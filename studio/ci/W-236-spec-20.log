@@ -1,0 +1,21 @@
+# opus: W-236
+# phase: spec
+# round: 20
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1311e-6107-71e0-a63b-a02a48f429c1
+# outcome: failed
+# at: 2026-10-12T23:22:56.644Z
+# tree: tree:526d26d803a8efa664f3f7154e69a20507f4dbb0
+# brief: briefs/W-236.md blob:c257c7cbf3659113f164925edcecd3a4c8818498
+
+## Findings
+1. blocking — brief:54 The stated numeric comparator can accept out-of-domain versions such as `2.x`: the prototype returns true after comparing the higher major without validating the remaining components. The lockfile reader therefore does not reliably fail closed on malformed versions. — check: scripts/source-map-js.test.mjs
+
+## Earlier findings
+- ci/W-236-spec-18.log #1: closed — brief:90 and brief:95 now record the later Patron ruling that adds the offline lockfile test alongside the still-general audit gate.
+
+## Verdict
+The new input-domain row leaves a malformed-version path that can fail open.
+
+VERDICT: FAIL

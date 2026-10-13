@@ -1149,7 +1149,9 @@ npm run bisellium -- ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <di
 `ci` runs this repository's CI pipeline locally, without a runner: the
 commands in `CI_STEPS` (`packages/commands/src/ci.ts`), in order, in
 `--repo` (default the current directory), stopping at the first that
-fails. Today those are `npm run -s typecheck`, `npm run -s lint`,
+fails. Today those are `npm run -s audit` (`npm audit --audit-level=moderate`:
+a moderate, high or critical npm advisory fails it, and so does a registry
+failure), `npm run -s typecheck`, `npm run -s lint`,
 `npm run -s format:check`, `npm test`,
 `npm run -s check -- studio --repo .` and
 `npm run -s check -- examples/sample-studio --repo .`. The steps are fixed
@@ -1158,7 +1160,7 @@ feature. `.github/workflows/ci.yml` runs the same commands on a `push` and on a
 source-change `merge_group`, each after `npm ci`, split across two jobs: `gates`
 runs every step except the studio check, in `CI_STEPS` order; `officina` runs
 `npm run -s check -- studio --repo .` alone. A records-only `merge_group` takes
-W-203's short path: `gates` skips five `CI_STEPS` and runs the studio check and
+W-203's short path: `gates` skips six `CI_STEPS` and runs the studio check and
 `test:record`, `officina` is unchanged, and `web-e2e` skips its build and
 browser steps. A pull request runs less (Merge queue, W-205). All four jobs,
 `gates`, `officina`, `web-e2e` and `certify`, are required checks (ruleset

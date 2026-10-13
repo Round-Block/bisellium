@@ -6,8 +6,8 @@
  * own runtime behaviour). No framework, same house style as
  * packages/cli/src/close.test.ts.
  *
- * CI_STEPS' six commands are fixed, hardcoded strings (npm run -s
- * typecheck/lint/format:check, npm test, npm run -s check -- <dir> --repo
+ * CI_STEPS' seven commands are fixed, hardcoded strings (npm run -s
+ * audit/typecheck/lint/format:check, npm test, npm run -s check -- <dir> --repo
  * .) — every fixture repo below carries a package.json whose scripts give
  * those exact names something trivial (but observable) to run, rather than
  * the real tsc/eslint/prettier this repo's own package.json wires up.
@@ -46,12 +46,15 @@ function commitAll(dir: string, message: string): void {
   git(dir, ["commit", "-q", "-m", message]);
 }
 
-const EXPECTED_ORDER = ["typecheck", "lint", "format:check", "test", "check:studio", "check:examples/sample-studio"];
+const EXPECTED_ORDER = [
+  "audit",
+  "typecheck", "lint", "format:check", "test", "check:studio", "check:examples/sample-studio",
+];
 
 // Appends its own step label to order.log (npm run's own "-- ARGS" carries
 // the two `check` invocations' argument apart, so both land in order.log as
 // distinct labels even though they share one npm script) and exits 1 when
-// fail-at.txt names that exact label — so a test controls "which of the six
+// fail-at.txt names that exact label — so a test controls "which of the seven
 // steps fails" with one file write.
 const ORDER_MARKER = `import { appendFileSync, existsSync, readFileSync } from "node:fs";
 const label = process.argv[2] === "check" ? \`check:\${process.argv[3]}\` : process.argv[2];
@@ -68,6 +71,7 @@ function writeOrderRepo(dir: string): void {
         name: "ci-order-fixture",
         private: true,
         scripts: {
+          audit: "node ci-marker.mjs audit",
           typecheck: "node ci-marker.mjs typecheck",
           lint: "node ci-marker.mjs lint",
           "format:check": "node ci-marker.mjs format:check",
@@ -88,7 +92,7 @@ function orderLog(dir: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// behaviour 1: runs all six steps in ci.yml's order on a passing tree, exits 0
+// behaviour 1: runs all seven steps in ci.yml's order on a passing tree, exits 0
 // ---------------------------------------------------------------------------
 {
   const dir = mkdtempSync(join(tmpdir(), "ci-order-"));
@@ -97,7 +101,7 @@ function orderLog(dir: string): string[] {
     const result = await runCi(["--repo", dir]);
     check(
       1,
-      "runs all six steps in order and exits 0",
+      "runs all seven steps in order and exits 0",
       result.exitCode === 0 && orderLog(dir).join(",") === EXPECTED_ORDER.join(","),
       JSON.stringify(orderLog(dir)),
     );
@@ -125,7 +129,7 @@ function orderLog(dir: string): string[] {
       2,
       "stops at first failing step, names it, exits non-zero",
       result.exitCode !== 0 &&
-        orderLog(dir).join(",") === ["typecheck", "lint", "format:check"].join(",") &&
+        orderLog(dir).join(",") === ["audit", "typecheck", "lint", "format:check"].join(",") &&
         stderr.includes("format:check"),
       `exit=${result.exitCode} order=${JSON.stringify(orderLog(dir))} stderr=${stderr.trim()}`,
     );
@@ -185,6 +189,7 @@ function orderLog(dir: string): string[] {
           private: true,
           workspaces: ["packages/*"],
           scripts: {
+            audit: "node -e \"process.exit(0)\"",
             typecheck: "node -e \"process.exit(0)\"",
             lint: "node -e \"process.exit(0)\"",
             "format:check": "node -e \"process.exit(0)\"",
@@ -237,7 +242,7 @@ function orderLog(dir: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// shared fixture for behaviours 5 and 6: a repo whose six CI_STEPS all pass,
+// shared fixture for behaviours 5 and 6: a repo whose seven CI_STEPS all pass,
 // plus a studio (elsewhere entirely — never a subdirectory of `repo`, so
 // neither studio's own writes nor the other's presence can flip the other's
 // dirty-tree check) with one opus and automated tests/lint/types
@@ -252,6 +257,7 @@ function makeCiRepo(): string {
         name: "ci-opus-fixture",
         private: true,
         scripts: {
+          audit: "node -e \"process.exit(0)\"",
           typecheck: "node -e \"process.exit(0)\"",
           lint: "node -e \"process.exit(0)\"",
           "format:check": "node -e \"process.exit(0)\"",
@@ -388,6 +394,7 @@ function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
         name: "ci-ref-opus-fixture",
         private: true,
         scripts: {
+          audit: "node -e \"process.exit(0)\"",
           typecheck: "node -e \"process.exit(0)\"",
           lint: "node -e \"process.exit(0)\"",
           "format:check": "node -e \"process.exit(0)\"",
@@ -462,7 +469,7 @@ function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
 // --allow-dirty makes `ci --opus` exit 2 and write nothing — the exact
 // refusal `verify` alone gives. Round 2's finding 2: a hardcoded, always-on
 // `verifyArgs.push("--allow-dirty")` would make this pass (exit 0, write a
-// `dirty:` certificate) instead. Same fixture also covers the step-5
+// `dirty:` certificate) instead. Same fixture also covers the step-6
 // "officina-wide" stderr hint (round 2's advisory), which nothing tested.
 // ---------------------------------------------------------------------------
 {
@@ -505,7 +512,7 @@ function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
 
     check(
       9,
-      "ci --opus on a dirty tree without --allow-dirty exits 2 and writes nothing; step-5 hint fires",
+      "ci --opus on a dirty tree without --allow-dirty exits 2 and writes nothing; step-6 hint fires",
       dirtyOk && hintOk,
       `dirty: exit=${dirtyResult.exitCode} changed=${after !== before} stderr=${dirtyStderr.trim()} | ` +
         `hint: exit=${hintResult.exitCode} stderr=${hintStderr.trim()}`,

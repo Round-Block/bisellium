@@ -1,0 +1,21 @@
+# opus: W-236
+# phase: spec
+# round: 18
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1311e-6107-71e0-a63b-a02a48f429c1
+# outcome: failed
+# at: 2026-10-12T23:21:14.266Z
+# tree: tree:526d26d803a8efa664f3f7154e69a20507f4dbb0
+# brief: briefs/W-236.md blob:b305729e45bcbace83094376585f260e1f65865d
+
+## Findings
+1. blocking — brief:89 The accepted default promises one general audit gate “rather than a test for this one package,” but the revision adds `scripts/source-map-js.test.mjs` permanently to `test:suite`; those requirements are incompatible as written. — check: package.json
+2. advisory — brief:43 The new `package-lock.json` reader described at brief:24 is absent from the Input domain table, which therefore does not state its valid lockfile/version domain or name its rejecting functions; its parse and assertions otherwise fail closed. — check: scripts/source-map-js.test.mjs
+
+## Earlier findings
+
+## Verdict
+The revised brief retains a false promise about excluding a package-specific test.
+
+VERDICT: FAIL

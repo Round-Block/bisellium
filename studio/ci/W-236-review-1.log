@@ -1,0 +1,18 @@
+# opus: W-236
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a132ab-1413-7921-9a44-e1923ed6be0f
+# outcome: passed
+# at: 2026-10-13T00:34:00.191Z
+# tree: tree:6f9115874475a1f17e11aca7216ee3c6704557a0
+# brief: briefs/W-236.md blob:ee6a6ad391214fae78eeefc2df96a8090a9d1237
+
+## Findings
+1. advisory — packages/commands/src/ci.ts:182 Nine descriptions still predate the audit insertion: this line; packages/cli/src/ci.test.ts:381,501; scripts/ci-workflow.test.mjs:179; scripts/ci-scope.test.mjs:572,606; and docs/ADOPTION.md:1254,1259,1267. I searched every W-236-declared non-record file for legacy step counts, ordinals, and pull-request descriptions; these are all instances. — check: none: extend CI documentation parity checks to cover counts, ordinals, and pull-request summaries
+2. advisory — packages/cli/src/ci.test.ts:122 The regression suite never makes the new audit step return non-zero to prove later steps and certificate minting do not run; scripts/source-map-js.test.mjs:18 likewise permanently exercises only 1.2.2 green and the recorded 1.2.1 red, not malformed, absent, or additional bad entries. I searched all W-236-modified test files and evidence logs; these are the two uncovered input-domain classes, although the implementation itself fails closed correctly. — check: packages/cli/src/ci.test.ts; scripts/source-map-js.test.mjs
+
+## Verdict
+The implementation behaves as specified, the lockfile change is exact, both genuine reds match their required causes, and all required gates and receipt evidence pass. The findings are advisory regression/documentation gaps only.
+VERDICT: PASS

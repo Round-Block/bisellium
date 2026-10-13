@@ -1,0 +1,20 @@
+# opus: W-236
+# phase: spec
+# round: 14
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1311e-6107-71e0-a63b-a02a48f429c1
+# outcome: failed
+# at: 2026-10-12T22:19:53.725Z
+# tree: tree:f09ef7f0ee04df5b75991c1696f833e48167e8a8
+# brief: briefs/W-236.md blob:af05bbc83c1a2f930beaa7e0707c9e9c223ba7d5
+
+## Findings
+1. blocking — brief:3 The requirement is commit ancestry from `8fc54534`, but the red log records only a tree and the prescribed `git show <tree>:…` checks only file contents. Different commits can share that tree, so the build review cannot guarantee the stated descent; require the prerequisite tree contents instead or name evidence that resolves the tree to a commit and verifies ancestry. — check: none: verify commit ancestry rather than only tree contents
+
+## Earlier findings
+- ci/W-236-spec-12.log #1: closed — brief:3 now states a future requirement instead of falsely claiming that behaviour 2’s red already exists.
+
+## Verdict
+The prior factual claim is fixed, but the new ancestry promise is broader than the evidence the brief says will verify it.
+VERDICT: FAIL

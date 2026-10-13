@@ -1,5 +1,5 @@
 /**
- * `bisellium ci` — W-031: runs the same six steps `.github/workflows/ci.yml`
+ * `bisellium ci` — W-031: runs the same seven steps `.github/workflows/ci.yml`
  * runs, locally, without a runner. GitHub Actions is blocked on billing
  * there (studio/briefs/W-031.md) — every push/PR dies in ~3 seconds with an
  * empty `steps: []`, so QA has been hand-building scratch worktrees and
@@ -7,9 +7,9 @@
  * pipeline, one command.
  *
  * CI_STEPS is the single source of truth for the step list, in `ci.yml`'s
- * order (typecheck, lint, format:check, test, check studio, check
+ * order (audit, typecheck, lint, format:check, test, check studio, check
  * examples/sample-studio — `npm ci` itself is a dependency-install
- * prerequisite, not one of the six). scripts/ci-workflow.test.mjs's drift
+ * prerequisite, not one of the seven). scripts/ci-workflow.test.mjs's drift
  * guard spawns a `node --import tsx` child to read this export straight out
  * of this file and diffs it against `ci.yml`'s own `run:` lines, so the two
  * lists cannot silently drift apart — see that script for why it needs a
@@ -45,10 +45,11 @@ import { selectProvider, type AcquiredWorktree, type WorktreeProvider } from "@b
 import { parseFlags } from "./writes.js";
 import { runVerify, toPosixRelative, type RunVerifyOptions, type RunVerifyResult } from "./verify.js";
 
-// The six steps `.github/workflows/ci.yml` runs, in order — `npm ci` is a
-// dependency-install prerequisite, not one of the six, and is deliberately
+// The seven steps `.github/workflows/ci.yml` runs, in order — `npm ci` is a
+// dependency-install prerequisite, not one of the seven, and is deliberately
 // left out here the same way it's left out of the brief's own list.
 export const CI_STEPS: readonly string[] = [
+  "npm run -s audit", // W-236: moderate-or-worse npm advisories fail CI; a registry failure fails it too
   "npm run -s typecheck",
   "npm run -s lint",
   "npm run -s format:check",
@@ -59,7 +60,7 @@ export const CI_STEPS: readonly string[] = [
 
 // The one CI_STEPS entry that's officina-wide rather than per-opus — named
 // so its failure message can point a reviewer at `verify <opus>` instead.
-// Found by content, not position: CI_STEPS[4] would keep matching the drift
+// Found by content, not position: CI_STEPS[5] would keep matching the drift
 // guard while silently pointing at the wrong step if the list is reordered,
 // and would go `undefined` (never matching, hint silently vanishing) if it's
 // shortened — noUncheckedIndexedAccess makes both changes typecheck clean.

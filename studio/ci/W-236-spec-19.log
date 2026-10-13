@@ -1,0 +1,17 @@
+# opus: W-236
+# phase: spec
+# round: 19
+# sella: architect
+# outcome: passed
+# at: 2026-10-12T23:21:37.173Z
+# tree: tree:526d26d803a8efa664f3f7154e69a20507f4dbb0
+# brief: briefs/W-236.md blob:c257c7cbf3659113f164925edcecd3a4c8818498
+
+## Findings
+
+1. advisory — Answer 2 no longer stands alone: it and answer 7 record that the Patron, later on 2026-10-13, added the offline lockfile test as behaviour 1's red evidence alongside the general gate. check: none: r9-r10.diff
+2. advisory — The input domain gains `package-lock.json` as read by `scripts/source-map-js.test.mjs`, with its valid domain and the test's not-ok exit as the fail-closed rejector. check: none: brief Input domain
+
+## Verdict
+
+Passed: round 18's blocker and advisory are answered; admission reports 0 problems.

@@ -16,12 +16,12 @@
  * `bisellium ci` runs except the studio check — this is the job a branch
  * protection rule can require) and `officina` (`check -- studio` alone, an
  * honest, non-required red). This is a DELIBERATE divergence from
- * `bisellium ci`'s CI_STEPS, which still runs all six steps in one
+ * `bisellium ci`'s CI_STEPS, which still runs all seven steps in one
  * sequential list with `check -- studio` before `check -- sample-studio` —
  * splitting into two parallel jobs moves the studio check out from between
  * `test` and the sample-studio check, so the workflow's `run:` order can no
  * longer equal CI_STEPS' order. What still holds: every CI_STEPS command
- * still runs somewhere, gates' own five steps keep CI_STEPS' relative order
+ * still runs somewhere, gates' own six steps keep CI_STEPS' relative order
  * for the entries they carry, and officina's one step is exactly the studio
  * entry.
  *
@@ -86,7 +86,7 @@ check("the string 'verify' appears nowhere in the file", !raw.includes("verify")
 // behaviour 7 of W-031's brief, updated for the 2026-09-20 gates/officina
 // split: the step list `bisellium ci` runs (packages/commands/src/ci.ts's
 // CI_STEPS) must equal this workflow's own `run:` steps, minus `npm ci` (a
-// dependency-install prerequisite, never one of the six) — otherwise local
+// dependency-install prerequisite, never one of the seven) — otherwise local
 // CI and the runner can silently disagree about what "green" means. CI_STEPS
 // lives in a .ts file; this script runs under plain `node` (no --import
 // tsx), and Node's native TS support does not resolve the ".js" specifier ->
@@ -117,6 +117,15 @@ try {
   ciSteps = [];
   check("CI_STEPS reads from packages/commands/src/ci.ts", false, String(err));
 }
+
+// W-236: the moderate-or-worse npm advisory gate runs first, locally and in
+// `gates`, and the root `audit` script it names is exactly that command.
+check("CI_STEPS[0] is npm run -s audit", ciSteps[0] === "npm run -s audit", JSON.stringify(ciSteps[0]));
+const rootPackageJson = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"));
+check(
+  "package.json: scripts.audit is npm audit --audit-level=moderate",
+  rootPackageJson?.scripts?.["audit"] === "npm audit --audit-level=moderate",
+);
 
 // The one CI_STEPS entry that's officina-wide (found by content, same rule
 // ci.ts itself uses for CHECK_STUDIO_STEP — never by position, since a
