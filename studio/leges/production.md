@@ -63,7 +63,7 @@ detection. The Aedile owns the road, not the work travelling on it.
   without asking; small reversible calls ship as veto-able defaults reported
   at the checkpoint; scope, names and ruling-contradicting calls go to the
   Patron.
-- **Session hygiene.** Refresh before the context nears 500k, at a clean
+- **Session hygiene.** Refresh before the context nears 350k (Patron 2026-10-13; subagent dispatches stay capped at 500k), at a clean
   point. The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
   automates fresh sessions; never run it while a session is working.
 - **Usage.** At ~87% Claude usage (the Patron reports it) start no new Opus
@@ -259,3 +259,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-11 | §9 step 2: where reviewer sessions live; a shape-refused verdict is reissued in its session | Producer (handoff review) |
 | 2026-10-13 | §7: one Patron gate at greenlight; pre-`branch` Ops approval only over 3 points or for security/sandbox/branch protection (D-061) | Patron |
 | 2026-10-13 | §7: process work capped at one per two product opera, weekly retro; status page frozen (D-061) | Patron |
+| 2026-10-13 | §7: the orchestrator session refreshes before 350k (was 500k); subagent dispatches stay at 500k | Patron |
