@@ -1,0 +1,26 @@
+# opus: W-233
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12bdd-64c4-7923-8e8b-7bb6e1cfc870
+# outcome: failed
+# at: 2026-10-13T01:07:54.592Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-233.md blob:a6e728b1bcf07cb9c423312d78d02800a6ee7194
+
+## Findings
+1. blocking — brief:9 The epoch is read only from `base_sha`, so the switch PR itself has no epoch and receives no ladder checks. If that PR accidentally adds a verdict/red log or ticket entry alongside the setting, the evidence passes unchecked. — check: scripts/ci-certify.test.mjs
+2. blocking — brief:10 A candidate-added ticketless log with a valid `# at:` before the epoch is excluded even though the diff proves it is newly introduced; clock skew or an in-flight uncommitted log therefore bypasses certification. The boundary must not trust the artifact’s self-reported time as the condition for checking it. — check: scripts/ci-certify.test.mjs
+3. blocking — brief:11 A ticketed `done` PR does add a covered record: Behaviour 5 and the ticket-record promise append a `done` entry to `tickets:`, while line 10 covers every added entry. It therefore does not unconditionally “pass as today” and can fail before the non-opus early return. — check: scripts/ci-certify.test.mjs
+
+## Earlier findings
+- ci/W-233-spec-2.log #1: closed — brief:10-11 and brief:215 exempt handoff-phase verdicts from `ladder.ticket` and assign them to `ladder.handoff`.
+- ci/W-233-spec-2.log #2: open — brief:9-10 adds a migration boundary, but the switch PR is wholly unchecked and candidate-added logs can escape through a pre-epoch self-reported timestamp.
+- ci/W-233-spec-2.log #3: closed — brief:15 removes replay at the ticket head and judges carried evidence from the candidate instead.
+- ci/W-233-spec-2.log #4: closed — brief:55, brief:108-113, and brief:162 replace warning-only consumption with an atomic claim that is never read again as pending.
+
+## Verdict
+The replay, handoff, and single-use defects are closed, but the revised migration boundary still fails open and contradicts the promised treatment of done PRs.
+
+VERDICT: FAIL
