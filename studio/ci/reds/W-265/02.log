@@ -1,0 +1,39 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-265-b2 scripts/replay-accept.test.mjs
+# exit: 1
+# at: 2026-10-14T11:33:53.078Z
+# sella: builder.W-265
+# tree: tree:62c02d6a968b1ed8e5484b9b0ed6704d9ce3d214
+
+TAP version 13
+# Subtest: W-265-b2 behaviour 2: only an assertion failure gets the exception
+not ok 1 - W-265-b2 behaviour 2: only an assertion failure gets the exception
+  ---
+  duration_ms: 2.346012
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-265/scripts/replay-accept.test.mjs:312:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    expected refused replay
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-265/scripts/replay-accept.test.mjs:322:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8.701531
