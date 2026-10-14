@@ -96,3 +96,5 @@ munera:
   - { id: build, tier: build }
   - { id: spec, tier: review }
   - { id: review, tier: review }
+# W-233 (D-064 C): every record write follows a `next` call for that step.
+step_tickets: required
