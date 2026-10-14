@@ -120,6 +120,8 @@ export function reconcileFindings(
   body: string,
   outcome: string,
   brief: { spec: string; repoSpec?: string; text: string } | { error: string },
+  /** W-246: a spec review that submits `failed` with no blocker standing (none cited, or none at all) passes too. */
+  advisoryPasses = false,
 ): { converted: Conversion[]; outcome: string; submittedOutcome?: string } {
   const converted: Conversion[] = [];
   const blocking = contentLines(body).lines.filter(
@@ -149,7 +151,7 @@ export function reconcileFindings(
     if (reason !== undefined) converted.push({ finding, reason });
   }
   // A failure stands exactly when the censor cites a brief line for a blocker: reconcile only when every submitted blocker converted.
-  if (blocking.length > 0 && converted.length === blocking.length && /^(?:verdict:\s*)?fail(?:ed)?\b/i.test(outcome.trim()))
+  if ((advisoryPasses || blocking.length > 0) && converted.length === blocking.length && /^(?:verdict:\s*)?fail(?:ed)?\b/i.test(outcome.trim()))
     return { converted, outcome: "passed", submittedOutcome: outcome };
   return { converted, outcome };
 }
@@ -637,6 +639,17 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       return { exitCode: 2 };
     }
     briefHeader = `${briefRel} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
+    // W-246: as in build, a blocker that cites no line of the pinned brief is advisory, and a failure with none standing passes
+    const where = officinaInRepo(root);
+    const reconciled = reconcileFindings(transcript.toString("utf8"), outcome, {
+      spec: briefRel,
+      ...(where === undefined ? {} : { repoSpec: where.rel === "" ? briefRel : `${where.rel}/${briefRel}` }),
+      text: read.bytes.toString("utf8"),
+    }, true);
+    conversions = reconciled.converted;
+    recorded = reconciled.outcome;
+    submitted = reconciled.submittedOutcome;
+    if (conversions.length > 0) convertedHeader = conversions.map((c) => `${c.finding} (${c.reason})`).join("; ");
   }
 
   // W-215: a sequence (opus, phase, sella) keeps the reviewer session its first sessioned round recorded
