@@ -1,0 +1,18 @@
+# opus: W-253
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1379d-842c-7252-931b-071ba560829d
+# outcome: failed
+# at: 2026-10-13T23:36:34.652Z
+# tree: tree:4cf65becabbad63587371074ee4d90121943b649
+# brief: briefs/W-253.md blob:51770d51f5e62a0edb3056fc6ebedc4ee1b8030e
+
+## Findings
+1. blocking — brief:45 The producer’s actual W-221 triage names findings from architect-signed `spec-1`, `spec-3`, `spec-5`, and `spec-7`; the mechanism and behaviour at brief:24 and brief:38 remove those findings and therefore refuse those triage entries as “not recorded.” The promised retro cannot succeed without first revising the triage. — check: packages/cli/src/retro-opus.test.ts
+2. advisory — brief:33 “Any contents” omits the existing `LOG_MAX_BYTES` limit: `readContainedRegularFile` refuses a signature larger than 1 MiB. The valid domain should state that bound. — check: packages/cli/src/retro-opus.test.ts
+
+## Verdict
+The input-size omission is fail-closed, but the unchanged producer triage makes the acceptance promise false as written.
+VERDICT: FAIL

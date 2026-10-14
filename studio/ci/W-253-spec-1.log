@@ -1,0 +1,18 @@
+# opus: W-253
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T23:33:41.984Z
+# tree: tree:4cf65becabbad63587371074ee4d90121943b649
+# brief: briefs/W-253.md blob:51770d51f5e62a0edb3056fc6ebedc4ee1b8030e
+
+## Findings
+
+1. advisory — The red's fixture was probed on master (abadb347) in a temp officina: runRetro --opus W-1 exits 2 with ci/W-1-spec-1.log: line under "## Findings" out of domain, the W-221 refusal. check: packages/cli/src/retro-opus.test.ts W-253-b1
+2. advisory — check's retro rules call owedRetros, which reads no verdict log; readOpusVerdicts is the one reader to change. check: none: grep census
+
+## Verdict
+
+Passed: one behaviour, red reproduced read-only, admission and the block-level check pass.
