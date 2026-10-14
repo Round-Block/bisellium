@@ -1,0 +1,19 @@
+# opus: W-255
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1391d-d621-78e2-8fce-17eab11e4ff2
+# outcome: failed
+# at: 2026-10-14T06:40:42.005Z
+# tree: tree:56e978bba9f5a93f5959e28d7d7911210a4956b2
+# brief: briefs/W-255.md blob:09d94a690ee6ebb83faca42c6c92cf439b255c48
+
+## Findings
+1. blocking — brief:13 The requirement is unenforced when optional `brief_behaviour_limit` is absent: ready, check and `specOrder` skip `readBriefAdmission`, while `specSectionsProblem` checks only form and headings, so a light brief missing its family, genuine reds, red commands or Red order can proceed. Replacement: `A light brief's family, genuine reds, red commands and ready Red order are validated even when brief_behaviour_limit is absent; that setting controls only the numeric behaviour limit.` — check: packages/cli/src/next.test.ts
+2. blocking — brief:37 The regex accepts `--behaviour 1a` or `--behaviour 1.5` for behaviour 1 because `(?!\d)` excludes only a following digit, admitting invalid CLI tokens as the required command. Replacement: `each numbered behaviour must contain a bisellium red command whose --behaviour value is exactly <i> as one CLI token`. — check: packages/cli/src/brief-admission.test.ts
+3. blocking — brief:50 The stated `1..limit` domain excludes an existing accepted path: more behaviours are admitted when `Behaviour limit exception:` names a valid architect decision, as the W-140 tests require. Replace the domain with the exception case and add its decision record, rejected by `patronDecisionProblem`. — check: packages/cli/src/brief-admission.test.ts
+
+## Verdict
+The brief has three substantive acceptance paths that contradict its stated input domain or requirements.
+VERDICT: FAIL

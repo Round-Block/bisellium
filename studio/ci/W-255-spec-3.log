@@ -1,0 +1,21 @@
+# opus: W-255
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-14T06:43:20.080Z
+# tree: tree:56e978bba9f5a93f5959e28d7d7911210a4956b2
+# brief: briefs/W-255.md blob:06c4242083a81c898c2eeb396988905e20bc2ee6
+
+## Findings
+1. advisory brief:41 round 2 finding 1 closed as a class; census of every path where a light brief's required lines (family, genuine reds, red commands, Red order) could skip validation, at master fad2ed30: (a) runReady, limit declared: admission and Red order ran already; (b) runReady, limit absent: skipped, now runs both for a marked brief with an unbounded count; (c) checkStudio brief.admission, limit declared: ran already; (d) checkStudio, limit absent: skipped, now runs admission for a marked active brief; (e) next reviewedSpec, any setting: headings only, now specSectionsProblem runs light admission and the Red order line; (f) next signedSpec, no reviewer: same helper; (g) next specOrder review gate: reached only past reviewedSpec's anchor, so (e) covers it, and with a limit its briefAdmissionProblems call is unchanged. check: packages/cli/src/brief-admission.test.ts W-255-b4 and packages/cli/src/next.test.ts W-255-b3
+2. advisory brief:15 not admission paths, unchanged: builder-run countBehaviours, rules/evidence.ts (opus.red_evidence, readRedOrder) and bisellium red's readRedOrder read behaviours and the red order but admit nothing; scripts/review-packet.mjs admissionFact is a reviewer fact gated on the limit, not a gate. check: none: an admission-caller census test like W-140-b2's
+3. advisory brief:39 round 2 finding 2: the red command is now exactly one `bisellium red` occurrence per behaviour with its --behaviour token equal to the ordinal; a light behaviour that mentions `bisellium red` twice is refused, a stated cost. check: packages/cli/src/brief-admission.test.ts W-255-b1
+4. advisory brief:55 round 2 finding 3: the exception decision is its own Input domain row, rejected by patronDecisionProblem; with no limit declared the count is unbounded and no exception line is read. check: packages/cli/src/brief-admission.test.ts W-140-b3
+5. advisory brief:37 the light-brief exclusion is a fixed list of family tokens and Files owned paths; work outside it rests on the signature and the review, a stated limit (Default 3, open to veto). check: none: a typed work-class field on the opus record
+6. advisory brief:79 W-255 and W-246 both own next.ts, next.test.ts, spec-review.md and docs/ADOPTION.md; W-255 builds after W-246 merges. check: none: a rule ordering greenlit opera whose briefs own one file
+7. advisory brief:95 Default 4 amends the design lex's definition of ready under D-063 §4; it stays a default open to the Patron's veto, not a ruling. check: none: a rule that a lex edit carries an amendment row naming its authority
+
+## Verdict
+Revision 2 closes round 2's three blockers: a marked brief is admitted by ready, check and both of next's signature gates whether or not a limit is declared, the red command's behaviour token is exact, and the exception path is in the Input domain; signed as round 3.

@@ -1,0 +1,25 @@
+# opus: W-255
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1391d-d621-78e2-8fce-17eab11e4ff2
+# outcome: failed
+# at: 2026-10-14T06:47:36.774Z
+# tree: tree:56e978bba9f5a93f5959e28d7d7911210a4956b2
+# brief: briefs/W-255.md blob:06c4242083a81c898c2eeb396988905e20bc2ee6
+
+## Findings
+1. blocking — studio/briefs/W-255.md:39 Reached by ci/W-255-spec-2.log #2’s exact-command class: the occurrence count and unanchored regex accept `xbisellium red W-900 --behaviour 1`, which is not a `bisellium red` command, so the validator still fails open on a plausible typo. brief:39 — check: packages/cli/src/brief-admission.test.ts
+2. blocking — studio/briefs/W-255.md:41 Reached by ci/W-255-spec-2.log #1’s no-limit admission-path class: the new `checkStudio` reader explicitly keeps missing or unreadable-spec findings limit-only, so with no limit it silently skips an out-of-domain `spec:`/brief input instead of failing closed. brief:41 — check: packages/cli/src/brief-admission.test.ts
+3. blocking — studio/briefs/W-255.md:43 Reached by ci/W-255-spec-2.log #1 and #3’s classes: `specSectionsProblem` always passes `Number.POSITIVE_INFINITY`, so `signedSpec` and W-246’s split-standing path can accept a light brief exceeding a declared limit without a valid exception, contrary to the signature-gate domain. brief:43 — check: packages/cli/src/next.test.ts
+4. advisory — studio/briefs/W-255.md:54 Reached by ci/W-255-spec-2.log #1’s mandatory-line class: the ready/check row omits ready’s Red order input and its `readRedOrder` rejector; the path does fail closed, but the combined row cannot include that constraint because check does not read it. — check: packages/cli/src/brief-admission.test.ts
+
+## Earlier findings
+- ci/W-255-spec-2.log #1: closed — brief:41 and brief:43 now validate a readable marked brief’s family, genuine reds, red commands and Red order in ready, check and both next signature readers when no limit is declared.
+- ci/W-255-spec-2.log #2: closed — brief:39 captures the complete `--behaviour` token and compares it with the ordinal, refusing `1a`, `1.5` and `01`.
+- ci/W-255-spec-2.log #3: open — brief:54 still defines the brief itself as valid only “at most the limit”; adding a separate decision row does not state that a valid exception makes an over-limit brief part of that domain.
+
+## Verdict
+Three new substantive fail-open paths stand, and earlier finding #3 remains open.
+VERDICT: FAIL
