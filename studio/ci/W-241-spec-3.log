@@ -1,0 +1,22 @@
+# opus: W-241
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T06:43:47.933Z
+# tree: dirty:de5913c54fd2df971390d672764108a6ba71ba53
+# brief: briefs/W-241.md blob:2b1ee1baf5660d9c78129ca2ee02a2a670f48dc4
+
+## Earlier findings
+
+- ci/W-241-spec-2.log #1: closed — the rule applies when the manifest lists the `ops` collegium, and then an absent or unreadable leges/ops.md blocks (brief Interfaces, Input domain row 2); b2 now covers an absent lex and a directory at its path. Red 2 reproduces offline at the b1 commit, failing at "an absent Ops lex blocks" (census revision 2).
+- ci/W-241-spec-2.log #2: closed — narrowed: the brief says only the clause's three paths and marker are checked, anywhere in the file; the role names and the §2 placement are wording, not promises (r1-r2.diff).
+
+## Findings
+
+No findings
+
+## Verdict
+
+Passed: both reds are accepted by classifyReplay in an offline replay-shaped cell, and on the revised scratch shape the full npm test, typecheck, lint, format and both officina checks pass (census.txt, revision 2).
