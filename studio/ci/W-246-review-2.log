@@ -1,0 +1,20 @@
+# opus: W-246
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a138ae-cee9-7683-baac-d7dd7678e71d
+# outcome: passed
+# at: 2026-10-14T05:39:13.091Z
+# tree: tree:b979404cd89f6273c54e1cf6680cbc94dbaf47a5
+# brief: briefs/W-246.md blob:1c80d9fdaf5232a2fd16cc4146bc3a47092c9ec8
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-246-review-1.log #1: closed — packages/commands/src/verdict.ts:716-721 reparses the sessioned spec verdict after rulings, promotes it only when no current blocker or earlier open finding stands, and preserves the failed submission.
+
+## Verdict
+The focused regression test covers withdrawn, upheld, unruly, and earlier-open cases, and the prior blocker is closed.
+VERDICT: PASS
