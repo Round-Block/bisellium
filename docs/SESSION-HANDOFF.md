@@ -17,8 +17,7 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 2. **W-246** done (#462; build review 2 rounds). **W-255** revision 3 signed (round 5) and stands
    by the D-061 §4 split after spec rounds 2 and 4 failed; remainder W-264 (backlog). Next: land
    its spec (`next --perform --expect spec`), branch, builder; its PR needs the Patron
-   (ADOPTION.md, leges). Backlog for the Patron: W-260–W-264. W-252 stays in backlog.
-   Use `npm run -s bisellium --`: the `bisellium` on PATH runs `~/projects/bisellium-guard` (stale).
+   (ADOPTION.md, leges). Backlog for the Patron: W-260–W-264.    Use `npm run -s bisellium --`: the `bisellium` on PATH runs `~/projects/bisellium-guard` (stale).
 3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is not
    yet an opus: file it after W-245's census (Queue item 2).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
@@ -53,7 +52,9 @@ milestone exits; lanes later.
 
 1. Audit cuts, re-ranked by the ops speed audit (Patron 2026-10-14;
    `~/.bisellium-evidence/ops-speed-audit/report.md`): W-255 — a light brief by the
-   architect's marker (spec signed);
+   architect's marker (spec signed); W-260 — build verdicts reconcile after rulings (greenlit
+   by the spec-review cap's retro); W-252 — the spec-round counter refuses malformed history
+   (greenlit by the same retro);
    W-206 + W-207 + W-214 as one opus — spec in the opus PR (absorbs W-256), done reads
    certify's receipt, retro in the done PR; W-257 — handoff and checkpoint edits ride the done
    PR; W-250 — ci.yml runs `bisellium ci` once, records-only pushes take the short path;
