@@ -14,18 +14,22 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 1. **W-221**, **W-233** part 1, **W-240** and **W-253** (#453, D-062 hotfix) done; the weekly
    retro is filed for all four (no new opera, D-061 §5).
-2. **W-246** spec landed (#450); the Patron vetoed Default 2 (D-063 §7): the architect re-signs
-   the brief to count failed rounds only since the newest re-spec, then `branch` and the builder.
-   W-252 stays in backlog (D-063 §6).
-3. **W-233** part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) waits for
-   W-245's census (D-061 §1).
+2. **W-246** revision 4 sits uncommitted in the working tree (D-063 §7: count failed spec rounds
+   only since the newest passed review or split signature; diff `W-246-spec/r3-r4.diff`). Next: the
+   architect signs round 7 with `--from ~/.bisellium-evidence/W-246-spec/r7-findings.md`, the
+   censor reviews round 8, the spec lands, then `branch` and the builder. W-252 stays in backlog.
+   Auto mode refused the signature and `gh pr merge` here; the Patron added an `autoMode.allow`
+   block to `~/.claude/settings.json` (auto mode drops `npm run` allow rules). If still refused,
+   ask the Patron; never retry by another route.
+3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is not
+   yet an opus: file it after W-245's census (Queue item 2).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
 5. **Audit's open choices ruled (D-063):** W-242 and W-248 widened, W-254 and W-255 filed,
    W-230 greenlit (`audit-rulings/apply-d063.sh`).
-6. **Audits ruled (D-061):** 25 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
+6. **Audits ruled (D-061):** 24 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
    W-251 filed; the Queue below is the new order.
 - Checkpoint after every opus: a Haiku agent adds the history rows, runs `build.sh` and
-  republishes Status and the dossier (lex §7); the 2026-10-14 catch-up lands as its own docs PR.
+  republishes Status and the dossier (lex §7); W-253 and the D-063 rulings still owe one (#455 covered the rest).
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
 ## Concurrency readiness
