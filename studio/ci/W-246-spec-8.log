@@ -1,0 +1,19 @@
+# opus: W-246
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1373f-05b7-7bd0-9ae8-4e8bf8fd4c8b
+# outcome: failed
+# at: 2026-10-14T02:58:37.731Z
+# tree: tree:4811f68547e26ba2aa31602e8dfa4f651d6d7ab0
+# brief: briefs/W-246.md blob:364a592ae7d53f7c50f6d690c46e7bc58fbc0296
+
+## Findings
+1. blocking — packages/cli/src/next.ts:646 The new reset promise cannot guarantee brief:55 after an already-landed pass: when trunk’s spec is valid, `deriveNext` never evaluates the changed working-tree brief and signature, so it names `branch` rather than reviewer round 8, exactly as `packets/r8/facts.txt:3` shows and `studio/opera/W-256.md:3` records. Add the W-256 dependency/limit or cover the landed-pass re-spec path here. — check: packages/cli/src/next.test.ts W-246-b2 landed-pass re-spec row
+
+## Earlier findings
+
+## Verdict
+The revision promises detection of a re-spec that the stated mechanism and current ladder ignore after the prior spec has landed.
+VERDICT: FAIL
