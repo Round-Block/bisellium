@@ -1,0 +1,19 @@
+# opus: W-265
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-14T09:49:45.935Z
+# tree: tree:8fd5235268fa36e9eae877c1b1cb6ec3317f09e9
+# brief: briefs/W-265.md blob:0326883866d73fd434b5e38c0e5145e0e327521d
+
+## Findings
+1. advisory — round 2's blocker (brief:69) is right: W-134-b3b replays `REBASED_RED` under `--test-reporter=tap`, and node prints a `# Subtest:` heading plus a `  code: 'ERR_ASSERTION'` block; W-134-b3a prints one too and is refused at status 0. The reviewer's replacement text is applied verbatim. check: packages/commands/src/run.test.ts:300
+2. advisory — census closed: every test output that reaches `classifyReplay` is listed with its outcome under rules 1-6. That means the two direct callers (replay-accept 4(b)-4(n), host-cells 3(d)) and the runner's replay as driven by run.test.ts's live rows (`node red.mjs` reds, canned Playwright, preparation failures, W-134 rebased rows). Red-log text that is never replayed (run.test.ts `logText`, opus-model.test.ts `assertionRed`, next/lifecycle/red-order logs, ci-certify.test.mjs's stubbed mint) is named. No verdict flips. check: git grep -l 'run-builder-host|classifyReplay|replay-accept|builder-run' over *.test.*; REBASED_RED reproduced on node v25.9.0: block omitted, no poison outside, today's verdict accepted, title printed `W-134 fixture red`
+3. advisory — the Input domain row now names `classifyReplay` as the rejector, with `outsideOwnFailure` as its fail-closed preprocessing. check: packages/commands/src/brief-admission.ts:131
+4. advisory — "always scanned" is now `Promise scan-outside-own-block`, and its limit names the quoted-assertion residual and deliberate forgery (D-045). `readBriefAdmission` returned the r1 problem `line 37 says "always" outside a promise line`; on r2 it returns no problems. `bisellium check` did not surface this rule. check: packages/commands/src/brief-admission.ts:152
+5. advisory — the Implementation plan's gate step now requires the live run.test.ts rows to run, not skip, with each keeping the census verdict; the Plan is unchanged. check: brief:117
+
+## Verdict
+passed — the round-2 blocker is closed with the reviewer's replacement text and a full census of the classifier's test inputs; the two advisories are applied, and no design or Default changed.
