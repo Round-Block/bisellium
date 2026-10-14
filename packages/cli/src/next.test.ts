@@ -5178,3 +5178,108 @@ test("W-246-b3 behaviour 3: build review has no cap", { timeout: 1_800_000 }, ()
   assert.doesNotMatch(command, /three-round cap/, "the censor's order names no cap");
   assert.doesNotMatch(command, /D-044/, "the censor's order cites no D-044");
 });
+
+// ---------------------------------------------------------------------------
+// W-255 (D-063 §4): next's signature gates accept a signed brief marked "Brief: light" (four sections, the
+// admission of a light brief, a declared limit, the Red order line). Rows are selectable with
+// --test-name-pattern=W-255-b3.
+// ---------------------------------------------------------------------------
+interface LightOpts {
+  mark?: string | null;
+  family?: boolean;
+  redOrder?: boolean;
+  owned?: string;
+  behaviours?: number;
+  exception?: string;
+  acceptance?: boolean;
+}
+/** A light brief: Intent, Files owned, Behaviours with a red command each and Acceptance; no Interfaces, Out of scope or Input domain. */
+function w255Light(o: LightOpts = {}): string {
+  const rows = Array.from({ length: o.behaviours ?? 1 }, (_, i) => [
+    `${i + 1}. **Fixture behaviour ${i + 1}.**`,
+    `   **Genuine red:** \`bisellium red ${OPUS} --behaviour ${i + 1} --sella builder -- node x\` fails.`,
+  ]).flat();
+  return [
+    `# ${OPUS} fixture light brief`,
+    "",
+    "## Intent",
+    "",
+    ...(o.mark === null ? [] : [o.mark ?? "Brief: light"]),
+    ...(o.family === false ? [] : ["Decree family: fixture"]),
+    ...(o.redOrder === false ? [] : ["Red order: one at a time"]),
+    ...(o.exception === undefined ? [] : [`Behaviour limit exception: ${o.exception}`]),
+    "",
+    "## Files owned",
+    "",
+    `- \`${o.owned ?? "source.txt"}\``,
+    "",
+    "## Behaviours to test",
+    "",
+    ...rows,
+    "",
+    ...(o.acceptance === false ? [] : ["## Acceptance", "", "Fixture.", ""]),
+  ].join("\n");
+}
+
+test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief and refuse the rest", { timeout: 1_800_000 }, () => {
+  const ok = w196World("w255-b3", "6");
+  put(ok.repo, BRIEF_REL, w255Light());
+  sign(ok, 1);
+  reviewerOrder(specNext(ok), 2, "a signed light brief goes to the reviewer");
+  review(ok, 2, "passed");
+  const named = specNext(ok);
+  expectStep(named, "spec", "named", "a reviewed light brief names the commit");
+  assert.match(named.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("act: commit", named));
+  expectStep(next(ok, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the light spec is committed");
+  git(ok.repo, ["merge", "-q", "--ff-only", `spec/${OPUS}`]);
+  expectStep(next(ok, [OPUS]), "branch", "named", "the landed light spec names branch");
+
+  const refuse = (tag: string, text: string, why: RegExp, setup?: (w: World) => void): void => {
+    const w = w196World(`w255-b3-${tag}`, "6");
+    setup?.(w);
+    put(w.repo, BRIEF_REL, text);
+    sign(w, 1);
+    const o = specNext(w);
+    architectOrder(o, 2, `${tag} goes back to the architect`);
+    assert.match(o.kv.get("why") ?? "", why, ran(`${tag}: why`, o));
+    assert.equal(o.out.includes(SR_MODEL), false, ran(`${tag}: no reviewer model is named`, o));
+  };
+  refuse("nomark", w255Light({ mark: null }), /lacks the six design-lex sections/);
+  refuse("variant", w255Light({ mark: "Brief: Light" }), /brief form line "Brief: Light" is not exactly "Brief: light"/);
+  refuse("pipeline", w255Light({ owned: ".github/workflows/ci.yml" }), /a light brief is not for security, sandbox, branch-protection or pipeline work/);
+  refuse("nofamily", w255Light({ family: false }), /declares no decree family/);
+  refuse("nored", w255Light({ redOrder: false }), /declares no red order; add the line "Red order: one at a time"/);
+  refuse("noaccept", w255Light({ acceptance: false }), /lacks the four light-brief sections/);
+  refuse("seven", w255Light({ behaviours: 7 }), /numbers 7 behaviours; the limit is 6/);
+  const grant = (w: World): void => {
+    put(w.studio, "decisions/D-900.md", "---\nid: D-900\nby: architect\n---\nW-900 may hold seven behaviours.\n");
+    commit(w.repo, "studio: D-900");
+  };
+  const granted = w196World("w255-b3-granted", "6");
+  grant(granted);
+  put(granted.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
+  sign(granted, 1);
+  reviewerOrder(specNext(granted), 2, "seven behaviours with an exception go to the reviewer");
+  refuse("badgrant", w255Light({ behaviours: 7, exception: "D-901" }), /behaviour limit exception: decision "D-901" not found/, grant);
+
+  const nolimit = srWorld("w255-b3-nolimit");
+  put(nolimit.repo, BRIEF_REL, w255Light());
+  sign(nolimit, 1);
+  const n = specNext(nolimit);
+  architectOrder(n, 2, "no limit declared: a light brief goes back to the architect");
+  assert.match(n.kv.get("why") ?? "", /"Brief: light" needs a declared brief_behaviour_limit \(W-264\)/, ran("the W-264 line", n));
+
+  const solo = (tag: string): World => srWorld(tag, { row: null, setting: null, edit: (t) => `${t}brief_behaviour_limit: 6\n` });
+  const alone = solo("w255-b3-solo");
+  put(alone.repo, BRIEF_REL, w255Light());
+  sign(alone, 1);
+  landed(alone);
+  expectStep(specNext(alone), "branch", "named", "no reviewer: a signed, committed light brief names branch");
+  const over = solo("w255-b3-solo-over");
+  put(over.repo, BRIEF_REL, w255Light({ behaviours: 7 }));
+  sign(over, 1);
+  landed(over);
+  const o = specNext(over);
+  architectOrder(o, 2, "no reviewer: seven behaviours and no exception go back to the architect");
+  assert.match(o.kv.get("why") ?? "", /numbers 7 behaviours; the limit is 6/, ran("the limit", o));
+});
