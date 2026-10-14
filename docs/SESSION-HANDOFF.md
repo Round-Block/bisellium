@@ -10,7 +10,7 @@ kill: when every item here is enforced by a lex clause or a check rule
 
 Current state only, after CLAUDE.md; rules and environment: `studio/leges/production.md`.
 
-## Resume point (2026-10-14)
+## Resume point (2026-10-15)
 
 0. **Rulings applied (D-064, PR #471):** 16 opera halted, 15 titles amended, W-268 filed (certify
    rules, after W-243); the retro rides the done PR (W-251 keeps the process cap only). **Step tickets
@@ -18,26 +18,32 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
    `~/.bisellium-evidence` (`record-review.sh`, `spec-review-*.sh`, review `r*-run.sh`) must call
    `next` first. The orchestrator dispatches a ladder-runner subagent per opus and a clerk for
    records (W-267 enforces later).
-1. Done this week: W-221, W-233 part 1, W-240, W-253, W-246 (retros filed).
-2. **W-265** (host red replay ignores environment words inside the failing test's own
-   assertion block) merged (#473, 60296781), review passed round 1; done, retro and checkpoint
-   are next (its spec logs 1–4 ride the done record). One advisory for W-098:
+1. **W-265** done (#473, #474; retro L-179–L-182). Next: **W-255**. One advisory for W-098:
    `scripts/replay-accept.test.mjs:332`'s doesNotReject row hardcodes `operator: 'doesNotThrow'`.
-   Then **W-255** (light brief; built, review not yet run): rebase `opus/W-255` onto master,
+   **W-255** (light brief; built, review not yet run): rebase `opus/W-255` onto master,
    re-mint from its worktree (red 2 then accepted), fix `~/.bisellium-evidence/W-255-review/r1-run.sh`
    (backticks in its "Look hardest" item 3 were eaten: restore `bisellium red` and `xbisellium`),
    review, PR (needs the Patron: ADOPTION.md, leges). Then **W-260** (spec landed): branch, build.
-   W-246 done (#462); W-266 now rides W-229.
+   W-266 now rides W-229.
    Use `npm run -s bisellium --`: the `bisellium` on PATH runs `~/projects/bisellium-guard` (stale).
    Kept scripts: `~/.bisellium-evidence/{spec-review-first,spec-review-later,retro-triage}.sh`,
    `retro-adjust.py`, `record-review.sh`, `chore-pr.sh`; a worktree needs `cp -a ../../node_modules`.
-   D-065 (#472): the lessons→checks pass filed W-269–W-273; W-223's layout approved, no Rank column.
    `~/.bisellium-evidence/handoff-check.mjs` misreads D-064's Queue layout (19 false findings).
-3. **W-233** is done; its part 2 is W-267 (the dispatch guard) and W-268 (the certify rules, after W-243).
-4. **W-241** part 1 spec passed (untracked), Patron-approved.
-5. Rulings: D-064 (backlog audit), D-063 (audit choices), D-061 (24 opera halted, lex §7); `audit-rulings/apply-d06{1,3,4}.sh`.
-- Checkpoint after every opus: a Haiku agent adds the history rows, runs `build.sh` and
-  republishes Status and the dossier (lex §7); last one #465 (cascade 77, W-246).
+2. Rulings: D-064 (backlog audit), D-063 (audit choices), D-061 (24 opera halted, lex §7); `audit-rulings/apply-d06{1,3,4}.sh`.
+- Audits done 2026-10-14 (read-only, Fable): ~/.bisellium-evidence/fable-{improvements,cleanliness,efficiency}/report.md.
+  Next: a backlog-alignment pass over the three reports against each other and the whole backlog
+  (overlaps already seen: the ESLint .worktrees ignore in cleanliness #1 and efficiency #5; the Inbox
+  fail-open in improvements #6 and cleanliness), ending in a filing list for the Patron. Producer's
+  recommended set: mint runs each gate once; ESLint ignores .worktrees/; newItem skips
+  validateRecordReferences + Inbox invents petitiones; milestone needs: exits evaluated; ladder
+  prompts/scripts into the repo; init yields a runnable studio; deletions into W-248/W-254, the
+  next.test.ts split into W-249.
+- Never run audits or other heavy read-only work during a mint or verify: W-265's verify timed out at
+  30 min (11 normal) under audit load.
+- 22 stale worktrees under .worktrees/ (and .kilo/worktrees/plastic-credit); check each for unpushed work before removal.
+- Patron reference (2026-10-15): https://claude.com/resources/articles/the-ai-native-sdlc-playbook
+- The timeout lesson has no retro slot (findings only); it goes in the backlog-alignment filing list as a guard opus (mint/verify refuse while other heavy jobs run).
+- Checkpoint after every opus: a Haiku agent adds history rows, runs `build.sh`, republishes Status and the dossier (lex §7); last one cascade 78 (W-265).
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
 ## Artifacts
@@ -46,8 +52,7 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 - Dossier: https://claude.ai/code/artifact/d70aefcf-d87a-4918-933f-cc7b58410d4c
 - Architecture: https://claude.ai/artifact/WUBAJ9JceMAX5qEhgjoyuN
 - Design direction: https://claude.ai/artifact/J6LGxy2T7V7M1x3F3CrT15
-- UI canvas (Patron-editable):
-  https://claude.ai/code/artifact/a2f1b828-4648-423b-bda8-f0bc2c77fb7f
+- UI canvas (Patron-editable): https://claude.ai/code/artifact/a2f1b828-4648-423b-bda8-f0bc2c77fb7f
 
 ## Queue
 
