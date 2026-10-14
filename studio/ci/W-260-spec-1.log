@@ -1,0 +1,20 @@
+# opus: W-260
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-14T07:46:56.436Z
+# tree: tree:8ebff6879bbb945139c58e309531722edcd34c1a
+# brief: briefs/W-260.md blob:0de6c1b4c6796e553c334c991f1dccf027fe64d3
+
+## Findings
+1. advisory — the draft owned `next.test.ts` and `docs/ADOPTION.md`, both W-255's in flight; signing ahead with that overlap breaks D-057 §2. The test moves to `verdict-findings.test.ts` (calling the exported `readBuildRounds`/`countedFailures` directly) and the guide sentence becomes Default 3. check: git -C .worktrees/W-255 diff master --stat
+2. advisory — the draft's two behaviours share one implementation line (dropping `phase === "spec"`), so behaviour 2's red could not be recorded after behaviour 1's implementation; merged into one behaviour. check: packages/commands/src/verdict.ts:716
+3. advisory — the draft's `lifecycle.ts` diagnostic rewrite and `verdict-citation.test.ts` flip are not needed for the promise: `runReview` already refuses `review --fail` on any `# submitted_outcome:` log; moved to Out of scope and Default 3. check: packages/commands/src/lifecycle.ts:674
+4. advisory — a `kind: ui` opus's handoff verdict is checked by `findingsProblem` like a non-UI one but was left refused by the draft's `!isUi`; the predicate is `!isUi || phase === "handoff"`, the one already at verdict.ts:572. check: probe of runVerdict on master: build-withdrawn, handoff-withdrawn, handoff-No-findings, ui-handoff-withdrawn all exit 2; build-upheld exits 0 failed
+5. advisory — downstream verified unchanged: `parseBuildReviewLog` reads a passed log with withdrawn blockers as passed with `blockers: []`; `countedFailures` filters on `failed`; `reviewGate` compares gate status to the round's outcome; `readSequence` is the only handoff-log reader. check: packages/commands/src/verdict.ts:885
+6. advisory — flips confirmed: exactly `W-215-b2` "failed with nothing standing is refused" and "failed with no finding is refused"; no sessioned rows in `verdict-citation.test.ts`; `next.test.ts:3629` (W-167-b1) is a hand-edited log row, unaffected. check: packages/cli/src/verdict-findings.test.ts:366
+
+## Verdict
+passed — the brief is the smallest change: one condition in `runVerdict`, one behaviour, two flipped assertions, no overlap with W-255.

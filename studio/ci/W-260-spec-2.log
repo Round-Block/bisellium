@@ -1,0 +1,17 @@
+# opus: W-260
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13961-7a5a-7990-bbcf-e6c99b670621
+# outcome: failed
+# at: 2026-10-14T07:50:43.068Z
+# tree: tree:8ebff6879bbb945139c58e309531722edcd34c1a
+# brief: briefs/W-260.md blob:0de6c1b4c6796e553c334c991f1dccf027fe64d3
+
+## Findings
+1. blocking — brief:28 `readSequence` is not the only reader of handoff logs: `reviewRounds` in `packages/cli/src/retro.ts` also parses sessioned handoff logs and uses a passed outcome to end a handoff run. Replace brief:28 with: `Downstream needs no change (read on master): parseBuildReviewLog reads the promoted build log as a passed round with no blockers, so readBuildRounds returns it passed and countedFailures omits it; review --fail already refuses any log carrying # submitted_outcome: (runReview, W-126); reviewGate accepts a passed gate whose status agrees with that log. The handoff readers also need no change: readSequence finds no standing blocker in a promoted round, so the next round owes no ## Earlier findings line, while reviewRounds parses the sessioned log, counts its withdrawn ruling, and treats its # outcome: passed as ending the handoff run.` — check: packages/cli/src/retro-opus.test.ts
+
+## Verdict
+The mechanism is feasible, but the brief’s downstream-reader guarantee is false until it accounts for the retro reader.
+VERDICT: FAIL

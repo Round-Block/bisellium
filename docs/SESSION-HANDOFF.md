@@ -51,9 +51,11 @@ Order set by the Patron 2026-10-13 (D-061): in flight, then the audit cuts, then
 milestone exits; lanes later.
 
 1. Audit cuts, re-ranked by the ops speed audit (Patron 2026-10-14;
-   `~/.bisellium-evidence/ops-speed-audit/report.md`): W-255 — a light brief by the
-   architect's marker (spec signed); W-260 — build verdicts reconcile after rulings (greenlit
-   by the spec-review cap's retro); W-252 — the spec-round counter refuses malformed history
+   `~/.bisellium-evidence/ops-speed-audit/report.md`): W-265 — the host's red replay judges
+   environment words outside the failing test's own assertion (unblocks W-255's receipt; host
+   security code: the Patron approves design before branch); W-255 — a light brief by the
+   architect's marker (built; mint waits on W-265); W-260 — build verdicts reconcile after rulings (greenlit
+   by the spec-review cap's retro; spec passed, landed); W-252 — the spec-round counter refuses malformed history
    (greenlit by the same retro);
    W-206 + W-207 + W-214 as one opus — spec in the opus PR (absorbs W-256), done reads
    certify's receipt, retro in the done PR; W-257 — handoff and checkpoint edits ride the done
