@@ -92,7 +92,7 @@ until W-169 lands). Older items: `studio/acta/2026-10-09-queue-review.md`.
    W-133, W-115, W-116, W-154, W-091, W-090, W-143, W-144, W-157, W-145, W-136, W-146,
    W-160, W-135; W-040, W-051, W-094; W-175, W-176; W-216.
 
-Greenlit, not yet ranked: W-070, W-113, W-147, W-151.
+Greenlit, not yet ranked: W-070, W-113, W-147, W-151; W-269, W-270, W-271, W-272, W-273 — the five lessons-to-checks checks (D-065), in its rank order.
 
 ## Open Patron choices
 - The 2026-10-11 audit (four rule breaks, eight gaps in 25 commits), `~/.bisellium-evidence/design-notes-1011/`.
