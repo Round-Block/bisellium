@@ -10,18 +10,20 @@ kill: when every item here is enforced by a lex clause or a check rule
 
 Current state only, after CLAUDE.md; rules and environment: `studio/leges/production.md`.
 
-## Resume point (2026-10-13)
+## Resume point (2026-10-14)
 
-1. **W-221** (#444), **W-233** part 1 (#446) and **W-240** (#441; review gate recorded on a
-   re-minted receipt, #448) done. Retros owed: the weekly retro (D-061 §5).
-2. **W-246** spec landed (#450; two failed rounds, remainder split to W-252, backlog). Its branch
-   holds on W-221's owed retro, which the retro verb cannot file; W-253 fixes that by hand-branch
-   (D-062), then W-221's retro, then W-246 branches. Weekly retro filed for W-233 and W-240.
+1. **W-221**, **W-233** part 1, **W-240** and **W-253** (#453, D-062 hotfix) done. Weekly
+   retro filed for W-221, W-233, W-240 (untracked: W-221's acta and L-170..L-173, W-253's spec
+   logs 1-2); W-253's retro is owed: land them together in one records PR first.
+2. **W-246** spec landed (#450); next: `next W-246 --perform --expect branch`, then the builder.
+   W-252 (its split remainder) sits in backlog for the Patron's greenlight.
 3. **W-233** part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) waits for
    W-245's census (D-061 §1).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
 5. **Audits ruled (D-061):** 25 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
    W-251 filed; the Queue below is the new order.
+- Checkpoint after every opus: a Haiku agent adds the history rows, runs `build.sh` and
+  republishes Status and the dossier (lex §7); the 2026-10-14 catch-up lands as its own docs PR.
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
 ## Concurrency readiness
@@ -45,9 +47,9 @@ Ranked. Item descriptions for the older items:
 Order set by the Patron 2026-10-13 (D-061): in flight, then the audit cuts, then the
 milestone exits; lanes later.
 
-1. W-253 — the retro reads only reviewer findings (D-062 hotfix; unblocks every new opus).
-   Audit cuts: W-246 — spec review blocks only on substance, changed lines only, two-round
-   cap; W-247 — drop the handoff Resume point and its review;
+1. Audit cuts: W-246 — spec review blocks only on substance, changed lines only, two-round
+   cap; W-223 — the Status page shows the ranked queue in plain words (Patron 2026-10-14: an
+   exception to the freeze); W-247 — drop the handoff Resume point and its review;
    W-250 — ci.yml runs `bisellium ci` once, verdict writes the gate; W-243 — certify judges the diff, not the branch name (D-039 high); W-206 + W-207
    + W-214 as one opus — spec in the opus PR, done reads certify's receipt, retro in the done
    PR; W-251 — process work capped, weekly retro.
@@ -65,8 +67,8 @@ milestone exits; lanes later.
    leads as agents (specced, approved); W-229, W-172 (high).
 6. Multi-lane prep: W-178, W-179, W-180, W-182, W-183, then W-169 (switches lanes on).
 7. The rest as ranked 2026-10-11/12 (acta `2026-10-11-patron-queue-review`), halted ids
-   dropped: W-225, W-219, W-228, W-227 (high), W-138, W-217, W-224; W-210, W-213; W-208,
-   W-223; W-081; W-173, W-174, W-195, W-165, W-190, W-191, W-192, W-194, W-198; W-158,
+   dropped: W-225, W-219, W-228, W-227 (high), W-138, W-217, W-224; W-210, W-213; W-208;
+   W-081; W-173, W-174, W-195, W-165, W-190, W-191, W-192, W-194, W-198; W-158,
    W-133, W-115, W-116, W-154, W-091, W-090, W-143, W-144, W-157, W-145, W-136, W-146,
    W-160, W-135; W-038, W-040, W-051, W-058, W-066, W-080, W-086, W-094, W-098; W-175, W-176.
 
