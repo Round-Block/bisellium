@@ -20,10 +20,9 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
    records (W-267 enforces later).
 1. Done this week: W-221, W-233 part 1, W-240, W-253, W-246 (retros filed).
 2. **W-265** (host red replay ignores environment words inside the failing test's own
-   assertion block; Patron approved design + Defaults after a Fable audit) is built at aeeb15e8
-   in `.worktrees/W-265` (gates green). Next: mint (`npm run -s bisellium -- run --sella builder
-   --opus W-265 --studio studio --repo . -- true` from the worktree), Codex build review (model:
-   `~/.bisellium-evidence/W-246-review/r1-run.sh`), PR, merge, done, retro, checkpoint.
+   assertion block) merged (#473, 60296781), review passed round 1; done, retro and checkpoint
+   are next (its spec logs 1–4 ride the done record). One advisory for W-098:
+   `scripts/replay-accept.test.mjs:332`'s doesNotReject row hardcodes `operator: 'doesNotThrow'`.
    Then **W-255** (light brief; built, review not yet run): rebase `opus/W-255` onto master,
    re-mint from its worktree (red 2 then accepted), fix `~/.bisellium-evidence/W-255-review/r1-run.sh`
    (backticks in its "Look hardest" item 3 were eaten: restore `bisellium red` and `xbisellium`),
@@ -32,10 +31,8 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
    Use `npm run -s bisellium --`: the `bisellium` on PATH runs `~/projects/bisellium-guard` (stale).
    Kept scripts: `~/.bisellium-evidence/{spec-review-first,spec-review-later,retro-triage}.sh`,
    `retro-adjust.py`, `record-review.sh`, `chore-pr.sh`; a worktree needs `cp -a ../../node_modules`.
-   Running at refresh (Patron 2026-10-14): Fable lessons→checks pass
-   (`~/.bisellium-evidence/lessons-to-checks/report.md`) and Astra's W-223 draft
-   (`~/.bisellium-evidence/W-223-draft/W-223-draft.md`); bring both to the Patron.
-   W-265 spec logs 1–4 sit untracked: commit them with its done record.
+   D-065 (#472): the lessons→checks pass filed W-269–W-273; W-223's layout approved, no Rank column.
+   `~/.bisellium-evidence/handoff-check.mjs` misreads D-064's Queue layout (19 false findings).
 3. **W-233** is done; its part 2 is W-267 (the dispatch guard) and W-268 (the certify rules, after W-243).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
 5. Rulings: D-064 (backlog audit), D-063 (audit choices), D-061 (24 opera halted, lex §7); `audit-rulings/apply-d06{1,3,4}.sh`.
@@ -58,9 +55,8 @@ Ranked (Patron 2026-10-13, D-061: in flight, audit cuts, milestone exits, lanes 
 until W-169 lands). Older items: `studio/acta/2026-10-09-queue-review.md`.
 
 1. Audit cuts, re-ranked by the ops speed audit (Patron 2026-10-14;
-   `~/.bisellium-evidence/ops-speed-audit/report.md`): W-265 — the host's red replay judges
-   environment words outside the failing test's own assertion (building; unblocks W-255), then W-098 (reuses its TAP-block parser); W-255 — a light brief by the
-   architect's marker (built; mint waits on W-265); W-260 — build verdicts reconcile after rulings (greenlit
+   `~/.bisellium-evidence/ops-speed-audit/report.md`): W-098 (reuses the red replay's TAP-block parser);
+   W-255 — a light brief by the architect's marker (built; re-mint next); W-260 — build verdicts reconcile after rulings (greenlit
    by the spec-review cap's retro; spec passed, landed); W-252 — the spec-round counter refuses malformed history (built as W-185's verdict-log loader in @bisellium/schema)
    (greenlit by the same retro);
    W-206 + W-214 as one opus — spec in the opus PR (spec phase, handoff and re-spec), retro in
