@@ -69,6 +69,23 @@ function redMarkers(section: string[]): { before: number; per: number[] } {
   return { before, per };
 }
 
+/** W-255: a light brief gives each numbered behaviour one red command, where `bisellium` opens a token. */
+const RED_COMMAND = /(?<![^\s`])bisellium red (\S+) --behaviour ([^\s`]+)/g;
+
+function redCommandProblems(section: string[]): string[] {
+  const items: string[][] = [];
+  for (const line of section) {
+    if (/^\s{0,3}\d+\.\s/.test(line)) items.push([]);
+    items[items.length - 1]?.push(line);
+  }
+  return items.flatMap((lines, i) => {
+    const found = lines.flatMap((l) => [...l.matchAll(RED_COMMAND)]);
+    if (found.length !== 1)
+      return [`behaviour ${i + 1} names ${found.length} red commands; a light brief gives each behaviour one "bisellium red <opus> --behaviour ${i + 1} …"`];
+    return found[0]![2] === String(i + 1) ? [] : [`behaviour ${i + 1}'s red command is not "bisellium red <opus> --behaviour ${i + 1} …"`];
+  });
+}
+
 const captured = (lines: string[], re: RegExp): string[] =>
   lines.flatMap((l) => {
     const m = re.exec(l);
@@ -255,6 +272,8 @@ export function readBriefLimit(raw: unknown): { limit: number | undefined } | { 
 export function readBriefAdmission(briefText: string, limit: number): { problems: string[]; exception?: string } {
   const problems: string[] = [];
   const real = realLines(briefText);
+  const form = readBriefForm(briefText);
+  const light = "light" in form && form.light;
   const families = captured(real, /^Decree family:(.*)$/);
   if (families.length === 0) problems.push('declares no decree family; add one line "Decree family: <slug>"');
   else if (families.length > 1)
@@ -285,8 +304,11 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
           `behaviour ${i + 1} names ${k} genuine reds; each numbered behaviour names exactly one, so number every independent behaviour`,
         );
     });
+    if (light) problems.push(...redCommandProblems(behavioursSection(real) ?? []));
   }
-  problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real), ...absolutePromiseProblems(real));
+  if (!light) problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real));
+  problems.push(...absolutePromiseProblems(real));
+  if ("error" in form) problems.push(form.error);
   return exception === undefined ? { problems } : { problems, exception };
 }
 
@@ -304,4 +326,19 @@ export function readRedOrder(briefText: string): { declared: boolean } | { error
   if (attempts.length > 1) return { error: `declares ${attempts.length} red order lines; one line "${RED_ORDER_LINE}" or none` };
   if (attempts[0] !== RED_ORDER_LINE) return { error: `red order line "${attempts[0]}" is not exactly "${RED_ORDER_LINE}"` };
   return { declared: true };
+}
+
+const BRIEF_FORM_LINE = "Brief: light";
+
+/** W-255 (D-063 §4): whether the architect marked the brief light. An attempt is a real line (outside fences and
+ *  comments) whose trimmed text matches `/^brief[\s_-]*:/i`. None: full. Exactly one, equal to "Brief: light": light.
+ *  Otherwise an error, which `readBriefAdmission` appends after every full check. */
+export function readBriefForm(briefText: string): { light: boolean } | { error: string } {
+  const attempts = realLines(briefText)
+    .map((l) => l.trim())
+    .filter((l) => /^brief[\s_-]*:/i.test(l));
+  if (attempts.length === 0) return { light: false };
+  if (attempts.length > 1) return { error: `has ${attempts.length} brief form lines; one line "${BRIEF_FORM_LINE}" or none` };
+  if (attempts[0] !== BRIEF_FORM_LINE) return { error: `brief form line "${attempts[0]}" is not exactly "${BRIEF_FORM_LINE}"` };
+  return { light: true };
 }
