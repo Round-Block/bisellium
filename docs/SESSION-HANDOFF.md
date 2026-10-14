@@ -12,9 +12,8 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 ## Resume point (2026-10-14)
 
-1. **W-221**, **W-233** part 1, **W-240** and **W-253** (#453, D-062 hotfix) done. Weekly
-   retro filed for W-221, W-233, W-240 (untracked: W-221's acta and L-170..L-173, W-253's spec
-   logs 1-2); W-253's retro is owed: land them together in one records PR first.
+1. **W-221**, **W-233** part 1, **W-240** and **W-253** (#453, D-062 hotfix) done; the weekly
+   retro is filed for all four (no new opera, D-061 §5).
 2. **W-246** spec landed (#450); next: `next W-246 --perform --expect branch`, then the builder.
    W-252 (its split remainder) sits in backlog for the Patron's greenlight.
 3. **W-233** part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) waits for
