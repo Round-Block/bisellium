@@ -30,8 +30,8 @@ import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
-import { briefAdmissionProblems, readRoundRulings } from "@bisellium/commands/lifecycle.js";
-import { SESSION_ID, buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
+import { SESSION_ID, buildReviewDrift, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
@@ -751,11 +751,6 @@ export function deriveNext(f: Facts): Derived {
       const studio = f.wt.usable ? join(".worktrees", id, f.studioRel) : f.studioRel;
       return { ...named("review", "producer", `build-review round ${n} is recorded but the review gate does not cite it`, `bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${n}.log --round ${n} --sella ${censor} --studio ${studio}`), ticket: { action: "review", round: n } };
     }
-    const rulings = readRoundRulings(f.wt.studio, f.manifest, b, id, read.rounds);
-    if ("error" in rulings) return hold("review", rulings.error);
-    const counted = countedFailures(read.rounds);
-    // D-046 §2: the cap is three counted failures plus one round per Patron ruling; a pass already recorded at this tree proceeds
-    if (!(gate?.status === "passed" && gate.tree === cur) && counted.length >= REVIEW_ROUND_CAP + rulings.rulings.length) return capHold(f, counted);
     const failedNow = gate !== undefined && gate.status === "failed" && gate.tree === cur;
     const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
     const receipt = f.receipt();
@@ -868,8 +863,6 @@ function afterDone(f: Facts): Derived {
   };
 }
 
-/** D-046 §2: three counted failed build-review rounds, then a further round needs a Patron ruling. */
-const REVIEW_ROUND_CAP = 3;
 /** The lowest-numbered standing blocker that names a class (L-069): the whole word `class` or `classes`. */
 const classBlocker = (round: BuildReviewRound | undefined) => round?.blockers.filter((b) => /\bclass(?:es)?\b/i.test(b.text)).sort((a, b) => a.n - b.n)[0];
 
@@ -879,24 +872,6 @@ function boundaryExtra(id: string, round: BuildReviewRound | undefined): [string
   return round === undefined || blocker === undefined
     ? []
     : [["boundary", `${round.log} finding ${blocker.n} is a class: fix it with one check at the input boundary named by the brief's Input domain, which every path reads, not a patch at the cited site (L-069)`]];
-}
-
-/** The hold at the cap: the Patron's one more round or a re-spec, recommended from the newest counted failure. */
-function capHold(f: Facts, counted: BuildReviewRound[]): Derived {
-  const { id } = f;
-  const newest = counted[counted.length - 1]!;
-  const blocker = classBlocker(newest);
-  return {
-    step: "review",
-    status: "held",
-    actor: "patron",
-    why: `${counted.length} counted failed build-review rounds (${counted.map((r) => r.n).join(", ")}); a further round needs the Patron's OK (D-046)`,
-    extra: [
-      ["recommendation", blocker === undefined ? `one more fix round: round ${newest.n}'s blockers are single instances` : `re-spec: ${newest.log} finding ${blocker.n} is a class, so the brief's boundary or promise is the problem`],
-      ["grant", `Grant: one more build-review round for ${id}.`],
-      ["attach", `bisellium amend ${id} --round-ruling <decision-id> --reason <text> --studio ${join(".worktrees", id, f.studioRel)}`],
-    ],
-  };
 }
 
 interface Gate {
@@ -984,7 +959,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else {
     role = "censor";
     sella = censor;
-    command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).`;
+    command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Use the word class in a blocker that recurs across sites (L-069).`;
   }
   const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
   // W-233: the verb a dispatched session closes out with; a build session records none, and a reds order with only findings names no behaviour
