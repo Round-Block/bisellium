@@ -30,8 +30,7 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
    (`~/.bisellium-evidence/lessons-to-checks/report.md`) and Astra's W-223 draft
    (`~/.bisellium-evidence/W-223-draft/W-223-draft.md`); bring both to the Patron.
    W-265 spec logs 1–4 sit untracked: commit them with its done record.
-3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is not
-   yet an opus: file it after W-245's census (Queue item 2).
+3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is filed as W-267.
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
 5. Rulings: D-063 (audit choices), D-061 (24 opera halted, lex §7); `audit-rulings/apply-d06{1,3}.sh`.
 - Checkpoint after every opus: a Haiku agent adds the history rows, runs `build.sh` and
@@ -67,7 +66,7 @@ milestone exits; lanes later.
    (greenlit by the same retro);
    W-206 + W-207 + W-214 as one opus — spec in the opus PR (absorbs W-256), done reads
    certify's receipt, retro in the done PR; W-257 — handoff and checkpoint edits ride the done
-   PR; W-250 — ci.yml runs `bisellium ci` once, records-only pushes take the short path;
+   PR; W-267 — the dispatch guard: the orchestrator session cannot run ladder writes itself; W-250 — ci.yml runs `bisellium ci` once, records-only pushes take the short path;
    W-259 — check each tree once, certify is the single mint (pipeline: design to the Patron
    before branch); W-258 — the builder self-reviews once before the first build review;
    W-247 — drop the handoff Resume point and its review; W-223 — the Status page shows the
