@@ -33,10 +33,7 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is not
    yet an opus: file it after W-245's census (Queue item 2).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
-5. **Audit's open choices ruled (D-063):** W-242 and W-248 widened, W-254 and W-255 filed,
-   W-230 greenlit (`audit-rulings/apply-d063.sh`).
-6. **Audits ruled (D-061):** 24 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
-   W-251 filed; the Queue below is the new order.
+5. Rulings: D-063 (audit choices), D-061 (24 opera halted, lex §7); `audit-rulings/apply-d06{1,3}.sh`.
 - Checkpoint after every opus: a Haiku agent adds the history rows, runs `build.sh` and
   republishes Status and the dossier (lex §7); last one #465 (cascade 77, W-246).
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
