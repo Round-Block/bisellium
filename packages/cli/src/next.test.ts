@@ -5174,3 +5174,66 @@ test("W-246-b1 behaviour 1: an advisory-only spec review passes", { timeout: 1_8
   assert.match(readLog(cited, 2), /^# outcome: failed$/m, "a blocker citing brief:7 still fails");
   architectOrder(specNext(cited), 3, "a standing blocker orders the architect");
 });
+
+test("W-246-b2 behaviour 2: two failed spec reviews since the newest re-spec end review; the next signature stands", { timeout: 1_800_000 }, () => {
+  const why = `ci/${OPUS}-spec-2.log and ci/${OPUS}-spec-4.log failed; D-061 §4: no third review: the producer files the remainder as a new opus, then the architect cuts the brief to what passed and signs`;
+  const split = `bisellium new --kind <kind> --collegium <collegium> --title <the remainder> --parent ${OPUS} studio`;
+  const edit = (w: World, n: number): void => appendFileSync(briefPath(w), `\nChanged before signature ${n}.\n`);
+  /** Signatures 1 and 3, failed reviews 2 and 4. */
+  const twice = (tag: string): World => {
+    const w = srWorld(tag);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed");
+    sign(w, 3);
+    review(w, 4, "failed");
+    return w;
+  };
+
+  const w = twice("w246-b2");
+  const order = specNext(w);
+  architectOrder(order, 5, "two failed reviews end review");
+  assert.equal(order.kv.get("why"), why, ran("why names both failed logs", order));
+  assert.equal(order.kv.get("split"), split, ran("the split line", order));
+  sign(w, 5);
+  const named = specNext(w);
+  expectStep(named, "spec", "named", "signature 5 stands without a third review");
+  assert.equal(named.kv.has("role"), false, ran("no reviewer is ordered", named));
+  assert.match(named.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("the commit is named", named));
+  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(done, "spec", "performed", "the split spec is committed");
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `spec/${OPUS}`]).split("\n").sort(), [BRIEF_REL, specLog(2), specLog(4), specLog(5)], "exactly the brief, the signature and the failed logs");
+  git(w.repo, ["merge", "-q", "--ff-only", `spec/${OPUS}`]);
+  expectStep(next(w, [OPUS]), "branch", "named", "the trunk counts the same and names branch");
+
+  const once = srWorld("w246-b2-once");
+  putBrief(once);
+  sign(once, 1);
+  review(once, 2, "failed");
+  sign(once, 3);
+  reviewerOrder(specNext(once), 4, "one failed review, then a signature, orders the reviewer");
+
+  // since the newest re-spec (D-063 §7): a passed review starts the count again
+  const passed = twice("w246-b2-passed");
+  sign(passed, 5);
+  review(passed, 6, "passed");
+  edit(passed, 7);
+  sign(passed, 7);
+  reviewerOrder(specNext(passed), 8, "a passed review ends the count");
+  review(passed, 8, "failed");
+  const again = specNext(passed);
+  architectOrder(again, 9, "one failed review since the passed one");
+  assert.equal(again.kv.has("split"), false, ran("no split line", again));
+  sign(passed, 9);
+  reviewerOrder(specNext(passed), 10, "so the signature orders the reviewer");
+
+  // after a split: the signature that stood ends the count
+  const stood = twice("w246-b2-stood");
+  sign(stood, 5);
+  assert.equal(specNext(stood).kv.has("role"), false, "signature 5 stands");
+  edit(stood, 6);
+  sign(stood, 6);
+  const after = specNext(stood);
+  reviewerOrder(after, 7, "a signature after the standing one orders the reviewer");
+  assert.equal(after.kv.has("split"), false, ran("no split line", after));
+});
