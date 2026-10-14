@@ -1,0 +1,18 @@
+# opus: W-260
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-14T07:51:54.165Z
+# tree: tree:8ebff6879bbb945139c58e309531722edcd34c1a
+# brief: briefs/W-260.md blob:68f688aded3bc3f79293e19e2d1642391e8f52e2
+
+## Findings
+1. advisory — closed ci/W-260-spec-2.log #1: brief:28's claim that `readSequence` was the only handoff-log reader was false; `reviewRounds` (packages/cli/src/retro.ts:634) parses sessioned handoff logs and ends a handoff run at `# outcome: passed`. The reviewer's replacement text is adopted and widened into a census of every reader. check: packages/cli/src/retro.ts:691
+2. advisory — the class (an incomplete downstream-reader claim) is closed by census, not by the one line: grep of `-review-`/`-handoff-` names and `# outcome:` reads across packages/, apps/, adapters/ and scripts/ finds `parseBuildReviewLog`/`readBuildRounds` (next's `reviewGate`, `amend --round-ruling`), `readSequence` (writer, scripts/review-packet.mjs), `reviewRounds` and `readOpusVerdicts` (retro.ts, scripts/review-rounds.mjs), header-only `reviewLogs`/`reviewSession`/`runReview`, and `authoritativeUiInput` (UI spec logs only). Each is named in Interfaces. check: packages/cli/src/next.ts:579
+3. advisory — no retro-opus.test.ts row is added: the retro readers are unchanged, a promoted log differs from an existing passed sessioned log only by the `# submitted_outcome:` header both parsers already accept, and `W-215-b5` already pins a passed sessioned handoff ending a run and a withdrawn ruling counted. Files owned stay verdict.ts and verdict-findings.test.ts. check: packages/cli/src/retro-opus.test.ts:584
+4. advisory — Input domain gains one row for the retro reader (`reviewRounds`, unchanged, refuses on an unparseable sessioned log); Status bumped to revision 2. check: ~/.bisellium-evidence/W-260-spec/r1-r2.diff
+
+## Verdict
+passed — revision 2 corrects the downstream claim with a full reader census; the change, the behaviour and Files owned are unchanged.
