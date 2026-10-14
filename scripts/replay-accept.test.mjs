@@ -4,6 +4,8 @@
  * canned transcripts: no runner, no bwrap, no playwright, no browser, no
  * filesystem, no network. Select the numbered behaviour with `--behaviour 4`
  * (the only one); omitting the selector runs it. node:test TAP, one test().
+ * W-265-b1 and W-265-b2 (the failing test's own block is not scanned for
+ * environment words) run only without the selector; select them by name.
  *
  * The module under test is loaded dynamically so that its absence is one
  * assertion failure, not a module-load error (a missing red).
@@ -165,3 +167,145 @@ test("W-130 behaviour 4: the classifier accepts a playwright assertion failure a
   const verdicts = () => table.map((output) => JSON.stringify(classify(output)));
   assert.deepEqual(verdicts(), verdicts(), "4(n): every verdict is identical on a second pass over the table");
 });
+
+if (only === undefined) {
+  const WORDS = [
+    "ERR_MODULE_NOT_FOUND",
+    "SyntaxError:",
+    "Cannot find module",
+    "command not found",
+    "ENOENT",
+    "not permitted",
+    "permission denied",
+    "sandbox",
+    "browserType.launch",
+    "Executable doesn't exist",
+    "No tests found",
+  ];
+  // node's TAP shape for one failing assertion; the output is stdout, "\n", then empty stderr.
+  const controlLines = (word) => [
+    "TAP version 13",
+    `# Subtest: a ${word} test`,
+    `not ok 1 - a ${word} test`,
+    "  ---",
+    "  duration_ms: 1",
+    "  failureType: 'testCodeFailure'",
+    "  error: |-",
+    `    expected ${word}`,
+    "  code: 'ERR_ASSERTION'",
+    "  name: 'AssertionError'",
+    "  ...",
+    "1..1",
+    "# fail 1",
+  ];
+  const render = (lines, stderr = "") => `${lines.join("\n")}\n\n${stderr}`;
+  const CONTROL = (word) => render(controlLines(word));
+  // W-255's red 2 (studio/ci/reds/W-255/02.log on opus/W-255), paths shortened.
+  const W255_RED_2 = [
+    "TAP version 13",
+    "# Subtest: W-255-b2 behaviour 2: security, sandbox, branch-protection and pipeline work cannot be light",
+    "not ok 1 - W-255-b2 behaviour 2: security, sandbox, branch-protection and pipeline work cannot be light",
+    "  ---",
+    "  duration_ms: 6.650044",
+    "  type: 'test'",
+    "  location: '/candidate/packages/cli/src/brief-admission.test.ts:27:5890'",
+    "  failureType: 'testCodeFailure'",
+    "  error: |-",
+    "    family token security",
+    "    + actual - expected",
+    "    ",
+    "    + []",
+    "    - [",
+    '    -   \'a light brief is not for security, sandbox, branch-protection or pipeline work (D-063 §4): decree family "lane-security-x" names "security"; use the full template\'',
+    "    - ]",
+    "    ",
+    "  code: 'ERR_ASSERTION'",
+    "  name: 'AssertionError'",
+    "  expected:",
+    "    0: 'a light brief is not for security, sandbox, branch-protection or pipeline work (D-063 §4)'",
+    "  actual:",
+    "  operator: 'deepStrictEqual'",
+    "  stack: |-",
+    "    TestContext.<anonymous> (/candidate/packages/cli/src/brief-admission.test.ts:809:12)",
+    "    Test.runInAsyncScope (node:async_hooks:226:14)",
+    "    Test.run (node:internal/test_runner/test:1201:25)",
+    "  ...",
+    "1..1",
+    "# tests 1",
+    "# suites 0",
+    "# pass 0",
+    "# fail 1",
+    "# cancelled 0",
+    "# skipped 0",
+    "# todo 0",
+    "# duration_ms 14.936286",
+  ];
+
+  test("W-265-b1 behaviour 1: an environment word inside the one failing test's own block does not refuse the red", async () => {
+    const { classifyReplay } = await import("./replay-accept.mjs");
+    const v = classifyReplay({ status: 1, output: render(W255_RED_2) });
+    assert.equal(v.accepted, true, "expected accepted replay");
+    assert.equal(v.reason, "assertion-level failure", "W-255 red 2: reason");
+    for (const word of WORDS) {
+      for (const status of [1, null]) {
+        const ok = classifyReplay({ status, output: CONTROL(word) });
+        assert.equal(ok.accepted, true, `${word} at status ${status}: ${ok.reason}`);
+        assert.equal(ok.reason, "assertion-level failure", `${word} at status ${status}: reason`);
+      }
+      const zero = classifyReplay({ status: 0, output: CONTROL(word) });
+      assert.equal(zero.accepted, false, `${word} at status 0: must be refused`);
+      assert.match(zero.reason, /the command exited 0/, `${word} at status 0: reason`);
+      const base = controlLines(word);
+      const at = (needle) => base.indexOf(needle);
+      const closer = at("  ...");
+      const perturbed = {
+        "before the heading": [base[0], word, ...base.slice(1)],
+        "after the closer": [...base.slice(0, closer + 1), word, ...base.slice(closer + 1)],
+        "in appended stderr": base,
+        "in a passing block": [
+          ...base.slice(0, closer + 1),
+          "# Subtest: a passing test",
+          `ok 2 - a ${word} passing test`,
+          "  ---",
+          "  duration_ms: 1",
+          "  ...",
+          ...base.slice(closer + 1),
+        ],
+        "a line between the headings": [base[0], base[1], `# note ${word}`, ...base.slice(2)],
+        "mismatched names": [base[0], `# Subtest: other ${word}`, ...base.slice(2)],
+        "a TODO suffix": [base[0], base[1], `${base[2]} # TODO`, ...base.slice(3)],
+        "no opening delimiter": base.filter((l) => l !== "  ---"),
+        "no closer": base.filter((l) => l !== "  ..."),
+        "an unindented body line": base.map((l) => (l === "  duration_ms: 1" ? "duration_ms: 1" : l)),
+        "a second root not ok": [...base.slice(0, closer + 1), "not ok 2 - second", ...base.slice(closer + 1)],
+        "nested under a parent": [
+          base[0],
+          "# Subtest: parent",
+          ...base.slice(1, closer + 1).map((l) => `    ${l}`),
+          "not ok 1 - parent",
+          "  ---",
+          "  failureType: 'subtestsFailed'",
+          "  error: '1 subtest failed'",
+          "  code: 'ERR_TEST_FAILURE'",
+          "  ...",
+          ...base.slice(closer + 1),
+        ],
+      };
+      for (const [why, lines] of Object.entries(perturbed)) {
+        const output = why === "in appended stderr" ? render(lines, `${word}\n`) : render(lines);
+        const bad = classifyReplay({ status: 1, output });
+        assert.equal(bad.accepted, false, `${word} ${why}: must be refused`);
+        assert.ok(
+          bad.reason.toLowerCase().includes(word.toLowerCase()),
+          `${word} ${why}: reason names it: ${bad.reason}`,
+        );
+      }
+      const pw = classifyReplay({ status: 1, output: `${BANNER_1}${CONTROL(word)}` });
+      assert.equal(pw.accepted, false, `${word} with a playwright banner: must be refused`);
+      assert.ok(
+        pw.reason.toLowerCase().includes(word.toLowerCase()),
+        `${word} with a playwright banner: reason names it`,
+      );
+    }
+  });
+}
