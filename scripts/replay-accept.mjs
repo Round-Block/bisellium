@@ -14,15 +14,34 @@ const PW_BANNER = /^[ \t]*Running \d+ tests? using \d+ workers?\b/m;
 const PW_SUMMARY = /^[ \t]*(\d+) failed\b/gm;
 const PW_EXPECT = /^[ \t]*(?:Error: )?expect\([a-z]+\)\.[A-Za-z]+\(/m;
 
+/**
+ * The output without the one failing test's own TAP block, or the whole output
+ * when no such block is recognised (fail closed: nothing is exempted by guess).
+ * The block is one root-level `not ok` with its `# Subtest:` heading, `  ---`
+ * delimiter and `  ...` closer; every line between the delimiters is indented.
+ */
+function outsideOwnFailure(output) {
+  const lines = output.split("\n");
+  const failing = lines.flatMap((line, i) => (/^not ok /.test(line) ? [i] : []));
+  if (failing.length !== 1) return output;
+  const n = failing[0];
+  const named = /^not ok [1-9][0-9]* - (.+)$/.exec(lines[n]);
+  if (named === null || lines[n - 1] !== `# Subtest: ${named[1]}` || lines[n + 1] !== "  ---") return output;
+  const closer = lines.indexOf("  ...", n + 2);
+  if (closer === -1) return output;
+  if (!lines.slice(n + 2, closer).every((line) => line.startsWith("  "))) return output;
+  return [...lines.slice(0, n - 1), ...lines.slice(closer + 1)].join("\n");
+}
+
 /** Was a confined replay a genuine assertion-level reproduction of a red? */
 export function classifyReplay({ status, output }) {
   if (status === 0) return { accepted: false, reason: "the command exited 0" };
-  // The matched token only, never the surrounding text: a real message embeds an absolute path.
-  const poisoned = POISON.exec(output);
-  if (poisoned) return { accepted: false, reason: `the output names an environment failure (${poisoned[0]})` };
   // A playwright run is routed before the TAP clause, so no token can skip the count or the matcher.
   const summary = [...output.matchAll(PW_SUMMARY)].at(-1);
   if (summary !== undefined || PW_BANNER.test(output)) {
+    // The matched token only, never the surrounding text: a real message embeds an absolute path.
+    const pwPoisoned = POISON.exec(output);
+    if (pwPoisoned) return { accepted: false, reason: `the output names an environment failure (${pwPoisoned[0]})` };
     if (summary === undefined) return { accepted: false, reason: "playwright printed no failure summary" };
     const failed = Number(summary[1]);
     if (failed !== 1)
@@ -34,6 +53,8 @@ export function classifyReplay({ status, output }) {
       return { accepted: false, reason: "playwright's failure is not an expect(...) assertion" };
     return { accepted: true, reason: "assertion-level failure" };
   }
+  const poisoned = POISON.exec(outsideOwnFailure(output));
+  if (poisoned) return { accepted: false, reason: `the output names an environment failure (${poisoned[0]})` };
   if (ASSERTION.test(output)) return { accepted: true, reason: "assertion-level failure" };
   return { accepted: false, reason: "no assertion-level failure in the output" };
 }
