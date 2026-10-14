@@ -18,7 +18,9 @@ const PW_EXPECT = /^[ \t]*(?:Error: )?expect\([a-z]+\)\.[A-Za-z]+\(/m;
  * The output without the one failing test's own TAP block, or the whole output
  * when no such block is recognised (fail closed: nothing is exempted by guess).
  * The block is one root-level `not ok` with its `# Subtest:` heading, `  ---`
- * delimiter and `  ...` closer; every line between the delimiters is indented.
+ * delimiter and `  ...` closer; every line between the delimiters is indented,
+ * with exactly one `  code: 'ERR_ASSERTION'` and one `  error:` line (a thrown
+ * error, or an assertion wrapping one, prints a second at the same indent).
  */
 function outsideOwnFailure(output) {
   const lines = output.split("\n");
@@ -29,7 +31,11 @@ function outsideOwnFailure(output) {
   if (named === null || lines[n - 1] !== `# Subtest: ${named[1]}` || lines[n + 1] !== "  ---") return output;
   const closer = lines.indexOf("  ...", n + 2);
   if (closer === -1) return output;
-  if (!lines.slice(n + 2, closer).every((line) => line.startsWith("  "))) return output;
+  const body = lines.slice(n + 2, closer);
+  if (!body.every((line) => line.startsWith("  "))) return output;
+  const codes = body.filter((line) => line.startsWith("  code:"));
+  if (codes.length !== 1 || codes[0] !== "  code: 'ERR_ASSERTION'") return output;
+  if (body.filter((line) => line.startsWith("  error:")).length !== 1) return output;
   return [...lines.slice(0, n - 1), ...lines.slice(closer + 1)].join("\n");
 }
 
