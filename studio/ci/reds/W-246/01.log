@@ -1,0 +1,50 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-246-b1 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-14T03:07:15.400Z
+# sella: builder.W-246
+# tree: tree:006ed6f91799130ae1313cefde50356b0067f3ca
+
+TAP version 13
+# Subtest: W-246-b1 behaviour 1: an advisory-only spec review passes
+not ok 1 - W-246-b1 behaviour 1: an advisory-only spec review passes
+  ---
+  duration_ms: 1800.406705
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-246/packages/cli/src/next.test.ts:160:5530'
+  failureType: 'testCodeFailure'
+  error: 'advisory: a failed submission with no standing blocker is recorded passed'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    # opus: W-900
+    # phase: spec
+    # round: 2
+    # sella: spec-reviewer
+    # model: gpt-5.6-sol
+    # outcome: failed
+    # at: 2026-10-02T01:00:00.000Z
+    # tree: tree:d6dd72a33140d2e38fe6ba8f4067e4e5fe1af588
+    # brief: briefs/W-900.md blob:db2e112f8be86c753661c832adf46e4e2cba229c
+    
+    ## Findings
+    1. advisory brief:7 a wording note. check: none: x
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-246/packages/cli/src/next.test.ts:5164:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1924.466762
