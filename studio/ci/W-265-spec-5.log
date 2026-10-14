@@ -1,0 +1,19 @@
+# opus: W-265
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-14T10:21:38.655Z
+# tree: tree:8fd5235268fa36e9eae877c1b1cb6ec3317f09e9
+# brief: briefs/W-265.md blob:cb605e7b76f8addd747a95838cc8f174f65d6a57
+
+## Findings
+1. advisory — the design audit's rule 6 hole is real. On node v25.9.0, `assert.doesNotReject(import("./nonexistent.mjs"))` and `assert.doesNotThrow` around an ENOENT print `  code: 'ERR_ASSERTION'` and the wrapped error's `  code: 'ERR_MODULE_NOT_FOUND'` / `'ENOENT'` at two spaces under `actual:`. Revision 2's rule 6 omitted the block and accepted them; today they are refused. Rule 6 now requires exactly one `  code:` line, equal to `  code: 'ERR_ASSERTION'`. check: scratch probe of rules 1-6 on node TAP for doesNotReject and doesNotThrow: revision 2 accepted, tightened rule refused (Cannot find module, ENOENT)
+2. advisory — the audit's code-line rule alone still hid `assert.doesNotThrow` around a code-less `Error("sandbox denied")` (one `code:` line; today refused, naming sandbox). Rule 6 also requires exactly one `  error:` line, because node prints a wrapped error's `error:` at two spaces, so every wrapped error is scanned whole. W-255's 02.log, `t.assert` with a multi-line message, `assert.rejects`, a `before` hook assertion, `deepStrictEqual` on objects and `REBASED_RED` (one `code:`, one `error:`) stay accepted, so the census verdicts hold. check: scratch probe on node v25.9.0 of 8 shapes plus 02.log; dntplain: codes-only accepted, with the one-error rule refused (sandbox)
+3. advisory — W-265-b2 gains the doesNotReject, doesNotThrow-ENOENT and doesNotThrow-code-less rows and a multi-line/object-value accepted row. Its first, failing assertion is unchanged (the thrown-ENOENT block, boolean-only), so its red output stays POISON-free. Default 1 and the hide-bound follow the rule. check: brief:62
+4. advisory — the ladder mechanism is corrected: `HOST_RUNNER` resolves beside the CLI that runs, so W-265's own mint uses its branch's classifier (harmless: clean reds), and W-255 is rebased onto master after W-265 lands, re-minted from its worktree with `npm run -s bisellium --`, and queued only after W-265 is on master, because certify uses the tooling at `merge_group.base_sha`. The Plan's "How it unblocks" says the same in plain words. check: packages/commands/src/builder-run.ts:25
+5. advisory — `readBriefAdmission` on revision 3 returns no problems; the new limit wording stays on the promise line. check: packages/commands/src/brief-admission.ts:255
+
+## Verdict
+passed — rule 6 now closes both a thrown error and an assertion that wraps one. The promise holds as stated with its quoted-text limit, and the ladder names the right copy of the classifier at each step.
