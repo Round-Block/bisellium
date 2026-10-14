@@ -12,12 +12,21 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 ## Resume point (2026-10-14)
 
-1. **W-221**, **W-233** part 1, **W-240** and **W-253** (#453, D-062 hotfix) done; the weekly
-   retro is filed for all four (no new opera, D-061 §5).
-2. **W-246** done (#462; build review 2 rounds). **W-255** revision 3 signed (round 5) and stands
-   by the D-061 §4 split after spec rounds 2 and 4 failed; remainder W-264 (backlog). Next: land
-   its spec (`next --perform --expect spec`), branch, builder; its PR needs the Patron
-   (ADOPTION.md, leges). Backlog for the Patron: W-260–W-264.    Use `npm run -s bisellium --`: the `bisellium` on PATH runs `~/projects/bisellium-guard` (stale).
+1. Done this week: W-221, W-233 part 1, W-240, W-253, W-246 (retros filed).
+2. **W-265** (host red replay ignores environment words inside the failing test's own
+   assertion block; Patron approved design + Defaults after a Fable audit) is built at aeeb15e8
+   in `.worktrees/W-265` (gates green). Next: mint (`npm run -s bisellium -- run --sella builder
+   --opus W-265 --studio studio --repo . -- true` from the worktree), Codex build review (model:
+   `~/.bisellium-evidence/W-246-review/r1-run.sh`), PR, merge, done, retro, checkpoint.
+   Then **W-255** (light brief; built, review not yet run): rebase `opus/W-255` onto master,
+   re-mint from its worktree (red 2 then accepted), fix `~/.bisellium-evidence/W-255-review/r1-run.sh`
+   (backticks in its "Look hardest" item 3 were eaten: restore `bisellium red` and `xbisellium`),
+   review, PR (needs the Patron: ADOPTION.md, leges). Then **W-260** (spec landed): branch, build.
+   W-246 done (#462); W-266 filed (backlog).
+   Use `npm run -s bisellium --`: the `bisellium` on PATH runs `~/projects/bisellium-guard` (stale).
+   Kept scripts: `~/.bisellium-evidence/{spec-review-first,spec-review-later,retro-triage}.sh`,
+   `retro-adjust.py`, `record-review.sh <id> <n> <out> <session>`, `chore-pr.sh` (stops on a
+   failed merge group). A worktree needs a real `node_modules` copy (`cp -a ../../node_modules`).
 3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is not
    yet an opus: file it after W-245's census (Queue item 2).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
@@ -26,7 +35,7 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 6. **Audits ruled (D-061):** 24 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
    W-251 filed; the Queue below is the new order.
 - Checkpoint after every opus: a Haiku agent adds the history rows, runs `build.sh` and
-  republishes Status and the dossier (lex §7); last one #459 (cascade 76, W-253).
+  republishes Status and the dossier (lex §7); last one #465 (cascade 77, W-246).
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
 ## Concurrency readiness
@@ -52,8 +61,7 @@ milestone exits; lanes later.
 
 1. Audit cuts, re-ranked by the ops speed audit (Patron 2026-10-14;
    `~/.bisellium-evidence/ops-speed-audit/report.md`): W-265 — the host's red replay judges
-   environment words outside the failing test's own assertion (unblocks W-255's receipt; host
-   security code: the Patron approves design before branch); W-255 — a light brief by the
+   environment words outside the failing test's own assertion (building; unblocks W-255); W-255 — a light brief by the
    architect's marker (built; mint waits on W-265); W-260 — build verdicts reconcile after rulings (greenlit
    by the spec-review cap's retro; spec passed, landed); W-252 — the spec-round counter refuses malformed history
    (greenlit by the same retro);
