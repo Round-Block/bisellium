@@ -272,8 +272,7 @@ export function readBriefLimit(raw: unknown): { limit: number | undefined } | { 
 export function readBriefAdmission(briefText: string, limit: number): { problems: string[]; exception?: string } {
   const problems: string[] = [];
   const real = realLines(briefText);
-  const form = readBriefForm(briefText);
-  const light = "light" in form && form.light;
+  const { light, error } = briefForm(real);
   const families = captured(real, /^Decree family:(.*)$/);
   if (families.length === 0) problems.push('declares no decree family; add one line "Decree family: <slug>"');
   else if (families.length > 1)
@@ -308,7 +307,7 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
   }
   if (!light) problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real));
   problems.push(...absolutePromiseProblems(real));
-  if ("error" in form) problems.push(form.error);
+  if (error !== undefined) problems.push(error);
   return exception === undefined ? { problems } : { problems, exception };
 }
 
@@ -329,16 +328,60 @@ export function readRedOrder(briefText: string): { declared: boolean } | { error
 }
 
 const BRIEF_FORM_LINE = "Brief: light";
+const RISKY_FAMILY_TOKENS = ["security", "secret", "auth", "sandbox", "protection", "pipeline", "ci", "certify"];
+const RISKY_PREFIXES = [".github/", ".claude/", "packages/pipeline/"];
+const RISKY_FILES = new Set([
+  "package.json",
+  "scripts/agent-workspace.sh",
+  "scripts/ci-certify.mjs",
+  "scripts/ci-scope.mjs",
+  "scripts/run-builder-host.mjs",
+  "scripts/git-broker.mjs",
+  "scripts/git-cell-client.mjs",
+  "scripts/host-cells.mjs",
+  "packages/commands/src/ci.ts",
+  "packages/commands/src/verify.ts",
+  "packages/commands/src/builder-run.ts",
+  "packages/commands/src/run.ts",
+  "packages/cli/src/integrate.ts",
+]);
+
+/** D-063 §4: the first sign that a light brief is security, sandbox, branch-protection or pipeline work: a token of a real
+ *  `Decree family:` value, or a backticked span of a real `## Files owned` line (every such section, to the next real `^## `).
+ *  A fixed list: work outside it rests on the signing architect and the build review (a path without backticks is not seen). */
+function riskySignal(real: string[]): string | undefined {
+  for (const family of captured(real, /^Decree family:(.*)$/)) {
+    const token = family.split("-").find((t) => RISKY_FAMILY_TOKENS.includes(t));
+    if (token !== undefined) return `decree family "${family}" names "${token}"`;
+  }
+  let owned = false;
+  for (const line of real) {
+    if (/^## /.test(line)) owned = line.trim() === "## Files owned";
+    else if (owned)
+      for (const [, span] of line.matchAll(/`([^`]+)`/g)) {
+        const path = span!.replace(/^\.\//, "");
+        if (RISKY_FILES.has(path) || RISKY_PREFIXES.some((p) => path.startsWith(p))) return `Files owned names \`${span}\``;
+      }
+  }
+  return undefined;
+}
+
+/** The brief's form with its error, if any. An excluded light brief is `{ light: true, error }`: it is checked as light
+ *  (its own sections were never asked for an Input domain), and the exclusion is the one problem it adds. */
+function briefForm(real: string[]): { light: boolean; error?: string } {
+  const attempts = real.map((l) => l.trim()).filter((l) => /^brief[\s_-]*:/i.test(l));
+  if (attempts.length === 0) return { light: false };
+  if (attempts.length > 1) return { light: false, error: `has ${attempts.length} brief form lines; one line "${BRIEF_FORM_LINE}" or none` };
+  if (attempts[0] !== BRIEF_FORM_LINE) return { light: false, error: `brief form line "${attempts[0]}" is not exactly "${BRIEF_FORM_LINE}"` };
+  const signal = riskySignal(real);
+  if (signal === undefined) return { light: true };
+  return { light: true, error: `a light brief is not for security, sandbox, branch-protection or pipeline work (D-063 §4): ${signal}; use the full template` };
+}
 
 /** W-255 (D-063 §4): whether the architect marked the brief light. An attempt is a real line (outside fences and
- *  comments) whose trimmed text matches `/^brief[\s_-]*:/i`. None: full. Exactly one, equal to "Brief: light": light.
- *  Otherwise an error, which `readBriefAdmission` appends after every full check. */
+ *  comments) whose trimmed text matches `/^brief[\s_-]*:/i`. None: full. Exactly one, equal to "Brief: light": light,
+ *  unless `riskySignal` finds the work is not for a light brief. Otherwise an error. */
 export function readBriefForm(briefText: string): { light: boolean } | { error: string } {
-  const attempts = realLines(briefText)
-    .map((l) => l.trim())
-    .filter((l) => /^brief[\s_-]*:/i.test(l));
-  if (attempts.length === 0) return { light: false };
-  if (attempts.length > 1) return { error: `has ${attempts.length} brief form lines; one line "${BRIEF_FORM_LINE}" or none` };
-  if (attempts[0] !== BRIEF_FORM_LINE) return { error: `brief form line "${attempts[0]}" is not exactly "${BRIEF_FORM_LINE}"` };
-  return { light: true };
+  const form = briefForm(realLines(briefText));
+  return form.error === undefined ? { light: form.light } : { error: form.error };
 }
