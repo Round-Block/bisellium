@@ -14,13 +14,9 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 1. **W-221**, **W-233** part 1, **W-240** and **W-253** (#453, D-062 hotfix) done; the weekly
    retro is filed for all four (no new opera, D-061 §5).
-2. **W-246** revision 4 sits uncommitted in the working tree (D-063 §7: count failed spec rounds
-   only since the newest passed review or split signature; diff `W-246-spec/r3-r4.diff`). Next: the
-   architect signs round 7 with `--from ~/.bisellium-evidence/W-246-spec/r7-findings.md`, the
-   censor reviews round 8, the spec lands, then `branch` and the builder. W-252 stays in backlog.
-   Auto mode refused the signature and `gh pr merge` here; the Patron added an `autoMode.allow`
-   block to `~/.claude/settings.json` (auto mode drops `npm run` allow rules). If still refused,
-   ask the Patron; never retry by another route.
+2. **W-246** revision 5 landed (#460; round 8 failed on the landed re-spec gap, now W-256;
+   round 10 passed); branched, `ready`, builder.W-246 in `.worktrees/W-246` on behaviours 1–3.
+   W-252 stays in backlog. `chore-pr.sh` now stops at the first failed merge-group run.
 3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is not
    yet an opus: file it after W-245's census (Queue item 2).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
@@ -29,7 +25,7 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 6. **Audits ruled (D-061):** 24 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
    W-251 filed; the Queue below is the new order.
 - Checkpoint after every opus: a Haiku agent adds the history rows, runs `build.sh` and
-  republishes Status and the dossier (lex §7); W-253 and the D-063 rulings still owe one (#455 covered the rest).
+  republishes Status and the dossier (lex §7); last one #459 (cascade 76, W-253).
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
 ## Concurrency readiness
@@ -53,13 +49,18 @@ Ranked. Item descriptions for the older items:
 Order set by the Patron 2026-10-13 (D-061): in flight, then the audit cuts, then the
 milestone exits; lanes later.
 
-1. Audit cuts: W-246 — spec review blocks only on substance, changed lines only, two-round
-   cap; W-223 — the Status page shows the ranked queue in plain words (Patron 2026-10-14: an
-   exception to the freeze); W-247 — drop the handoff Resume point and its review;
-   W-250 — ci.yml runs `bisellium ci` once, verdict writes the gate; W-243 — certify judges the diff, not the branch name (D-039 high); W-206 + W-207
-   + W-214 as one opus — spec in the opus PR, done reads certify's receipt, retro in the done
-   PR; W-251 — process work capped, weekly retro; W-254 — delete talk and the dailies;
-   W-255 — a light brief by the architect's marker.
+1. Audit cuts, re-ranked by the ops speed audit (Patron 2026-10-14;
+   `~/.bisellium-evidence/ops-speed-audit/report.md`): W-246 — spec review blocks only on
+   substance, two-round cap (building), with W-255 — a light brief by the architect's marker;
+   W-206 + W-207 + W-214 as one opus — spec in the opus PR (absorbs W-256), done reads
+   certify's receipt, retro in the done PR; W-257 — handoff and checkpoint edits ride the done
+   PR; W-250 — ci.yml runs `bisellium ci` once, records-only pushes take the short path;
+   W-259 — check each tree once, certify is the single mint (pipeline: design to the Patron
+   before branch); W-258 — the builder self-reviews once before the first build review;
+   W-247 — drop the handoff Resume point and its review; W-223 — the Status page shows the
+   ranked queue in plain words (Patron 2026-10-14: an exception to the freeze); W-243 —
+   certify judges the diff, not the branch name (D-039 high); W-251 — process work capped,
+   weekly retro; W-254 — delete talk and the dailies.
 2. W-245 part 1 — census of every provider coupling (the Patron approves the design); then
    W-248 — dead verbs and packages (W-081's injection note rides it), W-249 — lighter tests.
 3. W-068 — task dependencies (copy `~/.bisellium-evidence/partial-specs/W-068.md` to
