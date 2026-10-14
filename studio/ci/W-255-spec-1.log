@@ -1,0 +1,18 @@
+# opus: W-255
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-14T06:32:53.339Z
+# tree: tree:56e978bba9f5a93f5959e28d7d7911210a4956b2
+# brief: briefs/W-255.md blob:09d94a690ee6ebb83faca42c6c92cf439b255c48
+
+## Findings
+1. advisory brief:35 the light-brief exclusion is a fixed list of decree-family tokens and Files owned paths; work with a security or pipeline effect outside the list rests on the architect's signature and the reviewer, a stated limit. check: none: a typed work-class field on the opus record (Default 3)
+2. advisory brief:37 a light behaviour's red command is matched without comparing its opus id; the builder's red order from next names the id. check: none: an id-aware red-command check in briefAdmissionProblems
+3. advisory brief:70 W-255 and W-246 both own next.ts, next.test.ts, spec-review.md and docs/ADOPTION.md; W-255 builds after W-246 merges. check: none: a rule ordering greenlit opera whose briefs own one file
+4. advisory brief:86 the design lex's definition of ready is amended under D-063 §4, a Patron decree, with the Patron's veto kept as Default 4. check: none: a rule that a lex edit carries an amendment row naming its authority
+
+## Verdict
+Checked against master fad2ed30: the six sections are enforced only in next.ts, admission reads none, no check rule reads the dropped sections, and no existing test asserts against the change; signed as revision 1.
