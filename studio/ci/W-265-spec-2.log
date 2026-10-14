@@ -1,0 +1,19 @@
+# opus: W-265
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a139c8-6d42-76f1-a375-f88f4fabda9d
+# outcome: failed
+# at: 2026-10-14T09:46:30.324Z
+# tree: tree:8fd5235268fa36e9eae877c1b1cb6ec3317f09e9
+# brief: briefs/W-265.md blob:69d1923e4c29a8569ebd9e14eaa82b3380943179
+
+## Findings
+1. blocking — brief:69 The claim that no retained case carries `# Subtest:` is false: W-134-b3b runs `REBASED_RED`, whose TAP output has a recognizable assertion block; W-134-b3a also prints a subtest but is refused at status 0. Replace brief:69 with “- No existing assertion flips. The inline W-130 transcripts carry no `# Subtest:` line and remain whole; W-134-b3a remains refused at status 0; W-134-b3b’s assertion block is omitted from the poison scan, but the unchanged title check on the full output still refuses its absent recorded title. The listed W-130, host-cells, run and brief-admission assertions remain kept.” — check: packages/commands/src/run.test.ts
+2. advisory — brief:49 `outsideOwnFailure` is a transformer, not a rejecting function: it returns either filtered or original output, while `classifyReplay` performs the actual refusal. The row should name `classifyReplay` as rejector and describe `outsideOwnFailure` as its fail-closed preprocessing. — check: scripts/replay-accept.test.mjs
+3. advisory — brief:37 The computed brief-admission result rejects “always scanned” outside a declared promise line; state the guarantee once using `Promise <slug>: <claim> — limit: <limit>`, including the deliberate-TAP-forgery limit already acknowledged elsewhere. — check: packages/cli/src/brief-admission.test.ts
+
+## Verdict
+The false explanation for preserved W-134 assertions is blocking; the input-boundary and promise declarations also need correction.
+VERDICT: FAIL

@@ -1,0 +1,21 @@
+# opus: W-265
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-14T09:35:30.734Z
+# tree: tree:8ebff6879bbb945139c58e309531722edcd34c1a
+# brief: briefs/W-265.md blob:69d1923e4c29a8569ebd9e14eaa82b3380943179
+
+## Findings
+1. advisory — the draft's block rules alone would accept a test body that crashes on a missing file or module: node prints a complete, name-matched block with `code: 'ENOENT'` / `'ERR_MODULE_NOT_FOUND'`, and `ASSERTION` matches its `not ok`. Rule 6 (the block must carry `  code: 'ERR_ASSERTION'`) closes it and keeps the classifier's assertion-level promise; recorded as Default 1. check: node v25.9.0 probe of a throwing test body under --test-reporter=tap, and a scratch run of rules 1-5 vs 1-6 (ENOENT and Cannot find module clean without rule 6, refused with it)
+2. advisory — under `Red order: one at a time`, the draft's behaviour 2 red (an inside-only control expected accepted) would already pass at its red commit, after behaviour 1's implementation; behaviour 2 is re-cut to rule 6, whose boolean-only red fails against behaviour 1's helper. check: packages/cli/src/rules/evidence.ts:219
+3. advisory — W-255's real red-2 transcript is accepted by rules 1-6 (whole-output scan names `sandbox`; outside the block it is clean), and it is behaviour 1's first, failing assertion. check: .worktrees/W-255/studio/ci/reds/W-255/02.log
+4. advisory — Playwright routing is now decided before the poison scan; Playwright output still gets the full-output scan first, so every Playwright reason and order is unchanged, and 4(m)'s line-start `1 failed` TAP row stays routed and scanned whole. check: scripts/replay-accept.mjs:21
+5. advisory — no existing row flips: no transcript in replay-accept.test.mjs, host-cells.test.mjs TRANSCRIPTS or run.test.ts's canned rows carries a `# Subtest:` line, so the helper returns them whole. check: scripts/host-cells.test.mjs:400
+6. advisory — both reds' titles and messages hold no POISON word, so the master classifier at the receipt mint accepts them. check: scratch POISON.test over both titles and both messages: all false
+7. advisory — the runner and certify are unchanged; certify runs master's tooling at merge_group.base_sha, so landing W-265 first is what unblocks W-255. check: scripts/ci-certify.mjs:144
+
+## Verdict
+passed — one unexported helper and a reordered call in replay-accept.mjs, two behaviours, no flipped assertion; the hide-bound is stated plainly and the Patron approves design and Defaults before branch (D-061 §6).
