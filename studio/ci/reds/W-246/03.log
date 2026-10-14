@@ -1,0 +1,59 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-246-b3 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-14T03:13:18.432Z
+# sella: builder.W-246
+# tree: tree:603c6c99353222950ad702de6ce42cfb47dbed4e
+
+TAP version 13
+# Subtest: W-246-b3 behaviour 3: build review has no cap
+not ok 1 - W-246-b3 behaviour 3: build review has no cap
+  ---
+  duration_ms: 6881.019942
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-246/packages/cli/src/next.test.ts:159:2174'
+  failureType: 'testCodeFailure'
+  error: |-
+    three failures name build, phase fix
+    --- exit 1
+    --- stdout
+    next: W-900 review held
+    actor: patron
+    why: 3 counted failed build-review rounds (1, 2, 3); a further round needs the Patron's OK (D-046)
+    head: opus/W-900 2d38b3577847
+    recommendation: one more fix round: round 3's blockers are single instances
+    grant: Grant: one more build-review round for W-900.
+    attach: bisellium amend W-900 --round-ruling <decision-id> --reason <text> --studio .worktrees/W-900/studio
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 review held'
+    - 'next: W-900 build named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 build named'
+  actual: 'next: W-900 review held'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-246/packages/cli/src/next.test.ts:753:10)
+    buildFix (/home/edckt/agents/bisellium/.worktrees/W-246/packages/cli/src/next.test.ts:3533:3)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-246/packages/cli/src/next.test.ts:5169:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6904.993452

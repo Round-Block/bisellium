@@ -684,29 +684,19 @@ re-pointing a `building` opus at a shorter brief could erase an
 `opus.red_evidence` finding while the old passed gate — certifying a
 document the opus is no longer built against — survived untouched.
 
-## The build-review cap (W-167, D-046 §2–3)
+## The build-review loop (W-167, W-246, D-053)
 
-After a third counted failed build-review round, `bisellium next` holds for
-the Patron (`actor: patron`) with a `recommendation` (one more fix round, or a
-re-spec when the newest counted failure holds a standing blocker containing the
-whole word `class` or `classes`), the `grant` line and the `attach` command. A
-re-spec never restarts the count. A failed round counts only from a strictly
-parsed `ci/<id>-review-<n>.log` whose outcome agrees with its standing findings
-(converted blockers are advisory). A round whose every standing blocker opens
-`blocking (security)` is pre-approved and does not count (D-044); a mixed round
-counts. Each valid ruling permits one more round: a decision by the manifest's
-`patron`, in the worktree studio's `decisions/`, dated strictly after the third
-counted failure, whose body holds the exact standalone line
-`Grant: one more build-review round for <id>.`, attached with
-`bisellium amend <id> --round-ruling <decision-id> --reason <text>`. A pass
-already recorded at the current tree proceeds past the cap. When the failed
+Build review has no cap: `bisellium next` names a fix and then the next review round for as long as the
+censor fails the build, and `amend --round-ruling` and the `round_rulings` records are no longer read (D-061 §4).
+A round is read only from a strictly parsed `ci/<id>-review-<n>.log` whose outcome agrees with its standing
+findings (converted blockers are advisory). When the failed
 current round has a standing class blocker, the fix order carries a `boundary:`
 line: fix the class with one check at the input boundary the brief's Input
 domain names, not a patch at the cited site (L-069). `next` holds, naming the
 problem, on any unreadable or out-of-domain review record, on a worktree
 manifest that differs from the main checkout's on a review key, and on an
 uncomputable source tree. The tool cannot judge whether a finding truly is a
-class or truly security-only; those words are the censor's claim (D-045).
+class; that word is the censor's claim (D-045).
 
 ## bisellium amend
 
@@ -729,7 +719,7 @@ it never creates a decision or evidence.
 `--round-ruling` (W-167) appends one Patron ruling to `round_rulings`: it
 refuses, before any write, unless the build-review history and the review
 configuration read cleanly and the list with the id appended is valid (see
-"The build-review cap" below). A duplicate or a value identical to
+"The build-review loop" below). A duplicate or a value identical to
 the current one is
 refused as a no-op: `title` compared as an exact scalar (leading/trailing
 whitespace is a real change), `spec` by canonical resolved target (a path
@@ -1475,11 +1465,15 @@ follow it, and every log above the anchor must be that review:
 - no review: the spec-reviewer is ordered at the next round, with the packet and dispute lines and `--session` in the record command. A fresh one-shot dispatch (`resume: false`) when the reviewer has no recorded session; otherwise `resume <seat>'s session <id>` and a `session:` line (W-215);
 - `passed`: the existing commit (the brief, the signature and its review, nothing else), landing and then `branch`;
 - `failed`: the architect is ordered to revise and sign again; a newer signature needs a newer review;
+- two failed reviews since the newest re-spec (the count starts above the newer of the newest passed review and a signature that stood by the split; W-246, D-061 §4, D-063 §7): the architect is ordered with a `split:` line naming `bisellium new … --parent <opus>`; the producer files the remainder, the architect cuts the brief and signs, and that signature stands without a third review (the commit carries the brief, the signature and the failed logs);
 - an edited brief, or no valid signature: the architect is ordered to sign at the next round;
 - any malformed log, unreadable log, second reviewer verdict or log of another seat above the anchor: held. Logs at or below the anchor are history, so signing again recovers from a bad log.
 
 A review's outcome must agree with its findings (`passed` has no blocking finding,
-`failed` has at least one) and every numbered finding ends `check: <value>`. A
+`failed` has at least one) and every numbered finding ends `check: <value>`. A blocking
+finding that cites no line of the pinned brief is recorded advisory, as in build, and a
+review submitted `failed` with no standing blocker is recorded `passed` with
+`# submitted_outcome: failed` (W-246). A
 `spec/<opus>` branch that carries a signature but no passed review is not landed:
 `next` holds and names it. Limit: the `# model:` header is the recorder's claim,
 and the gate cannot judge whether the review reasoned well.

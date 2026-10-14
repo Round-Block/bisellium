@@ -30,8 +30,8 @@ import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
-import { briefAdmissionProblems, readRoundRulings } from "@bisellium/commands/lifecycle.js";
-import { SESSION_ID, buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
+import { SESSION_ID, buildReviewDrift, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
@@ -145,7 +145,7 @@ interface SpecReviewer {
   design: string;
 }
 /** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
-type SpecGate = { kind: "signature" } | { kind: "review"; signature: string; brief: string } | { kind: "failed"; review: string } | { kind: "ready"; review: string } | { kind: "invalid" };
+type SpecGate = { kind: "signature" } | { kind: "review"; signature: string; brief: string } | { kind: "failed"; review: string; failed: string[] } | { kind: "ready"; review: string } | { kind: "split"; failed: string[] } | { kind: "invalid" };
 interface SpecEvidence {
   ok: boolean;
   why: string;
@@ -247,6 +247,34 @@ function readSpecReview(text: string, id: string, round: number, reviewer: SpecR
  * architect signature naming the current brief anchors the sequence, and every log above it must be that
  * signature's one valid review. Logs at or below the anchor are history: only their names were checked.
  */
+/** The `# brief:` value a spec log carries once, which `readSpecReview` and `readSpecSignature` judge the log against. */
+function ownBrief(text: string, id: string, rel: string): string {
+  const p = parseVerdictLog(text, id, rel);
+  return "error" in p ? "" : (p.headers.get("brief")?.length === 1 ? p.headers.get("brief")![0]! : "");
+}
+
+/**
+ * D-061 §4: the failed spec reviews counted since the newest re-spec (D-063 §7), ascending. The count begins above the newer of
+ * the newest passed review and the newest signature that stood by the split: one with two failed reviews below it, followed by
+ * another signature. The newest signature never ends the count. Each log is read by the strict readers against its own brief.
+ */
+function failedSpecReviews(read: { n: number; rel: string; text: string | undefined }[], id: string, reviewer: SpecReviewer): string[] {
+  const signed = read.map((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, ownBrief(l.text, id, l.rel), l.rel)));
+  let failed: string[] = [];
+  read.forEach((l, i) => {
+    if (l.text === undefined) return;
+    if (signed[i]) {
+      if (failed.length >= 2 && signed[i + 1] === true) failed = [];
+      return;
+    }
+    const r = readSpecReview(l.text, id, l.n, reviewer, ownBrief(l.text, id, l.rel), l.rel);
+    if ("error" in r) return;
+    if (r.outcome === "passed") failed = [];
+    else failed.push(l.rel);
+  });
+  return failed;
+}
+
 function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer): SpecEvidence {
   if (src === undefined) return { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false, gate: { kind: "signature" } };
   const names = src.list("ci").filter((name) => name.startsWith(`${id}-spec-`));
@@ -275,9 +303,11 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer):
   }
   const signed = (gate: SpecGate, why: string): SpecEvidence => ({ ...result(why, gate), sella: reviewer.design, log: anchor.rel });
   const review = reviews[0];
+  const failed = failedSpecReviews(read, id, reviewer);
+  if (review === undefined && failed.length >= 2) return { ...signed({ kind: "split", failed }, `${briefRel(id)}, ${anchor.rel} stand without a third review (D-061 §4)`), ok: true };
   if (review === undefined) return signed({ kind: "review", signature: anchor.rel, brief }, `${anchor.rel} is signed and awaits the spec review`);
   if (reviews.length > 1) return result(`${reviews[1]!.log} is a second reviewer verdict after ${anchor.rel} with no signature between them; a newer signature must come first`, { kind: "invalid" });
-  if (review.outcome === "failed") return signed({ kind: "failed", review: review.log }, `${review.log} failed ${anchor.rel}; the architect revises and signs again`);
+  if (review.outcome === "failed") return signed({ kind: "failed", review: review.log, failed }, `${review.log} failed ${anchor.rel}; the architect revises and signs again`);
   return { ...signed({ kind: "ready", review: review.log }, `${briefRel(id)}, ${anchor.rel} and ${review.log} are the signed, reviewed spec`), ok: true };
 }
 function signedSpec(src: Src | undefined, id: string, design: string): SpecEvidence {
@@ -721,11 +751,6 @@ export function deriveNext(f: Facts): Derived {
       const studio = f.wt.usable ? join(".worktrees", id, f.studioRel) : f.studioRel;
       return { ...named("review", "producer", `build-review round ${n} is recorded but the review gate does not cite it`, `bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${n}.log --round ${n} --sella ${censor} --studio ${studio}`), ticket: { action: "review", round: n } };
     }
-    const rulings = readRoundRulings(f.wt.studio, f.manifest, b, id, read.rounds);
-    if ("error" in rulings) return hold("review", rulings.error);
-    const counted = countedFailures(read.rounds);
-    // D-046 §2: the cap is three counted failures plus one round per Patron ruling; a pass already recorded at this tree proceeds
-    if (!(gate?.status === "passed" && gate.tree === cur) && counted.length >= REVIEW_ROUND_CAP + rulings.rulings.length) return capHold(f, counted);
     const failedNow = gate !== undefined && gate.status === "failed" && gate.tree === cur;
     const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
     const receipt = f.receipt();
@@ -781,7 +806,17 @@ export function deriveNext(f: Facts): Derived {
 function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number): Derived {
   const { id } = f;
   const round = maxRound + 1;
-  if (ev.gate?.kind === "failed") return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.review] });
+  if (ev.gate?.kind === "failed") {
+    // D-061 §4: a second failed review since the newest re-spec ends review; the remainder is filed as a new opus
+    const ended = ev.gate.failed.length >= 2;
+    return dispatch(f, "spec", ended ? `${ev.gate.failed.join(" and ")} failed; D-061 §4: no third review: the producer files the remainder as a new opus, then the architect cuts the brief to what passed and signs` : ev.why, {
+      phase: "spec",
+      round,
+      resume: ev.anyLog,
+      inputs: [briefRel(id), ev.gate.review],
+      ...(ended ? { extra: [["split", `bisellium new --kind <kind> --collegium <collegium> --title <the remainder> --parent ${id} ${f.studioRel}`]] as [string, string][] } : {}),
+    });
+  }
   if (ev.gate?.kind === "invalid") return { step: "spec", status: "held", actor: "producer", why: ev.why, extra: [] };
   if (ev.gate?.kind === "review") {
     // W-196: a signed brief that fails admission goes back to the architect, never to the reviewer.
@@ -828,8 +863,6 @@ function afterDone(f: Facts): Derived {
   };
 }
 
-/** D-046 §2: three counted failed build-review rounds, then a further round needs a Patron ruling. */
-const REVIEW_ROUND_CAP = 3;
 /** The lowest-numbered standing blocker that names a class (L-069): the whole word `class` or `classes`. */
 const classBlocker = (round: BuildReviewRound | undefined) => round?.blockers.filter((b) => /\bclass(?:es)?\b/i.test(b.text)).sort((a, b) => a.n - b.n)[0];
 
@@ -839,24 +872,6 @@ function boundaryExtra(id: string, round: BuildReviewRound | undefined): [string
   return round === undefined || blocker === undefined
     ? []
     : [["boundary", `${round.log} finding ${blocker.n} is a class: fix it with one check at the input boundary named by the brief's Input domain, which every path reads, not a patch at the cited site (L-069)`]];
-}
-
-/** The hold at the cap: the Patron's one more round or a re-spec, recommended from the newest counted failure. */
-function capHold(f: Facts, counted: BuildReviewRound[]): Derived {
-  const { id } = f;
-  const newest = counted[counted.length - 1]!;
-  const blocker = classBlocker(newest);
-  return {
-    step: "review",
-    status: "held",
-    actor: "patron",
-    why: `${counted.length} counted failed build-review rounds (${counted.map((r) => r.n).join(", ")}); a further round needs the Patron's OK (D-046)`,
-    extra: [
-      ["recommendation", blocker === undefined ? `one more fix round: round ${newest.n}'s blockers are single instances` : `re-spec: ${newest.log} finding ${blocker.n} is a class, so the brief's boundary or promise is the problem`],
-      ["grant", `Grant: one more build-review round for ${id}.`],
-      ["attach", `bisellium amend ${id} --round-ruling <decision-id> --reason <text> --studio ${join(".worktrees", id, f.studioRel)}`],
-    ],
-  };
 }
 
 interface Gate {
@@ -944,7 +959,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else {
     role = "censor";
     sella = censor;
-    command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).`;
+    command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Use the word class in a blocker that recurs across sites (L-069).`;
   }
   const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
   // W-233: the verb a dispatched session closes out with; a build session records none, and a reds order with only findings names no behaviour
@@ -1330,7 +1345,7 @@ function performSpecCommit(f: Facts): StepResult {
   const spec = specEvidence(fsSrc(f.studioAbs), id, f.design, gate.reviewer);
   if (!spec.ok || spec.log === undefined) return heldResult(`refusing: ${spec.why}`);
   // exactly the brief, the newest signature and (with a reviewer) its one passed review: history stays where it is
-  const paths = [briefRel(id), spec.log, ...(spec.gate?.kind === "ready" ? [spec.gate.review] : [])].map((p) => `${f.studioRel}/${p}`);
+  const paths = [briefRel(id), spec.log, ...(spec.gate?.kind === "ready" ? [spec.gate.review] : []), ...(spec.gate?.kind === "split" ? spec.gate.failed : [])].map((p) => `${f.studioRel}/${p}`);
   const base = git(repo, ["rev-parse", TRUNK]).stdout.trim();
   const switched = git(repo, ["switch", "-q", "-c", head]);
   if (switched.status !== 0) return heldResult(`could not create ${head}: ${one(switched.stderr)}`);

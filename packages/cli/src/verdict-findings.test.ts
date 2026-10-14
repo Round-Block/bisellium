@@ -374,6 +374,41 @@ test("W-215-b2 behaviour 2: the writer accounts for every earlier blocker and ev
   assert.deepEqual(openRuling.ci, []);
 });
 
+// W-246 build review round 1: a spec verdict's outcome is decided after the session's rulings are applied.
+test("W-246-r1 a sessioned spec review whose only cited blocker is withdrawn is recorded passed", () => {
+  const brief = (): ReturnType<typeof sequenceStudio> => {
+    const s = sequenceStudio();
+    mkdirSync(join(s.dir, "briefs"));
+    writeFileSync(join(s.dir, "briefs", "W-300.md"), "# Brief\n\nline three\nline four\n");
+    return s;
+  };
+  const session = ["--phase", "spec", "--session", "s-1"];
+  const blocker = "1. blocking — brief:3 the guard is absent — check: none: probe";
+  const ruled = (ruling: string): string => `## Findings\n${blocker}\n\n## Rebuttal\n1. the line is current — docs/SESSION-HANDOFF.md:3\n\n## Ruling\n${ruling}\n`;
+
+  const w = brief();
+  const withdrawn = w.verdict(1, session, ruled("1. withdrawn — the line is current at docs/SESSION-HANDOFF.md:3"), { outcome: "failed" });
+  assert.equal(withdrawn.exitCode, 0, `failed with its only cited blocker withdrawn is recorded: ${withdrawn.stderr}`);
+  assert.match(logOf(w.dir, "W-300-spec-1.log"), /^# outcome: passed$/m);
+  assert.match(logOf(w.dir, "W-300-spec-1.log"), /^# submitted_outcome: failed$/m);
+
+  const upheld = brief();
+  assert.equal(upheld.verdict(1, session, ruled("1. upheld — the guard is absent, see a.ts:4"), { outcome: "failed" }).exitCode, 0);
+  assert.match(logOf(upheld.dir, "W-300-spec-1.log"), /^# outcome: failed$/m, "an upheld cited blocker still fails the round");
+  assert.doesNotMatch(logOf(upheld.dir, "W-300-spec-1.log"), /submitted_outcome/);
+
+  const plain = brief();
+  assert.equal(plain.verdict(1, session, `## Findings\n${blocker}\n`, { outcome: "failed" }).exitCode, 0);
+  assert.match(logOf(plain.dir, "W-300-spec-1.log"), /^# outcome: failed$/m, "a cited blocker with no ruling still fails the round");
+
+  // a round that also leaves an earlier blocker open cannot pass: still refused, nothing written
+  const open = brief();
+  assert.equal(open.verdict(1, session, `## Findings\n${blocker}\n`, { outcome: "failed" }).exitCode, 0);
+  const stillOpen = open.verdict(2, session, `${ruled("1. withdrawn — the line is current at docs/SESSION-HANDOFF.md:3")}\n## Earlier findings\n- ci/W-300-spec-1.log #1: open — still absent at a.ts:4\n`, { outcome: "failed" });
+  assert.equal(stillOpen.exitCode, 2, "an open earlier blocker keeps the round from passing");
+  assert.deepEqual(stillOpen.ci, ["W-300-spec-1.log"]);
+});
+
 // W-215 build review round 1: the separator and the citation boundary are classes, not instances.
 // Rows are selected by name (`--test-name-pattern=W-215-r1-<n>`).
 const R1_HEAD = ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: failed", "# session: s-1", ""];

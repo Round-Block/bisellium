@@ -3328,7 +3328,7 @@ test("W-162-b2 behaviour 2: architect signatures and review verdicts are strict,
   putBrief(empty);
   sign(empty, 1);
   review(empty, 2, "failed", { body: NO_FINDINGS });
-  specHeld(specNext(empty), "failed beside No findings holds", /spec-2\.log/);
+  assert.match(specNext(empty).kv.get("why") ?? "", /spec signed in the working tree, not committed/, "W-246: failed beside No findings passes to the commit");
   const unchecked = srWorld("w162-b2-no-check");
   putBrief(unchecked);
   sign(unchecked, 1);
@@ -3497,9 +3497,8 @@ test("W-162-b4 behaviour 4: a failed review returns to the architect, and only a
 });
 
 // ---------------------------------------------------------------------------
-// W-167: the build-review loop stops at three counted failures (D-046 §2),
-// security rounds are exempt (D-044), a class blocker's fix order names the
-// input boundary (L-069). Rows are selectable with --test-name-pattern=W-167-b<n>.
+// W-167: the build-review loop's strict reads; a class blocker's fix order names the
+// input boundary (L-069). W-246 removed the three-failure stop (D-046 §2, D-044). Rows are selectable with --test-name-pattern=W-167-b<n>.
 // ---------------------------------------------------------------------------
 /** Round n's recorded time: 04:00 for round 1, then every half hour (all before the 09:00 handover). */
 const rt = (n: number): string => new Date(Date.parse("2026-10-02T03:30:00.000Z") + n * 30 * 60_000).toISOString();
@@ -3553,10 +3552,6 @@ function excludesHeld(o: Out, row: string): void {
   assert.equal(o.kv.has("role"), false, ran(`${row}: no order is named`, o));
   assert.equal(o.kv.has("command"), false, ran(`${row}: no command is named`, o));
   assert.match(o.kv.get("why") ?? "", /^bisellium\.yml#source_excludes is malformed \(/, ran(`${row}: why names bisellium.yml#source_excludes`, o));
-}
-function patronHeld(o: Out, row: string): void {
-  reviewHeld(o, row);
-  assert.equal(o.kv.get("actor"), "patron", ran(`${row}: actor`, o));
 }
 interface Edit {
   dir: "repo" | "wt";
@@ -3697,58 +3692,6 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
   reviewHeld(n167(w, { GIT_STUB_REAL: failingGit("w167-b1-tree", ["ls-tree -r"]) }), "an uncomputable current tree holds");
 });
 
-test("W-167-b2 behaviour 2: the third counted failure holds for the Patron, recommends from the newest failure, and survives a re-spec", { timeout: 1_800_000 }, () => {
-  const w = w167("w167-b2", [found(klass("round one")), F, F]);
-  const o = n167(w);
-  patronHeld(o, "three plain failures hold for the Patron");
-  assert.equal(o.kv.get("why"), "3 counted failed build-review rounds (1, 2, 3); a further round needs the Patron's OK (D-046)", ran("why", o));
-  assert.equal(o.kv.get("recommendation"), "one more fix round: round 3's blockers are single instances", ran("a class in an older round does not count", o));
-  assert.equal(o.kv.get("grant"), "Grant: one more build-review round for W-900.", ran("grant", o));
-  assert.equal(o.kv.get("attach"), "bisellium amend W-900 --round-ruling <decision-id> --reason <text> --studio .worktrees/W-900/studio", ran("attach", o));
-
-  advanceSource(w);
-  patronHeld(n167(w), "a source edit leaves the hold unchanged");
-  appendFileSync(join(w.wt, "studio", "briefs", `${OPUS}.md`), "\nA brief edit.\n");
-  verb(w.wt, ["verdict", OPUS, "--round", "2", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, "spec-2.md"), "--studio", w.wtStudio, "--now", "2026-10-02T08:00:00.000Z"]);
-  commit(w.wt, `spec(${OPUS}): re-signed`);
-  patronHeld(n167(w), "a brief edit and a newer signature leave the hold unchanged");
-
-  const classy = w167("w167-b2-class", [F, F, found(plain(), klass("round three"))]);
-  const c = n167(classy);
-  patronHeld(c, "a class blocker in the newest failure holds");
-  assert.equal(c.kv.get("recommendation"), "re-spec: ci/W-900-review-3.log finding 2 is a class, so the brief's boundary or promise is the problem", ran("the re-spec recommendation names the lowest class finding", c));
-
-  const two = w167("w167-b2-two", [F, F]);
-  buildFix(n167(two), "two failures name the normal fix rung");
-  advanceSource(two);
-  reviewNamed(n167(two), 3, "two failures then a fix name the next review");
-
-  const passed = w167("w167-b2-pass", [F, F, F]);
-  record167(passed, ["pass"], 4);
-  secGate(passed);
-  expectStep(n167(passed), "pr", "named", "three failures then a passed round 4 at the current tree reach pr");
-});
-
-test("W-167-b3 behaviour 3: a security-only round is pre-approved, a mixed round counts, and the review order says so", { timeout: 1_800_000 }, () => {
-  const exempt = w167("w167-b3-exempt", [F, F, found(secure("a"), secure("b"))]);
-  buildFix(n167(exempt), "two plain failures plus a security-only third name build, phase fix");
-  const mixed = w167("w167-b3-mixed", [F, F, found(secure("a"), plain("b"))]);
-  patronHeld(n167(mixed), "the same third round with one plain blocker holds");
-  record167(exempt, [F], 4);
-  const later = n167(exempt);
-  patronHeld(later, "a later plain failure holds");
-  assert.match(later.kv.get("why") ?? "", /^3 counted failed build-review rounds \(1, 2, 4\);/, ran("why names only the counted rounds", later));
-
-  const order = w167("w167-b3-order", [F]);
-  advanceSource(order);
-  const review = n167(order);
-  reviewNamed(review, 2, "a review order");
-  const command = review.kv.get("command") ?? "";
-  assert.match(command, /blocking \(security\)/, ran("the command names the marker", review));
-  assert.match(command, /every blocker/i, ran("the command says every blocker must carry it", review));
-  assert.match(command, /D-044/, ran("the command cites D-044", review));
-});
-
 const RULING_LINE = `Grant: one more build-review round for ${OPUS}.`;
 function decision(w: World, id: string, o: { by?: string; at?: string; body?: string } = {}): void {
   put(w.wt, `studio/decisions/${id}.md`, `---\nid: "${id}"\ntitle: "Patron ruling for ${OPUS}"\nat: ${o.at ?? rt(3).replace(/(\d\d):00/, "$1:10")}\nprovenance: stated\nby: ${o.by ?? "patron"}\n---\n\n${o.body ?? RULING_LINE}\n`);
@@ -3766,23 +3709,19 @@ function refusedRuling(w: World, id: string, row: string): void {
   assert.deepEqual([readFileSync(recordPath(w), "utf8"), eventsOf(w.wtStudio)], before, `${row}: the record and the event log are byte-identical`);
 }
 
-test("W-167-b4 behaviour 4: a Patron ruling attached by amend --round-ruling permits exactly one more round", { timeout: 1_800_000 }, () => {
+test("W-167-b4 behaviour 4: amend --round-ruling attaches a Patron ruling or refuses, writing nothing", { timeout: 1_800_000 }, () => {
   const w = w167("w167-b4", [F, F, F]);
   decision(w, "D-901");
   const attached = amendRuling(w, "D-901");
   assert.equal(attached.status, 0, ran("a valid ruling attaches", attached));
   commit(w.wt, `studio(${OPUS}): ruling attached`);
-  buildFix(n167(w), "one ruling lets the fix run");
   refusedRuling(w, "D-901", "a duplicate id");
   advanceSource(w);
-  reviewNamed(n167(w), 4, "one ruling lets round 4 run");
   addReview(w, "failed", 4, rt(4), F);
-  patronHeld(n167(w), "a fourth counted failure holds again");
   decision(w, "D-902", { at: rt(3).replace(/(\d\d):00/, "$1:20") });
   const second = amendRuling(w, "D-902");
   assert.equal(second.status, 0, ran("a second valid ruling attaches", second));
   commit(w.wt, `studio(${OPUS}): second ruling attached`);
-  buildFix(n167(w), "a second ruling permits one more");
 
   const r = w167("w167-b4-refused", [F, F, F]);
   refusedRuling(r, "D-999", "a missing decision");
@@ -3810,19 +3749,6 @@ test("W-167-b4 behaviour 4: a Patron ruling attached by amend --round-ruling per
   const fewer = w167("w167-b4-fewer", [F, F]);
   decision(fewer, "D-919", { at: rt(2).replace(/(\d\d):00/, "$1:10") });
   refusedRuling(fewer, "D-919", "fewer than three counted failures");
-
-  // next reads the same lists, written by hand
-  const h = w167("w167-b4-hand", [F, F, F]);
-  decision(h, "D-930");
-  const lists: [string, string][] = [
-    ["a scalar", "round_rulings: D-930"],
-    ["an empty list", "round_rulings: []"],
-    ["a duplicated id", "round_rulings: [D-930, D-930]"],
-    ["a missing decision", "round_rulings: [D-940]"],
-  ];
-  for (const [name, line] of lists)
-    trial(h, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", `\n${line}\n---\n`) }], () => reviewHeld(n167(h), `${name} holds`, /round_rulings|D-9/));
-  trial(h, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", "\nround_rulings: [D-930]\n---\n") }], () => buildFix(n167(h), "a valid hand-written list permits one round"));
 });
 
 test("W-167-b5 behaviour 5: a class blocker's fix order prescribes one check at the input boundary", { timeout: 1_800_000 }, () => {
@@ -5144,4 +5070,111 @@ test("W-233-b5 behaviour 5: next --perform goes through the same tickets", { tim
   expectStep(ob, "branch", "performed", "branch is performed");
   assert.equal(ticketOf(b)["action"], "ready", ran("the ready ticket is left", ob));
   assert.equal(existsSync(claimedPath(b)), false, "nothing was claimed");
+});
+
+// ---------------------------------------------------------------------------
+// W-246: spec review passes on advice, stops at two failed rounds (a third is a split),
+// and build review has no cap. Rows are selectable with --test-name-pattern=W-246-b<n>.
+// ---------------------------------------------------------------------------
+test("W-246-b1 behaviour 1: an advisory-only spec review passes", { timeout: 1_800_000 }, () => {
+  const rows: [string, string][] = [
+    ["advisory", "## Findings\n1. advisory brief:7 a wording note. check: none: x\n"],
+    ["none", NO_FINDINGS],
+    ["uncited", "## Findings\n1. blocking the Input domain omits a record. check: none: x\n"],
+  ];
+  for (const [name, body] of rows) {
+    const w = srWorld(`w246-b1-${name}`);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed", { body });
+    assert.match(readLog(w, 2), /^# outcome: passed$/m, `${name}: a failed submission with no standing blocker is recorded passed`);
+    assert.match(readLog(w, 2), /^# submitted_outcome: failed$/m, `${name}: the submitted outcome is kept`);
+    const o = specNext(w);
+    expectStep(o, "spec", "named", `${name}: the passed review names the commit`);
+    assert.match(o.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran(`${name}: commit`, o));
+  }
+  const cited = srWorld("w246-b1-cited");
+  putBrief(cited);
+  sign(cited, 1);
+  review(cited, 2, "failed", { body: BLOCKER });
+  assert.match(readLog(cited, 2), /^# outcome: failed$/m, "a blocker citing brief:7 still fails");
+  architectOrder(specNext(cited), 3, "a standing blocker orders the architect");
+});
+
+test("W-246-b2 behaviour 2: two failed spec reviews since the newest re-spec end review; the next signature stands", { timeout: 1_800_000 }, () => {
+  const why = `ci/${OPUS}-spec-2.log and ci/${OPUS}-spec-4.log failed; D-061 §4: no third review: the producer files the remainder as a new opus, then the architect cuts the brief to what passed and signs`;
+  const split = `bisellium new --kind <kind> --collegium <collegium> --title <the remainder> --parent ${OPUS} studio`;
+  const edit = (w: World, n: number): void => appendFileSync(briefPath(w), `\nChanged before signature ${n}.\n`);
+  /** Signatures 1 and 3, failed reviews 2 and 4. */
+  const twice = (tag: string): World => {
+    const w = srWorld(tag);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed");
+    sign(w, 3);
+    review(w, 4, "failed");
+    return w;
+  };
+
+  const w = twice("w246-b2");
+  const order = specNext(w);
+  architectOrder(order, 5, "two failed reviews end review");
+  assert.equal(order.kv.get("why"), why, ran("why names both failed logs", order));
+  assert.equal(order.kv.get("split"), split, ran("the split line", order));
+  sign(w, 5);
+  const named = specNext(w);
+  expectStep(named, "spec", "named", "signature 5 stands without a third review");
+  assert.equal(named.kv.has("role"), false, ran("no reviewer is ordered", named));
+  assert.match(named.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("the commit is named", named));
+  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(done, "spec", "performed", "the split spec is committed");
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `spec/${OPUS}`]).split("\n").sort(), [BRIEF_REL, specLog(2), specLog(4), specLog(5)], "exactly the brief, the signature and the failed logs");
+  git(w.repo, ["merge", "-q", "--ff-only", `spec/${OPUS}`]);
+  expectStep(next(w, [OPUS]), "branch", "named", "the trunk counts the same and names branch");
+
+  const once = srWorld("w246-b2-once");
+  putBrief(once);
+  sign(once, 1);
+  review(once, 2, "failed");
+  sign(once, 3);
+  reviewerOrder(specNext(once), 4, "one failed review, then a signature, orders the reviewer");
+
+  // since the newest re-spec (D-063 §7): a passed review starts the count again
+  const passed = twice("w246-b2-passed");
+  sign(passed, 5);
+  review(passed, 6, "passed");
+  edit(passed, 7);
+  sign(passed, 7);
+  reviewerOrder(specNext(passed), 8, "a passed review ends the count");
+  review(passed, 8, "failed");
+  const again = specNext(passed);
+  architectOrder(again, 9, "one failed review since the passed one");
+  assert.equal(again.kv.has("split"), false, ran("no split line", again));
+  sign(passed, 9);
+  reviewerOrder(specNext(passed), 10, "so the signature orders the reviewer");
+
+  // after a split: the signature that stood ends the count
+  const stood = twice("w246-b2-stood");
+  sign(stood, 5);
+  assert.equal(specNext(stood).kv.has("role"), false, "signature 5 stands");
+  edit(stood, 6);
+  sign(stood, 6);
+  const after = specNext(stood);
+  reviewerOrder(after, 7, "a signature after the standing one orders the reviewer");
+  assert.equal(after.kv.has("split"), false, ran("no split line", after));
+});
+
+test("W-246-b3 behaviour 3: build review has no cap", { timeout: 1_800_000 }, () => {
+  const w = w167("w246-b3", [F, F, F]);
+  buildFix(n167(w), "three failures name build, phase fix");
+  advanceSource(w);
+  reviewNamed(n167(w), 4, "a fix names round 4");
+  addReview(w, "failed", 4, rt(4), F);
+  buildFix(n167(w), "a fourth failure names build, phase fix again");
+  trial(w, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", "\nround_rulings: nonsense\n---\n") }], () => buildFix(n167(w), "round_rulings is no longer read"));
+  const order = w167("w246-b3-order", [F]);
+  advanceSource(order);
+  const command = n167(order).kv.get("command") ?? "";
+  assert.doesNotMatch(command, /three-round cap/, "the censor's order names no cap");
+  assert.doesNotMatch(command, /D-044/, "the censor's order cites no D-044");
 });

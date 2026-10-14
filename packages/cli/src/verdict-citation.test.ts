@@ -151,12 +151,12 @@ describe("behaviour 1", () => {
     assert.equal(r.header.has("converted"), false);
   });
 
-  test("the same four-finding body in the spec phase gets # brief: but no # converted:", () => {
+  test("the same four-finding body in the spec phase gets # brief: and the same # converted:", () => {
     const body = findings("blocking — packages/x.ts:3 a", "advisory — b", "BLOCKING — brief:2 c", "**Blocking** — briefs/W-300.md:5 d");
     const r = verdict(studio(), body, "passed", ["--phase", "spec"]);
     assert.equal(r.exitCode, 0, r.stderr);
     assert.equal(r.header.get("brief"), `briefs/W-300.md ${BLOB}`);
-    assert.equal(r.header.has("converted"), false);
+    assert.equal(r.header.get("converted"), "1 (cites no line of briefs/W-300.md)");
   });
 });
 
@@ -245,11 +245,11 @@ describe("behaviour 3", () => {
     assert.equal(r.header.has("submitted_outcome"), false);
   });
 
-  test("a spec-phase failed outcome with an uncited blocker is untouched", () => {
+  test("a spec-phase failed outcome with an uncited blocker is recorded passed", () => {
     const r = verdict(studio(), findings(UNCITED), "failed", ["--phase", "spec"]);
     assert.equal(r.exitCode, 0, r.stderr);
-    assert.equal(r.header.get("outcome"), "failed");
-    assert.equal(r.header.has("submitted_outcome"), false);
+    assert.equal(r.header.get("outcome"), "passed");
+    assert.equal(r.header.get("submitted_outcome"), "failed");
   });
 });
 
