@@ -3328,7 +3328,7 @@ test("W-162-b2 behaviour 2: architect signatures and review verdicts are strict,
   putBrief(empty);
   sign(empty, 1);
   review(empty, 2, "failed", { body: NO_FINDINGS });
-  specHeld(specNext(empty), "failed beside No findings holds", /spec-2\.log/);
+  assert.match(specNext(empty).kv.get("why") ?? "", /spec signed in the working tree, not committed/, "W-246: failed beside No findings passes to the commit");
   const unchecked = srWorld("w162-b2-no-check");
   putBrief(unchecked);
   sign(unchecked, 1);
@@ -5144,4 +5144,33 @@ test("W-233-b5 behaviour 5: next --perform goes through the same tickets", { tim
   expectStep(ob, "branch", "performed", "branch is performed");
   assert.equal(ticketOf(b)["action"], "ready", ran("the ready ticket is left", ob));
   assert.equal(existsSync(claimedPath(b)), false, "nothing was claimed");
+});
+
+// ---------------------------------------------------------------------------
+// W-246: spec review passes on advice, stops at two failed rounds (a third is a split),
+// and build review has no cap. Rows are selectable with --test-name-pattern=W-246-b<n>.
+// ---------------------------------------------------------------------------
+test("W-246-b1 behaviour 1: an advisory-only spec review passes", { timeout: 1_800_000 }, () => {
+  const rows: [string, string][] = [
+    ["advisory", "## Findings\n1. advisory brief:7 a wording note. check: none: x\n"],
+    ["none", NO_FINDINGS],
+    ["uncited", "## Findings\n1. blocking the Input domain omits a record. check: none: x\n"],
+  ];
+  for (const [name, body] of rows) {
+    const w = srWorld(`w246-b1-${name}`);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed", { body });
+    assert.match(readLog(w, 2), /^# outcome: passed$/m, `${name}: a failed submission with no standing blocker is recorded passed`);
+    assert.match(readLog(w, 2), /^# submitted_outcome: failed$/m, `${name}: the submitted outcome is kept`);
+    const o = specNext(w);
+    expectStep(o, "spec", "named", `${name}: the passed review names the commit`);
+    assert.match(o.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran(`${name}: commit`, o));
+  }
+  const cited = srWorld("w246-b1-cited");
+  putBrief(cited);
+  sign(cited, 1);
+  review(cited, 2, "failed", { body: BLOCKER });
+  assert.match(readLog(cited, 2), /^# outcome: failed$/m, "a blocker citing brief:7 still fails");
+  architectOrder(specNext(cited), 3, "a standing blocker orders the architect");
 });
