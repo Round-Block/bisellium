@@ -25,8 +25,11 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
    W-246 done (#462); W-266 filed (backlog).
    Use `npm run -s bisellium --`: the `bisellium` on PATH runs `~/projects/bisellium-guard` (stale).
    Kept scripts: `~/.bisellium-evidence/{spec-review-first,spec-review-later,retro-triage}.sh`,
-   `retro-adjust.py`, `record-review.sh <id> <n> <out> <session>`, `chore-pr.sh` (stops on a
-   failed merge group). A worktree needs a real `node_modules` copy (`cp -a ../../node_modules`).
+   `retro-adjust.py`, `record-review.sh`, `chore-pr.sh`; a worktree needs `cp -a ../../node_modules`.
+   Running at refresh (Patron 2026-10-14): Fable lessons→checks pass
+   (`~/.bisellium-evidence/lessons-to-checks/report.md`) and Astra's W-223 draft
+   (`~/.bisellium-evidence/W-223-draft/W-223-draft.md`); bring both to the Patron.
+   W-265 spec logs 1–4 sit untracked: commit them with its done record.
 3. **W-233** is done; its part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) is not
    yet an opus: file it after W-245's census (Queue item 2).
 4. **W-241** part 1 spec passed (untracked), Patron-approved.
