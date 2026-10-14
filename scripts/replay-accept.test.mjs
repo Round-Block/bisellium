@@ -308,4 +308,77 @@ if (only === undefined) {
       );
     }
   });
+
+  test("W-265-b2 behaviour 2: only an assertion failure gets the exception", async () => {
+    const { classifyReplay } = await import("./replay-accept.mjs");
+    // CONTROL("x") with the error..name lines replaced by `middle`.
+    const withError = (middle) => {
+      const base = controlLines("x");
+      const from = base.indexOf("  error: |-");
+      return render([...base.slice(0, from), ...middle, ...base.slice(base.indexOf("  name: 'AssertionError'") + 1)]);
+    };
+    const thrownEnoent = withError([`  error: "ENOENT: no such file or directory, open '/x'"`, "  code: 'ENOENT'"]);
+    const first = classifyReplay({ status: 1, output: thrownEnoent });
+    assert.equal(first.accepted, false, "expected refused replay");
+    assert.match(first.reason, /ENOENT/, "thrown ENOENT: reason");
+    const wrapped = (inner, code) => [
+      "  error: |-",
+      "    Got unwanted exception.",
+      "  code: 'ERR_ASSERTION'",
+      "  name: 'AssertionError'",
+      "  actual:",
+      `  error: ${inner}`,
+      ...(code === undefined ? [] : [`  code: '${code}'`]),
+      "  operator: 'doesNotThrow'",
+    ];
+    const refusedRows = [
+      [
+        "thrown module error",
+        withError([`  error: "Cannot find module '/x'"`, "  code: 'ERR_MODULE_NOT_FOUND'"]),
+        /Cannot find module/,
+      ],
+      ["no code line", withError(["  error: 'sandbox denied'", "  name: 'Error'"]), /sandbox/],
+      [
+        "code only inside the error text",
+        withError(["  error: |-", "    sandbox denied", "    code: 'ERR_ASSERTION'", "  name: 'Error'"]),
+        /sandbox/,
+      ],
+      [
+        "doesNotReject around a missing module",
+        withError(wrapped(`"Cannot find module '/x.mjs' imported from /t.mjs"`, "ERR_MODULE_NOT_FOUND")),
+        /Cannot find module/,
+      ],
+      ["doesNotThrow around ENOENT", withError(wrapped("'ENOENT: no such file'", "ENOENT")), /ENOENT/],
+      ["doesNotThrow around a code-less Error", withError(wrapped("'sandbox denied'")), /sandbox/],
+    ];
+    for (const [why, output, pattern] of refusedRows) {
+      const bad = classifyReplay({ status: 1, output });
+      assert.equal(bad.accepted, false, `${why}: must be refused`);
+      assert.match(bad.reason, pattern, `${why}: reason`);
+    }
+    const acceptedRows = [
+      ["W-255 red 2", render(W255_RED_2)],
+      ...WORDS.map((word) => [`CONTROL(${word})`, CONTROL(word)]),
+      [
+        "object values and a multi-line message",
+        withError([
+          "  error: |-",
+          "    line one",
+          "    ",
+          "    line three",
+          "  code: 'ERR_ASSERTION'",
+          "  name: 'AssertionError'",
+          "  expected:",
+          "    a: 1",
+          "  actual:",
+          "    a: 2",
+          "  operator: 'deepStrictEqual'",
+        ]),
+      ],
+    ];
+    for (const [why, output] of acceptedRows) {
+      const ok = classifyReplay({ status: 1, output });
+      assert.equal(ok.accepted, true, `${why}: ${ok.reason}`);
+    }
+  });
 }
