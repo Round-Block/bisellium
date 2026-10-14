@@ -1,0 +1,21 @@
+# opus: W-241
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a133e0-326c-7a63-8f05-3d42de05f7e5
+# outcome: passed
+# at: 2026-10-13T06:46:47.510Z
+# tree: dirty:de5913c54fd2df971390d672764108a6ba71ba53
+# brief: briefs/W-241.md blob:2b1ee1baf5660d9c78129ca2ee02a2a670f48dc4
+
+## Findings
+1. advisory — brief:35 The new reader also consumes `opts.manifest`, but the Input domain omits that input’s valid shape and rejector. Malformed manifest shapes already fail closed through `checkStudio`, so this is non-blocking. — check: manifest.shape
+
+## Earlier findings
+- ci/W-241-spec-2.log #1: closed — brief:35, brief:46, and behaviour 2 now make an absent or unreadable `leges/ops.md` block whenever the manifest declares `ops`.
+- ci/W-241-spec-2.log #2: closed — brief:18, brief:35, and brief:37 explicitly narrow the checked clause to its paths and marker; role wording and §2 placement are no longer enforcement promises.
+
+## Verdict
+The earlier blockers are closed; the remaining input-table omission already fails closed and is advisory.
+VERDICT: PASS
