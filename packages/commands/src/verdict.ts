@@ -686,29 +686,42 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     return { exitCode: 2 };
   }
 
-  let header = [
-    headerLine("opus", opusId),
-    headerLine("phase", phase),
-    headerLine("round", round),
-    headerLine("sella", sella),
-    ...(model === undefined ? [] : [headerLine("model", model)]),
-    ...(session === undefined ? [] : [headerLine("session", session)]),
-    ...(sessionReason === undefined ? [] : [headerLine("session_reason", sessionReason)]),
-    headerLine("outcome", recorded),
-    ...(submitted === undefined ? [] : [headerLine("submitted_outcome", submitted)]),
-    headerLine("at", now.toISOString()),
-    headerLine("tree", treeAtCapture(root, manifest.source_excludes ?? [])),
-    ...(briefHeader === undefined ? [] : [headerLine("brief", briefHeader)]),
-    ...(convertedHeader === undefined ? [] : [headerLine("converted", convertedHeader)]),
-    ...(promptHeader === undefined ? [] : [headerLine("dispatch_prompt", promptHeader)]),
-    ...(inputHeader === undefined ? [] : [headerLine("ui_input", inputHeader)]),
-    ...(uiDigest === undefined ? [] : [headerLine("design_digest", uiDigest)]),
-  ].join("\n");
+  const headerText = (): string =>
+    [
+      headerLine("opus", opusId),
+      headerLine("phase", phase),
+      headerLine("round", round),
+      headerLine("sella", sella),
+      ...(model === undefined ? [] : [headerLine("model", model)]),
+      ...(session === undefined ? [] : [headerLine("session", session)]),
+      ...(sessionReason === undefined ? [] : [headerLine("session_reason", sessionReason)]),
+      headerLine("outcome", recorded),
+      ...(submitted === undefined ? [] : [headerLine("submitted_outcome", submitted)]),
+      headerLine("at", now.toISOString()),
+      headerLine("tree", treeAtCapture(root, manifest.source_excludes ?? [])),
+      ...(briefHeader === undefined ? [] : [headerLine("brief", briefHeader)]),
+      ...(convertedHeader === undefined ? [] : [headerLine("converted", convertedHeader)]),
+      ...(promptHeader === undefined ? [] : [headerLine("dispatch_prompt", promptHeader)]),
+      ...(inputHeader === undefined ? [] : [headerLine("ui_input", inputHeader)]),
+      ...(uiDigest === undefined ? [] : [headerLine("design_digest", uiDigest)]),
+    ].join("\n");
+  let header = headerText();
 
   // W-215: a sessioned verdict is judged whole, before it is written: it parses, its outcome agrees with what stands, and it
   // accounts for every standing blocker of the sequence's previous round
   if (session !== undefined) {
-    const problem = sessionedProblem(`${header}\n\n${transcript.toString("utf8")}`, opusId, relative(root, target).split(sep).join("/"), outcome, recorded, last?.parsed, last?.log);
+    const rel = relative(root, target).split(sep).join("/");
+    // W-246: a spec review is reconciled on its raw lines above, before the session's rulings apply; one submitted `failed`
+    // whose every cited blocker a ruling withdrew has nothing standing, so it passes as it does without a session
+    if (!isUi && phase === "spec" && recorded === "failed") {
+      const read = parseVerdictLog(`${header}\n\n${transcript.toString("utf8")}`, opusId, rel);
+      if (!("error" in read) && !read.findings.some((f) => f.blocking) && !read.earlier.some((e) => e.status === "open")) {
+        recorded = "passed";
+        submitted = outcome;
+        header = headerText();
+      }
+    }
+    const problem = sessionedProblem(`${header}\n\n${transcript.toString("utf8")}`, opusId, rel, outcome, recorded, last?.parsed, last?.log);
     if (problem !== undefined) {
       console.error(problem);
       return { exitCode: 2 };
