@@ -529,17 +529,21 @@ interface Verdicts {
   findings: RecordedFinding[];
 }
 
-/** One recorded log, read through the contained reader and judged by `parseVerdictLog`. */
-function readVerdictLog(root: string, id: string, rel: string): { findings: RecordedFinding[] } | Refusal {
+/** One recorded log, read through the contained reader and judged by `parseVerdictLog`, unless `signedBy` signed it (W-253: a signature is read, not judged). */
+function readVerdictLog(root: string, id: string, rel: string, signedBy?: string): { findings: RecordedFinding[] } | Refusal {
   const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
   if ("error" in file) return { error: `${rel}: ${file.error}` };
-  const parsed = parseVerdictLog(file.bytes.toString("utf8"), id, rel);
+  const text = file.bytes.toString("utf8");
+  if (signedBy !== undefined && headerBlock(text).get("sella") === signedBy) return { findings: [] };
+  const parsed = parseVerdictLog(text, id, rel);
   return "error" in parsed ? parsed : { findings: parsed.findings };
 }
 
 /** The verdict logs and reds of one opus (D-039 §2), or the first record outside the domain. */
 export function readOpusVerdicts(root: string, id: string): Verdicts | Refusal {
   if (!OPUS_ID.test(id)) return { error: `${id}: not an opus id` };
+  const magister = designMagister(root);
+  if (isRefusal(magister)) return magister;
   const sources: string[] = [];
   const findings: RecordedFinding[] = [];
   const ci = join(root, "ci");
@@ -548,7 +552,7 @@ export function readOpusVerdicts(root: string, id: string): Verdicts | Refusal {
     const prefix = [`${id}-review-`, `${id}-spec-`].find((p) => name.startsWith(p));
     if (prefix === undefined) continue;
     if (!/^[1-9]\d*\.log$/.test(name.slice(prefix.length))) return { error: `ci/${name}: a verdict log is named ${prefix}<n>.log, n a positive integer with no leading zero` };
-    const read = readVerdictLog(root, id, `ci/${name}`);
+    const read = readVerdictLog(root, id, `ci/${name}`, prefix.endsWith("-spec-") ? magister.design : undefined);
     if (isRefusal(read)) return read;
     sources.push(`ci/${name}`);
     findings.push(...read.findings);
