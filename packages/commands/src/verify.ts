@@ -48,10 +48,15 @@ export interface RunVerifyOptions {
    *  record and the start state write, so a test can change the state in that
    *  window. Not a flag: it appears in no argv and `main.ts`/`ci.ts` never set it. */
   afterRead?: () => void;
+  /** W-279: `ci --opus` asks which commands this run would execute. Does every read and refusal, then returns
+   *  `commands` and runs, writes and prints nothing. Not a flag: only `ci.ts` sets it. */
+  plan?: boolean;
 }
 
 export interface RunVerifyResult {
   exitCode: number;
+  /** Set only on a `plan` return: gate id to the command this run would execute (waived gates are left out). */
+  commands?: Readonly<Record<string, string>>;
 }
 
 const USAGE =
@@ -281,6 +286,8 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     if (currentStatus === "waived") waivedIds.push(gateId);
     else runCommands[gateId] = command;
   }
+
+  if (opts.plan) return { exitCode: 0, commands: runCommands };
 
   // The own-tree rule: only a run that certifies THIS checkout's HEAD, not a `ci --ref` scratch tree, and aimed at
   // this checkout's top level writes state. Anything else writes gates as it always did.

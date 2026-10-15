@@ -11,6 +11,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
+import { parse } from "yaml";
 import { initStudio } from "./init.js";
 import { newItem } from "./new.js";
 import { runCi } from "./ci.js";
@@ -83,10 +84,10 @@ function orderLog(repo: string): string[] {
   return readFileSync(join(repo, "order.log"), "utf8").trim().split("\n").filter(Boolean);
 }
 
-function gateRecord(studio: string, id: string, gate: string): string {
-  const text = readFileSync(join(studio, "opera", `${id}.md`), "utf8");
-  const at = text.indexOf(`  ${gate}:`);
-  return at === -1 ? "" : text.slice(at, text.indexOf("\n  ", at + 3) === -1 ? undefined : text.indexOf("\n  ", at + 3) + 1);
+function gateRecord(studio: string, id: string, gate: string): Record<string, unknown> {
+  const front = /^---\n([\s\S]*?)\n---/.exec(readFileSync(join(studio, "opera", `${id}.md`), "utf8"));
+  const record = parse(front?.[1] ?? "") as { probationes?: Record<string, Record<string, unknown>> };
+  return record.probationes?.[gate] ?? {};
 }
 
 const LOOP_ONLY = ["audit", "format:check", "check:studio", "check:examples/sample-studio"];
@@ -99,11 +100,10 @@ test("W-279-b1 behaviour 1: ci --opus drops no applicable CI_STEPS command and r
     const result = await runCi(["--repo", repo, "--studio", studio, "--opus", id]);
     assert.equal(result.exitCode, 0);
     assert.deepEqual(orderLog(repo), [...LOOP_ONLY, "test", "lint", "typecheck"]);
-    const opus = readFileSync(join(studio, "opera", `${id}.md`), "utf8");
     for (const gate of ["tests", "lint", "types"]) {
       const record = gateRecord(studio, id, gate);
-      assert.match(record, /status: passed/, `${gate}: ${opus}`);
-      assert.match(record, /certifies: "?tree:/, `${gate}: ${opus}`);
+      assert.equal(record["status"], "passed", gate);
+      assert.match(String(record["certifies"]), /^tree:/, gate);
     }
   }
   // (b) a waived tests gate keeps its step in the loop
@@ -117,7 +117,7 @@ test("W-279-b1 behaviour 1: ci --opus drops no applicable CI_STEPS command and r
     const result = await runCi(["--repo", repo, "--studio", studio, "--opus", id]);
     assert.equal(result.exitCode, 0);
     assert.deepEqual(orderLog(repo), ["audit", "format:check", "test", "check:studio", "check:examples/sample-studio", "lint", "typecheck"]);
-    assert.match(gateRecord(studio, id, "tests"), /status: waived/);
+    assert.equal(gateRecord(studio, id, "tests")["status"], "waived");
   }
   // (c) a second gate with the same normalised command runs on its own; the loop adds no third
   {
