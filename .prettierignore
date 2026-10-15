@@ -34,3 +34,5 @@ scripts/usage-from-workflow.mjs
 .mcp.json
 .idea
 .vscode
+.worktrees/
+.kilo/

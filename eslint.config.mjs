@@ -24,7 +24,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["node_modules", "dist", "studio/", "examples/", "docs/", ".bisellium/", "cascades/", ".claude/"],
+    ignores: ["node_modules", "dist", "studio/", "examples/", "docs/", ".bisellium/", "cascades/", ".claude/", ".worktrees/", ".kilo/"],
   },
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.mjs", "**/*.cjs"],
