@@ -1,0 +1,20 @@
+# opus: W-276
+# phase: spec
+# round: 3
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13db3-c5d0-7760-ad01-ac5d13ac37a4
+# outcome: failed
+# at: 2026-10-15T04:01:49.686Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-276.md blob:6be5137a515e384ba213a580ecb80c8bd2b1d967
+# ticket: {"opus":"W-276","step":"spec","action":"verdict-spec","round":3,"actor":"spec-reviewer","studio":"studio","head":"60f6bd5a1ea67fb102160ac20b7973811c936dd4","brief":"6be5137a515e384ba213a580ecb80c8bd2b1d967","at":"2026-10-15T04:01:49.009Z"}
+
+## Findings
+1. blocking — brief:53 The forbidden literal ends with a space, so it does not match W-236’s actual fragment, `run \`bisellium next\`;`; the specified rule therefore accepts the legacy prohibition. Replace brief:53 with `- it does not contain the exact legacy fragment “run \`bisellium next\`;”.` — check: packages/cli/src/rules/prompts.test.ts
+2. blocking — brief:63 The valid domain repeats the mismatched trailing-space literal and thus classifies a template retaining the actual legacy prohibition as valid. Replace brief:63 with `| \`prompts/builder-brief.md\`, when the manifest lists the \`ops\` collegium | W-241's contained regular file with its required texts, plus NEXT, TICKET and RED, NEXT before RED, and without the exact legacy fragment “run \`bisellium next\`;” | \`checkPromptTemplates\` (W-241 part 1, extended) |` — check: process.prompt_templates
+3. blocking — brief:67 The test uses the same synthetic trailing-space variant, so it would not prove rejection of the prohibition actually inherited from W-236. Replace its final variant with `the compliant template plus the actual W-236 fragment “run \`bisellium next\`;”`. — check: packages/cli/src/rules/prompts.test.ts
+
+## Verdict
+The specified validator and test miss the exact legacy prohibition W-276 exists to remove.
+VERDICT: FAIL

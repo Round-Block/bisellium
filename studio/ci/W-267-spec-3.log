@@ -1,0 +1,24 @@
+# opus: W-267
+# phase: spec
+# round: 3
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13db5-82f9-73a1-a824-b7d2b431d4a6
+# outcome: failed
+# at: 2026-10-15T04:07:35.186Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-267.md blob:e07c4e9a73d302bd4964e45b2d79bdfc5137c1ac
+# ticket: {"opus":"W-267","step":"spec","action":"verdict-spec","round":3,"actor":"spec-reviewer","studio":"studio","head":"60f6bd5a1ea67fb102160ac20b7973811c936dd4","brief":"e07c4e9a73d302bd4964e45b2d79bdfc5137c1ac","at":"2026-10-15T04:07:34.496Z"}
+
+## Findings
+1. blocking — brief:48 This requires exactly one heading, while brief:56 and brief:64 accept zero; the literal stricter reading would refuse every no-heading sella instead of preserving its bundle. Replace brief:48 with: `- **Source.** Zero matching lines add no runbook; exactly one line matching \`^## \d+\. Opus ladder$\` supplies the bytes from that line up to the next \`^## \` line (or EOF), without the newline before that next line; two or more are ambiguous as below.` — check: packages/cli/src/w267.test.ts
+2. blocking — brief:54 The installed SessionStart command is direct `bisellium context --studio studio`, not `hook-event context`, and brief:28 says that bare installation is stale; unchanged settings therefore cannot guarantee that a producer session boots with the new runbook. Replace brief:54 with: `The unchanged SessionStart command is the bare installed \`bisellium context --studio studio\`. Limit: a producer session boots with this runbook only after the Patron updates that installation to merged master; then \`runbook ambiguous\` exits 1. The separately generated \`hook-event context\` surface prints an empty bundle and exits 0 on ambiguity.` — check: .claude/settings.json
+3. blocking — brief:73 `checkStudio` takes `(root, now, opts)`, so the specified two-argument call passes `{repo:"."}` where a `Date` is required and cannot typecheck. Replace brief:73 with: `It also checks that \`.claude/agents/censor.md\` is absent, that \`renderInstructions\` names \`{builder,architect,clerk,ladder-runner}\` and no \`censor\`, and that \`checkStudio("studio", now, { repo: "." })\` has no \`instructions.stale\` finding.` — check: packages/cli/src/check.ts
+4. advisory — brief:5 The new test directly reads the ladder-runner definition and tests censor-file absence, but neither agent-file input appears in the Input domain; the assertions fail closed. — check: packages/cli/src/w267.test.ts
+5. advisory — brief:5 Behaviour 2 newly copies and reads `examples/sample-studio`, but that fixture input and its throwing copy/read boundary are omitted. — check: packages/cli/src/w267.test.ts
+6. advisory — brief:5 Behaviour 2 newly reads the pre-change `context.ts` through `git show master:…`, but the reused Git call and the function converting its non-zero exit into test refusal are omitted. — check: packages/cli/src/w267.test.ts
+
+## Verdict
+The brief has three substantive contradictions or infeasible promises that must be corrected before build.
+
+VERDICT: FAIL
