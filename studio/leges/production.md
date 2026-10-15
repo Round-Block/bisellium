@@ -113,8 +113,26 @@ detection. The Aedile owns the road, not the work travelling on it.
 ## 9. Opus ladder
 
 `npm run -s bisellium -- next <id> --budget 400000 --studio studio --repo .`
-names each step; `--perform --expect <step>` does it. From a worktree, pass
-the main checkout's absolute `--studio`/`--repo`.
+names each step and writes the step ticket the next record write consumes
+(D-064 C): run it just before every `verdict`, `review`, `red`, `ready`,
+`done`, `branch` and `merge`, at the head that write touches. `--perform
+--expect <step>` does the step; the spec and done rungs take two performs
+(commit, then land). From a worktree, pass the main checkout's absolute
+`--studio`/`--repo`. This section is the orchestrator's runbook.
+
+0. **Who runs what (D-066 A).** The orchestrator session plans, dispatches,
+   reads, and runs every record write and perform itself through the
+   `npm run -s bisellium --` verbs and `scripts/*.sh`; a harness permission
+   refusal is reported as a workflow conflict, never answered with a settings
+   change or a retry through another agent. Builders (Sonnet, background)
+   write code, reds and their `handoff`, running `next` before each `red`.
+   The architect (Opus 5.5) signs specs. Codex `gpt-5.6-sol` is the single
+   review gate for specs and builds (D-066 C), `gpt-5.6-terra` triages retros;
+   the orchestrator records their verdicts. A clerk (no shell) edits handoff
+   and dossier text only; a Haiku general-purpose agent republishes. The
+   Patron greenlights, holds, and merges PRs touching `.claude/`,
+   `docs/ADOPTION.md`, `studio/leges/` or branch protection. W-267 moves the
+   record writes into a defined ladder-runner agent and enforces this step.
 
 1. **Spec:** written ahead of the build where Files owned overlap no opus in
    flight, in a scratch worktree; changed Files owned are re-reviewed before
@@ -144,18 +162,20 @@ the main checkout's absolute `--studio`/`--repo`.
    behaviour at a time on the commit of the previous behaviour, build, gates,
    one full `npm test`. Record `handoff` before the review packet. A fresh
    builder past ~250k; dispatch builders in the background so a Patron
-   message cannot cut one off. `next` now orders all reds before any
-   implementation (phase 1), which conflicts with one-at-a-time; W-166
-   settles it.
+   message cannot cut one off. `next` orders the reds one behaviour at a
+   time (W-166, D-036); each `red` needs its own `next` ticket first.
 4. **Review:** `next` orders review only with a current host-minted receipt,
    so mint first (the bare `run … -- true` below, ~15 min). Codex `gpt-5.6-sol`, prompt modelled on
    `~/.bisellium-evidence/W-162-review/r1/prompt.md`; packet
    `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
-   `censor.sh <id> <round>`; record `record-review.sh <id> <round> <passed|failed>`
-   (a failed round records only the verdict log; W-165). Before any re-review
+   `censor.sh <id> <round>`; the orchestrator records with
+   `scripts/record-review.sh <id> <round> <passed|failed> <session>` (`next`,
+   `verdict`, `next`, `review`, one commit on the opus branch; the evidence
+   copy carries the `next` calls until the D-066 D filing lands). Before any re-review
    the producer checks the fix's census: every path to the input the blocker
    named is closed (W-184 makes it a hold). No round cap (D-053).
-5. **Merge:** refresh `handoff`; the receipt minted before review
+5. **Merge:** refresh `handoff` (the `bisellium handoff` verb, the record's
+   traditio; `next` does not ask for it before `pr`, so do it); the receipt minted before review
    (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
    run from the opus worktree: the host reads the reds and brief from that studio);
    `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
@@ -164,12 +184,15 @@ the main checkout's absolute `--studio`/`--repo`.
    queue's `certify` job certifies the merge result: a moved master needs no
    rebase and no second mint. In `mode: direct`, rebase if master moved and
    mint after it, as before.
-6. **Done:** `verify <id>` on master (~11 min); checkpoint script;
-   `next --perform --expect done` twice (commit, then land).
+6. **Done:** `verify <id>` on master (~11 min, nothing heavy alongside); edit
+   `docs/SESSION-HANDOFF.md` (the done perform refuses without a tracked
+   handoff edit and runs W-186's rule on it); `next --perform --expect done`
+   (commits on `chore/done-<id>`); the retro (step 7) on that branch; `next
+   --perform --expect done` again (lands). Earlier untracked spec logs ride it.
 7. **Retro:** Codex `gpt-5.6-terra` triage (prompt
    `~/.bisellium-evidence/retro-triage-W-162/prompt.md`), adjust with a kept
    script if needed, `retro --opus <id> --from <file>`, map any new opus to a
-   milestone (`amend --milestone --value`), land in a records PR.
+   milestone (`amend --milestone --value`); it rides the done PR (D-064 B).
    Then `npm run -s bisellium -- tick --studio studio`.
 
 `.claude/` changes stop merge/branch/done for the Patron's command.
@@ -260,3 +283,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-13 | §7: one Patron gate at greenlight; pre-`branch` Ops approval only over 3 points or for security/sandbox/branch protection (D-061) | Patron |
 | 2026-10-13 | §7: process work capped at one per two product opera, weekly retro; status page frozen (D-061) | Patron |
 | 2026-10-13 | §7: the orchestrator session refreshes before 350k (was 500k); subagent dispatches stay at 500k | Patron |
+| 2026-10-15 | §9: step 0 names who runs each step (the orchestrator records until W-267); tickets, two-perform rungs, the handoff refresh and the done rung's handoff edit named; step 3's W-166 sentence fixed; Codex Sol the one review gate (D-066) | Patron |

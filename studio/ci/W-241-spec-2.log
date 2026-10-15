@@ -1,0 +1,18 @@
+# opus: W-241
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a133e0-326c-7a63-8f05-3d42de05f7e5
+# outcome: failed
+# at: 2026-10-13T06:12:10.770Z
+# tree: dirty:de5913c54fd2df971390d672764108a6ba71ba53
+# brief: briefs/W-241.md blob:e3b6935e80d0232132465ede4550ec0450bcbca6
+
+## Findings
+1. blocking — brief:46 The stated valid domain requires `leges/ops.md` to be a regular file containing the clause, but `checkPromptTemplates` returns `[]` when that file is absent; this accepts an out-of-domain input and contradicts the promise that a missing ownership clause blocks. — check: packages/cli/src/rules/prompts.test.ts
+2. blocking — brief:37 The promised §2 owner/filler/signer clause is not enforced: the specified checker accepts any bullet anywhere in the lex containing the three paths and marker, even if the `ops-lead`, `eng-lead`, or `architect` bindings are removed or the bullet is outside §2. — check: packages/cli/src/rules/prompts.test.ts
+
+## Verdict
+The brief has two substantive fail-open paths and is not ready for building.
+VERDICT: FAIL

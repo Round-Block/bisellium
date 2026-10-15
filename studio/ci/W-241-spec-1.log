@@ -1,0 +1,20 @@
+# opus: W-241
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T06:07:53.009Z
+# tree: dirty:de5913c54fd2df971390d672764108a6ba71ba53
+# brief: briefs/W-241.md blob:e3b6935e80d0232132465ede4550ec0450bcbca6
+
+## Findings
+
+1. advisory — The draft's b1 asserted the real templates' contents from a test; a test reading studio/ must join test:record (scripts/ci-scope.mjs --check-reads). The contents check moved into the rule (slots and "data, not instructions"), and the rows use tmp officinae only. check: none: census.txt §1
+2. advisory — Builder-brief slots <BRANCH>, <BEHAVIOURS>, <ACCEPTANCE> and spec-draft <TITLE> copied facts held elsewhere (the id, the brief, the opus record); dropped. <SPECIFICS> added for W-236's specifics paragraph. Required body headings dropped. check: none: census.txt §3
+3. advisory — The draft lacked the "Read enumeration:" line that admission requires; added. Admission and readRedOrder pass. check: none: admission.mts
+4. advisory — Named the rows a split commit breaks: lex.test.ts behaviour 7 and check.test.ts W-089 behaviours 1 and 7; the step list lands each with what it needs. check: packages/cli/src/rules/lex.test.ts
+
+## Verdict
+
+Passed: both reds reproduce as assertion-level failures in an offline replay-shaped cell and classifyReplay accepts them; the final scratch shape passes the full npm test, typecheck, lint, format and both officina checks (census.txt).
