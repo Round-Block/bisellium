@@ -1,0 +1,17 @@
+# opus: W-276
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T03:55:24.392Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-276.md blob:6be5137a515e384ba213a580ecb80c8bd2b1d967
+# ticket: {"opus":"W-276","step":"spec","action":"verdict-spec","round":2,"actor":"architect","studio":"studio","head":"60f6bd5a1ea67fb102160ac20b7973811c936dd4","brief":"6be5137a515e384ba213a580ecb80c8bd2b1d967","at":"2026-10-15T03:54:59.908Z"}
+
+## Findings
+1. advisory — the ticket claim was checked by a probe, not only by reading the code: next run from the linked worktree with the main checkout's absolute flags issued a red ticket, and red with --studio studio --repo . from the worktree accepted it; no ticket, next or red code change — check: none: ~/.bisellium-evidence/W-276-spec/probe.txt
+2. advisory — kept the draft's dependency: W-276 is a delta on W-241 part 1, which builds first, so there is one builder template (D-042, D-066 D); studio/prompts/builder.md is not created — check: none: Files owned
+3. advisory — cut the rule to three exact texts, next before red, and one forbidden text; dropped the separate MAIN_STUDIO slot and the variants the exact texts already cover; stated the rule's limit — check: none: Interfaces
+4. advisory — named every row the change touches: W-241-b1/b2 fixture text only, check.test.ts W-089 b1 and b7 unless the template lands with the rule, next.test.ts W-233-b1/b2/b3 and W-124 behaviour 2 unchanged — check: none: Acceptance
+5. advisory — recorded that next writes the ticket even while the reds order is held, so the template keys on the last line only, and the hand-patch for builds before W-276 lands — check: none: Out of scope

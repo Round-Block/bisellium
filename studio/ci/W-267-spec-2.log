@@ -1,0 +1,19 @@
+# opus: W-267
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T03:56:56.967Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-267.md blob:e07c4e9a73d302bd4964e45b2d79bdfc5137c1ac
+# ticket: {"opus":"W-267","step":"spec","action":"verdict-spec","round":2,"actor":"architect","studio":"studio","head":"60f6bd5a1ea67fb102160ac20b7973811c936dd4","brief":"e07c4e9a73d302bd4964e45b2d79bdfc5137c1ac","at":"2026-10-15T03:56:44.737Z"}
+
+## Findings
+
+1. advisory — Cut to part 1 per the Patron's 2026-10-15 ruling on Fable's advice: b1 (ladder-runner.md defined, censor.md deleted) and the producer runbook in context; the hook (revision 1's b2-b5) is part 2, gated on one dispatched runner recording a real next + verdict and an auto-mode allow test before its branch, deny-only and fail-open; process.roles.defined is part 3 after W-274 — check: packages/cli/src/w267.test.ts
+2. advisory — Read enumeration line rewritten to the admitted "none: <reason>" form; revision 1's prose line failed brief.admission — check: brief.admission
+3. advisory — Revision 1's absolute "exactly as today" (line 94) replaced by "Promise builder-bundle-unchanged: … — limit: …", backed by b2's byte comparison against master's context.ts — check: brief.admission
+4. advisory — Part 1 leaves .claude/settings.json, hooks.ts, the shim profile and studio/leges/production.md untouched (lex step 0 is on master under D-066), so every settings.* and hooks.test.ts row stays green unchanged — check: packages/cli/src/instructions.test.ts
+5. advisory — The runner boots with npm run -s bisellium -- context --sella producer studio, not the bare bisellium on PATH (the Patron's stale bisellium-guard install); the agent.ladder-runner.body row gets that regex for this agent only — check: packages/cli/src/instructions.test.ts
+6. advisory — Revision 1's round-1 signature log had prose lines under ## Findings that parseVerdictLog refuses; this round's findings use the finding grammar only — check: none: verdict --phase spec does not run parseVerdictLog on a passed body (W-275 per Fable)

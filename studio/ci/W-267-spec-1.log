@@ -1,0 +1,27 @@
+# opus: W-267
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T03:36:24.141Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-267.md blob:96e4d8d37975e3e69915e31bd5397cd56b430eac
+# ticket: {"opus":"W-267","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"60f6bd5a1ea67fb102160ac20b7973811c936dd4","brief":"96e4d8d37975e3e69915e31bd5397cd56b430eac","at":"2026-10-15T03:35:45.558Z"}
+
+## Findings
+
+Changes from the Codex draft (~/.bisellium-evidence/W-267-draft/W-267-draft.md), each checked against master 60f6bd5a.
+
+1. Split: process.roles.defined moves to W-267 part 2, after W-274. Today's lex and handoff name eleven ~/.bisellium-evidence scripts and repo scripts that do not exist (review-packet.sh, review-receipt.sh, multilane-spec/{review,resume}.sh, chore-pr.sh), so the rule would block master on day one; W-274 moves them. The draft's "<name> agent" heuristic would also flag "another agent", "Haiku agent" and "an agent" in the current lex. check: none: the rule ships in part 2
+2. The per-opus runner lease is cut. SubagentStart carries agent_id and agent_type but no prompt and no tool_use_id, so a pending lease cannot be bound to the right runner when two are dispatched. A missed SubagentStop would lock the opus for the session. One runner per opus becomes Default 4. With no SubagentStart wiring, "print: SubagentStart intentionally absent" stays green. check: packages/shim/test/hooks.test.ts
+3. The two settings allow rules are replaced by the hook's own PreToolUse permissionDecision "allow", given only to an authenticated ladder-runner. Claude Code 2.1.280 lists shell allow rules it suspends in auto mode, and a wildcard interpreter or package-manager run rule is the kind it drops. The settings rules would also pre-authorise the main thread. Whether auto mode honours a hook allow is unverified and left to the Patron's live check. check: none: live auto-mode session after merge
+4. The draft denied "a ladder command from another subagent", which would refuse the builder's red and the architect's spec verdict (lex §9 steps 1 and 3). There is now an explicit agent_type table. check: packages/cli/src/w267.test.ts
+5. Runtime fail-open stated. A hook that is not found, crashes or times out does not block in Claude Code. The command gains "|| exit 2", so not-found and crash block; a timeout still passes and is named as a limit. check: packages/cli/src/w267.test.ts
+6. Latency measured: the installed bisellium (tsx loader) takes 1.02-1.13 s per call against the 2 s timeout, on every Bash call by every agent. The bin fast-paths dispatch to a stdlib-only dispatch.ts that Node 25 loads natively (0.16 s measured). check: packages/cli/src/w267.test.ts
+7. process.dispatch_guard is static only: CI has no installed bisellium, so a check rule that runs the hook target would fail every CI run. The live probe moves to hooks check --repo. check: process.dispatch_guard
+8. The draft said readJsonFromStream is size-bounded and that runHookEvent rejects oversized input. It is time-bounded only (packages/shim/src/hooks/stdin.ts). dispatch.ts caps stdin at 1 MiB itself. check: packages/cli/src/w267.test.ts
+9. Every red prints "not ok 1": with --test-name-pattern, node 25.9 numbers only the selected test (verified locally; W-265 b2's red is the precedent). The draft had "not ok 2" to "not ok 6", which would never match. check: brief.admission
+10. Files owned corrected. Added: check.ts registration, the main.ts context exit, bin/bisellium.mjs, instructions.template.md (its "censor subagent is not it" clause), AGENTS.md, docs/INSTRUCTIONS.md. Removed: containment.test.ts (no lease, no new join), context.test.ts and rules/process.test.ts (no rows change). check: instructions.stale
+11. Existing rows re-checked. Flipped: settings.hook-keys, agent.censor.* to agent.ladder-runner.*, "print: hooks.<name> present", the two usage per-line rows. Unchanged: "scanned every known usage constant" stays 41 because the lines are edited in place; W-141's next.test rows and cascade-loop 24e build their own censor.md fixtures. check: packages/cli/src/instructions.test.ts
+12. The runbook is bounded by the heading "## <n>. Opus ladder" rather than a literal 9. A lex without it is unchanged, so the sample-studio fixture is untouched. Duplicate headings refuse. check: packages/cli/src/w267.test.ts

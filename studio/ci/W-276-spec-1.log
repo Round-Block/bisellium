@@ -1,0 +1,22 @@
+# opus: W-276
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T03:29:19.182Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-276.md blob:6be5137a515e384ba213a580ecb80c8bd2b1d967
+# ticket: {"opus":"W-276","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"60f6bd5a1ea67fb102160ac20b7973811c936dd4","brief":"6be5137a515e384ba213a580ecb80c8bd2b1d967","at":"2026-10-15T03:29:08.306Z"}
+
+# W-276 spec signature (architect, claude-opus-5-5, D-027)
+
+## Findings
+
+No blocking findings remain; the brief at studio/briefs/W-276.md is the draft cut and corrected:
+
+1. Code claim verified, not only read: a scratch-clone probe (W-233-b1's fixture, next spawned with cwd in the linked worktree, absolute main-checkout --studio/--repo) issued `ticket: red round 1`; `red --studio studio --repo .` from the worktree recorded; `red` with the main studio was refused (studio mismatch). Evidence: ~/.bisellium-evidence/W-276-spec/probe.txt. No ticket/next/red code change. check: none: probe recorded.
+2. Dependency kept: delta on W-241 part 1, which builds first; one builder template (D-042, D-066 D); the title's studio/prompts/builder.md is not created. check: none: Files owned.
+3. Cut the check to three exact texts (NEXT, TICKET, RED), NEXT-before-RED, and one forbidden text; dropped the separate <MAIN_STUDIO> slot (it is <MAIN_REPO>/studio) and the --perform / wrong-path variants, which the exact texts already cover; stated the rule's limit. check: none: Interfaces.
+4. Named every row the change touches: W-241-b1/b2 fixture text only (no expected value); check.test.ts W-089 b1 and b7 unless the template lands with the rule; next.test.ts W-233-b1/b2/b3 and W-124 behaviour 2 unchanged. check: none: Acceptance.
+5. Recorded that `next` writes the ticket even when the reds order is held (stale handover), so the template keys on the last line only; and the interim hand-patch for builds before W-276 (W-241 part 1's own). check: none: Intent, Out of scope.
