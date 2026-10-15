@@ -1,0 +1,24 @@
+# opus: W-206
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1406a-7874-7081-9d81-182135db4b6f
+# outcome: failed
+# at: 2026-10-15T16:41:42.712Z
+# tree: tree:abd96b3c55a73136123c7bd1e81b7959b73e1679
+# brief: briefs/W-206.md blob:7d64eb628d8d83ee4bf469c921a0b603ebd6afe6
+# ticket: {"opus":"W-206","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"56b3fec80d52a1c9917d7692b43007b4f0b7fe85","brief":"7d64eb628d8d83ee4bf469c921a0b603ebd6afe6","at":"2026-10-15T16:41:42.201Z"}
+
+## Findings
+1. blocking — brief:50 The promised strict rejection is absent on two paths: `signedSpec` accepts loosely parsed passing logs when no reviewer is configured, while `reviewedSpec` ignores malformed edits at or below the newest signature as history; either changed log can then be committed. Replace brief:50 with: `| The spec once opus/<id> exists | the current brief and branch spec-log names; the current sequence and every changed or new spec log must pass the strict signature/review readers | specEvidence (existing, extended): an edited or unsigned brief orders the architect, and any malformed changed or new log holds |` — check: packages/cli/src/next.test.ts
+2. blocking — brief:39 A standalone rename of a historical spec log can leave `wtChanges().spec` empty, allowing `next` to proceed toward `pr`, despite the promise that any differing spec log names `spec`. Replace brief:39 with: `- With a usable worktree, any status entry touching the brief or a spec log is spec work: a non-rename change names spec with act: commit, while a rename holds at spec. The perform commits the allowed paths and the opus record if changed on opus/<id>; it creates no spec/<id>, opens no PR and leaves master where it was.` — check: packages/cli/src/next.test.ts
+3. blocking — brief:46 A held derivation normally deletes or replaces its pending ticket, as required by `W-233-b1`, and a rejected `--perform` writes the `.bisellium` step-health log; therefore “no ticket or log changes” is false. Replace brief:46 with: `Every rejected input fails closed: next holds or names the appropriate spec or review work, and no branch ref, Git index, opus record or studio evidence log changes; normal pending-ticket refresh and .bisellium step-health writes still occur.` — check: packages/cli/src/next.test.ts
+4. blocking — brief:51 The row promises that every unusable worktree holds at `spec`, but after the branch spec has passed `deriveNext` continues through PR classification and only later holds at `build`. Replace brief:51 with: `| The opus worktree while branch-side spec work is pending | registered, not prunable, on opus/<id>, its ci/ listable or absent | deriveNext (existing, extended): otherwise spec holds and no spec order is named; after the spec passes, the existing later-rung worktree handling is unchanged |` — check: packages/cli/src/next.test.ts
+5. blocking — brief:53 “Holds with nothing staged” conflicts with brief:46 when an unrelated path was already staged, and the proposed function can alter pre-existing staging on commit failure; it also ignores failure of its final `rev-parse` and reports success. Replace brief:53 with: `| The spec commit's Git calls and paths | git status succeeds; no rename or other changed path; only the brief, valid changed or new spec logs and optionally the opus record; every required Git read succeeds before mutation | wtChanges and performOpusSpecCommit (new): invalid status, a disallowed or pre-staged path, or any non-zero pre-commit call holds without changing the real index; no unchecked Git call follows a successful commit |` — check: packages/cli/src/next.test.ts
+6. advisory — brief:54 The input table omits the branch record’s `spec` value and referenced brief, newly read to construct the expected build-review pin; malformed or unreadable values make a pinned round stale, so this omission already fails closed. — check: packages/cli/src/next.test.ts
+7. advisory — brief:54 The valid domain states only the number of `# brief:` headers and names `parseBuildReviewLog` as rejector, but a single malformed or non-current pin is rejected later by `deriveNext`’s currentness comparison. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief has substantive fail-open and false-promise cases that must be closed before the build starts.
+VERDICT: FAIL
