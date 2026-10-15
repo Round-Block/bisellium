@@ -12,6 +12,7 @@ import { renderInstructions } from "./instructions.js";
 const NOW = new Date("2026-10-15T12:00:00Z");
 
 test("W-267-b1 behaviour 1: the runner is defined and the Claude censor is gone", () => {
+  assert.ok(existsSync(".claude/agents/ladder-runner.md"), "ladder-runner.md exists");
   const text = readFileSync(".claude/agents/ladder-runner.md", "utf8");
   const [, front = "", body = ""] = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/) ?? [];
   const key = (k: string): string | undefined => front.match(new RegExp(`^${k}: *(.+)$`, "m"))?.[1]?.trim();
