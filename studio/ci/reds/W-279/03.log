@@ -1,0 +1,38 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-279-b3\s --import tsx packages/cli/src/w279.test.ts
+# exit: 1
+# at: 2026-10-15T10:58:18.142Z
+# sella: builder.W-279
+# tree: tree:bf0984c4581c67d92c96e2969364317631dbe801
+# ticket: {"opus":"W-279","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-279/studio","head":"2b3d814e8eca08df981005fe5a6375afa2de88c3","brief":"03f5903b91a9e7d32575aa22b4e9578504b9da7e","at":"2026-10-15T10:58:17.404Z"}
+
+warning: Git ref-wide allocation unavailable; using local records only
+TAP version 13
+# Subtest: W-279-b3 behaviour 3: a failing verify gate prints its log tail to stderr
+not ok 1 - W-279-b3 behaviour 3: a failing verify gate prints its log tail to stderr
+  ---
+  duration_ms: 195.422474
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-279/packages/cli/src/w279.test.ts:6:3331'
+  failureType: 'testCodeFailure'
+  error: 'header after tests: {"stream":"out","text":"lint: passed  ci/W-001-lint-cd465da6.log"}'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    after (/home/edckt/agents/bisellium/.worktrees/W-279/packages/cli/src/w279.test.ts:177:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-279/packages/cli/src/w279.test.ts:182:16)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 212.716121
