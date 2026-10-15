@@ -11,6 +11,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
+import { ESLint } from "eslint";
+import * as prettier from "prettier";
 import { parse } from "yaml";
 import { initStudio } from "./init.js";
 import { newItem } from "./new.js";
@@ -128,4 +130,16 @@ test("W-279-b1 behaviour 1: ci --opus drops no applicable CI_STEPS command and r
     assert.equal(result.exitCode, 0);
     assert.deepEqual(orderLog(repo), [...LOOP_ONLY, "test", "lint", "typecheck", "test"]);
   }
+});
+
+test("W-279-b2 behaviour 2: lint and format ignore .worktrees and .kilo", async () => {
+  const eslint = new ESLint();
+  const foreign = [".worktrees/W-900/source.ts", ".kilo/worktrees/foreign/source.ts"];
+  const options = { ignorePath: ".prettierignore" };
+  for (const path of foreign) {
+    assert.equal(await eslint.isPathIgnored(path), true, `eslint ${path}`);
+    assert.equal((await prettier.getFileInfo(path, options)).ignored, true, `prettier ${path}`);
+  }
+  assert.equal(await eslint.isPathIgnored("packages/commands/src/ci.ts"), false);
+  assert.equal((await prettier.getFileInfo("scripts/run-builder-host.mjs", options)).ignored, false);
 });
