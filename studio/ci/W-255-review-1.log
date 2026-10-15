@@ -1,0 +1,18 @@
+# opus: W-255
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a13c96-8d21-7002-a045-7a787851b720
+# outcome: passed
+# at: 2026-10-15T01:35:35.251Z
+# tree: tree:79bfbd44612c8c48fd0b4d02de4a99d9c4080d20
+# brief: briefs/W-255.md blob:64cc0df4279ce4c93cf9c4f424b2d7ef264038ac
+# ticket: {"opus":"W-255","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-255/studio","head":"ba1b6845c9ca20b246660d32d50c14abb5a02a63","brief":"64cc0df4279ce4c93cf9c4f424b2d7ef264038ac","at":"2026-10-14T22:48:53.331Z"}
+
+## Findings
+1. advisory — packages/cli/src/next.test.ts:5224 `W-255-b3` covers a valid over-limit exception only through reviewer-configured `reviewedSpec`, and covers no-reviewer `signedSpec` only with a missing exception; it never exercises an over-limit light brief with a valid decision through `signedSpec` or W-246’s split-standing path. The shared production helper is correct, but the post-cap correction lacks direct regression coverage. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The implementation and required evidence satisfy the brief; the remaining regression-coverage gap is advisory only.
+VERDICT: PASS
