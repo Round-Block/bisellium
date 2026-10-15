@@ -151,6 +151,20 @@ export function toPosixRelative(base: string, path: string): string {
   return relative(base, path).split(sep).join("/");
 }
 
+/** W-279: a failed gate's log reaches stderr (the host mint deletes the checkout that holds it), cut to its last
+ *  `LOG_TAIL_LINES` lines. The stored text is printed as written, with no second redaction. */
+const LOG_TAIL_LINES = 200;
+function printLogTail(studioDir: string, gateId: string, evidence: string): void {
+  const log = readContainedRegularFile(studioDir, evidence, "ci");
+  if ("error" in log) {
+    console.error(`${gateId}: log unreadable: ${log.error}`);
+    return;
+  }
+  const lines = log.bytes.toString("utf8").replace(/\n$/, "").split("\n");
+  console.error(`--- ${evidence}: log tail, at most ${LOG_TAIL_LINES} lines ---`);
+  console.error(lines.slice(-LOG_TAIL_LINES).join("\n"));
+}
+
 export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Promise<RunVerifyResult> {
   const parsed = parseArgs(args);
   if ("error" in parsed) {
@@ -364,7 +378,10 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   for (const id of waivedIds) console.log(`${id}: waived (untouched)`);
   for (const [gateId, r] of Object.entries(results)) {
     console.log(`${gateId}: ${r.status}  ${r.evidence}`);
-    if (r.status === "failed") anyFailed = true;
+    if (r.status === "failed") {
+      anyFailed = true;
+      printLogTail(studioDir, gateId, r.evidence);
+    }
   }
 
   return { exitCode: anyFailed ? 1 : 0 };
