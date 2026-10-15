@@ -1,0 +1,22 @@
+# opus: W-267
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13db5-82f9-73a1-a824-b7d2b431d4a6
+# outcome: failed
+# at: 2026-10-15T08:15:13.394Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-267.md blob:b017830dbfbc683a85fffc2ea3b87a343b03fa06
+# ticket: {"opus":"W-267","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":"studio","head":"7061e79c3348225eb80c51f57b98d7b3b99eb2a5","brief":"b017830dbfbc683a85fffc2ea3b87a343b03fa06","at":"2026-10-15T08:15:12.930Z"}
+
+## Findings
+1. blocking — studio/briefs/W-267.md:81 brief:81: the shell consumes the unquoted backslash, so Node receives `^W-267-b1s`; no test matches and the command cannot produce the promised red. Replace `--test-name-pattern=^W-267-b1\s` with `--test-name-pattern='^W-267-b1\s'`. — check: none: execute the exact copied shell command and require the named test to run and fail
+2. blocking — studio/briefs/W-267.md:89 brief:89: the sibling b2 command has the same defect and receives `^W-267-b2s`. Replace `--test-name-pattern=^W-267-b2\s` with `--test-name-pattern='^W-267-b2\s'`. — check: none: execute the exact copied shell command and require the named test to run and fail
+
+## Earlier findings
+
+## Verdict
+The revised red commands are not executable with their promised selection semantics.
+
+VERDICT: FAIL

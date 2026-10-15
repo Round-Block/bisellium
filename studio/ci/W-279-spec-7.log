@@ -1,0 +1,21 @@
+# opus: W-279
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13e7b-bb38-75d3-9a8e-d0ee26d090d9
+# outcome: failed
+# at: 2026-10-15T08:14:02.127Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-279.md blob:414b047157e7d68d6d07e1e24d754c8704f69f4f
+# ticket: {"opus":"W-279","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":"studio","head":"7061e79c3348225eb80c51f57b98d7b3b99eb2a5","brief":"414b047157e7d68d6d07e1e24d754c8704f69f4f","at":"2026-10-15T08:14:01.649Z"}
+
+## Findings
+1. blocking — studio/briefs/W-279.md:62 brief:62 The claim that a local-pipeline log is shown “except its header lines” is false for failed logs shorter than 200 lines: tailing the entire log includes its `certifies`, `command`, and exit-code headers. Replace the final two sentences with: “The limit is 200, matching localPipeline’s private `LOG_TAIL_LINES`; a short local-pipeline log is shown whole, including its header lines, while a longer log is reduced to its last 200 lines. The local pipeline applies `redact` before writing its command and output; verify prints the stored tail without performing a second redaction.” — check: packages/cli/src/w279.test.ts behaviour 3 should include a short failing-log case
+
+## Earlier findings
+- ci/W-279-spec-4.log #1: closed — brief:92 and brief:102 now qualify exact-once execution by the Promise stability and uniqueness conditions, while preserving the duplicate-command test case.
+
+## Verdict
+The earlier blocker is closed, but the newly added failed-log-tail description makes a false promise for short logs.
+VERDICT: FAIL

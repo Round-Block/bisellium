@@ -1,0 +1,16 @@
+# opus: W-267
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T08:16:02.203Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-267.md blob:b09f4d45bccab8ee4b678788c4ad9316e80f2bf6
+# ticket: {"opus":"W-267","step":"spec","action":"verdict-spec","round":8,"actor":"architect","studio":"studio","head":"7061e79c3348225eb80c51f57b98d7b3b99eb2a5","brief":"b09f4d45bccab8ee4b678788c4ad9316e80f2bf6","at":"2026-10-15T08:15:57.097Z"}
+
+## Findings
+
+1. advisory — Round 7 findings 1 and 2 closed: both Genuine red commands now quote the pattern as --test-name-pattern='^W-267-b1\s' and '^W-267-b2\s', so a shell no longer strips the backslash before Node sees it — check: none: brief text only; printf of the quoted word yields --test-name-pattern=^W-267-b1\s
+2. advisory — The quoted form delivers exactly the argv the recorded reds ran: git show wip/W-267:studio/ci/reds/W-267/01.log and 02.log carry "# command: ... --test-name-pattern=^W-267-b<n>\s ...", and red writes argv joined by spaces that the host replay splits on whitespace (lifecycle.ts:953), so the recorded element holds the literal backslash — check: none: compared the shell-expanded quoted word against the recorded header byte for byte
+3. advisory — Every other shell command in the brief was checked for the same unquoted-metacharacter defect: the gate commands (line 101), the context and instructions commands (16, 28, 36, 55, 102) carry none; lines 29 and 86 hold <verb>, <name> and <scratch> as named placeholders, not runnable text, and line 94 is a regex, so none needs an edit — check: none: brief text inspection

@@ -1,0 +1,18 @@
+# opus: W-279
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T08:09:50.729Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-279.md blob:414b047157e7d68d6d07e1e24d754c8704f69f4f
+# ticket: {"opus":"W-279","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"7061e79c3348225eb80c51f57b98d7b3b99eb2a5","brief":"414b047157e7d68d6d07e1e24d754c8704f69f4f","at":"2026-10-15T08:09:46.152Z"}
+
+## Findings
+
+1. advisory — Patron ruling 2026-10-15, Default 4 vetoed: verify now prints the last 200 lines of a failed gate's log to stderr after the "<gate>: failed" line, read through readContainedRegularFile, with a stated limit (earlier output and an unreadable log); taken out of Out of scope because the host mint inherits ci's stdio (run-builder-host.mjs:853) but deletes the checkout holding the log (:876 via :261) — check: packages/cli/src/w279.test.ts behaviour 3
+2. advisory — Patron ruling 2026-10-15, Default 5 amended: the ADOPTION Running ci edit now corrects in place the "in order ... stopping at the first that fails" and "--opus runs verify ... once every step has passed" sentences, besides adding a paragraph — check: scripts/ci-workflow.test.mjs (the section still names every CI_STEPS command and the usage)
+3. advisory — Status and Defaults record the Patron's approval of the design with those two changes, so branch needs no further design gate; Read enumeration names the failed-gate log read-back — check: none: record wording, no behaviour
+4. advisory — re-checked every named test row against the tail: pipeline.test.ts (only the garbage-sibling row reads stderr, exit 2 before gates), stage-states.test.ts (quiet wrapper), opus-model.test.ts W-096 rows (pattern .some), lifecycle W-033 b4 and A5 rows (refused before gates), containment.test.ts (readContainedRegularFile is a listed helper) stay green unchanged — check: packages/pipeline/test/pipeline.test.ts, packages/cli/src/containment.test.ts
+5. advisory — Intent notes, per Fable's advice, that the ignore roots save local verify and review-packet time, not mint or certify time (fresh clones hold no worktrees) — check: none: wording only

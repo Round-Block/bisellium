@@ -1,0 +1,17 @@
+# opus: W-267
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T08:12:52.401Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-267.md blob:b017830dbfbc683a85fffc2ea3b87a343b03fa06
+# ticket: {"opus":"W-267","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"7061e79c3348225eb80c51f57b98d7b3b99eb2a5","brief":"b017830dbfbc683a85fffc2ea3b87a343b03fa06","at":"2026-10-15T08:12:43.704Z"}
+
+## Findings
+
+1. advisory — Files owned and Acceptance now carry scripts/cascade-loop.test.mjs row 24f (copies the real .claude/agents): its expected list flips censor to ladder-runner, since censor.md is deleted and the host mint refuses unowned paths; the built ladder-runner.md already meets 24f's key and tools assertions — check: scripts/cascade-loop.test.mjs
+2. advisory — Both Genuine red commands now read --test-name-pattern=^W-267-b<n>\s, matching studio/ci/reds/W-267/01.log and 02.log, because red rejects arguments containing whitespace — check: none: brief text aligned with already-recorded red logs
+3. advisory — Repo grep for tests reading the real .claude/agents found only docs.test.ts W-089 behaviour 10 (builder.md, unaffected), now named under must stay green; no other edit needed — check: packages/cli/src/docs.test.ts
+4. advisory — Status line bumped to revision 4 with the reason — check: none: prose only
