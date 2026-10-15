@@ -1,0 +1,19 @@
+# opus: W-279
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T07:33:50.319Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-279.md blob:5e802fea85b9a110d577c4e5a3df2b678b204ce6
+# ticket: {"opus":"W-279","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"c0bac563f6d82fea17ea0d11c1d4b7f30dcece95","brief":"5e802fea85b9a110d577c4e5a3df2b678b204ce6","at":"2026-10-15T07:33:45.977Z"}
+
+## Findings
+
+1. advisory — the draft skipped typecheck, lint and npm test unconditionally under --opus; on master verify skips a waived gate (verify.ts:276-283) and runs the manifest's own command, which the host mint reads from the candidate, so the suite could be dropped; the brief hands a step to verify only when verify's plan names its command — check: packages/cli/src/w279.test.ts behaviour 1 (b)
+2. advisory — the draft's design forced a fixture change in ci.test.ts behaviour 10 (its tests probatio is "true"); under the corrected design that step stays in the loop, so no existing row or fixture flips and behaviour 10 becomes the standing guard — check: packages/cli/src/ci.test.ts behaviour 10
+3. advisory — the draft said no code-owner path is touched while owning docs/ADOPTION.md, which .github/CODEOWNERS lists; the Status now says the Patron approves the design before branch and reviews the PR — check: none: CODEOWNERS is enforced by GitHub review, not a repo rule
+4. advisory — added a verify plan mode (RunVerifyOptions.plan, RunVerifyResult.commands) so ci learns what verify will run from verify's own code instead of duplicating its selection; a verify refusal now ends ci before any step — check: packages/cli/src/lifecycle.test.ts W-033 A5 rows and ci.test.ts behaviour 9 stay green
+5. advisory — behaviour 2's Prettier assertion passes only .prettierignore, since .gitignore already ignores .worktrees/ (checked at c0bac563: getFileInfo with .prettierignore alone gives ignored false for both roots) — check: packages/cli/src/w279.test.ts behaviour 2
+6. advisory — cut the draft's timing observation (two full mints, no gate) and noted that the host mint runs master's tooling (run-builder-host.mjs:466), so the saving starts after merge — check: none: scope cut, no behaviour
