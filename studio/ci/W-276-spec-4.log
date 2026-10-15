@@ -1,0 +1,24 @@
+# opus: W-276
+# phase: spec
+# round: 4
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T04:02:50.358Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-276.md blob:9144e7b1a45f9b8346a948808547edf951c39752
+# ticket: {"opus":"W-276","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"60f6bd5a1ea67fb102160ac20b7973811c936dd4","brief":"9144e7b1a45f9b8346a948808547edf951c39752","at":"2026-10-15T04:02:41.549Z"}
+
+## Earlier findings
+
+- ci/W-276-spec-3.log #1: closed — brief:53 now defines LEGACY character by character, as a substring with no trailing space, and quotes the sentence both kept briefs carry ("... or run `bisellium next`; the orchestrator does those."), which contains it; the rule rejects the real text and also any rewording that keeps the fragment (~/.bisellium-evidence/W-276-spec/r1-r2.diff).
+- ci/W-276-spec-3.log #2: closed — brief:63's valid domain says "without LEGACY", the same definition as brief:53.
+- ci/W-276-spec-3.log #3: closed — brief:67's last variant is the compliant template plus the kept briefs' exact sentence, so W-276-b1 proves the inherited prohibition is rejected.
+
+## Findings
+
+1. advisory — LEGACY is the fragment without its semicolon, rather than the reviewer's "run `bisellium next`;", so a reworded sentence that keeps the fragment is also rejected; brief:51's RED-suffix wording no longer depends on a padded code span either — check: none: r1-r2.diff
+
+## Verdict
+
+Passed: the forbidden text now matches both kept builder briefs, which are byte-identical in that sentence (W-162-build and W-236-build).
