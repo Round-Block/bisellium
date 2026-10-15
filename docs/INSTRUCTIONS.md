@@ -87,7 +87,7 @@ and the shared renderer is caught by the same test.
 
 ## `.claude/agents/*.md`
 
-`builder.md`, `censor.md`, `architect.md`, `clerk.md` — Claude Code subagent
+`builder.md`, `architect.md`, `clerk.md`, `ladder-runner.md` — Claude Code subagent
 front matter (`name`, `description`, `tools`, `model`) only. There is no
 `context:` include key in Claude Code's own contract; these files do not
 invent one. Each body names its collegium's lex with an `@studio/leges/<id>.md`

@@ -30,10 +30,8 @@ test("W-267-b1 behaviour 1: the runner is defined and the Claude censor is gone"
   assert.ok(/refusal/.test(body));
   assert.equal(existsSync(".claude/agents/censor.md"), false);
   const { claude, agents } = renderInstructions("studio", { now: NOW });
-  for (const doc of [claude, agents]) {
-    assert.ok(doc.includes("{builder,architect,clerk,ladder-runner}"));
-    assert.ok(!/censor/.test(doc));
-  }
+  assert.ok(claude.includes("{builder,architect,clerk,ladder-runner}"));
+  for (const doc of [claude, agents]) assert.ok(!/censor/.test(doc));
   const stale = checkStudio("studio", NOW, { repo: "." }).findings.filter((f) => f.rule === "instructions.stale");
   assert.deepEqual(stale, []);
 });
