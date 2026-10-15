@@ -17,6 +17,7 @@ import { parse } from "yaml";
 import { initStudio } from "./init.js";
 import { newItem } from "./new.js";
 import { runCi } from "./ci.js";
+import { runVerify } from "./verify.js";
 
 const scratch: string[] = [];
 after(() => {
@@ -142,4 +143,51 @@ test("W-279-b2 behaviour 2: lint and format ignore .worktrees and .kilo", async 
   }
   assert.equal(await eslint.isPathIgnored("packages/commands/src/ci.ts"), false);
   assert.equal((await prettier.getFileInfo("scripts/run-builder-host.mjs", options)).ignored, false);
+});
+
+test("W-279-b3 behaviour 3: a failing verify gate prints its log tail to stderr", async () => {
+  const repo = tmp("w279-tail-");
+  writeFileSync(join(repo, "noisy-fail.mjs"), 'for (let i = 1; i <= 300; i++) console.log("L" + String(i).padStart(4, "0"));\nprocess.exit(1);\n');
+  writeFileSync(join(repo, "short-fail.mjs"), 'console.log("S-ONLY");\nprocess.exit(1);\n');
+  commitRepo(repo);
+  const { studio, id } = writeStudio(
+    [
+      '{ id: tests, name: Tests, kind: automated, command: "node noisy-fail.mjs" }',
+      '{ id: lint, name: Lint, kind: automated, command: "true" }',
+      '{ id: types, name: Typecheck, kind: automated, command: "node short-fail.mjs" }',
+    ],
+    "w279 tail",
+  );
+  const out: { stream: "out" | "err"; text: string }[] = [];
+  const { log, error } = console;
+  console.log = (...a: unknown[]) => void out.push({ stream: "out", text: a.join(" ") });
+  console.error = (...a: unknown[]) => void out.push({ stream: "err", text: a.join(" ") });
+  let exitCode: number;
+  try {
+    exitCode = (await runVerify([id, "--repo", repo, "--studio", studio])).exitCode;
+  } finally {
+    console.log = log;
+    console.error = error;
+  }
+  assert.equal(exitCode, 1);
+  const after = (gate: string): string[] => {
+    const at = out.findIndex((e) => e.stream === "out" && e.text.startsWith(`${gate}: failed  ci/`));
+    assert.ok(at !== -1, `no "${gate}: failed" line in ${JSON.stringify(out)}`);
+    const header = out[at + 1];
+    assert.ok(header?.stream === "err" && /^--- ci\/.*: log tail, at most 200 lines ---$/.test(header.text), `header after ${gate}: ${JSON.stringify(header)}`);
+    const block = out[at + 2];
+    assert.ok(block?.stream === "err", `block after ${gate}: ${JSON.stringify(block)}`);
+    return block.text.split("\n");
+  };
+  const long = after("tests");
+  assert.ok(long.length <= 200, `long tail is ${long.length} lines`);
+  assert.ok(long.includes("L0300"));
+  assert.ok(!long.includes("L0001"));
+  const short = after("types").join("\n");
+  assert.match(short, /certifies: tree:/);
+  assert.match(short, /command: node short-fail\.mjs/);
+  assert.match(short, /exit code: 1/);
+  assert.match(short, /S-ONLY/);
+  const stderr = out.filter((e) => e.stream === "err").map((e) => e.text).join("\n");
+  assert.ok(!stderr.includes("exit code: 0"), "lint's log reached stderr");
 });
