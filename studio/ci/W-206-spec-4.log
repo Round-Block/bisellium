@@ -1,0 +1,26 @@
+# opus: W-206
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1406a-7874-7081-9d81-182135db4b6f
+# outcome: failed
+# at: 2026-10-15T17:02:38.371Z
+# tree: tree:0299f29acaca0dd09c372075f7e66284cfa4b728
+# brief: briefs/W-206.md blob:df76788de826e6b3d2c2544dced25562a5ca1174
+# ticket: {"opus":"W-206","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"0d6631368b77c3c2077802fbeb0f276361161a98","brief":"df76788de826e6b3d2c2544dced25562a5ca1174","at":"2026-10-15T17:02:37.961Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-206-spec/prototype-r3.diff:238 Reached from ci/W-206-spec-2.log #1’s class: `ownBrief` supplies a new historical log’s own arbitrary `# brief:` value as the expected value, so an otherwise valid signature or review with `# brief: garbage` passes one reader and can be committed, contrary to brief:53’s valid-log promise. — check: packages/cli/src/next.test.ts
+2. blocking — /home/edckt/.bisellium-evidence/W-206-spec/prototype-r3.diff:256 Reached from ci/W-206-spec-2.log #6–#7’s class: an unpinned same-tree round is current whenever `g.brief` is absent, even when the newly read branch-record `spec` or brief is unreadable; brief:54 instead promises that unreadability orders `review`. — check: packages/cli/src/next.test.ts
+
+## Earlier findings
+- ci/W-206-spec-2.log #1: open — prototype-r3.diff:238-239 validates each new historical log against its self-reported pin, leaving malformed or fictitious `# brief:` values accepted.
+- ci/W-206-spec-2.log #2: closed — prototype-r3.diff:184-194 consumes both rename fields and classifies any rename touching the brief or a spec log as `bad`, which holds at `spec`.
+- ci/W-206-spec-2.log #3: closed — brief:46 removes the ticket/index/log immutability claim and expressly preserves ticket refresh and step-health writes.
+- ci/W-206-spec-2.log #4: closed — brief:51 scopes the worktree requirement to pending branch-side spec work and preserves later-rung handling after passage.
+- ci/W-206-spec-2.log #5: closed — brief:53 drops the clean-index guarantee, while prototype-r3.diff:353-357 removes restoration and the unchecked post-commit `rev-parse`.
+
+## Verdict
+The revision closes four earlier blockers, but malformed self-pinned historical logs and the unpinned-round unreadable-brief path remain substantive.
+VERDICT: FAIL
