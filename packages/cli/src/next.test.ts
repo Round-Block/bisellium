@@ -5424,3 +5424,30 @@ test("W-206-b2 behaviour 2: the spec perform commits the amended brief and every
   assert.equal(tipOf(h), t3, "the branch is unmoved");
 });
 
+test("W-206-b3 behaviour 3: a build review of an older brief is not current", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-b3", "review");
+  amend(w);
+  wtSpec(w, 3, "architect", "passed");
+  wtSpec(w, 4, SR, "passed", SR_MODEL);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the amendment is committed");
+  handoffAt(w, "wt", "2026-10-02T09:30:00.000Z");
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "review", "named", "a passed review of the older brief orders review, not pr");
+  assert.equal(o.kv.get("round"), "2", ran("at the next round", o));
+  addReview(w, "passed", 2, T.review2);
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a passed review of the current brief restores pr");
+
+  const f = w206World("w206-b3-failed", "review", "failed");
+  amend(f);
+  wtSpec(f, 3, "architect", "passed");
+  wtSpec(f, 4, SR, "passed", SR_MODEL);
+  next(f, [OPUS, "--perform", "--expect", "spec"]);
+  handoffAt(f, "wt", "2026-10-02T09:30:00.000Z");
+  expectStep(next(f, [OPUS, ...BUDGET]), "review", "named", "a failed review of the older brief at this tree orders review, not a build fix");
+
+  const log = join(w.wtStudio, "ci", `${OPUS}-review-2.log`);
+  const text = readFileSync(log, "utf8");
+  writeFileSync(log, text.replace(/^(# brief: .*)$/m, "$1\n$1"));
+  commit(w.wt, "test: a duplicate brief pin");
+  expectStep(next(w, [OPUS, ...BUDGET]), "review", "held", "two # brief: headers hold");
+});
