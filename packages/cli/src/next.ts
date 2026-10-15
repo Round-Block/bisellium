@@ -848,7 +848,12 @@ export function deriveNext(f: Facts): Derived {
       const studio = f.wt.usable ? join(".worktrees", id, f.studioRel) : f.studioRel;
       return { ...named("review", "producer", `build-review round ${n} is recorded but the review gate does not cite it`, `bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${n}.log --round ${n} --sella ${censor} --studio ${studio}`), ticket: { action: "review", round: n } };
     }
-    const failedNow = gate !== undefined && gate.status === "failed" && gate.tree === cur;
+    // W-206: a round is current at this tree and, when it pins one, at the brief a verdict would pin now
+    const specRel = str(b["spec"]);
+    const specText = specRel === undefined ? undefined : bs.read(specRel);
+    const pin = specRel === undefined || specText === undefined ? undefined : `${one(specRel)} blob:${blobOf(specText)}`;
+    const current = (g: Gate): boolean => g.tree === cur && (g.brief === undefined || g.brief === pin);
+    const failedNow = gate !== undefined && gate.status === "failed" && current(gate);
     const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
     const receipt = f.receipt();
     if ((receipt !== undefined && !receipt.ok) || failedNow)
@@ -861,11 +866,11 @@ export function deriveNext(f: Facts): Derived {
 
     // 7 review
     const uiBranch = f.uiReviewProblems();
-    if (!(gate !== undefined && gate.status === "passed" && gate.tree === cur) || uiBranch.length > 0) {
+    if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");
-      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
+      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
         phase: "review",
         round: Math.max(0, ...rounds.map((r) => r.n)) + 1,
         resume: rounds.length > 0,
@@ -977,6 +982,7 @@ interface Gate {
   evidence: string | undefined;
   tree: string | undefined;
   round: number | undefined;
+  brief: string | undefined;
 }
 /** The recorded review gate, cross-checked against the strictly read rounds: absent is no decided review, anything else must agree with its log. */
 function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; rounds: BuildReviewRound[] }, tickets: boolean): Gate | undefined | { error: string } | { unrecorded: BuildReviewRound } {
@@ -994,7 +1000,7 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
   if (round !== newest) return tickets && newest !== undefined ? { unrecorded: newest } : bad(`evidence ${round.log} is not the newest build-review log, ${newest?.log}`);
   if (g["sella"] !== censor) return bad(`sella must be the censor ${censor}`);
   if (g["status"] !== round.outcome) return bad(`status ${g["status"]} disagrees with ${round.log}, which ${round.outcome}`);
-  return { status: g["status"], evidence, tree: round.tree, round: round.n };
+  return { status: g["status"], evidence, tree: round.tree, round: round.n, brief: round.brief };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
 

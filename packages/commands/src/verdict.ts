@@ -787,6 +787,8 @@ export interface BuildReviewRound {
   at: number;
   /** "# tree:" */
   tree: string;
+  /** W-206: "# brief:", the brief the round was recorded against, when the log carries one */
+  brief?: string;
   outcome: "passed" | "failed";
   /** standing, after "# converted:" */
   blockers: RecordedFinding[];
@@ -895,6 +897,8 @@ function parseBuildReviewLog(text: string, id: string, rel: string, n: number, c
   if (once["phase"] !== "build") return bad('the header "# phase:" must be build');
   if (once["round"] !== String(n)) return bad(`the header "# round:" must equal the filename's round ${n}`);
   if (once["sella"] !== censor) return bad(`the header "# sella:" must be the censor ${censor}`);
+  const brief = p.headers.get("brief") ?? [];
+  if (brief.length > 1) return bad('the header "# brief:" must appear at most once');
   const at = utcTimestampProblem(once["at"]);
   if (at !== undefined) return bad(`the header "# at:" ${at}`);
   const verdict = /^(?:verdict:\s*)?(pass(?:ed)?|fail(?:ed)?)\b/i.exec(once["outcome"]!.trim())?.[1];
@@ -908,6 +912,7 @@ function parseBuildReviewLog(text: string, id: string, rel: string, n: number, c
     log: rel,
     at: instant(once["at"])!.getTime(), // utcTimestampProblem passed above, so the instant exists
     tree: once["tree"]!,
+    ...(brief[0] === undefined ? {} : { brief: brief[0] }),
     outcome,
     blockers,
     securityOnly: outcome === "failed" && blockers.every((b) => /^\**blocking \(security\)/i.test(b.text)),
