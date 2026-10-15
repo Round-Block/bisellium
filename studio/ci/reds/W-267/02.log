@@ -1,0 +1,42 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-267-b2\s --import tsx packages/cli/src/w267.test.ts
+# exit: 1
+# at: 2026-10-15T09:44:08.973Z
+# sella: builder.W-267
+# tree: tree:1f6de9b395401c2cb6a9d60ffb3d54eed4f2ef2f
+# ticket: {"opus":"W-267","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-267/studio","head":"b1999f9c9fc2ee5981677a0ced8dade54b2bc312","brief":"b09f4d45bccab8ee4b678788c4ad9316e80f2bf6","at":"2026-10-15T09:44:08.126Z"}
+
+TAP version 13
+# Subtest: W-267-b2 behaviour 2: producer context serves all of lex section 9
+not ok 1 - W-267-b2 behaviour 2: producer context serves all of lex section 9
+  ---
+  duration_ms: 282.070924
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-267/packages/cli/src/w267.test.ts:1:1853'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(full.text.includes(`## Runbook\n${block}`))
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-267/packages/cli/src/w267.test.ts:50:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 291.071427
