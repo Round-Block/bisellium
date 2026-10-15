@@ -1,0 +1,23 @@
+# opus: W-279
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13e7b-bb38-75d3-9a8e-d0ee26d090d9
+# outcome: failed
+# at: 2026-10-15T07:46:09.537Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-279.md blob:679ba6867acfa5a75f11ae8b847eeebd467d6ef7
+# ticket: {"opus":"W-279","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"c0bac563f6d82fea17ea0d11c1d4b7f30dcece95","brief":"679ba6867acfa5a75f11ae8b847eeebd467d6ef7","at":"2026-10-15T07:46:08.918Z"}
+
+## Findings
+1. blocking — studio/briefs/W-279.md:85 brief:85 Reached from ci/W-279-spec-2.log #2’s class: the untouched behaviour heading and exact test/red name at brief:95 still promise that every check runs once, while new case (c) requires `test` to run twice. Replace both names with `ci --opus drops no applicable CI_STEPS command and runs each once when the Promise's stability and uniqueness conditions hold`. — check: packages/cli/src/w279.test.ts behaviour 1
+
+## Earlier findings
+- ci/W-279-spec-2.log #1: closed — brief:55 now limits the claim to checkout binding, explicitly permits working-tree or HEAD changes, and names behaviour 10 and dirty certification.
+- ci/W-279-spec-2.log #2: closed — brief:71 now conditions exactly-once on success, stable plan inputs and unique normalized commands, and brief:93 tests the duplicate-command limit.
+
+## Verdict
+The earlier blockers are closed, but the numbered behaviour still makes the superseded unconditional exactly-once promise.
+
+VERDICT: FAIL
