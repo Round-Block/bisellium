@@ -1,0 +1,20 @@
+# opus: W-267
+# phase: spec
+# round: 4
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T04:08:58.153Z
+# tree: tree:bf311edd40f16e4db81eb1c5e6611d21292f7295
+# brief: briefs/W-267.md blob:19a9a02d229e14a95a4307933581d982d224afdf
+# ticket: {"opus":"W-267","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"7f76b828edc5ee0dcf82c2e2343341e0e1bd66fb","brief":"19a9a02d229e14a95a4307933581d982d224afdf","at":"2026-10-15T04:08:47.643Z"}
+
+## Findings
+
+1. advisory — Advisory 6 (git show master: read) removed rather than registered: the byte comparison with master's context.ts is replaced by "Promise builder-sections-unchanged … — limit: …", backed by the existing context.test.ts rows and b2's no-runbook assertion, so the test reads no Git object — check: packages/cli/src/w267.test.ts
+2. advisory — Advisories 4 and 5 (agent files, sample-studio scratch copy) answered with one Input domain row for the test-only inputs, rejected by readFileSync/cpSync throwing and existsSync for censor's absence; they are test inputs, not records the shipped code reads — check: packages/cli/src/w267.test.ts
+
+## Earlier findings
+- ci/W-267-spec-3.log #1: closed — brief:48 now says zero matching lines add no runbook section, exactly one supplies it, two or more are ambiguous; the Input domain row and b2's new zero-heading bullet (sample-studio producer and builder bundles hold no Runbook) agree.
+- ci/W-267-spec-3.log #2: closed — brief:54-58 state that .claude/settings.json's SessionStart and PreCompact run the bare installed bisellium context --studio studio (sella $BISELLIUM_SELLA or guest, main.ts:194; guest and producer are both production), give the boot promise its limit (only after the Patron updates ~/projects/bisellium-guard, at 12a9041), and say the bare context exits 1 with no injected context on ambiguity while hook-event context (handleContext, hooks.ts) prints an empty bundle and exits 0.
+- ci/W-267-spec-3.log #3: closed — b1 now calls checkStudio("studio", now, { repo: "." }), matching check.ts:172 checkStudio(root, now, opts).
