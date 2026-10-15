@@ -421,6 +421,8 @@ export interface Facts {
   evidenceAt(): number;
   /** W-206: why the worktree's ci/ cannot be listed (absent is no problem) */
   wtCiProblem(): string | undefined;
+  /** W-206: the worktree's changed paths (porcelain, untracked included), split into the brief and spec logs, and the rest */
+  wtChanges(): { spec: string[]; other: string[]; bad: string[] } | { error: string };
 }
 
 function memo<T>(fn: () => T): () => T {
@@ -573,6 +575,26 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
         return code === "ENOENT" ? undefined : `ci/ of ${join(".worktrees", id, studioRel)} cannot be listed (${code ?? "error"})`;
       }
     }),
+    wtChanges: memo(() => {
+      const r = git(wt.dir, ["status", "--porcelain", "-z", "--untracked-files=all"]);
+      if (r.status !== 0 || r.error !== undefined) return { error: `git status failed in ${wt.dir}` };
+      const brief = `${studioRel}/${briefRel(id)}`;
+      const specLog = new RegExp(`^${esc(studioRel)}/ci/${esc(id)}-spec-[1-9][0-9]*\\.log$`);
+      const out = { spec: [] as string[], other: [] as string[], bad: [] as string[] };
+      const fields = r.stdout.split("\0");
+      for (let i = 0; i < fields.length; i++) {
+        const entry = fields[i]!;
+        if (entry.length < 4) continue;
+        const xy = entry.slice(0, 2);
+        const path = entry.slice(3);
+        // -z prints a rename or copy as "XY to\0from\0"
+        const from = /[RC]/.test(xy) ? fields[++i] : undefined;
+        if (![path, from].some((p) => p !== undefined && (p === brief || specLog.test(p)))) out.other.push(path);
+        else if (from === undefined && (path === brief ? /^[ M][ M]$/.test(xy) : /^(\?\?|A[ M])$/.test(xy))) out.spec.push(path);
+        else out.bad.push(path);
+      }
+      return out;
+    }),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(instant(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at"))?.getTime() ?? Number.NaN);
@@ -689,7 +711,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "commit" | "land";
+  act?: "verify" | "commit" | "commit-opus" | "land";
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
@@ -728,6 +750,25 @@ export function deriveNext(f: Facts): Derived {
     if (!f.wt.usable) return hold("spec", `${spec.why}; ${join(".worktrees", id)} is not a usable worktree on opus/${id}, so no spec write is ordered`);
     if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
     return hold("spec", spec.why);
+  }
+  if (onOpus && f.wt.usable) {
+    const changed = f.wtChanges();
+    if ("error" in changed) return hold("spec", changed.error);
+    if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one`);
+    // every new spec log, history included, must pass the strict readers against the brief it names
+    const loose = changed.spec.find((p) => {
+      const m = /(?:^|\/)(ci\/[^/]+-spec-([1-9][0-9]*)\.log)$/.exec(p);
+      if (m === null) return false;
+      const [, rel, n] = m as unknown as [string, string, string];
+      const text = f.branch?.read(rel);
+      if (text === undefined) return true;
+      const brief = ownBrief(text, id, rel);
+      // ponytail: the pin's shape only; an intermediate brief is never in Git, so which blob it names is not checked
+      if (!new RegExp(`^${esc(briefRel(id))} blob:[0-9a-f]{40}$`).test(brief)) return true;
+      return "error" in readSpecSignature(text, id, Number(n), reviewer.design, brief, rel) && "error" in readSpecReview(text, id, Number(n), reviewer, brief, rel);
+    });
+    if (loose !== undefined) return hold("spec", `${loose} is not a valid signature or spec review`);
+    if (changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
   }
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design, reviewer, admit);
@@ -1418,6 +1459,25 @@ function performSpecCommit(f: Facts): StepResult {
   return { ok: true, lines: [`branch: ${head}`, `commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${head}`]).stdout.trim()}`] };
 }
 
+/** W-206: the signed spec on opus/<id>, committed in its worktree: the brief, every changed spec log and the record, nothing else. */
+function performOpusSpecCommit(f: Facts): StepResult {
+  const { id, wt } = f;
+  if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
+  const changed = f.wtChanges();
+  if ("error" in changed) return heldResult(`refusing: ${changed.error}`);
+  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed or rewritten`);
+  const record = `${f.studioRel}/${recordRel(id)}`;
+  const other = changed.other.filter((p) => p !== record);
+  if (other.length > 0) return heldResult(`refusing: ${other.slice(0, 5).map((p) => clean(p)).join(", ")} changed beside the spec; commit or set it aside first`);
+  if (changed.spec.length === 0) return heldResult("refusing: no spec change to commit");
+  const paths = [...changed.spec, ...changed.other];
+  const staged = git(wt.dir, ["add", "--", ...paths]);
+  const committed = staged.status === 0 ? git(wt.dir, ["commit", "-q", "-m", `spec(${id}): re-signed on opus/${id}`, "-m", `Co-Authored-By: ${f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
+  // ponytail: a failure leaves only these allowed paths staged; the re-derivation names the same commit again
+  if (committed.status !== 0) return heldResult(`could not commit the spec on opus/${id}: ${one(committed.stderr)}`);
+  return { ok: true, lines: [`branch: opus/${id}`] };
+}
+
 /** A landing head may change the officina and `docs/` only: anything else is refused before the push. */
 async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
   const diff = git(f.repo, ["diff", "--name-only", "-z", `${TRUNK}...refs/heads/${head}`]);
@@ -1692,7 +1752,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = performReady(f, d2);
           break;
         case "spec":
-          result = d2.act === "land" ? await performLanding(f, ctx, `spec/${id}`) : performSpecCommit(f);
+          result = d2.act === "land" ? await performLanding(f, ctx, `spec/${id}`) : d2.act === "commit-opus" ? performOpusSpecCommit(f) : performSpecCommit(f);
           break;
         case "pr":
           result = openPr(ctx, d2.pr, a.title, a.bodyFile);
