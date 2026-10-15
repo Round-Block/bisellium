@@ -34,7 +34,9 @@
  *
  * `--opus <id>` reuses `runVerify` verbatim afterwards to mint the `tests`/
  * `lint`/`types` gate certificates — no separate certificate-minting or
- * tree-hashing logic here.
+ * tree-hashing logic here. W-279: it first asks `runVerify` (`plan`) which
+ * commands it will run, and leaves exactly those steps out of the loop, so
+ * each check runs once; a refusal ends `ci` before any step.
  */
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -124,6 +126,17 @@ function runStep(command: string, cwd: string): number {
   return r.status ?? 1;
 }
 
+/** W-279: true when `verify` will run a command equal to `step`, comparing space-split tokens with npm's `-s`
+ *  (before the first `--`) dropped. Any other difference fails to match: a mismatch can only cause a second run. */
+function handedToVerify(step: string, planned: Readonly<Record<string, string>>): boolean {
+  const norm = (command: string): string => {
+    const tokens = command.split(" ");
+    const end = tokens.indexOf("--");
+    return tokens.filter((t, i) => t !== "-s" || (end !== -1 && i > end)).join(" ");
+  };
+  return Object.values(planned).some((command) => norm(command) === norm(step));
+}
+
 export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<RunCiResult> {
   const parsed = parseFlags(args, { valued: ["--ref", "--opus", "--studio", "--repo"], boolean: ["--allow-dirty", "--offline"] });
   if ("error" in parsed) {
@@ -178,9 +191,38 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
       }
     }
 
+    const verifyArgs = opusId === undefined ? [] : [opusId, "--repo", execRepo];
+    const verifyOpts: RunVerifyOptions = {};
+    let planned: Readonly<Record<string, string>> = {};
+    if (opusId !== undefined) {
+      if (studioArg !== undefined) verifyArgs.push("--studio", studioArg);
+      // The current-tree path only certifies a `dirty:` tree when the
+      // caller of `ci` explicitly accepted that, same refusal `verify`
+      // alone gives. The `--ref` path's scratch checkout is a fresh `git
+      // worktree add` of `ref`, never touched by hand — clean by
+      // construction — so it always gets the same allowance `verify` would
+      // need to certify it at all.
+      if (allowDirty || ref !== undefined) verifyArgs.push("--allow-dirty");
+      if (opts.pipeline !== undefined) verifyOpts.pipeline = opts.pipeline;
+      if (ref !== undefined) {
+        // `execRepo` is a scratch worktree, not the checkout `--studio`
+        // lives under — translate the officina's position from `root` (the
+        // checkout the ref was forked from) onto `execRepo`'s own tree,
+        // which mirrors the same layout since it's a checkout of the same
+        // repo. See `RunVerifyOptions.studioRepoRelative`.
+        const studioDirActual = resolve(studioArg ?? ".");
+        verifyOpts.studioRepoRelative = toPosixRelative(root!, studioDirActual);
+      }
+      // W-279: ask which commands `verify` will run; a refusal ends `ci` before any step.
+      const plan = await runVerify(verifyArgs, { ...verifyOpts, plan: true });
+      if (plan.exitCode !== 0) return plan;
+      planned = plan.commands ?? {};
+    }
+
     // W-240: --offline skips the one step that needs the registry; the receipt
     // host recomputes ci in a network-isolated cell and is the only caller.
-    for (const step of offline ? CI_STEPS.filter((s) => s !== AUDIT_STEP) : CI_STEPS) {
+    const steps = (offline ? CI_STEPS.filter((s) => s !== AUDIT_STEP) : CI_STEPS).filter((s) => !handedToVerify(s, planned));
+    for (const step of steps) {
       const status = runStep(step, execRepo);
       if (status !== 0) {
         console.error(`bisellium ci: step failed (exit ${status}): ${step}`);
@@ -199,26 +241,6 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
     }
 
     if (opusId !== undefined) {
-      const verifyArgs = [opusId, "--repo", execRepo];
-      if (studioArg !== undefined) verifyArgs.push("--studio", studioArg);
-      // The current-tree path only certifies a `dirty:` tree when the
-      // caller of `ci` explicitly accepted that, same refusal `verify`
-      // alone gives. The `--ref` path's scratch checkout is a fresh `git
-      // worktree add` of `ref`, never touched by hand — clean by
-      // construction — so it always gets the same allowance `verify` would
-      // need to certify it at all.
-      if (allowDirty || ref !== undefined) verifyArgs.push("--allow-dirty");
-      const verifyOpts: RunVerifyOptions = {};
-      if (opts.pipeline !== undefined) verifyOpts.pipeline = opts.pipeline;
-      if (ref !== undefined) {
-        // `execRepo` is a scratch worktree, not the checkout `--studio`
-        // lives under — translate the officina's position from `root` (the
-        // checkout the ref was forked from) onto `execRepo`'s own tree,
-        // which mirrors the same layout since it's a checkout of the same
-        // repo. See `RunVerifyOptions.studioRepoRelative`.
-        const studioDirActual = resolve(studioArg ?? ".");
-        verifyOpts.studioRepoRelative = toPosixRelative(root!, studioDirActual);
-      }
       const result: RunVerifyResult = await runVerify(verifyArgs, verifyOpts);
       return result;
     }

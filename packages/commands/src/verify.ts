@@ -48,10 +48,15 @@ export interface RunVerifyOptions {
    *  record and the start state write, so a test can change the state in that
    *  window. Not a flag: it appears in no argv and `main.ts`/`ci.ts` never set it. */
   afterRead?: () => void;
+  /** W-279: `ci --opus` asks which commands this run would execute. Does every read and refusal, then returns
+   *  `commands` and runs, writes and prints nothing. Not a flag: only `ci.ts` sets it. */
+  plan?: boolean;
 }
 
 export interface RunVerifyResult {
   exitCode: number;
+  /** Set only on a `plan` return: gate id to the command this run would execute (waived gates are left out). */
+  commands?: Readonly<Record<string, string>>;
 }
 
 const USAGE =
@@ -144,6 +149,20 @@ function isStudioToplevel(repo: string, studioDir: string): boolean {
  *  really is nested under instead of at `repo`. */
 export function toPosixRelative(base: string, path: string): string {
   return relative(base, path).split(sep).join("/");
+}
+
+/** W-279: a failed gate's log reaches stderr (the host mint deletes the checkout that holds it), cut to its last
+ *  `LOG_TAIL_LINES` lines. The stored text is printed as written, with no second redaction. */
+const LOG_TAIL_LINES = 200;
+function printLogTail(studioDir: string, gateId: string, evidence: string): void {
+  const log = readContainedRegularFile(studioDir, evidence, "ci");
+  if ("error" in log) {
+    console.error(`${gateId}: log unreadable: ${log.error}`);
+    return;
+  }
+  const lines = log.bytes.toString("utf8").replace(/\n$/, "").split("\n");
+  console.error(`--- ${evidence}: log tail, at most ${LOG_TAIL_LINES} lines ---`);
+  console.error(lines.slice(-LOG_TAIL_LINES).join("\n"));
 }
 
 export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Promise<RunVerifyResult> {
@@ -282,6 +301,8 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     else runCommands[gateId] = command;
   }
 
+  if (opts.plan) return { exitCode: 0, commands: runCommands };
+
   // The own-tree rule: only a run that certifies THIS checkout's HEAD, not a `ci --ref` scratch tree, and aimed at
   // this checkout's top level writes state. Anything else writes gates as it always did.
   const ownTree = commit === "HEAD" && opts.studioRepoRelative === undefined && isStudioToplevel(repo, studioDir);
@@ -357,7 +378,10 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   for (const id of waivedIds) console.log(`${id}: waived (untouched)`);
   for (const [gateId, r] of Object.entries(results)) {
     console.log(`${gateId}: ${r.status}  ${r.evidence}`);
-    if (r.status === "failed") anyFailed = true;
+    if (r.status === "failed") {
+      anyFailed = true;
+      printLogTail(studioDir, gateId, r.evidence);
+    }
   }
 
   return { exitCode: anyFailed ? 1 : 0 };

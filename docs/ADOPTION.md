@@ -1179,7 +1179,8 @@ npm run bisellium -- ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <di
 `ci` runs this repository's CI pipeline locally, without a runner: the
 commands in `CI_STEPS` (`packages/commands/src/ci.ts`), in order, in
 `--repo` (default the current directory), stopping at the first that
-fails. Today those are `npm run -s audit` (`npm audit --audit-level=moderate`:
+fails; with `--opus`, the steps handed to `verify` (below) are left out of
+that loop. Today those are `npm run -s audit` (`npm audit --audit-level=moderate`:
 a moderate, high or critical npm advisory fails it, and so does a registry
 failure), `npm run -s typecheck`, `npm run -s lint`,
 `npm run -s format:check`, `npm test`,
@@ -1213,14 +1214,25 @@ steps in a scratch worktree of `<ref>` instead, after a from-scratch
 `npm ci` there against a throwaway cache (a worktree without its own
 `node_modules` would resolve `@bisellium/*` through the parent checkout and
 test the wrong code), and releases the worktree afterwards. `--opus <id>`
-runs `bisellium verify <id>` against the same tree once every step has
-passed, forwarding `--studio`, so the automated gates' certificates come
+runs `bisellium verify <id>` against the same tree once every step the loop
+kept has passed, forwarding `--studio`, so the automated gates' certificates come
 from `verify` itself; run it on the opus branch (D-021). `--allow-dirty` is
 passed to that `verify`, and on the `--ref` path it always is, since the
-scratch checkout is untouched. Exit codes: 0 every step passed (with
-`--opus`, `verify`'s own exit code instead), 1 a step or `--ref`'s install
-failed, 2 usage error, no git repo for `--ref`, or a ref that cannot be
-checked out.
+scratch checkout is untouched.
+
+`--opus` first asks `verify` which gates it will run (a plan that runs and
+writes nothing). A refusal (an unknown opus, a record owned by another
+branch, a dirty tree without `--allow-dirty`) ends `ci` with `verify`'s exit
+code before any step. A step whose command `verify` will run is left to it,
+so each check runs once: its output goes to the gate's log under `ci/`, not
+the terminal. A waived gate, or a gate whose command differs from the step,
+keeps its step in the loop. For this officina the handed-over steps are
+`npm run -s typecheck`, `npm run -s lint` and `npm test`. A failing gate
+prints its log to stderr after its `failed` line, cut to its last 200 lines
+when longer. Exit codes: 0 every step passed (with `--opus`, `verify`'s own
+exit code instead), 1 a step or `--ref`'s install failed, 2 usage error, no
+git repo for `--ref`, or a ref that cannot be checked out; with `--opus`, the
+plan's refusal code before any step.
 
 ## Merge queue
 
