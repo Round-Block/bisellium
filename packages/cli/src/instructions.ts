@@ -60,7 +60,7 @@ const CLAUDE_HARNESS = [
   "",
   "Hooks, subagents and slash commands are installed for this repo:",
   "- Hooks: `.claude/settings.json` (SessionStart/PreCompact re-inject context, Stop closes the receipt, PostToolUse on Write|Edit logs a tool event). The sella comes from `$BISELLIUM_SELLA` (default `guest`), never a `--sella` baked into a hook command.",
-  "- Subagents: `.claude/agents/{builder,censor,architect,clerk}.md`, each pointing at its collegium's lex and `bisellium context`.",
+  "- Subagents: `.claude/agents/{builder,architect,clerk,ladder-runner}.md`, each pointing at its collegium's lex and `bisellium context`.",
   "- Slash commands: `.claude/commands/{tick,talk,retro,verify,check}.md` — exact invocations, since the CLI's flag allowlists are strict.",
 ].join("\n");
 

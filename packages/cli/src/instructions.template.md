@@ -56,8 +56,7 @@ Read this before anything else in this repo.
   `Agent({ subagent_type: "builder", model: "sonnet" })`.
 - To review an opus, run the lex §9 review step: Codex `gpt-5.6-sol` by
   `codex exec`, recorded with `scripts/record-review.sh`. It is the single
-  review and QA gate (D-014, D-066 C); there is no other, and the `censor`
-  subagent is not it.
+  review and QA gate (D-014, D-066 C); there is no other.
 - This session orchestrates only. It does not write source, tests, or
   review verdicts.
 - Run `bisellium` with no arguments for the exact flag shapes before any

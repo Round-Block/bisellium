@@ -204,6 +204,7 @@ async function main(argv: string[]): Promise<number> {
     const bundle = buildContext(root, sella, { now, maxTokens });
     if (bundle.text === "" && bundle.truncated[0] === "not a studio") { console.error(`not a studio: ${root}`); return 2; }
     if (bundle.text === "" && bundle.truncated[0] === "unknown sella") { console.error(`unknown sella: ${sella}`); return 1; }
+    if (bundle.text === "" && bundle.truncated[0] === "runbook ambiguous") { console.error(`runbook ambiguous: ${sella}`); return 1; }
     if (bundle.text === "" && bundle.truncated.length === 0) console.log(`nothing for sella ${sella} right now`);
     else console.log(bundle.text);
     console.log(`tokens: ${bundle.tokens}`);

@@ -616,7 +616,7 @@ test("24f. the repo's real .claude/agents folder builds: its four agents, only t
   const r = w.run();
   assert.equal(w.runs(), 1, said(r));
   const { agents } = splitAgents(w);
-  assert.deepEqual(Object.keys(agents).sort(), ["architect", "builder", "censor", "clerk"]);
+  assert.deepEqual(Object.keys(agents).sort(), ["architect", "builder", "clerk", "ladder-runner"]);
   for (const a of Object.values(agents)) {
     assert.deepEqual(Object.keys(a).sort(), ["description", "model", "prompt", "tools"]);
     assert.ok(Array.isArray(a.tools) && a.tools.every((t) => /^[A-Za-z]+$/.test(t)), JSON.stringify(a.tools));
