@@ -419,6 +419,8 @@ export interface Facts {
   owed(): { owed: string[] } | { error: string };
   /** newest `# at:` among the opus's reds and review logs, in ms */
   evidenceAt(): number;
+  /** W-206: why the worktree's ci/ cannot be listed (absent is no problem) */
+  wtCiProblem(): string | undefined;
 }
 
 function memo<T>(fn: () => T): () => T {
@@ -562,6 +564,15 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
     pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
     owed: memo(() => owedRetros(studioAbs)),
+    wtCiProblem: memo(() => {
+      try {
+        readdirSync(join(wt.studio, "ci"));
+        return undefined;
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code;
+        return code === "ENOENT" ? undefined : `ci/ of ${join(".worktrees", id, studioRel)} cannot be listed (${code ?? "error"})`;
+      }
+    }),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(instant(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at"))?.getTime() ?? Number.NaN);
@@ -706,8 +717,18 @@ export function deriveNext(f: Facts): Derived {
   if ("error" in gate) return hold("spec", gate.error);
   const reviewer = gate.reviewer;
   const admit = lightAdmission(f);
-  const spec = specEvidence(f.trunk, id, f.design, reviewer, admit);
+  // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
+  // ponytail: only with a reviewer; without one signedSpec pins no brief, so an amendment never un-passes the spec (today's rung)
+  const onOpus = f.tip !== undefined && reviewer !== undefined;
+  const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
+  if (ciProblem !== undefined) return hold("spec", ciProblem);
+  const spec = specEvidence(onOpus ? f.branch : f.trunk, id, f.design, reviewer, admit);
   const ui = spec.ok ? f.uiSpecProblems() : [];
+  if (onOpus && !spec.ok) {
+    if (!f.wt.usable) return hold("spec", `${spec.why}; ${join(".worktrees", id)} is not a usable worktree on opus/${id}, so no spec write is ordered`);
+    if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
+    return hold("spec", spec.why);
+  }
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design, reviewer, admit);
     if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
@@ -838,7 +859,7 @@ export function deriveNext(f: Facts): Derived {
 }
 
 /** The order a reviewer-configured spec step names, from the source that holds the newest signature. */
-function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number): Derived {
+function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number, studio = f.studioRel, src: Src | undefined = fsSrc(f.studioAbs)): Derived {
   const { id } = f;
   const round = maxRound + 1;
   if (ev.gate?.kind === "failed") {
@@ -847,6 +868,7 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
     return dispatch(f, "spec", ended ? `${ev.gate.failed.join(" and ")} failed; D-061 §4: no third review: the producer files the remainder as a new opus, then the architect cuts the brief to what passed and signs` : ev.why, {
       phase: "spec",
       round,
+      studio,
       resume: ev.anyLog,
       inputs: [briefRel(id), ev.gate.review],
       ...(ended ? { extra: [["split", `bisellium new --kind <kind> --collegium <collegium> --title <the remainder> --parent ${id} ${f.studioRel}`]] as [string, string][] } : {}),
@@ -858,11 +880,11 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
     const limit = readBriefLimit(f.manifest.brief_behaviour_limit);
     if ("error" in limit) return { step: "spec", status: "held", actor: "producer", why: `brief.admission: ${limit.error}`, extra: [] };
     const problems = limit.limit === undefined ? [] : briefAdmissionProblems(f.studioAbs, f.manifest, id, ev.gate.brief, limit.limit);
-    if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature] });
-    const session = reviewSession(fsSrc(f.studioAbs), id, "spec", reviewer.sella);
-    return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model], ...(session === undefined ? [] : [["session", session] as [string, string]])], ...(session === undefined ? {} : { session }) });
+    if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature] });
+    const session = reviewSession(src, id, "spec", reviewer.sella);
+    return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model], ...(session === undefined ? [] : [["session", session] as [string, string]])], ...(session === undefined ? {} : { session }) });
   }
-  return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id)] });
+  return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id)] });
 }
 
 /** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. */
@@ -939,8 +961,9 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; session?: string; behaviour?: { from: number; through: number } }): Derived {
-  const { id, studioRel, manifest } = f;
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; session?: string; behaviour?: { from: number; through: number }; studio?: string }): Derived {
+  const { id, manifest } = f;
+  const studioRel = o.studio ?? f.studioRel;
   const builder = (() => {
     const resolved = resolveSeat(manifest, "builder");
     const minted = resolved === undefined ? undefined : mintDispatchSella(resolved, "builder", id, "next");
@@ -1485,7 +1508,7 @@ function performDone(f: Facts, d: Derived): StepResult {
 // ---------------------------------------------------------------------------
 
 /** W-233: the studio each ticketed action writes in: the main checkout, or else the opus's worktree when it is usable. */
-const MAIN_ACTIONS = new Set<TicketAction>(["verdict-spec", "branch", "merge", "done"]);
+const MAIN_ACTIONS = new Set<TicketAction>(["branch", "merge", "done"]);
 
 /**
  * W-233: in a studio that sets `step_tickets: required`, write the ticket for the action `d` names (replacing any
