@@ -1,0 +1,16 @@
+# opus: W-279
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T08:14:58.705Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-279.md blob:03f5903b91a9e7d32575aa22b4e9578504b9da7e
+# ticket: {"opus":"W-279","step":"spec","action":"verdict-spec","round":8,"actor":"architect","studio":"studio","head":"7061e79c3348225eb80c51f57b98d7b3b99eb2a5","brief":"03f5903b91a9e7d32575aa22b4e9578504b9da7e","at":"2026-10-15T08:14:53.523Z"}
+
+## Findings
+
+1. advisory — took spec review round 7 finding 1: the tail paragraph now says a short local-pipeline log is shown whole including its certifies, command and exit-code headers, a longer one is cut to its last 200 lines, and verify prints the stored tail without a second redaction (localPipeline redacts at packages/pipeline/src/index.ts:103-106) — check: packages/cli/src/w279.test.ts behaviour 3
+2. advisory — behaviour 3 gains a short failing-log case (a types gate printing one line) whose block must hold the whole log with its headers — check: packages/cli/src/w279.test.ts behaviour 3
+3. advisory — a re-read found three more lines implying exactly 200 lines; the stderr marker line, the ADOPTION paragraph text and Default 4 now say at most 200 lines — check: none: wording only, behaviour 3 asserts the bound
