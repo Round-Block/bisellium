@@ -5371,3 +5371,56 @@ test("W-206-b1 behaviour 1: an amended in-flight brief returns the ladder to spe
   assert.match(h.kv.get("why") ?? "", /not a usable worktree/, ran("why", h));
 });
 
+test("W-206-b2 behaviour 2: the spec perform commits the amended brief and every new spec round on opus/<id>", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-b2", "review");
+  amend(w);
+  assert.equal(wtSpec(w, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(w, 4, SR, "failed", SR_MODEL).status, 0, "review 4 fails");
+  appendFileSync(WT_BRIEF(w), "\nRevised.\n");
+  verb(w.wt, ["handoff", "--opus", OPUS, "--sella", "producer", "--next", "re-sign the amended brief", "--studio", w.wtStudio, "--now", "2026-10-02T09:30:00.000Z"]);
+  assert.equal(wtSpec(w, 5, "architect", "passed").status, 0, "signature 5");
+  assert.equal(wtSpec(w, 6, SR, "passed", SR_MODEL).status, 0, "review 6 passes");
+  const named = next(w, [OPUS]);
+  expectStep(named, "spec", "named", "a passed branch spec left uncommitted names the spec commit");
+  const tip = tipOf(w);
+  const master = git(w.repo, ["rev-parse", "master"]);
+  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(done, "spec", "performed", "the perform commits on the opus branch");
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), tip, "opus/<id> advances by one commit");
+  const logs = [3, 4, 5, 6].map((n) => `studio/ci/${OPUS}-spec-${n}.log`);
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(), [...logs, BRIEF_REL, `studio/opera/${OPUS}.md`].sort(), "exactly the brief, rounds 3-6 and the record the handoff changed");
+  assert.equal(git(w.repo, ["rev-parse", "master"]), master, "master is unmoved");
+  assert.equal(branchExists(w, `spec/${OPUS}`), false, "no spec/<id>");
+  assert.deepEqual(mutating(w), [], "no PR is opened or merged and nothing is pushed");
+
+  const dirty = w206World("w206-b2-dirty", "review");
+  amend(dirty);
+  wtSpec(dirty, 3, "architect", "passed");
+  wtSpec(dirty, 4, SR, "passed", SR_MODEL);
+  appendFileSync(join(dirty.wt, "source.txt"), "uncommitted source\n");
+  const t2 = tipOf(dirty);
+  const held = next(dirty, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(held, "spec", "held", "a source change beside the spec refuses the perform");
+  assert.equal(tipOf(dirty), t2, "the branch is unmoved");
+  assert.equal(git(dirty.wt, ["diff", "--cached", "--name-only"]), "", "nothing is staged");
+
+  const h = w206World("w206-b2-history", "review");
+  amend(h);
+  assert.equal(wtSpec(h, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(h, 4, "architect", "passed").status, 0, "signature 4");
+  assert.equal(wtSpec(h, 5, SR, "passed", SR_MODEL).status, 0, "review 5");
+  const log3 = join(h.wtStudio, "ci", `${OPUS}-spec-3.log`);
+  writeFileSync(log3, readFileSync(log3, "utf8").replace(/^# brief: .*$/m, "# brief: garbage"));
+  const t3 = tipOf(h);
+  const loose = next(h, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(loose, "spec", "held", "a malformed new spec log below the signature holds");
+  assert.match(loose.kv.get("why") ?? "", /spec-3\.log/, ran("why names it", loose));
+  rmSync(join(h.wtStudio, "ci", `${OPUS}-spec-3.log`));
+  git(h.wt, ["mv", `studio/ci/${OPUS}-spec-1.log`, "studio/ci/old.log"]);
+  expectStep(next(h, [OPUS, "--perform", "--expect", "spec"]), "spec", "held", "a renamed committed spec log holds");
+  git(h.wt, ["mv", "studio/ci/old.log", `studio/ci/${OPUS}-spec-1.log`]);
+  appendFileSync(join(h.wtStudio, "ci", `${OPUS}-spec-2.log`), "edited\n");
+  expectStep(next(h, [OPUS, "--perform", "--expect", "spec"]), "spec", "held", "an edited committed spec log holds");
+  assert.equal(tipOf(h), t3, "the branch is unmoved");
+});
+
