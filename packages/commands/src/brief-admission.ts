@@ -69,6 +69,23 @@ function redMarkers(section: string[]): { before: number; per: number[] } {
   return { before, per };
 }
 
+/** W-255: a light brief gives each numbered behaviour one red command, where `bisellium` opens a token. */
+const RED_COMMAND = /(?<![^\s`])bisellium red (\S+) --behaviour ([^\s`]+)/g;
+
+function redCommandProblems(section: string[]): string[] {
+  const items: string[][] = [];
+  for (const line of section) {
+    if (/^\s{0,3}\d+\.\s/.test(line)) items.push([]);
+    items[items.length - 1]?.push(line);
+  }
+  return items.flatMap((lines, i) => {
+    const found = lines.flatMap((l) => [...l.matchAll(RED_COMMAND)]);
+    if (found.length !== 1)
+      return [`behaviour ${i + 1} names ${found.length} red commands; a light brief gives each behaviour one "bisellium red <opus> --behaviour ${i + 1} …"`];
+    return found[0]![2] === String(i + 1) ? [] : [`behaviour ${i + 1}'s red command is not "bisellium red <opus> --behaviour ${i + 1} …"`];
+  });
+}
+
 const captured = (lines: string[], re: RegExp): string[] =>
   lines.flatMap((l) => {
     const m = re.exec(l);
@@ -255,6 +272,7 @@ export function readBriefLimit(raw: unknown): { limit: number | undefined } | { 
 export function readBriefAdmission(briefText: string, limit: number): { problems: string[]; exception?: string } {
   const problems: string[] = [];
   const real = realLines(briefText);
+  const { light, error } = briefForm(real);
   const families = captured(real, /^Decree family:(.*)$/);
   if (families.length === 0) problems.push('declares no decree family; add one line "Decree family: <slug>"');
   else if (families.length > 1)
@@ -285,8 +303,11 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
           `behaviour ${i + 1} names ${k} genuine reds; each numbered behaviour names exactly one, so number every independent behaviour`,
         );
     });
+    if (light) problems.push(...redCommandProblems(behavioursSection(real) ?? []));
   }
-  problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real), ...absolutePromiseProblems(real));
+  if (!light) problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real));
+  problems.push(...absolutePromiseProblems(real));
+  if (error !== undefined) problems.push(error);
   return exception === undefined ? { problems } : { problems, exception };
 }
 
@@ -304,4 +325,63 @@ export function readRedOrder(briefText: string): { declared: boolean } | { error
   if (attempts.length > 1) return { error: `declares ${attempts.length} red order lines; one line "${RED_ORDER_LINE}" or none` };
   if (attempts[0] !== RED_ORDER_LINE) return { error: `red order line "${attempts[0]}" is not exactly "${RED_ORDER_LINE}"` };
   return { declared: true };
+}
+
+const BRIEF_FORM_LINE = "Brief: light";
+const RISKY_FAMILY_TOKENS = ["security", "secret", "auth", "sandbox", "protection", "pipeline", "ci", "certify"];
+const RISKY_PREFIXES = [".github/", ".claude/", "packages/pipeline/"];
+const RISKY_FILES = new Set([
+  "package.json",
+  "scripts/agent-workspace.sh",
+  "scripts/ci-certify.mjs",
+  "scripts/ci-scope.mjs",
+  "scripts/run-builder-host.mjs",
+  "scripts/git-broker.mjs",
+  "scripts/git-cell-client.mjs",
+  "scripts/host-cells.mjs",
+  "packages/commands/src/ci.ts",
+  "packages/commands/src/verify.ts",
+  "packages/commands/src/builder-run.ts",
+  "packages/commands/src/run.ts",
+  "packages/cli/src/integrate.ts",
+]);
+
+/** D-063 §4: the first sign that a light brief is security, sandbox, branch-protection or pipeline work: a token of a real
+ *  `Decree family:` value, or a backticked span of a real `## Files owned` line (every such section, to the next real `^## `).
+ *  A fixed list: work outside it rests on the signing architect and the build review (a path without backticks is not seen). */
+function riskySignal(real: string[]): string | undefined {
+  for (const family of captured(real, /^Decree family:(.*)$/)) {
+    const token = family.split("-").find((t) => RISKY_FAMILY_TOKENS.includes(t));
+    if (token !== undefined) return `decree family "${family}" names "${token}"`;
+  }
+  let owned = false;
+  for (const line of real) {
+    if (/^## /.test(line)) owned = line.trim() === "## Files owned";
+    else if (owned)
+      for (const [, span] of line.matchAll(/`([^`]+)`/g)) {
+        const path = span!.replace(/^\.\//, "");
+        if (RISKY_FILES.has(path) || RISKY_PREFIXES.some((p) => path.startsWith(p))) return `Files owned names \`${span}\``;
+      }
+  }
+  return undefined;
+}
+
+/** The brief's form with its error, if any. An excluded light brief is `{ light: true, error }`: it is checked as light
+ *  (its own sections were never asked for an Input domain), and the exclusion is the one problem it adds. */
+function briefForm(real: string[]): { light: boolean; error?: string } {
+  const attempts = real.map((l) => l.trim()).filter((l) => /^brief[\s_-]*:/i.test(l));
+  if (attempts.length === 0) return { light: false };
+  if (attempts.length > 1) return { light: false, error: `has ${attempts.length} brief form lines; one line "${BRIEF_FORM_LINE}" or none` };
+  if (attempts[0] !== BRIEF_FORM_LINE) return { light: false, error: `brief form line "${attempts[0]}" is not exactly "${BRIEF_FORM_LINE}"` };
+  const signal = riskySignal(real);
+  if (signal === undefined) return { light: true };
+  return { light: true, error: `a light brief is not for security, sandbox, branch-protection or pipeline work (D-063 §4): ${signal}; use the full template` };
+}
+
+/** W-255 (D-063 §4): whether the architect marked the brief light. An attempt is a real line (outside fences and
+ *  comments) whose trimmed text matches `/^brief[\s_-]*:/i`. None: full. Exactly one, equal to "Brief: light": light,
+ *  unless `riskySignal` finds the work is not for a light brief. Otherwise an error. */
+export function readBriefForm(briefText: string): { light: boolean } | { error: string } {
+  const form = briefForm(realLines(briefText));
+  return form.error === undefined ? { light: form.light } : { error: form.error };
 }

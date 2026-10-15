@@ -29,7 +29,7 @@ import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bis
 import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
-import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
+import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { SESSION_ID, buildReviewDrift, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
@@ -73,6 +73,7 @@ const TRUNK = "refs/heads/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
 const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec"]);
 const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
+const LIGHT_SECTIONS = ["Intent", "Files owned", "Behaviours to test", "Acceptance"];
 const PAST_READY = new Set(["building", "verifying", "review", "done"]);
 /** W-162: the one model the spec reviewer may be. Another codex model is not close enough. */
 const REVIEWER_MODEL = "gpt-5.6-sol";
@@ -192,8 +193,40 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: Spe
 }
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
-function specEvidence(src: Src | undefined, id: string, design: string, reviewer?: SpecReviewer): SpecEvidence {
-  return reviewer === undefined ? signedSpec(src, id, design) : reviewedSpec(src, id, reviewer);
+function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[]): SpecEvidence {
+  return reviewer === undefined ? signedSpec(src, id, design, admit) : reviewedSpec(src, id, reviewer, admit);
+}
+
+const hasSections = (brief: string, names: string[]): boolean => names.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief));
+
+/**
+ * W-255 (D-063 §4): why a brief fails the signature gates' sections, or undefined. A brief marked `Brief: light` needs the four
+ * light sections and `admit`'s problems (a declared limit, admission, the Red order line); anything else is full and needs the
+ * six. A marker that `readBriefForm` refuses is that error, never a full brief.
+ */
+function specSectionsProblem(brief: string | undefined, rel: string, admit: (brief: string) => string[]): string | undefined {
+  const full = `${rel} is missing or lacks the six design-lex sections`;
+  if (brief === undefined) return full;
+  const form = readBriefForm(brief);
+  if ("error" in form) return `${rel} ${form.error}`;
+  if (!form.light) return hasSections(brief, SECTIONS) ? undefined : full;
+  if (!hasSections(brief, LIGHT_SECTIONS)) return `${rel} lacks the four light-brief sections`;
+  const problems = admit(brief);
+  return problems.length > 0 ? `${rel} ${problems.join("; ")}` : undefined;
+}
+
+/** W-255: what a light brief must also satisfy, built once per derivation: the declared limit and `ready`'s admission, then the Red order line. */
+function lightAdmission(f: Facts): (brief: string) => string[] {
+  return (brief) => {
+    const limit = readBriefLimit(f.manifest.brief_behaviour_limit);
+    if ("error" in limit) return [limit.error];
+    if (limit.limit === undefined) return ['"Brief: light" needs a declared brief_behaviour_limit (W-264)'];
+    const order = readRedOrder(brief);
+    return [
+      ...briefAdmissionProblems(f.studioAbs, f.manifest, f.id, brief, limit.limit),
+      ...("error" in order ? [order.error] : order.declared ? [] : ['declares no red order; add the line "Red order: one at a time"']),
+    ];
+  };
 }
 
 /** The git blob sha1 of a brief's text as a source returns it, encoded as UTF-8: the W-126 pin. */
@@ -275,7 +308,7 @@ function failedSpecReviews(read: { n: number; rel: string; text: string | undefi
   return failed;
 }
 
-function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer): SpecEvidence {
+function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, admit: (brief: string) => string[]): SpecEvidence {
   if (src === undefined) return { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false, gate: { kind: "signature" } };
   const names = src.list("ci").filter((name) => name.startsWith(`${id}-spec-`));
   const logs: { n: number; rel: string }[] = [];
@@ -289,7 +322,8 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer):
   const result = (why: string, gate: SpecGate): SpecEvidence => ({ ok: false, why, maxRound: Math.max(0, ...logs.map((l) => l.n)), anyLog: names.length > 0, gate });
   if (badName !== undefined) return result(`ci/${badName}: a spec log is named ${id}-spec-<n>.log, n a positive integer with no leading zero`, { kind: "invalid" });
   const brief = src.read(briefRel(id));
-  if (brief === undefined || !SECTIONS.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief))) return result(`${briefRel(id)} is missing or lacks the six design-lex sections`, { kind: "signature" });
+  const sections = specSectionsProblem(brief, briefRel(id), admit);
+  if (brief === undefined || sections !== undefined) return result(sections ?? "", { kind: "signature" });
   const expected = `${briefRel(id)} blob:${blobOf(brief)}`;
   const read = logs.map((l) => ({ ...l, text: src.read(l.rel) }));
   const anchor = [...read].reverse().find((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, expected, l.rel)));
@@ -310,11 +344,11 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer):
   if (review.outcome === "failed") return signed({ kind: "failed", review: review.log, failed }, `${review.log} failed ${anchor.rel}; the architect revises and signs again`);
   return { ...signed({ kind: "ready", review: review.log }, `${briefRel(id)}, ${anchor.rel} and ${review.log} are the signed, reviewed spec`), ok: true };
 }
-function signedSpec(src: Src | undefined, id: string, design: string): SpecEvidence {
+function signedSpec(src: Src | undefined, id: string, design: string, admit: (brief: string) => string[]): SpecEvidence {
   const none: SpecEvidence = { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false };
   if (src === undefined) return none;
   const brief = src.read(briefRel(id));
-  const sectionsOk = brief !== undefined && SECTIONS.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief));
+  const sections = specSectionsProblem(brief, briefRel(id), admit);
   let maxRound = 0;
   let anyLog = false;
   let best: { n: number; sella: string; log: string } | undefined;
@@ -327,7 +361,7 @@ function signedSpec(src: Src | undefined, id: string, design: string): SpecEvide
     const h = parseLogHeader(src.read(`ci/${name}`) ?? "");
     if (h.get("phase") === "spec" && h.get("opus") === id && h.get("sella") === design && (h.get("outcome") ?? "").startsWith("passed") && (best === undefined || n > best.n)) best = { n, sella: design, log: `ci/${name}` };
   }
-  if (!sectionsOk) return { ...none, why: `${briefRel(id)} is missing or lacks the six design-lex sections`, maxRound, anyLog };
+  if (sections !== undefined) return { ...none, why: sections, maxRound, anyLog };
   if (best === undefined) return { ...none, why: `no passing ${design} spec log (ci/${id}-spec-<n>.log with phase spec)`, maxRound, anyLog };
   return { ok: true, why: `${briefRel(id)} and ${best.log} are on the trunk`, sella: best.sella, log: best.log, maxRound, anyLog };
 }
@@ -671,15 +705,16 @@ export function deriveNext(f: Facts): Derived {
   const gate = readSpecReviewer(f.manifest, f.trunkRecord ?? {});
   if ("error" in gate) return hold("spec", gate.error);
   const reviewer = gate.reviewer;
-  const spec = specEvidence(f.trunk, id, f.design, reviewer);
+  const admit = lightAdmission(f);
+  const spec = specEvidence(f.trunk, id, f.design, reviewer, admit);
   const ui = spec.ok ? f.uiSpecProblems() : [];
   if (!spec.ok || ui.length > 0) {
-    const onBranch = specEvidence(f.specBranch, id, f.design, reviewer);
+    const onBranch = specEvidence(f.specBranch, id, f.design, reviewer, admit);
     if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
     // a spec/<id> branch cannot take a review (performSpecCommit refuses an existing branch): never land it, name it
     if (reviewer !== undefined && !spec.ok && f.specBranch !== undefined) return hold("spec", `spec/${id} exists but does not carry a signed spec with a passed review; it cannot take one, so it is not landed`);
     // no spec/<id> at all: the architect may have left the signed spec uncommitted in the main checkout
-    const tree = !spec.ok && f.specBranch === undefined ? specEvidence(fsSrc(f.studioAbs), id, f.design, reviewer) : undefined;
+    const tree = !spec.ok && f.specBranch === undefined ? specEvidence(fsSrc(f.studioAbs), id, f.design, reviewer, admit) : undefined;
     if (tree?.ok) return { ...named("spec", "producer", "spec signed in the working tree, not committed", `bisellium next ${id} --perform --expect spec`), act: "commit" };
     if (reviewer !== undefined && tree?.gate !== undefined) return specOrder(f, reviewer, tree, Math.max(spec.maxRound, tree.maxRound));
     return dispatch(f, "spec", spec.ok ? ui.join("; ") : spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
@@ -1342,7 +1377,7 @@ function performSpecCommit(f: Facts): StepResult {
   if (refExists(repo, `refs/heads/${head}`)) return heldResult(`refusing: ${head} already exists`);
   const gate = readSpecReviewer(f.manifest, f.trunkRecord ?? {});
   if ("error" in gate) return heldResult(`refusing: ${gate.error}`);
-  const spec = specEvidence(fsSrc(f.studioAbs), id, f.design, gate.reviewer);
+  const spec = specEvidence(fsSrc(f.studioAbs), id, f.design, gate.reviewer, lightAdmission(f));
   if (!spec.ok || spec.log === undefined) return heldResult(`refusing: ${spec.why}`);
   // exactly the brief, the newest signature and (with a reviewer) its one passed review: history stays where it is
   const paths = [briefRel(id), spec.log, ...(spec.gate?.kind === "ready" ? [spec.gate.review] : []), ...(spec.gate?.kind === "split" ? spec.gate.failed : [])].map((p) => `${f.studioRel}/${p}`);

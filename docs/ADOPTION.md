@@ -980,6 +980,22 @@ the log alone, implement, then the next behaviour. Where `bisellium.yml`
 declares `brief_behaviour_limit`, `ready` refuses a new brief without the line
 (after brief admission passes). Briefs without the line behave as before.
 
+**Light brief (W-255, D-063 §4).** A brief the architect marks with the one real
+line `Brief: light` (outside fences and comments; any other spelling of that
+prefix, or a repeat, is an error that is never read as light) needs only
+`## Intent`, `## Files owned`, `## Behaviours to test` and `## Acceptance`.
+Admission (`ready`, `check`'s `brief.admission`) then skips the Input domain and
+Read enumeration checks and asks each numbered behaviour for exactly one
+`bisellium red <opus> --behaviour <n> …` command whose `--behaviour` token is
+its ordinal; the decree family, behaviour limit, one genuine red per behaviour,
+promise lines and Red order line still apply. `next`'s signature gates take the
+four sections, a declared `brief_behaviour_limit` and the Red order line. A
+light brief is refused for security, sandbox, branch-protection and pipeline
+work: a decree family token (`security`, `secret`, `auth`, `sandbox`,
+`protection`, `pipeline`, `ci`, `certify`) or a backticked `## Files owned` path
+on a fixed list. Limit: the list is the whole of the check; other work rests on
+the signing architect and the build review. Without the marker a brief is full.
+
 For every red, `--repo` may only confirm the repository the command runs in (a
 different Git root is refused; a non-Git `--repo` keeps `# tree: unknown`); a
 red recorded in any worktree of the studio's own repository is hashed with the

@@ -76,6 +76,8 @@ interface BriefSpec {
   reads?: string[];
   /** W-196: extra lines in the Intent section, after the read enumeration. */
   intent?: string[];
+  /** W-255: the lines under "## Files owned"; default the one `- a.ts` bullet. */
+  owned?: string[];
 }
 
 const RED = "**Genuine red:**";
@@ -101,7 +103,7 @@ function brief(s: BriefSpec = {}): string {
   for (const r of s.reads ?? [READS]) out.push(r);
   out.push(...(s.intent ?? []));
   if (s.fencedIntent) out.push("```", ...s.fencedIntent, "```");
-  out.push("", "## Files owned", "", "- a.ts", "", "## Interfaces", "", "none", "");
+  out.push("", "## Files owned", "", ...(s.owned ?? ["- a.ts"]), "", "## Interfaces", "", "none", "");
   const domain = s.domain ?? DOMAIN;
   if (domain.length > 0) out.push("## Input domain", "", ...domain, "");
   out.push("## Behaviours to test", "");
@@ -746,4 +748,83 @@ test("W-196-b3 behaviour 3: D-050's three row forms are admitted, and nothing lo
     "containment.test.ts",
   ])
     refused(ready(brief({ domain: cell(bad) })), [NO_FN(1)], bad);
+});
+
+// ---------------------------------------------------------------------------
+// W-255 (D-063 §4): a brief marked "Brief: light" needs no Input domain and no Read enumeration, and each
+// behaviour names its one red command. Rows are selectable with --test-name-pattern=W-255-b<n>.
+// ---------------------------------------------------------------------------
+const MARK = "Brief: light";
+const redCommand = (i: number, token = String(i)): string => `   Red command: \`bisellium red W-900 --behaviour ${token} --sella builder -- node x\``;
+/** A light brief: the marker, no Input domain, no Read enumeration, one red command per behaviour. */
+function light(s: BriefSpec = {}): string {
+  const cmds: Record<number, string[]> = {};
+  (s.reds ?? [1, 1]).forEach((_, i) => (cmds[i + 1] = [redCommand(i + 1)]));
+  return brief({ domain: [], reads: [], ...s, intent: s.intent ?? [MARK], after: { ...cmds, ...s.after } });
+}
+const FULL_PROBLEMS = [NO_DOMAIN, NO_READS];
+const FORM = (l: string): string => `brief form line "${l}" is not exactly "Brief: light"`;
+const NAMES = (i: number, k: number): string => `behaviour ${i} names ${k} red commands; a light brief gives each behaviour one "bisellium red <opus> --behaviour ${i} …"`;
+const NOT_CMD = (i: number): string => `behaviour ${i}'s red command is not "bisellium red <opus> --behaviour ${i} …"`;
+
+test("W-255-b1 behaviour 1: a brief marked light is admitted without Input domain or Read enumeration; anything else is full or refused", () => {
+  accepted(ready(light()), "light");
+  refused(ready(light({ intent: [] })), FULL_PROBLEMS, "no marker is full");
+  for (const bad of ["Brief: Light", "Brief:light", "Brief: full", "Brief:"])
+    refused(ready(light({ intent: [bad] })), [...FULL_PROBLEMS, FORM(bad)], bad);
+  refused(ready(light({ intent: [MARK, MARK] })), [...FULL_PROBLEMS, 'has 2 brief form lines; one line "Brief: light" or none'], "two marker lines");
+  refused(ready(light({ intent: [], tail: ["```", MARK, "```"] })), FULL_PROBLEMS, "marker in a fence");
+  refused(ready(light({ intent: [], tail: ["<!--", MARK, "-->"] })), FULL_PROBLEMS, "marker in a comment");
+  refused(ready(light({ after: { 2: [] } })), [NAMES(2, 0)], "command dropped");
+  refused(ready(light({ after: { 2: [redCommand(2), redCommand(2)] } })), [NAMES(2, 2)], "command doubled");
+  refused(ready(light({ after: { 2: ["   xbisellium red W-900 --behaviour 2"] } })), [NAMES(2, 0)], "xbisellium is no command");
+  for (const token of ["2a", "2.5", "1", "02"]) refused(ready(light({ after: { 2: [redCommand(2, token)] } })), [NOT_CMD(2)], `--behaviour ${token}`);
+});
+
+const EXCLUDED = (signal: string): string =>
+  `a light brief is not for security, sandbox, branch-protection or pipeline work (D-063 §4): ${signal}; use the full template`;
+const OWNED = (...spans: string[]): string[] => spans.map((s) => `- \`${s}\`: the file`);
+const EXCLUDED_PATHS = [
+  ".github/workflows/ci.yml",
+  ".claude/agents/builder.md",
+  "packages/pipeline/src/a.ts",
+  "package.json",
+  "scripts/agent-workspace.sh",
+  "scripts/ci-certify.mjs",
+  "scripts/ci-scope.mjs",
+  "scripts/run-builder-host.mjs",
+  "scripts/git-broker.mjs",
+  "scripts/git-cell-client.mjs",
+  "scripts/host-cells.mjs",
+  "packages/commands/src/ci.ts",
+  "packages/commands/src/verify.ts",
+  "packages/commands/src/builder-run.ts",
+  "packages/commands/src/run.ts",
+  "packages/cli/src/integrate.ts",
+];
+
+test("W-255-b2 behaviour 2: security, sandbox, branch-protection and pipeline work cannot be light", () => {
+  const problems = (text: string): string[] => readBriefAdmission(text, 6).problems;
+  for (const token of ["security", "secret", "auth", "sandbox", "protection", "pipeline", "ci", "certify"])
+    assert.deepEqual(problems(light({ families: [`lane-${token}-x`] })), [EXCLUDED(`decree family "lane-${token}-x" names "${token}"`)], `family token ${token}`);
+  assert.deepEqual(problems(light({ families: ["ci-gate"] })), [EXCLUDED('decree family "ci-gate" names "ci"')], "ci-gate");
+  assert.deepEqual(problems(light({ families: ["branch-protection"] })), [EXCLUDED('decree family "branch-protection" names "protection"')], "branch-protection");
+  for (const path of EXCLUDED_PATHS)
+    assert.deepEqual(problems(light({ owned: OWNED(path) })), [EXCLUDED(`Files owned names \`${path}\``)], `path ${path}`);
+  assert.deepEqual(problems(light({ owned: OWNED("./package.json") })), [EXCLUDED("Files owned names `./package.json`")], "a leading ./ is dropped");
+  assert.deepEqual(problems(light({ owned: OWNED("packages/cli/src/next.ts", ".github/") })), [EXCLUDED("Files owned names `.github/`")], "a directory span");
+  assert.deepEqual(problems(light({ families: ["fixture-cinema"], owned: OWNED("packages/cli/src/next.ts", "docs/ADOPTION.md") })), [], "an ordinary light brief");
+  assert.deepEqual(problems(light({ owned: ["- .github/workflows/ci.yml with no backticks"] })), [], "a path without backticks is not seen");
+  assert.deepEqual(problems(light({ tail: ["`package.json` stays as it is."] })), [], "Out of scope is not Files owned");
+  assert.deepEqual(problems(light({ tail: ["## Files owned", "- `package.json`"] })), [EXCLUDED("Files owned names `package.json`")], "a repeated Files owned section is read too");
+  // the same brief unmarked is full: the family and the path are not read
+  assert.equal(problems(brief({ families: ["ci-gate"], owned: OWNED(".github/workflows/ci.yml") })).length, 0, "a full brief is not excluded");
+
+  refused(ready(light({ families: ["ci-gate"] })), [EXCLUDED('decree family "ci-gate" names "ci"')], "ready: family");
+  refused(ready(light({ owned: OWNED(".github/workflows/ci.yml") })), [EXCLUDED("Files owned names `.github/workflows/ci.yml`")], "ready: path");
+  const found = checked("building", light({ owned: OWNED("./package.json") })).admission;
+  assert.equal(found.length, 1, JSON.stringify(found));
+  assert.equal(found[0]!.level, "block");
+  assert.ok(found[0]!.message.endsWith(EXCLUDED("Files owned names `./package.json`")), found[0]!.message);
+  assert.equal(checked("building", light()).admission.length, 0, "check: an ordinary light brief");
 });

@@ -8,8 +8,11 @@ Turn a greenlit idea into a spec a builder can implement without guessing
 scope. **Definition of ready**: an opus is ready for `building` when it
 carries a `spec:` path to a brief with, at minimum, Intent, Files owned,
 Interfaces, Behaviours to test, Acceptance and Out of scope — and that
-brief has been read by the sella it hands off to. Nothing enters `building`
-without one (check: state.building.spec).
+brief has been read by the sella it hands off to. A brief the architect marks
+with the one line `Brief: light` needs only Intent, Files owned, Behaviours to
+test (each naming its `bisellium red` command) and Acceptance (D-063 §4); it is
+never for security, sandbox, branch-protection or pipeline work. Nothing enters
+`building` without one (check: state.building.spec).
 
 ## 2. Decides alone
 
@@ -45,7 +48,7 @@ without one (check: state.building.spec).
 
 ## 7. Evidence contract
 
-Every spec carries: the opus id it specs, the six sections above, and the
+Every spec carries: the opus id it specs, the six sections above (the four of a light brief), and the
 `spec:` front-matter path on the opus it belongs to, set before the opus
 moves to `building`.
 
@@ -55,3 +58,4 @@ moves to `building`.
 |---|---|---|
 | 2026-09-18 | Adopted; Design collegium established (W-018) | Patron |
 | 2026-09-19 | Architecture doc kept current per cascade; module graph script-generated (check rule ships with W-023) | Patron |
+| 2026-10-14 | Definition of ready names the light brief form: four sections, never for security, sandbox, branch-protection or pipeline work (W-255, D-063 §4) | Patron |
