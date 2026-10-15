@@ -5282,4 +5282,29 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   const o = specNext(over);
   architectOrder(o, 2, "no reviewer: seven behaviours and no exception go back to the architect");
   assert.match(o.kv.get("why") ?? "", /numbers 7 behaviours; the limit is 6/, ran("the limit", o));
+
+  // an over-limit light brief with a valid exception: no reviewer, signedSpec passes as for a full brief
+  const soloGranted = solo("w255-b3-solo-granted");
+  grant(soloGranted);
+  put(soloGranted.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
+  sign(soloGranted, 1);
+  landed(soloGranted);
+  expectStep(specNext(soloGranted), "branch", "named", "no reviewer: seven behaviours with a valid exception name branch");
+
+  // W-246's split path: two failed reviews, split standing; the signed over-limit light brief stands without a third review
+  const split = w196World("w255-b3-split", "6");
+  grant(split);
+  put(split.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
+  sign(split, 1);
+  review(split, 2, "failed");
+  sign(split, 3);
+  review(split, 4, "failed");
+  const splitOrder = specNext(split);
+  architectOrder(splitOrder, 5, "two failed reviews end review");
+  assert.match(splitOrder.kv.get("split") ?? "", /^bisellium new /, ran("the split line", splitOrder));
+  sign(split, 5);
+  const standing = specNext(split);
+  expectStep(standing, "spec", "named", "split: the signed over-limit light brief with a valid exception stands");
+  assert.equal(standing.kv.has("role"), false, ran("split: no reviewer is ordered", standing));
+  assert.match(standing.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("split: the commit is named", standing));
 });
