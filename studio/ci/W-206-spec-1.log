@@ -1,0 +1,17 @@
+# opus: W-206
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T16:33:55.494Z
+# tree: tree:abd96b3c55a73136123c7bd1e81b7959b73e1679
+# brief: briefs/W-206.md blob:7d64eb628d8d83ee4bf469c921a0b603ebd6afe6
+# ticket: {"opus":"W-206","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"56b3fec80d52a1c9917d7692b43007b4f0b7fe85","brief":"7d64eb628d8d83ee4bf469c921a0b603ebd6afe6","at":"2026-10-15T16:33:49.743Z"}
+
+# W-206 spec signature, round 1 (architect)
+
+Brief: studio/briefs/W-206.md, part 1 of 4 (W-206 with W-214 folded in). Checked against master 56b3fec8: a prototype of all three behaviours on a scratch clone ran every next.test.ts row green with W-167-b1's one expectation edited, and each Genuine red failed by assertion in order (classifyReplay accepted); brief admission and the red-order check pass. Census and prototype: ~/.bisellium-evidence/W-206-spec/.
+
+## Findings
+No findings
