@@ -1,0 +1,20 @@
+# opus: W-279
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13e7b-bb38-75d3-9a8e-d0ee26d090d9
+# outcome: failed
+# at: 2026-10-15T07:42:48.822Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-279.md blob:5e802fea85b9a110d577c4e5a3df2b678b204ce6
+# ticket: {"opus":"W-279","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"c0bac563f6d82fea17ea0d11c1d4b7f30dcece95","brief":"5e802fea85b9a110d577c4e5a3df2b678b204ce6","at":"2026-10-15T07:42:42.998Z"}
+
+## Findings
+1. blocking — brief:55 The shared `execRepo` and `HEAD` selector do not guarantee the same tree: `ci.test.ts` behaviour 10 already proves a retained step can dirty the checkout before the real `verify`. Replace brief:55 with `Checkout binding, not tree immutability: the loop and both verify calls use execRepo and the HEAD selector, but a retained step or local writer can change working files or move HEAD between them; --ref also deliberately forwards --allow-dirty.` — check: packages/cli/src/ci.test.ts behaviour 10
+2. blocking — brief:71 The exactly-once promise is false for a failing run, for two valid unwaived gates sharing one normalized `CI_STEPS` command, or when a command/status changes between planning and execution. Replace brief:71 with `Promise each-check-once: in a successful ci --opus run, while the manifest and opus gate statuses remain unchanged between plan and verify and at most one unwaived gate normalizes to each CI_STEPS command, each applicable CI_STEPS command runs exactly once, either in the loop or as a verify gate. A failing run may stop early; nonmatching commands may repeat an equivalent underlying check; RunCiOptions.pipeline replaces the runner. The private host mint excludes external concurrent writers, while local runs and retained commands do not guarantee this stability.` — check: packages/cli/src/w279.test.ts behaviour 1: add a duplicate-normalized-command fixture
+
+## Verdict
+The design is feasible, but its tree-identity and exactly-once guarantees are broader than the mechanism.
+
+VERDICT: FAIL

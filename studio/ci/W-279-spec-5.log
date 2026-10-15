@@ -1,0 +1,15 @@
+# opus: W-279
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-15T07:47:03.552Z
+# tree: tree:0ef428f71f090773961ea0914e27bd95e6eaa5ab
+# brief: briefs/W-279.md blob:df7f1c2fd45a0b08efb264a56eaa72a4e6b515c6
+# ticket: {"opus":"W-279","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"c0bac563f6d82fea17ea0d11c1d4b7f30dcece95","brief":"df7f1c2fd45a0b08efb264a56eaa72a4e6b515c6","at":"2026-10-15T07:46:53.628Z"}
+
+## Findings
+
+1. advisory — took spec review round 4 finding 1: behaviour 1's heading, its test row title and its genuine-red line now read, byte-identically, "ci --opus drops no applicable CI_STEPS command and runs each once when the Promise's stability and uniqueness conditions hold", matching case (c) where test runs twice — check: packages/cli/src/w279.test.ts behaviour 1
+2. advisory — a whole-brief re-read found two more lines with the unconditional wording: the title ("runs each gate once") and Intent ("No check is dropped"); both now carry the Promise's conditions — check: none: wording only, the Promise and behaviour 1 (c) carry the limit
