@@ -69,7 +69,11 @@ interface Section {
   /** 1 = highest priority, dropped last. */
   priority: number;
   text: string;
+  /** W-267: never dropped by the truncation loop (the lex §9 runbook). */
+  pinned?: boolean;
 }
+
+const RUNBOOK_HEADING = /^## (\d+)\. Opus ladder$/gm;
 
 /**
  * Contract: buildContext never throws. A missing/unparseable bisellium.yml
@@ -77,6 +81,8 @@ interface Section {
  * `{text:'', truncated:['not a studio']}` — main.ts turns that into exit 2.
  * An unrecognized sella yields `{text:'', truncated:['unknown sella']}` —
  * main.ts turns that into exit 1 (a refusal, the studio itself is fine).
+ * A collegium lex with two or more "Opus ladder" headings yields
+ * `{text:'', truncated:['runbook ambiguous']}` — also exit 1 (W-267).
  */
 export function buildContext(root: string, sella: string, opts: { now: Date; maxTokens?: number }): ContextBundle {
   const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
@@ -122,6 +128,7 @@ function buildContextFor(
 ): ContextBundle {
   const snap = snapshotDir(root, "context", now);
   const sections: Section[] = [];
+  let runbook: Section | undefined;
 
   // 1. the sella's own collegium lex ------------------------------------
   const collegium = sellaRow ? manifest.collegia.find((d) => d.id === sellaRow.collegium) : undefined;
@@ -131,6 +138,16 @@ function buildContextFor(
     if (lexFile !== undefined && !("error" in lexFile)) {
       const body = lexFile.bytes.toString("utf8").replace(/^﻿/, "").trim();
       sections.push({ name: "lex", priority: 1, text: `## ${collegium.name} lex\n${dataBlock(collegium.lex, body)}` });
+      // W-267: the "Opus ladder" section of the lex is the runbook, served whole and never truncated.
+      const raw = lexFile.bytes.toString("utf8").replace(/^﻿/, "");
+      const heads = [...raw.matchAll(RUNBOOK_HEADING)];
+      if (heads.length > 1) return { text: "", tokens: 0, truncated: ["runbook ambiguous"] };
+      const head = heads[0];
+      if (head) {
+        const next = raw.slice(head.index + head[0].length).search(/\n## /);
+        const bytes = next < 0 ? raw.slice(head.index) : raw.slice(head.index, head.index + head[0].length + next);
+        runbook = { name: "runbook", priority: 0, pinned: true, text: `## Runbook\n${dataBlock(`${collegium.lex} §${head[1]}`, bytes)}` };
+      }
     }
   }
 
@@ -161,6 +178,8 @@ function buildContextFor(
     priority: 0,
     text: "## CLI usage\nRun `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.",
   });
+
+  if (runbook) sections.push(runbook);
 
   // 2b. open lesson classes of the sella's collegium (the Patron sees all) —
   // priority 2, so it outlives every section but the lex and the CLI pointer.
@@ -270,8 +289,9 @@ function buildContextFor(
   const truncated: string[] = [];
   let text = withTrunc(render(active), truncated);
   while (tokensOf(text) > maxTokens && active.length > 0) {
-    let worst = 0;
-    for (let i = 1; i < active.length; i++) if (active[i]!.priority > active[worst]!.priority) worst = i;
+    let worst = -1;
+    for (let i = 0; i < active.length; i++) if (!active[i]!.pinned && (worst < 0 || active[i]!.priority > active[worst]!.priority)) worst = i;
+    if (worst < 0) break;
     truncated.push(active[worst]!.name);
     active.splice(worst, 1);
     text = withTrunc(render(active), truncated);
