@@ -52,6 +52,9 @@ until W-169 lands; re-ranked by D-067). Older items: `studio/acta/2026-10-09-que
    carries every round log (high) → W-243 — certify judges the diff, not the branch name (D-039 high). W-278 — the review
    gate named once — is a records-only PR now that the ladder-runner agent has landed. The runner's dispatch hook and roles check
    are filed as new opera when their gates clear (the hook after a live runner trial, the check after W-274).
+   Then (D-068, both high, the Patron approves each design before branch): W-289 — greenlight is the Patron's alone
+   (opera join CODEOWNERS) → W-290 — the orchestrator session cannot write source (one hook with the runner's dispatch
+   hook where it can).
 1. W-098 (reuses the red replay's TAP-block parser) → W-250 — ci.yml runs `bisellium ci` once, records-only pushes take the
    short path → W-258 — the builder self-reviews once before the first build review → W-252 — the spec-round counter
    refuses malformed history → W-247 — drop the handoff Resume point and its review → W-223 — the Status page shows the
@@ -85,4 +88,4 @@ until W-169 lands; re-ranked by D-067). Older items: `studio/acta/2026-10-09-que
 Greenlit, not yet ranked: W-070, W-113, W-147, W-151; W-269, W-270, W-271, W-272, W-273 — the five lessons-to-checks checks (D-065), in its rank order.
 
 ## Open Patron choices
-- The 2026-10-11 audit (four rule breaks, eight gaps in 25 commits), `~/.bisellium-evidence/design-notes-1011/`.
+- None (the 2026-10-11 audit closed by D-068).
