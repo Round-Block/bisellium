@@ -5308,3 +5308,66 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   assert.equal(standing.kv.has("role"), false, ran("split: no reviewer is ordered", standing));
   assert.match(standing.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("split: the commit is named", standing));
 });
+
+// ---------------------------------------------------------------------------
+// W-206 part 1: a brief amended after opus/<id> exists is re-signed, re-reviewed and committed on that branch
+// ---------------------------------------------------------------------------
+/** A reviewer-configured world whose spec (signature 1, review 2) landed on master before the branch was cut, built through `upTo`. */
+function w206World(tag: string, upTo: "ready" | "review", review1: "passed" | "failed" = "passed"): World {
+  const w = srWorld(tag);
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  landed(w);
+  git(w.repo, ["branch", BRANCH]);
+  git(w.repo, ["worktree", "add", "-q", w.wt, BRANCH]);
+  verb(w.wt, ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready]);
+  commit(w.wt, `studio(${OPUS}): ready`);
+  if (upTo === "review") {
+    writeReds(w);
+    writeReceipt(w, "current");
+    addReview(w, review1, 1, T.review1);
+  }
+  handoffAt(w, "wt", T.handoffFresh);
+  return w;
+}
+const WT_BRIEF = (w: World): string => join(w.wtStudio, "briefs", `${OPUS}.md`);
+const amend = (w: World): void => appendFileSync(WT_BRIEF(w), "\nAmended mid-build.\n");
+/** A spec-phase verdict through the real writer, in the opus worktree. */
+function wtSpec(w: World, round: number, sella: string, outcome: "passed" | "failed", model?: string): Out {
+  const from = join(w.root, `w206-${round}-${sella}.md`);
+  writeFileSync(from, outcome === "passed" ? NO_FINDINGS : BLOCKER);
+  return direct(w, w.wt, ["verdict", OPUS, "--round", String(round), "--sella", sella, ...(model === undefined ? [] : ["--model", model]), "--outcome", outcome, "--phase", "spec", "--from", from, "--studio", w.wtStudio, "--now", T.spec]);
+}
+
+test("W-206-b1 behaviour 1: an amended in-flight brief returns the ladder to spec on the opus branch, bound to its worktree", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-b1", "review");
+  ticketed(w);
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "unamended: the reviewed opus names pr");
+  amend(w);
+  commit(w.wt, `studio(${OPUS}): brief amended`);
+  const a = next(w, [OPUS, ...BUDGET]);
+  architectOrder(a, 3, "an amended branch brief orders the architect at the next branch round");
+  assert.match(a.kv.get("boot") ?? "", /--studio \.worktrees\/W-900\/studio$/, ran("the boot names the worktree studio", a));
+  assert.match(a.kv.get("command") ?? "", /--round 3 --sella architect --outcome passed --phase spec --studio \.worktrees\/W-900\/studio/, ran("the verdict command names the worktree studio", a));
+  assert.deepEqual({ ...ticketOf(w), at: undefined }, { opus: OPUS, step: "spec", action: "verdict-spec", round: 3, actor: "architect", studio: WT_STUDIO_REL, head: git(w.wt, ["rev-parse", "HEAD"]), brief: git(w.wt, ["hash-object", BRIEF_REL]), at: undefined }, "the ticket binds the worktree");
+  const main = wtSpec({ ...w, wt: w.repo, wtStudio: w.studio }, 3, "architect", "passed");
+  assert.equal(main.status, 2, ran("a main-checkout signature is refused (D-021)", main));
+  assert.equal(existsSync(ticketPath(w)), true, "and the ticket stays pending");
+  const signed = wtSpec(w, 3, "architect", "passed");
+  assert.equal(signed.status, 0, ran("the worktree signature consumes the ticket", signed));
+  assert.equal(existsSync(ticketPath(w)), false, "consumed");
+  const r = next(w, [OPUS, ...BUDGET]);
+  reviewerOrder(r, 4, "the branch signature goes to the reviewer");
+  assert.match(r.kv.get("command") ?? "", /--packets .*--studio \.worktrees\/W-900\/studio|--studio \.worktrees\/W-900\/studio .*--packets/, ran("the packet names the worktree studio", r));
+  assert.equal(ticketOf(w)["studio"], WT_STUDIO_REL, "the reviewer's ticket binds the worktree");
+
+  const gone = w206World("w206-b1-gone", "review");
+  amend(gone);
+  commit(gone.wt, `studio(${OPUS}): brief amended`);
+  git(gone.repo, ["worktree", "remove", "--force", gone.wt]);
+  const h = next(gone, [OPUS, ...BUDGET]);
+  expectStep(h, "spec", "held", "with no usable worktree the amended branch spec holds");
+  assert.match(h.kv.get("why") ?? "", /not a usable worktree/, ran("why", h));
+});
+
