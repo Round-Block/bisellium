@@ -1,0 +1,72 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-279-b1\s --import tsx packages/cli/src/w279.test.ts
+# exit: 1
+# at: 2026-10-15T10:55:47.497Z
+# sella: builder.W-279
+# tree: tree:fce2d5cac58960441951371fbf5ea5d9303b9e9f
+# ticket: {"opus":"W-279","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-279/studio","head":"95c9826bd7b8acbb42ef795268c91178468a9e84","brief":"03f5903b91a9e7d32575aa22b4e9578504b9da7e","at":"2026-10-15T10:55:46.589Z"}
+
+warning: Git ref-wide allocation unavailable; using local records only
+tests: passed  ci/W-001-tests-21d095d8.log
+lint: passed  ci/W-001-lint-21d095d8.log
+types: passed  ci/W-001-types-21d095d8.log
+TAP version 13
+# Subtest: W-279-b1 behaviour 1: ci --opus drops no applicable CI_STEPS command and runs each once when the Promise's stability and uniqueness conditions hold
+not ok 1 - W-279-b1 behaviour 1: ci --opus drops no applicable CI_STEPS command and runs each once when the Promise's stability and uniqueness conditions hold
+  ---
+  duration_ms: 1788.544114
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-279/packages/cli/src/w279.test.ts:6:1189'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+        'audit',
+    +   'typecheck',
+    +   'lint',
+        'format:check',
+    +   'test',
+        'check:studio',
+        'check:examples/sample-studio',
+        'test',
+        'lint',
+        'typecheck'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'audit'
+    1: 'format:check'
+    2: 'check:studio'
+    3: 'check:examples/sample-studio'
+    4: 'test'
+    5: 'lint'
+    6: 'typecheck'
+  actual:
+    0: 'audit'
+    1: 'typecheck'
+    2: 'lint'
+    3: 'format:check'
+    4: 'test'
+    5: 'check:studio'
+    6: 'check:examples/sample-studio'
+    7: 'test'
+    8: 'lint'
+    9: 'typecheck'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-279/packages/cli/src/w279.test.ts:101:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1797.616753
