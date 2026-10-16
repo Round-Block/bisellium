@@ -5524,6 +5524,40 @@ test("W-293-b2 behaviour 2: branch commits the main checkout's signed spec as th
     } else assert.match(o.out, /why: .*switch master/, ran("the why names the recovery", o));
   }
 
+  // an unreadable index after a failed add or commit keeps HEAD on the branch and names the recovery; nothing reports success
+  for (const [tag, needles] of [["add", ["add --"]], ["commit", ["commit -q -m spec(W-900)"]]] as const) {
+    const x = srWorld(`w293-b2-index-${tag}`);
+    putBrief(x);
+    sign(x, 1);
+    review(x, 2, "passed");
+    const o = next(x, [OPUS, "--perform", "--expect", "branch"], { env: { GIT_STUB_REAL: failingGit(`w293-b2-index-${tag}`, [...needles, "diff --cached --name-only -z"]) } });
+    expectHeld(o, `branch with a failing ${tag} and an unreadable index`);
+    assert.doesNotMatch(o.out, /^branch: /m, ran(`${tag}: no success line`, o));
+    assert.match(o.out, /why: .*could not read what is staged.*reset -q.*switch master.*branch -D opus\/W-900/, ran(`${tag}: the why names the recovery`, o));
+    assert.equal(git(x.repo, ["symbolic-ref", "HEAD"]), `refs/heads/${BRANCH}`, ran(`${tag}: HEAD stays on the kept branch`, o));
+    assert.equal(branchExists(x), true, `${tag}: the branch is kept`);
+  }
+
+  // a failed worktree add: a branch carrying the spec commit is kept, a bare cut is dropped, and an undeletable one is named
+  const kept = srWorld("w293-b2-wt-kept");
+  putBrief(kept);
+  sign(kept, 1);
+  review(kept, 2, "passed");
+  const keptOut = next(kept, [OPUS, "--perform", "--expect", "branch"], { env: { GIT_STUB_REAL: failingGit("w293-b2-wt-kept", ["worktree add"]) } });
+  expectHeld(keptOut, "a failing worktree add after the spec commit");
+  assert.doesNotMatch(keptOut.out, /^branch: /m, ran("kept: no success line", keptOut));
+  assert.match(keptOut.out, /why: .*worktree add failed.*carries the spec and is kept.*worktree add/, ran("kept: the why names git worktree add", keptOut));
+  assert.equal(branchExists(kept), true, "kept: the branch carrying the spec stays");
+  mainUnmoved(kept, "kept", keptOut);
+  for (const [tag, needles, left] of [["bare", ["worktree add"], false], ["bare-undeletable", ["worktree add", "update-ref -d"], true]] as const) {
+    const b = world(`w293-b2-wt-${tag}`, "spec");
+    const o = next(b, [OPUS, "--perform", "--expect", "branch"], { env: { GIT_STUB_REAL: failingGit(`w293-b2-wt-${tag}`, [...needles]) } });
+    expectHeld(o, `a failing worktree add on a bare cut (${tag})`);
+    assert.doesNotMatch(o.out, /^branch: /m, ran(`${tag}: no success line`, o));
+    assert.equal(branchExists(b), left, ran(`${tag}: the bare cut is ${left ? "kept" : "dropped"}`, o));
+    if (left) assert.match(o.out, /why: .*could not be deleted.*branch -D opus\/W-900/, ran(`${tag}: the why names the kept branch`, o));
+  }
+
   // an ignored spec log is read from the filesystem but git status omits it: branch refuses it rather than commit an incomplete spec
   const ign = srWorld("w293-b2-ignored");
   putBrief(ign);
