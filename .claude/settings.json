@@ -4,8 +4,16 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "bisellium context --studio studio", "timeout": 2 },
-          { "type": "command", "command": "bisellium hook-event start --studio studio", "timeout": 2 }
+          {
+            "type": "command",
+            "command": "bisellium context --studio studio",
+            "timeout": 2
+          },
+          {
+            "type": "command",
+            "command": "bisellium hook-event start --studio studio",
+            "timeout": 2
+          }
         ]
       }
     ],
@@ -13,7 +21,11 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "bisellium context --studio studio", "timeout": 2 }
+          {
+            "type": "command",
+            "command": "bisellium context --studio studio",
+            "timeout": 2
+          }
         ]
       }
     ],
@@ -21,7 +33,11 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "bisellium hook-event stop --studio studio", "timeout": 2 }
+          {
+            "type": "command",
+            "command": "bisellium hook-event stop --studio studio",
+            "timeout": 2
+          }
         ]
       }
     ],
@@ -29,12 +45,30 @@
       {
         "matcher": "Write|Edit",
         "hooks": [
-          { "type": "command", "command": "bisellium hook-event tool --studio studio", "timeout": 2 }
+          {
+            "type": "command",
+            "command": "bisellium hook-event tool --studio studio",
+            "timeout": 2
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -e '.tool_input.run_in_background != true and (.tool_input.command // \"\" | gsub(\"\\\"(\\\\\\\\.|[^\\\"\\\\\\\\])*\\\"|\\\\x27[^\\\\x27]*\\\\x27\"; \"Q\") | test(\"(^|\\\\s)&(?![&>])|(?<![&>|<\\\\\\\\])&(?=\\\\s|$|[;)}])|(^|[^-\\\\w./])(nohup|setsid|disown)(?![-\\\\w.])\"))' >/dev/null 2>&1 && { echo 'Blocked: &, nohup, setsid and disown die when this Bash call returns. Run the long command as its own Bash call with the run_in_background parameter set to true instead.' >&2; exit 2; }; exit 0",
+            "timeout": 2
+          }
         ]
       }
     ]
   },
   "permissions": {
-    "allow": ["Workflow"]
+    "allow": [
+      "Workflow"
+    ]
   }
 }
