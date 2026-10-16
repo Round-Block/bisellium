@@ -1,0 +1,24 @@
+# opus: W-293
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T05:18:43.522Z
+# tree: tree:8d7e6a93b0f7a92bf508110cef861c9c187b5a13
+# brief: briefs/W-293.md blob:bd5cd9b4578091393b44a8861a1ae914e416c38f
+# ticket: {"opus":"W-293","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"4a9e2c07b09b3b9a188389109ba9be0bca84f824","brief":"bd5cd9b4578091393b44a8861a1ae914e416c38f","at":"2026-10-16T05:18:43.113Z"}
+
+## Earlier findings
+- 1. closed — before the branch gateDispatch reads only recordOf(f.work, f.id); an absent or unparsable record holds as stale handover, with no trunk fallback (brief Interfaces and Input domain handover row) — check: packages/cli/src/next.test.ts W-293-b3 second world (deleted and unparsable record hold; fails on the round-2 prototype, reds-r3.out b3 on r2proto)
+- 2. closed — every performBranch cleanup exit is checked: a failed add or commit unstages what git diff --cached holds, a failed bare-cut or rollback update-ref -d holds naming the kept branch and git branch -D, an unreadable index holds with recovery, and no failure prints a branch: line — check: packages/cli/src/next.test.ts W-293-b2 add and drop cases (the add case fails on the round-2 prototype, reds-r3.out b2 on r2proto); ~/.bisellium-evidence/W-293-spec/fix-cleanup-r3.py
+- 3. closed — W-141-b5's outside-path case keeps its no-gh-call assertion, rewritten for the chore/done head: the refused perform adds no gh call beyond the derivation's repo view and pr list --head opus/W-900 reads, which the done perform itself makes, so the absolute zero cannot hold there — check: ~/.bisellium-evidence/W-293-spec/w141-b5-ported-r3.ts with flip-rows.py; packages/cli/src/next.test.ts W-141-b5 behaviour 5
+- 4. closed — the Input domain names the post-branch worktree status read by the shared specChanges through wtChanges, its valid statuses, and its rejectors deriveNext's spec rung and performOpusSpecCommit — check: studio/briefs/W-293.md Input domain row "The worktree after the branch"; next.test.ts W-206-b1 and W-206-b2
+- 5. closed — the Input domain names the post-branch committed refs/heads/opus/<id> source with no reviewer, rejected by deriveNext's tipRead hold and signedSpec, the worktree ci/ staying the review rung's hold — check: studio/briefs/W-293.md Input domain row "The spec after the branch, no reviewer"; next.test.ts W-167-b1
+
+## Findings
+1. advisory — rollback's update-ref -d check is in the function performDone shares, so a failed chore/done branch deletion is now reported with git branch -D instead of passing silently; no existing row flips — check: ~/.bisellium-evidence/W-293-spec/next-full-r3.out
+2. advisory — behaviour 2 grows two failure cases (a failing add, a failing commit whose branch deletion also fails) and behaviour 3 a second world; still three behaviours, each red unchanged on its stage — check: ~/.bisellium-evidence/W-293-spec/reds-r3.out
+
+## Verdict
+Signed at revision 3: the three round-2 blocking findings are closed at their cause in the prototype and the two advisories in the Input domain, each red accepted on its stage and green on the prototype.
