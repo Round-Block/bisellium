@@ -5515,3 +5515,38 @@ test("W-206-r2-B review round 2: an unlistable worktree ci/ beside an edited bri
   }
   assert.equal(tipOf(w), tip, "the branch is unmoved");
 });
+
+// ---------------------------------------------------------------------------
+// W-293 (W-206 part 2): the first signed spec is opus/<id>'s first commit; spec/<id> is retired
+// ---------------------------------------------------------------------------
+test("W-293-b1 behaviour 1: before the branch, next judges the spec in the main checkout ahead of the trunk's", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w293-b1");
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  landed(w);
+  expectStep(specNext(w), "branch", "named", "a passed spec landed on master names branch");
+  appendFileSync(briefPath(w), "\nRe-specified before the branch.\n");
+  architectOrder(specNext(w), 3, "an uncommitted re-spec of a landed brief orders the architect, never branch");
+  sign(w, 3);
+  reviewerOrder(specNext(w), 4, "the uncommitted signature 3 goes to the reviewer");
+  review(w, 4, "passed");
+  expectStep(specNext(w), "branch", "named", "the uncommitted passed review 4 names branch");
+
+  // a spec/<id> branch is never read or landed: the main checkout's spec decides
+  const stale = world("w293-b1-spec-branch", "greenlight", { specOn: "spec-branch" });
+  const o = next(stale, [OPUS, ...BUDGET]);
+  expectStep(o, "spec", "named", "with no spec in the main checkout the spec rung names the architect");
+  assert.equal(o.kv.get("role"), "architect", ran("an architect order", o));
+  assert.doesNotMatch(o.out, /spec\/W-900|--perform --expect spec/, ran("spec/<id> is neither named nor landed", o));
+
+  // without a reviewer the landed signature binds the brief it pins: an uncommitted edit that keeps every section voids it
+  const plain = world("w293-b1-plain", "spec");
+  handoffAt(plain, "repo", T.handoffFresh);
+  expectStep(specNext(plain), "branch", "named", "no reviewer: the landed signed spec names branch");
+  appendFileSync(briefPath(plain), "\nRe-specified before the branch, every section kept.\n");
+  architectOrder(specNext(plain), 2, "no reviewer: an uncommitted re-spec voids the landed signature");
+  sign(plain, 2);
+  expectStep(specNext(plain), "branch", "named", "no reviewer: the uncommitted signature 2 of the edited brief names branch");
+});
+
