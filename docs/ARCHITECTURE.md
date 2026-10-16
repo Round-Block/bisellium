@@ -329,13 +329,15 @@ lex's ladder step 7, which runs `tick` once per opus after the retro.
   `fetchTrunk` fast-forwards a clean checked-out `master` to the reviewed merge
   commit only (never the origin tip, and never from the `pr` rung), and stops
   before the tree on a Patron path (`.claude/`, `.github/`). The architect's spec verdict
-  is written in the main checkout before `opus/<id>` exists: the `spec` rung
-  commits it onto `spec/<id>` and lands that head through a PR; the `done` rung
+  is written in the main checkout before `opus/<id>` exists and is judged there
+  (the trunk's committed spec plus the uncommitted rounds) until `branch`, which
+  commits the brief, every new spec round and the modified record as
+  `opus/<id>`'s first commit; no `spec/<id>` head exists (W-293). The `done` rung
   names `verify`, then commits the record, the certificates and the checkpoint
-  docs onto `chore/done-<id>` and lands that head the same way (W-141). Once
+  docs onto `chore/done-<id>` and lands that head through a PR (W-141). Once
   `opus/<id>` exists (in a studio with a `spec_reviewer`) a spec amended after
   it is judged, re-signed, reviewed and committed on that branch, in its
-  worktree, never on master or `spec/<id>` (W-206): `next` orders the
+  worktree, never on master (W-206): `next` orders the
   architect and the reviewer there, and `--perform --expect spec` commits the
   brief and its new rounds as one `spec(<id>)` commit. A build review round
   that carries a `# brief:` pin is current only for the brief it names; a round

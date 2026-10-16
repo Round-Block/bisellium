@@ -1,0 +1,21 @@
+# opus: W-293
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a14394-257c-7921-bace-b4f0aea58d6c
+# outcome: passed
+# at: 2026-10-16T08:17:23.756Z
+# tree: tree:87fde7f9009e01a9bed6fc3271a6fcbd218a7b02
+# brief: briefs/W-293.md blob:7073d8a14c7e4415f41d88112bc47cf2b9f9a803
+# ticket: {"opus":"W-293","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-293/studio","head":"1180bdfb43da8aa475043eabaf7787cbb9074534","brief":"7073d8a14c7e4415f41d88112bc47cf2b9f9a803","at":"2026-10-16T08:17:22.948Z"}
+
+## Findings
+1. advisory — packages/cli/src/next.ts:459 The fix adds a fallible `git ls-files --others --ignored` read, but brief:5 and the Input domain rows enumerate only `git status` and the index read; the new read fails closed but is undocumented. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: enumerate this read and its non-zero-exit rejection in the brief
+
+## Earlier findings
+- ci/W-293-review-1.log #1: closed — packages/cli/src/next.ts:459-461 now lists ignored untracked brief and spec-log paths and classifies them as `bad`; the main and worktree regression cases prove they hold before an incomplete commit.
+
+## Verdict
+The blocking ignored-evidence path is closed, and the remaining read-enumeration omission is advisory.
+VERDICT: PASS

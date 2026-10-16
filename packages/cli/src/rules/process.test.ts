@@ -471,7 +471,7 @@ test("W-221-b2 behaviour 25: check blocks each surface once, in the repository's
 });
 
 // behaviour 26 (W-221): the moved helpers stop on a failed recording command, from a scratch main-checkout shape.
-const HELPERS = ["record-review.sh", "opus-done.sh", "opus-start.sh", "land-spec.sh", "censor.sh"];
+const HELPERS = ["record-review.sh", "opus-done.sh", "opus-start.sh", "censor.sh"];
 /** Stub commands: each logs its arguments to $LOG; npm exits 7 on the verb named by $STUB_FAIL (after $STUB_SKIP earlier calls with it). */
 const STUBS: Record<string, string> = {
   npm: 'echo "npm $*" >> "$LOG"\nif [ -n "${STUB_FAIL:-}" ] && printf "%s\\n" "$@" | grep -qx "$STUB_FAIL"; then\n  [ "$(grep -c " $STUB_FAIL " "$LOG")" -gt "${STUB_SKIP:-0}" ] && exit 7\nfi\necho "npm-out"\n',
@@ -560,12 +560,6 @@ test("W-221-b3 behaviour 26: the moved helpers stop on a failed recording comman
     assert.equal(r.status, 2, `${h} refuses in a worktree`);
     assert.equal(r.log, "", `${h} logs nothing in a worktree`);
   }
-
-  // land-spec.sh: the final perform's exit
-  r = runHelper(helperScratch(), "land-spec.sh", ["W-9"], { STUB_FAIL: "next", STUB_SKIP: "1" });
-  assert.equal(r.status, 7, "land-spec: the second next exits 7");
-  r = runHelper(helperScratch(), "land-spec.sh", ["W-9"], { STUB_FAIL: "next" });
-  assert.match(r.out, /first perform exited 7/, "land-spec: the first perform's exit is printed and expected");
 
   // the check rule admits the five scripts, and refuses one that drops pipefail
   const repo = mkdtempSync(join(tmpdir(), "bisellium-w221-r-"));

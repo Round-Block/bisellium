@@ -193,8 +193,8 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: Spe
 }
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
-function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[]): SpecEvidence {
-  return reviewer === undefined ? signedSpec(src, id, design, admit) : reviewedSpec(src, id, reviewer, admit);
+function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[], bind = false): SpecEvidence {
+  return reviewer === undefined ? signedSpec(src, id, design, admit, bind) : reviewedSpec(src, id, reviewer, admit);
 }
 
 const hasSections = (brief: string, names: string[]): boolean => names.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief));
@@ -344,11 +344,14 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
   if (review.outcome === "failed") return signed({ kind: "failed", review: review.log, failed }, `${review.log} failed ${anchor.rel}; the architect revises and signs again`);
   return { ...signed({ kind: "ready", review: review.log }, `${briefRel(id)}, ${anchor.rel} and ${review.log} are the signed, reviewed spec`), ok: true };
 }
-function signedSpec(src: Src | undefined, id: string, design: string, admit: (brief: string) => string[]): SpecEvidence {
+function signedSpec(src: Src | undefined, id: string, design: string, admit: (brief: string) => string[], bind: boolean): SpecEvidence {
   const none: SpecEvidence = { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false };
   if (src === undefined) return none;
   const brief = src.read(briefRel(id));
   const sections = specSectionsProblem(brief, briefRel(id), admit);
+  // W-293: when bound (before the branch), a signature counts only for the brief its `# brief:` pin names, so an edit after it, even
+  // one that keeps every section, voids it. ponytail: a log with no pin (written before W-162 pinned spec verdicts) stays unbound
+  const pinned = (pin: string | undefined): boolean => !bind || pin === undefined || (brief !== undefined && pin === `${briefRel(id)} blob:${blobOf(brief)}`);
   let maxRound = 0;
   let anyLog = false;
   let best: { n: number; sella: string; log: string } | undefined;
@@ -359,10 +362,10 @@ function signedSpec(src: Src | undefined, id: string, design: string, admit: (br
     const n = Number(m[1]);
     maxRound = Math.max(maxRound, n);
     const h = parseLogHeader(src.read(`ci/${name}`) ?? "");
-    if (h.get("phase") === "spec" && h.get("opus") === id && h.get("sella") === design && (h.get("outcome") ?? "").startsWith("passed") && (best === undefined || n > best.n)) best = { n, sella: design, log: `ci/${name}` };
+    if (h.get("phase") === "spec" && h.get("opus") === id && h.get("sella") === design && (h.get("outcome") ?? "").startsWith("passed") && pinned(h.get("brief")) && (best === undefined || n > best.n)) best = { n, sella: design, log: `ci/${name}` };
   }
   if (sections !== undefined) return { ...none, why: sections, maxRound, anyLog };
-  if (best === undefined) return { ...none, why: `no passing ${design} spec log (ci/${id}-spec-<n>.log with phase spec)`, maxRound, anyLog };
+  if (best === undefined) return { ...none, why: `no passing ${design} spec log (ci/${id}-spec-<n>.log with phase spec)${bind ? ` names the current ${briefRel(id)}` : ""}`, maxRound, anyLog };
   return { ok: true, why: `${briefRel(id)} and ${best.log} are on the trunk`, sella: best.sella, log: best.log, maxRound, anyLog };
 }
 
@@ -398,7 +401,8 @@ export interface Facts {
   certified(): boolean;
   branch: Src | undefined;
   branchRecord: Dict | undefined;
-  specBranch: Src | undefined;
+  /** W-293: the main checkout's studio: before opus/<id> exists, the committed trunk plus the uncommitted spec rounds */
+  work: Src;
   choreDone: boolean;
   handoff: string | undefined;
   residue: boolean;
@@ -422,7 +426,40 @@ export interface Facts {
   /** W-206: why the worktree's ci/ cannot be listed (absent is no problem) */
   wtCiProblem(): string | undefined;
   /** W-206: the worktree's changed paths (porcelain, untracked included), split into the brief and spec logs, and the rest */
-  wtChanges(): { spec: string[]; other: string[]; bad: string[] } | { error: string };
+  wtChanges(): Changes;
+  /** W-293: the same split of the main checkout's changes */
+  mainChanges(): Changes;
+}
+type Changes = { spec: string[]; other: string[]; bad: string[] } | { error: string };
+
+/** A checkout's changed paths (porcelain, untracked included), split into the brief and new spec logs, the rest, and the refused. */
+function specChanges(dir: string, studioRel: string, id: string): Changes {
+  const r = git(dir, ["status", "--porcelain", "-z", "--untracked-files=all"]);
+  if (r.status !== 0 || r.error !== undefined) return { error: `git status failed in ${dir}` };
+  const brief = `${studioRel}/${briefRel(id)}`;
+  const record = `${studioRel}/${recordRel(id)}`;
+  const specLog = new RegExp(`^${esc(studioRel)}/ci/${esc(id)}-spec-[1-9][0-9]*\\.log$`);
+  const out = { spec: [] as string[], other: [] as string[], bad: [] as string[] };
+  const fields = r.stdout.split("\0");
+  for (let i = 0; i < fields.length; i++) {
+    const entry = fields[i]!;
+    if (entry.length < 4) continue;
+    const xy = entry.slice(0, 2);
+    const path = entry.slice(3);
+    // -z prints a rename or copy as "XY to\0from\0"
+    const from = /[RC]/.test(xy) ? fields[++i] : undefined;
+    // the opus record may only be modified: a deletion, type change, rename or copy of it is named with its status, so the perform refuses it
+    if (![path, from].some((p) => p !== undefined && (p === brief || specLog.test(p)))) out.other.push(path === record && !/^[ M][ M]$/.test(xy) ? `${path} (${xy.trim()})` : path);
+    // W-293: a brief may be new (the first spec) or edited; a spec log only added
+    else if (from === undefined && (path === brief ? /^([ M][ M]|\?\?|A[ M])$/.test(xy) : /^(\?\?|A[ M])$/.test(xy))) out.spec.push(path);
+    else out.bad.push(path);
+  }
+  // W-293: git status omits an ignored untracked file, which the filesystem reads still see (and `git add` refuses): a spec file
+  // that is ignored is refused, never left out of the commit
+  const ignored = git(dir, ["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", `${studioRel}/briefs`, `${studioRel}/ci`]);
+  if (ignored.status !== 0 || ignored.error !== undefined) return { error: `git ls-files failed in ${dir}` };
+  for (const p of ignored.stdout.split("\0")) if (p === brief || specLog.test(p)) out.bad.push(`${p} (ignored)`);
+  return out;
 }
 
 function memo<T>(fn: () => T): () => T {
@@ -526,7 +563,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
       return false;
     }),
     certified: memo(() => certificate(repo, studioRel, studioAbs, excludes, manifest, trunkRecord, id).ok),
-    specBranch: refExists(repo, `refs/heads/spec/${id}`) ? gitSrc(repo, `refs/heads/spec/${id}`, studioRel) : undefined,
+    work: fsSrc(studioAbs),
     choreDone,
     handoff,
     residue: tip !== undefined || entry !== undefined || remoteTracking,
@@ -575,28 +612,8 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
         return code === "ENOENT" ? undefined : `ci/ of ${join(".worktrees", id, studioRel)} cannot be listed (${code ?? "error"})`;
       }
     }),
-    wtChanges: memo(() => {
-      const r = git(wt.dir, ["status", "--porcelain", "-z", "--untracked-files=all"]);
-      if (r.status !== 0 || r.error !== undefined) return { error: `git status failed in ${wt.dir}` };
-      const brief = `${studioRel}/${briefRel(id)}`;
-      const record = `${studioRel}/${recordRel(id)}`;
-      const specLog = new RegExp(`^${esc(studioRel)}/ci/${esc(id)}-spec-[1-9][0-9]*\\.log$`);
-      const out = { spec: [] as string[], other: [] as string[], bad: [] as string[] };
-      const fields = r.stdout.split("\0");
-      for (let i = 0; i < fields.length; i++) {
-        const entry = fields[i]!;
-        if (entry.length < 4) continue;
-        const xy = entry.slice(0, 2);
-        const path = entry.slice(3);
-        // -z prints a rename or copy as "XY to\0from\0"
-        const from = /[RC]/.test(xy) ? fields[++i] : undefined;
-        // the opus record may only be modified: a deletion, type change, rename or copy of it is named with its status, so the perform refuses it
-        if (![path, from].some((p) => p !== undefined && (p === brief || specLog.test(p)))) out.other.push(path === record && !/^[ M][ M]$/.test(xy) ? `${path} (${xy.trim()})` : path);
-        else if (from === undefined && (path === brief ? /^[ M][ M]$/.test(xy) : /^(\?\?|A[ M])$/.test(xy))) out.spec.push(path);
-        else out.bad.push(path);
-      }
-      return out;
-    }),
+    wtChanges: memo(() => specChanges(wt.dir, studioRel, id)),
+    mainChanges: memo(() => specChanges(repo, studioRel, id)),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(instant(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at"))?.getTime() ?? Number.NaN);
@@ -713,7 +730,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "commit" | "commit-opus" | "land";
+  act?: "verify" | "commit-opus" | "land";
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
@@ -744,12 +761,18 @@ export function deriveNext(f: Facts): Derived {
   // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
   // ponytail: only with a reviewer; without one signedSpec pins no brief, so an amendment never un-passes the spec (today's rung)
   const onOpus = f.tip !== undefined && reviewer !== undefined;
+  // W-293: before opus/<id> exists the main checkout carries the spec (the trunk's committed one plus any uncommitted round), and
+  // `branch` commits it there; once it exists the branch does, reviewer or not
+  const pre = f.tip === undefined;
+  // ponytail: without a reviewer nothing pins the brief, so the committed branch is read (an unlistable worktree ci/ is the later rungs' hold)
+  const pending = pre ? f.work : reviewer !== undefined ? f.branch : gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel);
   // W-206: the worktree's uncommitted spec work is read first, whatever the committed evidence says: a new log that is not a valid
   // signature or review must hold before the sequence is judged, or an unanchored malformed one would only order another round
+  // W-293: before the branch nothing holds here: a malformed log at or below the anchor is history (W-162), and `branch` refuses a bad path
   const changed = onOpus && f.wt.usable ? f.wtChanges() : undefined;
   if (changed !== undefined && reviewer !== undefined) {
     if ("error" in changed) return hold("spec", changed.error);
-    if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one`);
+    if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one or stop ignoring it`);
     // every new spec log, history included, must pass the strict readers against the brief it names
     const loose = changed.spec.find((p) => {
       const m = /(?:^|\/)(ci\/[^/]+-spec-([1-9][0-9]*)\.log)$/.exec(p);
@@ -771,23 +794,16 @@ export function deriveNext(f: Facts): Derived {
   if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
   // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
   if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
-  const spec = committed ?? specEvidence(onOpus ? f.branch : f.trunk, id, f.design, reviewer, admit);
+  const spec = committed ?? specEvidence(pending, id, f.design, reviewer, admit, pre);
   const ui = spec.ok ? f.uiSpecProblems() : [];
   if (onOpus && !spec.ok) {
     if (!f.wt.usable) return hold("spec", `${spec.why}; ${join(".worktrees", id)} is not a usable worktree on opus/${id}, so no spec write is ordered`);
     if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
     return hold("spec", spec.why);
   }
-  if (changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
+  if (onOpus && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
   if (!spec.ok || ui.length > 0) {
-    const onBranch = specEvidence(f.specBranch, id, f.design, reviewer, admit);
-    if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
-    // a spec/<id> branch cannot take a review (performSpecCommit refuses an existing branch): never land it, name it
-    if (reviewer !== undefined && !spec.ok && f.specBranch !== undefined) return hold("spec", `spec/${id} exists but does not carry a signed spec with a passed review; it cannot take one, so it is not landed`);
-    // no spec/<id> at all: the architect may have left the signed spec uncommitted in the main checkout
-    const tree = !spec.ok && f.specBranch === undefined ? specEvidence(fsSrc(f.studioAbs), id, f.design, reviewer, admit) : undefined;
-    if (tree?.ok) return { ...named("spec", "producer", "spec signed in the working tree, not committed", `bisellium next ${id} --perform --expect spec`), act: "commit" };
-    if (reviewer !== undefined && tree?.gate !== undefined) return specOrder(f, reviewer, tree, Math.max(spec.maxRound, tree.maxRound));
+    if (pre && reviewer !== undefined && !spec.ok && spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound);
     return dispatch(f, "spec", spec.ok ? ui.join("; ") : spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
 
@@ -1104,8 +1120,12 @@ function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
   if (d.order.resume) {
-    const t = (f.branchRecord ?? f.trunkRecord)?.["traditio"];
+    // W-293: before opus/<id> exists the handover is only the main checkout's record (`handoff` writes it there, D-021): an absent
+    // or unparsable one holds, never falling back to an older trunk handover
+    const rec = f.tip === undefined ? recordOf(f.work, f.id) : (f.branchRecord ?? f.trunkRecord);
+    const t = rec?.["traditio"];
     const at = isDict(t) ? (instant(t["at"])?.getTime() ?? Number.NaN) : Number.NaN;
+    if (f.tip === undefined && rec === undefined) return refuse(`stale handover: run bisellium handoff first (${recordRel(f.id)} cannot be read)`);
     if (Number.isNaN(at)) return refuse("stale handover: run bisellium handoff first (the record carries no traditio)");
     if (at < f.evidenceAt()) return refuse(`stale handover: run bisellium handoff first (traditio at ${new Date(at).toISOString()} predates the newest red or review log)`);
   }
@@ -1405,7 +1425,13 @@ function performBranch(f: Facts): StepResult {
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
   if (head !== "refs/heads/master") return heldResult(`refusing: HEAD is ${head === "" ? "detached" : head}, not the master branch`);
   if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
-  const dirty = dirtyHold(repo);
+  // W-293: the brief, the new spec logs and the modified record ride the branch's first commit; any other tracked change refuses
+  const changed = f.mainChanges();
+  if ("error" in changed) return heldResult(`refusing: ${changed.error}`);
+  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed, rewritten or ignored`);
+  const record = `${f.studioRel}/${recordRel(id)}`;
+  const paths = [...changed.spec, ...changed.other.filter((p) => p === record)];
+  const dirty = dirtyHold(repo, (p) => paths.includes(p));
   if (dirty !== undefined) return dirty;
   try {
     lstatSync(wt.dir);
@@ -1413,14 +1439,41 @@ function performBranch(f: Facts): StepResult {
   } catch {
     /* absent: the expected case */
   }
-  const made = createOpusBranch(repo, id);
-  if (!made.ok) return heldResult(made.error ?? "could not create the branch");
-  const added = git(repo, ["worktree", "add", "-q", wt.dir, `opus/${id}`]);
-  if (added.status !== 0) {
-    git(repo, ["update-ref", "-d", `refs/heads/opus/${id}`, git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim()]);
-    return heldResult(`git worktree add failed: ${one(added.stderr)}`);
+  const branch = `opus/${id}`;
+  const base = git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim();
+  if (paths.length === 0) {
+    // a spec landed on master before W-293: the branch is cut at master, with no spec commit
+    const made = createOpusBranch(repo, id);
+    if (!made.ok) return heldResult(made.error ?? "could not create the branch");
+  } else {
+    const switched = git(repo, ["switch", "-q", "-c", branch]);
+    if (switched.status !== 0) return heldResult(`could not create ${branch}: ${one(switched.stderr)}`);
+    const staged = git(repo, ["add", "--", ...paths]);
+    const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `spec(${id}): signed`, "-m", `Co-Authored-By: ${f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
+    if (committed.status !== 0) {
+      const index = git(repo, ["diff", "--cached", "--name-only", "-z"]);
+      const stuck =
+        index.status !== 0
+          ? `could not read what is staged (${one(index.stderr) || `exit ${index.status}`}); HEAD stays on ${branch}, which is kept; run: git -C ${quoted(repo)} reset -q && git -C ${quoted(repo)} switch master && git -C ${quoted(repo)} branch -D ${branch}`
+          : rollback(repo, branch, base, index.stdout.split("\0").filter(Boolean), true);
+      return heldResult(`could not commit the spec on ${branch}: ${one(committed.stderr)}${stuck === undefined ? "" : `; ${stuck}`}`);
+    }
+    const back = switchBack(repo);
+    if (back !== undefined) return heldResult(`the spec is committed on ${branch}, but the main checkout could not switch back to master (${back}); run: git -C ${quoted(repo)} switch master && git -C ${quoted(repo)} worktree add ${quoted(wt.dir)} ${branch}`);
   }
-  return { ok: true, lines: [`branch: opus/${id}`, `worktree: ${wt.dir}`] };
+  const added = git(repo, ["worktree", "add", "-q", wt.dir, branch]);
+  if (added.status !== 0) {
+    // ponytail: a branch carrying the spec commit is kept (D-021: it owns the spec now); a bare cut is dropped
+    const dropped = paths.length === 0 ? git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]) : undefined;
+    const kept =
+      dropped === undefined
+        ? `; ${branch} carries the spec and is kept: git -C ${quoted(repo)} worktree add ${quoted(wt.dir)} ${branch}`
+        : dropped.status !== 0
+          ? `; ${branch} could not be deleted (${one(dropped.stderr) || `exit ${dropped.status}`}) and is kept: git -C ${quoted(repo)} branch -D ${branch}`
+          : "";
+    return heldResult(`git worktree add failed: ${one(added.stderr)}${kept}`);
+  }
+  return { ok: true, lines: [`branch: ${branch}`, `worktree: ${wt.dir}`, ...(paths.length === 0 ? [] : [`commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${branch}`]).stdout.trim()}`])] };
 }
 
 /** Switch the main checkout back to master: the reason it could not, or `undefined` once HEAD is master. */
@@ -1433,7 +1486,7 @@ function switchBack(repo: string): string | undefined {
 /**
  * Roll the main checkout back to master after a failed commit on `branch`. The staged paths are unstaged first, and
  * only a fully restored checkout switches and drops the branch: a failed restore stays on the branch, keeps it and
- * returns the recovery text. `undefined` means master is restored.
+ * returns the recovery text, as does a failed branch deletion. `undefined` means master is restored and a dropped branch is gone.
  */
 function rollback(repo: string, branch: string, base: string, staged: string[], drop: boolean): string | undefined {
   if (staged.length > 0) {
@@ -1442,36 +1495,9 @@ function rollback(repo: string, branch: string, base: string, staged: string[], 
   }
   const back = switchBack(repo);
   if (back !== undefined) return `could not switch back to master (${back}); HEAD is ${branch}: git -C ${quoted(repo)} switch master`;
-  if (drop) git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]);
-  return undefined;
-}
-
-/** The spec signed in the main checkout, committed onto `spec/<id>`: only the brief and the spec log, nothing else moves. */
-function performSpecCommit(f: Facts): StepResult {
-  const { repo, id } = f;
-  const head = `spec/${id}`;
-  const symbolic = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
-  if (symbolic !== "refs/heads/master") return heldResult(`refusing: HEAD is ${symbolic === "" ? "detached" : symbolic}, not the master branch`);
-  if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", TRUNK]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
-  if (refExists(repo, `refs/heads/${head}`)) return heldResult(`refusing: ${head} already exists`);
-  const gate = readSpecReviewer(f.manifest, f.trunkRecord ?? {});
-  if ("error" in gate) return heldResult(`refusing: ${gate.error}`);
-  const spec = specEvidence(fsSrc(f.studioAbs), id, f.design, gate.reviewer, lightAdmission(f));
-  if (!spec.ok || spec.log === undefined) return heldResult(`refusing: ${spec.why}`);
-  // exactly the brief, the newest signature and (with a reviewer) its one passed review: history stays where it is
-  const paths = [briefRel(id), spec.log, ...(spec.gate?.kind === "ready" ? [spec.gate.review] : []), ...(spec.gate?.kind === "split" ? spec.gate.failed : [])].map((p) => `${f.studioRel}/${p}`);
-  const base = git(repo, ["rev-parse", TRUNK]).stdout.trim();
-  const switched = git(repo, ["switch", "-q", "-c", head]);
-  if (switched.status !== 0) return heldResult(`could not create ${head}: ${one(switched.stderr)}`);
-  const staged = git(repo, ["add", "--", ...paths]);
-  const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `spec(${id}): signed`, "-m", `Co-Authored-By: ${spec.sella ?? f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
-  if (committed.status !== 0) {
-    const stuck = rollback(repo, head, base, paths, true);
-    return heldResult(`could not commit the spec: ${one(committed.stderr)}${stuck === undefined ? "" : `; ${stuck}`}`);
-  }
-  const back = switchBack(repo);
-  if (back !== undefined) return heldResult(`the spec is committed on ${head}, but the main checkout could not switch back to master (${back}); run: git -C ${repo} switch master`);
-  return { ok: true, lines: [`branch: ${head}`, `commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${head}`]).stdout.trim()}`] };
+  if (!drop) return undefined;
+  const dropped = git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]);
+  return dropped.status === 0 ? undefined : `HEAD is master, but ${branch} could not be deleted (${one(dropped.stderr) || `exit ${dropped.status}`}) and is kept: git -C ${quoted(repo)} branch -D ${branch}`;
 }
 
 /** W-206: the signed spec on opus/<id>, committed in its worktree: the brief, every changed spec log and the record, nothing else. */
@@ -1480,7 +1506,7 @@ function performOpusSpecCommit(f: Facts): StepResult {
   if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
   const changed = f.wtChanges();
   if ("error" in changed) return heldResult(`refusing: ${changed.error}`);
-  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed or rewritten`);
+  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed, rewritten or ignored`);
   const record = `${f.studioRel}/${recordRel(id)}`;
   const other = changed.other.filter((p) => p !== record);
   if (other.length > 0) return heldResult(`refusing: ${other.slice(0, 5).map((p) => clean(p)).join(", ")} changed beside the spec; commit or set it aside first`);
@@ -1767,7 +1793,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = performReady(f, d2);
           break;
         case "spec":
-          result = d2.act === "land" ? await performLanding(f, ctx, `spec/${id}`) : d2.act === "commit-opus" ? performOpusSpecCommit(f) : performSpecCommit(f);
+          result = performOpusSpecCommit(f);
           break;
         case "pr":
           result = openPr(ctx, d2.pr, a.title, a.bodyFile);

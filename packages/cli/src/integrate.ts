@@ -558,7 +558,7 @@ export interface StepResult {
 export interface Ctx {
   repo: string;
   id: string;
-  /** The head branch this call carries to the trunk: `opus/<id>`, `spec/<id>` or `chore/done-<id>`. */
+  /** The head branch this call carries to the trunk: `opus/<id>` or `chore/done-<id>`. */
   head: string;
   /** The opus worktree (cwd of rebase and push). */
   wt: string;
@@ -803,7 +803,7 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
 }
 
 // ---------------------------------------------------------------------------
-// landing — a record-only head (`spec/<id>`, `chore/done-<id>`) carried to the trunk by the same gates as an opus
+// landing — a record-only head (`chore/done-<id>`) carried to the trunk by the same gates as an opus
 // ---------------------------------------------------------------------------
 
 /**
