@@ -256,7 +256,7 @@ flowchart TD
   full["full path<br/>gates: typecheck, lint, format:check, npm test,<br/>read guard, sample-studio check<br/>web-e2e: build + served E2E"]
   records["records-only path (W-203)<br/>gates: studio check, test:record<br/>web-e2e: build and E2E skipped"]
   officina["officina: check -- studio"]
-  certify["certify: master's scripts/ci-certify.mjs<br/>mints an opus/W-* head (CI_STEPS + verify);<br/>any other head mints nothing"]
+  certify["certify: master's scripts/ci-certify.mjs<br/>mints an opus/W-* head (CI_STEPS + verify);<br/>any other head passes only when recordOnly holds<br/>for its merge group's diff, else fails (W-243)"]
   green{"four required checks green?"}
   dropped["dropped from the queue"]
   master["master"]
@@ -286,8 +286,10 @@ skip every step rather than the whole job, because a job skipped by its own
 group, `gates` and `web-e2e` classify the delta against the group's base with
 `recordOnly` (`scripts/ci-scope.mjs`): a delta touching only `studio/` and
 `docs/SESSION-HANDOFF.md` takes W-203's records-only path; an empty, mixed or
-unreadable delta takes the full one. The post-merge `push` runs the full path
-for either kind. The light pull-request run is sound only while
+unreadable delta takes the full one. `recordOnly` is the one record list: `certify`
+(a head not named `opus/W-*` passes only when it holds for the group's diff, read
+raw through `diffPaths`) and `next`'s done and landing guards call it too. The
+post-merge `push` runs the full path for either kind. The light pull-request run is sound only while
 `master_protection` requires the merge queue (ADOPTION.md, Merge queue). On a
 `push` or a source-change group, `gates` is `CI_STEPS` minus the studio check
 and `officina` is that check alone; `scripts/ci-workflow.test.mjs` fails when

@@ -1267,7 +1267,13 @@ In `merge-queue` mode:
   existing mint (`bisellium run --sella builder --opus <id> -- true`) from
   master's tooling. GitHub merges only the commit that the required `certify`
   check passed on. The receipt is uploaded as the run's artifact; `bisellium`
-  never reads it.
+  never reads it. W-243: a head not named `opus/<id>` is judged by what its
+  merge group changes (`git diff --name-only --no-renames -z`, read raw): it
+  passes with nothing to mint only when every path is an officina record
+  (`recordOnly`), and an empty diff, any other path or a failed diff does not
+  (exit 1 or 2, no mint). Source reaches master only on `opus/<id>` with its
+  mint. `pr` refuses an opus branch carrying a merge commit before it pushes:
+  rebase it onto master instead.
 
 In `direct` mode `pr` and `merge` make today's writes and remote calls plus
 the rules read, one local `git rev-parse` and one `lstat` of the queue file and
