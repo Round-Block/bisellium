@@ -1,0 +1,21 @@
+# opus: W-293
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T06:05:43.535Z
+# tree: tree:8d7e6a93b0f7a92bf508110cef861c9c187b5a13
+# brief: briefs/W-293.md blob:7073d8a14c7e4415f41d88112bc47cf2b9f9a803
+# ticket: {"opus":"W-293","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"4a9e2c07b09b3b9a188389109ba9be0bca84f824","brief":"7073d8a14c7e4415f41d88112bc47cf2b9f9a803","at":"2026-10-16T06:05:43.117Z"}
+
+## Earlier findings
+- ci/W-293-spec-4.log #1: closed — the post-branch no-reviewer promise is replaced by a stated Limit: signedSpec stays unbound on the committed opus/<id> (binding it flipped W-166-b3 in next-full-r5-bind.out, and would loop, since the worktree signature is unread until committed), and the Input domain row says so; a configured reviewer re-judges branch amendments (W-206) — check: packages/cli/src/next.test.ts W-293-b2 landed world (a committed section-preserving edit leaves ready named)
+- ci/W-293-spec-4.log #2: closed — before the branch signedSpec is bound (specEvidence(…, pre)): a passing architect log counts only when its # brief: pin names the current brief blob, a pre-W-162 log with no pin staying unbound — check: packages/cli/src/next.test.ts W-293-b1 third world (fails on the round-3 prototype, reds-r5.out b1 on r3proto); ~/.bisellium-evidence/W-293-spec/fix-bind-r5.py
+- ci/W-293-spec-4.log #3: closed — the Input domain row for the main checkout at branch names the git diff --cached --name-only -z index read, its domain, and performBranch's unreadable-index hold with its recovery commands — check: studio/briefs/W-293.md Input domain row "The main checkout at branch"
+
+## Findings
+1. advisory — the no-reviewer pin binding is pre-branch only and admits a log with no # brief: header as legacy; W-162-b3's past-ready record and W-128 behaviour 7's fixture carry such logs, and both stay green unedited — check: ~/.bisellium-evidence/W-293-spec/next-full-r5.out; ~/.bisellium-evidence/W-293-spec/neighbours-r5.out
+
+## Verdict
+Signed at revision 5: the round-4 findings are closed, the pre-branch one at its cause in signedSpec and the post-branch one as a stated limit pinned by a test, with each red accepted on its stage and next.test.ts green on the prototype.

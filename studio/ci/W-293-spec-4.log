@@ -1,0 +1,27 @@
+# opus: W-293
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14308-06a0-7a63-9ade-429bd1a7705f
+# outcome: failed
+# at: 2026-10-16T05:21:01.398Z
+# tree: tree:8d7e6a93b0f7a92bf508110cef861c9c187b5a13
+# brief: briefs/W-293.md blob:bd5cd9b4578091393b44a8861a1ae914e416c38f
+# ticket: {"opus":"W-293","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"4a9e2c07b09b3b9a188389109ba9be0bca84f824","brief":"bd5cd9b4578091393b44a8861a1ae914e416c38f","at":"2026-10-16T05:21:00.984Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:347 brief:68 The new post-branch row says `signedSpec` dispatches on an edited brief, but `signedSpec` does not bind a passing log to the current brief; a section-preserving edit remains passed. This was reached from ci/W-293-spec-2.log #5’s input-boundary class. — check: none: add a no-reviewer post-branch edited-brief case
+
+2. blocking — packages/cli/src/next.ts:347 brief:15 The same no-reviewer defect reaches the pre-branch sibling promise: an uncommitted, section-preserving re-spec accompanied only by the older passing log is still accepted, so the re-spec can remain ignored. This was reached from ci/W-293-spec-2.log #5’s input-boundary class. — check: none: add a no-reviewer pre-branch landed-spec plus edited-brief case
+
+3. advisory — studio/briefs/W-293.md:65 The revision adds `git diff --cached --name-only -z` as an index reader after failed add or commit, but the Input domain row does not name that input, its valid domain, or the `performBranch` hold on an unreadable index; the Interface describes the fail-closed path, so this omission is advisory. — check: packages/cli/src/next.test.ts W-293-b2
+
+## Earlier findings
+- ci/W-293-spec-2.log #1: closed — brief lines 52 and 66 select only `recordOf(f.work, f.id)` before the branch, and W-293-b3 covers deleted and unparsable working records against a valid trunk handover.
+- ci/W-293-spec-2.log #2: closed — brief lines 48-50 require index-derived unstaging and checked ref deletion, while W-293-b2 covers failed add and failed rollback deletion without a success line.
+- ci/W-293-spec-2.log #3: closed — brief lines 90 and 93 preserve the outside-path no-GitHub-access contract as a before/after assertion, implemented in `w141-b5-ported-r3.ts`.
+
+## Verdict
+The cleanup, handover, and assertion blockers are closed, but both no-reviewer edited-brief paths still contradict the revised guarantees.
+VERDICT: FAIL

@@ -1,0 +1,26 @@
+# opus: W-293
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14308-06a0-7a63-9ade-429bd1a7705f
+# outcome: failed
+# at: 2026-10-16T04:50:58.351Z
+# tree: tree:85a6a98f5fd84d03462ca82330f8617e4ba095c3
+# brief: briefs/W-293.md blob:5719d77201a5d7386d483f981784bb91bf358500
+# ticket: {"opus":"W-293","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"6ee23e3d8693711d362fbe117570fd2058fdd2df","brief":"5719d77201a5d7386d483f981784bb91bf358500","at":"2026-10-16T04:50:57.930Z"}
+
+## Findings
+1. blocking — brief:64 The specified `gateDispatch` chain falls through from an absent or unparsable `recordOf(f.work, f.id)` to `f.trunkRecord`; deleting or corrupting the working record can therefore admit a resumed order using an older trunk handover instead of holding. Replacement for brief:64: `| The handover before the branch | the main checkout's record parses and its traditio has a readable at | gateDispatch (extended): before the branch it reads only recordOf(f.work, f.id); an absent or unparsable record, or an absent or unreadable at, holds a resumed order without falling back to the trunk |` — check: packages/cli/src/next.test.ts W-293-b3
+
+2. blocking — brief:48 The proposed cleanup ignores failure from both `update-ref -d` calls, so a failed commit or worktree addition can leave the branch that this line promises is dropped; failed `git add` can also pass never-staged new paths to `restore --staged`, leaving recovery incomplete. Replacement for brief:48: `performBranch, after today's HEAD and master-tip checks, admits only the spec paths and plainly modified record, refuses other tracked changes, and commits admitted paths on opus/<id>. Every cleanup command's exit is checked: a failed add, commit, unstage, switch-back or branch deletion holds without reporting success and gives recovery commands matching the actual staged paths and retained ref. A failed worktree add keeps a spec-bearing branch; a bare cut is dropped only after checked ref deletion, otherwise the hold names the retained branch and its recovery command.` — check: packages/cli/src/next.test.ts W-293-b2
+
+3. blocking — brief:86 The claimed assertion preservation disagrees with the named rewrite script: it deletes W-141-b5’s existing `ghCalls(o).length === 0` assertion from the outside-path case, although that assertion concerns refusal before GitHub access rather than `spec/<id>` identity or the spec commit; line 89 consequently does not move all promised coverage. Replacement for brief:86: `Existing rows flip as enumerated below and are rewritten by the kept script; every assertion not about spec/<id> or the spec commit stays, with W-141-b5's absolute whole-log no-gh-call assertion rewritten as a before/after assertion that the refused perform adds no GitHub call.` — check: packages/cli/src/next.test.ts W-141-b5 behaviour 5
+
+4. advisory — brief:63 The shared `specChanges` reader is also changed for `wtChanges`, but the Input domain names only the main-checkout `git status`; the post-branch worktree status, its valid statuses, and its existing fail-closed consumers are omitted. — check: packages/cli/src/next.test.ts W-206-b1 and W-206-b2
+
+5. advisory — brief:62 The Input domain covers only the pre-branch spec source, omitting the newly selected post-branch `refs/heads/opus/<id>` source when no reviewer is configured and its `signedSpec` rejection boundary. — check: none: add post-branch no-reviewer committed-ref coverage
+
+## Verdict
+The handover fallback, unchecked cleanup promises, and contradicted assertion-preservation guarantee require revision before building.
+VERDICT: FAIL
