@@ -1,0 +1,28 @@
+# opus: W-264
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T22:38:10.362Z
+# tree: tree:99e0edfc781481c443d647a91b2aa88cace9ceb3
+# brief: briefs/W-264.md blob:b80357b549fc08bb6be2adc74fd1f3b9f6f39ae3
+# ticket: {"opus":"W-264","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"e7998bac91cdbd6c72b0c6688be82c5feec9336e","brief":"b80357b549fc08bb6be2adc74fd1f3b9f6f39ae3","at":"2026-10-16T22:38:09.889Z"}
+
+## Earlier findings
+- ci/W-264-spec-2.log #1: closed — brief:18 adopts the replacement: an exact light brief gets every rule except the upper count, the exception line is ignored, `ready` and `next` require Red order; `ready` and `check` pass a refused marker through admission while `next` rejects its form error first (next.ts specSectionsProblem); W-264-b2 gains the refused-marker case, asserting the form error alone.
+- ci/W-264-spec-2.log #2: closed — brief:19 adopts the replacement: callers read and classify a full brief but do not pass it to `briefAdmissionProblems`.
+- ci/W-264-spec-2.log #3: closed — brief:59 adopts the replacement, narrowed by the code: a malformed limit holds `next` at `spec` only at the review gate for a signed full brief; for a light brief `lightAdmission` returns the limit error, so `next` orders the architect (next.ts:224, unchanged); row 65 says the same.
+- ci/W-264-spec-2.log #4: closed — brief:63 adopts the replacement row, and names `readBriefForm` and `readRedOrder` as rejectors (advisory #5), with the Red order exemption for a halted opus already past ready.
+- ci/W-264-spec-2.log #6: closed — brief:71 adopts the replacement: the check promises are about W-900's `brief.admission` findings only, and say the sample copy's other findings are not asserted.
+- ci/W-264-spec-2.log #7: closed — brief:88 adopts the replacement ADOPTION text.
+- ci/W-264-spec-2.log #8: closed — brief:93 adopts the replacement Out of scope line.
+
+## Findings
+1. advisory — finding #3's replacement said a malformed limit makes `next` hold at `spec`; that holds only at the W-196 review gate (next.ts:953); a light brief under a malformed limit gets the architect's order with the error (next.ts:224), so brief:59 and brief:65 carry both cases — check: packages/cli/src/next.test.ts (W-196-b4 malformed-limit hold)
+2. advisory — the r2 promise sweep (`~/.bisellium-evidence/W-264-spec/promise-sweep-r2.md`) backs 55 promises with a function and line each; 20 were scoped or replaced, including three not raised in round 2: brief:17 (a declared limit does not make `next` admit every brief), brief:85 (no-flip is claimed for the files run, not the whole suite) and brief:103 (the variant-A measure changed `ready` and `check`, not `ready` alone) — check: promise-sweep-r2.md
+3. advisory — W-264-b2 gained one case (a `Brief: Light` marker gets the architect's order, with the form error as the whole `why`); both reds were replayed again and accepted by assertion at the same failing lines (reds.out; revision 1's are reds-r1.out) — check: packages/cli/src/next.test.ts (W-264-b2)
+4. advisory — `scripts/review-packet.mjs` keeps its limit-only admission fact (Out of scope); this studio declares a limit, so its packets are unchanged — check: scripts/review-packet.test.mjs
+
+## Verdict
+Signed, revision 2. Every blocking finding of ci/W-264-spec-2.log is closed with its replacement text, and finding #3's text is narrowed where the code shows a light brief is not held. The brief passes admission on master and on the prototype (admission-r2.out, admission-r2-master.out). Both reds are accepted by assertion (reds.out).

@@ -1,0 +1,23 @@
+# opus: W-264
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T22:41:20.798Z
+# tree: tree:99e0edfc781481c443d647a91b2aa88cace9ceb3
+# brief: briefs/W-264.md blob:db581d5b568d83be64cbd290f6846cd123a30fa9
+# ticket: {"opus":"W-264","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"e7998bac91cdbd6c72b0c6688be82c5feec9336e","brief":"db581d5b568d83be64cbd290f6846cd123a30fa9","at":"2026-10-16T22:41:20.227Z"}
+
+## Earlier findings
+- ci/W-264-spec-4.log #1: closed — replacement adopted verbatim at brief:54
+- ci/W-264-spec-4.log #2: closed — replacement adopted verbatim at brief:59
+- ci/W-264-spec-4.log #3: closed — replacement adopted verbatim at brief:63
+- ci/W-264-spec-4.log #4: closed — replacement adopted verbatim at brief:65
+
+## Findings
+1. advisory — the sweep for other `next` order promises without `gateDispatch`'s condition found two, both scoped: brief:75 (W-264-b2's orders are emitted because every world commits a fresh handover and passes `--budget`) and brief:77 (the red's observed architect order, in that world); no behaviour, red or assertion changed — check: ~/.bisellium-evidence/W-264-spec/promise-sweep-r3.md
+2. advisory — revision 3 changes only the six brief lines above (brief-r2-r3.diff); it passes admission on master and on the prototype (admission-r3-master.out, admission-r3.out) — check: packages/cli/src/next.test.ts (W-196-b4 no-budget and no-handoff rows)
+
+## Verdict
+Signed, revision 3: passed. The four round-4 replacements are adopted verbatim, and the two other `next` order sentences are scoped to the dispatch gates the test worlds pass.

@@ -1,0 +1,31 @@
+# opus: W-264
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a146d3-0c98-7c01-a818-f2407690c6f6
+# outcome: failed
+# at: 2026-10-16T22:39:57.069Z
+# tree: tree:99e0edfc781481c443d647a91b2aa88cace9ceb3
+# brief: briefs/W-264.md blob:b80357b549fc08bb6be2adc74fd1f3b9f6f39ae3
+# ticket: {"opus":"W-264","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"e7998bac91cdbd6c72b0c6688be82c5feec9336e","brief":"b80357b549fc08bb6be2adc74fd1f3b9f6f39ae3","at":"2026-10-16T22:39:56.577Z"}
+
+## Findings
+1. blocking — brief:54 `lightAdmission` only causes `deriveNext` to derive an architect order; `gateDispatch` replaces it with a `spec` hold when the dispatch budget or handover gate fails. Replacement text: “A malformed key still returns its error here, so `deriveNext` derives an architect order for a light brief; `gateDispatch` emits that order only when its unchanged dispatch gates pass, and otherwise holds at `spec`.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts (W-196-b4 no-budget/no-handoff rows)
+2. blocking — brief:59 The revised fail-closed summary still guarantees architect orders that `gateDispatch` can suppress. Replacement text: “A rejection fails closed: an admission or form problem makes `ready` exit 1 with the record and event log unchanged, makes `check` block `brief.admission`, and makes `next` refuse at `spec`; when `gateDispatch` passes, `next` orders the architect. A malformed `brief_behaviour_limit` makes a signed full brief hold at its review gate, while a light brief derives an architect order subject to `gateDispatch`; `check` blocks `manifest.shape`. A test-row input read that throws fails the row.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts (W-196-b4)
+3. blocking — brief:63 All three `next` rejection clauses promise an architect order without naming the ordinary `gateDispatch` holds demonstrated by W-196-b4. Replacement text: “| A brief's text, as `ready`, `check` (active opera) and `next`'s signature gates read it in an officina with no `brief_behaviour_limit` | text classified by `readBriefForm` as full (read and classified, but not passed to full-brief admission), or an exact light brief meeting every admission rule except the upper count, with the Red order line where `ready` and `next` ask for it | `briefAdmissionProblems` refuses `ready` (exit 1), blocks `check`, and makes `deriveNext` derive an architect order that `gateDispatch` either emits or holds; `readBriefForm` rejects a form error in `next` before admission through the same derived-order boundary; `readRedOrder` rejects an error or missing line in `ready` (exit 1; except a halted opus already past ready) and through that same `next` boundary |” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts (W-196-b4 no-budget/no-handoff rows)
+4. blocking — brief:65 The malformed-light case likewise guarantees an architect order although the unchanged dispatch gates can turn it into a hold. Replacement text: “| `brief_behaviour_limit` | absent, or a positive integer | `readBriefLimit` (unchanged): `ready` exits 1; `next` holds at the review gate for a signed full brief, while a light brief makes `deriveNext` derive an architect order that `gateDispatch` emits or holds; `check` blocks `manifest.shape` and runs no admission |” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts (W-196-b4)
+
+## Earlier findings
+- ci/W-264-spec-2.log #1: closed — brief:18 now distinguishes exact light briefs, refused-marker admission in `ready`/`check`, and `next`’s pre-admission form rejection; W-264-b2 asserts the latter.
+- ci/W-264-spec-2.log #2: closed — brief:19 now distinguishes reading/classification from calling `briefAdmissionProblems`.
+- ci/W-264-spec-2.log #3: open — brief:59 correctly distinguishes malformed full and light briefs, but its new light-brief architect-order promise omits `gateDispatch`’s ordinary holds.
+- ci/W-264-spec-2.log #4: open — brief:63 fixes the full-brief read description, but its revised rejection clauses still overpromise `next` architect orders beyond `gateDispatch`.
+- ci/W-264-spec-2.log #6: closed — brief:71 now limits its claims to W-900’s filtered `brief.admission` findings.
+- ci/W-264-spec-2.log #7: closed — brief:88 now distinguishes refused-marker handling and full-brief reading from admission.
+- ci/W-264-spec-2.log #8: closed — brief:93 now accurately states each caller’s full-brief reads and skipped admission.
+
+## Verdict
+Revision 2 closes the read/classification and filtered-output defects, but its changed `next` wording still promises orders that the existing dispatch gates can replace with holds.
+
+VERDICT: FAIL
