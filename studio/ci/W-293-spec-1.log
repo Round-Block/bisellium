@@ -1,0 +1,23 @@
+# opus: W-293
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T04:45:54.033Z
+# tree: tree:85a6a98f5fd84d03462ca82330f8617e4ba095c3
+# brief: briefs/W-293.md blob:5719d77201a5d7386d483f981784bb91bf358500
+# ticket: {"opus":"W-293","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"6ee23e3d8693711d362fbe117570fd2058fdd2df","brief":"5719d77201a5d7386d483f981784bb91bf358500","at":"2026-10-16T04:45:53.631Z"}
+
+## Findings
+1. advisory — the draft's four behaviours are cut to three: its behaviour 4 (a process.test.ts red for deleting land-spec.sh and rewriting docs) is acceptance, not a behaviour; W-194's handover read is split out as behaviour 3 — check: studio/briefs/W-293.md "## Behaviours to test"
+2. advisory — the draft admitted only a traditio change to the record and let tracked unrelated changes coexist unstaged; the brief keeps today's refusal of any other tracked change (W-124 behaviour 2 and W-141-b1 pin it) and carries any plain modification of the record, as part 1 does on the worktree — check: next.test.ts W-124 behaviour 2 "branch refusals"; W-293-b2 dirty world
+3. advisory — the draft named a new preBranchSpecChanges; the brief reuses part 1's wtChanges reader as specChanges(dir), widened to admit a new brief (?? or A), and only performBranch reads it for the main checkout — check: ~/.bisellium-evidence/W-293-spec/prototype-final.diff
+4. advisory — part 1's strict guard on new spec logs is not applied before the branch: on the prototype it flipped W-162-b2 and W-162-b4, whose malformed logs at or below the newest signature are history that a new signature recovers from — check: ~/.bisellium-evidence/W-293-spec/next-full-proto2.out rows 42 and 44
+5. advisory — without a reviewer the post-branch spec is read from the committed opus ref, not the worktree: reading the worktree flipped W-167-b1, whose unlistable worktree ci/ must stay the review rung's hold — check: ~/.bisellium-evidence/W-293-spec/next-full-proto.out row 47
+6. advisory — the draft owned scripts/opus-start.sh, packages/commands/src/run.test.ts and scripts/ci-certify.test.mjs; none needs a change (opus-start already performs branch then ready; the builder host reads the brief from the worktree studio; an opus PR already carries officina files the source certificate excludes) — check: scripts/opus-start.sh; scripts/run-builder-host.mjs:610
+7. advisory — the draft listed W-162-b1 and W-162-b2 as keeping their contract; both flip, as do W-128 behaviour 7 and W-141-b5's spec-head cases, which move to the chore/done head — check: ~/.bisellium-evidence/W-293-spec/flip-rows.py
+8. advisory — identifyPr's reused spec/<id> name case is moot: after this opus no caller passes it a spec/ head, and its newest-PR rule stays pinned by W-123 round-1 fix 1a — check: git grep -n "identifyPr(" packages/cli/src
+
+## Verdict
+Signed: three behaviours, each red accepted by replay-accept on the stage before it and green on the prototype, with every flipped row rewritten and next.test.ts 96/96 green on the scratch worktree.
