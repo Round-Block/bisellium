@@ -769,6 +769,8 @@ export function deriveNext(f: Facts): Derived {
   const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
   const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, f.design, reviewer, admit);
   if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
+  // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
+  if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
   const spec = committed ?? specEvidence(onOpus ? f.branch : f.trunk, id, f.design, reviewer, admit);
   const ui = spec.ok ? f.uiSpecProblems() : [];
   if (onOpus && !spec.ok) {
