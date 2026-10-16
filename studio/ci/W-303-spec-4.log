@@ -1,0 +1,22 @@
+# opus: W-303
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14555-bac3-7a31-ba6d-7620b85edb69
+# outcome: passed
+# at: 2026-10-16T15:38:21.184Z
+# tree: tree:46e06f43c55e27ed1c186fd00ff5419142fa8921
+# brief: briefs/W-303.md blob:85626702272718e9e33bc6cd1405064fd8ce0c78
+# ticket: {"opus":"W-303","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"70c4df31b489394c4d233602b68d85c5e99f8191","brief":"85626702272718e9e33bc6cd1405064fd8ce0c78","at":"2026-10-16T15:38:20.791Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-303-spec-2.log #1: closed — brief:106 adopts the required limit, while brief:15, brief:66, brief:70, and brief:100 consistently scope the whole admission-promise class to officinae declaring `brief_behaviour_limit`.
+
+## Verdict
+Revision 2 closes the earlier blocker and its whole class; the changed input rows fail closed.
+
+VERDICT: PASS

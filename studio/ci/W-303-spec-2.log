@@ -1,0 +1,21 @@
+# opus: W-303
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14555-bac3-7a31-ba6d-7620b85edb69
+# outcome: failed
+# at: 2026-10-16T15:34:21.170Z
+# tree: tree:46e06f43c55e27ed1c186fd00ff5419142fa8921
+# brief: briefs/W-303.md blob:655a8ec694fe6b0dc7a7baa01d5ddb9af897fe48
+# ticket: {"opus":"W-303","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"70c4df31b489394c4d233602b68d85c5e99f8191","brief":"655a8ec694fe6b0dc7a7baa01d5ddb9af897fe48","at":"2026-10-16T15:34:20.772Z"}
+
+## Findings
+1. blocking — brief:103 The unconditional “every spec” promise is false when optional `brief_behaviour_limit` is absent: `runReady`, `checkStudio`, and `specOrder` skip full-brief admission. Replace brief:103 with: `1. In an officina that declares \`brief_behaviour_limit\` (including this studio), the rule has no grandfather exception: \`ready\` and active-opus \`check\` apply it whenever they read a brief, and \`next\` applies it at its existing admission gates; finished work is not re-read. Three approved specs not yet built (W-241 part 1, the prompt templates; W-260, a reviewer verdict fix; W-276, the builder-brief steps) each carry the old line \`the diff is the Files owned\`. Each swaps it for the standard line before it is built, which costs one short re-review each. Agree?` [class: spec×limit-absent-admission-skips-required-validation] — check: packages/cli/src/brief-admission.test.ts (W-166-b5); packages/cli/src/next.test.ts (W-255-b3)
+2. advisory — brief:5 Behaviour 2 adds a `studio()` call that copies and reads `examples/sample-studio`, but the read enumeration and input table omit that fixture and its throwing `cpSync`/`readFileSync` boundary; failures already fail the test closed. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/brief-admission.test.ts (W-303-b2)
+3. advisory — brief:5 Behaviour 2 directly reads the generated brief with `readFileSync`, but the read enumeration and input table omit that test input and rejector; a missing or unreadable file throws and fails the row closed. [class: spec×input-without-named-rejector] — check: packages/cli/src/brief-admission.test.ts (W-303-b2)
+
+## Verdict
+The no-limit configuration makes one unconditional promise false; the test-only input omissions are fail-closed advisories.
+
+VERDICT: FAIL

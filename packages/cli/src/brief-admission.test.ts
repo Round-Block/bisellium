@@ -21,6 +21,7 @@ import { readBriefAdmission } from "@bisellium/commands/brief-admission.js";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { checkStudio } from "./check.js";
 import { runReady } from "./lifecycle.js";
+import { runNew } from "./new.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SAMPLE = join(HERE, "..", "..", "..", "examples", "sample-studio");
@@ -827,4 +828,75 @@ test("W-255-b2 behaviour 2: security, sandbox, branch-protection and pipeline wo
   assert.equal(found[0]!.level, "block");
   assert.ok(found[0]!.message.endsWith(EXCLUDED("Files owned names `./package.json`")), found[0]!.message);
   assert.equal(checked("building", light()).admission.length, 0, "check: an ordinary light brief");
+});
+
+// ---------------------------------------------------------------------------
+// W-303 (D-070 C): a whole-diff promise names the source diff or the officina evidence the verbs write.
+// Rows are selectable with --test-name-pattern=W-303-b<n>.
+// ---------------------------------------------------------------------------
+const SOURCE_DIFF =
+  "The source diff (every path outside `studio/`) touches only the files in Files owned. The officina's evidence is written by the verbs and is not owned: the opus record, `studio/ci/` logs, `studio/ci/reds/<id>/` and receipts.";
+const CONFINES = (n: number, subject: string): string =>
+  `line ${n} confines "${subject}" to Files owned or one folder, but the verbs also write officina evidence; scope it to the source diff or name that evidence as not owned: "${SOURCE_DIFF}"`;
+const confines = (text: string): string[] => readBriefAdmission(text, 6).problems.filter((p) => / confines "/.test(p));
+
+test("W-303-b1 behaviour 1: a whole-diff promise that forgets the officina evidence is refused, by ready and by check", () => {
+  // W-302 revision 1's three refused lines (ci/W-302-spec-2.log), where they stood: the status line, Acceptance, a Default.
+  const status = "Status: signed. Every file this opus changes outside the test is under `.github/`, a code-owner path.";
+  const acc = "- The diff is the Files owned.";
+  const dflt = "4. The whole change is under `.github/` apart from one test line, so you approve this design. Agree?";
+  const w302 = `${status}\n\n${brief().replace("green", acc)}\n\n## Defaults for the Patron\n\n${dflt}\n`;
+  const want = [CONFINES(1, "Every file"), CONFINES(at(w302, acc), "The diff"), CONFINES(at(w302, dflt), "The whole change")];
+  refused(ready(w302), want, "W-302 revision 1");
+  const found = checked("building", w302).admission;
+  assert.deepEqual(
+    found.map((f) => [f.level, f.message]),
+    want.map((p) => ["block", `${BRIEF_REL} ${p}`]),
+    "check",
+  );
+  assert.equal(checked("done", w302).admission.length, 0, "a done brief is never re-read");
+  const one = (l: string, subject: string, label: string): void => {
+    const text = brief().replace("green", l);
+    assert.deepEqual(confines(text), [CONFINES(at(text, l), subject)], label);
+  };
+  one("All changed files are under `packages/`.", "All changed files", "all changed files, under one folder");
+  one("The entire diff touches only `scripts/`.", "The entire diff", "only one folder");
+  one("| a | the diff stays within Files owned |", "the diff", "a table cell");
+  one("npm test passes; the diff is the Files owned.", "the diff", "after a semicolon");
+  const lit = light({ intent: [MARK, "The diff is the Files owned."] });
+  assert.deepEqual(confines(lit), [CONFINES(at(lit, "The diff is the Files owned."), "The diff")], "a light brief");
+  for (const ok of [
+    `- ${SOURCE_DIFF}`,
+    "The diff outside `studio/` touches only Files owned.",
+    "The diff outside the studio touches only Files owned.",
+    "The source diff is Files owned only.",
+    "The diff is the Files owned; the officina evidence the verbs write is not owned.",
+    "`The diff is the Files owned.`",
+    "<!-- The diff is the Files owned. -->",
+    "Every refusal leaves every file untouched.",
+    "How certify reads the diff. It holds only while the queue is required.",
+    "The diff is the\nFiles owned.",
+  ])
+    assert.deepEqual(confines(brief().replace("green", ok)), [], ok);
+  assert.deepEqual(confines(brief({ fencedIntent: ["The diff is the Files owned."] })), [], "a fence");
+  accepted(ready(brief().replace("green", `- ${SOURCE_DIFF}`)), "ready: the standard line");
+});
+
+test("W-303-b2 behaviour 2: bisellium new --brief writes the standard diff promise under Acceptance", () => {
+  const dir = studio();
+  const out: string[] = [];
+  const log = console.log;
+  console.log = (...a: unknown[]) => void out.push(a.join(" "));
+  let code: number;
+  try {
+    code = runNew(["--kind", "feature", "--collegium", "engineering", "--title", "Template", "--brief", dir]).exitCode;
+  } finally {
+    console.log = log;
+  }
+  assert.equal(code, 0, "new exits 0");
+  const id = out.join("\n").trim();
+  const text = readFileSync(join(dir, "briefs", `${id}.md`), "utf8");
+  const acceptance = text.split("\n## Acceptance\n")[1]?.split("\n## ")[0] ?? "";
+  assert.ok(acceptance.includes(`\n- ${SOURCE_DIFF.replace("<id>", id)}\n`), `Acceptance carries the standard line: ${JSON.stringify(acceptance)}`);
+  assert.deepEqual(confines(text), [], "the template's line passes the rule");
 });

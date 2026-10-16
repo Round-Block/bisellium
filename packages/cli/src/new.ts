@@ -13,6 +13,7 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { Manifest } from "@bisellium/adapter-native";
+import { SOURCE_DIFF_LINE } from "@bisellium/commands/brief-admission.js";
 import { createNextRecord, ensureRealDirectory } from "@bisellium/commands/ids.js";
 import {
   isNativeOpusKind,
@@ -119,7 +120,9 @@ const NEW_USAGE =
 const BRIEF_SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 
 function briefTemplate(id: string, title: string): string {
-  const sections = BRIEF_SECTIONS.map((s) => `## ${s}\n\nTODO.\n`).join("\n");
+  // W-303: Acceptance opens with the standard diff promise, scoped to the source diff (brief admission refuses a whole-diff one).
+  const acceptance = `TODO.\n\n- ${SOURCE_DIFF_LINE.replace("<id>", id)}\n`;
+  const sections = BRIEF_SECTIONS.map((s) => `## ${s}\n\n${s === "Acceptance" ? acceptance : "TODO.\n"}`).join("\n");
   return `# ${id} — ${title}\n\n${sections}`;
 }
 
