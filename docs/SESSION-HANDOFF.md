@@ -48,26 +48,27 @@ or at two calendar weeks. Older items: `studio/acta/2026-10-09-queue-review.md`.
 Now, one builds at a time:
 1. Done: the first spec rides the opus PR, spec/<id> retired (#507)
 2. W-243 — certify mints by what the diff changes, never by branch name; `pr` refuses a merge commit (high, D-039)
-3. W-214 — one records PR at done; the handoff and checkpoint ride the done commit
-4. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
-5. W-274 — a review round is one `next --perform`: packet, prompt, Codex through the harness adapter, verdict and review; ride-along: the stderr trace line in `next.test.ts`'s helper
+3. W-302 — CODEOWNERS covers `studio/bisellium.yml` and `studio/prompts/`; after W-243, the stale `ci.yml` comment (Patron 2026-10-16; `.github/`: Patron merges)
+4. W-214 — one records PR at done; the handoff and checkpoint ride the done commit
+5. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
+6. W-274 — a review round is one `next --perform`: packet, prompt, Codex through the harness adapter, verdict and review; ride-along: the stderr trace line in `next.test.ts`'s helper
    recorded with the ticket, one commit; the bash copies and per-opus runners deleted; carries the later-round pass/fail rule (high)
-6. W-292 — only a dispatched runner writes ladder records and chains mint, review, PR and merge; one background call per perform (`.claude/`: Patron merges)
-7. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-292 (high)
-8. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
-9. W-259 — certify is the single mint, done records it, no host mint before review, no local verify (design approved, D-071 E)
-10. W-247 — drop the handoff Resume point and its Codex review
-11. W-299 — the queue is a record: `rank` writes `studio/queue.yml`; `next`, the Board and `status-page.mjs` read it; the handoff Queue section goes
-12. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
-13. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
-14. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if 12-13 had no interrupted run
+7. W-292 — only a dispatched runner writes ladder records and chains mint, review, PR and merge; one background call per perform (`.claude/`: Patron merges)
+8. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-292 (high)
+9. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
+10. W-259 — certify is the single mint, done records it, no host mint before review, no local verify (design approved, D-071 E)
+11. W-247 — drop the handoff Resume point and its Codex review
+12. W-299 — the queue is a record: `rank` writes `studio/queue.yml`; `next`, the Board and `status-page.mjs` read it; the handoff Queue section goes
+13. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
+14. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
+15. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if 12-13 had no interrupted run
 
 Next, the console MVP (after the block, same functions):
-15. W-280 — Inbox and `newItem` fail-open fixes
-16. W-298 — a `petitio` verb to the Patron; `next` holds on an open one
-17. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route
-18. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-19. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
+16. W-280 — Inbox and `newItem` fail-open fixes
+17. W-298 — a `petitio` verb to the Patron; `next` holds on an open one
+18. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route
+19. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+20. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (ranked by value; group descriptions stand for the ids in them):
