@@ -211,7 +211,7 @@ withTempCopy(join(repo, "studio"), (dir) => {
       const obj = parsed as Record<string, unknown>;
       const hooks = obj["hooks"] as Record<string, unknown> | undefined;
       const keys = hooks ? Object.keys(hooks).sort() : [];
-      const wantKeys = ["PostToolUse", "PreCompact", "SessionStart", "Stop"].sort();
+      const wantKeys = ["PostToolUse", "PreCompact", "PreToolUse", "SessionStart", "Stop"].sort();
       report("settings.hook-keys", JSON.stringify(keys) === JSON.stringify(wantKeys), JSON.stringify(keys));
 
       const allCommands: string[] = [];
@@ -227,10 +227,20 @@ withTempCopy(join(repo, "studio"), (dir) => {
         }
       }
       report("settings.timeouts-all-2", allTimeouts.length > 0 && allTimeouts.every((t) => t === 2), JSON.stringify(allTimeouts));
+      // The one non-bisellium hook: the PreToolUse background guard, pinned exactly.
+      const bgGuardCommand = "jq -e '.tool_input.run_in_background != true and (.tool_input.command // \"\" | gsub(\"\\\"(\\\\\\\\.|[^\\\"\\\\\\\\])*\\\"|\\\\x27[^\\\\x27]*\\\\x27\"; \"Q\") | test(\"(^|\\\\s)&(?![&>])|(?<![&>|<\\\\\\\\])&(?=\\\\s|$|[;)}])|(^|[^-\\\\w./])(nohup|setsid|disown)(?![-\\\\w.])\"))' >/dev/null 2>&1 && { echo 'Blocked: &, nohup, setsid and disown die when this Bash call returns. Run the long command as its own Bash call with the run_in_background parameter set to true instead.' >&2; exit 2; }; exit 0";
+      const bisellium = allCommands.filter((c) => c !== bgGuardCommand);
       report(
         "settings.commands-carry-studio-no-sella",
-        allCommands.length > 0 && allCommands.every((c) => c.includes("--studio studio") && !c.includes("--sella")),
-        JSON.stringify(allCommands),
+        bisellium.length > 0 && bisellium.every((c) => /^bisellium /.test(c) && c.includes("--studio studio") && !c.includes("--sella")),
+        JSON.stringify(bisellium),
+      );
+      const pre = hooks?.["PreToolUse"] as { matcher?: string; hooks: { type?: string; command: string; timeout: number }[] }[] | undefined;
+      const preHook = pre?.[0]?.hooks[0];
+      report(
+        "settings.pretooluse-bg-guard",
+        pre?.length === 1 && pre[0]?.matcher === "Bash" && pre[0].hooks.length === 1 && preHook?.type === "command" && preHook.timeout === 2 && preHook.command === bgGuardCommand,
+        JSON.stringify(pre),
       );
       report("settings.posttooluse-matcher", postToolUseMatcher === "Write|Edit", String(postToolUseMatcher));
       const perms = obj["permissions"] as { allow?: string[] } | undefined;
