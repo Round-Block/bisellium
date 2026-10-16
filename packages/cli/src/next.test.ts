@@ -939,13 +939,6 @@ if (runs(1)) {
       actor(o, /architect/i, "spec");
       assert.equal(o.kv.get("budget_tokens"), "100000", ran("spec order carries the declared budget", o));
     });
-    const specBranch = world("b1-spec-branch", "greenlight", { specOn: "spec-branch" });
-    rung(specBranch, "brief and passing spec log only on spec/<id> still names spec", "spec", "named", (o) => {
-      actor(o, /producer/i, "spec on branch");
-      assert.match(o.out, /spec signed on spec\/W-900, not on master/, ran("spec-branch why", o));
-      assert.match(o.out, /^command: bisellium next W-900 --perform --expect spec$/m, ran("names next's own landing for spec/<id> (W-141)", o));
-      assert.doesNotMatch(o.out, /scripts\//, ran("names no script", o));
-    });
 
     // 3 branch
     rung(world("b1-branch", "spec"), "branch absent names branch", "branch", "named", (o) => actor(o, /producer/i, "branch"));
@@ -2564,46 +2557,7 @@ test("W-141-b3 behaviour 3: the checkpoint rides the done commit", { timeout: 1_
 });
 
 // ---------------------------------------------------------------------------
-// W-141 behaviour 4: a spec signed in the main checkout is committed onto spec/<id>
-// ---------------------------------------------------------------------------
-/** The signed spec of a world, left uncommitted in `dir` (the way the architect leaves it). */
-function signSpecUncommitted(w: World, dir: string): void {
-  put(dir, "studio/briefs/W-900.md", briefText(w.behaviours));
-  verb(dir, ["verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, "spec.md"), "--studio", join(dir, "studio"), "--now", T.spec]);
-}
-test("W-141-b4 behaviour 4: a spec signed in the main checkout is committed onto spec/<id>, and nothing else moves", { timeout: 1_800_000 }, () => {
-  const w = world("w141-b4", "greenlight");
-  signSpecUncommitted(w, w.repo);
-  appendFileSync(join(w.repo, "README.md"), "an unrelated edit\n");
-  const brief = "studio/briefs/W-900.md";
-  const log = "studio/ci/W-900-spec-1.log";
-  assert.match(git(w.repo, ["status", "--porcelain", "-uall"]), /\?\? studio\/briefs\/W-900\.md/, "the brief is untracked");
-
-  const named = next(w, [OPUS]);
-  expectStep(named, "spec", "named", "a spec signed in the working tree is named");
-  assert.match(named.out, /why: spec signed in the working tree, not committed/, ran("the why", named));
-
-  const master = git(w.repo, ["rev-parse", "master"]);
-  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
-  assert.equal(done.status, 0, ran("perform exits 0", done));
-  expectStep(done, "spec", "performed", "the spec is committed");
-  assert.equal(git(w.repo, ["rev-parse", "master"]), master, "master is unmoved");
-  assert.equal(git(w.repo, ["rev-parse", `spec/${OPUS}^`]), master, "spec/<id> is master plus one commit");
-  assert.equal(git(w.repo, ["rev-list", "--count", `master..spec/${OPUS}`]), "1");
-  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `spec/${OPUS}`]).split("\n").sort(), [brief, log], "exactly the brief and the spec log");
-  assert.match(git(w.repo, ["log", "-1", "--format=%B", `spec/${OPUS}`]), /Co-Authored-By: architect \(bisellium next\)/, "the trailer names the spec log's sella");
-  assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD is master");
-  assert.equal(existsSync(join(w.repo, brief)), false, "the brief is gone from the working tree");
-  assert.equal(existsSync(join(w.repo, log)), false, "the log is gone from the working tree");
-  assert.match(readFileSync(join(w.repo, "README.md"), "utf8"), /an unrelated edit/, "the README edit is still there");
-  assert.match(git(w.repo, ["status", "--porcelain"]), /^ ?M README\.md$/m, "and still unstaged");
-  const landing = next(w, [OPUS]);
-  expectStep(landing, "spec", "named", "next names the landing of spec/<id>");
-  assert.match(landing.out, /why: spec signed on spec\/W-900, not on master/, ran("the landing why", landing));
-});
-
-// ---------------------------------------------------------------------------
-// W-141 behaviour 5: next lands spec/<id> and chore/done-<id> through a PR
+// W-141 behaviour 5: next lands chore/done-<id> through a PR (W-293 retired spec/<id>)
 // ---------------------------------------------------------------------------
 /** Write a raw gh scenario: `rules` are tried in order, first match wins (the slot builder cannot tell two `pr list` heads apart). */
 function rawScenario(w: World, rules: { match: string[]; replies: Reply[]; alts?: Alt[] }[]): void {
@@ -2642,40 +2596,39 @@ function landingScenario(w: World, head: string, o: { open: boolean; checks?: Js
 }
 const originHas = (w: World, head: string): boolean => git(w.origin, ["for-each-ref", `refs/heads/${head}`]) !== "";
 
-test("W-141-b5 behaviour 5: next lands spec/<id> and chore/done-<id> through a PR, as it lands an opus", { timeout: 1_800_000 }, () => {
-  const specHead = `spec/${OPUS}`;
-  // spec head: no PR yet, so one is created
-  const s = world("w141-b5-spec", "greenlight");
-  signSpecUncommitted(s, s.repo);
-  expectStep(next(s, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the spec is committed first");
-  landingScenario(s, specHead, { open: false });
-  const subject = git(s.repo, ["log", "-1", "--format=%s", specHead]);
-  const body = git(s.repo, ["log", "-1", "--format=%b", specHead]);
-  const landed = next(s, [OPUS, "--perform", "--expect", "spec", ...FAST]);
+test("W-141-b5 behaviour 5: next lands chore/done-<id> through a PR, as it lands an opus", { timeout: 1_800_000 }, () => {
+  const chore = `chore/done-${OPUS}`;
+  const doneCommitted = (tag: string): World => {
+    const w = world(tag, "cleanup");
+    scenario(w, { list: mergedList(w) });
+    touchHandoff(w);
+    expectStep(next(w, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the done commit is made first");
+    return w;
+  };
+  // done head: no PR yet, so one is created
+  const s = doneCommitted("w141-b5-create");
+  landingScenario(s, chore, { open: false, opusMerged: true });
+  const subject = git(s.repo, ["log", "-1", "--format=%s", chore]);
+  const body = git(s.repo, ["log", "-1", "--format=%b", chore]);
+  const landed = next(s, [OPUS, "--perform", "--expect", "done", ...FAST]);
   const creates = ghCalls(s).filter((a) => a[0] === "pr" && a[1] === "create");
   assert.equal(creates.length, 1, ran("one gh pr create call", landed));
   const arg = (a: string[], flag: string): string | undefined => a[a.indexOf(flag) + 1];
   assert.equal(arg(creates[0]!, "--title"), subject, "the PR title is the head commit's subject");
   assert.equal(arg(creates[0]!, "--body"), body, "the PR body is the head commit's body");
-  assert.equal(arg(creates[0]!, "--head"), specHead);
+  assert.equal(arg(creates[0]!, "--head"), chore);
   assert.equal(landed.status, 0, ran("landing exits 0", landed));
-  expectStep(landed, "spec", "performed", "the spec head is landed");
+  expectStep(landed, "done", "performed", "the done head is landed");
   assert.deepEqual(mutating(s), ["git push --force-with-lease", "gh pr create", "gh pr merge --squash --auto", "git fetch master:master", "git merge --ff-only"], "push, create, merge, fetch, in order");
   const pushes = gitCalls(s).filter((a) => a[0] === "push");
   assert.ok(pushes.every((a) => !a.includes("-u") && !a.includes("--set-upstream")), "no -u");
-  assert.deepEqual(pushes[0], ["push", "-q", "--force-with-lease", "origin", specHead], "the head is pushed with --force-with-lease");
-  assert.ok(pushes.some((a) => a.includes("--delete") && a.some((x) => x.startsWith(`--force-with-lease=refs/heads/${specHead}:`))), "the remote head is deleted, leased to the PR head");
-  assert.equal(branchExists(s, specHead), false, "the local head is deleted");
-  assert.equal(originHas(s, specHead), false, "the remote head is deleted");
-  assert.ok(existsSync(join(s.repo, "studio/briefs/W-900.md")), "master now carries the brief");
-  expectStep(next(s, [OPUS]), "branch", "named", "next reads branch");
+  assert.deepEqual(pushes[0], ["push", "-q", "--force-with-lease", "origin", chore], "the head is pushed with --force-with-lease");
+  assert.ok(pushes.some((a) => a.includes("--delete") && a.some((x) => x.startsWith(`--force-with-lease=refs/heads/${chore}:`))), "the remote head is deleted, leased to the PR head");
+  assert.equal(branchExists(s, chore), false, "the local head is deleted");
+  assert.equal(originHas(s, chore), false, "the remote head is deleted");
 
   // done head: an OPEN PR is reused, and the checkpoint rides along
-  const d = world("w141-b5-done", "cleanup");
-  scenario(d, { list: mergedList(d) });
-  touchHandoff(d);
-  expectStep(next(d, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the done commit is made first");
-  const chore = `chore/done-${OPUS}`;
+  const d = doneCommitted("w141-b5-done");
   landingScenario(d, chore, { open: true, opusMerged: true });
   const choreSubject = git(d.repo, ["log", "-1", "--format=%s", chore]);
   expectStep(next(d, [OPUS]), "done", "named", "next names the landing of chore/done-<id>");
@@ -2690,29 +2643,31 @@ test("W-141-b5 behaviour 5: next lands spec/<id> and chore/done-<id> through a P
   assert.equal(next(d, [OPUS]).first, `next: ${OPUS} checkpoint complete`, "the done head carried the handoff: complete");
 
   // mergeGate's rules apply: a failing check holds, merges nothing and deletes nothing
-  const f = world("w141-b5-fail", "greenlight");
-  signSpecUncommitted(f, f.repo);
-  next(f, [OPUS, "--perform", "--expect", "spec"]);
-  landingScenario(f, specHead, { open: false, checks: [...greens(MIN_CHECKS), check("lint", "fail")] });
-  const failed = next(f, [OPUS, "--perform", "--expect", "spec", ...FAST]);
+  const f = doneCommitted("w141-b5-fail");
+  landingScenario(f, chore, { open: false, opusMerged: true, checks: [...greens(MIN_CHECKS), check("lint", "fail")] });
+  const failed = next(f, [OPUS, "--perform", "--expect", "done", ...FAST]);
   expectHeld(failed, "a failing check");
   assert.match(failed.out, /state=CHECKS_FAILED/, ran("CHECKS_FAILED", failed));
   assert.equal(ghMerges(f).length, 0, "no merge");
-  assert.equal(branchExists(f, specHead), true, "the head stays");
+  assert.equal(branchExists(f, chore), true, "the head stays");
 
-  // a head that changes a path outside the officina and docs/ is refused before the push, with no gh call
-  const o = world("w141-b5-outside", "greenlight", { specOn: "spec-branch" });
-  git(o.repo, ["switch", "-q", specHead]);
+  // a head that changes a path outside the officina and docs/ is refused before the push
+  const o = doneCommitted("w141-b5-outside");
+  git(o.repo, ["switch", "-q", chore]);
   put(o.repo, "source.txt", "changed outside the officina\n");
   commit(o.repo, "feat: touch the source");
   git(o.repo, ["switch", "-q", "master"]);
-  expectStep(next(o, [OPUS]), "spec", "named", "the spec head is named");
-  const refused = next(o, [OPUS, "--perform", "--expect", "spec", ...FAST]);
+  scenario(o, { list: mergedList(o) });
+  expectStep(next(o, [OPUS]), "done", "named", "the done head is named");
+  const calls = ghCalls(o).length;
+  const refused = next(o, [OPUS, "--perform", "--expect", "done", ...FAST]);
   expectHeld(refused, "an outside path");
   assert.match(refused.out, /why: .*source\.txt/, ran("the refusal names the path", refused));
-  assert.equal(ghCalls(o).length, 0, "no gh call is made");
+  // the done rung reads opus/<id>'s PR (a spec head read none); the landing itself makes no gh call
+  const derivation = (a: string[]): boolean => (a[0] === "repo" && a[1] === "view") || (a[0] === "pr" && a[1] === "list" && a.includes(BRANCH));
+  assert.deepEqual(ghCalls(o).slice(calls).filter((a) => !derivation(a)), [], ran("no gh call is made beyond the derivation's reads", refused));
   assert.deepEqual(mutating(o), [], "nothing is pushed");
-  assert.equal(originHas(o, specHead), false, "the head never reached origin");
+  assert.equal(originHas(o, chore), false, "the head never reached origin");
 });
 
 // ---------------------------------------------------------------------------
@@ -2859,24 +2814,6 @@ test("W-141-b2 round 1: a failed done commit or switch-back never leaves the mai
   touchHandoff(s);
   const stuck = next(s, [OPUS, "--perform", "--expect", "done"], { env: { GIT_STUB_REAL: failingGit("w141-r1-b2-switch", ["switch -q master"]) } });
   expectHeld(stuck, "done with a failing switch back");
-  assert.match(stuck.out, /why: .*master/, ran("the why names the failed switch", stuck));
-});
-
-test("W-141-b4 round 1: a failed spec commit or switch-back never carries staged files onto master or reports success", { timeout: 1_800_000 }, () => {
-  const head = `spec/${OPUS}`;
-  const c = world("w141-r1-b4-commit", "greenlight");
-  signSpecUncommitted(c, c.repo);
-  const failed = next(c, [OPUS, "--perform", "--expect", "spec"], { env: { GIT_STUB_REAL: failingGit("w141-r1-b4-commit", ["commit -q -m spec(W-900)"]) } });
-  expectHeld(failed, "spec with a failing commit");
-  assert.equal(git(c.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", ran("HEAD is master", failed));
-  assert.equal(stagedPaths(c), "", ran("nothing is staged on master", failed));
-  assert.equal(branchExists(c, head), false, "no spec head is left");
-  assert.ok(existsSync(join(c.repo, "studio/briefs/W-900.md")), "the brief is still in the working tree");
-
-  const s = world("w141-r1-b4-switch", "greenlight");
-  signSpecUncommitted(s, s.repo);
-  const stuck = next(s, [OPUS, "--perform", "--expect", "spec"], { env: { GIT_STUB_REAL: failingGit("w141-r1-b4-switch", ["switch -q master"]) } });
-  expectHeld(stuck, "spec with a failing switch back");
   assert.match(stuck.out, /why: .*master/, ran("the why names the failed switch", stuck));
 });
 
@@ -3046,15 +2983,6 @@ test("W-141-b2 round 2: a failed unstage keeps the branch and HEAD on it, never 
   assert.equal(branchExists(c, chore), true, "the recovery branch is kept");
   assert.match(failed.out, /restore --staged/, ran("the why names the recovery command", failed));
   assert.match(failed.out, /switch master/, ran("and the switch back", failed));
-
-  const head = `spec/${OPUS}`;
-  const s = world("w141-r2-b4-restore", "greenlight");
-  signSpecUncommitted(s, s.repo);
-  const stuck = next(s, [OPUS, "--perform", "--expect", "spec"], { env: { GIT_STUB_REAL: failingGit("w141-r2-b4-restore", ["commit -q -m spec(W-900)", "restore -q --staged"]) } });
-  expectHeld(stuck, "spec with failing commit and restore");
-  assert.equal(git(s.repo, ["symbolic-ref", "HEAD"]), `refs/heads/${head}`, ran("HEAD stays on the spec branch", stuck));
-  assert.equal(branchExists(s, head), true, "the recovery branch is kept");
-  assert.match(stuck.out, /restore --staged/, ran("the why names the recovery command", stuck));
 });
 
 // ---------------------------------------------------------------------------
@@ -3212,8 +3140,7 @@ test("W-162-b1 behaviour 1: a valid reviewer setting sends a signed spec to the 
   putBrief(absent);
   sign(absent, 1);
   const kept = specNext(absent);
-  expectStep(kept, "spec", "named", "absent key: the existing ladder");
-  assert.match(kept.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("absent key names commit", kept));
+  expectStep(kept, "branch", "named", "absent key: the signed spec names branch");
   assert.equal(kept.kv.has("role"), false, ran("absent key names no order", kept));
 
   const bad: [string, SrOpts][] = [
@@ -3328,7 +3255,7 @@ test("W-162-b2 behaviour 2: architect signatures and review verdicts are strict,
   putBrief(empty);
   sign(empty, 1);
   review(empty, 2, "failed", { body: NO_FINDINGS });
-  assert.match(specNext(empty).kv.get("why") ?? "", /spec signed in the working tree, not committed/, "W-246: failed beside No findings passes to the commit");
+  assert.equal(specNext(empty).first, `next: ${OPUS} branch named`, "W-246: failed beside No findings passes to branch");
   const unchecked = srWorld("w162-b2-no-check");
   putBrief(unchecked);
   sign(unchecked, 1);
@@ -3360,26 +3287,18 @@ test("W-162-b3 behaviour 3: only a passed review after the newest architect sign
   sign(w, 1);
   review(w, 2, "passed");
   const named = specNext(w);
-  assert.match(named.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("act: commit", named));
-  expectStep(named, "spec", "named", "signature 1 plus passed review 2 names commit");
+  expectStep(named, "branch", "named", "signature 1 plus passed review 2 names branch");
   assert.equal(named.kv.has("role"), false, ran("no order is named", named));
 
   const master = git(w.repo, ["rev-parse", "master"]);
-  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
-  expectStep(done, "spec", "performed", "the spec is committed");
-  assert.match(done.out, /^branch: spec\/W-900$/m, ran("the branch line", done));
+  const done = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(done, "branch", "performed", "the spec is committed by branch");
+  assert.match(done.out, /^branch: opus\/W-900$/m, ran("the branch line", done));
   assert.match(done.out, /^commit: [0-9a-f]+$/m, ran("the commit line", done));
-  assert.equal(git(w.repo, ["rev-parse", `spec/${OPUS}^`]), master, "spec/<id> is master plus one commit");
-  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `spec/${OPUS}`]).split("\n").sort(), [BRIEF_REL, specLog(1), specLog(2)], "exactly the brief and both validated logs");
-  const landing = next(w, [OPUS]);
-  expectStep(landing, "spec", "named", "the accepted spec branch names landing");
-  assert.match(landing.out, /why: spec signed on spec\/W-900, not on master/, ran("the landing why", landing));
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), master, "opus/<id> is master plus one commit");
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(), [BRIEF_REL, specLog(1), specLog(2)], "exactly the brief and both validated logs");
 
-  // the landed trunk names branch; then ready is attributed to the signer, never the reviewer
-  git(w.repo, ["merge", "-q", "--ff-only", `spec/${OPUS}`]);
-  expectStep(next(w, [OPUS]), "branch", "named", "the landed trunk names branch");
-  git(w.repo, ["branch", BRANCH]);
-  git(w.repo, ["worktree", "add", "-q", w.wt, BRANCH]);
+  // ready is attributed to the signer, never the reviewer
   const ready = next(w, [OPUS]);
   expectStep(ready, "ready", "named", "ready follows branch");
   assert.match(ready.out, /^attributed: architect \(signed ci\/W-900-spec-1\.log\)$/m, ran("attributed to the signer", ready));
@@ -3434,19 +3353,6 @@ test("W-162-b3 behaviour 3: only a passed review after the newest architect sign
     specHeld(specNext(s), `a passed review by ${name} holds`);
   }
 
-  // a spec/<id> branch carrying only a signature holds at spec and is not landed
-  const lone = srWorld("w162-b3-spec-branch");
-  git(lone.repo, ["switch", "-q", "-c", `spec/${OPUS}`]);
-  putBrief(lone);
-  sign(lone, 1);
-  commit(lone.repo, "spec: signed");
-  git(lone.repo, ["switch", "-q", "master"]);
-  const heldBranch = specNext(lone);
-  specHeld(heldBranch, "a spec branch with only a signature holds", /spec\/W-900/);
-  const tried = next(lone, [OPUS, "--perform", "--expect", "spec"]);
-  assert.equal(tried.status, 1, ran("perform does not land it", tried));
-  assert.equal(ghCalls(lone).length, 0, "no PR call was made");
-
   // a merged record past ready keeps today's check: pre-gate logs (no brief header, no review) go past spec
   const past = srWorld("w162-b3-past-ready", { upTo: "spec" });
   writeFileSync(join(past.repo, specLog(1)), readLog(past, 1).replace(/^# brief: .*\n/m, ""));
@@ -3483,8 +3389,7 @@ test("W-162-b4 behaviour 4: a failed review returns to the architect, and only a
   reviewerOrder(specNext(gated), 4, "signature 3 orders the reviewer at round 4");
   review(gated, 4, "passed");
   const commitNamed = specNext(gated);
-  expectStep(commitNamed, "spec", "named", "passed review 4 permits the commit");
-  assert.match(commitNamed.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("act: commit", commitNamed));
+  expectStep(commitNamed, "branch", "named", "passed review 4 names branch");
 
   // a malformed log at round 2 holds; a valid signature at round 3 makes it history
   const bad = srWorld("w162-b4-history");
@@ -5090,8 +4995,7 @@ test("W-246-b1 behaviour 1: an advisory-only spec review passes", { timeout: 1_8
     assert.match(readLog(w, 2), /^# outcome: passed$/m, `${name}: a failed submission with no standing blocker is recorded passed`);
     assert.match(readLog(w, 2), /^# submitted_outcome: failed$/m, `${name}: the submitted outcome is kept`);
     const o = specNext(w);
-    expectStep(o, "spec", "named", `${name}: the passed review names the commit`);
-    assert.match(o.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran(`${name}: commit`, o));
+    expectStep(o, "branch", "named", `${name}: the passed review names branch`);
   }
   const cited = srWorld("w246-b1-cited");
   putBrief(cited);
@@ -5123,14 +5027,12 @@ test("W-246-b2 behaviour 2: two failed spec reviews since the newest re-spec end
   assert.equal(order.kv.get("split"), split, ran("the split line", order));
   sign(w, 5);
   const named = specNext(w);
-  expectStep(named, "spec", "named", "signature 5 stands without a third review");
+  expectStep(named, "branch", "named", "signature 5 stands without a third review");
   assert.equal(named.kv.has("role"), false, ran("no reviewer is ordered", named));
-  assert.match(named.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("the commit is named", named));
-  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
-  expectStep(done, "spec", "performed", "the split spec is committed");
-  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `spec/${OPUS}`]).split("\n").sort(), [BRIEF_REL, specLog(2), specLog(4), specLog(5)], "exactly the brief, the signature and the failed logs");
-  git(w.repo, ["merge", "-q", "--ff-only", `spec/${OPUS}`]);
-  expectStep(next(w, [OPUS]), "branch", "named", "the trunk counts the same and names branch");
+  const done = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(done, "branch", "performed", "the split spec rides branch");
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(), [BRIEF_REL, ...[1, 2, 3, 4, 5].map(specLog)], "the brief and every round");
+  expectStep(next(w, [OPUS]), "ready", "named", "the branch counts the same and names ready");
 
   const once = srWorld("w246-b2-once");
   putBrief(once);
@@ -5228,11 +5130,9 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   reviewerOrder(specNext(ok), 2, "a signed light brief goes to the reviewer");
   review(ok, 2, "passed");
   const named = specNext(ok);
-  expectStep(named, "spec", "named", "a reviewed light brief names the commit");
-  assert.match(named.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("act: commit", named));
-  expectStep(next(ok, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the light spec is committed");
-  git(ok.repo, ["merge", "-q", "--ff-only", `spec/${OPUS}`]);
-  expectStep(next(ok, [OPUS]), "branch", "named", "the landed light spec names branch");
+  expectStep(named, "branch", "named", "a reviewed light brief names branch");
+  expectStep(next(ok, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "the light spec rides branch");
+  expectStep(next(ok, [OPUS]), "ready", "named", "the branch carries the light spec: ready follows");
 
   const refuse = (tag: string, text: string, why: RegExp, setup?: (w: World) => void): void => {
     const w = w196World(`w255-b3-${tag}`, "6");
@@ -5304,9 +5204,8 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   assert.match(splitOrder.kv.get("split") ?? "", /^bisellium new /, ran("the split line", splitOrder));
   sign(split, 5);
   const standing = specNext(split);
-  expectStep(standing, "spec", "named", "split: the signed over-limit light brief with a valid exception stands");
+  expectStep(standing, "branch", "named", "split: the signed over-limit light brief with a valid exception stands");
   assert.equal(standing.kv.has("role"), false, ran("split: no reviewer is ordered", standing));
-  assert.match(standing.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("split: the commit is named", standing));
 });
 
 // ---------------------------------------------------------------------------

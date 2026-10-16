@@ -455,11 +455,10 @@ const evidence = (): Record<string, string> => ({ "briefs/W-900.md": BRIEF, "ci/
 if (runs(7)) {
   test("W-128 behaviour 7: a spec or done that must still land is landed by next, never by the scripts", () => {
     const base = { id: "W-900", design: "architect", trunkRecord: { state: "greenlit" }, uiSpecProblems: () => [] as string[] };
-    const spec = deriveNext({ ...base, trunk: undefined, specBranch: mem(evidence()) } as unknown as Facts);
     const done = deriveNext({
       ...base,
       trunk: mem(evidence()),
-      specBranch: undefined,
+      work: mem(evidence()),
       tip: undefined,
       pushed: false,
       pr: () => ({ kind: "settled", pr: {} }),
@@ -468,15 +467,11 @@ if (runs(7)) {
       certified: () => true,
     } as unknown as Facts);
 
-    assert.equal(spec.step, "spec", "7a: the spec fixture names the spec rung");
-    assert.equal(spec.status, "named", "7a: the spec rung is named");
-    assert.equal(spec.actor, "producer", "7a: the spec landing is the producer's");
-    assert.match(spec.why, /spec signed on spec\/W-900, not on master/, "7a: the spec why is unchanged");
     assert.equal(done.step, "done", "7b: the done fixture names the done rung");
     assert.equal(done.status, "named", "7b: the done rung is named");
     assert.match(done.why, /done committed on chore\/done-W-900, not on master/, "7b: the done why is unchanged");
 
-    for (const [label, d] of [["spec", spec], ["done", done]] as const) {
+    for (const [label, d] of [["done", done]] as const) {
       const command = d.command ?? "";
       assert.ok(!command.includes("scripts/"), `7c: the ${label} command does not name scripts/ (${command})`);
       assert.ok(!command.includes("open-pr"), `7c: the ${label} command does not name open-pr`);
@@ -484,8 +479,6 @@ if (runs(7)) {
     }
 
     // W-141: the landing is the verb's own rung, not a hand script
-    assert.equal(spec.command, "bisellium next W-900 --perform --expect spec", "7d: the spec landing is performed by next");
-    assert.equal(spec.act, "land", "7d: the spec rung's act is the landing");
     assert.equal(done.command, "bisellium next W-900 --perform --expect done", "7e: the done landing is performed by next");
     assert.equal(done.act, "land", "7e: the done rung's act is the landing");
   });
