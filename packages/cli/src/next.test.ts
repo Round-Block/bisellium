@@ -4252,7 +4252,7 @@ test("W-197-b1 behaviour 1: .github/ is a Patron path for every existing Patron 
 test("W-197-b2 behaviour 2: .github/CODEOWNERS names @edckt for /.github/, itself included", () => {
   const path = join(REPO_ROOT, ".github/CODEOWNERS");
   assert.ok(existsSync(path), ".github/CODEOWNERS exists");
-  assert.equal(readFileSync(path, "utf8"), "# Patron-only surfaces: a PR touching these needs the Patron's review.\n/.github/                 @edckt\n/scripts/ci-certify.mjs   @edckt\n/.claude/                 @edckt\n/studio/leges/            @edckt\n/studio/decisions/        @edckt\n/docs/ADOPTION.md         @edckt\n");
+  assert.equal(readFileSync(path, "utf8"), "# Patron-only surfaces: a PR touching these needs the Patron's review.\n/.github/                 @edckt\n/scripts/ci-certify.mjs   @edckt\n/.claude/                 @edckt\n/studio/leges/            @edckt\n/studio/decisions/        @edckt\n/studio/bisellium.yml     @edckt\n/studio/prompts/          @edckt\n/docs/ADOPTION.md         @edckt\n");
 });
 
 // ---------------------------------------------------------------------------
