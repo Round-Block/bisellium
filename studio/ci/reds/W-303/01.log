@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-303-b1\s --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-16T16:15:09.669Z
+# sella: builder.W-303
+# tree: tree:5d5dc634144600e9b640ce56c4e7ea9b35791963
+# ticket: {"opus":"W-303","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-303/studio","head":"0a16cce1aad061568868cac80fbc20041aee321f","brief":"85626702272718e9e33bc6cd1405064fd8ce0c78","at":"2026-10-16T16:15:03.920Z"}
+
+TAP version 13
+# Subtest: W-303-b1 behaviour 1: a whole-diff promise that forgets the officina evidence is refused, by ready and by check
+not ok 1 - W-303-b1 behaviour 1: a whole-diff promise that forgets the officina evidence is refused, by ready and by check
+  ---
+  duration_ms: 38.475805
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-303/packages/cli/src/brief-admission.test.ts:27:8944'
+  failureType: 'testCodeFailure'
+  error: |-
+    W-302 revision 1: exit (stderr [])
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-303/packages/cli/src/brief-admission.test.ts:181:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-303/packages/cli/src/brief-admission.test.ts:849:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 48.816914
