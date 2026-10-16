@@ -85,7 +85,7 @@ detection. The Aedile owns the road, not the work travelling on it.
   protection; the rest proceed on the architect's signature, vetoable at
   the checkpoint.
 - **Process work is capped (D-061 §5).** At most one process opus in flight
-  per two product opera; the retro runs weekly. Exempt: security, D-039
+  per two product opera; no retro runs (D-070). Exempt: security, D-039
   high, and opera that remove process.
 - **The status page is frozen (D-061 §3).** Bug fixes only; new see-or-act
   features go to the console.
@@ -127,7 +127,7 @@ names each step and writes the step ticket the next record write consumes
    change or a retry through another agent. Builders (Sonnet, background)
    write code, reds and their `handoff`, running `next` before each `red`.
    The architect (Opus 5.5) signs specs. Codex `gpt-5.6-sol` is the single
-   review gate for specs and builds (D-066 C), `gpt-5.6-terra` triages retros;
+   review gate for specs and builds (D-066 C) and tags each finding's class (D-070);
    the orchestrator records their verdicts. A clerk (no shell) edits handoff
    and dossier text only; a Haiku general-purpose agent republishes. The
    Patron greenlights, holds, and merges PRs touching `.claude/`,
@@ -187,13 +187,16 @@ names each step and writes the step ticket the next record write consumes
 6. **Done:** `verify <id>` on master (~11 min, nothing heavy alongside); edit
    `docs/SESSION-HANDOFF.md` (the done perform refuses without a tracked
    handoff edit and runs W-186's rule on it); `next --perform --expect done`
-   (commits on `chore/done-<id>`); the retro (step 7) on that branch; `next
-   --perform --expect done` again (lands). Earlier untracked spec logs ride it.
-7. **Retro:** Codex `gpt-5.6-terra` triage (prompt
-   `~/.bisellium-evidence/retro-triage-W-162/prompt.md`), adjust with a kept
-   script if needed, `retro --opus <id> --from <file>`, map any new opus to a
-   milestone (`amend --milestone --value`); it rides the done PR (D-064 B).
-   Then `npm run -s bisellium -- tick --studio studio`.
+   (commits on `chore/done-<id>`); `next --perform --expect done` again
+   (lands). Earlier untracked spec logs ride it.
+7. **No retro (D-070).** The reviewer names each finding's class
+   (`<area>×<slug>`, an existing class verbatim where one fits). When a
+   failing verdict names a class seen before, the fix round also fixes its
+   cause (a check rule, brief-admission rule, prompt template or hook in the
+   same opus) or files a greenlit high opus for the class. W-297 makes
+   `verdict` and `next` enforce it; until then the producer checks a failing
+   verdict's classes with `~/.bisellium-evidence/lesson-census/census.py`.
+   After done, `npm run -s bisellium -- tick --studio studio`.
 
 `.claude/` changes stop merge/branch/done for the Patron's command.
 
@@ -284,3 +287,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-13 | §7: process work capped at one per two product opera, weekly retro; status page frozen (D-061) | Patron |
 | 2026-10-13 | §7: the orchestrator session refreshes before 350k (was 500k); subagent dispatches stay at 500k | Patron |
 | 2026-10-15 | §9: step 0 names who runs each step (the orchestrator records until W-267); tickets, two-perform rungs, the handoff refresh and the done rung's handoff edit named; step 3's W-166 sentence fixed; Codex Sol the one review gate (D-066) | Patron |
+| 2026-10-16 | §7, §9: no per-opus retro; reviewer class tags, and a class seen before is fixed at its cause in the fix round (D-070) | Patron |
