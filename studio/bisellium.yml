@@ -59,9 +59,8 @@ source_excludes:
   - docs/design/dossier/head.html
   - docs/design/dossier/progress-body.html
   - docs/design/dossier/status-body.html
-# W-137 (D-039): a done opus owes a retro once it ended at or after `since` (the ruling's own time); a high-severity
-# fix is filed already greenlit by `high_greenlit_by`. Older done opera owe none.
-retro: { since: 2026-10-06T06:06:57Z, high_greenlit_by: D-039 }
+# D-070: no per-opus retro, so no `retro` setting and none owed (owedRetros); W-137's setting was
+# { since: 2026-10-06T06:06:57Z, high_greenlit_by: D-039 }. W-297 enforces the class tags that replace it.
 # D-015: how an opus branch reaches the trunk is a setting, not a fixed
 # flow. This is the Patron's own reference flow — rebase the opus branch
 # onto the trunk (bisellium merge does the rebase, then fast-forwards),
