@@ -1,0 +1,24 @@
+# opus: W-206
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a14231-f375-7d93-a58c-4aa00bc290ae
+# outcome: failed
+# at: 2026-10-16T01:48:41.177Z
+# tree: tree:5287d71d26120da9d38b7c76c3c07f87ed60e1f5
+# brief: briefs/W-206.md blob:822fa70484ada7eb20dd2c7cf0e256a2546a4e4b
+# ticket: {"opus":"W-206","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-206/studio","head":"7b0c537a58748ce83dc7b45ebee80362c51df9c9","brief":"822fa70484ada7eb20dd2c7cf0e256a2546a4e4b","at":"2026-10-16T01:48:40.345Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:750 Reached from ci/W-206-review-1.log #3’s class: with unlistable `ci/`, a passed committed spec is accepted even when the worktree brief is edited; line 779 then names `commit-opus`, allowing the unsigned amendment to be committed instead of holding pending spec work. brief:51 — check: packages/cli/src/next.test.ts
+
+## Earlier findings
+- ci/W-206-review-1.log #1: open — packages/cli/src/next.ts:752 still calls `specEvidence` and its strict readers before the new log’s pin-shape guard at packages/cli/src/next.ts:769, contrary to brief:53.
+- ci/W-206-review-1.log #2: closed — packages/cli/src/next.ts:594 preserves a non-modification record status in the reported path, preventing the exact-record exception at packages/cli/src/next.ts:1483 from admitting it.
+- ci/W-206-review-1.log #3: closed — packages/cli/src/next.ts:750-752 judges the committed branch when worktree `ci/` is unlistable, allowing a passed unchanged spec to reach the later review hold.
+- ci/W-206-review-1.log #4: closed — docs/ARCHITECTURE.md:341 now limits brief currentness to pinned rounds and expressly documents tree-only unpinned UI rounds.
+
+## Verdict
+The still-open reader-order requirement and the new unreadable-`ci/` sibling defect fail this round.
+VERDICT: FAIL
