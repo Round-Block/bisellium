@@ -6,8 +6,11 @@ name: CI
 # test.
 #
 # W-168: `merge_group` runs on the merge queue's temporary commit (the PR merged
-# with the latest master). For an opus head, `certify` runs the existing mint on
-# that merge result; a head that is not `opus/W-*` mints nothing.
+# with the latest master). For an `opus/W-*` head, `certify` runs the existing
+# mint on that merge result. W-243: any other head mints nothing and passes only
+# when its merge group's diff against the base changes officina records alone
+# (`recordOnly` in scripts/ci-scope.mjs); a source path, an empty diff or an
+# unreadable one fails the check.
 # W-203: there `gates` and `web-e2e` classify the group commit against the
 # group's base, so a records-only group takes the records-only path; any source
 # path takes the full path.
@@ -151,9 +154,10 @@ jobs:
   # W-168: the merge queue's certification. Runs only on a merge group. The
   # certifying code is master's (`tooling`, checked out at the merge group's
   # base commit), never the merge-group commit's own copy: scripts/ci-certify.mjs
-  # rebases the PR head onto the base inside the job and runs the existing mint
-  # on it. A non-zero exit fails the required `certify` check, so GitHub drops
-  # the PR from the queue. Skipped on a pull request, which a required check
+  # rebases an `opus/W-*` PR head onto the base inside the job and runs the
+  # existing mint on it; any other head is judged by its diff (W-243, above). A
+  # non-zero exit fails the required `certify` check, so GitHub drops the PR from
+  # the queue. Skipped on a pull request, which a required check
   # counts as passing.
   certify:
     if: github.event_name == 'merge_group'
