@@ -20,7 +20,7 @@ import {
   instant,
 } from "@bisellium/schema";
 import { listMd, readFront, resolveSeat, STATES, type Manifest } from "@bisellium/adapter-native";
-import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
+import { admissionLimit, readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 import { owedRetros } from "./retro.js";
@@ -657,14 +657,20 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
 
     // W-127: an active opus's brief must pass the same admission `ready` applies (done briefs are never re-read).
     // A brief it cannot read (no spec, or an unreadable one) is outside admission's domain, so it blocks (W-161).
+    // W-264: with no limit declared, a named spec is still read (an unreadable one blocks, as it may be light), and only a
+    // light brief is admitted, with no count; a missing spec: is not asked for. A malformed limit is manifest.shape's alone.
     const specRel = str(d["spec"]);
-    if (briefLimit !== undefined && ACTIVE.has(state)) {
+    if ("limit" in briefLimitRead && ACTIVE.has(state) && (briefLimit !== undefined || specRel)) {
       const brief = specRel ? readContainedRegularFile(root, specRel, "briefs") : undefined;
       if (!specRel || brief === undefined) add("brief.admission", "block", where, "active opus names no spec: brief");
       else if ("error" in brief) add("brief.admission", "block", where, `${specRel} unreadable: ${brief.error}`);
-      else
-        for (const problem of briefAdmissionProblems(root, admissionManifest, id ?? basename(p, ".md"), brief.bytes.toString("utf8"), briefLimit))
-          add("brief.admission", "block", where, `${specRel} ${problem}`);
+      else {
+        const text = brief.bytes.toString("utf8");
+        const limit = admissionLimit(briefLimit, text);
+        if (limit !== undefined)
+          for (const problem of briefAdmissionProblems(root, admissionManifest, id ?? basename(p, ".md"), text, limit))
+            add("brief.admission", "block", where, `${specRel} ${problem}`);
+      }
     }
 
     checkTraditio(where, d["traditio"], state, ACTIVE.has(state));

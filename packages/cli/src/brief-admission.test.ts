@@ -625,7 +625,7 @@ test("W-161-b6 behaviour 6: check blocks an active opus whose brief it cannot re
     assert.equal(found[0]!.message, "active opus names no spec: brief", spec);
   }
   assert.equal(checked("done", brief(), 6, front("spec: briefs/W-901.md\n").replace("state: building", "state: done")).admission.length, 0, "done");
-  assert.equal(checked("building", brief(), ABSENT, front("spec: briefs/W-901.md\n")).admission.length, 0, "no key");
+  assert.equal(checked("building", brief(), ABSENT, front("spec: briefs/W-901.md\n")).admission.length, 1, "no key: W-264 still reads a named spec");
   for (const bad of [0, null]) {
     const { admission, shape } = checked("building", brief(), bad, front("spec: briefs/W-901.md\n"));
     assert.equal(admission.length, 0, `limit ${String(bad)}: admission`);

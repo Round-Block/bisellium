@@ -292,6 +292,15 @@ export function readBriefLimit(raw: unknown): { limit: number | undefined } | { 
   return { error: "brief_behaviour_limit must be a positive integer" };
 }
 
+/** W-264 (L-186): the limit admission reads a brief under. A declared limit is that limit. With none, a brief carrying a
+ *  brief form line (`Brief: light`, or one `readBriefForm` refuses) is read with no count, so its other rules still hold;
+ *  a full brief is not read (`undefined`): full-brief admission stays opt-in through the key. */
+export function admissionLimit(declared: number | undefined, briefText: string): number | undefined {
+  if (declared !== undefined) return declared;
+  const form = readBriefForm(briefText);
+  return "error" in form || form.light ? Number.POSITIVE_INFINITY : undefined;
+}
+
 /** `exception`: the one "Behaviour limit exception:" value on an over-limit brief. It is not validated here
  *  (W-140: two parameters, as W-127 signed); `briefAdmissionProblems` checks it and places its problem. */
 export function readBriefAdmission(briefText: string, limit: number): { problems: string[]; exception?: string } {
