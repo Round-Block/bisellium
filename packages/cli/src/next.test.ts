@@ -5477,3 +5477,14 @@ test("W-206-r1-2 review round 1: a deleted opus record beside valid spec work ho
   assert.equal(tipOf(w), tip, "the branch is unmoved");
   assert.equal(git(w.wt, ["diff", "--cached", "--name-only"]), "", "nothing is staged");
 });
+
+test("W-206-r1-3 review round 1: an unlistable worktree ci/ after the committed spec passed is the later rungs' hold, not spec", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r1-3", "review");
+  const ci = join(w.wt, "studio/ci");
+  try {
+    chmodSync(ci, 0o100); // traversable but not listable
+    reviewHeld(next(w, [OPUS, ...BUDGET]), "the committed spec passed, so the hold is the review rung's", /ci\//);
+  } finally {
+    chmodSync(ci, 0o755);
+  }
+});
