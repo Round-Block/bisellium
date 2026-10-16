@@ -80,7 +80,7 @@ earlier: D-061, D-067); one lane until W-169 lands. Older items: `studio/acta/20
    W-169's subtask after W-214; W-261 after W-169, W-183 and
    W-219, narrowed to Patron-reply, verdict, certificate, merge and dependency waits.
 7. The rest as ranked 2026-10-11/12 (acta `2026-10-11-patron-queue-review`), halted ids
-   left out (W-213 halted by D-070): W-219, W-228, W-227 (high), W-230, W-138, W-217; W-210; W-208;
+   dropped (D-070 dropped one more): W-219, W-228, W-227 (high), W-230, W-138, W-217; W-210; W-208;
    W-081; W-173, W-174, W-195, W-165, W-190, W-198; W-158,
    W-133, W-115, W-116, W-154, W-091, W-090, W-143, W-144, W-157, W-145, W-136, W-146,
    W-160, W-135; W-040, W-051, W-094; W-175, W-176; W-216.
