@@ -5684,3 +5684,42 @@ test("W-243-b3 behaviour 3: pr refuses an opus branch carrying a merge commit be
   assert.ok(outLines(blind).some((l) => l.startsWith(`why: refusing: could not list ${BRANCH}'s merge commits`)), ran("the why", blind));
   assert.deepEqual(mutating(f), ["git fetch master:master"], ran("nothing is pushed", blind));
 });
+
+// ---------------------------------------------------------------------------
+// W-214 behaviour 1: the checkpoint's history row rides the done commit, so an opus closes in one records PR
+// ---------------------------------------------------------------------------
+test("W-214-b1 behaviour 1: done refuses until the checkpoint's history row naming the opus rides with the handoff", { timeout: 1_800_000 }, () => {
+  const chore = `chore/done-${OPUS}`;
+  const ROW = "docs/design/dossier/progress-body.html";
+  const MAST = "docs/design/dossier/body.html";
+  const w = world("w214-b1", "cleanup");
+  put(w.repo, ROW, "<tr><td>W-899 shipped</td></tr>\n");
+  put(w.repo, MAST, "<p>cascade 1: W-899</p>\n");
+  commit(w.repo, "test: master keeps the history page and the masthead");
+  git(w.repo, ["push", "-q", "origin", "master"]);
+  scenario(w, { list: mergedList(w) });
+  touchHandoff(w);
+  const still = (): string => [git(w.repo, ["rev-parse", "HEAD", "master"]), git(w.repo, ["ls-files", "-s"]), git(w.repo, ["status", "--porcelain"]), git(w.repo, ["branch", "--list"])].join("\n--\n");
+  const refusedRow = (label: string): void => {
+    const was = still();
+    const o = next(w, [OPUS, "--perform", "--expect", "done"]);
+    expectHeld(o, label);
+    assert.ok(outLines(o).some((l) => /^why: refusing: .*progress-body\.html.*W-900/.test(l)), ran(`${label}: the why line names the history page and the opus`, o));
+    assert.equal(still(), was, ran(`${label}: nothing is mutated`, o));
+    assert.equal(branchExists(w, chore), false, `${label}: no chore/done-<id> is made`);
+  };
+  // the handoff alone, as every done before W-214 committed it, no longer closes the opus
+  refusedRow("the handoff without the history row");
+  // a row that names another opus, or the id as a prefix of a longer one, is not the opus's row
+  appendFileSync(join(w.repo, ROW), "<tr><td>W-9000 and W-901 shipped</td></tr>\n");
+  refusedRow("a row naming W-9000 and W-901");
+  // the history page deleted from the working tree adds no row
+  rmSync(join(w.repo, ROW));
+  refusedRow("the history page deleted");
+  // the row naming the opus and the masthead ride the done commit with the record and the handoff
+  put(w.repo, ROW, `<tr><td>W-899 shipped</td></tr>\n<tr><td>${OPUS} shipped</td></tr>\n`);
+  put(w.repo, MAST, `<p>cascade 2: ${OPUS}</p>\n`);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the row naming the opus admits done");
+  const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `refs/heads/${chore}`]).split("\n").sort();
+  assert.deepEqual(paths, ["docs/SESSION-HANDOFF.md", MAST, ROW, `studio/opera/${OPUS}.md`], "the record, the handoff, the masthead and the history row are one commit");
+});
