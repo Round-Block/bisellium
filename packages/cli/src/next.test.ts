@@ -5611,3 +5611,46 @@ test("W-293-b3 behaviour 3: before the branch, the dispatch gate reads the hando
   writeFileSync(rec, text);
   architectOrder(specNext(t), 3, "the restored record admits the order again");
 });
+
+// ---------------------------------------------------------------------------
+// W-243 behaviour 2: done and its landing take only the paths certify takes as records (scripts/ci-scope.mjs recordOnly)
+// ---------------------------------------------------------------------------
+test("W-243-b2 behaviour 2: done and its landing refuse a docs/ path that is not an officina record", { timeout: 1_800_000 }, () => {
+  const chore = `chore/done-${OPUS}`;
+  // the done perform: a staged docs/ARCHITECTURE.md does not ride the done commit
+  const d = world("w243-b2-done", "cleanup");
+  scenario(d, { list: mergedList(d) });
+  touchHandoff(d);
+  put(d.repo, "docs/ARCHITECTURE.md", "an architecture edit\n");
+  git(d.repo, ["add", "--", "docs/ARCHITECTURE.md"]);
+  const held = next(d, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(held, "a staged docs/ARCHITECTURE.md holds done");
+  assert.ok(outLines(held).some((l) => l.includes("docs/ARCHITECTURE.md")), ran("the hold names docs/ARCHITECTURE.md", held));
+  assert.equal(branchExists(d, chore), false, "no chore/done-<id> is made");
+
+  // the dossier pages and the handoff still ride
+  const p = world("w243-b2-pages", "cleanup");
+  scenario(p, { list: mergedList(p) });
+  touchHandoff(p);
+  put(p.repo, "docs/design/dossier/progress-body.html", "<tr><td>W-900</td></tr>\n");
+  git(p.repo, ["add", "--", "docs/design/dossier/progress-body.html"]);
+  expectStep(next(p, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "a dossier page rides the done commit");
+  const paths = git(p.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `refs/heads/${chore}`]).split("\n").sort();
+  assert.deepEqual(paths, ["docs/SESSION-HANDOFF.md", "docs/design/dossier/progress-body.html", `studio/opera/${OPUS}.md`], "the record, the handoff and the page");
+
+  // the landing: a done head that also changes docs/ARCHITECTURE.md is refused before the push
+  const o = world("w243-b2-land", "cleanup");
+  scenario(o, { list: mergedList(o) });
+  touchHandoff(o);
+  expectStep(next(o, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the done commit is made first");
+  git(o.repo, ["switch", "-q", chore]);
+  put(o.repo, "docs/ARCHITECTURE.md", "an architecture edit\n");
+  commit(o.repo, "docs: architecture");
+  git(o.repo, ["switch", "-q", "master"]);
+  scenario(o, { list: mergedList(o) });
+  const refused = next(o, [OPUS, "--perform", "--expect", "done", ...FAST]);
+  expectHeld(refused, "docs/ARCHITECTURE.md on the done head");
+  assert.match(refused.out, /why: refusing: .*docs\/ARCHITECTURE\.md/, ran("the refusal names the path", refused));
+  assert.deepEqual(mutating(o), [], "nothing is pushed");
+  assert.equal(originHas(o, chore), false, "the head never reached origin");
+});
