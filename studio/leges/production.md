@@ -145,11 +145,12 @@ names each step and writes the step ticket the next record write consumes
 
 1. **Spec:** written ahead of the build where Files owned overlap no opus in
    flight, in a scratch worktree; changed Files owned are re-reviewed before
-   `branch` (D-057). Codex `gpt-5.6-sol` drafts (D-027; prompt
-   `~/.bisellium-evidence/W-167-draft/prompt.md`); the Opus architect checks
-   it against the code and signs (`verdict --phase spec`), uncommitted.
-   Tell the architect to name every existing test fixture or assertion the
-   change breaks: W-162's builder stopped twice on that.
+   `branch` (D-057). The Opus architect drafts, prototypes the reds and
+   signs (`verdict --phase spec`), uncommitted (D-072, replacing D-027's
+   Codex draft). Before signing, the architect runs Codex's test check,
+   `~/.bisellium-evidence/codex-passes/fixture-census.sh <id>`, and names in
+   the brief every existing test row or fixture it lists as flipped (W-162's
+   and W-293's builders stopped on unnamed ones).
 2. **Spec review (D-046, W-162):** `next` orders it. Codex `gpt-5.6-sol`,
    prompt `studio/prompts/spec-review.md` (filled per round); record with
    `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --session <codex session id> --from <$TMPDIR copy>`
@@ -182,7 +183,11 @@ names each step and writes the step ticket the next record write consumes
    `verdict`, `next`, `review`, one commit on the opus branch; the evidence
    copy carries the `next` calls until the D-066 D filing lands). Before any re-review
    the producer checks the fix's census: every path to the input the blocker
-   named is closed (W-184 makes it a hold). No round cap (D-053).
+   named is closed. Codex runs it in a fresh session, never the reviewer's
+   (`~/.bisellium-evidence/codex-passes/fix-census.sh <id> <failed-round>`,
+   D-072); an open path goes back to the builder, not to review. It is
+   advisory input, not a verdict; W-274 moves it into the review perform.
+   No round cap (D-053).
 5. **Merge:** refresh `handoff` (the `bisellium handoff` verb, the record's
    traditio; `next` does not ask for it before `pr`, so do it); the receipt minted before review
    (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
@@ -211,8 +216,9 @@ names each step and writes the step ticket the next record write consumes
 
 ## 10. Models
 
-Specs: Codex `gpt-5.6-sol` drafts, Claude Opus 5.5 architect signs. Spec
-review, build review, security: Codex `gpt-5.6-sol` high. Builds: Claude
+Specs: Claude Opus 5.5 architect drafts and signs (D-072). Spec review,
+build review, security, the test check at spec and the fix check before a
+re-review: Codex `gpt-5.6-sol` high. Builds: Claude
 Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 `gpt-5.6-terra`. Security fixes are mandatory (D-044).
 
@@ -297,5 +303,6 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-13 | §7: the orchestrator session refreshes before 350k (was 500k); subagent dispatches stay at 500k | Patron |
 | 2026-10-15 | §9: step 0 names who runs each step (the orchestrator records until W-267); tickets, two-perform rungs, the handoff refresh and the done rung's handoff edit named; step 3's W-166 sentence fixed; Codex Sol the one review gate (D-066) | Patron |
 | 2026-10-16 | §7, §9: no per-opus retro; reviewer class tags, and a class seen before is fixed at its cause in the fix round (D-070) | Patron |
+| 2026-10-16 | §9, §10: the Opus architect drafts specs; Codex runs the test check at spec and the fix check before a re-review (D-072) | Patron |
 | 2026-10-16 | §7: the CLI-first block's exit (the hand-steps measure and the trial's four conditions); the dossier republish leaves done and stays at cascade checkpoints (D-071) | Patron |
 | 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |
