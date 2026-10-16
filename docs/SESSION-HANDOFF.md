@@ -62,7 +62,8 @@ Now, one builds at a time:
 14. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if 12-13 had no interrupted run
 
 Next, the console MVP (after the block, same functions):
-15. W-280 — Inbox and `newItem` fail-open fixes
+15. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
+15b. W-280 — Inbox and `newItem` fail-open fixes
 16. W-298 — a `petitio` verb to the Patron; `next` holds on an open one
 17. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route
 18. W-300 — the drawer shows `next`'s read-only step, actor, round and health
