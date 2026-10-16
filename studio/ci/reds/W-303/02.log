@@ -1,0 +1,39 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-303-b2\s --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-16T16:15:57.753Z
+# sella: builder.W-303
+# tree: tree:a948ecdbe1642325e003e3c932686258636d5401
+# ticket: {"opus":"W-303","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-303/studio","head":"4f784da4db8106d08ebb9be973ae00b8a9467bcc","brief":"85626702272718e9e33bc6cd1405064fd8ce0c78","at":"2026-10-16T16:15:57.065Z"}
+
+warning: Git ref-wide allocation unavailable; using local records only
+TAP version 13
+# Subtest: W-303-b2 behaviour 2: bisellium new --brief writes the standard diff promise under Acceptance
+not ok 1 - W-303-b2 behaviour 2: bisellium new --brief writes the standard diff promise under Acceptance
+  ---
+  duration_ms: 31.70507
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-303/packages/cli/src/brief-admission.test.ts:34:1815'
+  failureType: 'testCodeFailure'
+  error: 'Acceptance carries the standard line: "\\nTODO.\\n"'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-303/packages/cli/src/brief-admission.test.ts:900:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 41.245124
