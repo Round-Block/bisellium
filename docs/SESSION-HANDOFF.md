@@ -47,7 +47,7 @@ or at two calendar weeks. Older items: `studio/acta/2026-10-09-queue-review.md`.
 
 Now, one builds at a time:
 1. W-302 — CODEOWNERS covers `studio/bisellium.yml` and `studio/prompts/`, and the stale `ci.yml` comment (Patron 2026-10-16; `.github/`: Patron merges)
-2. W-303 — brief admission refuses a whole-diff promise that forgets officina evidence (high, D-070 C cause fix from W-302)
+2. W-303 — brief admission refuses a whole-diff promise that forgets officina evidence (high, D-070 C cause fix from W-302); then W-264 — ready, check and next run brief admission even with no `brief_behaviour_limit` declared (high, D-070 C: the class recurred at W-303 spec round 2, L-186 first)
 3. W-214 — one records PR at done; the handoff and checkpoint ride the done commit
 4. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
 5. W-274 — a review round is one `next --perform`: packet, prompt, Codex through the harness adapter, verdict and review; ride-along: the stderr trace line in `next.test.ts`'s helper
