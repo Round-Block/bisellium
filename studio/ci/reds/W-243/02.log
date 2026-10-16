@@ -1,0 +1,50 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-243-b2\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-16T11:09:36.931Z
+# sella: builder.W-243
+# tree: tree:0e4dcd75572c24e494d71627d4f6f5d71449f972
+# ticket: {"opus":"W-243","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-243/studio","head":"a7724d154d9656f1f74369578a9708c52149cdd7","brief":"a59573d171c4c18ae5e4a1acd0b1e39ba79a592e","at":"2026-10-16T11:09:36.244Z"}
+
+TAP version 13
+# Subtest: W-243-b2 behaviour 2: done and its landing refuse a docs/ path that is not an officina record
+not ok 1 - W-243-b2 behaviour 2: done and its landing refuse a docs/ path that is not an officina record
+  ---
+  duration_ms: 2954.372104
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-243/packages/cli/src/next.test.ts:162:1532'
+  failureType: 'testCodeFailure'
+  error: |-
+    a staged docs/ARCHITECTURE.md holds done
+    --- exit 0
+    --- stdout
+    next: W-900 done performed
+    branch: chore/done-W-900
+    commit: 8980d0f
+    done: W-900: done
+    next-step: done
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 done performed'
+  operator: 'match'
+  stack: |-
+    expectHeld (/home/edckt/agents/bisellium/.worktrees/W-243/packages/cli/src/next.test.ts:893:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-243/packages/cli/src/next.test.ts:5627:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2971.645513

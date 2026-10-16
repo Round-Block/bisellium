@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { readManifest } from "../adapters/native/src/index.ts";
 import { readContainedRegularFile } from "../packages/commands/src/opus-model.ts";
 import { readSourceExcludes } from "../packages/commands/src/verdict.ts";
+import { diffPaths, recordOnly } from "./ci-scope.mjs";
 
 const QUEUE_REF_RE = /^refs\/heads\/gh-readonly-queue\/master\/pr-([1-9][0-9]*)-[0-9a-f]{40}$/;
 const SLUG_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
@@ -54,7 +55,7 @@ function readEvent(eventName, event) {
   return { pr: Number(queued[1]), headSha: g.head_sha, baseSha: g.base_sha, slug };
 }
 
-/** git in `cwd`: the exit status (1 when it could not run) and trimmed stdout. */
+/** git in `cwd`: the exit status (1 when it could not run) and trimmed stdout; for one-value reads only, never a path list. */
 function git(cwd, args) {
   const r = spawnSync("git", args, { cwd, encoding: "utf8", timeout: 120_000 });
   return { status: r.status ?? 1, stdout: (r.stdout ?? "").trim() };
@@ -163,8 +164,26 @@ export async function certify(o) {
   if (pr.error !== undefined) return refuse(pr.error);
   const opus = /^opus\/(W-[0-9]+)$/.exec(pr.headRefName);
   if (opus === null) {
-    o.log(`certify: PR #${ev.pr} head ${pr.headRefName} is not an opus; nothing to mint`);
-    return 0;
+    // W-243: a head that is not an opus is judged by what the merge group changes, never by its name
+    // read raw through diffPaths: the trimming `git` helper above would strip a first path's leading space
+    const paths = diffPaths(candidate, ev.baseSha, ev.headSha);
+    if (paths === undefined) return refuse("git diff of the merge group against its base failed");
+    if (recordOnly(paths, o.studio)) {
+      o.log(`certify: PR #${ev.pr} head ${pr.headRefName} is not an opus; nothing to mint (officina records only)`);
+      return 0;
+    }
+    const source = paths.filter((p) => !recordOnly([p], o.studio));
+    const named =
+      source.length === 0
+        ? "nothing"
+        : source
+            .slice(0, 5)
+            .map((p) => JSON.stringify(p))
+            .join(", ");
+    o.log(
+      `certify: not certified: PR #${ev.pr} head ${pr.headRefName} is not an opus and changes ${named} outside the officina records; source reaches master only on opus/<id> with its mint`,
+    );
+    return 1;
   }
 
   // Phase B moves only the job's disposable candidate checkout.

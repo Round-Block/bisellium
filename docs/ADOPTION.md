@@ -1267,7 +1267,13 @@ In `merge-queue` mode:
   existing mint (`bisellium run --sella builder --opus <id> -- true`) from
   master's tooling. GitHub merges only the commit that the required `certify`
   check passed on. The receipt is uploaded as the run's artifact; `bisellium`
-  never reads it.
+  never reads it. W-243: a head not named `opus/<id>` is judged by what its
+  merge group changes (`git diff --name-only --no-renames -z`, read raw): it
+  passes with nothing to mint only when every path is an officina record
+  (`recordOnly`), and an empty diff, any other path or a failed diff does not
+  (exit 1 or 2, no mint). Source reaches master only on `opus/<id>` with its
+  mint. `pr` refuses an opus branch carrying a merge commit before it pushes:
+  rebase it onto master instead.
 
 In `direct` mode `pr` and `merge` make today's writes and remote calls plus
 the rules read, one local `git rev-parse` and one `lstat` of the queue file and
@@ -1392,11 +1398,11 @@ record as the branch's first commit (a spec landed earlier adds none);
 `--force-with-lease`, reuse or
 create the PR (title and body from the head commit), the `merge` rules, a trunk
 fetch, then delete the head locally and on origin. A head that changes anything
-outside the officina and `docs/` is refused before the push. The `done` rung names
+outside the officina records (`recordOnly`: the officina, the handoff, the dossier pages) is refused before the push. The `done` rung names
 `bisellium verify <opus> --studio <dir> --repo .` while an automated probatio has
 no `tree:` certificate; performed `done` then creates `chore/done-<opus>` from the
 `master` tip, runs `done`, and commits the record, verify's
-`ci/<opus>-<probatio>-<hash>.log` files and the tracked `docs/` changes together
+`ci/<opus>-<probatio>-<hash>.log` files and the tracked handoff and dossier-page changes together
 (it refuses without a tracked change to `docs/SESSION-HANDOFF.md`: the checkpoint
 rides the done commit, and the checkpoint rung reads complete once the commit that
 made the record `done` also changed the handoff), and returns to `master`. Before `done` runs, performed `done` holds (`handoff: <rule> <where>: <message>` lines) when the real `studio/`'s working-tree handoff, read as if the opus were `done` now, would block `check` (see "Session handoff" under "Running check"); only `performDone` is held, and the step marker and log are written as for any perform. A path

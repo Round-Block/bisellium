@@ -1,0 +1,21 @@
+# opus: W-243
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1443a-45a8-74e0-8434-fd10a33acf97
+# outcome: passed
+# at: 2026-10-16T10:50:07.028Z
+# tree: tree:747a90855ca6cedb87aa62fd4c7bd590e40058e8
+# brief: briefs/W-243.md blob:a59573d171c4c18ae5e4a1acd0b1e39ba79a592e
+# ticket: {"opus":"W-243","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"77f12c2d5a75d4ecfc163a64b0273b9280981641","brief":"a59573d171c4c18ae5e4a1acd0b1e39ba79a592e","at":"2026-10-16T10:50:06.626Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-243-spec-2.log #1: closed — brief:45 and brief:67 require `diffPaths` to preserve raw NUL-delimited output, and brief:77 adds the leading-space regression case that fails against revision 1’s trimming implementation.
+
+## Verdict
+The revision closes the fail-open at its shared input boundary and makes the two done-state reads explicit.
+VERDICT: PASS
