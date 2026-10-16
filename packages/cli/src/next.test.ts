@@ -5451,3 +5451,16 @@ test("W-206-b3 behaviour 3: a build review of an older brief is not current", { 
   commit(w.wt, "test: a duplicate brief pin");
   expectStep(next(w, [OPUS, ...BUDGET]), "review", "held", "two # brief: headers hold");
 });
+
+test("W-206-r1-1 review round 1: a malformed new signature with no anchor holds at spec, never another architect round", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r1-1", "review");
+  amend(w);
+  commit(w.wt, `studio(${OPUS}): brief amended`);
+  assert.equal(wtSpec(w, 3, "architect", "passed").status, 0, "signature 3");
+  const log3 = join(w.wtStudio, "ci", `${OPUS}-spec-3.log`);
+  writeFileSync(log3, readFileSync(log3, "utf8").replace(/^# brief: .*$/m, "# brief: garbage"));
+  const held = next(w, [OPUS, ...BUDGET]);
+  expectStep(held, "spec", "held", "a signature whose # brief: has no pin shape holds");
+  assert.equal(held.kv.has("role"), false, ran("no order is named", held));
+  assert.match(held.kv.get("why") ?? "", /spec-3\.log/, ran("why names the log", held));
+});
