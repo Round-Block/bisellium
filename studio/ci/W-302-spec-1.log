@@ -1,0 +1,23 @@
+# opus: W-302
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T13:17:18.397Z
+# tree: tree:230880f286c15ae2459656577d556c514e6b1046
+# brief: briefs/W-302.md blob:dfef47b7cc011cb09dbf6fde906e0a07adee3e11
+# ticket: {"opus":"W-302","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"624db6ac726a28e1a29d3a3d2239a4de959bdfe5","brief":"dfef47b7cc011cb09dbf6fde906e0a07adee3e11","at":"2026-10-16T13:17:18.009Z"}
+
+## Findings
+
+1. advisory — the light form (W-255) is refused for this opus: Files owned names `.github/` paths, which brief admission's `riskySignal` excludes (D-063 §4), so the brief is full with `Input domain: None:` — check: `admission.out` (no problems) on the full form.
+2. advisory — the CODEOWNERS change has one genuine red, re-using `W-197-b2`'s own selector `'^W-197-b2\s'`; master fails it by assertion (`red-b1-master.out`, accepted by `scripts/replay-accept.mjs` in `red-b1-master.classify`) and the prototype passes it (`red-b1-proto.out`) — check: `node --test-reporter=tap --test-name-pattern='^W-197-b2\s' --import tsx packages/cli/src/next.test.ts`.
+3. advisory — the two `ci.yml` comment rewrites have no behaviour and no red; the rows that read `ci.yml` stay green on the prototype, including the two raw-text guards that forbid `verify` anywhere in the file — check: `neighbours-proto.out` (`scripts/ci-workflow.test.mjs`, `scripts/ci-certify.test.mjs`), `neighbours-scope-proto.out` (`scripts/ci-scope.test.mjs`, 18 of 18).
+4. advisory — the certify job's own comment (master lines 151-157) was stale in the same way as lines 8-10, so the brief rewrites it too and says so in Defaults 3 — check: `prototype.diff`.
+5. advisory — the Codex fixture census (`fixture-census.md`, second run; the first hit model capacity, `fixture-census-try1.session.log`) lists one flip, `W-197-b2`, named in the brief, and no unnamed flip. Its must-stay-green rows were checked: the `ci-workflow`, `ci-certify` and `ci-scope` rows ran green on the prototype; `W-197-b1` and `W-197 pin` build their own `.github/` in fixture worlds and ran green on the prototype (`next-w197-proto.out`, `next-w197pin-proto.out`). No census row is rejected — check: `fixture-census.md` against the brief's Acceptance.
+6. advisory — readers of `.github/CODEOWNERS` swept with `git grep -i -E "code.?owner"`: the ruleset and `W-197-b2` only; `docs/ADOPTION.md` lists no code-owner paths and does not change; `docs/SESSION-HANDOFF.md` line 18 lists them and is the producer's at done — check: the grep over the tree at master 624db6ac.
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-302.md`, master 624db6ac.

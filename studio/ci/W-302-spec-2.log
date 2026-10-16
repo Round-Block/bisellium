@@ -1,0 +1,23 @@
+# opus: W-302
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a144dc-33d4-7be2-ace2-d17a5e6be2c6
+# outcome: failed
+# at: 2026-10-16T13:21:29.054Z
+# tree: tree:230880f286c15ae2459656577d556c514e6b1046
+# brief: briefs/W-302.md blob:dfef47b7cc011cb09dbf6fde906e0a07adee3e11
+# ticket: {"opus":"W-302","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"624db6ac726a28e1a29d3a3d2239a4de959bdfe5","brief":"dfef47b7cc011cb09dbf6fde906e0a07adee3e11","at":"2026-10-16T13:21:28.651Z"}
+
+## Findings
+1. blocking — brief:3 The claim excludes only the test, but behaviour 1 necessarily adds generated officina evidence outside `.github/`; replace the sentence with: `Apart from the test and generated officina evidence, every file this opus changes is under .github/, a code-owner path: the Patron approves this design and merges the PR (lex §7).` [class: spec×promise-unattainable-under-accepted-domain] — check: none: add a Files-owned check over the source diff that explicitly excludes generated officina artifacts
+2. blocking — brief:96 The unqualified whole-diff promise is false because the required red and other verb-written officina evidence are not in Files owned; replace brief:96 with: `- The source diff (every path outside studio/) touches only the files in Files owned. The officina's evidence is written by the verbs and is not owned: the opus record, studio/ci/ logs, studio/ci/reds/W-302/ and receipts.` [class: spec×promise-unattainable-under-accepted-domain] — check: none: add a Files-owned check over the source diff that explicitly excludes generated officina artifacts
+3. blocking — brief:113 “The whole change” repeats the same false premise; replace it with: `4. Apart from generated officina evidence, the source change is under .github/ except for one test line, so you approve this design and merge the PR yourself. Agree?` [class: spec×promise-unattainable-under-accepted-domain] — check: none: add a Files-owned check over the source diff that explicitly excludes generated officina artifacts
+4. advisory — brief:78 The section identifies `.github/CODEOWNERS` and its fixed-byte domain but names no actual rejecting function; the changed `assert.equal(readFileSync(...))` already fails closed. [class: spec×input-without-named-rejector] — check: packages/cli/src/next.test.ts W-197-b2
+5. advisory — brief:18 The review promise is observed through GitHub’s base-branch CODEOWNERS and the test’s candidate-checkout file, but the brief neither identifies GitHub’s post-merge base as authoritative nor states their disagreement on W-302’s own PR. [class: spec×reader-disagreement-undeclared] — check: none: require multi-reader promises to name the trusted reader or disagreement boundary
+
+## Verdict
+The implementation is feasible, but three unqualified diff promises are false because required generated officina evidence lies outside Files owned.
+
+VERDICT: FAIL

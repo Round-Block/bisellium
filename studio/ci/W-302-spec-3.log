@@ -1,0 +1,28 @@
+# opus: W-302
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T13:23:39.540Z
+# tree: tree:230880f286c15ae2459656577d556c514e6b1046
+# brief: briefs/W-302.md blob:c2715888952252b08798fe184b0efea20b2b79c2
+# ticket: {"opus":"W-302","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"624db6ac726a28e1a29d3a3d2239a4de959bdfe5","brief":"c2715888952252b08798fe184b0efea20b2b79c2","at":"2026-10-16T13:23:39.141Z"}
+
+## Earlier findings
+
+- ci/W-302-spec-2.log #1: closed — the Status line now says that in the source diff (every path outside `studio/`) every file but the one test is under `.github/`, and that the officina evidence the verbs write under `studio/` is not owned — check: studio/briefs/W-302.md Status line
+- ci/W-302-spec-2.log #2: closed — Acceptance's diff line is the reviewer's replacement, scoped to the source diff and naming the verb-written evidence as not owned; Files owned says the same — check: studio/briefs/W-302.md Acceptance and Files owned
+- ci/W-302-spec-2.log #3: closed — Defaults 4 is scoped to the source change, apart from the officina evidence the verbs write; a sweep for "the diff", "every file", "the whole change" and "only" left no other unqualified scope promise — check: studio/briefs/W-302.md Defaults 4, brief-r1-r3.diff
+- ci/W-302-spec-2.log #4: closed — the Input domain names `W-197-b2`'s `assert.equal(readFileSync(path, "utf8"), …)` as the one test-time read, which rejects other bytes by failing the row, and says why there is no source rejector (no source reader is added) — check: packages/cli/src/next.test.ts W-197-b2
+- ci/W-302-spec-2.log #5: closed — Intent names GitHub, reading master's CODEOWNERS, as the reader that decides the review: W-302's own PR is reviewed under the old file, and the new lines bind once master carries them; `W-197-b2` reads the checkout under test and pins its bytes only; Defaults 1 says the same — check: studio/briefs/W-302.md Intent and Defaults 1
+
+## Findings
+
+1. advisory — revision 2 changes only prose: Files owned, the behaviour, the red command and the expected bytes are unchanged, so revision 1's red (`red-b1-master.out`, accepted), prototype (`prototype.diff`, `red-b1-proto.out`, neighbours) and census (`fixture-census.md`: one flip, `W-197-b2`, named; none rejected) stand without a rerun — check: brief-r1-r3.diff
+2. advisory — brief admission passes on revision 2 — check: admission-r3.out
+3. advisory — revision 2 is reproduced from revision 1 by the kept `revise-r3.py` — check: `python3 revise-r3.py <copy of brief-r1.md>` equals brief-r3.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-302.md`, master 624db6ac.
