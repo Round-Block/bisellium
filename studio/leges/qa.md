@@ -59,21 +59,13 @@ the architect — and closes the last one.
 
 ## 7. Evidence contract
 
-Owns the retrospectio: every cascade ends with a retrospective (`bisellium
-retro`) that files at least one lesson per distinct finding class, each with
-non-empty, non-dead evidence (check: lesson.evidence).
+Owns the finding classes (D-070, replacing the retrospectio): every finding
+in a spec or build verdict names its class, and a class seen before is fixed
+at its cause in the fix round or by a filed high opus (W-297 enforces it).
+The lessons already filed stay as history (check: lesson.evidence).
 
-A usage section is required in every retro (D-013): `bisellium retro`'s
-input carries `usage` (totals, checking/building ratio, tokens per opus,
-trend against the previous retro, posture from the current aerarium), not
-supplied as an afterthought once the numbers are already forgotten —
-`retro.ts` renders the section only when it's given, so an empty/absent
-`usage` on a real cascade is the Censor's own gap, not the tool's.
-
-The Censor carries the addressed ledger forward: every retro's `##
-Addressed` section lists each recurrent class with its target, and a class
-recorded as formally accepted names the `decisions/D-nnn.md` that accepts
-it, with its `kill_when`.
+A class recorded as formally accepted names the `decisions/D-nnn.md` that
+accepts it, with its `kill_when`.
 
 ## 9. Amendment log
 
@@ -85,3 +77,4 @@ it, with its `kill_when`.
 | 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
 | 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
 | 2026-10-04 | Severity rule: blocking = wrong behaviour, a security gap, or missing/false required evidence; an incomplete regression row on a correct fix is advisory and costs no round | Patron |
+| 2026-10-16 | §7: reviewer class tags replace the retrospectio and its usage section (D-070) | Patron |
