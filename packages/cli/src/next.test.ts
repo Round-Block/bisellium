@@ -5525,3 +5525,30 @@ test("W-293-b2 behaviour 2: branch commits the main checkout's signed spec as th
   }
 });
 
+
+test("W-293-b3 behaviour 3: before the branch, the dispatch gate reads the handoff in the main checkout", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w293-b3", { handoff: false });
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "failed");
+  specHeld(specNext(w), "no handoff yet", /no traditio/);
+  verb(w.repo, ["handoff", "--opus", OPUS, "--sella", "producer", "--next", "revise the brief", "--studio", w.studio, "--now", T.handoffFresh]);
+  const o = specNext(w);
+  architectOrder(o, 3, "the uncommitted handoff admits the architect's resumed order");
+  assert.equal(o.kv.get("budget_tokens"), "100000", ran("the order carries its budget", o));
+
+  // the trunk's fresh handover never stands in for a deleted or unparsable record in the main checkout
+  const t = srWorld("w293-b3-trunk");
+  putBrief(t);
+  sign(t, 1);
+  review(t, 2, "failed");
+  architectOrder(specNext(t), 3, "the committed handoff admits the order");
+  const rec = join(t.repo, "studio/opera", `${OPUS}.md`);
+  const text = readFileSync(rec, "utf8");
+  rmSync(rec);
+  specHeld(specNext(t), "a deleted record holds", /stale handover/);
+  writeFileSync(rec, "---\nstate: [unclosed\n---\n");
+  specHeld(specNext(t), "an unparsable record holds", /stale handover/);
+  writeFileSync(rec, text);
+  architectOrder(specNext(t), 3, "the restored record admits the order again");
+});
