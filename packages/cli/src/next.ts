@@ -579,6 +579,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
       const r = git(wt.dir, ["status", "--porcelain", "-z", "--untracked-files=all"]);
       if (r.status !== 0 || r.error !== undefined) return { error: `git status failed in ${wt.dir}` };
       const brief = `${studioRel}/${briefRel(id)}`;
+      const record = `${studioRel}/${recordRel(id)}`;
       const specLog = new RegExp(`^${esc(studioRel)}/ci/${esc(id)}-spec-[1-9][0-9]*\\.log$`);
       const out = { spec: [] as string[], other: [] as string[], bad: [] as string[] };
       const fields = r.stdout.split("\0");
@@ -589,7 +590,8 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
         const path = entry.slice(3);
         // -z prints a rename or copy as "XY to\0from\0"
         const from = /[RC]/.test(xy) ? fields[++i] : undefined;
-        if (![path, from].some((p) => p !== undefined && (p === brief || specLog.test(p)))) out.other.push(path);
+        // the opus record may only be modified: a deletion, type change, rename or copy of it is named with its status, so the perform refuses it
+        if (![path, from].some((p) => p !== undefined && (p === brief || specLog.test(p)))) out.other.push(path === record && !/^[ M][ M]$/.test(xy) ? `${path} (${xy.trim()})` : path);
         else if (from === undefined && (path === brief ? /^[ M][ M]$/.test(xy) : /^(\?\?|A[ M])$/.test(xy))) out.spec.push(path);
         else out.bad.push(path);
       }
