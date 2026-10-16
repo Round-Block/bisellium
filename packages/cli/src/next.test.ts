@@ -5418,6 +5418,13 @@ test("W-206-r2-B review round 2: an unlistable worktree ci/ beside an edited bri
 // ---------------------------------------------------------------------------
 // W-293 (W-206 part 2): the first signed spec is opus/<id>'s first commit; spec/<id> is retired
 // ---------------------------------------------------------------------------
+/** A failing commit, switch or worktree add of `branch` leaves the main checkout on master with nothing staged. */
+const mainUnmoved = (w: World, row: string, o: Out): void => {
+  assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", ran(`${row}: HEAD is master`, o));
+  assert.equal(stagedPaths(w), "", ran(`${row}: nothing is staged`, o));
+};
+
+
 test("W-293-b1 behaviour 1: before the branch, next judges the spec in the main checkout ahead of the trunk's", { timeout: 1_800_000 }, () => {
   const w = srWorld("w293-b1");
   putBrief(w);
@@ -5447,5 +5454,74 @@ test("W-293-b1 behaviour 1: before the branch, next judges the spec in the main 
   architectOrder(specNext(plain), 2, "no reviewer: an uncommitted re-spec voids the landed signature");
   sign(plain, 2);
   expectStep(specNext(plain), "branch", "named", "no reviewer: the uncommitted signature 2 of the edited brief names branch");
+});
+
+test("W-293-b2 behaviour 2: branch commits the main checkout's signed spec as the first commit on opus/<id>", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w293-b2");
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "failed");
+  sign(w, 3);
+  review(w, 4, "passed");
+  verb(w.repo, ["handoff", "--opus", OPUS, "--sella", "producer", "--next", "branch the reviewed spec", "--studio", w.studio, "--now", T.handoffFresh]);
+  writeFileSync(join(w.repo, "scratch.tmp"), "unrelated\n");
+  expectStep(next(w, [OPUS]), "branch", "named", "a passed spec in the main checkout names branch");
+  const master = git(w.repo, ["rev-parse", "master"]);
+  const done = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(done, "branch", "performed", "branch is performed");
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), master, "opus/<id> is master plus one commit");
+  const logs = [1, 2, 3, 4].map(specLog);
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(), [...logs, BRIEF_REL, `studio/opera/${OPUS}.md`].sort(), "exactly the brief, every round and the record the handoff changed");
+  assert.equal(git(w.repo, ["rev-parse", "master"]), master, "master is unmoved");
+  assert.equal(branchExists(w, `spec/${OPUS}`), false, "no spec/<id>");
+  assert.deepEqual(mutating(w), [], "nothing is pushed and no PR is opened");
+  assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD is master");
+  assert.equal(git(w.repo, ["status", "--porcelain", "-uall", "--", ".", ":!.worktrees"]), "?? scratch.tmp", "the spec left the main checkout; the unrelated file stays");
+  assert.match(recordOf(w, "wt"), /traditio:/, "the worktree's record carries the handoff");
+  expectStep(next(w, [OPUS]), "ready", "named", "the spec is judged on the branch: ready follows");
+
+  // an already landed spec cuts the branch at master, with no spec commit
+  const old = world("w293-b2-landed", "spec");
+  const oldMaster = git(old.repo, ["rev-parse", "master"]);
+  expectStep(next(old, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "a landed spec branches");
+  assert.equal(tipOf(old), oldMaster, "opus/<id> is master itself");
+  // the stated limit: without a reviewer the committed branch's signature is not bound to the brief, so a committed edit that
+  // keeps every section leaves the spec passed (a reviewer re-judges an amended brief on the branch, W-206)
+  appendFileSync(join(old.wt, BRIEF_REL), "\nAmended on the branch, every section kept.\n");
+  commit(old.wt, `spec(${OPUS}): amend the brief`);
+  expectStep(next(old, [OPUS]), "ready", "named", "no reviewer: the amended brief on opus/<id> stays passed (the limit)");
+
+  // a tracked change beside the spec refuses before anything moves
+  const dirty = srWorld("w293-b2-dirty");
+  putBrief(dirty);
+  sign(dirty, 1);
+  review(dirty, 2, "passed");
+  appendFileSync(join(dirty.repo, "source.txt"), "dirty\n");
+  const held = next(dirty, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(held, "a tracked source change refuses branch");
+  assert.equal(branchExists(dirty), false, "no branch");
+  mainUnmoved(dirty, "dirty", held);
+  assert.ok(existsSync(briefPath(dirty)), "the brief stays in the main checkout");
+
+  // a failed add, commit, switch back or branch deletion never reports success; a failed add or commit leaves no branch,
+  // and a branch whose deletion failed is named with its recovery
+  for (const [tag, needles] of [["add", ["add --"]], ["commit", ["commit -q -m spec(W-900)"]], ["switch", ["switch -q master"]], ["drop", ["commit -q -m spec(W-900)", "update-ref -d"]]] as const) {
+    const f = srWorld(`w293-b2-${tag}`);
+    putBrief(f);
+    sign(f, 1);
+    review(f, 2, "passed");
+    const o = next(f, [OPUS, "--perform", "--expect", "branch"], { env: { GIT_STUB_REAL: failingGit(`w293-b2-${tag}`, [...needles]) } });
+    expectHeld(o, `branch with a failing ${tag}`);
+    assert.doesNotMatch(o.out, /^branch: /m, ran(`${tag}: no success line`, o));
+    if (tag === "add" || tag === "commit") {
+      mainUnmoved(f, tag, o);
+      assert.equal(branchExists(f), false, ran(`${tag}: no opus branch is left`, o));
+      assert.ok(existsSync(briefPath(f)), "the brief stays in the main checkout");
+    } else if (tag === "drop") {
+      mainUnmoved(f, tag, o);
+      assert.equal(branchExists(f), true, "the undeletable branch is kept");
+      assert.match(o.out, /why: .*could not be deleted.*branch -D opus\/W-900/, ran("the why names the kept branch and its recovery", o));
+    } else assert.match(o.out, /why: .*switch master/, ran("the why names the recovery", o));
+  }
 });
 
