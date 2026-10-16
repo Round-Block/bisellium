@@ -13,31 +13,46 @@
  * and fails the run (exit 1) when the list is not exact. It fails closed: an
  * absent log is a failure, the opposite of the scope mode.
  */
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-/** W-131: `studio/` and the handoff; W-209: a page directly in `docs/design/dossier/` whose name ends `.html`. */
+/**
+ * W-131: the officina (`studio/`) and the handoff; W-209: a page directly in `docs/design/dossier/` whose name ends
+ * `.html`. W-243: the one list of officina record paths; certify and `next`'s done and landing guards read it too.
+ */
 const DOSSIER_PAGE = /^docs\/design\/dossier\/[^/]+\.html$/;
-export function recordOnly(paths) {
+export function recordOnly(paths, studio = "studio") {
   return (
     paths.length > 0 &&
-    paths.every((path) => path.startsWith("studio/") || path === "docs/SESSION-HANDOFF.md" || DOSSIER_PAGE.test(path))
+    paths.every(
+      (path) => path.startsWith(`${studio}/`) || path === "docs/SESSION-HANDOFF.md" || DOSSIER_PAGE.test(path),
+    )
   );
+}
+
+/**
+ * W-243: the paths `git diff --name-only --no-renames -z <base>...<head>` lists in `cwd`, read raw and split on NUL only
+ * (never trimmed, never unquoted: -z prints each path verbatim); undefined when git fails, times out or overflows.
+ * The one diff reader: scopeOf, certify and `next`'s done landing judge what it returns.
+ */
+export function diffPaths(cwd, base, head) {
+  const r = spawnSync("git", ["diff", "--name-only", "--no-renames", "-z", `${base}...${head}`], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+    timeout: 120_000,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (r.status !== 0 || r.error !== undefined) return undefined;
+  return r.stdout.split("\0").filter((path) => path !== "");
 }
 
 /** W-203: true only when `git diff <base>...<head>` succeeds and recordOnly accepts its paths; any git failure is false. */
 export function scopeOf(base, head) {
-  try {
-    const out = execFileSync("git", ["diff", "--name-only", "--no-renames", `${base}...${head}`], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    return recordOnly(out.split("\n").filter(Boolean));
-  } catch {
-    return false;
-  }
+  const paths = diffPaths(process.cwd(), base, head);
+  return paths !== undefined && recordOnly(paths);
 }
 
 /**
