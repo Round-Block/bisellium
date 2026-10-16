@@ -1,0 +1,19 @@
+# opus: W-243
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1443a-45a8-74e0-8434-fd10a33acf97
+# outcome: failed
+# at: 2026-10-16T10:24:29.051Z
+# tree: tree:747a90855ca6cedb87aa62fd4c7bd590e40058e8
+# brief: briefs/W-243.md blob:72d300780f0a036c73abcaf97fadd174ad170568
+# ticket: {"opus":"W-243","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"f152e1fa41138ce1f3d9727567cd3481666c1b95","brief":"72d300780f0a036c73abcaf97fadd174ad170568","at":"2026-10-16T10:24:28.652Z"}
+
+## Findings
+1. blocking — brief:45 `ci-certify.mjs`’s existing `git()` helper applies `.trim()` to the NUL-delimited diff output, so a source path such as ` studio/x.ts` becomes `studio/x.ts`, passes `recordOnly`, and exits 0. Replace brief:45 with: `- Run git diff --name-only --no-renames -z <baseSha>...<headSha> through a raw-output reader that never trims before NUL splitting; a non-zero exit refuses with certify: refused: git diff of the merge group against its base failed, exit 2.` — check: scripts/ci-certify.test.mjs
+2. advisory — brief:65 The row collapses two tracked-state reads into `dirtyHold`: pre-existing changes are checked before the branch, while changes made by `runDone` are re-read and rejected directly by `performDone` after the branch is cut; these reads can disagree because `runDone` changes the record. — check: D-070 C
+
+## Verdict
+The shared classifier and merge-commit refusal are otherwise feasible, but certification retains a real fail-open until its diff reader preserves the raw NUL stream.
+VERDICT: FAIL
