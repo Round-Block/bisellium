@@ -1,0 +1,19 @@
+# opus: W-214
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a145b7-e5ff-7492-aa7b-a7335521f4c4
+# outcome: passed
+# at: 2026-10-16T17:24:06.220Z
+# tree: tree:9027cb2daa46f3df9a36edfe2225235628a31cc8
+# brief: briefs/W-214.md blob:08f52d55f3020e0d3d69bc847d33935ddb47bccc
+# ticket: {"opus":"W-214","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"fa3c46b663c58fa29ba0a3ffa1fc4c76eccade0d","brief":"08f52d55f3020e0d3d69bc847d33935ddb47bccc","at":"2026-10-16T17:24:05.814Z"}
+
+## Findings
+1. advisory — brief:52 `historyRowRefusal` newly consumes `id`, but the table omits its `ID_RE` domain and existing `parseArgs` rejector; that upstream path fails closed. [class: spec×input-without-named-rejector] — check: packages/cli/src/next.test.ts
+2. advisory — brief:53 The test row omits the reused `next()` subprocess and the assertions that reject its unexpected exit/output; those paths fail closed, so this is an incomplete boundary row. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: packages/cli/src/next.test.ts
+
+## Verdict
+The production reads fail closed and every stated behaviour and promise is feasible; only fail-closed input-table omissions remain.
+VERDICT: PASS
