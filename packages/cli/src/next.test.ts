@@ -5488,3 +5488,12 @@ test("W-206-r1-3 review round 1: an unlistable worktree ci/ after the committed 
     chmodSync(ci, 0o755);
   }
 });
+
+test("W-206-r2-A review round 2: the shape guard on every new worktree spec log runs before any strict reader in deriveNext", { timeout: 1_800_000 }, () => {
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "next.ts"), "utf8");
+  const body = src.slice(src.indexOf("export function deriveNext("), src.indexOf("// 3 branch"));
+  const guard = body.indexOf("is not a valid signature or spec review");
+  const reader = body.indexOf("specEvidence(");
+  assert.ok(guard >= 0 && reader >= 0, "deriveNext holds both the shape guard and a specEvidence read");
+  assert.ok(guard < reader, `the guard (offset ${guard}) precedes the first specEvidence read (offset ${reader})`);
+});
