@@ -744,9 +744,12 @@ export function deriveNext(f: Facts): Derived {
   // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
   // ponytail: only with a reviewer; without one signedSpec pins no brief, so an amendment never un-passes the spec (today's rung)
   const onOpus = f.tip !== undefined && reviewer !== undefined;
+  // an unlistable worktree ci/ cannot carry the spec, so the committed branch is judged instead: once it has passed, the later rungs'
+  // worktree handling is unchanged (the review rung holds on the same ci/); until then nothing can be ordered
   const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
-  if (ciProblem !== undefined) return hold("spec", ciProblem);
-  const spec = specEvidence(onOpus ? f.branch : f.trunk, id, f.design, reviewer, admit);
+  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, f.design, reviewer, admit);
+  if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
+  const spec = committed ?? specEvidence(onOpus ? f.branch : f.trunk, id, f.design, reviewer, admit);
   const ui = spec.ok ? f.uiSpecProblems() : [];
   // W-206: the worktree's uncommitted spec work is read first, whatever the committed evidence says: a new log that is not a valid
   // signature or review must hold before the sequence is judged, or an unanchored malformed one would only order another round
