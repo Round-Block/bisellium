@@ -900,3 +900,39 @@ test("W-303-b2 behaviour 2: bisellium new --brief writes the standard diff promi
   assert.ok(acceptance.includes(`\n- ${SOURCE_DIFF.replace("<id>", id)}\n`), `Acceptance carries the standard line: ${JSON.stringify(acceptance)}`);
   assert.deepEqual(confines(text), [], "the template's line passes the rule");
 });
+
+// ---------------------------------------------------------------------------
+// W-264 (D-070 C, L-186): with no brief_behaviour_limit, a light brief is admitted by every rule but the count.
+// Rows are selectable with --test-name-pattern=W-264-b<n>.
+// ---------------------------------------------------------------------------
+test("W-264-b1 behaviour 1: with no limit declared, ready and check admit a light brief by every rule but the count, and check blocks an unreadable spec", () => {
+  accepted(ready(light(), ABSENT), "no limit: a light brief");
+  refused(ready(light({ families: [] }), ABSENT), [NO_FAMILY], "no limit: no family");
+  refused(ready(light({ after: { 2: [] } }), ABSENT), [NAMES(2, 0)], "no limit: a red command dropped");
+  refused(ready(light({ reds: [1, 0] }), ABSENT), [`behaviour 2 names 0 genuine reds; ${TAIL}`], "no limit: a genuine red dropped");
+  refused(ready(light({ families: ["ci-gate"] }), ABSENT), [EXCLUDED('decree family "ci-gate" names "ci"')], "no limit: pipeline work");
+  refused(ready(light({ redOrder: [] }), ABSENT), ['declares no red order; add the line "Red order: one at a time"'], "no limit: no red order");
+  const diff = light({ tail: ["The diff is the Files owned."] });
+  refused(ready(diff, ABSENT), [CONFINES(diff.split("\n").length, "The diff")], "no limit: a whole-diff promise");
+  refused(ready(light({ intent: ["Brief: Light"] }), ABSENT), [...FULL_PROBLEMS, FORM("Brief: Light")], "no limit: a refused marker");
+  accepted(ready(light({ reds: SEVEN }), ABSENT), "no limit: no count");
+  accepted(ready(light({ reds: SEVEN, exceptions: ["D-404"] }), ABSENT), "no limit: an exception line is not read");
+  accepted(ready(brief({ families: [], domain: [], reads: [] }), ABSENT), "no limit: a full brief is not read");
+
+  const front = (state: string, spec: string): string =>
+    `---\nid: W-900\ntitle: Admission fixture\nkind: feature\ncollegium: engineering\nstate: ${state}\nprobationes: {}\n${spec}---\nbody\n`;
+  const bad = checked("building", light({ families: [] }), ABSENT).admission;
+  assert.equal(bad.length, 1, JSON.stringify(bad));
+  assert.equal(bad[0]!.level, "block");
+  assert.equal(bad[0]!.message, `${BRIEF_REL} ${NO_FAMILY}`);
+  assert.equal(checked("building", light(), ABSENT).admission.length, 0, "check, no limit: a light brief");
+  assert.equal(checked("building", light({ reds: SEVEN }), ABSENT).admission.length, 0, "check, no limit: no count");
+  assert.equal(checked("building", brief({ families: [] }), ABSENT).admission.length, 0, "check, no limit: a full brief is not read");
+  assert.equal(checked("done", light({ families: [] }), ABSENT).admission.length, 0, "check, no limit: a done opus");
+  const unreadable = checked("building", light(), ABSENT, front("building", "spec: briefs/W-901.md\n")).admission;
+  assert.equal(unreadable.length, 1, JSON.stringify(unreadable));
+  assert.equal(unreadable[0]!.level, "block");
+  assert.ok(unreadable[0]!.message.startsWith("briefs/W-901.md unreadable: "), unreadable[0]!.message);
+  for (const spec of ["", "spec: 7\n"])
+    assert.equal(checked("building", light(), ABSENT, front("building", spec)).admission.length, 0, `check, no limit: no spec ${JSON.stringify(spec)}`);
+});
