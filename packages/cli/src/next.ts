@@ -1416,7 +1416,13 @@ function performBranch(f: Facts): StepResult {
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
   if (head !== "refs/heads/master") return heldResult(`refusing: HEAD is ${head === "" ? "detached" : head}, not the master branch`);
   if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
-  const dirty = dirtyHold(repo);
+  // W-293: the brief, the new spec logs and the modified record ride the branch's first commit; any other tracked change refuses
+  const changed = f.mainChanges();
+  if ("error" in changed) return heldResult(`refusing: ${changed.error}`);
+  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed or rewritten`);
+  const record = `${f.studioRel}/${recordRel(id)}`;
+  const paths = [...changed.spec, ...changed.other.filter((p) => p === record)];
+  const dirty = dirtyHold(repo, (p) => paths.includes(p));
   if (dirty !== undefined) return dirty;
   try {
     lstatSync(wt.dir);
@@ -1424,14 +1430,41 @@ function performBranch(f: Facts): StepResult {
   } catch {
     /* absent: the expected case */
   }
-  const made = createOpusBranch(repo, id);
-  if (!made.ok) return heldResult(made.error ?? "could not create the branch");
-  const added = git(repo, ["worktree", "add", "-q", wt.dir, `opus/${id}`]);
-  if (added.status !== 0) {
-    git(repo, ["update-ref", "-d", `refs/heads/opus/${id}`, git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim()]);
-    return heldResult(`git worktree add failed: ${one(added.stderr)}`);
+  const branch = `opus/${id}`;
+  const base = git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim();
+  if (paths.length === 0) {
+    // a spec landed on master before W-293: the branch is cut at master, with no spec commit
+    const made = createOpusBranch(repo, id);
+    if (!made.ok) return heldResult(made.error ?? "could not create the branch");
+  } else {
+    const switched = git(repo, ["switch", "-q", "-c", branch]);
+    if (switched.status !== 0) return heldResult(`could not create ${branch}: ${one(switched.stderr)}`);
+    const staged = git(repo, ["add", "--", ...paths]);
+    const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `spec(${id}): signed`, "-m", `Co-Authored-By: ${f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
+    if (committed.status !== 0) {
+      const index = git(repo, ["diff", "--cached", "--name-only", "-z"]);
+      const stuck =
+        index.status !== 0
+          ? `could not read what is staged (${one(index.stderr) || `exit ${index.status}`}); HEAD stays on ${branch}, which is kept; run: git -C ${quoted(repo)} reset -q && git -C ${quoted(repo)} switch master && git -C ${quoted(repo)} branch -D ${branch}`
+          : rollback(repo, branch, base, index.stdout.split("\0").filter(Boolean), true);
+      return heldResult(`could not commit the spec on ${branch}: ${one(committed.stderr)}${stuck === undefined ? "" : `; ${stuck}`}`);
+    }
+    const back = switchBack(repo);
+    if (back !== undefined) return heldResult(`the spec is committed on ${branch}, but the main checkout could not switch back to master (${back}); run: git -C ${quoted(repo)} switch master && git -C ${quoted(repo)} worktree add ${quoted(wt.dir)} ${branch}`);
   }
-  return { ok: true, lines: [`branch: opus/${id}`, `worktree: ${wt.dir}`] };
+  const added = git(repo, ["worktree", "add", "-q", wt.dir, branch]);
+  if (added.status !== 0) {
+    // ponytail: a branch carrying the spec commit is kept (D-021: it owns the spec now); a bare cut is dropped
+    const dropped = paths.length === 0 ? git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]) : undefined;
+    const kept =
+      dropped === undefined
+        ? `; ${branch} carries the spec and is kept: git -C ${quoted(repo)} worktree add ${quoted(wt.dir)} ${branch}`
+        : dropped.status !== 0
+          ? `; ${branch} could not be deleted (${one(dropped.stderr) || `exit ${dropped.status}`}) and is kept: git -C ${quoted(repo)} branch -D ${branch}`
+          : "";
+    return heldResult(`git worktree add failed: ${one(added.stderr)}${kept}`);
+  }
+  return { ok: true, lines: [`branch: ${branch}`, `worktree: ${wt.dir}`, ...(paths.length === 0 ? [] : [`commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${branch}`]).stdout.trim()}`])] };
 }
 
 /** Switch the main checkout back to master: the reason it could not, or `undefined` once HEAD is master. */
@@ -1444,7 +1477,7 @@ function switchBack(repo: string): string | undefined {
 /**
  * Roll the main checkout back to master after a failed commit on `branch`. The staged paths are unstaged first, and
  * only a fully restored checkout switches and drops the branch: a failed restore stays on the branch, keeps it and
- * returns the recovery text. `undefined` means master is restored.
+ * returns the recovery text, as does a failed branch deletion. `undefined` means master is restored and a dropped branch is gone.
  */
 function rollback(repo: string, branch: string, base: string, staged: string[], drop: boolean): string | undefined {
   if (staged.length > 0) {
@@ -1453,8 +1486,9 @@ function rollback(repo: string, branch: string, base: string, staged: string[], 
   }
   const back = switchBack(repo);
   if (back !== undefined) return `could not switch back to master (${back}); HEAD is ${branch}: git -C ${quoted(repo)} switch master`;
-  if (drop) git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]);
-  return undefined;
+  if (!drop) return undefined;
+  const dropped = git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]);
+  return dropped.status === 0 ? undefined : `HEAD is master, but ${branch} could not be deleted (${one(dropped.stderr) || `exit ${dropped.status}`}) and is kept: git -C ${quoted(repo)} branch -D ${branch}`;
 }
 
 /** W-206: the signed spec on opus/<id>, committed in its worktree: the brief, every changed spec log and the record, nothing else. */
