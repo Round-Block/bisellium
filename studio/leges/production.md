@@ -90,14 +90,19 @@ detection. The Aedile owns the road, not the work travelling on it.
   high, and opera that remove process.
 - **The status page is frozen (D-061 §3).** Bug fixes only; new see-or-act
   features go to the console.
-- **The CLI-first block (D-071).** Measure: orchestrator shell calls between
-  greenlight and done, counted from the session transcript (baseline ~25 on
-  W-293, target under 8). Exit: two consecutive opera pass the trial, then the
-  console MVP starts. The trial's four conditions: zero hand-run evidence
-  scripts, zero required handoff edits, review independence kept, and a safe
-  restart after an interruption (one failed review and one interrupted run
-  between the two opera). Early stop, and the queue is re-ranked: the count
-  not under 15 after W-214, W-274 and W-292, or two calendar weeks.
+- **The CLI-first block (D-071; measure D-073).** Measure: record-writing
+  actions per opus (`next --perform`, verdict, review, red, ready, handoff,
+  amend, run, an executed kept script, a `gh pr` write, a git commit or push),
+  attributed by the opus id or worktree in the command and counted by
+  `~/.bisellium-evidence/hand-steps/count.py` (baseline 32 on W-243); reads,
+  polls and spec rounds are reported beside it, untargeted. A dispatched
+  ladder-runner's calls count once W-292 lands. Exit: two consecutive opera
+  pass the trial, then the console MVP starts. The trial's conditions: under
+  12 record-writing actions per opus (the runner's included), zero hand-run
+  evidence scripts, zero required handoff edits, review independence kept, and
+  a safe restart after an interruption (one failed review and one interrupted
+  run between the two opera). Early stop, and the queue is re-ranked: the
+  count not under 20 after W-214, W-274 and W-292, or two calendar weeks.
 - Never relay a mid-turn Patron message into a running agent.
 - epoch0 (`~/projects/epoch0`) is a reference instance only; never modify it.
 
@@ -304,5 +309,6 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-15 | §9: step 0 names who runs each step (the orchestrator records until W-267); tickets, two-perform rungs, the handoff refresh and the done rung's handoff edit named; step 3's W-166 sentence fixed; Codex Sol the one review gate (D-066) | Patron |
 | 2026-10-16 | §7, §9: no per-opus retro; reviewer class tags, and a class seen before is fixed at its cause in the fix round (D-070) | Patron |
 | 2026-10-16 | §9, §10: the Opus architect drafts specs; Codex runs the test check at spec and the fix check before a re-review (D-072) | Patron |
+| 2026-10-16 | §7: D-071's measure redefined as record-writing actions per opus (D-073) | Patron |
 | 2026-10-16 | §7: the CLI-first block's exit (the hand-steps measure and the trial's four conditions); the dossier republish leaves done and stays at cascade checkpoints (D-071) | Patron |
 | 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |
