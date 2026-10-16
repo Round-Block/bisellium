@@ -746,13 +746,10 @@ export function deriveNext(f: Facts): Derived {
   if (ciProblem !== undefined) return hold("spec", ciProblem);
   const spec = specEvidence(onOpus ? f.branch : f.trunk, id, f.design, reviewer, admit);
   const ui = spec.ok ? f.uiSpecProblems() : [];
-  if (onOpus && !spec.ok) {
-    if (!f.wt.usable) return hold("spec", `${spec.why}; ${join(".worktrees", id)} is not a usable worktree on opus/${id}, so no spec write is ordered`);
-    if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
-    return hold("spec", spec.why);
-  }
-  if (onOpus && f.wt.usable) {
-    const changed = f.wtChanges();
+  // W-206: the worktree's uncommitted spec work is read first, whatever the committed evidence says: a new log that is not a valid
+  // signature or review must hold before the sequence is judged, or an unanchored malformed one would only order another round
+  const changed = onOpus && f.wt.usable ? f.wtChanges() : undefined;
+  if (changed !== undefined && reviewer !== undefined) {
     if ("error" in changed) return hold("spec", changed.error);
     if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one`);
     // every new spec log, history included, must pass the strict readers against the brief it names
@@ -768,8 +765,13 @@ export function deriveNext(f: Facts): Derived {
       return "error" in readSpecSignature(text, id, Number(n), reviewer.design, brief, rel) && "error" in readSpecReview(text, id, Number(n), reviewer, brief, rel);
     });
     if (loose !== undefined) return hold("spec", `${loose} is not a valid signature or spec review`);
-    if (changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
   }
+  if (onOpus && !spec.ok) {
+    if (!f.wt.usable) return hold("spec", `${spec.why}; ${join(".worktrees", id)} is not a usable worktree on opus/${id}, so no spec write is ordered`);
+    if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
+    return hold("spec", spec.why);
+  }
+  if (changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design, reviewer, admit);
     if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
