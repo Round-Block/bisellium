@@ -1,0 +1,49 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-243-b3\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-16T11:10:18.203Z
+# sella: builder.W-243
+# tree: tree:e9b20cdb41111d154a244b7924ab98abf12c6ce5
+# ticket: {"opus":"W-243","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-243/studio","head":"6998d9fe2a17a59a578a9351d8cd7960a8204dae","brief":"a59573d171c4c18ae5e4a1acd0b1e39ba79a592e","at":"2026-10-16T11:10:17.474Z"}
+
+TAP version 13
+# Subtest: W-243-b3 behaviour 3: pr refuses an opus branch carrying a merge commit before any push
+not ok 1 - W-243-b3 behaviour 3: pr refuses an opus branch carrying a merge commit before any push
+  ---
+  duration_ms: 3646.014931
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-243/packages/cli/src/next.test.ts:162:3577'
+  failureType: 'testCodeFailure'
+  error: |-
+    a merge commit on the opus branch holds pr
+    --- exit 0
+    --- stdout
+    next: W-900 pr performed
+    mode: merge-queue
+    PR=901 base=f5542fa head=d7a4319
+    next-step: merge
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 pr performed'
+  operator: 'match'
+  stack: |-
+    expectHeld (/home/edckt/agents/bisellium/.worktrees/W-243/packages/cli/src/next.test.ts:893:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-243/packages/cli/src/next.test.ts:5673:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3662.923535
