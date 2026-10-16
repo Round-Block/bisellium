@@ -5464,3 +5464,16 @@ test("W-206-r1-1 review round 1: a malformed new signature with no anchor holds 
   assert.equal(held.kv.has("role"), false, ran("no order is named", held));
   assert.match(held.kv.get("why") ?? "", /spec-3\.log/, ran("why names the log", held));
 });
+
+test("W-206-r1-2 review round 1: a deleted opus record beside valid spec work holds the perform", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r1-2", "review");
+  amend(w);
+  assert.equal(wtSpec(w, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(w, 4, SR, "passed", SR_MODEL).status, 0, "review 4");
+  rmSync(join(w.wtStudio, "opera", `${OPUS}.md`));
+  const tip = tipOf(w);
+  const held = next(w, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(held, "spec", "held", "a deleted record beside the spec refuses the perform");
+  assert.equal(tipOf(w), tip, "the branch is unmoved");
+  assert.equal(git(w.wt, ["diff", "--cached", "--name-only"]), "", "nothing is staged");
+});
