@@ -5497,3 +5497,21 @@ test("W-206-r2-A review round 2: the shape guard on every new worktree spec log 
   assert.ok(guard >= 0 && reader >= 0, "deriveNext holds both the shape guard and a specEvidence read");
   assert.ok(guard < reader, `the guard (offset ${guard}) precedes the first specEvidence read (offset ${reader})`);
 });
+
+test("W-206-r2-B review round 2: an unlistable worktree ci/ beside an edited brief holds at spec, never commits the unsigned amendment", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r2-b", "review");
+  amend(w);
+  const ci = join(w.wt, "studio/ci");
+  const tip = tipOf(w);
+  try {
+    chmodSync(ci, 0o100); // traversable but not listable
+    const held = next(w, [OPUS, ...BUDGET]);
+    expectStep(held, "spec", "held", "the edited brief is pending spec work, so an unlistable ci/ holds");
+    assert.match(held.kv.get("why") ?? "", /ci\//, ran("why names ci/", held));
+    const performed = next(w, [OPUS, "--perform", "--expect", "spec"]);
+    expectStep(performed, "spec", "held", "the perform does not commit the amendment");
+  } finally {
+    chmodSync(ci, 0o755);
+  }
+  assert.equal(tipOf(w), tip, "the branch is unmoved");
+});
