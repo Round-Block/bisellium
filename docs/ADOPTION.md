@@ -672,7 +672,7 @@ probatio with id `spec` — a studio that never opts in stays untouched. Where
 it applies: `building`, `verifying` or `review` with no `spec:` front-matter
 key, or whose `spec` gate isn't `passed`. `spec:` is an officina-relative
 path to `briefs/<opus-id>.md` (`bisellium new --spec <path>`, or `--brief`
-to also scaffold it); `done` and `halted` are never gated retroactively, and
+to also scaffold it, with the standard diff promise under `## Acceptance`, W-303); `done` and `halted` are never gated retroactively, and
 `since` plays no part here — a spec is either on the opus or it isn't, there
 is no "before the gate existed" case for a currently-active item. The same
 rule (W-062) also blocks an ACTIVE opus whose `spec:` and its passed gate's
@@ -962,6 +962,40 @@ or backlog record; a malformed or UI reviewer setting; a signed, reviewed spec
 on the trunk or the main checkout), `--track`, the
 dispatch gate (no `--budget`, or a stale or absent handover on a resumed
 order), `--expect`, a running, dead or invalid step marker, and an exception.
+
+**Whole-diff promises (W-303, D-070 C).** Where `brief_behaviour_limit` is
+declared, `readBriefAdmission` also refuses a line that promises the whole diff
+is the Files owned or one folder, because the verbs write the officina's
+evidence into the same history: the opus record, `studio/ci/` logs,
+`studio/ci/reds/<id>/` and receipts, none of it owned. A line is read once,
+after fences and comments are blanked. It is skipped when its raw text holds a
+scope phrase (any case): `source diff`, `source change`, `outside studio` or
+`outside the studio` (with or without a backtick before `studio`), `officina
+evidence` or `officina's evidence`. Otherwise it is split into sentences after
+`.`, `!`, `?` or `;` and at every `|`, and each sentence has its inline code
+removed. A sentence that holds a subject and a confinement is one problem, at
+most one per line. Subjects (whole words, any case): `the diff`, `the whole
+diff`, `the entire diff`, `the full diff`, `the whole change`, `the entire
+change`, `the full change`, `every file`, `every changed file`, `all files`,
+`all changed files`, `all the files`, `all the changed files`. Confinements:
+`Files owned`, the word `only`, or `is`, `are`, `lies` or `stays`, optionally
+followed by `all` or `entirely`, then `under`, `inside` or `within`. The
+problem reads `line <n> confines "<subject>" to Files owned or one folder, but
+the verbs also write officina evidence; scope it to the source diff or name
+that evidence as not owned: "<standard line>"`, and the standard line is: "The
+source diff (every path outside `studio/`) touches only the files in Files
+owned. The officina's evidence is written by the verbs and is not owned: the
+opus record, `studio/ci/` logs, `studio/ci/reds/<id>/` and receipts." Not
+seen (false negatives): a promise wrapped across two lines; subjects outside
+the list (`the change`, `the PR`, `this opus touches`); confinements outside it
+(`is limited to`, `is confined to`); a line that holds a scope phrase for
+another reason; and a promise in inline code, a fence or a comment. Refused
+though true (false positives): a promise that covers the evidence in other
+words (`the diff touches only Files owned and studio/`), and a sentence that
+names the diff and uses `only` for something else; scope either with the
+standard line. The scope list names the literal `studio`, so a brief in an
+officina with another directory name scopes itself with `source diff`. Where
+the key is absent, no full-brief admission runs and neither does this rule.
 
 **Red order (W-166).** A brief that carries the one real line
 `Red order: one at a time` (outside fences and comments; any other spelling of
