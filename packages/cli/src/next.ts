@@ -36,6 +36,7 @@ import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } fro
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
+import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { owedRetros } from "./retro.js";
@@ -1519,12 +1520,15 @@ function performOpusSpecCommit(f: Facts): StepResult {
   return { ok: true, lines: [`branch: opus/${id}`] };
 }
 
-/** A landing head may change the officina and `docs/` only: anything else is refused before the push. */
+/** W-243: a landing head may change officina records only (`recordOnly`, the list certify reads): anything else is refused before the push. */
 async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
-  const diff = git(f.repo, ["diff", "--name-only", "-z", `${TRUNK}...refs/heads/${head}`]);
-  if (diff.status !== 0) return heldResult(`refusing: could not read what ${head} changes: ${one(diff.stderr)}`);
-  const outside = diff.stdout.split("\0").filter((p) => p !== "" && !p.startsWith(`${f.studioRel}/`) && !p.startsWith("docs/"));
-  if (outside.length > 0) return heldResult(`refusing: ${head} changes ${outside.slice(0, 5).map((p) => clean(p)).join(", ")}, outside the officina and docs/; nothing pushed`);
+  const paths = diffPaths(f.repo, TRUNK, `refs/heads/${head}`);
+  if (paths === undefined) return heldResult(`refusing: could not read what ${head} changes (git diff failed); nothing pushed`);
+  // the whole list, as certify judges it: an empty diff is not records-only either
+  if (!recordOnly(paths, f.studioRel)) {
+    const outside = paths.filter((p) => !recordOnly([p], f.studioRel));
+    return heldResult(`refusing: ${head} changes ${outside.length === 0 ? "nothing" : outside.slice(0, 5).map((p) => clean(p)).join(", ")}, outside the officina records; nothing pushed`);
+  }
   return landHead({ ...ctx, head });
 }
 
@@ -1558,9 +1562,10 @@ function performDone(f: Facts, d: Derived): StepResult {
   const { repo, id } = f;
   const chore = `chore/done-${id}`;
   if (git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() !== "refs/heads/master") return heldResult("refusing: done is performed from the main checkout on master");
-  // the record, tracked `docs/` changes and verify's certificates may ride along; any other tracked change refuses
+  // the record, the checkpoint's record pages outside the officina (`recordOnly`: the handoff, the dossier pages) and
+  // verify's certificates may ride along; any other tracked change refuses
   const only = `${f.studioRel}/${recordRel(id)}`;
-  const rides = (path: string): boolean => path === only || path.startsWith("docs/");
+  const rides = (path: string): boolean => path === only || (!path.startsWith(`${f.studioRel}/`) && recordOnly([path], f.studioRel));
   const dirty = dirtyHold(repo, rides);
   if (dirty !== undefined) return dirty;
   if (d.act === "verify") return heldResult(`refusing: no automated certificate is recorded; run: ${d.command ?? ""}`);
@@ -1588,7 +1593,7 @@ function performDone(f: Facts, d: Derived): StepResult {
   const changes = trackedChanges(repo);
   const changed = typeof changes === "string" ? [] : changes.flatMap(touched);
   if (typeof changes === "string" || changed.some((p) => !rides(p))) {
-    const r = unwind(`done changed tracked paths other than ${only} and docs/; nothing committed, ${chore} left for inspection`, [], false);
+    const r = unwind(`done changed tracked paths other than ${only}, the handoff and the dossier pages; nothing committed, ${chore} left for inspection`, [], false);
     return { ok: false, lines: [...r.lines, ...changed.map((p) => `changed: ${p}`)] };
   }
   // verify's certificates are new files: exactly the evidence each automated gate recorded, validated again on the record to be committed
