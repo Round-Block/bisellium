@@ -259,6 +259,31 @@ function absolutePromiseProblems(real: string[]): string[] {
   return problems;
 }
 
+/** W-303: the standard wording for a brief's diff promise; it scopes itself to the source diff and names the evidence. */
+export const SOURCE_DIFF_LINE =
+  "The source diff (every path outside `studio/`) touches only the files in Files owned. The officina's evidence is written by the verbs and is not owned: the opus record, `studio/ci/` logs, `studio/ci/reds/<id>/` and receipts.";
+/** W-303: a whole-diff subject, a confinement and a scope, each a closed list of phrases (case-insensitive, whole words). */
+const WHOLE_DIFF = /(?<![\w-])(the (?:whole |entire |full )?diff|the (?:whole|entire|full) change|every (?:changed )?file|all (?:the )?(?:changed )?files)(?![\w-])/i;
+const CONFINED = /files owned|(?<![\w-])(?:only|(?:is|are|lies|stays) (?:all |entirely )?(?:under|inside|within))(?![\w-])/i;
+const SCOPED = /source (?:diff|change)|outside (?:the )?`?studio\b|officina(?:'s)? evidence/i;
+
+/** W-303 (D-070 C): a sentence of a real line (split after `.`, `!`, `?` or `;` and at `|`) that, with inline code removed,
+ *  names the whole diff and confines it (to Files owned, with "only", or under one folder) promises what the verbs' own
+ *  evidence breaks, unless its raw line scopes it to the source diff or names the officina evidence. Limit: a promise
+ *  wrapped across lines, or worded outside the closed lists, is not seen; one problem per line. */
+function wholeDiffProblems(real: string[]): string[] {
+  return real.flatMap((l, i) => {
+    if (SCOPED.test(l)) return [];
+    for (const s of l.split(/(?<=[.!?;])\s+|\|/)) {
+      const t = withoutInlineCode(s);
+      const hit = WHOLE_DIFF.exec(t);
+      if (hit !== null && CONFINED.test(t))
+        return [`line ${i + 1} confines "${hit[1]}" to Files owned or one folder, but the verbs also write officina evidence; scope it to the source diff or name that evidence as not owned: "${SOURCE_DIFF_LINE}"`];
+    }
+    return [];
+  });
+}
+
 /** W-161: the one reader of `brief_behaviour_limit`. Absent is no admission; a positive integer is the limit;
  *  anything else, `null` included, is an error that fails closed in both callers. */
 export function readBriefLimit(raw: unknown): { limit: number | undefined } | { error: string } {
@@ -306,7 +331,7 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
     if (light) problems.push(...redCommandProblems(behavioursSection(real) ?? []));
   }
   if (!light) problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real));
-  problems.push(...absolutePromiseProblems(real));
+  problems.push(...absolutePromiseProblems(real), ...wholeDiffProblems(real));
   if (error !== undefined) problems.push(error);
   return exception === undefined ? { problems } : { problems, exception };
 }
