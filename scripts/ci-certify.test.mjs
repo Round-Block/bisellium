@@ -241,6 +241,10 @@ function fixture(tag, o = {}) {
   git(seed, "checkout", "-q", "--detach", base);
   if (o.advance !== "conflict") git(seed, "checkout", head, "--", "studio/ci/reds");
   if (o.extraStudio) put(seed, "studio/extra.md", "a studio-only difference\n");
+  // W-243: the merge group's own paths, a null removing one
+  for (const [rel, text] of Object.entries(o.group ?? {}))
+    if (text === null) rmSync(join(seed, rel));
+    else put(seed, rel, text);
   const merged = commitAll(seed, "merge group");
   git(seed, "push", "-q", "origin", `${merged}:refs/heads/queue`);
 
@@ -249,7 +253,7 @@ function fixture(tag, o = {}) {
   git(cand, "init", "-q", "-b", "scratch");
   git(cand, "remote", "add", "origin", `https://github.com/${SLUG}`);
   git(cand, "config", `url.${origin}.insteadOf`, `https://github.com/${SLUG}`);
-  git(cand, "fetch", "-q", "origin", "queue");
+  git(cand, "fetch", "-q", ...(o.shallow ? ["--depth=1"] : []), "origin", "queue");
   git(cand, "checkout", "-q", "--detach", merged);
   const tooling = join(root, "tooling");
   git(root, "clone", "-q", origin, tooling);
@@ -453,4 +457,65 @@ test("W-168-b2 behaviour 2: a mint that returns 1 makes certify return 1", async
   const r = await run(fx, { mintCode: 1 });
   assert.equal(r.code, 1, `a failing mint fails certification\n${out(r)}`);
   assert.equal(r.minted.length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// W-243 behaviour 1: a head that is not an opus is judged by what its merge group changes
+// ---------------------------------------------------------------------------
+const NOT_AN_OPUS =
+  /certify: not certified: PR #7 head chore\/x is not an opus and changes .* outside the officina records/;
+
+test("W-243-b1 behaviour 1: a non-opus head is judged by the merge group's diff: records pass, any other path or an unreadable diff fails closed", async () => {
+  const refused = [
+    ["a source file", { "src.txt": "changed source\n" }, '"src.txt"'],
+    [
+      "a source file beside the handoff and a record",
+      { "src.txt": "changed\n", "docs/SESSION-HANDOFF.md": "handoff\n", "studio/opera/W-1.md": "record\n" },
+      '"src.txt"',
+    ],
+    ["a top-level path with a leading space", { " studio/x.ts": "source\n" }, '" studio/x.ts"'],
+    ["docs/ARCHITECTURE.md", { "docs/ARCHITECTURE.md": "architecture\n" }, '"docs/ARCHITECTURE.md"'],
+    ["a workflow file", { ".github/workflows/ci.yml": "on: push\n" }, '".github/workflows/ci.yml"'],
+    ["a dossier build script", { "docs/design/dossier/build.sh": "echo\n" }, '"docs/design/dossier/build.sh"'],
+    ["the sample studio", { "examples/sample-studio/x.md": "fixture\n" }, '"examples/sample-studio/x.md"'],
+    ["a source file moved into the officina", { "src.txt": null, "studio/src.txt": "source\n" }, '"src.txt"'],
+    ["an empty diff", { "studio/ci/reds/W-900/01.log": null, "studio/ci/reds/W-900/02.log": null }, "nothing"],
+  ];
+  for (const [what, group, named] of refused) {
+    const fx = fixture("w243-b1-refused", { group });
+    const r = await run(fx, { pr: { headRefName: "chore/x" } });
+    assert.equal(r.code, 1, `${what}: a non-opus head is not certified\n${out(r)}`);
+    assert.equal(r.minted.length, 0, `${what}: mint is not called`);
+    assert.match(out(r), NOT_AN_OPUS, `${what}: the refusal says why`);
+    assert.ok(out(r).includes(`changes ${named}`), `${what}: the refusal names ${named}\n${out(r)}`);
+  }
+
+  const unreadable = fixture("w243-b1-shallow", { shallow: true });
+  const blind = await run(unreadable, { pr: { headRefName: "chore/x" } });
+  assert.equal(blind.code, 2, `a diff that cannot be read is refused\n${out(blind)}`);
+  assert.equal(blind.minted.length, 0, "an unreadable diff mints nothing");
+  assert.match(out(blind), /certify: refused: git diff of the merge group against its base failed/);
+
+  const records = fixture("w243-b1-records", {
+    group: {
+      "docs/SESSION-HANDOFF.md": "handoff\n",
+      "docs/design/dossier/body.html": "<p>page</p>\n",
+      "studio/notes/café.md": "a record whose name git would quote without -z\n",
+    },
+  });
+  const passed = await run(records, { pr: { headRefName: "chore/done-W-900" } });
+  assert.equal(passed.code, 0, `records only: nothing to mint\n${out(passed)}`);
+  assert.equal(passed.minted.length, 0, "records only: mint is not called");
+  assert.match(out(passed), /not an opus; nothing to mint \(officina records only\)/);
+  // gates' records-only path reads the same raw list, so the two cannot disagree on a quoted name
+  const scope = spawnSync(process.execPath, [join(HERE, "ci-scope.mjs"), records.base, records.merged], {
+    cwd: records.cand,
+    encoding: "utf8",
+    env: GIT_ENV,
+  });
+  assert.equal(
+    scope.stdout.trim(),
+    "record_only=true",
+    `ci-scope.mjs agrees with certify\n${scope.stdout}${scope.stderr}`,
+  );
 });
