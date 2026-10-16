@@ -1439,7 +1439,7 @@ no `tree:` certificate; performed `done` then creates `chore/done-<opus>` from t
 `ci/<opus>-<probatio>-<hash>.log` files and the tracked handoff and dossier-page changes together
 (it refuses without a tracked change to `docs/SESSION-HANDOFF.md`: the checkpoint
 rides the done commit, and the checkpoint rung reads complete once the commit that
-made the record `done` also changed the handoff), and returns to `master`. Before `done` runs, performed `done` holds (`handoff: <rule> <where>: <message>` lines) when the real `studio/`'s working-tree handoff, read as if the opus were `done` now, would block `check` (see "Session handoff" under "Running check"); only `performDone` is held, and the step marker and log are written as for any perform. A path
+made the record `done` also changed the handoff; it likewise refuses, while `master` keeps `docs/design/dossier/progress-body.html`, unless the working tree adds a line to that page naming the opus id, the history row), and returns to `master`. Before `done` runs, performed `done` holds (`handoff: <rule> <where>: <message>` lines) when the real `studio/`'s working-tree handoff, read as if the opus were `done` now, would block `check` (see "Session handoff" under "Running check"); only `performDone` is held, and the step marker and log are written as for any perform. A path
 under `.claude/` or `.github/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
 stops before the tree and prints `patron: git -C <repo> merge --ff-only <oid>`; a
 dirty tracked Patron path prints `patron: git -C <repo> checkout -- <path>`.
