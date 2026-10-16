@@ -70,8 +70,9 @@ detection. The Aedile owns the road, not the work travelling on it.
   work unless the Patron says go; never kill a running agent. Prefer Codex
   for drafting (D-027) and reviews when Claude is tight.
 - **Checkpoint after every opus:** a history row (`progress-body.html`) and
-  the masthead (`body.html`) by a kept script, `build.sh`, republish the
-  Status page and the dossier, with a spend line per provider. A
+  the masthead (`body.html`) by a kept script, `build.sh`; the Status page
+  and the dossier are republished at cascade checkpoints only, never at an
+  opus's done (D-071), with a spend line per provider. A
   general-purpose subagent on Haiku republishes (the publish tool makes it
   read every line of a live page it did not publish, ~135k tokens per pair);
   never the orchestrating session. The architecture page is republished the
@@ -89,6 +90,14 @@ detection. The Aedile owns the road, not the work travelling on it.
   high, and opera that remove process.
 - **The status page is frozen (D-061 §3).** Bug fixes only; new see-or-act
   features go to the console.
+- **The CLI-first block (D-071).** Measure: orchestrator shell calls between
+  greenlight and done, counted from the session transcript (baseline ~25 on
+  W-293, target under 8). Exit: two consecutive opera pass the trial, then the
+  console MVP starts. The trial's four conditions: zero hand-run evidence
+  scripts, zero required handoff edits, review independence kept, and a safe
+  restart after an interruption (one failed review and one interrupted run
+  between the two opera). Early stop, and the queue is re-ranked: the count
+  not under 15 after W-214, W-274 and W-292, or two calendar weeks.
 - Never relay a mid-turn Patron message into a running agent.
 - epoch0 (`~/projects/epoch0`) is a reference instance only; never modify it.
 
@@ -288,4 +297,5 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-13 | §7: the orchestrator session refreshes before 350k (was 500k); subagent dispatches stay at 500k | Patron |
 | 2026-10-15 | §9: step 0 names who runs each step (the orchestrator records until W-267); tickets, two-perform rungs, the handoff refresh and the done rung's handoff edit named; step 3's W-166 sentence fixed; Codex Sol the one review gate (D-066) | Patron |
 | 2026-10-16 | §7, §9: no per-opus retro; reviewer class tags, and a class seen before is fixed at its cause in the fix round (D-070) | Patron |
+| 2026-10-16 | §7: the CLI-first block's exit (the hand-steps measure and the trial's four conditions); the dossier republish leaves done and stays at cascade checkpoints (D-071) | Patron |
 | 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |
