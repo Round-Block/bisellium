@@ -332,7 +332,14 @@ lex's ladder step 7, which runs `tick` once per opus after the retro.
   is written in the main checkout before `opus/<id>` exists: the `spec` rung
   commits it onto `spec/<id>` and lands that head through a PR; the `done` rung
   names `verify`, then commits the record, the certificates and the checkpoint
-  docs onto `chore/done-<id>` and lands that head the same way (W-141).
+  docs onto `chore/done-<id>` and lands that head the same way (W-141). Once
+  `opus/<id>` exists (in a studio with a `spec_reviewer`) a spec amended after
+  it is judged, re-signed, reviewed and committed on that branch, in its
+  worktree, never on master or `spec/<id>` (W-206): `next` orders the
+  architect and the reviewer there, and `--perform --expect spec` commits the
+  brief and its new rounds as one `spec(<id>)` commit. A build review round
+  that carries a `# brief:` pin is current only for the brief it names; a round
+  without one (a `kind: ui` build verdict writes none) is judged by tree alone.
   Every dispatch order also carries a `boot:` line (the sella's `bisellium
   context` command, W-085) for a harness that cannot run it.
   `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the

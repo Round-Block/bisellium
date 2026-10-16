@@ -1,0 +1,57 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-206-b3\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-15T23:49:53.494Z
+# sella: builder.W-206
+# tree: tree:be784c6dbe7cf5abc569a5ac2694ab13ebefd46a
+# ticket: {"opus":"W-206","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-206/studio","head":"232b681095c10ceefced9d33c718378b55d52b0f","brief":"822fa70484ada7eb20dd2c7cf0e256a2546a4e4b","at":"2026-10-15T23:49:49.864Z"}
+
+TAP version 13
+# Subtest: W-206-b3 behaviour 3: a build review of an older brief is not current
+not ok 1 - W-206-b3 behaviour 3: a build review of an older brief is not current
+  ---
+  duration_ms: 6048.460335
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:160:8102'
+  failureType: 'testCodeFailure'
+  error: |-
+    a passed review of the older brief orders review, not pr
+    --- exit 0
+    --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: review is met and no PR exists for the head
+    head: opus/W-900 f35d08d2dcfa
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 pr named'
+    - 'next: W-900 review named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 review named'
+  actual: 'next: W-900 pr named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:753:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:5435:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6063.037509

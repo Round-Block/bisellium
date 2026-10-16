@@ -419,6 +419,10 @@ export interface Facts {
   owed(): { owed: string[] } | { error: string };
   /** newest `# at:` among the opus's reds and review logs, in ms */
   evidenceAt(): number;
+  /** W-206: why the worktree's ci/ cannot be listed (absent is no problem) */
+  wtCiProblem(): string | undefined;
+  /** W-206: the worktree's changed paths (porcelain, untracked included), split into the brief and spec logs, and the rest */
+  wtChanges(): { spec: string[]; other: string[]; bad: string[] } | { error: string };
 }
 
 function memo<T>(fn: () => T): () => T {
@@ -562,6 +566,37 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
     pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
     owed: memo(() => owedRetros(studioAbs)),
+    wtCiProblem: memo(() => {
+      try {
+        readdirSync(join(wt.studio, "ci"));
+        return undefined;
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code;
+        return code === "ENOENT" ? undefined : `ci/ of ${join(".worktrees", id, studioRel)} cannot be listed (${code ?? "error"})`;
+      }
+    }),
+    wtChanges: memo(() => {
+      const r = git(wt.dir, ["status", "--porcelain", "-z", "--untracked-files=all"]);
+      if (r.status !== 0 || r.error !== undefined) return { error: `git status failed in ${wt.dir}` };
+      const brief = `${studioRel}/${briefRel(id)}`;
+      const record = `${studioRel}/${recordRel(id)}`;
+      const specLog = new RegExp(`^${esc(studioRel)}/ci/${esc(id)}-spec-[1-9][0-9]*\\.log$`);
+      const out = { spec: [] as string[], other: [] as string[], bad: [] as string[] };
+      const fields = r.stdout.split("\0");
+      for (let i = 0; i < fields.length; i++) {
+        const entry = fields[i]!;
+        if (entry.length < 4) continue;
+        const xy = entry.slice(0, 2);
+        const path = entry.slice(3);
+        // -z prints a rename or copy as "XY to\0from\0"
+        const from = /[RC]/.test(xy) ? fields[++i] : undefined;
+        // the opus record may only be modified: a deletion, type change, rename or copy of it is named with its status, so the perform refuses it
+        if (![path, from].some((p) => p !== undefined && (p === brief || specLog.test(p)))) out.other.push(path === record && !/^[ M][ M]$/.test(xy) ? `${path} (${xy.trim()})` : path);
+        else if (from === undefined && (path === brief ? /^[ M][ M]$/.test(xy) : /^(\?\?|A[ M])$/.test(xy))) out.spec.push(path);
+        else out.bad.push(path);
+      }
+      return out;
+    }),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(instant(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at"))?.getTime() ?? Number.NaN);
@@ -678,7 +713,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "commit" | "land";
+  act?: "verify" | "commit" | "commit-opus" | "land";
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
@@ -706,8 +741,44 @@ export function deriveNext(f: Facts): Derived {
   if ("error" in gate) return hold("spec", gate.error);
   const reviewer = gate.reviewer;
   const admit = lightAdmission(f);
-  const spec = specEvidence(f.trunk, id, f.design, reviewer, admit);
+  // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
+  // ponytail: only with a reviewer; without one signedSpec pins no brief, so an amendment never un-passes the spec (today's rung)
+  const onOpus = f.tip !== undefined && reviewer !== undefined;
+  // W-206: the worktree's uncommitted spec work is read first, whatever the committed evidence says: a new log that is not a valid
+  // signature or review must hold before the sequence is judged, or an unanchored malformed one would only order another round
+  const changed = onOpus && f.wt.usable ? f.wtChanges() : undefined;
+  if (changed !== undefined && reviewer !== undefined) {
+    if ("error" in changed) return hold("spec", changed.error);
+    if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one`);
+    // every new spec log, history included, must pass the strict readers against the brief it names
+    const loose = changed.spec.find((p) => {
+      const m = /(?:^|\/)(ci\/[^/]+-spec-([1-9][0-9]*)\.log)$/.exec(p);
+      if (m === null) return false;
+      const [, rel, n] = m as unknown as [string, string, string];
+      const text = f.branch?.read(rel);
+      if (text === undefined) return true;
+      const brief = ownBrief(text, id, rel);
+      // ponytail: the pin's shape only; an intermediate brief is never in Git, so which blob it names is not checked
+      if (!new RegExp(`^${esc(briefRel(id))} blob:[0-9a-f]{40}$`).test(brief)) return true;
+      return "error" in readSpecSignature(text, id, Number(n), reviewer.design, brief, rel) && "error" in readSpecReview(text, id, Number(n), reviewer, brief, rel);
+    });
+    if (loose !== undefined) return hold("spec", `${loose} is not a valid signature or spec review`);
+  }
+  // an unlistable worktree ci/ cannot carry the spec, so the committed branch is judged instead: once it has passed, the later rungs'
+  // worktree handling is unchanged (the review rung holds on the same ci/); until then nothing can be ordered
+  const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
+  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, f.design, reviewer, admit);
+  if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
+  // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
+  if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
+  const spec = committed ?? specEvidence(onOpus ? f.branch : f.trunk, id, f.design, reviewer, admit);
   const ui = spec.ok ? f.uiSpecProblems() : [];
+  if (onOpus && !spec.ok) {
+    if (!f.wt.usable) return hold("spec", `${spec.why}; ${join(".worktrees", id)} is not a usable worktree on opus/${id}, so no spec write is ordered`);
+    if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
+    return hold("spec", spec.why);
+  }
+  if (changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design, reviewer, admit);
     if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
@@ -786,7 +857,12 @@ export function deriveNext(f: Facts): Derived {
       const studio = f.wt.usable ? join(".worktrees", id, f.studioRel) : f.studioRel;
       return { ...named("review", "producer", `build-review round ${n} is recorded but the review gate does not cite it`, `bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${n}.log --round ${n} --sella ${censor} --studio ${studio}`), ticket: { action: "review", round: n } };
     }
-    const failedNow = gate !== undefined && gate.status === "failed" && gate.tree === cur;
+    // W-206: a round is current at this tree and, when it pins one, at the brief a verdict would pin now
+    const specRel = str(b["spec"]);
+    const specText = specRel === undefined ? undefined : bs.read(specRel);
+    const pin = specRel === undefined || specText === undefined ? undefined : `${one(specRel)} blob:${blobOf(specText)}`;
+    const current = (g: Gate): boolean => g.tree === cur && (g.brief === undefined || g.brief === pin);
+    const failedNow = gate !== undefined && gate.status === "failed" && current(gate);
     const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
     const receipt = f.receipt();
     if ((receipt !== undefined && !receipt.ok) || failedNow)
@@ -799,11 +875,11 @@ export function deriveNext(f: Facts): Derived {
 
     // 7 review
     const uiBranch = f.uiReviewProblems();
-    if (!(gate !== undefined && gate.status === "passed" && gate.tree === cur) || uiBranch.length > 0) {
+    if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");
-      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
+      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
         phase: "review",
         round: Math.max(0, ...rounds.map((r) => r.n)) + 1,
         resume: rounds.length > 0,
@@ -838,7 +914,7 @@ export function deriveNext(f: Facts): Derived {
 }
 
 /** The order a reviewer-configured spec step names, from the source that holds the newest signature. */
-function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number): Derived {
+function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number, studio = f.studioRel, src: Src | undefined = fsSrc(f.studioAbs)): Derived {
   const { id } = f;
   const round = maxRound + 1;
   if (ev.gate?.kind === "failed") {
@@ -847,6 +923,7 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
     return dispatch(f, "spec", ended ? `${ev.gate.failed.join(" and ")} failed; D-061 §4: no third review: the producer files the remainder as a new opus, then the architect cuts the brief to what passed and signs` : ev.why, {
       phase: "spec",
       round,
+      studio,
       resume: ev.anyLog,
       inputs: [briefRel(id), ev.gate.review],
       ...(ended ? { extra: [["split", `bisellium new --kind <kind> --collegium <collegium> --title <the remainder> --parent ${id} ${f.studioRel}`]] as [string, string][] } : {}),
@@ -858,11 +935,11 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
     const limit = readBriefLimit(f.manifest.brief_behaviour_limit);
     if ("error" in limit) return { step: "spec", status: "held", actor: "producer", why: `brief.admission: ${limit.error}`, extra: [] };
     const problems = limit.limit === undefined ? [] : briefAdmissionProblems(f.studioAbs, f.manifest, id, ev.gate.brief, limit.limit);
-    if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature] });
-    const session = reviewSession(fsSrc(f.studioAbs), id, "spec", reviewer.sella);
-    return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model], ...(session === undefined ? [] : [["session", session] as [string, string]])], ...(session === undefined ? {} : { session }) });
+    if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature] });
+    const session = reviewSession(src, id, "spec", reviewer.sella);
+    return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model], ...(session === undefined ? [] : [["session", session] as [string, string]])], ...(session === undefined ? {} : { session }) });
   }
-  return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id)] });
+  return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id)] });
 }
 
 /** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. */
@@ -914,6 +991,7 @@ interface Gate {
   evidence: string | undefined;
   tree: string | undefined;
   round: number | undefined;
+  brief: string | undefined;
 }
 /** The recorded review gate, cross-checked against the strictly read rounds: absent is no decided review, anything else must agree with its log. */
 function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; rounds: BuildReviewRound[] }, tickets: boolean): Gate | undefined | { error: string } | { unrecorded: BuildReviewRound } {
@@ -931,7 +1009,7 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
   if (round !== newest) return tickets && newest !== undefined ? { unrecorded: newest } : bad(`evidence ${round.log} is not the newest build-review log, ${newest?.log}`);
   if (g["sella"] !== censor) return bad(`sella must be the censor ${censor}`);
   if (g["status"] !== round.outcome) return bad(`status ${g["status"]} disagrees with ${round.log}, which ${round.outcome}`);
-  return { status: g["status"], evidence, tree: round.tree, round: round.n };
+  return { status: g["status"], evidence, tree: round.tree, round: round.n, brief: round.brief };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
 
@@ -939,8 +1017,9 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; session?: string; behaviour?: { from: number; through: number } }): Derived {
-  const { id, studioRel, manifest } = f;
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; session?: string; behaviour?: { from: number; through: number }; studio?: string }): Derived {
+  const { id, manifest } = f;
+  const studioRel = o.studio ?? f.studioRel;
   const builder = (() => {
     const resolved = resolveSeat(manifest, "builder");
     const minted = resolved === undefined ? undefined : mintDispatchSella(resolved, "builder", id, "next");
@@ -1395,6 +1474,25 @@ function performSpecCommit(f: Facts): StepResult {
   return { ok: true, lines: [`branch: ${head}`, `commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${head}`]).stdout.trim()}`] };
 }
 
+/** W-206: the signed spec on opus/<id>, committed in its worktree: the brief, every changed spec log and the record, nothing else. */
+function performOpusSpecCommit(f: Facts): StepResult {
+  const { id, wt } = f;
+  if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
+  const changed = f.wtChanges();
+  if ("error" in changed) return heldResult(`refusing: ${changed.error}`);
+  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed or rewritten`);
+  const record = `${f.studioRel}/${recordRel(id)}`;
+  const other = changed.other.filter((p) => p !== record);
+  if (other.length > 0) return heldResult(`refusing: ${other.slice(0, 5).map((p) => clean(p)).join(", ")} changed beside the spec; commit or set it aside first`);
+  if (changed.spec.length === 0) return heldResult("refusing: no spec change to commit");
+  const paths = [...changed.spec, ...changed.other];
+  const staged = git(wt.dir, ["add", "--", ...paths]);
+  const committed = staged.status === 0 ? git(wt.dir, ["commit", "-q", "-m", `spec(${id}): re-signed on opus/${id}`, "-m", `Co-Authored-By: ${f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
+  // ponytail: a failure leaves only these allowed paths staged; the re-derivation names the same commit again
+  if (committed.status !== 0) return heldResult(`could not commit the spec on opus/${id}: ${one(committed.stderr)}`);
+  return { ok: true, lines: [`branch: opus/${id}`] };
+}
+
 /** A landing head may change the officina and `docs/` only: anything else is refused before the push. */
 async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
   const diff = git(f.repo, ["diff", "--name-only", "-z", `${TRUNK}...refs/heads/${head}`]);
@@ -1485,7 +1583,7 @@ function performDone(f: Facts, d: Derived): StepResult {
 // ---------------------------------------------------------------------------
 
 /** W-233: the studio each ticketed action writes in: the main checkout, or else the opus's worktree when it is usable. */
-const MAIN_ACTIONS = new Set<TicketAction>(["verdict-spec", "branch", "merge", "done"]);
+const MAIN_ACTIONS = new Set<TicketAction>(["branch", "merge", "done"]);
 
 /**
  * W-233: in a studio that sets `step_tickets: required`, write the ticket for the action `d` names (replacing any
@@ -1669,7 +1767,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = performReady(f, d2);
           break;
         case "spec":
-          result = d2.act === "land" ? await performLanding(f, ctx, `spec/${id}`) : performSpecCommit(f);
+          result = d2.act === "land" ? await performLanding(f, ctx, `spec/${id}`) : d2.act === "commit-opus" ? performOpusSpecCommit(f) : performSpecCommit(f);
           break;
         case "pr":
           result = openPr(ctx, d2.pr, a.title, a.bodyFile);

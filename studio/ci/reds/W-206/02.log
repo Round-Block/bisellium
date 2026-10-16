@@ -1,0 +1,57 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-206-b2\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-15T23:47:49.290Z
+# sella: builder.W-206
+# tree: tree:dcf942a7d7c9417d1995704dccac129754f6cc02
+# ticket: {"opus":"W-206","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-206/studio","head":"5f3657ed6067da5740182cf0baaf456ef43fabba","brief":"822fa70484ada7eb20dd2c7cf0e256a2546a4e4b","at":"2026-10-15T23:47:45.957Z"}
+
+TAP version 13
+# Subtest: W-206-b2 behaviour 2: the spec perform commits the amended brief and every new spec round on opus/<id>
+not ok 1 - W-206-b2 behaviour 2: the spec perform commits the amended brief and every new spec round on opus/<id>
+  ---
+  duration_ms: 6198.12712
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:160:4837'
+  failureType: 'testCodeFailure'
+  error: |-
+    a passed branch spec left uncommitted names the spec commit
+    --- exit 0
+    --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: review is met and no PR exists for the head
+    head: opus/W-900 3f7105181ccd
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 pr named'
+    - 'next: W-900 spec named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec named'
+  actual: 'next: W-900 pr named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:753:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:5384:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6212.896485

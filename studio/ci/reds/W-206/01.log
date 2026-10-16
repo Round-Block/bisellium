@@ -1,0 +1,56 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-206-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-15T23:44:09.740Z
+# sella: builder.W-206
+# tree: tree:1794fc473a237a706bae37f3ca7e04b6de25758e
+# ticket: {"opus":"W-206","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-206/studio","head":"aa3c77a7a7f7f287a58f723fecaee412c5ed89e8","brief":"822fa70484ada7eb20dd2c7cf0e256a2546a4e4b","at":"2026-10-15T23:44:06.209Z"}
+
+TAP version 13
+# Subtest: W-206-b1 behaviour 1: an amended in-flight brief returns the ladder to spec on the opus branch, bound to its worktree
+not ok 1 - W-206-b1 behaviour 1: an amended in-flight brief returns the ladder to spec on the opus branch, bound to its worktree
+  ---
+  duration_ms: 4696.182262
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:160:2653'
+  failureType: 'testCodeFailure'
+  error: |-
+    an amended branch brief orders the architect at the next branch round: role: architect
+    --- exit 0
+    --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: review is met and no PR exists for the head
+    head: opus/W-900 b4f092b4786b
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>
+    health: no step recorded
+    ticket: none
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + undefined
+    - 'architect'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'architect'
+  operator: 'strictEqual'
+  stack: |-
+    architectOrder (/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:3180:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-206/packages/cli/src/next.test.ts:5350:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4709.962537

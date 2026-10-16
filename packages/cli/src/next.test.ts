@@ -5308,3 +5308,210 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   assert.equal(standing.kv.has("role"), false, ran("split: no reviewer is ordered", standing));
   assert.match(standing.kv.get("why") ?? "", /spec signed in the working tree, not committed/, ran("split: the commit is named", standing));
 });
+
+// ---------------------------------------------------------------------------
+// W-206 part 1: a brief amended after opus/<id> exists is re-signed, re-reviewed and committed on that branch
+// ---------------------------------------------------------------------------
+/** A reviewer-configured world whose spec (signature 1, review 2) landed on master before the branch was cut, built through `upTo`. */
+function w206World(tag: string, upTo: "ready" | "review", review1: "passed" | "failed" = "passed"): World {
+  const w = srWorld(tag);
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  landed(w);
+  git(w.repo, ["branch", BRANCH]);
+  git(w.repo, ["worktree", "add", "-q", w.wt, BRANCH]);
+  verb(w.wt, ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready]);
+  commit(w.wt, `studio(${OPUS}): ready`);
+  if (upTo === "review") {
+    writeReds(w);
+    writeReceipt(w, "current");
+    addReview(w, review1, 1, T.review1);
+  }
+  handoffAt(w, "wt", T.handoffFresh);
+  return w;
+}
+const WT_BRIEF = (w: World): string => join(w.wtStudio, "briefs", `${OPUS}.md`);
+const amend = (w: World): void => appendFileSync(WT_BRIEF(w), "\nAmended mid-build.\n");
+/** A spec-phase verdict through the real writer, in the opus worktree. */
+function wtSpec(w: World, round: number, sella: string, outcome: "passed" | "failed", model?: string): Out {
+  const from = join(w.root, `w206-${round}-${sella}.md`);
+  writeFileSync(from, outcome === "passed" ? NO_FINDINGS : BLOCKER);
+  return direct(w, w.wt, ["verdict", OPUS, "--round", String(round), "--sella", sella, ...(model === undefined ? [] : ["--model", model]), "--outcome", outcome, "--phase", "spec", "--from", from, "--studio", w.wtStudio, "--now", T.spec]);
+}
+
+test("W-206-b1 behaviour 1: an amended in-flight brief returns the ladder to spec on the opus branch, bound to its worktree", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-b1", "review");
+  ticketed(w);
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "unamended: the reviewed opus names pr");
+  amend(w);
+  commit(w.wt, `studio(${OPUS}): brief amended`);
+  const a = next(w, [OPUS, ...BUDGET]);
+  architectOrder(a, 3, "an amended branch brief orders the architect at the next branch round");
+  assert.match(a.kv.get("boot") ?? "", /--studio \.worktrees\/W-900\/studio$/, ran("the boot names the worktree studio", a));
+  assert.match(a.kv.get("command") ?? "", /--round 3 --sella architect --outcome passed --phase spec --studio \.worktrees\/W-900\/studio/, ran("the verdict command names the worktree studio", a));
+  assert.deepEqual({ ...ticketOf(w), at: undefined }, { opus: OPUS, step: "spec", action: "verdict-spec", round: 3, actor: "architect", studio: WT_STUDIO_REL, head: git(w.wt, ["rev-parse", "HEAD"]), brief: git(w.wt, ["hash-object", BRIEF_REL]), at: undefined }, "the ticket binds the worktree");
+  const main = wtSpec({ ...w, wt: w.repo, wtStudio: w.studio }, 3, "architect", "passed");
+  assert.equal(main.status, 2, ran("a main-checkout signature is refused (D-021)", main));
+  assert.equal(existsSync(ticketPath(w)), true, "and the ticket stays pending");
+  const signed = wtSpec(w, 3, "architect", "passed");
+  assert.equal(signed.status, 0, ran("the worktree signature consumes the ticket", signed));
+  assert.equal(existsSync(ticketPath(w)), false, "consumed");
+  const r = next(w, [OPUS, ...BUDGET]);
+  reviewerOrder(r, 4, "the branch signature goes to the reviewer");
+  assert.match(r.kv.get("command") ?? "", /--packets .*--studio \.worktrees\/W-900\/studio|--studio \.worktrees\/W-900\/studio .*--packets/, ran("the packet names the worktree studio", r));
+  assert.equal(ticketOf(w)["studio"], WT_STUDIO_REL, "the reviewer's ticket binds the worktree");
+
+  const gone = w206World("w206-b1-gone", "review");
+  amend(gone);
+  commit(gone.wt, `studio(${OPUS}): brief amended`);
+  git(gone.repo, ["worktree", "remove", "--force", gone.wt]);
+  const h = next(gone, [OPUS, ...BUDGET]);
+  expectStep(h, "spec", "held", "with no usable worktree the amended branch spec holds");
+  assert.match(h.kv.get("why") ?? "", /not a usable worktree/, ran("why", h));
+});
+
+test("W-206-b2 behaviour 2: the spec perform commits the amended brief and every new spec round on opus/<id>", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-b2", "review");
+  amend(w);
+  assert.equal(wtSpec(w, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(w, 4, SR, "failed", SR_MODEL).status, 0, "review 4 fails");
+  appendFileSync(WT_BRIEF(w), "\nRevised.\n");
+  verb(w.wt, ["handoff", "--opus", OPUS, "--sella", "producer", "--next", "re-sign the amended brief", "--studio", w.wtStudio, "--now", "2026-10-02T09:30:00.000Z"]);
+  assert.equal(wtSpec(w, 5, "architect", "passed").status, 0, "signature 5");
+  assert.equal(wtSpec(w, 6, SR, "passed", SR_MODEL).status, 0, "review 6 passes");
+  const named = next(w, [OPUS]);
+  expectStep(named, "spec", "named", "a passed branch spec left uncommitted names the spec commit");
+  const tip = tipOf(w);
+  const master = git(w.repo, ["rev-parse", "master"]);
+  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(done, "spec", "performed", "the perform commits on the opus branch");
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), tip, "opus/<id> advances by one commit");
+  const logs = [3, 4, 5, 6].map((n) => `studio/ci/${OPUS}-spec-${n}.log`);
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(), [...logs, BRIEF_REL, `studio/opera/${OPUS}.md`].sort(), "exactly the brief, rounds 3-6 and the record the handoff changed");
+  assert.equal(git(w.repo, ["rev-parse", "master"]), master, "master is unmoved");
+  assert.equal(branchExists(w, `spec/${OPUS}`), false, "no spec/<id>");
+  assert.deepEqual(mutating(w), [], "no PR is opened or merged and nothing is pushed");
+
+  const dirty = w206World("w206-b2-dirty", "review");
+  amend(dirty);
+  wtSpec(dirty, 3, "architect", "passed");
+  wtSpec(dirty, 4, SR, "passed", SR_MODEL);
+  appendFileSync(join(dirty.wt, "source.txt"), "uncommitted source\n");
+  const t2 = tipOf(dirty);
+  const held = next(dirty, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(held, "spec", "held", "a source change beside the spec refuses the perform");
+  assert.equal(tipOf(dirty), t2, "the branch is unmoved");
+  assert.equal(git(dirty.wt, ["diff", "--cached", "--name-only"]), "", "nothing is staged");
+
+  const h = w206World("w206-b2-history", "review");
+  amend(h);
+  assert.equal(wtSpec(h, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(h, 4, "architect", "passed").status, 0, "signature 4");
+  assert.equal(wtSpec(h, 5, SR, "passed", SR_MODEL).status, 0, "review 5");
+  const log3 = join(h.wtStudio, "ci", `${OPUS}-spec-3.log`);
+  writeFileSync(log3, readFileSync(log3, "utf8").replace(/^# brief: .*$/m, "# brief: garbage"));
+  const t3 = tipOf(h);
+  const loose = next(h, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(loose, "spec", "held", "a malformed new spec log below the signature holds");
+  assert.match(loose.kv.get("why") ?? "", /spec-3\.log/, ran("why names it", loose));
+  rmSync(join(h.wtStudio, "ci", `${OPUS}-spec-3.log`));
+  git(h.wt, ["mv", `studio/ci/${OPUS}-spec-1.log`, "studio/ci/old.log"]);
+  expectStep(next(h, [OPUS, "--perform", "--expect", "spec"]), "spec", "held", "a renamed committed spec log holds");
+  git(h.wt, ["mv", "studio/ci/old.log", `studio/ci/${OPUS}-spec-1.log`]);
+  appendFileSync(join(h.wtStudio, "ci", `${OPUS}-spec-2.log`), "edited\n");
+  expectStep(next(h, [OPUS, "--perform", "--expect", "spec"]), "spec", "held", "an edited committed spec log holds");
+  assert.equal(tipOf(h), t3, "the branch is unmoved");
+});
+
+test("W-206-b3 behaviour 3: a build review of an older brief is not current", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-b3", "review");
+  amend(w);
+  wtSpec(w, 3, "architect", "passed");
+  wtSpec(w, 4, SR, "passed", SR_MODEL);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the amendment is committed");
+  handoffAt(w, "wt", "2026-10-02T09:30:00.000Z");
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "review", "named", "a passed review of the older brief orders review, not pr");
+  assert.equal(o.kv.get("round"), "2", ran("at the next round", o));
+  addReview(w, "passed", 2, T.review2);
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a passed review of the current brief restores pr");
+
+  const f = w206World("w206-b3-failed", "review", "failed");
+  amend(f);
+  wtSpec(f, 3, "architect", "passed");
+  wtSpec(f, 4, SR, "passed", SR_MODEL);
+  next(f, [OPUS, "--perform", "--expect", "spec"]);
+  handoffAt(f, "wt", "2026-10-02T09:30:00.000Z");
+  expectStep(next(f, [OPUS, ...BUDGET]), "review", "named", "a failed review of the older brief at this tree orders review, not a build fix");
+
+  const log = join(w.wtStudio, "ci", `${OPUS}-review-2.log`);
+  const text = readFileSync(log, "utf8");
+  writeFileSync(log, text.replace(/^(# brief: .*)$/m, "$1\n$1"));
+  commit(w.wt, "test: a duplicate brief pin");
+  expectStep(next(w, [OPUS, ...BUDGET]), "review", "held", "two # brief: headers hold");
+});
+
+test("W-206-r1-1 review round 1: a malformed new signature with no anchor holds at spec, never another architect round", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r1-1", "review");
+  amend(w);
+  commit(w.wt, `studio(${OPUS}): brief amended`);
+  assert.equal(wtSpec(w, 3, "architect", "passed").status, 0, "signature 3");
+  const log3 = join(w.wtStudio, "ci", `${OPUS}-spec-3.log`);
+  writeFileSync(log3, readFileSync(log3, "utf8").replace(/^# brief: .*$/m, "# brief: garbage"));
+  const held = next(w, [OPUS, ...BUDGET]);
+  expectStep(held, "spec", "held", "a signature whose # brief: has no pin shape holds");
+  assert.equal(held.kv.has("role"), false, ran("no order is named", held));
+  assert.match(held.kv.get("why") ?? "", /spec-3\.log/, ran("why names the log", held));
+});
+
+test("W-206-r1-2 review round 1: a deleted opus record beside valid spec work holds the perform", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r1-2", "review");
+  amend(w);
+  assert.equal(wtSpec(w, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(w, 4, SR, "passed", SR_MODEL).status, 0, "review 4");
+  rmSync(join(w.wtStudio, "opera", `${OPUS}.md`));
+  const tip = tipOf(w);
+  const held = next(w, [OPUS, "--perform", "--expect", "spec"]);
+  expectStep(held, "spec", "held", "a deleted record beside the spec refuses the perform");
+  assert.equal(tipOf(w), tip, "the branch is unmoved");
+  assert.equal(git(w.wt, ["diff", "--cached", "--name-only"]), "", "nothing is staged");
+});
+
+test("W-206-r1-3 review round 1: an unlistable worktree ci/ after the committed spec passed is the later rungs' hold, not spec", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r1-3", "review");
+  const ci = join(w.wt, "studio/ci");
+  try {
+    chmodSync(ci, 0o100); // traversable but not listable
+    reviewHeld(next(w, [OPUS, ...BUDGET]), "the committed spec passed, so the hold is the review rung's", /ci\//);
+  } finally {
+    chmodSync(ci, 0o755);
+  }
+});
+
+test("W-206-r2-A review round 2: the shape guard on every new worktree spec log runs before any strict reader in deriveNext", { timeout: 1_800_000 }, () => {
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "next.ts"), "utf8");
+  const body = src.slice(src.indexOf("export function deriveNext("), src.indexOf("// 3 branch"));
+  const guard = body.indexOf("is not a valid signature or spec review");
+  const reader = body.indexOf("specEvidence(");
+  assert.ok(guard >= 0 && reader >= 0, "deriveNext holds both the shape guard and a specEvidence read");
+  assert.ok(guard < reader, `the guard (offset ${guard}) precedes the first specEvidence read (offset ${reader})`);
+});
+
+test("W-206-r2-B review round 2: an unlistable worktree ci/ beside an edited brief holds at spec, never commits the unsigned amendment", { timeout: 1_800_000 }, () => {
+  const w = w206World("w206-r2-b", "review");
+  amend(w);
+  const ci = join(w.wt, "studio/ci");
+  const tip = tipOf(w);
+  try {
+    chmodSync(ci, 0o100); // traversable but not listable
+    const held = next(w, [OPUS, ...BUDGET]);
+    expectStep(held, "spec", "held", "the edited brief is pending spec work, so an unlistable ci/ holds");
+    assert.match(held.kv.get("why") ?? "", /ci\//, ran("why names ci/", held));
+    const performed = next(w, [OPUS, "--perform", "--expect", "spec"]);
+    expectStep(performed, "spec", "held", "the perform does not commit the amendment");
+  } finally {
+    chmodSync(ci, 0o755);
+  }
+  assert.equal(tipOf(w), tip, "the branch is unmoved");
+});

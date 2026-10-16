@@ -1,0 +1,21 @@
+# opus: W-206
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a14231-f375-7d93-a58c-4aa00bc290ae
+# outcome: failed
+# at: 2026-10-16T00:56:05.561Z
+# tree: tree:cc1c724e8bcf9cac39bd49b881b28b012a87fcf9
+# brief: briefs/W-206.md blob:822fa70484ada7eb20dd2c7cf0e256a2546a4e4b
+# ticket: {"opus":"W-206","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-206/studio","head":"af545b602f0c869e53f88f91b4517dfac737e2ed","brief":"822fa70484ada7eb20dd2c7cf0e256a2546a4e4b","at":"2026-10-16T00:56:04.727Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:749 A malformed new signature that prevents `reviewedSpec` from finding an anchor orders another architect round and bypasses the new-log shape check at lines 754–770; it must hold before either strict reader runs. brief:53 — check: packages/cli/src/next.test.ts
+2. blocking — packages/cli/src/next.ts:1476 The opus-record exception checks only its path after `wtChanges` discards status, so a deleted or type-changed record beside valid spec work is staged and committed, moving the branch instead of holding. brief:53 — check: packages/cli/src/next.test.ts
+3. blocking — packages/cli/src/next.ts:745 An unlistable worktree `ci/` holds at `spec` unconditionally, even when the committed branch spec has already passed; the contract preserves later-rung worktree handling after passage. brief:51 — check: packages/cli/src/next.test.ts
+4. blocking — docs/ARCHITECTURE.md:340 The documentation says every build-review round pins a brief, but UI build verdicts carry no pin and the implementation deliberately judges unpinned rounds by tree alone. brief:88 — check: none: architecture prose should distinguish pinned from unpinned build-review rounds
+
+## Verdict
+Required evidence is present and green, but the behavior and contract defects above fail this round.
+VERDICT: FAIL
