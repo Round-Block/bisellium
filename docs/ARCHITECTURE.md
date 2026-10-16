@@ -338,8 +338,8 @@ lex's ladder step 7, which runs `tick` once per opus after the retro.
   worktree, never on master or `spec/<id>` (W-206): `next` orders the
   architect and the reviewer there, and `--perform --expect spec` commits the
   brief and its new rounds as one `spec(<id>)` commit. A build review round
-  pins the brief it was recorded against (`# brief:`) and is current only for
-  that brief.
+  that carries a `# brief:` pin is current only for the brief it names; a round
+  without one (a `kind: ui` build verdict writes none) is judged by tree alone.
   Every dispatch order also carries a `boot:` line (the sella's `bisellium
   context` command, W-085) for a harness that cannot run it.
   `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the
