@@ -1115,8 +1115,12 @@ function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
   if (d.order.resume) {
-    const t = (f.branchRecord ?? f.trunkRecord)?.["traditio"];
+    // W-293: before opus/<id> exists the handover is only the main checkout's record (`handoff` writes it there, D-021): an absent
+    // or unparsable one holds, never falling back to an older trunk handover
+    const rec = f.tip === undefined ? recordOf(f.work, f.id) : (f.branchRecord ?? f.trunkRecord);
+    const t = rec?.["traditio"];
     const at = isDict(t) ? (instant(t["at"])?.getTime() ?? Number.NaN) : Number.NaN;
+    if (f.tip === undefined && rec === undefined) return refuse(`stale handover: run bisellium handoff first (${recordRel(f.id)} cannot be read)`);
     if (Number.isNaN(at)) return refuse("stale handover: run bisellium handoff first (the record carries no traditio)");
     if (at < f.evidenceAt()) return refuse(`stale handover: run bisellium handoff first (traditio at ${new Date(at).toISOString()} predates the newest red or review log)`);
   }
