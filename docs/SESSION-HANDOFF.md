@@ -39,40 +39,43 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`, read w
 
 ## Queue
 
-Ranked CLI first (D-071, Patron 2026-10-16, on `~/.bisellium-evidence/lead-arch-1016/book-of-work.md`; earlier: D-069, D-070,
-D-067); one lane, no second until the console MVP lands. Block exit (lex §7): two consecutive opera pass the trial (no
-hand-run evidence scripts, no required handoff edits, review independence kept, safe restart after an interruption);
-early stop if record-writing actions per opus (D-073; baseline 32, exit under 12) are not under 20 after W-214, W-274 and W-292,
-or at two calendar weeks. Older items: `studio/acta/2026-10-09-queue-review.md`.
+Ranked by minutes saved (D-075, Patron 2026-10-17, on `~/.bisellium-evidence/speed-1017/report.md`; earlier: D-071, D-069,
+D-070, D-067). Block exit (lex §7): two consecutive opera after W-292 pass the trial (cycle under 150 min from the first spec
+signature to done, no hand-run evidence scripts, no required handoff edits, review independence kept, safe restart after an
+interruption); early stop if a cycle is over 180 min after W-292, or at two calendar weeks. One builder per opus; a second lane
+after W-292 and W-179. Older items: `studio/acta/2026-10-09-queue-review.md`.
 
-Now, one builds at a time:
-2. W-303 — brief admission refuses a whole-diff promise that forgets officina evidence (high, D-070 C cause fix); then W-264 — ready, check and next run brief admission even with no `brief_behaviour_limit` declared (high, D-070 C: the class recurred at W-303 spec round 2, L-186 first)
-3. W-214 — one records PR at done; the handoff and checkpoint ride the done commit
-4. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
-5. W-274 — a review round is one `next --perform`: packet, prompt, Codex through the harness adapter, verdict and review; ride-along: the stderr trace line in `next.test.ts`'s helper
+Now, one builds at a time (one lane until W-169):
+1. W-303 — brief admission refuses a whole-diff promise that forgets officina evidence (high, D-070 C cause fix); then W-264 — ready, check and next run brief admission even with no `brief_behaviour_limit` declared (high, D-070 C: the class recurred at W-303 spec round 2, L-186 first)
+2. W-214 — one records PR at done; the handoff and checkpoint ride the done commit
+3. W-274 — a review round is one `next --perform`: packet, prompt, Codex through the harness adapter, verdict and review; ride-along: the stderr trace line in `next.test.ts`'s helper
    recorded with the ticket, one commit; the bash copies and per-opus runners deleted; carries the later-round pass/fail rule (high)
-6. W-292 — only a dispatched runner writes ladder records and chains mint, review, PR and merge; one background call per perform (`.claude/`: Patron merges)
-7. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-292 (high)
-8. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
-9. W-259 — certify is the single mint, done records it, no host mint before review, no local verify (design approved, D-071 E)
-10. W-247 — drop the handoff Resume point and its Codex review
-11. W-299 — the queue is a record: `rank` writes `studio/queue.yml`; `next`, the Board and `status-page.mjs` read it; the handoff Queue section goes
-12. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
-13. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
-14. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if 12-13 had no interrupted run
+4. W-292 — only a dispatched runner writes ladder records and chains mint, review, PR and merge; one background call per perform (`.claude/`: Patron merges)
+5. W-179 — `next.test.ts` split by behaviour group so the suite runs in parallel pieces, with W-178 (the test-row count check) first (−60 to −70 min per opus)
+6. W-259 — certify is the single mint, done records it, no host mint before review, no local verify (design approved, D-071 E)
+7. W-258 — the builder self-reviews once before handing off (−25 min average)
+8. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
+9. W-182 → W-183 (slot wrapper and waiting line only) → W-169 — a second lane (D-075 F; heavy-job slots 1, then 2 after W-179)
+10. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
+11. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-292 (high)
+12. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
+13. W-247 — drop the handoff Resume point and its Codex review
+14. W-299 — the queue is a record: `rank` writes `studio/queue.yml`; `next`, the Board and `status-page.mjs` read it; the handoff Queue section goes
+15. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
+16. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
+17. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if 15-16 had no interrupted run
 
 Next, the console MVP (after the block, same functions):
-15. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
-15b. W-280 — Inbox and `newItem` fail-open fixes
-16. W-298 — a `petitio` verb to the Patron; `next` holds on an open one
-17. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route
-18. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-19. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
+18. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
+19. W-280 — Inbox and `newItem` fail-open fixes
+20. W-298 — a `petitio` verb to the Patron; `next` holds on an open one
+21. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route
+22. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+23. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (ranked by value; group descriptions stand for the ids in them):
-- Speed experiments (W-258 first): W-258 — the builder self-reviews once before handing off; W-178 — the test-row count check, then W-179 —
-  the slowest test file split; W-276 — the builder brief under step tickets; W-260 — build verdicts reconcile after rulings; W-250 — ci.yml runs `bisellium ci` once.
+- Speed experiments: W-276 — the builder brief under step tickets; W-260 — build verdicts reconcile after rulings; W-250 — ci.yml runs `bisellium ci` once.
 - High block remainder: W-296 — one typed boundary for tracked writes; the lessons-to-checks checks W-269, W-270, W-271, W-272, W-273 (D-065).
 - Records hygiene, small, no hand steps saved: W-278 (the review gate named once; rides any records PR), W-098, W-252, W-251 (after W-297), W-254,
   W-238, W-239, W-229, W-172, W-219, W-228, W-227, W-230, W-217, W-210, W-173, W-174, W-165, W-190, W-198, W-195, W-208, W-081, W-138.
@@ -85,7 +88,7 @@ Later (ranked by value; group descriptions stand for the ids in them):
 - Console screens, M5 and later (after the MVP): W-073, W-078, W-113, W-116, W-090, W-091, W-092, W-145, W-146, W-147, W-148, W-202, W-136, W-143,
   W-144, W-154, W-158, W-160, W-040, W-051, W-094, W-115, W-133, W-175, W-176, W-216, W-264, W-286.
 - Adopters and remote, not on the path: W-135, W-284, W-288, W-291, W-070, W-151.
-- Deferred or held: W-182, W-183, W-169, W-261, W-263 (a second lane, D-071 L); W-231 (orchestrator self-refresh, after the W-118 split);
+- Deferred or held: W-261, W-263 (more lanes, after W-169); W-231 (orchestrator self-refresh, after the W-118 split);
   W-242 (held until the measure retires); W-294, W-295 stay in the backlog (D-069 C).
 
 ## Open Patron choices
