@@ -5523,6 +5523,31 @@ test("W-293-b2 behaviour 2: branch commits the main checkout's signed spec as th
       assert.match(o.out, /why: .*could not be deleted.*branch -D opus\/W-900/, ran("the why names the kept branch and its recovery", o));
     } else assert.match(o.out, /why: .*switch master/, ran("the why names the recovery", o));
   }
+
+  // an ignored spec log is read from the filesystem but git status omits it: branch refuses it rather than commit an incomplete spec
+  const ign = srWorld("w293-b2-ignored");
+  putBrief(ign);
+  sign(ign, 1);
+  appendFileSync(join(ign.repo, ".git/info/exclude"), `/${specLog(2)}\n`);
+  review(ign, 2, "passed");
+  expectStep(specNext(ign), "branch", "named", "the ignored passed review is read from the filesystem");
+  const refused = next(ign, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(refused, "branch refuses an ignored spec log");
+  assert.doesNotMatch(refused.out, /^branch: /m, ran("no success line", refused));
+  assert.match(refused.out, /ignored/, ran("the why names the ignored log", refused));
+  assert.equal(branchExists(ign), false, "no branch is cut");
+  mainUnmoved(ign, "ignored", refused);
+  assert.ok(existsSync(briefPath(ign)), "the brief stays in the main checkout");
+
+  // after the branch the same disagreement holds the spec rung and its perform
+  const wtIgn = w206World("w293-b2-wt-ignored", "review");
+  amend(wtIgn);
+  appendFileSync(join(wtIgn.repo, ".git/info/exclude"), `/${specLog(3)}\n`);
+  assert.equal(wtSpec(wtIgn, 3, "architect", "passed").status, 0, "signature 3 is written");
+  const heldWt = next(wtIgn, [OPUS, ...BUDGET]);
+  expectStep(heldWt, "spec", "held", "an ignored worktree spec log holds the spec rung");
+  assert.match(heldWt.kv.get("why") ?? "", /ignored/, ran("the why names the ignored log", heldWt));
+  expectHeld(next(wtIgn, [OPUS, "--perform", "--expect", "spec"]), "the spec perform refuses an ignored spec log");
 });
 
 
