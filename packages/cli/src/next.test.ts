@@ -5208,6 +5208,35 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   assert.equal(standing.kv.has("role"), false, ran("split: no reviewer is ordered", standing));
 });
 
+// W-264 (D-070 C, L-186): with no brief_behaviour_limit, next's signature gates admit a light brief by every rule but the count.
+test("W-264-b2 behaviour 2: with no limit declared, next's signature gates admit a light brief by every rule but the count", { timeout: 1_800_000 }, () => {
+  const ok = srWorld("w264-b2");
+  put(ok.repo, BRIEF_REL, w255Light());
+  sign(ok, 1);
+  reviewerOrder(specNext(ok), 2, "no limit: a signed light brief goes to the reviewer");
+  const seven = srWorld("w264-b2-seven");
+  put(seven.repo, BRIEF_REL, w255Light({ behaviours: 7 }));
+  sign(seven, 1);
+  reviewerOrder(specNext(seven), 2, "no limit: seven behaviours go to the reviewer");
+  const nofamily = srWorld("w264-b2-nofamily");
+  put(nofamily.repo, BRIEF_REL, w255Light({ family: false }));
+  sign(nofamily, 1);
+  const o = specNext(nofamily);
+  architectOrder(o, 2, "no limit: a light brief with no family goes back to the architect");
+  assert.match(o.kv.get("why") ?? "", /declares no decree family/, ran("no limit: the family line", o));
+  const variant = srWorld("w264-b2-variant");
+  put(variant.repo, BRIEF_REL, w255Light({ mark: "Brief: Light" }));
+  sign(variant, 1);
+  const v = specNext(variant);
+  architectOrder(v, 2, "no limit: a refused marker goes back to the architect");
+  assert.match(v.kv.get("why") ?? "", /^briefs\/W-900\.md brief form line "Brief: Light" is not exactly "Brief: light"$/, ran("no limit: the form error alone, before admission", v));
+  const alone = srWorld("w264-b2-solo", { row: null, setting: null });
+  put(alone.repo, BRIEF_REL, w255Light());
+  sign(alone, 1);
+  landed(alone);
+  expectStep(specNext(alone), "branch", "named", "no limit, no reviewer: a signed, committed light brief names branch");
+});
+
 // ---------------------------------------------------------------------------
 // W-206 part 1: a brief amended after opus/<id> exists is re-signed, re-reviewed and committed on that branch
 // ---------------------------------------------------------------------------
