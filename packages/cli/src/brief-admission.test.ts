@@ -21,6 +21,7 @@ import { readBriefAdmission } from "@bisellium/commands/brief-admission.js";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { checkStudio } from "./check.js";
 import { runReady } from "./lifecycle.js";
+import { runNew } from "./new.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SAMPLE = join(HERE, "..", "..", "..", "examples", "sample-studio");
@@ -879,4 +880,23 @@ test("W-303-b1 behaviour 1: a whole-diff promise that forgets the officina evide
     assert.deepEqual(confines(brief().replace("green", ok)), [], ok);
   assert.deepEqual(confines(brief({ fencedIntent: ["The diff is the Files owned."] })), [], "a fence");
   accepted(ready(brief().replace("green", `- ${SOURCE_DIFF}`)), "ready: the standard line");
+});
+
+test("W-303-b2 behaviour 2: bisellium new --brief writes the standard diff promise under Acceptance", () => {
+  const dir = studio();
+  const out: string[] = [];
+  const log = console.log;
+  console.log = (...a: unknown[]) => void out.push(a.join(" "));
+  let code: number;
+  try {
+    code = runNew(["--kind", "feature", "--collegium", "engineering", "--title", "Template", "--brief", dir]).exitCode;
+  } finally {
+    console.log = log;
+  }
+  assert.equal(code, 0, "new exits 0");
+  const id = out.join("\n").trim();
+  const text = readFileSync(join(dir, "briefs", `${id}.md`), "utf8");
+  const acceptance = text.split("\n## Acceptance\n")[1]?.split("\n## ")[0] ?? "";
+  assert.ok(acceptance.includes(`\n- ${SOURCE_DIFF.replace("<id>", id)}\n`), `Acceptance carries the standard line: ${JSON.stringify(acceptance)}`);
+  assert.deepEqual(confines(text), [], "the template's line passes the rule");
 });
