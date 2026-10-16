@@ -1,0 +1,54 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-293-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-16T06:11:13.485Z
+# sella: builder.W-293
+# tree: tree:43893dd5a17d11fc52cf7a0a959d19b2c46e9bdf
+# ticket: {"opus":"W-293","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-293/studio","head":"6b840b4b82b0659a3b3d79be83d0f72d32c6d6d2","brief":"7073d8a14c7e4415f41d88112bc47cf2b9f9a803","at":"2026-10-16T06:11:08.812Z"}
+
+TAP version 13
+# Subtest: W-293-b1 behaviour 1: before the branch, next judges the spec in the main checkout ahead of the trunk's
+not ok 1 - W-293-b1 behaviour 1: before the branch, next judges the spec in the main checkout ahead of the trunk's
+  ---
+  duration_ms: 2624.326438
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-293/packages/cli/src/next.test.ts:160:12501'
+  failureType: 'testCodeFailure'
+  error: |-
+    an uncommitted re-spec of a landed brief orders the architect, never branch: role: architect
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + undefined
+    - 'architect'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'architect'
+  operator: 'strictEqual'
+  stack: |-
+    architectOrder (/home/edckt/agents/bisellium/.worktrees/W-293/packages/cli/src/next.test.ts:3180:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-293/packages/cli/src/next.test.ts:5530:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2639.504084
