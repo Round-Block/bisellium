@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-264-b1\s --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-16T23:56:26.343Z
+# sella: builder.W-264
+# tree: tree:e0270106817bdc7c487090acd97907bc4d41b4ac
+# ticket: {"opus":"W-264","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-264/studio","head":"0a103aa5556b6bb3a0a2d6f27f29a5f405ca20f7","brief":"db581d5b568d83be64cbd290f6846cd123a30fa9","at":"2026-10-16T23:56:22.892Z"}
+
+TAP version 13
+# Subtest: W-264-b1 behaviour 1: with no limit declared, ready and check admit a light brief by every rule but the count, and check blocks an unreadable spec
+not ok 1 - W-264-b1 behaviour 1: with no limit declared, ready and check admit a light brief by every rule but the count, and check blocks an unreadable spec
+  ---
+  duration_ms: 62.336536
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-264/packages/cli/src/brief-admission.test.ts:36:151'
+  failureType: 'testCodeFailure'
+  error: |-
+    no limit: no family: exit (stderr [])
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-264/packages/cli/src/brief-admission.test.ts:182:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-264/packages/cli/src/brief-admission.test.ts:910:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 171.515724
