@@ -29,8 +29,11 @@ discarded. `--keep` never preserves the clone. Git reads, add and ordinary
 commit are brokered; remotes, configuration, hooks, reset/stash/ref operations
 and credentials are unavailable by contract.
 
-Never leave a backgrounded watcher shell behind: no `run_in_background`
-wait loops polling for a log or a process. Wait in the foreground, or
-re-check on your next step. Every orphaned watcher becomes a phantom
-"running task" in the Patron's console (retro-32's watcher class — six
-instances and counting).
+Anything over ~5 minutes (the full `npm test`) runs as its own Bash call
+with the tool's `run_in_background: true` parameter, never
+`&`/nohup/setsid/disown (they die when the call returns; a hook refuses
+them): `cmd > X.log 2>&1; echo $? > X.exit`. Poll with short foreground
+checks (`cat X.exit; tail -1 X.log`), each under the 10-minute call cap;
+never a background watcher or wait loop (retro-32's phantom "running
+task" class). No exit file and a log stale for 5 minutes means dead:
+report it.
