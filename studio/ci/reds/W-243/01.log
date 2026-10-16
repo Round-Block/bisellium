@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-243-b1\s --import tsx scripts/ci-certify.test.mjs
+# exit: 1
+# at: 2026-10-16T11:08:31.072Z
+# sella: builder.W-243
+# tree: tree:c7746751c3f5f91290b00594dbda198104c183c5
+# ticket: {"opus":"W-243","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-243/studio","head":"a0af9d20f1a4274a09bbcb1cf11a80c37f12809a","brief":"a59573d171c4c18ae5e4a1acd0b1e39ba79a592e","at":"2026-10-16T11:08:30.199Z"}
+
+TAP version 13
+# Subtest: W-243-b1 behaviour 1: a non-opus head is judged by the merge group's diff: records pass, any other path or an unreadable diff fails closed
+not ok 1 - W-243-b1 behaviour 1: a non-opus head is judged by the merge group's diff: records pass, any other path or an unreadable diff fails closed
+  ---
+  duration_ms: 151.826934
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-243/scripts/ci-certify.test.mjs:468:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a source file: a non-opus head is not certified
+    certify: merge group for PR #7
+    certify: PR #7 head chore/x is not an opus; nothing to mint
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-243/scripts/ci-certify.test.mjs:487:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 167.761125
