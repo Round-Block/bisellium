@@ -72,6 +72,8 @@ const NEXT_USAGE =
 
 const TRUNK = "refs/heads/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
+/** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
+const HISTORY = "docs/design/dossier/progress-body.html";
 const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec"]);
 const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 const LIGHT_SECTIONS = ["Intent", "Files owned", "Behaviours to test", "Acceptance"];
@@ -1558,6 +1560,21 @@ function handoffHold(f: Facts): StepResult | undefined {
   return findings.length === 0 ? undefined : held(findings);
 }
 
+/** W-214: why done may not commit yet: master keeps the history page and the working tree adds no line naming `id` to it. Reads only; a git failure is a reason. */
+function historyRowRefusal(repo: string, id: string): string | undefined {
+  const kept = git(repo, ["ls-tree", "-z", "--name-only", TRUNK, "--", HISTORY]);
+  if (kept.error !== undefined || kept.status !== 0) return `master's tree cannot be read: ${one(kept.error?.message ?? kept.stderr)}`;
+  if (kept.stdout === "") return undefined;
+  const diff = git(repo, ["diff", "--no-ext-diff", "--no-textconv", "--no-color", "--unified=0", TRUNK, "--", HISTORY]);
+  if (diff.error !== undefined || diff.status !== 0) return `could not diff ${HISTORY}: ${one(diff.error?.message ?? diff.stderr)}`;
+  const named = new RegExp(`(?<![\\w-])${esc(id)}(?![\\w-])`);
+  // added lines only: everything after the first hunk header, so the `+++ b/<path>` header is never read as a row
+  const lines = diff.stdout.split("\n");
+  const added = lines.slice(lines.findIndex((l) => l.startsWith("@@")) + 1).filter((l) => l.startsWith("+"));
+  if (added.some((l) => named.test(l))) return undefined;
+  return `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run`;
+}
+
 function performDone(f: Facts, d: Derived): StepResult {
   const { repo, id } = f;
   const chore = `chore/done-${id}`;
@@ -1573,6 +1590,8 @@ function performDone(f: Facts, d: Derived): StepResult {
     const changes = trackedChanges(repo);
     if (typeof changes === "string" || !changes.some((c) => c.path === HANDOFF)) return heldResult(`refusing: the checkpoint rides the done commit, and ${HANDOFF} has no tracked change; edit it, then re-run`);
   }
+  const row = historyRowRefusal(repo, id);
+  if (row !== undefined) return heldResult(`refusing: ${row}`);
   const why = mergeRefusal(repo, id);
   if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);

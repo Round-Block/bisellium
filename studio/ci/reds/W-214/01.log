@@ -1,0 +1,51 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-214-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-16T22:05:18.761Z
+# sella: builder.W-214
+# tree: tree:fb512d5d0496037b4bb6719ad8167961b5fd6f43
+# ticket: {"opus":"W-214","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-214/studio","head":"39d49e17577961cef11ebf96eae19f6ee64f8ec3","brief":"08f52d55f3020e0d3d69bc847d33935ddb47bccc","at":"2026-10-16T22:05:12.977Z"}
+
+TAP version 13
+# Subtest: W-214-b1 behaviour 1: done refuses until the checkpoint's history row naming the opus rides with the handoff
+not ok 1 - W-214-b1 behaviour 1: done refuses until the checkpoint's history row naming the opus rides with the handoff
+  ---
+  duration_ms: 3253.842373
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-214/packages/cli/src/next.test.ts:162:5143'
+  failureType: 'testCodeFailure'
+  error: |-
+    the handoff without the history row
+    --- exit 0
+    --- stdout
+    next: W-900 done performed
+    branch: chore/done-W-900
+    commit: dabcb93
+    done: W-900: done
+    next-step: done
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 done performed'
+  operator: 'match'
+  stack: |-
+    expectHeld (/home/edckt/agents/bisellium/.worktrees/W-214/packages/cli/src/next.test.ts:893:10)
+    refusedRow (/home/edckt/agents/bisellium/.worktrees/W-214/packages/cli/src/next.test.ts:5706:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-214/packages/cli/src/next.test.ts:5712:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3374.619914

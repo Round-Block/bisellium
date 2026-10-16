@@ -1,0 +1,23 @@
+# opus: W-214
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T17:17:18.197Z
+# tree: tree:9027cb2daa46f3df9a36edfe2225235628a31cc8
+# brief: briefs/W-214.md blob:08f52d55f3020e0d3d69bc847d33935ddb47bccc
+# ticket: {"opus":"W-214","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"fa3c46b663c58fa29ba0a3ffa1fc4c76eccade0d","brief":"08f52d55f3020e0d3d69bc847d33935ddb47bccc","at":"2026-10-16T17:17:17.776Z"}
+
+## Findings
+
+1. advisory — the code already lets the checkpoint ride the done commit (`performDone`'s `rides` takes `recordOnly` paths; the landing guard, certify and the CI scope read the same list; `W-243-b2` commits a dossier page with the done record), so the opus is one refusal: `done` holds until the history row naming the opus is in the working tree, while master keeps `progress-body.html` — check: packages/cli/src/next.ts performDone; scripts/ci-scope.mjs recordOnly; prototype.diff
+2. advisory — the red fails by assertion on master (`the handoff without the history row`, actual `next: W-900 done performed`) and `scripts/replay-accept.mjs` accepts it; on the prototype the row and the 20 `next.test.ts` rows that run `--perform --expect done` pass unedited — check: reds.out, red-b1-master.out, neighbours-proto.out
+3. advisory — the Codex test check lists no flip and no unnamed row; its 16 must-stay-green rows were each run on the prototype: the 15 `next.test.ts` rows inside `neighbours-proto.out`, and `containment.test.ts`'s `W-163-b6` (65 rows) in `containment-proto.out`; no row rejected — check: fixture-census.md, neighbours-proto.out, containment-proto.out
+4. advisory — W-192 is met for the checkpoint's dossier pages by W-209's `source_excludes` (shown by `verify-tolerance.out`); the handoff stays dirty to verify, kept out of scope because `W-211-b1` pins that list and `studio/bisellium.yml` is code-owned, and named in Defaults 3 — check: verify-tolerance.mts, verify-tolerance.out; studio/briefs/W-214.md Out of scope
+5. advisory — one code-owned path is owned: `docs/ADOPTION.md` (one clause); nothing under `.github/`, `.claude/`, `studio/leges/`, `studio/bisellium.yml`, `studio/prompts/` or `scripts/ci-certify.mjs` — check: studio/briefs/W-214.md Files owned, Defaults 4
+6. advisory — the brief passes admission on master's and on W-303's prototype `brief-admission.ts` (the whole-diff rule); typecheck, lint and format:check pass on the prototype — check: admission.out, typecheck-proto.out, lint-proto.out, format-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-214.md` (copy `brief-r1.md`), master fa3c46b6.
