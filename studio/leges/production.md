@@ -116,7 +116,7 @@ detection. The Aedile owns the road, not the work travelling on it.
 names each step and writes the step ticket the next record write consumes
 (D-064 C): run it just before every `verdict`, `review`, `red`, `ready`,
 `done`, `branch` and `merge`, at the head that write touches. `--perform
---expect <step>` does the step; the spec and done rungs take two performs
+--expect <step>` does the step; the done rung takes two performs
 (commit, then land). From a worktree, pass the main checkout's absolute
 `--studio`/`--repo`. This section is the orchestrator's runbook.
 
@@ -151,7 +151,7 @@ names each step and writes the step ticket the next record write consumes
    `verdict` refuses for its shape (an `## Earlier findings` line without `- `, or
    one naming a blocker that does not stand) is reissued by the same session,
    never edited by hand.
-   Any brief edit needs a new signature and review. On pass, `next` lands it.
+   Any brief edit needs a new signature and review. On pass, `branch` commits it as the opus branch's first commit.
    Reused, unchanged code is one input judged by its exit, one row per
    unchanged job (D-050); an unchanged line inside a changed function is
    reused code too, unless a promise depends on it (D-054). Only substance
@@ -188,7 +188,7 @@ names each step and writes the step ticket the next record write consumes
    `docs/SESSION-HANDOFF.md` (the done perform refuses without a tracked
    handoff edit and runs W-186's rule on it); `next --perform --expect done`
    (commits on `chore/done-<id>`); `next --perform --expect done` again
-   (lands). Earlier untracked spec logs ride it.
+   (lands).
 7. **No retro (D-070).** The reviewer names each finding's class
    (`<area>×<slug>`, an existing class verbatim where one fits). When a
    failing verdict names a class seen before, the fix round also fixes its
@@ -288,3 +288,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-13 | §7: the orchestrator session refreshes before 350k (was 500k); subagent dispatches stay at 500k | Patron |
 | 2026-10-15 | §9: step 0 names who runs each step (the orchestrator records until W-267); tickets, two-perform rungs, the handoff refresh and the done rung's handoff edit named; step 3's W-166 sentence fixed; Codex Sol the one review gate (D-066) | Patron |
 | 2026-10-16 | §7, §9: no per-opus retro; reviewer class tags, and a class seen before is fixed at its cause in the fix round (D-070) | Patron |
+| 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |

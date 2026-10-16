@@ -959,7 +959,7 @@ instead: refused arguments, a non-repository or linked worktree, an unloadable
 studio, an unsafe id, malformed `source_excludes`, an unknown opus, a
 `deriveNext` return before the review order (done, declined, halted, stateless
 or backlog record; a malformed or UI reviewer setting; a signed, reviewed spec
-on the trunk, a `spec/<id>` branch or the main checkout), `--track`, the
+on the trunk or the main checkout), `--track`, the
 dispatch gate (no `--budget`, or a stale or absent handover on a resumed
 order), `--expect`, a running, dead or invalid step marker, and an exception.
 
@@ -1384,9 +1384,11 @@ refuses on a failing check, on fewer than `MIN_CHECKS` (5) checks in bucket
 `CLEAN` with every check passing, asks directly; `BLOCKED` is never merged
 directly. `cleanup` deletes the worktree, the local branch and the remote branch
 in that order, each after a fresh MERGED re-read, idempotently (an absent piece
-is `skipped (absent)`). The `spec` rung commits a spec signed in the main checkout
-onto `spec/<opus>` (only the brief and the spec log), and lands `spec/<opus>` and
-`chore/done-<opus>` the way it lands an opus: push `--force-with-lease`, reuse or
+is `skipped (absent)`). Before `opus/<opus>` exists the spec is judged in the main
+checkout, and `branch` commits the brief, every new spec round and the modified
+record as the branch's first commit (a spec landed earlier adds none);
+`chore/done-<opus>` is landed as before, the way it lands an opus: push
+`--force-with-lease`, reuse or
 create the PR (title and body from the head commit), the `merge` rules, a trunk
 fetch, then delete the head locally and on origin. A head that changes anything
 outside the officina and `docs/` is refused before the push. The `done` rung names
@@ -1467,7 +1469,7 @@ each ticket admits at most one write and a failure after the claim costs a fresh
 `done` consume it, and leaves the ticket the next derivation names. Limit: the
 file is local and agent-writable (mistakes, not adversaries, D-045); `handoff`,
 `verify`, `run`, `amend`, `halt`, `waive`, `greenlight` and the other verbs stay
-unticketed, `pr`, `cleanup` and the spec commit and landing run only inside
+unticketed, `pr`, `cleanup` and the spec commit run only inside
 `next --perform`, and dispatch preconditions (budget, stale handover) gate
 launching a session, not the ticket.
 
@@ -1491,7 +1493,7 @@ sequence; at most one valid review of the configured seat, with exact model, may
 follow it, and every log above the anchor must be that review:
 
 - no review: the spec-reviewer is ordered at the next round, with the packet and dispute lines and `--session` in the record command. A fresh one-shot dispatch (`resume: false`) when the reviewer has no recorded session; otherwise `resume <seat>'s session <id>` and a `session:` line (W-215);
-- `passed`: the existing commit (the brief, the signature and its review, nothing else), landing and then `branch`;
+- `passed`: `branch`, which commits the brief and every round;
 - `failed`: the architect is ordered to revise and sign again; a newer signature needs a newer review;
 - two failed reviews since the newest re-spec (the count starts above the newer of the newest passed review and a signature that stood by the split; W-246, D-061 §4, D-063 §7): the architect is ordered with a `split:` line naming `bisellium new … --parent <opus>`; the producer files the remainder, the architect cuts the brief and signs, and that signature stands without a third review (the commit carries the brief, the signature and the failed logs);
 - an edited brief, or no valid signature: the architect is ordered to sign at the next round;
@@ -1501,9 +1503,7 @@ A review's outcome must agree with its findings (`passed` has no blocking findin
 `failed` has at least one) and every numbered finding ends `check: <value>`. A blocking
 finding that cites no line of the pinned brief is recorded advisory, as in build, and a
 review submitted `failed` with no standing blocker is recorded `passed` with
-`# submitted_outcome: failed` (W-246). A
-`spec/<opus>` branch that carries a signature but no passed review is not landed:
-`next` holds and names it. Limit: the `# model:` header is the recorder's claim,
+`# submitted_outcome: failed` (W-246). Limit: the `# model:` header is the recorder's claim,
 and the gate cannot judge whether the review reasoned well.
 
 ## Writing to a studio (handoff, emit, answer, greenlight, budget)
