@@ -454,6 +454,11 @@ function specChanges(dir: string, studioRel: string, id: string): Changes {
     else if (from === undefined && (path === brief ? /^([ M][ M]|\?\?|A[ M])$/.test(xy) : /^(\?\?|A[ M])$/.test(xy))) out.spec.push(path);
     else out.bad.push(path);
   }
+  // W-293: git status omits an ignored untracked file, which the filesystem reads still see (and `git add` refuses): a spec file
+  // that is ignored is refused, never left out of the commit
+  const ignored = git(dir, ["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", `${studioRel}/briefs`, `${studioRel}/ci`]);
+  if (ignored.status !== 0 || ignored.error !== undefined) return { error: `git ls-files failed in ${dir}` };
+  for (const p of ignored.stdout.split("\0")) if (p === brief || specLog.test(p)) out.bad.push(`${p} (ignored)`);
   return out;
 }
 
@@ -767,7 +772,7 @@ export function deriveNext(f: Facts): Derived {
   const changed = onOpus && f.wt.usable ? f.wtChanges() : undefined;
   if (changed !== undefined && reviewer !== undefined) {
     if ("error" in changed) return hold("spec", changed.error);
-    if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one`);
+    if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one or stop ignoring it`);
     // every new spec log, history included, must pass the strict readers against the brief it names
     const loose = changed.spec.find((p) => {
       const m = /(?:^|\/)(ci\/[^/]+-spec-([1-9][0-9]*)\.log)$/.exec(p);
@@ -1423,7 +1428,7 @@ function performBranch(f: Facts): StepResult {
   // W-293: the brief, the new spec logs and the modified record ride the branch's first commit; any other tracked change refuses
   const changed = f.mainChanges();
   if ("error" in changed) return heldResult(`refusing: ${changed.error}`);
-  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed or rewritten`);
+  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed, rewritten or ignored`);
   const record = `${f.studioRel}/${recordRel(id)}`;
   const paths = [...changed.spec, ...changed.other.filter((p) => p === record)];
   const dirty = dirtyHold(repo, (p) => paths.includes(p));
@@ -1501,7 +1506,7 @@ function performOpusSpecCommit(f: Facts): StepResult {
   if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
   const changed = f.wtChanges();
   if ("error" in changed) return heldResult(`refusing: ${changed.error}`);
-  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed or rewritten`);
+  if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed, rewritten or ignored`);
   const record = `${f.studioRel}/${recordRel(id)}`;
   const other = changed.other.filter((p) => p !== record);
   if (other.length > 0) return heldResult(`refusing: ${other.slice(0, 5).map((p) => clean(p)).join(", ")} changed beside the spec; commit or set it aside first`);
