@@ -1,0 +1,27 @@
+# opus: W-303
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T15:36:32.070Z
+# tree: tree:46e06f43c55e27ed1c186fd00ff5419142fa8921
+# brief: briefs/W-303.md blob:85626702272718e9e33bc6cd1405064fd8ce0c78
+# ticket: {"opus":"W-303","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"70c4df31b489394c4d233602b68d85c5e99f8191","brief":"85626702272718e9e33bc6cd1405064fd8ce0c78","at":"2026-10-16T15:36:31.667Z"}
+
+## Earlier findings
+
+- ci/W-303-spec-2.log #1: closed — Defaults 1 (now brief:106) is the reviewer's replacement verbatim, scoped to an officina that declares `brief_behaviour_limit`; the sweep for "every", "always", "never", "whenever", "all" and "any" scoped the same promise at Intent (brief:15), the Input domain prose (brief:66) and its first row (brief:70); Out of scope (brief:100) names the no-limit skip as W-264's class (L-186), not widened here — check: studio/briefs/W-303.md lines 15, 66, 70, 100, 106; brief-r1-r2.diff
+- ci/W-303-spec-2.log #2: closed — the read enumeration (brief:5) and a new Input domain row (brief:71) name the `examples/sample-studio` copy made by `studio()`, whose `cpSync`, `readFileSync` or `parseDocument` throws and fails the row — check: studio/briefs/W-303.md lines 5, 71
+- ci/W-303-spec-2.log #3: closed — the read enumeration (brief:5) and a new Input domain row (brief:72) name `W-303-b2`'s `readFileSync` of the generated brief, which throws on a missing or unreadable file and fails the row — check: studio/briefs/W-303.md lines 5, 72
+
+## Findings
+
+1. advisory — revision 2 changes only prose and the Input domain table: Files owned, the rule, both behaviours, both red commands and their expected failures are unchanged, so revision 1's reds (`reds.out`, both accepted), prototype (`prototype.diff`, `neighbours-proto.out`, `next-rows-proto.out`), brief census (`census.out`) and Codex test check (`fixture-census.md`: no flip; no row rejected) stand without a rerun — check: brief-r1-r2.diff
+2. advisory — the sweep reworded one other unconditional word in a promise: Acceptance's "never on a missing export" is now "neither red can fail on a missing export" (brief:86); brief:62's "every officina" is kept because `briefTemplate` does not read `brief_behaviour_limit` — check: studio/briefs/W-303.md lines 62, 86
+3. advisory — revision 2 passes admission on master and on the prototype's `brief-admission.ts` — check: admission-r2.out, admission-r2-master.out
+4. advisory — revision 2 is reproduced from revision 1 by the kept `revise-r2.py` — check: `python3 revise-r2.py <copy of brief-r1.md>` equals brief-r2.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-303.md`, master 70c4df31.
