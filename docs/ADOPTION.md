@@ -1375,7 +1375,8 @@ marker first, derives again, checks `--expect` against that second derivation,
 then acts; it never sets `BISELLIUM_ROLE` (a `greenlight` rung is the Patron's
 alone) and relays any refusal from `ready` (D-021) or `done` unchanged as
 `held`. `branch` refuses unless HEAD is the `master` branch at the `master` tip
-and the tree is not dirty. `pr` rebases onto the fetched trunk, stops before
+and the tree is not dirty, except the brief, the new spec rounds and the
+opus record, which ride the first commit (an ignored spec file is refused). `pr` rebases onto the fetched trunk, stops before
 push and PR if the rebase changes the SOURCE tree, pushes `--force-with-lease`,
 and creates the PR from `--title` and `--body-file` (without them it only names
 the command; an existing OPEN PR is reused). `merge` updates a BEHIND branch,
