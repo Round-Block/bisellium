@@ -609,6 +609,11 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
   if (dirty !== undefined) return dirty;
   const fetched = fetchTrunk(repo);
   if (!fetched.ok) return held(fetched.reason, ...(fetched.after ?? []));
+  // W-243: certify replays the head onto master commit by commit, so a merged-in master conflicts again in the queue (#489)
+  const merges = git(wt, ["rev-list", "--merges", `${TRUNK_REF}..HEAD`]);
+  if (merges.status !== 0) return held(`refusing: could not list ${branch}'s merge commits: ${why(merges)}`);
+  const merge = merges.stdout.trim().split("\n")[0] ?? "";
+  if (merge !== "") return held(`refusing: ${branch} carries merge commit ${merge.slice(0, 12)}; certify replays the branch onto master, so rebase it onto master instead (no merge commits), then mint and review the rebased head`);
   const slug = repoSlug(repo);
   if (!slug.ok) return held(slug.reason);
   const mode = readMergeQueue(repo, slug.slug);
