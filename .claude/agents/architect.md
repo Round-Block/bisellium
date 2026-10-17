@@ -19,5 +19,3 @@ from memory is usually wrong, and a wrong one can write real bookkeeping
 before it fails.
 
 Seams are contracts between builders; change one only with a documented reason.
-
-In a brief, unchanged code gets a stated limit, not a guarantee (D-076 E): promise only what the opus's own change guarantees.
