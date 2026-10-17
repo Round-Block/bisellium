@@ -322,10 +322,11 @@ lex's ladder step 7, which runs `tick` once per opus after the retro.
 - `MergePipeline` (`@bisellium/pipeline`) — `verify` runs gates through it, so a
   merge-blocking pipeline is a drop-in for the local runner.
 - `WorktreeProvider` / `HarnessProfile` (`@bisellium/shim`) — where a builder
-  runs, and what drives it. Builder-class execution uses the stricter private
+  runs, and what drives it (a call's options include an optional `timeoutMs` and
+  `reasoningEffort`, W-274; only the codex profile reads `reasoningEffort`). Builder-class execution uses the stricter private
   `builder-run`/host-runner seam instead of this generic provider.
 - `bisellium next` (`packages/cli/src/next.ts`, `integrate.ts`) — the cascade
-  ladder derived from evidence (W-124), thirteen rungs `STEPS` from
+  ladder derived from evidence (W-124; `--perform --expect review` runs one build-review round through the codex adapter, W-274), thirteen rungs `STEPS` from
   `greenlight` to `checkpoint` with `retro` after `done` (W-137). `integrate.ts` owns the `gh`/`git` PR
   rungs (`pr`, `merge`, `cleanup`), which replaced the retired PR scripts;
   `fetchTrunk` fast-forwards a clean checked-out `master` to the reviewed merge

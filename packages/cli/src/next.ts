@@ -1605,9 +1605,9 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     }
     const seq = readSequence(wt.studio, id, "build", censor);
     if ("error" in seq) return heldResult(`the review sequence cannot be read: ${seq.error}`);
-    const previous: string | undefined = undefined;
-    let prompt = "";
-    {
+    const previous = seq.last?.session;
+    let prompt = files.get("prompt.md");
+    if (previous === undefined || prompt === undefined) {
       const template = readContainedRegularFile(wt.studio, BUILD_REVIEW_PROMPT, "prompts");
       if ("error" in template) return heldResult(`${BUILD_REVIEW_PROMPT}: ${template.error}`);
       const filled = fillSlots(template.bytes.toString("utf8"), {
@@ -1634,8 +1634,8 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     const override = Number(process.env["BISELLIUM_TEST_REVIEW_TIMEOUT_MS"]);
     const timeoutMs = testClock && Number.isSafeInteger(override) && override > 0 ? override : REVIEW_TIMEOUT_MS;
     const call = { cwd: wt.dir, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt };
-    log(`review: codex started${previous ?? ""} (round ${round})`);
-    const turn = await codexProfile.start({ ...call, systemPrompt: "" });
+    log(`review: ${previous === undefined ? "codex started" : `codex resumed ${previous}`} (round ${round})`);
+    const turn = previous === undefined ? await codexProfile.start({ ...call, systemPrompt: "" }) : await codexProfile.resume({ ...call, sessionId: previous });
     log(`review: codex exited ${turn.exitCode}`);
     // the packet is proven again before the one write after the call
     requireRealDirectory(packet);
@@ -1644,11 +1644,13 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     const why = raw["timedOut"] === true ? ` (timed out after ${timeoutMs} ms)` : typeof raw["signal"] === "string" ? ` (signal ${raw["signal"]})` : turn.exitCode === 3 ? " (a usage limit)" : "";
     if (turn.exitCode !== 0) return heldResult(`codex exited ${turn.exitCode}${why}; nothing is recorded`);
     if (!SESSION_ID.test(turn.sessionId)) return heldResult("codex reported no session id; nothing is recorded");
+    if (previous !== undefined && turn.sessionId !== previous) return heldResult(`codex resumed ${previous} but reported session ${clean(turn.sessionId)}; nothing is recorded`);
     const replied = replyOutcome(turn.reply);
     if (replied === undefined) return heldResult(`the reply's last line is not "VERDICT: PASS" or "VERDICT: FAIL" (${packet}/verdict.md); nothing is recorded`);
     const v = capture(() => runVerdict([id, "--round", String(round), "--sella", censor, "--outcome", replied, "--model", REVIEWER_MODEL, "--session", turn.sessionId, "--from", join(packet, "verdict.md"), "--studio", wt.studio]));
     if (v.exit !== 0) return heldResult(`verdict refused: ${[...v.err, ...v.out].map(one).filter(Boolean)[0] ?? `exit ${v.exit}`}`, ...v.err.slice(1, 6).map((l) => `verdict: ${one(l)}`));
-  } else return heldResult(`refusing: the review rung names neither an order nor a recorded verdict to cite`);
+  } else if (d.ticket?.action === "review") round = d.ticket.round;
+  else return heldResult(`refusing: the review rung names neither an order nor a recorded verdict to cite`);
   // the outcome `review` records is the log's, which verdict may have reconciled (W-126); the log must be a fixed-reviewer
   // Codex round of this sequence; in a ticketed studio the re-derivation names the review record for this round, and
   // `review` refuses any other ticket

@@ -5764,6 +5764,7 @@ process.stdin.on("end", () => {
   // poison: a directory where the perform will write verdict.md, so that write throws
   const packet = /packet (\S+)\.\n/.exec(stdin);
   if (r.poison && packet) fs.mkdirSync(path.join(packet[1], "verdict.md"));
+  // sleep-waiver: fixture -- the stub reply is delayed only so the perform's timeout seam can fire first
   setTimeout(() => {
     if (r.session !== undefined) process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: r.session }) + "\n");
     process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: r.reply } }) + "\n", () => {

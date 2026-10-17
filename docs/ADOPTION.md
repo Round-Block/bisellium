@@ -1438,7 +1438,7 @@ orchestrator must read the word.**
 
 `--expect <step>` exits 1 with `refusing: next step for <opus> is <A>, not <B>`
 whenever `<B>` is not the derived step. `--perform` executes only the derived
-rung (`branch`, `ready`, `pr`, `merge`, `cleanup`, `done`) and then re-derives;
+rung (`branch`, `ready`, `review`, `pr`, `merge`, `cleanup`, `done`) and then re-derives;
 it never runs a second rung in one call and stops at the first named-only rung
 (a dispatch, `greenlight`, `checkpoint`), running nothing. It takes the step
 marker first, derives again, checks `--expect` against that second derivation,
@@ -1473,6 +1473,28 @@ made the record `done` also changed the handoff; it likewise refuses, while `mas
 under `.claude/` or `.github/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
 stops before the tree and prints `patron: git -C <repo> merge --ff-only <oid>`; a
 dirty tracked Patron path prints `patron: git -C <repo> checkout -- <path>`.
+
+**`review` (W-274, part 1).** `next <opus> --perform --expect review --budget <tokens>` runs one build-review round
+end to end, in the foreground (the orchestrator launches it in its own background call and waits for its exit). It
+holds, before either reading, on a UI opus (dispatch it as the order names) and on a worktree that is unusable or has a
+tracked change. For the censor's order of round `n` it builds the packet under `<repo>/.bisellium/reviews/<opus>/r<n>/`
+(local, not committed; `.bisellium`, `reviews` and the packet are proven real directories outside both studio trees
+before anything is made, removed or written), fills the six slots of `prompts/build-review.md` read from the opus
+branch (`<ID>`, `<ROUND>`, `<WORKTREE>`, `<PACKET>`, `<REVIEWED_HEAD>`, `<FOCUS>`; a later round of a sessioned
+sequence resumes the reviewer's session with the packet's later-round prompt), calls Codex `gpt-5.6-sol` at reasoning
+effort `high` through the harness adapter with a 25-minute timeout, and records the reply with `verdict`, then `review`,
+then one commit on `opus/<opus>` of exactly the log and the record. A reply is accepted only after Codex closes
+normally with exit code 0 (a signal, a non-zero exit, a usage limit, a timeout, no session id, a changed session, or a
+last nonblank line other than exactly `VERDICT: PASS` or `VERDICT: FAIL` holds), and any failed step holds, exit 1,
+the step marker released, nothing recorded after it. A verdict already recorded for the round but not yet cited by the
+gate is finished without another Codex call, when its log records exactly one model header `gpt-5.6-sol`, exactly one
+valid session header and, for a later round, the sequence's session; otherwise the perform holds. Limits: a failed
+commit after `review` leaves the log and the record staged and uncommitted (committing them is a hand step, and `pr`
+holds on the dirty record until then); a log the second reading refuses stays uncommitted until it is recorded by hand
+or removed; `facts.txt`'s `next` block exits 2 in a worktree packet; a verdict `verdict` refuses for its shape is not
+reissued in the same session. The template is read from the opus branch, so an opus may change its own review prompt;
+`studio/prompts/` is code-owned, so the Patron reviews such a change. A close by signal is a failure of the codex
+profile for every caller, `talk` included.
 
 `gh` and `git` are spawned by bare name through `PATH` with argument arrays (no
 shell). Every `gh` read asks for a fixed `--json` field list, is bounded to
