@@ -20,7 +20,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`, read w
 ## Resume point (2026-10-17)
 
 0. **Rulings in force:** D-077 (work state is a git record; W-299 absorbs the Resume-point cut and a read-only `next --all`; W-308 the timeline; no OTel now); D-076 (only S1 real defects, security gaps and missing evidence block; a second spec review only after a design-changing S1; cause fixes only on an S1 recurrence; daily retro into `studio/acta/improvements.md`; the architect line "unchanged code gets a stated limit, not a guarantee" goes in every architect dispatch until W-310); D-075 (cycle minutes are the measure, D-073's hand-step count a secondary line; one heavy job at a time on this host; one builder per opus); D-074 (seats are live settings, W-304); D-072 (the Opus architect drafts specs); D-066 A (the orchestrator runs record writes until W-310).
-1. **State:** W-259 part 1 is done (#544, #546): the done rung records the merge queue's certify certificate, holding to the full `verify` on any mismatch. W-292 part 1's done lands on chore/done-W-292 with checkpoint row 92, after `verify W-292` passed on master 92bc62c3 in 24 min with the cache warmed (W-259 changed source after W-292's merge, so its certify did not count). W-259's parts 2 (review accepts the builder's gate logs, no pre-review mint) and 3 (gate progress lines) are filed greenlit as W-312 and W-313. W-259's cycle was about 200 min, over D-075's 180, so the Queue was re-ranked (Patron 2026-10-17). The suite takes ~39 min here, over the 30-minute gate cap of the host mint and `verify`, because `main.ts`'s `process.exit` truncates tsx's cache writes and the sandbox's /tmp is read-only (`~/.bisellium-evidence/fable-suite-1017/report.md`); W-311 fixes both and is next. Until it lands, a mint or verify here needs the Patron to warm the cache from the checkout it runs in, outside the sandbox: `node --import tsx -e "process.exit=(c)=>{process.exitCode=c}; await import('./packages/cli/src/main.ts')"`. The ladder per opus: architect spec (its signature carries a `Promise ledger:` line, W-306) → spec review (`~/.bisellium-evidence/spec-review-d076/r2-run.sh <ID>`; a second round resumes that session, model `~/.bisellium-evidence/W-259-specreview/r4-run.sh`) → branch, `npm ci --cache ~/.bisellium-evidence/npm-cache`, ready, Sonnet builder (brief model `~/.bisellium-evidence/W-259-build/builder-brief.md`) → `next <id> --perform --chain` in one background call (mint, review round, pr) → the Patron queues → merge, cleanup → done with the checkpoint row (a new row script copied from the newest one, `~/.bisellium-evidence/checkpoint-w292b.py` (row 92), with the next row number) and this file's edit in one commit → daily retro `python3 -I ~/.bisellium-evidence/retro-daily/retro.py . <date> --append`.
+1. **State:** W-311 is merged (#549) and its done lands on chore/done-W-311 with checkpoint row 93, recording CI's certify: the CLI ends by `process.exitCode`, so tsx's compile cache survives, and the full suite here fell from 39 to 23 min, under the 30-minute gate cap of the host mint and `verify`; no Patron cache warm is needed any more. Its review left one advisory: nothing pins the TMPDIR line in `scripts/ci-certify.test.mjs`. W-259 and W-292 part 1 are done (#546, #547); the done rung records the merge queue's certify certificate and holds to the full `verify` on any mismatch. The Queue was re-ranked on 2026-10-17 after W-259's ~200-minute cycle passed D-075's 180 (Patron); W-312 (W-259 part 2) is next. The ladder per opus: architect spec (its signature carries a `Promise ledger:` line, W-306) → spec review (`~/.bisellium-evidence/spec-review-d076/r2-run.sh <ID>`; a second round resumes that session, model `~/.bisellium-evidence/W-259-specreview/r4-run.sh`) → branch, `npm ci --cache ~/.bisellium-evidence/npm-cache`, ready, Sonnet builder (brief model `~/.bisellium-evidence/W-259-build/builder-brief.md`) → `next <id> --perform --chain` in one background call (mint, review round, pr) → the Patron queues → merge, cleanup → done with the checkpoint row (a new row script copied from the newest one, `~/.bisellium-evidence/checkpoint-w311.py` (row 93), with the next row number) and this file's edit in one commit → daily retro `python3 -I ~/.bisellium-evidence/retro-daily/retro.py . <date> --append`.
 2. Use `npm run -s bisellium --` (the `bisellium` on PATH runs a stale install). `cleanup` busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227). Many worktrees under `.worktrees/` are stale: check each for unpushed work before removal. Older audits and rulings: `studio/decisions/`, `~/.bisellium-evidence/{fable-efficiency,review-audit-1017,speed-1017,state-tracker-1017}/`.
 
 ## Artifacts
@@ -40,31 +40,30 @@ interruption); early stop if a cycle is over 180 min after the chain (#540), or 
 after the chain (#540) and W-179. Older items: `studio/acta/2026-10-09-queue-review.md`.
 
 Now, one builds at a time (one lane until W-169):
-1. W-311 — test runs reuse tsx's compile cache: the CLI exits by `process.exitCode` (not `process.exit`, which truncates the cache writes) and the hand-built test envs pass TMPDIR; suite ~39 to ~22 min here; Patron 2026-10-17: next
-2. W-312 — build review accepts the builder's gate logs for the exact tree; the pre-review mint leaves the chain and lex §9 (−25 min per opus; `studio/leges/`: Patron merges)
-3. W-179 — `next.test.ts` split by behaviour group so the suite runs in parallel pieces, with W-178 (the test-row count check) first (−60 to −70 min per opus)
-4. W-299 — the queue is a record: `studio/queue.yml`, read by `next`, the Board and the status page; absorbs the Resume-point cut (no handoff Resume point, no required handoff edit at done) and a read-only `next --all` (D-077 B)
-5. W-313 — verify, ci and the mint print each gate's start, end and a per-minute progress line
-6. W-308 — the opus timeline: greenlight, branch, merge and PR times stamped in the record; read-only `next <id> --timeline` and `--all`; retires elapsed.mjs and retro.py's reconstruction (D-077 C)
-7. W-258 — the builder self-reviews once before handing off (−25 min average)
-8. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
-9. W-182 → W-183 (slot wrapper and waiting line only) → W-169 — a second lane (D-075 F; heavy-job slots 1, then 2 after W-179)
-10. W-309 — the review-perform remainder (#538's brief, parts 2-6): spec-review rounds and the fix check as performs, the hand scripts and evidence copies deleted (the trial needs none), done through certified(), the CODEOWNERS re-request, the later-round pass/fail rule; split at spec; also the ADOPTION ordering sentence #540's review flagged
-11. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
-12. W-310 — the chain's remainder (#540's brief, parts 2, 3, 5, 6): the PreToolUse dispatch hook (only a dispatched runner writes ladder records), its settings entry, check rule and probe, the Bash PostToolUse logger and shell-call count, and D-076 E's architect line (`.claude/`: Patron merges); W-290 is the second guard in the same hook
-13. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-310 (high)
-14. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
-15. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
-16. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
-17. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if W-297 and W-283 had no interrupted run
+1. W-312 — build review accepts the builder's gate logs for the exact tree; the pre-review mint leaves the chain and lex §9 (−25 min per opus; `studio/leges/`: Patron merges)
+2. W-179 — `next.test.ts` split by behaviour group so the suite runs in parallel pieces, with W-178 (the test-row count check) first (−60 to −70 min per opus)
+3. W-299 — the queue is a record: `studio/queue.yml`, read by `next`, the Board and the status page; absorbs the Resume-point cut (no handoff Resume point, no required handoff edit at done) and a read-only `next --all` (D-077 B)
+4. W-313 — verify, ci and the mint print each gate's start, end and a per-minute progress line
+5. W-308 — the opus timeline: greenlight, branch, merge and PR times stamped in the record; read-only `next <id> --timeline` and `--all`; retires elapsed.mjs and retro.py's reconstruction (D-077 C)
+6. W-258 — the builder self-reviews once before handing off (−25 min average)
+7. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
+8. W-182 → W-183 (slot wrapper and waiting line only) → W-169 — a second lane (D-075 F; heavy-job slots 1, then 2 after W-179)
+9. W-309 — the review-perform remainder (#538's brief, parts 2-6): spec-review rounds and the fix check as performs, the hand scripts and evidence copies deleted (the trial needs none), done through certified(), the CODEOWNERS re-request, the later-round pass/fail rule; split at spec; also the ADOPTION ordering sentence #540's review flagged
+10. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
+11. W-310 — the chain's remainder (#540's brief, parts 2, 3, 5, 6): the PreToolUse dispatch hook (only a dispatched runner writes ladder records), its settings entry, check rule and probe, the Bash PostToolUse logger and shell-call count, and D-076 E's architect line (`.claude/`: Patron merges); W-290 is the second guard in the same hook
+12. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-310 (high)
+13. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
+14. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
+15. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
+16. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if W-297 and W-283 had no interrupted run
 
 Next, the console MVP (after the block, same functions):
-18. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
-19. W-280 — Inbox and `newItem` fail-open fixes
-20. W-298 — a `petitio` verb to the Patron; `next` holds on an open one
-21. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route
-22. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-23. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
+17. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
+18. W-280 — Inbox and `newItem` fail-open fixes
+19. W-298 — a `petitio` verb to the Patron; `next` holds on an open one
+20. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route
+21. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+22. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (ranked by value; group descriptions stand for the ids in them):
