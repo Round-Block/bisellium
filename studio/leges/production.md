@@ -168,8 +168,13 @@ names each step and writes the step ticket the next record write consumes
    Any brief edit needs a new signature and review. On pass, `branch` commits it as the opus branch's first commit.
    Reused, unchanged code is one input judged by its exit, one row per
    unchanged job (D-050); an unchanged line inside a changed function is
-   reused code too, unless a promise depends on it (D-054). Only substance
-   blocks: a path that fails open or a false promise (D-056). No round cap (D-053).
+   reused code too, unless a promise depends on it (D-054). Only a real
+   defect blocks (D-076 A): an S1 (a plausible mistake in this studio's or the
+   fixture's configuration that the code mishandles and no test catches), a
+   security gap, or missing or false evidence; wording findings (S2, S4) are
+   advisories with replacement text the builder adopts, S3 is noted. A second
+   spec review runs only after a design-changing S1 (D-076 B); two reviews are
+   the ceiling (D-061 §4).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
    in the worktree, `ready` (commit), then a Sonnet builder (brief model:
    `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
@@ -207,11 +212,14 @@ names each step and writes the step ticket the next record write consumes
    handoff edit and runs W-186's rule on it); `next --perform --expect done`
    (commits on `chore/done-<id>`); `next --perform --expect done` again
    (lands).
-7. **No retro (D-070).** The reviewer names each finding's class
-   (`<area>×<slug>`, an existing class verbatim where one fits). When a
-   failing verdict names a class seen before, the fix round also fixes its
-   cause (a check rule, brief-admission rule, prompt template or hook in the
-   same opus) or files a greenlit high opus for the class. W-297 makes
+7. **Daily retro (D-076 F).** The reviewer names each finding's class
+   (`<area>×<slug>`, an existing class verbatim where one fits) and severity
+   (`S1`-`S4`). When a failing verdict names an S1 class seen before, the fix
+   round also fixes its cause (a check rule, brief-admission rule, prompt
+   template or hook in the same opus) or files a greenlit high opus for the
+   class (D-076 D); wording classes recur as advisories. Once a day the
+   producer runs `~/.bisellium-evidence/retro-daily/retro.py` and updates
+   `studio/acta/improvements.md`. W-297 makes
    `verdict` and `next` enforce it; until then the producer checks a failing
    verdict's classes with `~/.bisellium-evidence/lesson-census/census.py`.
    After done, `npm run -s bisellium -- tick --studio studio`.
@@ -310,5 +318,6 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-16 | §9, §10: the Opus architect drafts specs; Codex runs the test check at spec and the fix check before a re-review (D-072) | Patron |
 | 2026-10-16 | §7: D-071's measure redefined as record-writing actions per opus (D-073) | Patron |
 | 2026-10-17 | §7: elapsed cycle minutes are the measure; exit under 150, stop over 180; one builder per opus; a second lane after W-292 and W-179 (D-075) | Patron |
+| 2026-10-17 | §9 steps 2 and 7: only real defects block; a second spec review only after a design-changing defect; cause fixes on real-defect recurrence; a daily retro and the improvements tracker (D-076) | Patron |
 | 2026-10-16 | §7: the CLI-first block's exit (the hand-steps measure and the trial's four conditions); the dossier republish leaves done and stays at cascade checkpoints (D-071) | Patron |
 | 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |

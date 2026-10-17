@@ -39,30 +39,29 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`, read w
 
 ## Queue
 
-Ranked by minutes saved (D-075, Patron 2026-10-17, on `~/.bisellium-evidence/speed-1017/report.md`; earlier: D-071, D-069,
+Improvements tracker: `studio/acta/improvements.md`, updated by the daily retro (D-076 F). Ranked by minutes saved (D-075, Patron 2026-10-17, on `~/.bisellium-evidence/speed-1017/report.md`; earlier: D-071, D-069,
 D-070, D-067). Block exit (lex §7): two consecutive opera after W-292 pass the trial (cycle under 150 min from the first spec
 signature to done, no hand-run evidence scripts, no required handoff edits, review independence kept, safe restart after an
 interruption); early stop if a cycle is over 180 min after W-292, or at two calendar weeks. One builder per opus; a second lane
 after W-292 and W-179. Older items: `studio/acta/2026-10-09-queue-review.md`.
 
 Now, one builds at a time (one lane until W-169):
-1. W-307 — the architect's signature also carries a reader ledger (every reader the opus adds or changes, its domain and its fail-closed rejector), checked by verdict (high, D-070 C cause fix for spec×input-domain-missing-or-unenforceable; extends the promise ledger (#534))
-2. W-274 — a review round is one `next --perform`: packet, prompt, Codex through the harness adapter, verdict and review; ride-along: the stderr trace line in `next.test.ts`'s helper
+1. W-274 — a review round is one `next --perform`: packet, prompt, Codex through the harness adapter, verdict and review; ride-along: the stderr trace line in `next.test.ts`'s helper
    recorded with the ticket, one commit; the bash copies and per-opus runners deleted; carries the later-round pass/fail rule (high)
-3. W-292 — only a dispatched runner writes ladder records and chains mint, review, PR and merge; one background call per perform (`.claude/`: Patron merges)
-4. W-179 — `next.test.ts` split by behaviour group so the suite runs in parallel pieces, with W-178 (the test-row count check) first (−60 to −70 min per opus)
-5. W-259 — certify is the single mint, done records it, no host mint before review, no local verify (design approved, D-071 E)
-6. W-258 — the builder self-reviews once before handing off (−25 min average)
-7. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
-8. W-182 → W-183 (slot wrapper and waiting line only) → W-169 — a second lane (D-075 F; heavy-job slots 1, then 2 after W-179)
-9. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
-10. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-292 (high)
-11. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
-12. W-247 — drop the handoff Resume point and its Codex review
-13. W-299 — the queue is a record: `rank` writes `studio/queue.yml`; `next`, the Board and `status-page.mjs` read it; the handoff Queue section goes
-14. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
-15. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
-16. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if 16-17 had no interrupted run
+2. W-292 — only a dispatched runner writes ladder records and chains mint, review, PR and merge; one background call per perform (`.claude/`: Patron merges)
+3. W-179 — `next.test.ts` split by behaviour group so the suite runs in parallel pieces, with W-178 (the test-row count check) first (−60 to −70 min per opus)
+4. W-259 — certify is the single mint, done records it, no host mint before review, no local verify (design approved, D-071 E)
+5. W-258 — the builder self-reviews once before handing off (−25 min average)
+6. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
+7. W-182 → W-183 (slot wrapper and waiting line only) → W-169 — a second lane (D-075 F; heavy-job slots 1, then 2 after W-179)
+8. W-241 part 1 — the prompt templates in `studio/prompts/` (specced)
+9. W-290 — the orchestrator session cannot write source or tests; same hook and Patron merge as W-292 (high)
+10. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read (high)
+11. W-247 — drop the handoff Resume point and its Codex review
+12. W-299 — the queue is a record: `rank` writes `studio/queue.yml`; `next`, the Board and `status-page.mjs` read it; the handoff Queue section goes
+13. W-297 — reviewer class tags enforced by `verdict` and `next` (D-070); trial opus 1
+14. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
+15. W-268 — the certify rules: the merge queue refuses writes `next` never ticketed (high); trial opus if 16-17 had no interrupted run
 
 Next, the console MVP (after the block, same functions):
 18. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
