@@ -3183,7 +3183,8 @@ test("W-162-b1 behaviour 1 review round 1: a duplicate design collegium row hold
   const design = "  - { id: design, name: Design, magister: architect }";
   const w = srWorld("w162-b1-r1-dup-design", { edit: (t) => t.replace(design, `${design}\n${design}`) });
   putBrief(w);
-  sign(w, 1);
+  // W-306: the writer refuses any spec verdict under two design rows, so no signature exists for next to read
+  assert.throws(() => sign(w, 1), /declares the design collegium 2 times/, "the writer refuses the signature");
   specHeld(specNext(w), "two design collegium rows hold", /spec_reviewer|spec-reviewer/);
 });
 
