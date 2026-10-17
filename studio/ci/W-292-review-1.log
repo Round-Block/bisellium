@@ -1,0 +1,19 @@
+# opus: W-292
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a148a9-0f18-7c01-82db-16228d09c790
+# outcome: passed
+# at: 2026-10-17T07:02:26.768Z
+# tree: tree:1521e1a0be06064d1c0a54b0e4b2ebfa9ef7b6cd
+# brief: briefs/W-292.md blob:09cff2c1194be2b054fd3b5eaddfcf1068824f98
+# ticket: {"opus":"W-292","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-292/studio","head":"55306896596e40066364f148a8ea2ad4f36a301b","brief":"09cff2c1194be2b054fd3b5eaddfcf1068824f98","at":"2026-10-17T06:59:58.538Z"}
+
+## Findings
+1. advisory — docs/ADOPTION.md:1506 The documentation says an inadmissible receipt “holds uncommitted,” but `mintSteps` commits the record at `packages/cli/src/next.ts:1763` before checking receipt admission at line 1766. [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose/implementation ordering is not automated
+2. advisory — packages/cli/src/next.ts:1730 `openSync(output, "a")` follows a symlink and does not enforce the brief’s regular-file domain; the row covers an unopenable directory but not this previously identified S3 case. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+
+## Verdict
+The numbered behavior, declared file set, genuine red, and host-minted gate receipt are consistent. Both findings are advisory under D-076 and do not fail the round.
+VERDICT: PASS
