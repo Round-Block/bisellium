@@ -1,0 +1,52 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-274-b2\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-17T04:08:15.724Z
+# sella: builder.W-274
+# tree: tree:0a7264fdd51aa8f486b2014af98a04ffb0edf5d2
+# ticket: {"opus":"W-274","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-274/studio","head":"356aef5c8bdcfaf7e0ae2d133c95eae0fc1d659b","brief":"e83ad8941cdd49ff63f3d7abdd17b9e307dfeda8","at":"2026-10-17T04:08:09.234Z"}
+
+TAP version 13
+# Subtest: W-274-b2 behaviour 2: a later round resumes the reviewer's session with the later-round prompt, and an interrupted round is finished without a second codex call
+not ok 1 - W-274-b2 behaviour 2: a later round resumes the reviewer's session with the later-round prompt, and an interrupted round is finished without a second codex call
+  ---
+  duration_ms: 4388.321221
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-274/packages/cli/src/next.test.ts:195:1743'
+  failureType: 'testCodeFailure'
+  error: |-
+    another session: why
+    --- exit 1
+    --- stdout
+    next: W-900 review held
+    why: refusing: the review rung names neither an order nor a recorded verdict to cite
+    next-step: review
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'refusing: the review rung names neither an order nor a recorded verdict to cite'
+    - "refusing: ci/W-900-review-2.log records session s-other, not the sequence's sole valid session (ci/W-900-review-1.log)"
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: "refusing: ci/W-900-review-2.log records session s-other, not the sequence's sole valid session (ci/W-900-review-1.log)"
+  actual: 'refusing: the review rung names neither an order nor a recorded verdict to cite'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-274/packages/cli/src/next.test.ts:5949:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4403.836486
