@@ -2501,7 +2501,7 @@ test("W-141-b2 behaviour 2: done composes with verify: the rung names verify fir
   // before verify: the rung names the verify command, and a perform holds with it on a why: line
   const named = next(w, [OPUS]);
   expectStep(named, "done", "named", "no certificate: done is named");
-  assert.equal(named.kv.get("command"), verify, ran("the command is verify", named));
+  assert.equal(named.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("W-259: the command is the done perform", named));
   const refused = next(w, [OPUS, "--perform", "--expect", "done"]);
   expectHeld(refused, "perform before verify");
   assert.ok(outLines(refused).some((l) => l.startsWith("why: ") && l.includes(verify)), ran("the why line carries the verify command", refused));
@@ -2761,6 +2761,8 @@ function certifiedWorld(tag: string, kind: "opus" | "ui", gates: Record<string, 
   return w;
 }
 const VERIFY = `bisellium verify ${OPUS} --studio studio --repo .`;
+/** W-259: an uncertified non-ui opus is named the done perform, which records certify's certificate or names VERIFY. */
+const DONE_PERFORM = `bisellium next ${OPUS} --perform --expect done`;
 
 test("W-141-b2 round 1: a UI opus's implicit served-e2e gate counts toward certificate readiness", { timeout: 1_800_000 }, () => {
   const w = certifiedWorld("w141-r1-b2-ui", "ui", { tests: { certifies: (t) => t, hex: "aaa111" } });
@@ -2806,7 +2808,7 @@ test("W-141-b2 round 1: a stale or dirty certificate is not a certificate", { ti
     const w = certifiedWorld(`w141-r1-b2-${row.split(" ")[1]}`, "opus", { tests: { certifies, hex: "aaa111" } });
     const o = next(w, [OPUS]);
     expectStep(o, "done", "named", row);
-    assert.equal(o.kv.get("command"), VERIFY, ran(`${row}: the rung names verify`, o));
+    assert.equal(o.kv.get("command"), DONE_PERFORM, ran(`${row}: the rung names the done perform (W-259)`, o));
     const held = next(w, [OPUS, "--perform", "--expect", "done"]);
     expectHeld(held, `${row}: perform`);
     assert.ok(outLines(held).some((l) => l.startsWith("why: ") && l.includes(VERIFY)), ran(`${row}: the why line names verify`, held));
@@ -2931,7 +2933,7 @@ test("W-141-b2 round 2: readiness judges the working record: a valid trunk certi
   editRecord(w, "repo", (doc) => doc.setIn(["probationes", "tests", "certifies"], `tree:${"0".repeat(40)}`));
   const masked = next(w, [OPUS]);
   expectStep(masked, "done", "named", "stale working certificate");
-  assert.equal(masked.kv.get("command"), VERIFY, ran("the stale working record is not masked by the trunk's", masked));
+  assert.equal(masked.kv.get("command"), DONE_PERFORM, ran("the stale working record is not masked by the trunk's", masked));
   const heldPerform = next(w, [OPUS, "--perform", "--expect", "done"]);
   expectHeld(heldPerform, "perform with a stale working record");
 
@@ -2966,7 +2968,7 @@ test("W-141-b2 round 2: readiness validates each gate's recorded evidence file, 
   const missing = certified("w141-r2-b2-missing");
   const m = next(missing, [OPUS]);
   expectStep(m, "done", "named", "evidence file missing");
-  assert.equal(m.kv.get("command"), VERIFY, ran("a missing log is not certified", m));
+  assert.equal(m.kv.get("command"), DONE_PERFORM, ran("a missing log is not certified", m));
   touchHandoff(missing);
   expectHeld(next(missing, [OPUS, "--perform", "--expect", "done"]), "perform with a missing log");
   assert.equal(branchExists(missing, `chore/done-${OPUS}`), false, "no chore head");
@@ -2975,7 +2977,7 @@ test("W-141-b2 round 2: readiness validates each gate's recorded evidence file, 
   const odd = certified("w141-r2-b2-odd");
   editRecord(odd, "repo", (doc) => doc.setIn(["probationes", "tests", "evidence"], "../README.md"));
   const o = next(odd, [OPUS]);
-  assert.equal(o.kv.get("command"), VERIFY, ran("a malformed evidence path is not certified", o));
+  assert.equal(o.kv.get("command"), DONE_PERFORM, ran("a malformed evidence path is not certified", o));
 
   // a good untracked log, but `git ls-files` fails: the omission is a refusal, not a silent skip
   const fine = certified("w141-r2-b2-lsfiles");

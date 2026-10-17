@@ -804,6 +804,8 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/next.ts:reviewSteps:writeFileSync#1", disposition: "outside", why: "writes the review packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
   { key: "packages/cli/src/next.ts:reviewSteps:writeFileSync#2", disposition: "outside", why: "writes the review packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
   { key: "packages/cli/src/next.ts:mintSteps:openSync#1", disposition: "outside", why: "appends the mint's output to the step output file under .bisellium/steps/" },
+  { key: "packages/cli/src/next.ts:recordCertify:writeFileSync#1", disposition: "guarded", why: "writes certify's gate logs into ci/, which ensureRealDirectory proves a real directory of the officina first" },
+  { key: "packages/cli/src/next.ts:recordCertify:rmSync#1", disposition: "outside", why: "removes the downloaded certify artifact under <repo>/.bisellium/certify/; never an officina" },
   { key: "packages/cli/src/next.ts:once:readFileSync#1", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
   { key: "packages/cli/src/next.ts:log:appendFileSync#1", disposition: "outside", why: "appends to the step output file under .bisellium/" },
   { key: "packages/cli/src/next.ts:once:readFileSync#2", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
