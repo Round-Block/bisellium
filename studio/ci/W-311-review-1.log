@@ -1,0 +1,18 @@
+# opus: W-311
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a14a93-6e98-73c0-90a4-9715f05fd60c
+# outcome: passed
+# at: 2026-10-17T15:58:53.024Z
+# tree: tree:6be8fd243532d6138360f0bd43e54a53ad68d4b0
+# brief: briefs/W-311.md blob:18f204ed05d59bdcf3e865704e722af7b26f968c
+# ticket: {"opus":"W-311","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-311/studio","head":"a228d3f2d2e38d553b914769d0c2a6ba74daaecf","brief":"18f204ed05d59bdcf3e865704e722af7b26f968c","at":"2026-10-17T15:33:44.811Z"}
+
+## Findings
+1. advisory — scripts/ci-certify.test.mjs:59 `spawnScript` now forwards `TMPDIR`, but its callers assert only status/output; deleting this line leaves both `W-311-b1` and the ci-certify suite green, so the second hand-built environment is unpinned. Add a focused assertion and pre-fix red proving this environment retains the test process’s temp directory. [class: mechanism×unpinned-by-test] — check: scripts/ci-certify.test.mjs
+
+## Verdict
+The implementation satisfies the specified behavior, and the receipt, red replay, gates, and owned-file boundary are valid. Complete the advisory regression row in this pass; no additional review round is required.
+VERDICT: PASS
