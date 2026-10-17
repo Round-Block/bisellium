@@ -6014,3 +6014,197 @@ test("W-274-b2 behaviour 2: a later round resumes the reviewer's session with th
   assert.equal(op.first, `next: ${OPUS} pr held`, ran("commit fails: pr holds", op));
   assert.equal(op.kv.get("why"), "refusing: the working tree has tracked changes", ran("commit fails: on the dirty record", op));
 });
+
+// ---------------------------------------------------------------------------
+// W-292: `next --perform --chain` runs the mint, the review round and the pr in one call. The mint is a stub
+// (BISELLIUM_TEST_MINT) that logs its argv and cwd under $HOME and writes what $HOME/mint.json names; codex is W-274's
+// stub. The real mint and the real codex never run.
+// ---------------------------------------------------------------------------
+const MINT_STUB = String.raw`#!/usr/bin/env node
+"use strict";
+const fs = require("node:fs");
+const path = require("node:path");
+const home = process.env.HOME;
+fs.appendFileSync(path.join(home, "mint-calls.jsonl"), JSON.stringify({ argv: process.argv.slice(2), cwd: process.cwd() }) + "\n");
+const plan = JSON.parse(fs.readFileSync(path.join(home, "mint.json"), "utf8"));
+for (const [file, text] of Object.entries(plan.writes)) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, text);
+}
+for (const [file, mode] of Object.entries(plan.modes || {})) fs.chmodSync(file, mode);
+process.stdout.write("mint stub output\n");
+process.exit(plan.exit);
+`;
+const MINT = join(scratch("mint-bin"), "mint");
+writeFileSync(MINT, MINT_STUB, { mode: 0o755 });
+const mintCalls = (w: World): { argv: string[]; cwd: string }[] =>
+  existsSync(join(w.home, "mint-calls.jsonl")) ? readFileSync(join(w.home, "mint-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; cwd: string }) : [];
+/** What a real mint leaves at the worktree's tip: the record's run_receipt line, uncommitted, and a host receipt for the tree. */
+function mintSays(w: World, exit = 0, extra: Record<string, string> = {}, field?: [string, string]): void {
+  const rec = join(w.wtStudio, "opera", `${OPUS}.md`);
+  const was = readFileSync(rec, "utf8");
+  const rel = `receipts/builder.${OPUS}/minted.json`;
+  editOpusFrontMatter(rec, (doc) => {
+    doc.setIn(["run_receipt"], rel);
+    if (field !== undefined) doc.setIn([field[0]], field[1]);
+    return undefined;
+  });
+  const minted = readFileSync(rec, "utf8");
+  writeFileSync(rec, was);
+  const tip = git(w.wt, ["rev-parse", "HEAD"]);
+  const tree = sourceTree(w.wt);
+  const completion = { schema: 1, origin: "host-producer", opus: OPUS, branch: BRANCH, builder: `builder.${OPUS}`, producer: "producer", baseCommit: tip, finalCommit: tip, toolingCommit: tip, finalSourceTree: tree, redReplays: Array.from({ length: w.behaviours }, (_, i) => ({ behaviour: i + 1, commit: tip, sourceTree: tree, command: "x", assertionFailed: true })), gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true };
+  const receipt = JSON.stringify({ sella: `builder.${OPUS}`, harness: "run", exitCode: 0, completion });
+  writeFileSync(join(w.home, "mint.json"), JSON.stringify({ exit, writes: { [rec]: minted, [join(w.wtStudio, rel)]: receipt, ...extra } }));
+}
+/** Edits the plan mintSays wrote, for a mint that also changes the record's bytes or mode. */
+function mintTweak(w: World, edit: (plan: { exit: number; writes: Record<string, string>; modes?: Record<string, number> }) => void): void {
+  const file = join(w.home, "mint.json");
+  const plan = JSON.parse(readFileSync(file, "utf8")) as { exit: number; writes: Record<string, string>; modes?: Record<string, number> };
+  edit(plan);
+  writeFileSync(file, JSON.stringify(plan));
+}
+/** A ticketed world whose builder has handed off after the reds, with no receipt and the review templates on the branch. */
+function chainWorld(tag: string, handoff = true): World {
+  // ticketed on master before the reds, and the opus branch rebased onto it, so the pr's rebase moves nothing
+  const w = world(tag, "ready");
+  appendFileSync(join(w.repo, MANIFEST_REL), "step_tickets: required\n");
+  git(w.repo, ["commit", "-q", "-m", "test: W-292 step_tickets required", "--", MANIFEST_REL]);
+  git(w.repo, ["push", "-q", "origin", "master"]);
+  git(w.wt, ["rebase", "-q", "master"]);
+  writeReds(w);
+  for (const [rel, text] of Object.entries({ [BUILD_REVIEW]: BUILD_REVIEW_TEMPLATE, "studio/prompts/later-round.md": LATER_TEMPLATE })) put(w.wt, rel, text);
+  commit(w.wt, "test: W-292 review templates");
+  if (handoff) handoffAt(w, "wt", T.handoffFresh);
+  return w;
+}
+const performChain = (w: World, extra: string[] = prArgs, env: Record<string, string> = {}): Out =>
+  next(w, [OPUS, "--perform", "--chain", "--budget", "400000", ...extra], { env: { ...CODEX_PATH, BISELLIUM_TEST_MINT: MINT, ...env } });
+const subjects = (w: World, since: string): string[] => git(w.wt, ["log", "--format=%s", `${since}..HEAD`]).split("\n").filter(Boolean).reverse();
+
+test("W-292-b1 behaviour 1: next --perform --chain runs the mint, the review round and the pr in one call, reporting once and stopping at the first hold", { timeout: 1_800_000 }, () => {
+  // the whole chain: one mint, one codex call, one PR, and one report ending in the merge rung
+  const w = chainWorld("w292-b1-chain");
+  mintSays(w);
+  codexSays(w, { session: "s-292-1", reply: PASS_REPLY });
+  const tip = tipOf(w);
+  const o = performChain(w);
+  assert.equal(o.status, 0, ran("chain: exit 0", o));
+  assert.equal(o.first, `next: ${OPUS} build performed`, ran("chain: the mint is performed first", o));
+  const heads = o.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `));
+  assert.deepEqual(heads, [`next: ${OPUS} build performed`, `next: ${OPUS} review performed`, `next: ${OPUS} pr performed`], ran("chain: mint, review and pr in turn", o));
+  assert.equal(o.kv.get("mint"), "exit 0", ran("chain: the mint's line", o));
+  assert.equal(o.kv.get("review"), "round 1 passed", ran("chain: the review round", o));
+  assert.equal(o.out.split("\n").filter((l) => l.startsWith("next-step: ")).length, 1, ran("chain: one next-step line, at the end", o));
+  assert.deepEqual(mintCalls(w), [{ argv: ["run", "--sella", "builder", "--opus", OPUS, "--studio", w.wtStudio, "--repo", w.wt, "--", "true"], cwd: w.wt }], "chain: one mint, from the worktree");
+  assert.match(readFileSync(join(w.repo, ".bisellium", "steps", `${OPUS}.log`), "utf8"), /^mint stub output$/m, "chain: the mint's output is in the step log");
+  assert.equal(codexCalls(w).length, 1, "chain: one codex call");
+  assert.equal(ghCalls(w).filter((a) => a[0] === "pr" && a[1] === "create").length, 1, "chain: one PR created");
+  assert.deepEqual(subjects(w, tip), [`chore(studio): ${OPUS} run receipt`, `chore(studio): ${OPUS} review round 1 passed`], "chain: the receipt commit, then the review commit");
+  assert.deepEqual(git(w.wt, ["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD~1"]).split("\n"), [`studio/opera/${OPUS}.md`], "chain: the receipt commit carries the record only");
+  assert.equal(existsSync(join(w.repo, ".bisellium", "steps", `${OPUS}.json`)), false, "chain: the step marker is released");
+
+  // the flags: --chain needs --perform and takes no --expect
+  assert.equal(next(w, [OPUS, "--chain", "--budget", "400000"]).status, 2, "--chain without --perform is a usage error");
+  assert.equal(next(w, [OPUS, "--perform", "--chain", "--expect", "pr", "--budget", "400000"]).status, 2, "--chain with --expect is a usage error");
+
+  // each hold: exit 1, the rung's own why, nothing performed after it
+  const held = (label: string, o: Out, rung: string, why: RegExp): void => {
+    assert.equal(o.status, 1, ran(`${label}: exit 1`, o));
+    assert.equal(o.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `)).pop(), `next: ${OPUS} ${rung} held`, ran(`${label}: the ${rung} rung holds`, o));
+    assert.match(o.kv.get("why") ?? "", why, ran(`${label}: why`, o));
+  };
+  // before the builder's handover: no mint
+  const early = chainWorld("w292-b1-early", false);
+  mintSays(early);
+  held("no handover", performChain(early), "build", /^refusing: stale handover: run bisellium handoff first /);
+  assert.equal(mintCalls(early).length, 0, "no handover: no mint");
+  // a rung outside the chain: nothing is performed
+  const reds = world("w292-b1-reds", "ready");
+  held("a rung outside the chain", performChain(reds), "reds", /^refusing: --chain performs only the mint, review and pr rungs; /);
+  // a failed mint, then a mint that leaves another tracked change: no review, no commit
+  const m = chainWorld("w292-b1-mint");
+  const mtip = tipOf(m);
+  // with the test clock on, a relative BISELLIUM_TEST_MINT holds before anything is spawned
+  mintSays(m);
+  held("a relative BISELLIUM_TEST_MINT", performChain(m, prArgs, { BISELLIUM_TEST_MINT: "mint" }), "build", /^refusing: BISELLIUM_TEST_MINT must be an absolute path$/);
+  assert.equal(mintCalls(m).length, 0, "a relative BISELLIUM_TEST_MINT: no mint");
+  mintSays(m, 1);
+  held("the mint fails", performChain(m), "build", new RegExp(`^the mint exited 1; its output is in \\.bisellium/steps/${OPUS}\\.log$`));
+  git(m.wt, ["checkout", "--", `studio/opera/${OPUS}.md`]);
+  mintSays(m, 0, { [join(m.wt, "source.txt")]: "a mint that edits source\n" });
+  held("another tracked change", performChain(m), "build", /^refusing: the mint left tracked changes other than studio\/opera\/W-900\.md: source\.txt$/);
+  // a mint that changes another field of the record holds uncommitted
+  git(m.wt, ["checkout", "--", `studio/opera/${OPUS}.md`, "source.txt"]);
+  mintSays(m, 0, {}, ["title", "a mint that renames the opus"]);
+  held("another record field", performChain(m), "build", /^refusing: the mint changed studio\/opera\/W-900\.md beyond its run_receipt field$/);
+  // all other bytes and tracked metadata of the record stay as they were: a front-matter comment or a mode change holds
+  const recRel = `studio/opera/${OPUS}.md`;
+  const recAbs = join(m.wtStudio, "opera", `${OPUS}.md`);
+  const beyond = /^refusing: the mint changed studio\/opera\/W-900\.md beyond its run_receipt field$/;
+  mintSays(m);
+  mintTweak(m, (plan) => {
+    plan.writes[recAbs] = plan.writes[recAbs]!.replace("\n---\n", "\n# a comment the mint adds\n---\n");
+  });
+  held("a front-matter comment", performChain(m), "build", beyond);
+  git(m.wt, ["checkout", "--", recRel]);
+  mintSays(m);
+  mintTweak(m, (plan) => {
+    plan.modes = { [recAbs]: 0o755 };
+  });
+  held("a mode change", performChain(m), "build", beyond);
+  git(m.wt, ["checkout", "--", recRel]);
+  assert.equal(tipOf(m), mtip, "a comment or a mode change: no commit");
+  // a thrown step error (the step log cannot be opened) is a build hold, never next's generic failure
+  git(m.wt, ["checkout", "--", `studio/opera/${OPUS}.md`, "source.txt"]);
+  rmSync(join(m.repo, ".bisellium", "steps", `${OPUS}.log`), { force: true });
+  mkdirSync(join(m.repo, ".bisellium", "steps", `${OPUS}.log`));
+  const thrown = performChain(m);
+  held("a thrown step error", thrown, "build", /^the mint failed: /);
+  assert.doesNotMatch(thrown.out + thrown.err, /W-900 failed/, ran("a thrown step error is a build hold", thrown));
+  assert.equal(mintCalls(m).length, 5, "a thrown step error: no sixth mint");
+  rmSync(join(m.repo, ".bisellium", "steps", `${OPUS}.log`), { recursive: true });
+  assert.equal(codexCalls(m).length, 0, "mint holds: no codex call");
+  assert.equal(tipOf(m), mtip, "mint holds: no commit");
+  // a review hold after the mint: the receipt commit stays, and a re-run resumes at review without a second mint
+  const r = chainWorld("w292-b1-review");
+  mintSays(r);
+  codexSays(r, { session: "s-292-r", reply: "", exit: 1, stderr: "boom\n" });
+  const or = performChain(r);
+  held("codex fails", or, "review", /^codex exited 1; nothing is recorded$/);
+  assert.equal(or.first, `next: ${OPUS} build performed`, ran("codex fails: the mint was performed first", or));
+  assert.equal(ghCalls(r).filter((a) => a[0] === "pr").length, 0, "codex fails: no PR");
+  codexSays(r, { session: "s-292-r", reply: PASS_REPLY });
+  const again = performChain(r);
+  assert.equal(again.status, 0, ran("re-run: exit 0", again));
+  assert.equal(again.first, `next: ${OPUS} review performed`, ran("re-run: resumes at review", again));
+  assert.equal(mintCalls(r).length, 1, "re-run: no second mint");
+  assert.equal(again.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `)).pop(), `next: ${OPUS} pr performed`, ran("re-run: through the pr", again));
+  // a failed round is performed and ends the chain at the builder's fix; a re-run refuses the fix rung
+  const fl = chainWorld("w292-b1-fail");
+  mintSays(fl);
+  codexSays(fl, { session: "s-292-f", reply: FAIL_REPLY });
+  const of = performChain(fl);
+  assert.equal(of.status, 0, ran("fail: exit 0", of));
+  assert.equal(of.kv.get("review"), "round 1 failed", ran("fail: recorded failed", of));
+  assert.equal(of.kv.get("next-step"), "build", ran("fail: the fix is next", of));
+  assert.equal(ghCalls(fl).filter((a) => a[0] === "pr").length, 0, "fail: no PR");
+  held("the fix rung", performChain(fl), "build", /^refusing: --chain performs only the mint, review and pr rungs; /);
+  // gh failing at PR discovery after a passing review: the derived pr hold is the chain's exit 1, never a success
+  const g = chainWorld("w292-b1-gh");
+  mintSays(g);
+  codexSays(g, { session: "s-292-g", reply: PASS_REPLY });
+  scenario(g, { list: { exit: 1, stderr: "gh: authentication required" } });
+  const og = performChain(g);
+  held("gh fails after the review", og, "pr", /./);
+  assert.equal(og.kv.get("review"), "round 1 passed", ran("gh fails: the review was performed", og));
+  assert.equal(ghCalls(g).filter((a) => a[0] === "pr" && a[1] === "create").length, 0, "gh fails: no PR");
+  // with no --title and --body-file the chain stops at the pr rung it names
+  const nt = chainWorld("w292-b1-notext");
+  mintSays(nt);
+  codexSays(nt, { session: "s-292-n", reply: PASS_REPLY });
+  const on = performChain(nt, []);
+  assert.equal(on.status, 0, ran("no text: exit 0", on));
+  assert.equal(on.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `)).pop(), `next: ${OPUS} pr named`, ran("no text: the pr rung is named", on));
+  assert.equal(ghCalls(nt).filter((a) => a[0] === "pr" && a[1] === "create").length, 0, "no text: no PR");
+});
