@@ -1,0 +1,27 @@
+# opus: W-306
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-17T01:03:53.129Z
+# tree: tree:5cd20d6662d67e9a285e47bd49cd0b3b6cc9fa4c
+# brief: briefs/W-306.md blob:a2abb5c826a8cd7222005a63f67a84bf7e4df703
+# ticket: {"opus":"W-306","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"277fa6a34c692c20b9e4e342446cceb763cbb935","brief":"a2abb5c826a8cd7222005a63f67a84bf7e4df703","at":"2026-10-17T01:03:52.610Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-306-spec/promise-ledger.md
+
+## Earlier findings
+
+- ci/W-306-spec-4.log #1: closed — replacement adopted verbatim at brief:40; brief:42 updated: its `CITATION_TOKEN` boundary is now the same rule (a positive integer not followed by a word, `/`, `~` or `-` character, nor by `.` followed by a token character), it says a range is no citation, and the verb and status words use the same boundaries (`wholeWord`). The prototype's `CITATION_TOKEN`, `STATUS` and verb test share one `TOKEN_END`, and W-306-b1 adds `brief:3-5`, `NX:20/notes` and `next.ts` in place of the verb to its never-count cases — check: studio/briefs/W-306.md lines 40, 42; packages/cli/src/verdict-citation.test.ts (W-306-b1)
+
+## Findings
+
+1. advisory — the same-gap sweep: the other tokens the prototype reads have no suffix gap. The usage token is the whole whitespace-free run after `bisellium ` (`usageVerbs`), the ledger path is the whole trimmed rest of its line, and a promise line needs the whole span's text to be a verb. The verb and status words had the gap (`next.ts` named `next`), so they now share the citation boundary — check: studio/briefs/W-306.md line 42; reader-sweep-r2.md rows 1, 7, 9
+2. advisory — this brief's own ledger had to change under the new rule: its `X:a-b` ranges are now written `X:a to X:b`. Brief:42's new text names `next`, which the rule caught on the first self-check, and the ledger now covers it (45 lines, 6 scoped, 0 open). The revision 3 prototype accepts it as the architect — check: self-check.out, promise-ledger.md, promise-ledger-r2.md
+3. advisory — the red fails by assertion on master at `no ledger line: exit (stderr "")` and passes on the revision 3 prototype, accepted by replay-accept. verdict-citation 29/29, verdict-findings 13/13 and verdict.test exit 0. The W-163-b6 pin still holds (65 of 65). Typecheck, eslint and prettier pass — check: reds.out, neighbours-proto.out, containment-proto.out, typecheck-proto.out, lint-proto.out, format-proto.out
+4. advisory — revision 3 passes admission on master's and on opus/W-264's `brief-admission.ts`. It changes only lines 3, 40, 42, 67 and 72, and no line number moved — check: admission.out, admission-w264.out, brief-r2-r3.diff
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-306.md`, master 277fa6a3.

@@ -1,0 +1,22 @@
+# opus: W-306
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1474a-4751-7e33-a07b-11d84e90beda
+# outcome: failed
+# at: 2026-10-17T00:46:10.993Z
+# tree: tree:5cd20d6662d67e9a285e47bd49cd0b3b6cc9fa4c
+# brief: briefs/W-306.md blob:65b385603898d004bb0fb0bb84fd2491b2b3e934
+# ticket: {"opus":"W-306","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"277fa6a34c692c20b9e4e342446cceb763cbb935","brief":"65b385603898d004bb0fb0bb84fd2491b2b3e934","at":"2026-10-17T00:46:10.562Z"}
+
+## Findings
+1. blocking — brief:36 The prototyped `VERBS` regex has no terminal boundary: a usage line for `bisellium v2` contributes `v`, while `v2` never joins, contradicting the every-word/new-verb promise and leaving the new `USAGE` reader without a domain or rejector. Replace brief:36 with: `1. Promise lines are brief lines containing an inline-code span whose trimmed text is in VERBS. usageVerbs(USAGE) (new) requires every nonblank usage line to contain exactly one complete command token matching [a-z][a-z-]* immediately after bisellium, returns a problem that makes runVerdict exit 2 otherwise, and VERBS is those tokens; a conforming new verb joins without another edit. No promise line requires no ledger. The Input domain includes USAGE with usageVerbs as rejector.` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts
+2. blocking — brief:37 The prototype searches for an exact raw `## Findings`, while existing `findingsProblem` accepts trailing-space, indented, and setext Findings headings; consequently a ledger citation below an accepted `## Findings   ` heading is treated as above it and can write the signature. Replace brief:37 with: `2. The citation: contentLines(transcript) locates the sole accepted level-2 Findings heading, and exactly one trimmed raw line before its reported source line starts Promise ledger:; promiseLedgerProblems rejects none or several and exits 2.` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts
+3. blocking — brief:39 The proposed `brief:<n>` test excludes only a following digit and `FILE_LINE` has no closing boundary, so a malformed line such as `brief:3x, next, NX:20x — holds` satisfies coverage. Replace brief:39 with: `4. Coverage: a ledger line counts only when it contains full citation tokens brief:<n> and <file>:<positive-integer-line> other than brief:, the verb as a whole word, and holds or scoped as a whole word; prefix forms including brief:3x, brief:3.5, NX:20x and NX:20.5 never count. promiseLedgerProblems emits one problem for every uncovered pair in brief-line then verb order and exits 2.` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts
+4. blocking — brief:57 `openStudio` rejects unreadable or unparsable YAML but does not validate manifest shape; a parseable design row with an empty or non-string `magister` bypasses the ledger check, and duplicate design rows silently select the first. Replace brief:57 with: `| The design magister read from manifest.collegia | collegia is a list with no design row (default architect), or exactly one design row whose magister is a nonblank string | readDesignMagister (specified): any other shape or duplicate returns a problem and runVerdict exits 2 before the ledger check |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts
+5. advisory — brief:66 `W-306-b1` configures `architect`, exactly the production fallback, and does not assert that its manifest replacement matched; a no-op replacement or an implementation that ignores the design row therefore passes the same assertions. [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/verdict-citation.test.ts
+
+## Verdict
+The proposed boundary has four ordinary fail-open paths that must be closed before build.
+VERDICT: FAIL
