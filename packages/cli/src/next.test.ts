@@ -6142,6 +6142,7 @@ test("W-292-b1 behaviour 1: next --perform --chain runs the mint, the review rou
   const recRel = `studio/opera/${OPUS}.md`;
   const recAbs = join(m.wtStudio, "opera", `${OPUS}.md`);
   const beyond = /^refusing: the mint changed studio\/opera\/W-900\.md beyond its run_receipt field$/;
+  git(m.wt, ["checkout", "--", recRel, "source.txt"]);
   mintSays(m);
   mintTweak(m, (plan) => {
     plan.writes[recAbs] = plan.writes[recAbs]!.replace("\n---\n", "\n# a comment the mint adds\n---\n");

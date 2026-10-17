@@ -1390,7 +1390,7 @@ change.
 ## Running next
 
 ```bash
-npm run bisellium -- next <opus> [--perform] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]
+npm run bisellium -- next <opus> [--perform [--chain]] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]
 npm run bisellium -- next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]
 ```
 
@@ -1495,6 +1495,33 @@ or removed; `facts.txt`'s `next` block exits 2 in a worktree packet; a verdict `
 reissued in the same session. The template is read from the opus branch, so an opus may change its own review prompt;
 `studio/prompts/` is code-owned, so the Patron reviews such a change. A close by signal is a failure of the codex
 profile for every caller, `talk` included.
+
+**`--chain` (W-292, part 1).** `next <opus> --perform --chain --budget <tokens> --title <text> --body-file <path>`
+performs, in turn and in one foreground call (the orchestrator launches it in its own background call and waits for
+its exit), each rung the ladder derives while that rung is the mint, `review` or `pr`; `--chain` without `--perform`,
+or with `--expect`, is a usage error (exit 2). The mint is the `build` rung once the builder has handed off: it holds
+unless the handover is current (`traditio` no older than the newest red or review log), holds on a tracked change in the
+worktree, then runs `bisellium run --sella builder --opus <opus> --studio <worktree studio> --repo <worktree> -- true`
+from the worktree, as lex §9 step 4 does by hand, its output appended to `.bisellium/steps/<opus>.log`. A non-zero exit
+holds. Afterwards the only tracked change allowed is the record's `run_receipt` line (every other byte and the file's
+mode unchanged), which is committed alone as `chore(studio): <opus> run receipt`; any other tracked change, or a receipt
+the review gate does not admit, holds uncommitted, and a thrown step error holds as `the mint failed: <message>`. Each
+rung runs under its own step marker and is performed at most once per call, so the call ends after `pr` at the latest;
+the one derivation after each rung is trusted for both the final `next-step:` line and the decision to go on. It prints
+each rung's `next: <opus> <step> performed|held` line and its lines, then one `next-step:` line, and exits 0 when every
+rung it ran was performed (a failed review round is performed: `next-step: build` is the builder's fix) and 1 at the
+first hold, including a later rung that derives held after an earlier one was performed (`gh` failing at PR discovery,
+say). A first rung outside the three holds before anything is performed (`refusing: --chain performs only the mint,
+review and pr rungs`). Without `--title` and `--body-file` the call ends where `pr` is only named. A re-run after a hold
+starts at the rung the ladder derives, so nothing is performed twice. Limits: the handover check is the only proof the
+builder has finished (a builder that records `handoff` and keeps editing is minted at the handed-off tip; a tracked
+change holds, a new commit does not); a throw outside the mint and review performs (the `pr`'s) ends the call as
+`next: <opus> failed`, without the earlier rungs' lines, their commits standing; a mint silent for longer than 1,800 s
+reads stalled to a concurrent `next`, and nothing kills it; the `pr` rung in mode direct rebases onto a moved master and
+holds when the source tree changes, after which the ladder orders the build rung again. Under the test clock
+(`BISELLIUM_TEST_CLOCK=1`), `BISELLIUM_TEST_MINT` names an absolute path run in place of the CLI with the same
+arguments (a relative value holds before anything is spawned); it is ignored otherwise. `docs/ADOPTION.md` is
+code-owned, so the Patron reviews a change to this paragraph.
 
 `gh` and `git` are spawned by bare name through `PATH` with argument arrays (no
 shell). Every `gh` read asks for a fixed `--json` field list, is bounded to
