@@ -5764,8 +5764,9 @@ process.stdin.on("end", () => {
   // poison: a directory where the perform will write verdict.md, so that write throws
   const packet = /packet (\S+)\.\n/.exec(stdin);
   if (r.poison && packet) fs.mkdirSync(path.join(packet[1], "verdict.md"));
-  // sleep-waiver: fixture -- the stub reply is delayed only so the perform's timeout seam can fire first
-  setTimeout(() => {
+  // the delay is a spin in the stub process (no timer): the adapter's kill ends it early, so the timeout row waits on the call's own deadline
+  for (const end = Date.now() + (r.sleepMs ?? 0); Date.now() < end; ) { /* spin */ }
+  (() => {
     if (r.session !== undefined) process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: r.session }) + "\n");
     process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: r.reply } }) + "\n", () => {
       if (r.signal !== undefined) process.kill(process.pid, r.signal);
@@ -5774,7 +5775,7 @@ process.stdin.on("end", () => {
         process.exit(r.exit ?? 0);
       }
     });
-  }, r.sleepMs ?? 0);
+  })();
 });
 `;
 const CODEX_BIN = scratch("codex-bin");
