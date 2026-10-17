@@ -1,0 +1,32 @@
+# opus: W-306
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-17T00:56:48.621Z
+# tree: tree:5cd20d6662d67e9a285e47bd49cd0b3b6cc9fa4c
+# brief: briefs/W-306.md blob:d41e51445e67a9b742eb8b1f78693cfc3616274b
+# ticket: {"opus":"W-306","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"277fa6a34c692c20b9e4e342446cceb763cbb935","brief":"d41e51445e67a9b742eb8b1f78693cfc3616274b","at":"2026-10-17T00:56:48.197Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-306-spec/promise-ledger.md
+
+## Earlier findings
+
+- ci/W-306-spec-2.log #1: closed — brief:37 is the reviewer's replacement verbatim; the prototype's `usageVerbs` (new export) requires each nonblank usage line to hold exactly one `bisellium <token>` with the token `^[a-z][a-z-]*$` and returns an error that `promiseLedgerProblems` turns into exit 2; W-306-b1 asserts `bisellium v2`, two commands and no command each return the exact error, and a conforming `new-verb` joins; Input domain row brief:62 names `usageVerbs` — check: studio/briefs/W-306.md lines 37, 42, 62; packages/cli/src/verdict-citation.test.ts (W-306-b1)
+- ci/W-306-spec-2.log #2: closed — brief:38 is the reviewer's replacement verbatim; the prototype finds the level-2 Findings heading through `contentLines`, as `findingsProblem` does, and counts raw lines before its source line; W-306-b1 asserts a ledger line under `## Findings   ` (trailing spaces) is refused as missing and one above it is admitted; Input domain rows brief:64-65 — check: studio/briefs/W-306.md lines 38, 64, 65; packages/cli/src/verdict-citation.test.ts (W-306-b1)
+- ci/W-306-spec-2.log #3: closed — brief:40 is the reviewer's replacement verbatim; the prototype reads whole citation tokens (`CITATION_TOKEN`: not preceded by a token character, not followed by a word character or `.` and a word character), and W-306-b1 asserts `brief:3x`, `brief:3.5`, `NX:20x` and `NX:20.5` each leave the pair uncovered; brief:42 states the token rule — check: studio/briefs/W-306.md lines 40, 42, 67; packages/cli/src/verdict-citation.test.ts (W-306-b1)
+- ci/W-306-spec-2.log #4: closed — brief:61 is the reviewer's replacement verbatim except that its rejector name is backticked, which admission requires of a "Rejected by" cell (packages/commands/src/brief-admission.ts:97; unbackticked, admission refuses the brief: "input domain row 2 names no rejecting function"); `readDesignMagister` refuses a non-list `collegia`, two design rows and a blank or non-string magister, exit 2, before the ledger check and whatever the sella; W-306-b1 asserts each with its exact text — check: studio/briefs/W-306.md lines 33, 52, 61; packages/cli/src/verdict-citation.test.ts (W-306-b1)
+
+## Findings
+
+1. advisory — ci/W-306-spec-2.log #5 answered: the row now configures `drafter` as the design magister and asserts the manifest rewrite took; `drafter` is refused with no ledger while `architect` and `qa-lead` are admitted, and with no design row `architect` is refused, so the row fails if the design row is ignored or the rewrite is a no-op — check: packages/cli/src/verdict-citation.test.ts (W-306-b1)
+2. advisory — the class sweep: every reader the prototype adds or changes (usage text, manifest collegia, manifest file, brief and its lines, Findings heading, raw transcript lines, ledger path and home directory, ledger file, ledger lines, the sella test, the row's inputs: 11) has an Input domain row with its domain and one rejector that exits 2, or is stated as never refused; `os.homedir()` throwing now yields a non-absolute path, refused — check: reader-sweep-r2.md; studio/briefs/W-306.md lines 60-68
+3. advisory — a new flip, named: `readDesignMagister` refuses the fixture signature in next.test.ts's `W-162-b1 behaviour 1 review round 1` (two design rows); it fails unedited and passes with its one-line `assert.throws` edit, the only next.test.ts fixture with a refused design row; it is in Files owned (brief:26), about 1,900 lines from W-264's rows — check: w162-dup-unedited.out, w162-dup-edited.out
+4. advisory — the red fails by assertion on master at `no ledger line: exit (stderr "")` and passes on the revision 2 prototype; accepted by replay-accept; `W-163-b6` still fails without the pin and passes with it (65 of 65); verdict-citation 29/29, verdict-findings 13/13, verdict.test exit 0; typecheck, eslint and prettier pass — check: reds.out, containment-unpinned.out, containment-proto.out, neighbours-proto.out, typecheck-proto.out, lint-proto.out, format-proto.out
+5. advisory — next.test.ts was not rerun whole on revision 2 (the host is busy); it passed 99/99 on revision 1's prototype, and revision 2's only effect on its fixtures is the row in finding 3; Acceptance (brief:79) says so — check: next-proto.out; `grep -n "id: design" packages/cli/src/*.test.ts`
+6. advisory — revision 2 passes admission on master's and on opus/W-264's `brief-admission.ts`, and its own ledger (44 lines, 6 scoped, 0 open) passes the revision 2 prototype as the architect — check: admission.out, admission-w264.out, self-check.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-306.md`, master 277fa6a3.

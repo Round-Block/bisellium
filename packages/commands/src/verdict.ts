@@ -1,11 +1,13 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { ensureRealDirectory } from "./ids.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
+import { USAGE } from "./usage.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
 import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import {
@@ -351,6 +353,95 @@ function hasHeaderBreak(value: string): boolean {
   return value.includes("\r") || value.includes("\n");
 }
 
+/**
+ * W-306: the CLI's verbs, read from its usage text so the list has one source. Every nonblank line names exactly one command:
+ * one `bisellium <token>`, the token a whole `[a-z][a-z-]*` word; anything else is the error, never a partial list.
+ */
+export function usageVerbs(usage: string): { verbs: Set<string> } | { error: string } {
+  const verbs = new Set<string>();
+  const lines = usage.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i]!.trim() === "") continue;
+    const named = [...lines[i]!.matchAll(/(?<![\w./-])bisellium (\S+)/g)].map((m) => m[1]!);
+    if (named.length !== 1 || !/^[a-z][a-z-]*$/.test(named[0]!)) return { error: `usage line ${i + 1} does not name exactly one command "bisellium <[a-z][a-z-]*>"` };
+    verbs.add(named[0]!);
+  }
+  return { verbs };
+}
+const USAGE_VERBS = usageVerbs(USAGE);
+const LEDGER_MAX_BYTES = 262_144;
+/** W-306: the end of a whole token: not followed by a word, `/`, `~` or `-` character, nor by `.` and a token character */
+const TOKEN_END = String.raw`(?![\w/~-]|\.[\w./~-])`;
+/** a whole citation token `<name>:<positive integer>`: `NX:20x`, `brief:3.5`, `brief:3-5` and `NX:20/notes` are not citations */
+const CITATION_TOKEN = new RegExp(String.raw`(?<![\w./~-])([\w./~-]+):([1-9]\d*)` + TOKEN_END, "g");
+/** a whole word by the same boundary: `next.ts` and `src/next` do not name `next`, `scoped-ish` is no status */
+const wholeWord = (word: string): RegExp => new RegExp(String.raw`(?<![\w./~-])${word}` + TOKEN_END);
+const STATUS = wholeWord("(?:holds|scoped)");
+
+/** W-306: the design collegium's magister: no design row is `architect`; exactly one row needs a nonblank string magister. */
+function readDesignMagister(manifest: unknown): { magister: string } | { error: string } {
+  const collegia = typeof manifest === "object" && manifest !== null ? (manifest as Record<string, unknown>)["collegia"] : undefined;
+  if (!Array.isArray(collegia)) return { error: "bisellium.yml#collegia must be a list" };
+  const rows = collegia.filter((r): r is Record<string, unknown> => typeof r === "object" && r !== null && (r as Record<string, unknown>)["id"] === "design");
+  if (rows.length === 0) return { magister: "architect" };
+  if (rows.length > 1) return { error: `bisellium.yml#collegia declares the design collegium ${rows.length} times; exactly one row names the magister` };
+  const magister = rows[0]!["magister"];
+  return typeof magister === "string" && magister.trim() !== "" ? { magister } : { error: "bisellium.yml#collegia: the design row's magister must be a nonblank string" };
+}
+
+/**
+ * W-306: why an architect's spec signature cannot be recorded. A brief line that names a CLI verb as a whole inline-code span
+ * (`ready`, `next`) is a promise line; the signature's raw lines before its one level-2 Findings heading (as `contentLines` finds
+ * it) then cite one ledger file, and for each promise line and each verb on it some ledger line holds the whole tokens
+ * `brief:<n>` and `<file>:<line>`, the verb and holds or scoped.
+ * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
+ */
+function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
+  if ("error" in USAGE_VERBS) return [USAGE_VERBS.error];
+  const callers = new Map<number, string[]>();
+  brief.split(/\r?\n/).forEach((line, i) => {
+    const named = [...new Set([...line.matchAll(/`([^`\r\n]+)`/g)].map((m) => m[1]!.trim()).filter((t) => USAGE_VERBS.verbs.has(t)))];
+    if (named.length > 0) callers.set(i + 1, named);
+  });
+  if (callers.size === 0) return [];
+  const heading = contentLines(transcript).headings.find((h) => h.level === 2 && h.name === "Findings");
+  if (heading === undefined) return ['the signature has no level-2 "Findings" heading'];
+  const cites = transcript.split(/\r?\n/).slice(0, heading.line).map((l) => l.trim()).filter((l) => l.startsWith("Promise ledger:"));
+  if (cites.length === 0) return [`${briefRel} names a CLI verb in code on lines ${[...callers.keys()].join(", ")}; cite the promise ledger on one line above "## Findings": "Promise ledger: <absolute path>"`];
+  if (cites.length > 1) return [`${cites.length} "Promise ledger:" lines above "## Findings"; one only`];
+  const named = cites[0]!.slice("Promise ledger:".length).trim();
+  let path: string;
+  try {
+    path = named.startsWith("~/") ? join(homedir(), named.slice(2)) : named;
+  } catch {
+    path = ""; // ponytail: os.homedir() throws only with no HOME and no passwd entry; the path is then not absolute
+  }
+  if (!isAbsolute(path)) return [`"${named}" is not an absolute or ~/ path`];
+  let ledger: string[];
+  try {
+    const stat = statSync(path);
+    if (!stat.isFile() || stat.size > LEDGER_MAX_BYTES) throw new Error("not a regular file under the cap");
+    ledger = readFileSync(path, "utf8").split(/\r?\n/);
+  } catch {
+    return [`${named} is not a readable regular file`];
+  }
+  // each ledger line: the brief lines it cites and whether it counts (a non-brief citation and a status)
+  const entries = ledger.map((text) => {
+    const tokens = [...text.matchAll(CITATION_TOKEN)].map((m) => ({ name: m[1]!, n: Number(m[2]) }));
+    const briefs = new Set(tokens.filter((t) => t.name === "brief").map((t) => t.n));
+    const counts = STATUS.test(text) && tokens.some((t) => t.name !== "brief" && /[A-Za-z]/.test(t.name));
+    return { text, briefs, counts };
+  });
+  const problems: string[] = [];
+  for (const [n, verbs] of callers) {
+    const covering = entries.filter((e) => e.counts && e.briefs.has(n));
+    for (const v of verbs)
+      if (!covering.some((e) => wholeWord(v).test(e.text)))
+        problems.push(`brief:${n} names \`${v}\`, and no ledger line cites brief:${n} with ${v}, a <file>:<line> and holds or scoped`);
+  }
+  return problems;
+}
+
 /** W-215: why a sessioned verdict cannot be recorded, or undefined. `text` is the whole log to be written. */
 function sessionedProblem(text: string, id: string, rel: string, outcome: string, recorded: string, previous: Parsed | undefined, previousLog: string | undefined): string | undefined {
   if (outcome !== "passed" && outcome !== "failed") return "a sessioned verdict's outcome is exactly passed or failed";
@@ -637,6 +728,19 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     if ("error" in read) {
       console.error(`${opusId}: the brief ${briefRel} is unreadable, so a spec verdict cannot pin it: ${read.error}`);
       return { exitCode: 2 };
+    }
+    // W-306: the design magister's signature cites a promise ledger covering every caller the brief names in code
+    const design = readDesignMagister(manifest);
+    if ("error" in design) {
+      console.error(`${opusId}: ${design.error}`);
+      return { exitCode: 2 };
+    }
+    if (sella === design.magister) {
+      const problems = promiseLedgerProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), briefRel);
+      if (problems.length > 0) {
+        console.error(problems.map((p) => `${opusId}: promise ledger: ${p}`).join("\n"));
+        return { exitCode: 2 };
+      }
     }
     briefHeader = `${briefRel} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
     // W-246: as in build, a blocker that cites no line of the pinned brief is advisory, and a failure with none standing passes

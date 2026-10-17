@@ -15,6 +15,9 @@ import { after, describe, test } from "node:test";
 import { parseVerdictHeader } from "@bisellium/commands/opus-model.js";
 import { runReview } from "./lifecycle.js";
 import { runVerdict } from "./verdict.js";
+import { USAGE } from "@bisellium/commands/usage.js";
+// W-306: a namespace import, so on a writer without usageVerbs the row fails at an assertion, never at load
+import * as verdictModule from "@bisellium/commands/verdict.js";
 
 const NOW = new Date("2026-10-05T12:00:00.000Z");
 const roots: string[] = [];
@@ -363,4 +366,112 @@ describe("review round 1 rows", () => {
     assert.equal(r.header.has("submitted_outcome"), false);
     assert.equal(r.body, body, "body exact");
   });
+});
+
+// W-306: the design magister's spec signature cites a promise ledger that covers every caller its brief names in code
+const LEDGER_BRIEF = [
+  "# W-300 fixture brief",
+  "## Intent",
+  "After this, `ready` refuses the brief and `next` orders the architect.",
+  "Files owned: `packages/cli/src/next.ts` and `bisellium red W-300 --behaviour 1 -- node x`.",
+  "`check` blocks it; `ready` again.",
+  "",
+].join("\n");
+const NEXT_ENTRY = "brief:3, next, orders the architect: NX:20 — scoped";
+const COVERING = ["brief:3, ready, refuses: packages/x.ts:10 — holds", NEXT_ENTRY, "brief:5, check and ready: CK:30 — holds"].join("\n");
+
+test("W-306-b1 behaviour 1: an architect spec signature cites a promise ledger covering every caller its brief names, or verdict refuses", () => {
+  const dir = studio();
+  const manifest = join(dir, "bisellium.yml");
+  const base = readFileSync(manifest, "utf8");
+  const DESIGN = "  - { id: design, name: Design, magister: drafter }\n";
+  const withDesign = (rows: string): string => base.replace("collegia:\n", `collegia:\n${rows}`);
+  writeFileSync(manifest, withDesign(DESIGN));
+  assert.ok(readFileSync(manifest, "utf8").includes(DESIGN), "the manifest names drafter as the design magister");
+  writeFileSync(join(dir, "briefs", "W-300.md"), LEDGER_BRIEF);
+  const log = join(dir, "ci", "W-300-spec-1.log");
+  let n = 0;
+  const sign = (body: string, sella = "drafter"): { exitCode: number; stderr: string; written: boolean } => {
+    const input = join(dir, `input-${++n}.md`);
+    writeFileSync(input, body);
+    const r = capture(() => runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }));
+    const written = existsSync(log);
+    if (written) rmSync(log);
+    return { exitCode: r.result.exitCode, stderr: r.stderr, written };
+  };
+  const ledger = (text: string): string => {
+    const p = join(dir, `ledger-${++n}.md`);
+    writeFileSync(p, text);
+    return p;
+  };
+  const refused = (name: string, body: string, stderr: string, sella = "drafter"): void => {
+    const r = sign(body, sella);
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.equal(r.stderr, stderr, `${name}: stderr`);
+  };
+  const admitted = (name: string, body: string, sella = "drafter"): void => {
+    const r = sign(body, sella);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, true, `${name}: the log is written`);
+  };
+  const NO = findings("advisory — fine");
+  const cite = (text: string): string => `Promise ledger: ${ledger(text)}\n\n${NO}`;
+  const MISSING = 'W-300: promise ledger: briefs/W-300.md names a CLI verb in code on lines 3, 5; cite the promise ledger on one line above "## Findings": "Promise ledger: <absolute path>"\n';
+  const uncovered = (line: number, verb: string): string => `W-300: promise ledger: brief:${line} names \`${verb}\`, and no ledger line cites brief:${line} with ${verb}, a <file>:<line> and holds or scoped\n`;
+
+  refused("no ledger line", NO, MISSING);
+  refused("the ledger line under Findings", `${NO}Promise ledger: ${ledger(COVERING)}\n`, MISSING);
+  const trailing = NO.replace("## Findings\n", "## Findings   \n");
+  refused("the ledger line under a Findings heading with trailing spaces", `${trailing}Promise ledger: ${ledger(COVERING)}\n`, MISSING);
+  admitted("a covering ledger above a Findings heading with trailing spaces", `Promise ledger: ${ledger(COVERING)}\n\n${trailing}`);
+  const two = ledger(COVERING);
+  refused("two ledger lines", `Promise ledger: ${two}\nPromise ledger: ${two}\n\n${NO}`, 'W-300: promise ledger: 2 "Promise ledger:" lines above "## Findings"; one only\n');
+  refused("a relative path", `Promise ledger: ledger.md\n\n${NO}`, 'W-300: promise ledger: "ledger.md" is not an absolute or ~/ path\n');
+  refused("a missing file", `Promise ledger: ${join(dir, "absent.md")}\n\n${NO}`, `W-300: promise ledger: ${join(dir, "absent.md")} is not a readable regular file\n`);
+  refused("one caller uncovered", cite(COVERING.replace(`${NEXT_ENTRY}\n`, "")), uncovered(3, "next"));
+  for (const [name, entry] of [
+    ["no status", NEXT_ENTRY.replace(" — scoped", "")],
+    ["no <file>:<line>", NEXT_ENTRY.replace("NX:20", "next.ts")],
+    ["brief:3x", NEXT_ENTRY.replace("brief:3,", "brief:3x,")],
+    ["brief:3.5", NEXT_ENTRY.replace("brief:3,", "brief:3.5,")],
+    ["NX:20x", NEXT_ENTRY.replace("NX:20", "NX:20x")],
+    ["NX:20.5", NEXT_ENTRY.replace("NX:20", "NX:20.5")],
+    ["brief:3-5", NEXT_ENTRY.replace("brief:3,", "brief:3-5,")],
+    ["NX:20/notes", NEXT_ENTRY.replace("NX:20", "NX:20/notes")],
+    ["next.ts for the verb", NEXT_ENTRY.replace("next,", "next.ts,")],
+  ] as const)
+    refused(`an entry with ${name}`, cite(COVERING.replace(NEXT_ENTRY, entry)), uncovered(3, "next"));
+  refused("an empty ledger", cite(""), uncovered(3, "ready") + uncovered(3, "next") + uncovered(5, "check") + uncovered(5, "ready"));
+  admitted("a covering ledger", cite(COVERING));
+  admitted("another seat's spec verdict with no ledger (architect is not this officina's design magister)", NO, "architect");
+  admitted("another seat's spec verdict with no ledger", NO, "qa-lead");
+
+  // the design magister is read strictly: no design row means architect; a duplicate or a blank magister refuses every spec verdict
+  writeFileSync(manifest, base);
+  refused("no design row: architect is the magister", NO, MISSING, "architect");
+  writeFileSync(manifest, withDesign(DESIGN + DESIGN));
+  refused("two design rows", NO, "W-300: bisellium.yml#collegia declares the design collegium 2 times; exactly one row names the magister\n", "qa-lead");
+  for (const bad of ['""', '"  "', "3"]) {
+    writeFileSync(manifest, withDesign(`  - { id: design, name: Design, magister: ${bad} }\n`));
+    refused(`a design magister ${bad}`, cite(COVERING), "W-300: bisellium.yml#collegia: the design row's magister must be a nonblank string\n");
+  }
+  writeFileSync(manifest, base.replace(/collegia:\n(?: {2}- .*\n)+/, "collegia: none\n"));
+  assert.ok(readFileSync(manifest, "utf8").includes("collegia: none\nsellae:"), "the manifest's collegia is not a list");
+  refused("collegia not a list", NO, "W-300: bisellium.yml#collegia must be a list\n", "qa-lead");
+  writeFileSync(manifest, withDesign(DESIGN));
+  writeFileSync(join(dir, "briefs", "W-300.md"), BRIEF);
+  admitted("a brief naming no verb in code needs no ledger", NO);
+
+  // the verbs come from the usage text, one whole command per line, or the reader refuses
+  const { usageVerbs } = verdictModule;
+  const real = usageVerbs(USAGE);
+  assert.ok("verbs" in real && ["check", "ready", "next", "verdict", "hook-event"].every((v) => real.verbs.has(v)), `the usage text's verbs: ${JSON.stringify(real)}`);
+  assert.deepEqual(usageVerbs("usage: bisellium check [dir]\n       bisellium new-verb <x>\n"), { verbs: new Set(["check", "new-verb"]) });
+  for (const [name, text, line] of [
+    ["a token with a digit", "usage: bisellium check\n       bisellium v2 <x>\n", 2],
+    ["a line with two commands", "usage: bisellium check or bisellium next\n", 1],
+    ["a line with no command", "usage: bisellium check\n       see the docs\n", 2],
+  ] as const)
+    assert.deepEqual(usageVerbs(text), { error: `usage line ${line} does not name exactly one command "bisellium <[a-z][a-z-]*>"` }, name);
 });

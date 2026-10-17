@@ -1,0 +1,28 @@
+# opus: W-306
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-17T00:36:47.291Z
+# tree: tree:5cd20d6662d67e9a285e47bd49cd0b3b6cc9fa4c
+# brief: briefs/W-306.md blob:65b385603898d004bb0fb0bb84fd2491b2b3e934
+# ticket: {"opus":"W-306","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"277fa6a34c692c20b9e4e342446cceb763cbb935","brief":"65b385603898d004bb0fb0bb84fd2491b2b3e934","at":"2026-10-17T00:36:46.779Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-306-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the one red fails by assertion on master's `verdict.ts` at `no ledger line: exit (stderr "")` and passes on the prototype's; accepted by `scripts/replay-accept.mjs` — check: reds.out, red-b1-master.out, red-b1-proto.out
+2. advisory — the Codex test check lists one real flip, `W-163-b6` in `containment.test.ts` (inventory D, the raw file access census: its assertions at lines 1056, 1058, 1063 and 1104), caused by the new ledger `readFileSync`; checked: it fails without the pin (`not ok 1`) and passes with the one `PINNED_D` entry (65 of 65). The brief names it in Files owned (brief:25) and Acceptance (brief:73). No other flip, no unnamed row left — check: fixture-census.md, containment-unpinned.out, containment-proto.out
+3. advisory — every must-stay-green row the test check lists was run on the prototype: `verdict-citation.test.ts` 29 of 29, `verdict-findings.test.ts` 13 of 13, `verdict.test.ts` exit 0, and all of `next.test.ts` (99 of 99), whose `briefText`, `W196_ADMITTED` and light fixtures hold no whole-verb code span — check: neighbours-proto.out, next-proto.out
+4. advisory — signature census: 246 architect spec logs under `studio/ci/`, 239 with promise lines, none citing a ledger. Only new signatures are judged: the rule's one caller is the verdict writer (`runVerdict`), and `next`'s readers (`readSpecSignature`, `signedSpec`) are unchanged, so no recorded log is re-read by it (brief:48, Defaults 1) — check: census.mts, census.out
+5. advisory — against W-264, the model case: 10 of the 11 lines its rounds 2 and 4 failed are promise lines; the prototype refuses revision 1's signature (no ledger) and refuses revision 2 with its kept sweep as the ledger on 23 uncovered (line, caller) pairs, among them brief:63 `next` (round 4 blocker 3) and brief:88 and 93; brief:54, 59 and 65 pass coverage and failed on their reasoning (`gateDispatch`), which is the stated limit — check: w264-lines.out, w264-ledger.out
+6. advisory — this brief's own sweep: `promise-ledger.md` (45 lines, 8 scoped in the sweep, 0 open) passes the prototype writer as the architect; the brief passes admission on master's and on `opus/W-264`'s `brief-admission.ts` — check: self-check.out, admission.out, admission-w264.out
+7. advisory — Files owned overlap with W-264 (in build): none. W-306 owns `verdict.ts`, `verdict-citation.test.ts`, `containment.test.ts` and one `docs/ADOPTION.md` paragraph in the `bisellium verdict` section (near line 108); W-264's ADOPTION hunks are at lines 920-1031, and its new test lines hold no whole-verb code span, so its rows stay out of this rule — check: `git diff master...opus/W-264 --stat`
+8. advisory — the opus title names `studio/prompts/spec-draft.md` and 19 lessons: the template is W-241 part 1's (code-owned), carried by Defaults 3, and `studio/lessons/` holds 18 lessons of the class, which the brief states — check: studio/briefs/W-241.md:15; `grep -rl 'spec×promise-unattainable-under-accepted-domain' studio/lessons/ | wc -l`
+9. advisory — typecheck (`packages/commands`, `packages/cli`), eslint and prettier on the three changed files pass on the prototype — check: typecheck-proto.out, lint-proto.out, format-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-306.md`, master 277fa6a3.

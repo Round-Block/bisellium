@@ -118,6 +118,27 @@ of the exact title plus raw current brief. A UI build verdict instead requires
 references reject symlinks, non-regular files, traversal and stale design
 bytes. Non-UI verdict behavior is unchanged.
 
+For a non-`ui` spec verdict by the design collegium's magister (W-306; no
+design row means `architect`; a design row that is duplicated or whose
+magister is not a nonblank string refuses every non-`ui` spec verdict), the
+writer refuses a signature whose brief names a CLI verb in inline code unless
+it cites a promise ledger. A promise line is a brief line holding an inline-code
+span whose whole text is a verb of the usage text. The signature carries one
+line above its `## Findings` heading, `Promise ledger: <absolute or ~/ path>`,
+naming a regular file of at most 256 KiB. The coverage test is textual: for each
+promise line and each verb on it, some ledger line holds the whole tokens
+`brief:<n>` and `<file>:<line>` (not `brief:`, and not a range, a decimal or a
+path continuing past the number), the verb as a whole word, and `holds` or
+`scoped`. The ledger's reasoning is not checked, only its coverage, and the
+word test for `check` is also met by an incidental "check". A caller named
+outside inline code, as a full command (`bisellium next W-1`) or by function
+name (`gateDispatch`), makes no promise line, nor does a sentence that names no
+verb. The log names the ledger and does not copy or fingerprint it, so an edit
+after signing is not seen. Only new signatures are judged: `next` reads
+recorded signatures as before, so a log written before this is not re-read. A
+reviewer's spec verdict, a build or handoff verdict and a `ui` opus's spec
+input need no ledger.
+
 For a build-phase, non-`ui` verdict (W-126) the writer reconciles each
 `blocking` finding with the opus's declared brief. A blocking finding stays
 blocking only when it cites a non-blank line of that brief, as `brief:<n>`,
