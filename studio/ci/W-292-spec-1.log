@@ -1,0 +1,25 @@
+# opus: W-292
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-17T05:45:05.376Z
+# tree: tree:8f39e8a0cb7676391081d45b041c70007fa53ca5
+# brief: briefs/W-292.md blob:2564fc76747dcba3a508ddfffad4217d0badf000
+# ticket: {"opus":"W-292","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"9f8fd0b085c12fbda9d63e30db8e6a330d489eb7","brief":"2564fc76747dcba3a508ddfffad4217d0badf000","at":"2026-10-17T05:45:04.869Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-292-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — part 1 is the chain only (mint, review, pr in one `next --perform --chain`); the hook, its settings entry, check rule and probe, W-290's guard, the Bash logger and the architect line are parts 2 to 6 under Out of scope; nothing under `.claude/` is touched — check: studio/briefs/W-292.md Out of scope; prototype.diff
+2. advisory — the minutes are an upper bound: about 25 to 40 per opus (median 25 over ten opera, 27 to 45 on the three newest), not the 50 to 70 the ranking used, which counted W-302's whole idle — check: minutes.md
+3. advisory — the red fails by assertion at `chain: exit 0` on 24542f48 (packages equal master 9f8fd0b0), and the row passes on the prototype — check: red-b1-base.out, proto-b1.out
+4. advisory — the Codex test check listed two flips: usage.test.ts's count of 41 (avoided: the flag rides the existing usage line; usage-proto.out passes) and W-163-b6 (real; named in Files owned and Acceptance, repinned on the prototype, 65 of 65); every must-stay-green row run here passed — check: fixture-census.md, containment-unpinned.out, containment-proto.out, neighbours-proto.out, neighbours2-proto.out
+5. advisory — a real mint leaves the record's `run_receipt` line uncommitted, so W-274's review perform holds after a hand mint; the chain commits it, and the brief states it — check: packages/commands/src/builder-run.ts:119, packages/cli/src/next.ts:1591 on master
+6. advisory — the brief passes admission on master (both readers) — check: admission.out, admission-full.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-292.md`, master 9f8fd0b0.
