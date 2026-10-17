@@ -6350,3 +6350,37 @@ test("W-259-b1 behaviour 1: the done perform records the merge queue's certify c
   assert.deepEqual(runCalls.map((a) => a[1]), ["list", "view", "download"], "one run list, view and download");
   assert.ok(runCalls[0]!.includes(merge) && runCalls[0]!.includes("merge_group"), "the run list names the merge commit and the merge_group event");
 });
+
+test("W-311-b1 behaviour 1: one CLI start leaves tsx's compile cache entries written, and the env this file builds for its children keeps the test's TMPDIR, and a verb that leaves a handle open still exits", { timeout: 300_000 }, () => {
+  // a fresh TMPDIR, so every entry under it was written by this one start
+  const tmp = scratch("w311-cache");
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN], { cwd: tmp, env: { ...SETUP_ENV, TMPDIR: tmp }, encoding: "utf8", timeout: 120_000 });
+  assert.equal(r.error, undefined, `the bare CLI start did not fail to spawn or time out: ${r.error?.message}`);
+  assert.equal(r.signal, null, `the bare CLI start ended on its own: ${r.stderr}`);
+  assert.equal(r.status, 2, `the bare CLI prints its usage and exits 2: ${r.stderr}`);
+  const dirs = readdirSync(tmp).filter((d) => d.startsWith("tsx-"));
+  assert.equal(dirs.length, 1, `one tsx cache directory under the fresh TMPDIR: ${JSON.stringify(readdirSync(tmp))}`);
+  const cache = join(tmp, dirs[0]!);
+  const entries = readdirSync(cache).filter((f) => !f.startsWith("."));
+  assert.ok(entries.length > 0, "the start wrote cache entries");
+  const empty = entries.filter((f) => statSync(join(cache, f)).size === 0);
+  assert.equal(empty.length, 0, `every cache entry the start wrote is non-empty: ${empty.length} of ${entries.length} are empty`);
+  // SETUP_ENV is every git and CLI child's env in this file: without TMPDIR a child's cache goes to /tmp,
+  // which the Claude sandbox mounts read-only
+  assert.equal(SETUP_ENV["TMPDIR"], tmpdir(), "SETUP_ENV carries the test process's TMPDIR");
+  // a handle a verb leaves open past main(): hook-event's payload reader on a stdin that never ends, a FIFO
+  // this process holds open for writing; the CLI still exits, with the code main() returned
+  const fifo = join(tmp, "stdin.fifo");
+  execFileSync("mkfifo", [fifo]);
+  assert.ok(statSync(fifo).isFIFO(), "the stdin the row holds open is a FIFO");
+  const fd = openSync(fifo, "r+");
+  try {
+    const h = spawnSync(process.execPath, ["--import", TSX, MAIN, "hook-event", "tool", "--sella", "guest", "--studio", tmp], { cwd: tmp, env: SETUP_ENV, stdio: [fd, "pipe", "pipe"], encoding: "utf8", timeout: 30_000 });
+    assert.equal(h.error, undefined, `hook-event did not fail to spawn or time out: ${h.error?.message}`);
+    assert.equal(h.signal, null, `hook-event on a stdin that never ends exits on its own: ${h.stderr}`);
+    assert.equal(h.status, 0, `hook-event exits 0: ${h.stderr}`);
+    assert.match(h.stderr, /^hook-event tool: timed out after 2000ms reading hook payload from stdin$/m, "the payload read timed out");
+  } finally {
+    closeSync(fd);
+  }
+});
