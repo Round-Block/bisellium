@@ -1,0 +1,19 @@
+# opus: W-259
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14951-d123-7030-84e2-88b9357666d1
+# outcome: failed
+# at: 2026-10-17T10:08:47.167Z
+# tree: tree:07316294ad96ad5d6b9074bfbc84d1815b7395e5
+# brief: briefs/W-259.md blob:2460e07f55190090a4e354c758198ba52bba081e
+# ticket: {"opus":"W-259","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"3bf6de327702c980d86e7ddbc791a224847ccceb","brief":"2460e07f55190090a4e354c758198ba52bba081e","at":"2026-10-17T10:08:46.687Z"}
+
+## Findings
+1. blocking — brief:15 A valid records-only PR can mistakenly add or change an automated gate in `<studio>/bisellium.yml` after the opus merges; the producer’s `bisellium next <id> --perform --expect done` then has `recordCertify` mark that current gate passed using an older artifact that never ran it, while `W-259-b1` tests only handoff drift. [severity: S1] Replace brief:15 with: `After this part, the done rung of a non-ui opus names bisellium next <id> --perform --expect done; the perform records the merge queue certificate or holds naming full verify. Records-only commits after the merge preserve this route only when they did not change <studio>/bisellium.yml or <studio>/opera/<id>.md; either policy-input change holds and names verify.` Replace brief:32 with: `When merged is given and the first gate does not certify master's tree, mergedTree(repo, studioRel, excludes, merged, id) accepts the merge tree only when diffPaths is readable, empty or recordOnly, and names neither <studio>/bisellium.yml nor <studio>/opera/<id>.md; otherwise certificate keeps master's tree as want.` Replace brief:62 with: `| Master's changes since the merge commit, diffPaths(repo, oid, master) | readable, empty or recordOnly, with neither <studio>/bisellium.yml nor <studio>/opera/<id>.md changed | mergedTree (specified, taking id): a failed diff, source path or either policy-input path is the reason; certificate keeps master's tree as want |` [class: mechanism×certification-coverage-not-diff-bound] — check: packages/cli/src/next.test.ts: W-259-b1 must add a post-merge records commit that adds an automated manifest gate and assert a verify hold, byte-identical record, no certificate log and no chore branch
+
+## Verdict
+The brief requires a fail-closed boundary between the merge artifact’s gate configuration and the configuration recorded at done.
+
+VERDICT: FAIL

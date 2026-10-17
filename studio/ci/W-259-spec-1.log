@@ -1,0 +1,24 @@
+# opus: W-259
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-10-17T10:03:52.423Z
+# tree: tree:07316294ad96ad5d6b9074bfbc84d1815b7395e5
+# brief: briefs/W-259.md blob:2460e07f55190090a4e354c758198ba52bba081e
+# ticket: {"opus":"W-259","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"3bf6de327702c980d86e7ddbc791a224847ccceb","brief":"2460e07f55190090a4e354c758198ba52bba081e","at":"2026-10-17T10:03:49.006Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-259-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — part 1 is the done step only: the perform records the merge queue's certify certificate for the merge commit and names the full verify when it cannot; review accepting the builder's gate logs (the pre-review mint leaving the chain) and the per-minute progress lines are parts 2 and 3 under Out of scope; nothing under `.claude/`, `.github/`, `scripts/` or `packages/pipeline` is touched — check: studio/briefs/W-259.md Out of scope; prototype.diff
+2. advisory — the design rests on two facts read from #540: the PR's merge commit 05b7ddc2 is merge-queue run 39012304510's head, and its certify artifact's receipt certifies tree:1521e1a0, which is 05b7ddc2's source tree; master moved since only by records (the handoff), so master's tree differs and the merge tree is the one to accept — check: artifact-540/, tree-census.out
+3. advisory — the red fails by assertion at `the command is the done perform` on master 3bf6de32 and the host's replay classifier accepts it; the row passes on the prototype — check: red-b1-master.out, red-accept.out, proto-b1.out
+4. advisory — the Codex test check lists seven flips, all named (four W-141-b2 rows' named-command assertions and W-163-b6), and no unnamed one; the four rows pass with only those assertions changed, W-163-b6 passes with the two pins, and every must-stay-green row it lists passed unedited on the prototype — check: fixture-census.md, flips-proto.out, neighbours-proto.out, neighbours2-proto.out, containment-unpinned.out, containment-proto.out
+5. advisory — the fallback verify keeps the 30-minute GATE_TIMEOUT_MS that W-292's master run hit; the brief states it as a limit and leaves the timeout to the orchestrator's diagnosis — check: packages/pipeline/src/index.ts:52
+6. advisory — the brief passes admission on master, and lint, format and typecheck pass on the prototype's touched files — check: admission-full.out, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-259.md`, master 3bf6de32.

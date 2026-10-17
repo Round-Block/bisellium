@@ -1,0 +1,26 @@
+# opus: W-259
+# phase: spec
+# round: 3
+# sella: architect
+# outcome: passed
+# at: 2026-10-17T10:14:47.825Z
+# tree: tree:07316294ad96ad5d6b9074bfbc84d1815b7395e5
+# brief: briefs/W-259.md blob:4fa6f0184fa82f5319e78d31b1df73f980ada372
+# ticket: {"opus":"W-259","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"3bf6de327702c980d86e7ddbc791a224847ccceb","brief":"4fa6f0184fa82f5319e78d31b1df73f980ada372","at":"2026-10-17T10:14:41.452Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-259-spec/promise-ledger.md
+
+## Earlier findings
+
+- ci/W-259-spec-2.log #1: closed — the replacement texts are adopted at brief:15, brief:34 and the Input domain's drift row (brief:64): `mergedTree` takes the opus id and refuses a drift that changes `<studio>/bisellium.yml` or `<studio>/opera/<id>.md`, which holds and names verify; W-259-b1 adds a records commit adding an automated `lint` gate and one retitling the record, each a hold with the record unchanged, no certificate log and no chore branch — check: packages/cli/src/next.test.ts (W-259-b1, "a gate added since the merge", "the record changed since the merge"); red-b1-r1proto.out (revision 1 fails there), proto-b1.out
+
+## Findings
+
+1. advisory — cause fix (D-076 D, class mechanism×certification-coverage-not-diff-bound, L-160): every acceptance of a certificate for a tree other than master's goes through the one diff-bound function `mergedTree`, called by `certificate` and `recordCertify` and pinned by W-259-b1; stated at brief:17 — check: proto-next.ts mergedTree, certificate, recordCertify; proto-b1.out
+2. advisory — the red still fails by assertion at `the command is the done perform` on master 3bf6de32 and the host replay classifier accepts it; the row passes on revision 2 — check: red-b1-master.out, red-accept.out, proto-b1.out
+3. advisory — Files owned and the existing rows are unchanged since round 1, so the Codex test check is not rerun; on revision 2 the flipped rows (with their named edits), the W-141-b2 family, W-123, W-124 behaviour 4, W-214, W-233-b5, W-243-b2 and W-163-b6 (65 of 65) pass — check: fixture-census.md, neighbours-r2.out, containment-proto.out
+4. advisory — the brief passes admission, and lint, format and typecheck pass on the touched files — check: admission-full.out, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-259.md`, master 3bf6de32.
