@@ -1,0 +1,34 @@
+# opus: W-274
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-17T03:42:52.711Z
+# tree: tree:57805bd8fe3f3cab8174f03a7559e9a620547281
+# brief: briefs/W-274.md blob:aa84294efa5020999682bfaaa9633b936b7b0ded
+# ticket: {"opus":"W-274","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"d784a1bf92729797997f346bdd9f8e150ba3927f","brief":"aa84294efa5020999682bfaaa9633b936b7b0ded","at":"2026-10-17T03:42:52.133Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-274-spec/promise-ledger.md
+
+## Earlier findings
+
+- ci/W-274-spec-2.log #1: closed — brief:75 is the reviewer's row verbatim, with `performReview` in backticks because brief admission requires the Rejected-by cell to open with a backticked function (packages/commands/src/brief-admission.ts:148). The prototype checks `branchRecord.kind === "ui"` before either reading and before any packet work, and no longer reads `uiReviewInput` (next.ts reviewSteps); W-274-b1 runs the W-124 UI fixture: it holds with no packet and no Codex call — check: packages/cli/src/next.test.ts (W-274-b1, "ui:")
+- ci/W-274-spec-2.log #2: closed — brief:121 is the reviewer's text verbatim; the other items of the old line moved to brief:123. brief:35 states the same order (UI, then worktree and tracked change, before either reading) — check: studio/briefs/W-274.md lines 35, 121; packages/cli/src/next.test.ts (W-274-b1, "ui:")
+- ci/W-274-spec-2.log #3: closed — brief:76 is the reviewer's row verbatim (the rejector name backticked, as #1). `packetBase` proves containment before any mkdir, removal or write: `requireRealDirectory` on the real `<repo>/.bisellium`, W-215's `parsePacketArgs` real-path check against both studio trees, neither studio inside it, then `ensureRealDirectory` for each level below. The verdict.md write is checked again after the call, and every packet write is exclusive. brief:42 says this. writer-sweep.md lists all 10 write sites. W-274-b1 makes `.bisellium/reviews` a symlink into the officina: it holds, nothing lands there, no Codex call — check: packages/cli/src/next.test.ts (W-274-b1, "a symlinked packet parent"); writer-sweep.md
+- ci/W-274-spec-2.log #4: closed — brief:81's reply clause is the reviewer's text verbatim. `replyOutcome` no longer trims; it removes only a CRLF's CR. brief:46 restates it. W-274-b1 holds a trailing space and a leading space, and performs a CRLF verdict line — check: packages/cli/src/next.test.ts (W-274-b1, "a trailing space", "a leading space", "re-run")
+- ci/W-274-spec-2.log #5: closed — brief:45 is the reviewer's text verbatim; brief:46 names the hold texts. In the codex adapter, `code === null` (a signal close) is now exit 1 with the signal in raw, before any parse. brief:23 and brief:57 say this change reaches every caller of the profile, talk included. harness, harness-env, provider-portability and talk tests pass unedited. W-274-b1 holds a SIGKILL close after a PASS reply — check: packages/cli/src/next.test.ts (W-274-b1, "a signal close"); gates-proto.out
+- ci/W-274-spec-2.log #6: closed — brief:37 is the reviewer's text verbatim. `performReview` is now a catch around `reviewSteps` that holds as `the review perform failed: <message>`; brief:85 adds the matching Input domain row. W-274-b1 plants a directory at verdict.md: the round holds and is never `next: W-900 failed` — check: packages/cli/src/next.test.ts (W-274-b1, "a thrown step error")
+- ci/W-274-spec-2.log #7: closed — brief:49 is the reviewer's text verbatim; brief:51 defines the preceding session (round n-1's log), and brief:84 adds the header reader's row. The perform's shared tail requires model gpt-5.6-sol, a SESSION_ID session and round n-1's session when it records one. W-274-b2 holds another model, no session, and a hand-replaced round-2 session, each with its exact why and no gate — check: packages/cli/src/next.test.ts (W-274-b2, "another model", "no session", "another session")
+- ci/W-274-spec-2.log #8: closed — brief:61 is the reviewer's text verbatim; brief:62 states the one other residual state (a log the second reading refuses). The commit-failure hold now says the two files must be committed by hand. W-274-b2 makes the commit fail: the log and record are left staged but uncommitted, and `--perform --expect pr` holds on the dirty record. recovery-table.md lists 13 failure points, and no two brief lines disagree on any of them — check: packages/cli/src/next.test.ts (W-274-b2, "commit fails"); recovery-table.md
+
+## Findings
+
+1. advisory — the class sweeps: reader-sweep.md has 19 perform readers (20 with the test row), each with a brief:73 to brief:89 row and a fail-closed rejector; writer-sweep.md has 10 write sites, each with the function that proves its containment first; recovery-table.md has 13 failure points, each with its state and resume command; promise-ledger.md covers all 18 (line, verb) pairs in promise-lines.out, and master's verdict writer (W-306, now landed) accepts this signature with it — check: reader-sweep.md, writer-sweep.md, recovery-table.md, promise-lines.out, ledger-self-check.out
+2. advisory — master moved to d784a1bf (W-306, W-264) during the revision; next.ts and the codex adapter are unchanged there, and the prototype applies cleanly. The reds were replayed on the rebased worktree: b1 fails by assertion on master at `pass: performed`, b2 on the behaviour 1 stage at `another session: why`; replay-accept accepts both, and both rows pass on the prototype — check: reds.out, red-b1-master.out, red-b2-stage1.out
+3. advisory — the only flip is still `W-163-b6`, now with four pins (`reviewSteps:{rmSync#1, mkdirSync#1, writeFileSync#1, writeFileSync#2}`: the level mkdirs moved into `ensureRealDirectory`). It fails unpinned and passes 65 of 65 pinned. Typecheck, eslint and prettier pass — check: containment-unpinned.out, containment-proto.out, gates-proto.out
+4. advisory — the brief passes admission on master (both readers). next.test.ts was not run whole on this host; the builder's npm test runs it — check: admission.out, admission-full.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-274.md`, master d784a1bf.

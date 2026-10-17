@@ -1,0 +1,29 @@
+# opus: W-274
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a147dd-1f6a-7302-8ec5-61caab195cdd
+# outcome: failed
+# at: 2026-10-17T03:58:21.901Z
+# tree: tree:57805bd8fe3f3cab8174f03a7559e9a620547281
+# brief: briefs/W-274.md blob:aa84294efa5020999682bfaaa9633b936b7b0ded
+# ticket: {"opus":"W-274","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"d784a1bf92729797997f346bdd9f8e150ba3927f","brief":"aa84294efa5020999682bfaaa9633b936b7b0ded","at":"2026-10-17T03:58:21.471Z"}
+
+## Findings
+1. blocking — brief:49 `parseVerdictLog` permits duplicate `model` and `session` headers, while `header(...)?[0]` validates only the first, so an ambiguous recorded verdict is finished instead of refused. Replace brief:49 with: `A recorded verdict the gate does not cite yet is finished without another Codex call only when its log records exactly one model header equal to gpt-5.6-sol, exactly one SESSION_ID-valid session header, and, for a later round, that session equals the preceding sequence's sole valid session header when present; otherwise performReview holds.` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+2. blocking — brief:84 The row places round `n-1`'s `# model:` header in the valid domain, but `reviewSteps` reads only that round's session, so a previous round naming another model is accepted. Replace brief:84 with: `| Round n's # model: and # session: headers and the preceding round's # session: header, as parseVerdictLog reads the worktree's copy | exactly one model gpt-5.6-sol and exactly one SESSION_ID-valid session for round n; when the preceding round records a session, exactly one SESSION_ID-valid header equal to round n's | performReview (specified): each other case holds before review runs |`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+
+## Earlier findings
+- ci/W-274-spec-2.log #1: closed — `reviewSteps` checks `branchRecord.kind === "ui"` before packet work, with the UI fixture covering the refusal.
+- ci/W-274-spec-2.log #2: closed — the same guard precedes both the censor-order and recorded-verdict readings.
+- ci/W-274-spec-2.log #3: closed — `packetBase` proves real-directory containment before removal or writes, and the symlink-parent case holds without writing.
+- ci/W-274-spec-2.log #4: closed — `replyOutcome` preserves selected-line whitespace except a CR from CRLF, and the leading/trailing-space cases hold.
+- ci/W-274-spec-2.log #5: closed — `runCodex` maps `code === null` to exit 1 with the signal in `raw`.
+- ci/W-274-spec-2.log #6: closed — `performReview` catches errors thrown anywhere in `reviewSteps` and returns a review hold.
+- ci/W-274-spec-2.log #7: open — `parseVerdictLog` accepts duplicate model/session headers and `header(...)?[0]` ignores every value after the first.
+- ci/W-274-spec-2.log #8: closed — the revised limit and recovery test correctly require a hand commit after review has changed the record.
+
+## Verdict
+The revision closes seven prior blockers, but the recorded-verdict validation still accepts out-of-domain header states.
+VERDICT: FAIL
