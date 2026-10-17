@@ -218,15 +218,15 @@ function specSectionsProblem(brief: string | undefined, rel: string, admit: (bri
   return problems.length > 0 ? `${rel} ${problems.join("; ")}` : undefined;
 }
 
-/** W-255: what a light brief must also satisfy, built once per derivation: the declared limit and `ready`'s admission, then the Red order line. */
+/** W-255: what a light brief must also satisfy, built once per derivation: `ready`'s admission under the declared limit (W-264:
+ *  with none, no count), then the Red order line. */
 function lightAdmission(f: Facts): (brief: string) => string[] {
   return (brief) => {
     const limit = readBriefLimit(f.manifest.brief_behaviour_limit);
     if ("error" in limit) return [limit.error];
-    if (limit.limit === undefined) return ['"Brief: light" needs a declared brief_behaviour_limit (W-264)'];
     const order = readRedOrder(brief);
     return [
-      ...briefAdmissionProblems(f.studioAbs, f.manifest, f.id, brief, limit.limit),
+      ...briefAdmissionProblems(f.studioAbs, f.manifest, f.id, brief, limit.limit ?? Number.POSITIVE_INFINITY),
       ...("error" in order ? [order.error] : order.declared ? [] : ['declares no red order; add the line "Red order: one at a time"']),
     ];
   };

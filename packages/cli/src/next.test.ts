@@ -5162,13 +5162,6 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   reviewerOrder(specNext(granted), 2, "seven behaviours with an exception go to the reviewer");
   refuse("badgrant", w255Light({ behaviours: 7, exception: "D-901" }), /behaviour limit exception: decision "D-901" not found/, grant);
 
-  const nolimit = srWorld("w255-b3-nolimit");
-  put(nolimit.repo, BRIEF_REL, w255Light());
-  sign(nolimit, 1);
-  const n = specNext(nolimit);
-  architectOrder(n, 2, "no limit declared: a light brief goes back to the architect");
-  assert.match(n.kv.get("why") ?? "", /"Brief: light" needs a declared brief_behaviour_limit \(W-264\)/, ran("the W-264 line", n));
-
   const solo = (tag: string): World => srWorld(tag, { row: null, setting: null, edit: (t) => `${t}brief_behaviour_limit: 6\n` });
   const alone = solo("w255-b3-solo");
   put(alone.repo, BRIEF_REL, w255Light());
