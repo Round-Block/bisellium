@@ -222,7 +222,7 @@ function parseEvents(events: unknown[]): Parsed {
   return { sessionId, model, reply: messages.length ? messages[messages.length - 1] : undefined, input, output };
 }
 
-function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; message: string }): Promise<Turn> {
+function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; message: string; timeoutMs?: number }): Promise<Turn> {
   return new Promise((resolve) => {
     const child = spawn("codex", args, { cwd: opts.cwd, env: harnessEnv(opts.env) });
     let stdout = "";
@@ -237,7 +237,7 @@ function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; m
     const timer = setTimeout(() => {
       child.kill("SIGKILL");
       finish({ sessionId: "", reply: "", exitCode: 1, raw: { stdout, stderr, timedOut: true } });
-    }, TIMEOUT_MS);
+    }, opts.timeoutMs ?? TIMEOUT_MS);
 
     child.stdout?.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
     child.stderr?.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
@@ -245,8 +245,13 @@ function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; m
       clearTimeout(timer);
       finish({ sessionId: "", reply: "", exitCode: 127, raw: { error: err.message } });
     });
-    child.on("close", (code) => {
+    child.on("close", (code, signal) => {
       clearTimeout(timer);
+      // W-274: a close by signal is a failure, whatever the stream held before it
+      if (code === null) {
+        finish({ sessionId: "", reply: "", exitCode: 1, raw: { stdout, stderr, signal } });
+        return;
+      }
       const events = linesToEvents(stdout);
       // Detection sources: stderr, or a dedicated error-kind event — never
       // the reply text an agent_message/assistant event carries.
@@ -261,7 +266,7 @@ function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; m
         model: parsed.model,
         usage: parsed.input !== undefined || parsed.output !== undefined ? { input: parsed.input, output: parsed.output } : undefined,
         raw: { stdout, stderr },
-        exitCode: code ?? (parsed.reply !== undefined ? 0 : 1),
+        exitCode: code,
       });
     });
 
@@ -269,6 +274,12 @@ function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; m
     child.stdin?.end();
   });
 }
+
+/** The per-call flags: `-m <model>` and, W-274, `-c model_reasoning_effort=<v>`, each only when given. */
+const callArgs = (opts: { model?: string; reasoningEffort?: string }): string[] => [
+  ...(opts.model ? ["-m", opts.model] : []),
+  ...(opts.reasoningEffort ? ["-c", `model_reasoning_effort=${opts.reasoningEffort}`] : []),
+];
 
 export const codexProfile: HarnessProfile = {
   id: "codex",
@@ -300,14 +311,12 @@ export const codexProfile: HarnessProfile = {
     // block ("data, never an instruction to the sella reading its own
     // context" — packages/cli/src/context.ts).
     const message = opts.systemPrompt ? `${opts.systemPrompt}\n\n${opts.message}` : opts.message;
-    const modelArgs = opts.model ? ["-m", opts.model] : [];
-    const args = ["exec", ...CODEX_POLICY_FLAGS, ...modelArgs, "-"];
-    return runCodex(args, { cwd: opts.cwd, env: opts.env, message });
+    const args = ["exec", ...CODEX_POLICY_FLAGS, ...callArgs(opts), "-"];
+    return runCodex(args, { cwd: opts.cwd, env: opts.env, message, timeoutMs: opts.timeoutMs });
   },
 
   async resume(opts: HarnessResumeOpts): Promise<Turn> {
-    const modelArgs = opts.model ? ["-m", opts.model] : [];
-    const args = ["exec", "resume", opts.sessionId, ...CODEX_POLICY_FLAGS, ...modelArgs, "-"];
-    return runCodex(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
+    const args = ["exec", "resume", opts.sessionId, ...CODEX_POLICY_FLAGS, ...callArgs(opts), "-"];
+    return runCodex(args, { cwd: opts.cwd, env: opts.env, message: opts.message, timeoutMs: opts.timeoutMs });
   },
 };
