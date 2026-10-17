@@ -1,0 +1,18 @@
+# opus: W-311
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14a62-8acb-77d0-bb44-c5925139ed4a
+# outcome: passed
+# at: 2026-10-17T15:05:12.933Z
+# tree: tree:cd7366f8673e976b0980451d3df7606ca77425ee
+# brief: briefs/W-311.md blob:18f204ed05d59bdcf3e865704e722af7b26f968c
+# ticket: {"opus":"W-311","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"8f944d28a0cd142023b9cde029c9d4f1218da156","brief":"18f204ed05d59bdcf3e865704e722af7b26f968c","at":"2026-10-17T15:05:12.405Z"}
+
+## Findings
+1. advisory — brief:73 [severity: S4] `W-311-b1` also newly reads two `spawnSync` subprocess results, but the Input domain omits both calls and the assertions that reject spawn errors, timeouts/signals, wrong exits, or the wrong diagnostic. Replace brief:73 with: `| The FIFO W-311-b1 makes for hook-event's stdin | a FIFO the row creates under its scratch directory and opens read-write | execFileSync (mkfifo), openSync: a failure throws and fails the row |`; add `| W-311-b1's bare-CLI spawnSync result | status 2 | assert.equal(r.status, 2): a spawn error, timeout, signal or other status fails the row |` and `| W-311-b1's hook-event spawnSync result | no signal, status 0 and the exact timeout diagnostic on stderr | assert.equal and assert.match: any other result fails the row |`. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief is feasible and its implemented paths fail closed; the incomplete test-input enumeration is advisory only.
+VERDICT: PASS

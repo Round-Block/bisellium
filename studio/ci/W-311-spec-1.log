@@ -1,0 +1,23 @@
+# opus: W-311
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-10-17T15:01:53.496Z
+# tree: tree:cd7366f8673e976b0980451d3df7606ca77425ee
+# brief: briefs/W-311.md blob:18f204ed05d59bdcf3e865704e722af7b26f968c
+# ticket: {"opus":"W-311","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"8f944d28a0cd142023b9cde029c9d4f1218da156","brief":"18f204ed05d59bdcf3e865704e722af7b26f968c","at":"2026-10-17T15:01:53.012Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-311-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — cause fix: `main.ts` ends by `process.exitCode` through `finish`, so tsx's cache writes land (104 of 104 entries empty on master, 0 of 104 on the prototype; W-123 behaviour 1 on a fresh cache 35.8/32.5 s against 19.4/18.5 s); `SETUP_ENV` and `spawnScript`'s env carry `tmpdir()` — check: exit-variants.out, time-fresh.out, env-census.out, prototype.diff, prototype-test.diff
+2. advisory — the open-handle constraint is real: `hook-event` on a stdin that never ends hangs under `process.exitCode` alone (killed at 10 s); the unref'd `EXIT_GRACE_MS` backstop ends it 1 s later than master with main()'s code, and W-311-b1 pins it; the 79 CLI starts of W-123 behaviour 1 all ended on their own, 5.6 ms after main() on average — check: open-stdin.out, red-b1-nobackstop.out, w123-exitlog.tsv
+3. advisory — the red fails by assertion on master d78ffa00 at `every cache entry the start wrote is non-empty: 104 of 104 are empty` and the host replay classifier accepts it; with the exit fix alone it fails at the TMPDIR assertion, without the backstop at the hook-event assertion; the row passes on the prototype — check: red-b1-master.out, red-accept.out, red-b1-exitonly.out, red-b1-nobackstop.out, proto-b1.out
+4. advisory — the Codex test check lists no flip and no unnamed row; cli.test.ts, hooks.test.ts, ci-certify.test.mjs, ids.test.ts, red-order.test.ts, safe-helpers.test.ts, answer-carry.test.ts, delegate.test.ts, open-lessons.test.ts, w267.test.ts and the W-123 and W-124 behaviour 1 rows pass unedited on the prototype — check: fixture-census.md, neighbours-proto.out, neighbours2-proto.out
+5. advisory — the brief passes admission, and lint, format and typecheck pass on the touched files — check: admission-full.out, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-311.md`, master d78ffa00.
