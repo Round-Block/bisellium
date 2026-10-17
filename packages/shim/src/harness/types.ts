@@ -44,6 +44,10 @@ export interface HarnessStartOpts {
    *  config file (this opus's codex policy), not from the session being
    *  resumed. */
   model?: string;
+  /** W-274: kill the vendor call after this many ms (a profile's own default when absent). */
+  timeoutMs?: number;
+  /** W-274: the vendor's reasoning effort; only the codex profile passes it (`-c model_reasoning_effort=<v>`), the others ignore it. */
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface HarnessResumeOpts {
@@ -55,6 +59,10 @@ export interface HarnessResumeOpts {
   env: NodeJS.ProcessEnv;
   /** See HarnessStartOpts.model. */
   model?: string;
+  /** W-274: kill the vendor call after this many ms (a profile's own default when absent). */
+  timeoutMs?: number;
+  /** W-274: the vendor's reasoning effort; only the codex profile passes it (`-c model_reasoning_effort=<v>`), the others ignore it. */
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface HarnessProfile {

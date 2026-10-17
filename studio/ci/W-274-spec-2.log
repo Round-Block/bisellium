@@ -1,0 +1,25 @@
+# opus: W-274
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a147dd-1f6a-7302-8ec5-61caab195cdd
+# outcome: failed
+# at: 2026-10-17T03:23:53.627Z
+# tree: tree:186537b907c6e7e4ccb81846254b6cc2ad9f7fd6
+# brief: briefs/W-274.md blob:48c838eac69428f6fb736792c74f83b4d9816412
+# ticket: {"opus":"W-274","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"f2bf83d6984614aebebb2d1c9ef9d1eb611d919f","brief":"48c838eac69428f6fb736792c74f83b4d9816412","at":"2026-10-17T03:23:53.182Z"}
+
+## Findings
+1. blocking — brief:69 `uiReviewInput() === undefined` conflates a non-UI opus with a UI opus whose input is missing or malformed, so the censor-order path performs an out-of-scope UI review. Replace brief:69 with: `| The branch record's opus kind | not ui | performReview (specified): branchRecord.kind === "ui" holds before packet work |`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+2. blocking — brief:113 The UI guard is inside the censor-order branch, so the recorded-verdict reading performs any UI opus without checking `uiReviewInput`. Replace brief:113 with: `Not in part 1 either: any UI opus's review round; performReview checks branchRecord.kind before either reading and holds when it is ui.` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+3. blocking — brief:70 The direct `buildPacket(args)` call bypasses `parsePacketArgs`, the only real-path check keeping `--packets` outside the studio, so a symlinked `.bisellium/reviews` parent permits the new removal and writes inside an officina. Replace brief:70 with: `| The packet directory <repo>/.bisellium/reviews/<id>/r<n>/ and what buildPacket reads | a writable path whose real parents are non-symlink directories outside both studio trees | performReview (specified) proves that containment before any mkdir, removal or write; buildPacket rejects its own remaining input errors |`. [class: security×symlink-parent-write-escape] — check: packages/cli/src/containment.test.ts
+4. blocking — brief:75 `replyOutcome` trims the selected line before applying `VERDICT_LINE`, so replies ending in ` VERDICT: PASS ` are accepted although the row requires an exact line. Replace brief:75's reply clause with: `a reply whose selected raw last nonblank line, after removing only CR from CRLF, is exactly VERDICT: PASS or VERDICT: FAIL; replyOutcome performs no whitespace normalization`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+5. blocking — brief:43 `runCodex` maps a signal close (`code === null`) to exit 0 whenever it parsed an agent message, allowing a killed turn ending in a verdict line to be recorded. Replace brief:43 with: `The reply is refused, with nothing recorded, unless Codex closes normally with code 0; a signal is failure, as are a non-zero exit, an invalid or changed session, or a last nonblank line other than exactly VERDICT: PASS or VERDICT: FAIL.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/shim/test/harness.test.ts
+6. blocking — brief:35 `writeFileSync(...verdict.md)` and later throwing reads are outside any `heldResult` conversion, so an I/O error reaches `runNext`'s generic `next: <id> failed` catch rather than the promised review hold. Replace brief:35 with: `The perform runs inside the step marker like the others, and performReview converts every returned refusal and thrown step error into next: <id> review held, why: <reason>, exit 1.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts
+7. blocking — brief:46 The second reading accepts any log that `readBuildRounds` accepts, including one with no session or a missing/different model, then labels the gate `gpt-5.6-sol`; it cannot guarantee this is an interrupted fixed-reviewer Codex round. Replace brief:46 with: `A recorded verdict the gate does not cite yet is finished without another Codex call only when its log records model gpt-5.6-sol, a SESSION_ID-valid session, and, for a later round, the preceding sequence's session; otherwise performReview holds.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts
+8. blocking — brief:56 A failed commit occurs after `runReview` has modified the tracked record, so derivation names `pr` and `dirtyHold` prevents the promised review re-run; the line's following crash clause correctly requires a hand commit for the same state. Replace brief:56 with: `A review refusal after verdict leaves only the log uncommitted, and a ticketed re-run finishes it without Codex. A failed commit or crash after review leaves the log and record uncommitted; pr holds on the dirty record, and committing the two is a hand step.` [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief has substantive fail-open input paths and recovery guarantees that the specified mechanisms cannot provide.
+VERDICT: FAIL

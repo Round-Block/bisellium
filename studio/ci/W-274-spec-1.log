@@ -1,0 +1,27 @@
+# opus: W-274
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-17T03:17:10.545Z
+# tree: tree:186537b907c6e7e4ccb81846254b6cc2ad9f7fd6
+# brief: briefs/W-274.md blob:48c838eac69428f6fb736792c74f83b4d9816412
+# ticket: {"opus":"W-274","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"f2bf83d6984614aebebb2d1c9ef9d1eb611d919f","brief":"48c838eac69428f6fb736792c74f83b4d9816412","at":"2026-10-17T03:17:10.039Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-274-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the split (D-061 §4): part 1 is the build-review round as one `next --perform --expect review`; spec-review rounds (with W-277's spec logs), the fix check (D-072 C), retiring the hand scripts and evidence copies (with D-069's rule), the done perform with `certified()`, the CODEOWNERS re-request and `chore-pr.sh`'s auto-merge (#488), and W-234's later-round rule are parts 2 to 6 under Out of scope — check: studio/briefs/W-274.md lines 103 to 113
+2. advisory — the reds: b1 fails by assertion on master at `pass: performed` (master only names the order), b2 fails on the behaviour 1 stage at `round 2: resumes the session` (that stage starts every round fresh); replay-accept accepts both, and both rows pass on their own stage and on the prototype. No row runs the real codex: a stub on PATH answers from `$HOME` — check: reds.out, red-b1-master.out, red-b2-stage1.out, stages/
+3. advisory — the Codex test check lists one flip, `W-163-b6` (inventory D, the five new raw writes), named in Files owned and pinned; it fails unpinned (`containment-unpinned.out`) and passes pinned (65 of 65). Its must-stay-green rows were checked: `harness.test.ts`, `harness-env.test.ts`, `provider-portability.test.ts`, `talk.test.ts`, `review-packet.test.mjs` and `W-166-b4` pass unedited on the prototype; the census's other next.test.ts rows perform other rungs and were not run whole on this host (the builder's `npm test` runs them) — check: fixture-census.md, containment-proto.out, neighbours-proto.out, census-rows-proto.out
+4. advisory — the adapter seam changes for a documented reason: the codex profile's fixed 120 s timeout would kill every review, and every hand round ran at reasoning effort high. Both options are optional and absent keeps today's argv, so the census's argv-pinning rows stay green — check: packages/shim/src/harness/codex.ts (callArgs), packages/cli/src/provider-portability.test.ts behaviour 2
+5. advisory — `studio/prompts/build-review.md` is added here with W-241 part 1's six slots (Defaults 1), so W-241's brief line 17 changes from "new" to an existing file when it is built; with `docs/ADOPTION.md`, it makes this PR the Patron's — check: studio/briefs/W-241.md line 33, .github/CODEOWNERS line 8
+6. advisory — `facts.txt`'s `next` block exits 2 in a worktree packet, as in today's later-round packets; part 1 reuses `buildPacket` unchanged and states the limit — check: none: a review-packet.test.mjs row that runs a build packet with a linked worktree as --repo
+7. advisory — the brief passes admission on master (both the brief reader and `briefAdmissionProblems`), and W-306's verdict writer accepts this signature with its ledger as the architect; the reader sweep has 16 rows — check: admission.out, admission-full.out, ledger-self-check.out, reader-sweep.md
+8. advisory — typecheck, eslint and prettier pass on the prototype's changed files — check: typecheck-proto.out, lint-proto.out, format-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-274.md`, master f2bf83d6.

@@ -22,23 +22,26 @@
  * honoured only when `BISELLIUM_TEST_CLOCK=1` is also set; so is `--now`.
  */
 import { createHash } from "node:crypto";
-import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
-import { sourceTreeHash } from "@bisellium/shim";
+import { codexProfile, sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
-import { SESSION_ID, buildReviewDrift, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { SESSION_ID, buildReviewDrift, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
+import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
+import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs";
 import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
-import { runDone, runReady } from "./lifecycle.js";
+import { runDone, runReady, runReview } from "./lifecycle.js";
+import { runVerdict } from "./verdict.js";
 import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
@@ -74,9 +77,10 @@ const TRUNK = "refs/heads/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
-const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec"]);
-const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
-const LIGHT_SECTIONS = ["Intent", "Files owned", "Behaviours to test", "Acceptance"];
+const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review"]);
+const BEHAVIOURS = "Behaviours to test";
+const SECTIONS = ["Intent", "Files owned", "Interfaces", BEHAVIOURS, "Acceptance", "Out of scope"];
+const LIGHT_SECTIONS = ["Intent", "Files owned", BEHAVIOURS, "Acceptance"];
 const PAST_READY = new Set(["building", "verifying", "review", "done"]);
 /** W-162: the one model the spec reviewer may be. Another codex model is not close enough. */
 const REVIEWER_MODEL = "gpt-5.6-sol";
@@ -1522,6 +1526,166 @@ function performOpusSpecCommit(f: Facts): StepResult {
   return { ok: true, lines: [`branch: opus/${id}`] };
 }
 
+// ---------------------------------------------------------------------------
+// review: one build-review round (W-274)
+// ---------------------------------------------------------------------------
+
+/** The template the first round of a reviewer session is filled from, and the slots it must carry (W-241's set). */
+const BUILD_REVIEW_PROMPT = "prompts/build-review.md";
+const BUILD_REVIEW_SLOTS = ["ID", "ROUND", "WORKTREE", "PACKET", "REVIEWED_HEAD", "FOCUS"] as const;
+/** Under STEP_SILENCE_SECONDS.review, so a live round never reads stalled: the perform logs before and after the call. */
+const REVIEW_TIMEOUT_MS = 25 * 60_000;
+const VERDICT_LINE = /^VERDICT: (PASS|FAIL)$/;
+
+/** `template` with every slot present and filled in one pass (a value is never re-scanned), or the slot it lacks. */
+export function fillSlots(template: string, values: Record<(typeof BUILD_REVIEW_SLOTS)[number], string>): string | { error: string } {
+  const missing = BUILD_REVIEW_SLOTS.find((slot) => !template.includes(`<${slot}>`));
+  if (missing !== undefined) return { error: `${BUILD_REVIEW_PROMPT} lacks the slot <${missing}>` };
+  return template.replace(new RegExp(`<(${BUILD_REVIEW_SLOTS.join("|")})>`, "g"), (_, slot: (typeof BUILD_REVIEW_SLOTS)[number]) => values[slot]);
+}
+
+/** The reviewer's outcome: the reply's last nonblank line, raw but for the CR of a CRLF, exactly `VERDICT: PASS` or `VERDICT: FAIL`. */
+export function replyOutcome(reply: string): "passed" | "failed" | undefined {
+  const last = reply
+    .split("\n")
+    .map((l) => (l.endsWith("\r") ? l.slice(0, -1) : l))
+    .filter((l) => l.trim() !== "")
+    .pop();
+  const m = last === undefined ? null : VERDICT_LINE.exec(last);
+  return m === null ? undefined : m[1] === "PASS" ? "passed" : "failed";
+}
+
+/**
+ * `<repo>/.bisellium/reviews/<id>`, its containment proven before anything under it is made, removed or written:
+ * `.bisellium` is a real directory (`requireRealDirectory`) outside both studio trees (`parsePacketArgs`, W-215's
+ * check) holding neither, and each level below is created only inside a real one (`ensureRealDirectory`). Throws.
+ */
+function packetBase(f: Facts): string {
+  const dot = join(realpathSync(f.repo), ".bisellium");
+  requireRealDirectory(dot);
+  for (const studio of [f.studioAbs, f.wt.studio]) {
+    parsePacketArgs(["--phase", "build", "--opus", f.id, "--round", "1", "--sella", "censor", "--studio", studio, "--repo", f.wt.dir, "--packets", dot]);
+    const back = relative(dot, realpathSync(studio));
+    if (back === "" || (back !== ".." && !back.startsWith(`..${sep}`) && !isAbsolute(back))) throw new Error(`${studio} is inside ${dot}`);
+  }
+  return ensureRealDirectory(dot, "reviews", f.id);
+}
+
+/**
+ * The review rung, performed. With the censor's order: the packet, the prompt, the Codex round through the harness
+ * adapter, then `verdict`, `review` and one commit on opus/<id>. With a recorded verdict the gate does not cite yet (an
+ * interrupted round): `review` and the commit only. Every refusal and every thrown step error is a `review held`.
+ */
+async function performReview(f: Facts, d: Readonly<Derived>, nowMs: number, testClock: boolean, log: (line: string) => void): Promise<StepResult> {
+  try {
+    return await reviewSteps(f, d, nowMs, testClock, log);
+  } catch (e) {
+    return heldResult(`the review perform failed: ${one((e as Error).message)}`);
+  }
+}
+
+async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testClock: boolean, log: (line: string) => void): Promise<StepResult> {
+  const { id, wt, studioRel } = f;
+  if (f.branchRecord?.["kind"] === "ui") return heldResult("refusing: a UI opus's review round is not performed; dispatch it as the order names");
+  if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
+  const dirty = dirtyHold(wt.dir);
+  if (dirty !== undefined) return dirty;
+  const censor = censorSella(f.manifest) ?? "qa-lead";
+  let round: number;
+  if (d.order !== undefined) {
+    round = d.order.round ?? 0;
+    if (round < 1) return heldResult("refusing: the review order names no round");
+    let packet: string;
+    let files: Map<string, string>;
+    try {
+      const packets = packetBase(f);
+      rmSync(join(packets, `r${round}`), { recursive: true, force: true });
+      ({ packet, files } = buildPacket({ phase: "build", opus: id, round, sella: censor, studio: wt.studio, repo: wt.dir, packets }));
+    } catch (e) {
+      return heldResult(`the review packet could not be built: ${one((e as Error).message)}`);
+    }
+    const seq = readSequence(wt.studio, id, "build", censor);
+    if ("error" in seq) return heldResult(`the review sequence cannot be read: ${seq.error}`);
+    const previous = seq.last?.session;
+    let prompt = files.get("prompt.md");
+    if (previous === undefined || prompt === undefined) {
+      const template = readContainedRegularFile(wt.studio, BUILD_REVIEW_PROMPT, "prompts");
+      if ("error" in template) return heldResult(`${BUILD_REVIEW_PROMPT}: ${template.error}`);
+      const filled = fillSlots(template.bytes.toString("utf8"), {
+        ID: id,
+        ROUND: String(round),
+        WORKTREE: wt.dir,
+        PACKET: packet,
+        REVIEWED_HEAD: f.tip ?? "",
+        FOCUS: [
+          `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${studioRel}/${briefRel(id)}, as its rows assert.`,
+          "2. The existing rows its Acceptance names as flipped, and no other.",
+          `3. The source diff (paths outside ${studioRel}/) is exactly its Files owned.`,
+          `4. Each red under ${studioRel}/ci/reds/${id}/ fails by assertion on its commit.`,
+        ].join("\n"),
+      });
+      if (typeof filled !== "string") return heldResult(filled.error);
+      prompt = filled;
+    }
+    const diff = git(wt.dir, ["diff", `${TRUNK}...HEAD`]);
+    if (diff.status !== 0) return heldResult(`git diff ${TRUNK}...HEAD failed: ${one(diff.stderr)}`);
+    mkdirSync(packet);
+    files.set("prompt.md", prompt).set(`${id}.diff`, diff.stdout);
+    for (const [name, text] of files) writeFileSync(join(packet, name), text, { flag: "wx" });
+    const override = Number(process.env["BISELLIUM_TEST_REVIEW_TIMEOUT_MS"]);
+    const timeoutMs = testClock && Number.isSafeInteger(override) && override > 0 ? override : REVIEW_TIMEOUT_MS;
+    const call = { cwd: wt.dir, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt };
+    log(`review: ${previous === undefined ? "codex started" : `codex resumed ${previous}`} (round ${round})`);
+    const turn = previous === undefined ? await codexProfile.start({ ...call, systemPrompt: "" }) : await codexProfile.resume({ ...call, sessionId: previous });
+    log(`review: codex exited ${turn.exitCode}`);
+    // the packet is proven again before the one write after the call
+    requireRealDirectory(packet);
+    writeFileSync(join(packet, "verdict.md"), turn.reply, { flag: "wx" });
+    const raw = isDict(turn.raw) ? turn.raw : {};
+    const why = raw["timedOut"] === true ? ` (timed out after ${timeoutMs} ms)` : typeof raw["signal"] === "string" ? ` (signal ${raw["signal"]})` : turn.exitCode === 3 ? " (a usage limit)" : "";
+    if (turn.exitCode !== 0) return heldResult(`codex exited ${turn.exitCode}${why}; nothing is recorded`);
+    if (!SESSION_ID.test(turn.sessionId)) return heldResult("codex reported no session id; nothing is recorded");
+    if (previous !== undefined && turn.sessionId !== previous) return heldResult(`codex resumed ${previous} but reported session ${clean(turn.sessionId)}; nothing is recorded`);
+    const replied = replyOutcome(turn.reply);
+    if (replied === undefined) return heldResult(`the reply's last line is not "VERDICT: PASS" or "VERDICT: FAIL" (${packet}/verdict.md); nothing is recorded`);
+    const v = capture(() => runVerdict([id, "--round", String(round), "--sella", censor, "--outcome", replied, "--model", REVIEWER_MODEL, "--session", turn.sessionId, "--from", join(packet, "verdict.md"), "--studio", wt.studio]));
+    if (v.exit !== 0) return heldResult(`verdict refused: ${[...v.err, ...v.out].map(one).filter(Boolean)[0] ?? `exit ${v.exit}`}`, ...v.err.slice(1, 6).map((l) => `verdict: ${one(l)}`));
+  } else if (d.ticket?.action === "review") round = d.ticket.round;
+  else return heldResult(`refusing: the review rung names neither an order nor a recorded verdict to cite`);
+  // the outcome `review` records is the log's, which verdict may have reconciled (W-126); the log must be a fixed-reviewer
+  // Codex round of this sequence; in a ticketed studio the re-derivation names the review record for this round, and
+  // `review` refuses any other ticket
+  f = gather(f.repo, f.studioAbs, id);
+  const read = f.buildRounds();
+  if ("error" in read) return heldResult(`refusing: the build-review logs cannot be read (${read.error})`);
+  const recorded = read.rounds.find((r) => r.n === round);
+  if (recorded === undefined) return heldResult(`refusing: ci/${id}-review-${round}.log cannot be read`);
+  // every value of a header, so a duplicate is seen (parseVerdictLog keeps them all)
+  const headers = (rel: string, key: string): string[] => {
+    const text = f.branch?.read(rel);
+    const p = text === undefined ? undefined : parseVerdictLog(text, id, rel);
+    return p === undefined || "error" in p ? [] : (p.headers.get(key) ?? []);
+  };
+  const models = headers(recorded.log, "model");
+  const sessions = headers(recorded.log, "session");
+  if (models.length !== 1 || models[0] !== REVIEWER_MODEL) return heldResult(`refusing: ${recorded.log} does not record exactly one model header, ${REVIEWER_MODEL}`);
+  const session = sessions.length === 1 ? sessions[0]! : "";
+  if (!SESSION_ID.test(session)) return heldResult(`refusing: ${recorded.log} does not record exactly one valid session header`);
+  const before = read.rounds.filter((r) => r.n < round).pop();
+  const sequence = before === undefined ? [] : headers(before.log, "session");
+  if (sequence.length > 0 && (sequence.length !== 1 || !SESSION_ID.test(sequence[0]!) || sequence[0] !== session))
+    return heldResult(`refusing: ${recorded.log} records session ${session}, not the sequence's sole valid session (${before?.log})`);
+  const outcome = recorded.outcome === "passed" ? "passed" : "failed";
+  for (const l of refreshTicket(f, deriveNext(f), nowMs)) log(l);
+  const r = capture(() => runReview([id, outcome === "passed" ? "--pass" : "--fail", "--evidence", `ci/${id}-review-${round}.log`, "--round", String(round), "--sella", censor, "--model", REVIEWER_MODEL, "--studio", wt.studio]));
+  if (r.exit !== 0) return heldResult(`review refused: ${[...r.err, ...r.out].map(one).filter(Boolean)[0] ?? `exit ${r.exit}`}`);
+  const paths = [`${studioRel}/ci/${id}-review-${round}.log`, `${studioRel}/${recordRel(id)}`];
+  const staged = git(wt.dir, ["add", "--", ...paths]);
+  const committed = staged.status === 0 ? git(wt.dir, ["commit", "-q", "-m", `chore(studio): ${id} review round ${round} ${outcome}`, "-m", `Co-Authored-By: ${censor} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
+  if (committed.status !== 0) return heldResult(`could not commit review round ${round} on opus/${id}: ${one(committed.stderr)}; the log and the record are uncommitted: commit them by hand`);
+  return { ok: true, lines: [`review: round ${round} ${outcome}`, `log: ci/${id}-review-${round}.log`, `branch: opus/${id}`] };
+}
+
 /** W-243: a landing head may change officina records only (`recordOnly`, the list certify reads): anything else is refused before the push. */
 async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
   const paths = diffPaths(f.repo, TRUNK, `refs/heads/${head}`);
@@ -1827,6 +1991,9 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           break;
         case "cleanup":
           result = cleanup(ctx);
+          break;
+        case "review":
+          result = await performReview(f, d2, a.nowMs, a.testClock, log);
           break;
         default:
           result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : (handoffHold(f) ?? performDone(f, d2));
