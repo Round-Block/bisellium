@@ -24,8 +24,8 @@ Measured and Status columns from it. Cycle = minutes from the first spec signatu
 | D-077 work state is a git record; W-299 queue.yml + next --all; W-308 timeline | 2026-10-17 | not built | no session note; cycle minutes from records | not yet | queued |
 | W-305 fast lane for one-behaviour light briefs | 2026-10-17 | not built | ~35 min on a trivial opus | not yet | queued |
 | W-179 split the slow test file | 2026-10-17 | not built | 60-70 min per opus | not yet | queued |
-| W-259 one certify instead of mint plus verify | 2026-10-17 | not built | ~41 min per opus | not yet | queued |
-| W-292 the runner chains mint, review, PR and merge | 2026-10-17 | not built | 50-70 min idle per opus | not yet | queued |
+| W-259 one certify instead of mint plus verify | 2026-10-17 | part 1 done 2026-10-17 (#544, #546) | ~41 min per opus | done records certify, no local verify | parts 2, 3 queued as W-312, W-313 |
+| W-292 the runner chains mint, review, PR and merge | 2026-10-17 | part 1 done 2026-10-17 (#540, #547) | 50-70 min idle per opus | used on W-259 and W-311 (mint, review, PR in one call) | remainder queued as W-310 |
 
 ## Daily retro
 
