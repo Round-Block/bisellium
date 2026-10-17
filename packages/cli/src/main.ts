@@ -237,10 +237,22 @@ async function main(argv: string[]): Promise<number> {
   return 2;
 }
 
-main(process.argv.slice(2)).then(
-  (code) => process.exit(code),
-  (err) => {
-    console.error(err instanceof Error ? err.stack ?? err.message : String(err));
-    process.exit(1);
-  },
-);
+/** How long a verb's process may outlive `main()` when a handle it left
+ *  open (a stdin a hook payload never closed, a timer) keeps the loop alive. */
+const EXIT_GRACE_MS = 1000;
+
+/**
+ * W-311: end the process by `process.exitCode`, not `process.exit`. tsx writes each compiled module to its
+ * cache asynchronously while the graph loads; `process.exit` at once leaves every entry created and empty,
+ * which tsx reads as a miss, so every start compiles again. Letting the loop drain lets the writes land.
+ * The unref'd timer is the backstop for a handle a verb left open: it never keeps the loop alive itself.
+ */
+function finish(code: number): void {
+  process.exitCode = code;
+  setTimeout(() => process.exit(code), EXIT_GRACE_MS).unref();
+}
+
+main(process.argv.slice(2)).then(finish, (err) => {
+  console.error(err instanceof Error ? err.stack ?? err.message : String(err));
+  finish(1);
+});

@@ -102,6 +102,7 @@ after(() => {
 const SETUP_ENV: NodeJS.ProcessEnv = {
   PATH: process.env["PATH"] ?? "/usr/bin:/bin",
   HOME: scratch("home"),
+  TMPDIR: tmpdir(),
   LANG: "C.UTF-8",
   TZ: "UTC",
   GIT_CONFIG_GLOBAL: "/dev/null",

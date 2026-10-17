@@ -56,6 +56,7 @@ function spawnScript(args, eventName, payload) {
     env: {
       PATH: process.env.PATH ?? "/usr/bin:/bin",
       HOME: dir,
+      TMPDIR: tmpdir(),
       GITHUB_EVENT_NAME: eventName,
       GITHUB_EVENT_PATH: eventPath,
     },
