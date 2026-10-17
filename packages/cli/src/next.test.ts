@@ -179,6 +179,14 @@ state[hit] = n + 1;
 fs.writeFileSync(statePath, JSON.stringify(state));
 const reply = replies[Math.min(n, replies.length - 1)];
 if (reply.touch) fs.writeFileSync(reply.touch, "1");
+if (reply.files) {
+  const path = require("node:path");
+  const into = argv[argv.indexOf("-D") + 1];
+  for (const [rel, text] of Object.entries(reply.files)) {
+    fs.mkdirSync(path.dirname(path.join(into, rel)), { recursive: true });
+    fs.writeFileSync(path.join(into, rel), text);
+  }
+}
 let out = "";
 if (reply.bytes !== undefined) out = "x".repeat(reply.bytes);
 else if (typeof reply.stdout === "string") out = reply.stdout;
@@ -264,6 +272,8 @@ interface Reply {
   exit?: number;
   bytes?: number;
   touch?: string;
+  /** W-259: files written under the call's -D directory, as gh run download writes an artifact */
+  files?: Record<string, string>;
 }
 interface Alt {
   ifExists?: string;
@@ -274,7 +284,7 @@ interface Rule {
   replies: Reply[];
   alts?: Alt[];
 }
-type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "alerts" | "update" | "merge" | "create";
+type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "alerts" | "update" | "merge" | "create" | "runList" | "runView" | "runDownload";
 const SLOT_MATCH: Record<SlotName, string[]> = {
   repoView: ["repo", "view"],
   list: ["pr", "list"],
@@ -286,6 +296,10 @@ const SLOT_MATCH: Record<SlotName, string[]> = {
   update: ["pr", "update-branch"],
   merge: ["pr", "merge"],
   create: ["pr", "create"],
+  // W-259: the merge queue's CI run for a merge commit, its jobs and its certify artifact
+  runList: ["run", "list"],
+  runView: ["run", "view"],
+  runDownload: ["run", "download"],
 };
 type SlotValue = Reply | Reply[] | Rule;
 const asRule = (v: SlotValue): Rule => (Array.isArray(v) ? { replies: v } : "replies" in v ? v : { replies: [v] });
@@ -601,6 +615,9 @@ function scenario(w: World, over: Partial<Record<SlotName, SlotValue>>): void {
     update: { stdout: "" },
     merge: { stdout: "" },
     create: { stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n` },
+    runList: { stdout: [] },
+    runView: { stdout: { jobs: [] } },
+    runDownload: { exit: 1, stderr: "no artifact" },
   };
   const rules = (Object.keys(SLOT_MATCH) as SlotName[]).map((slot) => ({ match: SLOT_MATCH[slot], ...asRule(over[slot] ?? defaults[slot]) }));
   writeFileSync(w.scn, JSON.stringify({ rules }));
@@ -2484,7 +2501,7 @@ test("W-141-b2 behaviour 2: done composes with verify: the rung names verify fir
   // before verify: the rung names the verify command, and a perform holds with it on a why: line
   const named = next(w, [OPUS]);
   expectStep(named, "done", "named", "no certificate: done is named");
-  assert.equal(named.kv.get("command"), verify, ran("the command is verify", named));
+  assert.equal(named.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("W-259: the command is the done perform", named));
   const refused = next(w, [OPUS, "--perform", "--expect", "done"]);
   expectHeld(refused, "perform before verify");
   assert.ok(outLines(refused).some((l) => l.startsWith("why: ") && l.includes(verify)), ran("the why line carries the verify command", refused));
@@ -2744,6 +2761,8 @@ function certifiedWorld(tag: string, kind: "opus" | "ui", gates: Record<string, 
   return w;
 }
 const VERIFY = `bisellium verify ${OPUS} --studio studio --repo .`;
+/** W-259: an uncertified non-ui opus is named the done perform, which records certify's certificate or names VERIFY. */
+const DONE_PERFORM = `bisellium next ${OPUS} --perform --expect done`;
 
 test("W-141-b2 round 1: a UI opus's implicit served-e2e gate counts toward certificate readiness", { timeout: 1_800_000 }, () => {
   const w = certifiedWorld("w141-r1-b2-ui", "ui", { tests: { certifies: (t) => t, hex: "aaa111" } });
@@ -2789,7 +2808,7 @@ test("W-141-b2 round 1: a stale or dirty certificate is not a certificate", { ti
     const w = certifiedWorld(`w141-r1-b2-${row.split(" ")[1]}`, "opus", { tests: { certifies, hex: "aaa111" } });
     const o = next(w, [OPUS]);
     expectStep(o, "done", "named", row);
-    assert.equal(o.kv.get("command"), VERIFY, ran(`${row}: the rung names verify`, o));
+    assert.equal(o.kv.get("command"), DONE_PERFORM, ran(`${row}: the rung names the done perform (W-259)`, o));
     const held = next(w, [OPUS, "--perform", "--expect", "done"]);
     expectHeld(held, `${row}: perform`);
     assert.ok(outLines(held).some((l) => l.startsWith("why: ") && l.includes(VERIFY)), ran(`${row}: the why line names verify`, held));
@@ -2914,7 +2933,7 @@ test("W-141-b2 round 2: readiness judges the working record: a valid trunk certi
   editRecord(w, "repo", (doc) => doc.setIn(["probationes", "tests", "certifies"], `tree:${"0".repeat(40)}`));
   const masked = next(w, [OPUS]);
   expectStep(masked, "done", "named", "stale working certificate");
-  assert.equal(masked.kv.get("command"), VERIFY, ran("the stale working record is not masked by the trunk's", masked));
+  assert.equal(masked.kv.get("command"), DONE_PERFORM, ran("the stale working record is not masked by the trunk's", masked));
   const heldPerform = next(w, [OPUS, "--perform", "--expect", "done"]);
   expectHeld(heldPerform, "perform with a stale working record");
 
@@ -2949,7 +2968,7 @@ test("W-141-b2 round 2: readiness validates each gate's recorded evidence file, 
   const missing = certified("w141-r2-b2-missing");
   const m = next(missing, [OPUS]);
   expectStep(m, "done", "named", "evidence file missing");
-  assert.equal(m.kv.get("command"), VERIFY, ran("a missing log is not certified", m));
+  assert.equal(m.kv.get("command"), DONE_PERFORM, ran("a missing log is not certified", m));
   touchHandoff(missing);
   expectHeld(next(missing, [OPUS, "--perform", "--expect", "done"]), "perform with a missing log");
   assert.equal(branchExists(missing, `chore/done-${OPUS}`), false, "no chore head");
@@ -2958,7 +2977,7 @@ test("W-141-b2 round 2: readiness validates each gate's recorded evidence file, 
   const odd = certified("w141-r2-b2-odd");
   editRecord(odd, "repo", (doc) => doc.setIn(["probationes", "tests", "evidence"], "../README.md"));
   const o = next(odd, [OPUS]);
-  assert.equal(o.kv.get("command"), VERIFY, ran("a malformed evidence path is not certified", o));
+  assert.equal(o.kv.get("command"), DONE_PERFORM, ran("a malformed evidence path is not certified", o));
 
   // a good untracked log, but `git ls-files` fails: the omission is a refusal, not a silent skip
   const fine = certified("w141-r2-b2-lsfiles");
@@ -6208,4 +6227,126 @@ test("W-292-b1 behaviour 1: next --perform --chain runs the mint, the review rou
   assert.equal(on.status, 0, ran("no text: exit 0", on));
   assert.equal(on.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `)).pop(), `next: ${OPUS} pr named`, ran("no text: the pr rung is named", on));
   assert.equal(ghCalls(nt).filter((a) => a[0] === "pr" && a[1] === "create").length, 0, "no text: no PR");
+});
+
+// ---------------------------------------------------------------------------
+// W-259 behaviour 1: done records the merge queue's certify certificate
+// ---------------------------------------------------------------------------
+test("W-259-b1 behaviour 1: the done perform records the merge queue's certify certificate for the merge commit, and names verify when it cannot", { timeout: 1_800_000 }, () => {
+  const w = world("w259-b1", "cleanup", { automated: true });
+  const merge = w.mergeOid!;
+  const tree = `tree:${sourceTreeHash(w.repo, ["studio", ".bisellium"], merge)}`;
+  const RUN = 4242;
+  const receipt = (over: Record<string, unknown> = {}): string =>
+    JSON.stringify({ sella: `builder.${OPUS}`, harness: "run", exitCode: 0, completion: { schema: 1, origin: "host-producer", opus: OPUS, branch: BRANCH, builder: `builder.${OPUS}`, producer: "producer", baseCommit: merge, finalCommit: merge, toolingCommit: merge, finalSourceTree: tree, redReplays: [], gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true, ...over } });
+  const certifyLog = (pr = PR_NUMBER, exit = 0): string => `certify: merge group for PR #${pr}\ncertify: running the mint\ntests: passed  ci/${OPUS}-tests-${tree.slice(5, 13)}.log\ncertify: the mint exited ${exit}\n`;
+  const ci = (o: { runs?: unknown; jobs?: unknown; files?: Record<string, string>; download?: number } = {}): void =>
+    scenario(w, {
+      list: mergedList(w),
+      runList: { stdout: o.runs ?? [{ databaseId: RUN, headSha: merge, event: "merge_group", status: "completed", conclusion: "success" }] },
+      runView: { stdout: { jobs: o.jobs ?? [{ name: "gates", conclusion: "success" }, { name: "certify", conclusion: "success" }] } },
+      runDownload: o.download === undefined ? { stdout: "", files: o.files ?? { [`bisellium/bisellium/candidate/studio/receipts/builder.${OPUS}/r.json`]: receipt(), "_temp/certify.log": certifyLog() } } : { exit: o.download, stderr: "artifact expired" },
+    });
+  const verify = `bisellium verify ${OPUS} --studio studio --repo .`;
+  const perform = (): Out => next(w, [OPUS, "--perform", "--expect", "done"]);
+  const logName = `studio/ci/${OPUS}-tests-${tree.slice(5)}.log`;
+
+  // the rung names the perform, not verify
+  ci();
+  const named = next(w, [OPUS]);
+  expectStep(named, "done", "named", "no certificate: done is named");
+  assert.equal(named.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("the command is the done perform", named));
+
+  // every case certify cannot vouch for holds, names verify, and writes nothing
+  touchHandoff(w);
+  const record = readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8");
+  const heldWith = (row: string, why: RegExp): void => {
+    const o = perform();
+    expectHeld(o, row);
+    const line = outLines(o).find((l) => l.startsWith("why: ")) ?? "";
+    assert.match(line, why, ran(`${row}: the reason`, o));
+    assert.ok(line.includes(verify), ran(`${row}: the why line names verify`, o));
+    assert.equal(readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8"), record, `${row}: the record is unchanged`);
+    assert.equal(existsSync(join(w.repo, logName)), false, `${row}: no certificate log`);
+    assert.equal(branchExists(w, `chore/done-${OPUS}`), false, `${row}: no chore/done-<id>`);
+  };
+  ci({ runs: [] });
+  heldWith("no run", /0 merge-queue CI runs name the merge commit/);
+  ci({ runs: [{ databaseId: RUN, headSha: merge, event: "merge_group", status: "completed", conclusion: "failure" }] });
+  heldWith("a failed run", /CI run 4242 is completed, failure/);
+  ci({ jobs: [{ name: "certify", conclusion: "skipped" }] });
+  heldWith("certify skipped", /no one successful certify job/);
+  ci({ download: 1 });
+  heldWith("an expired artifact", /gh run download of certify-4242 failed/);
+  ci({ files: { [`receipts/r.json`]: receipt({ finalSourceTree: `tree:${"0".repeat(40)}` }), "certify.log": certifyLog() } });
+  heldWith("a receipt of another tree", /not the merge commit's tree:/);
+  ci({ files: { [`receipts/r.json`]: receipt({ opus: "W-901" }), "certify.log": certifyLog() } });
+  heldWith("another opus's receipt", /the receipt is not W-900's/);
+  ci({ files: { [`receipts/r.json`]: receipt(), "certify.log": certifyLog(PR_NUMBER, 1) } });
+  heldWith("a mint that failed", /does not show PR #901's mint exiting 0/);
+  ci({ files: { "certify.log": certifyLog() } });
+  heldWith("no receipt", /holds 0 receipt\(s\) and 1 certify\.log/);
+  // master's source moved since the merge: certify's tree is not master's
+  put(w.repo, "source.txt", "a later source change\n");
+  git(w.repo, ["commit", "-q", "-m", "feat: later", "--", "source.txt"]);
+  ci();
+  heldWith("source moved since the merge", /master's source changed since the merge commit [0-9a-f]{12} \(source\.txt\)/);
+  git(w.repo, ["reset", "-q", "--hard", merge]);
+  // a records-only commit that changes what the certificate must cover: a new automated gate, or the opus's own record
+  put(w.studio, "bisellium.yml", readFileSync(join(w.studio, "bisellium.yml"), "utf8").replace("source_excludes:", '  - { id: lint, name: Lint, kind: automated, command: "node -e 0" }\nsource_excludes:'));
+  git(w.repo, ["commit", "-q", "-m", "chore(studio): a records PR adds a gate", "--", "studio/bisellium.yml"]);
+  touchHandoff(w);
+  ci();
+  heldWith("a gate added since the merge", /master changed studio\/bisellium\.yml since the merge commit [0-9a-f]{12}, which certify's run did not judge/);
+  assert.equal(existsSync(join(w.studio, "ci", `${OPUS}-lint-${tree.slice(5)}.log`)), false, "a gate added since the merge: no lint log");
+  git(w.repo, ["reset", "-q", "--hard", merge]);
+  editRecord(w, "repo", (doc) => doc.setIn(["title"], "W-124 fixture: retitled by a records PR"));
+  git(w.repo, ["commit", "-q", "-m", "chore(studio): a records PR edits the record", "--", `studio/opera/${OPUS}.md`]);
+  touchHandoff(w);
+  const recordAfter = readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8");
+  const o = perform();
+  expectHeld(o, "the record changed since the merge");
+  assert.match(outLines(o).find((l) => l.startsWith("why: ")) ?? "", new RegExp(`master changed studio/opera/${OPUS}\\.md since the merge commit`), ran("the record changed since the merge: the reason", o));
+  assert.equal(readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8"), recordAfter, "the record changed since the merge: the record is unchanged");
+  assert.equal(existsSync(join(w.repo, logName)), false, "the record changed since the merge: no certificate log");
+  git(w.repo, ["reset", "-q", "--hard", merge]);
+  touchHandoff(w);
+
+  // a symlink planted at the certificate log's predictable name is never written through (review round 1: security×symlink-parent-write-escape)
+  const outside = join(w.repo, "..", "w259-outside.txt");
+  writeFileSync(outside, "outside the officina\n");
+  mkdirSync(join(w.repo, "studio", "ci"), { recursive: true });
+  symlinkSync(outside, join(w.repo, logName));
+  ci();
+  const linked = perform();
+  expectHeld(linked, "a symlink at the certificate log's name");
+  assert.match(outLines(linked).find((l) => l.startsWith("why: ")) ?? "", /the merge queue's certify certificate cannot be recorded/, ran("the symlinked log: the reason", linked));
+  assert.equal(readFileSync(outside, "utf8"), "outside the officina\n", "the symlinked log: the outside file is byte-identical");
+  assert.equal(lstatSync(join(w.repo, logName)).isSymbolicLink(), true, "the symlinked log: still the planted link, no log written");
+  assert.equal(branchExists(w, `chore/done-${OPUS}`), false, "the symlinked log: no chore/done-<id>");
+  rmSync(join(w.repo, logName));
+  rmSync(outside);
+
+  // records alone moved since the merge: the merge commit's certificate is recorded and the done record committed
+  // a records PR after the merge: the handoff is a record (recordOnly) but inside the source tree, as on master after #541
+  git(w.repo, ["commit", "-q", "-m", "chore(studio): a records PR", "--", "docs/SESSION-HANDOFF.md"]);
+  touchHandoff(w);
+  assert.notEqual(sourceTree(w.repo), tree, "the fixture: master's tree is not the merge commit's");
+  ci();
+  const done = perform();
+  assert.equal(done.status, 0, ran("perform exits 0", done));
+  expectStep(done, "done", "performed", "done is performed over certify's certificate");
+  assert.ok(outLines(done).includes(`certificate: certify run ${RUN}, PR #${PR_NUMBER}, merge commit ${merge.slice(0, 12)}, ${tree}`), ran("the certificate line", done));
+  const chore = `chore/done-${OPUS}`;
+  const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `refs/heads/${chore}`]).split("\n").sort();
+  assert.deepEqual(paths, ["docs/SESSION-HANDOFF.md", logName, `studio/opera/${OPUS}.md`], "the done commit carries the handoff, certify's log and the record");
+  const committed = git(w.repo, ["show", `refs/heads/${chore}:${logName}`]);
+  assert.equal(committed.split("\n")[0], `certifies: ${tree}`, "the log's first line is its certificate");
+  assert.match(committed, new RegExp(`CI run ${RUN}, PR #${PR_NUMBER}, merge commit ${merge}`), "the log names the run, the PR and the merge commit");
+  const rec = parseFrontMatter(git(w.repo, ["show", `refs/heads/${chore}:studio/opera/${OPUS}.md`])).data as Json;
+  assert.deepEqual((rec["probationes"] as Json)["tests"], { status: "passed", evidence: `ci/${OPUS}-tests-${tree.slice(5)}.log`, certifies: tree }, "the record's tests gate certifies the merge commit's tree");
+  assert.equal(rec["state"], "done", "the record is done");
+  const runCalls = ghCalls(w).filter((a) => a[0] === "run");
+  assert.deepEqual(runCalls.map((a) => a[1]), ["list", "view", "download"], "one run list, view and download");
+  assert.ok(runCalls[0]!.includes(merge) && runCalls[0]!.includes("merge_group"), "the run list names the merge commit and the merge_group event");
 });

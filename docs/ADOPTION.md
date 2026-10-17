@@ -1462,9 +1462,10 @@ record as the branch's first commit (a spec landed earlier adds none);
 `--force-with-lease`, reuse or
 create the PR (title and body from the head commit), the `merge` rules, a trunk
 fetch, then delete the head locally and on origin. A head that changes anything
-outside the officina records (`recordOnly`: the officina, the handoff, the dossier pages) is refused before the push. The `done` rung names
-`bisellium verify <opus> --studio <dir> --repo .` while an automated probatio has
-no `tree:` certificate; performed `done` then creates `chore/done-<opus>` from the
+outside the officina records (`recordOnly`: the officina, the handoff, the dossier pages) is refused before the push. While an automated probatio
+has no `tree:` certificate the `done` rung of a non-`ui` opus names `bisellium next <opus> --perform --expect done`
+(W-259, part 1: the perform records the merge queue's certify certificate, below) and that of a `ui` opus, on either
+record, names `bisellium verify <opus> --studio <dir> --repo .`; performed `done` then creates `chore/done-<opus>` from the
 `master` tip, runs `done`, and commits the record, verify's
 `ci/<opus>-<probatio>-<hash>.log` files and the tracked handoff and dossier-page changes together
 (it refuses without a tracked change to `docs/SESSION-HANDOFF.md`: the checkpoint
@@ -1473,6 +1474,40 @@ made the record `done` also changed the handoff; it likewise refuses, while `mas
 under `.claude/` or `.github/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
 stops before the tree and prints `patron: git -C <repo> merge --ff-only <oid>`; a
 dirty tracked Patron path prints `patron: git -C <repo> checkout -- <path>`.
+
+**`done` certify (W-259, part 1).** An uncertified `done` perform of a non-`ui` opus records the certificate the merge
+queue's `certify` job produced for the merge commit, instead of rerunning `verify` on this host. After `dirtyHold` and
+before the handoff, history-row and merge refusals, it reads the settled PR's merge commit and finds the one `merge_group`
+run of `ci.yml` whose head is that commit (`gh run list`), completed and successful, with exactly one successful `certify`
+job (`gh run view`); it downloads that run's `certify-<run>` artifact into a fresh directory under
+`<repo>/.bisellium/certify/` (removed afterwards; `gh run download`) and requires exactly one receipt under a `receipts`
+path segment and one `certify.log`. The receipt must be a successful host-produced `run` completion for `<opus>` on
+`opus/<opus>` with `ci`, `verify` and `check` passed, complete teardown, and a `finalSourceTree` equal to the merge
+commit's source tree; `certify.log` must show `certify: merge group for PR #<n>` and `certify: the mint exited 0`. It then
+writes, for each automated probatio of the working and trunk records, `ci/<opus>-<probatio>-<40-hex tree>.log`
+(`certifies: tree:<hash>`, a `command:` line naming the run, the PR, the merge commit and the receipt's sha256, `exit code:
+0`, the receipt and the log's last 200 lines through `redact`) and records the probatio's `passed`, `evidence` and
+`certifies` on the opus record, prints `certificate: certify run <run>, PR #<n>, merge commit <oid12>, tree:<hash>` and
+one `certificate: <probatio> ci/<file>` line per probatio, and carries on as above; the done commit stages those logs.
+
+The certificate names the merge commit's tree, not master's tip. Records-only commits after the merge (`recordOnly`: the
+officina, the handoff, the dossier pages) keep it, so every probatio then certifies the merge commit's own tree, which
+`certificate` accepts as the one `want` when the first gate certifies it. That acceptance is diff-bound and goes through
+one function, `mergedTree`, which both `certificate` and the certify perform call: a source change on master after the
+merge, an unreadable diff, a change to `<studio>/bisellium.yml` (a gate may have been added) or a change to
+`<studio>/opera/<opus>.md` (its `kind` decides the gates) refuses it, and the perform holds. Any other failure (no run, a
+failed run or job, an expired artifact, a receipt of another tree or opus, a log whose mint did not exit 0, a symlink in
+the artifact) holds too, exit 1, with `why: refusing: the merge queue's certify certificate cannot be recorded: <reason>;
+run: bisellium verify <opus> --studio <dir> --repo .`, before `chore/done-<opus>` is cut and with no log or record
+written. A hold after the record is written (a stale handoff, say) leaves the certificate in the working tree, as a
+`verify` run does, and the next perform finds it certified. Limits: the fallback `verify` is unchanged and keeps its
+30-minute limit per gate; GitHub keeps the artifact for 90 days, and a later `done` falls back to `verify`; a records-only
+change after the merge was checked by CI's records-only path (`test:record` and the studio check), not the full suite;
+the perform trusts what `gh` reports for the repository's own Actions run and reads no signature; the step marker's
+silence limit for `done` is 120 s, so a download slower than that reads stalled to a concurrent `next` (nothing kills it),
+and each `gh` call has `sh`'s 120 s timeout and 16 MiB buffer; a hold after the logs are written but before the record
+write leaves untracked logs that the next perform overwrites; `runDone` still accepts any `tree:` certificate, `check`'s
+`probatio.certifies.stale` judges active opera only, and a failed review's tree is compared with the gates' tree as before.
 
 **`review` (W-274, part 1).** `next <opus> --perform --expect review --budget <tokens>` runs one build-review round
 end to end, in the foreground (the orchestrator launches it in its own background call and waits for its exit). It

@@ -1,0 +1,23 @@
+# opus: W-259
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14951-d123-7030-84e2-88b9357666d1
+# outcome: passed
+# at: 2026-10-17T10:17:14.646Z
+# tree: tree:07316294ad96ad5d6b9074bfbc84d1815b7395e5
+# brief: briefs/W-259.md blob:4fa6f0184fa82f5319e78d31b1df73f980ada372
+# ticket: {"opus":"W-259","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"3bf6de327702c980d86e7ddbc791a224847ccceb","brief":"4fa6f0184fa82f5319e78d31b1df73f980ada372","at":"2026-10-17T10:17:14.141Z"}
+
+## Findings
+1. advisory — studio/briefs/W-259.md:17 Following the round-2 class, “every acceptance” overclaims the fix because unchanged `runDone` accepts any `tree:` certificate, as line 55 acknowledges; only `next`’s non-master-tree acceptance is diff-bound. Replace “every acceptance” with “every acceptance by `next`”. [severity: S2] [class: spec×prose-contradiction-under-revision] — check: none: scope qualifiers in cause-fix prose have no automated check
+2. advisory — studio/briefs/W-259.md:113 Following the round-2 class, Defaults 2 still promises that studio-record commits do not void the certificate, contradicting the new refusal when this opus’s record changes. Replace with: `2. Records-only commits after the merge do not void that certificate unless they change <studio>/bisellium.yml or <studio>/opera/<id>.md; other studio records, the handoff and dossier pages may move while the certificate continues to name the merge commit's tree. Agree?` [severity: S2] [class: mechanism×certification-coverage-not-diff-bound] — check: none: the promise ledger must compare Defaults with the stated limits
+
+## Earlier findings
+- ci/W-259-spec-2.log #1: closed — `mergedTree` now takes the opus id, rejects post-merge changes to the manifest or this opus’s record before either call site accepts the merge tree, and W-259-b1 records the revision-1 failure and revision-2 passing manifest-drift and record-drift cases
+
+## Verdict
+The original S1 is closed; the remaining findings are advisory overclaims in dependent prose.
+
+VERDICT: PASS
