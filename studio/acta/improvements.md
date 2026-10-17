@@ -21,6 +21,7 @@ Measured and Status columns from it. Cycle = minutes from the first spec signatu
 | W-306 architect signature cites a promise ledger | 2026-10-17 | PR 534 | fewer failed spec rounds | W-274 still failed 8 with a ledger | done; warning if 2 more opera fail on wording (D-076 D) |
 | W-307 reader ledger | 2026-10-17 | halted | - | - | halted (D-076 D) |
 | D-076 only real defects block; second spec review only after a design-changing defect | 2026-10-17 | this PR | ~20 min per opus | not yet | live |
+| D-077 work state is a git record; W-299 queue.yml + next --all; W-308 timeline | 2026-10-17 | not built | no session note; cycle minutes from records | not yet | queued |
 | W-305 fast lane for one-behaviour light briefs | 2026-10-17 | not built | ~35 min on a trivial opus | not yet | queued |
 | W-179 split the slow test file | 2026-10-17 | not built | 60-70 min per opus | not yet | queued |
 | W-259 one certify instead of mint plus verify | 2026-10-17 | not built | ~41 min per opus | not yet | queued |
