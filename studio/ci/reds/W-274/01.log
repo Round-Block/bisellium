@@ -1,0 +1,64 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-274-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-17T04:06:48.763Z
+# sella: builder.W-274
+# tree: tree:8e90fa2189128f73b97f4713c501097d681fcae7
+# ticket: {"opus":"W-274","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-274/studio","head":"520dfc4a8a3cf5adb3c75224713dfad2edb26d99","brief":"e83ad8941cdd49ff63f3d7abdd17b9e307dfeda8","at":"2026-10-17T04:06:43.607Z"}
+
+TAP version 13
+# Subtest: W-274-b1 behaviour 1: next --perform --expect review runs round 1 end to end through the codex adapter, or holds with nothing recorded
+not ok 1 - W-274-b1 behaviour 1: next --perform --expect review runs round 1 end to end through the codex adapter, or holds with nothing recorded
+  ---
+  duration_ms: 1576.447414
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-274/packages/cli/src/next.test.ts:189:2061'
+  failureType: 'testCodeFailure'
+  error: |-
+    pass: performed
+    --- exit 0
+    --- stdout
+    next: W-900 review named
+    actor: censor
+    why: no review gate is recorded
+    head: opus/W-900 2678eb93800f
+    role: censor
+    sella: qa-lead
+    boot: bisellium context --sella qa-lead --studio studio
+    budget_tokens: 400000
+    phase: review
+    round: 1
+    inputs: briefs/W-900.md, ci/reds/W-900/, opera/W-900.md#traditio
+    command: dispatch qa-lead; Packet first: node --import tsx scripts/review-packet.mjs --phase build --opus W-900 --round 1 --sella qa-lead --studio studio --repo . --packets <packet dir>; If the author disputes a finding with evidence, send studio/prompts/rebuttal.md and the author's ## Rebuttal into the same session and record the reviewer's ## Ruling in the same verdict.; record the transcript with: bisellium verdict W-900 --round 1 --sella qa-lead --outcome <passed|failed> --studio studio --session <the session id the reviewer prints>; close out with: bisellium review W-900 --pass|--fail --evidence ci/W-900-review-1.log --round 1 --sella qa-lead --studio studio. Use the word class in a blocker that recurs across sites (L-069).
+    health: no step recorded
+    ticket: verdict-build round 1
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 review named'
+    - 'next: W-900 review performed'
+                          ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 review performed'
+  actual: 'next: W-900 review named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-274/packages/cli/src/next.test.ts:5815:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1679.612879
