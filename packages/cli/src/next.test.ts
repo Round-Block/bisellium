@@ -6312,6 +6312,21 @@ test("W-259-b1 behaviour 1: the done perform records the merge queue's certify c
   git(w.repo, ["reset", "-q", "--hard", merge]);
   touchHandoff(w);
 
+  // a symlink planted at the certificate log's predictable name is never written through (review round 1: security×symlink-parent-write-escape)
+  const outside = join(w.repo, "..", "w259-outside.txt");
+  writeFileSync(outside, "outside the officina\n");
+  mkdirSync(join(w.repo, "studio", "ci"), { recursive: true });
+  symlinkSync(outside, join(w.repo, logName));
+  ci();
+  const linked = perform();
+  expectHeld(linked, "a symlink at the certificate log's name");
+  assert.match(outLines(linked).find((l) => l.startsWith("why: ")) ?? "", /the merge queue's certify certificate cannot be recorded/, ran("the symlinked log: the reason", linked));
+  assert.equal(readFileSync(outside, "utf8"), "outside the officina\n", "the symlinked log: the outside file is byte-identical");
+  assert.equal(lstatSync(join(w.repo, logName)).isSymbolicLink(), true, "the symlinked log: still the planted link, no log written");
+  assert.equal(branchExists(w, `chore/done-${OPUS}`), false, "the symlinked log: no chore/done-<id>");
+  rmSync(join(w.repo, logName));
+  rmSync(outside);
+
   // records alone moved since the merge: the merge commit's certificate is recorded and the done record committed
   // a records PR after the merge: the handoff is a record (recordOnly) but inside the source tree, as on master after #541
   git(w.repo, ["commit", "-q", "-m", "chore(studio): a records PR", "--", "docs/SESSION-HANDOFF.md"]);

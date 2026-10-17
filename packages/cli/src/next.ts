@@ -1963,7 +1963,13 @@ function recordCertify(f: Facts): { lines: string[] } | { why: string } {
     const evidence = new Map<string, string>();
     for (const gate of gates) {
       const name = `${id}-${gate}-${m.tree.slice(5)}.log`;
-      writeFileSync(join(ci, name), body);
+      // O_NOFOLLOW: a symlink planted at the predictable name is refused (ELOOP, which holds), never written through
+      const fd = openSync(join(ci, name), constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o666);
+      try {
+        writeFileSync(fd, body);
+      } finally {
+        closeSync(fd);
+      }
       evidence.set(gate, `ci/${name}`);
       out.push(`certificate: ${gate} ci/${name}`);
     }
