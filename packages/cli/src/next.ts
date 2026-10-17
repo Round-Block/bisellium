@@ -78,8 +78,9 @@ const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
 const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review"]);
-const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
-const LIGHT_SECTIONS = ["Intent", "Files owned", "Behaviours to test", "Acceptance"];
+const BEHAVIOURS = "Behaviours to test";
+const SECTIONS = ["Intent", "Files owned", "Interfaces", BEHAVIOURS, "Acceptance", "Out of scope"];
+const LIGHT_SECTIONS = ["Intent", "Files owned", BEHAVIOURS, "Acceptance"];
 const PAST_READY = new Set(["building", "verifying", "review", "done"]);
 /** W-162: the one model the spec reviewer may be. Another codex model is not close enough. */
 const REVIEWER_MODEL = "gpt-5.6-sol";
@@ -1617,7 +1618,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
         PACKET: packet,
         REVIEWED_HEAD: f.tip ?? "",
         FOCUS: [
-          `1. Each numbered behaviour under ## Behaviours to test in ${studioRel}/${briefRel(id)}, as its rows assert.`,
+          `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${studioRel}/${briefRel(id)}, as its rows assert.`,
           "2. The existing rows its Acceptance names as flipped, and no other.",
           `3. The source diff (paths outside ${studioRel}/) is exactly its Files owned.`,
           `4. Each red under ${studioRel}/ci/reds/${id}/ fails by assertion on its commit.`,
