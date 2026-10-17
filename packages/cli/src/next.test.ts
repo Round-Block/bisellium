@@ -5932,3 +5932,83 @@ test("W-274-b1 behaviour 1: next --perform --expect review runs round 1 end to e
   assert.equal(codexCalls(u).length, 0, "ui: no codex call");
   assert.equal(existsSync(join(u.repo, ".bisellium", "reviews")), false, "ui: no packet");
 });
+
+test("W-274-b2 behaviour 2: a later round resumes the reviewer's session with the later-round prompt, and an interrupted round is finished without a second codex call", { timeout: 1_800_000 }, () => {
+  // round 1 fails in session s-274-2; after the fix, round 2 resumes it
+  const w = reviewWorld("w274-b2-resume");
+  codexSays(w, { session: "s-274-2", reply: FAIL_REPLY });
+  const o1 = performReview(w);
+  assert.equal(o1.kv.get("review"), "round 1 failed", ran("round 1 failed", o1));
+  advanceSource(w);
+  handoffAt(w, "wt", new Date(Date.now() + 60_000).toISOString());
+  // a round-2 verdict recorded in another session than the sequence's is not finished as an interrupted round
+  next(w, [OPUS, "--budget", "400000"]);
+  verb(w.wt, ["verdict", OPUS, "--round", "2", "--sella", "qa-lead", "--outcome", "passed", "--model", "gpt-5.6-sol", "--session", "s-other", "--session-reason", "a hand-replaced session", "--from", writeTranscript(w, "other.md", `No findings\n\n## Earlier findings\n- ci/${OPUS}-review-1.log #1: closed — fixed`), "--studio", w.wtStudio]);
+  const other = performReview(w);
+  assert.equal(other.first, `next: ${OPUS} review held`, ran("another session: held", other));
+  assert.equal(other.kv.get("why"), `refusing: ci/${OPUS}-review-2.log records session s-other, not the sequence's sole valid session (ci/${OPUS}-review-1.log)`, ran("another session: why", other));
+  assert.equal(codexCalls(w).length, 1, "another session: no codex call");
+  rmSync(reviewLog(w, 2));
+  const before = tipOf(w);
+  codexSays(w, { session: "s-274-2", reply: `## Earlier findings\n- ci/${OPUS}-review-1.log #1: closed — source.txt changed\n\n${PASS_REPLY}` });
+  const o2 = performReview(w);
+  assert.equal(o2.first, `next: ${OPUS} review performed`, ran("round 2: performed", o2));
+  assert.equal(o2.kv.get("review"), "round 2 passed", ran("round 2: passed", o2));
+  const call = codexCalls(w)[1];
+  assert.deepEqual(call?.argv.slice(0, 3), ["exec", "resume", "s-274-2"], "round 2: resumes the session");
+  assert.equal(call?.stdin, LATER_TEMPLATE.replace("<ROUND>", "2").replace("<ID>", OPUS).replace("<PREVIOUS>", `ci/${OPUS}-review-1.log`).replace("<PACKET>", packetDir(w, 2)), "round 2: the later-round template, filled");
+  assert.match(readFileSync(join(packetDir(w, 2), "delta.diff"), "utf8"), /^\+change /m, "round 2: the delta holds the fix");
+  assert.equal(logKey(readFileSync(reviewLog(w, 2), "utf8"), "session"), "s-274-2", "round 2: the log names the same session");
+  assert.equal(git(w.wt, ["rev-parse", "HEAD~1"]), before, "round 2: one commit");
+
+  // a verdict recorded but not yet cited by the gate (an interrupted round): review and the commit, no codex call
+  const i = reviewWorld("w274-b2-interrupted");
+  // only a fixed-reviewer Codex round is finished: the log must record gpt-5.6-sol and a valid session
+  const once = `refusing: ci/${OPUS}-review-1.log does not record exactly one model header, gpt-5.6-sol`;
+  const oneSession = `refusing: ci/${OPUS}-review-1.log does not record exactly one valid session header`;
+  const dup = (key: string, value: string) => (text: string) => text.replace(new RegExp(`^(# ${key}: .*)$`, "m"), `$1\n# ${key}: ${value}`);
+  for (const [label, extra, why, edit] of [
+    ["another model", ["--model", "gpt-5.5", "--session", "s-274-i"], once, undefined],
+    ["no session", ["--model", "gpt-5.6-sol"], oneSession, undefined],
+    ["a duplicate model header", ["--model", "gpt-5.6-sol", "--session", "s-274-i"], once, dup("model", "gpt-5.6-sol")],
+    ["a duplicate session header", ["--model", "gpt-5.6-sol", "--session", "s-274-i"], oneSession, dup("session", "s-274-j")],
+  ] as const) {
+    next(i, [OPUS, "--budget", "400000"]);
+    verb(i.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", ...extra, "--from", writeTranscript(i, "interrupted.md"), "--studio", i.wtStudio]);
+    if (edit !== undefined) {
+      const was = readFileSync(reviewLog(i, 1), "utf8");
+      writeFileSync(reviewLog(i, 1), edit(was));
+      assert.notEqual(readFileSync(reviewLog(i, 1), "utf8"), was, `${label}: the header was duplicated`);
+    }
+    const oh = performReview(i);
+    assert.equal(oh.first, `next: ${OPUS} review held`, ran(`${label}: held`, oh));
+    assert.equal(oh.kv.get("why"), why, ran(`${label}: why`, oh));
+    assert.equal(reviewGateOf(i), undefined, `${label}: no gate`);
+    rmSync(reviewLog(i, 1));
+  }
+  next(i, [OPUS, "--budget", "400000"]);
+  verb(i.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--model", "gpt-5.6-sol", "--session", "s-274-i", "--from", writeTranscript(i, "interrupted.md"), "--studio", i.wtStudio]);
+  const itip = tipOf(i);
+  const oi = performReview(i);
+  assert.equal(oi.first, `next: ${OPUS} review performed`, ran("interrupted: performed", oi));
+  assert.equal(oi.kv.get("review"), "round 1 passed", ran("interrupted: the recorded outcome", oi));
+  assert.equal(codexCalls(i).length, 0, "interrupted: codex is not called again");
+  assert.equal(reviewGateOf(i)?.["status"], "passed", "interrupted: the gate cites the log");
+  assert.equal(git(i.wt, ["rev-parse", "HEAD~1"]), itip, "interrupted: one commit");
+  assert.deepEqual(git(i.wt, ["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"]).split("\n").sort(), [`studio/ci/${OPUS}-review-1.log`, `studio/opera/${OPUS}.md`], "interrupted: the log and the record");
+
+  // a failed commit after review leaves the log and the record uncommitted; pr holds on the dirty record
+  const c = reviewWorld("w274-b2-commit");
+  codexSays(c, { session: "s-274-c", reply: PASS_REPLY });
+  const ctip = tipOf(c);
+  const oc = performReview(c, { GIT_STUB_REAL: failingGit("w274-b2-commit", [`review round 1 passed`]) });
+  assert.equal(oc.first, `next: ${OPUS} review held`, ran("commit fails: held", oc));
+  assert.match(oc.kv.get("why") ?? "", /^could not commit review round 1 on opus\/W-900: .*; the log and the record are uncommitted: commit them by hand$/, ran("commit fails: why", oc));
+  assert.equal(tipOf(c), ctip, "commit fails: no commit");
+  assert.deepEqual(git(c.wt, ["status", "--porcelain"]).split("\n").sort(), [`A  studio/ci/${OPUS}-review-1.log`, `M  studio/opera/${OPUS}.md`], "commit fails: the log and the record are staged, uncommitted");
+  const body = join(c.root, "body.md");
+  writeFileSync(body, "body\n");
+  const op = next(c, [OPUS, "--perform", "--expect", "pr", "--title", "t", "--body-file", body, "--budget", "400000"]);
+  assert.equal(op.first, `next: ${OPUS} pr held`, ran("commit fails: pr holds", op));
+  assert.equal(op.kv.get("why"), "refusing: the working tree has tracked changes", ran("commit fails: on the dirty record", op));
+});
