@@ -1,0 +1,19 @@
+# opus: W-264
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-16T22:26:33.391Z
+# tree: tree:77ba6a21313b14a60aa38e9f2cb7799caac6d77e
+# brief: briefs/W-264.md blob:120d19efdc08e3b23a38492e24dff36b0b246b4d
+# ticket: {"opus":"W-264","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"88ef7abfaabeabfe00491d69a2975a3149c96cac","brief":"120d19efdc08e3b23a38492e24dff36b0b246b4d","at":"2026-10-16T22:26:32.805Z"}
+
+## Findings
+1. advisory — `specOrder`'s W-196 review gate keeps its own `limit.limit === undefined ? []` guard instead of `admissionLimit`: with no limit it is reached only after `specSectionsProblem` has admitted a light brief, or for a full brief, which is not read, so its answer cannot differ; brief Interfaces says so — check: packages/cli/src/next.test.ts (W-264-b2, W-196-b4 green on the prototype, next-rows-proto.out)
+2. advisory — `scripts/review-packet.mjs`'s `admissionFact` keeps its limit-only reading, so in an officina with no limit it would state "(none)" for a light brief that `ready` refuses; this studio declares a limit, so its packets do not change; left out of scope by name — check: scripts/review-packet.test.mjs
+3. advisory — Defaults 3: with no limit, `check` newly blocks an active opus whose named `spec:` it cannot read, even a full one; in this repository that flips only `W-161-b6`'s "no key" assertion (named), and every `examples/fixtures/*/EXPECT` golden and both officina checks are unchanged — check: ~/.bisellium-evidence/W-264-spec/fixtures-proto.out, check-sample-proto.json, check-studio-proto.json
+4. advisory — the Codex test check lists two flips (W-161-b6 line 628, W-255-b3's no-limit stanza at line 5165), both named in Files owned and Acceptance, and no unnamed flip; each must-stay-green row it lists was run on the prototype and is green (brief-admission, red-order, lifecycle, opus-model, process, check, rules, cli test files; W-196-b4 and W-255-b3; the fixture goldens) — check: ~/.bisellium-evidence/W-264-spec/fixture-census.md, neighbours-proto.out, next-rows-proto.out
+
+## Verdict
+Signed. Two behaviours; both reds replayed and accepted by assertion (b1 on master, b2 on the behaviour 1 prototype; reds.out); the prototype passes typecheck, lint, format and every neighbour run; the brief passes admission on master and the prototype (admission.out); the census of the 143 briefs under studio/ and examples/ finds no light brief, so no brief changes outcome.

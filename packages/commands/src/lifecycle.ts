@@ -23,7 +23,7 @@ import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisell
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
-import { readBriefAdmission, readBriefLimit, readRedOrder } from "./brief-admission.js";
+import { admissionLimit, readBriefAdmission, readBriefLimit, readRedOrder } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentRunReceipt } from "./builder-run.js";
 import {
@@ -302,14 +302,15 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   };
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposed, "ready"))) return { exitCode: 1 };
 
-  // W-127: brief admission, only where the officina declares a limit.
-  const limit = readBriefLimit(manifest.brief_behaviour_limit);
-  if ("error" in limit) {
-    console.error(`${opusId}: brief.admission: ${limit.error}`);
+  // W-127: brief admission where the officina declares a limit; W-264: with none, a light brief is still read, with no count.
+  const declared = readBriefLimit(manifest.brief_behaviour_limit);
+  if ("error" in declared) {
+    console.error(`${opusId}: brief.admission: ${declared.error}`);
     return { exitCode: 1 };
   }
-  if (limit.limit !== undefined) {
-    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), limit.limit);
+  const limit = admissionLimit(declared.limit, containedSpec.bytes.toString("utf8"));
+  if (limit !== undefined) {
+    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), limit);
     if (admission.length > 0) {
       console.error(admission.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
       return { exitCode: 1 };

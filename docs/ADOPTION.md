@@ -920,8 +920,14 @@ shell or a sourced file is not read. `set -e` does
 not act inside `if`, `while`, `!` or a non-final `&&`/`||` member, so a pipeline
 there still hides its status from the script.
 
-**Brief admission (W-127).** Only when `bisellium.yml` declares
-`brief_behaviour_limit` (a positive integer, else `manifest.shape` blocks).
+**Brief admission (W-127).** Where `bisellium.yml` declares
+`brief_behaviour_limit` (a positive integer, else `manifest.shape` blocks), and,
+with none declared (W-264), for an exact light brief by every rule except the
+upper count: an exception line on it is ignored, `ready` and `next` still require
+Red order, `ready` and `check` run a refused `Brief:` marker through admission
+while `next` rejects its form error, and `check` blocks an active opus whose
+named `spec:` it cannot read. With none declared, a full brief may be read and
+classified but is not passed to full-brief admission.
 A brief carries `Decree family: <slug>` on exactly one line, at most that many
 numbered behaviours under `## Behaviours to test`, and exactly one
 `**Genuine red:**` per numbered behaviour. A brief over the limit is admitted
@@ -995,7 +1001,8 @@ words (`the diff touches only Files owned and studio/`), and a sentence that
 names the diff and uses `only` for something else; scope either with the
 standard line. The scope list names the literal `studio`, so a brief in an
 officina with another directory name scopes itself with `source diff`. Where
-the key is absent, no full-brief admission runs and neither does this rule.
+the key is absent, no full-brief admission runs, but this rule runs on a light
+brief.
 
 **Red order (W-166).** A brief that carries the one real line
 `Red order: one at a time` (outside fences and comments; any other spelling of
@@ -1011,8 +1018,9 @@ host replay re-splits. `check` blocks (`opus.red_evidence`) an active opted-in
 opus whose reds for two behaviours name one `tree:`. `next` orders one
 behaviour at a time: commit its test, record its red from the worktree, commit
 the log alone, implement, then the next behaviour. Where `bisellium.yml`
-declares `brief_behaviour_limit`, `ready` refuses a new brief without the line
-(after brief admission passes). Briefs without the line behave as before.
+declares `brief_behaviour_limit`, and with none for a light brief (W-264),
+`ready` refuses a new brief without the line (after brief admission passes).
+Briefs without the line behave as before.
 
 **Light brief (W-255, D-063 §4).** A brief the architect marks with the one real
 line `Brief: light` (outside fences and comments; any other spelling of that
@@ -1023,7 +1031,8 @@ Read enumeration checks and asks each numbered behaviour for exactly one
 `bisellium red <opus> --behaviour <n> …` command whose `--behaviour` token is
 its ordinal; the decree family, behaviour limit, one genuine red per behaviour,
 promise lines and Red order line still apply. `next`'s signature gates take the
-four sections, a declared `brief_behaviour_limit` and the Red order line. A
+four sections, brief admission under the declared `brief_behaviour_limit` (with
+none, every rule but the count) and the Red order line. A
 light brief is refused for security, sandbox, branch-protection and pipeline
 work: a decree family token (`security`, `secret`, `auth`, `sandbox`,
 `protection`, `pipeline`, `ci`, `certify`) or a backticked `## Files owned` path
