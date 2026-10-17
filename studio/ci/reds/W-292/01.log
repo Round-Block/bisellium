@@ -1,0 +1,50 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-292-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-17T06:03:35.304Z
+# sella: builder.W-292
+# tree: tree:bcccfe18adec4dcdcf501d3059f9e704ae2a8f58
+# ticket: {"opus":"W-292","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-292/studio","head":"4c680453dd17dcdf5ee39d718d633d0f0b731b10","brief":"09cff2c1194be2b054fd3b5eaddfcf1068824f98","at":"2026-10-17T06:03:30.110Z"}
+
+TAP version 13
+# Subtest: W-292-b1 behaviour 1: next --perform --chain runs the mint, the review round and the pr in one call, reporting once and stopping at the first hold
+not ok 1 - W-292-b1 behaviour 1: next --perform --chain runs the mint, the review round and the pr in one call, reporting once and stopping at the first hold
+  ---
+  duration_ms: 2081.204021
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-292/packages/cli/src/next.test.ts:218:2448'
+  failureType: 'testCodeFailure'
+  error: |-
+    chain: exit 0
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    unknown flag "--chain"
+    usage: bisellium next <opus> [--perform] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]
+           bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-292/packages/cli/src/next.test.ts:6092:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2197.092765

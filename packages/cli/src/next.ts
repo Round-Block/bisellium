@@ -23,7 +23,9 @@
  */
 import { createHash } from "node:crypto";
 import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { codexProfile, sourceTreeHash } from "@bisellium/shim";
@@ -70,7 +72,7 @@ export const STEP_SILENCE_SECONDS: Record<Step, number> = {
 };
 
 const NEXT_USAGE =
-  "usage: bisellium next <opus> [--perform] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
+  "usage: bisellium next <opus> [--perform [--chain]] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]";
 
 const TRUNK = "refs/heads/master";
@@ -78,6 +80,8 @@ const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
 const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review"]);
+/** W-292: the rungs --chain performs in turn, the build rung only as the mint. */
+const CHAIN = new Set<Step>(["build", "review", "pr"]);
 const BEHAVIOURS = "Behaviours to test";
 const SECTIONS = ["Intent", "Files owned", "Interfaces", BEHAVIOURS, "Acceptance", "Out of scope"];
 const LIGHT_SECTIONS = ["Intent", "Files owned", BEHAVIOURS, "Acceptance"];
@@ -1323,6 +1327,8 @@ function installMarker(read: MarkerRead | undefined, path: string, marker: Marke
 interface Args {
   id: string;
   perform: boolean;
+  /** W-292: perform the mint, review and pr rungs in turn, stopping at the first that is not performed. */
+  chain: boolean;
   expect?: Step;
   budget?: number;
   title?: string;
@@ -1338,7 +1344,7 @@ interface Args {
 const isStep = (v: string): v is Step => (STEPS as readonly string[]).includes(v);
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): Args | { error: string } {
-  const parsed = parseFlags(argv, { valued: ["--expect", "--budget", "--title", "--body-file", "--poll-ms", "--max-polls", "--studio", "--repo", "--now", "--track", "--pid", "--output"], boolean: ["--perform"] });
+  const parsed = parseFlags(argv, { valued: ["--expect", "--budget", "--title", "--body-file", "--poll-ms", "--max-polls", "--studio", "--repo", "--now", "--track", "--pid", "--output"], boolean: ["--perform", "--chain"] });
   if ("error" in parsed) return { error: parsed.error };
   const { values, flags, positionals } = parsed;
   const id = positionals[0];
@@ -1354,14 +1360,16 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): Args | { error: stri
   const maxPolls = intIn("--max-polls", 1, 1000, 60);
   if (typeof pollMs === "string") return { error: pollMs };
   if (typeof maxPolls === "string") return { error: maxPolls };
-  const a: Args = { id, perform: flags.has("--perform"), pollMs, maxPolls, repo: resolve(values.get("--repo") ?? "."), studio: "", nowMs: Date.now(), testClock };
+  const a: Args = { id, perform: flags.has("--perform"), chain: flags.has("--chain"), pollMs, maxPolls, repo: resolve(values.get("--repo") ?? "."), studio: "", nowMs: Date.now(), testClock };
   a.studio = resolve(values.get("--studio") ?? join(a.repo, "studio"));
   const budget = values.get("--budget");
   if (budget !== undefined) {
     if (!/^[1-9][0-9]{0,9}$/.test(budget)) return { error: "--budget must be a positive integer of at most ten digits" };
     a.budget = Number(budget);
   }
+  if (a.chain && !a.perform) return { error: "--chain needs --perform" };
   const expect = values.get("--expect");
+  if (expect !== undefined && a.chain) return { error: "--chain and --expect are mutually exclusive" };
   if (expect !== undefined) {
     if (!isStep(expect)) return { error: `--expect must name one of: ${STEPS.join(", ")}` };
     a.expect = expect;
@@ -1686,6 +1694,80 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
   return { ok: true, lines: [`review: round ${round} ${outcome}`, `log: ci/${id}-review-${round}.log`, `branch: opus/${id}`] };
 }
 
+// ---------------------------------------------------------------------------
+// build: the mint, under --chain (W-292)
+// ---------------------------------------------------------------------------
+
+const CLI_BIN = fileURLToPath(new URL("../bin/bisellium.mjs", import.meta.url));
+
+/**
+ * The host-minted run receipt, made as lex §9 step 4 does by hand (`bisellium run --sella builder --opus <id> -- true`
+ * from the worktree), its output appended to the step log; then the record's `run_receipt` line, the one tracked change
+ * the mint leaves, is committed alone. Held: before the builder's handover, on a tracked change, a non-zero exit, any
+ * other tracked change after it, a receipt the review gate does not admit, or a thrown step error.
+ */
+async function performMint(f: Facts, d: Readonly<Derived>, budget: number | undefined, testClock: boolean, output: string, log: (line: string) => void): Promise<StepResult> {
+  try {
+    return await mintSteps(f, d, budget, testClock, output, log);
+  } catch (e) {
+    return heldResult(`the mint failed: ${one((e as Error).message)}`);
+  }
+}
+
+async function mintSteps(f: Facts, d: Readonly<Derived>, budget: number | undefined, testClock: boolean, output: string, log: (line: string) => void): Promise<StepResult> {
+  const { id, wt, studioRel } = f;
+  if (!wt.usable || d.order === undefined) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
+  // the builder's handover, checked as for a resumed order: it may not predate the newest red or review log
+  const handed = gateDispatch({ ...d, status: "named", order: { ...d.order, resume: true } }, f, budget);
+  if (handed.status === "held") return heldResult(`refusing: ${handed.why}`);
+  const dirty = dirtyHold(wt.dir);
+  if (dirty !== undefined) return dirty;
+  const stub = process.env["BISELLIUM_TEST_MINT"];
+  if (testClock && stub !== undefined && !isAbsolute(stub)) return heldResult("refusing: BISELLIUM_TEST_MINT must be an absolute path");
+  const cmd = testClock && stub !== undefined ? [stub] : [process.execPath, CLI_BIN];
+  const args = ["run", "--sella", "builder", "--opus", id, "--studio", wt.studio, "--repo", wt.dir, "--", "true"];
+  log(`mint: ${args.join(" ")}`);
+  const fd = openSync(output, "a");
+  let code: number;
+  try {
+    code = await new Promise<number>((done) => {
+      const child = spawn(cmd[0]!, [...cmd.slice(1), ...args], { cwd: wt.dir, stdio: ["ignore", fd, fd] });
+      child.once("error", () => done(127));
+      child.once("exit", (c) => done(c ?? 1));
+    });
+  } finally {
+    closeSync(fd);
+  }
+  log(`mint: exited ${code}`);
+  if (code !== 0) return heldResult(`the mint exited ${code}; its output is in .bisellium/steps/${id}.log`);
+  const record = `${studioRel}/${recordRel(id)}`;
+  const changes = trackedChanges(wt.dir);
+  if (typeof changes === "string") return heldResult(`refusing: ${changes}`);
+  const other = changes.flatMap(touched).filter((p) => p !== record);
+  if (other.length > 0) return heldResult(`refusing: the mint left tracked changes other than ${record}: ${other.map(quoted).join(" ")}`);
+  if (changes.length > 0) {
+    // only the run_receipt line may differ from the committed record, every other byte and its mode alike
+    const was = git(wt.dir, ["show", `HEAD:${record}`]);
+    if (was.status !== 0) return heldResult(`refusing: git show HEAD:${record} failed: ${one(was.stderr)}`);
+    const raw = git(wt.dir, ["diff", "--raw", "HEAD", "--", record]);
+    if (raw.status !== 0) return heldResult(`refusing: git diff HEAD -- ${record} failed: ${one(raw.stderr)}`);
+    const modes = /^:(\d+) (\d+) /.exec(raw.stdout);
+    const now = fsSrc(wt.studio).read(recordRel(id));
+    if (now === undefined) return heldResult(`refusing: ${record} cannot be read after the mint`);
+    const bare = (text: string): string => {
+      const end = text.indexOf("\n---\n") + 1; // the front matter's end; the body is compared whole
+      return text.slice(0, end).replace(/^run_receipt:[^\n]*\n/m, "") + text.slice(end);
+    };
+    if (modes === null || modes[1] !== modes[2] || bare(was.stdout) !== bare(now)) return heldResult(`refusing: the mint changed ${record} beyond its run_receipt field`);
+    const staged = git(wt.dir, ["add", "--", record]);
+    const committed = staged.status === 0 ? git(wt.dir, ["commit", "-q", "-m", `chore(studio): ${id} run receipt`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>", "--", record]) : staged;
+    if (committed.status !== 0) return heldResult(`could not commit ${record} on opus/${id}: ${one(committed.stderr)}`);
+  }
+  const after = gather(f.repo, f.studioAbs, id).receipt();
+  if (after === undefined || !after.ok) return heldResult(`the mint's receipt is not admitted: ${after === undefined ? "no worktree" : after.error}`);
+  return { ok: true, lines: [`mint: exit 0`, `receipt: ${str(recordOf(fsSrc(wt.studio), id)?.["run_receipt"]) ?? "(none)"}`] };
+}
+
 /** W-243: a landing head may change officina records only (`recordOnly`, the list certify reads): anything else is refused before the push. */
 async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
   const paths = diffPaths(f.repo, TRUNK, `refs/heads/${head}`);
@@ -1881,8 +1963,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     console.log(lines.map((l) => clean(l, 1000)).join("\n"));
     return { exitCode: code };
   };
-  const refusal = (d: Derived): { exitCode: number } =>
-    say(1, [`next: ${id} ${d.step} held`, `why: refusing: next step for ${id} is ${d.step}, not ${a.expect}`, ...(d.status === "held" ? [`detail: ${one(d.why)}`] : [])]);
+  const refusalLines = (d: Derived): string[] => [`next: ${id} ${d.step} held`, `why: refusing: next step for ${id} is ${d.step}, not ${a.expect}`, ...(d.status === "held" ? [`detail: ${one(d.why)}`] : [])];
+  const refusal = (d: Derived): { exitCode: number } => say(1, refusalLines(d));
   const resume = (d: Derived): string => (d.status === "named" ? one(d.order?.command ?? d.command ?? d.why) : `${d.step} is held: ${one(d.why)}`);
 
   try {
@@ -1910,7 +1992,10 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       return say(0, [`next: ${id} ${t.step} running`, `health: tracked pid ${pid} (writer track, an unverified attestation)`, `output: ${t.output}`]);
     }
 
-    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (d.step !== "spec" || d.act !== undefined);
+    // W-292: --chain performs the mint (a build rung whose builder work is handed off: phase 2), review and pr, and no other rung
+    const mint = (d: Derived): boolean => a.chain && d.step === "build" && d.order?.phase === "2";
+    const performable = (d: Derived): boolean =>
+      a.perform && d.status === "named" && (mint(d) || (PERFORMABLE.has(d.step) && (!a.chain || CHAIN.has(d.step)))) && (d.step !== "spec" || d.act !== undefined);
     // a `pr` that must be created needs --title and --body-file; without them it only names the command
     const needsText = (d: Derived): boolean => d.step === "pr" && d.pr === undefined && (a.title === undefined || a.bodyFile === undefined);
 
@@ -1918,6 +2003,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     if (!performable(d1)) {
       // W-233: the ticket is refreshed from the ungated derivation, before the --expect check
       const tickets = refreshTicket(f, deriveNext(f), a.nowMs);
+      if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the mint, review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
       const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
       const h = assess(readMarker(repo, id), d1.step, env);
@@ -1941,75 +2027,96 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       }
     }
 
-    // ---- --perform on a performable rung: take the marker, re-derive, check --expect, act once ----
-    if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
-    const read = readMarker(repo, id);
-    const h = assess(read, d1.step, env);
-    if (h.kind === "running") return say(1, [`next: ${id} ${d1.step} held`, `why: step ${h.m.step} is running, pid ${h.m.pid}`]);
-    if (h.kind === "unknown") return say(1, [`next: ${id} ${d1.step} held`, `health: unknown (${h.reason})`, "why: the existing marker's health cannot be proven; nothing is performed"]);
-    if (h.kind === "anomaly") return say(1, [`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: nothing is performed"]);
-    const own = readProc(env.procRoot, "self");
-    if (own.kind !== "ok") return say(1, [`next: ${id} ${d1.step} held`, `why: the verb cannot read its own /proc start time (${own.kind === "absent" ? "absent" : own.reason}); nothing is performed`]);
-    const outputRel = `steps/${id}.log`;
-    const marker = newMarker(id, d1.step, "perform", process.pid, own.ticks, outputRel, env.nowMs, a.pollMs);
-    const taken = installMarker(read, markerPath(repo, id), marker);
-    if (taken !== undefined) return say(1, [`next: ${id} ${d1.step} held`, `why: ${taken}`]);
-    const ours = readFileSync(markerPath(repo, id), "utf8");
-    const log = (line: string): void => {
+    // ---- --perform on a performable rung: take the marker, re-derive, check --expect, act once; W-292: --chain repeats it ----
+    type Once = { code: number; lines: string[]; after: string[]; ok: boolean; next?: Derived };
+    const once = async (d1: Derived): Promise<Once> => {
+      const halt = (lines: string[]): Once => ({ code: 1, lines, after: [], ok: false });
+      if (a.expect !== undefined && a.expect !== d1.step) return halt(refusalLines(d1));
+      const read = readMarker(repo, id);
+      const h = assess(read, d1.step, env);
+      if (h.kind === "running") return halt([`next: ${id} ${d1.step} held`, `why: step ${h.m.step} is running, pid ${h.m.pid}`]);
+      if (h.kind === "unknown") return halt([`next: ${id} ${d1.step} held`, `health: unknown (${h.reason})`, "why: the existing marker's health cannot be proven; nothing is performed"]);
+      if (h.kind === "anomaly") return halt([`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: nothing is performed"]);
+      const own = readProc(env.procRoot, "self");
+      if (own.kind !== "ok") return halt([`next: ${id} ${d1.step} held`, `why: the verb cannot read its own /proc start time (${own.kind === "absent" ? "absent" : own.reason}); nothing is performed`]);
+      const outputRel = `steps/${id}.log`;
+      const marker = newMarker(id, d1.step, "perform", process.pid, own.ticks, outputRel, env.nowMs, a.pollMs);
+      const taken = installMarker(read, markerPath(repo, id), marker);
+      if (taken !== undefined) return halt([`next: ${id} ${d1.step} held`, `why: ${taken}`]);
+      const ours = readFileSync(markerPath(repo, id), "utf8");
+      const log = (line: string): void => {
+        try {
+          appendFileSync(join(repo, ".bisellium", outputRel), `${new Date().toISOString()} ${one(line)}\n`);
+        } catch {
+          /* the log is a health aid, never a reason to fail the step */
+        }
+      };
+      log(`take ${d1.step}`);
       try {
-        appendFileSync(join(repo, ".bisellium", outputRel), `${new Date().toISOString()} ${one(line)}\n`);
-      } catch {
-        /* the log is a health aid, never a reason to fail the step */
+        f = gather(repo, opened.root, id);
+        const d2 = derive(f);
+        if (a.expect !== undefined && a.expect !== d2.step) return halt(refusalLines(d2));
+        if (!performable(d2) || needsText(d2)) return { code: d2.status === "held" ? 1 : 0, lines: render(id, d2, f, d2.status), after: [], ok: false };
+        // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
+        for (const l of refreshTicket(f, deriveNext(f), a.nowMs)) log(l);
+        const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
+        const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
+        let result: StepResult;
+        switch (d2.step) {
+          case "branch":
+            result = performBranch(f);
+            break;
+          case "ready":
+            result = performReady(f, d2);
+            break;
+          case "spec":
+            result = performOpusSpecCommit(f);
+            break;
+          case "pr":
+            result = openPr(ctx, d2.pr, a.title, a.bodyFile);
+            break;
+          case "merge":
+            result = d2.pr === undefined ? heldResult("no identified PR to merge") : await mergeGate(ctx, d2.pr);
+            break;
+          case "cleanup":
+            result = cleanup(ctx);
+            break;
+          case "review":
+            result = await performReview(f, d2, a.nowMs, a.testClock, log);
+            break;
+          case "build":
+            result = await performMint(f, d2, a.budget, a.testClock, join(repo, ".bisellium", outputRel), log);
+            break;
+          default:
+            result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : (handoffHold(f) ?? performDone(f, d2));
+        }
+        log(`${d2.step} ${result.ok ? "performed" : "held"}`);
+        f = gather(repo, opened.root, id);
+        const d3 = deriveNext(f);
+        for (const l of refreshTicket(f, d3, a.nowMs)) log(l);
+        const after = [`next-step: ${d3.step}`, ...(d3.status === "held" ? [`next-why: ${one(d3.why)}`] : [])];
+        return { code: result.ok ? 0 : 1, lines: [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note], after, ok: result.ok, next: d3 };
+      } finally {
+        try {
+          if (readFileSync(markerPath(repo, id), "utf8") === ours) unlinkSync(markerPath(repo, id));
+        } catch {
+          /* already gone */
+        }
       }
     };
-    log(`take ${d1.step}`);
-    try {
-      f = gather(repo, opened.root, id);
-      const d2 = derive(f);
-      if (a.expect !== undefined && a.expect !== d2.step) return refusal(d2);
-      if (!performable(d2) || needsText(d2)) return say(d2.status === "held" ? 1 : 0, render(id, d2, f, d2.status));
-      // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
-      for (const l of refreshTicket(f, deriveNext(f), a.nowMs)) log(l);
-      const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
-      const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
-      let result: StepResult;
-      switch (d2.step) {
-        case "branch":
-          result = performBranch(f);
-          break;
-        case "ready":
-          result = performReady(f, d2);
-          break;
-        case "spec":
-          result = performOpusSpecCommit(f);
-          break;
-        case "pr":
-          result = openPr(ctx, d2.pr, a.title, a.bodyFile);
-          break;
-        case "merge":
-          result = d2.pr === undefined ? heldResult("no identified PR to merge") : await mergeGate(ctx, d2.pr);
-          break;
-        case "cleanup":
-          result = cleanup(ctx);
-          break;
-        case "review":
-          result = await performReview(f, d2, a.nowMs, a.testClock, log);
-          break;
-        default:
-          result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : (handoffHold(f) ?? performDone(f, d2));
-      }
-      log(`${d2.step} ${result.ok ? "performed" : "held"}`);
-      f = gather(repo, opened.root, id);
-      const d3 = deriveNext(f);
-      for (const l of refreshTicket(f, d3, a.nowMs)) log(l);
-      const after = [`next-step: ${d3.step}`, ...(d3.status === "held" ? [`next-why: ${one(d3.why)}`] : [])];
-      return say(result.ok ? 0 : 1, [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note, ...after]);
-    } finally {
-      try {
-        if (readFileSync(markerPath(repo, id), "utf8") === ours) unlinkSync(markerPath(repo, id));
-      } catch {
-        /* already gone */
-      }
+    // the chain moves only forward: each rung is performed at most once, so it ends after pr at the latest
+    const lines: string[] = [];
+    for (let d = d1; ; ) {
+      const r = await once(d);
+      lines.push(...r.lines);
+      if (!r.ok || !a.chain || r.next === undefined) return say(r.code, [...lines, ...r.after]);
+      const was = STEPS.indexOf(d.step);
+      // the one derivation after the rung, the one `next-step` prints, decides whether the chain goes on: it is not derived again
+      d = r.next;
+      if (STEPS.indexOf(d.step) <= was) return say(0, [...lines, ...r.after]);
+      // a later rung of the chain that derives held (gh failing at pr discovery, say) is the chain's hold, never a success
+      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, `why: ${one(d.why)}`, ...r.after]);
+      if (!performable(d)) return say(0, [...lines, ...r.after]);
     }
   } catch (e) {
     console.error(`next: ${id} failed: ${clean((e as Error).message)}`);

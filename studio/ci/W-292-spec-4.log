@@ -1,0 +1,24 @@
+# opus: W-292
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14864-a957-7673-9e6d-4b04aa6511c8
+# outcome: passed
+# at: 2026-10-17T05:56:45.498Z
+# tree: tree:8f39e8a0cb7676391081d45b041c70007fa53ca5
+# brief: briefs/W-292.md blob:09cff2c1194be2b054fd3b5eaddfcf1068824f98
+# ticket: {"opus":"W-292","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"9f8fd0b085c12fbda9d63e30db8e6a330d489eb7","brief":"09cff2c1194be2b054fd3b5eaddfcf1068824f98","at":"2026-10-17T05:56:45.079Z"}
+
+## Findings
+1. advisory — studio/briefs/W-292.md:61 [severity: S2] Reached from ci/W-292-spec-2.log #3’s class: the new parsed-content comparison still accepts a tracked mode change or a front-matter comment change, then commits it despite promising that only `run_receipt` changed. Replacement text: `| The worktree's tracked changes after the mint | none, or exactly the record's run_receipt field changed in <studio>/opera/<id>.md, with all other bytes and tracked metadata unchanged | mintSteps (specified): a failed git status, show or comparison, another path, any other record-content change, or a tracked mode change holds |`. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts
+2. advisory — studio/briefs/W-292.md:37 [severity: S3] `once` derives the post-rung state for `next-step`, but the loop gathers and derives it again for control; a transient first `gh` refusal can therefore disappear on the second read, so the call continues instead of stopping at its first hold. Replacement text: `The one post-rung derivation returned by once is trusted for both the final next-step lines and the loop's stop-or-continue decision; the loop does not derive it again.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts
+
+## Earlier findings
+- ci/W-292-spec-2.log #1: closed — brief:59 now rejects a present relative BISELLIUM_TEST_MINT before spawning, and W-292-b1 proves no mint call occurs.
+- ci/W-292-spec-2.log #2: closed — brief:37 and brief:78 now require the later PR hold, while prototype-r2 and W-292-b1 report `pr held` with exit 1 when gh discovery fails consistently after review.
+
+## Verdict
+Both round-2 blockers are closed; the remaining issues are advisory under D-076 A.
+
+VERDICT: PASS

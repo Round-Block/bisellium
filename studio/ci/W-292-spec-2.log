@@ -1,0 +1,23 @@
+# opus: W-292
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14864-a957-7673-9e6d-4b04aa6511c8
+# outcome: failed
+# at: 2026-10-17T05:49:48.645Z
+# tree: tree:8f39e8a0cb7676391081d45b041c70007fa53ca5
+# brief: briefs/W-292.md blob:2564fc76747dcba3a508ddfffad4217d0badf000
+# ticket: {"opus":"W-292","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"9f8fd0b085c12fbda9d63e30db8e6a330d489eb7","brief":"2564fc76747dcba3a508ddfffad4217d0badf000","at":"2026-10-17T05:49:48.132Z"}
+
+## Findings
+1. blocking — brief:59 [severity: S1] A relative `BISELLIUM_TEST_MINT` is a plausible test-configuration mistake; `mintSteps` silently launches the real CLI, so a chain test can perform a real mint instead of refusing, and no existing row catches it. Replacement text: `| BISELLIUM_TEST_MINT | absent, or an absolute path when BISELLIUM_TEST_CLOCK=1; ignored when the test clock is off | mintSteps (specified): with the test clock on, a present non-absolute value holds before spawning |`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+2. blocking — brief:78 [severity: S1] A missing or misconfigured `gh` that makes PR derivation hold after a successful review is plausible for the real chain caller, but the prototype returns exit 0 without a `pr held` report because the loop stops on `!performable`; the row tests no post-success derived hold. Replacement text: `- Row W-292-b1 passes, its red recorded before the behaviour lands (D-036). It also makes gh PR discovery exit non-zero after a successful review and asserts exit 1 with next: W-900 pr held, proving that a hold derived after an earlier performed rung is not reported as success. No row runs the real mint or the real codex.` [class: tests×ruled-case-uncovered] — check: packages/cli/src/next.test.ts
+3. advisory — brief:61 [severity: S2] The accepted domain permits any mutation within the opus record, while brief:33 promises that only `run_receipt` changes; `mintSteps` checks paths and can commit an unrelated record-field edit. Replacement text: `| The worktree's tracked changes after the mint | none, or exactly the record's run_receipt field changed in <studio>/opera/<id>.md | mintSteps (specified): a failed git status or diff, another path, or any other record-field change holds |`. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts
+4. advisory — brief:63 [severity: S3] `mintSteps` admits the receipt through `f.receipt()` and then reads the record again through `recordOf(fsSrc(...))` for output, but the row names only the first reader and does not state how disagreement is handled. Replacement text: `| The minted receipt and the reported run_receipt path, through one f.receipt()/admitCurrentRunReceipt result | an admitted receipt for the current tree that supplies its path | mintSteps (specified): trusts that single result for admission and output; an absent or erroneous result holds |`. [class: spec×input-without-named-rejector] — check: packages/cli/src/next.test.ts
+5. advisory — brief:64 [severity: S3] `openSync(output, "a")` does not enforce the promised regular-file domain and follows a symlink; the existing directory case does not test this accepted out-of-domain entry. Replacement text: `| .bisellium/steps/<id>.log, opened for append | a writable regular file reached without a symlink | mintSteps (specified): lstat/open with O_NOFOLLOW/fstat rejects another entry before spawning, and performMint turns the error into the mint failed hold |`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief needs another design round because two plausible configuration failures remain fail-open or are reported as success.
+
+VERDICT: FAIL
