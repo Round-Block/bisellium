@@ -110,7 +110,7 @@ interface Tree {
 /** A committed git repository (tracked files and symlinks), then any untracked files. */
 function mkRepo(tag: string, tree: Tree): string {
   const repo = scratch(tag);
-  git(repo, ["init", "-q"]);
+  git(repo, ["init", "-q", "-b", "master"]);
   for (const [rel, text] of Object.entries(tree.files ?? {})) put(repo, rel, text);
   for (const [rel, target] of Object.entries(tree.links ?? {})) {
     mkdirSync(dirname(join(repo, rel)), { recursive: true });
@@ -668,6 +668,7 @@ if (runs(5)) {
 // is loaded dynamically, so its absence is an assertion and not a load error.
 // ---------------------------------------------------------------------------
 interface RowsModule {
+  testRowFindings?: (repo: string) => Finding[];
   lex?: (text: string, opts?: { blankStrings?: boolean }) => { code: string; comment?: string }[];
   countTestRows?: (text: string) => number;
 }
@@ -727,4 +728,98 @@ test("W-178-b1 the grammar counts each test style once and nothing else", { time
   assert.equal(blank[1]!.code, `           const b = '    ';`, "an escape pair is blank too");
   assert.equal(blank[3]!.code.trim(), "", "a template line is blank");
   assert.equal(blank[2]!.code, "const t = `", "the opening backtick stays");
+});
+
+// ---- W-178-b2 fixtures: a repository on master, then a branch that changes test files
+const rowsOf = (n: number): string => code([RUNNER_IMPORT, ...Array.from({ length: n }, (_, i) => `test("row ${i}", () => {});`)]);
+function commitAll(repo: string, message: string): void {
+  git(repo, ["add", "-A"]);
+  git(repo, ["commit", "-q", "--allow-empty", "-m", message]);
+}
+/** A repository whose master holds `files`, left on branch opus/x (one commit past the base when `change` edits it). */
+function branched(tag: string, files: Record<string, string>, change?: (repo: string) => void): string {
+  const repo = mkRepo(tag, { files });
+  git(repo, ["checkout", "-q", "-b", "opus/x"]);
+  if (change) {
+    change(repo);
+    commitAll(repo, "branch");
+  }
+  return repo;
+}
+/** The row findings, all of them test.rows blocks. */
+async function rowFindings(repo: string): Promise<Finding[]> {
+  const mod = await rowsModule();
+  assert.equal(typeof mod.testRowFindings, "function", "rules/tests.ts exports testRowFindings");
+  const found = mod.testRowFindings!(repo);
+  for (const f of found) assert.deepEqual([f.rule, f.level], ["test.rows", "block"], `${f.where}: rule and level`);
+  return found;
+}
+/** Exactly one finding, at `where`, whose message matches. */
+function oneRowBlock(found: Finding[], where: string, message: RegExp, label: string): void {
+  assert.deepEqual(wheres(found), [where], `${label}: where`);
+  assert.match(found[0]!.message, message, `${label}: message`);
+}
+
+test("W-178-b2 each base test path is compared with the candidate, and an unobservable base blocks", { timeout: 600_000 }, async () => {
+  const three = { "a.test.ts": rowsOf(3) };
+  const lowered = (repo: string): void => put(repo, "a.test.ts", rowsOf(2));
+
+  // control and the three comparisons
+  assert.deepEqual(await rowFindings(branched("b2-same", three)), [], "an unchanged branch passes");
+  oneRowBlock(await rowFindings(branched("b2-drop", three, lowered)), "a.test.ts", /from 3 to 2/, "3 to 2");
+  oneRowBlock(await rowFindings(branched("b2-delete", three, (r) => git(r, ["rm", "-q", "a.test.ts"]))), "a.test.ts", /from 3 to 0/, "deleted");
+  const renamed = branched("b2-rename", three, (r) => git(r, ["mv", "a.test.ts", "b.test.ts"]));
+  oneRowBlock(await rowFindings(renamed), "a.test.ts", /from 3 to 0/, "renamed: the old path counts 0");
+  assert.deepEqual(await rowFindings(branched("b2-rise", three, (r) => put(r, "a.test.ts", rowsOf(4)))), [], "a rise passes");
+  assert.deepEqual(await rowFindings(branched("b2-new", three, (r) => put(r, "c.test.ts", rowsOf(1)))), [], "a new file passes");
+  oneRowBlock(await rowFindings(branched("b2-tracked-missing", three, (r) => rmSync(join(r, "a.test.ts")))), "a.test.ts", /from 3 to 0/, "tracked file gone from the tree");
+
+  // what is a test path is decided at the base
+  const util = { "util.ts": rowsOf(3), "a.test.ts": rowsOf(3) };
+  assert.deepEqual(await rowFindings(branched("b2-nontest", util, (r) => git(r, ["rm", "-q", "util.ts"]))), [], "a non-test path is never compared");
+  const registered = { "package.json": '{"scripts":{"test":"node scripts/gate.mjs"}}\n', "scripts/gate.mjs": rowsOf(3) };
+  oneRowBlock(await rowFindings(branched("b2-reg-delete", registered, (r) => git(r, ["rm", "-q", "scripts/gate.mjs"]))), "scripts/gate.mjs", /from 3 to 0/, "registered, deleted");
+  const unregistered = branched("b2-unregister", registered, (r) => put(r, "package.json", '{"scripts":{}}\n'));
+  oneRowBlock(await rowFindings(unregistered), "scripts/gate.mjs", /from 3 to 0/, "no longer a test path: counts 0");
+
+  // the base: local master, origin-only master, master moved past the branch point
+  const originOnly = branched("b2-origin", three, lowered);
+  git(originOnly, ["update-ref", "refs/remotes/origin/master", "master"]);
+  git(originOnly, ["branch", "-q", "-D", "master"]);
+  oneRowBlock(await rowFindings(originOnly), "a.test.ts", /from 3 to 2/, "origin-only master");
+  const moved = branched("b2-moved", three, lowered);
+  git(moved, ["checkout", "-q", "master"]);
+  put(moved, "a.test.ts", rowsOf(6));
+  put(moved, "later.test.ts", rowsOf(2));
+  commitAll(moved, "master moved");
+  git(moved, ["checkout", "-q", "opus/x"]);
+  oneRowBlock(await rowFindings(moved), "a.test.ts", /from 3 to 2/, "base is the branch point, not master's tip");
+
+  // an unobservable base blocks, once, at the base
+  const trunk = branched("b2-no-master", three);
+  git(trunk, ["branch", "-q", "-m", "master", "trunk"]);
+  oneRowBlock(await rowFindings(trunk), "git merge-base", /./, "no master ref");
+  const unborn = scratch("b2-unborn");
+  git(unborn, ["init", "-q", "-b", "master"]);
+  oneRowBlock(await rowFindings(unborn), "git merge-base", /./, "unborn HEAD");
+  oneRowBlock(await rowFindings(branched("b2-base-pkg", { ...three, "package.json": "{not json" })), "package.json", /./, "base package.json does not parse");
+  oneRowBlock(await rowFindings(branched("b2-cand-pkg", three, (r) => put(r, "package.json", "{not json"))), "package.json", /./, "candidate package.json does not parse");
+
+  // an unreadable candidate test file blocks, naming the path
+  const linked = branched("b2-symlink", three, (r) => {
+    rmSync(join(r, "a.test.ts"));
+    symlinkSync("elsewhere.ts", join(r, "a.test.ts"));
+  });
+  oneRowBlock(await rowFindings(linked), "a.test.ts", /./, "a symlinked test file");
+  const huge = branched("b2-huge", three, (r) => put(r, "a.test.ts", rowsOf(3) + "// " + "x".repeat(1024 * 1024) + "\n"));
+  oneRowBlock(await rowFindings(huge), "a.test.ts", /1 MiB/, "an oversized test file");
+  const locked = branched("b2-unreadable", three);
+  chmodSync(join(locked, "a.test.ts"), 0);
+  let readable = true;
+  try {
+    readFileSync(join(locked, "a.test.ts"));
+  } catch {
+    readable = false;
+  }
+  if (!readable) oneRowBlock(await rowFindings(locked), "a.test.ts", /./, "an unreadable test file");
 });
