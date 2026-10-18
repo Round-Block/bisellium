@@ -1,0 +1,18 @@
+# opus: W-316
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a14f24-4e8b-7873-8def-13ae488e9832
+# outcome: passed
+# at: 2026-10-18T13:14:53.902Z
+# tree: tree:91d697f9546a273b1d7100889b6a26f84137d10f
+# brief: briefs/W-316.md blob:0d251203778cc60acf48e66171d2d5c958301272
+# ticket: {"opus":"W-316","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-316/studio","head":"4e0ad0a3933832681640c31c4714368991ce63a3","brief":"0d251203778cc60acf48e66171d2d5c958301272","at":"2026-10-18T13:12:18.249Z"}
+
+## Findings
+No findings
+
+## Verdict
+All five behaviours, declared row flips, owned paths, reds, and certified gates match the brief at the reviewed head.
+VERDICT: PASS
