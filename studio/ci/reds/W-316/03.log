@@ -1,0 +1,44 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-316-b3\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-18T12:20:35.107Z
+# sella: builder.W-316
+# tree: tree:54c752e1d8a5e565fcabee1155459ceac0445c88
+# ticket: {"opus":"W-316","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-316/studio","head":"46264056ff0fb6c0206382aa76454501efcbcf1c","brief":"0d251203778cc60acf48e66171d2d5c958301272","at":"2026-10-18T12:20:29.832Z"}
+
+TAP version 13
+# Subtest: W-316-b3 behaviour 3: a dispatch order with no marker reads stalled when no file of its opus changed past the window, naming the newest
+not ok 1 - W-316-b3 behaviour 3: a dispatch order with no marker reads stalled when no file of its opus changed past the window, naming the newest
+  ---
+  duration_ms: 998.148377
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:257:806'
+  failureType: 'testCodeFailure'
+  error: |-
+    past the window: stalled, naming the newest file and its age (node_modules and another opus's files never count)
+    + actual - expected
+    
+    + 'no step recorded'
+    - 'stalled (no step recorded; newest file /tmp/claude-1000/w124-w316-b3-rtcwl9/repo/.worktrees/W-900/notes.txt changed 901s ago, past 900s)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'stalled (no step recorded; newest file /tmp/claude-1000/w124-w316-b3-rtcwl9/repo/.worktrees/W-900/notes.txt changed 901s ago, past 900s)'
+  actual: 'no step recorded'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:6647:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1013.99518
