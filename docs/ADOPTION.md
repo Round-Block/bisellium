@@ -1528,7 +1528,7 @@ valid session header and, for a later round, the sequence's session; otherwise t
 commit after `review` leaves the log and the record staged and uncommitted (committing them is a hand step, and `pr`
 holds on the dirty record until then); a log the second reading refuses stays uncommitted until it is recorded by hand
 or removed; `facts.txt`'s `next` block exits 2 in a worktree packet; a verdict `verdict` refuses for its shape is not
-reissued in the same session. Both templates are read from the main checkout's studio (W-314), so an opus's prompt edit lands with its code and governs from the next opus; the charter and lessons the prompts name through `<STUDIO>` are the main checkout's too (W-315). A close by signal is a failure of the codex
+reissued in the same session. Both templates are read from the main checkout's studio (W-314), so an opus's prompt edit lands with its code and governs from the next opus; the charter and lessons the prompts name through `<STUDIO>` are the main checkout's too (W-315). Codex runs with the main checkout as its working directory, never the opus worktree, in a fresh and a resumed round, so the `AGENTS.md` it loads is the main checkout's, and the prompt names the opus's brief, logs and reds by absolute path under `<WORKTREE>` (W-316). A close by signal is a failure of the codex
 profile for every caller, `talk` included.
 
 **`--chain` (W-292, W-312).** `next <opus> --perform --chain --budget <tokens> --title <text> --body-file <path>`

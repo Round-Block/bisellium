@@ -5867,7 +5867,7 @@ test("W-274-b1 behaviour 1: next --perform --expect review runs round 1 end to e
   assert.equal(argv.at(-1), "-", "pass: the prompt is sent on stdin");
   for (const pair of [["-m", "gpt-5.6-sol"], ["-c", "model_reasoning_effort=high"], ["-c", "sandbox_mode=read-only"]])
     assert.ok(argv.some((a, i) => a === pair[0] && argv[i + 1] === pair[1]), `pass: argv carries ${pair.join(" ")}: ${argv.join(" ")}`);
-  const focus = `1. Each numbered behaviour under ## Behaviours to test in studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
+  const focus = `1. Each numbered behaviour under ## Behaviours to test in ${w.wt}/studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under ${w.wt}/studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
   const filled = BUILD_REVIEW_TEMPLATE.replace("<ID>", OPUS).replace("<ROUND>", "1").replace("<REVIEWED_HEAD>", tip).replace("<WORKTREE>", w.wt).replace("<PACKET>", packetDir(w, 1)).replace("<FOCUS>", focus).replace("<STUDIO>", w.studio);
   assert.equal(calls[0]!.stdin, filled, "pass: the template, every slot filled");
   assert.equal(readFileSync(join(packetDir(w, 1), "prompt.md"), "utf8"), filled, "pass: the packet keeps the prompt");
@@ -6514,7 +6514,7 @@ test("W-314-b1 behaviour 1: the build-review perform reads build-review.md and l
   codexSays(w, { session: "s-314-1", reply: FAIL_REPLY });
   const o1 = performReview(w);
   assert.equal(o1.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o1));
-  const focus = `1. Each numbered behaviour under ## Behaviours to test in studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
+  const focus = `1. Each numbered behaviour under ## Behaviours to test in ${w.wt}/studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under ${w.wt}/studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
   const filled = BUILD_REVIEW_TEMPLATE.replace("<ID>", OPUS).replace("<ROUND>", "1").replace("<REVIEWED_HEAD>", tip).replace("<WORKTREE>", w.wt).replace("<PACKET>", packetDir(w, 1)).replace("<FOCUS>", focus).replace("<STUDIO>", w.studio);
   assert.equal(codexCalls(w)[0]?.stdin, filled, "round 1: the main checkout's build-review template, not the branch's");
   advanceSource(w);

@@ -1672,10 +1672,10 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
         REVIEWED_HEAD: f.tip ?? "",
         STUDIO: f.studioAbs,
         FOCUS: [
-          `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${studioRel}/${briefRel(id)}, as its rows assert.`,
+          `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${wt.studio}/${briefRel(id)}, as its rows assert.`,
           "2. The existing rows its Acceptance names as flipped, and no other.",
           `3. The source diff (paths outside ${studioRel}/) is exactly its Files owned.`,
-          `4. Each red under ${studioRel}/ci/reds/${id}/ fails by assertion on its commit.`,
+          `4. Each red under ${wt.studio}/ci/reds/${id}/ fails by assertion on its commit.`,
         ].join("\n"),
       });
       if (typeof filled !== "string") return heldResult(filled.error);
