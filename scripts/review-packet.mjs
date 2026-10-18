@@ -173,9 +173,12 @@ const nextFact = (id, studio, repo) =>
     repo,
   ]);
 
-/** Everything a round is given, computed before `<packets>/r<n>` exists. */
+/**
+ * Everything a round is given, computed before `<packets>/r<n>` exists. `promptStudio` (default `studio`) is the studio
+ * whose `prompts/later-round.md` is read: `next`'s review perform passes the main checkout's, never the branch's (W-314).
+ */
 export function buildPacket(args) {
-  const { phase, opus, round, sella, studio, repo, packets } = args;
+  const { phase, opus, round, sella, studio, repo, packets, promptStudio = studio } = args;
   const packet = join(packets, `r${round}`);
   try {
     lstatSync(packet);
@@ -253,7 +256,7 @@ export function buildPacket(args) {
   files.set("facts.txt", facts.join("\n"));
 
   if (previous !== undefined) {
-    const template = readContainedRegularFile(studio, "prompts/later-round.md", "prompts");
+    const template = readContainedRegularFile(promptStudio, "prompts/later-round.md", "prompts");
     if ("error" in template) refuse(`prompts/later-round.md: ${template.error}`);
     files.set(
       "prompt.md",
