@@ -1,0 +1,21 @@
+# opus: W-316
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14ea0-21c0-71a1-beba-be4f0bc37a70
+# outcome: passed
+# at: 2026-10-18T12:19:01.090Z
+# tree: tree:cecf54936656a9f684c109d74bf72b509ad66f17
+# brief: briefs/W-316.md blob:0d251203778cc60acf48e66171d2d5c958301272
+# ticket: {"opus":"W-316","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-316/studio","head":"b8aa091d688c8af46c84921e1d605f7af5ca8125","brief":"0d251203778cc60acf48e66171d2d5c958301272","at":"2026-10-18T12:19:00.619Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-316-spec-4.log #1: closed — `silence` now fails closed for every parent, subtree, listed-file, and lease read; W-316-b5 and five mutants cover those reads and the unknown-result path.
+
+## Verdict
+Revision 3 closes the blocking class, adopts both advisory replacement texts, and supplies the required evidence.
+VERDICT: PASS

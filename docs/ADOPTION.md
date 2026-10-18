@@ -1528,7 +1528,7 @@ valid session header and, for a later round, the sequence's session; otherwise t
 commit after `review` leaves the log and the record staged and uncommitted (committing them is a hand step, and `pr`
 holds on the dirty record until then); a log the second reading refuses stays uncommitted until it is recorded by hand
 or removed; `facts.txt`'s `next` block exits 2 in a worktree packet; a verdict `verdict` refuses for its shape is not
-reissued in the same session. Both templates are read from the main checkout's studio (W-314), so an opus's prompt edit lands with its code and governs from the next opus; the charter and lessons the prompts name through `<STUDIO>` are the main checkout's too (W-315). A close by signal is a failure of the codex
+reissued in the same session. Both templates are read from the main checkout's studio (W-314), so an opus's prompt edit lands with its code and governs from the next opus; the charter and lessons the prompts name through `<STUDIO>` are the main checkout's too (W-315). Codex runs with the main checkout as its working directory, never the opus worktree, in a fresh and a resumed round, so the `AGENTS.md` it loads is the main checkout's, and the prompt names the opus's brief, logs and reds by absolute path under `<WORKTREE>` (W-316). A close by signal is a failure of the codex
 profile for every caller, `talk` included.
 
 **`--chain` (W-292, W-312).** `next <opus> --perform --chain --budget <tokens> --title <text> --body-file <path>`
@@ -1583,7 +1583,19 @@ inside the step's silence budget; otherwise it reports `dead` (or `stalled`, the
 pid named and never killed) with the last output line as a JSON-quoted
 `last-output:`, its age and a `resume:` line. An unreadable or unparseable
 `/proc` entry is `unknown`, which is `held`, never `dead`. No marker is
-`health: no step recorded`, never "running" or "healthy". Linux only.
+`health: no step recorded`, never "running" or "healthy". A dispatch order (the
+architect's signature, a spec review, the reds, the build, a review dispatched
+rather than performed) with no marker reads `health: stalled (no step recorded;
+newest file <path> changed <n>s ago, past 900s)` when no regular file under
+`<repo>/.worktrees/<id>` or `<id>-*` or `~/.bisellium-evidence/<id>` or `<id>-*`
+(`node_modules` and `.git` skipped, no symlink below them followed) has changed for more
+than `DISPATCH_SILENCE_SECONDS` (900); the opus's producer lease
+(`<repo>/.bisellium/leases/<id>/pid`) no older than the host run's 60-minute
+timeout is a `bisellium run` in flight, never a stall. The step named and the
+exit status are unchanged (W-316). A counted directory, file or the lease that
+exists but cannot be read is never skipped: it reads `next: <id> <step> held`,
+`health: unknown (dispatch activity cannot be read: <reason>)`, exit 1 (W-316).
+Linux only.
 
 Test seams, honoured only with `BISELLIUM_TEST_CLOCK=1`: `--now <iso>` (otherwise
 a usage error) and `BISELLIUM_TEST_PROC=<dir>` replacing `/proc` for every

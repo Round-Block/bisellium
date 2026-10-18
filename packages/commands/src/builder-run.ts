@@ -125,6 +125,9 @@ function attachReceipt(studioRoot: string, opus: string, receiptFile: string): v
  * owner. A lease whose owner process is gone (a double kill) is reclaimed; a
  * live owner's is refused. A lease with no readable owner is treated as live.
  */
+/** The host runner's wall-clock cap: a `bisellium run` and the producer lease it holds last no longer (W-316 reads it). */
+export const HOST_RUN_TIMEOUT_MS = 60 * 60_000;
+
 export function acquireProducerLease(repo: string, opus: string): string | undefined {
   const lease = join(repo, ".bisellium", "leases", opus);
   mkdirSync(dirname(lease), { recursive: true });
@@ -216,7 +219,7 @@ export async function runBuilderCommand(request: BuilderRunRequest): Promise<Bui
     const child = spawnSync(process.execPath, [HOST_RUNNER, "--request", encoded], {
       cwd: request.repo,
       env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC", ...(process.env["TMPDIR"] ? { TMPDIR: process.env["TMPDIR"] } : {}), ...(isAbsolute(process.env["PLAYWRIGHT_BROWSERS_PATH"] ?? "") ? { PLAYWRIGHT_BROWSERS_PATH: process.env["PLAYWRIGHT_BROWSERS_PATH"] } : {}) },
-      encoding: "utf8", timeout: 60 * 60_000, maxBuffer: 512 * 1024 * 1024,
+      encoding: "utf8", timeout: HOST_RUN_TIMEOUT_MS, maxBuffer: 512 * 1024 * 1024,
     });
     if (child.stdout) console.log(child.stdout.trimEnd());
     if (child.stderr) console.error(child.stderr.trimEnd());

@@ -1,0 +1,44 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-316-b4\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-18T12:21:19.162Z
+# sella: builder.W-316
+# tree: tree:35801435646d7f633eed8311a300ec1d56578095
+# ticket: {"opus":"W-316","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-316/studio","head":"11f0a2f3e771de89b8c9e3e53ad73ef469f118d8","brief":"0d251203778cc60acf48e66171d2d5c958301272","at":"2026-10-18T12:21:13.810Z"}
+
+TAP version 13
+# Subtest: W-316-b4 behaviour 4: a bisellium run in flight, the opus's producer lease inside the host run's timeout, is activity
+not ok 1 - W-316-b4 behaviour 4: a bisellium run in flight, the opus's producer lease inside the host run's timeout, is activity
+  ---
+  duration_ms: 944.339601
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:257:2662'
+  failureType: 'testCodeFailure'
+  error: |-
+    a lease 3600s old is a run inside its 60-minute timeout: activity
+    + actual - expected
+    
+    + 'stalled (no step recorded; newest file /tmp/claude-1000/w124-w316-b4-UqGqll/repo/.worktrees/W-900/.gitignore changed 3600s ago, past 900s)'
+    - 'no step recorded'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'no step recorded'
+  actual: 'stalled (no step recorded; newest file /tmp/claude-1000/w124-w316-b4-UqGqll/repo/.worktrees/W-900/.gitignore changed 3600s ago, past 900s)'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:6671:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 959.074709

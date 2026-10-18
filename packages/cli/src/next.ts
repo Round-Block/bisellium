@@ -22,13 +22,13 @@
  * honoured only when `BISELLIUM_TEST_CLOCK=1` is also set; so is `--now`.
  */
 import { createHash } from "node:crypto";
-import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync, type Dirent } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
-import { admitCurrentGates } from "@bisellium/commands/builder-run.js";
+import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
@@ -1332,6 +1332,56 @@ function assess(read: MarkerRead | undefined, derived: Step, env: Env): Health {
   return { kind: "running", m, ageS: clamped, ...(out.last === undefined ? {} : { last: out.last }) };
 }
 
+/** W-316: seconds a dispatch order with no marker may go with no file of its opus changing before its health reads stalled. */
+export const DISPATCH_SILENCE_SECONDS = 900;
+
+type Newest = { path: string; mtimeMs: number };
+/** The newest regular file under `dir`: `node_modules` and `.git` skipped, no symlink followed; a listing or lstat that fails throws. */
+function newestFile(dir: string, best: Newest | undefined): Newest | undefined {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name === "node_modules" || e.name === ".git") continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) best = newestFile(p, best);
+    else if (e.isFile()) {
+      const m = lstatSync(p).mtimeMs;
+      if (best === undefined || m > best.mtimeMs) best = { path: p, mtimeMs: m };
+    }
+  }
+  return best;
+}
+
+/**
+ * W-316: a dispatch order with no marker is stalled when no file its agent writes has changed for more than
+ * DISPATCH_SILENCE_SECONDS: the files under `<repo>/.worktrees/<id>` and `<id>-*` (the opus worktree, scratch
+ * worktrees) and `~/.bisellium-evidence/<id>` and `<id>-*` (directories only). No counted file, or a newer one, is undefined.
+ * Only an absent parent or lease (ENOENT) is nothing; any other failed read is `{ unknown }`, never a partial walk's answer.
+ */
+function silence(repo: string, wtParent: string, id: string, nowMs: number): { stalled: string } | { unknown: string } | undefined {
+  const absent = (e: unknown): boolean => (e as NodeJS.ErrnoException).code === "ENOENT";
+  const mine = (parent: string): string[] => {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(parent, { withFileTypes: true });
+    } catch (e) {
+      if (absent(e)) return [];
+      throw e;
+    }
+    return entries.filter((e) => e.isDirectory() && (e.name === id || e.name.startsWith(`${id}-`))).map((e) => join(parent, e.name));
+  };
+  try {
+    // a `bisellium run` in flight holds the opus's producer lease; the host run's own timeout bounds how long that is true
+    const lease = lstatSync(join(repo, ".bisellium", "leases", id, "pid"), { throwIfNoEntry: false });
+    if (lease?.isFile() === true && Math.floor((nowMs - lease.mtimeMs) / 1000) <= HOST_RUN_TIMEOUT_MS / 1000) return undefined;
+    let newest: Newest | undefined;
+    for (const dir of [...mine(wtParent), ...mine(join(homedir(), ".bisellium-evidence"))]) newest = newestFile(dir, newest);
+    if (newest === undefined) return undefined;
+    const age = Math.floor((nowMs - newest.mtimeMs) / 1000);
+    return age > DISPATCH_SILENCE_SECONDS ? { stalled: `stalled (no step recorded; newest file ${newest.path} changed ${age}s ago, past ${DISPATCH_SILENCE_SECONDS}s)` } : undefined;
+  } catch (e) {
+    return { unknown: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 function newMarker(id: string, step: Step, writer: Marker["writer"], pid: number, ticks: number, output: string, nowMs: number, pollMs: number): Marker {
   const base = STEP_SILENCE_SECONDS[step];
   return { schema: 1, opus: id, step, pid, start_ticks: ticks, started: new Date(nowMs).toISOString(), output, budget_seconds: step === "merge" ? Math.max(base, Math.ceil((6 * pollMs) / 1000)) : base, writer };
@@ -1672,10 +1722,10 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
         REVIEWED_HEAD: f.tip ?? "",
         STUDIO: f.studioAbs,
         FOCUS: [
-          `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${studioRel}/${briefRel(id)}, as its rows assert.`,
+          `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${wt.studio}/${briefRel(id)}, as its rows assert.`,
           "2. The existing rows its Acceptance names as flipped, and no other.",
           `3. The source diff (paths outside ${studioRel}/) is exactly its Files owned.`,
-          `4. Each red under ${studioRel}/ci/reds/${id}/ fails by assertion on its commit.`,
+          `4. Each red under ${wt.studio}/ci/reds/${id}/ fails by assertion on its commit.`,
         ].join("\n"),
       });
       if (typeof filled !== "string") return heldResult(filled.error);
@@ -1688,7 +1738,9 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     for (const [name, text] of files) writeFileSync(join(packet, name), text, { flag: "wx" });
     const override = Number(process.env["BISELLIUM_TEST_REVIEW_TIMEOUT_MS"]);
     const timeoutMs = testClock && Number.isSafeInteger(override) && override > 0 ? override : REVIEW_TIMEOUT_MS;
-    const call = { cwd: wt.dir, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt };
+    // W-316: codex runs in the main checkout, never the opus worktree: it loads AGENTS.md from its working directory,
+    // on a resume too, so an opus cannot edit its own reviewer's standing instructions
+    const call = { cwd: f.repo, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt };
     log(`review: ${previous === undefined ? "codex started" : `codex resumed ${previous}`} (round ${round})`);
     const turn = previous === undefined ? await codexProfile.start({ ...call, systemPrompt: "" }) : await codexProfile.resume({ ...call, sessionId: previous });
     log(`review: codex exited ${turn.exitCode}`);
@@ -2110,7 +2162,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     // ---- report mode (also --perform on a rung that is only named) ----
     if (!performable(d1)) {
       // W-233: the ticket is refreshed from the ungated derivation, before the --expect check
-      const tickets = refreshTicket(f, deriveNext(f), a.nowMs);
+      const ungated = deriveNext(f);
+      const tickets = refreshTicket(f, ungated, a.nowMs);
       if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
       const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
@@ -2128,7 +2181,10 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         case "anomaly":
           return sayT(1, [`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: the output mtime is ahead of the clock; nothing is performed"]);
         default: {
-          const note = h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)";
+          // W-316: a dispatch order (held for its budget or handover too) with no marker is checked for silence
+          const quiet = h.kind === "none" && ungated.order !== undefined ? silence(repo, dirname(f.wt.dir), id, env.nowMs) : undefined;
+          if (quiet !== undefined && "unknown" in quiet) return sayT(1, [`next: ${id} ${d1.step} held`, `health: unknown (dispatch activity cannot be read: ${quiet.unknown})`, "why: dispatch activity cannot be proven; nothing is performed"]);
+          const note = quiet?.stalled ?? (h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)");
           const status = d1.status === "named" ? "named" : d1.status;
           return sayT(d1.status === "held" ? 1 : 0, [...lines(status), `health: ${note}`]);
         }

@@ -34,6 +34,7 @@ import {
   readdirSync,
   readFileSync,
   readlinkSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -5794,7 +5795,7 @@ const home = process.env.HOME;
 let stdin = "";
 process.stdin.on("data", (d) => (stdin += d));
 process.stdin.on("end", () => {
-  fs.appendFileSync(path.join(home, "codex-calls.jsonl"), JSON.stringify({ argv: process.argv.slice(2), stdin }) + "\n");
+  fs.appendFileSync(path.join(home, "codex-calls.jsonl"), JSON.stringify({ argv: process.argv.slice(2), stdin, cwd: process.cwd() }) + "\n");
   const r = JSON.parse(fs.readFileSync(path.join(home, "codex-reply.json"), "utf8"));
   // poison: a directory where the perform will write verdict.md, so that write throws
   const packet = /packet (\S+)\.\n/.exec(stdin);
@@ -5823,8 +5824,8 @@ const PASS_REPLY = "## Findings\nNo findings\n\n## Verdict\nFine.\n\nVERDICT: PA
 const FAIL_REPLY = "## Findings\n1. blocking — source.txt:1 fixture defect at brief:1 [class: tests×fixture] — check: none: fixture\n\n## Verdict\nNot yet.\n\nVERDICT: FAIL";
 type CodexReply = { session?: string; reply: string; exit?: number; stderr?: string; sleepMs?: number; signal?: string; poison?: boolean };
 const codexSays = (w: World, r: CodexReply): void => writeFileSync(join(w.home, "codex-reply.json"), JSON.stringify(r));
-const codexCalls = (w: World): { argv: string[]; stdin: string }[] =>
-  existsSync(join(w.home, "codex-calls.jsonl")) ? readFileSync(join(w.home, "codex-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; stdin: string }) : [];
+const codexCalls = (w: World): { argv: string[]; stdin: string; cwd: string }[] =>
+  existsSync(join(w.home, "codex-calls.jsonl")) ? readFileSync(join(w.home, "codex-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; stdin: string; cwd: string }) : [];
 /** Each template written and committed in the main checkout's studio, which the perform reads (W-314), and on the opus branch (studio files: the source tree is unchanged). */
 function putTemplates(w: World, templates: Record<string, string>, message: string): void {
   for (const dir of [w.repo, w.wt]) {
@@ -5866,7 +5867,7 @@ test("W-274-b1 behaviour 1: next --perform --expect review runs round 1 end to e
   assert.equal(argv.at(-1), "-", "pass: the prompt is sent on stdin");
   for (const pair of [["-m", "gpt-5.6-sol"], ["-c", "model_reasoning_effort=high"], ["-c", "sandbox_mode=read-only"]])
     assert.ok(argv.some((a, i) => a === pair[0] && argv[i + 1] === pair[1]), `pass: argv carries ${pair.join(" ")}: ${argv.join(" ")}`);
-  const focus = `1. Each numbered behaviour under ## Behaviours to test in studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
+  const focus = `1. Each numbered behaviour under ## Behaviours to test in ${w.wt}/studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under ${w.wt}/studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
   const filled = BUILD_REVIEW_TEMPLATE.replace("<ID>", OPUS).replace("<ROUND>", "1").replace("<REVIEWED_HEAD>", tip).replace("<WORKTREE>", w.wt).replace("<PACKET>", packetDir(w, 1)).replace("<FOCUS>", focus).replace("<STUDIO>", w.studio);
   assert.equal(calls[0]!.stdin, filled, "pass: the template, every slot filled");
   assert.equal(readFileSync(join(packetDir(w, 1), "prompt.md"), "utf8"), filled, "pass: the packet keeps the prompt");
@@ -6513,7 +6514,7 @@ test("W-314-b1 behaviour 1: the build-review perform reads build-review.md and l
   codexSays(w, { session: "s-314-1", reply: FAIL_REPLY });
   const o1 = performReview(w);
   assert.equal(o1.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o1));
-  const focus = `1. Each numbered behaviour under ## Behaviours to test in studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
+  const focus = `1. Each numbered behaviour under ## Behaviours to test in ${w.wt}/studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under ${w.wt}/studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
   const filled = BUILD_REVIEW_TEMPLATE.replace("<ID>", OPUS).replace("<ROUND>", "1").replace("<REVIEWED_HEAD>", tip).replace("<WORKTREE>", w.wt).replace("<PACKET>", packetDir(w, 1)).replace("<FOCUS>", focus).replace("<STUDIO>", w.studio);
   assert.equal(codexCalls(w)[0]?.stdin, filled, "round 1: the main checkout's build-review template, not the branch's");
   advanceSource(w);
@@ -6578,4 +6579,136 @@ test("W-315-b3 behaviour 3: a spec re-review on the opus branch is told to send 
   const command = r.kv.get("command") ?? "";
   assert.ok(command.includes("send studio/prompts/rebuttal.md and"), ran("the dispute names the main checkout's rebuttal prompt", r));
   assert.ok(!command.includes(`${WT_STUDIO_REL}/prompts/rebuttal.md`), ran("never the worktree's", r));
+});
+
+// W-316: the build reviewer's codex runs in the main checkout, never the opus worktree, so the AGENTS.md it loads is
+// the main checkout's (codex loads AGENTS.md from its working directory, on a resume too); codex is W-274's stub.
+// ---------------------------------------------------------------------------
+test("W-316-b1 behaviour 1: the build reviewer's codex runs in the main checkout, never the opus worktree, round 1 and every later round", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w316-b1");
+  const main = realpathSync(w.repo);
+  codexSays(w, { session: "s-316-1", reply: FAIL_REPLY });
+  const o1 = performReview(w);
+  assert.equal(o1.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o1));
+  assert.equal(codexCalls(w)[0]?.cwd, main, "round 1: codex runs in the main checkout, not the opus worktree");
+  advanceSource(w);
+  handoffAt(w, "wt", new Date(Date.now() + 60_000).toISOString());
+  codexSays(w, { session: "s-316-1", reply: `## Earlier findings\n- ci/${OPUS}-review-1.log #1: closed — source.txt changed\n\n${PASS_REPLY}` });
+  const o2 = performReview(w);
+  assert.equal(o2.kv.get("review"), "round 2 passed", ran("round 2: performed, passed", o2));
+  const call = codexCalls(w)[1];
+  assert.deepEqual(call?.argv.slice(0, 3), ["exec", "resume", "s-316-1"], "round 2: resumes the session");
+  assert.equal(call?.cwd, main, "round 2: the resumed codex runs in the main checkout too");
+});
+
+test("W-316-b2 behaviour 2: the round-1 prompt names the opus's brief and reds by absolute path in the opus worktree", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w316-b2");
+  codexSays(w, { session: "s-316-2", reply: FAIL_REPLY });
+  const o = performReview(w);
+  const stdin = codexCalls(w)[0]?.stdin ?? "";
+  assert.ok(stdin.includes(`1. Each numbered behaviour under ## Behaviours to test in ${w.wt}/studio/briefs/${OPUS}.md, as its rows assert.\n`), `round 1: the brief by its absolute path in the worktree:\n${stdin}`);
+  assert.ok(stdin.includes(`4. Each red under ${w.wt}/studio/ci/reds/${OPUS}/ fails by assertion on its commit.\n`), `round 1: the reds by their absolute path in the worktree:\n${stdin}`);
+  assert.equal(o.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o));
+});
+
+// ---------------------------------------------------------------------------
+// W-316: a dispatched agent's silence is surfaced: a dispatch order with no marker whose opus's files are all older than
+// the silence window reads stalled, naming the newest file and its age; a bisellium run in flight (its lease) is activity.
+// ---------------------------------------------------------------------------
+/** Every regular file under `dir`, last written `ageSeconds` before NOW. */
+function ageTree(dir: string, ageSeconds: number): void {
+  const t = new Date(NOW_MS - ageSeconds * 1000);
+  for (const e of readdirSync(dir, { recursive: true, withFileTypes: true })) if (e.isFile()) utimesSync(join(e.parentPath, e.name), t, t);
+}
+/** One file at `path`, last written `ageSeconds` before NOW. */
+function putAged(path: string, ageSeconds: number): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, "w316\n");
+  const t = new Date(NOW_MS - ageSeconds * 1000);
+  utimesSync(path, t, t);
+}
+/** The health line of a report-mode next, after its first line and exit status are checked. */
+function healthOf(w: World, label: string, args: string[] = BUDGET, step = "build", status = "named"): string {
+  const o = next(w, [OPUS, ...args]);
+  expectStep(o, step, status, label);
+  assert.equal(o.status, status === "held" ? 1 : 0, ran(`${label}: the exit status is the step's, unchanged`, o));
+  return o.kv.get("health") ?? "";
+}
+
+test("W-316-b3 behaviour 3: a dispatch order with no marker reads stalled when no file of its opus changed past the window, naming the newest", { timeout: 1_800_000 }, () => {
+  const w = world("w316-b3", "reds", { automated: true });
+  const wt = realpathSync(w.wt);
+  const evidence = join(w.home, ".bisellium-evidence");
+  ageTree(w.wt, 3600);
+  putAged(join(w.wt, "notes.txt"), 901);
+  putAged(join(w.wt, "node_modules", "pkg", "index.js"), 10);
+  putAged(join(w.repo, ".worktrees", "W-9000", "fresh.txt"), 10);
+  putAged(join(evidence, "W-9000-spec", "run.out"), 10);
+  assert.equal(healthOf(w, "901s"), `stalled (no step recorded; newest file ${wt}/notes.txt changed 901s ago, past 900s)`, "past the window: stalled, naming the newest file and its age (node_modules and another opus's files never count)");
+  assert.match(healthOf(w, "no budget", [], "build", "held"), /^stalled \(no step recorded; newest file /, "an order held for its budget is checked too");
+  putAged(join(w.wt, "notes.txt"), 900);
+  assert.equal(healthOf(w, "900s"), "no step recorded", "a file exactly 900s old is inside the window");
+  putAged(join(w.wt, "notes.txt"), 3600);
+  putAged(join(evidence, `${OPUS}-spec`, "run.out"), 60);
+  assert.equal(healthOf(w, "evidence"), "no step recorded", "a fresh file in the opus's evidence directory is activity");
+  putAged(join(evidence, `${OPUS}-spec`, "run.out"), 3600);
+  putAged(join(w.repo, ".worktrees", `${OPUS}-spec`, "proto.diff"), 60);
+  assert.equal(healthOf(w, "scratch"), "no step recorded", "a fresh file in the opus's scratch worktree is activity");
+  putAged(join(w.repo, ".worktrees", `${OPUS}-spec`, "proto.diff"), 3600);
+  assert.match(healthOf(w, "all old again"), /^stalled /, "every counted file old again: stalled");
+
+  // a rung that is not a dispatch order never reads stalled, with every counted file old
+  const p = world("w316-b3-branch", "spec");
+  putAged(join(p.home, ".bisellium-evidence", `${OPUS}-spec`, "run.out"), 3600);
+  assert.equal(healthOf(p, "branch", BUDGET, "branch"), "no step recorded", "the producer's branch rung is never stalled");
+});
+
+test("W-316-b4 behaviour 4: a bisellium run in flight, the opus's producer lease inside the host run's timeout, is activity", { timeout: 1_800_000 }, () => {
+  const w = world("w316-b4", "reds", { automated: true });
+  ageTree(w.wt, 3600);
+  const lease = join(w.repo, ".bisellium", "leases", OPUS, "pid");
+  putAged(lease, 3600);
+  assert.equal(healthOf(w, "lease 3600s"), "no step recorded", "a lease 3600s old is a run inside its 60-minute timeout: activity");
+  putAged(lease, 3601);
+  assert.match(healthOf(w, "lease 3601s"), /^stalled /, "a lease past the run's timeout is a killed run's residue, not activity");
+  rmSync(dirname(lease), { recursive: true });
+  putAged(join(w.repo, ".bisellium", "leases", "W-9000", "pid"), 60);
+  assert.match(healthOf(w, "another lease"), /^stalled /, "another opus's lease is not this one's activity");
+});
+
+test("W-316-b5 behaviour 5: an unreadable counted directory, file or lease reads unknown, never silence or activity", { timeout: 1_800_000 }, () => {
+  const w = world("w316-b5", "reds", { automated: true });
+  const evidence = join(w.home, ".bisellium-evidence");
+  const leases = join(w.repo, ".bisellium", "leases");
+  const locked = join(w.wt, "locked");
+  ageTree(w.wt, 3600);
+  putAged(join(locked, "fresh.txt"), 10);
+  mkdirSync(evidence, { recursive: true });
+  mkdirSync(join(leases, OPUS), { recursive: true });
+  const unknown = (label: string, read: RegExp): void => {
+    const health = healthOf(w, label, BUDGET, "build", "held");
+    assert.match(health, /^unknown \(dispatch activity cannot be read: /, label);
+    assert.match(health, read, `${label}: the reason names the failed read`);
+  };
+  const shut = new Set<string>();
+  const lock = (dir: string, mode: number): void => {
+    shut.add(dir);
+    chmodSync(dir, mode);
+  };
+  try {
+    lock(locked, 0o000);
+    unknown("an unreadable counted subtree, its fresh file unseen, reads unknown, never stalled", /EACCES: permission denied, scandir '[^']*\/locked'\)$/);
+    chmodSync(locked, 0o644);
+    unknown("a listed file that cannot be stat'd reads unknown, never an older file's age", /EACCES: permission denied, lstat '[^']*\/locked\/fresh\.txt'\)$/);
+    chmodSync(locked, 0o755);
+    lock(evidence, 0o000);
+    unknown("an unreadable counted parent reads unknown, never no counted file", /EACCES: permission denied, scandir '[^']*\/\.bisellium-evidence'\)$/);
+    chmodSync(evidence, 0o755);
+    lock(leases, 0o000);
+    unknown("an unreadable lease path reads unknown, never no lease", /EACCES: permission denied, lstat '[^']*\/leases\/W-900\/pid'\)$/);
+    chmodSync(leases, 0o755);
+    assert.equal(healthOf(w, "readable again"), "no step recorded", "everything readable again: the fresh file is activity");
+  } finally {
+    for (const d of shut) chmodSync(d, 0o755);
+  }
 });

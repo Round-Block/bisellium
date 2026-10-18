@@ -1,0 +1,19 @@
+# opus: W-316
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14ea0-21c0-71a1-beba-be4f0bc37a70
+# outcome: passed
+# at: 2026-10-18T10:50:57.323Z
+# tree: tree:0cfe2b54f4a9bdb55613f0f192c5a694919f8f6a
+# brief: briefs/W-316.md blob:6f4e7674b50f38ae19ee64fdee46de5cb5285768
+# ticket: {"opus":"W-316","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"84ba80f37dedd6c9558d6c065c17a7fc3aa3a546","brief":"6f4e7674b50f38ae19ee64fdee46de5cb5285768","at":"2026-10-18T10:50:52.239Z"}
+
+## Findings
+1. advisory — brief:77 The table enumerates `AGENTS.md`, an internal read of unchanged Codex, instead of treating the reused `codexProfile.start`/`codexProfile.resume` subprocess as one input. Replace brief:77 with: `| \`codexProfile.start\` / \`codexProfile.resume\`, the reused Codex subprocess call whose \`cwd\` changes | a completed call with exit code 0 | \`reviewSteps\`: \`turn.exitCode !== 0\` returns a held result before any verdict or review record is made |` [severity: S4] [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: packages/cli/src/next.test.ts
+2. advisory — brief:79 The row names fixture writes but omits the added test-side readers `realpathSync(w.repo)` and `process.cwd()`, plus the changed `codexCalls` call-log read. Replace brief:79 with: `| The W-316 rows' cwd evidence: \`realpathSync(w.repo)\`, \`process.cwd()\` in \`CODEX_STUB\`, and \`codexCalls\`'s call-log read | \`w.repo\` resolves to the canonical main checkout and every logged call carries a string \`cwd\` equal to that path | \`realpathSync\` or JSON parsing throws on unreadable input, and \`assert.equal\` in \`W-316-b1\` rejects an absent or unequal \`cwd\`; any failure fails the row |` [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/next.test.ts
+
+## Verdict
+The behaviours and promises are feasible with their stated limits; the remaining input-boundary corrections are advisory.
+VERDICT: PASS
