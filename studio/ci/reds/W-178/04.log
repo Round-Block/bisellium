@@ -1,0 +1,50 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx --test-name-pattern=^W-178-b4\s packages/cli/src/rules/tests.test.ts
+# exit: 1
+# at: 2026-10-18T22:22:51.147Z
+# sella: builder.W-178
+# tree: tree:e75e766e04dc1e1b1135067c37ebffd6bd213647
+# ticket: {"opus":"W-178","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-178/studio","head":"8d5af220d6e8406de8f0842e6d1c7f68b69f24f7","brief":"604a0dd02839c16bfd86a91fa4a871925da1e051","at":"2026-10-18T22:22:50.464Z"}
+
+TAP version 13
+# Subtest: W-178-b4 the rule runs from check --repo beside test.sleep
+not ok 1 - W-178-b4 the rule runs from check --repo beside test.sleep
+  ---
+  duration_ms: 313.023372
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-178/packages/cli/src/rules/tests.test.ts:20:403'
+  failureType: 'testCodeFailure'
+  error: |-
+    the 3 to 2 fixture exits 1
+    check /tmp/claude-1000/w121-officina-zSUvth  (now 2026-10-18T22:22:53.234Z)
+    
+    advisories (2)
+      acta.daily                 acta/#production               magister "producer" last daily 16.4 days ago
+      instructions.present       /tmp/claude-1000/w121-b4-drop-8A0chy neither CLAUDE.md nor AGENTS.md exists at the repo root — run `bisellium instructions --write`
+    
+    PASS — 0 blocking, 2 advisory
+    
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-178/packages/cli/src/rules/tests.test.ts:887:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 321.681046
