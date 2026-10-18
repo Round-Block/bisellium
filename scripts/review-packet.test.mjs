@@ -221,7 +221,7 @@ test("W-215-b4 behaviour 4: a handoff round diffs against HEAD and states facts 
   assert.equal(w.has(1, "prompt.md"), false, "no sessioned predecessor, no later-round prompt");
 });
 
-test("W-215-b4 behaviour 4: a build round diffs from the commit that added the previous log, outside the officina", () => {
+test("W-215-b4 behaviour 4: a build round diffs from the commit that added the previous log", () => {
   assert.ok(existsSync(SCRIPT), "scripts/review-packet.mjs exists");
   const w = world();
   w.put(w.studio, "ci/W-1-review-1.log", sessioned("W-1", "review", 1, "qa-lead", "c-1"));
@@ -235,7 +235,7 @@ test("W-215-b4 behaviour 4: a build round diffs from the commit that added the p
   assert.equal(r.status, 0, r.err);
   const delta = w.read(2, "delta.diff");
   assert.match(delta, /^\+changed line$/m, "the source change is in the delta");
-  assert.doesNotMatch(delta, /A brief edit|studio\//, "the officina is excluded");
+  assert.match(delta, /^\+A brief edit\.$/m, "the officina's change follows it (W-314)");
   assert.equal(w.has(2, "subject"), false, "a build packet has no subject");
   assert.match(w.read(2, "prompt.md"), /ci\/W-1-review-1\.log/, "the prompt names the previous round's log");
   assert.match(w.read(2, "facts.txt"), /^== next W-1$/m);
@@ -396,4 +396,36 @@ test("W-215-r1-3 studio containment: a studio whose name merely starts with `..`
   ]);
   assert.equal(r.status, 0, r.err);
   assert.ok(w.has(1, "subject"), "the packet is written");
+});
+
+test("W-314-b2 behaviour 2: a build round's delta carries the officina's change since the previous log, after the source change", () => {
+  assert.ok(existsSync(SCRIPT), "scripts/review-packet.mjs exists");
+  const w = world();
+  w.put(w.studio, "ci/W-1-review-1.log", sessioned("W-1", "review", 1, "qa-lead", "c-1"));
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "review 1");
+  // a studio-only fix: a gate log and a brief edit, no source change
+  w.put(w.studio, "ci/W-1-tests-0123abcd.log", "certifies: tree:0123abcd\ncommand: node -e 0\nexit code: 0\n");
+  writeFileSync(join(w.studio, "briefs/W-1.md"), `${BRIEF}\nA brief fix.\n`);
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "a studio-only fix");
+  const r = w.packet("build", "W-1", 2, "qa-lead");
+  assert.equal(r.status, 0, r.err);
+  const delta = w.read(2, "delta.diff");
+  assert.match(delta, /^\+A brief fix\.$/m, "a studio-only fix: the brief edit is in the delta");
+  assert.match(
+    delta,
+    /^\+\+\+ b\/studio\/ci\/W-1-tests-0123abcd\.log$/m,
+    "a studio-only fix: the new gate log is in the delta",
+  );
+  assert.doesNotMatch(delta, /W-1-review-1\.log/, "the previous round's own log is the base, not the delta");
+  // a source change beside it: the source diff comes first, the officina's after, though `tools/` sorts after `studio/`
+  w.put(w.repo, "tools/late.txt", "a source fix\n");
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "a source fix");
+  const r3 = w.packet("build", "W-1", 3, "qa-lead");
+  assert.equal(r3.status, 0, r3.err);
+  const both = w.read(3, "delta.diff");
+  const source = both.indexOf("+a source fix");
+  assert.ok(source >= 0 && source < both.indexOf("+A brief fix."), `the source change, then the officina's:\n${both}`);
 });
