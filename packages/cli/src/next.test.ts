@@ -6600,3 +6600,13 @@ test("W-316-b1 behaviour 1: the build reviewer's codex runs in the main checkout
   assert.deepEqual(call?.argv.slice(0, 3), ["exec", "resume", "s-316-1"], "round 2: resumes the session");
   assert.equal(call?.cwd, main, "round 2: the resumed codex runs in the main checkout too");
 });
+
+test("W-316-b2 behaviour 2: the round-1 prompt names the opus's brief and reds by absolute path in the opus worktree", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w316-b2");
+  codexSays(w, { session: "s-316-2", reply: FAIL_REPLY });
+  const o = performReview(w);
+  const stdin = codexCalls(w)[0]?.stdin ?? "";
+  assert.ok(stdin.includes(`1. Each numbered behaviour under ## Behaviours to test in ${w.wt}/studio/briefs/${OPUS}.md, as its rows assert.\n`), `round 1: the brief by its absolute path in the worktree:\n${stdin}`);
+  assert.ok(stdin.includes(`4. Each red under ${w.wt}/studio/ci/reds/${OPUS}/ fails by assertion on its commit.\n`), `round 1: the reds by their absolute path in the worktree:\n${stdin}`);
+  assert.equal(o.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o));
+});
