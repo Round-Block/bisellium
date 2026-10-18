@@ -69,8 +69,11 @@ interface Line {
  *  newline. Block-comment spans are blanked out of `code`; string and template
  *  contents stay in it. In a line that begins inside a template literal, a
  *  trimmed text beginning with a double slash is an embedded script's own
- *  comment line (that is where an annotation inside a fixture lives). */
-export function lex(text: string): Line[] {
+ *  comment line (that is where an annotation inside a fixture lives).
+ *  W-178: `blankStrings` replaces string and template contents (quotes stay)
+ *  with spaces, so `countTestRows` never counts text inside a fixture. */
+export function lex(text: string, opts: { blankStrings?: boolean } = {}): Line[] {
+  const blank = opts.blankStrings === true;
   const out: Line[] = [];
   let inBlock = false;
   let inTemplate = false;
@@ -92,11 +95,12 @@ export function lex(text: string): Line[] {
           code += "  ";
         } else code += " ";
       } else if (quote !== "" || inTemplate) {
-        code += c;
+        const closing = quote !== "" ? c === quote : c === "`";
+        code += blank && !closing ? " " : c;
         if (c === "\\" && n !== undefined) {
-          code += n;
+          code += blank ? " " : n;
           i++;
-        } else if (quote !== "" ? c === quote : c === "`") {
+        } else if (closing) {
           quote = "";
           inTemplate = false;
         }
@@ -170,6 +174,27 @@ function judge(lines: Line[], idx: number): Verdict {
   return { ok: flavour, kind: flavour === "seam" ? "seam" : word };
 }
 
+/** The paths a root package.json `test*` script names; throws on text that is not JSON. */
+function registeredPaths(pkgText: string): Set<string> {
+  const registered = new Set<string>();
+  const pkg = JSON.parse(pkgText) as { scripts?: unknown };
+  const scripts = typeof pkg.scripts === "object" && pkg.scripts !== null ? (pkg.scripts as Record<string, unknown>) : {};
+  for (const [key, value] of Object.entries(scripts)) {
+    if (!key.startsWith("test") || typeof value !== "string") continue;
+    for (const token of value.split(/\s+/)) registered.add(token.replace(/^\.\//, ""));
+  }
+  return registered;
+}
+
+/** W-121's test-file classification: a code file named *.test.* or *.spec.*, under a test directory, or registered by a `test*` script. */
+export function isTestPath(path: string, registered: ReadonlySet<string>): boolean {
+  const segs = path.split("/");
+  const name = segs[segs.length - 1]!;
+  const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
+  if (!EXTENSIONS.has(ext) || segs.includes("node_modules")) return false;
+  return TEST_NAME.test(name) || segs.slice(0, -1).some((s) => TEST_DIRS.has(s)) || registered.has(path);
+}
+
 /** Repo-relative POSIX paths of the tracked files the rule scans, plus any
  *  observation-failure findings. */
 function fileSet(repo: string, findings: Finding[]): string[] {
@@ -191,28 +216,86 @@ function fileSet(repo: string, findings: Finding[]): string[] {
   }
 
   // test paths registered by a root package.json `test*` script
-  const registered = new Set<string>();
+  let registered = new Set<string>();
   const pkgPath = join(repo, PACKAGE_JSON);
   if (existsSync(pkgPath)) {
     try {
-      const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { scripts?: unknown };
-      const scripts = typeof pkg.scripts === "object" && pkg.scripts !== null ? (pkg.scripts as Record<string, unknown>) : {};
-      for (const [key, value] of Object.entries(scripts)) {
-        if (!key.startsWith("test") || typeof value !== "string") continue;
-        for (const token of value.split(/\s+/)) registered.add(token.replace(/^\.\//, ""));
-      }
+      registered = registeredPaths(readFileSync(pkgPath, "utf8"));
     } catch {
       findings.push(block(PACKAGE_JSON, "could not parse package.json; registered test paths unknown"));
     }
   }
 
-  return tracked.filter((p) => {
-    const segs = p.split("/");
-    const name = segs[segs.length - 1]!;
-    const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
-    if (!EXTENSIONS.has(ext) || segs.includes("node_modules")) return false;
-    return TEST_NAME.test(name) || segs.slice(0, -1).some((s) => TEST_DIRS.has(s)) || registered.has(p);
-  });
+  return tracked.filter((p) => isTestPath(p, registered));
+}
+
+// ---- W-178: the row grammar (brief "Interfaces"), applied to `lex(.., { blankStrings: true })` code
+const DEFINITION =
+  /^(\s*)(?:export\s+)?(?:(?:async\s+)?function\s*\*?\s*([\w$]+)\s*\(|(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>))/;
+const REGISTRATION = /(?<![\w$.])(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(/g;
+const RUNNER_IMPORT = /from\s+["'](?:node:test|@playwright\/test)["']|require\(\s*["']node:test["']\s*\)/;
+const PRINTS = /console\.(?:log|error)|process\.std(?:out|err)\.write/;
+const WRAPPER_ROUNDS = 4;
+
+/** The test rows a file registers, statically: registrations (in a file that imports a runner), PASS/FAIL reporters
+ *  and the wrappers that call them, each call weighing its function's rows. Total; see the brief for the limits. */
+export function countTestRows(text: string): number {
+  const code = lex(text, { blankStrings: true }).map((l) => l.code);
+  const raw = text.split(/\r?\n/);
+  const runner = RUNNER_IMPORT.test(text);
+  const registrations = (lines: string[]): number => (runner ? lines.reduce((n, l) => n + (l.match(REGISTRATION)?.length ?? 0), 0) : 0);
+  const calls = (name: string, lines: string[]): number => {
+    const re = new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}\\s*\\(`, "g");
+    return lines.reduce((n, l) => n + (l.match(re)?.length ?? 0), 0);
+  };
+
+  // a body runs from its definition line to the first later line indented at or left of it
+  const fns: { name: string; start: number; end: number }[] = [];
+  for (let i = 0; i < code.length; i++) {
+    const m = DEFINITION.exec(code[i]!);
+    if (!m) continue;
+    const indent = m[1]!.length;
+    let end = i;
+    const line = code[i]!;
+    const oneLine = /[;,]\s*$/.test(line) || (/=>\s*[^{\s]/.test(line) && !/[({[]\s*$/.test(line));
+    if (!oneLine)
+      for (let j = i + 1; j < code.length; j++) {
+        const next = code[j]!;
+        if (next.trim() === "") continue;
+        if (next.length - next.trimStart().length <= indent) {
+          end = /^\s*[})\]]/.test(next) ? j : j - 1;
+          break;
+        }
+        end = j;
+      }
+    fns.push({ name: (m[2] ?? m[3])!, start: i, end });
+  }
+
+  const weight = new Map<string, number>();
+  const reporters = new Set<string>();
+  for (const f of fns) {
+    const body = raw.slice(f.start, f.end + 1).join("\n");
+    if (body.includes("PASS") && body.includes("FAIL") && PRINTS.test(body)) {
+      weight.set(f.name, 1);
+      reporters.add(f.name);
+    }
+  }
+  for (let round = 0; round < WRAPPER_ROUNDS; round++)
+    for (const f of fns) {
+      if (reporters.has(f.name)) continue;
+      const body = [code[f.start]!.replace(DEFINITION, ""), ...code.slice(f.start + 1, f.end + 1)];
+      let w = registrations(body);
+      for (const [name, wt] of weight) if (name !== f.name) w += calls(name, body) * wt;
+      if (w > 0) weight.set(f.name, w);
+    }
+
+  // count: registrations and weighted calls outside every weighted function's body
+  const inside = new Set<number>();
+  for (const f of fns) if (weight.has(f.name)) for (let k = f.start; k <= f.end; k++) inside.add(k);
+  const outside = code.map((l, k) => (inside.has(k) ? "" : l));
+  let total = registrations(outside);
+  for (const [name, wt] of weight) total += calls(name, outside) * wt;
+  return total;
 }
 
 export function scanTests(_root: string, opts: RuleOpts): TestScan {
