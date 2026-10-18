@@ -1,0 +1,20 @@
+# opus: W-319
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14fb2-4b6b-71d2-b1cd-ed49b7be6548
+# outcome: passed
+# at: 2026-10-18T15:53:14.389Z
+# tree: tree:d5687c52d145823ba74982252fd5d30fc6b93d18
+# brief: briefs/W-319.md blob:a192ec5d4169f25678a1e5e58f512af21482b08d
+# ticket: {"opus":"W-319","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"11c41ac88be8cd99008d392075f7acdd8388bf80","brief":"a192ec5d4169f25678a1e5e58f512af21482b08d","at":"2026-10-18T15:53:13.971Z"}
+
+## Findings
+1. advisory — brief:54 [severity: S2] The promised documentation says every brief refused by Input-domain admission has no rows here, but `inputDomainRows` still returns data-line numbers when admission rejects malformed headers, delimiters, cells, or rejectors. Replace brief:54 with: `The docs/ADOPTION.md paragraph states the rule and its limits: coverage only, it cannot tell whether the cited line fails closed nor see an omitted reader; inputDomainRows yields no rows for a missing or repeated section or a first pipe run shorter than three lines, while other admission failures can still yield rows; where brief_behaviour_limit is declared, next separately sends every inadmissible signed brief back.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/verdict-citation.test.ts
+2. advisory — brief:78 [severity: S4] The added `existsSync(log)` is a reader, but the row neither states its valid result—absent after refusal and present after admission—nor names the `assert.equal` calls that reject disagreement; `readFileSync` does not perform this read. Replace brief:78 with: `| The W-319-b1 row's fixture filesystem operations: its brief, ledger and transcript writes, brief rewrite read, and verdict-log existence read | writable files under its temporary officina; the brief rewrite has the fixture prefix; the log is absent after refusal and present after admission | writeFileSync and readFileSync throw on failure; assert.ok rejects a wrong brief rewrite; assert.equal in refused and admitted rejects a wrong log-existence result |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts
+
+## Verdict
+The design is feasible and has no blocking input-boundary or promise defect, subject to these advisory corrections.
+
+VERDICT: PASS
