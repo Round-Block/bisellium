@@ -6565,3 +6565,17 @@ test("W-315-b1 behaviour 1: the build-review prompt names the main checkout's st
   assert.equal(codexCalls(h).length, 0, "no <STUDIO>: no codex call");
   assert.equal(absentPath(reviewLog(h, 1)), true, "no <STUDIO>: no verdict log");
 });
+
+test("W-315-b3 behaviour 3: a spec re-review on the opus branch is told to send the main checkout's rebuttal prompt", { timeout: 1_800_000 }, () => {
+  const w = w206World("w315-b3", "review");
+  ticketed(w);
+  amend(w);
+  commit(w.wt, `studio(${OPUS}): brief amended`);
+  architectOrder(next(w, [OPUS, ...BUDGET]), 3, "an amended branch brief orders the architect");
+  assert.equal(wtSpec(w, 3, "architect", "passed").status, 0, "signature 3");
+  const r = next(w, [OPUS, ...BUDGET]);
+  reviewerOrder(r, 4, "the branch signature goes to the reviewer");
+  const command = r.kv.get("command") ?? "";
+  assert.ok(command.includes("send studio/prompts/rebuttal.md and"), ran("the dispute names the main checkout's rebuttal prompt", r));
+  assert.ok(!command.includes(`${WT_STUDIO_REL}/prompts/rebuttal.md`), ran("never the worktree's", r));
+});
