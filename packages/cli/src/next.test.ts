@@ -6610,3 +6610,55 @@ test("W-316-b2 behaviour 2: the round-1 prompt names the opus's brief and reds b
   assert.ok(stdin.includes(`4. Each red under ${w.wt}/studio/ci/reds/${OPUS}/ fails by assertion on its commit.\n`), `round 1: the reds by their absolute path in the worktree:\n${stdin}`);
   assert.equal(o.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o));
 });
+
+// ---------------------------------------------------------------------------
+// W-316: a dispatched agent's silence is surfaced: a dispatch order with no marker whose opus's files are all older than
+// the silence window reads stalled, naming the newest file and its age; a bisellium run in flight (its lease) is activity.
+// ---------------------------------------------------------------------------
+/** Every regular file under `dir`, last written `ageSeconds` before NOW. */
+function ageTree(dir: string, ageSeconds: number): void {
+  const t = new Date(NOW_MS - ageSeconds * 1000);
+  for (const e of readdirSync(dir, { recursive: true, withFileTypes: true })) if (e.isFile()) utimesSync(join(e.parentPath, e.name), t, t);
+}
+/** One file at `path`, last written `ageSeconds` before NOW. */
+function putAged(path: string, ageSeconds: number): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, "w316\n");
+  const t = new Date(NOW_MS - ageSeconds * 1000);
+  utimesSync(path, t, t);
+}
+/** The health line of a report-mode next, after its first line and exit status are checked. */
+function healthOf(w: World, label: string, args: string[] = BUDGET, step = "build", status = "named"): string {
+  const o = next(w, [OPUS, ...args]);
+  expectStep(o, step, status, label);
+  assert.equal(o.status, status === "held" ? 1 : 0, ran(`${label}: the exit status is the step's, unchanged`, o));
+  return o.kv.get("health") ?? "";
+}
+
+test("W-316-b3 behaviour 3: a dispatch order with no marker reads stalled when no file of its opus changed past the window, naming the newest", { timeout: 1_800_000 }, () => {
+  const w = world("w316-b3", "reds", { automated: true });
+  const wt = realpathSync(w.wt);
+  const evidence = join(w.home, ".bisellium-evidence");
+  ageTree(w.wt, 3600);
+  putAged(join(w.wt, "notes.txt"), 901);
+  putAged(join(w.wt, "node_modules", "pkg", "index.js"), 10);
+  putAged(join(w.repo, ".worktrees", "W-9000", "fresh.txt"), 10);
+  putAged(join(evidence, "W-9000-spec", "run.out"), 10);
+  assert.equal(healthOf(w, "901s"), `stalled (no step recorded; newest file ${wt}/notes.txt changed 901s ago, past 900s)`, "past the window: stalled, naming the newest file and its age (node_modules and another opus's files never count)");
+  assert.match(healthOf(w, "no budget", [], "build", "held"), /^stalled \(no step recorded; newest file /, "an order held for its budget is checked too");
+  putAged(join(w.wt, "notes.txt"), 900);
+  assert.equal(healthOf(w, "900s"), "no step recorded", "a file exactly 900s old is inside the window");
+  putAged(join(w.wt, "notes.txt"), 3600);
+  putAged(join(evidence, `${OPUS}-spec`, "run.out"), 60);
+  assert.equal(healthOf(w, "evidence"), "no step recorded", "a fresh file in the opus's evidence directory is activity");
+  putAged(join(evidence, `${OPUS}-spec`, "run.out"), 3600);
+  putAged(join(w.repo, ".worktrees", `${OPUS}-spec`, "proto.diff"), 60);
+  assert.equal(healthOf(w, "scratch"), "no step recorded", "a fresh file in the opus's scratch worktree is activity");
+  putAged(join(w.repo, ".worktrees", `${OPUS}-spec`, "proto.diff"), 3600);
+  assert.match(healthOf(w, "all old again"), /^stalled /, "every counted file old again: stalled");
+
+  // a rung that is not a dispatch order never reads stalled, with every counted file old
+  const p = world("w316-b3-branch", "spec");
+  putAged(join(p.home, ".bisellium-evidence", `${OPUS}-spec`, "run.out"), 3600);
+  assert.equal(healthOf(p, "branch", BUDGET, "branch"), "no step recorded", "the producer's branch rung is never stalled");
+});
