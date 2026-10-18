@@ -34,6 +34,7 @@ import {
   readdirSync,
   readFileSync,
   readlinkSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -5794,7 +5795,7 @@ const home = process.env.HOME;
 let stdin = "";
 process.stdin.on("data", (d) => (stdin += d));
 process.stdin.on("end", () => {
-  fs.appendFileSync(path.join(home, "codex-calls.jsonl"), JSON.stringify({ argv: process.argv.slice(2), stdin }) + "\n");
+  fs.appendFileSync(path.join(home, "codex-calls.jsonl"), JSON.stringify({ argv: process.argv.slice(2), stdin, cwd: process.cwd() }) + "\n");
   const r = JSON.parse(fs.readFileSync(path.join(home, "codex-reply.json"), "utf8"));
   // poison: a directory where the perform will write verdict.md, so that write throws
   const packet = /packet (\S+)\.\n/.exec(stdin);
@@ -5823,8 +5824,8 @@ const PASS_REPLY = "## Findings\nNo findings\n\n## Verdict\nFine.\n\nVERDICT: PA
 const FAIL_REPLY = "## Findings\n1. blocking — source.txt:1 fixture defect at brief:1 [class: tests×fixture] — check: none: fixture\n\n## Verdict\nNot yet.\n\nVERDICT: FAIL";
 type CodexReply = { session?: string; reply: string; exit?: number; stderr?: string; sleepMs?: number; signal?: string; poison?: boolean };
 const codexSays = (w: World, r: CodexReply): void => writeFileSync(join(w.home, "codex-reply.json"), JSON.stringify(r));
-const codexCalls = (w: World): { argv: string[]; stdin: string }[] =>
-  existsSync(join(w.home, "codex-calls.jsonl")) ? readFileSync(join(w.home, "codex-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; stdin: string }) : [];
+const codexCalls = (w: World): { argv: string[]; stdin: string; cwd: string }[] =>
+  existsSync(join(w.home, "codex-calls.jsonl")) ? readFileSync(join(w.home, "codex-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; stdin: string; cwd: string }) : [];
 /** Each template written and committed in the main checkout's studio, which the perform reads (W-314), and on the opus branch (studio files: the source tree is unchanged). */
 function putTemplates(w: World, templates: Record<string, string>, message: string): void {
   for (const dir of [w.repo, w.wt]) {
@@ -6578,4 +6579,24 @@ test("W-315-b3 behaviour 3: a spec re-review on the opus branch is told to send 
   const command = r.kv.get("command") ?? "";
   assert.ok(command.includes("send studio/prompts/rebuttal.md and"), ran("the dispute names the main checkout's rebuttal prompt", r));
   assert.ok(!command.includes(`${WT_STUDIO_REL}/prompts/rebuttal.md`), ran("never the worktree's", r));
+});
+
+// W-316: the build reviewer's codex runs in the main checkout, never the opus worktree, so the AGENTS.md it loads is
+// the main checkout's (codex loads AGENTS.md from its working directory, on a resume too); codex is W-274's stub.
+// ---------------------------------------------------------------------------
+test("W-316-b1 behaviour 1: the build reviewer's codex runs in the main checkout, never the opus worktree, round 1 and every later round", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w316-b1");
+  const main = realpathSync(w.repo);
+  codexSays(w, { session: "s-316-1", reply: FAIL_REPLY });
+  const o1 = performReview(w);
+  assert.equal(o1.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o1));
+  assert.equal(codexCalls(w)[0]?.cwd, main, "round 1: codex runs in the main checkout, not the opus worktree");
+  advanceSource(w);
+  handoffAt(w, "wt", new Date(Date.now() + 60_000).toISOString());
+  codexSays(w, { session: "s-316-1", reply: `## Earlier findings\n- ci/${OPUS}-review-1.log #1: closed — source.txt changed\n\n${PASS_REPLY}` });
+  const o2 = performReview(w);
+  assert.equal(o2.kv.get("review"), "round 2 passed", ran("round 2: performed, passed", o2));
+  const call = codexCalls(w)[1];
+  assert.deepEqual(call?.argv.slice(0, 3), ["exec", "resume", "s-316-1"], "round 2: resumes the session");
+  assert.equal(call?.cwd, main, "round 2: the resumed codex runs in the main checkout too");
 });
