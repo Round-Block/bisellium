@@ -54,7 +54,7 @@ const MANIFEST = [
   "",
 ].join("\n");
 const TEMPLATE =
-  "Round <ROUND> of <ID>. Previous round: <PREVIOUS>. Packet: <PACKET>.\nJudge delta.diff only. Number each earlier finding <k>.\n";
+  "Round <ROUND> of <ID>. Previous round: <PREVIOUS>. Packet: <PACKET>. Lessons: <STUDIO>/lessons/.\nJudge delta.diff only. Number each earlier finding <k>.\n";
 const HANDOFF = [
   "# Handoff",
   "",

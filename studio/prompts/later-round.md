@@ -1,6 +1,6 @@
 # Later-round review prompt (W-215)
 
-Used for every review round after the first of a sequence, in every phase (spec, build, handoff): `scripts/review-packet.mjs` fills the four slots and writes it as `<packet>/prompt.md`, and the reviewer's session is resumed with it. Round 1 keeps its own prompt.
+Used for every review round after the first of a sequence, in every phase (spec, build, handoff): `scripts/review-packet.mjs` fills the five slots and writes it as `<packet>/prompt.md`, and the reviewer's session is resumed with it. Round 1 keeps its own prompt.
 
 ---
 
@@ -15,7 +15,7 @@ For every blocking finding of <PREVIOUS> that still stood, write one line under 
 
 Severity is unchanged: a finding is blocking only on substance, citing a file:line; anything else is advisory. In a spec or build round, a blocking finding also cites `brief:<line>`, the non-blank brief line whose behaviour it breaks (W-126): `bisellium verdict` records a blocker without one as advisory, so an uncited blocker cannot fail the round. A finding of this round that you reached by an earlier finding's class says so.
 
-Class (D-070): end each finding's text, before its `check:` marker, with its class in brackets, `[class: <area>×<slug>]`, reusing a class from studio/lessons/ or an earlier round's tag verbatim where one fits.
+Class (D-070): end each finding's text, before its `check:` marker, with its class in brackets, `[class: <area>×<slug>]`, reusing a class from <STUDIO>/lessons/ or an earlier round's tag verbatim where one fits.
 
 Output: your final message is recorded verbatim. Under 5500 bytes, in this order:
 

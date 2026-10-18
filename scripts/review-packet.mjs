@@ -30,7 +30,7 @@ const MAIN = join(CHECKOUT, "packages/cli/src/main.ts");
 const PHASES = ["spec", "build", "handoff"];
 const FLAGS = ["--phase", "--opus", "--round", "--sella", "--studio", "--repo", "--packets"];
 const MAX_BYTES = 4 * 1024 * 1024;
-const SLOTS = ["ID", "ROUND", "PREVIOUS", "PACKET"];
+const SLOTS = ["ID", "ROUND", "PREVIOUS", "PACKET", "STUDIO"];
 const HANDOFF_REL = "docs/SESSION-HANDOFF.md";
 const USAGE = `usage: node --import tsx scripts/review-packet.mjs ${FLAGS.map((f) => `${f} <${f.slice(2)}>`).join(" ")}`;
 
@@ -105,11 +105,11 @@ function factOf(name, argv) {
   return [`== ${name}`, argv.join(" "), `${r.stdout}${r.stderr}`.trimEnd(), `exit ${r.status}`, ""].join("\n");
 }
 
-/** `template` with the four slots filled in one pass (a value is never re-scanned); a missing slot is a refusal. */
+/** `template` with the five slots filled in one pass (a value is never re-scanned); a missing slot is a refusal. */
 export function fillTemplate(template, values) {
   for (const slot of SLOTS)
     if (!template.includes(`<${slot}>`)) refuse(`prompts/later-round.md lacks the slot <${slot}>`);
-  return template.replace(/<(ID|ROUND|PREVIOUS|PACKET)>/g, (_, slot) => values[slot]);
+  return template.replace(/<(ID|ROUND|PREVIOUS|PACKET|STUDIO)>/g, (_, slot) => values[slot]);
 }
 
 /** The previous packet's `subject`: a regular file, never a fallback to the full subject. */
@@ -174,11 +174,24 @@ const nextFact = (id, studio, repo) =>
   ]);
 
 /**
- * Everything a round is given, computed before `<packets>/r<n>` exists. `promptStudio` (default `studio`) is the studio
- * whose `prompts/later-round.md` is read: `next`'s review perform passes the main checkout's, never the branch's (W-314).
+ * `studio`'s place in the repository's main work tree, the first entry `git worktree list` gives (W-315): the same
+ * path for a studio in the main checkout, and the main checkout's copy for one in a linked worktree.
+ */
+function mainStudio(studio) {
+  const top = runGit(studio, ["rev-parse", "--show-toplevel"]).trim();
+  const main = /^worktree (.+)$/m.exec(runGit(studio, ["worktree", "list", "--porcelain"]))?.[1];
+  if (main === undefined) refuse("git worktree list names no main work tree");
+  return join(main, relative(realpathSync(top), realpathSync(studio)));
+}
+
+/**
+ * Everything a round is given, computed before `<packets>/r<n>` exists. `promptStudio` is the studio whose
+ * `prompts/later-round.md` is read and whose path fills `<STUDIO>`: `next`'s review perform passes the main checkout's
+ * (W-314); absent, it is `studio`'s place in the main work tree, so a hand-run packet for a branch never reads the
+ * branch's template (W-315).
  */
 export function buildPacket(args) {
-  const { phase, opus, round, sella, studio, repo, packets, promptStudio = studio } = args;
+  const { phase, opus, round, sella, studio, repo, packets } = args;
   const packet = join(packets, `r${round}`);
   try {
     lstatSync(packet);
@@ -259,6 +272,7 @@ export function buildPacket(args) {
   files.set("facts.txt", facts.join("\n"));
 
   if (previous !== undefined) {
+    const promptStudio = args.promptStudio ?? mainStudio(studio);
     const template = readContainedRegularFile(promptStudio, "prompts/later-round.md", "prompts");
     if ("error" in template) refuse(`prompts/later-round.md: ${template.error}`);
     files.set(
@@ -268,6 +282,7 @@ export function buildPacket(args) {
         ROUND: String(round),
         PREVIOUS: previous.log,
         PACKET: packet,
+        STUDIO: promptStudio,
       }),
     );
   }
