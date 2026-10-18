@@ -6662,3 +6662,16 @@ test("W-316-b3 behaviour 3: a dispatch order with no marker reads stalled when n
   putAged(join(p.home, ".bisellium-evidence", `${OPUS}-spec`, "run.out"), 3600);
   assert.equal(healthOf(p, "branch", BUDGET, "branch"), "no step recorded", "the producer's branch rung is never stalled");
 });
+
+test("W-316-b4 behaviour 4: a bisellium run in flight, the opus's producer lease inside the host run's timeout, is activity", { timeout: 1_800_000 }, () => {
+  const w = world("w316-b4", "reds", { automated: true });
+  ageTree(w.wt, 3600);
+  const lease = join(w.repo, ".bisellium", "leases", OPUS, "pid");
+  putAged(lease, 3600);
+  assert.equal(healthOf(w, "lease 3600s"), "no step recorded", "a lease 3600s old is a run inside its 60-minute timeout: activity");
+  putAged(lease, 3601);
+  assert.match(healthOf(w, "lease 3601s"), /^stalled /, "a lease past the run's timeout is a killed run's residue, not activity");
+  rmSync(dirname(lease), { recursive: true });
+  putAged(join(w.repo, ".bisellium", "leases", "W-9000", "pid"), 60);
+  assert.match(healthOf(w, "another lease"), /^stalled /, "another opus's lease is not this one's activity");
+});
