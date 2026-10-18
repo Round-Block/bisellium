@@ -12,7 +12,8 @@ import {
 } from "@bisellium/shim";
 import { countBehaviours } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, markIsolatedBuilderRuntime } from "./frontmatter.js";
-import { readContainedRegularFile } from "./opus-model.js";
+import { PROBATIO_KINDS } from "@bisellium/schema";
+import { effectiveProbationes, isNativeOpusKind, readContainedRegularFile, type EffectiveProbatio } from "./opus-model.js";
 
 interface BuilderRunCompletion {
   schema: 1; origin: "host-producer"; opus: string; branch: string; builder: string; producer: string;
@@ -266,6 +267,85 @@ function rebasedRedCommit(repo: string, tip: string, logRel: string, log: Buffer
 }
 
 export type RunReceiptAdmission = { ok: true; receipt: string } | { ok: false; error: string };
+
+export type GateAdmission = { ok: true } | { ok: false; error: string };
+
+const isMapping = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * W-312: the gate selectors, validated whole before any gate is filtered (a malformed row never narrows the set): the record's
+ * native kind and its probationes (absent or a mapping), the manifest's probationes (absent or a list of well-formed rows with
+ * unique ids) and source_excludes (absent or a list of nonempty paths), and no effectiveProbationes problem.
+ */
+function gateSelectors(front: Record<string, unknown>, manifest: unknown): { gates: string[]; recorded: Record<string, unknown>; excludes: string[] } | { error: string } {
+  if (!isNativeOpusKind(front["kind"])) return { error: `kind ${JSON.stringify(front["kind"])} is not a native opus kind` };
+  if (front["probationes"] !== undefined && !isMapping(front["probationes"])) return { error: "the record's probationes is not a mapping" };
+  if (!isMapping(manifest)) return { error: "bisellium.yml is not a mapping" };
+  const declared = manifest["probationes"] ?? [];
+  if (!Array.isArray(declared)) return { error: "bisellium.yml probationes is not a list" };
+  const seen = new Set<string>();
+  for (const [i, row] of declared.entries()) {
+    const ok = isMapping(row) && typeof row["id"] === "string" && row["id"] !== "" && !seen.has(row["id"]) && typeof row["name"] === "string"
+      && (PROBATIO_KINDS as readonly unknown[]).includes(row["kind"]) && (row["kind"] !== "automated" || (typeof row["command"] === "string" && row["command"] !== ""));
+    if (!ok) return { error: `bisellium.yml probationes[${i}] is not a well-formed gate row` };
+    seen.add(row["id"] as string);
+  }
+  const excludes = manifest["source_excludes"] ?? [];
+  if (!Array.isArray(excludes) || !excludes.every((e) => typeof e === "string" && e !== "")) return { error: "bisellium.yml source_excludes is not a list of nonempty paths" };
+  const effective = effectiveProbationes(front["kind"], declared as EffectiveProbatio[]);
+  if (effective.problems.length > 0) return { error: effective.problems.map((p) => p.message).join("; ") };
+  return { gates: effective.probationes.filter((p) => p.kind === "automated").map((p) => p.id), recorded: (front["probationes"] ?? {}) as Record<string, unknown>, excludes: excludes as string[] };
+}
+
+/**
+ * W-312: review's precondition, replacing the host receipt (D-071 E: certify is the one mint). A marked record's automated
+ * gates (the manifest's, plus a UI opus's served-e2e) each `passed` at the checkout's clean current SOURCE tree, with the log
+ * `verify` (and `ci --opus`) writes for that tree, `ci/<id>-<gate>-<tree8>.log`, opening `certifies: tree:<hash>` and
+ * `exit code: 0`; those logs tracked by git and unchanged from HEAD, so an ignored or untracked log never counts (the record's
+ * own edits are the review perform's `dirtyHold`). A waived gate is skipped, as `verify` skips it; a legacy record is admitted
+ * as before. Threat model: mistakes (D-045); a hand-written log of the right shape is not detected.
+ */
+export function admitCurrentGates(studioRoot: string, opus: string): GateAdmission {
+  try {
+    const opusPath = join(studioRoot, "opera", `${opus}.md`);
+    const obligation = builderRuntimeObligation(opusPath);
+    if (obligation.kind === "invalid") return { ok: false, error: obligation.error };
+    if (obligation.kind === "legacy") return { ok: true };
+    const selectors = gateSelectors(readFront<Record<string, unknown>>(opusPath).data, readManifest(studioRoot));
+    if ("error" in selectors) return { ok: false, error: `${opus}: the gate configuration is malformed: ${selectors.error}` };
+    const rootResult = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: studioRoot, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+    if (rootResult.status !== 0) return { ok: false, error: `${opus}: current source tree is unavailable` };
+    const repo = resolve(rootResult.stdout.trim());
+    const studioRel = relative(repo, studioRoot).split(sep).join("/");
+    const exclusions = [studioRel, ".bisellium", ...selectors.excludes];
+    if (isDirtyOutside(repo, exclusions)) return { ok: false, error: `${opus}: current source tree is dirty` };
+    const tree = `tree:${sourceTreeHash(repo, exclusions, "HEAD")}`;
+    const paths: string[] = [];
+    for (const gate of selectors.gates) {
+      const g = selectors.recorded[gate] as { status?: unknown; evidence?: unknown; certifies?: unknown } | undefined;
+      if (g?.status === "waived") continue;
+      if (g?.status !== "passed" || g.certifies !== tree)
+        return { ok: false, error: `${opus}: ${gate} is not passed at the current source tree ${tree.slice(0, 17)}; run bisellium ci --opus ${opus} in the worktree and commit the record and its gate logs` };
+      const evidence = `ci/${opus}-${gate}-${tree.slice(5, 13)}.log`;
+      if (g.evidence !== evidence) return { ok: false, error: `${opus}: ${gate} records evidence ${String(g.evidence)}, not ${evidence}` };
+      const log = readContainedRegularFile(studioRoot, evidence, "ci");
+      if ("error" in log) return { ok: false, error: `${opus}: ${gate}'s log ${evidence} is not a contained regular file (${log.error})` };
+      const [first, , third] = log.bytes.toString("utf8").split("\n");
+      if (first !== `certifies: ${tree}` || third !== "exit code: 0") return { ok: false, error: `${opus}: ${gate}'s log ${evidence} does not open with certifies: ${tree} and exit code: 0` };
+      paths.push(`${studioRel}/${evidence}`);
+    }
+    if (paths.length === 0) return { ok: true };
+    // tracked (an ignored or untracked log is not in the branch) and unchanged from HEAD; a failed git call refuses either way
+    const untracked = paths.filter((p) => spawnSync("git", ["ls-files", "--error-unmatch", "--", p], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS }).status !== 0);
+    if (untracked.length > 0) return { ok: false, error: `${opus}: a gate log is not committed (${untracked.sort().join(", ")})` };
+    const status = spawnSync("git", ["status", "--porcelain", "--untracked-files=all", "--", ...paths], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+    if (status.status !== 0) return { ok: false, error: `${opus}: git status of the gate logs failed` };
+    if (status.stdout !== "") return { ok: false, error: `${opus}: a gate log is not committed (${status.stdout.split("\n").filter(Boolean).map((l) => l.slice(3)).sort().join(", ")})` };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: `${opus}: the gate evidence cannot be read: ${(error as Error).message}` };
+  }
+}
 
 /** Shared by producer dispatch and direct/manual review. No verdict bypass. */
 export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunReceiptAdmission {

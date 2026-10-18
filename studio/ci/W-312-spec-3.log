@@ -1,0 +1,29 @@
+# opus: W-312
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-17T22:56:34.200Z
+# tree: tree:9ee3f674fd88b65b1d1bafcfa2db37d0128ac8c5
+# brief: briefs/W-312.md blob:8fb088003627a6a2138ff3ba996dfd317a75ed67
+# ticket: {"opus":"W-312","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"ba2bb37081aa308ed0666a1bb16b0e8a321a3f03","brief":"8fb088003627a6a2138ff3ba996dfd317a75ed67","at":"2026-10-17T22:56:33.664Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-312-spec/promise-ledger-r3.md
+
+## Earlier findings
+
+- ci/W-312-spec-2.log #1: closed — brief:93 is the review's replacement row verbatim (`admitCurrentGates` set in backticks for brief admission, D-050); Interfaces step 5 (brief:48) adds `git ls-files --error-unmatch` per log before the status check, so an ignored or untracked log refuses (BR:339-343); W-312-b1 checks an ignored log (a committed `studio/ci/.gitignore` of `*.log`) through both `next` and `reviewVerb` (NT:6375), failing on revision 1's admission (probe-r1-r3.out)
+- ci/W-312-spec-2.log #2: closed — brief:94 is the review's replacement row verbatim (backticks as above); Interfaces step 2 (brief:45) validates the record kind and probationes, the manifest's rows and source_excludes, and refuses any effectiveProbationes problem before any gate is filtered (BR:280-298); W-312-b1 checks an unknown gate kind, a non-native record kind, a scalar source_excludes and a ui opus whose served-e2e is declared an agent gate, each through both `next` (or W-166's earlier hold) and `reviewVerb` (NT:6392, NT:6393, NT:6402, NT:6422), each failing on revision 1's admission (probe-r1-r3.out)
+
+## Findings
+
+1. advisory — class sweep: the source tree check (`isDirtyOutside`, unchanged) judges no ignored file and, at the review rung under `trackedOnly`, no untracked one; the record's own commit state is not judged; the `resume` hint reads loosely; each is now a stated limit and an Input domain row (brief:75, brief:76, brief:88, brief:96, brief:97), not a guarantee (D-076 E); a scalar source_excludes is already held by `next` before derivation (W-166, NP:2048) — check: packages/cli/src/next.test.ts (W-312-b1), ledger lines brief:75 to brief:97
+2. advisory — the red fails by assertion at `no gate evidence: why` on master ba2bb370 with the final test diff, and the host replay classifier accepts it; the row passes on the prototype — check: red-b1-master-r3.out, red-accept-r3.out, proto-b1-r3.out
+3. advisory — must-stay-green on the prototype: the whole next.test.ts 106 of 106, lifecycle.test.ts 674 checks, containment.test.ts 65 of 65 (round 1's `admitCurrentGates#2` pin was stale: the function has one raw id-to-path join; brief:33 and brief:122 corrected), and opus-model.test.ts 7 of 7, whose review rows the Codex test check lists as must-stay-green — check: next-full-proto-r3.out, lifecycle-proto-r3.out, containment-proto-r3.out, opus-model-proto-r3.out
+4. advisory — the Codex test check rerun on the changed test diff lists no unnamed flip, and every listed flip is named at brief:112 to brief:122; it read the brief before its last edits (evidence names, the red's evidence, the trackedOnly note, the admission backticks), none of which changes scope — check: fixture-census-r3.md
+5. advisory — the brief passes admission and the ledger covers every promise line (the W-306 rule, replicated); lint, format and typecheck pass on the touched files (one pre-existing lint warning in integrate.ts, OID_RE, on master too) — check: admission-r3.out, ledger-check-r3.out, lint-proto-r3.out, format-proto-r3.out, typecheck-proto-r3.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-312.md`, master ba2bb370.

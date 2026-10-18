@@ -1,0 +1,18 @@
+# opus: W-312
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a14c8f-b2f3-7bc3-bc20-4f9b12e661be
+# outcome: failed
+# at: 2026-10-18T01:12:38.120Z
+# tree: tree:8cf2367ca4d799e26f51799ab3628ac0cee0187e
+# brief: briefs/W-312.md blob:8fb088003627a6a2138ff3ba996dfd317a75ed67
+# ticket: {"opus":"W-312","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-312/studio","head":"6d13f6af386e2c0cec00808e50ef9ff1abc7de86","brief":"8fb088003627a6a2138ff3ba996dfd317a75ed67","at":"2026-10-18T00:49:25.823Z"}
+
+## Findings
+1. blocking — studio/prompts/build-review.md:10 The packet claims committed automated-gate logs exist and no host replay occurred, but `studio/opera/W-312.md:7` records no automated gates, the tree contains no such logs, and the receipt named at line 32 records a red replay. This contradicts the explicit old-ladder transition at brief:23 and makes the required evidence statement false. [class: review×evidence-backfilled-or-absent] — check: none: review-packet creation must select evidence wording from the active ladder and validate it against the record
+
+## Verdict
+The round cannot pass with a review packet that falsely describes its gate and red-replay evidence.
+VERDICT: FAIL

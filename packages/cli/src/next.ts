@@ -23,14 +23,12 @@
  */
 import { createHash } from "node:crypto";
 import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
-import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
+import { admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
@@ -81,8 +79,8 @@ const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
 const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review"]);
-/** W-292: the rungs --chain performs in turn, the build rung only as the mint. */
-const CHAIN = new Set<Step>(["build", "review", "pr"]);
+/** W-292: the rungs --chain performs in turn (W-312: no mint before review). */
+const CHAIN = new Set<Step>(["review", "pr"]);
 const BEHAVIOURS = "Behaviours to test";
 const SECTIONS = ["Intent", "Files owned", "Interfaces", BEHAVIOURS, "Acceptance", "Out of scope"];
 const LIGHT_SECTIONS = ["Intent", "Files owned", BEHAVIOURS, "Acceptance"];
@@ -424,7 +422,8 @@ export interface Facts {
   curTree(): string | undefined;
   /** W-167: the review configuration and every strictly read build-review round, or why they cannot be read (held, never zero rounds) */
   buildRounds(): { config: BuildReviewConfig; rounds: BuildReviewRound[] } | { error: string };
-  receipt(): { ok: true } | { ok: false; error: string } | undefined;
+  /** W-312: the worktree record's automated gates passed at the branch's current source tree (`admitCurrentGates`), or why not */
+  gates(): { ok: true } | { ok: false; error: string } | undefined;
   redFindings(): string[];
   uiSpecProblems(): string[];
   uiReviewProblems(): string[];
@@ -633,7 +632,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
       const read = readBuildRounds(wt.studio, id, config.config);
       return "error" in read ? read : { config: config.config, rounds: read.rounds };
     }),
-    receipt: memo(() => (usable ? trackedOnly(() => admitCurrentRunReceipt(wt.studio, id)) : undefined)),
+    gates: memo(() => (usable ? trackedOnly(() => admitCurrentGates(wt.studio, id)) : undefined)),
     redFindings: memo(() => {
       if (!usable) return [];
       try {
@@ -672,7 +671,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
 
 /**
  * "Dirty" is tracked changes only (an untracked file never makes a tree dirty). The reused
- * receipt admission asks `git status --porcelain`, which counts untracked files; git's own
+ * gate admission (W-312) asks `git status --porcelain`, which counts untracked files; git's own
  * `status.showUntrackedFiles=no` (set for this process's children only, for the duration of the
  * call) gives it the tracked-only definition without reimplementing or editing the admission.
  */
@@ -926,11 +925,12 @@ export function deriveNext(f: Facts): Derived {
     const current = (g: Gate): boolean => g.tree === cur && (g.brief === undefined || g.brief === pin);
     const failedNow = gate !== undefined && gate.status === "failed" && current(gate);
     const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
-    const receipt = f.receipt();
-    if ((receipt !== undefined && !receipt.ok) || failedNow)
-      return dispatch(f, "build", failedNow ? `review round ${gate?.round} failed at this tree` : receipt !== undefined && !receipt.ok ? receipt.error : "no admissible run receipt", {
+    // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
+    const gates = f.gates();
+    if ((gates !== undefined && !gates.ok) || failedNow)
+      return dispatch(f, "build", failedNow ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
         phase: failedNow ? "fix" : "2",
-        resume: str(b["run_receipt"]) !== undefined || reviewRounds(f).length > 0,
+        resume: automatedGates(f.manifest, b).some((g) => isDict(b["probationes"]) && isDict(b["probationes"][g]) && b["probationes"][g]["certifies"] !== undefined) || reviewRounds(f).length > 0,
         inputs: [briefRel(id), ...(failedNow && gate?.evidence !== undefined ? [gate.evidence] : [])],
         extra: boundary,
       });
@@ -1366,7 +1366,7 @@ function installMarker(read: MarkerRead | undefined, path: string, marker: Marke
 interface Args {
   id: string;
   perform: boolean;
-  /** W-292: perform the mint, review and pr rungs in turn, stopping at the first that is not performed. */
+  /** W-292: perform the review and pr rungs in turn, stopping at the first that is not performed. */
   chain: boolean;
   expect?: Step;
   budget?: number;
@@ -1733,80 +1733,6 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
   return { ok: true, lines: [`review: round ${round} ${outcome}`, `log: ci/${id}-review-${round}.log`, `branch: opus/${id}`] };
 }
 
-// ---------------------------------------------------------------------------
-// build: the mint, under --chain (W-292)
-// ---------------------------------------------------------------------------
-
-const CLI_BIN = fileURLToPath(new URL("../bin/bisellium.mjs", import.meta.url));
-
-/**
- * The host-minted run receipt, made as lex §9 step 4 does by hand (`bisellium run --sella builder --opus <id> -- true`
- * from the worktree), its output appended to the step log; then the record's `run_receipt` line, the one tracked change
- * the mint leaves, is committed alone. Held: before the builder's handover, on a tracked change, a non-zero exit, any
- * other tracked change after it, a receipt the review gate does not admit, or a thrown step error.
- */
-async function performMint(f: Facts, d: Readonly<Derived>, budget: number | undefined, testClock: boolean, output: string, log: (line: string) => void): Promise<StepResult> {
-  try {
-    return await mintSteps(f, d, budget, testClock, output, log);
-  } catch (e) {
-    return heldResult(`the mint failed: ${one((e as Error).message)}`);
-  }
-}
-
-async function mintSteps(f: Facts, d: Readonly<Derived>, budget: number | undefined, testClock: boolean, output: string, log: (line: string) => void): Promise<StepResult> {
-  const { id, wt, studioRel } = f;
-  if (!wt.usable || d.order === undefined) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
-  // the builder's handover, checked as for a resumed order: it may not predate the newest red or review log
-  const handed = gateDispatch({ ...d, status: "named", order: { ...d.order, resume: true } }, f, budget);
-  if (handed.status === "held") return heldResult(`refusing: ${handed.why}`);
-  const dirty = dirtyHold(wt.dir);
-  if (dirty !== undefined) return dirty;
-  const stub = process.env["BISELLIUM_TEST_MINT"];
-  if (testClock && stub !== undefined && !isAbsolute(stub)) return heldResult("refusing: BISELLIUM_TEST_MINT must be an absolute path");
-  const cmd = testClock && stub !== undefined ? [stub] : [process.execPath, CLI_BIN];
-  const args = ["run", "--sella", "builder", "--opus", id, "--studio", wt.studio, "--repo", wt.dir, "--", "true"];
-  log(`mint: ${args.join(" ")}`);
-  const fd = openSync(output, "a");
-  let code: number;
-  try {
-    code = await new Promise<number>((done) => {
-      const child = spawn(cmd[0]!, [...cmd.slice(1), ...args], { cwd: wt.dir, stdio: ["ignore", fd, fd] });
-      child.once("error", () => done(127));
-      child.once("exit", (c) => done(c ?? 1));
-    });
-  } finally {
-    closeSync(fd);
-  }
-  log(`mint: exited ${code}`);
-  if (code !== 0) return heldResult(`the mint exited ${code}; its output is in .bisellium/steps/${id}.log`);
-  const record = `${studioRel}/${recordRel(id)}`;
-  const changes = trackedChanges(wt.dir);
-  if (typeof changes === "string") return heldResult(`refusing: ${changes}`);
-  const other = changes.flatMap(touched).filter((p) => p !== record);
-  if (other.length > 0) return heldResult(`refusing: the mint left tracked changes other than ${record}: ${other.map(quoted).join(" ")}`);
-  if (changes.length > 0) {
-    // only the run_receipt line may differ from the committed record, every other byte and its mode alike
-    const was = git(wt.dir, ["show", `HEAD:${record}`]);
-    if (was.status !== 0) return heldResult(`refusing: git show HEAD:${record} failed: ${one(was.stderr)}`);
-    const raw = git(wt.dir, ["diff", "--raw", "HEAD", "--", record]);
-    if (raw.status !== 0) return heldResult(`refusing: git diff HEAD -- ${record} failed: ${one(raw.stderr)}`);
-    const modes = /^:(\d+) (\d+) /.exec(raw.stdout);
-    const now = fsSrc(wt.studio).read(recordRel(id));
-    if (now === undefined) return heldResult(`refusing: ${record} cannot be read after the mint`);
-    const bare = (text: string): string => {
-      const end = text.indexOf("\n---\n") + 1; // the front matter's end; the body is compared whole
-      return text.slice(0, end).replace(/^run_receipt:[^\n]*\n/m, "") + text.slice(end);
-    };
-    if (modes === null || modes[1] !== modes[2] || bare(was.stdout) !== bare(now)) return heldResult(`refusing: the mint changed ${record} beyond its run_receipt field`);
-    const staged = git(wt.dir, ["add", "--", record]);
-    const committed = staged.status === 0 ? git(wt.dir, ["commit", "-q", "-m", `chore(studio): ${id} run receipt`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>", "--", record]) : staged;
-    if (committed.status !== 0) return heldResult(`could not commit ${record} on opus/${id}: ${one(committed.stderr)}`);
-  }
-  const after = gather(f.repo, f.studioAbs, id).receipt();
-  if (after === undefined || !after.ok) return heldResult(`the mint's receipt is not admitted: ${after === undefined ? "no worktree" : after.error}`);
-  return { ok: true, lines: [`mint: exit 0`, `receipt: ${str(recordOf(fsSrc(wt.studio), id)?.["run_receipt"]) ?? "(none)"}`] };
-}
-
 /** W-243: a landing head may change officina records only (`recordOnly`, the list certify reads): anything else is refused before the push. */
 async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
   const paths = diffPaths(f.repo, TRUNK, `refs/heads/${head}`);
@@ -2169,10 +2095,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       return say(0, [`next: ${id} ${t.step} running`, `health: tracked pid ${pid} (writer track, an unverified attestation)`, `output: ${t.output}`]);
     }
 
-    // W-292: --chain performs the mint (a build rung whose builder work is handed off: phase 2), review and pr, and no other rung
-    const mint = (d: Derived): boolean => a.chain && d.step === "build" && d.order?.phase === "2";
-    const performable = (d: Derived): boolean =>
-      a.perform && d.status === "named" && (mint(d) || (PERFORMABLE.has(d.step) && (!a.chain || CHAIN.has(d.step)))) && (d.step !== "spec" || d.act !== undefined);
+    // W-292: --chain performs review and pr, and no other rung (W-312: no mint before review)
+    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (!a.chain || CHAIN.has(d.step)) && (d.step !== "spec" || d.act !== undefined);
     // a `pr` that must be created needs --title and --body-file; without them it only names the command
     const needsText = (d: Derived): boolean => d.step === "pr" && d.pr === undefined && (a.title === undefined || a.bodyFile === undefined);
 
@@ -2180,7 +2104,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     if (!performable(d1)) {
       // W-233: the ticket is refreshed from the ungated derivation, before the --expect check
       const tickets = refreshTicket(f, deriveNext(f), a.nowMs);
-      if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the mint, review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
+      if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
       const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
       const h = assess(readMarker(repo, id), d1.step, env);
@@ -2260,9 +2184,6 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
             break;
           case "review":
             result = await performReview(f, d2, a.nowMs, a.testClock, log);
-            break;
-          case "build":
-            result = await performMint(f, d2, a.budget, a.testClock, join(repo, ".bisellium", outputRel), log);
             break;
           default:
             result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : (handoffHold(f) ?? performDone(f, d2));

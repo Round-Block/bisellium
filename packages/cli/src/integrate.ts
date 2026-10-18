@@ -613,7 +613,7 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
   const merges = git(wt, ["rev-list", "--merges", `${TRUNK_REF}..HEAD`]);
   if (merges.status !== 0) return held(`refusing: could not list ${branch}'s merge commits: ${why(merges)}`);
   const merge = merges.stdout.trim().split("\n")[0] ?? "";
-  if (merge !== "") return held(`refusing: ${branch} carries merge commit ${merge.slice(0, 12)}; certify replays the branch onto master, so rebase it onto master instead (no merge commits), then mint and review the rebased head`);
+  if (merge !== "") return held(`refusing: ${branch} carries merge commit ${merge.slice(0, 12)}; certify replays the branch onto master, so rebase it onto master instead (no merge commits), then run its gates (bisellium ci --opus) and review the rebased head`);
   const slug = repoSlug(repo);
   if (!slug.ok) return held(slug.reason);
   const mode = readMergeQueue(repo, slug.slug);
@@ -709,7 +709,7 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   if (mode === "direct") {
     // a head pushed for the queue (no rebase) is merged only through the queue
     if (readBinding(ctx.repo, ctx.head).kind !== "absent")
-      return { ok: false, lines: [`mode: ${mode}`, `why: PR #${pr.number} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${ctx.head} onto master, which changes the SOURCE tree and needs the local mint again`] };
+      return { ok: false, lines: [`mode: ${mode}`, `why: PR #${pr.number} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${ctx.head} onto master, which changes the SOURCE tree and needs its gates (bisellium ci --opus) and review again`] };
   }
   const done = await gate(ctx, pr, mode);
   return { ok: done.ok, lines: [`mode: ${mode}`, ...done.lines] };
@@ -718,7 +718,7 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
 async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<StepResult> {
   const { repo } = ctx;
   const queued = mode === "merge-queue";
-  const conflict = (): StepResult => ({ ok: false, lines: ["state=CONFLICT", `why: PR #${pr.number} conflicts with master; rebase ${ctx.head} and resolve it there: that changes the SOURCE tree and needs the local mint again`] });
+  const conflict = (): StepResult => ({ ok: false, lines: ["state=CONFLICT", `why: PR #${pr.number} conflicts with master; rebase ${ctx.head} and resolve it there: that changes the SOURCE tree and needs its gates (bisellium ci --opus) and review again`] });
   const n = String(pr.number);
   let pinned = pr.headRefOid;
   const headMoved = (now: string): StepResult => ({ ok: false, lines: [`state=HEAD_MOVED pinned=${pinned.slice(0, 12)} now=${now.slice(0, 12)}`] });

@@ -1,0 +1,57 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-312-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-18T00:06:48.172Z
+# sella: builder.W-312
+# tree: tree:fe4af9a55b3d54ecb342dfb44fa387768e1cff56
+# ticket: {"opus":"W-312","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-312/studio","head":"1629c9a738c7a6dfa15f55c0a4a3c80b324137da","brief":"8fb088003627a6a2138ff3ba996dfd317a75ed67","at":"2026-10-18T00:06:42.597Z"}
+
+TAP version 13
+# Subtest: W-312-b1 behaviour 1: review is ordered and recorded only when the branch record's automated gates passed at its current source tree, and nothing mints before review
+not ok 1 - W-312-b1 behaviour 1: review is ordered and recorded only when the branch record's automated gates passed at its current source tree, and nothing mints before review
+  ---
+  duration_ms: 1305.623227
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-312/packages/cli/src/next.test.ts:221:571'
+  failureType: 'testCodeFailure'
+  error: |-
+    no gate evidence: why
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: W-900: review requires a current host-produced run receipt
+    head: opus/W-900 e73116d6a867
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 400000
+    phase: 2
+    inputs: briefs/W-900.md, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase 2) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'W-900: review requires a current host-produced run receipt'
+  operator: 'match'
+  stack: |-
+    build (/home/edckt/agents/bisellium/.worktrees/W-312/packages/cli/src/next.test.ts:6325:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-312/packages/cli/src/next.test.ts:6329:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1478.810113

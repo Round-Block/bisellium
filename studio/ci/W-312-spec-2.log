@@ -1,0 +1,19 @@
+# opus: W-312
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14aea-227f-7e81-abee-0e9af68f57d7
+# outcome: failed
+# at: 2026-10-17T17:35:35.419Z
+# tree: tree:0565e19742f51bbf86e88a2ad55e7401c7f04332
+# brief: briefs/W-312.md blob:829a656138b02e9bfebf5767991dcab7bcafb83e
+# ticket: {"opus":"W-312","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"799eb8a5946e4d463522cccd49c6f8d269fa30c6","brief":"829a656138b02e9bfebf5767991dcab7bcafb83e","at":"2026-10-17T17:35:34.903Z"}
+
+## Findings
+1. blocking — brief:89 [severity: S1] `git status --porcelain --untracked-files=all` omits ignored untracked files, although `readContainedRegularFile` reads them; a plausible ignore rule for `studio/ci/*.log` therefore lets `next` and direct `review` accept an uncommitted log, and the proposed untracked-only test misses this. Replace brief:89 with: `| The gate logs in Git | every path is tracked and unchanged from HEAD; ignored and other untracked files are invalid | admitCurrentGates (specified): git ls-files --error-unmatch -- <each log> must succeed and git status --porcelain --untracked-files=all -- <each log> must print nothing; either failure refuses |` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts (W-312-b1 ignored-log refusal through both next and reviewVerb)
+2. blocking — brief:90 [severity: S1] A plausible manifest mistake such as declaring a UI `served-e2e` gate as `kind: agent` is parseable and makes `effectiveProbationes` report a problem, but the prototype ignores those problems and filters the required gate out, so `next` and `review` admit without its evidence. Replace brief:90 with: `| The record and manifest gate selectors (record kind and probationes; manifest probationes and source_excludes), parsed | a native record kind; absent or mapping record probationes; absent or a list of nonempty source exclusions; well-formed declared gate rows; and no effectiveProbationes problem | admitCurrentGates (specified): validates every field and refuses any malformed row or effectiveProbationes problem before filtering automated gates or admitting an empty set |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts (W-312-b1 malformed effective-gate configuration through both next and reviewVerb)
+
+## Verdict
+The signed brief has two design-changing S1 admission gaps that can order or record review without the promised committed, required gate evidence.
+VERDICT: FAIL
