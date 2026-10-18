@@ -1580,10 +1580,11 @@ function performOpusSpecCommit(f: Facts): StepResult {
 /**
  * The template the first round of a reviewer session is filled from, and the slots it must carry (W-241's set). It and
  * `prompts/later-round.md` are read from the main checkout's studio, never the opus branch, so an opus cannot rewrite its
- * own reviewer's prompt: a prompt edit lands with its code and governs from the next opus (W-314).
+ * own reviewer's prompt: a prompt edit lands with its code and governs from the next opus (W-314). `<STUDIO>` is that
+ * studio, where the reviewer reads the charter and the lessons, never the opus branch's copies (W-315).
  */
 const BUILD_REVIEW_PROMPT = "prompts/build-review.md";
-const BUILD_REVIEW_SLOTS = ["ID", "ROUND", "WORKTREE", "PACKET", "REVIEWED_HEAD", "FOCUS"] as const;
+const BUILD_REVIEW_SLOTS = ["ID", "ROUND", "WORKTREE", "PACKET", "REVIEWED_HEAD", "FOCUS", "STUDIO"] as const;
 /** Under STEP_SILENCE_SECONDS.review, so a live round never reads stalled: the perform logs before and after the call. */
 const REVIEW_TIMEOUT_MS = 25 * 60_000;
 const VERDICT_LINE = /^VERDICT: (PASS|FAIL)$/;
@@ -1668,6 +1669,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
         WORKTREE: wt.dir,
         PACKET: packet,
         REVIEWED_HEAD: f.tip ?? "",
+        STUDIO: f.studioAbs,
         FOCUS: [
           `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${studioRel}/${briefRel(id)}, as its rows assert.`,
           "2. The existing rows its Acceptance names as flipped, and no other.",
