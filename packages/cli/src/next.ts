@@ -28,7 +28,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
-import { admitCurrentGates } from "@bisellium/commands/builder-run.js";
+import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
@@ -1365,7 +1365,7 @@ function newestFile(dir: string, best: Newest | undefined): Newest | undefined {
  * DISPATCH_SILENCE_SECONDS: the files under `<repo>/.worktrees/<id>` and `<id>-*` (the opus worktree, scratch
  * worktrees) and `~/.bisellium-evidence/<id>` and `<id>-*` (directories only). No counted file, or a newer one, is undefined.
  */
-function silence(wtParent: string, id: string, nowMs: number): string | undefined {
+function silence(repo: string, wtParent: string, id: string, nowMs: number): string | undefined {
   const mine = (parent: string): string[] => {
     try {
       return readdirSync(parent, { withFileTypes: true })
@@ -1375,6 +1375,13 @@ function silence(wtParent: string, id: string, nowMs: number): string | undefine
       return [];
     }
   };
+  // a `bisellium run` in flight holds the opus's producer lease; the host run's own timeout bounds how long that is true
+  try {
+    const lease = lstatSync(join(repo, ".bisellium", "leases", id, "pid"));
+    if (lease.isFile() && Math.floor((nowMs - lease.mtimeMs) / 1000) <= HOST_RUN_TIMEOUT_MS / 1000) return undefined;
+  } catch {
+    /* no lease */
+  }
   let newest: Newest | undefined;
   for (const dir of [...mine(wtParent), ...mine(join(homedir(), ".bisellium-evidence"))]) newest = newestFile(dir, newest);
   if (newest === undefined) return undefined;
@@ -2182,7 +2189,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           return sayT(1, [`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: the output mtime is ahead of the clock; nothing is performed"]);
         default: {
           // W-316: a dispatch order (held for its budget or handover too) with no marker is checked for silence
-          const quiet = h.kind === "none" && ungated.order !== undefined ? silence(dirname(f.wt.dir), id, env.nowMs) : undefined;
+          const quiet = h.kind === "none" && ungated.order !== undefined ? silence(repo, dirname(f.wt.dir), id, env.nowMs) : undefined;
           const note = quiet ?? (h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)");
           const status = d1.status === "named" ? "named" : d1.status;
           return sayT(d1.status === "held" ? 1 : 0, [...lines(status), `health: ${note}`]);
