@@ -661,3 +661,70 @@ if (runs(5)) {
     assert.deepEqual(scan.sites.filter((s) => s.startsWith(`${self}:`)), [], "this file has no site: its fixtures are assembled from fragments");
   });
 }
+
+// ---------------------------------------------------------------------------
+// W-178: `test.rows` -- the row count of each test file never drops unrecorded.
+// Rows W-178-b1..b4 are selected by name (--test-name-pattern); the rule module
+// is loaded dynamically, so its absence is an assertion and not a load error.
+// ---------------------------------------------------------------------------
+interface RowsModule {
+  lex?: (text: string, opts?: { blankStrings?: boolean }) => { code: string; comment?: string }[];
+  countTestRows?: (text: string) => number;
+}
+const rowsModule = (): Promise<RowsModule> => import(TESTS_MODULE) as Promise<RowsModule>;
+
+const RUNNER_IMPORT = 'import test from "node:test";';
+const GRAMMAR: [string, string[], number][] = [
+  ["node:test registrations with skip, only and todo", [RUNNER_IMPORT, 'test("a", () => {});', 'test.skip("b", () => {});', 'test.only("c", () => {});', 'test.todo("d");', 'it("e", () => {});'], 5],
+  ["playwright registrations", ['import { test, expect } from "@playwright/test";', 'test("a", async ({ page }) => {});', 'test.skip("b", async () => {});'], 2],
+  ["a file without a runner import counts no registration", ['test("a", () => {});'], 0],
+  ["a PASS and FAIL reporter counts each call once", ["function row(name, ok) {", '  console.log(ok ? "PASS" : "FAIL", name);', "}", 'row("a", true);', 'row("b", false);'], 2],
+  ["a one-level wrapper counts its calls, not its registration", [RUNNER_IMPORT, "function checkB(name, fn) {", "  test(name, fn);", "}", 'checkB("a", () => {});', 'checkB("b", () => {});'], 2],
+  [
+    "a wrapper of two checks weighs 2, one level up as well",
+    [RUNNER_IMPORT, "function check(name, fn) {", "  test(name, fn);", "}", "function pair(name, fn) {", "  check(name + 1, fn);", "  check(name + 2, fn);", "}", "const quad = (name, fn) => {", "  pair(name + 1, fn);", "  pair(name + 2, fn);", "};", 'pair("a", () => {});', 'quad("b", () => {});', 'check("c", () => {});'],
+    7,
+  ],
+  [
+    "a call in a comment, a string or a template fixture is not a row",
+    [RUNNER_IMPORT, '// test("a", () => {});', '/* test("b", () => {}); */', "const s = 'test(\"c\")';", "const t = `", 'test("d", () => {});', "`;", 'test("real", () => {});'],
+    1,
+  ],
+  ["a method call and a longer name are not registrations", [RUNNER_IMPORT, "const ok = /a/.test(text);", "const also = pattern.test(text);", 'submit("x");', 'latest("y");', 'test("real", () => {});'], 1],
+  ["a registration in a loop counts once", [RUNNER_IMPORT, 'for (const name of ["a", "b", "c"]) {', "  test(name, () => {});", "}"], 1],
+  ["an empty file counts nothing", [], 0],
+];
+const LEX_SAMPLE = ['const a = "x(1)"; // note', "/* gone */ const b = 'y\\'z';", "const t = `", "  test('in template')", "`;", "go();"].join("\n");
+
+test("W-178-b1 the grammar counts each test style once and nothing else", { timeout: 600_000 }, async () => {
+  const mod = await rowsModule();
+  assert.equal(typeof mod.countTestRows, "function", "rules/tests.ts exports countTestRows");
+  for (const [label, lines, want] of GRAMMAR) assert.equal(mod.countTestRows!(code(lines)), want, label);
+
+  // lex without the option is what it is on master; with it, string and template contents are blank
+  const plain = mod.lex!(LEX_SAMPLE);
+  assert.deepEqual(plain, [
+    { code: 'const a = "x(1)"; ', comment: "// note" },
+    { code: "           const b = 'y\\'z';" },
+    { code: "const t = `" },
+    { code: "  test('in template')" },
+    { code: "`;" },
+    { code: "go();" },
+  ]);
+  const blank = mod.lex!(LEX_SAMPLE, { blankStrings: true });
+  assert.equal(blank.length, plain.length, "same number of lines");
+  assert.deepEqual(
+    blank.map((l) => l.code.length),
+    plain.map((l) => l.code.length),
+    "blanking keeps every column",
+  );
+  assert.deepEqual(
+    blank.map((l) => l.comment),
+    plain.map((l) => l.comment),
+    "comments are untouched",
+  );
+  assert.equal(blank[0]!.code, 'const a = "    "; ', "a double-quoted string is blank, its quotes stay");
+  assert.equal(blank[1]!.code, `           const b = '    ';`, "an escape pair is blank too");
+  assert.equal(blank[3]!.code.trim(), "", "a template line is blank");
+  assert.equal(blank[2]!.code, "const t = `", "the opening backtick stays");
+});
