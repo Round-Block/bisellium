@@ -1105,7 +1105,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
       "2. can every promise be guaranteed, or does it state its limit?",
       'Record findings under ## Findings, each ending "check: …", or write "No findings".',
       packetLine("spec", id, o.round, sella, studioRel),
-      disputeLine(studioRel),
+      disputeLine(f.studioRel),
       `Record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --model ${o.reviewer.model} --outcome <passed|failed> --phase spec --from <file> --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}`,
     ].join("\n");
   } else if (step === "spec") {
@@ -1139,7 +1139,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else {
     role = "censor";
     sella = censor;
-    command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Use the word class in a blocker that recurs across sites (L-069).`;
+    command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(f.studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Use the word class in a blocker that recurs across sites (L-069).`;
   }
   const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
   // W-233: the verb a dispatched session closes out with; a build session records none, and a reds order with only findings names no behaviour
@@ -1160,6 +1160,7 @@ const SESSION_PLACEHOLDER = "<the session id the reviewer prints>";
 /** W-215: the packet the reviewer is given before a round (delta, facts, prompt); `<packet dir>` is the caller's to choose. */
 const packetLine = (phase: "spec" | "build", id: string, round: number | undefined, sella: string, studioRel: string): string =>
   `Packet first: node --import tsx scripts/review-packet.mjs --phase ${phase} --opus ${id} --round ${round} --sella ${sella} --studio ${studioRel} --repo . --packets <packet dir>`;
+/** W-315: always the main checkout's `prompts/rebuttal.md`, even for an order bound to the opus worktree. */
 const disputeLine = (studioRel: string): string =>
   `If the author disputes a finding with evidence, send ${studioRel}/prompts/rebuttal.md and the author's ## Rebuttal into the same session and record the reviewer's ## Ruling in the same verdict.`;
 
