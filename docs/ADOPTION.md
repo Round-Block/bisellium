@@ -1319,8 +1319,8 @@ In `merge-queue` mode:
 - `pr` pushes the reviewed head as it is, without a rebase, and records that
   head in the file `<git common dir>/bisellium/queue/opus%2F<id>` before the
   push.
-  The receipt and the review stay current on that head, so master moving costs
-  no second local mint.
+  The gate logs and the review stay current on that head, so master moving costs
+  no second gate run of the builder's `ci --opus`.
 - `merge` enqueues the PR with one `gh pr merge --squash --auto
   --match-head-commit <head>`, never updates the branch and never merges
   directly. It reads the rules again just before that call and holds if they
@@ -1349,7 +1349,7 @@ read holds too.
 The conflict path. A PR that conflicts with master (`DIRTY`) holds with
 `state=CONFLICT` in queue mode, and the merge group's rebase conflict fails
 `certify`. The remedy is the same in both: rebase `opus/<id>` onto master
-locally and resolve it there. That fix is new source, so the local mint and
+locally and resolve it there. That fix is new source, so the builder's `ci --opus` and
 review follow, exactly as before the queue.
 
 Records-only merge groups. W-203. In a merge group, the `gates` and `web-e2e`
@@ -1380,7 +1380,9 @@ the format check, the tests, the read guard, the sample-officina check, the
 studio check, and the build and served E2E; for a records-only change, the
 studio check and `test:record`. It keeps typecheck and lint. It makes no merge
 result and cannot reach master, no certificate reads that run, and for an opus
-head the local mint already ran `CI_STEPS` and `verify` on its head. The
+head the builder's `ci --opus` already ran `CI_STEPS` and `verify` on its head (its gate logs prove only the automated
+gates: the audit, `format:check`, both officina checks and the red replays are first proven by the merge queue's
+`certify` and `gates` jobs, and a failure there drops the PR from the queue). The
 `push` run is unchanged: for either change kind it runs the full `gates` and
 `web-e2e` paths and `officina`, and `certify` is skipped. This holds only while ruleset `master_protection`
 requires the merge queue: without it GitHub would merge on the light pull
@@ -1401,8 +1403,8 @@ thirteen-rung ladder `STEPS` (`greenlight`, `spec`, `branch`, `ready`, `reds`,
 and refuses to skip. A rung is met by evidence, never by memory: the committed
 trunk (`refs/heads/master`, read with `git show`, never a working tree) carries
 the signed spec, and, once it carries the opus's `done` record, settles every
-rung up to `done`. The opus branch's own evidence (record, `ci/`, reds, run
-receipt) is read from its worktree `<repo>/.worktrees/<id>`. A MERGED PR settles
+rung up to `done`. The opus branch's own evidence (record, `ci/`, reds, gate
+logs) is read from its worktree `<repo>/.worktrees/<id>`. A MERGED PR settles
 the rungs up to `merge` only by reachability (its merge commit is in the local
 trunk by `trunkContainsMerge`, `@bisellium/commands/trunk.js`, and a
 still-present local branch tip is the PR's head or an ancestor of it); a merged
@@ -1531,32 +1533,23 @@ reissued in the same session. The template is read from the opus branch, so an o
 `studio/prompts/` is code-owned, so the Patron reviews such a change. A close by signal is a failure of the codex
 profile for every caller, `talk` included.
 
-**`--chain` (W-292, part 1).** `next <opus> --perform --chain --budget <tokens> --title <text> --body-file <path>`
+**`--chain` (W-292, W-312).** `next <opus> --perform --chain --budget <tokens> --title <text> --body-file <path>`
 performs, in turn and in one foreground call (the orchestrator launches it in its own background call and waits for
-its exit), each rung the ladder derives while that rung is the mint, `review` or `pr`; `--chain` without `--perform`,
-or with `--expect`, is a usage error (exit 2). The mint is the `build` rung once the builder has handed off: it holds
-unless the handover is current (`traditio` no older than the newest red or review log), holds on a tracked change in the
-worktree, then runs `bisellium run --sella builder --opus <opus> --studio <worktree studio> --repo <worktree> -- true`
-from the worktree, as lex §9 step 4 does by hand, its output appended to `.bisellium/steps/<opus>.log`. A non-zero exit
-holds. Afterwards the only tracked change allowed is the record's `run_receipt` line (every other byte and the file's
-mode unchanged), which is committed alone as `chore(studio): <opus> run receipt`; any other tracked change, or a receipt
-the review gate does not admit, holds uncommitted, and a thrown step error holds as `the mint failed: <message>`. Each
+its exit), each rung the ladder derives while that rung is `review` or `pr`; `--chain` without `--perform`,
+or with `--expect`, is a usage error (exit 2). No host mint runs before review (W-312, D-071 E: the merge queue's
+`certify` is the one mint): review is ordered once the builder's `bisellium ci --opus <opus>` has passed the record's
+automated gates at the branch's source tree and their logs are committed. Each
 rung runs under its own step marker and is performed at most once per call, so the call ends after `pr` at the latest;
 the one derivation after each rung is trusted for both the final `next-step:` line and the decision to go on. It prints
 each rung's `next: <opus> <step> performed|held` line and its lines, then one `next-step:` line, and exits 0 when every
 rung it ran was performed (a failed review round is performed: `next-step: build` is the builder's fix) and 1 at the
 first hold, including a later rung that derives held after an earlier one was performed (`gh` failing at PR discovery,
-say). A first rung outside the three holds before anything is performed (`refusing: --chain performs only the mint,
-review and pr rungs`). Without `--title` and `--body-file` the call ends where `pr` is only named. A re-run after a hold
-starts at the rung the ladder derives, so nothing is performed twice. Limits: the handover check is the only proof the
-builder has finished (a builder that records `handoff` and keeps editing is minted at the handed-off tip; a tracked
-change holds, a new commit does not); a throw outside the mint and review performs (the `pr`'s) ends the call as
-`next: <opus> failed`, without the earlier rungs' lines, their commits standing; a mint silent for longer than 1,800 s
-reads stalled to a concurrent `next`, and nothing kills it; the `pr` rung in mode direct rebases onto a moved master and
-holds when the source tree changes, after which the ladder orders the build rung again. Under the test clock
-(`BISELLIUM_TEST_CLOCK=1`), `BISELLIUM_TEST_MINT` names an absolute path run in place of the CLI with the same
-arguments (a relative value holds before anything is spawned); it is ignored otherwise. `docs/ADOPTION.md` is
-code-owned, so the Patron reviews a change to this paragraph.
+say). A first rung outside the two holds before anything is performed (`refusing: --chain performs only the review and
+pr rungs`). Without `--title` and `--body-file` the call ends where `pr` is only named. A re-run after a hold
+starts at the rung the ladder derives, so nothing is performed twice. Limits: a throw outside the review perform (the
+`pr`'s) ends the call as `next: <opus> failed`, without the earlier rungs' lines, their commits standing; the `pr` rung
+in mode direct rebases onto a moved master and holds when the source tree changes, after which the ladder orders the
+build rung again. `docs/ADOPTION.md` is code-owned, so the Patron reviews a change to this paragraph.
 
 `gh` and `git` are spawned by bare name through `PATH` with argument arrays (no
 shell). Every `gh` read asks for a fixed `--json` field list, is bounded to
@@ -2249,10 +2242,14 @@ all three gate outcomes, teardown completion and final exit zero. The opus's
 `run_receipt` is a contained repository-relative pointer written only after
 all of those conditions succeed.
 
-Both `review --pass` and `review --fail` run the same admission check before
-reading evidence or changing a gate/event. The receipt must be a contained
-regular file in `receipts/`, host-produced and complete, for the same opus and
-owning branch, reachable from the clean current checkout, and certify its
-current SOURCE tree. Missing, malformed, forged, failed, incomplete, dirty,
-unreachable or stale receipts remain historical evidence but cannot admit a
-new review. `verdict` remains transcript-only and grants no admission.
+Both `review --pass` and `review --fail` run the same admission check (`admitCurrentGates`, W-312) before
+reading evidence or changing a gate/event, as does the `review` rung of `next`. A marked record's gate selectors
+(its kind and `probationes`, the manifest's `probationes` rows and `source_excludes`) are validated whole first: a
+malformed one refuses (`the gate configuration is malformed: <problem>`) and never narrows the set. The source tree
+must be clean, and each automated gate of the record's kind (the manifest's, plus a `ui` opus's `served-e2e`) must be
+`waived` or `passed` certifying the tree of `HEAD`, with `evidence` exactly `ci/<opus>-<gate>-<8 hex>.log`, a contained
+regular file under `ci/` whose first line is `certifies: <tree>` and third `exit code: 0` (what `bisellium ci --opus`
+and `verify` write); each log must be tracked by git and unchanged from `HEAD` (`a gate log is not committed`). A
+legacy (unmarked) record is admitted. The logs prove the automated gates at the tree, not which command wrote them;
+the rest of `CI_STEPS` and the red replays are first proven by the merge queue's `certify` and `gates` jobs. The
+older host receipt (`admitCurrentRunReceipt`) remains as history and admits nothing. `verdict` remains transcript-only and grants no admission.

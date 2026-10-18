@@ -178,13 +178,11 @@ names each step and writes the step ticket the next record write consumes
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
    in the worktree, `ready` (commit), then a Sonnet builder (brief model:
    `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
-   behaviour at a time on the commit of the previous behaviour, build, gates,
-   one full `npm test`. Record `handoff` before the review packet. A fresh
+   behaviour at a time on the commit of the previous behaviour, build, gates; then, after recording `handoff`, `npm run -s bisellium -- ci --opus <id> --studio studio --repo .` in the worktree (the one full suite), the record and its gate logs committed (`chore(studio): <id> gates`). A fresh
    builder past ~250k; dispatch builders in the background so a Patron
    message cannot cut one off. `next` orders the reds one behaviour at a
    time (W-166, D-036); each `red` needs its own `next` ticket first.
-4. **Review:** `next` orders review only with a current host-minted receipt,
-   so mint first (the bare `run … -- true` below, ~15 min). Codex `gpt-5.6-sol`, prompt modelled on
+4. **Review:** `next` orders review only when the branch record's automated gates passed at the branch's current source tree, with their logs committed (the builder's `ci --opus`, step 3); no host mint runs before review: the merge queue's `certify` is the one mint, and it replays the reds (D-071 E). `next <id> --perform --chain --budget 400000 --title <t> --body-file <f> --studio studio --repo .`, in one background call, runs the review round and the pr. Codex `gpt-5.6-sol`, prompt modelled on
    `~/.bisellium-evidence/W-162-review/r1/prompt.md`; packet
    `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
    `censor.sh <id> <round>`; the orchestrator records with
@@ -198,15 +196,11 @@ names each step and writes the step ticket the next record write consumes
    advisory input, not a verdict; W-274 moves it into the review perform.
    No round cap (D-053).
 5. **Merge:** refresh `handoff` (the `bisellium handoff` verb, the record's
-   traditio; `next` does not ask for it before `pr`, so do it); the receipt minted before review
-   (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
-   run from the opus worktree: the host reads the reds and brief from that studio);
-   `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
+   traditio; `next` does not ask for it before `pr`, so do it); record the pass; `pr`; `merge`; `cleanup`.
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
    pushes the reviewed head without a rebase, `merge` enqueues it, and the
-   queue's `certify` job certifies the merge result: a moved master needs no
-   rebase and no second mint. In `mode: direct`, rebase if master moved and
-   mint after it, as before.
+   queue's `certify` job mints the merge result (it replays the reds and runs the gates): a moved master needs no
+   rebase and no second gate run. In `mode: direct` no `certify` runs, so nothing replays the reds before merge: rebase if master moved, and the builder's `ci --opus` and review follow.
 6. **Done:** `verify <id>` on master (~11 min, nothing heavy alongside); edit
    `docs/SESSION-HANDOFF.md` (the done perform refuses without a tracked
    handoff edit and runs W-186's rule on it); `next --perform --expect done`
@@ -321,3 +315,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-17 | §9 steps 2 and 7: only real defects block; a second spec review only after a design-changing defect; cause fixes on real-defect recurrence; a daily retro and the improvements tracker (D-076) | Patron |
 | 2026-10-16 | §7: the CLI-first block's exit (the hand-steps measure and the trial's four conditions); the dossier republish leaves done and stays at cascade checkpoints (D-071) | Patron |
 | 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |
+| 2026-10-18 | §9 steps 3 to 5: review needs the builder's `ci --opus` gate logs at the branch's source tree; no host mint before review; `certify` is the one mint (W-312, D-071 E) | Patron |

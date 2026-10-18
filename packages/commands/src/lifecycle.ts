@@ -25,7 +25,7 @@ import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
 import { admissionLimit, readBriefAdmission, readBriefLimit, readRedOrder } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
-import { admitCurrentRunReceipt } from "./builder-run.js";
+import { admitCurrentGates } from "./builder-run.js";
 import {
   censorSella,
   effectiveProbationes,
@@ -577,8 +577,8 @@ const REVIEW_USAGE =
   "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]";
 
 export interface RunReviewOptions extends WriteOptions {
-  /** Deterministic admission seam for command tests; production uses the host receipt validator. */
-  runReceiptAdmission?: typeof admitCurrentRunReceipt;
+  /** Deterministic admission seam for command tests; production uses W-312's gate admission. */
+  gateAdmission?: typeof admitCurrentGates;
 }
 
 export function runReview(args: string[], opts: RunReviewOptions = {}): WriteResult {
@@ -658,7 +658,7 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     return { exitCode: 2 };
   }
   if (obligation.kind === "marked") {
-    const runAdmission = (opts.runReceiptAdmission ?? admitCurrentRunReceipt)(root, opusId);
+    const runAdmission = (opts.gateAdmission ?? admitCurrentGates)(root, opusId);
     if (!runAdmission.ok) {
       console.error(runAdmission.error);
       return { exitCode: 2 };
