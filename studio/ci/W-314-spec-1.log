@@ -1,0 +1,25 @@
+# opus: W-314
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T03:59:23.798Z
+# tree: tree:7b87c5ea839e4ce8e59d88af566901d5134a0c37
+# brief: briefs/W-314.md blob:e0d0ff9803139cb522ac67855c8d3b1153e3b347
+# ticket: {"opus":"W-314","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"61edcd28a3645210d6f9c2bafb8eac77b9deca1e","brief":"e0d0ff9803139cb522ac67855c8d3b1153e3b347","at":"2026-10-18T03:58:32.572Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-314-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — bootstrap: the opus changes no file under studio/prompts/ (brief:98), so its own round 1 under master's ladder reads master's build-review.md byte for byte, true once its builder's ci --opus gate logs are committed (master's admitCurrentGates orders review only then); its own later rounds get master's source-only delta, a stated limit (brief:23), not a guarantee (D-076 E) — check: packages/cli/src/next.test.ts (W-314-b1), brief:23, brief:98
+2. advisory — class sweep of ladder-read files: the spec phase's later-round read on an opus-branch re-spec and the charter and lessons named by build-review.md stay read from the branch; each is a stated limit and an Out of scope line with a Defaults question (brief:56, brief:57, brief:103, brief:104, Defaults 3) — check: none: a re-spec packet that reads the main checkout's later-round.md
+3. advisory — each red fails by assertion on master e140f1f8 with the final test diff (b1 at "round 1: the main checkout's build-review template, not the branch's"; b2 at "a studio-only fix: the brief edit is in the delta", also on the behaviour 1 stage), and the host replay classifier accepts all three; b1 passes at its stage — check: red-b1-master.out, red-b2-master.out, red-b2-stage1.out, red-accept.out, proto-b1-stage1.out
+4. advisory — must-stay-green on the prototype: the whole next.test.ts 107 of 107 (run twice by mistake on one output file; both exit 0, next-full-proto.NOTE), review-packet.test.mjs 8 of 8, containment.test.ts 65 of 65 with no pin change; the four flips fail unedited and are named at brief:91 to brief:94 — check: next-full-proto.out, review-packet-proto.out, containment-proto.out, next-unedited-proto.out, review-packet-unedited-proto.out
+5. advisory — the Codex test check lists exactly the four named flips and no unnamed one; its must-stay-green rows (W-215-b4's other rows, W-215-r1-3, W-163-b6) pass on the prototype; it read the brief before its last edits (the bootstrap later-round sentence, the counts, one flip's wording), none of which changes scope — check: fixture-census.md
+6. advisory — the brief passes admission and the ledger covers both promise lines and every Input domain row; lint (one pre-existing warning: scripts/review-packet.d.mts has no eslint config), format and typecheck pass on the touched files — check: admission.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-314.md`, master 61edcd28.

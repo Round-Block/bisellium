@@ -1,0 +1,19 @@
+# opus: W-314
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14d2a-a10b-77e0-8d2e-b0a099f941a5
+# outcome: passed
+# at: 2026-10-18T04:04:43.994Z
+# tree: tree:7b87c5ea839e4ce8e59d88af566901d5134a0c37
+# brief: briefs/W-314.md blob:e0d0ff9803139cb522ac67855c8d3b1153e3b347
+# ticket: {"opus":"W-314","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"61edcd28a3645210d6f9c2bafb8eac77b9deca1e","brief":"e0d0ff9803139cb522ac67855c8d3b1153e3b347","at":"2026-10-18T04:04:43.485Z"}
+
+## Findings
+1. advisory — brief:69 `readContainedRegularFile` cannot enforce that `promptStudio` is the main checkout; it accepts any root containing a valid template, while `reviewSteps` separately guarantees the production caller’s selection. Replace brief:69 with: `| buildPacket's promptStudio argument, when a later-round template is read | absent (defaults to studio), or a directory root whose prompts/later-round.md is a contained regular file holding all four slots; reviewSteps passes f.studioAbs | readContainedRegularFile (existing) refuses an unreadable, escaping, symlinked or non-regular template; fillTemplate (existing) refuses a missing slot |`. [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: scripts/review-packet.test.mjs (direct `buildPacket` `promptStudio` cases)
+2. advisory — brief:73 The added rows also read `tipOf`’s git result, the `performReview` and packet subprocess results, Codex’s call log, `prompt.md`, `delta.diff`, and held-world path absence; none is named, and `existsSync` plus `codexCalls`’s absent-file fallback can accept an unlikely unreadable path as absence. Replace brief:73 with rows naming those inputs and their assertions, with held-world absence observed by a specified `absentPath` helper that returns true only for `ENOENT` and throws every other `lstatSync` error. [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts (W-314-b1); scripts/review-packet.test.mjs (W-314-b2)
+
+## Verdict
+The production promises are feasible; only advisory input-boundary corrections remain.
+VERDICT: PASS
