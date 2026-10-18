@@ -6675,3 +6675,40 @@ test("W-316-b4 behaviour 4: a bisellium run in flight, the opus's producer lease
   putAged(join(w.repo, ".bisellium", "leases", "W-9000", "pid"), 60);
   assert.match(healthOf(w, "another lease"), /^stalled /, "another opus's lease is not this one's activity");
 });
+
+test("W-316-b5 behaviour 5: an unreadable counted directory, file or lease reads unknown, never silence or activity", { timeout: 1_800_000 }, () => {
+  const w = world("w316-b5", "reds", { automated: true });
+  const evidence = join(w.home, ".bisellium-evidence");
+  const leases = join(w.repo, ".bisellium", "leases");
+  const locked = join(w.wt, "locked");
+  ageTree(w.wt, 3600);
+  putAged(join(locked, "fresh.txt"), 10);
+  mkdirSync(evidence, { recursive: true });
+  mkdirSync(join(leases, OPUS), { recursive: true });
+  const unknown = (label: string, read: RegExp): void => {
+    const health = healthOf(w, label, BUDGET, "build", "held");
+    assert.match(health, /^unknown \(dispatch activity cannot be read: /, label);
+    assert.match(health, read, `${label}: the reason names the failed read`);
+  };
+  const shut = new Set<string>();
+  const lock = (dir: string, mode: number): void => {
+    shut.add(dir);
+    chmodSync(dir, mode);
+  };
+  try {
+    lock(locked, 0o000);
+    unknown("an unreadable counted subtree, its fresh file unseen, reads unknown, never stalled", /EACCES: permission denied, scandir '[^']*\/locked'\)$/);
+    chmodSync(locked, 0o644);
+    unknown("a listed file that cannot be stat'd reads unknown, never an older file's age", /EACCES: permission denied, lstat '[^']*\/locked\/fresh\.txt'\)$/);
+    chmodSync(locked, 0o755);
+    lock(evidence, 0o000);
+    unknown("an unreadable counted parent reads unknown, never no counted file", /EACCES: permission denied, scandir '[^']*\/\.bisellium-evidence'\)$/);
+    chmodSync(evidence, 0o755);
+    lock(leases, 0o000);
+    unknown("an unreadable lease path reads unknown, never no lease", /EACCES: permission denied, lstat '[^']*\/leases\/W-900\/pid'\)$/);
+    chmodSync(leases, 0o755);
+    assert.equal(healthOf(w, "readable again"), "no step recorded", "everything readable again: the fresh file is activity");
+  } finally {
+    for (const d of shut) chmodSync(d, 0o755);
+  }
+});
