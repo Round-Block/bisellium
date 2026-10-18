@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-315-b2\s --import tsx scripts/review-packet.test.mjs
+# exit: 1
+# at: 2026-10-18T06:50:18.768Z
+# sella: builder.W-315
+# tree: tree:1c7c7b93cbcb603ea89725e45e9c697578a45dc3
+# ticket: {"opus":"W-315","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-315/studio","head":"4611e20ca2cd8ea94aace8b5acb680ad575d0e38","brief":"2d637191e374efbd7047dcdf6ba6736568871903","at":"2026-10-18T06:50:07.659Z"}
+
+TAP version 13
+# Subtest: W-315-b2 behaviour 2: a hand-run later-round packet for a linked worktree's studio reads later-round.md from the main work tree and fills <STUDIO> with it
+not ok 1 - W-315-b2 behaviour 2: a hand-run later-round packet for a linked worktree's studio reads later-round.md from the main work tree and fills <STUDIO> with it
+  ---
+  duration_ms: 1790.256558
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-315/scripts/review-packet.test.mjs:447:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the main work tree's template, not the branch's:
+    The branch's own round 4 of W-1. Previous round: ci/W-1-spec-2.log. Packet: /tmp/claude-1000/bisellium-w215-packet-y3TxN2/packets/r4. Lessons: <STUDIO>/lessons/.
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    The branch's own round 4 of W-1. Previous round: ci/W-1-spec-2.log. Packet: /tmp/claude-1000/bisellium-w215-packet-y3TxN2/packets/r4. Lessons: <STUDIO>/lessons/.
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-315/scripts/review-packet.test.mjs:490:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1808.683061
