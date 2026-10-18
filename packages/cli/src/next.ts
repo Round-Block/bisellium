@@ -1688,7 +1688,9 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     for (const [name, text] of files) writeFileSync(join(packet, name), text, { flag: "wx" });
     const override = Number(process.env["BISELLIUM_TEST_REVIEW_TIMEOUT_MS"]);
     const timeoutMs = testClock && Number.isSafeInteger(override) && override > 0 ? override : REVIEW_TIMEOUT_MS;
-    const call = { cwd: wt.dir, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt };
+    // W-316: codex runs in the main checkout, never the opus worktree: it loads AGENTS.md from its working directory,
+    // on a resume too, so an opus cannot edit its own reviewer's standing instructions
+    const call = { cwd: f.repo, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt };
     log(`review: ${previous === undefined ? "codex started" : `codex resumed ${previous}`} (round ${round})`);
     const turn = previous === undefined ? await codexProfile.start({ ...call, systemPrompt: "" }) : await codexProfile.resume({ ...call, sessionId: previous });
     log(`review: codex exited ${turn.exitCode}`);
