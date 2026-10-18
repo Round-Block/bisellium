@@ -1,0 +1,24 @@
+# opus: W-178
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T22:10:10.463Z
+# tree: tree:23e6674230006c02bb3c5b38e8ecf920e607e479
+# brief: briefs/W-178.md blob:604a0dd02839c16bfd86a91fa4a871925da1e051
+# ticket: {"opus":"W-178","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":"studio","head":"2df55ee73c05302ee8b77f04f82aeb16b8212405","brief":"604a0dd02839c16bfd86a91fa4a871925da1e051","at":"2026-10-18T22:10:10.033Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-178-recheck/promise-ledger.md
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+- ci/W-178-spec-8.log #1: closed — the blocker was the review runner's missing packet, not the brief; the runner now creates the packets folder and refuses to launch without facts.txt (~/.bisellium-evidence/W-178-specreview/r10/run.sh)
+
+## Verdict
+
+passed — signed again by the architect (`claude-opus-5-5`, D-072), the brief unchanged since round 7 at `studio/briefs/W-178.md` (blob 604a0dd0), master 2df55ee7.
