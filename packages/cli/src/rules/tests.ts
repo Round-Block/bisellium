@@ -248,8 +248,9 @@ function fileSet(repo: string, findings: Finding[]): string[] {
 const DEFINITION =
   /^(\s*)(?:export\s+)?(?:(?:async\s+)?function\s*\*?\s*([\w$]+)\s*\(|(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>))/;
 const REGISTRATION = /(?<![\w$.])(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(/g;
-const RUNNER_IMPORT = /from\s+["'](?:node:test|@playwright\/test)["']|require\(\s*["']node:test["']\s*\)/;
-const IMPORT_SITE = /\bfrom\s+(["'])\s*\1|require\(\s*(["'])\s*\2\s*\)/; // the same sites with their string blanked
+const RUNNERS = new Set(["node:test", "@playwright/test"]);
+// An import site in code (strings blanked, so never inside a string): the quote that opens the module specifier it owns.
+const IMPORT_SITE = /\bfrom\s*(["'])|\bimport\s*(["'])|\b(?:require|import)\s*\(\s*(["'])/g;
 const PRINTS = /console\.(?:log|error)|process\.std(?:out|err)\.write/;
 const WRAPPER_ROUNDS = 4;
 
@@ -259,7 +260,14 @@ export function countTestRows(text: string): number {
   const code = lex(text, { blankStrings: true }).map((l) => l.code);
   // comments are gone from both views; `plain` keeps string contents (PASS, FAIL, a module name), `code` blanks them
   const plain = lex(text).map((l) => l.code);
-  const runner = code.some((l, i) => IMPORT_SITE.test(l) && RUNNER_IMPORT.test(plain[i]!));
+  // the runner is the module specifier of one import site; nothing else on the line takes part
+  const runner = code.some((l, i) =>
+    [...l.matchAll(IMPORT_SITE)].some((m) => {
+      const open = m.index + m[0].length;
+      const close = l.indexOf(m[0].at(-1)!, open);
+      return close >= 0 && RUNNERS.has(plain[i]!.slice(open, close));
+    }),
+  );
   const registrations = (lines: string[]): number => (runner ? lines.reduce((n, l) => n + (l.match(REGISTRATION)?.length ?? 0), 0) : 0);
   const calls = (name: string, lines: string[]): number => {
     const re = new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}\\s*\\(`, "g");
