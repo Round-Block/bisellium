@@ -1,0 +1,18 @@
+# opus: W-315
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a14e1a-add0-7661-ad66-108bcd53cdc6
+# outcome: passed
+# at: 2026-10-18T08:24:26.791Z
+# tree: tree:2cd8839769ea9e474b313d206b514f939ac5f79c
+# brief: briefs/W-315.md blob:2d637191e374efbd7047dcdf6ba6736568871903
+# ticket: {"opus":"W-315","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-315/studio","head":"d13feff0e71598d0a5c5b6052eb9dd309e485448","brief":"2d637191e374efbd7047dcdf6ba6736568871903","at":"2026-10-18T08:22:11.333Z"}
+
+## Findings
+No findings
+
+## Verdict
+The three behaviours, declared ownership, staged assertion reds, and source-tree-matched gates satisfy the brief.
+VERDICT: PASS
