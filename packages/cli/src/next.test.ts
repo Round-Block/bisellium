@@ -5825,12 +5825,18 @@ type CodexReply = { session?: string; reply: string; exit?: number; stderr?: str
 const codexSays = (w: World, r: CodexReply): void => writeFileSync(join(w.home, "codex-reply.json"), JSON.stringify(r));
 const codexCalls = (w: World): { argv: string[]; stdin: string }[] =>
   existsSync(join(w.home, "codex-calls.jsonl")) ? readFileSync(join(w.home, "codex-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; stdin: string }) : [];
-/** A ticketed world at the review rung with the templates committed on the opus branch (studio files: the source tree is unchanged). */
+/** Each template written and committed in the main checkout's studio, which the perform reads (W-314), and on the opus branch (studio files: the source tree is unchanged). */
+function putTemplates(w: World, templates: Record<string, string>, message: string): void {
+  for (const dir of [w.repo, w.wt]) {
+    for (const [rel, text] of Object.entries(templates)) put(dir, rel, text);
+    commit(dir, message);
+  }
+}
+/** A ticketed world at the review rung with the templates committed in the main checkout and on the opus branch. */
 function reviewWorld(tag: string, templates: Record<string, string> = { [BUILD_REVIEW]: BUILD_REVIEW_TEMPLATE, "studio/prompts/later-round.md": LATER_TEMPLATE }): World {
   const w = world(tag, "build");
   ticketed(w);
-  for (const [rel, text] of Object.entries(templates)) put(w.wt, rel, text);
-  commit(w.wt, "test: W-274 review templates");
+  putTemplates(w, templates, "test: W-274 review templates");
   return w;
 }
 const performReview = (w: World, env: Record<string, string> = {}): Out => next(w, [OPUS, "--perform", "--expect", "review", "--budget", "400000"], { env: { ...CODEX_PATH, ...env } });
@@ -5897,11 +5903,9 @@ test("W-274-b1 behaviour 1: next --perform --expect review runs round 1 end to e
   const htip = tipOf(h);
   codexSays(h, { session: "s-274-h", reply: PASS_REPLY });
   held("no template", h, /^prompts\/build-review\.md: /, performReview(h), 0);
-  put(h.wt, BUILD_REVIEW, BUILD_REVIEW_TEMPLATE.replace("<FOCUS>", ""));
-  commit(h.wt, "test: a template without <FOCUS>");
+  putTemplates(h, { [BUILD_REVIEW]: BUILD_REVIEW_TEMPLATE.replace("<FOCUS>", "") }, "test: a template without <FOCUS>");
   held("a slot missing", h, /^prompts\/build-review\.md lacks the slot <FOCUS>$/, performReview(h), 0);
-  put(h.wt, BUILD_REVIEW, BUILD_REVIEW_TEMPLATE);
-  commit(h.wt, "test: the whole template");
+  putTemplates(h, { [BUILD_REVIEW]: BUILD_REVIEW_TEMPLATE }, "test: the whole template");
   const h2tip = tipOf(h);
   put(h.wt, `studio/opera/${OPUS}.md`, `${readFileSync(join(h.wtStudio, "opera", `${OPUS}.md`), "utf8")}\n`);
   held("a dirty worktree", h, /^refusing: the working tree has tracked changes$/, performReview(h), 0);
@@ -6061,11 +6065,12 @@ function chainWorld(tag: string, handoff = true): World {
   const w = world(tag, "ready");
   appendFileSync(join(w.repo, MANIFEST_REL), "step_tickets: required\n");
   git(w.repo, ["commit", "-q", "-m", "test: W-292 step_tickets required", "--", MANIFEST_REL]);
+  // W-314: the perform reads the templates from the main checkout's studio; the rebase carries them onto the branch
+  for (const [rel, text] of Object.entries({ [BUILD_REVIEW]: BUILD_REVIEW_TEMPLATE, "studio/prompts/later-round.md": LATER_TEMPLATE })) put(w.repo, rel, text);
+  commit(w.repo, "test: W-292 review templates");
   git(w.repo, ["push", "-q", "origin", "master"]);
   git(w.wt, ["rebase", "-q", "master"]);
   writeReds(w);
-  for (const [rel, text] of Object.entries({ [BUILD_REVIEW]: BUILD_REVIEW_TEMPLATE, "studio/prompts/later-round.md": LATER_TEMPLATE })) put(w.wt, rel, text);
-  commit(w.wt, "test: W-292 review templates");
   if (handoff) handoffAt(w, "wt", T.handoffFresh);
   return w;
 }
@@ -6479,4 +6484,59 @@ test("W-312-b1 behaviour 1: review is ordered and recorded only when the branch 
   assert.equal(o.first, `next: ${OPUS} build held`, ran("chain from build: held", o));
   assert.equal(o.kv.get("why"), `refusing: --chain performs only the review and pr rungs; the next step for ${OPUS} is build`, ran("chain from build: why", o));
   assert.equal(tipOf(chained), t0, "chain from build: nothing committed");
+});
+
+// ---------------------------------------------------------------------------
+// W-314: the review perform reads both templates from the main checkout's studio, never the opus branch, so an opus
+// cannot rewrite its own reviewer's prompt; codex is W-274's stub. The real codex never runs.
+// ---------------------------------------------------------------------------
+const LATER_ROUND = "studio/prompts/later-round.md";
+const BRANCH_REVIEW_TEMPLATE = BUILD_REVIEW_TEMPLATE.replace("Review <ID>", "The branch's own review of <ID>");
+const BRANCH_LATER_TEMPLATE = LATER_TEMPLATE.replace("Round <ROUND>", "The branch's own round <ROUND>");
+/** True only for a missing path (ENOENT): any other lstat error (a permission, a loop) is rethrown, never read as absence. */
+function absentPath(path: string): boolean {
+  try {
+    lstatSync(path);
+    return false;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return true;
+    throw e;
+  }
+}
+
+test("W-314-b1 behaviour 1: the build-review perform reads build-review.md and later-round.md from the main checkout's studio, never the opus branch", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w314-b1");
+  put(w.wt, BUILD_REVIEW, BRANCH_REVIEW_TEMPLATE);
+  put(w.wt, LATER_ROUND, BRANCH_LATER_TEMPLATE);
+  commit(w.wt, "test: the opus rewrites its own review templates");
+  const tip = tipOf(w);
+  codexSays(w, { session: "s-314-1", reply: FAIL_REPLY });
+  const o1 = performReview(w);
+  assert.equal(o1.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o1));
+  const focus = `1. Each numbered behaviour under ## Behaviours to test in studio/briefs/${OPUS}.md, as its rows assert.\n2. The existing rows its Acceptance names as flipped, and no other.\n3. The source diff (paths outside studio/) is exactly its Files owned.\n4. Each red under studio/ci/reds/${OPUS}/ fails by assertion on its commit.`;
+  const filled = BUILD_REVIEW_TEMPLATE.replace("<ID>", OPUS).replace("<ROUND>", "1").replace("<REVIEWED_HEAD>", tip).replace("<WORKTREE>", w.wt).replace("<PACKET>", packetDir(w, 1)).replace("<FOCUS>", focus);
+  assert.equal(codexCalls(w)[0]?.stdin, filled, "round 1: the main checkout's build-review template, not the branch's");
+  advanceSource(w);
+  handoffAt(w, "wt", new Date(Date.now() + 60_000).toISOString());
+  codexSays(w, { session: "s-314-1", reply: `## Earlier findings\n- ci/${OPUS}-review-1.log #1: closed — source.txt changed\n\n${PASS_REPLY}` });
+  const o2 = performReview(w);
+  assert.equal(o2.kv.get("review"), "round 2 passed", ran("round 2: performed, passed", o2));
+  const call = codexCalls(w)[1];
+  assert.deepEqual(call?.argv.slice(0, 3), ["exec", "resume", "s-314-1"], "round 2: resumes the session");
+  assert.equal(call?.stdin, LATER_TEMPLATE.replace("<ROUND>", "2").replace("<ID>", OPUS).replace("<PREVIOUS>", `ci/${OPUS}-review-1.log`).replace("<PACKET>", packetDir(w, 2)), "round 2: the main checkout's later-round template, not the branch's");
+  assert.equal(readFileSync(join(packetDir(w, 2), "prompt.md"), "utf8"), call?.stdin, "round 2: the packet keeps the prompt sent");
+
+  // the main checkout without a template holds, though the branch carries one, with nothing recorded and no codex call
+  const h = reviewWorld("w314-b1-held");
+  put(h.wt, BUILD_REVIEW, BRANCH_REVIEW_TEMPLATE);
+  commit(h.wt, "test: the opus rewrites its own review template");
+  rmSync(join(h.studio, "prompts", "build-review.md"));
+  commit(h.repo, "test: no build-review template in the main checkout");
+  codexSays(h, { session: "s-314-h", reply: PASS_REPLY });
+  const oh = performReview(h);
+  assert.equal(oh.status, 1, ran("no main template: exit 1", oh));
+  assert.equal(oh.first, `next: ${OPUS} review held`, ran("no main template: held", oh));
+  assert.match(oh.kv.get("why") ?? "", /^prompts\/build-review\.md: /, ran("no main template: why", oh));
+  assert.equal(codexCalls(h).length, 0, "no main template: no codex call");
+  assert.equal(absentPath(reviewLog(h, 1)), true, "no main template: no verdict log");
 });

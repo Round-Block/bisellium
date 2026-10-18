@@ -21,6 +21,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { buildPacket } from "./review-packet.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(HERE);
@@ -322,6 +323,54 @@ test("W-215-b4 behaviour 4: a --packets at or under --studio exits 2 and writes 
     assert.deepEqual(tree(w.studio), before, `${name}: nothing is written`);
   }
   assert.equal(w.run(args(w.packets)).status, 0, "a --packets outside the studio still works");
+});
+
+test("W-314-b1 behaviour 1: buildPacket reads prompts/later-round.md from promptStudio, defaulting to studio, and refuses what is not a template", () => {
+  assert.ok(existsSync(SCRIPT), "scripts/review-packet.mjs exists");
+  const w = world();
+  w.put(w.studio, "ci/W-1-review-1.log", sessioned("W-1", "review", 1, "qa-lead", "c-1"));
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "review 1");
+  const build = (promptStudio) =>
+    buildPacket({
+      phase: "build",
+      opus: "W-1",
+      round: 2,
+      sella: "qa-lead",
+      studio: w.studio,
+      repo: w.repo,
+      packets: w.packets,
+      ...(promptStudio === undefined ? {} : { promptStudio }),
+    });
+  const promptStudio = (name, files) => {
+    const dir = join(w.root, name);
+    for (const [rel, text] of Object.entries(files)) put(dir, rel, text);
+    return dir;
+  };
+  assert.match(build().files.get("prompt.md") ?? "", /^Round 2 of W-1\./, "absent: the template is studio's");
+  const other = promptStudio("other", {
+    "prompts/later-round.md": TEMPLATE.replace("Round <ROUND>", "Other round <ROUND>"),
+  });
+  assert.match(
+    build(other).files.get("prompt.md") ?? "",
+    /^Other round 2 of W-1\./,
+    "given: the template is promptStudio's",
+  );
+  const refusal = /prompts\/later-round\.md: /;
+  assert.throws(() => build(join(w.root, "nowhere")), refusal, "a studio with no template");
+  const outside = promptStudio("outside", { "elsewhere/later-round.md": TEMPLATE });
+  mkdirSync(join(w.root, "escaping"));
+  symlinkSync(join(outside, "elsewhere"), join(w.root, "escaping", "prompts"));
+  assert.throws(() => build(join(w.root, "escaping")), refusal, "a prompts directory that escapes the studio");
+  const linked = promptStudio("linked", { "elsewhere/later-round.md": TEMPLATE });
+  mkdirSync(join(linked, "prompts"));
+  symlinkSync(join(linked, "elsewhere/later-round.md"), join(linked, "prompts/later-round.md"));
+  assert.throws(() => build(linked), refusal, "a symlinked template");
+  const directory = promptStudio("directory", {});
+  mkdirSync(join(directory, "prompts/later-round.md"), { recursive: true });
+  assert.throws(() => build(directory), refusal, "a template that is not a regular file");
+  const missing = promptStudio("missing", { "prompts/later-round.md": TEMPLATE.replace("<PACKET>", "") });
+  assert.throws(() => build(missing), /prompts\/later-round\.md lacks the slot <PACKET>/, "a template missing a slot");
 });
 
 test("W-215-r1-3 studio containment: a studio whose name merely starts with `..` is inside the repo", () => {
