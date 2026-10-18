@@ -1,0 +1,50 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-315-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-18T06:39:32.607Z
+# sella: builder.W-315
+# tree: tree:86b3f4d0a2fad76a1694071602baac7363bdefbe
+# ticket: {"opus":"W-315","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-315/studio","head":"d1abec361e09b0cb1ff69e717735b403e7c605c4","brief":"2d637191e374efbd7047dcdf6ba6736568871903","at":"2026-10-18T06:39:28.810Z"}
+
+TAP version 13
+# Subtest: W-315-b1 behaviour 1: the build-review prompt names the main checkout's studio for the charter and the lessons, and a template without <STUDIO> holds
+not ok 1 - W-315-b1 behaviour 1: the build-review prompt names the main checkout's studio for the charter and the lessons, and a template without <STUDIO> holds
+  ---
+  duration_ms: 1678.976126
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-315/packages/cli/src/next.test.ts:248:17'
+  failureType: 'testCodeFailure'
+  error: |-
+    round 1: the charter and the lessons are the main checkout's:
+    # fixture build review
+    
+    ---
+    
+    Review W-900 round 1 at 0fd16fd9f27c7ec1329fe9ca2044251be0f69402 in /tmp/claude-1000/w124-w315-b1-EdF29r/repo/.worktrees/W-900; packet /tmp/claude-1000/w124-w315-b1-EdF29r/repo/.bisellium/reviews/W-900/r1.
+    1. Each numbered behaviour under ## Behaviours to test in studio/briefs/W-900.md, as its rows assert.
+    2. The existing rows its Acceptance names as flipped, and no other.
+    3. The source diff (paths outside studio/) is exactly its Files owned.
+    4. Each red under studio/ci/reds/W-900/ fails by assertion on its commit.
+    Charter: <STUDIO>/leges/qa.md. Lessons: <STUDIO>/lessons/.
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-315/packages/cli/src/next.test.ts:6555:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1824.493446
