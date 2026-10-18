@@ -823,3 +823,56 @@ test("W-178-b2 each base test path is compared with the candidate, and an unobse
   }
   if (!readable) oneRowBlock(await rowFindings(locked), "a.test.ts", /./, "an unreadable test file");
 });
+
+// ---- W-178-b3 fixtures: the reason file, test/row-drops.yml
+const LEDGER = "test/row-drops.yml";
+const RECORD = { path: "a.test.ts", drop: 1, opus: "W-999", reason: "trimmed a duplicated row" };
+/** A ledger of flow-mapping records (JSON is YAML). */
+const ledgerOf = (...records: Record<string, unknown>[]): string => `drops:\n${records.map((r) => `  - ${JSON.stringify(r)}`).join("\n")}\n`;
+const lowerWith =
+  (ledger: string) =>
+  (repo: string): void => {
+    put(repo, "a.test.ts", rowsOf(2));
+    put(repo, LEDGER, ledger);
+  };
+
+test("W-178-b3 one new, exact record admits its drop and nothing else", { timeout: 600_000 }, async () => {
+  const three = { "a.test.ts": rowsOf(3) };
+
+  // the admitted forms
+  assert.deepEqual(await rowFindings(branched("b3-ok", three, lowerWith(ledgerOf(RECORD)))), [], "3 to 2 with a drop-1 record");
+  const deleted = branched("b3-deleted", three, (r) => {
+    git(r, ["rm", "-q", "a.test.ts"]);
+    put(r, LEDGER, ledgerOf({ ...RECORD, drop: 3 }));
+  });
+  assert.deepEqual(await rowFindings(deleted), [], "a deleted file with drop equal to its count");
+  const older = { ...three, [LEDGER]: ledgerOf({ ...RECORD, path: "gone.test.ts", opus: "W-998" }) };
+  assert.deepEqual(await rowFindings(branched("b3-older", older, lowerWith(ledgerOf({ ...RECORD, path: "gone.test.ts", opus: "W-998" }, RECORD)))), [], "an old record beside a new one");
+
+  // a record that does not fit its drop
+  oneRowBlock(await rowFindings(branched("b3-wrong", three, lowerWith(ledgerOf({ ...RECORD, drop: 2 })))), "a.test.ts", /from 3 to 2/, "wrong drop");
+  oneRowBlock(await rowFindings(branched("b3-twice", three, lowerWith(ledgerOf(RECORD, { ...RECORD, reason: "a second reason for the same path" })))), "a.test.ts", /two|2/, "two new records for the path");
+  oneRowBlock(await rowFindings(branched("b3-unmatched", three, (r) => put(r, LEDGER, ledgerOf({ ...RECORD, path: "other.test.ts" })))), LEDGER, /other\.test\.ts/, "a record with no drop");
+  oneRowBlock(await rowFindings(branched("b3-none", three, lowerWith(ledgerOf({ ...RECORD, path: "other.test.ts", drop: 1 })))), "a.test.ts", /from 3 to 2/, "a record for another path leaves the drop unrecorded");
+  const inBase = { ...three, [LEDGER]: ledgerOf(RECORD) };
+  oneRowBlock(await rowFindings(branched("b3-in-base", inBase, (r) => put(r, "a.test.ts", rowsOf(2)))), "a.test.ts", /from 3 to 2/, "a record already in the base's file admits nothing");
+
+  // a ledger that is not well formed blocks at the ledger, whatever it names
+  const malformed: [string, string][] = [
+    ["a short reason", ledgerOf({ ...RECORD, reason: "too short" })],
+    ["a one-word reason", ledgerOf({ ...RECORD, reason: "abcdefghijklmnopqrstuvwxyz" })],
+    ["a parent path", ledgerOf({ ...RECORD, path: "../a.test.ts" })],
+    ["an absolute path", ledgerOf({ ...RECORD, path: "/a.test.ts" })],
+    ["an extra key", ledgerOf({ ...RECORD, why: "extra" })],
+    ["a missing key", ledgerOf({ path: "a.test.ts", drop: 1, opus: "W-999" })],
+    ["a zero drop", ledgerOf({ ...RECORD, drop: 0 })],
+    ["a drop that is text", ledgerOf({ ...RECORD, drop: "1" })],
+    ["an opus that is not an id", ledgerOf({ ...RECORD, opus: "fix-it" })],
+    ["another top-level key", `${ledgerOf(RECORD)}extra: 1\n`],
+    ["an exact duplicate", ledgerOf(RECORD, RECORD)],
+    ["malformed YAML", "drops: [\n"],
+    ["no mapping", "- a\n- b\n"],
+  ];
+  for (const [label, ledger] of malformed) oneRowBlock(await rowFindings(branched(`b3-bad`, three, lowerWith(ledger))), LEDGER, /./, label);
+  oneRowBlock(await rowFindings(branched("b3-bad-base", { ...three, [LEDGER]: "drops: [\n" }, lowerWith(ledgerOf(RECORD)))), LEDGER, /./, "a malformed ledger at the base");
+});
