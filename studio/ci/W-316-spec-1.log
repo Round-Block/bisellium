@@ -1,0 +1,27 @@
+# opus: W-316
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T10:47:20.048Z
+# tree: tree:0cfe2b54f4a9bdb55613f0f192c5a694919f8f6a
+# brief: briefs/W-316.md blob:6f4e7674b50f38ae19ee64fdee46de5cb5285768
+# ticket: {"opus":"W-316","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"84ba80f37dedd6c9558d6c065c17a7fc3aa3a546","brief":"6f4e7674b50f38ae19ee64fdee46de5cb5285768","at":"2026-10-18T10:47:19.480Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-316-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — design (a), the main checkout as the reviewer's working directory, over (b), `-c project_doc_max_bytes=0`: both were probed on codex-cli 0.153.4 through the shipped shim and policy flags; (a) loads the main checkout's AGENTS.md and not the worktree's, fresh and resumed, and touches one caller's value; (b) loads none but belongs in CODEX_POLICY_FLAGS, the one policy every Codex caller shares (W-044, W-049), and would strip master's instructions from the reviewer and from talk (brief:17 to brief:21) — check: probe.out, probe-b.out
+2. advisory — Codex's AGENTS.md discovery is the vendor's behaviour, measured and not asserted by a row (the rows assert the working directory the stub ran in); a sequence begun before the merge keeps its round-1 branch AGENTS.md in its session history, and the template's literal studio/ under <WORKTREE> is unchanged: each is a stated limit, not a guarantee (D-076 E; brief:55, brief:57, brief:61) — check: none: a probe row that runs the real codex per codex-cli version, as the shim's --disable names are re-verified
+3. advisory — class sweep of every path that runs a reviewer's Codex: the build-review perform (closed, behaviour 1); spec review first, later and re-sign rounds (kept scripts, -C the main checkout), handoff reviews (-C the main checkout or a records worktree), scripts/censor.sh (-C the evidence packet) are already outside the opus checkout and stated; the advisory codex-passes/fix-census.sh runs in the opus worktree and is stated with its fix (brief:63 to brief:66, brief:105, Defaults 3) — check: none: a check that no kept reviewer script passes -C a .worktrees/ path
+4. advisory — each red fails by assertion on master 44e41080 with the final test rows (b1 at "round 1: codex runs in the main checkout, not the opus worktree", b2 at "round 1: the brief by its absolute path in the worktree") and b2 on behaviour 1's stage; the host replay classifier accepts all three; b1 passes at stage 1 — check: red-b1-master.out, red-b2-master.out, red-b2-stage1.out, red-accept.out, proto-b1-stage1.out
+5. advisory — must-stay-green on the prototype: the whole next.test.ts 111 of 111 and containment.test.ts 65 of 65 with no pin change; unedited, exactly the two named rows flip (W-274-b1 at "pass: the template, every slot filled", W-314-b1 at "round 1: the main checkout's build-review template, not the branch's") and W-274-b2, W-292-b1, W-315-b1 and W-315-b3 stay green — check: next-full-proto.out, containment-proto.out, next-unedited-proto.out
+6. advisory — the Codex test check lists two flips (W-274-b1, W-314-b1), both named, Unnamed: None; its must-stay-green rows (W-124 behaviour 2's linked-worktree refusal, containment W-163-b6, W-274-b2, W-292-b1, W-315-b1) pass in the full prototype runs — check: fixture-census.md
+7. advisory — bootstrap: this opus's own build rounds run master's reviewSteps in its worktree and load its branch AGENTS.md, which it does not edit and whose generated text its change leaves unchanged, so that is master's at the branch point (brief:27) — check: instructions-proto.out
+8. advisory — the brief passes admission and the ledger covers both promise lines and every Input domain row; lint, format and typecheck pass on the touched files — check: admission.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-316.md`, master 84ba80f3 (records only since 44e41080, where the reds and the prototype ran).
