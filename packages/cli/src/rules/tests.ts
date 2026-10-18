@@ -12,6 +12,10 @@
  * Not a JavaScript parser: one lexical pass splits each line into `code` and
  * `comment` (see `lex`). Regex literals holding a quote or a double slash, and
  * a backtick nested in `${ }`, can desynchronise it (brief, residual 5).
+ *
+ * W-178 adds `test.rows`, block: with `opts.repo`, no test file at the
+ * merge-base of HEAD and master has fewer rows in the working tree unless the
+ * change adds one exact record to `test/row-drops.yml` (studio/briefs/W-178.md).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
@@ -506,5 +510,6 @@ export function testRowFindings(repo: string): Finding[] {
 }
 
 export function checkTests(root: string, opts: RuleOpts): Finding[] {
-  return scanTests(root, opts).findings;
+  const findings = scanTests(root, opts).findings;
+  return opts.repo ? [...findings, ...testRowFindings(opts.repo)] : findings;
 }
