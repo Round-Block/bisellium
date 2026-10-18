@@ -6540,3 +6540,28 @@ test("W-314-b1 behaviour 1: the build-review perform reads build-review.md and l
   assert.equal(codexCalls(h).length, 0, "no main template: no codex call");
   assert.equal(absentPath(reviewLog(h, 1)), true, "no main template: no verdict log");
 });
+
+// W-315: the reviewer reads the charter and the lessons from the main checkout's studio (`<STUDIO>`), never the opus
+// branch, and a spec re-review on the branch is sent the main checkout's rebuttal prompt; codex is W-274's stub.
+// ---------------------------------------------------------------------------
+const STUDIO_LINE = "Charter: <STUDIO>/leges/qa.md. Lessons: <STUDIO>/lessons/.\n";
+const STUDIO_REVIEW_TEMPLATE = `# fixture build review\n\n---\n\nReview <ID> round <ROUND> at <REVIEWED_HEAD> in <WORKTREE>; packet <PACKET>.\n<FOCUS>\n${STUDIO_LINE}`;
+
+test("W-315-b1 behaviour 1: the build-review prompt names the main checkout's studio for the charter and the lessons, and a template without <STUDIO> holds", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w315-b1", { [BUILD_REVIEW]: STUDIO_REVIEW_TEMPLATE, [LATER_ROUND]: LATER_TEMPLATE });
+  codexSays(w, { session: "s-315-1", reply: FAIL_REPLY });
+  const o = performReview(w);
+  const stdin = codexCalls(w)[0]?.stdin ?? "";
+  assert.ok(stdin.includes(`Charter: ${w.studio}/leges/qa.md. Lessons: ${w.studio}/lessons/.\n`), `round 1: the charter and the lessons are the main checkout's:\n${stdin}`);
+  assert.equal(o.kv.get("review"), "round 1 failed", ran("round 1: performed, failed", o));
+
+  // a main checkout template without the slot holds, with nothing recorded and no codex call
+  const h = reviewWorld("w315-b1-held", { [BUILD_REVIEW]: STUDIO_REVIEW_TEMPLATE.replace(STUDIO_LINE, ""), [LATER_ROUND]: LATER_TEMPLATE });
+  codexSays(h, { session: "s-315-h", reply: PASS_REPLY });
+  const oh = performReview(h);
+  assert.equal(oh.status, 1, ran("no <STUDIO>: exit 1", oh));
+  assert.equal(oh.first, `next: ${OPUS} review held`, ran("no <STUDIO>: held", oh));
+  assert.equal(oh.kv.get("why"), "prompts/build-review.md lacks the slot <STUDIO>", ran("no <STUDIO>: why", oh));
+  assert.equal(codexCalls(h).length, 0, "no <STUDIO>: no codex call");
+  assert.equal(absentPath(reviewLog(h, 1)), true, "no <STUDIO>: no verdict log");
+});
