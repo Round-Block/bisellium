@@ -1,0 +1,20 @@
+# opus: W-316
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14ea0-21c0-71a1-beba-be4f0bc37a70
+# outcome: failed
+# at: 2026-10-18T11:47:52.219Z
+# tree: tree:cecf54936656a9f684c109d74bf72b509ad66f17
+# brief: briefs/W-316.md blob:11d0b12097917df7568acb8007c0c4379c119c42
+# ticket: {"opus":"W-316","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-316/studio","head":"d86a04d7d5a434cd539c7b7550b976ce8232cdea","brief":"11d0b12097917df7568acb8007c0c4379c119c42","at":"2026-10-18T11:47:51.472Z"}
+
+## Findings
+1. blocking — brief:115 A permissions mistake making a counted evidence subtree unreadable causes `newestFile` to retain an older candidate, so report-mode `next` can falsely report a working agent as stalled; unreadable parent roots can instead suppress the stall entirely. Rows 123–124 describe skipping as rejection, but no function rejects this incomplete truth and no test covers it. Replace brief:115 with: `A rejection fails closed: runNext exits 2 with a usage line before any step is derived, performed or recorded. A test row whose own read fails throws, which fails the row. An unreadable counted parent, subtree or listed file makes silence return an error; report mode prints health: unknown (dispatch activity cannot be read: <reason>) and exits 1, never inferring silence or activity from a partial walk.` [severity: S1] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts
+2. advisory — brief:35 The probe and current 137-second maximum do not guarantee every redirected command emits within 900 seconds, and the producer lease begins before the timed child and ends after its post-processing, so the host-child timeout does not bound the lease’s entire lifetime. Replace brief:35 with: `- **Heavy runs may still appear silent.** The probe shows that the measured node --test run streamed output and the current next.test.ts rows remain below 900 seconds; another working command can emit nothing for longer and therefore appear stalled. A bisellium run is treated as active while its producer lease is at most 3600 seconds old, matching the host child’s timeout, but that age is a reporting heuristic rather than proof of the wrapper or child state because lease setup and cleanup lie outside the timed spawn.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: exercise a quiet working command and the lease’s pre-spawn/post-spawn boundary through a clock seam
+3. advisory — brief:72 The “no symlink followed” promise is broader than the implementation: child symlinks are skipped, but `readdirSync` follows either counted parent itself when `.worktrees` or `.bisellium-evidence` is a symlink. Replace brief:72 with: `- otherwise the newest regular file under the counted directories (every entry of <repo>/.worktrees/ and of ~/.bisellium-evidence/ that is a directory, not a symlink, named <id> or starting <id>-, walked with node_modules and .git skipped at every depth and no descendant symlink followed; the two parent paths themselves are trusted and may resolve through symlinks) gives age, the same floor; age > DISPATCH_SILENCE_SECONDS answers stalled (no step recorded; newest file <absolute path> changed <age>s ago, past 900s); a newer file, or no counted file, answers nothing.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.test.ts
+
+## Verdict
+The round-2 advisories are adopted, but revision 2’s counted-file reader still fails open on an ordinary unreadable-directory mistake.
+VERDICT: FAIL
