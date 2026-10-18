@@ -19,3 +19,10 @@ from memory is usually wrong, and a wrong one can write real bookkeeping
 before it fails.
 
 Seams are contracts between builders; change one only with a documented reason.
+
+Sign from the repository's main checkout, never a linked worktree (`next`
+refuses one): before `branch` the brief sits uncommitted in the main
+checkout's `studio/briefs/`; an amendment is committed on the opus branch
+first. A refusal about your own evidence (the promise ledger, the brief
+admission, the findings shape) is yours: fix it and sign again before you
+report. Stop and report only on any other refusal.

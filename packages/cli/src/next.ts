@@ -1336,25 +1336,15 @@ function assess(read: MarkerRead | undefined, derived: Step, env: Env): Health {
 export const DISPATCH_SILENCE_SECONDS = 900;
 
 type Newest = { path: string; mtimeMs: number };
-/** The newest regular file under `dir`: `node_modules` and `.git` skipped, no symlink followed, an unreadable entry skipped. */
+/** The newest regular file under `dir`: `node_modules` and `.git` skipped, no symlink followed; a listing or lstat that fails throws. */
 function newestFile(dir: string, best: Newest | undefined): Newest | undefined {
-  let entries: Dirent[];
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return best;
-  }
-  for (const e of entries) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.name === "node_modules" || e.name === ".git") continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) best = newestFile(p, best);
     else if (e.isFile()) {
-      try {
-        const m = lstatSync(p).mtimeMs;
-        if (best === undefined || m > best.mtimeMs) best = { path: p, mtimeMs: m };
-      } catch {
-        /* gone since it was listed */
-      }
+      const m = lstatSync(p).mtimeMs;
+      if (best === undefined || m > best.mtimeMs) best = { path: p, mtimeMs: m };
     }
   }
   return best;
@@ -1364,29 +1354,32 @@ function newestFile(dir: string, best: Newest | undefined): Newest | undefined {
  * W-316: a dispatch order with no marker is stalled when no file its agent writes has changed for more than
  * DISPATCH_SILENCE_SECONDS: the files under `<repo>/.worktrees/<id>` and `<id>-*` (the opus worktree, scratch
  * worktrees) and `~/.bisellium-evidence/<id>` and `<id>-*` (directories only). No counted file, or a newer one, is undefined.
+ * Only an absent parent or lease (ENOENT) is nothing; any other failed read is `{ unknown }`, never a partial walk's answer.
  */
-function silence(repo: string, wtParent: string, id: string, nowMs: number): string | undefined {
+function silence(repo: string, wtParent: string, id: string, nowMs: number): { stalled: string } | { unknown: string } | undefined {
+  const absent = (e: unknown): boolean => (e as NodeJS.ErrnoException).code === "ENOENT";
   const mine = (parent: string): string[] => {
+    let entries: Dirent[];
     try {
-      return readdirSync(parent, { withFileTypes: true })
-        .filter((e) => e.isDirectory() && (e.name === id || e.name.startsWith(`${id}-`)))
-        .map((e) => join(parent, e.name));
-    } catch {
-      return [];
+      entries = readdirSync(parent, { withFileTypes: true });
+    } catch (e) {
+      if (absent(e)) return [];
+      throw e;
     }
+    return entries.filter((e) => e.isDirectory() && (e.name === id || e.name.startsWith(`${id}-`))).map((e) => join(parent, e.name));
   };
-  // a `bisellium run` in flight holds the opus's producer lease; the host run's own timeout bounds how long that is true
   try {
-    const lease = lstatSync(join(repo, ".bisellium", "leases", id, "pid"));
-    if (lease.isFile() && Math.floor((nowMs - lease.mtimeMs) / 1000) <= HOST_RUN_TIMEOUT_MS / 1000) return undefined;
-  } catch {
-    /* no lease */
+    // a `bisellium run` in flight holds the opus's producer lease; the host run's own timeout bounds how long that is true
+    const lease = lstatSync(join(repo, ".bisellium", "leases", id, "pid"), { throwIfNoEntry: false });
+    if (lease?.isFile() === true && Math.floor((nowMs - lease.mtimeMs) / 1000) <= HOST_RUN_TIMEOUT_MS / 1000) return undefined;
+    let newest: Newest | undefined;
+    for (const dir of [...mine(wtParent), ...mine(join(homedir(), ".bisellium-evidence"))]) newest = newestFile(dir, newest);
+    if (newest === undefined) return undefined;
+    const age = Math.floor((nowMs - newest.mtimeMs) / 1000);
+    return age > DISPATCH_SILENCE_SECONDS ? { stalled: `stalled (no step recorded; newest file ${newest.path} changed ${age}s ago, past ${DISPATCH_SILENCE_SECONDS}s)` } : undefined;
+  } catch (e) {
+    return { unknown: e instanceof Error ? e.message : String(e) };
   }
-  let newest: Newest | undefined;
-  for (const dir of [...mine(wtParent), ...mine(join(homedir(), ".bisellium-evidence"))]) newest = newestFile(dir, newest);
-  if (newest === undefined) return undefined;
-  const age = Math.floor((nowMs - newest.mtimeMs) / 1000);
-  return age > DISPATCH_SILENCE_SECONDS ? `stalled (no step recorded; newest file ${newest.path} changed ${age}s ago, past ${DISPATCH_SILENCE_SECONDS}s)` : undefined;
 }
 
 function newMarker(id: string, step: Step, writer: Marker["writer"], pid: number, ticks: number, output: string, nowMs: number, pollMs: number): Marker {
@@ -2190,7 +2183,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         default: {
           // W-316: a dispatch order (held for its budget or handover too) with no marker is checked for silence
           const quiet = h.kind === "none" && ungated.order !== undefined ? silence(repo, dirname(f.wt.dir), id, env.nowMs) : undefined;
-          const note = quiet ?? (h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)");
+          if (quiet !== undefined && "unknown" in quiet) return sayT(1, [`next: ${id} ${d1.step} held`, `health: unknown (dispatch activity cannot be read: ${quiet.unknown})`, "why: dispatch activity cannot be proven; nothing is performed"]);
+          const note = quiet?.stalled ?? (h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)");
           const status = d1.status === "named" ? "named" : d1.status;
           return sayT(d1.status === "held" ? 1 : 0, [...lines(status), `health: ${note}`]);
         }
