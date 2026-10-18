@@ -1,0 +1,66 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-316-b5\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-18T12:22:02.023Z
+# sella: builder.W-316
+# tree: tree:4baffc1ff01f1e03a9a5efbc85927eb0887190fa
+# ticket: {"opus":"W-316","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-316/studio","head":"88586f011e424549f5b395ab67cb4a90a431ef9f","brief":"0d251203778cc60acf48e66171d2d5c958301272","at":"2026-10-18T12:21:55.158Z"}
+
+TAP version 13
+# Subtest: W-316-b5 behaviour 5: an unreadable counted directory, file or lease reads unknown, never silence or activity
+not ok 1 - W-316-b5 behaviour 5: an unreadable counted directory, file or lease reads unknown, never silence or activity
+  ---
+  duration_ms: 947.833942
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:257:3433'
+  failureType: 'testCodeFailure'
+  error: |-
+    an unreadable counted subtree, its fresh file unseen, reads unknown, never stalled
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: W-900: tests is not passed at the current source tree tree:d6dd72a33140; run bisellium ci --opus W-900 in the worktree and commit the record and its gate logs
+    head: opus/W-900 85b6afc9e2ce
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: 2
+    inputs: briefs/W-900.md, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase 2) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    health: stalled (no step recorded; newest file /tmp/claude-1000/w124-w316-b5-o2RCki/repo/.worktrees/W-900/.gitignore changed 3600s ago, past 900s)
+    
+    --- stderr
+    warning: could not open directory 'locked/': Permission denied
+    
+    + actual - expected
+    
+    + 'next: W-900 build named'
+    - 'next: W-900 build held'
+                         ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 build held'
+  actual: 'next: W-900 build named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:782:10)
+    healthOf (/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:6633:3)
+    unknown (/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:6689:20)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-316/packages/cli/src/next.test.ts:6700:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 963.679826
