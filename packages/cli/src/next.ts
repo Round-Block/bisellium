@@ -22,8 +22,8 @@
  * honoured only when `BISELLIUM_TEST_CLOCK=1` is also set; so is `--now`.
  */
 import { createHash } from "node:crypto";
-import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync, type Dirent } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
@@ -1332,6 +1332,56 @@ function assess(read: MarkerRead | undefined, derived: Step, env: Env): Health {
   return { kind: "running", m, ageS: clamped, ...(out.last === undefined ? {} : { last: out.last }) };
 }
 
+/** W-316: seconds a dispatch order with no marker may go with no file of its opus changing before its health reads stalled. */
+export const DISPATCH_SILENCE_SECONDS = 900;
+
+type Newest = { path: string; mtimeMs: number };
+/** The newest regular file under `dir`: `node_modules` and `.git` skipped, no symlink followed, an unreadable entry skipped. */
+function newestFile(dir: string, best: Newest | undefined): Newest | undefined {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return best;
+  }
+  for (const e of entries) {
+    if (e.name === "node_modules" || e.name === ".git") continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) best = newestFile(p, best);
+    else if (e.isFile()) {
+      try {
+        const m = lstatSync(p).mtimeMs;
+        if (best === undefined || m > best.mtimeMs) best = { path: p, mtimeMs: m };
+      } catch {
+        /* gone since it was listed */
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * W-316: a dispatch order with no marker is stalled when no file its agent writes has changed for more than
+ * DISPATCH_SILENCE_SECONDS: the files under `<repo>/.worktrees/<id>` and `<id>-*` (the opus worktree, scratch
+ * worktrees) and `~/.bisellium-evidence/<id>` and `<id>-*` (directories only). No counted file, or a newer one, is undefined.
+ */
+function silence(wtParent: string, id: string, nowMs: number): string | undefined {
+  const mine = (parent: string): string[] => {
+    try {
+      return readdirSync(parent, { withFileTypes: true })
+        .filter((e) => e.isDirectory() && (e.name === id || e.name.startsWith(`${id}-`)))
+        .map((e) => join(parent, e.name));
+    } catch {
+      return [];
+    }
+  };
+  let newest: Newest | undefined;
+  for (const dir of [...mine(wtParent), ...mine(join(homedir(), ".bisellium-evidence"))]) newest = newestFile(dir, newest);
+  if (newest === undefined) return undefined;
+  const age = Math.floor((nowMs - newest.mtimeMs) / 1000);
+  return age > DISPATCH_SILENCE_SECONDS ? `stalled (no step recorded; newest file ${newest.path} changed ${age}s ago, past ${DISPATCH_SILENCE_SECONDS}s)` : undefined;
+}
+
 function newMarker(id: string, step: Step, writer: Marker["writer"], pid: number, ticks: number, output: string, nowMs: number, pollMs: number): Marker {
   const base = STEP_SILENCE_SECONDS[step];
   return { schema: 1, opus: id, step, pid, start_ticks: ticks, started: new Date(nowMs).toISOString(), output, budget_seconds: step === "merge" ? Math.max(base, Math.ceil((6 * pollMs) / 1000)) : base, writer };
@@ -2112,7 +2162,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     // ---- report mode (also --perform on a rung that is only named) ----
     if (!performable(d1)) {
       // W-233: the ticket is refreshed from the ungated derivation, before the --expect check
-      const tickets = refreshTicket(f, deriveNext(f), a.nowMs);
+      const ungated = deriveNext(f);
+      const tickets = refreshTicket(f, ungated, a.nowMs);
       if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
       const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
@@ -2130,7 +2181,9 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         case "anomaly":
           return sayT(1, [`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: the output mtime is ahead of the clock; nothing is performed"]);
         default: {
-          const note = h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)";
+          // W-316: a dispatch order (held for its budget or handover too) with no marker is checked for silence
+          const quiet = h.kind === "none" && ungated.order !== undefined ? silence(dirname(f.wt.dir), id, env.nowMs) : undefined;
+          const note = quiet ?? (h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)");
           const status = d1.status === "named" ? "named" : d1.status;
           return sayT(d1.status === "held" ? 1 : 0, [...lines(status), `health: ${note}`]);
         }
