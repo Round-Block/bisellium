@@ -1,0 +1,22 @@
+# opus: W-178
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15132-101c-7f43-9299-f4ff47927b88
+# outcome: failed
+# at: 2026-10-18T23:16:40.899Z
+# tree: tree:811395b7533185e1727ac858bda750fe84b637b7
+# brief: briefs/W-178.md blob:604a0dd02839c16bfd86a91fa4a871925da1e051
+# ticket: {"opus":"W-178","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-178/studio","head":"36bcf6a7d028f1af656d5a6259090e5b2f4b9abf","brief":"604a0dd02839c16bfd86a91fa4a871925da1e051","at":"2026-10-18T23:15:31.239Z"}
+
+## Findings
+1. blocking — packages/cli/src/rules/tests.ts:262 Reached by round 1’s `tests×ruled-case-uncovered` class: the fix cross-pairs independent matches on one line, so `import x from "other"; const s = 'from "node:test"';` supplies `IMPORT_SITE` from the unrelated import and `RUNNER_IMPORT` from the string, causing later `test(...)` calls to count despite no runner import, contrary to brief:68 and brief:109. [class: tests×ruled-case-uncovered] — check: packages/cli/src/rules/tests.test.ts
+
+## Earlier findings
+- ci/W-178-review-1.log #1: closed — packages/cli/src/rules/tests.ts:261-295 now uses comment-free lexical views for imports and reporters, with the original comment cases covered at packages/cli/src/rules/tests.test.ts:696-701.
+
+## Verdict
+The original cases are fixed, but the new line-level cross-pair still violates behaviour 1.
+
+VERDICT: FAIL
