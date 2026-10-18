@@ -68,6 +68,7 @@ Next, the console MVP (after the block, same functions):
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
+- W-321 — the review packet builds a later spec round even when the previous round's packet was never built (backlog; found on W-178, whose round 10 needed a hand rebuild).
 - W-288 part 2 — the ADOPTION editorial cut: ids and round narrative out, limits kept, caps lowered (D-083 B).
 - Speed experiments: W-276 — the builder brief under step tickets; W-260 — build verdicts reconcile after rulings; W-250 — ci.yml runs `bisellium ci` once.
 - High block remainder: W-296 — one typed boundary for tracked writes; the lessons-to-checks checks W-269, W-270, W-271, W-272, W-273 (D-065).
