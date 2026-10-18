@@ -7,11 +7,14 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   symlinkSync,
@@ -65,6 +68,17 @@ const HANDOFF = [
   "",
 ].join("\n");
 const BRIEF = "# W-1\n\nThe brief.\n\n## Intent\n\nOne line.\n";
+
+/** True only for a missing path (ENOENT): any other lstat error (a permission, a loop) is rethrown, never read as absence. */
+const absentPath = (path) => {
+  try {
+    lstatSync(path);
+    return false;
+  } catch (e) {
+    if (e.code === "ENOENT") return true;
+    throw e;
+  }
+};
 
 const git = (cwd, args) => {
   const r = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args], {
@@ -428,4 +442,122 @@ test("W-314-b2 behaviour 2: a build round's delta carries the officina's change 
   const both = w.read(3, "delta.diff");
   const source = both.indexOf("+a source fix");
   assert.ok(source >= 0 && source < both.indexOf("+A brief fix."), `the source change, then the officina's:\n${both}`);
+});
+
+test("W-315-b2 behaviour 2: a hand-run later-round packet for a linked worktree's studio reads later-round.md from the main work tree and fills <STUDIO> with it", () => {
+  assert.ok(existsSync(SCRIPT), "scripts/review-packet.mjs exists");
+  const w = world();
+  const main = "Round <ROUND> of <ID>. Previous round: <PREVIOUS>. Packet: <PACKET>. Lessons: <STUDIO>/lessons/.\n";
+  w.put(w.studio, "prompts/later-round.md", main);
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "the main checkout's template");
+  // the opus branch in a linked worktree rewrites its own copy; the packet is run from the main checkout, as `next` orders
+  const wt = join(w.repo, ".worktrees", "W-1");
+  w.git("worktree", "add", "-q", "-b", "opus/W-1", wt);
+  const branchStudio = join(wt, "studio");
+  w.put(branchStudio, "prompts/later-round.md", main.replace("Round <ROUND>", "The branch's own round <ROUND>"));
+  git(wt, ["add", "-A"]);
+  git(wt, ["commit", "-q", "-m", "the branch's template"]);
+  const args = (round) => [
+    "--phase",
+    "spec",
+    "--opus",
+    "W-1",
+    "--round",
+    String(round),
+    "--sella",
+    "spec-reviewer",
+    "--studio",
+    branchStudio,
+    "--repo",
+    w.repo,
+    "--packets",
+    w.packets,
+  ];
+  const packet = (round) => w.run(args(round));
+  assert.equal(packet(2).status, 0, "round 2 packet");
+  w.put(
+    branchStudio,
+    "ci/W-1-spec-2.log",
+    sessioned("W-1", "spec", 2, "spec-reviewer", "s-1").replace(
+      "# outcome: passed",
+      `# outcome: passed\n# brief: briefs/W-1.md blob:${blob(BRIEF)}`,
+    ),
+  );
+  const r = packet(4);
+  assert.equal(r.status, 0, r.err);
+  const prompt = w.read(4, "prompt.md");
+  assert.match(prompt, /^Round 4 of W-1\./, `the main work tree's template, not the branch's:\n${prompt}`);
+  assert.equal(
+    prompt,
+    `Round 4 of W-1. Previous round: ci/W-1-spec-2.log. Packet: ${join(w.packets, "r4")}. Lessons: ${realpathSync(w.studio)}/lessons/.\n`,
+    "every slot filled, <STUDIO> the main checkout's studio",
+  );
+
+  // buildPacket directly: an absent promptStudio is studio's place in the main work tree, a given one is used as given
+  const build = (round, promptStudio) =>
+    buildPacket({
+      phase: "spec",
+      opus: "W-1",
+      round,
+      sella: "spec-reviewer",
+      studio: branchStudio,
+      repo: w.repo,
+      packets: w.packets,
+      ...(promptStudio === undefined ? {} : { promptStudio }),
+    });
+  assert.match(build(5).files.get("prompt.md") ?? "", /^Round 5 of W-1\./, "absent: the main work tree's template");
+  const given = build(5, branchStudio).files.get("prompt.md") ?? "";
+  assert.ok(given.startsWith("The branch's own round 5"), "given: promptStudio's template");
+  assert.ok(given.includes(`Lessons: ${branchStudio}/lessons/.`), "given: <STUDIO> is promptStudio as given");
+
+  // the main work tree's copy is read as it stands, and judged like any template
+  const mainTemplate = join(w.studio, "prompts/later-round.md");
+  const refusal = /prompts\/later-round\.md: /;
+  writeFileSync(mainTemplate, main.replace(" Lessons: <STUDIO>/lessons/.", ""));
+  assert.throws(() => build(5), /prompts\/later-round\.md lacks the slot <STUDIO>/, "a main template without <STUDIO>");
+  rmSync(mainTemplate);
+  assert.throws(() => build(5), refusal, "no template in the main work tree");
+  symlinkSync(join(branchStudio, "prompts/later-round.md"), mainTemplate);
+  assert.throws(() => build(5), refusal, "a symlinked main template");
+  rmSync(mainTemplate);
+  mkdirSync(mainTemplate);
+  assert.throws(() => build(5), refusal, "a main template that is not a regular file");
+  rmSync(join(w.studio, "prompts"), { recursive: true });
+  symlinkSync(join(branchStudio, "prompts"), join(w.studio, "prompts"));
+  assert.throws(() => build(5), refusal, "a main prompts directory that is a symlink");
+
+  // the CLI: a refusal exits 2, any other throw exits 1, both before the packet directory exists
+  const refused = packet(6);
+  assert.equal(refused.status, 2, refused.err);
+  assert.match(
+    refused.err,
+    /^review-packet: prompts\/later-round\.md: /,
+    "a main work tree without a template refuses",
+  );
+  assert.equal(absentPath(join(w.packets, "r6")), true, "a refusal writes no packet directory");
+  const realGit = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
+  const withGit = (name, body, round) => {
+    const bin = join(w.root, name);
+    put(bin, "git", `#!/bin/sh\n${body}\nexec ${realGit} "$@"\n`);
+    chmodSync(join(bin, "git"), 0o755);
+    const r = spawnSync(process.execPath, ["--import", "tsx", SCRIPT, ...args(round)], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    });
+    return { status: r.status, err: r.stderr };
+  };
+  const noMain = withGit("git-no-main", '[ "$1" = worktree ] && exit 0', 7);
+  assert.equal(noMain.status, 2, noMain.err);
+  assert.match(noMain.err, /^review-packet: git worktree list names no main work tree$/m, "no worktree line refuses");
+  assert.equal(absentPath(join(w.packets, "r7")), true, "no worktree line writes no packet directory");
+  const noTop = withGit(
+    "git-no-top",
+    '[ "$1" = rev-parse ] && [ "$2" = --show-toplevel ] && { echo /w315/no/such/top; exit 0; }',
+    8,
+  );
+  assert.equal(noTop.status, 1, noTop.err);
+  assert.doesNotMatch(noTop.err, /^review-packet: /m, "an unrefused throw is not reported as a refusal");
+  assert.equal(absentPath(join(w.packets, "r8")), true, "a thrown error writes no packet directory");
 });
