@@ -1,0 +1,26 @@
+# opus: W-312
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T02:07:08.956Z
+# tree: tree:8cf2367ca4d799e26f51799ab3628ac0cee0187e
+# brief: briefs/W-312.md blob:eff505741420c5bbd842bcecbcc8eb1cc5181438
+# ticket: {"opus":"W-312","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-312/studio","head":"99de7eb899a5b6754f49557c20f6242560bec1c8","brief":"eff505741420c5bbd842bcecbcc8eb1cc5181438","at":"2026-10-18T02:07:08.437Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-312-spec/promise-ledger-r5.md
+
+## Earlier findings
+
+- ci/W-312-review-1.log #1: closed — the packet's evidence sentence is now true for this opus: `ci --opus W-312` passed and its gate logs studio/ci/W-312-{tests,lint,types}-8cf2367c.log and the record's three gate fields are committed on opus/W-312 (d68642cc, tree:8cf2367c, unchanged by the studio-only commits after it); brief:23 now says this opus's review prompt is read from its own branch (master next.ts:1659, W-274 brief:65), so it runs `ci --opus` before review and the host mint and receipt stand as history; brief:59 and studio/prompts/build-review.md:10 (99de7eb8) drop the false "no host has replayed the reds yet" clause and say the merge queue's certify replays the reds before merge
+
+## Findings
+
+1. advisory — revision 3 changes exactly two sentences, brief:23 and brief:59, by option B′ of the review-bootstrap proposal (the Patron's ruling, 2026-10-18); line numbers are unchanged, no other sentence contradicts them (brief:17, brief:70, brief:124, brief:126 and Defaults 1 read the same), and no source, test or prototype changes, so round 3's prototype evidence stands — check: promise-ledger-r5.md (brief:23, brief:59), admission-r5.out ([]), ledger-check-r5.out (covered)
+2. advisory — unchanged code, a stated limit and not a guarantee (D-076 E): the review perform still reads prompts/build-review.md from the opus branch (master next.ts:1659; W-274 brief:65), so an opus can still change its own reviewer's prompt; this opus's text is made true for itself, and the reader fix is the follow-up opus of the proposal §3, filed by the producer (D-076 D) — check: none: the follow-up opus's red, a worktree prompt differing from the main studio's
+3. advisory — brief:3's status line still says revision 2 at spec round 3; it was left as is, the edit scope being the two sentences — check: brief:3
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-312.md` in `.worktrees/W-312`, opus/W-312 99de7eb8.
