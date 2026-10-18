@@ -34,9 +34,9 @@ const NOW = new Date("2026-09-19T13:00:00Z");
 
 // Existing lifecycle rows isolate review's mutation grammar. W-125's actual
 // admission behavior has dedicated rows below; this seam keeps the older
-// rows from having to counterfeit host receipts.
+// rows from having to counterfeit gate evidence (W-312: review admits gate logs, not host receipts).
 function runReview(args: string[], opts: RunReviewOptions = {}): WriteResult {
-  return runReviewCommand(args, { ...opts, runReceiptAdmission: () => ({ ok: true, receipt: "receipts/producer/test.json" }) });
+  return runReviewCommand(args, { ...opts, gateAdmission: () => ({ ok: true }) });
 }
 
 // W-039: a stray $BISELLIUM_SELLA on the host would let a `red` call that
@@ -480,7 +480,7 @@ try {
     const malformedBefore = readFileSync(malformedPath, "utf8");
     const malformedResult = runReviewCommand(
       ["W-002", "--pass", "--evidence", "ci/malformed-review.log", "--sella", "eng-lead", "--studio", malformed],
-      { now: NOW, runReceiptAdmission: () => ({ ok: true, receipt: "receipts/producer/valid.json" }) },
+      { now: NOW, gateAdmission: () => ({ ok: true }) },
     );
     check("W-125 marker immutable: malformed present value fails closed", malformedResult.exitCode !== 0, String(malformedResult.exitCode));
     check("W-125 marker immutable: malformed refusal writes nothing", readFileSync(malformedPath, "utf8") === malformedBefore);
@@ -502,65 +502,31 @@ try {
         !admitCurrentRunReceipt(historyStudio, "W-002").ok,
       );
 
-      type ReceiptMode = "valid" | "failed" | "stale" | "missing" | "partial-reds";
-      const markedReview = (tag: string, outcome: "--pass" | "--fail", mode: ReceiptMode): { result: WriteResult; unchanged: boolean } => {
-        const markedRepo = tmpGitStudioRepo(`w125-marked-${tag}`);
+      // W-312: review admits the record's automated gates passed at the clean current SOURCE tree, with verify's logs, committed
+      type GateMode = "valid" | "failed" | "stale" | "missing" | "uncommitted";
+      const markedReview = (tag: string, outcome: "--pass" | "--fail", mode: GateMode): { result: WriteResult; unchanged: boolean } => {
+        const markedRepo = tmpGitStudioRepo(`w312-marked-${tag}`);
         const markedStudio = join(markedRepo, "studio");
         const markedPath = join(markedStudio, "opera", "W-002.md");
         writeFileSync(markedPath, readFileSync(markedPath, "utf8").replace("state: building\n", "state: building\nbuilder_runtime: isolated\n"));
         writeFileSync(join(markedRepo, "source.txt"), "candidate source\n");
-        // The receipt must carry a replayed red for EVERY numbered behaviour the brief declares.
-        mkdirSync(join(markedStudio, "briefs"), { recursive: true });
-        const declared = mode === "partial-reds" ? 2 : 1;
-        writeFileSync(
-          join(markedStudio, "briefs", "W-002.md"),
-          ["# W-002", "", "## Behaviours to test", "", ...Array.from({ length: declared }, (_, i) => `${i + 1}. **Behaviour ${i + 1}.**`), "", "## Out of scope", ""].join("\n"),
-        );
         gitCommitAll(markedRepo, "test: establish marked review source");
         gitBranch(markedRepo, "opus/W-002");
         gitCheckout(markedRepo, "opus/W-002");
         const finalCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: markedRepo, encoding: "utf8" }).trim();
-        const finalSourceTree = `tree:${sourceTreeHash(markedRepo, ["studio", ".bisellium", "examples/fixtures"], finalCommit)}`;
+        const tree = `tree:${sourceTreeHash(markedRepo, ["studio", ".bisellium", "examples/fixtures"], finalCommit)}`;
         if (mode !== "missing") {
-          const receiptRel = `receipts/builder.W-002/${tag}.json`;
-          const receiptPath = join(markedStudio, receiptRel);
-          mkdirSync(join(markedStudio, "receipts", "builder.W-002"), { recursive: true });
-          writeFileSync(
-            receiptPath,
-            JSON.stringify({
-              schema: 1,
-              harness: "run",
-              sella: "builder.W-002",
-              sessionId: tag,
-              startedAt: NOW.toISOString(),
-              cwd: "/disposed",
-              cmd: ["builder"],
-              endedAt: NOW.toISOString(),
-              exitCode: mode === "failed" ? 1 : 0,
-              durationMs: 1,
-              completion: {
-                schema: 1,
-                origin: "host-producer",
-                opus: "W-002",
-                branch: "opus/W-002",
-                builder: "builder.W-002",
-                producer: "producer",
-                baseCommit: finalCommit,
-                finalCommit,
-                finalSourceTree,
-                toolingCommit: finalCommit,
-                redReplays: [{ behaviour: 1, commit: finalCommit, sourceTree: finalSourceTree, command: "node --test", assertionFailed: true }],
-                gates: { ci: true, verify: true, check: true },
-                teardownComplete: true,
-                completed: true,
-              },
-            }),
-          );
-          editOpusFrontMatter(markedPath, (doc) => { doc.set("run_receipt", receiptRel); return undefined; });
+          for (const gate of ["tests", "lint", "types"]) {
+            const evidence = `ci/W-002-${gate}-${tree.slice(5, 13)}.log`;
+            const failed = mode === "failed" && gate === "tests";
+            writeFileSync(join(markedStudio, evidence), `certifies: ${tree}\ncommand: true\nexit code: ${failed ? 1 : 0}\n\n\n`);
+            editOpusFrontMatter(markedPath, (doc) => { doc.setIn(["probationes", gate], { status: failed ? "failed" : "passed", evidence, certifies: tree }); return undefined; });
+          }
+          if (mode !== "uncommitted") gitCommitAll(markedRepo, "test: the builder's gates");
         }
         if (mode === "stale") {
           writeFileSync(join(markedRepo, "source.txt"), "drifted source\n");
-          gitCommitAll(markedRepo, "test: drift source after receipt");
+          gitCommitAll(markedRepo, "test: drift source after the gates");
         }
         writeFileSync(join(markedStudio, "ci", `${tag}.log`), "marked review evidence\n");
         const recordBefore = readFileSync(markedPath, "utf8");
@@ -575,16 +541,16 @@ try {
         };
       };
 
-      for (const mode of ["missing", "failed", "stale", "partial-reds"] as const) {
+      for (const mode of ["missing", "failed", "stale", "uncommitted"] as const) {
         for (const outcome of ["--pass", "--fail"] as const) {
           const row = markedReview(`${mode}-${outcome.slice(2)}`, outcome, mode);
-          check(`W-125 marked admission: ${mode} receipt refuses ${outcome}`, row.result.exitCode !== 0, String(row.result.exitCode));
-          check(`W-125 marked admission: ${mode} ${outcome} refusal mutates no gate/event/lifecycle`, row.unchanged);
+          check(`W-312 marked admission: ${mode} gates refuse ${outcome}`, row.result.exitCode !== 0, String(row.result.exitCode));
+          check(`W-312 marked admission: ${mode} ${outcome} refusal mutates no gate/event/lifecycle`, row.unchanged);
         }
       }
       for (const outcome of ["--pass", "--fail"] as const) {
         const row = markedReview(`valid-${outcome.slice(2)}`, outcome, "valid");
-        check(`W-125 marked admission: valid current-tree receipt admits ${outcome}`, row.result.exitCode === 0, String(row.result.exitCode));
+        check(`W-312 marked admission: gates passed at the current tree admit ${outcome}`, row.result.exitCode === 0, String(row.result.exitCode));
       }
     } catch (error) {
       const sandboxRefusal = error instanceof Error && /(?:spawnSync git EPERM|operation not permitted)/i.test(error.message);

@@ -484,10 +484,18 @@ function advanceSource(w: World, refresh = true): void {
   commit(w.wt, `feat(${OPUS}): source change`);
   if (refresh) writeReceipt(w, "current");
 }
-function landMerge(w: World, fetched: boolean): string {
+function landMerge(w: World, fetched: boolean, moved = false): string {
   const side = join(scratch(`${w.tag}-side`), "c");
   git(dirname(side), ["clone", "-q", w.origin, side]);
-  const tree = git(side, ["rev-parse", `origin/${BRANCH}^{tree}`]);
+  let tree = git(side, ["rev-parse", `origin/${BRANCH}^{tree}`]);
+  if (moved) {
+    // W-312: the queue's merge result carries a source move of master's, as most real merges do, so the branch's own gates
+    // certify the branch's tree, not the merge's
+    git(side, ["read-tree", tree]);
+    put(side, "moved.txt", "master moved\n");
+    git(side, ["update-index", "--add", "moved.txt"]);
+    tree = git(side, ["write-tree"]);
+  }
   const parent = git(side, ["rev-parse", "origin/master"]);
   const m = git(side, ["commit-tree", tree, "-p", parent, "-m", `feat(${OPUS}): squash (#${PR_NUMBER})`]);
   git(side, ["push", "-q", "origin", `${m}:refs/heads/master`]);
@@ -587,6 +595,8 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
   if (!(o.mainOnMaster ?? true) && reach >= idx("ready")) git(w.repo, ["switch", "-q", "--detach", "master"]);
   if (reach >= idx("reds")) writeReds(w);
   if (reach >= idx("build")) writeReceipt(w, "current");
+  // W-312: an automated world's builder leaves its gate logs at the tip, as its `ci --opus` would
+  if (reach >= idx("build") && o.automated) writeGates(w);
   if (reach >= idx("review")) {
     addReview(w, "passed", 1, T.review1);
     if (o.sec ?? true) {
@@ -599,7 +609,7 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
   }
   if (reach >= idx("review")) w.headOid = tipOf(w);
   if (reach >= idx("pr")) git(w.wt, ["push", "-q", "-u", "origin", BRANCH]);
-  if (reach >= idx("merge")) landMerge(w, o.fetched ?? true);
+  if (reach >= idx("merge")) landMerge(w, o.fetched ?? true, o.automated ?? false);
   if (reach >= idx("cleanup")) removeBranchAndWorktree(w);
   if (reach >= idx("done")) markDone(w, false, reach >= idx("checkpoint") ? HANDOFF_DONE : undefined);
   return w;
@@ -981,13 +991,14 @@ if (runs(1)) {
       rung(noReds, `a ${kind} red counts as missing`, "reds", "named");
     }
 
-    // 6 build: stale receipt; then a current receipt moves to review
-    const build = world("b1-build", "reds");
-    rung(build, "no receipt names build", "build", "named", (o) => actor(o, /builder/i, "build"));
-    writeReceipt(build, "stale");
-    rung(build, "a stale receipt names build", "build", "named");
-    writeReceipt(build, "current");
-    rung(build, "a current receipt and no review names review (round 1)", "review", "named", (o) => {
+    // 6 build (W-312): no gate evidence, or gates at an older tree; then gates at the current tree move to review
+    const build = world("b1-build", "reds", { automated: true });
+    rung(build, "no gate evidence names build", "build", "named", (o) => actor(o, /builder/i, "build"));
+    writeGates(build);
+    advanceSource(build, false);
+    rung(build, "gates at an older tree name build", "build", "named");
+    writeGates(build);
+    rung(build, "gates at the current tree and no review name review (round 1)", "review", "named", (o) => {
       assert.match(o.out, /round[^\n]*1/i, ran("round 1", o));
     });
 
@@ -1082,11 +1093,11 @@ if (runs(2)) {
     expectStep(matches, "review", "named", "--expect equal to the derived step passes");
     assert.equal(matches.status, 0, ran("--expect match exit", matches));
 
-    // a clean tree with a review log but no receipt names build
-    const noReceipt = world("b2-no-receipt", "reds");
+    // a clean tree with a review log but no gate evidence names build
+    const noReceipt = world("b2-no-receipt", "reds", { automated: true });
     verb(noReceipt.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(noReceipt, "r.md"), "--studio", noReceipt.wtStudio, "--now", T.review1]);
     commit(noReceipt.wt, "studio: review log without receipt");
-    refusal(next(noReceipt, [OPUS, "--expect", "review", ...budget]), "build", "review", "a review log without a receipt names build");
+    refusal(next(noReceipt, [OPUS, "--expect", "review", ...budget]), "build", "review", "a review log without gate evidence names build");
 
     // an unknown step id is usage
     const unknown = next(early, [OPUS, "--expect", "nonsense", ...budget]);
@@ -1730,7 +1741,7 @@ if (runs(4)) {
 if (runs(5)) {
   test("W-124 behaviour 5: step health comes from the pid, /proc start time and the output mtime, never assumption", { timeout: 1_800_000 }, async () => {
     const budget = ["--budget", "100000"];
-    const w = world("b5-health", "reds");
+    const w = world("b5-health", "reds", { automated: true });
     const status = (o: Out): string => o.kv.get("health") ?? "";
 
     // the 2026-10-02 fixture: a marker whose pid is gone and whose output is four hours old is dead, not running
@@ -1851,7 +1862,7 @@ if (runs(5)) {
     expectStep(ignored, "build", "dead", "BISELLIUM_TEST_PROC without BISELLIUM_TEST_CLOCK=1 is ignored");
 
     // --track: registers a step an orchestrator launched itself
-    const t = world("b5-track", "reds");
+    const t = world("b5-track", "reds", { automated: true });
     const child = liveChild();
     mkdirSync(stepsDir(t), { recursive: true });
     writeFileSync(join(stepsDir(t), "w124.log"), "tee\n");
@@ -1987,8 +1998,11 @@ if (runs(6)) {
       {
         step: "build",
         where: "wt",
-        build: (tag) => world(tag, "reds"),
-        resume: (w) => writeReceipt(w, "stale"),
+        build: (tag) => world(tag, "reds", { automated: true }),
+        resume: (w) => {
+          writeGates(w);
+          advanceSource(w, false);
+        },
       },
       {
         step: "spec",
@@ -2247,6 +2261,7 @@ if (runs(6)) {
     put(w.studio, `ci/${OPUS}-spec-2.log`, readFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-2.log`), "utf8"));
     commit(w.repo, `studio(${OPUS}): ui-lead input on the trunk`);
 
+    writeGates(w, { gate: "served-e2e" });
     const o = next(w, [OPUS, "--budget", "100000"]);
     expectStep(o, "review", "named", "a kind: ui record with a met build gate names the review dispatch");
     assert.match(o.kv.get("inputs") ?? "", new RegExp(`ci/${OPUS}-spec-2\\.log`), ran("the ui-lead input path is an input", o));
@@ -4069,7 +4084,7 @@ test("W-168-b3 behaviour 3: a tracked change holds pr with today's lines and no 
   assert.deepEqual(mutating(w), [], "nothing was fetched or pushed");
 });
 
-const CONFLICT_WHY = `why: PR #${PR_NUMBER} conflicts with master; rebase ${BRANCH} and resolve it there: that changes the SOURCE tree and needs the local mint again`;
+const CONFLICT_WHY = `why: PR #${PR_NUMBER} conflicts with master; rebase ${BRANCH} and resolve it there: that changes the SOURCE tree and needs its gates (bisellium ci --opus) and review again`;
 const lineAfter = (o: Out, prefix: string): string | undefined => o.out.split("\n").find((l) => l.startsWith(prefix));
 
 test("W-168-b4 behaviour 4: in queue mode merge enqueues once and never updates the branch", { timeout: 3_600_000 }, () => {
@@ -4141,7 +4156,7 @@ function expectBoundHold(w: World, row: string): void {
   assert.deepEqual(mutating(w), [], ran(`${row}: a PR pushed for the queue is held when the queue is gone`, o));
   assert.equal(o.out.split("\n")[1], "mode: direct", ran(`${row}: the mode line`, o));
   assert.ok(
-    o.out.includes(`why: PR #${PR_NUMBER} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${BRANCH} onto master, which changes the SOURCE tree and needs the local mint again`),
+    o.out.includes(`why: PR #${PR_NUMBER} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${BRANCH} onto master, which changes the SOURCE tree and needs its gates (bisellium ci --opus) and review again`),
     ran(`${row}: the why`, o),
   );
   assert.equal(o.status, 1, ran(`${row}: exit`, o));
@@ -5947,6 +5962,7 @@ test("W-274-b1 behaviour 1: next --perform --expect review runs round 1 end to e
   put(u.studio, "ci/dispatch.md", uiPrompt);
   put(u.studio, `ci/${OPUS}-spec-2.log`, readFileSync(join(u.wtStudio, "ci", `${OPUS}-spec-2.log`), "utf8"));
   commit(u.repo, `studio(${OPUS}): ui-lead input on the trunk`);
+  writeGates(u, { gate: "served-e2e" });
   codexSays(u, { session: "s-274-u", reply: PASS_REPLY });
   const ou = performReview(u);
   assert.equal(ou.first, `next: ${OPUS} review held`, ran("ui: held", ou));
@@ -6036,55 +6052,10 @@ test("W-274-b2 behaviour 2: a later round resumes the reviewer's session with th
 });
 
 // ---------------------------------------------------------------------------
-// W-292: `next --perform --chain` runs the mint, the review round and the pr in one call. The mint is a stub
-// (BISELLIUM_TEST_MINT) that logs its argv and cwd under $HOME and writes what $HOME/mint.json names; codex is W-274's
-// stub. The real mint and the real codex never run.
+// W-292: `next --perform --chain` runs the review round and the pr in one call (W-312: no mint before review); codex is
+// W-274's stub. The real codex never runs.
 // ---------------------------------------------------------------------------
-const MINT_STUB = String.raw`#!/usr/bin/env node
-"use strict";
-const fs = require("node:fs");
-const path = require("node:path");
-const home = process.env.HOME;
-fs.appendFileSync(path.join(home, "mint-calls.jsonl"), JSON.stringify({ argv: process.argv.slice(2), cwd: process.cwd() }) + "\n");
-const plan = JSON.parse(fs.readFileSync(path.join(home, "mint.json"), "utf8"));
-for (const [file, text] of Object.entries(plan.writes)) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, text);
-}
-for (const [file, mode] of Object.entries(plan.modes || {})) fs.chmodSync(file, mode);
-process.stdout.write("mint stub output\n");
-process.exit(plan.exit);
-`;
-const MINT = join(scratch("mint-bin"), "mint");
-writeFileSync(MINT, MINT_STUB, { mode: 0o755 });
-const mintCalls = (w: World): { argv: string[]; cwd: string }[] =>
-  existsSync(join(w.home, "mint-calls.jsonl")) ? readFileSync(join(w.home, "mint-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; cwd: string }) : [];
-/** What a real mint leaves at the worktree's tip: the record's run_receipt line, uncommitted, and a host receipt for the tree. */
-function mintSays(w: World, exit = 0, extra: Record<string, string> = {}, field?: [string, string]): void {
-  const rec = join(w.wtStudio, "opera", `${OPUS}.md`);
-  const was = readFileSync(rec, "utf8");
-  const rel = `receipts/builder.${OPUS}/minted.json`;
-  editOpusFrontMatter(rec, (doc) => {
-    doc.setIn(["run_receipt"], rel);
-    if (field !== undefined) doc.setIn([field[0]], field[1]);
-    return undefined;
-  });
-  const minted = readFileSync(rec, "utf8");
-  writeFileSync(rec, was);
-  const tip = git(w.wt, ["rev-parse", "HEAD"]);
-  const tree = sourceTree(w.wt);
-  const completion = { schema: 1, origin: "host-producer", opus: OPUS, branch: BRANCH, builder: `builder.${OPUS}`, producer: "producer", baseCommit: tip, finalCommit: tip, toolingCommit: tip, finalSourceTree: tree, redReplays: Array.from({ length: w.behaviours }, (_, i) => ({ behaviour: i + 1, commit: tip, sourceTree: tree, command: "x", assertionFailed: true })), gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true };
-  const receipt = JSON.stringify({ sella: `builder.${OPUS}`, harness: "run", exitCode: 0, completion });
-  writeFileSync(join(w.home, "mint.json"), JSON.stringify({ exit, writes: { [rec]: minted, [join(w.wtStudio, rel)]: receipt, ...extra } }));
-}
-/** Edits the plan mintSays wrote, for a mint that also changes the record's bytes or mode. */
-function mintTweak(w: World, edit: (plan: { exit: number; writes: Record<string, string>; modes?: Record<string, number> }) => void): void {
-  const file = join(w.home, "mint.json");
-  const plan = JSON.parse(readFileSync(file, "utf8")) as { exit: number; writes: Record<string, string>; modes?: Record<string, number> };
-  edit(plan);
-  writeFileSync(file, JSON.stringify(plan));
-}
-/** A ticketed world whose builder has handed off after the reds, with no receipt and the review templates on the branch. */
+/** A ticketed world whose builder has handed off after the reds, with the review templates on the branch. */
 function chainWorld(tag: string, handoff = true): World {
   // ticketed on master before the reds, and the opus branch rebased onto it, so the pr's rebase moves nothing
   const w = world(tag, "ready");
@@ -6099,29 +6070,24 @@ function chainWorld(tag: string, handoff = true): World {
   return w;
 }
 const performChain = (w: World, extra: string[] = prArgs, env: Record<string, string> = {}): Out =>
-  next(w, [OPUS, "--perform", "--chain", "--budget", "400000", ...extra], { env: { ...CODEX_PATH, BISELLIUM_TEST_MINT: MINT, ...env } });
+  next(w, [OPUS, "--perform", "--chain", "--budget", "400000", ...extra], { env: { ...CODEX_PATH, ...env } });
 const subjects = (w: World, since: string): string[] => git(w.wt, ["log", "--format=%s", `${since}..HEAD`]).split("\n").filter(Boolean).reverse();
 
-test("W-292-b1 behaviour 1: next --perform --chain runs the mint, the review round and the pr in one call, reporting once and stopping at the first hold", { timeout: 1_800_000 }, () => {
-  // the whole chain: one mint, one codex call, one PR, and one report ending in the merge rung
+test("W-292-b1 behaviour 1: next --perform --chain runs the review round and the pr in one call, reporting once and stopping at the first hold", { timeout: 1_800_000 }, () => {
+  // the whole chain: one codex call, one PR, and one report ending in the merge rung
   const w = chainWorld("w292-b1-chain");
-  mintSays(w);
   codexSays(w, { session: "s-292-1", reply: PASS_REPLY });
   const tip = tipOf(w);
   const o = performChain(w);
   assert.equal(o.status, 0, ran("chain: exit 0", o));
-  assert.equal(o.first, `next: ${OPUS} build performed`, ran("chain: the mint is performed first", o));
+  assert.equal(o.first, `next: ${OPUS} review performed`, ran("chain: the review round is performed first", o));
   const heads = o.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `));
-  assert.deepEqual(heads, [`next: ${OPUS} build performed`, `next: ${OPUS} review performed`, `next: ${OPUS} pr performed`], ran("chain: mint, review and pr in turn", o));
-  assert.equal(o.kv.get("mint"), "exit 0", ran("chain: the mint's line", o));
+  assert.deepEqual(heads, [`next: ${OPUS} review performed`, `next: ${OPUS} pr performed`], ran("chain: review and pr in turn", o));
   assert.equal(o.kv.get("review"), "round 1 passed", ran("chain: the review round", o));
   assert.equal(o.out.split("\n").filter((l) => l.startsWith("next-step: ")).length, 1, ran("chain: one next-step line, at the end", o));
-  assert.deepEqual(mintCalls(w), [{ argv: ["run", "--sella", "builder", "--opus", OPUS, "--studio", w.wtStudio, "--repo", w.wt, "--", "true"], cwd: w.wt }], "chain: one mint, from the worktree");
-  assert.match(readFileSync(join(w.repo, ".bisellium", "steps", `${OPUS}.log`), "utf8"), /^mint stub output$/m, "chain: the mint's output is in the step log");
   assert.equal(codexCalls(w).length, 1, "chain: one codex call");
   assert.equal(ghCalls(w).filter((a) => a[0] === "pr" && a[1] === "create").length, 1, "chain: one PR created");
-  assert.deepEqual(subjects(w, tip), [`chore(studio): ${OPUS} run receipt`, `chore(studio): ${OPUS} review round 1 passed`], "chain: the receipt commit, then the review commit");
-  assert.deepEqual(git(w.wt, ["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD~1"]).split("\n"), [`studio/opera/${OPUS}.md`], "chain: the receipt commit carries the record only");
+  assert.deepEqual(subjects(w, tip), [`chore(studio): ${OPUS} review round 1 passed`], "chain: the review commit alone");
   assert.equal(existsSync(join(w.repo, ".bisellium", "steps", `${OPUS}.json`)), false, "chain: the step marker is released");
 
   // the flags: --chain needs --perform and takes no --expect
@@ -6134,86 +6100,31 @@ test("W-292-b1 behaviour 1: next --perform --chain runs the mint, the review rou
     assert.equal(o.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `)).pop(), `next: ${OPUS} ${rung} held`, ran(`${label}: the ${rung} rung holds`, o));
     assert.match(o.kv.get("why") ?? "", why, ran(`${label}: why`, o));
   };
-  // before the builder's handover: no mint
-  const early = chainWorld("w292-b1-early", false);
-  mintSays(early);
-  held("no handover", performChain(early), "build", /^refusing: stale handover: run bisellium handoff first /);
-  assert.equal(mintCalls(early).length, 0, "no handover: no mint");
   // a rung outside the chain: nothing is performed
   const reds = world("w292-b1-reds", "ready");
-  held("a rung outside the chain", performChain(reds), "reds", /^refusing: --chain performs only the mint, review and pr rungs; /);
-  // a failed mint, then a mint that leaves another tracked change: no review, no commit
-  const m = chainWorld("w292-b1-mint");
-  const mtip = tipOf(m);
-  // with the test clock on, a relative BISELLIUM_TEST_MINT holds before anything is spawned
-  mintSays(m);
-  held("a relative BISELLIUM_TEST_MINT", performChain(m, prArgs, { BISELLIUM_TEST_MINT: "mint" }), "build", /^refusing: BISELLIUM_TEST_MINT must be an absolute path$/);
-  assert.equal(mintCalls(m).length, 0, "a relative BISELLIUM_TEST_MINT: no mint");
-  mintSays(m, 1);
-  held("the mint fails", performChain(m), "build", new RegExp(`^the mint exited 1; its output is in \\.bisellium/steps/${OPUS}\\.log$`));
-  git(m.wt, ["checkout", "--", `studio/opera/${OPUS}.md`]);
-  mintSays(m, 0, { [join(m.wt, "source.txt")]: "a mint that edits source\n" });
-  held("another tracked change", performChain(m), "build", /^refusing: the mint left tracked changes other than studio\/opera\/W-900\.md: source\.txt$/);
-  // a mint that changes another field of the record holds uncommitted
-  git(m.wt, ["checkout", "--", `studio/opera/${OPUS}.md`, "source.txt"]);
-  mintSays(m, 0, {}, ["title", "a mint that renames the opus"]);
-  held("another record field", performChain(m), "build", /^refusing: the mint changed studio\/opera\/W-900\.md beyond its run_receipt field$/);
-  // all other bytes and tracked metadata of the record stay as they were: a front-matter comment or a mode change holds
-  const recRel = `studio/opera/${OPUS}.md`;
-  const recAbs = join(m.wtStudio, "opera", `${OPUS}.md`);
-  const beyond = /^refusing: the mint changed studio\/opera\/W-900\.md beyond its run_receipt field$/;
-  git(m.wt, ["checkout", "--", recRel, "source.txt"]);
-  mintSays(m);
-  mintTweak(m, (plan) => {
-    plan.writes[recAbs] = plan.writes[recAbs]!.replace("\n---\n", "\n# a comment the mint adds\n---\n");
-  });
-  held("a front-matter comment", performChain(m), "build", beyond);
-  git(m.wt, ["checkout", "--", recRel]);
-  mintSays(m);
-  mintTweak(m, (plan) => {
-    plan.modes = { [recAbs]: 0o755 };
-  });
-  held("a mode change", performChain(m), "build", beyond);
-  git(m.wt, ["checkout", "--", recRel]);
-  assert.equal(tipOf(m), mtip, "a comment or a mode change: no commit");
-  // a thrown step error (the step log cannot be opened) is a build hold, never next's generic failure
-  git(m.wt, ["checkout", "--", `studio/opera/${OPUS}.md`, "source.txt"]);
-  rmSync(join(m.repo, ".bisellium", "steps", `${OPUS}.log`), { force: true });
-  mkdirSync(join(m.repo, ".bisellium", "steps", `${OPUS}.log`));
-  const thrown = performChain(m);
-  held("a thrown step error", thrown, "build", /^the mint failed: /);
-  assert.doesNotMatch(thrown.out + thrown.err, /W-900 failed/, ran("a thrown step error is a build hold", thrown));
-  assert.equal(mintCalls(m).length, 5, "a thrown step error: no sixth mint");
-  rmSync(join(m.repo, ".bisellium", "steps", `${OPUS}.log`), { recursive: true });
-  assert.equal(codexCalls(m).length, 0, "mint holds: no codex call");
-  assert.equal(tipOf(m), mtip, "mint holds: no commit");
-  // a review hold after the mint: the receipt commit stays, and a re-run resumes at review without a second mint
+  held("a rung outside the chain", performChain(reds), "reds", /^refusing: --chain performs only the review and pr rungs; /);
+  // a review hold: no PR, and a re-run resumes at review
   const r = chainWorld("w292-b1-review");
-  mintSays(r);
   codexSays(r, { session: "s-292-r", reply: "", exit: 1, stderr: "boom\n" });
   const or = performChain(r);
   held("codex fails", or, "review", /^codex exited 1; nothing is recorded$/);
-  assert.equal(or.first, `next: ${OPUS} build performed`, ran("codex fails: the mint was performed first", or));
   assert.equal(ghCalls(r).filter((a) => a[0] === "pr").length, 0, "codex fails: no PR");
   codexSays(r, { session: "s-292-r", reply: PASS_REPLY });
   const again = performChain(r);
   assert.equal(again.status, 0, ran("re-run: exit 0", again));
   assert.equal(again.first, `next: ${OPUS} review performed`, ran("re-run: resumes at review", again));
-  assert.equal(mintCalls(r).length, 1, "re-run: no second mint");
   assert.equal(again.out.split("\n").filter((l) => l.startsWith(`next: ${OPUS} `)).pop(), `next: ${OPUS} pr performed`, ran("re-run: through the pr", again));
   // a failed round is performed and ends the chain at the builder's fix; a re-run refuses the fix rung
   const fl = chainWorld("w292-b1-fail");
-  mintSays(fl);
   codexSays(fl, { session: "s-292-f", reply: FAIL_REPLY });
   const of = performChain(fl);
   assert.equal(of.status, 0, ran("fail: exit 0", of));
   assert.equal(of.kv.get("review"), "round 1 failed", ran("fail: recorded failed", of));
   assert.equal(of.kv.get("next-step"), "build", ran("fail: the fix is next", of));
   assert.equal(ghCalls(fl).filter((a) => a[0] === "pr").length, 0, "fail: no PR");
-  held("the fix rung", performChain(fl), "build", /^refusing: --chain performs only the mint, review and pr rungs; /);
+  held("the fix rung", performChain(fl), "build", /^refusing: --chain performs only the review and pr rungs; /);
   // gh failing at PR discovery after a passing review: the derived pr hold is the chain's exit 1, never a success
   const g = chainWorld("w292-b1-gh");
-  mintSays(g);
   codexSays(g, { session: "s-292-g", reply: PASS_REPLY });
   scenario(g, { list: { exit: 1, stderr: "gh: authentication required" } });
   const og = performChain(g);
@@ -6222,7 +6133,6 @@ test("W-292-b1 behaviour 1: next --perform --chain runs the mint, the review rou
   assert.equal(ghCalls(g).filter((a) => a[0] === "pr" && a[1] === "create").length, 0, "gh fails: no PR");
   // with no --title and --body-file the chain stops at the pr rung it names
   const nt = chainWorld("w292-b1-notext");
-  mintSays(nt);
   codexSays(nt, { session: "s-292-n", reply: PASS_REPLY });
   const on = performChain(nt, []);
   assert.equal(on.status, 0, ran("no text: exit 0", on));
@@ -6384,4 +6294,189 @@ test("W-311-b1 behaviour 1: one CLI start leaves tsx's compile cache entries wri
   } finally {
     closeSync(fd);
   }
+});
+
+// ---------------------------------------------------------------------------
+// W-312: review is admitted by the branch's own gate logs at its current source tree (the builder's `bisellium ci --opus`
+// in the worktree), never by a host-minted receipt; nothing mints before review, and the chain performs review and pr only
+// ---------------------------------------------------------------------------
+/** What `verify` (and `ci --opus`) leaves for the `tests` gate at the worktree's tip: the record's three keys and the log, committed unless asked not to. */
+function writeGates(w: World, o: { gate?: string; log?: (tree: string) => string; certifies?: (tree: string) => string; evidence?: (tree: string) => string; commit?: boolean } = {}): void {
+  const tree = sourceTree(w.wt);
+  const gate = o.gate ?? "tests";
+  const evidence = o.evidence?.(tree) ?? `ci/${OPUS}-${gate}-${tree.slice(5, 13)}.log`;
+  put(w.wtStudio, evidence, o.log?.(tree) ?? `certifies: ${tree}\ncommand: node -e 0\nexit code: 0\n\n\n`);
+  editRecord(w, "wt", (doc) => doc.setIn(["probationes", gate], { status: "passed", evidence, certifies: o.certifies?.(tree) ?? tree }));
+  if (o.commit ?? true) commit(w.wt, `studio(${OPUS}): gates`);
+}
+/** The real `review` verb in the worktree, its exit and stderr returned rather than thrown. */
+const reviewVerb = (w: World, round: number): { status: number | null; stderr: string } => {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "review", OPUS, "--pass", "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", w.wtStudio, "--now", T.review1], { cwd: w.wt, env: SETUP_ENV, encoding: "utf8", timeout: 120_000 });
+  return { status: r.status, stderr: r.stderr ?? "" };
+};
+
+test("W-312-b1 behaviour 1: review is ordered and recorded only when the branch record's automated gates passed at its current source tree, and nothing mints before review", { timeout: 1_800_000 }, () => {
+  const budget = ["--budget", "400000"];
+  const w = world("w312-b1", "reds", { automated: true });
+  handoffAt(w, "wt", T.handoffFresh);
+  const build = (label: string, why: RegExp): void => {
+    const o = next(w, [OPUS, ...budget]);
+    expectStep(o, "build", "named", `${label}: build is named`);
+    assert.match(o.kv.get("why") ?? "", why, ran(`${label}: why`, o));
+  };
+  const notPassed = /^W-900: tests is not passed at the current source tree tree:[0-9a-f]{12}; run bisellium ci --opus W-900 in the worktree and commit the record and its gate logs$/;
+  // no gate evidence: the builder's order names the gate, the tree and the command that writes it
+  build("no gate evidence", notPassed);
+  // a current host receipt alone admits nothing
+  writeReceipt(w, "current");
+  build("a current receipt and no gates", notPassed);
+
+  // the review verb refuses before it writes, naming the same reason
+  verb(w.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "w312-r1.md"), "--studio", w.wtStudio, "--now", T.review1]);
+  const before = readFileSync(join(w.wtStudio, "opera", `${OPUS}.md`), "utf8");
+  const refused = reviewVerb(w, 1);
+  assert.equal(refused.status, 2, `review without gates: exit 2\n${refused.stderr}`);
+  assert.match(refused.stderr, /tests is not passed at the current source tree/, "review without gates: the reason");
+  assert.equal(readFileSync(join(w.wtStudio, "opera", `${OPUS}.md`), "utf8"), before, "review without gates: the record is unchanged");
+  rmSync(join(w.wtStudio, "ci", `${OPUS}-review-1.log`));
+
+  // each mistake in the gate evidence names build with its reason
+  const cases: [string, Parameters<typeof writeGates>[1], RegExp][] = [
+    ["a dirty: certificate", { certifies: (t) => `dirty:${t.slice(5)}` }, notPassed],
+    ["evidence of another tree", { evidence: () => `ci/${OPUS}-tests-0badcafe.log` }, /^W-900: tests records evidence ci\/W-900-tests-0badcafe\.log, not ci\/W-900-tests-[0-9a-f]{8}\.log$/],
+    ["a log of a failed run", { log: (t) => `certifies: ${t}\ncommand: node -e 0\nexit code: 1\n\n\n` }, /^W-900: tests's log ci\/W-900-tests-[0-9a-f]{8}\.log does not open with certifies: tree:[0-9a-f]{40} and exit code: 0$/],
+    ["a log of another tree", { log: () => `certifies: tree:${"0".repeat(40)}\ncommand: node -e 0\nexit code: 0\n\n\n` }, /^W-900: tests's log ci\/W-900-tests-[0-9a-f]{8}\.log does not open with certifies: tree:[0-9a-f]{40} and exit code: 0$/],
+    ["gates not committed", { commit: false }, /^W-900: a gate log is not committed \(studio\/ci\/W-900-tests-[0-9a-f]{8}\.log\)$/],
+  ];
+  for (const [label, o, why] of cases) {
+    const tip = tipOf(w);
+    writeGates(w, o);
+    build(label, why);
+    git(w.wt, ["reset", "-q", "--hard", tip]);
+    git(w.wt, ["clean", "-qfd", "studio/ci"]);
+  }
+  // the review verb refuses each with the same reason, before it writes (its verdict log removed after)
+  const refusedBoth = (label: string, why: RegExp): void => {
+    build(label, why);
+    verb(w.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, `w312-${label.replace(/\W+/g, "-")}.md`), "--studio", w.wtStudio, "--now", T.review1]);
+    const record = readFileSync(join(w.wtStudio, "opera", `${OPUS}.md`), "utf8");
+    const r = reviewVerb(w, 1);
+    assert.equal(r.status, 2, `${label}: review exits 2\n${r.stderr}`);
+    assert.match(r.stderr.trim(), why, `${label}: review's reason`);
+    assert.equal(readFileSync(join(w.wtStudio, "opera", `${OPUS}.md`), "utf8"), record, `${label}: review leaves the record unchanged`);
+    rmSync(join(w.wtStudio, "ci", `${OPUS}-review-1.log`));
+  };
+  // a gate log git ignores is not in the branch, though the record that names it is committed
+  {
+    const tip = tipOf(w);
+    put(w.wtStudio, "ci/.gitignore", "*.log\n");
+    writeGates(w);
+    assert.equal(gitYesNo(w.wt, ["ls-files", "--error-unmatch", "--", `studio/ci/${OPUS}-tests-${sourceTree(w.wt).slice(5, 13)}.log`]), false, "the ignored log is untracked");
+    refusedBoth("an ignored gate log", /^W-900: a gate log is not committed \(studio\/ci\/W-900-tests-[0-9a-f]{8}\.log\)$/);
+    git(w.wt, ["reset", "-q", "--hard", tip]);
+    git(w.wt, ["clean", "-qfd", "studio/ci"]);
+  }
+  // a missing log
+  writeGates(w);
+  rmSync(join(w.wtStudio, "ci", `${OPUS}-tests-${sourceTree(w.wt).slice(5, 13)}.log`));
+  commit(w.wt, "test: drop the gate log");
+  build("a missing log", /^W-900: tests's log ci\/W-900-tests-[0-9a-f]{8}\.log is not a contained regular file/);
+
+  // the real verify, as the builder's ci --opus runs it in the worktree, committed: review is named and the verb records it
+  verb(w.wt, ["verify", OPUS, "--studio", w.wtStudio, "--repo", w.wt, "--now", T.reds]);
+  commit(w.wt, `studio(${OPUS}): gates`);
+  const named = next(w, [OPUS, ...budget]);
+  expectStep(named, "review", "named", "gates at the current tree: review is named");
+  // a malformed gate selector refuses before any gate is filtered out, though the tests gate's evidence is current
+  const malformed: [string, () => void, RegExp][] = [
+    ["a gate row of an unknown kind", () => put(w.wtStudio, "bisellium.yml", readFileSync(join(w.wtStudio, "bisellium.yml"), "utf8").replace("source_excludes:", '  - { id: lint, name: Lint, kind: automatic, command: "node -e 0" }\nsource_excludes:')), /^W-900: the gate configuration is malformed: bisellium\.yml probationes\[\d+\] is not a well-formed gate row$/],
+    ["a record kind outside the vocabulary", () => editRecord(w, "wt", (doc) => doc.setIn(["kind"], "UI")), /^W-900: the gate configuration is malformed: kind "UI" is not a native opus kind$/],
+  ];
+  for (const [label, mutate, why] of malformed) {
+    const tip = tipOf(w);
+    mutate();
+    commit(w.wt, `test: ${label}`);
+    refusedBoth(label, why);
+    git(w.wt, ["reset", "-q", "--hard", tip]);
+  }
+  // source exclusions that are not a list: next holds before any derivation (W-166, unchanged); the review verb refuses them itself
+  {
+    const tip = tipOf(w);
+    const trunk = git(w.repo, ["rev-parse", "HEAD"]);
+    for (const [dir, studio] of [[w.repo, w.studio], [w.wt, w.wtStudio]] as const) {
+      put(studio, "bisellium.yml", readFileSync(join(studio, "bisellium.yml"), "utf8").replace(/source_excludes:.*/, "source_excludes: examples/"));
+      commit(dir, "test: source_excludes not a list");
+    }
+    const o = next(w, [OPUS, ...budget]);
+    excludesHeld(o, "source exclusions not a list");
+    verb(w.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "w312-excludes.md"), "--studio", w.wtStudio, "--now", T.review1]);
+    const record = readFileSync(join(w.wtStudio, "opera", `${OPUS}.md`), "utf8");
+    const r = reviewVerb(w, 1);
+    assert.equal(r.status, 2, `source exclusions not a list: review exits 2\n${r.stderr}`);
+    assert.match(r.stderr.trim(), /^W-900: the gate configuration is malformed: bisellium\.yml source_excludes is not a list of nonempty paths$/, "source exclusions not a list: review's reason");
+    assert.equal(readFileSync(join(w.wtStudio, "opera", `${OPUS}.md`), "utf8"), record, "source exclusions not a list: review leaves the record unchanged");
+    rmSync(join(w.wtStudio, "ci", `${OPUS}-review-1.log`));
+    git(w.wt, ["reset", "-q", "--hard", tip]);
+    git(w.repo, ["reset", "-q", "--hard", trunk]);
+  }
+  // a ui opus whose manifest declares served-e2e an agent gate: an effectiveProbationes problem refuses; it never filters the gate out
+  {
+    const u = world("w312-b1-ui", "build");
+    for (const dir of ["repo", "wt"] as const)
+      editRecord(u, dir, (doc) => {
+        doc.setIn(["kind"], "ui");
+        doc.setIn(["spec"], `briefs/${OPUS}.md`);
+      });
+    const uiPrompt = "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n";
+    put(u.wtStudio, "ci/dispatch.md", uiPrompt);
+    const uiFrom = join(u.root, "ui-spec.md");
+    writeFileSync(uiFrom, ["## Findings", "No findings", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "## Recommendation", "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: passed", ""].join("\n"));
+    verb(u.wt, ["verdict", OPUS, "--round", "2", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--dispatch-prompt", "ci/dispatch.md", "--from", uiFrom, "--studio", u.wtStudio, "--now", T.spec]);
+    commit(u.wt, `studio(${OPUS}): ui-lead input`);
+    put(u.studio, "ci/dispatch.md", uiPrompt);
+    put(u.studio, `ci/${OPUS}-spec-2.log`, readFileSync(join(u.wtStudio, "ci", `${OPUS}-spec-2.log`), "utf8"));
+    commit(u.repo, `studio(${OPUS}): ui-lead input on the trunk`);
+    for (const studio of [u.studio, u.wtStudio])
+      put(studio, "bisellium.yml", readFileSync(join(studio, "bisellium.yml"), "utf8").replace("source_excludes:", "  - { id: served-e2e, name: Served e2e, kind: agent }\nsource_excludes:"));
+    commit(u.repo, "test: served-e2e declared an agent gate");
+    commit(u.wt, "test: served-e2e declared an agent gate");
+    const why = /^W-900: the gate configuration is malformed: manifest gate "served-e2e" must be automated with command "node scripts\/served-e2e\.mjs"$/;
+    const o = next(u, [OPUS, ...budget]);
+    expectStep(o, "build", "named", "served-e2e as an agent gate: build is named");
+    assert.match(o.kv.get("why") ?? "", why, ran("served-e2e as an agent gate: why", o));
+    // no verdict log: the admission refuses before the review verb reads its evidence
+    const record = readFileSync(join(u.wtStudio, "opera", `${OPUS}.md`), "utf8");
+    const r = reviewVerb(u, 1);
+    assert.equal(r.status, 2, `served-e2e as an agent gate: review exits 2\n${r.stderr}`);
+    assert.match(r.stderr.trim(), why, "served-e2e as an agent gate: review's reason");
+    assert.equal(readFileSync(join(u.wtStudio, "opera", `${OPUS}.md`), "utf8"), record, "served-e2e as an agent gate: review leaves the record unchanged");
+  }
+  // a tracked source edit not committed: the tree is dirty
+  appendFileSync(join(w.wt, "source.txt"), "uncommitted\n");
+  build("a dirty source tree", /^W-900: current source tree is dirty$/);
+  git(w.wt, ["checkout", "--", "source.txt"]);
+  // a source commit after the gates: they certify an older tree
+  advanceSource(w, false);
+  build("a source commit after the gates", notPassed);
+  verb(w.wt, ["verify", OPUS, "--studio", w.wtStudio, "--repo", w.wt, "--now", T.reds]);
+  commit(w.wt, `studio(${OPUS}): gates again`);
+  verb(w.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "w312-r1b.md"), "--studio", w.wtStudio, "--now", T.review1]);
+  const recorded = reviewVerb(w, 1);
+  assert.equal(recorded.status, 0, `review with gates at the tree: exit 0\n${recorded.stderr}`);
+  commit(w.wt, `studio(${OPUS}): review round 1 passed`);
+  expectStep(next(w, [OPUS, ...budget]), "pr", "named", "a passed review at the gated tree: pr is named");
+
+  // a studio with no automated gate admits review after the reds, as done certifies nothing for it
+  const none = world("w312-b1-none", "reds");
+  expectStep(next(none, [OPUS, ...budget]), "review", "named", "no automated gate: review is named");
+
+  // the chain performs review and pr only: a build rung is refused before anything is performed
+  const chained = world("w312-b1-chain", "reds", { automated: true });
+  handoffAt(chained, "wt", T.handoffFresh);
+  const t0 = tipOf(chained);
+  const o = next(chained, [OPUS, "--perform", "--chain", ...budget]);
+  assert.equal(o.status, 1, ran("chain from build: exit 1", o));
+  assert.equal(o.first, `next: ${OPUS} build held`, ran("chain from build: held", o));
+  assert.equal(o.kv.get("why"), `refusing: --chain performs only the review and pr rungs; the next step for ${OPUS} is build`, ran("chain from build: why", o));
+  assert.equal(tipOf(chained), t0, "chain from build: nothing committed");
 });
