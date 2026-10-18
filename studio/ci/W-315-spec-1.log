@@ -1,0 +1,25 @@
+# opus: W-315
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T06:26:36.143Z
+# tree: tree:fd18d790107c442f7ca8e45f26800b0831bff84b
+# brief: briefs/W-315.md blob:2d637191e374efbd7047dcdf6ba6736568871903
+# ticket: {"opus":"W-315","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"5c612c6cf2e30c23c4d544c73416dd43c05126b7","brief":"2d637191e374efbd7047dcdf6ba6736568871903","at":"2026-10-18T06:26:09.912Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-315-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — bootstrap (Patron 2026-10-18 ladder rule): the opus edits both review prompts, but master's ladder reads them from the main checkout's studio (W-314), so its own build rounds read master's text (six and four slots, which master's code requires) and never its edited copies; master's text names studio/leges/qa.md and studio/lessons/ in the opus checkout, which this opus does not change, so the sentences hold for it; a re-spec on its branch would read its branch later-round.md with <STUDIO> unfilled, a stated limit (brief:25), not a guarantee (D-076 E) — check: brief:25, packages/cli/src/next.test.ts (W-315-b1)
+2. advisory — class sweep of reviewer-facing branch reads in the build and spec paths: charter and lessons (closed, behaviour 1 and the later-round slot), a hand-run later-round packet for a linked worktree (closed, behaviour 2), the dispute's rebuttal.md (closed, behaviour 3); left as stated limits with Out of scope lines: the worktree AGENTS.md Codex loads (Defaults 3), facts.txt's brief admission from the branch's bisellium.yml, the kept spec fill script, and the opus's own evidence by design (brief:65 to brief:70, brief:117 to brief:119) — check: none: a shim Codex flag that stops a reviewer loading the worktree's AGENTS.md
+3. advisory — each red fails by assertion on master f8039584 with the final test rows (b1 at "round 1: the charter and the lessons are the main checkout's", b2 at "the main work tree's template, not the branch's", b3 at "the dispute names the main checkout's rebuttal prompt") and on its stage (b2 on stage 1, b3 on stage 2); the host replay classifier accepts all five; b1 passes at stage 1 and b2 at stage 2 — check: red-b1-master.out, red-b2-master.out, red-b2-stage1.out, red-b3-master.out, red-b3-stage2.out, red-accept.out, proto-b1-stage1.out, proto-b2-stage2.out
+4. advisory — must-stay-green on the prototype: the whole next.test.ts 109 of 109, review-packet.test.mjs 10 of 10, containment.test.ts 65 of 65 with no pin change; the flips fail unedited exactly as Acceptance names them (W-274-b1, W-274-b2, W-292-b1, W-314-b1 on "lacks the slot <STUDIO>" at round 1; W-274-b2 and W-314-b1 at round 2 with behaviour 1's edits in; four review-packet rows) — check: next-full-proto.out, review-packet-proto.out, containment-proto.out, next-unedited-proto.out, next-unedited-b2-proto.out, review-packet-unedited-proto.out
+5. advisory — the Codex test check lists eleven flips (three fixture constants and the eight rows), every one named, Unnamed: None; its must-stay-green rows (the W-124, W-162, W-167, W-196, W-206, W-215, W-233, W-246, W-255, W-264, W-293 and W-312 order rows, the remaining review-packet rows and containment inventory D) pass in the full prototype runs — check: fixture-census.md
+6. advisory — the brief passes admission and the ledger covers the three promise lines and every Input domain row; lint (one pre-existing warning: scripts/review-packet.d.mts has no eslint config), format and typecheck pass on the touched files — check: admission.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-315.md`, master 5c612c6c.

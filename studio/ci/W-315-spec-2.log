@@ -1,0 +1,20 @@
+# opus: W-315
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14db1-6c3f-7a61-a080-83d9f586b468
+# outcome: passed
+# at: 2026-10-18T06:31:28.274Z
+# tree: tree:fd18d790107c442f7ca8e45f26800b0831bff84b
+# brief: briefs/W-315.md blob:2d637191e374efbd7047dcdf6ba6736568871903
+# ticket: {"opus":"W-315","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"5c612c6cf2e30c23c4d544c73416dd43c05126b7","brief":"2d637191e374efbd7047dcdf6ba6736568871903","at":"2026-10-18T06:31:27.783Z"}
+
+## Findings
+1. advisory — brief:74 The blanket exit-2 promise contradicts brief:82, where the new `realpathSync` rejection is a non-`Refused` throw and exits 1. Replace brief:74 with: `A rejection fails closed: in the review perform it holds (next: <id> review held, exit 1) before any Codex call, with nothing recorded; in buildPacket an explicit Refused makes the CLI exit 2, while any other thrown error makes it exit 1; both occur before the packet directory exists and write nothing. A test row whose own read fails throws, which fails the row.` [severity: S2] [class: spec×prose-contradiction-under-revision] — check: scripts/review-packet.test.mjs
+2. advisory — brief:83 `readContainedRegularFile` cannot enforce that an explicit `promptStudio` is the main checkout; it accepts any root containing a valid template. Replace brief:83 with: `| buildPacket's promptStudio argument, when a later-round template is read | absent (then mainStudio(studio)), or a directory root whose prompts/later-round.md is a contained regular file holding all five slots; reviewSteps passes f.studioAbs when main-checkout provenance is required | readContainedRegularFile refuses an unreadable, escaping, symlinked or non-regular template; fillTemplate refuses a missing slot |` [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: scripts/review-packet.test.mjs
+3. advisory — brief:86 The added rows also read subprocess results, the Codex-call log, generated `prompt.md`, review-log absence, and the main-studio real path; these observations are omitted, and `codexCalls` can treat an unlikely unreadable log as no calls. Replace brief:86 with rows naming fixture writes plus: `performReview`/`next`/packet results rejected by their status assertions; generated files and real paths rejected by `readFileSync`/`realpathSync`; and asserted absence accepted only by `absentPath`, which rethrows every error except `ENOENT`. [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts (W-315-b1, W-315-b3); scripts/review-packet.test.mjs (W-315-b2)
+
+## Verdict
+The production behaviours are feasible; the remaining findings are advisory boundary and wording corrections.
+VERDICT: PASS
