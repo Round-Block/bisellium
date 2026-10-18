@@ -31,6 +31,8 @@ export interface TestScan {
 
 const PACKAGE_JSON = "package.json";
 const GIT_WHERE = "git ls-files";
+const MERGE_BASE_WHERE = "git merge-base";
+const MASTER_REFS = ["refs/heads/master", "refs/remotes/origin/master"];
 const TIMEOUT_MS = 30_000;
 const MAX_BYTES = 1024 * 1024;
 const EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs"]);
@@ -58,6 +60,7 @@ const MIN_REASON_CHARS = 15;
 const MIN_REASON_WORDS = 3;
 
 const block = (where: string, message: string): Finding => ({ rule: "test.sleep", level: "block", where, message });
+const rowBlock = (where: string, message: string): Finding => ({ rule: "test.rows", level: "block", where, message });
 
 interface Line {
   code: string;
@@ -336,6 +339,105 @@ export function scanTests(_root: string, opts: RuleOpts): TestScan {
     scan.findings.push(block(GIT_WHERE, `the sleep scan failed (${(e as Error).message})`));
   }
   return scan;
+}
+
+/** Stdout of one git call in `repo`; throws on a non-zero exit. */
+function gitOut(repo: string, args: string[]): string {
+  return execFileSync("git", args, { cwd: repo, encoding: "utf8", timeout: TIMEOUT_MS, maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
+}
+const reasonOf = (e: unknown): string => {
+  const err = e as { stderr?: unknown; message?: string };
+  return ((typeof err.stderr === "string" && err.stderr.trim()) || err.message || "unknown error").split("\n")[0]!;
+};
+
+/** W-178: the merge-base of HEAD with refs/heads/master, else with refs/remotes/origin/master. */
+export function resolveTestBase(repo: string): { base: string } | { error: string } {
+  try {
+    const ref = MASTER_REFS.find((r) => {
+      try {
+        gitOut(repo, ["rev-parse", "--verify", "-q", `${r}^{commit}`]);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    if (ref === undefined) return { error: `no ${MASTER_REFS.join(" or ")}; row counts not compared` };
+    const bases = gitOut(repo, ["merge-base", "--all", "HEAD", ref]).trim().split("\n").filter(Boolean);
+    if (bases.length !== 1) return { error: `${bases.length} merge-bases of HEAD and ${ref}; row counts not compared` };
+    return { base: bases[0]! };
+  } catch (e) {
+    return { error: `base unresolved (${reasonOf(e)}); row counts not compared` };
+  }
+}
+
+type Candidate = { text: string } | { missing: true } | { error: string };
+/** A working-tree file as the sleep scan reads it: regular, at most 1 MiB; a tracked file that is gone is `missing`. */
+function readCandidate(repo: string, rel: string): Candidate {
+  const abs = join(repo, rel);
+  try {
+    const st = lstatSync(abs);
+    if (st.isSymbolicLink()) return { error: "tests are counted as regular files; track the target as a regular file" };
+    if (!st.isFile()) return { error: "not counted: not a regular file" };
+    if (st.size > MAX_BYTES) return { error: "not counted: over 1 MiB" };
+    return { text: readFileSync(abs, "utf8") };
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { missing: true };
+    return { error: `could not read (${(e as Error).message})` };
+  }
+}
+
+/** W-178: `test.rows`, block. Each test file at the merge-base keeps its row count in the working tree. With a
+ *  repo only; an unobservable base or file is a finding, never a silent pass. */
+export function testRowFindings(repo: string): Finding[] {
+  const resolved = resolveTestBase(repo);
+  if ("error" in resolved) return [rowBlock(MERGE_BASE_WHERE, resolved.error)];
+  const { base } = resolved;
+  const findings: Finding[] = [];
+  try {
+    const baseFiles = gitOut(repo, ["ls-tree", "-r", "--name-only", "-z", base]).split("\0").filter(Boolean);
+    let baseRegistered = new Set<string>();
+    if (baseFiles.includes(PACKAGE_JSON)) {
+      try {
+        baseRegistered = registeredPaths(gitOut(repo, ["show", `${base}:${PACKAGE_JSON}`]));
+      } catch {
+        return [rowBlock(PACKAGE_JSON, "could not read or parse package.json at the base; registered test paths unknown")];
+      }
+    }
+    let registered = new Set<string>();
+    const pkg = readCandidate(repo, PACKAGE_JSON);
+    if ("error" in pkg) return [rowBlock(PACKAGE_JSON, `package.json ${pkg.error}; registered test paths unknown`)];
+    if ("text" in pkg) {
+      try {
+        registered = registeredPaths(pkg.text);
+      } catch {
+        return [rowBlock(PACKAGE_JSON, "could not parse package.json; registered test paths unknown")];
+      }
+    }
+    const candidate = new Set(gitOut(repo, ["ls-files", "-z"]).split("\0").filter((p) => p.length > 0 && isTestPath(p, registered)));
+
+    for (const path of baseFiles.filter((p) => isTestPath(p, baseRegistered))) {
+      let from: number;
+      try {
+        from = countTestRows(gitOut(repo, ["show", `${base}:${path}`]));
+      } catch (e) {
+        findings.push(rowBlock(path, `could not read at the base (${reasonOf(e)})`));
+        continue;
+      }
+      let to = 0;
+      if (candidate.has(path)) {
+        const read = readCandidate(repo, path);
+        if ("error" in read) {
+          findings.push(rowBlock(path, read.error));
+          continue;
+        }
+        if ("text" in read) to = countTestRows(read.text);
+      }
+      if (to < from) findings.push(rowBlock(path, `row count fell from ${from} to ${to}`));
+    }
+  } catch (e) {
+    findings.push(rowBlock(GIT_WHERE, `the row comparison failed (${reasonOf(e)})`));
+  }
+  return findings;
 }
 
 export function checkTests(root: string, opts: RuleOpts): Finding[] {

@@ -828,6 +828,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/rules/milestones.ts:readDeclared:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (milestones.yml)" },
   { key: "packages/cli/src/rules/tests.ts:fileSet:readFileSync#1", disposition: "outside", why: "reads package.json and source files in the repo" },
   { key: "packages/cli/src/rules/tests.ts:scanTests:readFileSync#1", disposition: "outside", why: "reads test files in the repo" },
+  { key: "packages/cli/src/rules/tests.ts:readCandidate:readFileSync#1", disposition: "outside", why: "reads a candidate test file and package.json in the repo (W-178)" },
   { key: "packages/cli/src/test.ts:<module>:readFileSync#1", disposition: "outside", why: "acceptance run: reads the fixtures under examples/ in the repo" },
   { key: "packages/cli/src/tick.ts:writeHealthFile:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (health.json)" },
   { key: "packages/cli/src/tick.ts:writeTickReceipt:writeFileSync#1", disposition: "contained", why: "receipts/tick/<session>.json in a real receipts/tick/ checked by ensureRealDirectory" },
