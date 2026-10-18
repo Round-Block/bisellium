@@ -225,7 +225,10 @@ export function buildPacket(args) {
         `${studioRel}/${previous.log}`,
       ]).trim();
       if (base === "") refuse(`${previous.log} is not committed: no base for the delta`);
-      delta = runGit(repo, ["diff", base, "HEAD", "--", ".", `:(exclude)${studioRel}`]);
+      // the source change, then the officina's (gate logs, brief, record, reds, prompts): every change since that round (W-314)
+      delta =
+        runGit(repo, ["diff", base, "HEAD", "--", ".", `:(exclude)${studioRel}`]) +
+        runGit(repo, ["diff", base, "HEAD", "--", studioRel]);
     }
   } else if (previous !== undefined) {
     delta = diffTexts(readFileSync(previousSubject(packets, previous.round), "utf8"), subject);

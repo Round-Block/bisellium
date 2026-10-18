@@ -1516,9 +1516,8 @@ end to end, in the foreground (the orchestrator launches it in its own backgroun
 holds, before either reading, on a UI opus (dispatch it as the order names) and on a worktree that is unusable or has a
 tracked change. For the censor's order of round `n` it builds the packet under `<repo>/.bisellium/reviews/<opus>/r<n>/`
 (local, not committed; `.bisellium`, `reviews` and the packet are proven real directories outside both studio trees
-before anything is made, removed or written), fills the six slots of `prompts/build-review.md` read from the opus
-branch (`<ID>`, `<ROUND>`, `<WORKTREE>`, `<PACKET>`, `<REVIEWED_HEAD>`, `<FOCUS>`; a later round of a sessioned
-sequence resumes the reviewer's session with the packet's later-round prompt), calls Codex `gpt-5.6-sol` at reasoning
+before anything is made, removed or written), fills the six slots of `prompts/build-review.md` read from the main checkout's studio, never the opus branch (`<ID>`, `<ROUND>`, `<WORKTREE>`, `<PACKET>`, `<REVIEWED_HEAD>`, `<FOCUS>`; a later round of a sessioned
+sequence resumes the reviewer's session with the packet's later-round prompt, from the main checkout's `prompts/later-round.md`, whose `delta.diff` is the source change since the previous round's log, then the officina's), calls Codex `gpt-5.6-sol` at reasoning
 effort `high` through the harness adapter with a 25-minute timeout, and records the reply with `verdict`, then `review`,
 then one commit on `opus/<opus>` of exactly the log and the record. A reply is accepted only after Codex closes
 normally with exit code 0 (a signal, a non-zero exit, a usage limit, a timeout, no session id, a changed session, or a
@@ -1529,8 +1528,7 @@ valid session header and, for a later round, the sequence's session; otherwise t
 commit after `review` leaves the log and the record staged and uncommitted (committing them is a hand step, and `pr`
 holds on the dirty record until then); a log the second reading refuses stays uncommitted until it is recorded by hand
 or removed; `facts.txt`'s `next` block exits 2 in a worktree packet; a verdict `verdict` refuses for its shape is not
-reissued in the same session. The template is read from the opus branch, so an opus may change its own review prompt;
-`studio/prompts/` is code-owned, so the Patron reviews such a change. A close by signal is a failure of the codex
+reissued in the same session. Both templates are read from the main checkout's studio (W-314), so an opus's prompt edit lands with its code and governs from the next opus; the charter and lessons the prompt names are read in the opus checkout. A close by signal is a failure of the codex
 profile for every caller, `talk` included.
 
 **`--chain` (W-292, W-312).** `next <opus> --perform --chain --budget <tokens> --title <text> --body-file <path>`
