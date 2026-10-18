@@ -1,0 +1,28 @@
+# opus: W-316
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T11:41:55.067Z
+# tree: tree:cecf54936656a9f684c109d74bf72b509ad66f17
+# brief: briefs/W-316.md blob:11d0b12097917df7568acb8007c0c4379c119c42
+# ticket: {"opus":"W-316","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-316/studio","head":"d013764f5b53b8e998e034cd1532d17df187ce45","brief":"11d0b12097917df7568acb8007c0c4379c119c42","at":"2026-10-18T11:41:50.469Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-316-amend/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 folds in the Patron's stall fix (2026-10-18, the record's title at b039ab5a): report-mode next on a dispatch order with no marker reads the opus's worktrees and evidence directories and, past 900 seconds with no changed file, prints the stall line naming the newest file and its age, leaving the step, order and exit status unchanged; it extends the step-health region and the default health case (W-124, D-042), no parallel machinery (brief:29 to brief:39, brief:69 to brief:74) — check: prototype-src.diff, proto-b34-all.out
+2. advisory — heavy runs: a redirected single-file node --test writes its rows as they finish and next.test.ts's longest row is 137 seconds, so a run under a counted directory is never silent for 900 seconds; the isolated bisellium run is covered by its producer lease, bounded by the host runner's own timeout, now one exported constant; no pid is read because each sandboxed command has its own PID namespace, measured (brief:35, brief:36) — check: stream-probe.out, W-316-b4
+3. advisory — what the line cannot know is stated, not guaranteed (D-076 E): an agent writing outside the counted directories reads stalled though working, one touching a counted file reads active though stuck, the lease is read by mtime only, and the reused deriveNext, assess, opusWorktree, acquireProducerLease and os.homedir are unchanged code it leans on (brief:93, brief:95, brief:107 to brief:111) — check: none: a check that the dispatch briefs keep naming the counted directories for agents' output
+4. advisory — each new red fails by assertion on its stage and the host replay classifier accepts both: W-316-b3 on 515ae6e5 at "past the window: stalled, naming the newest file and its age (node_modules and another opus's files never count)", W-316-b4 on behaviour 3's stage at "a lease 3600s old is a run inside its 60-minute timeout: activity"; W-316-b3 passes on its stage, both on the whole prototype, and eight mutants each fail their row — check: red-b3-base.out, red-b4-s3.out, red-accept.out, proto-b3-s3.out, proto-b34-all.out, mutants.out
+5. advisory — must-stay-green on the revision-2 prototype: the whole next.test.ts (113 of 113) and containment.test.ts (65 of 65) pass with no pin change (the new reads are readdirSync and lstatSync, outside the raw-read census), behaviours 3 and 4 flip no existing row, and the generated AGENTS.md and CLAUDE.md are unchanged — check: next-full-proto.out, containment-proto.out, instructions-proto.out
+6. advisory — the Codex test check on revision 2 lists the same two flips, W-274-b1 and W-314-b1, both named (brief:153), Unnamed: None; its must-stay-green rows pass on the prototype: every next.test.ts row it names (113 of 113), containment W-163-b6 (65 of 65), run.test.ts's W-125 and W-134 rows on HOST_RUN_TIMEOUT_MS and the lease (40 of 40), instructions.test.ts's agent.architect rows and cascade-loop 24f (100 of 100) — check: fixture-census.md, next-full-proto.out, containment-proto.out, run-test-proto.out, instructions-test-proto.out, cascade-loop-proto.out
+7. advisory — revision 1's two spec-review advisories (S4) are adopted verbatim as the Input domain rows for the Codex call and the W-316 rows' cwd evidence (brief:120, brief:122) — check: ~/.bisellium-evidence/W-316-specreview/r2/verdict.md
+8. advisory — .claude/agents/architect.md gains the signing paragraph as guidance; next's linked-worktree refusal and the stall line are the enforcement (CLAUDE.md standing rule), the D-076 E line stays W-310's, and the Patron merges and pulls the .claude/ change (brief:78 to brief:87, Defaults 7) — check: prototype-docs.diff
+9. advisory — the brief passes admission, the ledger covers every promise, Input domain row and CLI-verb line by verdict.ts's own coverage rule, and lint, format and typecheck pass on the touched files — check: admission.out, ledger-check.out, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-316.md` on `opus/W-316`; the prototype and reds ran on 515ae6e5 and the scratch worktree `.worktrees/W-316-amend` (b039ab5a plus the revision-2 prototype).
