@@ -1,0 +1,38 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-314-b2\s --import tsx scripts/review-packet.test.mjs
+# exit: 1
+# at: 2026-10-18T04:12:31.738Z
+# sella: builder.W-314
+# tree: tree:777fdb240b49f7e3e2bd5b83d1cd472280ac1978
+# ticket: {"opus":"W-314","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-314/studio","head":"0be75c8208f68b58248ab2adb677f86c77016e7f","brief":"e0d0ff9803139cb522ac67855c8d3b1153e3b347","at":"2026-10-18T04:12:26.158Z"}
+
+TAP version 13
+# Subtest: W-314-b2 behaviour 2: a build round's delta carries the officina's change since the previous log, after the source change
+not ok 1 - W-314-b2 behaviour 2: a build round's delta carries the officina's change since the previous log, after the source change
+  ---
+  duration_ms: 614.828895
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-314/scripts/review-packet.test.mjs:401:1'
+  failureType: 'testCodeFailure'
+  error: 'a studio-only fix: the brief edit is in the delta'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-314/scripts/review-packet.test.mjs:415:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 629.949466

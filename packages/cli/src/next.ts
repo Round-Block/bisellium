@@ -1577,7 +1577,11 @@ function performOpusSpecCommit(f: Facts): StepResult {
 // review: one build-review round (W-274)
 // ---------------------------------------------------------------------------
 
-/** The template the first round of a reviewer session is filled from, and the slots it must carry (W-241's set). */
+/**
+ * The template the first round of a reviewer session is filled from, and the slots it must carry (W-241's set). It and
+ * `prompts/later-round.md` are read from the main checkout's studio, never the opus branch, so an opus cannot rewrite its
+ * own reviewer's prompt: a prompt edit lands with its code and governs from the next opus (W-314).
+ */
 const BUILD_REVIEW_PROMPT = "prompts/build-review.md";
 const BUILD_REVIEW_SLOTS = ["ID", "ROUND", "WORKTREE", "PACKET", "REVIEWED_HEAD", "FOCUS"] as const;
 /** Under STEP_SILENCE_SECONDS.review, so a live round never reads stalled: the perform logs before and after the call. */
@@ -1647,7 +1651,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     try {
       const packets = packetBase(f);
       rmSync(join(packets, `r${round}`), { recursive: true, force: true });
-      ({ packet, files } = buildPacket({ phase: "build", opus: id, round, sella: censor, studio: wt.studio, repo: wt.dir, packets }));
+      ({ packet, files } = buildPacket({ phase: "build", opus: id, round, sella: censor, studio: wt.studio, repo: wt.dir, packets, promptStudio: f.studioAbs }));
     } catch (e) {
       return heldResult(`the review packet could not be built: ${one((e as Error).message)}`);
     }
@@ -1656,7 +1660,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     const previous = seq.last?.session;
     let prompt = files.get("prompt.md");
     if (previous === undefined || prompt === undefined) {
-      const template = readContainedRegularFile(wt.studio, BUILD_REVIEW_PROMPT, "prompts");
+      const template = readContainedRegularFile(f.studioAbs, BUILD_REVIEW_PROMPT, "prompts");
       if ("error" in template) return heldResult(`${BUILD_REVIEW_PROMPT}: ${template.error}`);
       const filled = fillSlots(template.bytes.toString("utf8"), {
         ID: id,
