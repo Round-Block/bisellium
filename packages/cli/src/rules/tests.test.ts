@@ -700,6 +700,8 @@ const GRAMMAR: [string, string[], number][] = [
   ["a whole runner import inside a string enables nothing", ['const s = \'import { test } from "node:test"\';', 'test("a", () => {});'], 0],
   ["a require call inside a string enables nothing", ['const r = "require(\'node:test\')";', 'test("a", () => {});'], 0],
   ["two imports on one line, the second the runner", ['import a from "x"; import { test } from "node:test";', 'test("a", () => {});'], 1],
+  ["a required Playwright runner counts its rows", ['const { test } = require("@playwright/test");', 'test("a", () => {});', 'test.skip("b", () => {});'], 2],
+  ["a required module that only starts like a runner enables nothing", ['const { test } = require("@playwright/testing");', 'test("a", () => {});'], 0],
   ["a require of the runner", ['const test = require("node:test");', 'test("a", () => {});'], 1],
   ["a real import after a commented one still counts", ['// import test from "node:test";', RUNNER_IMPORT, 'test("a", () => {});'], 1],
   ["reporter words only in comments make no reporter", ["function row(name, ok) {", '  // console.log(ok ? "PASS" : "FAIL", name);', "  return name;", "}", 'row("a", true);', 'row("b", false);'], 0],
