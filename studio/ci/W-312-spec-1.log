@@ -1,0 +1,23 @@
+# opus: W-312
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-10-17T17:29:56.208Z
+# tree: tree:0565e19742f51bbf86e88a2ad55e7401c7f04332
+# brief: briefs/W-312.md blob:829a656138b02e9bfebf5767991dcab7bcafb83e
+# ticket: {"opus":"W-312","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"799eb8a5946e4d463522cccd49c6f8d269fa30c6","brief":"829a656138b02e9bfebf5767991dcab7bcafb83e","at":"2026-10-17T17:29:55.723Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-312-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — red replay is already in the merge queue: `certify` runs the very host mint that replays every red (scripts/ci-certify.mjs:232, scripts/run-builder-host.mjs:719 and :780), so removing the pre-review mint removes no check; lex §11 holds with certify as the one mint (brief:15) — check: scripts/ci-certify.test.mjs, packages/commands/src/run.test.ts (unchanged)
+2. advisory — the red fails by assertion at `no gate evidence: why` on master 799eb8a5 with the final test diff, and the host replay classifier accepts it; the row passes on the prototype — check: red-b1-master.out, red-accept.out, proto-b1.out
+3. advisory — the Codex test check's one unnamed flip (`W-168-b4 behaviour 4: in direct mode a bound PR holds…`, through `expectBoundHold`) is named at brief:112, and the changed-setup row it displaced does not flip; every other listed flip is named at brief:105 to brief:115, and its must-stay-green rows pass on the prototype (the whole next.test.ts, 106 of 106; lifecycle.test.ts, 674 checks; containment.test.ts, 65 of 65) — check: fixture-census.md, next-full-proto.out, flips2-proto.out, lifecycle-proto.out, containment-proto.out
+4. advisory — the record's own commit state is deliberately not judged by admitCurrentGates (only the gate logs'), since a review or handoff write between rounds leaves the record dirty; judging it flipped W-233-b3, W-274-b1 and W-274-b2 on the first prototype — check: next-full-unedited-proto.out (first prototype), next-full-proto.out
+5. advisory — the brief passes admission, and lint, format and typecheck pass on the touched files (one pre-existing lint warning in integrate.ts, OID_RE, on master too) — check: admission-full.out, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-312.md`, master 799eb8a5.

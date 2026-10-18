@@ -1,0 +1,22 @@
+# opus: W-312
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a14aea-227f-7e81-abee-0e9af68f57d7
+# outcome: passed
+# at: 2026-10-17T22:58:27.699Z
+# tree: tree:9ee3f674fd88b65b1d1bafcfa2db37d0128ac8c5
+# brief: briefs/W-312.md blob:8fb088003627a6a2138ff3ba996dfd317a75ed67
+# ticket: {"opus":"W-312","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"ba2bb37081aa308ed0666a1bb16b0e8a321a3f03","brief":"8fb088003627a6a2138ff3ba996dfd317a75ed67","at":"2026-10-17T22:58:27.163Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-312-spec-2.log #1: closed — brief:48/93 now require each gate log to pass `git ls-files --error-unmatch` and a clean status check; the ignored-log regression passes for both `next` and `reviewVerb`, while the revision-1 probe fails.
+- ci/W-312-spec-2.log #2: closed — brief:45/94 now require `gateSelectors` to validate every selector before filtering or empty admission; the malformed-kind, record-kind, scalar-exclusion, and served-e2e-agent regressions pass, while the revision-1 probes fail.
+
+## Verdict
+Both round-2 blocking classes are closed by fail-closed promises and supporting regression evidence, with no defect in the changed lines.
+VERDICT: PASS
