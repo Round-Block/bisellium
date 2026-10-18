@@ -201,7 +201,10 @@ names each step and writes the step ticket the next record write consumes
    pushes the reviewed head without a rebase, `merge` enqueues it, and the
    queue's `certify` job mints the merge result (it replays the reds and runs the gates): a moved master needs no
    rebase and no second gate run. In `mode: direct` no `certify` runs, so nothing replays the reds before merge: rebase if master moved, and the builder's `ci --opus` and review follow.
-6. **Done:** `verify <id>` on master (~11 min, nothing heavy alongside); edit
+6. **Done:** no `verify` after the merge queue's `certify`: the done perform
+   records certify's certificate (D-082 B); only a `kind: ui` opus, which
+   certify cannot vouch for, runs `verify <id>` on master (~24 min, nothing
+   heavy alongside) when `next` names it; edit
    `docs/SESSION-HANDOFF.md` (the done perform refuses without a tracked
    handoff edit and runs W-186's rule on it); `next --perform --expect done`
    (commits on `chore/done-<id>`); `next --perform --expect done` again
@@ -316,3 +319,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-16 | §7: the CLI-first block's exit (the hand-steps measure and the trial's four conditions); the dossier republish leaves done and stays at cascade checkpoints (D-071) | Patron |
 | 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |
 | 2026-10-18 | §9 steps 3 to 5: review needs the builder's `ci --opus` gate logs at the branch's source tree; no host mint before review; `certify` is the one mint (W-312, D-071 E) | Patron |
+| 2026-10-18 | §9 step 6: no `verify` on master after `certify` except for a `kind: ui` opus; the done perform records certify's certificate (D-082 B) | Patron |
