@@ -853,7 +853,8 @@ test("W-178-b3 one new, exact record admits its drop and nothing else", { timeou
   oneRowBlock(await rowFindings(branched("b3-wrong", three, lowerWith(ledgerOf({ ...RECORD, drop: 2 })))), "a.test.ts", /from 3 to 2/, "wrong drop");
   oneRowBlock(await rowFindings(branched("b3-twice", three, lowerWith(ledgerOf(RECORD, { ...RECORD, reason: "a second reason for the same path" })))), "a.test.ts", /two|2/, "two new records for the path");
   oneRowBlock(await rowFindings(branched("b3-unmatched", three, (r) => put(r, LEDGER, ledgerOf({ ...RECORD, path: "other.test.ts" })))), LEDGER, /other\.test\.ts/, "a record with no drop");
-  oneRowBlock(await rowFindings(branched("b3-none", three, lowerWith(ledgerOf({ ...RECORD, path: "other.test.ts", drop: 1 })))), "a.test.ts", /from 3 to 2/, "a record for another path leaves the drop unrecorded");
+  const elsewhere = await rowFindings(branched("b3-none", three, lowerWith(ledgerOf({ ...RECORD, path: "other.test.ts", drop: 1 }))));
+  assert.deepEqual(wheres(elsewhere), ["a.test.ts", LEDGER], "a record for another path leaves the drop unrecorded and is itself unmatched");
   const inBase = { ...three, [LEDGER]: ledgerOf(RECORD) };
   oneRowBlock(await rowFindings(branched("b3-in-base", inBase, (r) => put(r, "a.test.ts", rowsOf(2)))), "a.test.ts", /from 3 to 2/, "a record already in the base's file admits nothing");
 

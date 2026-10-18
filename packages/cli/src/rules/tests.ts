@@ -16,12 +16,19 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { parse as parseYaml } from "yaml";
 import type { Finding, RuleOpts } from "../check.js";
 
 export interface Covered {
   where: string;
   annotation: "seam" | "waiver";
   kind: string;
+}
+export interface RowDrop {
+  path: string;
+  drop: number;
+  opus: string;
+  reason: string;
 }
 export interface TestScan {
   findings: Finding[];
@@ -32,6 +39,7 @@ export interface TestScan {
 const PACKAGE_JSON = "package.json";
 const GIT_WHERE = "git ls-files";
 const MERGE_BASE_WHERE = "git merge-base";
+const ROW_DROPS = "test/row-drops.yml";
 const MASTER_REFS = ["refs/heads/master", "refs/remotes/origin/master"];
 const TIMEOUT_MS = 30_000;
 const MAX_BYTES = 1024 * 1024;
@@ -370,6 +378,36 @@ export function resolveTestBase(repo: string): { base: string } | { error: strin
   }
 }
 
+/** W-178: the records of `test/row-drops.yml` (text undefined: the file is absent). Pure; any malformed
+ *  content, extra key, bad or exactly duplicated record is an error. */
+export function readRowDrops(text: string | undefined): { drops: RowDrop[] } | { error: string } {
+  if (text === undefined) return { drops: [] };
+  let doc: unknown;
+  try {
+    doc = parseYaml(text);
+  } catch (e) {
+    return { error: `malformed YAML (${reasonOf(e)})` };
+  }
+  if (typeof doc !== "object" || doc === null || Array.isArray(doc) || Object.keys(doc).join() !== "drops") return { error: 'the only top-level key is "drops"' };
+  const list = (doc as { drops: unknown }).drops;
+  if (!Array.isArray(list)) return { error: '"drops" is not a list' };
+  const drops: RowDrop[] = [];
+  for (const [i, rec] of list.entries()) {
+    const at = `record ${i + 1}`;
+    if (typeof rec !== "object" || rec === null || Array.isArray(rec) || Object.keys(rec).sort().join() !== "drop,opus,path,reason")
+      return { error: `${at} must have exactly path, drop, opus and reason` };
+    const { path, drop, opus, reason } = rec as Record<string, unknown>;
+    if (typeof path !== "string" || path.split("/").some((seg) => seg === "" || seg === "." || seg === "..")) return { error: `${at}: path must be repo-relative, without "..", "." or empty segments` };
+    if (typeof drop !== "number" || !Number.isInteger(drop) || drop < 1) return { error: `${at}: drop must be an integer of at least 1` };
+    if (typeof opus !== "string" || !/^W-\d+$/.test(opus)) return { error: `${at}: opus must be W-<digits>` };
+    if (typeof reason !== "string" || reason.replace(/\s+/g, "").length < MIN_REASON_CHARS || reason.trim().split(/\s+/).length < MIN_REASON_WORDS)
+      return { error: `${at}: reason too short (need ${MIN_REASON_CHARS} non-whitespace characters in at least ${MIN_REASON_WORDS} words)` };
+    if (drops.some((d) => d.path === path && d.drop === drop && d.opus === opus && d.reason === reason)) return { error: `${at} repeats an earlier record` };
+    drops.push({ path, drop, opus, reason });
+  }
+  return { drops };
+}
+
 type Candidate = { text: string } | { missing: true } | { error: string };
 /** A working-tree file as the sleep scan reads it: regular, at most 1 MiB; a tracked file that is gone is `missing`. */
 function readCandidate(repo: string, rel: string): Candidate {
@@ -393,6 +431,7 @@ export function testRowFindings(repo: string): Finding[] {
   if ("error" in resolved) return [rowBlock(MERGE_BASE_WHERE, resolved.error)];
   const { base } = resolved;
   const findings: Finding[] = [];
+  const dropped: { path: string; from: number; to: number }[] = [];
   try {
     const baseFiles = gitOut(repo, ["ls-tree", "-r", "--name-only", "-z", base]).split("\0").filter(Boolean);
     let baseRegistered = new Set<string>();
@@ -413,6 +452,23 @@ export function testRowFindings(repo: string): Finding[] {
         return [rowBlock(PACKAGE_JSON, "could not parse package.json; registered test paths unknown")];
       }
     }
+    // the reason file, in the base and in the working tree
+    let baseLedger: string | undefined;
+    if (baseFiles.includes(ROW_DROPS)) {
+      try {
+        baseLedger = gitOut(repo, ["show", `${base}:${ROW_DROPS}`]);
+      } catch (e) {
+        return [rowBlock(ROW_DROPS, `could not read at the base (${reasonOf(e)})`)];
+      }
+    }
+    const ledger = readCandidate(repo, ROW_DROPS);
+    if ("error" in ledger) return [rowBlock(ROW_DROPS, ledger.error)];
+    const before = readRowDrops(baseLedger);
+    if ("error" in before) return [rowBlock(ROW_DROPS, `at the base: ${before.error}`)];
+    const after = readRowDrops("text" in ledger ? ledger.text : undefined);
+    if ("error" in after) return [rowBlock(ROW_DROPS, after.error)];
+    const fresh = after.drops.filter((r) => !before.drops.some((b) => b.path === r.path && b.drop === r.drop && b.opus === r.opus && b.reason === r.reason));
+
     const candidate = new Set(gitOut(repo, ["ls-files", "-z"]).split("\0").filter((p) => p.length > 0 && isTestPath(p, registered)));
 
     for (const path of baseFiles.filter((p) => isTestPath(p, baseRegistered))) {
@@ -432,8 +488,17 @@ export function testRowFindings(repo: string): Finding[] {
         }
         if ("text" in read) to = countTestRows(read.text);
       }
-      if (to < from) findings.push(rowBlock(path, `row count fell from ${from} to ${to}`));
+      if (to < from) dropped.push({ path, from, to });
     }
+    // each drop needs exactly one new record of exactly its size; each new record must match a drop
+    for (const { path, from, to } of dropped) {
+      const mine = fresh.filter((r) => r.path === path);
+      const fell = `row count fell from ${from} to ${to}`;
+      if (mine.length === 0) findings.push(rowBlock(path, `${fell}; add one record to ${ROW_DROPS} naming this path with drop ${from - to}`));
+      else if (mine.length > 1) findings.push(rowBlock(path, `${fell}; ${mine.length} new records in ${ROW_DROPS} name this path, exactly one is allowed`));
+      else if (mine[0]!.drop !== from - to) findings.push(rowBlock(path, `${fell}, but the new record in ${ROW_DROPS} drops ${mine[0]!.drop}; it must drop ${from - to}`));
+    }
+    for (const r of fresh) if (!dropped.some((d) => d.path === r.path)) findings.push(rowBlock(ROW_DROPS, `the new record for "${r.path}" matches no test file whose row count fell`));
   } catch (e) {
     findings.push(rowBlock(GIT_WHERE, `the row comparison failed (${reasonOf(e)})`));
   }
