@@ -693,6 +693,12 @@ const GRAMMAR: [string, string[], number][] = [
   ],
   ["a method call and a longer name are not registrations", [RUNNER_IMPORT, "const ok = /a/.test(text);", "const also = pattern.test(text);", 'submit("x");', 'latest("y");', 'test("real", () => {});'], 1],
   ["a registration in a loop counts once", [RUNNER_IMPORT, 'for (const name of ["a", "b", "c"]) {', "  test(name, () => {});", "}"], 1],
+  ["a line-commented node:test import enables nothing", ['// import test from "node:test";', 'test("a", () => {});'], 0],
+  ["a block-commented node:test import enables nothing", ['/* import test from "node:test"; */', 'test("a", () => {});'], 0],
+  ["a runner import named in a string enables nothing", ["const s = 'import test from \"node:test\"';", 'test("a", () => {});'], 0],
+  ["a real import after a commented one still counts", ['// import test from "node:test";', RUNNER_IMPORT, 'test("a", () => {});'], 1],
+  ["reporter words only in comments make no reporter", ["function row(name, ok) {", '  // console.log(ok ? "PASS" : "FAIL", name);', "  return name;", "}", 'row("a", true);', 'row("b", false);'], 0],
+  ["a block comment holding the reporter words makes no reporter", ["function row(name, ok) {", '  /* PASS FAIL */ console.log(name);', "}", 'row("a", true);'], 0],
   ["an empty file counts nothing", [], 0],
 ];
 const LEX_SAMPLE = ['const a = "x(1)"; // note', "/* gone */ const b = 'y\\'z';", "const t = `", "  test('in template')", "`;", "go();"].join("\n");

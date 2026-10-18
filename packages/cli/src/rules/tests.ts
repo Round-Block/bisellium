@@ -249,6 +249,7 @@ const DEFINITION =
   /^(\s*)(?:export\s+)?(?:(?:async\s+)?function\s*\*?\s*([\w$]+)\s*\(|(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>))/;
 const REGISTRATION = /(?<![\w$.])(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(/g;
 const RUNNER_IMPORT = /from\s+["'](?:node:test|@playwright\/test)["']|require\(\s*["']node:test["']\s*\)/;
+const IMPORT_SITE = /\bfrom\s+(["'])\s*\1|require\(\s*(["'])\s*\2\s*\)/; // the same sites with their string blanked
 const PRINTS = /console\.(?:log|error)|process\.std(?:out|err)\.write/;
 const WRAPPER_ROUNDS = 4;
 
@@ -256,8 +257,9 @@ const WRAPPER_ROUNDS = 4;
  *  and the wrappers that call them, each call weighing its function's rows. Total; see the brief for the limits. */
 export function countTestRows(text: string): number {
   const code = lex(text, { blankStrings: true }).map((l) => l.code);
-  const raw = text.split(/\r?\n/);
-  const runner = RUNNER_IMPORT.test(text);
+  // comments are gone from both views; `plain` keeps string contents (PASS, FAIL, a module name), `code` blanks them
+  const plain = lex(text).map((l) => l.code);
+  const runner = code.some((l, i) => IMPORT_SITE.test(l) && RUNNER_IMPORT.test(plain[i]!));
   const registrations = (lines: string[]): number => (runner ? lines.reduce((n, l) => n + (l.match(REGISTRATION)?.length ?? 0), 0) : 0);
   const calls = (name: string, lines: string[]): number => {
     const re = new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}\\s*\\(`, "g");
@@ -289,8 +291,8 @@ export function countTestRows(text: string): number {
   const weight = new Map<string, number>();
   const reporters = new Set<string>();
   for (const f of fns) {
-    const body = raw.slice(f.start, f.end + 1).join("\n");
-    if (body.includes("PASS") && body.includes("FAIL") && PRINTS.test(body)) {
+    const words = plain.slice(f.start, f.end + 1).join("\n");
+    if (words.includes("PASS") && words.includes("FAIL") && PRINTS.test(code.slice(f.start, f.end + 1).join("\n"))) {
       weight.set(f.name, 1);
       reporters.add(f.name);
     }
