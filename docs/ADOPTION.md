@@ -139,6 +139,19 @@ recorded signatures as before, so a log written before this is not re-read. A
 reviewer's spec verdict, a build or handoff verdict and a `ui` opus's spec
 input need no ledger.
 
+The same ledger covers the brief's readers (W-319). Each row of the brief's
+Input domain table, as brief admission reads it (the one `Input domain`
+section's first table, after its header and delimiter lines), needs a ledger
+line holding the whole token `brief:<n>` for the row's line, a `<file>:<line>`
+and `holds` (the cited line rejects the row's out-of-domain input and fails
+closed) or `scoped` (the row's stated limit), so a brief with an Input domain
+row and no promise line needs the ledger too. The check is coverage only: it
+cannot tell whether the cited line fails closed nor see an omitted reader;
+`inputDomainRows` yields no rows for a missing or repeated section or a first
+pipe run shorter than three lines, while other admission failures can still
+yield rows; where `brief_behaviour_limit` is declared, `next` separately sends
+every inadmissible signed brief back.
+
 For a build-phase, non-`ui` verdict (W-126) the writer reconciles each
 `blocking` finding with the opus's declared brief. A blocking finding stays
 blocking only when it cites a non-blank line of that brief, as `brief:<n>`,

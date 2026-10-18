@@ -4412,16 +4412,20 @@ test("W-196-b4 behaviour 4: next sends an inadmissible signed brief back to the 
   assert.match(o.kv.get("inputs") ?? "", /ci\/W-900-spec-1\.log/, ran("the signature is an input", o));
   assert.equal(o.out.includes(SR_MODEL), false, ran("no reviewer model is named", o));
 
+  // W-319: W196_ADMITTED's Input domain row (brief:23, brief:25 under the added sentence) needs a ledger line in the signature
+  const ledger = join(bad.root, "w319-ledger.md");
+  writeFileSync(ledger, "brief:23 brief:25, fixture record: fixture.ts:1 readFixture — holds\n");
+  const LEDGERED = `Promise ledger: ${ledger}\n\n${NO_FINDINGS}`;
   const promise = w196World("w196-b4-promise", "6");
   put(promise.repo, BRIEF_REL, W196_ADMITTED.replace("Decree family: fixture", "Decree family: fixture\n\nThe step always runs."));
-  sign(promise, 1);
+  sign(promise, 1, LEDGERED);
   const p = specNext(promise);
   architectOrder(p, 2, "an unqualified absolute phrase goes back to the architect");
   assert.match(p.kv.get("why") ?? "", /^brief\.admission: .*says "always" outside a promise line/, ran("why names the phrase", p));
 
   const good = w196World("w196-b4-good", "6");
   put(good.repo, BRIEF_REL, W196_ADMITTED);
-  sign(good, 1);
+  sign(good, 1, LEDGERED);
   const g = specNext(good);
   reviewerOrder(g, 2, "an admissible signed brief goes to the reviewer");
 
@@ -4449,7 +4453,7 @@ test("W-196-b4 behaviour 4: next sends an inadmissible signed brief back to the 
 
   const failed = w196World("w196-b4-failed", "6");
   put(failed.repo, BRIEF_REL, W196_ADMITTED);
-  sign(failed, 1);
+  sign(failed, 1, LEDGERED);
   review(failed, 2, "failed");
   architectOrder(specNext(failed), 3, "a failed review still returns to the architect");
 });

@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
+import { inputDomainRows } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
@@ -393,7 +394,7 @@ function readDesignMagister(manifest: unknown): { magister: string } | { error: 
  * W-306: why an architect's spec signature cannot be recorded. A brief line that names a CLI verb as a whole inline-code span
  * (`ready`, `next`) is a promise line; the signature's raw lines before its one level-2 Findings heading (as `contentLines` finds
  * it) then cite one ledger file, and for each promise line and each verb on it some ledger line holds the whole tokens
- * `brief:<n>` and `<file>:<line>`, the verb and holds or scoped.
+ * `brief:<n>` and `<file>:<line>`, the verb and holds or scoped. W-319: so does each Input domain row (a reader), with no verb.
  * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
  */
 function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
@@ -403,11 +404,18 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
     const named = [...new Set([...line.matchAll(/`([^`\r\n]+)`/g)].map((m) => m[1]!.trim()).filter((t) => USAGE_VERBS.verbs.has(t)))];
     if (named.length > 0) callers.set(i + 1, named);
   });
-  if (callers.size === 0) return [];
+  const rows = inputDomainRows(brief);
+  if (callers.size === 0 && rows.length === 0) return [];
   const heading = contentLines(transcript).headings.find((h) => h.level === 2 && h.name === "Findings");
   if (heading === undefined) return ['the signature has no level-2 "Findings" heading'];
   const cites = transcript.split(/\r?\n/).slice(0, heading.line).map((l) => l.trim()).filter((l) => l.startsWith("Promise ledger:"));
-  if (cites.length === 0) return [`${briefRel} names a CLI verb in code on lines ${[...callers.keys()].join(", ")}; cite the promise ledger on one line above "## Findings": "Promise ledger: <absolute path>"`];
+  if (cites.length === 0) {
+    const why = [
+      ...(callers.size > 0 ? [`names a CLI verb in code on lines ${[...callers.keys()].join(", ")}`] : []),
+      ...(rows.length > 0 ? [`has Input domain rows on lines ${rows.join(", ")}`] : []),
+    ].join(" and ");
+    return [`${briefRel} ${why}; cite the promise ledger on one line above "## Findings": "Promise ledger: <absolute path>"`];
+  }
   if (cites.length > 1) return [`${cites.length} "Promise ledger:" lines above "## Findings"; one only`];
   const named = cites[0]!.slice("Promise ledger:".length).trim();
   let path: string;
@@ -439,6 +447,9 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
       if (!covering.some((e) => wholeWord(v).test(e.text)))
         problems.push(`brief:${n} names \`${v}\`, and no ledger line cites brief:${n} with ${v}, a <file>:<line> and holds or scoped`);
   }
+  for (const n of rows)
+    if (!entries.some((e) => e.counts && e.briefs.has(n)))
+      problems.push(`brief:${n} is an Input domain row, and no ledger line cites brief:${n} with a <file>:<line> and holds or scoped`);
   return problems;
 }
 

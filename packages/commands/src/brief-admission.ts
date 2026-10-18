@@ -108,21 +108,36 @@ const cellsOf = (line: string): string[] =>
     .split(/(?<!\\)\|/)
     .map((c) => c.trim());
 
-/** W-161: problems with the one "Input domain" section (`## ` or `### `, up to the next real `^#{1,3} ` line):
- *  a three-column table whose rows each name a record, its domain and one rejecting function, and which says
- *  that a rejection fails closed; or one `None: <reason>` line. Shape only: the named function is not looked up. */
-function inputDomainProblems(real: string[]): string[] {
+/** The one "Input domain" section (`## ` or `### `, up to the next real `^#{1,3} ` line) and its first run of `|`
+ *  lines, `at` the run's index in `real`; `starts` holds every heading's index, and unless it holds one there is no section. */
+function domainTable(real: string[]): { starts: number[]; section: string[]; run: string[]; at: number } {
   const starts = real.flatMap((l, i) => (DOMAIN_HEADING.test(l) ? [i] : []));
-  if (starts.length === 0)
-    return [
-      'declares no input domain; add one "## Input domain" section: a table with "Record", "Valid domain" and "Rejected by" columns, or one line "None: <reason>" if it reads no officina records',
-    ];
-  if (starts.length > 1) return [`has ${starts.length} "Input domain" headings; one section only`];
+  if (starts.length !== 1) return { starts, section: [], run: [], at: -1 };
   const end = real.findIndex((l, i) => i > starts[0]! && /^#{1,3} /.test(l));
   const section = real.slice(starts[0]! + 1, end === -1 ? undefined : end);
   const first = section.findIndex((l) => /^ {0,3}\|/.test(l));
   const run: string[] = [];
   for (let i = first; i !== -1 && i < section.length && /^ {0,3}\|/.test(section[i]!); i++) run.push(section[i]!);
+  return { starts, section, run, at: first === -1 ? -1 : starts[0]! + 1 + first };
+}
+
+/** W-319: the 1-based brief lines of the Input domain table's rows, as `inputDomainProblems` reads the table: the run's
+ *  lines after its header and delimiter. None with no section, a repeated heading or no table (admission refuses each). */
+export function inputDomainRows(briefText: string): number[] {
+  const { run, at } = domainTable(realLines(briefText));
+  return run.slice(2).map((_, i) => at + 3 + i);
+}
+
+/** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
+ *  domain and one rejecting function, and which says that a rejection fails closed; or one `None: <reason>` line.
+ *  Shape only: the named function is not looked up. */
+function inputDomainProblems(real: string[]): string[] {
+  const { starts, section, run } = domainTable(real);
+  if (starts.length === 0)
+    return [
+      'declares no input domain; add one "## Input domain" section: a table with "Record", "Valid domain" and "Rejected by" columns, or one line "None: <reason>" if it reads no officina records',
+    ];
+  if (starts.length > 1) return [`has ${starts.length} "Input domain" headings; one section only`];
   const nones = section.filter((l) => l.startsWith("None:"));
   if (nones.length > 0) {
     if (nones.length > 1 || run.length > 0) return ['input domain mixes "None:" with a table or repeats it; one table or one "None: <reason>" line'];
