@@ -475,3 +475,89 @@ test("W-306-b1 behaviour 1: an architect spec signature cites a promise ledger c
   ] as const)
     assert.deepEqual(usageVerbs(text), { error: `usage line ${line} does not name exactly one command "bisellium <[a-z][a-z-]*>"` }, name);
 });
+
+// W-319: the same ledger covers every Input domain row (a reader) with a brief:<n>, a <file>:<line> and holds or scoped
+const ROWS_BRIEF = [
+  "# W-300 fixture brief",
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  "| the flag | a string | `parseFlag`: exit 2 |",
+  "| the file | a regular file | `readIt`: exit 2 |",
+  "",
+  "| a second table | not | read |",
+  "|---|---|---|",
+  "| its row | is not | a row |",
+  "## Behaviours to test",
+  "| after the section | is not | a row |",
+  "",
+].join("\n");
+const ROW_7 = "brief:7, the file: packages/x.ts:12 readIt exits 2 — scoped";
+const ROWS_COVERING = ["brief:6, the flag: packages/x.ts:5 parseFlag exits 2 — holds", ROW_7].join("\n");
+
+test("W-319-b1 behaviour 1: an architect spec signature's ledger covers every Input domain row, or verdict refuses", () => {
+  const dir = studio();
+  writeFileSync(join(dir, "briefs", "W-300.md"), ROWS_BRIEF);
+  assert.ok(readFileSync(join(dir, "briefs", "W-300.md"), "utf8").startsWith("# W-300 fixture brief\n## Input domain\n"), "the brief is the rows fixture");
+  const log = join(dir, "ci", "W-300-spec-1.log");
+  let n = 0;
+  const sign = (body: string, sella = "architect"): { exitCode: number; stderr: string; written: boolean } => {
+    const input = join(dir, `input-${++n}.md`);
+    writeFileSync(input, body);
+    const r = capture(() => runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }));
+    const written = existsSync(log);
+    if (written) rmSync(log);
+    return { exitCode: r.result.exitCode, stderr: r.stderr, written };
+  };
+  const ledger = (text: string): string => {
+    const p = join(dir, `ledger-${++n}.md`);
+    writeFileSync(p, text);
+    return p;
+  };
+  const refused = (name: string, body: string, stderr: string, sella = "architect"): void => {
+    const r = sign(body, sella);
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.equal(r.stderr, stderr, `${name}: stderr`);
+  };
+  const admitted = (name: string, body: string, sella = "architect"): void => {
+    const r = sign(body, sella);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, true, `${name}: the log is written`);
+  };
+  const NO = findings("advisory — fine");
+  const cite = (text: string): string => `Promise ledger: ${ledger(text)}\n\n${NO}`;
+  const row = (line: number): string => `W-300: promise ledger: brief:${line} is an Input domain row, and no ledger line cites brief:${line} with a <file>:<line> and holds or scoped\n`;
+
+  refused("no ledger line", NO, 'W-300: promise ledger: briefs/W-300.md has Input domain rows on lines 6, 7; cite the promise ledger on one line above "## Findings": "Promise ledger: <absolute path>"\n');
+  refused("one row uncovered", cite(ROWS_COVERING.replace(ROW_7, "")), row(7));
+  for (const [name, entry] of [
+    ["no status", ROW_7.replace(" — scoped", "")],
+    ["no <file>:<line>", ROW_7.replace("packages/x.ts:12", "packages/x.ts")],
+    ["brief:7x", ROW_7.replace("brief:7,", "brief:7x,")],
+    ["brief:7-9", ROW_7.replace("brief:7,", "brief:7-9,")],
+    ["a range for its <file>:<line>", ROW_7.replace("packages/x.ts:12", "packages/x.ts:12-14")],
+  ] as const)
+    refused(`a row entry with ${name}`, cite(ROWS_COVERING.replace(ROW_7, entry)), row(7));
+  refused("an empty ledger", cite(""), row(6) + row(7));
+  admitted("a ledger covering both rows", cite(ROWS_COVERING));
+  admitted("another seat's spec verdict with no ledger", NO, "qa-lead");
+
+  // with a promise line too, the missing citation names both, and the verb pairs come before the rows
+  writeFileSync(join(dir, "briefs", "W-300.md"), ROWS_BRIEF.replace("A rejection fails closed.", "A rejection fails closed; `ready` refuses."));
+  refused("a verb line and rows, no ledger line", NO, 'W-300: promise ledger: briefs/W-300.md names a CLI verb in code on lines 3 and has Input domain rows on lines 6, 7; cite the promise ledger on one line above "## Findings": "Promise ledger: <absolute path>"\n');
+  refused("a ledger covering only the verb", cite("brief:3, ready, refuses: packages/x.ts:1 — holds"), row(6) + row(7));
+  refused("a ledger covering only the rows", cite(ROWS_COVERING), "W-300: promise ledger: brief:3 names `ready`, and no ledger line cites brief:3 with ready, a <file>:<line> and holds or scoped\n");
+
+  // no table, a "None:" line, or a table in a fence or a comment: no row
+  for (const [name, text] of [
+    ["no Input domain section", "# W-300 fixture brief\n## Intent\nNothing.\n"],
+    ["a None: line", "# W-300 fixture brief\n## Input domain\nNone: it reads no records.\n"],
+    ["a table in a fence", ROWS_BRIEF.replace("| Record |", "```\n| Record |").replace("## Behaviours", "```\n## Behaviours")],
+    ["a table in a comment", ROWS_BRIEF.replace("| Record |", "<!--\n| Record |").replace("## Behaviours", "-->\n## Behaviours")],
+  ] as const) {
+    writeFileSync(join(dir, "briefs", "W-300.md"), text);
+    admitted(`${name}: no ledger needed`, NO);
+  }
+});

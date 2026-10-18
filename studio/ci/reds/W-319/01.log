@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-319-b1\s --import tsx packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-18T15:54:52.029Z
+# sella: builder.W-319
+# tree: tree:6f2d5dd9c0173c19e4438a5e343502f63a95d465
+# ticket: {"opus":"W-319","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-319/studio","head":"a23c8dcd54f6113a908555754201ce8ac7df1b7d","brief":"a192ec5d4169f25678a1e5e58f512af21482b08d","at":"2026-10-18T15:54:47.811Z"}
+
+TAP version 13
+# Subtest: W-319-b1 behaviour 1: an architect spec signature's ledger covers every Input domain row, or verdict refuses
+not ok 1 - W-319-b1 behaviour 1: an architect spec signature's ledger covers every Input domain row, or verdict refuses
+  ---
+  duration_ms: 21.115355
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-319/packages/cli/src/verdict-citation.test.ts:41:1929'
+  failureType: 'testCodeFailure'
+  error: |-
+    no ledger line: exit (stderr "")
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-319/packages/cli/src/verdict-citation.test.ts:520:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-319/packages/cli/src/verdict-citation.test.ts:533:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29.015197

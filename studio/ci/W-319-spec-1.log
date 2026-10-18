@@ -1,0 +1,25 @@
+# opus: W-319
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T15:47:13.880Z
+# tree: tree:d5687c52d145823ba74982252fd5d30fc6b93d18
+# brief: briefs/W-319.md blob:a192ec5d4169f25678a1e5e58f512af21482b08d
+# ticket: {"opus":"W-319","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"11c41ac88be8cd99008d392075f7acdd8388bf80","brief":"a192ec5d4169f25678a1e5e58f512af21482b08d","at":"2026-10-18T15:46:43.216Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-319-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — design: the reader ledger is W-306's file and reader extended, not a parallel one (D-042): each Input domain row, as brief admission's table lookup reads it (`domainTable`, shared with `inputDomainProblems`), needs a counting ledger line (`brief:<n>`, a `<file>:<line>`, `holds` or `scoped`), and the writer refuses the design magister's spec signature otherwise; a refusal, not a warning (brief Defaults 1), with W-306's D-076 D demotion rule — check: brief:15, prototype-src.diff
+2. advisory — the class's findings replayed on their signing briefs and cited ledgers: six of seventeen are refused at the finding's row, the three S1s among them, but only W-292 #1 and W-312 #2 lack a line of their own; W-316 #1 is refused on citation form only and its row 124 line counts, so the check does not catch it; the eleven others are not caught; each stated as a limit (brief:19 to brief:23, brief:62 to brief:65) — check: s1-census.out, ledger-census.out
+3. advisory — the red fails by assertion on master 2f279556 with the final row (`no ledger line: exit (stderr "")`), accepted by the host replay classifier; the row passes on the prototype, and each of four mutants fails it — check: red-b1-master.out, red-accept.out, proto-b1.out, mutants.out
+4. advisory — must-stay-green on the prototype: next.test.ts 113 of 114 unedited, the one failure W-196-b4 at its ledgerless `promise` signature, which passes with the edit Files owned names; verdict-citation 30, verdict-findings 13, verdict.test 44 checks, brief-admission 60, red-order 32, containment 65 with no pin change, safe-helpers 10, ci-scope 18 — check: next-unedited-proto.out, w196-flip-proto.out, neighbours-proto.out
+5. advisory — the Codex test check lists one flip, W-196-b4, now named in Files owned and Acceptance (its Unnamed entry is closed by that edit); its must-stay-green rows pass in the runs above — check: fixture-census.md
+6. advisory — the brief passes admission and the officina check; its ledger covers the one promise line and every Input domain row under the prototype's writer; lint, format and typecheck pass on the touched files — check: admission.out, check-studio.out, ledger-check.out, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-319.md` (blob a192ec5d), master 2f279556.
