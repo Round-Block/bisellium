@@ -877,3 +877,37 @@ test("W-178-b3 one new, exact record admits its drop and nothing else", { timeou
   for (const [label, ledger] of malformed) oneRowBlock(await rowFindings(branched(`b3-bad`, three, lowerWith(ledger))), LEDGER, /./, label);
   oneRowBlock(await rowFindings(branched("b3-bad-base", { ...three, [LEDGER]: "drops: [\n" }, lowerWith(ledgerOf(RECORD)))), LEDGER, /./, "a malformed ledger at the base");
 });
+
+test("W-178-b4 the rule runs from check --repo beside test.sleep", { timeout: 600_000 }, async () => {
+  const three = { "a.test.ts": rowsOf(3) };
+  const off = officina();
+  const dropped = branched("b4-drop", three, (r) => put(r, "a.test.ts", rowsOf(2)));
+
+  const blocked = cli(["check", off, "--repo", dropped]);
+  assert.equal(blocked.status, 1, `the 3 to 2 fixture exits 1\n${blocked.out}`);
+  assert.ok(blocked.out.includes("test.rows") && blocked.out.includes("a.test.ts"), `output names the rule and the path\n${blocked.out}`);
+  put(dropped, LEDGER, ledgerOf(RECORD));
+  const admitted = cli(["check", off, "--repo", dropped]);
+  assert.equal(admitted.status, 0, `with the record it exits 0\n${admitted.out}`);
+  assert.ok(!admitted.out.includes("test.rows"), "no test.rows line once the record is there");
+
+  // both rules report from one run
+  const both = branched("b4-both", three, (r) => {
+    lowerWith(ledgerOf({ ...RECORD, path: "other.test.ts" }))(r);
+    put(r, "s.test.ts", code([RUNNER_IMPORT, SITE]));
+  });
+  const twice = cli(["check", off, "--repo", both]);
+  assert.equal(twice.status, 1, `an unannotated wait and a drop exit 1\n${twice.out}`);
+  assert.ok(twice.out.includes("test.sleep") && twice.out.includes("s.test.ts:2"), `the sleep finding is there\n${twice.out}`);
+  assert.ok(twice.out.includes("test.rows") && twice.out.includes("a.test.ts"), `the row finding is there\n${twice.out}`);
+
+  // neither rule runs without --repo
+  const noRepo = cli(["check", off]);
+  assert.equal(noRepo.status, 0, `without --repo the rules do not run\n${noRepo.out}`);
+  assert.ok(!noRepo.out.includes("test.rows") && !noRepo.out.includes("test.sleep"), "no rule line without --repo");
+
+  // the real repository holds its row counts
+  const mod = await rowsModule();
+  assert.equal(typeof mod.testRowFindings, "function", "rules/tests.ts exports testRowFindings");
+  assert.deepEqual(mod.testRowFindings!(REPO_ROOT), [], "the real repository has no test.rows finding");
+});
