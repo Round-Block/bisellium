@@ -131,6 +131,12 @@ export function inputDomainRows(briefText: string): number[] {
 /** W-322: a pin names the test row and an assertion text that exercise a ruled case: pinned by `<row>` "<assertion>". */
 const PIN = /(?<![\w-])[Pp]inned by `([^`]*[^`\s][^`]*)` "([^"]*[^"\s][^"]*)"/g;
 const UNPINNED = /(?<![\w-])unpinned(?![\w-])/i;
+/** W-322 (D-085 D): a Valid domain of any text or any string, and the forms clause such a row holds: "recognises", the
+ *  forms (code spans, or `brief:<n>` and `brief:<a>-<b>` citations of the lines that list them), then "every other form"
+ *  and "limit". */
+const ANY_TEXT = /(?<![\w-])any (?:text|string)(?![\w-])/i;
+const FORMS = /(?<![\w-])recogni[sz]es(?![\w-])(.*?)(?<![\w-])every other form(?![\w-]).*?(?<![\w-])limits?(?![\w-])/i;
+const GRAMMAR_CITE = /(?<![\w./~-])brief:([1-9]\d*)(?:-([1-9]\d*))?(?![\w/~-]|\.[\w./~-])/g;
 
 /** W-322: one pin: the test row's name and a text of the assertion that exercises the case. */
 export interface Pin {
@@ -154,7 +160,18 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
   const cases: RuledCase[] = [];
   const formless: number[] = [];
   for (const n of inputDomainRows(briefText)) {
-    cases.push({ line: n, row: n, pins: pinsOf(n), unpinned: UNPINNED.test(real[n - 1]!) });
+    const text = real[n - 1]!;
+    cases.push({ line: n, row: n, pins: pinsOf(n), unpinned: UNPINNED.test(text) });
+    if (!ANY_TEXT.test(cellsOf(text)[1] ?? "")) continue;
+    const clause = FORMS.exec(text)?.[1];
+    // a cited range ends at the brief's last line; a start past it is one line, which holds no pin
+    const cited = [...(clause ?? "").matchAll(GRAMMAR_CITE)].flatMap((m) => {
+      const a = Number(m[1]);
+      const b = Math.max(a, Math.min(Number(m[2] ?? a), real.length));
+      return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+    });
+    if (clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause))) formless.push(n);
+    for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
   }
   return { cases, formless };
 }

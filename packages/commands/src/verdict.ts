@@ -396,7 +396,8 @@ function readDesignMagister(manifest: unknown): { magister: string } | { error: 
  * (`ready`, `next`) is a promise line; the signature's raw lines before its one level-2 Findings heading (as `contentLines` finds
  * it) then cite one ledger file, and for each promise line and each verb on it some ledger line holds the whole tokens
  * `brief:<n>` and `<file>:<line>`, the verb and holds or scoped. W-319: so does each Input domain row (a reader), with no verb.
- * W-322: each row also holds a pin (`ruledCases`), or says unpinned and its ledger line is scoped.
+ * W-322: each row also holds a pin (`ruledCases`), or says unpinned and its ledger line is scoped; a row ruling any text
+ * or any string lists the forms it recognises, and each grammar line it cites holds a pin.
  * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
  */
 function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
@@ -457,11 +458,15 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const c of cases) {
     if (c.pins.length > 0) continue;
     const covering = entries.filter((e) => e.counts && e.briefs.has(c.line));
-    if (!c.unpinned)
+    if (c.line !== c.row)
+      problems.push(`brief:${c.line} is a grammar line brief:${c.row} recognises, with no pin: name its test row and assertion ${PIN_FORM}`);
+    else if (!c.unpinned)
       problems.push(`brief:${c.line} is an Input domain row with no pin: name the test row and assertion that exercise it ${PIN_FORM}, or say unpinned (a stated limit, scoped in the ledger)`);
     else if (covering.length > 0 && !covering.some((e) => SCOPED.test(e.text)))
       problems.push(`brief:${c.line} says unpinned, and no ledger line cites brief:${c.line} as scoped`);
   }
+  for (const n of formless)
+    problems.push(`brief:${n} rules any text or any string and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"`);
   return problems;
 }
 
