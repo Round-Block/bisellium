@@ -1158,7 +1158,12 @@ merge.
 code with comments and string and template contents blanked, a registration is
 `test(` or `it(` (and their `.skip`, `.only`, `.todo` forms, not preceded by `.`
 or an identifier character) in a file that imports `node:test` or
-`@playwright/test`. A PASS/FAIL reporter is a function whose body holds `PASS`,
+`@playwright/test`: a static `import ... from`, a side-effect `import`, a dynamic
+`import(...)` or a `require(...)` whose one literal is exactly that module name,
+where `import` and `require` are free identifiers (not `x.require(`, `x?.import(`
+or `new require(`). A type-only `import type`, an `export ... from`, a call
+inside a comment, string or template, and a longer name such as `node:testing`
+do not count. A PASS/FAIL reporter is a function whose body holds `PASS`,
 `FAIL` and a `console.log`, `console.error` or `process.stdout.write`; it weighs
 1. A wrapper is a function whose body calls registrations or weighted functions;
 it weighs their sum (resolved over up to four rounds). A body runs from its
@@ -1169,7 +1174,8 @@ outside every weighted function's body, each call times its weight.
 Limit: rows are counted statically, so a weakened row, a row traded for another,
 a row inside a loop (one site) and data removed behind one registration do not
 lower the count. `t.test` subtests, `describe` and reflective or generated
-registrations are not counted. A hand-formatted body can be measured wrong, in
+registrations are not counted. Scopes are not tracked: a local binding named
+`require` is taken for the module system's. A hand-formatted body can be measured wrong, in
 the base and the working tree alike.
 
 **The record.** `test/row-drops.yml` is absent until a drop needs it; W-178 does

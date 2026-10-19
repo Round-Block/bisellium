@@ -781,6 +781,7 @@ const EDGES: [string, string[], boolean][] = [
   ["edge 42 a longer Playwright name", ['import { test } from "@playwright/testing";'], false],
   ["edge 42 a Playwright scope alone", ['import { test } from "@playwright/";'], false],
   ["edge 43 a runner import after commented and unrelated imports", ['// import a from "node:test";', 'import b from "other";', 'import { test } from "node:test";'], true],
+  ["edge 45 a bare require beside a string statement", ["const r = require", '"node:test";'], false],
   ["edge 44 a require with unmatched quotes", ['const test = require("node:test\');', "const u = 1;"], false],
   ["edge 44 a side-effect import with unmatched quotes", ['import "node:test\';', "const u = 1;"], false],
 ];

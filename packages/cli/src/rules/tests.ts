@@ -249,8 +249,39 @@ const DEFINITION =
   /^(\s*)(?:export\s+)?(?:(?:async\s+)?function\s*\*?\s*([\w$]+)\s*\(|(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>))/;
 const REGISTRATION = /(?<![\w$.])(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(/g;
 const RUNNERS = new Set(["node:test", "@playwright/test"]);
-// An import site in code (strings blanked, so never inside a string): the quote that opens the module specifier it owns.
-const IMPORT_SITE = /\bfrom\s*(["'])|\bimport\s*(["'])|\b(?:require|import)\s*\(\s*(["'])/g;
+// An import site, scanned in comment-free code with strings blanked (so never inside a comment, string or template).
+// `import` or `require` must be a free identifier: no identifier character before it, not a member (`x.require(`,
+// `x?.import(`; `...require(` is a spread) and not `new require(`. It owns the one module literal it names.
+const KEYWORD = /(?<![\p{ID_Continue}$])(?:import|require)/gu;
+const MEMBER_OR_NEW = /(?:(?<!\.\.)\.|(?<![\w$])new)$/;
+const CALL = /\s*\(\s*(["'`])/y; // import("m"), require("m")
+const SIDE_EFFECT = /\s*(["'])/y; // import "m"
+const TYPE_ONLY = /\s*type(?![\w$,])(?!\s*from\b)/y; // import type ... : erased, loads no runner
+const STATIC = /[\w$\s,{}*]*?\bfrom\s*(["'])/y; // import <clause> from "m", the clause over any lines
+const AFTER_MODULE = /\s*[,)]/y;
+
+/** The module names imported or required by the free sites of `code`; `plain` is the same text with string contents. */
+function importedModules(code: string, plain: string): Set<string> {
+  const mods = new Set<string>();
+  const at = (re: RegExp, from: number): RegExpExecArray | null => {
+    re.lastIndex = from;
+    return re.exec(code);
+  };
+  for (const key of code.matchAll(KEYWORD)) {
+    let back = key.index;
+    while (back > 0 && /\s/.test(code[back - 1]!)) back--;
+    if (MEMBER_OR_NEW.test(code.slice(Math.max(0, back - 4), back))) continue;
+    const from = key.index + key[0].length;
+    const call = at(CALL, from);
+    const site = call ?? (key[0] === "require" ? null : (at(SIDE_EFFECT, from) ?? (at(TYPE_ONLY, from) ? null : at(STATIC, from))));
+    if (!site) continue;
+    const open = from + site[0].length;
+    const close = code.indexOf(site[0].at(-1)!, open);
+    if (close < 0 || (call && !at(AFTER_MODULE, close + 1))) continue;
+    mods.add(plain.slice(open, close));
+  }
+  return mods;
+}
 const PRINTS = /console\.(?:log|error)|process\.std(?:out|err)\.write/;
 const WRAPPER_ROUNDS = 4;
 
@@ -260,14 +291,8 @@ export function countTestRows(text: string): number {
   const code = lex(text, { blankStrings: true }).map((l) => l.code);
   // comments are gone from both views; `plain` keeps string contents (PASS, FAIL, a module name), `code` blanks them
   const plain = lex(text).map((l) => l.code);
-  // the runner is the module specifier of one import site; nothing else on the line takes part
-  const runner = code.some((l, i) =>
-    [...l.matchAll(IMPORT_SITE)].some((m) => {
-      const open = m.index + m[0].length;
-      const close = l.indexOf(m[0].at(-1)!, open);
-      return close >= 0 && RUNNERS.has(plain[i]!.slice(open, close));
-    }),
-  );
+  // the runner is the module of one free import or require site; nothing else on the line takes part
+  const runner = [...importedModules(code.join("\n"), plain.join("\n"))].some((m) => RUNNERS.has(m));
   const registrations = (lines: string[]): number => (runner ? lines.reduce((n, l) => n + (l.match(REGISTRATION)?.length ?? 0), 0) : 0);
   const calls = (name: string, lines: string[]): number => {
     const re = new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}\\s*\\(`, "g");
