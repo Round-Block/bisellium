@@ -14,13 +14,13 @@ export default defineConfig({
   retries: process.env["CI"] ? 2 : 0,
   reporter: "list",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: `http://127.0.0.1:${PORT}`,
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `npm run dev -- --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}`,
+    command: `npm run dev -- --host 127.0.0.1 --port ${PORT} --strictPort`,
+    url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: !process.env["CI"],
     timeout: 30_000,
   },
