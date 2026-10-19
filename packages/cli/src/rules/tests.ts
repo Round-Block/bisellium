@@ -301,7 +301,7 @@ export function countTestRows(text: string): number {
   const runner = [...importedModules(code.join("\n"), plain.join("\n"))].some((m) => RUNNERS.has(m));
   const registrations = (lines: string[]): number => (runner ? lines.reduce((n, l) => n + (l.match(REGISTRATION)?.length ?? 0), 0) : 0);
   const calls = (name: string, lines: string[]): number => {
-    const re = new RegExp(String.raw`(?<!${ID}|\.)${name.replace(/\$/g, "\\$")}\s*\(`, "gu");
+    const re = new RegExp(String.raw`(?<!${ID}|\.)${escapeRegExp(name)}\s*\(`, "gu");
     return lines.reduce((n, l) => n + (l.match(re)?.length ?? 0), 0);
   };
 

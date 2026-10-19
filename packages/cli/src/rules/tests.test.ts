@@ -707,6 +707,7 @@ const GRAMMAR: [string, string[], number][] = [
   ["reporter words only in comments make no reporter", ["function row(name, ok) {", '  // console.log(ok ? "PASS" : "FAIL", name);', "  return name;", "}", 'row("a", true);', 'row("b", false);'], 0],
   ["a block comment holding the reporter words makes no reporter", ["function row(name, ok) {", '  /* PASS FAIL */ console.log(name);', "}", 'row("a", true);'], 0],
   ["an empty file counts nothing", [], 0],
+  ["a wrapper with a $ in its name still counts its calls", [RUNNER_IMPORT, "function $row(n) {", "  test(n, () => {});", "}", '$row("a");', '$row("b");'], 2],
   ["edge 53 a wrapper with a non-ASCII name", [RUNNER_IMPORT, "function ŕow(n) {", "  test(n, () => {});", "}", 'ŕow("a");', 'ŕow("b");'], 2],
   ["edge 53 a const-arrow wrapper with a non-ASCII name", [RUNNER_IMPORT, "const ŕow = (n) => {", "  test(n, () => {});", "};", 'ŕow("a");', 'ŕow("b");'], 2],
   ["edge 53 an arrow wrapper with a non-ASCII parameter", [RUNNER_IMPORT, "const row = ñ => {", "  test(ñ, () => {});", "};", 'row("a");', 'row("b");'], 2],
