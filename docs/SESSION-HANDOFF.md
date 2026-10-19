@@ -68,6 +68,8 @@ W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
 - W-324 — a spec round counts as one architect signature plus its review (backlog: a Patron decision point, deferred 2026-10-19; it does not break the workflow, since the caps and the loop hold already count reviews).
+- W-328 — `next` orders a re-review when a failed build round's fix is evidence-only, outside the source tree (backlog, D-086 B's enforcement; found when W-179's timing rerun could not reach review without a brief correction).
+- W-327 — a pull request's checks that run nothing on a PR show as skipped, named for the merge queue that runs them, not as a 0-3 s pass (backlog; Patron 2026-10-19).
 - W-326 — the branch replay of the architect's staged prototype as a kept script, a builder only for fix rounds (backlog, D-086: trial once W-179 and W-297 are measured).
 - W-321 — the review packet builds a later spec round even when the previous round's packet was never built (backlog; found when a spec review's round 10 needed a hand rebuild).
 - W-288 part 2 — the ADOPTION editorial cut: ids and round narrative out, limits kept, caps lowered (D-083 B).
