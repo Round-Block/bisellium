@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, test } from "node:test";
 import { parseVerdictHeader } from "@bisellium/commands/opus-model.js";
+import { ruledCases } from "@bisellium/commands/brief-admission.js";
 import { runReview } from "./lifecycle.js";
 import { runVerdict } from "./verdict.js";
 import { USAGE } from "@bisellium/commands/usage.js";
@@ -483,8 +484,9 @@ const ROWS_BRIEF = [
   "A rejection fails closed.",
   "| Record | Valid domain | Rejected by |",
   "|---|---|---|",
-  "| the flag | a string | `parseFlag`: exit 2 |",
-  "| the file | a regular file | `readIt`: exit 2 |",
+  // W-322: each row names its pinning test row and assertion
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b1` "exit 2" |',
+  '| the file | a regular file | `readIt`: exit 2, pinned by `W-300-b1` "exit 2" |',
   "",
   "| a second table | not | read |",
   "|---|---|---|",
@@ -560,4 +562,184 @@ test("W-319-b1 behaviour 1: an architect spec signature's ledger covers every In
     writeFileSync(join(dir, "briefs", "W-300.md"), text);
     admitted(`${name}: no ledger needed`, NO);
   }
+});
+
+// W-322: every ruled case names the test row and assertion that pin it; the design magister's signature is refused otherwise
+/** The W-319-b1 sign, ledger, refused and admitted steps for one brief, on a fresh officina with no design row. */
+function specSigner(brief: string): {
+  refused: (name: string, body: string, stderr: string) => void;
+  admitted: (name: string, body: string, sella?: string) => void;
+  cite: (text: string) => string;
+  setBrief: (text: string) => void;
+  NO: string;
+} {
+  const dir = studio();
+  const setBrief = (text: string): void => {
+    writeFileSync(join(dir, "briefs", "W-300.md"), text);
+    assert.equal(readFileSync(join(dir, "briefs", "W-300.md"), "utf8"), text, "the brief rewrite took");
+  };
+  setBrief(brief);
+  const log = join(dir, "ci", "W-300-spec-1.log");
+  let n = 0;
+  const sign = (body: string, sella: string): { exitCode: number; stderr: string; written: boolean } => {
+    const input = join(dir, `input-${++n}.md`);
+    writeFileSync(input, body);
+    const r = capture(() => runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }));
+    const written = existsSync(log);
+    if (written) rmSync(log);
+    return { exitCode: r.result.exitCode, stderr: r.stderr, written };
+  };
+  const NO = findings("advisory — fine");
+  const cite = (text: string): string => {
+    const p = join(dir, `ledger-${++n}.md`);
+    writeFileSync(p, text);
+    return `Promise ledger: ${p}\n\n${NO}`;
+  };
+  const refused = (name: string, body: string, stderr: string): void => {
+    const r = sign(body, "architect");
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.equal(r.stderr, stderr, `${name}: stderr`);
+  };
+  const admitted = (name: string, body: string, sella = "architect"): void => {
+    const r = sign(body, sella);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, true, `${name}: the log is written`);
+  };
+  return { refused, admitted, cite, setBrief, NO };
+}
+const uncoveredRow = (line: number): string =>
+  `W-300: promise ledger: brief:${line} is an Input domain row, and no ledger line cites brief:${line} with a <file>:<line> and holds or scoped\n`;
+
+const PIN_6 = 'pinned by `W-300-b1` "flag: exit 2"';
+const PINS_BRIEF = [
+  "# W-300 fixture brief",
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  `| the flag | a string | \`parseFlag\`: exit 2, ${PIN_6} |`,
+  '| the file | a regular file | `readIt`: exit 2, Pinned by `W-300-b1` "file: exit 2" and pinned by `W-300-b2` "no log" |',
+  "| the job | its step exits 0 | runner: `gates` fails the merge; unpinned |",
+  "## Behaviours to test",
+  "",
+].join("\n");
+const ROW_8 = "brief:8, the job: .github/workflows/ci.yml:20 gates — scoped";
+const PINS_COVERING = ["brief:6, the flag: packages/x.ts:5 parseFlag exits 2 — holds", "brief:7, the file: packages/x.ts:12 readIt exits 2 — holds", ROW_8].join("\n");
+
+test("W-322-b1 behaviour 1: an architect spec signature is refused for an Input domain row that names no pinning test row and assertion", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(PINS_BRIEF);
+  const noPin = (line: number): string =>
+    `W-300: promise ledger: brief:${line} is an Input domain row with no pin: name the test row and assertion that exercise it as pinned by \`<row>\` "<assertion>", or say unpinned (a stated limit, scoped in the ledger)\n`;
+  const notScoped = (line: number): string => `W-300: promise ledger: brief:${line} says unpinned, and no ledger line cites brief:${line} as scoped\n`;
+
+  // the row with no pin, and each malformed pin, is refused at that row; every other row stands
+  for (const [name, pin] of [
+    ["no pin", ""],
+    ["no backticks round the row", 'pinned by W-300-b1 "flag: exit 2"'],
+    ["no quotes round the assertion", "pinned by `W-300-b1` flag: exit 2"],
+    ["an empty assertion", 'pinned by `W-300-b1` ""'],
+    ["a blank row name", 'pinned by ` ` "flag: exit 2"'],
+    ["a word run into it", 'repinned by `W-300-b1` "flag: exit 2"'],
+    ["the pin in an HTML comment", `<!-- ${PIN_6} -->`],
+  ] as const) {
+    setBrief(PINS_BRIEF.replace(PIN_6, pin));
+    refused(`row 6 with ${name}`, cite(PINS_COVERING), noPin(6));
+  }
+  setBrief(PINS_BRIEF.replace(PIN_6, "").replace(/, Pinned by .*" \|$/m, " |"));
+  refused("rows 6 and 7 with no pin, in row order", cite(PINS_COVERING), noPin(6) + noPin(7));
+  refused("an uncovered row with no pin: its coverage problem, then its pin problem", cite(PINS_COVERING.replace("brief:7,", "brief:70,")), uncoveredRow(7) + noPin(6) + noPin(7));
+
+  // unpinned is a stated limit: its covering ledger line says scoped
+  setBrief(PINS_BRIEF);
+  refused("an unpinned row covered as holds", cite(PINS_COVERING.replace(ROW_8, ROW_8.replace("scoped", "holds"))), notScoped(8));
+  refused("an unpinned row covered by no line: the W-319 problem only", cite(PINS_COVERING.replace(ROW_8, "")), uncoveredRow(8));
+  refused("an empty ledger: coverage only, the pins stand", cite(""), uncoveredRow(6) + uncoveredRow(7) + uncoveredRow(8));
+  admitted("every row pinned or unpinned and scoped, two pins on one row, a capital P", cite(PINS_COVERING));
+  setBrief(PINS_BRIEF.replace(PIN_6, `${PIN_6} (an ordinary edit: a comment after it)`));
+  admitted("a pin followed by prose", cite(PINS_COVERING));
+  setBrief(PINS_BRIEF.replace(PIN_6, ""));
+  admitted("another seat's spec verdict needs no pin", NO, "qa-lead");
+});
+
+const GRAMMAR_BRIEF = [
+  "# W-300 fixture brief",
+  "## Interfaces",
+  '- a static `import` from the runner, pinned by `W-300-b1` "static import"',
+  '- a free `require` call, pinned by `W-300-b1` "require call"',
+  '- a dynamic `import(` call, pinned by `W-300-b1` "dynamic import"',
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  '| the source | any text; recognises the forms on brief:3-4 and brief:5; every other form is a limit | `count`: never errors, pinned by `W-300-b1` "counts" |',
+  '| the name | any string; recognises `a-z` and `0-9`, every other form a limit | `name`: exit 2, pinned by `W-300-b2` "name" |',
+  '| the file | a regular file | `readIt`: exit 2 on any text it cannot decode, pinned by `W-300-b3` "file" |',
+  "## Behaviours to test",
+  "",
+].join("\n");
+const SOURCE_DOMAIN = "any text; recognises the forms on brief:3-4 and brief:5; every other form is a limit";
+const GRAMMAR_COVERING = [10, 11, 12].map((n) => `brief:${n}, a reader: packages/x.ts:${n} exits 2 — holds`).join("\n");
+
+test("W-322-b2 behaviour 2: a row ruling any text or any string lists the forms it recognises, each cited grammar line pinned, or the signature is refused", () => {
+  const { refused, admitted, cite, setBrief } = specSigner(GRAMMAR_BRIEF);
+  const grammar = (line: number, row: number): string =>
+    `W-300: promise ledger: brief:${line} is a grammar line brief:${row} recognises, with no pin: name its test row and assertion as pinned by \`<row>\` "<assertion>"\n`;
+  const formless = (row: number): string =>
+    `W-300: promise ledger: brief:${row} rules any text or any string and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"\n`;
+  const ledger = cite(GRAMMAR_COVERING);
+
+  // each line a forms clause cites, singly or in a range, holds its own pin; unpinned does not excuse a grammar line
+  for (const [name, from, to, line] of [
+    ["the range's first line", 'pinned by `W-300-b1` "static import"', "", 3],
+    ["the range's last line", 'pinned by `W-300-b1` "require call"', "unpinned", 4],
+    ["a single citation", 'pinned by `W-300-b1` "dynamic import"', "", 5],
+  ] as const) {
+    setBrief(GRAMMAR_BRIEF.replace(from, to));
+    refused(`a grammar line with no pin: ${name}`, ledger, grammar(line, 10));
+  }
+  setBrief(GRAMMAR_BRIEF.replace("brief:5;", "brief:13;"));
+  refused("a cited line holding no pin (the Behaviours heading)", ledger, grammar(13, 10));
+
+  // the forms clause: recognises, at least one form, then every other form and limit, in that order
+  for (const [name, domain] of [
+    ["no recognises", "any text; the forms on brief:3-4 and brief:5; every other form is a limit"],
+    ["no every other form", "any text; recognises the forms on brief:3-4 and brief:5"],
+    ["no limit", "any text; recognises the forms on brief:3-4 and brief:5; every other form is counted"],
+    ["no form", "any text; recognises whatever it is given; every other form is a limit"],
+    ["a malformed citation only", "any text; recognises brief:3to4; every other form is a limit"],
+    ["the limit before the forms", "any text; every other form is a limit; recognises brief:3"],
+  ] as const) {
+    setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, domain));
+    refused(`a source row with ${name}`, ledger, formless(10));
+  }
+  setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, "Any Text, as given").replace("any string; recognises `a-z` and `0-9`,", "any string, as given,"));
+  refused("both rows formless, Any Text capitalised, in row order", ledger, formless(10) + formless(11));
+  setBrief(GRAMMAR_BRIEF.replace("recognises the forms", "recognizes the forms").replace("is a limit", "are limits"));
+  admitted("recognizes and limits spelled otherwise", ledger);
+
+  // a range beginning beyond the last line clamps to the last line; a pin there admits it
+  const BEYOND = "any text; recognises brief:999-1000; every other form is a limit";
+  setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, BEYOND));
+  refused("a range beginning beyond the last line clamps to it", ledger, grammar(14, 10));
+  setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, BEYOND) + 'a last line, pinned by `W-300-b1` "last"');
+  admitted("a pin on the last line admits a range beginning beyond it", ledger);
+
+  // a ruled case holds exactly the keys line, row, pins and unpinned
+  const { cases } = ruledCases(GRAMMAR_BRIEF);
+  assert.ok(cases.length > 0, "the brief has cases");
+  for (const c of cases) assert.deepEqual(Object.keys(c).sort(), ["line", "pins", "row", "unpinned"], "a case has exactly the keys line, row, pins and unpinned");
+
+  // a row citing its own line is reported as a grammar line, after its row problem
+  const SELF_ROW = GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, "any text; recognises brief:10; every other form is a limit").replace(', pinned by `W-300-b1` "counts"', "");
+  setBrief(SELF_ROW);
+  refused(
+    "a self-cited row is reported as a grammar line",
+    ledger,
+    `W-300: promise ledger: brief:10 is an Input domain row with no pin: name the test row and assertion that exercise it as pinned by \`<row>\` "<assertion>", or say unpinned (a stated limit, scoped in the ledger)\n` + grammar(10, 10),
+  );
+
+  // any text outside the Valid domain cell, or no any text at all, needs no forms clause
+  setBrief(GRAMMAR_BRIEF);
+  admitted("every form listed and pinned; any text in a Rejected by cell", ledger);
 });

@@ -1,0 +1,23 @@
+# opus: W-322
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1539f-e08e-7fd1-94ba-caec40e5b7b5
+# outcome: failed
+# at: 2026-10-19T10:44:00.128Z
+# tree: tree:aa77004ab77b40b2cd3efe4a9b4f70b79d02fb67
+# brief: briefs/W-322.md blob:591e93f9e9c356bacfb1aa885e2b07bfd042fea9
+# ticket: {"opus":"W-322","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-322/studio","head":"92b6d2a73167b987d58f0dbb929cadfbae52a049","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T10:43:59.013Z"}
+
+## Findings
+1. blocking — packages/commands/src/brief-admission.ts:150 The fix adds an observable required `grammar` member to exported `RuledCase` and every object returned by `ruledCases`, but brief:35 declares the shape as `{ line, row, pins, unpinned }`; preserve that interface or revise and re-sign the spec. [class: spec×fix-opens-new-surface] — check: packages/cli/src/brief-admission.test.ts (assert the exact keys returned for row and grammar cases)
+2. advisory — scripts/review-packet.mjs:195 Reached by ci/W-322-review-1.log #2’s class: the packet now branches on `c.grammar`, but the added regression exercises only the verdict consumer; `W-322-b3` never self-cites, so the packet’s corrected grammar-line label remains unpinned. [class: tests×ruled-case-uncovered] — check: scripts/review-packet.test.mjs (`W-322-b3`: a self-cited row is listed as a grammar line)
+
+## Earlier findings
+- ci/W-322-review-1.log #1: closed — packages/commands/src/brief-admission.ts:170 now clamps an out-of-range start to the final line, and `W-322-b2` covers refusal without its pin and admission with it.
+- ci/W-322-review-1.log #2: closed — packages/commands/src/verdict.ts:461 and scripts/review-packet.mjs:195 now distinguish self-cited grammar cases, while `W-322-b2` asserts the writer’s grammar-line diagnostic.
+
+## Verdict
+The earlier defects are fixed, but the fix changes the signed exported interface.
+VERDICT: FAIL

@@ -1,0 +1,59 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-322-b3\s --import tsx scripts/review-packet.test.mjs
+# exit: 1
+# at: 2026-10-19T09:43:33.863Z
+# sella: builder.W-322
+# tree: tree:995956730eeba7b77a275b4a1f1147a60e854de6
+# ticket: {"opus":"W-322","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-322/studio","head":"aea1c14952e628b87ce2ac203e8df854bd4d63ec","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T09:43:33.145Z"}
+
+TAP version 13
+# Subtest: W-322-b3 behaviour 3: a build packet's facts list the ruled cases no pin of theirs finds in the source diff
+not ok 1 - W-322-b3 behaviour 3: a build packet's facts list the ruled cases no pin of theirs finds in the source diff
+  ---
+  duration_ms: 472.103366
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-322/scripts/review-packet.test.mjs:565:1'
+  failureType: 'testCodeFailure'
+  error: 'the build facts carry the block'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    == next W-1
+    /home/linuxbrew/.linuxbrew/Cellar/node/25.9.0_2/bin/node --import tsx /home/edckt/agents/bisellium/.worktrees/W-322/packages/cli/src/main.ts next W-1 --budget 400000 --studio /tmp/claude-1000/bisellium-w215-packet-uy5mFS/repo/studio --repo /tmp/claude-1000/bisellium-w215-packet-uy5mFS/repo
+    next: W-1 spec named
+    actor: architect
+    why: briefs/W-1.md is missing or lacks the six design-lex sections
+    head: opus/W-1 d1eee002ea5f
+    role: architect
+    sella: architect
+    boot: bisellium context --sella architect --studio studio
+    budget_tokens: 400000
+    phase: spec
+    round: 1
+    inputs: briefs/W-1.md, opera/W-1.md#traditio
+    command: dispatch architect to sign the spec for W-1; close out with: bisellium verdict W-1 --round 1 --sella architect --outcome passed --phase spec --studio studio
+    health: no step recorded
+    exit 0
+    
+    == brief admission W-1
+    briefAdmissionProblems(W-1)
+    (none)
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-322/scripts/review-packet.test.mjs:598:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 481.916613

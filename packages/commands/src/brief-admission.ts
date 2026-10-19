@@ -128,6 +128,54 @@ export function inputDomainRows(briefText: string): number[] {
   return run.slice(2).map((_, i) => at + 3 + i);
 }
 
+/** W-322: a pin names the test row and an assertion text that exercise a ruled case: pinned by `<row>` "<assertion>". */
+const PIN = /(?<![\w-])[Pp]inned by `([^`]*[^`\s][^`]*)` "([^"]*[^"\s][^"]*)"/g;
+const UNPINNED = /(?<![\w-])unpinned(?![\w-])/i;
+/** W-322 (D-085 D): a Valid domain of any text or any string, and the forms clause such a row holds: "recognises", the
+ *  forms (code spans, or `brief:<n>` and `brief:<a>-<b>` citations of the lines that list them), then "every other form"
+ *  and "limit". */
+const ANY_TEXT = /(?<![\w-])any (?:text|string)(?![\w-])/i;
+const FORMS = /(?<![\w-])recogni[sz]es(?![\w-])(.*?)(?<![\w-])every other form(?![\w-]).*?(?<![\w-])limits?(?![\w-])/i;
+const GRAMMAR_CITE = /(?<![\w./~-])brief:([1-9]\d*)(?:-([1-9]\d*))?(?![\w/~-]|\.[\w./~-])/g;
+
+/** W-322: one pin: the test row's name and a text of the assertion that exercises the case. */
+export interface Pin {
+  row: string;
+  assertion: string;
+}
+/** W-322: a ruled case: an Input domain row (`row` is `line`), or a grammar line that row's forms clause cites (a row's own case comes first, then its cited lines, each carrying that row as `row`). */
+export interface RuledCase {
+  line: number;
+  row: number;
+  pins: Pin[];
+  unpinned: boolean;
+}
+
+/** W-322: the brief's ruled cases in brief order, each with the pins its real line holds; `formless`, the rows whose
+ *  Valid domain says any text or any string and which hold no forms clause. Text only, like `inputDomainRows`. */
+export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[] } {
+  const real = realLines(briefText);
+  const pinsOf = (n: number): Pin[] =>
+    [...(real[n - 1] ?? "").matchAll(PIN)].map((m) => ({ row: m[1]!, assertion: m[2]! }));
+  const cases: RuledCase[] = [];
+  const formless: number[] = [];
+  for (const n of inputDomainRows(briefText)) {
+    const text = real[n - 1]!;
+    cases.push({ line: n, row: n, pins: pinsOf(n), unpinned: UNPINNED.test(text) });
+    if (!ANY_TEXT.test(cellsOf(text)[1] ?? "")) continue;
+    const clause = FORMS.exec(text)?.[1];
+    // a cited range is clamped to the brief's last line: a start past it cites the last line alone
+    const cited = [...(clause ?? "").matchAll(GRAMMAR_CITE)].flatMap((m) => {
+      const a = Math.min(Number(m[1]), real.length);
+      const b = Math.max(a, Math.min(Number(m[2] ?? a), real.length));
+      return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+    });
+    if (clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause))) formless.push(n);
+    for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
+  }
+  return { cases, formless };
+}
+
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
  *  domain and one rejecting function, and which says that a rejection fails closed; or one `None: <reason>` line.
  *  Shape only: the named function is not looked up. */

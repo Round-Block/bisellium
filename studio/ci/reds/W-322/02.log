@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-322-b2\s --import tsx packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-19T09:42:50.486Z
+# sella: builder.W-322
+# tree: tree:7673a0a0ed1fcf3d00d0d54bbcd16d92f571deec
+# ticket: {"opus":"W-322","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-322/studio","head":"83c3b82cb7a938d24b8ecd0b7b3f91d543e557ad","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T09:42:45.017Z"}
+
+TAP version 13
+# Subtest: W-322-b2 behaviour 2: a row ruling any text or any string lists the forms it recognises, each cited grammar line pinned, or the signature is refused
+not ok 1 - W-322-b2 behaviour 2: a row ruling any text or any string lists the forms it recognises, each cited grammar line pinned, or the signature is refused
+  ---
+  duration_ms: 20.650676
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-322/packages/cli/src/verdict-citation.test.ts:49:2609'
+  failureType: 'testCodeFailure'
+  error: |-
+    a grammar line with no pin: the range's first line: exit (stderr "")
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-322/packages/cli/src/verdict-citation.test.ts:599:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-322/packages/cli/src/verdict-citation.test.ts:698:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28.929622

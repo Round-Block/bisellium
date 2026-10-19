@@ -152,6 +152,23 @@ pipe run shorter than three lines, while other admission failures can still
 yield rows; where `brief_behaviour_limit` is declared, `next` separately sends
 every inadmissible signed brief back.
 
+Each row also names the test that pins it (W-322): its line holds
+`` pinned by `<test row>` "<assertion text>" `` (one or more), or the word
+`unpinned`, and then a ledger line citing it says `scoped`. A row whose Valid
+domain says "any text" or "any string" (D-085 D) also holds a forms clause:
+"recognises", the forms it recognises as code spans or as `brief:<n>` or
+`brief:<a>-<b>` citations of the lines that list them, then "every other form"
+and "limit"; each cited line holds a pin of its own. The writer refuses the
+signature otherwise, one problem per row or line. The check reads words, not
+meaning: a row ruling text that does not say "any text" or "any string" needs no
+forms clause, and a pin's row and assertion are not looked up at signing. The
+build round's `facts.txt` (`scripts/review-packet.mjs`) then lists, under
+`== ruled cases with no pinning assertion in the diff`, each row or cited line
+none of whose pins is found in the source diff from the merge-base with master:
+a pin is found when one changed file's added lines hold its row name and its
+assertion text, anywhere in that file's added lines; an `unpinned` row and a
+pin to an unchanged test are listed too.
+
 For a build-phase, non-`ui` verdict (W-126) the writer reconciles each
 `blocking` finding with the opus's declared brief. A blocking finding stays
 blocking only when it cites a non-blank line of that brief, as `brief:<n>`,

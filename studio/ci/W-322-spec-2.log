@@ -1,0 +1,18 @@
+# opus: W-322
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15376-c2b2-7c71-aaff-6b7c523977f9
+# outcome: passed
+# at: 2026-10-19T09:24:58.847Z
+# tree: tree:f46acf79fe044919c84f677339ad1f682eb3824d
+# brief: briefs/W-322.md blob:591e93f9e9c356bacfb1aa885e2b07bfd042fea9
+# ticket: {"opus":"W-322","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"20c405435d4bf9660d1e1aff9784284a9cfe6fc7","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T09:24:58.405Z"}
+
+## Findings
+1. advisory — brief:84 [severity: S2] The row calls the ledger read reused and unchanged, but W-322 adds a read of the `scoped` status and rejects an `unpinned` row covered only as `holds`. Replace brief:84 with: | 3. The signature's citation line and the ledger file it names | exactly one `Promise ledger:` line above `## Findings`, naming a readable regular file of at most 256 KiB; citations and statuses are whole tokens, every Input domain row has a counting line, and every `unpinned` row's covering line says `scoped` | `promiseLedgerProblems` (specified, extending W-306/W-319): none, several, a bad path or file, an uncovered row, or an `unpinned` row without a `scoped` covering line is one problem, exit 2; pinned by `W-322-b1` "an unpinned row covered as holds" | [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts (`W-322-b1`)
+
+## Verdict
+The design is feasible and its changed readers fail closed; the sole finding corrects an overstatement already covered by the specified test.
+VERDICT: PASS

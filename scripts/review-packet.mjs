@@ -19,11 +19,12 @@ import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { briefAdmissionProblems } from "../packages/commands/src/lifecycle.ts";
-import { readBriefLimit } from "../packages/commands/src/brief-admission.ts";
+import { readBriefLimit, ruledCases } from "../packages/commands/src/brief-admission.ts";
 import { readContainedRegularFile } from "../packages/commands/src/opus-model.ts";
 import { readSequence } from "../packages/commands/src/verdict.ts";
 import { openStudio, safeItemPath } from "../packages/commands/src/writes.ts";
 import { handoffInputs, sessionHandoffFindings } from "../packages/cli/src/rules/process.ts";
+import { resolveTestBase } from "../packages/cli/src/rules/tests.ts";
 
 const CHECKOUT = dirname(dirname(fileURLToPath(import.meta.url)));
 const MAIN = join(CHECKOUT, "packages/cli/src/main.ts");
@@ -157,6 +158,55 @@ function admissionFact(studio, manifest, id, requireBrief) {
   return [...lines, ""].join("\n");
 }
 
+/**
+ * W-322: the block naming the brief's ruled cases (`ruledCases`) that no pin of theirs finds in the source diff: the
+ * change from the merge-base with master (`resolveTestBase`) to HEAD, outside the officina. A pin is found when one
+ * file's added lines hold its row name and, on the same or another added line, its assertion text. No base is stated,
+ * not refused.
+ */
+function pinFact(studio, repo, studioRel, id) {
+  const lines = [
+    "== ruled cases with no pinning assertion in the diff",
+    `ruledCases(briefs/${id}.md) against git diff <merge-base with master> HEAD, outside ${studioRel || "nothing"}`,
+  ];
+  const brief = readContainedRegularFile(studio, `briefs/${id}.md`, "briefs");
+  if ("error" in brief) refuse(`briefs/${id}.md cannot be read`);
+  const base = resolveTestBase(repo);
+  if ("error" in base) {
+    const why = base.error.replace(/; row counts not compared$/, "");
+    return [...lines, `no base: ${why}`, ""].join("\n");
+  }
+  const scope = studioRel === "" ? ["."] : [".", `:(exclude)${studioRel}`];
+  const diff = runGit(repo, ["diff", "--no-color", "--no-ext-diff", "--unified=0", base.base, "HEAD", "--", ...scope]);
+  const added = [];
+  let hunk = false;
+  for (const l of diff.split("\n")) {
+    if (l.startsWith("diff --git ")) {
+      hunk = false;
+      added.push([]);
+    } else if (l.startsWith("@@")) hunk = true;
+    else if (hunk && l.startsWith("+")) added.at(-1).push(l.slice(1));
+  }
+  const found = (pin) =>
+    added.some((file) => file.some((l) => l.includes(pin.row)) && file.some((l) => l.includes(pin.assertion)));
+  // a row's own case comes first; every later case with that row is a line its forms clause cites, even its own
+  const rowsSeen = new Set();
+  const open = ruledCases(brief.bytes.toString("utf8"))
+    .cases.map((c) => {
+      const grammar = rowsSeen.has(c.row);
+      rowsSeen.add(c.row);
+      return { c, grammar };
+    })
+    .filter(({ c }) => !c.pins.some(found))
+    .map(({ c, grammar }) => {
+      const what = grammar ? `grammar line of brief:${c.row}` : "Input domain row";
+      const pins = c.pins.map((p) => `pinned by \`${p.row}\` "${p.assertion}"`).join(", ");
+      const why = pins !== "" ? `${pins}: not in the diff` : c.unpinned && !grammar ? "unpinned" : "no pin";
+      return `brief:${c.line} (${what}): ${why}`;
+    });
+  return [...lines, open.length === 0 ? "(none)" : open.join("\n"), ""].join("\n");
+}
+
 const nextFact = (id, studio, repo) =>
   factOf(`next ${id}`, [
     process.execPath,
@@ -268,6 +318,7 @@ export function buildPacket(args) {
     for (const id of ids) facts.push(nextFact(id, studio, repo), admissionFact(studio, manifest, id, false));
   } else {
     facts.push(nextFact(opus, studio, repo), admissionFact(studio, manifest, opus, true));
+    if (phase === "build") facts.push(pinFact(studio, repo, studioRel, opus));
   }
   files.set("facts.txt", facts.join("\n"));
 

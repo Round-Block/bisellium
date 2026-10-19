@@ -1,0 +1,26 @@
+# opus: W-322
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T09:20:27.679Z
+# tree: tree:f46acf79fe044919c84f677339ad1f682eb3824d
+# brief: briefs/W-322.md blob:591e93f9e9c356bacfb1aa885e2b07bfd042fea9
+# ticket: {"opus":"W-322","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"20c405435d4bf9660d1e1aff9784284a9cfe6fc7","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T09:20:23.805Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-322-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — design: the pin lives in the brief row (and in each grammar line an any-text row cites), read by one text-only reader (`ruledCases`, beside `inputDomainRows`) that W-319's ledger check and the build packet share; the writer refuses the design magister's signature for a row with no pin, an unpinned row without a scoped line, a formless any-text row or an unpinned grammar line; the packet lists cases none of whose pins the source diff from the merge-base holds, as a fact, not a gate; no new verb, column or file format — check: brief:15, brief:35, prototype-src.diff
+2. advisory — measured on master's 154 briefs: 60 tabled, 563 rows, none pinned; 7 any-text rows with no forms clause, W-178 row 96 and W-221 row 97 among them (the two loops D-085 names); what it does not catch (whether the assertion tests the case, whether a forms list is complete) is stated and left to review — check: census.out, brief:17
+3. advisory — red order one at a time: each row fails by assertion on master and on the stage before its behaviour, passes on its own stage, accepted by the host replay classifier; ten mutants each fail their row — check: reds.out, row-b1-master.out, row-b2-s1.out, row-b3-s2.out, mutants.out
+4. advisory — flips: W-319-b1 fails unedited (31 of 32) and W-196-b4 fails unedited at `brief:25 is an Input domain row with no pin`; both pass with the pin edits Files owned names; next.test.ts passes whole on the prototype (114 of 114); verdict-citation 32, verdict-findings 13, verdict.test, brief-admission 60, red-order 32, containment 65, review-packet 11 pass — check: vc-unedited.out, next-unedited.out, next-proto.out, neighbours-proto.out
+5. advisory — the Codex test check lists the same two flips, both named (Unnamed: None); its must-stay-green rows are in the runs above — check: fixture-census.md
+6. advisory — the brief passes admission and the officina check; its ledger covers every Input domain row under master's writer and the prototype's (its own rows carry pins or unpinned with scoped lines, and its two any-text rows a forms clause); lint, format and typecheck pass on the touched files — check: admission.out, ledger-check.out, check-studio.out, lint-proto.out, format-proto.out, typecheck-proto.out
+7. advisory — size: three behaviours, about 110 source and 240 test lines, 3 points at the ceiling; the packet list (behaviour 3) is offered as a split if wanted — check: brief:120
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-322.md` (blob 591e93f9), prototype on master 06df6304.
