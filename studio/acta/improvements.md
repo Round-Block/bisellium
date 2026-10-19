@@ -56,3 +56,46 @@ Measured and Status columns from it. Cycle = minutes from the first spec signatu
 | W-315 | 158 | 30 | 0 |  |
 | W-316 | 205 | 24 | 1 | S1 1 |
 | W-319 | 66 | 31 | 0 |  |
+
+### 2026-10-19
+
+| Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
+|---|---|---|---|---|
+| W-178 | 11689 | 324 | 8 | S1 1, untagged 8 |
+| W-322 | 173 | 34 | 2 | S2 2, untagged 1 |
+| W-323 | 139 | 24 | 0 |  |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-178 | review | 3 | failed | 47 | tests×ruled-case-uncovered untagged |
+| W-178 | review | 4 | failed | 76 | tests×ruled-case-uncovered untagged |
+| W-178 | review | 5 | failed | 108 | tests×ruled-case-uncovered untagged |
+| W-178 | review | 6 | passed | 11 |  |
+| W-178 | review | 7 | passed | 23 |  |
+| W-178 | review | 8 | passed | 230 |  |
+| W-178 | spec | 11 | passed | 288 |  |
+| W-178 | spec | 12 | passed | 5 |  |
+| W-178 | spec | 13 | passed | 7 |  |
+| W-178 | spec | 14 | passed | 5 |  |
+| W-178 | spec | 15 | passed | 231 |  |
+| W-178 | spec | 16 | passed | 3 |  |
+| W-322 | review | 1 | failed | - | tests×ruled-case-uncovered S2, tests×ruled-case-uncovered S2 |
+| W-322 | review | 2 | failed | 32 | spec×fix-opens-new-surface untagged |
+| W-322 | review | 3 | passed | 49 |  |
+| W-322 | spec | 1 | passed | - |  |
+| W-322 | spec | 2 | passed | 5 |  |
+| W-323 | review | 1 | passed | - |  |
+| W-323 | spec | 1 | passed | - |  |
+| W-323 | spec | 2 | passed | 6 |  |
+
+- LOOP W-178 review: class tests×ruled-case-uncovered, rounds 1-4 (minutes since previous round: r1 -, r2 26, r3 47, r4 76)
+- LOOP W-178 review: any class, rounds 1-5 (minutes since previous round: r1 -, r2 26, r3 47, r4 76, r5 108)
+
+Classes in more than one opus, 2026-10-05..2026-10-19:
+- class review×evidence-backfilled-or-absent seen in 2 opera: W-178, W-312
+- class security×symlink-parent-write-escape seen in 2 opera: W-259, W-274
+- class spec×input-domain-missing-or-unenforceable seen in 5 opera: W-274, W-292, W-306, W-312, W-316
+- class spec×promise-unattainable-under-accepted-domain seen in 5 opera: W-264, W-274, W-293, W-302, W-312
+- class tests×ruled-case-uncovered seen in 3 opera: W-178, W-292, W-322
