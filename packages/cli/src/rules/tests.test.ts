@@ -707,6 +707,14 @@ const GRAMMAR: [string, string[], number][] = [
   ["reporter words only in comments make no reporter", ["function row(name, ok) {", '  // console.log(ok ? "PASS" : "FAIL", name);', "  return name;", "}", 'row("a", true);', 'row("b", false);'], 0],
   ["a block comment holding the reporter words makes no reporter", ["function row(name, ok) {", '  /* PASS FAIL */ console.log(name);', "}", 'row("a", true);'], 0],
   ["an empty file counts nothing", [], 0],
+  ["edge 53 a wrapper with a non-ASCII name", [RUNNER_IMPORT, "function ŕow(n) {", "  test(n, () => {});", "}", 'ŕow("a");', 'ŕow("b");'], 2],
+  ["edge 53 a const-arrow wrapper with a non-ASCII name", [RUNNER_IMPORT, "const ŕow = (n) => {", "  test(n, () => {});", "};", 'ŕow("a");', 'ŕow("b");'], 2],
+  ["edge 53 an arrow wrapper with a non-ASCII parameter", [RUNNER_IMPORT, "const row = ñ => {", "  test(ñ, () => {});", "};", 'row("a");', 'row("b");'], 2],
+  ["edge 53 a reporter with a non-ASCII name", ["function ŕow(name, ok) {", '  console.log(ok ? "PASS" : "FAIL", name);', "}", 'ŕow("a", true);', 'ŕow("b", false);'], 2],
+  ["edge 54 other names ending in a wrapper's name are not its calls", [RUNNER_IMPORT, "function row(n) {", "  test(n, () => {});", "}", 'row("a");', 'ŕow("b");', '𠮷row("c");'], 1],
+  ["edge 55 a non-ASCII identifier before test, it and test.skip is no registration", [RUNNER_IMPORT, 'ñtest("x");', 'ñit("y");', 'ñtest.skip("z");', 'test("real", () => {});'], 1],
+  ["edge 56 function followed by an identifier is a call, not a definition", [RUNNER_IMPORT, "functionrow(", '  test("a", () => {}),', ");"], 1],
+  ["edge 56 function followed by a non-ASCII identifier is a call, not a definition", [RUNNER_IMPORT, "functionñ(", '  test("a", () => {}),', ");"], 1],
 ];
 // Every source form that could look like a runner import (edges.md in the build evidence): the lines before one
 // `test(...)` call, which counts 1 when the file imports a runner and 0 when it does not.
@@ -796,6 +804,22 @@ const EDGES: [string, string[], boolean][] = [
   ["edge 47 a brace before require is not an escape", ['{}require("node:test");'], true],
   ["edge 48 an identifier continuing import, then from on its own lines", ["importer", "from", '"node:test";'], false],
   ["edge 49 a decorator is a call of the free require", ['@require("node:test") class A {}'], true],
+  ["edge 50 a non-ASCII alias in the clause", ['import test, { test as tést } from "node:test";'], true],
+  ["edge 50 a non-ASCII default binding", ['import tést from "node:test";'], true],
+  ["edge 50 a non-ASCII namespace binding", ['import * as tëst from "node:test";'], true],
+  ["edge 50 a non-ASCII named import", ['import { tést } from "node:test";'], true],
+  ["edge 50 an astral binding", ['import 𠮷 from "node:test";'], true],
+  ["edge 50 an escaped binding", ['import { \\u0074est } from "node:test";'], true],
+  ["edge 50 a braced escaped binding", ['import { \\u{74}est } from "node:test";'], true],
+  ["edge 51 from after a non-ASCII identifier is no keyword", ['import ñfrom "node:test";'], false],
+  ["edge 52 a default binding starting with type, then a non-ASCII letter", ['import typé from "node:test";'], true],
+  ["edge 52 a default binding starting with type, then ñ", ['import typeñ from "node:test";'], true],
+  ["edge 52 a type-only default binding named fromé", ['import type fromé from "node:test";'], false],
+  ["edge 52 a type-only import of a non-ASCII name", ['import type { tést } from "node:test";'], false],
+  ["edge 57 a non-ASCII identifier ending in new is no new", ["const ñnew = 1;", "ñnew", 'require("node:test");'], true],
+  ["edge 58 a non-ASCII identifier before require", ['const test = ñrequire("node:test");'], false],
+  ["edge 58 a non-ASCII identifier before import", ['const test = ñimport("node:test");'], false],
+  ["edge 58 import continued by a non-ASCII identifier, then from on its own lines", ["importñ", "from", '"node:test";'], false],
 ];
 const LEX_SAMPLE = ['const a = "x(1)"; // note', "/* gone */ const b = 'y\\'z';", "const t = `", "  test('in template')", "`;", "go();"].join("\n");
 
