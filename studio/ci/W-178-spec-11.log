@@ -1,0 +1,21 @@
+# opus: W-178
+# phase: spec
+# round: 11
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T03:00:05.538Z
+# tree: tree:501723279b8125855db85d4889ed03fd28bca1e0
+# brief: briefs/W-178.md blob:20373bc2173cb747d953bce19ab080bf340eaa12
+# ticket: {"opus":"W-178","step":"spec","action":"verdict-spec","round":11,"actor":"architect","studio":".worktrees/W-178/studio","head":"a867ea9f4185bd5783d89dd1cb5c5b0320e5abd7","brief":"20373bc2173cb747d953bce19ab080bf340eaa12","at":"2026-10-19T03:00:04.995Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-178-amend/promise-ledger.md
+
+## Findings
+
+1. advisory — the amendment states a limit, it changes no code: every edges.md verdict is a listed form (runner) or a stated limit or not an import at all (not runner); the built scanner at a867ea9f agrees, including a substitution-free template in a call (edge 10), escaped bindings in a static clause (edge 50), a second call argument (edges 13, 18), `import { type T }` counted as a value import and `new require(` refused; unchanged code gets this stated limit, not a guarantee (D-076 E) — check: ~/.bisellium-evidence/W-178-build/fix-r3/edges.md, ~/.bisellium-evidence/W-178-amend/probe.out
+2. advisory — docs/ADOPTION.md's "How rows are counted" already lists the same four forms, the free-identifier rule, the escaped-keyword and local-require limits, and "whose one literal is exactly that module name", so it is left unchanged and the source tree hash and gate logs stand — check: docs/ADOPTION.md:1157-1179
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 4 at `studio/briefs/W-178.md` on `opus/W-178` a867ea9f: brief:69 lists the recognised runner-import forms, brief:75 and :98 make every other form a limit read alike in base and candidate (ruling of 2026-10-19 after build review rounds 1-4 on one class; W-221 precedent, D-059); the change is ~/.bisellium-evidence/W-178-amend/W-178-r3-to-r4.diff.
