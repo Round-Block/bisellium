@@ -88,3 +88,10 @@ test("W-182 behaviour 1: the smoke browser uses the free port printed by its own
   await page.goto("/");
   expect(new URL(page.url()).port).toBe(port);
 });
+
+test("W-182 behaviour 2: a missing or malformed captured smoke port is refused", () => {
+  expect(smokeBaseURL("1")).toBe("http://127.0.0.1:1");
+  expect(smokeBaseURL("65535")).toBe("http://127.0.0.1:65535");
+  for (const bad of [undefined, "", "0", "01", "65536", "-1", "1.5", " 5199", "5199 "])
+    expect(() => smokeBaseURL(bad), JSON.stringify(bad)).toThrow();
+});
