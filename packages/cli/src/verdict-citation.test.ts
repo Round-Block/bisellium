@@ -561,3 +561,101 @@ test("W-319-b1 behaviour 1: an architect spec signature's ledger covers every In
     admitted(`${name}: no ledger needed`, NO);
   }
 });
+
+// W-322: every ruled case names the test row and assertion that pin it; the design magister's signature is refused otherwise
+/** The W-319-b1 sign, ledger, refused and admitted steps for one brief, on a fresh officina with no design row. */
+function specSigner(brief: string): {
+  refused: (name: string, body: string, stderr: string) => void;
+  admitted: (name: string, body: string, sella?: string) => void;
+  cite: (text: string) => string;
+  setBrief: (text: string) => void;
+  NO: string;
+} {
+  const dir = studio();
+  const setBrief = (text: string): void => {
+    writeFileSync(join(dir, "briefs", "W-300.md"), text);
+    assert.equal(readFileSync(join(dir, "briefs", "W-300.md"), "utf8"), text, "the brief rewrite took");
+  };
+  setBrief(brief);
+  const log = join(dir, "ci", "W-300-spec-1.log");
+  let n = 0;
+  const sign = (body: string, sella: string): { exitCode: number; stderr: string; written: boolean } => {
+    const input = join(dir, `input-${++n}.md`);
+    writeFileSync(input, body);
+    const r = capture(() => runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }));
+    const written = existsSync(log);
+    if (written) rmSync(log);
+    return { exitCode: r.result.exitCode, stderr: r.stderr, written };
+  };
+  const NO = findings("advisory — fine");
+  const cite = (text: string): string => {
+    const p = join(dir, `ledger-${++n}.md`);
+    writeFileSync(p, text);
+    return `Promise ledger: ${p}\n\n${NO}`;
+  };
+  const refused = (name: string, body: string, stderr: string): void => {
+    const r = sign(body, "architect");
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.equal(r.stderr, stderr, `${name}: stderr`);
+  };
+  const admitted = (name: string, body: string, sella = "architect"): void => {
+    const r = sign(body, sella);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, true, `${name}: the log is written`);
+  };
+  return { refused, admitted, cite, setBrief, NO };
+}
+const uncoveredRow = (line: number): string =>
+  `W-300: promise ledger: brief:${line} is an Input domain row, and no ledger line cites brief:${line} with a <file>:<line> and holds or scoped\n`;
+
+const PIN_6 = 'pinned by `W-300-b1` "flag: exit 2"';
+const PINS_BRIEF = [
+  "# W-300 fixture brief",
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  `| the flag | a string | \`parseFlag\`: exit 2, ${PIN_6} |`,
+  '| the file | a regular file | `readIt`: exit 2, Pinned by `W-300-b1` "file: exit 2" and pinned by `W-300-b2` "no log" |',
+  "| the job | its step exits 0 | runner: `gates` fails the merge; unpinned |",
+  "## Behaviours to test",
+  "",
+].join("\n");
+const ROW_8 = "brief:8, the job: .github/workflows/ci.yml:20 gates — scoped";
+const PINS_COVERING = ["brief:6, the flag: packages/x.ts:5 parseFlag exits 2 — holds", "brief:7, the file: packages/x.ts:12 readIt exits 2 — holds", ROW_8].join("\n");
+
+test("W-322-b1 behaviour 1: an architect spec signature is refused for an Input domain row that names no pinning test row and assertion", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(PINS_BRIEF);
+  const noPin = (line: number): string =>
+    `W-300: promise ledger: brief:${line} is an Input domain row with no pin: name the test row and assertion that exercise it as pinned by \`<row>\` "<assertion>", or say unpinned (a stated limit, scoped in the ledger)\n`;
+  const notScoped = (line: number): string => `W-300: promise ledger: brief:${line} says unpinned, and no ledger line cites brief:${line} as scoped\n`;
+
+  // the row with no pin, and each malformed pin, is refused at that row; every other row stands
+  for (const [name, pin] of [
+    ["no pin", ""],
+    ["no backticks round the row", 'pinned by W-300-b1 "flag: exit 2"'],
+    ["no quotes round the assertion", "pinned by `W-300-b1` flag: exit 2"],
+    ["an empty assertion", 'pinned by `W-300-b1` ""'],
+    ["a blank row name", 'pinned by ` ` "flag: exit 2"'],
+    ["a word run into it", 'repinned by `W-300-b1` "flag: exit 2"'],
+    ["the pin in an HTML comment", `<!-- ${PIN_6} -->`],
+  ] as const) {
+    setBrief(PINS_BRIEF.replace(PIN_6, pin));
+    refused(`row 6 with ${name}`, cite(PINS_COVERING), noPin(6));
+  }
+  setBrief(PINS_BRIEF.replace(PIN_6, "").replace(/, Pinned by .*" \|$/m, " |"));
+  refused("rows 6 and 7 with no pin, in row order", cite(PINS_COVERING), noPin(6) + noPin(7));
+  refused("an uncovered row with no pin: its coverage problem, then its pin problem", cite(PINS_COVERING.replace("brief:7,", "brief:70,")), uncoveredRow(7) + noPin(6) + noPin(7));
+
+  // unpinned is a stated limit: its covering ledger line says scoped
+  setBrief(PINS_BRIEF);
+  refused("an unpinned row covered as holds", cite(PINS_COVERING.replace(ROW_8, ROW_8.replace("scoped", "holds"))), notScoped(8));
+  refused("an unpinned row covered by no line: the W-319 problem only", cite(PINS_COVERING.replace(ROW_8, "")), uncoveredRow(8));
+  refused("an empty ledger: coverage only, the pins stand", cite(""), uncoveredRow(6) + uncoveredRow(7) + uncoveredRow(8));
+  admitted("every row pinned or unpinned and scoped, two pins on one row, a capital P", cite(PINS_COVERING));
+  setBrief(PINS_BRIEF.replace(PIN_6, `${PIN_6} (an ordinary edit: a comment after it)`));
+  admitted("a pin followed by prose", cite(PINS_COVERING));
+  setBrief(PINS_BRIEF.replace(PIN_6, ""));
+  admitted("another seat's spec verdict needs no pin", NO, "qa-lead");
+});
