@@ -611,6 +611,37 @@ test("W-322-b3 behaviour 3: a build packet's facts list the ruled cases no pin o
     "rows 6 and 10 are found; the others are listed in brief order",
   );
 
+  // a row whose forms clause cites its own line: its row case first, then the same line as a grammar line
+  w.put(
+    w.studio,
+    "briefs/W-1.md",
+    [
+      "# W-1",
+      "## Input domain",
+      "A rejection fails closed.",
+      "| Record | Valid domain | Rejected by |",
+      "|---|---|---|",
+      '| e | any text; recognises brief:6; every other form is a limit | `k`: never errors, pinned by `W-1-b2` "self pin" |',
+      "",
+    ].join("\n"),
+  );
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "a self-citing row");
+  const self = w.packet("build", "W-1", 5, "qa-lead");
+  assert.equal(self.status, 0, self.err);
+  assert.ok(
+    w
+      .read(5, "facts.txt")
+      .endsWith(
+        [
+          'brief:6 (Input domain row): pinned by `W-1-b2` "self pin": not in the diff',
+          'brief:6 (grammar line of brief:6): pinned by `W-1-b2` "self pin": not in the diff',
+          "",
+        ].join("\n"),
+      ),
+    "a self-cited row is listed as a grammar line after its row, in case order",
+  );
+
   // a brief with no ruled case states none; a spec packet carries no such block
   w.put(w.studio, "briefs/W-1.md", BRIEF);
   w.git("add", "-A");
