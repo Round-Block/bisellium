@@ -1236,8 +1236,8 @@ process.stdout.write(JSON.stringify(out));
     assert.notEqual(gate, "socket-gated", "b1: liveSkip is a socket refusal");
     assert.equal(gate, bwrapUsable ? "ungated" : "bwrap-gated", "b1: liveSkip is false exactly when bwrap is usable");
     assert.equal(liveRows.filter((row) => row.skipped).length, bwrapUsable ? 0 : liveRows.length, "b1: a usable bwrap leaves no live row skipped");
-    // 14 W-125 live rows, the 2 W-132 live rows (L2, L3), the 3 W-134 live rows (b1-b3) and the 7 W-130 acceptance rows.
-    assert.equal(liveRows.length, 26, "b1: every live row is registered, none dropped or added unrecorded");
+    // 14 W-125 live rows, the 2 W-132 live rows (L2, L3), the 3 W-134 live rows (b1-b3), the 7 W-130 acceptance rows and W-323-b1.
+    assert.equal(liveRows.length, 27, "b1: every live row is registered, none dropped or added unrecorded");
     // Assembled, so this assertion is not itself the text it forbids.
     const probe = ["socket", "Usable"].join("");
     assert.equal(readFileSync(fileURLToPath(import.meta.url), "utf8").includes(probe), false, "b1: the live gate still consults a socket probe");
@@ -2019,4 +2019,35 @@ test("W-131 behaviour 8: live rows: none skip where BISELLIUM_REQUIRE_LIVE_ROWS=
   if (process.env["BISELLIUM_REQUIRE_LIVE_ROWS"] !== "1") return;
   const skipped = liveRows.filter((row) => row.skipped).length;
   assert.equal(skipped, 0, `${skipped} of ${liveRows.length} live rows skipped (liveSkip: ${String(liveSkip)})`);
+});
+
+// ---------------------------------------------------------------------------
+// W-323 behaviour 1: the host's candidate clone is single-branch, so a check the CI gate runs in it (W-178's
+// test.rows) had no master to compare with. The row's gate.mjs runs in /candidate and exits 0 only when
+// refs/remotes/origin/master resolves there and names the fixture's master commit. Selected by name:
+// --test-name-pattern='^W-323-b1\s'. A live row: counted in W-132-b1's census.
+// ---------------------------------------------------------------------------
+const MASTER_GATE = [
+  "import { execFileSync } from 'node:child_process';",
+  "const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();",
+  "try {",
+  "  git('rev-parse', '--verify', 'refs/remotes/origin/master');",
+  "  const subject = git('log', '-1', '--format=%s', 'refs/remotes/origin/master');",
+  "  git('merge-base', '--is-ancestor', 'refs/remotes/origin/master', 'HEAD');",
+  "  process.exit(subject === 'test: establish W-125 fixture' ? 0 : 1);",
+  "} catch {",
+  "  process.exit(1);",
+  "}",
+  "",
+].join("\n");
+
+live("W-323-b1 the host mint's candidate clone has master, so a check its ci gate runs has a base", async () => {
+  const f = liveFixture("w323-b1", { gate: MASTER_GATE });
+  const result = await withTmp(f, () => run(builderArgs(f, [], builder(FIX_AND_COMMIT))));
+  assert.equal(result.exitCode, 0, "b1: the run mints a receipt, so the gate saw origin/master");
+  const receipt = oneReceipt(f.studio) as { exitCode: number; completion?: Record<string, unknown> };
+  assert.equal(receipt.exitCode, 0, "b1: the receipt records success");
+  assert.equal(receipt.completion?.["completed"], true, "b1: the run completed");
+  assert.equal(git(f.repo, ["rev-parse", "refs/heads/master"]), f.base, "b1: the fixture's master is where the gate looked");
+  assert.equal(leftovers(f).length, 0, "b1: runtime and clones are gone");
 });
