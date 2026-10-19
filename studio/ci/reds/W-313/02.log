@@ -1,0 +1,52 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-313-b2\s --import tsx packages/cli/src/w279.test.ts
+# exit: 1
+# at: 2026-10-19T23:54:53.117Z
+# sella: builder.W-313
+# tree: tree:1e788e7a045c24de812dc25231c7ddc9baa4726c
+# ticket: {"opus":"W-313","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-313/studio","head":"5dc8bc3063c956e02b09d346679fc7444e83cacf","brief":"7319b35c897e79c8bc987bcaefa73452e39fb810","at":"2026-10-19T23:54:48.642Z"}
+
+warning: Git ref-wide allocation unavailable; using local records only
+marker audit
+marker format:check
+marker check:studio
+marker check:examples/sample-studio
+bisellium verify: gate tests: start 2026-10-19T23:54:56.122Z
+TAP version 13
+bisellium verify: gate tests: end 2026-10-19T23:54:56.501Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-19T23:54:56.502Z
+bisellium verify: gate lint: end 2026-10-19T23:54:56.858Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-19T23:54:56.858Z
+bisellium verify: gate types: end 2026-10-19T23:54:57.212Z after 0m00s, exited 0
+tests: passed  ci/W-001-tests-279be2a0.log
+lint: passed  ci/W-001-lint-279be2a0.log
+types: passed  ci/W-001-types-279be2a0.log
+# Subtest: W-313-b2 behaviour 2: ci --opus prints each step's and each gate's start and end with the time, a step's output between them
+not ok 1 - W-313-b2 behaviour 2: ci --opus prints each step's and each gate's start and end with the time, a step's output between them
+  ---
+  duration_ms: 2541.348285
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-313/packages/cli/src/w279.test.ts:6:5301'
+  failureType: 'testCodeFailure'
+  error: 'a step prints its start: no err line matching /^bisellium ci: step npm run -s audit: start \\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z\\n$/ after entry 0 in [{"stream":"err","text":"bisellium verify: gate tests: start 2026-10-19T23:54:56.122Z\\n"},{"stream":"out","text":"TAP version 13\\n"},{"stream":"err","text":"bisellium verify: gate tests: end 2026-10-19T23:54:56.501Z after 0m00s, exited 0\\n"},{"stream":"err","text":"bisellium verify: gate lint: start 2026-10-19T23:54:56.502Z\\n"},{"stream":"err","text":"bisellium verify: gate lint: end 2026-10-19T23:54:56.858Z after 0m00s, exited 0\\n"},{"stream":"err","text":"bisellium verify: gate types: start 2026-10-19T23:54:56.858Z\\n"},{"stream":"err","text":"bisellium verify: gate types: end 2026-10-19T23:54:57.212Z after 0m00s, exited 0\\n"},{"stream":"out","text":"tests: passed  ci/W-001-tests-279be2a0.log\\n"},{"stream":"out","text":"lint: passed  ci/W-001-lint-279be2a0.log\\n"},{"stream":"out","text":"types: passed  ci/W-001-types-279be2a0.log\\n"}]'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    at (/home/edckt/agents/bisellium/.worktrees/W-313/packages/cli/src/w279.test.ts:220:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-313/packages/cli/src/w279.test.ts:225:19)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2549.6989
