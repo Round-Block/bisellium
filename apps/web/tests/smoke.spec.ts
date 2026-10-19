@@ -73,7 +73,7 @@ test("W-182 behaviour 1: the smoke browser uses the free port printed by its own
   baseURL,
 }) => {
   const port = process.env["SMOKE_PORT"];
-  expect(port).toMatch(/^[1-9][0-9]*$/);
+  expect(port ?? "").toMatch(/^[1-9][0-9]*$/);
   expect(baseURL).toBe(`http://127.0.0.1:${port}`);
   await page.goto("/");
   expect(new URL(page.url()).port).toBe(port);
