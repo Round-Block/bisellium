@@ -1,0 +1,18 @@
+# opus: W-297
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1567c-e89a-7b73-b8d5-842a17131fd3
+# outcome: failed
+# at: 2026-10-19T23:29:38.098Z
+# tree: tree:43416b0b53faa370768ece9e5c86f4814b94faf6
+# brief: briefs/W-297.md blob:1594c221399dda1b03b5f2ec63ea28ed8262fa1e
+# ticket: {"opus":"W-297","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"14b1b8831feba833c3cadca11ffbacdb9fd6834e","brief":"1594c221399dda1b03b5f2ec63ea28ed8262fa1e","at":"2026-10-19T23:29:36.993Z"}
+
+## Findings
+1. blocking — brief:60 `classLoop` accepts any leading-asterisk count for `blocking (security|evidence)` and any text beginning `[class: security×`, so a plausible malformed review finding such as `*blocking (security)` or `[class: security×]` makes `next` dispatch a builder instead of holding for the architect; no W-297-b3 row covers these rejected forms. Replace brief:60 with: `- an exempt round: a standing blocker of the newest round opens exactly blocking (security) or blocking (evidence), in any case with either zero or two leading asterisks, or carries one valid [class: security×<slug>] tag; malformed emphasis and malformed or incomplete security-class tags are not exempt — pinned by W-297-b3 "is exempt" and malformed-form rows` [severity: S1] [design: keeps] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/next-review.test.ts
+
+## Verdict
+The malformed exemption forms can fail open on an ordinary reviewer typo, so the signed brief is not ready to build.
+VERDICT: FAIL

@@ -1,0 +1,21 @@
+# opus: W-297
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1567c-e89a-7b73-b8d5-842a17131fd3
+# outcome: passed
+# at: 2026-10-19T23:39:29.366Z
+# tree: tree:43416b0b53faa370768ece9e5c86f4814b94faf6
+# brief: briefs/W-297.md blob:a3956e212482b6ebbe59dbff4740e215b0218e9d
+# ticket: {"opus":"W-297","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"14b1b8831feba833c3cadca11ffbacdb9fd6834e","brief":"a3956e212482b6ebbe59dbff4740e215b0218e9d","at":"2026-10-19T23:39:28.741Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-297-spec-2.log #1: closed — brief:60 now admits only exact bare or bold exempt openers and well-formed security-class tags; prototype-src.diff:133 and prototype-src.diff:137 enforce those forms, while row-b3-r1.out:10 records the revision-1 failure and row-b3-proto.out:3 records the corrected row passing
+
+## Verdict
+Revision 2 closes the standing fail-open blocker with matching domain text, implementation, red evidence, and passing coverage.
+VERDICT: PASS
