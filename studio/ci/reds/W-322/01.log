@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-322-b1\s --import tsx packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-19T09:41:43.049Z
+# sella: builder.W-322
+# tree: tree:c2d3d237441ecb84ee42b8e85580d2d98f95eadf
+# ticket: {"opus":"W-322","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-322/studio","head":"865848f94dcdabc1f14f955f967510480af1454f","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T09:41:39.560Z"}
+
+TAP version 13
+# Subtest: W-322-b1 behaviour 1: an architect spec signature is refused for an Input domain row that names no pinning test row and assertion
+not ok 1 - W-322-b1 behaviour 1: an architect spec signature is refused for an Input domain row that names no pinning test row and assertion
+  ---
+  duration_ms: 20.230135
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-322/packages/cli/src/verdict-citation.test.ts:47:766'
+  failureType: 'testCodeFailure'
+  error: |-
+    row 6 with no pin: exit (stderr "")
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-322/packages/cli/src/verdict-citation.test.ts:598:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-322/packages/cli/src/verdict-citation.test.ts:645:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 103.022281
