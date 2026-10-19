@@ -1,0 +1,21 @@
+# opus: W-322
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1539f-e08e-7fd1-94ba-caec40e5b7b5
+# outcome: passed
+# at: 2026-10-19T11:32:42.790Z
+# tree: tree:dbc6b14a67c73174de9d303831f9390f9a57cdfe
+# brief: briefs/W-322.md blob:591e93f9e9c356bacfb1aa885e2b07bfd042fea9
+# ticket: {"opus":"W-322","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-322/studio","head":"a1add2a0a9fcab4303754fadcbaf39941cc93acc","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T11:32:04.437Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-322-review-2.log #1: closed — packages/commands/src/brief-admission.ts:147 restores the declared `RuledCase` shape, packages/commands/src/verdict.ts:458 and scripts/review-packet.mjs:192 infer grammar cases from the specified row-first order, and packages/cli/src/verdict-citation.test.ts:728 asserts the exact returned keys.
+
+## Verdict
+The standing blocker is closed and the packet’s self-citation path now has regression coverage.
+VERDICT: PASS
