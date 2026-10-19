@@ -1,0 +1,63 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-297-b2\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-19T23:42:07.772Z
+# sella: builder.W-297
+# tree: tree:c31d2df5bf62630245a9fab9234e3a2ab85efb30
+# ticket: {"opus":"W-297","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-297/studio","head":"98be4e6775713a6b6cb08105ae6314cd933ef782","brief":"a3956e212482b6ebbe59dbff4740e215b0218e9d","at":"2026-10-19T23:42:02.281Z"}
+
+TAP version 13
+# Subtest: W-297-b2 behaviour 2: a failed spec review whose blockers all keep the design goes to branch, its blockers named as required fixes
+not ok 1 - W-297-b2 behaviour 2: a failed spec review whose blockers all keep the design goes to branch, its blockers named as required fixes
+  ---
+  duration_ms: 1208.927608
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/next-spec.test.ts:11:2941'
+  failureType: 'testCodeFailure'
+  error: |-
+    two keeps blockers name branch
+    --- exit 0
+    --- stdout
+    next: W-900 spec named
+    actor: architect
+    why: ci/W-900-spec-2.log failed ci/W-900-spec-1.log; the architect revises and signs again
+    role: architect
+    sella: architect
+    boot: bisellium context --sella architect --studio studio
+    budget_tokens: 100000
+    phase: spec
+    round: 3
+    inputs: briefs/W-900.md, ci/W-900-spec-2.log, opera/W-900.md#traditio
+    command: dispatch architect to sign the spec for W-900; close out with: bisellium verdict W-900 --round 3 --sella architect --outcome passed --phase spec --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 spec named'
+    - 'next: W-900 branch named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 branch named'
+  actual: 'next: W-900 spec named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/next-world.test.ts:762:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/next-spec.test.ts:727:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1339.601089
