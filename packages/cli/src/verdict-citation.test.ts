@@ -660,3 +660,64 @@ test("W-322-b1 behaviour 1: an architect spec signature is refused for an Input 
   setBrief(PINS_BRIEF.replace(PIN_6, ""));
   admitted("another seat's spec verdict needs no pin", NO, "qa-lead");
 });
+
+const GRAMMAR_BRIEF = [
+  "# W-300 fixture brief",
+  "## Interfaces",
+  '- a static `import` from the runner, pinned by `W-300-b1` "static import"',
+  '- a free `require` call, pinned by `W-300-b1` "require call"',
+  '- a dynamic `import(` call, pinned by `W-300-b1` "dynamic import"',
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  '| the source | any text; recognises the forms on brief:3-4 and brief:5; every other form is a limit | `count`: never errors, pinned by `W-300-b1` "counts" |',
+  '| the name | any string; recognises `a-z` and `0-9`, every other form a limit | `name`: exit 2, pinned by `W-300-b2` "name" |',
+  '| the file | a regular file | `readIt`: exit 2 on any text it cannot decode, pinned by `W-300-b3` "file" |',
+  "## Behaviours to test",
+  "",
+].join("\n");
+const SOURCE_DOMAIN = "any text; recognises the forms on brief:3-4 and brief:5; every other form is a limit";
+const GRAMMAR_COVERING = [10, 11, 12].map((n) => `brief:${n}, a reader: packages/x.ts:${n} exits 2 — holds`).join("\n");
+
+test("W-322-b2 behaviour 2: a row ruling any text or any string lists the forms it recognises, each cited grammar line pinned, or the signature is refused", () => {
+  const { refused, admitted, cite, setBrief } = specSigner(GRAMMAR_BRIEF);
+  const grammar = (line: number, row: number): string =>
+    `W-300: promise ledger: brief:${line} is a grammar line brief:${row} recognises, with no pin: name its test row and assertion as pinned by \`<row>\` "<assertion>"\n`;
+  const formless = (row: number): string =>
+    `W-300: promise ledger: brief:${row} rules any text or any string and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"\n`;
+  const ledger = cite(GRAMMAR_COVERING);
+
+  // each line a forms clause cites, singly or in a range, holds its own pin; unpinned does not excuse a grammar line
+  for (const [name, from, to, line] of [
+    ["the range's first line", 'pinned by `W-300-b1` "static import"', "", 3],
+    ["the range's last line", 'pinned by `W-300-b1` "require call"', "unpinned", 4],
+    ["a single citation", 'pinned by `W-300-b1` "dynamic import"', "", 5],
+  ] as const) {
+    setBrief(GRAMMAR_BRIEF.replace(from, to));
+    refused(`a grammar line with no pin: ${name}`, ledger, grammar(line, 10));
+  }
+  setBrief(GRAMMAR_BRIEF.replace("brief:5;", "brief:13;"));
+  refused("a cited line holding no pin (the Behaviours heading)", ledger, grammar(13, 10));
+
+  // the forms clause: recognises, at least one form, then every other form and limit, in that order
+  for (const [name, domain] of [
+    ["no recognises", "any text; the forms on brief:3-4 and brief:5; every other form is a limit"],
+    ["no every other form", "any text; recognises the forms on brief:3-4 and brief:5"],
+    ["no limit", "any text; recognises the forms on brief:3-4 and brief:5; every other form is counted"],
+    ["no form", "any text; recognises whatever it is given; every other form is a limit"],
+    ["a malformed citation only", "any text; recognises brief:3to4; every other form is a limit"],
+    ["the limit before the forms", "any text; every other form is a limit; recognises brief:3"],
+  ] as const) {
+    setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, domain));
+    refused(`a source row with ${name}`, ledger, formless(10));
+  }
+  setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, "Any Text, as given").replace("any string; recognises `a-z` and `0-9`,", "any string, as given,"));
+  refused("both rows formless, Any Text capitalised, in row order", ledger, formless(10) + formless(11));
+  setBrief(GRAMMAR_BRIEF.replace("recognises the forms", "recognizes the forms").replace("is a limit", "are limits"));
+  admitted("recognizes and limits spelled otherwise", ledger);
+
+  // any text outside the Valid domain cell, or no any text at all, needs no forms clause
+  setBrief(GRAMMAR_BRIEF);
+  admitted("every form listed and pinned; any text in a Rejected by cell", ledger);
+});
