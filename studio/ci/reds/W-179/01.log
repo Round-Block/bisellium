@@ -1,0 +1,59 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-179-b1\s --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-19T14:55:53.900Z
+# sella: builder.W-179
+# tree: tree:43303d1f329ba6ddaca2176d3526d89f497ec875
+# ticket: {"opus":"W-179","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-179/studio","head":"fc2c14546828ab8be99f2289a11b5153ec170de2","brief":"22fb645a40fef120038e3d0f672bbb98a0c6b684","at":"2026-10-19T14:55:50.394Z"}
+
+TAP version 13
+# Subtest: W-179-b1 behaviour 1: test:suite runs every next row file once, side by side, in one node --test call
+not ok 1 - W-179-b1 behaviour 1: test:suite runs every next row file once, side by side, in one node --test call
+  ---
+  duration_ms: 12.59933
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-179/packages/cli/src/next.test.ts:259:5119'
+  failureType: 'testCodeFailure'
+  error: |-
+    the next rows live in exactly the seven declared files
+    + actual - expected
+    
+      [
+    -   'packages/cli/src/next-branch.test.ts',
+    -   'packages/cli/src/next-done.test.ts',
+    -   'packages/cli/src/next-ladder.test.ts',
+    -   'packages/cli/src/next-queue.test.ts',
+    -   'packages/cli/src/next-review.test.ts',
+    -   'packages/cli/src/next-spec.test.ts',
+        'packages/cli/src/next.test.ts'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'packages/cli/src/next-branch.test.ts'
+    1: 'packages/cli/src/next-done.test.ts'
+    2: 'packages/cli/src/next-ladder.test.ts'
+    3: 'packages/cli/src/next-queue.test.ts'
+    4: 'packages/cli/src/next-review.test.ts'
+    5: 'packages/cli/src/next-spec.test.ts'
+    6: 'packages/cli/src/next.test.ts'
+  actual:
+    0: 'packages/cli/src/next.test.ts'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-179/packages/cli/src/next.test.ts:6731:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 101.218647
