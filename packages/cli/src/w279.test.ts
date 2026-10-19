@@ -191,3 +191,44 @@ test("W-279-b3 behaviour 3: a failing verify gate prints its log tail to stderr"
   const stderr = out.filter((e) => e.stream === "err").map((e) => e.text).join("\n");
   assert.ok(!stderr.includes("exit code: 0"), "lint's log reached stderr");
 });
+
+test("W-313-b2 behaviour 2: ci --opus prints each step's and each gate's start and end with the time, a step's output between them", async () => {
+  const repo = tmp("w313-repo-");
+  writeFileSync(join(repo, "ci-marker.mjs"), 'console.log(`marker ${process.argv[2] === "check" ? `check:${process.argv[3]}` : process.argv[2]}`);\n');
+  const scripts = Object.fromEntries(["audit", "typecheck", "lint", "format:check", "test", "check"].map((s) => [s, `node ci-marker.mjs ${s}`]));
+  writeFileSync(join(repo, "package.json"), JSON.stringify({ name: "w313-fixture", private: true, scripts }, null, 2));
+  commitRepo(repo);
+  const { studio, id } = writeStudio(THREE_GATES, "w313 b2");
+  const seen: { stream: "out" | "err"; text: string }[] = [];
+  const out = process.stdout.write.bind(process.stdout);
+  const err = process.stderr.write.bind(process.stderr);
+  // record what ci writes, and pass it on
+  process.stdout.write = ((chunk: string | Uint8Array, ...rest: never[]) => (seen.push({ stream: "out", text: String(chunk) }), out(chunk, ...rest))) as typeof process.stdout.write;
+  process.stderr.write = ((chunk: string | Uint8Array, ...rest: never[]) => (seen.push({ stream: "err", text: String(chunk) }), err(chunk, ...rest))) as typeof process.stderr.write;
+  let exitCode: number;
+  try {
+    exitCode = (await runCi(["--repo", repo, "--studio", studio, "--opus", id])).exitCode;
+  } finally {
+    process.stdout.write = out;
+    process.stderr.write = err;
+  }
+  assert.equal(exitCode, 0);
+  const ISO = String.raw`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z`;
+  const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const at = (what: string, stream: "out" | "err", re: RegExp, from = 0): number => {
+    const i = seen.findIndex((e, n) => n >= from && e.stream === stream && re.test(e.text));
+    assert.ok(i !== -1, `${what}: no ${stream} line matching ${re} after entry ${from} in ${JSON.stringify(seen)}`);
+    return i;
+  };
+  let from = 0;
+  for (const [step, label] of [["npm run -s audit", "audit"], ["npm run -s format:check", "format:check"], ["npm run -s check -- studio --repo .", "check:studio"], ["npm run -s check -- examples/sample-studio --repo .", "check:examples/sample-studio"]]) {
+    const start = at("a step prints its start", "err", new RegExp(`^bisellium ci: step ${esc(step!)}: start ${ISO}\n$`), from);
+    const output = at("a step's output passes through between its start and end", "out", new RegExp(`^marker ${esc(label!)}\n$`), start);
+    from = at("a step prints its end", "err", new RegExp(`^bisellium ci: step ${esc(step!)}: end ${ISO} after \\d+m\\d\\ds, exited 0\n$`), output);
+  }
+  for (const gate of ["tests", "lint", "types"]) {
+    const start = at("a gate prints its start", "err", new RegExp(`^bisellium verify: gate ${gate}: start ${ISO}\n$`), from);
+    from = at("a gate prints its end", "err", new RegExp(`^bisellium verify: gate ${gate}: end ${ISO} after \\d+m\\d\\ds, exited 0\n$`), start);
+  }
+  assert.ok(!seen.some((e) => e.stream === "out" && /^marker (test|lint|typecheck)\n$/.test(e.text)), "a gate's output goes to its log, not the terminal");
+});
