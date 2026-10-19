@@ -1,0 +1,65 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-297-b3\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-10-19T23:46:05.853Z
+# sella: builder.W-297
+# tree: tree:b22af7d02273ea240842962bc867e0b1092eadde
+# ticket: {"opus":"W-297","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-297/studio","head":"23d5c8c9530c5cd81cdb6e92067b5b42a5b7b51c","brief":"a3956e212482b6ebbe59dbff4740e215b0218e9d","at":"2026-10-19T23:46:02.267Z"}
+
+TAP version 13
+# Subtest: W-297-b3 behaviour 3: a class loop or three failed build rounds hold the fix until a newer architect signature
+not ok 1 - W-297-b3 behaviour 3: a class loop or three failed build rounds hold the fix until a newer architect signature
+  ---
+  duration_ms: 2424.034015
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/next-review.test.ts:70:5119'
+  failureType: 'testCodeFailure'
+  error: |-
+    two rounds sharing a class against one brief
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: review round 2 failed at this tree
+    head: opus/W-900 9102157d20c3
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: fix
+    boundary: ci/W-900-review-2.log finding 1 is a class: fix it with one check at the input boundary named by the brief's Input domain, which every path reads, not a patch at the cited site (L-069)
+    inputs: briefs/W-900.md, ci/W-900-review-2.log, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase fix) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 build named'
+    - 'next: W-900 build held'
+                         ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 build held'
+  actual: 'next: W-900 build named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/next-world.test.ts:762:10)
+    loopHeld (/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/next-review.test.ts:939:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/next-review.test.ts:947:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2533.918581
