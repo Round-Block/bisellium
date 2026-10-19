@@ -13,7 +13,7 @@ For every blocking finding of <PREVIOUS> that still stood, write one line under 
 - ci/<ID>-<kind>-<m>.log #<k>: open — <why it still stands>
 - ci/<ID>-<kind>-<m>.log #<k>: reversed — <why the finding was wrong, holding a file:line>
 
-Severity is unchanged: a finding is blocking only on substance, citing a file:line; anything else is advisory. In a spec or build round, a blocking finding also cites `brief:<line>`, the non-blank brief line whose behaviour it breaks (W-126): `bisellium verdict` records a blocker without one as advisory, so an uncited blocker cannot fail the round. A finding of this round that you reached by an earlier finding's class says so.
+Severity is unchanged: a finding is blocking only on substance, citing a file:line; anything else is advisory. In a build round, substance means an S1 real defect (an input this studio's or examples/sample-studio's configuration plausibly produces, which no test catches), a security gap, or missing or false evidence (D-084); wrong behaviour only on an input nothing here plausibly produces is advisory. In a spec or build round, a blocking finding also cites `brief:<line>`, the non-blank brief line whose behaviour it breaks (W-126): `bisellium verdict` records a blocker without one as advisory, so an uncited blocker cannot fail the round. A finding of this round that you reached by an earlier finding's class says so.
 
 Class (D-070): end each finding's text, before its `check:` marker, with its class in brackets, `[class: <area>×<slug>]`, reusing a class from <STUDIO>/lessons/ or an earlier round's tag verbatim where one fits.
 

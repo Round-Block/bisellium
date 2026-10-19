@@ -14,7 +14,7 @@ Packet (<PACKET>): <ID>.diff (the opus change against master) and facts.txt. Red
 Look hardest at:
 <FOCUS>
 
-Severity (charter §2): blocking only for wrong behaviour, a security gap, or missing or false required evidence (reds, gates). Only a blocking finding fails the round. Citation (W-126): a blocking finding cites a non-blank line of the declared brief as `brief:<line>`. Class (D-070): end each finding's text with its class in brackets, `[class: <area>×<slug>]`, reusing a class from <STUDIO>/lessons/ verbatim where one fits.
+Severity (charter §2, D-084): blocking only for an S1 real defect (wrong behaviour on an input this studio's or examples/sample-studio's configuration plausibly produces, which no test catches), a security gap, or missing or false required evidence (reds, gates). Wrong behaviour only on an input nothing here plausibly produces is advisory: name the input and the test that would pin it, and the builder may adopt it. Tag each finding `[severity: S1|S2|S3|S4]` before its class. Only a blocking finding fails the round. Citation (W-126): a blocking finding cites a non-blank line of the declared brief as `brief:<line>`. Class (D-070): end each finding's text with its class in brackets, `[class: <area>×<slug>]`, reusing a class from <STUDIO>/lessons/ verbatim where one fits.
 
 Output: your final message is recorded verbatim as the verdict log. Keep it under 8000 bytes, no transcript, exactly this shape:
 

@@ -194,7 +194,7 @@ names each step and writes the step ticket the next record write consumes
    (`~/.bisellium-evidence/codex-passes/fix-census.sh <id> <failed-round>`,
    D-072); an open path goes back to the builder, not to review. It is
    advisory input, not a verdict; W-274 moves it into the review perform.
-   No round cap (D-053).
+   No round cap (D-053). Only a real defect blocks a build round too (D-084, as D-076 A for spec): an S1 on an input this studio's or the fixture's configuration plausibly produces, a security gap, or missing or false evidence; an implausible input is an advisory.
 5. **Merge:** refresh `handoff` (the `bisellium handoff` verb, the record's
    traditio; `next` does not ask for it before `pr`, so do it); record the pass; `pr`; `merge`; `cleanup`.
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
@@ -320,3 +320,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-16 | §9: the first signed spec is `opus/<id>`'s first commit and `spec/<id>` is retired, so the spec rung takes no landing and step 6 no earlier spec logs (W-293) | Producer |
 | 2026-10-18 | §9 steps 3 to 5: review needs the builder's `ci --opus` gate logs at the branch's source tree; no host mint before review; `certify` is the one mint (W-312, D-071 E) | Patron |
 | 2026-10-18 | §9 step 6: no `verify` on master after `certify` except for a `kind: ui` opus; the done perform records certify's certificate (D-082 B) | Patron |
+| 2026-10-19 | §9 step 4: only a real defect blocks a build review round, as for spec (D-084) | Patron |
