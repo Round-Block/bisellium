@@ -1,0 +1,30 @@
+# opus: W-179
+# phase: spec
+# round: 10
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T16:21:37.166Z
+# tree: tree:688a18d8dc29cd021cc4eef0d75e17bfb20fc4e7
+# brief: briefs/W-179.md blob:9a82fc7540ec4cf65b4fac72108c8f168fe2990f
+# ticket: {"opus":"W-179","step":"spec","action":"verdict-spec","round":10,"actor":"architect","studio":".worktrees/W-179/studio","head":"c0cabe32b8c020faff4c586f784658876da989ed","brief":"9a82fc7540ec4cf65b4fac72108c8f168fe2990f","at":"2026-10-19T16:21:26.024Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-179-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief:124 corrected (Patron-approved, after build review round 1): the acceptance timing names the checkout `time-seg.sh` admits, a detached checkout at the opus branch's merge-base with the branch's diff outside `studio/` overlaid uncommitted and `node_modules` hard-linked, its working tree as the candidate tree; the method, the run count and the 0.40 ceiling are unchanged; the build's kept runs at merge-base 62f58e38 and candidate tree ea4b7f87 (recomputed from c0cabe32's non-studio diff over 62f58e38 and matching) give medians 772 s and 239 s, ratio 0.310, `--check` exit 0; admission and the ledger check still pass — check: brief:124, ~/.bisellium-evidence/W-179-build/timing/summary, ~/.bisellium-evidence/W-179-build/timing-check.out, ledger-check.out, admission.out
+2. advisory — round 8 finding 1 (the ceiling compared rounded): `time-base.sh --check` now compares the unrounded medians in integer arithmetic (candidate×5 ≤ base×2), keeping the three-decimal ratio for display only; `time-test.sh` adds 400/999 (0.4004), which fails with exit 1, and 400/1000 (exactly 0.40), which passes; rerun on the kept `timing-r7` runs without re-timing, `--check` still exits 0 at 242/776 (0.312) — check: time-base.sh:43, time-test.out, timing-r7-check.out
+3. advisory — round 8 finding 2 (one-sided exit assertions): `time-test.sh` asserts each case's exact exit status: 0 for a valid run, 1 for a failed measurement or claim (the step exits non-zero, a ratio over 0.40), 2 for refused input; all 28 cases pass (0 failing) — check: time-test.sh:9, time-test.out
+4. advisory — round 6 finding 1 (timing evidence): `time-seg.sh` now refuses a run, exit 2, at a HEAD other than the named commit, a working tree other than the named tree (a dirty base, a wrong candidate file set), no single next segment of `test:suite`, or a one-minute load at or over 2, and exits 1 when the step fails; `time-base.sh` runs exactly base, candidate three times each in a fresh directory, refusing an existing one, a host that does not idle and any refused run, and its `--check` refuses any run set but run-1-base … run-6-cand at the plan's commit and trees and fails a ratio over 0.40; `time-test.sh` proves all 28 cases (0 failing) — check: time-seg.sh, time-base.sh, time-test.out, brief:106
+5. advisory — re-measured through the hardened scripts on master 54e18d0b, the base a clean worktree and the candidate the prototype stage at tree ac03f552: base 776, 775, 782 s, candidate 246, 242, 240 s (115 of 115 pass), median ratio 0.312 under the 40% ceiling; `--check` exits 0 on the kept runs; the brief's numbers, row-time table and Defaults cite only these, and the unchecked suite-wide timings are withdrawn — check: timing-r7/summary, timing-r7-check.out, durations-r7.out, brief:13, brief:37, brief:124
+6. advisory — round 6 finding 2 (the seven-file promise): `split.mjs` checks `groups.json` before writing anything (every destination one of the seven declared files, each reached, no key repeated, every key matching a row); W-179-b1, `inventory.mjs`, `apply-src.py` and `lines-check.py` pin the seven names; the mutants (a typo'd destination `next-specc.test.ts`, a repeated key, a dead key, an unreached file, an eighth file, a declared file as a link) are all killed, the groups mutants writing nothing — check: split.mjs, mutants.out, brief:101, brief:102, brief:105
+7. advisory — round 6 findings 3 and 4: W-179-b1 asserts each declared file is regular by `lstatSync`, so a link fails the row; Input domain rows 9, 10 and 11 name `apply-test.py`, `apply-src.py` and `lines-check.py`, each valid domain and its exit-1 refusal, and both now refuse before any write — check: brief:101, brief:108, brief:109, brief:110
+8. advisory — the red, rechecked: W-179-b1 fails by assertion on master with only the row added, at `the next rows live in exactly the seven declared files`, zero matches of the replay classifier's poison pattern, accepted; it passes on the prototype — check: reds.out, row-b1-master.out, row-b1-proto.out
+9. advisory — flips: the Codex test check was rerun on revision 4 and lists no flip and no unnamed row; every must-stay-green row it lists passed on the prototype (the seven files, 115 rows, in each candidate run; ladder-followon, rules/tests, containment, no-vendor and ci-scope); lint, typecheck, format and both officina checks pass, and `test.rows` blocks without the record — check: fixture-census.md, neighbours-proto.out, timing-r7/run-6-cand.tap, check-studio.out, check-norecord.out
+10. advisory — unchanged code stays a stated limit, not a guarantee (D-076 E): the moved helpers and row bodies, W-178's counter, Node's runner and tsx's cache are reused as they are; the design is revision 3's — check: brief:88, brief:89
+11. advisory — the brief passes admission and its ledger covers every Input domain row and promise through master's writer; size 2 points, no code-owned path, so it proceeds on this signature — check: admission.out, ledger-check.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 4 with its brief:124 correction at `studio/briefs/W-179.md`, prototype on master 54e18d0b.
