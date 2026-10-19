@@ -1,0 +1,24 @@
+# opus: W-323
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T04:39:54.629Z
+# tree: tree:173edee99bce6595a0b7e9cf755279ed16cbe161
+# brief: briefs/W-323.md blob:bad335862b670afd15eb8f1d274370d8aa4e4e08
+# ticket: {"opus":"W-323","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"d72bb51687573e9084a4214c9dc032bffe236aee","brief":"bad335862b670afd15eb8f1d274370d8aa4e4e08","at":"2026-10-19T04:39:51.228Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-323-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — design: W-178 cannot certify unchanged under any shape of W-323: certify's own rebase conflicts at W-178's row b5 (census pin and appended row), and even resolved the host's W-134 replay runs W-178-b5 at a commit already holding the fetch, where it passes and the classifier refuses it; so W-323 takes W-178-b5's row as W-323-b1 with the pin, and W-178 drops behaviour 5 by brief amendment, re-signed spec and a rebase dropping 0c97539d, 10dfb8f0 and 9d7588f0, after which reds 01-04 re-identify and replay (brief:15 to brief:21, Defaults 1) — check: rebase-sim.out, w178b5-replay-accept.out, w178-behaviours.out, replay-w178.out
+2. advisory — the red fails by assertion on master d72bb516 with the final row (`b1: the run mints a receipt, so the gate saw origin/master`, 1 !== 0), accepted by the host replay classifier; the row passes on the prototype; mutants m1 and m2 fail it, m3 (the fetch's failure ignored) does not and is a stated limit — check: red-b1-master.out, red-accept.out, proto-b1.out, mutants.out
+3. advisory — must-stay-green on the prototype: all 41 rows of run.test.ts with live rows required and none skipped, W-132-b1's census flip named in Files owned; containment 65 with no pin change, w279 3, host-cells 5, brief-admission 60; the Codex test check lists the one flip and nothing unnamed — check: run-test-proto.out, neighbours-proto.out, fixture-census.md
+4. advisory — pipeline work touching the sandbox's host runner (a D-063 §4 risky file, 2 points): the Patron approves the design before branch; no confinement, bwrap argument, receipt or CI file changes, and no path is code-owned — check: brief:3, prototype.diff
+5. advisory — the brief passes admission and the officina check; its ledger covers the verb line, both promises and every Input domain row under master's writer; lint, format and typecheck pass on the touched files — check: admission.out, check-studio.out, ledger-check.out, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-323.md` (blob bad33586), master d72bb516.

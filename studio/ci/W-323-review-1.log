@@ -1,0 +1,18 @@
+# opus: W-323
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a152d6-0712-7d42-9491-e83a78daef00
+# outcome: passed
+# at: 2026-10-19T06:29:20.102Z
+# tree: tree:5d99191ab0a8785c14ee86d53774a4f8af504b83
+# brief: briefs/W-323.md blob:bad335862b670afd15eb8f1d274370d8aa4e4e08
+# ticket: {"opus":"W-323","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-323/studio","head":"cb3536e4f55486234208ddb2dd221ff27e0db598","brief":"bad335862b670afd15eb8f1d274370d8aa4e4e08","at":"2026-10-19T06:25:17.819Z"}
+
+## Findings
+1. advisory — packages/commands/src/run.test.ts:2017 The W-131 comment still says W-132 pins 26 live rows and that the count is unchanged, while this change deliberately raises the pin to 27. [severity: S4] [class: tests×stale-census-comment] — check: none: test-source census comments should be checked against the pinned live-row count
+
+## Verdict
+The implementation, red, declared source scope, and automated gate evidence satisfy the brief; only a stale explanatory comment remains.
+VERDICT: PASS
