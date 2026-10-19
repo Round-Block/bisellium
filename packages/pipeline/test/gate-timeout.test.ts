@@ -105,9 +105,9 @@ test("W-313-b1 behaviour 1: a watched run prints its start, a progress line each
 
     // a gate that passes its stream cap with a SIGTERM handler still exits 0: the cap error alone must fail the gate
     const loud = join(dir, "loud.cjs");
-    writeFileSync(loud, 'process.on("SIGTERM", () => {});\nconst chunk = "x".repeat(1 << 20);\nfor (let i = 0; i < 65; i++) process.stdout.write(chunk);\n');
+    writeFileSync(loud, 'process.on("SIGTERM", () => {});\nconst chunk = ("x".repeat(1023) + "\\n").repeat(1024);\nfor (let i = 0; i < 65; i++) process.stdout.write(chunk);\n');
     const logDir = join(dir, "ci");
-    const gates = await pipeline.localPipeline.run({ opus: { id: "W-LOUD" } as never, repo: dir, commands: { tests: `${JSON.stringify(process.execPath)} ${JSON.stringify(loud)}` }, treeHash: "0123456789abcdef0123456789abcdef01234567", logDir, now: new Date("2026-10-20T00:00:00Z"), studioDir: dir });
+    const gates = await pipeline.localPipeline.run({ opus: { id: "W-LOUD" } as never, repo: dir, commands: { tests: `exec ${JSON.stringify(process.execPath)} ${JSON.stringify(loud)}` }, treeHash: "0123456789abcdef0123456789abcdef01234567", logDir, now: new Date("2026-10-20T00:00:00Z"), studioDir: dir });
     assert.equal(gates.tests?.status, "failed", "ENOBUFS cannot pass");
     assert.match(readFileSync(join(dir, gates.tests?.evidence ?? "missing"), "utf8"), /ENOBUFS/, "the gate log names the cap error");
   } finally {
