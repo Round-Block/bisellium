@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds } from "./next-world.test.js";
+import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
 const readLog = (w: World, n: number): string => readFileSync(join(w.repo, specLog(n)), "utf8");
@@ -544,10 +544,18 @@ test("W-246-b2 behaviour 2: two failed spec reviews since the newest re-spec end
 
 test("W-246-b3 behaviour 3: build review has no cap", { timeout: 1_800_000 }, () => {
   const w = w167("w246-b3", [F, F, F]);
+  // W-297 (D-085 C): three failed rounds in a row hold the fix until the architect signs again; that is routing, not a cap
+  const resign = (n: number, after: number): void => {
+    verb(w.wt, ["verdict", OPUS, "--round", String(n), "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, `w246-resign-${n}.md`), "--studio", w.wtStudio, "--now", new Date(Date.parse(rt(after)) + 10 * 60_000).toISOString()]);
+    commit(w.wt, `studio(${OPUS}): the architect signs again`);
+  };
+  expectStep(n167(w), "build", "held", "three failures hold the fix for the architect");
+  resign(2, 3);
   buildFix(n167(w), "three failures name build, phase fix");
   advanceSource(w);
   reviewNamed(n167(w), 4, "a fix names round 4");
   addReview(w, "failed", 4, rt(4), F);
+  resign(3, 4);
   buildFix(n167(w), "a fourth failure names build, phase fix again");
   trial(w, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", "\nround_rulings: nonsense\n---\n") }], () => buildFix(n167(w), "round_rulings is no longer read"));
   const order = w167("w246-b3-order", [F]);

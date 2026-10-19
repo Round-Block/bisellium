@@ -32,7 +32,7 @@ import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/buil
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
-import { SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
@@ -935,6 +935,9 @@ export function deriveNext(f: Facts): Derived {
     const current = (g: Gate): boolean => g.tree === cur && (g.brief === undefined || g.brief === pin);
     const failedNow = gate !== undefined && gate.status === "failed" && current(gate);
     const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
+    // W-297 (D-085 C): a class loop goes to the architect to state the limit, not back to a builder
+    const loop = failedNow ? classLoop(f, read.rounds) : undefined;
+    if (loop !== undefined) return hold("build", loop);
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
     if ((gates !== undefined && !gates.ok) || failedNow)
@@ -1049,6 +1052,36 @@ function afterDone(f: Facts): Derived {
     command: `update ${HANDOFF}, the progress row and the masthead for ${id}, then republish`,
     extra: [],
   };
+}
+
+/**
+ * W-297 (D-085 A, C): why the fix of the newest failed build-review round is held for the architect, or undefined. It holds when
+ * the newest two rounds failed, pin one `# brief:` and share a `[class:]` tag on their standing blockers, or the newest three
+ * failed; it does not when a standing blocker of the newest round opens exactly `blocking (security)` or `blocking (evidence)`
+ * (bare or wrapped in `**`) or carries a well-formed `[class: security×<slug>]` tag, nor once an architect signature in opus/<id>'s ci/ is newer than that round.
+ */
+/** W-297: an exempt blocker's opener, exactly: `blocking (security)` or `blocking (evidence)`, any case, bare or wrapped in `**` (r2). */
+const EXEMPT = /^(?:blocking \((?:security|evidence)\)(?!\*)|\*\*blocking \((?:security|evidence)\)\*\*(?!\*))/i;
+function classLoop(f: Facts, rounds: BuildReviewRound[]): string | undefined {
+  const [a, b, c] = [...rounds].reverse();
+  if (a?.outcome !== "failed" || b?.outcome !== "failed") return undefined;
+  if (a.blockers.some((x) => EXEMPT.test(x.text) || [...x.text.matchAll(CLASS_TAG)].some((m) => m[1]!.startsWith("security×")))) return undefined;
+  const classes = (r: BuildReviewRound): string[] => r.blockers.flatMap((x) => [...x.text.matchAll(CLASS_TAG)].map((m) => m[1]!));
+  const shared = a.brief !== undefined && a.brief === b.brief ? classes(a).find((k) => classes(b).includes(k)) : undefined;
+  if (shared === undefined && c?.outcome !== "failed") return undefined;
+  if (signedAfter(f, a.at)) return undefined;
+  const loop = shared !== undefined ? `${b.log} and ${a.log} failed on class ${shared} against one brief` : `${c!.log}, ${b.log} and ${a.log} failed in a row`;
+  return `${loop}: a class loop goes to the architect, not a builder (D-085): state the limit in ${briefRel(f.id)} (the forms the rule recognises, every other form a limit) and sign it again in ${join(".worktrees", f.id, f.studioRel)}, or sign it unchanged when the form is inside the stated domain; a security or evidence blocker opens blocking (security) or blocking (evidence)`;
+}
+
+/** W-297: some valid architect signature in opus/<id>'s ci/ (the worktree's when usable) records an `# at:` after `at` (ms). */
+function signedAfter(f: Facts, at: number): boolean {
+  return (f.branch?.list("ci") ?? []).some((name) => {
+    const m = new RegExp(`^${esc(f.id)}-spec-([1-9][0-9]*)\\.log$`).exec(name);
+    const text = m === null ? undefined : f.branch!.read(`ci/${name}`);
+    if (m === null || text === undefined || "error" in readSpecSignature(text, f.id, Number(m[1]), f.design, ownBrief(text, f.id, `ci/${name}`), `ci/${name}`)) return false;
+    return (instant(parseLogHeader(text).get("at") ?? "")?.getTime() ?? 0) > at;
+  });
 }
 
 /** The lowest-numbered standing blocker that names a class (L-069): the whole word `class` or `classes`. */

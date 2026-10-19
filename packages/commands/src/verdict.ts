@@ -117,6 +117,9 @@ export function designOf(text: string): "changes" | "keeps" | undefined {
   return tags.length === 1 ? (tags[0]![1] as "changes" | "keeps") : undefined;
 }
 
+/** W-297: a class tag (D-070 B), whole: `[class: <area>×<slug>]`, each a lower-case word of letters, digits and hyphens. */
+export const CLASS_TAG = /\[class: ([a-z0-9][a-z0-9-]*×[a-z0-9][a-z0-9-]*)\]/g;
+
 export interface Conversion {
   /** The finding's number as written. */
   finding: string;
