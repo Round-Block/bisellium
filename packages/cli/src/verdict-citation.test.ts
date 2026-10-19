@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, test } from "node:test";
 import { parseVerdictHeader } from "@bisellium/commands/opus-model.js";
+import { ruledCases } from "@bisellium/commands/brief-admission.js";
 import { runReview } from "./lifecycle.js";
 import { runVerdict } from "./verdict.js";
 import { USAGE } from "@bisellium/commands/usage.js";
@@ -723,6 +724,11 @@ test("W-322-b2 behaviour 2: a row ruling any text or any string lists the forms 
   refused("a range beginning beyond the last line clamps to it", ledger, grammar(14, 10));
   setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, BEYOND) + 'a last line, pinned by `W-300-b1` "last"');
   admitted("a pin on the last line admits a range beginning beyond it", ledger);
+
+  // a ruled case holds exactly the keys line, row, pins and unpinned
+  const { cases } = ruledCases(GRAMMAR_BRIEF);
+  assert.ok(cases.length > 0, "the brief has cases");
+  for (const c of cases) assert.deepEqual(Object.keys(c).sort(), ["line", "pins", "row", "unpinned"], "a case has exactly the keys line, row, pins and unpinned");
 
   // a row citing its own line is reported as a grammar line, after its row problem
   const SELF_ROW = GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, "any text; recognises brief:10; every other form is a limit").replace(', pinned by `W-300-b1` "counts"', "");

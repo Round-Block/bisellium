@@ -455,10 +455,14 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
       problems.push(`brief:${n} is an Input domain row, and no ledger line cites brief:${n} with a <file>:<line> and holds or scoped`);
   const { cases, formless } = ruledCases(brief);
   const PIN_FORM = 'as pinned by `<row>` "<assertion>"';
+  const rowsSeen = new Set<number>();
   for (const c of cases) {
+    // a row's own case comes first; every later case with that row is a line its forms clause cites, even its own
+    const grammar = rowsSeen.has(c.row);
+    rowsSeen.add(c.row);
     if (c.pins.length > 0) continue;
     const covering = entries.filter((e) => e.counts && e.briefs.has(c.line));
-    if (c.grammar)
+    if (grammar)
       problems.push(`brief:${c.line} is a grammar line brief:${c.row} recognises, with no pin: name its test row and assertion ${PIN_FORM}`);
     else if (!c.unpinned)
       problems.push(`brief:${c.line} is an Input domain row with no pin: name the test row and assertion that exercise it ${PIN_FORM}, or say unpinned (a stated limit, scoped in the ledger)`);
