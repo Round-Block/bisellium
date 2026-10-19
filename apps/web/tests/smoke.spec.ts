@@ -11,6 +11,8 @@
 import { expect, test } from "@playwright/test";
 
 export function smokeBaseURL(port: string | undefined): string {
+  if (port === undefined || !/^[1-9][0-9]{0,4}$/.test(port) || Number(port) > 65535)
+    throw new Error(`SMOKE_PORT is not a port from 1 through 65535: ${JSON.stringify(port)}`);
   return `http://127.0.0.1:${port}`;
 }
 
