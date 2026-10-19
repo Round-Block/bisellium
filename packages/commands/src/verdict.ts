@@ -458,7 +458,7 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const c of cases) {
     if (c.pins.length > 0) continue;
     const covering = entries.filter((e) => e.counts && e.briefs.has(c.line));
-    if (c.line !== c.row)
+    if (c.grammar)
       problems.push(`brief:${c.line} is a grammar line brief:${c.row} recognises, with no pin: name its test row and assertion ${PIN_FORM}`);
     else if (!c.unpinned)
       problems.push(`brief:${c.line} is an Input domain row with no pin: name the test row and assertion that exercise it ${PIN_FORM}, or say unpinned (a stated limit, scoped in the ledger)`);

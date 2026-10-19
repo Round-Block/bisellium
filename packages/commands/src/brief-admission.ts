@@ -143,10 +143,11 @@ export interface Pin {
   row: string;
   assertion: string;
 }
-/** W-322: a ruled case: an Input domain row (`row` is `line`), or a grammar line that row's forms clause cites. */
+/** W-322: a ruled case: an Input domain row (`row` is `line`), or a grammar line that row's forms clause cites (`grammar`, even the row's own). */
 export interface RuledCase {
   line: number;
   row: number;
+  grammar: boolean;
   pins: Pin[];
   unpinned: boolean;
 }
@@ -161,17 +162,17 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
   const formless: number[] = [];
   for (const n of inputDomainRows(briefText)) {
     const text = real[n - 1]!;
-    cases.push({ line: n, row: n, pins: pinsOf(n), unpinned: UNPINNED.test(text) });
+    cases.push({ line: n, row: n, grammar: false, pins: pinsOf(n), unpinned: UNPINNED.test(text) });
     if (!ANY_TEXT.test(cellsOf(text)[1] ?? "")) continue;
     const clause = FORMS.exec(text)?.[1];
-    // a cited range ends at the brief's last line; a start past it is one line, which holds no pin
+    // a cited range is clamped to the brief's last line: a start past it cites the last line alone
     const cited = [...(clause ?? "").matchAll(GRAMMAR_CITE)].flatMap((m) => {
-      const a = Number(m[1]);
+      const a = Math.min(Number(m[1]), real.length);
       const b = Math.max(a, Math.min(Number(m[2] ?? a), real.length));
       return Array.from({ length: b - a + 1 }, (_, i) => a + i);
     });
     if (clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause))) formless.push(n);
-    for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
+    for (const m of new Set(cited)) cases.push({ line: m, row: n, grammar: true, pins: pinsOf(m), unpinned: false });
   }
   return { cases, formless };
 }

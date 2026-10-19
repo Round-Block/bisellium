@@ -717,6 +717,22 @@ test("W-322-b2 behaviour 2: a row ruling any text or any string lists the forms 
   setBrief(GRAMMAR_BRIEF.replace("recognises the forms", "recognizes the forms").replace("is a limit", "are limits"));
   admitted("recognizes and limits spelled otherwise", ledger);
 
+  // a range beginning beyond the last line clamps to the last line; a pin there admits it
+  const BEYOND = "any text; recognises brief:999-1000; every other form is a limit";
+  setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, BEYOND));
+  refused("a range beginning beyond the last line clamps to it", ledger, grammar(14, 10));
+  setBrief(GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, BEYOND) + 'a last line, pinned by `W-300-b1` "last"');
+  admitted("a pin on the last line admits a range beginning beyond it", ledger);
+
+  // a row citing its own line is reported as a grammar line, after its row problem
+  const SELF_ROW = GRAMMAR_BRIEF.replace(SOURCE_DOMAIN, "any text; recognises brief:10; every other form is a limit").replace(', pinned by `W-300-b1` "counts"', "");
+  setBrief(SELF_ROW);
+  refused(
+    "a self-cited row is reported as a grammar line",
+    ledger,
+    `W-300: promise ledger: brief:10 is an Input domain row with no pin: name the test row and assertion that exercise it as pinned by \`<row>\` "<assertion>", or say unpinned (a stated limit, scoped in the ledger)\n` + grammar(10, 10),
+  );
+
   // any text outside the Valid domain cell, or no any text at all, needs no forms clause
   setBrief(GRAMMAR_BRIEF);
   admitted("every form listed and pinned; any text in a Rejected by cell", ledger);

@@ -192,9 +192,9 @@ function pinFact(studio, repo, studioRel, id) {
   const open = ruledCases(brief.bytes.toString("utf8"))
     .cases.filter((c) => !c.pins.some(found))
     .map((c) => {
-      const what = c.line === c.row ? "Input domain row" : `grammar line of brief:${c.row}`;
+      const what = c.grammar ? `grammar line of brief:${c.row}` : "Input domain row";
       const pins = c.pins.map((p) => `pinned by \`${p.row}\` "${p.assertion}"`).join(", ");
-      const why = pins !== "" ? `${pins}: not in the diff` : c.unpinned && c.line === c.row ? "unpinned" : "no pin";
+      const why = pins !== "" ? `${pins}: not in the diff` : c.unpinned && !c.grammar ? "unpinned" : "no pin";
       return `brief:${c.line} (${what}): ${why}`;
     });
   return [...lines, open.length === 0 ? "(none)" : open.join("\n"), ""].join("\n");
