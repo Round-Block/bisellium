@@ -1,0 +1,34 @@
+# behaviour: 1
+# command: npx playwright test --config=apps/web/playwright.config.ts --grep W-182.behaviour.1
+# exit: 1
+# at: 2026-10-19T22:46:56.733Z
+# sella: builder.W-182
+# tree: tree:0d1dcee503f1368c1e00a976680ba028d7786232
+# ticket: {"opus":"W-182","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-182/studio","head":"d8170dbe1819cc592a0e5b6106fc4dc4ffaa7902","brief":"e2968b5d3711ac8a8c633ca201f3ab44cafac61e","at":"2026-10-19T22:46:53.110Z"}
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › apps/web/tests/smoke.spec.ts:71:1 › W-182 behaviour 1: the smoke browser uses the free port printed by its own Vite process (76ms)
+
+
+  1) [chromium] › apps/web/tests/smoke.spec.ts:71:1 › W-182 behaviour 1: the smoke browser uses the free port printed by its own Vite process 
+
+    Error: expect(received).toMatch(expected)
+
+    Expected pattern: /^[1-9][0-9]*$/
+    Received string:  ""
+
+      74 | }) => {
+      75 |   const port = process.env["SMOKE_PORT"];
+    > 76 |   expect(port ?? "").toMatch(/^[1-9][0-9]*$/);
+         |                      ^
+      77 |   expect(baseURL).toBe(`http://127.0.0.1:${port}`);
+      78 |   await page.goto("/");
+      79 |   expect(new URL(page.url()).port).toBe(port);
+        at /home/edckt/agents/bisellium/.worktrees/W-182/apps/web/tests/smoke.spec.ts:76:22
+
+    Error Context: apps/web/test-results/smoke-W-182-behaviour-1-th-3d376-ted-by-its-own-Vite-process-chromium/error-context.md
+
+  1 failed
+    [chromium] › apps/web/tests/smoke.spec.ts:71:1 › W-182 behaviour 1: the smoke browser uses the free port printed by its own Vite process 
