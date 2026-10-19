@@ -806,6 +806,9 @@ try {
       candidate,
     ]);
     if (clonedCandidate.status !== 0) throw new Error(`producer checkout failed: ${clonedCandidate.stderr.trim()}`);
+    // W-323: the clone is single-branch, so a check the gate runs in it (W-178's test.rows) would find no master.
+    const fetchedMaster = git(candidate, ["fetch", "-q", "origin", "+refs/heads/master:refs/remotes/origin/master"]);
+    if (fetchedMaster.status !== 0) throw new Error(`producer checkout failed: ${fetchedMaster.stderr.trim()}`);
     if (mustGit(candidate, ["rev-parse", "HEAD"]) !== finalCommit)
       throw new Error("producer checkout is not the exported tip");
     copyModules(candidate);
