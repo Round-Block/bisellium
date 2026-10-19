@@ -1,0 +1,5 @@
+drops:
+  - path: packages/cli/src/next.test.ts
+    drop: 104
+    opus: W-179
+    reason: moved, not removed, into next-branch.test.ts, next-done.test.ts, next-ladder.test.ts, next-queue.test.ts, next-review.test.ts, next-spec.test.ts (split by behaviour group, every row kept once)

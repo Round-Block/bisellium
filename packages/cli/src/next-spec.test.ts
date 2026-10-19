@@ -1,0 +1,707 @@
+/**
+ * W-179: one behaviour group of the next.test.ts rows (studio/briefs/W-179.md); the fixture is ./next-world.test.ts.
+ * Select one row with --test-name-pattern='^<row id>\s'.
+ */
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { join } from "node:path";
+import { test } from "node:test";
+import { BLOCKER, BRANCH, BRIEF_REL, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, w167, world } from "./next-world.test.js";
+
+const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
+const readLog = (w: World, n: number): string => readFileSync(join(w.repo, specLog(n)), "utf8");
+const writeLog = (w: World, n: number, text: string): void => writeFileSync(join(w.repo, specLog(n)), text);
+
+test("W-162-b1 behaviour 1: a valid reviewer setting sends a signed spec to the reviewer, while bad settings and UI opera hold", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w162-b1");
+  putBrief(w);
+  sign(w, 1);
+  const o = specNext(w);
+  reviewerOrder(o, 2, "a working-tree signature with no review");
+  const inputs = o.kv.get("inputs") ?? "";
+  assert.match(inputs, /briefs\/W-900\.md/, ran("the brief is an input", o));
+  assert.match(inputs, /ci\/W-900-spec-1\.log/, ran("the signature log is an input", o));
+  const command = o.kv.get("command") ?? "";
+  assert.match(command, /does its Input domain name every record the opus reads, with one rejecting function that fails closed\?/, ran("question 1", o));
+  assert.match(command, /can every promise be guaranteed, or does it state its limit\?/, ran("question 2", o));
+  assert.match(command, /bisellium verdict W-900 --round 2 --sella spec-reviewer --model gpt-5\.6-sol --outcome <passed\|failed> --phase spec --from <file> --studio studio/, ran("the exact verdict command", o));
+  assert.equal(o.out.includes("traditio"), false, ran("the reviewer order reads no handover", o));
+
+  // an absent key preserves the existing commit path
+  const absent = srWorld("w162-b1-absent", { setting: null });
+  putBrief(absent);
+  sign(absent, 1);
+  const kept = specNext(absent);
+  expectStep(kept, "branch", "named", "absent key: the signed spec names branch");
+  assert.equal(kept.kv.has("role"), false, ran("absent key names no order", kept));
+
+  const bad: [string, SrOpts][] = [
+    ["null", { setting: "null" }],
+    ["another type", { setting: "42" }],
+    ["an unknown seat", { setting: "ghost" }],
+    ["a retired seat", { row: SR_ROW.replace(" }", ", retired: true }") }],
+    ["the design magister", { setting: "architect", edit: (t) => t.replace(ARCHITECT_ROW, "  - { id: architect, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }") }],
+    ["a non-agent seat", { row: SR_ROW.replace("kind: agent", "kind: orchestrator") }],
+    ["a non-codex harness", { row: SR_ROW.replace("harness: codex", "harness: claude-code") }],
+    ["a missing harness", { row: SR_ROW.replace(", harness: codex", "") }],
+    ["a missing model", { row: SR_ROW.replace(` model: ${SR_MODEL},`, "") }],
+    ["another codex model", { row: SR_ROW.replace(SR_MODEL, "gpt-5.6-terra") }],
+  ];
+  for (const [name, opts] of bad) {
+    const b = srWorld(`w162-b1-bad-${name.replace(/\W+/g, "-")}`, opts);
+    putBrief(b);
+    sign(b, 1);
+    specHeld(specNext(b), `${name} holds at spec`, /spec_reviewer|spec-reviewer/);
+  }
+
+  // a kind: ui opus holds and names the verdict-writer / UI-input limit
+  const ui = srWorld("w162-b1-ui");
+  editRecord(ui, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  commit(ui.repo, "studio: W-900 is a ui opus");
+  putBrief(ui);
+  const held = specNext(ui);
+  specHeld(held, "a kind: ui opus holds at spec", /UI input/);
+  assert.match(held.kv.get("why") ?? "", /verdict/i, ran("it names the verdict writer", held));
+});
+
+test("W-162-b1 behaviour 1 review round 1: a duplicate reviewer-seat row holds at spec even when the first row is valid", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w162-b1-r1-dup-seat", { row: `${SR_ROW}\n${SR_ROW}` });
+  putBrief(w);
+  sign(w, 1);
+  specHeld(specNext(w), "two rows for the reviewer seat hold", /spec_reviewer|spec-reviewer/);
+});
+
+test("W-162-b1 behaviour 1 review round 1: a duplicate design collegium row holds at spec even when the first row is valid", { timeout: 1_800_000 }, () => {
+  const design = "  - { id: design, name: Design, magister: architect }";
+  const w = srWorld("w162-b1-r1-dup-design", { edit: (t) => t.replace(design, `${design}\n${design}`) });
+  putBrief(w);
+  // W-306: the writer refuses any spec verdict under two design rows, so no signature exists for next to read
+  assert.throws(() => sign(w, 1), /declares the design collegium 2 times/, "the writer refuses the signature");
+  specHeld(specNext(w), "two design collegium rows hold", /spec_reviewer|spec-reviewer/);
+});
+
+test("W-162-b2 behaviour 2: architect signatures and review verdicts are strict, and their outcomes agree with their findings", { timeout: 1_800_000 }, () => {
+  // editing the brief after the signature orders the architect at the next round, not the reviewer
+  const w = srWorld("w162-b2-blob");
+  putBrief(w);
+  const blob = gitq(w.repo, ["hash-object", briefPath(w)]);
+  sign(w, 1);
+  appendFileSync(briefPath(w), "\nEdited after the signature.\n");
+  architectOrder(specNext(w), 2, "a brief edited after its signature");
+
+  // the writer pins the brief's blob on a non-UI spec-phase verdict
+  assert.match(readLog(w, 1), new RegExp(`^# brief: briefs/W-900\\.md blob:${blob}$`, "m"), "the signature carries # brief: <path> blob:<sha1>");
+
+  // and refuses, writing nothing, when the brief is unreadable
+  const bare = srWorld("w162-b2-nobrief");
+  const from = join(bare.root, "none.md");
+  writeFileSync(from, NO_FINDINGS);
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", from, "--studio", bare.studio, "--now", T.spec], { cwd: bare.repo, env: SETUP_ENV, encoding: "utf8" });
+  assert.equal(r.status, 2, `an unreadable brief exits 2\n${r.stderr}${r.stdout}`);
+  assert.match(r.stderr, /brief/, "the refusal names the brief");
+  assert.equal(existsSync(join(bare.repo, specLog(1))), false, "no spec log is written");
+
+  // a sole signature that is not strictly valid anchors nothing: the architect signs again
+  const lone: [string, (t: string) => string][] = [
+    ["a signature with no brief header", (t) => t.replace(/^# brief: .*\n/m, "")],
+    ["a signature with a duplicate sella header", (t) => t.replace(/^# sella: architect\n/m, "# sella: architect\n# sella: architect\n")],
+    ["a signature by another sella", (t) => t.replace("# sella: architect", "# sella: qa-lead")],
+    ["a signature for another phase", (t) => t.replace("# phase: spec", "# phase: build")],
+    ["a signature with a blocking finding", (t) => t.replace("No findings", "1. blocking brief:7 a defect. check: none: x")],
+  ];
+  for (const [name, mutate] of lone) {
+    const s = srWorld(`w162-b2-lone-${name.replace(/\W+/g, "-")}`);
+    putBrief(s);
+    sign(s, 1);
+    writeLog(s, 1, mutate(readLog(s, 1)));
+    architectOrder(specNext(s), 2, `${name} is no signature`);
+  }
+
+  // a log above the newest valid signature must be that signature's strict review: nothing is skipped
+  const above: [string, (t: string) => string, RegExp][] = [
+    ["a review with no model", (t) => t.replace(/^# model: .*\n/m, ""), /spec-2\.log/],
+    ["a review with another model", (t) => t.replace(`# model: ${SR_MODEL}`, "# model: gpt-5.6-terra"), /spec-2\.log/],
+    ["a review with a duplicate header", (t) => t.replace(/^# outcome: passed\n/m, "# outcome: passed\n# outcome: passed\n"), /spec-2\.log/],
+    ["a review with no brief header", (t) => t.replace(/^# brief: .*\n/m, ""), /spec-2\.log/],
+    ["a review with no Findings section", (t) => t.replace("## Findings", "## Notes"), /spec-2\.log/],
+    ["a review by another sella", (t) => t.replace(`# sella: ${SR}`, "# sella: qa-lead"), /spec-2\.log/],
+    ["a review of another round", (t) => t.replace("# round: 2", "# round: 5"), /spec-2\.log/],
+    ["a review of another phase", (t) => t.replace("# phase: spec", "# phase: build"), /spec-2\.log/],
+    ["a review naming another brief blob", (t) => t.replace(/blob:[0-9a-f]{40}/, `blob:${"0".repeat(40)}`), /spec-2\.log/],
+    ["a review with an unknown outcome", (t) => t.replace("# outcome: passed", "# outcome: passed with notes"), /spec-2\.log/],
+  ];
+  for (const [name, mutate, why] of above) {
+    const s = srWorld(`w162-b2-above-${name.replace(/\W+/g, "-")}`);
+    putBrief(s);
+    sign(s, 1);
+    review(s, 2, "passed");
+    writeLog(s, 2, mutate(readLog(s, 2)));
+    specHeld(specNext(s), `${name} holds`, why);
+  }
+  // outcome and findings must agree
+  const blocked = srWorld("w162-b2-passed-blocker");
+  putBrief(blocked);
+  sign(blocked, 1);
+  review(blocked, 2, "passed", { body: BLOCKER });
+  specHeld(specNext(blocked), "passed beside a blocking finding holds", /spec-2\.log/);
+  const empty = srWorld("w162-b2-failed-none");
+  putBrief(empty);
+  sign(empty, 1);
+  review(empty, 2, "failed", { body: NO_FINDINGS });
+  assert.equal(specNext(empty).first, `next: ${OPUS} branch named`, "W-246: failed beside No findings passes to branch");
+  const unchecked = srWorld("w162-b2-no-check");
+  putBrief(unchecked);
+  sign(unchecked, 1);
+  review(unchecked, 2, "failed", { body: BLOCKER });
+  writeLog(unchecked, 2, readLog(unchecked, 2).replace(" check: none: no rule", ""));
+  specHeld(specNext(unchecked), "a numbered finding with no check holds", /spec-2\.log/);
+
+  // malformed names hold, wherever they sit
+  for (const name of [`${OPUS}-spec-01.log`, `${OPUS}-spec-x.log`, `${OPUS}-spec-2.txt`]) {
+    const n = srWorld(`w162-b2-name-${name.replace(/\W+/g, "-")}`);
+    putBrief(n);
+    sign(n, 1);
+    put(n.repo, `studio/ci/${name}`, "junk\n");
+    specHeld(specNext(n), `the name ${name} holds`, /spec-/);
+  }
+
+  // a malformed newest signature is not skipped in favour of an older one
+  const newest = srWorld("w162-b2-newest");
+  putBrief(newest);
+  sign(newest, 1);
+  sign(newest, 2);
+  writeLog(newest, 2, readLog(newest, 2).replace(/^# brief: .*\n/m, ""));
+  specHeld(specNext(newest), "a malformed newest signature holds", /spec-2/);
+});
+
+test("W-162-b3 behaviour 3: only a passed review after the newest architect signature unlocks commit, landing and branch", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w162-b3");
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  const named = specNext(w);
+  expectStep(named, "branch", "named", "signature 1 plus passed review 2 names branch");
+  assert.equal(named.kv.has("role"), false, ran("no order is named", named));
+
+  const master = git(w.repo, ["rev-parse", "master"]);
+  const done = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(done, "branch", "performed", "the spec is committed by branch");
+  assert.match(done.out, /^branch: opus\/W-900$/m, ran("the branch line", done));
+  assert.match(done.out, /^commit: [0-9a-f]+$/m, ran("the commit line", done));
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), master, "opus/<id> is master plus one commit");
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(), [BRIEF_REL, specLog(1), specLog(2)], "exactly the brief and both validated logs");
+
+  // ready is attributed to the signer, never the reviewer
+  const ready = next(w, [OPUS]);
+  expectStep(ready, "ready", "named", "ready follows branch");
+  assert.match(ready.out, /^attributed: architect \(signed ci\/W-900-spec-1\.log\)$/m, ran("attributed to the signer", ready));
+  assert.match(ready.out, /--sella architect /, ran("the ready command names the design magister", ready));
+  assert.doesNotMatch(ready.out, /--sella spec-reviewer/, ran("never the reviewer", ready));
+
+  // a signature with no passed review does not unlock anything, committed or not
+  const only = srWorld("w162-b3-only");
+  putBrief(only);
+  sign(only, 1);
+  landed(only);
+  reviewerOrder(specNext(only), 2, "a committed signature with no review");
+
+  // an edit after a passed review orders the architect, in the working tree and on the trunk
+  const edited = srWorld("w162-b3-edit");
+  putBrief(edited);
+  sign(edited, 1);
+  review(edited, 2, "passed");
+  appendFileSync(briefPath(edited), "\nEdited after the review.\n");
+  architectOrder(specNext(edited), 3, "a working-tree brief edited after a passed review");
+  const trunk = srWorld("w162-b3-edit-trunk");
+  putBrief(trunk);
+  sign(trunk, 1);
+  review(trunk, 2, "passed");
+  landed(trunk);
+  appendFileSync(briefPath(trunk), "\nEdited after the review.\n");
+  commit(trunk.repo, "spec: brief edited after review");
+  architectOrder(specNext(trunk), 3, "a trunk brief edited after a passed review");
+
+  // a newer signature needs a newer review
+  for (const committed of [false, true]) {
+    const s = srWorld(`w162-b3-resign-${committed}`);
+    putBrief(s);
+    sign(s, 1);
+    review(s, 2, "passed");
+    sign(s, 3);
+    if (committed) landed(s);
+    const o = specNext(s);
+    reviewerOrder(o, 4, `signature 3 after a passed review 2 (committed: ${committed})`);
+    assert.doesNotMatch(o.out, /^next: W-900 branch/m, ran("never branch", o));
+  }
+
+  // the review's model must be exact, independently of the sella header
+  for (const [name, opts] of [
+    ["another model", { model: "gpt-5.6-terra" }],
+    ["another sella with the right model", { sella: "qa-lead" }],
+  ] as const) {
+    const s = srWorld(`w162-b3-model-${name.replace(/\W+/g, "-")}`);
+    putBrief(s);
+    sign(s, 1);
+    review(s, 2, "passed", opts);
+    specHeld(specNext(s), `a passed review by ${name} holds`);
+  }
+
+  // a merged record past ready keeps today's check: pre-gate logs (no brief header, no review) go past spec
+  const past = srWorld("w162-b3-past-ready", { upTo: "spec" });
+  writeFileSync(join(past.repo, specLog(1)), readLog(past, 1).replace(/^# brief: .*\n/m, ""));
+  editRecord(past, "repo", (doc) => doc.setIn(["state"], "building"));
+  commit(past.repo, "studio: W-900 is building on the trunk");
+  expectStep(next(past, [OPUS]), "branch", "named", "a past-ready record goes past spec as today");
+});
+
+test("W-162-b4 behaviour 4: a failed review returns to the architect, and only a newer signature can reopen review", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w162-b4");
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "failed");
+  const o = specNext(w);
+  architectOrder(o, 3, "signature 1 plus failed review 2");
+  const inputs = o.kv.get("inputs") ?? "";
+  assert.match(inputs, /briefs\/W-900\.md/, ran("the brief is an input", o));
+  assert.match(inputs, /ci\/W-900-spec-2\.log/, ran("the failed review is an input", o));
+
+  // a second reviewer verdict, with no signature between, holds and cannot erase the finding
+  review(w, 3, "passed");
+  specHeld(specNext(w), "a second reviewer verdict after a failed review holds", /spec-3|second|another/);
+
+  // the architect's re-sign order resumes, so it needs a handover; the reviewer order does not
+  const gated = srWorld("w162-b4-gate", { handoff: false });
+  putBrief(gated);
+  sign(gated, 1);
+  reviewerOrder(specNext(gated), 2, "the first reviewer order needs no traditio");
+  review(gated, 2, "failed");
+  specHeld(specNext(gated), "the architect's order is held until the record carries a traditio", /stale handover/);
+  handoffAt(gated, "repo", T.handoffFresh);
+  architectOrder(specNext(gated), 3, "the architect's order with a handover");
+  sign(gated, 3);
+  reviewerOrder(specNext(gated), 4, "signature 3 orders the reviewer at round 4");
+  review(gated, 4, "passed");
+  const commitNamed = specNext(gated);
+  expectStep(commitNamed, "branch", "named", "passed review 4 names branch");
+
+  // a malformed log at round 2 holds; a valid signature at round 3 makes it history
+  const bad = srWorld("w162-b4-history");
+  putBrief(bad);
+  sign(bad, 1);
+  put(bad.repo, specLog(2), "junk, not a verdict\n");
+  specHeld(specNext(bad), "a malformed log at round 2 holds", /spec-2/);
+  sign(bad, 3);
+  reviewerOrder(specNext(bad), 4, "a valid signature at round 3 makes the malformed log history");
+});
+
+// ---------------------------------------------------------------------------
+// W-196: with `brief_behaviour_limit` declared, a signed brief that fails admission takes an architect
+// order, never the reviewer's. Rows are selectable with --test-name-pattern=W-196-b4.
+// ---------------------------------------------------------------------------
+const W196_ADMITTED = [
+  `# ${OPUS} fixture brief`,
+  "",
+  "Read enumeration: `enumerate-reads.mjs` -> `reads.txt`",
+  "",
+  "## Intent",
+  "",
+  "Decree family: fixture",
+  "",
+  "## Files owned",
+  "",
+  "- `source.txt`",
+  "",
+  "## Interfaces",
+  "",
+  "None.",
+  "",
+  "## Input domain",
+  "",
+  "A rejection fails closed.",
+  "",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  '| fixture record | a string | `readFixture`, pinned by `W-900-b1` "row 1 fails" |', // W-322: the row's pin
+  "",
+  "## Behaviours to test",
+  "",
+  "1. **Fixture behaviour 1.**",
+  "   **Genuine red:** row 1 fails.",
+  "",
+  "## Acceptance",
+  "",
+  "Fixture.",
+  "",
+  "## Out of scope",
+  "",
+  "None.",
+  "",
+].join("\n");
+const w196World = (tag: string, limit: string): World => srWorld(tag, { edit: (t) => `${t}brief_behaviour_limit: ${limit}\n` });
+
+test("W-196-b4 behaviour 4: next sends an inadmissible signed brief back to the architect", { timeout: 1_800_000 }, () => {
+  const bad = w196World("w196-b4-bad", "6");
+  putBrief(bad);
+  sign(bad, 1);
+  const o = specNext(bad);
+  architectOrder(o, 2, "an inadmissible signed brief goes back to the architect");
+  assert.match(o.kv.get("why") ?? "", /^brief\.admission: .*cites no read enumeration/, ran("why names the admission problems", o));
+  assert.match(o.kv.get("inputs") ?? "", /ci\/W-900-spec-1\.log/, ran("the signature is an input", o));
+  assert.equal(o.out.includes(SR_MODEL), false, ran("no reviewer model is named", o));
+
+  // W-319: W196_ADMITTED's Input domain row (brief:23, brief:25 under the added sentence) needs a ledger line in the signature
+  const ledger = join(bad.root, "w319-ledger.md");
+  writeFileSync(ledger, "brief:23 brief:25, fixture record: fixture.ts:1 readFixture — holds\n");
+  const LEDGERED = `Promise ledger: ${ledger}\n\n${NO_FINDINGS}`;
+  const promise = w196World("w196-b4-promise", "6");
+  put(promise.repo, BRIEF_REL, W196_ADMITTED.replace("Decree family: fixture", "Decree family: fixture\n\nThe step always runs."));
+  sign(promise, 1, LEDGERED);
+  const p = specNext(promise);
+  architectOrder(p, 2, "an unqualified absolute phrase goes back to the architect");
+  assert.match(p.kv.get("why") ?? "", /^brief\.admission: .*says "always" outside a promise line/, ran("why names the phrase", p));
+
+  const good = w196World("w196-b4-good", "6");
+  put(good.repo, BRIEF_REL, W196_ADMITTED);
+  sign(good, 1, LEDGERED);
+  const g = specNext(good);
+  reviewerOrder(g, 2, "an admissible signed brief goes to the reviewer");
+
+  const off = srWorld("w196-b4-off");
+  putBrief(off);
+  sign(off, 1);
+  reviewerOrder(specNext(off), 2, "no limit: no admission, the reviewer as before");
+
+  const malformed = w196World("w196-b4-malformed", "0");
+  putBrief(malformed);
+  sign(malformed, 1);
+  const m = specNext(malformed);
+  specHeld(m, "a malformed limit holds", /^brief\.admission: brief_behaviour_limit must be a positive integer$/);
+
+  // the unchanged gateDispatch holds the architect order without --budget (E10), and without a traditio, a resumed order (E11)
+  const nobudget = next(bad, [OPUS]);
+  specHeld(nobudget, "no --budget holds the architect order", /^dispatch budget undeclared$/);
+  const nohandoff = srWorld("w196-b4-nohandoff", { handoff: false, edit: (t) => `${t}brief_behaviour_limit: 6\n` });
+  putBrief(nohandoff);
+  sign(nohandoff, 1);
+  const nh = specNext(nohandoff);
+  specHeld(nh, "no traditio holds the architect order", /^stale handover: .*no traditio/);
+  const nobudgetGood = next(good, [OPUS]);
+  specHeld(nobudgetGood, "no --budget holds the reviewer order too", /^dispatch budget undeclared$/);
+
+  const failed = w196World("w196-b4-failed", "6");
+  put(failed.repo, BRIEF_REL, W196_ADMITTED);
+  sign(failed, 1, LEDGERED);
+  review(failed, 2, "failed");
+  architectOrder(specNext(failed), 3, "a failed review still returns to the architect");
+});
+
+// ---------------------------------------------------------------------------
+// W-215: the review orders name the packet, the resume and --session. Rows are
+// selectable with --test-name-pattern=W-215-b3.
+// ---------------------------------------------------------------------------
+test("W-215-b3 behaviour 3: the spec reviewer's order resumes the recorded session and names the packet", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w215-b3-spec");
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "failed", { extra: ["--session", "S1"] });
+  sign(w, 3);
+  const o = specNext(w);
+  reviewerOrder(o, 4, "a failed review under session S1, then a new signature");
+  assert.equal(o.kv.get("session"), "S1", ran("the order carries the session", o));
+  const command = o.kv.get("command") ?? "";
+  assert.match(command, /^resume spec-reviewer's session S1 \(gpt-5\.6-sol\) with the packet's prompt, on the same two questions \(D-046\):/, ran("the first line resumes", o));
+  assert.match(command, /scripts\/review-packet\.mjs --phase spec --opus W-900 --round 4 --sella spec-reviewer --studio studio --repo \. --packets /, ran("the packet command", o));
+  assert.match(command, /studio\/prompts\/rebuttal\.md/, ran("the dispute line", o));
+  assert.match(command, /--studio studio --session S1$/, ran("the record command ends with the session", o));
+
+  const first = srWorld("w215-b3-spec-first");
+  putBrief(first);
+  sign(first, 1);
+  const none = specNext(first);
+  reviewerOrder(none, 2, "no session recorded");
+  assert.equal(none.kv.has("session"), false, ran("no session line", none));
+  const c = none.kv.get("command") ?? "";
+  assert.match(c, /^dispatch spec-reviewer \(gpt-5\.6-sol\) to review the signed spec once, on two questions only \(D-046\):/, ran("the round-1 wording is kept", none));
+  assert.match(c, /scripts\/review-packet\.mjs --phase spec --opus W-900 --round 2 --sella spec-reviewer/, ran("the packet command", none));
+  assert.match(c, /rebuttal/, ran("the dispute line", none));
+  assert.match(c, /--studio studio --session <the session id the reviewer prints>$/, ran("the record command asks for the printed session", none));
+});
+
+test("W-215-b3 behaviour 3: the censor's order resumes the recorded build session", { timeout: 1_800_000 }, () => {
+  const w = world("w215-b3-build", "build");
+  addReview(w, "failed", 1, rt(1), F, ["--session", "S9"]);
+  handoffAt(w, "wt", T.handoffFresh);
+  advanceSource(w);
+  const o = n167(w);
+  reviewNamed(o, 2, "review 1 failed under S9, then a source change");
+  assert.equal(o.kv.get("session"), "S9", ran("the order carries the session", o));
+  const command = o.kv.get("command") ?? "";
+  assert.match(command, /^resume qa-lead's session S9 with the packet's prompt/, ran("the censor resumes", o));
+  assert.match(command, /scripts\/review-packet\.mjs --phase build --opus W-900 --round 2 --sella qa-lead/, ran("the packet command", o));
+  assert.match(command, /rebuttal/, ran("the dispute line", o));
+  assert.match(command, /--studio studio --session S9;/, ran("--session follows --studio in the record command", o));
+
+  const plain = world("w215-b3-build-plain", "build");
+  addReview(plain, "failed", 1, rt(1), F);
+  handoffAt(plain, "wt", T.handoffFresh);
+  advanceSource(plain);
+  const p = n167(plain);
+  reviewNamed(p, 2, "review 1 failed with no session");
+  assert.equal(p.kv.has("session"), false, ran("no session line", p));
+  assert.match(p.kv.get("command") ?? "", /^dispatch qa-lead; /, ran("today's wording", p));
+  assert.match(p.kv.get("command") ?? "", /--studio studio --session <the session id the reviewer prints>;/, ran("the record command asks for the printed session", p));
+});
+
+// ---------------------------------------------------------------------------
+// W-246: spec review passes on advice, stops at two failed rounds (a third is a split),
+// and build review has no cap. Rows are selectable with --test-name-pattern=W-246-b<n>.
+// ---------------------------------------------------------------------------
+test("W-246-b1 behaviour 1: an advisory-only spec review passes", { timeout: 1_800_000 }, () => {
+  const rows: [string, string][] = [
+    ["advisory", "## Findings\n1. advisory brief:7 a wording note. check: none: x\n"],
+    ["none", NO_FINDINGS],
+    ["uncited", "## Findings\n1. blocking the Input domain omits a record. check: none: x\n"],
+  ];
+  for (const [name, body] of rows) {
+    const w = srWorld(`w246-b1-${name}`);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed", { body });
+    assert.match(readLog(w, 2), /^# outcome: passed$/m, `${name}: a failed submission with no standing blocker is recorded passed`);
+    assert.match(readLog(w, 2), /^# submitted_outcome: failed$/m, `${name}: the submitted outcome is kept`);
+    const o = specNext(w);
+    expectStep(o, "branch", "named", `${name}: the passed review names branch`);
+  }
+  const cited = srWorld("w246-b1-cited");
+  putBrief(cited);
+  sign(cited, 1);
+  review(cited, 2, "failed", { body: BLOCKER });
+  assert.match(readLog(cited, 2), /^# outcome: failed$/m, "a blocker citing brief:7 still fails");
+  architectOrder(specNext(cited), 3, "a standing blocker orders the architect");
+});
+
+test("W-246-b2 behaviour 2: two failed spec reviews since the newest re-spec end review; the next signature stands", { timeout: 1_800_000 }, () => {
+  const why = `ci/${OPUS}-spec-2.log and ci/${OPUS}-spec-4.log failed; D-061 §4: no third review: the producer files the remainder as a new opus, then the architect cuts the brief to what passed and signs`;
+  const split = `bisellium new --kind <kind> --collegium <collegium> --title <the remainder> --parent ${OPUS} studio`;
+  const edit = (w: World, n: number): void => appendFileSync(briefPath(w), `\nChanged before signature ${n}.\n`);
+  /** Signatures 1 and 3, failed reviews 2 and 4. */
+  const twice = (tag: string): World => {
+    const w = srWorld(tag);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed");
+    sign(w, 3);
+    review(w, 4, "failed");
+    return w;
+  };
+
+  const w = twice("w246-b2");
+  const order = specNext(w);
+  architectOrder(order, 5, "two failed reviews end review");
+  assert.equal(order.kv.get("why"), why, ran("why names both failed logs", order));
+  assert.equal(order.kv.get("split"), split, ran("the split line", order));
+  sign(w, 5);
+  const named = specNext(w);
+  expectStep(named, "branch", "named", "signature 5 stands without a third review");
+  assert.equal(named.kv.has("role"), false, ran("no reviewer is ordered", named));
+  const done = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(done, "branch", "performed", "the split spec rides branch");
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(), [BRIEF_REL, ...[1, 2, 3, 4, 5].map(specLog)], "the brief and every round");
+  expectStep(next(w, [OPUS]), "ready", "named", "the branch counts the same and names ready");
+
+  const once = srWorld("w246-b2-once");
+  putBrief(once);
+  sign(once, 1);
+  review(once, 2, "failed");
+  sign(once, 3);
+  reviewerOrder(specNext(once), 4, "one failed review, then a signature, orders the reviewer");
+
+  // since the newest re-spec (D-063 §7): a passed review starts the count again
+  const passed = twice("w246-b2-passed");
+  sign(passed, 5);
+  review(passed, 6, "passed");
+  edit(passed, 7);
+  sign(passed, 7);
+  reviewerOrder(specNext(passed), 8, "a passed review ends the count");
+  review(passed, 8, "failed");
+  const again = specNext(passed);
+  architectOrder(again, 9, "one failed review since the passed one");
+  assert.equal(again.kv.has("split"), false, ran("no split line", again));
+  sign(passed, 9);
+  reviewerOrder(specNext(passed), 10, "so the signature orders the reviewer");
+
+  // after a split: the signature that stood ends the count
+  const stood = twice("w246-b2-stood");
+  sign(stood, 5);
+  assert.equal(specNext(stood).kv.has("role"), false, "signature 5 stands");
+  edit(stood, 6);
+  sign(stood, 6);
+  const after = specNext(stood);
+  reviewerOrder(after, 7, "a signature after the standing one orders the reviewer");
+  assert.equal(after.kv.has("split"), false, ran("no split line", after));
+});
+
+test("W-246-b3 behaviour 3: build review has no cap", { timeout: 1_800_000 }, () => {
+  const w = w167("w246-b3", [F, F, F]);
+  buildFix(n167(w), "three failures name build, phase fix");
+  advanceSource(w);
+  reviewNamed(n167(w), 4, "a fix names round 4");
+  addReview(w, "failed", 4, rt(4), F);
+  buildFix(n167(w), "a fourth failure names build, phase fix again");
+  trial(w, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", "\nround_rulings: nonsense\n---\n") }], () => buildFix(n167(w), "round_rulings is no longer read"));
+  const order = w167("w246-b3-order", [F]);
+  advanceSource(order);
+  const command = n167(order).kv.get("command") ?? "";
+  assert.doesNotMatch(command, /three-round cap/, "the censor's order names no cap");
+  assert.doesNotMatch(command, /D-044/, "the censor's order cites no D-044");
+});
+
+// ---------------------------------------------------------------------------
+// W-255 (D-063 §4): next's signature gates accept a signed brief marked "Brief: light" (four sections, the
+// admission of a light brief, a declared limit, the Red order line). Rows are selectable with
+// --test-name-pattern=W-255-b3.
+// ---------------------------------------------------------------------------
+interface LightOpts {
+  mark?: string | null;
+  family?: boolean;
+  redOrder?: boolean;
+  owned?: string;
+  behaviours?: number;
+  exception?: string;
+  acceptance?: boolean;
+}
+/** A light brief: Intent, Files owned, Behaviours with a red command each and Acceptance; no Interfaces, Out of scope or Input domain. */
+function w255Light(o: LightOpts = {}): string {
+  const rows = Array.from({ length: o.behaviours ?? 1 }, (_, i) => [
+    `${i + 1}. **Fixture behaviour ${i + 1}.**`,
+    `   **Genuine red:** \`bisellium red ${OPUS} --behaviour ${i + 1} --sella builder -- node x\` fails.`,
+  ]).flat();
+  return [
+    `# ${OPUS} fixture light brief`,
+    "",
+    "## Intent",
+    "",
+    ...(o.mark === null ? [] : [o.mark ?? "Brief: light"]),
+    ...(o.family === false ? [] : ["Decree family: fixture"]),
+    ...(o.redOrder === false ? [] : ["Red order: one at a time"]),
+    ...(o.exception === undefined ? [] : [`Behaviour limit exception: ${o.exception}`]),
+    "",
+    "## Files owned",
+    "",
+    `- \`${o.owned ?? "source.txt"}\``,
+    "",
+    "## Behaviours to test",
+    "",
+    ...rows,
+    "",
+    ...(o.acceptance === false ? [] : ["## Acceptance", "", "Fixture.", ""]),
+  ].join("\n");
+}
+
+test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief and refuse the rest", { timeout: 1_800_000 }, () => {
+  const ok = w196World("w255-b3", "6");
+  put(ok.repo, BRIEF_REL, w255Light());
+  sign(ok, 1);
+  reviewerOrder(specNext(ok), 2, "a signed light brief goes to the reviewer");
+  review(ok, 2, "passed");
+  const named = specNext(ok);
+  expectStep(named, "branch", "named", "a reviewed light brief names branch");
+  expectStep(next(ok, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "the light spec rides branch");
+  expectStep(next(ok, [OPUS]), "ready", "named", "the branch carries the light spec: ready follows");
+
+  const refuse = (tag: string, text: string, why: RegExp, setup?: (w: World) => void): void => {
+    const w = w196World(`w255-b3-${tag}`, "6");
+    setup?.(w);
+    put(w.repo, BRIEF_REL, text);
+    sign(w, 1);
+    const o = specNext(w);
+    architectOrder(o, 2, `${tag} goes back to the architect`);
+    assert.match(o.kv.get("why") ?? "", why, ran(`${tag}: why`, o));
+    assert.equal(o.out.includes(SR_MODEL), false, ran(`${tag}: no reviewer model is named`, o));
+  };
+  refuse("nomark", w255Light({ mark: null }), /lacks the six design-lex sections/);
+  refuse("variant", w255Light({ mark: "Brief: Light" }), /brief form line "Brief: Light" is not exactly "Brief: light"/);
+  refuse("pipeline", w255Light({ owned: ".github/workflows/ci.yml" }), /a light brief is not for security, sandbox, branch-protection or pipeline work/);
+  refuse("nofamily", w255Light({ family: false }), /declares no decree family/);
+  refuse("nored", w255Light({ redOrder: false }), /declares no red order; add the line "Red order: one at a time"/);
+  refuse("noaccept", w255Light({ acceptance: false }), /lacks the four light-brief sections/);
+  refuse("seven", w255Light({ behaviours: 7 }), /numbers 7 behaviours; the limit is 6/);
+  const grant = (w: World): void => {
+    put(w.studio, "decisions/D-900.md", "---\nid: D-900\nby: architect\n---\nW-900 may hold seven behaviours.\n");
+    commit(w.repo, "studio: D-900");
+  };
+  const granted = w196World("w255-b3-granted", "6");
+  grant(granted);
+  put(granted.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
+  sign(granted, 1);
+  reviewerOrder(specNext(granted), 2, "seven behaviours with an exception go to the reviewer");
+  refuse("badgrant", w255Light({ behaviours: 7, exception: "D-901" }), /behaviour limit exception: decision "D-901" not found/, grant);
+
+  const solo = (tag: string): World => srWorld(tag, { row: null, setting: null, edit: (t) => `${t}brief_behaviour_limit: 6\n` });
+  const alone = solo("w255-b3-solo");
+  put(alone.repo, BRIEF_REL, w255Light());
+  sign(alone, 1);
+  landed(alone);
+  expectStep(specNext(alone), "branch", "named", "no reviewer: a signed, committed light brief names branch");
+  const over = solo("w255-b3-solo-over");
+  put(over.repo, BRIEF_REL, w255Light({ behaviours: 7 }));
+  sign(over, 1);
+  landed(over);
+  const o = specNext(over);
+  architectOrder(o, 2, "no reviewer: seven behaviours and no exception go back to the architect");
+  assert.match(o.kv.get("why") ?? "", /numbers 7 behaviours; the limit is 6/, ran("the limit", o));
+
+  // an over-limit light brief with a valid exception: no reviewer, signedSpec passes as for a full brief
+  const soloGranted = solo("w255-b3-solo-granted");
+  grant(soloGranted);
+  put(soloGranted.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
+  sign(soloGranted, 1);
+  landed(soloGranted);
+  expectStep(specNext(soloGranted), "branch", "named", "no reviewer: seven behaviours with a valid exception name branch");
+
+  // W-246's split path: two failed reviews, split standing; the signed over-limit light brief stands without a third review
+  const split = w196World("w255-b3-split", "6");
+  grant(split);
+  put(split.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
+  sign(split, 1);
+  review(split, 2, "failed");
+  sign(split, 3);
+  review(split, 4, "failed");
+  const splitOrder = specNext(split);
+  architectOrder(splitOrder, 5, "two failed reviews end review");
+  assert.match(splitOrder.kv.get("split") ?? "", /^bisellium new /, ran("the split line", splitOrder));
+  sign(split, 5);
+  const standing = specNext(split);
+  expectStep(standing, "branch", "named", "split: the signed over-limit light brief with a valid exception stands");
+  assert.equal(standing.kv.has("role"), false, ran("split: no reviewer is ordered", standing));
+});
+
+// W-264 (D-070 C, L-186): with no brief_behaviour_limit, next's signature gates admit a light brief by every rule but the count.
+test("W-264-b2 behaviour 2: with no limit declared, next's signature gates admit a light brief by every rule but the count", { timeout: 1_800_000 }, () => {
+  const ok = srWorld("w264-b2");
+  put(ok.repo, BRIEF_REL, w255Light());
+  sign(ok, 1);
+  reviewerOrder(specNext(ok), 2, "no limit: a signed light brief goes to the reviewer");
+  const seven = srWorld("w264-b2-seven");
+  put(seven.repo, BRIEF_REL, w255Light({ behaviours: 7 }));
+  sign(seven, 1);
+  reviewerOrder(specNext(seven), 2, "no limit: seven behaviours go to the reviewer");
+  const nofamily = srWorld("w264-b2-nofamily");
+  put(nofamily.repo, BRIEF_REL, w255Light({ family: false }));
+  sign(nofamily, 1);
+  const o = specNext(nofamily);
+  architectOrder(o, 2, "no limit: a light brief with no family goes back to the architect");
+  assert.match(o.kv.get("why") ?? "", /declares no decree family/, ran("no limit: the family line", o));
+  const variant = srWorld("w264-b2-variant");
+  put(variant.repo, BRIEF_REL, w255Light({ mark: "Brief: Light" }));
+  sign(variant, 1);
+  const v = specNext(variant);
+  architectOrder(v, 2, "no limit: a refused marker goes back to the architect");
+  assert.match(v.kv.get("why") ?? "", /^briefs\/W-900\.md brief form line "Brief: Light" is not exactly "Brief: light"$/, ran("no limit: the form error alone, before admission", v));
+  const alone = srWorld("w264-b2-solo", { row: null, setting: null });
+  put(alone.repo, BRIEF_REL, w255Light());
+  sign(alone, 1);
+  landed(alone);
+  expectStep(specNext(alone), "branch", "named", "no limit, no reviewer: a signed, committed light brief names branch");
+});
