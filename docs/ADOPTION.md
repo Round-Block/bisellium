@@ -1160,8 +1160,9 @@ code with comments and string and template contents blanked, a registration is
 or an identifier character) in a file that imports `node:test` or
 `@playwright/test`: a static `import ... from`, a side-effect `import`, a dynamic
 `import(...)` or a `require(...)` whose one literal is exactly that module name,
-where `import` and `require` are free identifiers (not `x.require(`, `x?.import(`
-or `new require(`). A type-only `import type`, an `export ... from`, a call
+where `import` and `require` are free identifiers (not `x.require(`, `x?.import(`,
+`x.#require(` or `new require(`; an escaped spelling such as `r\u0065quire` is not
+recognised). A type-only `import type`, an `export ... from`, a call
 inside a comment, string or template, and a longer name such as `node:testing`
 do not count. A PASS/FAIL reporter is a function whose body holds `PASS`,
 `FAIL` and a `console.log`, `console.error` or `process.stdout.write`; it weighs

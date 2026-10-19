@@ -250,9 +250,10 @@ const DEFINITION =
 const REGISTRATION = /(?<![\w$.])(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(/g;
 const RUNNERS = new Set(["node:test", "@playwright/test"]);
 // An import site, scanned in comment-free code with strings blanked (so never inside a comment, string or template).
-// `import` or `require` must be a free identifier: no identifier character before it, not a member (`x.require(`,
-// `x?.import(`; `...require(` is a spread) and not `new require(`. It owns the one module literal it names.
-const KEYWORD = /(?<![\p{ID_Continue}$])(?:import|require)/gu;
+// `import` or `require` must be a free identifier: no identifier character, `#` (a private name) or `\u{..}` escape before
+// it and no identifier character after it, not a member (`x.require(`, `x?.import(`, `x.#require(`; `...require(` is a spread)
+// and not `new require(`. It owns the one module literal it names.
+const KEYWORD = /(?<![\p{ID_Continue}$#]|\\u\{[\da-fA-F]+\})(?:import|require)(?![\p{ID_Continue}$])/gu;
 const MEMBER_OR_NEW = /(?:(?<!\.\.)\.|(?<![\w$])new)$/;
 const CALL = /\s*\(\s*(["'`])/y; // import("m"), require("m")
 const SIDE_EFFECT = /\s*(["'])/y; // import "m"
