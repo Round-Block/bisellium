@@ -111,6 +111,12 @@ export function findingTagProblems(body: string, phase: "spec" | "build"): strin
   return problems;
 }
 
+/** W-297: a finding's one design tag, or undefined when it carries none or several (`findingTagProblems` refuses both). */
+export function designOf(text: string): "changes" | "keeps" | undefined {
+  const tags = [...text.matchAll(DESIGN_TAG)];
+  return tags.length === 1 ? (tags[0]![1] as "changes" | "keeps") : undefined;
+}
+
 export interface Conversion {
   /** The finding's number as written. */
   finding: string;
