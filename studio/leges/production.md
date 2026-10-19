@@ -194,7 +194,7 @@ names each step and writes the step ticket the next record write consumes
    (`~/.bisellium-evidence/codex-passes/fix-census.sh <id> <failed-round>`,
    D-072); an open path goes back to the builder, not to review. It is
    advisory input, not a verdict; W-274 moves it into the review perform.
-   No round cap (D-053). Only a real defect blocks a build round too (D-084, as D-076 A for spec): an S1 on an input this studio's or the fixture's configuration plausibly produces, a security gap, or missing or false evidence; an implausible input is an advisory.
+   No round cap (D-053). Only a real defect blocks a build round too (D-084, as D-076 A for spec): wrong behaviour on an input inside the brief's stated domain, a security gap, or missing or false evidence; wrong behaviour on a form the brief's limits exclude or do not list is an advisory the architect may add as a limit or a ruled case.
 5. **Merge:** refresh `handoff` (the `bisellium handoff` verb, the record's
    traditio; `next` does not ask for it before `pr`, so do it); record the pass; `pr`; `merge`; `cleanup`.
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
