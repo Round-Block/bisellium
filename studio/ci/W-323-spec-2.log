@@ -1,0 +1,19 @@
+# opus: W-323
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15275-e972-7543-adef-5151fd719798
+# outcome: passed
+# at: 2026-10-19T04:45:38.012Z
+# tree: tree:173edee99bce6595a0b7e9cf755279ed16cbe161
+# brief: briefs/W-323.md blob:bad335862b670afd15eb8f1d274370d8aa4e4e08
+# ticket: {"opus":"W-323","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"d72bb51687573e9084a4214c9dc032bffe236aee","brief":"bad335862b670afd15eb8f1d274370d8aa4e4e08","at":"2026-10-19T04:45:37.578Z"}
+
+## Findings
+1. advisory — brief:51 `runBuilderHost` is not a real function; the code fails closed, but the row names its rejector imprecisely. Replace with: `| The host repository's refs/heads/master, fetched into the candidate clone (new read) | a branch the clone's origin (file://<repo>, --no-local) serves; in certify, the merge group's base | the changed status branch throws producer checkout failed on a non-zero fetch; runBuilderCommand (builder-run.ts:172,232-240) converts the host runner's non-zero exit or missing completion into a refused run with no current receipt attached |`. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief.input.rejector.exists
+2. advisory — brief:53 The row covers `MASTER_GATE` but omits the valid domains of the added test’s reused `run`, `oneReceipt`, fixture-ref, and `leftovers` reads; all already fail closed through throws or assertions. Replace with: `| W-323-b1's reused calls: liveFixture(...), run(builderArgs(...)), oneReceipt(...), git(f.repo, ["rev-parse", "refs/heads/master"]), leftovers(f), and MASTER_GATE through FAKE_TOOLING | fixture setup completes; run returns exitCode 0; oneReceipt finds exactly one parseable receipt with exitCode 0 and completion.completed true; the fixture master resolves to f.base; leftovers returns []; MASTER_GATE's three git calls succeed, origin/master has the fixture subject and is an ancestor of HEAD | test (node:test): every helper, parse, read, or subprocess throw fails the row; assert.equal rejects every mismatched result, and a non-zero gate is refused at run-builder-host.mjs:855 |`. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.reused-call-coverage
+
+## Verdict
+The design is feasible and fail-closed; both findings are advisory input-table corrections for the builder to adopt.
+VERDICT: PASS
