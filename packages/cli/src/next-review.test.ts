@@ -8,7 +8,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSy
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, found, ghCalls, git, gitYesNo, handoffAt, n167, next, plain, prArgs, put, ran, reviewHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, found, ghCalls, git, gitYesNo, handoffAt, n167, next, plain, prArgs, put, ran, record167, reviewHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
 const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1 [severity: S1]. check: none: fixture`;
 const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1 [severity: S1]. check: none: fixture`;
@@ -928,4 +928,59 @@ test("W-316-b5 behaviour 5: an unreadable counted directory, file or lease reads
   } finally {
     for (const d of shut) chmodSync(d, 0o755);
   }
+});
+
+// ---------------------------------------------------------------------------
+// W-297 (D-085 A, C): a build-review loop on one class, or three failed rounds in a row, holds the fix for the architect.
+// ---------------------------------------------------------------------------
+test("W-297-b3 behaviour 3: a class loop or three failed build rounds hold the fix until a newer architect signature", { timeout: 1_800_000 }, () => {
+  const cls = (k: string, lead = "blocking"): string => `${lead}: fixture defect at brief:1 [severity: S1] [class: ${k}]. check: none: fixture`;
+  const loopHeld = (o: ReturnType<typeof n167>, row: string, why: RegExp): void => {
+    expectStep(o, "build", "held", row);
+    assert.equal(o.status, 1, ran(`${row}: exit`, o));
+    assert.equal(o.kv.has("role"), false, ran(`${row}: no builder is dispatched`, o));
+    assert.match(o.kv.get("why") ?? "", why, ran(`${row}: why`, o));
+    assert.match(o.kv.get("why") ?? "", /a class loop goes to the architect, not a builder \(D-085\)/, ran(`${row}: the architect`, o));
+  };
+  const SHARED = /^ci\/W-900-review-1\.log and ci\/W-900-review-2\.log failed on class tests×a against one brief: /;
+  const shared = w167("w297-b3-shared", [found(cls("tests×a")), found(cls("tests×b"), cls("tests×a"))]);
+  loopHeld(n167(shared), "two rounds sharing a class against one brief", SHARED);
+  loopHeld(n167(w167("w297-b3-three", [found(cls("tests×a")), found(cls("tests×b")), found(cls("tests×c"))])), "three failed rounds of three classes", /^ci\/W-900-review-1\.log, ci\/W-900-review-2\.log and ci\/W-900-review-3\.log failed in a row: /);
+
+  // no loop: two classes, one failed round, a pass between, an advisory class, a class on the older brief
+  buildFix(n167(w167("w297-b3-two-classes", [found(cls("tests×a")), found(cls("tests×b"))])), "two rounds of two classes");
+  buildFix(n167(w167("w297-b3-one", [found(cls("tests×a"))])), "one failed round");
+  buildFix(n167(w167("w297-b3-pass-between", [found(cls("tests×a")), "pass", found(cls("tests×a"))])), "a passed round between two of one class");
+  buildFix(n167(w167("w297-b3-advisory", [found(cls("tests×a")), found(cls("tests×b"), "advisory: a nit [severity: S4] [class: tests×a]. check: none: fixture")])), "the class only on an advisory");
+  const amended = w167("w297-b3-amended", [found(cls("tests×a"))]);
+  appendFileSync(join(amended.wtStudio, "briefs", `${OPUS}.md`), "\nThe limit, stated.\n");
+  commit(amended.wt, `studio(${OPUS}): brief amended`);
+  record167(amended, [found(cls("tests×a"))], 2);
+  buildFix(n167(amended), "one class across two briefs");
+
+  // exempt: the newest round's security or evidence blocker goes to the builder
+  for (const [name, line] of [
+    ["blocking (security)", cls("tests×a", "blocking (security)")],
+    ["blocking (evidence)", cls("tests×a", "blocking (evidence)")],
+    ["**blocking (security)**", cls("tests×a", "**blocking (security)**")],
+    ["a security class", "blocking: fixture defect at brief:1 [severity: S1] [class: tests×a] [class: security×symlink-escape]. check: none: fixture"],
+  ] as const)
+    buildFix(n167(w167(`w297-b3-exempt-${name.replace(/\W+/g, "-")}`, [found(cls("tests×a")), found(line)])), `${name} is exempt`);
+  // not exempt (spec round 2): malformed emphasis, and a malformed or unclosed security class
+  for (const [name, line] of [
+    ["*blocking (security)", cls("tests×a", "*blocking (security)")],
+    ["***blocking (evidence)", cls("tests×a", "***blocking (evidence)")],
+    ["[class: security×]", "blocking: fixture defect at brief:1 [severity: S1] [class: tests×a] [class: security×]. check: none: fixture"],
+    ["an unclosed [class: security×x", "blocking: fixture defect at brief:1 [severity: S1] [class: tests×a] [class: security×x. check: none: fixture"],
+  ] as const)
+    loopHeld(n167(w167(`w297-b3-malformed-${name.replace(/\W+/g, "-")}`, [found(cls("tests×a")), found(line)])), `${name} is not exempt`, SHARED);
+
+  // the answer: a newer architect signature in the worktree releases the fix; another sella's spec verdict does not
+  const after = new Date(Date.parse(rt(2)) + 10 * 60_000).toISOString();
+  verb(shared.wt, ["verdict", OPUS, "--round", "2", "--sella", "qa-lead", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(shared, "w297-qa.md"), "--studio", shared.wtStudio, "--now", after]);
+  commit(shared.wt, `studio(${OPUS}): a qa-lead spec verdict`);
+  loopHeld(n167(shared), "a newer spec verdict by another sella", SHARED);
+  verb(shared.wt, ["verdict", OPUS, "--round", "3", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(shared, "w297-resign.md"), "--studio", shared.wtStudio, "--now", after]);
+  commit(shared.wt, `studio(${OPUS}): the architect signs again`);
+  buildFix(n167(shared), "a newer architect signature releases the fix");
 });
