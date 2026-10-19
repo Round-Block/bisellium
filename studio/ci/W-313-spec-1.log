@@ -1,0 +1,28 @@
+# opus: W-313
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T23:44:59.954Z
+# tree: tree:43416b0b53faa370768ece9e5c86f4814b94faf6
+# brief: briefs/W-313.md blob:7319b35c897e79c8bc987bcaefa73452e39fb810
+# ticket: {"opus":"W-313","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"14b1b8831feba833c3cadca11ffbacdb9fd6834e","brief":"7319b35c897e79c8bc987bcaefa73452e39fb810","at":"2026-10-19T23:44:56.482Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-313-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — re-scoped at spec (D-071 E, D-082 B): no host mint runs before review, so `scripts/run-builder-host.mjs` leaves scope; certify's producer cell runs master's `ci --offline --opus` with stdout and stderr inherited and the workflow tees it into `certify.log`, so the new lines reach certify's log with no edit there; the Intent ends with the record title for the producer's amend — check: brief:17, brief:21, scripts/run-builder-host.mjs:856, .github/workflows/ci.yml:189
+2. advisory — the design: one helper, `runWatched` in `@bisellium/pipeline`, runs every `verify` gate (captured, as spawnSync kept it) and every `ci` step (passed through), printing start, a progress line each minute and end on stderr; `MergePipeline` and `PipelineRunOpts` are unchanged, and the gate log's bytes, its 30-minute timeout and its 64 MiB cap are kept — check: brief:51, brief:62, prototype-src.diff
+3. advisory — the reds: `W-313-b1` fails by assertion on master at `the progress line comes every minute`, `W-313-b2` on master and on behaviour 1's code at `a step prints its start`; the replay classifier accepts all three outputs; both rows pass on the prototype — check: reds.out, red-accept.out, row-b1-proto.out, row-b2-proto.out
+4. advisory — the rows wait on no wall clock: `W-313-b1`'s child moves on only when a progress line naming its last output makes the test signal it, its keep-alive carries a `sleep-waiver: fixture` annotation, and the studio check reports no `test.sleep` finding; three consecutive runs passed — check: brief:91, brief:104, check-studio.out
+5. advisory — flips: none. The Codex test check lists no flip and no unnamed row; every must-stay-green row it lists passes unedited on the prototype (`gate-timeout`, `gate-env`, `w279`, `containment` 65, `pipeline.test.ts` 25, `ci.test.ts` 10, `ci-workflow`, `shim.test.ts` 46, `W-129 behaviour 15`, `W-141-b2 behaviour 2`, `W-312-b1 behaviour 1`); lint, format, typecheck and the studio check pass — check: fixture-census.md, neighbours-proto.out, neighbours2-proto.out, lint-proto.out, format-proto.out, typecheck-proto.out
+6. advisory — `progressLine` is a lexical reader of any text: its row lists the four forms it recognises, each pinned in `W-313-b1`, and names every other form a limit (D-085 D) — check: brief:55, brief:60, brief:82
+7. advisory — W-183 composes: its heavy-job slot wraps the `npm test` entry around `await runStep`, so the step's start line follows the slot; whichever lands second re-anchors its line — check: brief:111
+8. advisory — unchanged code stays a stated limit, not a guarantee (D-076 E); a step's output now goes through a pipe, so colour on a terminal is lost and back-pressure moves into this process, both stated and put to the Patron — check: brief:68, brief:72, brief:121
+9. advisory — the brief passes admission and its ledger covers every promise, verb line and Input domain row through master's writer; 2 points, no code-owned path, so it proceeds on this signature — check: admission.out, ledger-check.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-313.md`, prototype on master 3e25d73d.
