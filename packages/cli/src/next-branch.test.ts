@@ -462,7 +462,7 @@ test("W-233-b3 behaviour 3: a write claims its ticket before writing and copies 
   const verdict = (round: number, outcome: "passed" | "failed", body: string): Out =>
     direct(b, b.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(b, `r${round}.md`, body), "--studio", b.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
   const review = (round: number, flag: string): Out => direct(b, b.wt, ["review", OPUS, flag, "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", b.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
-  const v1 = verdict(1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture");
+  const v1 = verdict(1, "failed", "1. blocking: fixture defect at brief:1 [severity: S1]. check: none: fixture");
   assert.equal(v1.status, 0, ran("the build verdict", v1));
   assert.equal(headerOf(join(b.wtStudio, "ci", `${OPUS}-review-1.log`)).at(-1), `# ticket: ${buildLine}`, "the build verdict's header block ends with the ticket");
   consumed(b, "build verdict");
@@ -570,7 +570,7 @@ test("W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet n
   };
 
   issued(b, BUDGET);
-  assert.equal(verdict(b, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  assert.equal(verdict(b, 1, "failed", "1. blocking: fixture defect at brief:1 [severity: S1]. check: none: fixture").status, 0);
   handoffAt(b, "wt", T.handoffFresh);
   substep(b, 1, "verdict 1 recorded, no gate");
   const r1 = reviewV(b, 1, "--fail");
@@ -594,9 +594,9 @@ test("W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet n
   // another malformed gate state still holds
   const m = world("w233-b4-malformed", "build");
   ticketed(m);
-  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 2, "no ticket yet: the verdict is refused");
+  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1 [severity: S1]. check: none: fixture").status, 2, "no ticket yet: the verdict is refused");
   forge(m, "verdict-build", 1);
-  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1 [severity: S1]. check: none: fixture").status, 0);
   editRecord(m, "wt", (doc) => doc.setIn(["probationes", "review"], { status: "maybe", sella: "qa-lead", evidence: `ci/${OPUS}-review-1.log` }));
   commit(m.wt, "test: a malformed gate");
   const om = next(m, [OPUS, ...BUDGET]);
@@ -605,7 +605,7 @@ test("W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet n
 
   // without the key: the censor is dispatched for round 2, and the stale gate holds, as on master
   const p = world("w233-b4-plain", "build");
-  assert.equal(verdict(p, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  assert.equal(verdict(p, 1, "failed", "1. blocking: fixture defect at brief:1 [severity: S1]. check: none: fixture").status, 0);
   handoffAt(p, "wt", T.handoffFresh);
   const op = next(p, [OPUS, ...BUDGET]);
   expectStep(op, "review", "named", "no key: dispatch");

@@ -461,7 +461,7 @@ test("W-246-b1 behaviour 1: an advisory-only spec review passes", { timeout: 1_8
   const rows: [string, string][] = [
     ["advisory", "## Findings\n1. advisory brief:7 a wording note. check: none: x\n"],
     ["none", NO_FINDINGS],
-    ["uncited", "## Findings\n1. blocking the Input domain omits a record. check: none: x\n"],
+    ["uncited", "## Findings\n1. blocking the Input domain omits a record [design: changes]. check: none: x\n"],
   ];
   for (const [name, body] of rows) {
     const w = srWorld(`w246-b1-${name}`);

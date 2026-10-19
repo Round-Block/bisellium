@@ -70,7 +70,7 @@ function record(body: string, extra: string[] = []): { exitCode: number; stderr:
 
 /** A findings-shaped body of exactly `bytes` bytes (padding lives in a second section). */
 function findingsBody(bytes: number): string {
-  const head = "## Findings\n1. advisory - one - check: packages/cli/src/verdict-findings.test.ts\n\n## Notes\n";
+  const head = "## Findings\n1. advisory - one [severity: S4] - check: packages/cli/src/verdict-findings.test.ts\n\n## Notes\n";
   return head + "x".repeat(bytes - head.length);
 }
 
@@ -84,7 +84,7 @@ test("W-131 behaviour 1: verdict caps the body at 8192 bytes", () => {
   assert.equal(at.written, true);
 });
 
-const CHECKED = "1. blocking - prune deletes a cited log - check: packages/cli/src/prune.test.ts";
+const CHECKED = "1. blocking - prune deletes a cited log [severity: S1] - check: packages/cli/src/prune.test.ts";
 const SECTION_REFUSAL = /verdict body needs exactly one "## Findings" section holding numbered findings or the exact line "No findings"/;
 
 test("W-131 behaviour 2: verdict needs exactly one non-empty ## Findings section", () => {
@@ -117,7 +117,7 @@ test("W-131 behaviour 3: every numbered finding names check: <text>", () => {
       name,
     );
   }
-  const accepted = record(`## Findings\n${CHECKED}\n2. advisory - usage omits the cap - check: none: a usage-string pin in verdict.test.ts\n`);
+  const accepted = record(`## Findings\n${CHECKED}\n2. advisory - usage omits the cap [severity: S4] - check: none: a usage-string pin in verdict.test.ts\n`);
   assert.equal(accepted.exitCode, 0, accepted.stderr);
   assert.equal(accepted.written, true);
 });
@@ -383,7 +383,7 @@ test("W-246-r1 a sessioned spec review whose only cited blocker is withdrawn is 
     return s;
   };
   const session = ["--phase", "spec", "--session", "s-1"];
-  const blocker = "1. blocking — brief:3 the guard is absent — check: none: probe";
+  const blocker = "1. blocking — brief:3 the guard is absent [design: changes] — check: none: probe";
   const ruled = (ruling: string): string => `## Findings\n${blocker}\n\n## Rebuttal\n1. the line is current — docs/SESSION-HANDOFF.md:3\n\n## Ruling\n${ruling}\n`;
 
   const w = brief();

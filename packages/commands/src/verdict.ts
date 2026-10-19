@@ -81,6 +81,36 @@ function findingsProblem(body: string): string | undefined {
   return undefined;
 }
 
+/** W-297: a severity tag (D-076 A), whole: `[severity: S1]` to `[severity: S4]`. */
+const SEVERITY_TAG = /\[severity: S([1-4])\]/g;
+/** W-297: a design tag (D-086 A), whole: `[design: changes]` or `[design: keeps]`. */
+const DESIGN_TAG = /\[design: (changes|keeps)\]/g;
+
+/**
+ * W-297: why a spec or build verdict's findings cannot be recorded, one problem per finding and rule, in finding order. A finding
+ * is a numbered line of the one Findings section (`contentLines`, as `findingsProblem` reads it), blocking when it opens
+ * `blocking`. Each tag is read as a whole token anywhere on the line, at most once. A build finding carries one severity tag
+ * (D-085 C); a blocking finding tagged S2, S3 or S4 is refused, never downgraded (D-086 C); a blocking spec finding carries one
+ * design tag (D-086 A). ponytail: grammar only; whether the tag is right stays the reviewer's.
+ */
+export function findingTagProblems(body: string, phase: "spec" | "build"): string[] {
+  const problems: string[] = [];
+  for (const line of contentLines(body).lines) {
+    if (line.section !== "Findings" || !/^[1-9]\d*\. \S/.test(line.text)) continue;
+    const n = /^\d+/.exec(line.text)![0];
+    const blocking = /^[1-9]\d*\. \**blocking\b/i.test(line.text);
+    const severities = [...line.text.matchAll(SEVERITY_TAG)].map((m) => m[1]!);
+    const designs = [...line.text.matchAll(DESIGN_TAG)];
+    if (severities.length > 1) problems.push(`finding ${n} carries ${severities.length} [severity:] tags; one only`);
+    else if (phase === "build" && severities.length === 0) problems.push(`finding ${n} has no [severity: S1|S2|S3|S4] tag; every build finding carries one (D-085 C)`);
+    else if (blocking && severities[0] !== undefined && severities[0] !== "1")
+      problems.push(`finding ${n} is blocking and tagged [severity: S${severities[0]}]; only an S1 blocks: reissue it as advisory, or fix the tag (D-086 C)`);
+    if (phase === "spec" && blocking && designs.length !== 1)
+      problems.push(`finding ${n} is a blocking spec finding with ${designs.length === 0 ? "no" : designs.length} [design: changes|keeps] tag${designs.length === 0 ? "" : "s"}; it carries exactly one (D-086 A)`);
+  }
+  return problems;
+}
+
 export interface Conversion {
   /** The finding's number as written. */
   finding: string;
@@ -696,6 +726,14 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     const problem = findingsProblem(transcript.toString("utf8"));
     if (problem !== undefined) {
       console.error(problem);
+      return { exitCode: 2 };
+    }
+  }
+  // W-297: a spec or build finding carries the tags D-085 C and D-086 require, before anything is written or claimed
+  if (!isUi && phase !== "handoff") {
+    const problems = findingTagProblems(transcript.toString("utf8"), phase);
+    if (problems.length > 0) {
+      console.error(problems.map((p) => `${opusId}: finding tags: ${p}`).join("\n"));
       return { exitCode: 2 };
     }
   }
