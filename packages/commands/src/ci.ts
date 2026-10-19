@@ -42,7 +42,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { GATE_TIMEOUT_MS, type MergePipeline } from "@bisellium/pipeline";
+import { GATE_TIMEOUT_MS, runWatched, type MergePipeline } from "@bisellium/pipeline";
 import { selectProvider, type AcquiredWorktree, type WorktreeProvider } from "@bisellium/shim";
 import { parseFlags } from "./writes.js";
 import { runVerify, toPosixRelative, type RunVerifyOptions, type RunVerifyResult } from "./verify.js";
@@ -113,12 +113,13 @@ function defaultInstallDeps(repoDir: string): void {
   }
 }
 
-/** Runs one CI_STEPS entry in `cwd`. Every entry is a fixed, hardcoded
- *  string with no quoting needs — a plain space split is enough, never a
- *  shell. */
-function runStep(command: string, cwd: string): number {
+/** Runs one CI_STEPS entry in `cwd`, its output passed through, with its start, a progress line a minute and
+ *  its end (W-313). Every entry is a fixed, hardcoded string with no quoting needs — a plain space split is
+ *  enough, never a shell. */
+async function runStep(command: string, cwd: string): Promise<number> {
   const [bin, ...rest] = command.split(" ");
-  const r = spawnSync(bin!, rest, { cwd, stdio: "inherit", timeout: GATE_TIMEOUT_MS });
+  const r = await runWatched(bin!, rest, { cwd, tee: true, timeoutMs: GATE_TIMEOUT_MS, label: `bisellium ci: step ${command}` });
+  if (r.timedOut) return 1;
   if (r.error) {
     console.error(`bisellium ci: failed to start "${command}": ${r.error.message}`);
     return 1;
@@ -223,7 +224,7 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
     // host recomputes ci in a network-isolated cell and is the only caller.
     const steps = (offline ? CI_STEPS.filter((s) => s !== AUDIT_STEP) : CI_STEPS).filter((s) => !handedToVerify(s, planned));
     for (const step of steps) {
-      const status = runStep(step, execRepo);
+      const status = await runStep(step, execRepo);
       if (status !== 0) {
         console.error(`bisellium ci: step failed (exit ${status}): ${step}`);
         // Step 5 is officina-wide by construction (it's the line ci.yml
