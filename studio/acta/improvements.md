@@ -41,14 +41,6 @@ Measured and Status columns from it. Cycle = minutes from the first spec signatu
 | Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
 |---|---|---|---|---|
 | W-214 | 521 | 50 | 0 |  |
-| W-264 | 296 | 19 | 2 | untagged 11 |
-| W-306 | 206 | 33 | 2 | untagged 5 |
-
-### 2026-10-17
-
-| Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
-|---|---|---|---|---|
-| W-214 | 521 | 50 | 0 |  |
 | W-259 | 218 | 27 | 2 | S1 1, untagged 1 |
 | W-264 | 296 | 19 | 2 | untagged 11 |
 | W-274 | 162 | 25 | 2 | untagged 10 |
@@ -63,3 +55,4 @@ Measured and Status columns from it. Cycle = minutes from the first spec signatu
 | W-314 | 98 | 24 | 0 |  |
 | W-315 | 158 | 30 | 0 |  |
 | W-316 | 205 | 24 | 1 | S1 1 |
+| W-319 | 66 | 31 | 0 |  |
