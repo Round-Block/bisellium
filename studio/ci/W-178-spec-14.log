@@ -1,0 +1,22 @@
+# opus: W-178
+# phase: spec
+# round: 14
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0895-7041-9f12-d07c3da1f2d7
+# outcome: passed
+# at: 2026-10-19T03:16:26.070Z
+# tree: tree:501723279b8125855db85d4889ed03fd28bca1e0
+# brief: briefs/W-178.md blob:902e72039e4db9c7b5450c94c8531721c6b80486
+# ticket: {"opus":"W-178","step":"spec","action":"verdict-spec","round":14,"actor":"spec-reviewer","studio":".worktrees/W-178/studio","head":"cc004f8fb056046f20ed5e699fb8e1e3394a397c","brief":"902e72039e4db9c7b5450c94c8531721c6b80486","at":"2026-10-19T03:16:25.611Z"}
+
+## Findings
+1. advisory — brief:68 [severity: S2] Strings do participate: runner-module literals drive import detection, and `PASS`/`FAIL` inside strings drive reporter detection. Replace the claim with “Comments never take part; string and template contents take part only as the runner-module literal in line 69 or reporter words in line 70.” [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/rules/tests.test.ts
+2. advisory — brief:69 [severity: S2] `STATIC` recognises `\u`-escaped bindings, as `escBindingClause 1` confirms, but line 69 omits them and line 75 excludes escaped identifiers “anywhere.” List escaped static-clause bindings and narrow line 75’s escape limit accordingly. [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/rules/tests.test.ts
+3. advisory — brief:72 [severity: S2] `DEFINITION` recognises `async function* f(`, but the supposedly exhaustive list names only async functions and generator functions separately. Add the combined async-generator spelling. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/rules/tests.test.ts
+4. advisory — brief:75 [severity: S2] The limits exclude every “typed arrow” even though line 72 and `DEFINITION` recognise parenthesized typed parameters and return types; the ordinary-whitespace promise also conflicts with the scanner’s exact reporter substrings (`reporterSpaced 0`). Narrow the limit to the unrecognised typed-arrow forms and promise whitespace only where lines 69–72 permit it. [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/rules/tests.test.ts
+
+## Verdict
+The amendment has advisory boundary contradictions, but no S1 defect, security gap, or missing evidence.
+
+VERDICT: PASS

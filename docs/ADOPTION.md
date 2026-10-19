@@ -1125,6 +1125,81 @@ counts; a block comment or `//` text inside a string never does):
 `packages/cli/src/rules/tests.test.ts` pins waiver caps over the rule's own
 parsed output; raising a cap needs an architect ruling.
 
+## Test row counts
+
+`check --repo <dir>` runs `test.rows` (block, W-178, beside `test.sleep`): each
+file that is a test file at the base keeps at least its base row count in the
+working tree, or the change adds one record to `test/row-drops.yml` naming the
+path and the exact number dropped. It is how a speed-up or a refactor of a
+test file cannot remove rows unnoticed (production lex §11). A reason makes a
+drop visible; review still refuses a speed-only deletion.
+
+**The base** is the single merge-base of `HEAD` with `refs/heads/master`, or with
+`refs/remotes/origin/master` when there is no local master. A stale local master
+gives an older base (rows added since are simply new). On master itself the base
+is `HEAD` and nothing is compared. The merge group, whose `HEAD` holds current
+master, compares against master as merged; `gates` and `officina` check out with
+`fetch-depth: 0`, so `origin/master` exists. The host mint's single-branch
+candidate clone fetches `refs/remotes/origin/master` from the host repository
+(`scripts/run-builder-host.mjs`), so its `ci` gate has a base too. Test files are
+classified at the base with the base's `package.json` (the same classification as
+`test.sleep`, above), and in the working tree with the working tree's. A file
+deleted, renamed or no longer a test file counts 0 under its base path.
+
+**Fails closed.** With `--repo`, an unresolvable base (no master ref, an unborn
+`HEAD`, no or several merge-bases), an unreadable base or working-tree test file
+(a symlink, over 1 MiB), a `package.json` that does not parse at the base or in
+the working tree, or a malformed `test/row-drops.yml` is a `test.rows` block.
+Without `--repo` the rule does not run, as `test.sleep` does not. The
+pull-request path runs no check; the merge group is where the rule binds before
+merge.
+
+**How rows are counted** (`countTestRows`, lexical, no parser): on the file's
+code with comments and string and template contents blanked, a registration is
+`test(` or `it(` (and their `.skip`, `.only`, `.todo` forms, not preceded by `.`
+or an identifier character) in a file that imports `node:test` or
+`@playwright/test`: a static `import ... from`, a side-effect `import`, a dynamic
+`import(...)` or a `require(...)` whose one literal is exactly that module name,
+where `import` and `require` are free identifiers (not `x.require(`, `x?.import(`,
+`x.#require(` or `new require(`; an escaped spelling such as `r\u0065quire` is not
+recognised). A type-only `import type`, an `export ... from`, a call
+inside a comment, string or template, and a longer name such as `node:testing`
+do not count. A PASS/FAIL reporter is a function whose body holds `PASS`,
+`FAIL` and a `console.log`, `console.error` or `process.stdout.write`; it weighs
+1. A wrapper is a function whose body calls registrations or weighted functions;
+it weighs their sum (resolved over up to four rounds). A body runs from its
+definition line to the first later line indented at or left of it
+(prettier-formatted source). The count is the registrations and weighted calls
+outside every weighted function's body, each call times its weight.
+
+Limit: rows are counted statically, so a weakened row, a row traded for another,
+a row inside a loop (one site) and data removed behind one registration do not
+lower the count. `t.test` subtests, `describe` and reflective or generated
+registrations are not counted. Scopes are not tracked: a local binding named
+`require` is taken for the module system's. A hand-formatted body can be measured wrong, in
+the base and the working tree alike.
+
+**The record.** `test/row-drops.yml` is absent until a drop needs it; W-178 does
+not create it. Its only key is `drops`, a list of records with exactly these keys:
+
+```yaml
+drops:
+  - path: packages/cli/src/test.ts
+    drop: 5
+    opus: W-193
+    reason: renamed to packages/cli/src/acceptance.test.ts with the same rows
+```
+
+`path` is repo-relative with no `..` segment (compared as a string, never
+opened), `drop` an integer of at least 1, `opus` is `W-<digits>`, and `reason`
+has at least 15 non-whitespace characters in at least three words. A record is
+new when no identical record is in the base's file, so an old record never
+admits anything. Each dropping path needs exactly one new record whose `drop`
+equals its base count minus its working-tree count; each new record must match a
+dropping path. A record names how many rows were dropped, not before and after
+counts, so it still matches in the merge group after other opera moved master's
+count.
+
 ## The SOURCE tree hash
 
 W-096 has an additional, opus-scoped preservation boundary. Its producer-run

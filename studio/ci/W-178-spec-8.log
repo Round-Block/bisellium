@@ -1,0 +1,19 @@
+# opus: W-178
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0895-7041-9f12-d07c3da1f2d7
+# outcome: failed
+# at: 2026-10-18T22:09:22.570Z
+# tree: tree:23e6674230006c02bb3c5b38e8ecf920e607e479
+# brief: briefs/W-178.md blob:604a0dd02839c16bfd86a91fa4a871925da1e051
+# ticket: {"opus":"W-178","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":"studio","head":"2df55ee73c05302ee8b77f04f82aeb16b8212405","brief":"604a0dd02839c16bfd86a91fa4a871925da1e051","at":"2026-10-18T22:09:22.147Z"}
+
+## Findings
+1. blocking — brief:3 [severity: S1] Required review evidence is missing: the declared `packets/r8/facts.txt` does not exist, and `r8/packet.out` shows packet generation failed because the packets directory was absent. The computed `next` and brief-admission results therefore cannot be taken as given; regenerate the packet before review. [class: review×evidence-backfilled-or-absent] — check: scripts/review-packet.test.mjs (review launch must stop when packet generation fails or `facts.txt` is absent)
+
+## Verdict
+The changed promises are otherwise supported, but the missing required review packet prevents approval.
+
+VERDICT: FAIL

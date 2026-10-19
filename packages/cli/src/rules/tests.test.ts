@@ -110,7 +110,7 @@ interface Tree {
 /** A committed git repository (tracked files and symlinks), then any untracked files. */
 function mkRepo(tag: string, tree: Tree): string {
   const repo = scratch(tag);
-  git(repo, ["init", "-q"]);
+  git(repo, ["init", "-q", "-b", "master"]);
   for (const [rel, text] of Object.entries(tree.files ?? {})) put(repo, rel, text);
   for (const [rel, target] of Object.entries(tree.links ?? {})) {
     mkdirSync(dirname(join(repo, rel)), { recursive: true });
@@ -661,3 +661,382 @@ if (runs(5)) {
     assert.deepEqual(scan.sites.filter((s) => s.startsWith(`${self}:`)), [], "this file has no site: its fixtures are assembled from fragments");
   });
 }
+
+// ---------------------------------------------------------------------------
+// W-178: `test.rows` -- the row count of each test file never drops unrecorded.
+// Rows W-178-b1..b4 are selected by name (--test-name-pattern); the rule module
+// is loaded dynamically, so its absence is an assertion and not a load error.
+// ---------------------------------------------------------------------------
+interface RowsModule {
+  testRowFindings?: (repo: string) => Finding[];
+  lex?: (text: string, opts?: { blankStrings?: boolean }) => { code: string; comment?: string }[];
+  countTestRows?: (text: string) => number;
+}
+const rowsModule = (): Promise<RowsModule> => import(TESTS_MODULE) as Promise<RowsModule>;
+
+const RUNNER_IMPORT = 'import test from "node:test";';
+const GRAMMAR: [string, string[], number][] = [
+  ["node:test registrations with skip, only and todo", [RUNNER_IMPORT, 'test("a", () => {});', 'test.skip("b", () => {});', 'test.only("c", () => {});', 'test.todo("d");', 'it("e", () => {});'], 5],
+  ["playwright registrations", ['import { test, expect } from "@playwright/test";', 'test("a", async ({ page }) => {});', 'test.skip("b", async () => {});'], 2],
+  ["a file without a runner import counts no registration", ['test("a", () => {});'], 0],
+  ["a PASS and FAIL reporter counts each call once", ["function row(name, ok) {", '  console.log(ok ? "PASS" : "FAIL", name);', "}", 'row("a", true);', 'row("b", false);'], 2],
+  ["a one-level wrapper counts its calls, not its registration", [RUNNER_IMPORT, "function checkB(name, fn) {", "  test(name, fn);", "}", 'checkB("a", () => {});', 'checkB("b", () => {});'], 2],
+  [
+    "a wrapper of two checks weighs 2, one level up as well",
+    [RUNNER_IMPORT, "function check(name, fn) {", "  test(name, fn);", "}", "function pair(name, fn) {", "  check(name + 1, fn);", "  check(name + 2, fn);", "}", "const quad = (name, fn) => {", "  pair(name + 1, fn);", "  pair(name + 2, fn);", "};", 'pair("a", () => {});', 'quad("b", () => {});', 'check("c", () => {});'],
+    7,
+  ],
+  [
+    "a call in a comment, a string or a template fixture is not a row",
+    [RUNNER_IMPORT, '// test("a", () => {});', '/* test("b", () => {}); */', "const s = 'test(\"c\")';", "const t = `", 'test("d", () => {});', "`;", 'test("real", () => {});'],
+    1,
+  ],
+  ["a method call and a longer name are not registrations", [RUNNER_IMPORT, "const ok = /a/.test(text);", "const also = pattern.test(text);", 'submit("x");', 'latest("y");', 'test("real", () => {});'], 1],
+  ["a registration in a loop counts once", [RUNNER_IMPORT, 'for (const name of ["a", "b", "c"]) {', "  test(name, () => {});", "}"], 1],
+  ["a line-commented node:test import enables nothing", ['// import test from "node:test";', 'test("a", () => {});'], 0],
+  ["a block-commented node:test import enables nothing", ['/* import test from "node:test"; */', 'test("a", () => {});'], 0],
+  ["a runner import named in a string enables nothing", ["const s = 'import test from \"node:test\"';", 'test("a", () => {});'], 0],
+  ["an unrelated import beside a runner name in a string enables nothing", ['import x from "other"; const s = \'from "node:test"\';', 'test("a", () => {});'], 0],
+  ["a whole runner import inside a string enables nothing", ['const s = \'import { test } from "node:test"\';', 'test("a", () => {});'], 0],
+  ["a require call inside a string enables nothing", ['const r = "require(\'node:test\')";', 'test("a", () => {});'], 0],
+  ["two imports on one line, the second the runner", ['import a from "x"; import { test } from "node:test";', 'test("a", () => {});'], 1],
+  ["a required Playwright runner counts its rows", ['const { test } = require("@playwright/test");', 'test("a", () => {});', 'test.skip("b", () => {});'], 2],
+  ["a required module that only starts like a runner enables nothing", ['const { test } = require("@playwright/testing");', 'test("a", () => {});'], 0],
+  ["a require of the runner", ['const test = require("node:test");', 'test("a", () => {});'], 1],
+  ["a real import after a commented one still counts", ['// import test from "node:test";', RUNNER_IMPORT, 'test("a", () => {});'], 1],
+  ["reporter words only in comments make no reporter", ["function row(name, ok) {", '  // console.log(ok ? "PASS" : "FAIL", name);', "  return name;", "}", 'row("a", true);', 'row("b", false);'], 0],
+  ["a block comment holding the reporter words makes no reporter", ["function row(name, ok) {", '  /* PASS FAIL */ console.log(name);', "}", 'row("a", true);'], 0],
+  ["an empty file counts nothing", [], 0],
+  ["a wrapper with a $ in its name still counts its calls", [RUNNER_IMPORT, "function $row(n) {", "  test(n, () => {});", "}", '$row("a");', '$row("b");'], 2],
+  ["edge 53 a wrapper with a non-ASCII name", [RUNNER_IMPORT, "function ŕow(n) {", "  test(n, () => {});", "}", 'ŕow("a");', 'ŕow("b");'], 2],
+  ["edge 53 a const-arrow wrapper with a non-ASCII name", [RUNNER_IMPORT, "const ŕow = (n) => {", "  test(n, () => {});", "};", 'ŕow("a");', 'ŕow("b");'], 2],
+  ["edge 53 an arrow wrapper with a non-ASCII parameter", [RUNNER_IMPORT, "const row = ñ => {", "  test(ñ, () => {});", "};", 'row("a");', 'row("b");'], 2],
+  ["edge 53 a reporter with a non-ASCII name", ["function ŕow(name, ok) {", '  console.log(ok ? "PASS" : "FAIL", name);', "}", 'ŕow("a", true);', 'ŕow("b", false);'], 2],
+  ["edge 54 other names ending in a wrapper's name are not its calls", [RUNNER_IMPORT, "function row(n) {", "  test(n, () => {});", "}", 'row("a");', 'ŕow("b");', '𠮷row("c");'], 1],
+  ["edge 55 a non-ASCII identifier before test, it and test.skip is no registration", [RUNNER_IMPORT, 'ñtest("x");', 'ñit("y");', 'ñtest.skip("z");', 'test("real", () => {});'], 1],
+  ["edge 56 function followed by an identifier is a call, not a definition", [RUNNER_IMPORT, "functionrow(", '  test("a", () => {}),', ");"], 1],
+  ["edge 56 function followed by a non-ASCII identifier is a call, not a definition", [RUNNER_IMPORT, "functionñ(", '  test("a", () => {}),', ");"], 1],
+];
+// Every source form that could look like a runner import (edges.md in the build evidence): the lines before one
+// `test(...)` call, which counts 1 when the file imports a runner and 0 when it does not.
+const EDGES: [string, string[], boolean][] = [
+  ["edge 1 a static named import", ['import { test } from "node:test";'], true],
+  ["edge 2 a default and named import", ['import test, { it } from "node:test";'], true],
+  ["edge 2 a namespace import", ['import * as t from "node:test";'], true],
+  ["edge 3 a side-effect import", ['import "node:test";'], true],
+  ["edge 4 a type-only import", ['import type { T } from "node:test";'], false],
+  ["edge 5 a default binding named type", ['import type from "node:test";'], true],
+  ["edge 6 an inline type specifier beside a value", ['import { type T, test } from "node:test";'], true],
+  ["edge 7 a named re-export", ['export { test } from "node:test";'], false],
+  ["edge 7 a star re-export", ['export * from "node:test";'], false],
+  ["edge 8 a require", ['const test = require("node:test");'], true],
+  ["edge 9 a require with whitespace", ['const test = require ("node:test");'], true],
+  ["edge 9 a require split across lines", ["const test = require (", '  "node:test"', ");"], true],
+  ["edge 10 a template literal without substitution", ["const test = require(`node:test`);"], true],
+  ["edge 11 a template literal with substitution", ["const x = 'test';", "const test = require(`node:${x}`);"], false],
+  ["edge 12 a concatenated specifier", ['const test = require("node:" + "test");'], false],
+  ["edge 12 a specifier with a tail", ['const test = require("node:test" + x);'], false],
+  ["edge 12 a variable specifier", ["const test = require(m);"], false],
+  ["edge 13 a trailing comma", ['const test = require("node:test",);'], true],
+  ["edge 14 an optional call", ['const test = require?.("node:test");'], false],
+  ["edge 14 a tagged template", ["const test = require`node:test`;"], false],
+  ["edge 15 require.resolve", ['const p = require.resolve("node:test");'], false],
+  ["edge 15 require.cache", ['const c = require.cache["node:test"];'], false],
+  ["edge 16 a dynamic import", ['import("node:test");'], true],
+  ["edge 17 an awaited dynamic import", ['const { test } = await import("node:test");'], true],
+  ["edge 18 a dynamic import with options", ['import("node:test", { with: {} });'], true],
+  ["edge 19 import.meta.url", ["const u = import.meta.url;"], false],
+  ["edge 19 import.meta.resolve", ['const p = import.meta.resolve("node:test");'], false],
+  ["edge 20 a member require", ['const test = loader.require("node:test");'], false],
+  ["edge 20 a member import", ['const test = loader.import("node:test");'], false],
+  ["edge 21 an optional member require", ['const test = loader?.require("node:test");'], false],
+  ["edge 21 an optional member import", ['const test = loader?.import("node:test");'], false],
+  ["edge 22 a member on the next line", ["const test = loader", '  .require("node:test");'], false],
+  ["edge 22 an optional member import on the next line", ["const test = loader?.", '  import("node:test");'], false],
+  ["edge 23 a computed require", ['const test = loader["require"]("node:test");'], false],
+  ["edge 23 a computed import", ['const test = loader["import"]("node:test");'], false],
+  ["edge 24 a require used as a key", ['const test = loader[require]("node:test");'], false],
+  ["edge 25 an identifier ending in require", ['const test = myrequire("node:test");'], false],
+  ["edge 25 an underscore before require", ['const test = _require("node:test");'], false],
+  ["edge 25 a dollar before require", ['const test = $require("node:test");'], false],
+  ["edge 25 an identifier starting with require", ['const test = requires("node:test");'], false],
+  ["edge 25 an identifier starting with import", ['const test = importer("node:test");'], false],
+  ["edge 26 a property key named require", ['const o = { require: "node:test" };'], false],
+  ["edge 26 a property key named import", ['const o = { import: ("node:test") };'], false],
+  ["edge 27 a constructed require", ['const test = new require("node:test");'], false],
+  ["edge 28 a spread of a required module", ['const all = [...require("node:test")];'], true],
+  ["edge 29 a createRequire binding", ["const require = createRequire(import.meta.url);", 'const test = require("node:test");'], true],
+  ["edge 30 a local require function is still a call of require (limit)", ["function require(m) {", "  return m;", "}", 'const test = require("node:test");'], true],
+  ["edge 31 a line-commented require", ['// const test = require("node:test");'], false],
+  ["edge 32 a block-commented require", ['/* const test = require("node:test"); */'], false],
+  ["edge 33 a require inside a string", ["const s = \"require('node:test')\";"], false],
+  ["edge 34 an import inside a template literal", ["const s = `", 'import { test } from "node:test";', "`;"], false],
+  ["edge 34 a require inside a substitution", ['const s = `${require("node:test")}`;'], false],
+  ["edge 35 two statements on one line", ['import a from "x"; import { test } from "node:test";'], true],
+  ["edge 36 an unrelated import beside a runner string", ['import x from "other"; const s = \'from "node:test"\';'], false],
+  ["edge 37 an unrelated require beside a runner string", ['require("other"); const s = "node:test";'], false],
+  ["edge 37 an unrelated dynamic import beside a runner comment", ['import("other"); /* "node:test" */'], false],
+  ["edge 38 a statement split across lines", ["import { test }", '  from "node:test";'], true],
+  ["edge 39 a braced clause over several lines", ["import {", "  test,", "  it,", '} from "node:test";'], true],
+  ["edge 40 node:testing", ['import { test } from "node:testing";'], false],
+  ["edge 40 node:tests", ['import { test } from "node:tests";'], false],
+  ["edge 40 node:test/reporters", ['import { spec } from "node:test/reporters";'], false],
+  ["edge 40 a bare test package", ['import test from "test";'], false],
+  ["edge 40 another case", ['import test from "Node:Test";'], false],
+  ["edge 41 a Playwright import", ['import { test } from "@playwright/test";'], true],
+  ["edge 41 a Playwright require", ['const { test } = require("@playwright/test");'], true],
+  ["edge 41 a Playwright dynamic import", ['const { test } = await import("@playwright/test");'], true],
+  ["edge 42 a Playwright subpath", ['import { test } from "@playwright/test/foo";'], false],
+  ["edge 42 a longer Playwright name", ['import { test } from "@playwright/testing";'], false],
+  ["edge 42 a Playwright scope alone", ['import { test } from "@playwright/";'], false],
+  ["edge 43 a runner import after commented and unrelated imports", ['// import a from "node:test";', 'import b from "other";', 'import { test } from "node:test";'], true],
+  ["edge 45 a bare require beside a string statement", ["const r = require", '"node:test";'], false],
+  ["edge 44 a require with unmatched quotes", ['const test = require("node:test\');', "const u = 1;"], false],
+  ["edge 44 a side-effect import with unmatched quotes", ['import "node:test\';', "const u = 1;"], false],
+  ["edge 46 a private-member require", ['class A { m() { return this.#require("node:test"); } }'], false],
+  ["edge 46 a private-member import of Playwright", ['class A { m() { return this.#import("@playwright/test"); } }'], false],
+  ["edge 46 an optional private-member require", ['class A { m() { return this?.#require("node:test"); } }'], false],
+  ["edge 46 a private member on the next line", ["class A { m() { return this.", '  #import("node:test"); } }'], false],
+  ["edge 47 a braced unicode escape before require", ['const test = \\u{61}require("node:test");'], false],
+  ["edge 47 a braced unicode escape before import", ['const test = \\u{61}import("node:test");'], false],
+  ["edge 47 a fixed unicode escape before require", ['const test = \\u0061require("node:test");'], false],
+  ["edge 47 a zero-width joiner before require", ['const test = a\u200crequire("node:test");'], false],
+  ["edge 47 an escaped spelling of require is not recognised (limit)", ['const test = r\\u0065quire("node:test");'], false],
+  ["edge 47 a brace before require is not an escape", ['{}require("node:test");'], true],
+  ["edge 48 an identifier continuing import, then from on its own lines", ["importer", "from", '"node:test";'], false],
+  ["edge 49 a decorator is a call of the free require", ['@require("node:test") class A {}'], true],
+  ["edge 50 a non-ASCII alias in the clause", ['import test, { test as tést } from "node:test";'], true],
+  ["edge 50 a non-ASCII default binding", ['import tést from "node:test";'], true],
+  ["edge 50 a non-ASCII namespace binding", ['import * as tëst from "node:test";'], true],
+  ["edge 50 a non-ASCII named import", ['import { tést } from "node:test";'], true],
+  ["edge 50 an astral binding", ['import 𠮷 from "node:test";'], true],
+  ["edge 50 an escaped binding", ['import { \\u0074est } from "node:test";'], true],
+  ["edge 50 a braced escaped binding", ['import { \\u{74}est } from "node:test";'], true],
+  ["edge 51 from after a non-ASCII identifier is no keyword", ['import ñfrom "node:test";'], false],
+  ["edge 52 a default binding starting with type, then a non-ASCII letter", ['import typé from "node:test";'], true],
+  ["edge 52 a default binding starting with type, then ñ", ['import typeñ from "node:test";'], true],
+  ["edge 52 a type-only default binding named fromé", ['import type fromé from "node:test";'], false],
+  ["edge 52 a type-only import of a non-ASCII name", ['import type { tést } from "node:test";'], false],
+  ["edge 57 a non-ASCII identifier ending in new is no new", ["const ñnew = 1;", "ñnew", 'require("node:test");'], true],
+  ["edge 57 an astral identifier ending in new is no new", ["const 𠮷new = 1;", "𠮷new", 'require("node:test");'], true],
+  ["edge 58 a non-ASCII identifier before require", ['const test = ñrequire("node:test");'], false],
+  ["edge 58 a non-ASCII identifier before import", ['const test = ñimport("node:test");'], false],
+  ["edge 58 import continued by a non-ASCII identifier, then from on its own lines", ["importñ", "from", '"node:test";'], false],
+];
+const LEX_SAMPLE = ['const a = "x(1)"; // note', "/* gone */ const b = 'y\\'z';", "const t = `", "  test('in template')", "`;", "go();"].join("\n");
+
+test("W-178-b1 the grammar counts each test style once and nothing else", { timeout: 600_000 }, async () => {
+  const mod = await rowsModule();
+  assert.equal(typeof mod.countTestRows, "function", "rules/tests.ts exports countTestRows");
+  for (const [label, lines, want] of GRAMMAR) assert.equal(mod.countTestRows!(code(lines)), want, label);
+  for (const [label, lines, runner] of EDGES) assert.equal(mod.countTestRows!(code([...lines, 'test("a", () => {});'])), runner ? 1 : 0, label);
+
+  // lex without the option is what it is on master; with it, string and template contents are blank
+  const plain = mod.lex!(LEX_SAMPLE);
+  assert.deepEqual(plain, [
+    { code: 'const a = "x(1)"; ', comment: "// note" },
+    { code: "           const b = 'y\\'z';" },
+    { code: "const t = `" },
+    { code: "  test('in template')" },
+    { code: "`;" },
+    { code: "go();" },
+  ]);
+  const blank = mod.lex!(LEX_SAMPLE, { blankStrings: true });
+  assert.equal(blank.length, plain.length, "same number of lines");
+  assert.deepEqual(
+    blank.map((l) => l.code.length),
+    plain.map((l) => l.code.length),
+    "blanking keeps every column",
+  );
+  assert.deepEqual(
+    blank.map((l) => l.comment),
+    plain.map((l) => l.comment),
+    "comments are untouched",
+  );
+  assert.equal(blank[0]!.code, 'const a = "    "; ', "a double-quoted string is blank, its quotes stay");
+  assert.equal(blank[1]!.code, `           const b = '    ';`, "an escape pair is blank too");
+  assert.equal(blank[3]!.code.trim(), "", "a template line is blank");
+  assert.equal(blank[2]!.code, "const t = `", "the opening backtick stays");
+});
+
+// ---- W-178-b2 fixtures: a repository on master, then a branch that changes test files
+const rowsOf = (n: number): string => code([RUNNER_IMPORT, ...Array.from({ length: n }, (_, i) => `test("row ${i}", () => {});`)]);
+function commitAll(repo: string, message: string): void {
+  git(repo, ["add", "-A"]);
+  git(repo, ["commit", "-q", "--allow-empty", "-m", message]);
+}
+/** A repository whose master holds `files`, left on branch opus/x (one commit past the base when `change` edits it). */
+function branched(tag: string, files: Record<string, string>, change?: (repo: string) => void): string {
+  const repo = mkRepo(tag, { files });
+  git(repo, ["checkout", "-q", "-b", "opus/x"]);
+  if (change) {
+    change(repo);
+    commitAll(repo, "branch");
+  }
+  return repo;
+}
+/** The row findings, all of them test.rows blocks. */
+async function rowFindings(repo: string): Promise<Finding[]> {
+  const mod = await rowsModule();
+  assert.equal(typeof mod.testRowFindings, "function", "rules/tests.ts exports testRowFindings");
+  const found = mod.testRowFindings!(repo);
+  for (const f of found) assert.deepEqual([f.rule, f.level], ["test.rows", "block"], `${f.where}: rule and level`);
+  return found;
+}
+/** Exactly one finding, at `where`, whose message matches. */
+function oneRowBlock(found: Finding[], where: string, message: RegExp, label: string): void {
+  assert.deepEqual(wheres(found), [where], `${label}: where`);
+  assert.match(found[0]!.message, message, `${label}: message`);
+}
+
+test("W-178-b2 each base test path is compared with the candidate, and an unobservable base blocks", { timeout: 600_000 }, async () => {
+  const three = { "a.test.ts": rowsOf(3) };
+  const lowered = (repo: string): void => put(repo, "a.test.ts", rowsOf(2));
+
+  // control and the three comparisons
+  assert.deepEqual(await rowFindings(branched("b2-same", three)), [], "an unchanged branch passes");
+  oneRowBlock(await rowFindings(branched("b2-drop", three, lowered)), "a.test.ts", /from 3 to 2/, "3 to 2");
+  oneRowBlock(await rowFindings(branched("b2-delete", three, (r) => git(r, ["rm", "-q", "a.test.ts"]))), "a.test.ts", /from 3 to 0/, "deleted");
+  const renamed = branched("b2-rename", three, (r) => git(r, ["mv", "a.test.ts", "b.test.ts"]));
+  oneRowBlock(await rowFindings(renamed), "a.test.ts", /from 3 to 0/, "renamed: the old path counts 0");
+  assert.deepEqual(await rowFindings(branched("b2-rise", three, (r) => put(r, "a.test.ts", rowsOf(4)))), [], "a rise passes");
+  assert.deepEqual(await rowFindings(branched("b2-new", three, (r) => put(r, "c.test.ts", rowsOf(1)))), [], "a new file passes");
+  oneRowBlock(await rowFindings(branched("b2-tracked-missing", three, (r) => rmSync(join(r, "a.test.ts")))), "a.test.ts", /from 3 to 0/, "tracked file gone from the tree");
+
+  // what is a test path is decided at the base
+  const util = { "util.ts": rowsOf(3), "a.test.ts": rowsOf(3) };
+  assert.deepEqual(await rowFindings(branched("b2-nontest", util, (r) => git(r, ["rm", "-q", "util.ts"]))), [], "a non-test path is never compared");
+  const registered = { "package.json": '{"scripts":{"test":"node scripts/gate.mjs"}}\n', "scripts/gate.mjs": rowsOf(3) };
+  oneRowBlock(await rowFindings(branched("b2-reg-delete", registered, (r) => git(r, ["rm", "-q", "scripts/gate.mjs"]))), "scripts/gate.mjs", /from 3 to 0/, "registered, deleted");
+  const unregistered = branched("b2-unregister", registered, (r) => put(r, "package.json", '{"scripts":{}}\n'));
+  oneRowBlock(await rowFindings(unregistered), "scripts/gate.mjs", /from 3 to 0/, "no longer a test path: counts 0");
+
+  // the base: local master, origin-only master, master moved past the branch point
+  const originOnly = branched("b2-origin", three, lowered);
+  git(originOnly, ["update-ref", "refs/remotes/origin/master", "master"]);
+  git(originOnly, ["branch", "-q", "-D", "master"]);
+  oneRowBlock(await rowFindings(originOnly), "a.test.ts", /from 3 to 2/, "origin-only master");
+  const moved = branched("b2-moved", three, lowered);
+  git(moved, ["checkout", "-q", "master"]);
+  put(moved, "a.test.ts", rowsOf(6));
+  put(moved, "later.test.ts", rowsOf(2));
+  commitAll(moved, "master moved");
+  git(moved, ["checkout", "-q", "opus/x"]);
+  oneRowBlock(await rowFindings(moved), "a.test.ts", /from 3 to 2/, "base is the branch point, not master's tip");
+
+  // an unobservable base blocks, once, at the base
+  const trunk = branched("b2-no-master", three);
+  git(trunk, ["branch", "-q", "-m", "master", "trunk"]);
+  oneRowBlock(await rowFindings(trunk), "git merge-base", /./, "no master ref");
+  const unborn = scratch("b2-unborn");
+  git(unborn, ["init", "-q", "-b", "master"]);
+  oneRowBlock(await rowFindings(unborn), "git merge-base", /./, "unborn HEAD");
+  oneRowBlock(await rowFindings(branched("b2-base-pkg", { ...three, "package.json": "{not json" })), "package.json", /./, "base package.json does not parse");
+  oneRowBlock(await rowFindings(branched("b2-cand-pkg", three, (r) => put(r, "package.json", "{not json"))), "package.json", /./, "candidate package.json does not parse");
+
+  // an unreadable candidate test file blocks, naming the path
+  const linked = branched("b2-symlink", three, (r) => {
+    rmSync(join(r, "a.test.ts"));
+    symlinkSync("elsewhere.ts", join(r, "a.test.ts"));
+  });
+  oneRowBlock(await rowFindings(linked), "a.test.ts", /./, "a symlinked test file");
+  const huge = branched("b2-huge", three, (r) => put(r, "a.test.ts", rowsOf(3) + "// " + "x".repeat(1024 * 1024) + "\n"));
+  oneRowBlock(await rowFindings(huge), "a.test.ts", /1 MiB/, "an oversized test file");
+  const locked = branched("b2-unreadable", three);
+  chmodSync(join(locked, "a.test.ts"), 0);
+  let readable = true;
+  try {
+    readFileSync(join(locked, "a.test.ts"));
+  } catch {
+    readable = false;
+  }
+  if (!readable) oneRowBlock(await rowFindings(locked), "a.test.ts", /./, "an unreadable test file");
+});
+
+// ---- W-178-b3 fixtures: the reason file, test/row-drops.yml
+const LEDGER = "test/row-drops.yml";
+const RECORD = { path: "a.test.ts", drop: 1, opus: "W-999", reason: "trimmed a duplicated row" };
+/** A ledger of flow-mapping records (JSON is YAML). */
+const ledgerOf = (...records: Record<string, unknown>[]): string => `drops:\n${records.map((r) => `  - ${JSON.stringify(r)}`).join("\n")}\n`;
+const lowerWith =
+  (ledger: string) =>
+  (repo: string): void => {
+    put(repo, "a.test.ts", rowsOf(2));
+    put(repo, LEDGER, ledger);
+  };
+
+test("W-178-b3 one new, exact record admits its drop and nothing else", { timeout: 600_000 }, async () => {
+  const three = { "a.test.ts": rowsOf(3) };
+
+  // the admitted forms
+  assert.deepEqual(await rowFindings(branched("b3-ok", three, lowerWith(ledgerOf(RECORD)))), [], "3 to 2 with a drop-1 record");
+  const deleted = branched("b3-deleted", three, (r) => {
+    git(r, ["rm", "-q", "a.test.ts"]);
+    put(r, LEDGER, ledgerOf({ ...RECORD, drop: 3 }));
+  });
+  assert.deepEqual(await rowFindings(deleted), [], "a deleted file with drop equal to its count");
+  const older = { ...three, [LEDGER]: ledgerOf({ ...RECORD, path: "gone.test.ts", opus: "W-998" }) };
+  assert.deepEqual(await rowFindings(branched("b3-older", older, lowerWith(ledgerOf({ ...RECORD, path: "gone.test.ts", opus: "W-998" }, RECORD)))), [], "an old record beside a new one");
+
+  // a record that does not fit its drop
+  oneRowBlock(await rowFindings(branched("b3-wrong", three, lowerWith(ledgerOf({ ...RECORD, drop: 2 })))), "a.test.ts", /from 3 to 2/, "wrong drop");
+  oneRowBlock(await rowFindings(branched("b3-twice", three, lowerWith(ledgerOf(RECORD, { ...RECORD, reason: "a second reason for the same path" })))), "a.test.ts", /two|2/, "two new records for the path");
+  oneRowBlock(await rowFindings(branched("b3-unmatched", three, (r) => put(r, LEDGER, ledgerOf({ ...RECORD, path: "other.test.ts" })))), LEDGER, /other\.test\.ts/, "a record with no drop");
+  const elsewhere = await rowFindings(branched("b3-none", three, lowerWith(ledgerOf({ ...RECORD, path: "other.test.ts", drop: 1 }))));
+  assert.deepEqual(wheres(elsewhere), ["a.test.ts", LEDGER], "a record for another path leaves the drop unrecorded and is itself unmatched");
+  const inBase = { ...three, [LEDGER]: ledgerOf(RECORD) };
+  oneRowBlock(await rowFindings(branched("b3-in-base", inBase, (r) => put(r, "a.test.ts", rowsOf(2)))), "a.test.ts", /from 3 to 2/, "a record already in the base's file admits nothing");
+
+  // a ledger that is not well formed blocks at the ledger, whatever it names
+  const malformed: [string, string][] = [
+    ["a short reason", ledgerOf({ ...RECORD, reason: "too short" })],
+    ["a one-word reason", ledgerOf({ ...RECORD, reason: "abcdefghijklmnopqrstuvwxyz" })],
+    ["a parent path", ledgerOf({ ...RECORD, path: "../a.test.ts" })],
+    ["an absolute path", ledgerOf({ ...RECORD, path: "/a.test.ts" })],
+    ["an extra key", ledgerOf({ ...RECORD, why: "extra" })],
+    ["a missing key", ledgerOf({ path: "a.test.ts", drop: 1, opus: "W-999" })],
+    ["a zero drop", ledgerOf({ ...RECORD, drop: 0 })],
+    ["a drop that is text", ledgerOf({ ...RECORD, drop: "1" })],
+    ["an opus that is not an id", ledgerOf({ ...RECORD, opus: "fix-it" })],
+    ["another top-level key", `${ledgerOf(RECORD)}extra: 1\n`],
+    ["an exact duplicate", ledgerOf(RECORD, RECORD)],
+    ["malformed YAML", "drops: [\n"],
+    ["no mapping", "- a\n- b\n"],
+  ];
+  for (const [label, ledger] of malformed) oneRowBlock(await rowFindings(branched(`b3-bad`, three, lowerWith(ledger))), LEDGER, /./, label);
+  oneRowBlock(await rowFindings(branched("b3-bad-base", { ...three, [LEDGER]: "drops: [\n" }, lowerWith(ledgerOf(RECORD)))), LEDGER, /./, "a malformed ledger at the base");
+});
+
+test("W-178-b4 the rule runs from check --repo beside test.sleep", { timeout: 600_000 }, async () => {
+  const three = { "a.test.ts": rowsOf(3) };
+  const off = officina();
+  const dropped = branched("b4-drop", three, (r) => put(r, "a.test.ts", rowsOf(2)));
+
+  const blocked = cli(["check", off, "--repo", dropped]);
+  assert.equal(blocked.status, 1, `the 3 to 2 fixture exits 1\n${blocked.out}`);
+  assert.ok(blocked.out.includes("test.rows") && blocked.out.includes("a.test.ts"), `output names the rule and the path\n${blocked.out}`);
+  put(dropped, LEDGER, ledgerOf(RECORD));
+  const admitted = cli(["check", off, "--repo", dropped]);
+  assert.equal(admitted.status, 0, `with the record it exits 0\n${admitted.out}`);
+  assert.ok(!admitted.out.includes("test.rows"), "no test.rows line once the record is there");
+
+  // both rules report from one run
+  const both = branched("b4-both", three, (r) => {
+    lowerWith(ledgerOf({ ...RECORD, path: "other.test.ts" }))(r);
+    put(r, "s.test.ts", code([RUNNER_IMPORT, SITE]));
+  });
+  const twice = cli(["check", off, "--repo", both]);
+  assert.equal(twice.status, 1, `an unannotated wait and a drop exit 1\n${twice.out}`);
+  assert.ok(twice.out.includes("test.sleep") && twice.out.includes("s.test.ts:2"), `the sleep finding is there\n${twice.out}`);
+  assert.ok(twice.out.includes("test.rows") && twice.out.includes("a.test.ts"), `the row finding is there\n${twice.out}`);
+
+  // neither rule runs without --repo
+  const noRepo = cli(["check", off]);
+  assert.equal(noRepo.status, 0, `without --repo the rules do not run\n${noRepo.out}`);
+  assert.ok(!noRepo.out.includes("test.rows") && !noRepo.out.includes("test.sleep"), "no rule line without --repo");
+
+  // the real repository holds its row counts
+  const mod = await rowsModule();
+  assert.equal(typeof mod.testRowFindings, "function", "rules/tests.ts exports testRowFindings");
+  assert.deepEqual(mod.testRowFindings!(REPO_ROOT), [], "the real repository has no test.rows finding");
+});

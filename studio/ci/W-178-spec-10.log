@@ -1,0 +1,22 @@
+# opus: W-178
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0895-7041-9f12-d07c3da1f2d7
+# outcome: passed
+# at: 2026-10-18T22:12:27.228Z
+# tree: tree:23e6674230006c02bb3c5b38e8ecf920e607e479
+# brief: briefs/W-178.md blob:604a0dd02839c16bfd86a91fa4a871925da1e051
+# ticket: {"opus":"W-178","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":"studio","head":"2df55ee73c05302ee8b77f04f82aeb16b8212405","brief":"604a0dd02839c16bfd86a91fa4a871925da1e051","at":"2026-10-18T22:12:26.811Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-178-spec-8.log #1: closed — the round-10 packet exists with successful `next` and zero-problem admission facts; its subject matches the unchanged brief byte-for-byte, and `delta.diff` is empty.
+
+## Verdict
+The missing packet evidence is restored and no changed promise has a substantive defect.
+
+VERDICT: PASS

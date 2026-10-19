@@ -12,16 +12,27 @@
  * Not a JavaScript parser: one lexical pass splits each line into `code` and
  * `comment` (see `lex`). Regex literals holding a quote or a double slash, and
  * a backtick nested in `${ }`, can desynchronise it (brief, residual 5).
+ *
+ * W-178 adds `test.rows`, block: with `opts.repo`, no test file at the
+ * merge-base of HEAD and master has fewer rows in the working tree unless the
+ * change adds one exact record to `test/row-drops.yml` (studio/briefs/W-178.md).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { parse as parseYaml } from "yaml";
 import type { Finding, RuleOpts } from "../check.js";
 
 export interface Covered {
   where: string;
   annotation: "seam" | "waiver";
   kind: string;
+}
+export interface RowDrop {
+  path: string;
+  drop: number;
+  opus: string;
+  reason: string;
 }
 export interface TestScan {
   findings: Finding[];
@@ -31,6 +42,9 @@ export interface TestScan {
 
 const PACKAGE_JSON = "package.json";
 const GIT_WHERE = "git ls-files";
+const MERGE_BASE_WHERE = "git merge-base";
+const ROW_DROPS = "test/row-drops.yml";
+const MASTER_REFS = ["refs/heads/master", "refs/remotes/origin/master"];
 const TIMEOUT_MS = 30_000;
 const MAX_BYTES = 1024 * 1024;
 const EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs"]);
@@ -58,6 +72,7 @@ const MIN_REASON_CHARS = 15;
 const MIN_REASON_WORDS = 3;
 
 const block = (where: string, message: string): Finding => ({ rule: "test.sleep", level: "block", where, message });
+const rowBlock = (where: string, message: string): Finding => ({ rule: "test.rows", level: "block", where, message });
 
 interface Line {
   code: string;
@@ -69,8 +84,11 @@ interface Line {
  *  newline. Block-comment spans are blanked out of `code`; string and template
  *  contents stay in it. In a line that begins inside a template literal, a
  *  trimmed text beginning with a double slash is an embedded script's own
- *  comment line (that is where an annotation inside a fixture lives). */
-export function lex(text: string): Line[] {
+ *  comment line (that is where an annotation inside a fixture lives).
+ *  W-178: `blankStrings` replaces string and template contents (quotes stay)
+ *  with spaces, so `countTestRows` never counts text inside a fixture. */
+export function lex(text: string, opts: { blankStrings?: boolean } = {}): Line[] {
+  const blank = opts.blankStrings === true;
   const out: Line[] = [];
   let inBlock = false;
   let inTemplate = false;
@@ -92,11 +110,12 @@ export function lex(text: string): Line[] {
           code += "  ";
         } else code += " ";
       } else if (quote !== "" || inTemplate) {
-        code += c;
+        const closing = quote !== "" ? c === quote : c === "`";
+        code += blank && !closing ? " " : c;
         if (c === "\\" && n !== undefined) {
-          code += n;
+          code += blank ? " " : n;
           i++;
-        } else if (quote !== "" ? c === quote : c === "`") {
+        } else if (closing) {
           quote = "";
           inTemplate = false;
         }
@@ -170,6 +189,27 @@ function judge(lines: Line[], idx: number): Verdict {
   return { ok: flavour, kind: flavour === "seam" ? "seam" : word };
 }
 
+/** The paths a root package.json `test*` script names; throws on text that is not JSON. */
+function registeredPaths(pkgText: string): Set<string> {
+  const registered = new Set<string>();
+  const pkg = JSON.parse(pkgText) as { scripts?: unknown };
+  const scripts = typeof pkg.scripts === "object" && pkg.scripts !== null ? (pkg.scripts as Record<string, unknown>) : {};
+  for (const [key, value] of Object.entries(scripts)) {
+    if (!key.startsWith("test") || typeof value !== "string") continue;
+    for (const token of value.split(/\s+/)) registered.add(token.replace(/^\.\//, ""));
+  }
+  return registered;
+}
+
+/** W-121's test-file classification: a code file named *.test.* or *.spec.*, under a test directory, or registered by a `test*` script. */
+export function isTestPath(path: string, registered: ReadonlySet<string>): boolean {
+  const segs = path.split("/");
+  const name = segs[segs.length - 1]!;
+  const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
+  if (!EXTENSIONS.has(ext) || segs.includes("node_modules")) return false;
+  return TEST_NAME.test(name) || segs.slice(0, -1).some((s) => TEST_DIRS.has(s)) || registered.has(path);
+}
+
 /** Repo-relative POSIX paths of the tracked files the rule scans, plus any
  *  observation-failure findings. */
 function fileSet(repo: string, findings: Finding[]): string[] {
@@ -191,28 +231,127 @@ function fileSet(repo: string, findings: Finding[]): string[] {
   }
 
   // test paths registered by a root package.json `test*` script
-  const registered = new Set<string>();
+  let registered = new Set<string>();
   const pkgPath = join(repo, PACKAGE_JSON);
   if (existsSync(pkgPath)) {
     try {
-      const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { scripts?: unknown };
-      const scripts = typeof pkg.scripts === "object" && pkg.scripts !== null ? (pkg.scripts as Record<string, unknown>) : {};
-      for (const [key, value] of Object.entries(scripts)) {
-        if (!key.startsWith("test") || typeof value !== "string") continue;
-        for (const token of value.split(/\s+/)) registered.add(token.replace(/^\.\//, ""));
-      }
+      registered = registeredPaths(readFileSync(pkgPath, "utf8"));
     } catch {
       findings.push(block(PACKAGE_JSON, "could not parse package.json; registered test paths unknown"));
     }
   }
 
-  return tracked.filter((p) => {
-    const segs = p.split("/");
-    const name = segs[segs.length - 1]!;
-    const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
-    if (!EXTENSIONS.has(ext) || segs.includes("node_modules")) return false;
-    return TEST_NAME.test(name) || segs.slice(0, -1).some((s) => TEST_DIRS.has(s)) || registered.has(p);
-  });
+  return tracked.filter((p) => isTestPath(p, registered));
+}
+
+// ---- W-178: the row grammar (brief "Interfaces"), applied to `lex(.., { blankStrings: true })` code
+// An identifier character, the one class every pattern below uses: `\w` and `\b` are ASCII-only and read `ñtest(` as `test(`.
+const ID = String.raw`[\p{ID_Continue}$\u200c\u200d]`;
+const DEFINITION = new RegExp(
+  String.raw`^(\s*)(?:export\s+)?(?:(?:async\s+)?function(?!${ID})\s*\*?\s*(${ID}+)\s*\(|(?:const|let|var)\s+(${ID}+)\s*=\s*(?:async\s+)?(?:function(?!${ID})|\([^)]*\)\s*(?::[^=]*)?=>|${ID}+\s*=>))`,
+  "u",
+);
+const REGISTRATION = new RegExp(String.raw`(?<!${ID}|\.)(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(`, "gu");
+const RUNNERS = new Set(["node:test", "@playwright/test"]);
+// An import site, scanned in comment-free code with strings blanked (so never inside a comment, string or template).
+// `import` or `require` must be a free identifier: no identifier character, `#` (a private name) or `\u{..}` escape before
+// it and no identifier character after it, not a member (`x.require(`, `x?.import(`, `x.#require(`; `...require(` is a spread)
+// and not `new require(`. It owns the one module literal it names.
+const KEYWORD = new RegExp(String.raw`(?<!${ID}|#|\\u\{[\da-fA-F]+\})(?:import|require)(?!${ID})`, "gu");
+const MEMBER_OR_NEW = new RegExp(String.raw`(?:(?<!\.\.)\.|(?<!${ID})new)$`, "u");
+const CALL = /\s*\(\s*(["'`])/y; // import("m"), require("m")
+const SIDE_EFFECT = /\s*(["'])/y; // import "m"
+const TYPE_ONLY = new RegExp(String.raw`\s*type(?!${ID}|,)(?!\s*from(?!${ID}))`, "uy"); // import type ... : erased, loads no runner
+const STATIC = new RegExp(String.raw`[\p{ID_Continue}$\u200c\u200d\s,{}*\\]*?(?<!${ID})from\s*(["'])`, "uy"); // import <clause> from "m", the clause over any lines
+const AFTER_MODULE = /\s*[,)]/y;
+
+/** The module names imported or required by the free sites of `code`; `plain` is the same text with string contents. */
+function importedModules(code: string, plain: string): Set<string> {
+  const mods = new Set<string>();
+  const at = (re: RegExp, from: number): RegExpExecArray | null => {
+    re.lastIndex = from;
+    return re.exec(code);
+  };
+  for (const key of code.matchAll(KEYWORD)) {
+    let back = key.index;
+    while (back > 0 && /\s/.test(code[back - 1]!)) back--;
+    // five code units: `.`, or `new` and the whole (possibly astral) character before it
+    if (MEMBER_OR_NEW.test(code.slice(Math.max(0, back - 5), back))) continue;
+    const from = key.index + key[0].length;
+    const call = at(CALL, from);
+    const site = call ?? (key[0] === "require" ? null : (at(SIDE_EFFECT, from) ?? (at(TYPE_ONLY, from) ? null : at(STATIC, from))));
+    if (!site) continue;
+    const open = from + site[0].length;
+    const close = code.indexOf(site[0].at(-1)!, open);
+    if (close < 0 || (call && !at(AFTER_MODULE, close + 1))) continue;
+    mods.add(plain.slice(open, close));
+  }
+  return mods;
+}
+const PRINTS = /console\.(?:log|error)|process\.std(?:out|err)\.write/;
+const WRAPPER_ROUNDS = 4;
+
+/** The test rows a file registers, statically: registrations (in a file that imports a runner), PASS/FAIL reporters
+ *  and the wrappers that call them, each call weighing its function's rows. Total; see the brief for the limits. */
+export function countTestRows(text: string): number {
+  const code = lex(text, { blankStrings: true }).map((l) => l.code);
+  // comments are gone from both views; `plain` keeps string contents (PASS, FAIL, a module name), `code` blanks them
+  const plain = lex(text).map((l) => l.code);
+  // the runner is the module of one free import or require site; nothing else on the line takes part
+  const runner = [...importedModules(code.join("\n"), plain.join("\n"))].some((m) => RUNNERS.has(m));
+  const registrations = (lines: string[]): number => (runner ? lines.reduce((n, l) => n + (l.match(REGISTRATION)?.length ?? 0), 0) : 0);
+  const calls = (name: string, lines: string[]): number => {
+    const re = new RegExp(String.raw`(?<!${ID}|\.)${escapeRegExp(name)}\s*\(`, "gu");
+    return lines.reduce((n, l) => n + (l.match(re)?.length ?? 0), 0);
+  };
+
+  // a body runs from its definition line to the first later line indented at or left of it
+  const fns: { name: string; start: number; end: number }[] = [];
+  for (let i = 0; i < code.length; i++) {
+    const m = DEFINITION.exec(code[i]!);
+    if (!m) continue;
+    const indent = m[1]!.length;
+    let end = i;
+    const line = code[i]!;
+    const oneLine = /[;,]\s*$/.test(line) || (/=>\s*[^{\s]/.test(line) && !/[({[]\s*$/.test(line));
+    if (!oneLine)
+      for (let j = i + 1; j < code.length; j++) {
+        const next = code[j]!;
+        if (next.trim() === "") continue;
+        if (next.length - next.trimStart().length <= indent) {
+          end = /^\s*[})\]]/.test(next) ? j : j - 1;
+          break;
+        }
+        end = j;
+      }
+    fns.push({ name: (m[2] ?? m[3])!, start: i, end });
+  }
+
+  const weight = new Map<string, number>();
+  const reporters = new Set<string>();
+  for (const f of fns) {
+    const words = plain.slice(f.start, f.end + 1).join("\n");
+    if (words.includes("PASS") && words.includes("FAIL") && PRINTS.test(code.slice(f.start, f.end + 1).join("\n"))) {
+      weight.set(f.name, 1);
+      reporters.add(f.name);
+    }
+  }
+  for (let round = 0; round < WRAPPER_ROUNDS; round++)
+    for (const f of fns) {
+      if (reporters.has(f.name)) continue;
+      const body = [code[f.start]!.replace(DEFINITION, ""), ...code.slice(f.start + 1, f.end + 1)];
+      let w = registrations(body);
+      for (const [name, wt] of weight) if (name !== f.name) w += calls(name, body) * wt;
+      if (w > 0) weight.set(f.name, w);
+    }
+
+  // count: registrations and weighted calls outside every weighted function's body
+  const inside = new Set<number>();
+  for (const f of fns) if (weight.has(f.name)) for (let k = f.start; k <= f.end; k++) inside.add(k);
+  const outside = code.map((l, k) => (inside.has(k) ? "" : l));
+  let total = registrations(outside);
+  for (const [name, wt] of weight) total += calls(name, outside) * wt;
+  return total;
 }
 
 export function scanTests(_root: string, opts: RuleOpts): TestScan {
@@ -255,6 +394,163 @@ export function scanTests(_root: string, opts: RuleOpts): TestScan {
   return scan;
 }
 
+/** Stdout of one git call in `repo`; throws on a non-zero exit. */
+function gitOut(repo: string, args: string[]): string {
+  return execFileSync("git", args, { cwd: repo, encoding: "utf8", timeout: TIMEOUT_MS, maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
+}
+const reasonOf = (e: unknown): string => {
+  const err = e as { stderr?: unknown; message?: string };
+  return ((typeof err.stderr === "string" && err.stderr.trim()) || err.message || "unknown error").split("\n")[0]!;
+};
+
+/** W-178: the merge-base of HEAD with refs/heads/master, else with refs/remotes/origin/master. */
+export function resolveTestBase(repo: string): { base: string } | { error: string } {
+  try {
+    const ref = MASTER_REFS.find((r) => {
+      try {
+        gitOut(repo, ["rev-parse", "--verify", "-q", `${r}^{commit}`]);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    if (ref === undefined) return { error: `no ${MASTER_REFS.join(" or ")}; row counts not compared` };
+    const bases = gitOut(repo, ["merge-base", "--all", "HEAD", ref]).trim().split("\n").filter(Boolean);
+    if (bases.length !== 1) return { error: `${bases.length} merge-bases of HEAD and ${ref}; row counts not compared` };
+    return { base: bases[0]! };
+  } catch (e) {
+    return { error: `base unresolved (${reasonOf(e)}); row counts not compared` };
+  }
+}
+
+/** W-178: the records of `test/row-drops.yml` (text undefined: the file is absent). Pure; any malformed
+ *  content, extra key, bad or exactly duplicated record is an error. */
+export function readRowDrops(text: string | undefined): { drops: RowDrop[] } | { error: string } {
+  if (text === undefined) return { drops: [] };
+  let doc: unknown;
+  try {
+    doc = parseYaml(text);
+  } catch (e) {
+    return { error: `malformed YAML (${reasonOf(e)})` };
+  }
+  if (typeof doc !== "object" || doc === null || Array.isArray(doc) || Object.keys(doc).join() !== "drops") return { error: 'the only top-level key is "drops"' };
+  const list = (doc as { drops: unknown }).drops;
+  if (!Array.isArray(list)) return { error: '"drops" is not a list' };
+  const drops: RowDrop[] = [];
+  for (const [i, rec] of list.entries()) {
+    const at = `record ${i + 1}`;
+    if (typeof rec !== "object" || rec === null || Array.isArray(rec) || Object.keys(rec).sort().join() !== "drop,opus,path,reason")
+      return { error: `${at} must have exactly path, drop, opus and reason` };
+    const { path, drop, opus, reason } = rec as Record<string, unknown>;
+    if (typeof path !== "string" || path.split("/").some((seg) => seg === "" || seg === "." || seg === "..")) return { error: `${at}: path must be repo-relative, without "..", "." or empty segments` };
+    if (typeof drop !== "number" || !Number.isInteger(drop) || drop < 1) return { error: `${at}: drop must be an integer of at least 1` };
+    if (typeof opus !== "string" || !/^W-\d+$/.test(opus)) return { error: `${at}: opus must be W-<digits>` };
+    if (typeof reason !== "string" || reason.replace(/\s+/g, "").length < MIN_REASON_CHARS || reason.trim().split(/\s+/).length < MIN_REASON_WORDS)
+      return { error: `${at}: reason too short (need ${MIN_REASON_CHARS} non-whitespace characters in at least ${MIN_REASON_WORDS} words)` };
+    if (drops.some((d) => d.path === path && d.drop === drop && d.opus === opus && d.reason === reason)) return { error: `${at} repeats an earlier record` };
+    drops.push({ path, drop, opus, reason });
+  }
+  return { drops };
+}
+
+type Candidate = { text: string } | { missing: true } | { error: string };
+/** A working-tree file as the sleep scan reads it: regular, at most 1 MiB; a tracked file that is gone is `missing`. */
+function readCandidate(repo: string, rel: string): Candidate {
+  const abs = join(repo, rel);
+  try {
+    const st = lstatSync(abs);
+    if (st.isSymbolicLink()) return { error: "tests are counted as regular files; track the target as a regular file" };
+    if (!st.isFile()) return { error: "not counted: not a regular file" };
+    if (st.size > MAX_BYTES) return { error: "not counted: over 1 MiB" };
+    return { text: readFileSync(abs, "utf8") };
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { missing: true };
+    return { error: `could not read (${(e as Error).message})` };
+  }
+}
+
+/** W-178: `test.rows`, block. Each test file at the merge-base keeps its row count in the working tree. With a
+ *  repo only; an unobservable base or file is a finding, never a silent pass. */
+export function testRowFindings(repo: string): Finding[] {
+  const resolved = resolveTestBase(repo);
+  if ("error" in resolved) return [rowBlock(MERGE_BASE_WHERE, resolved.error)];
+  const { base } = resolved;
+  const findings: Finding[] = [];
+  const dropped: { path: string; from: number; to: number }[] = [];
+  try {
+    const baseFiles = gitOut(repo, ["ls-tree", "-r", "--name-only", "-z", base]).split("\0").filter(Boolean);
+    let baseRegistered = new Set<string>();
+    if (baseFiles.includes(PACKAGE_JSON)) {
+      try {
+        baseRegistered = registeredPaths(gitOut(repo, ["show", `${base}:${PACKAGE_JSON}`]));
+      } catch {
+        return [rowBlock(PACKAGE_JSON, "could not read or parse package.json at the base; registered test paths unknown")];
+      }
+    }
+    let registered = new Set<string>();
+    const pkg = readCandidate(repo, PACKAGE_JSON);
+    if ("error" in pkg) return [rowBlock(PACKAGE_JSON, `package.json ${pkg.error}; registered test paths unknown`)];
+    if ("text" in pkg) {
+      try {
+        registered = registeredPaths(pkg.text);
+      } catch {
+        return [rowBlock(PACKAGE_JSON, "could not parse package.json; registered test paths unknown")];
+      }
+    }
+    // the reason file, in the base and in the working tree
+    let baseLedger: string | undefined;
+    if (baseFiles.includes(ROW_DROPS)) {
+      try {
+        baseLedger = gitOut(repo, ["show", `${base}:${ROW_DROPS}`]);
+      } catch (e) {
+        return [rowBlock(ROW_DROPS, `could not read at the base (${reasonOf(e)})`)];
+      }
+    }
+    const ledger = readCandidate(repo, ROW_DROPS);
+    if ("error" in ledger) return [rowBlock(ROW_DROPS, ledger.error)];
+    const before = readRowDrops(baseLedger);
+    if ("error" in before) return [rowBlock(ROW_DROPS, `at the base: ${before.error}`)];
+    const after = readRowDrops("text" in ledger ? ledger.text : undefined);
+    if ("error" in after) return [rowBlock(ROW_DROPS, after.error)];
+    const fresh = after.drops.filter((r) => !before.drops.some((b) => b.path === r.path && b.drop === r.drop && b.opus === r.opus && b.reason === r.reason));
+
+    const candidate = new Set(gitOut(repo, ["ls-files", "-z"]).split("\0").filter((p) => p.length > 0 && isTestPath(p, registered)));
+
+    for (const path of baseFiles.filter((p) => isTestPath(p, baseRegistered))) {
+      let from: number;
+      try {
+        from = countTestRows(gitOut(repo, ["show", `${base}:${path}`]));
+      } catch (e) {
+        findings.push(rowBlock(path, `could not read at the base (${reasonOf(e)})`));
+        continue;
+      }
+      let to = 0;
+      if (candidate.has(path)) {
+        const read = readCandidate(repo, path);
+        if ("error" in read) {
+          findings.push(rowBlock(path, read.error));
+          continue;
+        }
+        if ("text" in read) to = countTestRows(read.text);
+      }
+      if (to < from) dropped.push({ path, from, to });
+    }
+    // each drop needs exactly one new record of exactly its size; each new record must match a drop
+    for (const { path, from, to } of dropped) {
+      const mine = fresh.filter((r) => r.path === path);
+      const fell = `row count fell from ${from} to ${to}`;
+      if (mine.length === 0) findings.push(rowBlock(path, `${fell}; add one record to ${ROW_DROPS} naming this path with drop ${from - to}`));
+      else if (mine.length > 1) findings.push(rowBlock(path, `${fell}; ${mine.length} new records in ${ROW_DROPS} name this path, exactly one is allowed`));
+      else if (mine[0]!.drop !== from - to) findings.push(rowBlock(path, `${fell}, but the new record in ${ROW_DROPS} drops ${mine[0]!.drop}; it must drop ${from - to}`));
+    }
+    for (const r of fresh) if (!dropped.some((d) => d.path === r.path)) findings.push(rowBlock(ROW_DROPS, `the new record for "${r.path}" matches no test file whose row count fell`));
+  } catch (e) {
+    findings.push(rowBlock(GIT_WHERE, `the row comparison failed (${reasonOf(e)})`));
+  }
+  return findings;
+}
+
 export function checkTests(root: string, opts: RuleOpts): Finding[] {
-  return scanTests(root, opts).findings;
+  const findings = scanTests(root, opts).findings;
+  return opts.repo ? [...findings, ...testRowFindings(opts.repo)] : findings;
 }

@@ -1,0 +1,25 @@
+# opus: W-178
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-18T22:06:39.668Z
+# tree: tree:23e6674230006c02bb3c5b38e8ecf920e607e479
+# brief: briefs/W-178.md blob:604a0dd02839c16bfd86a91fa4a871925da1e051
+# ticket: {"opus":"W-178","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"2df55ee73c05302ee8b77f04f82aeb16b8212405","brief":"604a0dd02839c16bfd86a91fa4a871925da1e051","at":"2026-10-18T22:06:39.239Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-178-recheck/promise-ledger.md
+
+## Findings
+
+1. advisory — recheck on master 33a54346 of the brief signed 2026-10-11 (revision 3, blob 85a45003): every Files owned path and function still exists; moved anchors are corrected (ci.ts:55-63, run-builder-host.mjs:843-855, `ci --offline --opus`); certify sets local master (scripts/ci-certify.mjs:200), so promise base holds — check: ~/.bisellium-evidence/W-178-recheck/W-178-signed-to-recheck.diff, apply-edits.py
+2. advisory — numbers re-measured: 131 test files, 3,434 rows, next.test.ts 114, no file lower than at 580d5fd5; the only exact count in Acceptance (brief:134) now names the base count and one less; the 26 to 27 live-row pin is exact (run.test.ts unchanged) — check: census-ref-33a54346.txt
+3. advisory — what landed since: W-179 now splits next.test.ts after W-178 and owes a record (brief:53, D-080 A, D-082 D); W-312's one-mint rule moves the real-host proof to certify (brief:133); the Defaults are approved (brief:131, D-080 H); no design or red changes — check: W-178-signed-to-recheck.diff
+4. advisory — the kept prototype on master returns no finding, and one removed test( on an opus branch gives one test.rows block 114 to 113; the b1 and b5 red preconditions hold (no countTestRows, single-branch clone) — check: recheck-proto.sh, recheck-proto.out
+5. advisory — the Codex test check lists six flips, all named in the brief (behaviours 2 and 5); Unnamed: none — check: ~/.bisellium-evidence/W-178-spec/fixture-census.md
+6. advisory — the ledger covers the six CLI-verb lines and all eleven Input domain rows (brief:95 to brief:105) — check: promise-lines.mts, promise-lines.out, promise-ledger.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 with the recheck's wording edits at `studio/briefs/W-178.md` (blob 604a0dd0), master 2df55ee7.
