@@ -245,20 +245,24 @@ function fileSet(repo: string, findings: Finding[]): string[] {
 }
 
 // ---- W-178: the row grammar (brief "Interfaces"), applied to `lex(.., { blankStrings: true })` code
-const DEFINITION =
-  /^(\s*)(?:export\s+)?(?:(?:async\s+)?function\s*\*?\s*([\w$]+)\s*\(|(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>))/;
-const REGISTRATION = /(?<![\w$.])(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(/g;
+// An identifier character, the one class every pattern below uses: `\w` and `\b` are ASCII-only and read `ñtest(` as `test(`.
+const ID = String.raw`[\p{ID_Continue}$\u200c\u200d]`;
+const DEFINITION = new RegExp(
+  String.raw`^(\s*)(?:export\s+)?(?:(?:async\s+)?function(?!${ID})\s*\*?\s*(${ID}+)\s*\(|(?:const|let|var)\s+(${ID}+)\s*=\s*(?:async\s+)?(?:function(?!${ID})|\([^)]*\)\s*(?::[^=]*)?=>|${ID}+\s*=>))`,
+  "u",
+);
+const REGISTRATION = new RegExp(String.raw`(?<!${ID}|\.)(?:test|it)(?:\s*\.\s*(?:skip|only|todo))?\s*\(`, "gu");
 const RUNNERS = new Set(["node:test", "@playwright/test"]);
 // An import site, scanned in comment-free code with strings blanked (so never inside a comment, string or template).
 // `import` or `require` must be a free identifier: no identifier character, `#` (a private name) or `\u{..}` escape before
 // it and no identifier character after it, not a member (`x.require(`, `x?.import(`, `x.#require(`; `...require(` is a spread)
 // and not `new require(`. It owns the one module literal it names.
-const KEYWORD = /(?<![\p{ID_Continue}$#]|\\u\{[\da-fA-F]+\})(?:import|require)(?![\p{ID_Continue}$])/gu;
-const MEMBER_OR_NEW = /(?:(?<!\.\.)\.|(?<![\w$])new)$/;
+const KEYWORD = new RegExp(String.raw`(?<!${ID}|#|\\u\{[\da-fA-F]+\})(?:import|require)(?!${ID})`, "gu");
+const MEMBER_OR_NEW = new RegExp(String.raw`(?:(?<!\.\.)\.|(?<!${ID})new)$`, "u");
 const CALL = /\s*\(\s*(["'`])/y; // import("m"), require("m")
 const SIDE_EFFECT = /\s*(["'])/y; // import "m"
-const TYPE_ONLY = /\s*type(?![\w$,])(?!\s*from\b)/y; // import type ... : erased, loads no runner
-const STATIC = /[\w$\s,{}*]*?\bfrom\s*(["'])/y; // import <clause> from "m", the clause over any lines
+const TYPE_ONLY = new RegExp(String.raw`\s*type(?!${ID}|,)(?!\s*from(?!${ID}))`, "uy"); // import type ... : erased, loads no runner
+const STATIC = new RegExp(String.raw`[\p{ID_Continue}$\u200c\u200d\s,{}*\\]*?(?<!${ID})from\s*(["'])`, "uy"); // import <clause> from "m", the clause over any lines
 const AFTER_MODULE = /\s*[,)]/y;
 
 /** The module names imported or required by the free sites of `code`; `plain` is the same text with string contents. */
@@ -271,7 +275,8 @@ function importedModules(code: string, plain: string): Set<string> {
   for (const key of code.matchAll(KEYWORD)) {
     let back = key.index;
     while (back > 0 && /\s/.test(code[back - 1]!)) back--;
-    if (MEMBER_OR_NEW.test(code.slice(Math.max(0, back - 4), back))) continue;
+    // five code units: `.`, or `new` and the whole (possibly astral) character before it
+    if (MEMBER_OR_NEW.test(code.slice(Math.max(0, back - 5), back))) continue;
     const from = key.index + key[0].length;
     const call = at(CALL, from);
     const site = call ?? (key[0] === "require" ? null : (at(SIDE_EFFECT, from) ?? (at(TYPE_ONLY, from) ? null : at(STATIC, from))));
@@ -296,7 +301,7 @@ export function countTestRows(text: string): number {
   const runner = [...importedModules(code.join("\n"), plain.join("\n"))].some((m) => RUNNERS.has(m));
   const registrations = (lines: string[]): number => (runner ? lines.reduce((n, l) => n + (l.match(REGISTRATION)?.length ?? 0), 0) : 0);
   const calls = (name: string, lines: string[]): number => {
-    const re = new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}\\s*\\(`, "g");
+    const re = new RegExp(String.raw`(?<!${ID}|\.)${name.replace(/\$/g, "\\$")}\s*\(`, "gu");
     return lines.reduce((n, l) => n + (l.match(re)?.length ?? 0), 0);
   };
 
