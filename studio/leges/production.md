@@ -174,7 +174,9 @@ names each step and writes the step ticket the next record write consumes
    security gap, or missing or false evidence; wording findings (S2, S4) are
    advisories with replacement text the builder adopts, S3 is noted. A second
    spec review runs only after a design-changing S1 (D-076 B); two reviews are
-   the ceiling (D-061 §4).
+   the ceiling (D-061 §4). A blocker carries `[design: changes|keeps]`; a failed round whose blockers
+   all keep the design goes to `branch` with them as required build fixes, and a blocker tagged S2-S4 is
+   sent back to its reviewer session, never downgraded (D-086).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
    in the worktree, `ready` (commit), then a Sonnet builder (brief model:
    `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
@@ -194,7 +196,7 @@ names each step and writes the step ticket the next record write consumes
    (`~/.bisellium-evidence/codex-passes/fix-census.sh <id> <failed-round>`,
    D-072); an open path goes back to the builder, not to review. It is
    advisory input, not a verdict; W-274 moves it into the review perform.
-   No round cap (D-053). Only a real defect blocks a build round too (D-084, as D-076 A for spec): wrong behaviour on an input inside the brief's stated domain, a security gap, or missing or false evidence; wrong behaviour on a form the brief's limits exclude or do not list is an advisory the architect may add as a limit or a ruled case.
+   No round cap (D-053). A fix round stops before its `ci --opus` until the fix check lists no open path (D-086 D). Only a real defect blocks a build round too (D-084, as D-076 A for spec): wrong behaviour on an input inside the brief's stated domain, a security gap, or missing or false evidence; wrong behaviour on a form the brief's limits exclude or do not list is an advisory the architect may add as a limit or a ruled case.
 5. **Merge:** refresh `handoff` (the `bisellium handoff` verb, the record's
    traditio; `next` does not ask for it before `pr`, so do it); record the pass; `pr`; `merge`; `cleanup`.
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
@@ -321,3 +323,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-18 | §9 steps 3 to 5: review needs the builder's `ci --opus` gate logs at the branch's source tree; no host mint before review; `certify` is the one mint (W-312, D-071 E) | Patron |
 | 2026-10-18 | §9 step 6: no `verify` on master after `certify` except for a `kind: ui` opus; the done perform records certify's certificate (D-082 B) | Patron |
 | 2026-10-19 | §9 step 4: only a real defect blocks a build review round, as for spec (D-084) | Patron |
+| 2026-10-19 | §9 steps 2 and 4: a design-keeping spec blocker goes to the build; S2-S4 blockers are reissued; the fix check runs before a fix round's suite (D-086) | Patron |
