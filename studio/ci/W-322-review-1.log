@@ -1,0 +1,19 @@
+# opus: W-322
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1539f-e08e-7fd1-94ba-caec40e5b7b5
+# outcome: failed
+# at: 2026-10-19T10:12:08.410Z
+# tree: tree:b26c034ab46bddc972bd842dec44bd7e7b3d12f6
+# brief: briefs/W-322.md blob:591e93f9e9c356bacfb1aa885e2b07bfd042fea9
+# ticket: {"opus":"W-322","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-322/studio","head":"0665db6215e0c77e61252a9e9dc34297236f2a87","brief":"591e93f9e9c356bacfb1aa885e2b07bfd042fea9","at":"2026-10-19T10:05:47.235Z"}
+
+## Findings
+1. blocking — packages/commands/src/brief-admission.ts:170 [severity: S2] A range beginning beyond EOF is not clamped to the brief’s last line: `brief:999-1000` produces case 999 instead of the final line, so a valid pin there is ignored and the signature is wrongly refused; brief:43 requires cited ranges to be clamped. — check: packages/cli/src/verdict-citation.test.ts (`W-322-b2`: a range beginning beyond EOF clamps to the last line) [class: tests×ruled-case-uncovered]
+2. blocking — packages/commands/src/brief-admission.ts:174 [severity: S2] A forms citation containing its own Input-domain row creates a grammar case with `line === row`, making consumers misreport it as an Input-domain row rather than the grammar line required by brief:49; the packet mislabels the same case. — check: packages/cli/src/verdict-citation.test.ts (`W-322-b2`: a self-cited row is reported as a grammar line) [class: tests×ruled-case-uncovered]
+
+## Verdict
+Two forms admitted by the declared citation grammar produce wrong behavior and lack regression coverage.
+VERDICT: FAIL
