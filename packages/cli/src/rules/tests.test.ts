@@ -817,6 +817,7 @@ const EDGES: [string, string[], boolean][] = [
   ["edge 52 a type-only default binding named fromé", ['import type fromé from "node:test";'], false],
   ["edge 52 a type-only import of a non-ASCII name", ['import type { tést } from "node:test";'], false],
   ["edge 57 a non-ASCII identifier ending in new is no new", ["const ñnew = 1;", "ñnew", 'require("node:test");'], true],
+  ["edge 57 an astral identifier ending in new is no new", ["const 𠮷new = 1;", "𠮷new", 'require("node:test");'], true],
   ["edge 58 a non-ASCII identifier before require", ['const test = ñrequire("node:test");'], false],
   ["edge 58 a non-ASCII identifier before import", ['const test = ñimport("node:test");'], false],
   ["edge 58 import continued by a non-ASCII identifier, then from on its own lines", ["importñ", "from", '"node:test";'], false],
