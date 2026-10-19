@@ -10,6 +10,18 @@
  */
 import { expect, test } from "@playwright/test";
 
+export function smokeBaseURL(port: string | undefined): string {
+  if (port === undefined || !/^[1-9][0-9]{0,4}$/.test(port) || Number(port) > 65535)
+    throw new Error(`SMOKE_PORT is not a port from 1 through 65535: ${JSON.stringify(port)}`);
+  return `http://127.0.0.1:${port}`;
+}
+
+test.use({
+  baseURL: async ({}, use) => {
+    await use(smokeBaseURL(process.env["SMOKE_PORT"]));
+  },
+});
+
 // behaviour 1: Inbox screen loads and shows the heading.
 test("inbox screen loads and shows heading", async ({ page }) => {
   await page.goto("/");
@@ -65,4 +77,23 @@ test("route hash changes reflect in displayed screen", async ({ page }) => {
     window.location.hash = "#/inbox";
   });
   await expect(page.getByRole("heading", { name: "Inbox" })).toBeVisible();
+});
+
+// W-182 behaviour 1: the browser uses the free port its own Vite printed.
+test("W-182 behaviour 1: the smoke browser uses the free port printed by its own Vite process", async ({
+  page,
+  baseURL,
+}) => {
+  const port = process.env["SMOKE_PORT"];
+  expect(port ?? "").toMatch(/^[1-9][0-9]*$/);
+  expect(baseURL).toBe(`http://127.0.0.1:${port}`);
+  await page.goto("/");
+  expect(new URL(page.url()).port).toBe(port);
+});
+
+test("W-182 behaviour 2: a missing or malformed captured smoke port is refused", () => {
+  expect(smokeBaseURL("1")).toBe("http://127.0.0.1:1");
+  expect(smokeBaseURL("65535")).toBe("http://127.0.0.1:65535");
+  for (const bad of [undefined, "", "0", "01", "65536", "-1", "1.5", " 5199", "5199 "])
+    expect(() => smokeBaseURL(bad), JSON.stringify(bad)).toThrow();
 });

@@ -1,0 +1,25 @@
+# opus: W-182
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T22:43:04.362Z
+# tree: tree:53970cbb4150738db3685b3e18dac1ecf583ea4e
+# brief: briefs/W-182.md blob:e2968b5d3711ac8a8c633ca201f3ab44cafac61e
+# ticket: {"opus":"W-182","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-182/studio","head":"28da36e3fac7eadefa762470692a8f7b3d86d7b5","brief":"e2968b5d3711ac8a8c633ca201f3ab44cafac61e","at":"2026-10-19T22:43:03.813Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-182-amend/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 1's red commands passed `--cwd apps/web`, which `red` refuses under "Red order: one at a time" (lifecycle.ts:1087 needs the repository root); both now run from the root as `npx playwright test --config=apps/web/playwright.config.ts --grep W-182.behaviour.N`, no whitespace in any argument, and Playwright starts the webServer from the config's directory; at c9b921d4 plus the red shape below b1 fails by assertion and passes on its stage, and b2 likewise — check: ~/.bisellium-evidence/W-182-amend/b1-red-stage-a.txt, b1-pass-stage-b.txt, b2-red-stage-c.txt, b2-pass-stage-d.txt
+2. advisory — the merge queue's certify replay (run-builder-host.mjs: fresh clone at the red's commit, bwrap replay cell with a private /etc and CI=1) could not run revision 1's first red: master's config binds `localhost`, which the cell cannot resolve (getaddrinfo EAI_AGAIN, no test loads); revision 2 moves master's fixed server to 127.0.0.1 as a first step before red 1, and both reds replayed in a mimic of that cell are accepted by replay-accept.mjs — check: replay-b1-at-c9b921d4-shape-localhost.txt, replay-b1-stage-a.txt, replay-b2-stage-c.txt, replay-mimic.mjs
+3. advisory — the builder's row b1 at c9b921d4 opens with `expect(port).toMatch(...)`; on undefined that is a matcher TypeError, which replay-accept.mjs refuses ("playwright's failure is not an expect(...) assertion"); revision 2 has the row expect `process.env["SMOKE_PORT"] ?? ""`, so the builder amends that line before recording red 1 — check: b1-red-c9b921d4.txt, b1-red-stage-a.txt
+4. advisory — stated limit (D-076 E): the reused, unchanged replay re-identifies a red after a rebase that moves master's source only by `not ok` titles, which Playwright's list reporter does not print, so certify refuses these reds if the branch is rebased over new master source before the merge; written into Acceptance — check: none: scripts/run-builder-host.mjs identifyRebased is outside Files owned
+5. advisory — Input domain rows now carry W-322 pins (row 1 by behaviour 2 "toThrow", row 3 by behaviour 1 "toMatch") and row 2 is unpinned and scoped; the officina check reports no admission problem for the brief — check: promise-ledger.md
+6. advisory — design unchanged: the stage d prototype lists 7 tests from the root and runs 7 passed — check: list-stage-d.txt, all-stage-d.txt, prototype-src.diff
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-182.md` on opus/W-182 e4853b0f.
