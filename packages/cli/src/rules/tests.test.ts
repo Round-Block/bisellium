@@ -784,6 +784,18 @@ const EDGES: [string, string[], boolean][] = [
   ["edge 45 a bare require beside a string statement", ["const r = require", '"node:test";'], false],
   ["edge 44 a require with unmatched quotes", ['const test = require("node:test\');', "const u = 1;"], false],
   ["edge 44 a side-effect import with unmatched quotes", ['import "node:test\';', "const u = 1;"], false],
+  ["edge 46 a private-member require", ['class A { m() { return this.#require("node:test"); } }'], false],
+  ["edge 46 a private-member import of Playwright", ['class A { m() { return this.#import("@playwright/test"); } }'], false],
+  ["edge 46 an optional private-member require", ['class A { m() { return this?.#require("node:test"); } }'], false],
+  ["edge 46 a private member on the next line", ["class A { m() { return this.", '  #import("node:test"); } }'], false],
+  ["edge 47 a braced unicode escape before require", ['const test = \\u{61}require("node:test");'], false],
+  ["edge 47 a braced unicode escape before import", ['const test = \\u{61}import("node:test");'], false],
+  ["edge 47 a fixed unicode escape before require", ['const test = \\u0061require("node:test");'], false],
+  ["edge 47 a zero-width joiner before require", ['const test = a\u200crequire("node:test");'], false],
+  ["edge 47 an escaped spelling of require is not recognised (limit)", ['const test = r\\u0065quire("node:test");'], false],
+  ["edge 47 a brace before require is not an escape", ['{}require("node:test");'], true],
+  ["edge 48 an identifier continuing import, then from on its own lines", ["importer", "from", '"node:test";'], false],
+  ["edge 49 a decorator is a call of the free require", ['@require("node:test") class A {}'], true],
 ];
 const LEX_SAMPLE = ['const a = "x(1)"; // note', "/* gone */ const b = 'y\\'z';", "const t = `", "  test('in template')", "`;", "go();"].join("\n");
 
