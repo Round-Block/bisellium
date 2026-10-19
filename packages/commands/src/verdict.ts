@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { inputDomainRows } from "./brief-admission.js";
+import { inputDomainRows, ruledCases } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
@@ -378,6 +378,7 @@ const CITATION_TOKEN = new RegExp(String.raw`(?<![\w./~-])([\w./~-]+):([1-9]\d*)
 /** a whole word by the same boundary: `next.ts` and `src/next` do not name `next`, `scoped-ish` is no status */
 const wholeWord = (word: string): RegExp => new RegExp(String.raw`(?<![\w./~-])${word}` + TOKEN_END);
 const STATUS = wholeWord("(?:holds|scoped)");
+const SCOPED = wholeWord("scoped");
 
 /** W-306: the design collegium's magister: no design row is `architect`; exactly one row needs a nonblank string magister. */
 function readDesignMagister(manifest: unknown): { magister: string } | { error: string } {
@@ -395,6 +396,7 @@ function readDesignMagister(manifest: unknown): { magister: string } | { error: 
  * (`ready`, `next`) is a promise line; the signature's raw lines before its one level-2 Findings heading (as `contentLines` finds
  * it) then cite one ledger file, and for each promise line and each verb on it some ledger line holds the whole tokens
  * `brief:<n>` and `<file>:<line>`, the verb and holds or scoped. W-319: so does each Input domain row (a reader), with no verb.
+ * W-322: each row also holds a pin (`ruledCases`), or says unpinned and its ledger line is scoped.
  * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
  */
 function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
@@ -450,6 +452,16 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const n of rows)
     if (!entries.some((e) => e.counts && e.briefs.has(n)))
       problems.push(`brief:${n} is an Input domain row, and no ledger line cites brief:${n} with a <file>:<line> and holds or scoped`);
+  const { cases, formless } = ruledCases(brief);
+  const PIN_FORM = 'as pinned by `<row>` "<assertion>"';
+  for (const c of cases) {
+    if (c.pins.length > 0) continue;
+    const covering = entries.filter((e) => e.counts && e.briefs.has(c.line));
+    if (!c.unpinned)
+      problems.push(`brief:${c.line} is an Input domain row with no pin: name the test row and assertion that exercise it ${PIN_FORM}, or say unpinned (a stated limit, scoped in the ledger)`);
+    else if (covering.length > 0 && !covering.some((e) => SCOPED.test(e.text)))
+      problems.push(`brief:${c.line} says unpinned, and no ledger line cites brief:${c.line} as scoped`);
+  }
   return problems;
 }
 

@@ -128,6 +128,37 @@ export function inputDomainRows(briefText: string): number[] {
   return run.slice(2).map((_, i) => at + 3 + i);
 }
 
+/** W-322: a pin names the test row and an assertion text that exercise a ruled case: pinned by `<row>` "<assertion>". */
+const PIN = /(?<![\w-])[Pp]inned by `([^`]*[^`\s][^`]*)` "([^"]*[^"\s][^"]*)"/g;
+const UNPINNED = /(?<![\w-])unpinned(?![\w-])/i;
+
+/** W-322: one pin: the test row's name and a text of the assertion that exercises the case. */
+export interface Pin {
+  row: string;
+  assertion: string;
+}
+/** W-322: a ruled case: an Input domain row (`row` is `line`), or a grammar line that row's forms clause cites. */
+export interface RuledCase {
+  line: number;
+  row: number;
+  pins: Pin[];
+  unpinned: boolean;
+}
+
+/** W-322: the brief's ruled cases in brief order, each with the pins its real line holds; `formless`, the rows whose
+ *  Valid domain says any text or any string and which hold no forms clause. Text only, like `inputDomainRows`. */
+export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[] } {
+  const real = realLines(briefText);
+  const pinsOf = (n: number): Pin[] =>
+    [...(real[n - 1] ?? "").matchAll(PIN)].map((m) => ({ row: m[1]!, assertion: m[2]! }));
+  const cases: RuledCase[] = [];
+  const formless: number[] = [];
+  for (const n of inputDomainRows(briefText)) {
+    cases.push({ line: n, row: n, pins: pinsOf(n), unpinned: UNPINNED.test(real[n - 1]!) });
+  }
+  return { cases, formless };
+}
+
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
  *  domain and one rejecting function, and which says that a rejection fails closed; or one `None: <reason>` line.
  *  Shape only: the named function is not looked up. */

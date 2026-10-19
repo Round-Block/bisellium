@@ -483,8 +483,9 @@ const ROWS_BRIEF = [
   "A rejection fails closed.",
   "| Record | Valid domain | Rejected by |",
   "|---|---|---|",
-  "| the flag | a string | `parseFlag`: exit 2 |",
-  "| the file | a regular file | `readIt`: exit 2 |",
+  // W-322: each row names its pinning test row and assertion
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b1` "exit 2" |',
+  '| the file | a regular file | `readIt`: exit 2, pinned by `W-300-b1` "exit 2" |',
   "",
   "| a second table | not | read |",
   "|---|---|---|",

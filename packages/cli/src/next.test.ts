@@ -4384,7 +4384,7 @@ const W196_ADMITTED = [
   "",
   "| Record | Valid domain | Rejected by |",
   "|---|---|---|",
-  "| fixture record | a string | `readFixture` |",
+  '| fixture record | a string | `readFixture`, pinned by `W-900-b1` "row 1 fails" |', // W-322: the row's pin
   "",
   "## Behaviours to test",
   "",
