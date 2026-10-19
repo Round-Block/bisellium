@@ -446,3 +446,81 @@ test("W-215-r1-2 citation: a token is bounded on its right by a non-word charact
     assert.ok(!("error" in p), `${text}: ${"error" in p ? p.error : ""}`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// W-297 (D-085 C, D-086 A and C): the tags a spec or build finding carries, refused before anything is written.
+// ---------------------------------------------------------------------------
+test("W-297-b1 behaviour 1: verdict refuses a build finding without a severity, a blocker tagged S2-S4 and a spec blocker without a design tag", () => {
+  /** One verdict on a fresh W-300 officina that holds a brief; the exit, stderr and whether a log was written. */
+  const tagged = (body: string, phase: "spec" | "build" | "handoff", outcome: string): { exitCode: number; stderr: string; written: boolean } => {
+    const dir = studio();
+    mkdirSync(join(dir, "briefs"));
+    writeFileSync(join(dir, "briefs", "W-300.md"), "# Brief\n\nline three\nline four\n");
+    const input = join(dir, "input.md");
+    writeFileSync(input, body);
+    let stderr = "";
+    const [oldError, oldLog] = [console.error, console.log];
+    console.error = (...args: unknown[]) => {
+      stderr += `${args.map(String).join(" ")}\n`;
+    };
+    console.log = () => {};
+    try {
+      const r = runVerdict(["W-300", "--round", "1", "--sella", "qa-lead", "--outcome", outcome, "--phase", phase, "--from", input, "--studio", dir], { now: NOW });
+      return { exitCode: r.exitCode, stderr, written: existsSync(join(dir, "ci")) && readdirSync(join(dir, "ci")).length > 0 };
+    } finally {
+      console.error = oldError;
+      console.log = oldLog;
+    }
+  };
+  const body = (...lines: string[]): string => `## Findings\n${lines.map((l, i) => `${i + 1}. ${l} — check: none: probe`).join("\n")}\n`;
+  const refused = (name: string, b: string, phase: "spec" | "build", outcome: string, problems: string[]): void => {
+    const r = tagged(b, phase, outcome);
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.equal(r.stderr, problems.map((p) => `W-300: finding tags: ${p}\n`).join(""), `${name}: stderr`);
+  };
+  const recorded = (name: string, b: string, phase: "spec" | "build" | "handoff", outcome: string): void => {
+    const r = tagged(b, phase, outcome);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, true, `${name}: the log is written`);
+  };
+  const NO_SEVERITY = (n: number): string => `finding ${n} has no [severity: S1|S2|S3|S4] tag; every build finding carries one (D-085 C)`;
+  const NOT_S1 = (n: number, s: number): string => `finding ${n} is blocking and tagged [severity: S${s}]; only an S1 blocks: reissue it as advisory, or fix the tag (D-086 C)`;
+  const NO_DESIGN = (n: number): string => `finding ${n} is a blocking spec finding with no [design: changes|keeps] tag; it carries exactly one (D-086 A)`;
+
+  // a build finding carries one severity tag
+  refused("a build advisory with no severity", body("advisory — a.ts:3 a nit"), "build", "passed", [NO_SEVERITY(1)]);
+  refused("a build blocker with no severity", body("blocking — brief:3 the guard is absent"), "build", "failed", [NO_SEVERITY(1)]);
+  for (const form of ["[severity: s1]", "[severity:S1]", "[Severity: S1]", "[severity: S5]", "(severity: S1)", "severity: S1", "[severity: S1 ]"])
+    refused(`the form ${form}`, body(`advisory — a.ts:3 a nit ${form}`), "build", "passed", [NO_SEVERITY(1)]);
+  refused("two severity tags", body("advisory — a.ts:3 [severity: S4] a nit [severity: S4]"), "build", "passed", ["finding 1 carries 2 [severity:] tags; one only"]);
+  // a blocker tagged S2, S3 or S4 is refused, in a build or a spec round, never downgraded
+  for (const s of [2, 3, 4]) {
+    refused(`a build blocker tagged S${s}`, body(`blocking — brief:3 the guard is absent [severity: S${s}]`), "build", "failed", [NOT_S1(1, s)]);
+    refused(`a spec blocker tagged S${s}`, body(`blocking — brief:3 the guard is absent [severity: S${s}] [design: keeps]`), "spec", "failed", [NOT_S1(1, s)]);
+  }
+  // a blocking spec finding carries exactly one design tag
+  refused("a spec blocker with no design tag", body("blocking — brief:3 the guard is absent [severity: S1]"), "spec", "failed", [NO_DESIGN(1)]);
+  for (const form of ["[design: keep]", "[design:keeps]", "[Design: keeps]", "[design: changed]"])
+    refused(`the design form ${form}`, body(`blocking — brief:3 the guard is absent ${form}`), "spec", "failed", [NO_DESIGN(1)]);
+  refused("two design tags", body("blocking — brief:3 the guard is absent [design: keeps] [design: changes]"), "spec", "failed", ["finding 1 is a blocking spec finding with 2 [design: changes|keeps] tags; it carries exactly one (D-086 A)"]);
+  // every problem, in finding order
+  refused(
+    "three findings, three problems",
+    body("advisory — a.ts:3 a nit", "blocking — brief:3 the guard is absent [severity: S3]", "advisory — a.ts:4 [severity: S2] fine"),
+    "build",
+    "failed",
+    [NO_SEVERITY(1), NOT_S1(2, 3)],
+  );
+  refused("a spec blocker tagged S2 with no design tag", body("blocking — brief:3 absent [severity: S2]"), "spec", "failed", [NOT_S1(1, 2), NO_DESIGN(1)]);
+
+  // what is recorded
+  for (const s of [1, 2, 3, 4]) recorded(`a build advisory tagged S${s}`, body(`advisory — a.ts:3 a nit [severity: S${s}] [class: tests×probe]`), "build", "passed");
+  recorded("a build blocker tagged S1", body("blocking — brief:3 the guard is absent [severity: S1] [class: tests×probe]"), "build", "failed");
+  recorded("a bold build blocker tagged S1", body("**blocking** — brief:3 the guard is absent [severity: S1]"), "build", "failed");
+  recorded("a build round with no findings", "## Findings\nNo findings\n", "build", "passed");
+  recorded("a spec blocker that keeps the design", body("blocking — brief:3 the guard is absent [severity: S1] [design: keeps]"), "spec", "failed");
+  recorded("a spec blocker that changes the design", body("blocking — brief:3 [design: changes] the guard is absent"), "spec", "failed");
+  recorded("a spec advisory with no tag", body("advisory — brief:3 a nit"), "spec", "passed");
+  recorded("a handoff finding with no tag", body("advisory — docs/SESSION-HANDOFF.md:3 a nit"), "handoff", "passed");
+});
