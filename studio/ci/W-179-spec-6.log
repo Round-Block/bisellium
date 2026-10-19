@@ -1,0 +1,23 @@
+# opus: W-179
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-08c2-7001-a82a-21474948bbc7
+# outcome: failed
+# at: 2026-10-19T13:25:06.367Z
+# tree: tree:4d98eaf9f9d9b99c57978720d00c92368582cd97
+# brief: briefs/W-179.md blob:25f03cb5fb351822280defdb42add0f429e50291
+# ticket: {"opus":"W-179","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":"studio","head":"a25697aacdaf196ba361a3e5cce36cfabe87c0e2","brief":"25f03cb5fb351822280defdb42add0f429e50291","at":"2026-10-19T13:25:05.903Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-179-spec/time-seg.sh:16 brief:104 `time-seg.sh` and `time-base.sh` record child exit, checkout state, and load but finish with successful `cat`; they never reject non-zero, dirty, misnamed, overloaded, misordered, or incomplete runs, so invalid timing evidence is accepted. [severity: S1] [class: research×claimed-metric-without-enforced-methodology] — check: none: shell tests must prove every invalid measurement exits non-zero and that exactly three alternating runs per commit are required
+2. blocking — /home/edckt/.bisellium-evidence/W-179-spec/split.mjs:20 brief:15 brief:100 `groups.json` is unvalidated, and its values become output filenames at lines 150 and 201; a plausible typo such as `next-specc.test.ts` creates an eighth file that `apply-src.py`, `inventory.mjs`, and `W-179-b1` all discover dynamically, allowing their checks to pass while the seven-file and Files-owned promises are false. [severity: S1] [class: spec×input-domain-missing-or-unenforceable] — check: none: test that `split.mjs` rejects every destination outside the seven declared row filenames before writing
+3. advisory — studio/briefs/W-179.md:99 `readdirSync` plus `readFileSync` does not establish that an entry is regular: it follows a readable symlink. The existing officina checks block registered symlinked tests, so this path fails closed, but the row should name that gate or specify `lstatSync` in `W-179-b1`. [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/rules/tests.test.ts
+4. advisory — studio/briefs/W-179.md:96 The table has no call-boundary rows for the newly kept `apply-test.py`, `apply-src.py`, and `lines-check.py` readers invoked by brief:115-116; their errors currently surface through exceptions, assertions, or later gates, but D-050 requires each script call, valid domain, and non-zero refusal to be named. [severity: S2] [class: spec×input-without-named-rejector] — check: none: add one Input-domain row per kept script call
+
+## Earlier findings
+
+## Verdict
+The revision retains two substantive fail-open paths, so it is not ready to build.
+VERDICT: FAIL

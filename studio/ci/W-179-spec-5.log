@@ -1,0 +1,27 @@
+# opus: W-179
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T13:15:28.115Z
+# tree: tree:4d98eaf9f9d9b99c57978720d00c92368582cd97
+# brief: briefs/W-179.md blob:25f03cb5fb351822280defdb42add0f429e50291
+# ticket: {"opus":"W-179","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"a25697aacdaf196ba361a3e5cce36cfabe87c0e2","brief":"25f03cb5fb351822280defdb42add0f429e50291","at":"2026-10-19T13:15:13.048Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-179-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — design (revision 3, D-080 A): the 114 rows move by a kept codemod (`split.mjs` over `groups.json`) into seven files grouped by behaviour, over one shared fixture module (`next-world.test.ts`, no row, named as test code so containment, the no-vendor pins and W-121 keep classifying it as today); `test:suite`'s one next step becomes one `node --test --test-concurrency=7` call; revision 2's fixture cache and Defaults 1 and 2 are withdrawn — check: brief:15, split.mjs, groups.json
+2. advisory — measured on this host, idle, master 54e18d0b: the base step took 776 s (114 of 114 pass, `base-1.meta`); the split took 311 s over six files (`cand6-1.meta`) and 241 s over seven (`cand-1.meta`, 31%), every row passing; the slowest file bounds the step (127 s of row time idle, about twice that under the shared load), so promise faster is set at 40%; the whole `npm test` took 1,049 s before and 508 s after (the next step 238 s of it), both exit 0 — check: base-1.meta, cand6-1.meta, cand-1.meta, suite-base.meta, suite-cand.meta
+3. advisory — every row kept: `inventory.mjs` finds each of the 114 base rows once, byte for byte, under the same guards, plus W-179-b1; W-178's `test.rows` passes with the one record (drop 104) and blocks without it — check: inventory-proto.out, check-studio.out, check-norecord.out
+4. advisory — the red: W-179-b1 fails by assertion on master with only the row added (`the rows are split over several files`) and passes on the split, accepted by the host replay classifier — check: reds.out, row-b1-master.out, row-b1-proto.out
+5. advisory — parallel safety: each file runs in its own process with its own scratch roots, stub bins, HOME, worlds and after hook; no row mutates process.env, cwd or git config, and none listens on a port; the shared tsx cache (reads fall back on a parse failure), the host pid space and the read-only repository reads are stated limits; `.bisellium/vendor-sentinel.lock` is held once by `npm test` around the whole suite and no file touches it — check: brief:35, brief:87, brief:88, node-test-probe.out
+6. advisory — flips: none; W-128 behaviour 2 reads `next.test.ts` by name for `W-124 behaviour 3:` and `const TERMINALS`, so behaviour 3 stays there; W-178-b4's real-repository row passes with the record; containment, no-vendor and ci-scope pass unedited; the Codex test check lists no flip and no unnamed row, and every must-stay-green row it lists passed on the prototype — check: neighbours-proto.out, fixture-census.md
+7. advisory — reds and records: the 68 recorded reds that name `next.test.ts` are judged as text and replayed only at their own commit, where the file held every row; `test:record` names no next file and certify runs no test by name, so neither changes — check: brief:89, brief:90
+8. advisory — the brief passes admission, its ledger covers every Input domain row and promise, and lint, typecheck and both officina checks pass on the prototype; size 2 points, no code-owned path, so it proceeds on this signature — check: admission.out, promise-ledger.md, lint-proto.out, typecheck-proto.out, check-sample.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-179.md`, prototype on master 54e18d0b.

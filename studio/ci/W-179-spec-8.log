@@ -1,0 +1,23 @@
+# opus: W-179
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-08c2-7001-a82a-21474948bbc7
+# outcome: failed
+# at: 2026-10-19T14:53:02.842Z
+# tree: tree:70aa5e41e4ed978818ca27c436d8f96af7a1a0ed
+# brief: briefs/W-179.md blob:22fb645a40fef120038e3d0f672bbb98a0c6b684
+# ticket: {"opus":"W-179","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":"studio","head":"62f58e38cf676de166a625f15110b0e4df6c340c","brief":"22fb645a40fef120038e3d0f672bbb98a0c6b684","at":"2026-10-19T14:53:02.312Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-179-spec/time-base.sh:40 brief:37 Reached through ci/W-179-spec-6.log #1’s methodology class: the script rounds the ratio to three decimals before line 43 compares it, so a real ratio such as 400/999 (0.4004) becomes `0.400` and passes despite exceeding the promised 40% ceiling. [severity: S1] [design: keeps] [class: research×claimed-metric-without-enforced-methodology] — check: none: add a just-over-0.40 boundary case and compare the unrounded values
+2. advisory — /home/edckt/.bisellium-evidence/W-179-spec/time-test.sh:9 brief:106 The harness accepts only `0` or `nonzero`, so it does not prove the claimed distinction between exit 1 for a failed measurement and exit 2 for refused input. [severity: S2] [class: tests×one-sided-bound-assertion] — check: none: require each timing case’s exact numeric exit status
+
+## Earlier findings
+- ci/W-179-spec-6.log #1: open — /home/edckt/.bisellium-evidence/W-179-spec/time-base.sh:40 still admits a just-over-ceiling ratio after rounding it down
+- ci/W-179-spec-6.log #2: closed — /home/edckt/.bisellium-evidence/W-179-spec/split.mjs:24 pins the seven destinations, lines 29-33 and 166 reject malformed mappings before writes, and `mutants.out` records every relevant mutant killed
+
+## Verdict
+The seven-file boundary is closed, but the timing gate still accepts a result above the promised ceiling.
+VERDICT: FAIL
