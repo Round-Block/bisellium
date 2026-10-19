@@ -1,0 +1,40 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx --test-name-pattern=^W-323-b1\s packages/commands/src/run.test.ts
+# exit: 1
+# at: 2026-10-19T06:04:34.864Z
+# sella: builder.W-323
+# tree: tree:f646700a6efbc1c57934c5a19ee7d36a02c6838d
+# ticket: {"opus":"W-323","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-323/studio","head":"66fbcb6e82b37adcb4168fbdee5b98665aaa8f57","brief":"bad335862b670afd15eb8f1d274370d8aa4e4e08","at":"2026-10-19T06:04:31.200Z"}
+
+TAP version 13
+# Subtest: W-323-b1 the host mint's candidate clone has master, so a check its ci gate runs has a base
+not ok 1 - W-323-b1 the host mint's candidate clone has master, so a check its ci gate runs has a base
+  ---
+  duration_ms: 1261.338472
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-323/packages/commands/src/run.test.ts:1:4650'
+  failureType: 'testCodeFailure'
+  error: |-
+    b1: the run mints a receipt, so the gate saw origin/master
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-323/packages/commands/src/run.test.ts:2047:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1385.338054
