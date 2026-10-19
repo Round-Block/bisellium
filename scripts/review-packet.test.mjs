@@ -561,3 +561,78 @@ test("W-315-b2 behaviour 2: a hand-run later-round packet for a linked worktree'
   assert.doesNotMatch(noTop.err, /^review-packet: /m, "an unrefused throw is not reported as a refusal");
   assert.equal(absentPath(join(w.packets, "r8")), true, "a thrown error writes no packet directory");
 });
+
+test("W-322-b3 behaviour 3: a build packet's facts list the ruled cases no pin of theirs finds in the source diff", () => {
+  const w = world();
+  // brief lines: 6 to 10 the Input domain rows, 12 the grammar line row 10 cites
+  const brief = [
+    "# W-1",
+    "## Input domain",
+    "A rejection fails closed.",
+    "| Record | Valid domain | Rejected by |",
+    "|---|---|---|",
+    '| a | a string | `f`: exit 2, pinned by `W-1-b1` "first pin" |',
+    '| b | a string | `g`: exit 2, pinned by `W-1-b1` "second pin" |',
+    "| c | its step | runner: `gates` fails; unpinned |",
+    "| d | a string | `h`: exit 2 |",
+    '| e | any text; recognises brief:12; every other form is a limit | `k`: never errors, pinned by `W-1-b2` "grammar row" |',
+    "## Interfaces",
+    '- one form, pinned by `W-1-b2` "grammar form"',
+    "",
+  ].join("\n");
+  w.put(w.studio, "briefs/W-1.md", brief);
+  // on master: a test holding row 7's pin, unchanged on the branch
+  w.put(w.repo, "src/old.test.mjs", 'test("W-1-b1", () => assert.equal(x, "second pin"));\n');
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "brief and an old test");
+  w.git("checkout", "-q", "-b", "opus/W-1");
+  w.put(w.repo, "src/a.test.mjs", 'test("W-1-b1 behaviour 1", () => {\n  assert.equal(x, "first pin");\n});\n');
+  w.put(w.repo, "src/b.test.mjs", 'test("W-1-b9", () => assert.equal(y, "second pin"));\n');
+  w.put(w.repo, "src/c.test.mjs", 'test("W-1-b2 behaviour 2", () => assert.equal(z, "grammar row"));\n');
+  w.put(w.studio, "notes.md", 'W-1-b2 "grammar form" in the officina, not the source\n');
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "the opus");
+  const r = w.packet("build", "W-1", 1, "qa-lead");
+  assert.equal(r.status, 0, r.err);
+  const facts = w.read(1, "facts.txt");
+  assert.match(facts, /^== ruled cases with no pinning assertion in the diff$/m, "the build facts carry the block");
+  const block = facts.slice(facts.indexOf("== ruled cases with no pinning assertion in the diff"));
+  assert.equal(
+    block,
+    [
+      "== ruled cases with no pinning assertion in the diff",
+      "ruledCases(briefs/W-1.md) against git diff <merge-base with master> HEAD, outside studio",
+      'brief:7 (Input domain row): pinned by `W-1-b1` "second pin": not in the diff',
+      "brief:8 (Input domain row): unpinned",
+      "brief:9 (Input domain row): no pin",
+      'brief:12 (grammar line of brief:10): pinned by `W-1-b2` "grammar form": not in the diff',
+      "",
+    ].join("\n"),
+    "rows 6 and 10 are found; the others are listed in brief order",
+  );
+
+  // a brief with no ruled case states none; a spec packet carries no such block
+  w.put(w.studio, "briefs/W-1.md", BRIEF);
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "no rows");
+  const none = w.packet("build", "W-1", 2, "qa-lead");
+  assert.equal(none.status, 0, none.err);
+  assert.match(
+    w.read(2, "facts.txt"),
+    /^== ruled cases with no pinning assertion in the diff\n.*\n\(none\)\n$/m,
+    "no case: (none)",
+  );
+  const spec = w.packet("spec", "W-1", 3, "spec-reviewer");
+  assert.equal(spec.status, 0, spec.err);
+  assert.doesNotMatch(w.read(3, "facts.txt"), /ruled cases/, "a spec packet has no pin block");
+
+  // no master: the base is stated, not refused
+  w.git("branch", "-q", "-m", "master", "trunk");
+  const nobase = w.packet("build", "W-1", 4, "qa-lead");
+  assert.equal(nobase.status, 0, nobase.err);
+  assert.match(
+    w.read(4, "facts.txt"),
+    /^== ruled cases with no pinning assertion in the diff\n.*\nno base: no refs\/heads\/master or refs\/remotes\/origin\/master$/m,
+    "no master ref is stated in the block",
+  );
+});
