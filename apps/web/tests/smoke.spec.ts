@@ -10,6 +10,16 @@
  */
 import { expect, test } from "@playwright/test";
 
+export function smokeBaseURL(port: string | undefined): string {
+  return `http://127.0.0.1:${port}`;
+}
+
+test.use({
+  baseURL: async ({}, use) => {
+    await use(smokeBaseURL(process.env["SMOKE_PORT"]));
+  },
+});
+
 // behaviour 1: Inbox screen loads and shows the heading.
 test("inbox screen loads and shows heading", async ({ page }) => {
   await page.goto("/");
