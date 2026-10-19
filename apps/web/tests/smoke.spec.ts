@@ -66,3 +66,15 @@ test("route hash changes reflect in displayed screen", async ({ page }) => {
   });
   await expect(page.getByRole("heading", { name: "Inbox" })).toBeVisible();
 });
+
+// W-182 behaviour 1: the browser uses the free port its own Vite printed.
+test("W-182 behaviour 1: the smoke browser uses the free port printed by its own Vite process", async ({
+  page,
+  baseURL,
+}) => {
+  const port = process.env["SMOKE_PORT"];
+  expect(port).toMatch(/^[1-9][0-9]*$/);
+  expect(baseURL).toBe(`http://127.0.0.1:${port}`);
+  await page.goto("/");
+  expect(new URL(page.url()).port).toBe(port);
+});
