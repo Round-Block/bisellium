@@ -6716,3 +6716,23 @@ test("W-316-b5 behaviour 5: an unreadable counted directory, file or lease reads
     for (const d of shut) chmodSync(d, 0o755);
   }
 });
+
+// ---------------------------------------------------------------------------
+// W-179: the next rows live in several files; test:suite runs them all, once, side by side
+// ---------------------------------------------------------------------------
+test("W-179-b1 behaviour 1: test:suite runs every next row file once, side by side, in one node --test call", () => {
+  const suite = (JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as { scripts: Record<string, string> }).scripts["test:suite"]!;
+  // the seven declared row files (studio/briefs/W-179.md): a next*.test.ts beside this one, or a test file importing the shared fixture, is one of them
+  const declared = ["next-branch", "next-done", "next-ladder", "next-queue", "next-review", "next-spec", "next"].map((f) => `packages/cli/src/${f}.test.ts`);
+  const found = readdirSync(HERE)
+    .filter((f) => f.endsWith(".test.ts") && f !== "next-world.test.ts" && (f.startsWith("next") || readFileSync(join(HERE, f), "utf8").includes('from "./next-world.test.js"')))
+    .sort()
+    .map((f) => `packages/cli/src/${f}`);
+  assert.deepEqual(found, declared, "the next rows live in exactly the seven declared files");
+  for (const f of declared) assert.ok(lstatSync(join(REPO_ROOT, f)).isFile(), `${f} is a regular file, not a link`);
+  const segments = suite.split("&&").map((s) => s.trim().split(/\s+/));
+  const runners = segments.filter((words) => words.some((w) => w.includes("packages/cli/src/next")));
+  assert.equal(runners.length, 1, `one test:suite segment names the next files: ${JSON.stringify(runners.map((w) => w.join(" ")))}`);
+  assert.deepEqual(runners[0]!.slice(0, 6), ["node", "--test", `--test-concurrency=${declared.length}`, "--test-reporter=tap", "--import", "tsx"], "it is one node --test call running every file at once, with TAP");
+  assert.deepEqual(runners[0]!.slice(6), declared, "it names each next row file once, in path order, and nothing else");
+});
