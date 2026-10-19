@@ -1,0 +1,32 @@
+# behaviour: 2
+# command: npx playwright test --config=apps/web/playwright.config.ts --grep W-182.behaviour.2
+# exit: 1
+# at: 2026-10-19T22:47:29.082Z
+# sella: builder.W-182
+# tree: tree:939aa8f10b068ecd80db7d293e76fb6c1fd07177
+# ticket: {"opus":"W-182","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-182/studio","head":"3a1e81ea9e80751c779b08b6562841196cb495fc","brief":"e2968b5d3711ac8a8c633ca201f3ab44cafac61e","at":"2026-10-19T22:47:22.894Z"}
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › apps/web/tests/smoke.spec.ts:92:1 › W-182 behaviour 2: a missing or malformed captured smoke port is refused (5ms)
+
+
+  1) [chromium] › apps/web/tests/smoke.spec.ts:92:1 › W-182 behaviour 2: a missing or malformed captured smoke port is refused 
+
+    Error: expect(received).toThrow()
+
+    Received function did not throw
+
+      94 |   expect(smokeBaseURL("65535")).toBe("http://127.0.0.1:65535");
+      95 |   for (const bad of [undefined, "", "0", "01", "65536", "-1", "1.5", " 5199", "5199 "])
+    > 96 |     expect(() => smokeBaseURL(bad), JSON.stringify(bad)).toThrow();
+         |                                                          ^
+      97 | });
+      98 |
+        at /home/edckt/agents/bisellium/.worktrees/W-182/apps/web/tests/smoke.spec.ts:96:58
+
+    Error Context: apps/web/test-results/smoke-W-182-behaviour-2-a--71877-tured-smoke-port-is-refused-chromium/error-context.md
+
+  1 failed
+    [chromium] › apps/web/tests/smoke.spec.ts:92:1 › W-182 behaviour 2: a missing or malformed captured smoke port is refused 
