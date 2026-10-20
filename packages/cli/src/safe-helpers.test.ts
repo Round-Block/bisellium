@@ -452,7 +452,7 @@ test("W-334-b2 malformed tokens: a digit run followed by a word character is not
 
   // a blocker's brief citation: `brief:2x` is no line 2, so the blocker converts to advisory; `brief:2` and `brief:2.` hold
   const brief = { spec: "briefs/W-1.md", text: "one\ntwo\nthree\n" };
-  const converted = (cite: string): number => reconcileFindings(`1. blocking — see ${cite} here\n`, "failed", brief).converted.length;
+  const converted = (cite: string): number => reconcileFindings(`## Findings\n1. blocking — see ${cite} here\n`, "failed", brief).converted.length;
   holds("citation 'brief:2x' is no citation", converted("brief:2x") === 1);
   holds("citation 'brief:2_' is no citation", converted("brief:2_") === 1);
   holds("citation 'brief:2' is line 2", converted("brief:2") === 0);
