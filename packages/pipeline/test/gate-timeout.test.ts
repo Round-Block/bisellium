@@ -26,8 +26,8 @@ test("W-142-b1 behaviour 1: the gate timeout has 2x headroom over the slowest su
 const W313_CHILD = `process.on("SIGUSR1", () => process.stderr.write("beta \\u001b[31mred\\u001b[0m\\u0007 token=s3cr3t\\n"));
 process.on("SIGUSR2", () => process.exit(3));
 process.stdout.write("alpha " + process.pid + "\\n");
-// sleep-waiver: fixture -- the child keeps itself alive until the test signals it to exit
-setInterval(() => {}, 1000);
+// an open listening socket keeps the child alive until the test signals it to exit
+require("node:net").createServer().listen(0);
 `;
 const ISO = String.raw`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z`;
 
