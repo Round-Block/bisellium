@@ -931,3 +931,36 @@ test("W-338-b3 behaviour 3: before the branch, a kind: ui opus takes the spec re
   expectStep(ready, "ready", "named", "ready follows branch");
   assert.match(ready.out, /^attributed: architect \(signed ci\/W-900-spec-1\.log\)$/m, ran("attributed to the signer, never the ui-lead", ready));
 });
+
+test("W-338-b4 behaviour 4: after the branch, a ui-lead input recorded in the worktree passes its spec check and is committed with its prompt", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b4", { kind: "opus" });
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  expectStep(next(w, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "branch commits the spec");
+  // D-088 E: UI work is amended to kind: ui when it starts, on the branch that owns the record
+  editRecord(w, "wt", (doc) => doc.setIn(["kind"], "ui"));
+  commit(w.wt, "studio: W-900 is a ui opus");
+
+  const wtRel = ".worktrees/W-900/studio";
+  const o = specNext(w);
+  expectStep(o, "spec", "named", "a branch record amended to kind: ui orders the ui-lead");
+  assert.equal(o.kv.get("role"), "ui-lead", ran("role", o));
+  assert.equal(o.kv.get("round"), "3", ran("round", o));
+  assert.match(o.kv.get("command") ?? "", new RegExp(`--dispatch-prompt ci/W-900-ui-prompt-3\\.md --from <file> --studio ${wtRel.replace(/\./g, "\\.")}$`), ran("the order names the worktree", o));
+
+  const input = uiInput(w, 3, w.wtStudio);
+  assert.equal(input.status, 0, `the input is recorded in the worktree\n${input.out}`);
+  const pending = specNext(w);
+  expectStep(pending, "spec", "named", "the uncommitted input is committed with the spec");
+  assert.match(pending.kv.get("why") ?? "", /is not committed \(2 path\(s\)\)/, ran("the log and its prompt", pending));
+  const tip = git(w.repo, ["rev-parse", BRANCH]);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the spec commit");
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), tip, "one commit on the branch");
+  assert.deepEqual(
+    git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(),
+    [specLog(3), `studio/ci/${OPUS}-ui-prompt-3.md`].sort(),
+    "the input and its prompt",
+  );
+  expectStep(next(w, [OPUS]), "ready", "named", "the worktree's input admits ready");
+});
