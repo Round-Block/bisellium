@@ -1,0 +1,204 @@
+certifies: tree:437400e699de7b6c2cea83970739ed324c4e5d57
+command: npm test -s
+exit code: 0
+
+bisellium verify: gate types: end 2026-10-20T09:45:22.154Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:45:22.210Z
+bisellium verify: gate tests: end 2026-10-20T09:45:22.214Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:22.215Z
+bisellium verify: gate lint: end 2026-10-20T09:45:22.218Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:22.219Z
+bisellium verify: gate types: end 2026-10-20T09:45:22.222Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:22.301Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:22.737Z after 0m00s, exited 0
+bisellium ci: step npm run -s typecheck: start 2026-10-20T09:45:22.737Z
+bisellium ci: step npm run -s typecheck: end 2026-10-20T09:45:23.117Z after 0m00s, exited 0
+bisellium ci: step npm run -s lint: start 2026-10-20T09:45:23.118Z
+bisellium ci: step npm run -s lint: end 2026-10-20T09:45:23.573Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:23.573Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:23.968Z after 0m00s, exited 0
+bisellium ci: step npm test: start 2026-10-20T09:45:23.968Z
+bisellium ci: step npm test: end 2026-10-20T09:45:24.351Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:24.351Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:24.745Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:24.745Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:25.141Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:25.291Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:25.704Z after 0m00s, exited 0
+bisellium ci: step npm run -s typecheck: start 2026-10-20T09:45:25.704Z
+bisellium ci: step npm run -s typecheck: end 2026-10-20T09:45:26.109Z after 0m00s, exited 0
+bisellium ci: step npm run -s lint: start 2026-10-20T09:45:26.109Z
+bisellium ci: step npm run -s lint: end 2026-10-20T09:45:26.514Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:26.514Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:26.910Z after 0m00s, exited 0
+bisellium ci: step npm test: start 2026-10-20T09:45:26.910Z
+bisellium ci: step npm test: end 2026-10-20T09:45:27.306Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:27.306Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:27.718Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:27.718Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:28.133Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:45:28.190Z
+bisellium verify: gate tests: end 2026-10-20T09:45:28.195Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:28.195Z
+bisellium verify: gate lint: end 2026-10-20T09:45:28.198Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:28.198Z
+bisellium verify: gate types: end 2026-10-20T09:45:28.202Z after 0m00s, exited 0
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:28.289Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:28.668Z after 0m00s, exited 0
+bisellium ci: step npm run -s typecheck: start 2026-10-20T09:45:28.668Z
+bisellium ci: step npm run -s typecheck: end 2026-10-20T09:45:29.038Z after 0m00s, exited 0
+bisellium ci: step npm run -s lint: start 2026-10-20T09:45:29.038Z
+bisellium ci: step npm run -s lint: end 2026-10-20T09:45:29.463Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:29.463Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:29.895Z after 0m00s, exited 0
+bisellium ci: step npm test: start 2026-10-20T09:45:29.895Z
+bisellium ci: step npm test: end 2026-10-20T09:45:30.325Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:30.325Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:30.763Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:30.763Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:31.222Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:45:31.276Z
+bisellium verify: gate tests: end 2026-10-20T09:45:31.281Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:31.281Z
+bisellium verify: gate lint: end 2026-10-20T09:45:31.286Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:31.286Z
+bisellium verify: gate types: end 2026-10-20T09:45:31.290Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:31.476Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:31.915Z after 0m00s, exited 0
+bisellium ci: step npm run -s typecheck: start 2026-10-20T09:45:31.915Z
+bisellium ci: step npm run -s typecheck: end 2026-10-20T09:45:32.356Z after 0m00s, exited 0
+bisellium ci: step npm run -s lint: start 2026-10-20T09:45:32.356Z
+bisellium ci: step npm run -s lint: end 2026-10-20T09:45:32.793Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:32.793Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:33.223Z after 0m00s, exited 0
+bisellium ci: step npm test: start 2026-10-20T09:45:33.223Z
+bisellium ci: step npm test: end 2026-10-20T09:45:33.652Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:33.652Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:34.105Z after 0m00s, exited 1
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:34.277Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:34.668Z after 0m00s, exited 0
+bisellium ci: step npm run -s typecheck: start 2026-10-20T09:45:34.668Z
+bisellium ci: step npm run -s typecheck: end 2026-10-20T09:45:35.093Z after 0m00s, exited 0
+bisellium ci: step npm run -s lint: start 2026-10-20T09:45:35.093Z
+bisellium ci: step npm run -s lint: end 2026-10-20T09:45:35.529Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:35.529Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:35.944Z after 0m00s, exited 0
+bisellium ci: step npm test: start 2026-10-20T09:45:35.945Z
+bisellium ci: step npm test: end 2026-10-20T09:45:36.399Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:36.399Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:36.847Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:36.847Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:37.307Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:45:37.354Z
+bisellium verify: gate tests: end 2026-10-20T09:45:37.358Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:37.359Z
+bisellium verify: gate lint: end 2026-10-20T09:45:37.363Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:37.363Z
+bisellium verify: gate types: end 2026-10-20T09:45:37.368Z after 0m00s, exited 0
+bisellium ci: step npm run -s typecheck: start 2026-10-20T09:45:37.411Z
+bisellium ci: step npm run -s typecheck: end 2026-10-20T09:45:37.843Z after 0m00s, exited 0
+bisellium ci: step npm run -s lint: start 2026-10-20T09:45:37.843Z
+bisellium ci: step npm run -s lint: end 2026-10-20T09:45:38.277Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:38.277Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:38.704Z after 0m00s, exited 0
+bisellium ci: step npm test: start 2026-10-20T09:45:38.705Z
+bisellium ci: step npm test: end 2026-10-20T09:45:39.152Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:39.152Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:39.614Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:39.614Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:40.055Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:41.309Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:41.773Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:41.774Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:42.209Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:42.210Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:42.644Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:42.644Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:43.072Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:45:43.135Z
+bisellium verify: gate tests: end 2026-10-20T09:45:43.553Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:43.554Z
+bisellium verify: gate lint: end 2026-10-20T09:45:44.009Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:44.009Z
+bisellium verify: gate types: end 2026-10-20T09:45:44.406Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:44.516Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:44.919Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:44.920Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:45.351Z after 0m00s, exited 0
+bisellium ci: step npm test: start 2026-10-20T09:45:45.351Z
+bisellium ci: step npm test: end 2026-10-20T09:45:45.771Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:45.771Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:46.185Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:46.185Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:46.604Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:46.651Z
+bisellium verify: gate lint: end 2026-10-20T09:45:47.067Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:47.068Z
+bisellium verify: gate types: end 2026-10-20T09:45:47.490Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:47.593Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:48.023Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:48.024Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:48.441Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:48.441Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:48.854Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:48.854Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:49.285Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:45:49.337Z
+bisellium verify: gate tests: end 2026-10-20T09:45:49.750Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:49.750Z
+bisellium verify: gate lint: end 2026-10-20T09:45:50.146Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:50.146Z
+bisellium verify: gate types: end 2026-10-20T09:45:50.590Z after 0m00s, exited 0
+bisellium verify: gate tests-again: start 2026-10-20T09:45:50.591Z
+bisellium verify: gate tests-again: end 2026-10-20T09:45:51.031Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium verify: gate tests: start 2026-10-20T09:45:52.493Z
+bisellium verify: gate tests: end 2026-10-20T09:45:52.649Z after 0m00s, exited 1
+bisellium verify: gate lint: start 2026-10-20T09:45:52.649Z
+bisellium verify: gate lint: end 2026-10-20T09:45:52.653Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:52.654Z
+bisellium verify: gate types: end 2026-10-20T09:45:52.780Z after 0m00s, exited 1
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium ci: step npm run -s audit: start 2026-10-20T09:45:52.884Z
+bisellium ci: step npm run -s audit: end 2026-10-20T09:45:53.308Z after 0m00s, exited 0
+bisellium ci: step npm run -s format:check: start 2026-10-20T09:45:53.308Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T09:45:53.715Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T09:45:53.715Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T09:45:54.168Z after 0m00s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T09:45:54.169Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T09:45:54.593Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:45:54.651Z
+bisellium verify: gate tests: end 2026-10-20T09:45:55.050Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-20T09:45:55.050Z
+bisellium verify: gate lint: end 2026-10-20T09:45:55.477Z after 0m00s, exited 0
+bisellium verify: gate types: start 2026-10-20T09:45:55.477Z
+bisellium verify: gate types: end 2026-10-20T09:45:55.868Z after 0m00s, exited 0
+Use the `defaultValue` or `value` props on <select> instead of setting `selected` on <option>.
+bisellium verify: gate tests: start 2026-10-20T09:46:06.732Z
+bisellium verify: gate tests: end 2026-10-20T09:46:06.852Z after 0m00s, exited 0
+bisellium verify: gate served-e2e: start 2026-10-20T09:46:06.853Z
+bisellium verify: gate served-e2e: end 2026-10-20T09:46:06.977Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:46:06.983Z
+bisellium verify: gate tests: end 2026-10-20T09:46:07.101Z after 0m00s, exited 0
+bisellium verify: gate served-e2e: start 2026-10-20T09:46:07.102Z
+bisellium verify: gate served-e2e: end 2026-10-20T09:46:07.217Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:46:07.220Z
+bisellium verify: gate tests: end 2026-10-20T09:46:07.339Z after 0m00s, exited 0
+bisellium verify: gate served-e2e: start 2026-10-20T09:46:07.339Z
+bisellium verify: gate served-e2e: end 2026-10-20T09:46:07.452Z after 0m00s, exited 0
+bisellium verify: gate tests: start 2026-10-20T09:46:07.457Z
+bisellium verify: gate tests: end 2026-10-20T09:46:07.575Z after 0m00s, exited 0
+bisellium verify: gate served-e2e: start 2026-10-20T09:46:07.575Z
+bisellium verify: gate served-e2e: end 2026-10-20T09:46:07.686Z after 0m00s, exited 3
+bisellium verify: gate tests: start 2026-10-20T09:46:08.746Z
+bisellium verify: gate tests: end 2026-10-20T09:46:09.127Z after 0m00s, exited 0
+vendor-sentinel: 1 vendor-spend violation(s) detected:
+  row3-violation
+

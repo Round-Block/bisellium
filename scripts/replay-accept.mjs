@@ -10,7 +10,8 @@ const ASSERTION = /(?:not ok|AssertionError|ERR_ASSERTION)/;
 const POISON =
   /ERR_MODULE_NOT_FOUND|SyntaxError:|Cannot find module|command not found|ENOENT|not permitted|permission denied|sandbox|browserType\.launch|Executable doesn't exist|No tests found/i;
 const PW_BANNER = /^[ \t]*Running \d+ tests? using \d+ workers?\b/m;
-// Global: read only through matchAll, which does not mutate it (no lastIndex leak).
+// Global: read only through matchAll, which does not mutate it (no lastIndex leak). W-334: any digit run is a summary,
+// and its count is compared as written, never through a double.
 const PW_SUMMARY = /^[ \t]*(\d+) failed\b/gm;
 const PW_EXPECT = /^[ \t]*(?:Error: )?expect\([a-z]+\)\.[A-Za-z]+\(/m;
 
@@ -49,11 +50,10 @@ export function classifyReplay({ status, output }) {
     const pwPoisoned = POISON.exec(output);
     if (pwPoisoned) return { accepted: false, reason: `the output names an environment failure (${pwPoisoned[0]})` };
     if (summary === undefined) return { accepted: false, reason: "playwright printed no failure summary" };
-    const failed = Number(summary[1]);
-    if (failed !== 1)
+    if (summary[1] !== "1")
       return {
         accepted: false,
-        reason: `playwright reported ${failed} failed tests; a behaviour's red is exactly one`,
+        reason: `playwright reported ${summary[1]} failed tests; a behaviour's red is exactly one`,
       };
     if (!PW_EXPECT.test(output))
       return { accepted: false, reason: "playwright's failure is not an expect(...) assertion" };
@@ -63,4 +63,15 @@ export function classifyReplay({ status, output }) {
   if (poisoned) return { accepted: false, reason: `the output names an environment failure (${poisoned[0]})` };
   if (ASSERTION.test(output)) return { accepted: true, reason: "assertion-level failure" };
   return { accepted: false, reason: "no assertion-level failure in the output" };
+}
+
+/**
+ * W-334: a recorded red's `# behaviour:` header, read exactly: a line of 1 to 15 digits whose number is the red's
+ * two-digit file name (`<nn>.log`), or undefined. A longer run, no header, another file name or another number refuses.
+ */
+export function readRedBehaviour(text, name) {
+  const header = /^# behaviour:\s*([0-9]{1,15})$/m.exec(text);
+  const file = /^([0-9]{2})\.log$/.exec(name);
+  if (header === null || file === null || Number(header[1]) !== Number(file[1])) return undefined;
+  return Number(header[1]);
 }

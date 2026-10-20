@@ -155,6 +155,8 @@ export interface RuledCase {
  *  Valid domain says any text or any string and which hold no forms clause. Text only, like `inputDomainRows`. */
 export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[] } {
   const real = realLines(briefText);
+  // W-334: a line number past 15 digits is past any brief's last line, so it clamps without a double
+  const clamp = (digits: string): number => (digits.length > 15 ? real.length : Math.min(Number(digits), real.length));
   const pinsOf = (n: number): Pin[] =>
     [...(real[n - 1] ?? "").matchAll(PIN)].map((m) => ({ row: m[1]!, assertion: m[2]! }));
   const cases: RuledCase[] = [];
@@ -166,8 +168,8 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
     const clause = FORMS.exec(text)?.[1];
     // a cited range is clamped to the brief's last line: a start past it cites the last line alone
     const cited = [...(clause ?? "").matchAll(GRAMMAR_CITE)].flatMap((m) => {
-      const a = Math.min(Number(m[1]), real.length);
-      const b = Math.max(a, Math.min(Number(m[2] ?? a), real.length));
+      const a = clamp(m[1]!);
+      const b = Math.max(a, m[2] === undefined ? a : clamp(m[2]));
       return Array.from({ length: b - a + 1 }, (_, i) => a + i);
     });
     if (clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause))) formless.push(n);

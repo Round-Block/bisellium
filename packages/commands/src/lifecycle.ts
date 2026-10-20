@@ -610,13 +610,11 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     return { exitCode: 2 };
   }
 
-  let round: number | undefined;
-  if (values.has("--round")) {
-    round = Number(values.get("--round"));
-    if (!Number.isFinite(round) || !Number.isInteger(round)) {
-      console.error("--round must be an integer");
-      return { exitCode: 2 };
-    }
+  // W-334: a supplied round is a positive integer of at most 15 digits; the evidence path's own round, when it names one, wins
+  const roundFlag = values.get("--round");
+  if (roundFlag !== undefined && !/^[1-9][0-9]{0,14}$/.test(roundFlag)) {
+    console.error("--round must be a positive integer of at most 15 digits");
+    return { exitCode: 2 };
   }
 
   const now = resolveExactNow(values.get("--now"), opts.now);
@@ -736,8 +734,19 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
   }
 
   // W-233: the round is the evidence file's own (`ci/<opus>-review-<n>.log`); another name has none
-  const evidenceRound = /^ci\/(.+)-review-([1-9][0-9]*)\.log$/.exec(evidence);
-  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "review", action: "review", round: evidenceRound !== null && evidenceRound[1] === opusId ? Number(evidenceRound[2]) : -1 });
+  // W-334: that round is trusted; a review log of this opus whose round is past 15 digits, or a --round that differs, refuses
+  const evidenceRound = /^ci\/(.+)-review-([1-9][0-9]{0,14})\.log$/.exec(evidence);
+  const own = evidenceRound !== null && evidenceRound[1] === opusId ? evidenceRound[2]! : undefined;
+  if (own === undefined && evidence.startsWith(`ci/${opusId}-review-`) && /^[1-9][0-9]*\.log$/.test(evidence.slice(`ci/${opusId}-review-`.length))) {
+    console.error(`${opusId}: review refused: ${evidence} names a round past 15 digits`);
+    return { exitCode: 2 };
+  }
+  if (own !== undefined && roundFlag !== undefined && roundFlag !== own) {
+    console.error(`${opusId}: review refused: --round ${roundFlag} differs from ${evidence}'s round ${own}`);
+    return { exitCode: 2 };
+  }
+  const round = own ?? roundFlag;
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "review", action: "review", round: own === undefined ? -1 : Number(own) });
   if ("refusal" in ticket) {
     console.error(ticket.refusal);
     return { exitCode: 2 };
@@ -789,7 +798,7 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     [WF.GATE_EVIDENCE]: evidence,
     [WF.ACTOR_ROLE]: sella,
   };
-  if (round !== undefined) attrs[WF.REVIEW_ROUND] = round;
+  if (round !== undefined) attrs[WF.REVIEW_ROUND] = Number(round);
   emitEvent(root, manifest, "workflow.gate_evaluated", now, attrs);
   if (reopens) {
     emitEvent(root, manifest, "workflow.state_changed", now, {

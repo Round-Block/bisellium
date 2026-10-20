@@ -101,7 +101,7 @@ function existingLessonsByClass(studioRoot: string): Map<string, { cascade: numb
     if (!m) continue;
     const classMatch = /^class:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
     const idMatch = /^id:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
-    const cascadeMatch = /^cascade:\s*(\d+)\s*$/m.exec(m[1]!);
+    const cascadeMatch = /^cascade:\s*(\d{1,15})\s*$/m.exec(m[1]!);
     const addressedByMatch = /^addressed_by:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
     if (!classMatch || !cascadeMatch) continue;
     const cls = classMatch[1]!.trim();
@@ -239,7 +239,7 @@ function previousRetroTotalTokens(studioRoot: string, cascade: number): { cascad
     files = [];
   }
   let best: { cascadeNumber: number; file: string } | undefined;
-  const re = /-retro-(\d+)\.md$/;
+  const re = /-retro-(\d{1,15})\.md$/;
   for (const f of files) {
     const m = re.exec(f);
     if (!m) continue;
@@ -250,7 +250,8 @@ function previousRetroTotalTokens(studioRoot: string, cascade: number): { cascad
   const retroFile = readContainedRegularFile(studioRoot, `acta/${best.file}`, "acta");
   if ("error" in retroFile) return undefined;
   const raw = retroFile.bytes.toString("utf8");
-  const m = /Total tokens:\s*(\d+)/.exec(raw);
+  // W-334: the complete generated `- Total tokens: <n>` line, n of 1 to 15 digits: `Total tokens: 12x` is absent, never 12
+  const m = /^- Total tokens: (\d{1,15})[ \t\r]*$/m.exec(raw);
   if (!m) return undefined;
   return { cascadeNumber: best.cascadeNumber, totalTokens: Number(m[1]) };
 }
@@ -643,7 +644,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
   const logs: RoundLog[] = [];
   const tabled = new Set<string>();
   for (const name of names) {
-    const m = /^(W-\d+)-(spec|review|handoff)-(\d+)\.log$/.exec(name);
+    const m = /^(W-\d+)-(spec|review|handoff)-(\d{1,15})\.log$/.exec(name);
     if (m === null) continue;
     const file = readContainedRegularFile(root, `ci/${name}`, "ci", LOG_MAX_BYTES);
     if ("error" in file) return { error: `ci/${name}: ${file.error}` };

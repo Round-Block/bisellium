@@ -46,7 +46,7 @@ import {
   prepFailure,
   replayCell,
 } from "./host-cells.mjs";
-import { classifyReplay } from "./replay-accept.mjs";
+import { classifyReplay, readRedBehaviour } from "./replay-accept.mjs";
 import { countBehaviours } from "../packages/commands/src/brief-admission.ts";
 
 const argv = process.argv.slice(2);
@@ -718,16 +718,11 @@ try {
   };
   for (const name of redFiles) {
     const text = readFileSync(join(redDir, name), "utf8");
-    const behaviour = Number(text.match(/^# behaviour:\s*(\d+)$/m)?.[1]);
+    const behaviour = readRedBehaviour(text, name);
     const commandText = text.match(/^# command:\s*(.+)$/m)?.[1];
     const claimedTree = text.match(/^# tree:\s*(tree:[0-9a-f]{40})$/m)?.[1];
     let commit = claimedTree ? sourceCommits.get(claimedTree) : undefined;
-    if (
-      !Number.isInteger(behaviour) ||
-      behaviour !== Number(name.slice(0, 2)) ||
-      behaviour > behaviours ||
-      seen.has(behaviour)
-    )
+    if (behaviour === undefined || behaviour > behaviours || seen.has(behaviour))
       throw new Error(`producer red replay refused ${name}: behaviour header does not match a declared behaviour`);
     seen.add(behaviour);
     if (!commandText || !claimedTree) throw new Error(`producer red replay refused malformed/unreachable ${name}`);

@@ -1,0 +1,26 @@
+# opus: W-334
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T08:38:46.986Z
+# tree: tree:385d68ac02f5ac83a57016482d24d69ad1d47048
+# brief: briefs/W-334.md blob:e42b290f0319d55409c8af86646eb4a830b5d9a8
+# ticket: {"opus":"W-334","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"47941afa241bde251e039a7290645ca0cb4c6999","brief":"e42b290f0319d55409c8af86646eb4a830b5d9a8","at":"2026-10-20T08:38:43.404Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-334-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 adopts ci/W-334-spec-2.log #1: row 8 takes the review's text and names its real rejectors; `runReview` trusts its evidence's bounded round for the ticket and the emitted `workflow.review.round`, and refuses a `--round` out of domain or differing, and a review log of the opus whose round is past 15 digits, before any write; pinned in `W-334-b2` — check: brief:64, brief:87, mutants.out
+2. advisory — revision 2 adopts ci/W-334-spec-2.log #2: `previousRetroTotalTokens` reads `Total tokens:\s*(\d{1,15})(?!\d)`, so a 16-digit total is absent, not its prefix; pinned in `W-334-b2` — check: brief:61, row-b2-proto.out
+3. advisory — revision 2 adopts ci/W-334-spec-2.log #3: `classifyReplay` reads any digit-run playwright summary and accepts only the count string `1`; `readRedBehaviour`, exported from the host's pure `replay-accept.mjs`, refuses a header past 15 digits or unequal to the two-digit red file name; both pinned in `W-334-b2` — check: brief:67, mutants.out
+4. advisory — revision 2 adopts ci/W-334-spec-2.log #4: `Number.parseFloat` is named and pinned in `W-334-b1` — check: brief:99
+5. advisory — every 15-digit bound the prototype adds was audited mechanically: all 24 read a 15-digit value and refuse a 16-digit one, so no bound matches a prefix — check: bound-audit.mjs, bound-audit.out, brief:121
+6. advisory — the prototype on master cc13a1ae (master is now 12709492, records only since): each red fails by assertion on the stage before its own and passes on its own; eighteen guard mutants killed; every neighbour file passes whole, `stage-states.test.ts` added from the Codex list, `check.test.ts` failing only the detached stage's two W-089 rows as on the master stage; lint, typecheck and format pass — check: reds.out, mutants.out, neighbours.out, gates-proto.out
+7. advisory — the Codex test check, rerun on revision 2, lists no flip and no unnamed row; no code-owned path, `ids.ts` or `package.json` line is touched, so the PR stays off W-288's files — check: fixture-census.md, brief:122, brief:39
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-334.md`, prototype on master cc13a1ae; no code-owned path touched.

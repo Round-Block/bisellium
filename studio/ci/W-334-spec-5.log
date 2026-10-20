@@ -1,0 +1,23 @@
+# opus: W-334
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T11:57:41.962Z
+# tree: tree:28193e64f5670b6d9f262a2d2bdcc19331dedee9
+# brief: briefs/W-334.md blob:34d40acc08929b24a1ad054367d285f50301183d
+# ticket: {"opus":"W-334","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-334/studio","head":"3f27828cc61fe5142309aaf9e6796b3818cbfe06","brief":"34d40acc08929b24a1ad054367d285f50301183d","at":"2026-10-20T11:57:37.079Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-334-spec/r3/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 rules on the class loop `mechanism×shadowed-global-treated-as-builtin` (ci/W-334-review-1.log #3, ci/W-334-review-2.log #1): a numeric reader is the global unless a value binding of its name is in scope; a type alias, interface, type parameter and `import type` / `import { type … }` are passed over; every value binding (const, let, var, function, class, parameter, catch parameter, enum, namespace, value import, `import … = require`) is a shadow — check: brief:57, brief:82, r3/probe-scope.out
+2. advisory — the probe on typescript-eslint 8.70 shows the scope manager's `isValueVariable` and reference resolution both take an `import type` binding for a value, so the test is on `defs`: not `Type`, and not an `ImportBinding` whose specifier or declaration has `importKind: "type"`; it agrees with every decided case (0 disagreements, against 11 for the current rule) — check: r3/probe-scope.mjs, r3/probe-scope.out
+3. advisory — the stated reader limits: an ambient `declare` value and a types-only namespace count as shadows; `globalThis.Number`, an alias, `.call` / `.apply`, `Reflect.apply`, a computed member, a reader returned from a function, `eval` and `new Function` are not recognised; a mixed digit class is not counted (ci/W-334-review-1.log #4); an undeclared global reassigned is still judged — check: brief:73, brief:21
+4. advisory — the prototype on opus/W-334 37c3b0d9: the new `W-334-b1` cases fail by assertion at "a type alias: a type-only binding is no shadow, reported" and pass with the fix; four guard mutants killed; `safe-helpers.test.ts` passes whole; lint over the tree and format pass; the ledger passes the writer and the brief passes the admission — check: r3/stages-r3.out, r3/mutants-r3.out, r3/nb-safe-helpers-r3.log, r3/ledger-check-r3.out, r3/admission-r3.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-334.md`, prototype of the shadow fix on opus/W-334 37c3b0d9; no code-owned path touched.

@@ -1,0 +1,23 @@
+# opus: W-334
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15904-ac71-7d81-bc63-157bdc3a7c2b
+# outcome: failed
+# at: 2026-10-20T11:48:53.953Z
+# tree: tree:28193e64f5670b6d9f262a2d2bdcc19331dedee9
+# brief: briefs/W-334.md blob:e42b290f0319d55409c8af86646eb4a830b5d9a8
+# ticket: {"opus":"W-334","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-334/studio","head":"51ccb6556ddf2a7418f2373378a8fdf2ad6cc65d","brief":"e42b290f0319d55409c8af86646eb4a830b5d9a8","at":"2026-10-20T11:47:00.057Z"}
+
+## Findings
+1. blocking — scripts/exact-digits.mjs:280 Reached through round-1 finding 3’s class: `isGlobal` treats every same-named definition as a runtime shadow, but a TypeScript type-only declaration such as `type Number = unknown` does not shadow the global value; `Number(m[1])` on an unbounded capture is therefore skipped despite brief:46. [severity: S1] [class: mechanism×shadowed-global-treated-as-builtin] — check: packages/cli/src/safe-helpers.test.ts
+
+## Earlier findings
+- ci/W-334-review-1.log #1: closed — scripts/exact-digits.mjs:155,176,210,250 now advance the shared recursion depth before every variable follow, and packages/cli/src/safe-helpers.test.ts:350 covers cycles through each reachable form.
+- ci/W-334-review-1.log #2: closed — scripts/exact-digits.mjs:39 starts a named capture after its `?<name>` prefix, while packages/cli/src/safe-helpers.test.ts:365 covers long names, indexed following groups and nested named groups.
+- ci/W-334-review-1.log #3: closed — scripts/exact-digits.mjs:280-300 now excludes runtime declarations, imports and parameters that shadow the numeric readers, with those forms pinned at packages/cli/src/safe-helpers.test.ts:374.
+
+## Verdict
+The three original defects are fixed, but the binding fix introduces a same-class false negative for type-only declarations.
+VERDICT: FAIL

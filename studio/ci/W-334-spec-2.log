@@ -1,0 +1,22 @@
+# opus: W-334
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15851-6114-7443-b0da-ae3df5e0c0fe
+# outcome: failed
+# at: 2026-10-20T08:07:50.653Z
+# tree: tree:e098bff31186fb7c6660c2f1b9c3070082a98048
+# brief: briefs/W-334.md blob:4ac1e9a2ab1dcfcd902bb88af02c53b62a1df274
+# ticket: {"opus":"W-334","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"12709492ea244c40233578e75a6f8bf5730ff67a","brief":"4ac1e9a2ab1dcfcd902bb88af02c53b62a1df274","at":"2026-10-20T08:07:50.016Z"}
+
+## Findings
+1. blocking — brief:87 [severity: S1] [design: changes] Row 8 names no real rejector and omits `runReview`’s two readers of the round: a copied `--round` that differs from `ci/<opus>-review-<n>.log` can pass the evidence-derived ticket while emitting the flag-derived, potentially rounded `workflow.review_round`. Replace brief:87 with: “| 8. Other bounded census inputs: PR URL; lesson cascade; retro filename and total; review evidence and optional flag round; UI-input round; screenshot numeric fields; verdict citation/exchange/ledger references; Playwright count; red header behaviour | each contextual token contains 1–15 digits, with positive/no-leading-zero grammars where Interfaces 3 specifies them; paired round readers must agree | `openPr`, `existingLessonsByClass`, `previousRetroTotalTokens`, `reviewRounds`, `runReview`, `authoritativeUiInput`, `shotManifestProblems`, `reconcileFindings`, `parseVerdictLog`, `promiseLedgerProblems`, `classifyReplay`, and specified `readRedBehaviour`; `runReview` trusts the bounded evidence-path round, refuses a supplied flag that is out of domain or differs, and emits that trusted round |” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/lifecycle.test.ts
+2. blocking — brief:61 [severity: S1] [design: keeps] `/Total tokens:\s*(\d{1,15})/` accepts the prefix of a hand-edited 16-digit total, so `bisellium retro` receives one tenth of the value and computes the wrong trend; no existing test covers it. Replace brief:61 with: “- `retro.ts`: a lesson’s `cascade:`, a retro file’s number, `Total tokens:` and review-round metrics’ log rounds are bounded; `previousRetroTotalTokens` uses `Total tokens:\s*(\d{1,15})(?!\d)`, so a longer lesson, retro, total or log value is skipped or absent.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/retro.test.ts
+3. blocking — brief:67 [severity: S1] [design: keeps] A corrupted 16-digit Playwright summary without `PW_BANNER` no longer matches `PW_SUMMARY`, so an accompanying `AssertionError` falls through and `classifyReplay` accepts it as a generic assertion instead of refusing it; no existing test covers that path. Replace brief:67 with: “- `scripts/replay-accept.mjs`: `classifyReplay` recognises every digit-run Playwright failure summary before generic assertion classification, accepts only the exact count string `1`, and refuses every other or malformed count; `scripts/run-builder-host.mjs` parses `# behaviour:` through specified `readRedBehaviour`, which refuses a value longer than 15 digits or one differing from the two-digit red filename.” [class: spec×input-domain-missing-or-unenforceable] — check: scripts/replay-accept.test.mjs
+4. advisory — brief:99 [severity: S4] The claim that every numeric-read form is exercised omits `Number.parseFloat`, although Interfaces 1 and the lint promise include it. Replace brief:99 with: “- Each form of Interfaces 1 is reported once: `parseInt`, `Number.parseInt`, `parseFloat`, `Number.parseFloat`, unary `+`, `{1,}`, a 16-digit bound, a regex constant, a non-global match, a `matchAll` callback, a `for … of`, a destructured capture, `String.raw` with a constant, `.at(-1)` of a list, and a group counted after a named one.” [class: mechanism×unpinned-by-test] — check: packages/cli/src/safe-helpers.test.ts
+
+## Verdict
+The brief needs a design-changing round fix plus two fail-closed corrections before build.
+
+VERDICT: FAIL

@@ -151,8 +151,11 @@ const headerLine = (name: (typeof VERDICT_HEADERS)[number], value: string | numb
 /** A header value is one line: CR and LF in spec- or error-derived text are written as the two characters `\r` and `\n`. */
 const oneLine = (text: string): string => text.replace(/\r/g, "\\r").replace(/\n/g, "\\n");
 
-/** The ways a citation can name the declared brief: a bare `brief`, or any path ending in `briefs/<name>.md`. */
-const CITATION = /(?<![\w./-])(brief|\/?(?:[\w.-]+\/)*briefs\/[\w.-]+\.md):([1-9]\d*)(?!\d)/g;
+/**
+ * The ways a citation can name the declared brief: a bare `brief`, or any path ending in `briefs/<name>.md`.
+ * W-334: the line is a whole token of 1 to 15 digits, no word character after it: `brief:2x` cites no line.
+ */
+const CITATION = /(?<![\w./-])(brief|\/?(?:[\w.-]+\/)*briefs\/[\w.-]+\.md):([1-9]\d{0,14})(?!\w)/g;
 
 /**
  * W-126: a blocking finding keeps its severity only when it cites a line of the opus's declared brief; the rest are
@@ -253,7 +256,7 @@ function readExchange(body: string[], id: string, rel: string, findings: Recorde
 
   const rebuttal: Rebuttal[] = [];
   for (const line of sections.get("Rebuttal") ?? []) {
-    const m = /^([1-9]\d*)\. (.+)$/.exec(line);
+    const m = /^([1-9]\d{0,14})\. (.+)$/.exec(line);
     if (m === null || !CITE.test(m[2]!)) return bad("Rebuttal", line, 'want "<k>. <evidence holding a file:line>"');
     if (!known(Number(m[1])) || rebuttal.some((r) => r.n === Number(m[1]))) return bad("Rebuttal", line, "<k> is not a finding of this log, or is rebutted twice");
     rebuttal.push({ n: Number(m[1]), text: m[2]! });
@@ -261,7 +264,7 @@ function readExchange(body: string[], id: string, rel: string, findings: Recorde
   const ruled = new Map<number, "withdrawn" | "upheld">();
   for (const line of sections.get("Ruling") ?? []) {
     if (/^[1-9]\d*\. open\b/.test(line)) return { error: `${rel}: ruling is open (${line.slice(0, 60)}): a dispute the reviewer cannot rule goes to the Patron first; record the Patron's answer as the ruling` };
-    const m = new RegExp(`^([1-9]\\d*)\\. (withdrawn|upheld) ${SEPARATOR} (.+)$`).exec(line);
+    const m = new RegExp(`^([1-9]\\d{0,14})\\. (withdrawn|upheld) ${SEPARATOR} (.+)$`).exec(line);
     if (m === null || (m[2] === "upheld" && !CITE.test(m[3]!))) return bad("Ruling", line, 'want "<k>. withdrawn — <why>" or "<k>. upheld — <why holding a file:line>"');
     if (!known(Number(m[1])) || ruled.has(Number(m[1]))) return bad("Ruling", line, "<k> is not a finding of this log, or is ruled twice");
     ruled.set(Number(m[1]), m[2] as "withdrawn" | "upheld");
@@ -271,7 +274,7 @@ function readExchange(body: string[], id: string, rel: string, findings: Recorde
   for (const f of findings) if (ruled.get(f.n) === "withdrawn") (f.blocking = false), (f.withdrawn = true);
 
   const earlier: EarlierFinding[] = [];
-  const line = new RegExp(`^- (ci/${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-(?:spec|review|handoff)-[1-9]\\d*\\.log) #([1-9]\\d*): (closed|open|reversed) ${SEPARATOR} (.+)$`);
+  const line = new RegExp(`^- (ci/${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-(?:spec|review|handoff)-[1-9]\\d*\\.log) #([1-9]\\d{0,14}): (closed|open|reversed) ${SEPARATOR} (.+)$`);
   for (const text of sections.get("Earlier findings") ?? []) {
     const m = line.exec(text);
     if (m === null || (m[3] === "reversed" && !CITE.test(m[4]!))) return bad("Earlier findings", text, 'want "- ci/<opus>-<kind>-<m>.log #<k>: closed|open|reversed — <evidence>", a reversal holding a file:line');
@@ -323,7 +326,7 @@ export function parseVerdictLog(text: string, id: string, rel: string): Parsed |
     // "<n> (<reason>)", joined by "; ": every piece closed, every n a blocking finding of this log
     const pieces = converted[0]!.split(/; (?=[1-9]\d* \()/);
     for (const piece of pieces) {
-      const m = /^([1-9]\d*) \((.+)\)$/.exec(piece);
+      const m = /^([1-9]\d{0,14}) \((.+)\)$/.exec(piece);
       const f = m ? findings.find((x) => x.n === Number(m[1])) : undefined;
       if (!m || !f?.blocking) return { error: `${rel}: "# converted:" is not a list of "<n> (<reason>)" naming blocking findings of this log: ${piece.slice(0, 60)}` };
       f.blocking = false;
@@ -373,7 +376,7 @@ export function readSequence(root: string, opus: string, phase: SequencePhase, s
   const prefix = `${opus}-${LOG_KIND[phase]}-`;
   let last: { round: number; rel: string; text: string; session: string | undefined } | undefined;
   for (const name of names) {
-    const m = name.startsWith(prefix) ? /^([1-9]\d*)\.log$/.exec(name.slice(prefix.length)) : null;
+    const m = name.startsWith(prefix) ? /^([1-9]\d{0,14})\.log$/.exec(name.slice(prefix.length)) : null;
     if (m === null) continue;
     const rel = `ci/${name}`;
     const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
@@ -413,7 +416,7 @@ const LEDGER_MAX_BYTES = 262_144;
 /** W-306: the end of a whole token: not followed by a word, `/`, `~` or `-` character, nor by `.` and a token character */
 const TOKEN_END = String.raw`(?![\w/~-]|\.[\w./~-])`;
 /** a whole citation token `<name>:<positive integer>`: `NX:20x`, `brief:3.5`, `brief:3-5` and `NX:20/notes` are not citations */
-const CITATION_TOKEN = new RegExp(String.raw`(?<![\w./~-])([\w./~-]+):([1-9]\d*)` + TOKEN_END, "g");
+const CITATION_TOKEN = new RegExp(String.raw`(?<![\w./~-])([\w./~-]+):([1-9]\d{0,14})` + TOKEN_END, "g");
 /** a whole word by the same boundary: `next.ts` and `src/next` do not name `next`, `scoped-ish` is no status */
 const wholeWord = (word: string): RegExp => new RegExp(String.raw`(?<![\w./~-])${word}` + TOKEN_END);
 const STATUS = wholeWord("(?:holds|scoped)");
@@ -576,15 +579,12 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   }
 
   const roundRaw = values.get("--round");
-  if (roundRaw === undefined || !/^[1-9]\d*$/.test(roundRaw)) {
-    console.error(`--round must be a positive integer\n${VERDICT_USAGE}`);
+  // W-334: at most 15 digits, the grammar every round reader holds, so a double reads it exactly
+  if (roundRaw === undefined || !/^[1-9]\d{0,14}$/.test(roundRaw)) {
+    console.error(`--round must be a positive integer of at most 15 digits\n${VERDICT_USAGE}`);
     return { exitCode: 2 };
   }
   const round = Number(roundRaw);
-  if (!Number.isSafeInteger(round)) {
-    console.error(`--round must be a positive integer\n${VERDICT_USAGE}`);
-    return { exitCode: 2 };
-  }
 
   const phase = values.get("--phase") ?? "build";
   if (phase !== "spec" && phase !== "build" && phase !== "handoff") {
@@ -1116,8 +1116,8 @@ export function readBuildRounds(root: string, id: string, config: BuildReviewCon
   const prefix = `${id}-review-`;
   const rounds: BuildReviewRound[] = [];
   for (const name of names.filter((x) => x.startsWith(prefix)).sort()) {
-    const m = /^([1-9]\d*)\.log$/.exec(name.slice(prefix.length));
-    if (m === null) return { error: `ci/${name}: a build-review log is named ${prefix}<n>.log, n a positive integer with no leading zero` };
+    const m = /^([1-9]\d{0,14})\.log$/.exec(name.slice(prefix.length));
+    if (m === null) return { error: `ci/${name}: a build-review log is named ${prefix}<n>.log, n a positive integer of at most 15 digits with no leading zero` };
     const rel = `ci/${name}`;
     const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
     if ("error" in file) return { error: `${rel}: ${file.error}` };
