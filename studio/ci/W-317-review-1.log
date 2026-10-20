@@ -1,0 +1,18 @@
+# opus: W-317
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1577a-fc02-7540-b23e-471cd8346ba2
+# outcome: failed
+# at: 2026-10-20T04:06:47.708Z
+# tree: tree:17a55d70bcbe6bd7c7c23f24b79e7e4f2e3ce38b
+# brief: briefs/W-317.md blob:5de5e42bbd88a7521e29eb05990b6610bd617a1b
+# ticket: {"opus":"W-317","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-317/studio","head":"6aaefcb304317ba8befd889a40ce1ac4c10f1e27","brief":"5de5e42bbd88a7521e29eb05990b6610bd617a1b","at":"2026-10-20T04:03:57.199Z"}
+
+## Findings
+1. blocking — packages/cli/src/rules/brief-stale.ts:54 [severity: S1] The declared `[1-9][0-9]*` round grammar is unbounded, but converting suffixes to `Number` collapses distinct valid rounds above `Number.MAX_SAFE_INTEGER`; sorting can therefore select an older signature instead of the required highest `n` (brief:56, brief:76). [class: tests×one-sided-bound-assertion] — check: packages/cli/src/rules/brief-stale.test.ts
+
+## Verdict
+The owned paths, gates, and assertion-level reds are sound, but valid large round numbers can make the rule judge against the wrong signature.
+VERDICT: FAIL
