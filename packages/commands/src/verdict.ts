@@ -439,7 +439,8 @@ function readDesignMagister(manifest: unknown): { magister: string } | { error: 
  * it) then cite one ledger file, and for each promise line and each verb on it some ledger line holds the whole tokens
  * `brief:<n>` and `<file>:<line>`, the verb and holds or scoped. W-319: so does each Input domain row (a reader), with no verb.
  * W-322: each row also holds a pin (`ruledCases`), or says unpinned and its ledger line is scoped; a row ruling any text
- * or any string lists the forms it recognises, and each grammar line it cites holds a pin.
+ * or any string lists the forms it recognises, and each grammar line it cites holds a pin. W-336: so does a row whose
+ * Valid domain names a path, a command line or an environment value, and its line or a cited line names each hostile form.
  * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
  */
 function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
@@ -495,7 +496,7 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const n of rows)
     if (!entries.some((e) => e.counts && e.briefs.has(n)))
       problems.push(`brief:${n} is an Input domain row, and no ledger line cites brief:${n} with a <file>:<line> and holds or scoped`);
-  const { cases, formless } = ruledCases(brief);
+  const { cases, formless, pathGaps } = ruledCases(brief);
   const PIN_FORM = 'as pinned by `<row>` "<assertion>"';
   const rowsSeen = new Set<number>();
   for (const c of cases) {
@@ -513,6 +514,10 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   }
   for (const n of formless)
     problems.push(`brief:${n} rules any text or any string and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"`);
+  const PATH = "rules a path, a command line or an environment value";
+  for (const g of pathGaps)
+    if (g.formless)
+      problems.push(`brief:${g.row} ${PATH} and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"`);
   return problems;
 }
 
