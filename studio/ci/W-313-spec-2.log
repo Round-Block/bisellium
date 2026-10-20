@@ -1,0 +1,21 @@
+# opus: W-313
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1568e-3d68-70b1-be3f-df5a173a273f
+# outcome: passed
+# at: 2026-10-19T23:51:02.393Z
+# tree: tree:43416b0b53faa370768ece9e5c86f4814b94faf6
+# brief: briefs/W-313.md blob:7319b35c897e79c8bc987bcaefa73452e39fb810
+# ticket: {"opus":"W-313","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"14b1b8831feba833c3cadca11ffbacdb9fd6834e","brief":"7319b35c897e79c8bc987bcaefa73452e39fb810","at":"2026-10-19T23:51:01.582Z"}
+
+## Findings
+1. advisory — brief:86 The label row names no rejecting function; only a deliberately control-bearing label is harmful, but `runWatched` currently echoes every label. Replace brief:86 with: `| 5. The label | non-empty, trimmed single-line text without C0, DEL, C1, bidirectional or zero-width characters; production labels use a fixed CI step or manifest probatio id | runWatched (specified): returns EINVAL without spawning or echoing an out-of-domain label, and localPipeline.run or runStep maps the error to failure; pinned by W-313-b1 "an invalid label is refused" |` [severity: S3] [class: spec×input-without-named-rejector] — check: packages/pipeline/test/gate-timeout.test.ts
+2. advisory — brief:83 An unusually verbose gate with a graceful SIGTERM handler can exceed 64 MiB, leave `error: ENOBUFS`, exit 0, and be marked passed because `localPipeline.run` ignores `error`. Replace brief:83 with: `| 2. The same output, as a gate's log keeps it | stdout then stderr, each at most 64 MiB, the last 200 lines redacted | runWatched (specified) sets ENOBUFS and kills a stream passing 64 MiB; localPipeline.run treats any error as a failed gate regardless of child status; pinned by W-313-b1 "ENOBUFS cannot pass" and W-279-b3 behaviour 3 "long tail is" |` [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/pipeline/test/gate-timeout.test.ts
+3. advisory — brief:68 Byte-for-byte gate-log equivalence is not guaranteed above the cap: the helper drops the whole crossing chunk, while master delegates truncation to `spawnSync`. Replace brief:68 with: `Promise outcome-kept: below the 64 MiB per-stream capture cap, a gate's status, log bytes and 30-minute timeout, and a step's exit status, timeout and output bytes, are as on master; over the cap the gate fails and its retained whole-chunk prefix is not promised byte-identical to spawnSync — limit: a step loses TTY-sensitive colour or animation, a gate's stdin is /dev/null rather than an empty pipe, and step-output back-pressure moves into this process.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/pipeline/test/gate-timeout.test.ts
+4. advisory — brief:60 An OSC or other non-CSI escape cannot pass through as written because brief:57 also requires its ESC and other C0 framing bytes to become `?`. Replace brief:60 with: `Every other form is a limit: for an OSC or other non-CSI escape, each C0 framing control reads as ? while its printable payload passes; a C1 control, bidirectional or zero-width character passes through; a line longer than the stream's last 4096 characters shows only its end; the last line is from the stream that wrote last, so two streams interleave by chunk.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/pipeline/test/gate-timeout.test.ts
+
+## Verdict
+The signed brief may proceed with these advisory corrections applied during the build.
+VERDICT: PASS

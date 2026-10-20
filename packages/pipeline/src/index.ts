@@ -5,8 +5,9 @@
  * opus, so a merge-blocking pipeline (no-mistakes) is a drop-in for the
  * local runner and nothing else has to care which one ran.
  */
-import { execSync, spawnSync } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { StringDecoder } from "node:string_decoder";
 import { join, relative, sep } from "node:path";
 import type { Opus } from "@bisellium/schema";
 import { filterEnv, redact } from "@bisellium/shim";
@@ -60,10 +61,146 @@ function tail(text: string, n: number): string {
   return lines.slice(Math.max(0, lines.length - n)).join("\n");
 }
 
+/** W-313: how often a running gate or `bisellium ci` step prints its progress line. */
+export const PROGRESS_INTERVAL_MS = 60_000;
+/** spawnSync's cap on one captured stream, kept for a gate's output. */
+const CAPTURE_MAX = 64 * 1024 * 1024;
+const LAST_LINE_MAX = 200;
+
+export interface WatchOptions {
+  /** Names the run in each line: `bisellium verify: gate <id>` or `bisellium ci: step <command>`. */
+  label: string;
+  cwd: string;
+  env?: NodeJS.ProcessEnv;
+  shell?: boolean;
+  timeoutMs: number;
+  /** `true`: the child's stdout and stderr are passed to this process's own as they arrive and not kept
+   *  (`bisellium ci`); otherwise they are captured, each up to 64 MiB, and returned (`verify`'s gate log). */
+  tee?: boolean;
+  /** The interval between progress lines; tests shorten it. */
+  everyMs?: number;
+  /** Where the start, progress and end lines go; defaults to this process's stderr. */
+  write?: (line: string) => void;
+}
+
+export interface WatchResult {
+  status: number | null;
+  signal: NodeJS.Signals | null;
+  timedOut: boolean;
+  /** The spawn failure, or `ENOBUFS` when a captured stream passed 64 MiB (the child is then killed, as spawnSync did). */
+  error?: NodeJS.ErrnoException;
+  stdout: string;
+  stderr: string;
+}
+
+const LABEL_FORBIDDEN = /[\u0000-\u001f\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/;
+
+const elapsed = (ms: number): string => `${Math.floor(ms / 60_000)}m${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}s`;
+
+/** The last non-blank line of `text` for a progress line: `\n` and `\r` end a line, CSI escapes are dropped,
+ *  any other C0 control or DEL reads `?` (so an OSC or other non-CSI escape loses its framing bytes and its
+ *  printable payload passes), secrets are redacted, and it is cut to 200 characters. A C1 control, bidirectional
+ *  or zero-width character passes through (a stated limit). */
+export function progressLine(text: string): string | undefined {
+  const line = text
+    .split(/[\r\n]+/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+    .at(-1);
+  if (line === undefined) return undefined;
+  const clean = redact(line.replace(/\u001b\[[0-9;?]*[ -/]*[@-~]/g, "")).replace(/[\u0000-\u001f\u007f]/g, "?");
+  return clean.length > LAST_LINE_MAX ? `${clean.slice(0, LAST_LINE_MAX)}…` : clean;
+}
+
+/**
+ * W-313: runs one gate or ci step without blocking the event loop, printing `<label>: start <time>`, then every
+ * `everyMs` while it runs `<label>: running <elapsed> at <time>, <n> bytes of output, last line: <line>`, then
+ * `<label>: end <time> after <elapsed>, <outcome>`, so a silent healthy run is not read as a hung one.
+ * A label that is empty, untrimmed or holds a control, bidirectional or zero-width character is refused with
+ * `EINVAL`: nothing is spawned or written. A captured stream passing 64 MiB sets `ENOBUFS` and kills the child; the
+ * prefix kept is whole chunks, so it is not promised byte-identical to spawnSync's.
+ */
+export function runWatched(command: string, args: readonly string[], opts: WatchOptions): Promise<WatchResult> {
+  if (opts.label.length === 0 || opts.label !== opts.label.trim() || LABEL_FORBIDDEN.test(opts.label)) {
+    const error: NodeJS.ErrnoException = Object.assign(new Error("invalid label"), { code: "EINVAL" });
+    return Promise.resolve({ status: null, signal: null, timedOut: false, error, stdout: "", stderr: "" });
+  }
+  const write = opts.write ?? ((line: string) => void process.stderr.write(`${line}\n`));
+  const started = new Date();
+  write(`${opts.label}: start ${started.toISOString()}`);
+  return new Promise((resolvePromise) => {
+    const child = spawn(command, [...args], {
+      cwd: opts.cwd,
+      env: opts.env,
+      shell: opts.shell ?? false,
+      stdio: [opts.tee ? "inherit" : "ignore", "pipe", "pipe"],
+    });
+    let bytes = 0;
+    let last: string | undefined;
+    let timedOut = false;
+    let error: NodeJS.ErrnoException | undefined;
+    let settled = false;
+    const kept = { stdout: [] as Buffer[], stderr: [] as Buffer[] };
+    const keptBytes = { stdout: 0, stderr: 0 };
+    const recent = { stdout: "", stderr: "" };
+    const decoders = { stdout: new StringDecoder("utf8"), stderr: new StringDecoder("utf8") };
+    for (const name of ["stdout", "stderr"] as const) {
+      child[name].on("data", (chunk: Buffer) => {
+        bytes += chunk.length;
+        recent[name] = (recent[name] + decoders[name].write(chunk)).slice(-4096); // ponytail: a line over 4 KiB shows its end
+        last = progressLine(recent[name]) ?? last;
+        if (opts.tee) {
+          process[name].write(chunk);
+        } else if (error === undefined) {
+          if (keptBytes[name] + chunk.length > CAPTURE_MAX) {
+            error = Object.assign(new Error(`${name} passed ${CAPTURE_MAX} bytes`), { code: "ENOBUFS" });
+            child.kill();
+          } else {
+            kept[name].push(chunk);
+            keptBytes[name] += chunk.length;
+          }
+        }
+      });
+    }
+    const progress = setInterval(() => {
+      const at = new Date();
+      write(`${opts.label}: running ${elapsed(at.getTime() - started.getTime())} at ${at.toISOString()}, ${bytes} bytes of output, last line: ${last ?? "(none yet)"}`);
+    }, opts.everyMs ?? PROGRESS_INTERVAL_MS);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+    }, opts.timeoutMs);
+    const finish = (status: number | null, signal: NodeJS.Signals | null): void => {
+      if (settled) return;
+      settled = true;
+      clearInterval(progress);
+      clearTimeout(timer);
+      const at = new Date();
+      const outcome = timedOut
+        ? `timed out after ${opts.timeoutMs / 60_000}m`
+        : error !== undefined && child.pid === undefined
+          ? `failed to start: ${error.message}`
+          : status !== null
+            ? `exited ${status}`
+            : `killed by ${signal ?? "an unknown signal"}`;
+      write(`${opts.label}: end ${at.toISOString()} after ${elapsed(at.getTime() - started.getTime())}, ${outcome}`);
+      const result: WatchResult = { status, signal, timedOut, stdout: Buffer.concat(kept.stdout).toString("utf8"), stderr: Buffer.concat(kept.stderr).toString("utf8") };
+      if (error !== undefined) result.error = error;
+      resolvePromise(result);
+    };
+    child.on("error", (e: NodeJS.ErrnoException) => {
+      error ??= e;
+      if (child.pid === undefined) finish(null, null);
+    });
+    child.on("close", finish);
+  });
+}
+
 /**
  * localPipeline: runs each command in `repo` with a 30-minute timeout,
  * writes one log per probatio (command, exit code, last 200 lines of
- * combined stdout+stderr) and reports pass/fail from the exit code.
+ * combined stdout+stderr) and reports pass/fail from the exit code. Each
+ * command prints its start, a progress line a minute and its end (W-313).
  */
 export const localPipeline: MergePipeline = {
   id: "local",
@@ -81,19 +218,17 @@ export const localPipeline: MergePipeline = {
     for (const [probatioId, command] of Object.entries(opts.commands)) {
       const extra = opts.commandEnv?.[probatioId];
       const env = extra === undefined ? base : { ...base, ...extra };
-      const r = spawnSync(command, {
-        cwd: opts.repo,
-        shell: true,
-        encoding: "utf8",
-        timeout: GATE_TIMEOUT_MS,
-        maxBuffer: 64 * 1024 * 1024,
-        env,
-      });
+      const r = await runWatched(command, [], { cwd: opts.repo, shell: true, timeoutMs: GATE_TIMEOUT_MS, env, label: `bisellium verify: gate ${probatioId}` });
 
-      const timedOut = r.error !== undefined && (r.error as NodeJS.ErrnoException).code === "ETIMEDOUT";
-      const exitCode = timedOut ? null : r.status;
-      const output = `${r.stdout ?? ""}${r.stderr ?? ""}`;
-      const statusLine = timedOut ? `exit code: (timed out after ${GATE_TIMEOUT_MS / 60_000}m)` : `exit code: ${exitCode ?? `(signal ${r.signal ?? "unknown"})`}`;
+      const timedOut = r.timedOut;
+      // any error (a spawn failure, ENOBUFS) fails the gate, whatever status the child then exited with
+      const exitCode = timedOut || r.error !== undefined ? null : r.status;
+      const output = `${r.stdout}${r.stderr}`;
+      const statusLine = timedOut
+        ? `exit code: (timed out after ${GATE_TIMEOUT_MS / 60_000}m)`
+        : r.error !== undefined
+          ? `exit code: (error ${r.error.code ?? "unknown"})`
+          : `exit code: ${exitCode ?? `(signal ${r.signal ?? "unknown"})`}`;
       // The tree/certifies header is our own metadata, not part of the
       // command's (untrusted) output — check.ts's probatio.evidence.tree
       // rule reads it back to confirm a gate's log actually mentions the

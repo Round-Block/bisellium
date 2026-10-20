@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-313-b1\s --import tsx packages/pipeline/test/gate-timeout.test.ts
+# exit: 1
+# at: 2026-10-19T23:53:03.212Z
+# sella: builder.W-313
+# tree: tree:fc8b55d1b387b9800edf68b310c0ee4290556167
+# ticket: {"opus":"W-313","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-313/studio","head":"b7e74fcb7a3dd766b77fbb0d42308233b99b201a","brief":"7319b35c897e79c8bc987bcaefa73452e39fb810","at":"2026-10-19T23:53:02.150Z"}
+
+TAP version 13
+# Subtest: W-313-b1 behaviour 1: a watched run prints its start, a progress line each interval naming its output size and last line, and its end, with the time
+not ok 1 - W-313-b1 behaviour 1: a watched run prints its start, a progress line each interval naming its output size and last line, and its end, with the time
+  ---
+  duration_ms: 3.285586
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-313/packages/pipeline/test/gate-timeout.test.ts:6:64'
+  failureType: 'testCodeFailure'
+  error: |-
+    the progress line comes every minute
+    + actual - expected
+    
+    + undefined
+    - 60000
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 60000
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-313/packages/pipeline/test/gate-timeout.test.ts:35:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 123.810896
