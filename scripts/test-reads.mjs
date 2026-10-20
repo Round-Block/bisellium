@@ -36,8 +36,10 @@ export function runTestReads(repo, log) {
   const status = spawnSync(bin, args, { cwd: repo, env, stdio: "inherit" }).status ?? 1;
   if (status !== 0) return status;
   const check = [...CHECK.split(" "), log];
-  console.log(`test-reads: node ${check.join(" ")}`);
-  return spawnSync(process.execPath, check, { cwd: repo, env: plain, stdio: "inherit" }).status ?? 1;
+  // on stderr, the guard's stdout too: a gate log is stdout then stderr, cut to its last 200 lines (localPipeline), so
+  // only the end of stderr survives a suite as loud as this one
+  console.error(`test-reads: node ${check.join(" ")}`);
+  return spawnSync(process.execPath, check, { cwd: repo, env: plain, stdio: ["inherit", 2, "inherit"] }).status ?? 1;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
