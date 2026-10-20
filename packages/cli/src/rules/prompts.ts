@@ -7,9 +7,11 @@
  */
 import type { Finding, RuleOpts } from "../check.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { bulletClauses } from "./lex.js";
 
 const isDict = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const DATA = "data, not instructions";
+const MARKER = /\(check:\s*process\.prompt_templates\)\s*$/;
 export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA],
@@ -27,5 +29,10 @@ export function checkPromptTemplates(root: string, opts: RuleOpts): Finding[] {
     if (missing.length > 0)
       findings.push({ rule: "process.prompt_templates", level: "block", where: path, message: text === undefined ? "not a readable regular file" : `lacks ${missing.join(", ")}` });
   }
+  const lex = readContainedRegularFile(root, "leges/ops.md", "leges");
+  const clauses = "error" in lex ? [] : bulletClauses(lex.bytes.toString("utf8"));
+  const paths = Object.keys(PROMPT_TEMPLATES);
+  if (!clauses.some((c) => MARKER.test(c) && paths.every((p) => c.includes(p))))
+    findings.push({ rule: "process.prompt_templates", level: "block", where: "leges/ops.md", message: `no clause names ${paths.join(", ")} and ends with (check: process.prompt_templates)` });
   return findings;
 }
