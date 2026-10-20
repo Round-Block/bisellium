@@ -1,0 +1,19 @@
+# opus: W-268
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15904-c4f1-74e0-aef2-2738a739cc77
+# outcome: failed
+# at: 2026-10-20T11:18:18.676Z
+# tree: tree:42e6b9506381a129317b2da748d55e2f00f0cfe8
+# brief: briefs/W-268.md blob:092400f48a8043edfeebdd8a9eec389f7c999c09
+# ticket: {"opus":"W-268","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"34bd4d43417d77a056ace1533b7296ce2108590e","brief":"092400f48a8043edfeebdd8a9eec389f7c999c09","at":"2026-10-20T11:18:18.084Z"}
+
+## Findings
+1. blocking — brief:32 [severity: S1] [design: changes] With only one canonical ticket whose `at` is accidentally later than its own log, the prototype adopts that time as the boundary and filters the log out before checking “issued after the log”; the merge-queue `officina` caller therefore gets no `ladder.ticket` block, and W-268-b2 misses this because its fixture already contains an earlier valid ticket. Replace brief:32 with `Promise ticketed-logs: in an officina with step_tickets: required and at least one ticket, check blocks ladder.ticket at each covered log of an open opus whose # at is at or after the first ticket, is not an exact UTC timestamp, or whose canonical ticket defines the first-ticket boundary, unless its leading header holds exactly one # ticket: line that parseTicketLine accepts, naming the log's opus, action and round, issued no later than the log and after the opus's previous covered log; one finding per log, the first reason found — limit: judged from the checked tree, so a log of a done, halted or backlog opus, a log before the first ticket that does not carry the boundary-defining ticket, the record's tickets: entries and handoff-phase logs are not judged; a log that cannot be read through the containment helper is skipped.` Replace brief:62 with `- Judged: covered logs of an open opus whose time is undefined or at or after the first ticket, plus every such log whose canonical ticket's at is the first ticket, in time order (a tie by path). For each, the first failing check is one block at the log's path:` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/rules/ladder-ticket.test.ts
+
+## Verdict
+The first-ticket bootstrap has a design-changing fail-open path that must be specified and tested before building.
+
+VERDICT: FAIL

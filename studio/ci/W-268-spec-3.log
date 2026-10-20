@@ -1,0 +1,24 @@
+# opus: W-268
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T11:29:42.264Z
+# tree: tree:42e6b9506381a129317b2da748d55e2f00f0cfe8
+# brief: briefs/W-268.md blob:00952f6e66e17a7df20e5354cb8163c049593ec6
+# ticket: {"opus":"W-268","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"34bd4d43417d77a056ace1533b7296ce2108590e","brief":"00952f6e66e17a7df20e5354cb8163c049593ec6","at":"2026-10-20T11:29:24.508Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-268-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — revision 2 answers spec round 2's S1: the first ticket is now the earliest of every canonical ticket line's `at` and every ticket-carrying covered log's own `# at:`, so the boundary never passes over a log that carries a ticket line; this closes the round's path (a lone ticket issued after its own log) and the wider one the proposed text left open (an un-ticketed log written between that log and its late ticket's `at`) — check: brief:24, brief:32, brief:60, brief:62
+2. advisory — row b3 gains three cases: a lone late ticket blocks at its log, an un-ticketed log before that late ticket's `at` is judged, a lone non-canonical ticket line blocks; b3 fails by assertion on revision 1's prototype and passes on revision 2's, and each red is still accepted on its stage — check: reds-r3.out, row-b3-proto-r1-r3.out, row-b3-proto-r3.out
+3. advisory — nineteen guard mutants killed, among them revision 1's boundary, the boundary without the carrying log's own time, the round's proposed text, and a canonical-only boundary — check: mutants-r3.out
+4. advisory — the other bounds the rule derives from the logs it judges were checked: the per-opus previous log, a log's own time, and the coverage class (a repeated `# phase:` or `# opus:` line is a stated limit) — check: brief:77, brief:86
+5. advisory — on master 34bd4d43 the boundary is the same instant (2026-10-14T22:48:53.331Z), the rule judges W-276's five spec logs and finds nothing in master's, the main checkout's, W-334's, W-335's or W-335-r2's officinae; no existing row flips; gates and the blocking set match the master stage — check: probes-r3.out, neighbours-proto-r3.out, neighbours-census-r3.out, gates-proto-r3.out, gates-master-r3.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-268.md`, part 1 of W-268, prototype on master 34bd4d43; no code-owned path touched, 2 points.

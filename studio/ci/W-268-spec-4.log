@@ -1,0 +1,22 @@
+# opus: W-268
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15904-c4f1-74e0-aef2-2738a739cc77
+# outcome: passed
+# at: 2026-10-20T11:33:03.409Z
+# tree: tree:42e6b9506381a129317b2da748d55e2f00f0cfe8
+# brief: briefs/W-268.md blob:00952f6e66e17a7df20e5354cb8163c049593ec6
+# ticket: {"opus":"W-268","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"34bd4d43417d77a056ace1533b7296ce2108590e","brief":"00952f6e66e17a7df20e5354cb8163c049593ec6","at":"2026-10-20T11:33:02.942Z"}
+
+## Findings
+1. advisory — studio/briefs/W-268.md:60 [severity: S2] If every ticket line is noncanonical and every carrying log has an inexact `# at:`, the prototype’s candidate set is empty and line 81 produces `Infinity`, not the promised earliest timestamp. Replace brief:60 with `The first-ticket boundary is the earliest exact time among every canonical ticket line's at and every ticket-carrying covered log's own # at:; if none is exact, the boundary is +Infinity, so open covered logs with inexact times are judged while exact-time un-ticketed logs are before it. With no covered log carrying a # ticket: line, the result is [].` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/rules/ladder-ticket.test.ts
+
+## Earlier findings
+- ci/W-268-spec-2.log #1: closed — brief:24, brief:32, and brief:60 now include every ticket-carrying log’s own exact time in the boundary; proto-ladder-ticket-r3.ts:79-81 implements it, and proto-ladder-ticket-r3.test.ts:119-125 pins both the lone late ticket and the intervening un-ticketed log.
+
+## Verdict
+The earlier S1 is closed; revision 2 is feasible, with one advisory boundary-fallback clarification.
+
+VERDICT: PASS
