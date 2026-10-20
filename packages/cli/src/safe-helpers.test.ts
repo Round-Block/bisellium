@@ -385,6 +385,39 @@ test("W-334-b1 behaviour 1: the lint refuses a regex capture of more than 15 dig
   const sibling = `${DECL}export const f = (Number: string): string => Number;\nconst m = /^v(\\d+)$/.exec(s);\nexport const n = Number(m![1]!);\nexport const p = Number.parseInt(m![1]!, 10);\n`;
   assert.equal((await lossy(sibling)).length, 2, "a Number declared in a sibling scope leaves the global reported");
 
+  // review round 2 fix: a shadow is a value binding; a type-only one (a type alias, an interface, a type parameter, `import type`
+  // or `import { type … }`) leaves the global reader, so the read is reported
+  const LONG = "const m = /^v(\\d+)$/.exec(s);\n";
+  const typeOnly: [string, string][] = [
+    ["a type alias", `type Number = unknown;\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["an interface", `interface Number {\n  x: 1;\n}\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["an import type", `import type { Number } from "./reader.js";\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["an import { type }", `import { type Number } from "./reader.js";\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["an import type default", `import type parseInt from "./reader.js";\n${DECL}${LONG}export const n = parseInt(m![1]!, 10);\n`],
+    ["an import type namespace", `import type * as Number from "./reader.js";\n${DECL}${LONG}export const n = Number.parseFloat(m![1]!);\n`],
+    ["a type parameter", `${DECL}export function f<Number>(): number {\n  return Number(/^v(\\d+)$/.exec(s)![1]!);\n}\n`],
+    ["a type alias, Number.parseInt", `type Number = unknown;\n${DECL}${LONG}export const n = Number.parseInt(m![1]!, 10);\n`],
+    ["a type alias, parseFloat", `type parseFloat = unknown;\n${DECL}${LONG}export const n = parseFloat(m![1]!);\n`],
+    ["an inner type alias over no value", `${DECL}export function f(): number {\n  type Number = unknown;\n  return Number(/^v(\\d+)$/.exec(s)![1]!);\n}\n`],
+  ];
+  for (const [name, code] of typeOnly) assert.equal((await lossy(code)).length, 1, `${name}: a type-only binding is no shadow, reported`);
+  const valueBindings: [string, string][] = [
+    ["a class", `class Number {\n  constructor(readonly x: string) {}\n}\n${DECL}${LONG}export const n = new Number(m![1]!) && Number(m![1]!);\n`],
+    ["a let", `let Number = (x: string): string => x;\nNumber = (x: string): string => x;\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["a var", `var Number = (x: string): string => x;\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["a destructured parameter", `${DECL}export const f = ({ Number }: { Number: (x: string) => string }) => Number(/^v(\\d+)$/.exec(s)![1]!);\n`],
+    ["a catch parameter", `${DECL}try {\n  throw 1;\n} catch (Number) {\n  console.log(Number(/^v(\\d+)$/.exec(s)![1]!));\n}\n`],
+    ["an import default", `import Number from "./reader.js";\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["an import equals", `import Number = require("./reader.js");\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["a function expression's name", `${DECL}export const f = function Number(x: string): unknown {\n  return x === "" ? x : Number(/^v(\\d+)$/.exec(s)![1]!);\n};\n`],
+    ["a class expression's name", `${DECL}export const C = class Number {\n  m(): unknown {\n    return Number(/^v(\\d+)$/.exec(s)![1]!);\n  }\n};\n`],
+    ["an enum", `enum Number {\n  A,\n}\n${DECL}${LONG}export const n = Number(m![1]!);\n`],
+    ["an instantiated namespace", `namespace Number {\n  export const parseInt = (x: string): string => x;\n}\n${DECL}${LONG}export const n = Number.parseInt(m![1]!);\n`],
+    ["a value merged with a type", `const Number = (x: string): string => x;\ntype Number = string;\n${DECL}${LONG}export const n: Number = Number(m![1]!);\n`],
+    ["an outer value under an inner type alias", `function Number(x: string): string {\n  return x;\n}\n${DECL}export function f(): string {\n  type Number = unknown;\n  return Number(/^v(\\d+)$/.exec(s)![1]!);\n}\n`],
+  ];
+  for (const [name, code] of valueBindings) assert.deepEqual(await lossy(code), [], `${name}: a value binding is a shadow, not judged`);
+
   // where it runs: source, not tests (they read their own fixtures), and not the Patron's scripts/ci-certify.mjs (a stated limit)
   const plain = "const s = process.argv[2] ?? '';\nconst m = /^v(\\d+)$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n";
   assert.equal((await lossy(plain, "scripts/w334-probe.mjs")).length, 1, "a script is linted");
