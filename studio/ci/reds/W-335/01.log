@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-335-b1\s scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-20T09:26:04.898Z
+# sella: builder.W-335
+# tree: tree:e2c2dd46fd68a1f945745a415cbd684e01d68b68
+# ticket: {"opus":"W-335","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-335/studio","head":"56bd43fa27a1e435c2b515a8bcf86c07877db8be","brief":"79bd2e23a2faea36dde609e14cd7df8537fa892a","at":"2026-10-20T09:26:00.498Z"}
+
+TAP version 13
+# Subtest: W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test step and its records-read guard as one command, and fails closed
+not ok 1 - W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test step and its records-read guard as one command, and fails closed
+  ---
+  duration_ms: 2.604877
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-335/scripts/ci-scope.test.mjs:669:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    scripts/test-reads.mjs exists
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-335/scripts/ci-scope.test.mjs:670:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.434815
