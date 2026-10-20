@@ -1,0 +1,51 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-241-b1\s --import tsx packages/cli/src/rules/prompts.test.ts
+# exit: 1
+# at: 2026-10-20T02:05:09.142Z
+# sella: builder.W-241
+# tree: tree:a8f1011972d575592ae18dba125e60479eac2a3d
+# ticket: {"opus":"W-241","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-241/studio","head":"0beb441ed3cb1af5c85ae5f08439ca69c5900d45","brief":"c856b2747ce6902d3e887cd830406751a563ec3c","at":"2026-10-20T02:05:05.039Z"}
+
+TAP version 13
+# Subtest: W-241-b1 behaviour 1: an officina with an ops collegium carries the three prompt templates
+not ok 1 - W-241-b1 behaviour 1: an officina with an ops collegium carries the three prompt templates
+  ---
+  duration_ms: 33.936778
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-241/packages/cli/src/rules/prompts.test.ts:12:185'
+  failureType: 'testCodeFailure'
+  error: |-
+    each absent template blocks once
+    + actual - expected
+    
+    + []
+    - [
+    -   'block prompts/build-review.md',
+    -   'block prompts/builder-brief.md',
+    -   'block prompts/spec-draft.md'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'block prompts/build-review.md'
+    1: 'block prompts/builder-brief.md'
+    2: 'block prompts/spec-draft.md'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-241/packages/cli/src/rules/prompts.test.ts:62:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 134.168063
