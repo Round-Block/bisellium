@@ -1,0 +1,24 @@
+# opus: W-268
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T12:20:48.196Z
+# tree: tree:152a58da8c4ad208a57b2658bf36fafe9591167b
+# brief: briefs/W-268.md blob:4deb684b5c45d6a757c9dc5e64088aafe648826b
+# ticket: {"opus":"W-268","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-268/studio","head":"0a1bf581d596737d374329c77e1d279ccf3fa56e","brief":"4deb684b5c45d6a757c9dc5e64088aafe648826b","at":"2026-10-20T12:20:44.030Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-268-spec/r5/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 answers the build's stop: the id `ladder.ticket` adds the rule family `ladder`, which the Officina screen's `RULE_FAMILY_LABELS` does not label, so the drift guard in W-077 behaviour 5 fails; Files owned gains `apps/web/src/lib/officinaTruth.ts` with the one line `ladder: "Step tickets",` after `integration`, and the guard and its row stay as they are — check: brief:47, brief:71, r5/stage.sh
+2. advisory — the row fails by assertion at "every rule family has exactly one label (drift guard)" on opus/W-268 0a1bf581 without the label and passes with it; Acceptance names it as the one flip — check: r5/flip.out, r5/row-w077-b5-without.out, r5/row-w077-b5-with.out, brief:137
+3. advisory — every test that enumerates rule ids or families, or tests a source that reads `RULE_IDS`, was found by search and run whole with the label: nine pass, and `check.test.ts` fails only its two W-089 rows (`opus.records_unchanged` at `opera/W-096.md`, a detached stage), as on master; no other flip is hiding; the served walk is a stated limit — check: r5/census.out, r5/id-neighbours-with.out, brief:138
+4. advisory — why revision 2 missed it: its neighbour list and the Codex test check's `RULE_IDS` search both stopped at `packages/`, and the one family-keyed drift guard lives in `apps/web` — check: fixture-census.session.log:3595, brief:138
+5. advisory — the label is screen copy, offered to the Patron as Default 5 (reversible); the change is not code-owned and adds no import, so size (2 points) and architecture are unchanged; the admission and the ledger pass on the revised brief — check: brief:169, r5/admission.out, r5/ledger-check.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-268.md`, part 1 of W-268, on opus/W-268 0a1bf581; no code-owned path touched, 2 points.

@@ -1,0 +1,21 @@
+# opus: W-268
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15904-c4f1-74e0-aef2-2738a739cc77
+# outcome: passed
+# at: 2026-10-20T12:49:52.955Z
+# tree: tree:152a58da8c4ad208a57b2658bf36fafe9591167b
+# brief: briefs/W-268.md blob:4deb684b5c45d6a757c9dc5e64088aafe648826b
+# ticket: {"opus":"W-268","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-268/studio","head":"0a1bf581d596737d374329c77e1d279ccf3fa56e","brief":"4deb684b5c45d6a757c9dc5e64088aafe648826b","at":"2026-10-20T12:49:52.141Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+Revision 3 correctly owns and labels the new rule family, and the unchanged drift guard proves the required flip.
+
+VERDICT: PASS
