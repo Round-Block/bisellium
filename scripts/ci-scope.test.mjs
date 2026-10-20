@@ -5,10 +5,20 @@
  * missing file is an assertion failure, not a module-load failure.
  *
  * W-139 adds the `test:record` rows (`--test-name-pattern=W-139.behaviour.N:`).
+ * W-335 adds scripts/test-reads.mjs's row (`--test-name-pattern='^W-335-b1\s'`).
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { test } from "node:test";
@@ -632,5 +642,97 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
   for (const job of ["gates", "web-e2e"]) {
     const scope = doc.jobs[job].steps.find((step) => step.id === "scope");
     assert.deepEqual(scope?.env, { BASE_SHA: "${{ github.event.merge_group.base_sha }}" }, `${job}'s scope base`);
+  }
+});
+
+/** W-335: a scratch checkout holding scripts/test-reads.mjs and the two scripts it runs, `studio/x.md`, two tests that
+ *  read it and a package.json whose `test` and `test:record` are the given commands. */
+function readsCheckout(test, record) {
+  const dir = mkdtempSync(join(tmpdir(), "w335-reads-"));
+  mkdirSync(join(dir, "scripts"));
+  mkdirSync(join(dir, "studio"));
+  for (const name of ["test-reads.mjs", "record-reads.mjs", "ci-scope.mjs"])
+    copyFileSync(join(HERE, name), join(dir, "scripts", name));
+  writeFileSync(join(dir, "studio", "x.md"), "x\n");
+  for (const name of ["a", "b"])
+    writeFileSync(
+      join(dir, `${name}.test.mjs`),
+      'import { readFileSync } from "node:fs";\nreadFileSync(new URL("./studio/x.md", import.meta.url));\n',
+    );
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify({ name: "w335-reads", private: true, scripts: { test, "test:record": record } }),
+  );
+  return dir;
+}
+
+test("W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test step and its records-read guard as one command, and fails closed", async () => {
+  assert.equal(existsSync(join(HERE, "test-reads.mjs")), true, "scripts/test-reads.mjs exists");
+  const { TEST, PRELOAD, CHECK } = await import("./test-reads.mjs");
+  const steps = workflow().jobs.gates.steps;
+  const at = steps.findIndex((step) => step.run === TEST);
+  assert.notEqual(at, -1, "gates runs the wrapper's TEST");
+  assert.equal(
+    steps[at]?.env?.NODE_OPTIONS,
+    `--import \${{ github.workspace }}/${PRELOAD}`,
+    "the wrapper's preload is ci.yml's",
+  );
+  assert.equal(
+    steps[at + 1]?.run,
+    `node ${CHECK} \${{ runner.temp }}/record-reads.log`,
+    "the wrapper's check is ci.yml's guard",
+  );
+
+  const both = "node a.test.mjs && node b.test.mjs";
+  const run = (dir, extra = {}) => {
+    const env = { ...process.env, ...extra };
+    return spawnSync(process.execPath, [join(dir, "scripts", "test-reads.mjs")], { cwd: dir, env, encoding: "utf8" });
+  };
+  const dirs = [];
+  const checkout = (test, record) => (dirs.push(readsCheckout(test, record)), dirs.at(-1));
+  try {
+    const exact = run(checkout(both, both));
+    assert.equal(exact.status, 0, `an exact test:record passes: ${exact.stdout}${exact.stderr}`);
+    assert.match(
+      exact.stdout,
+      /^test-reads: node scripts\/ci-scope\.mjs --check-reads \S+record-reads\.log$/m,
+      "it names the check it runs",
+    );
+    assert.match(exact.stdout, /^record_reads=ok$/m, "and the check's verdict");
+
+    const unlisted = run(checkout(both, "node b.test.mjs"));
+    assert.equal(unlisted.status, 1, "a test missing from test:record fails");
+    assert.match(
+      unlisted.stdout,
+      /^unlisted: a\.test\.mjs \(read studio\/x\.md\)$/m,
+      "naming the test and what it read",
+    );
+
+    const failing = run(checkout(`${both} && node -e "process.exit(3)"`, both));
+    assert.notEqual(failing.status, 0, "a failing npm test fails the command");
+    assert.doesNotMatch(failing.stdout, /test-reads: /, "and the check does not run after it");
+
+    const bare = checkout(both, both);
+    rmSync(join(bare, "scripts", "record-reads.mjs"));
+    const missing = run(bare);
+    assert.notEqual(missing.status, 0, "a missing preload fails closed");
+    assert.doesNotMatch(missing.stdout, /record_reads=ok/, "and nothing reports the reads checked");
+
+    const nested = checkout(both, both);
+    writeFileSync(
+      join(nested, "poison.mjs"),
+      'if (!process.argv[1]?.endsWith("test-reads.mjs")) { console.error("w335: inherited NODE_OPTIONS"); process.exit(9); }\n',
+    );
+    const inherited = run(nested, {
+      NODE_OPTIONS: `--import ${join(nested, "poison.mjs")}`,
+      BISELLIUM_RECORD_ROOT: "w335-outer",
+      BISELLIUM_RECORD_OWNER: "outer.test.mjs",
+      BISELLIUM_RECORD_READS: join(nested, "outer.log"),
+    });
+    assert.equal(inherited.status, 0, `an inherited trace is ignored: ${inherited.stdout}${inherited.stderr}`);
+    assert.match(inherited.stdout, /^record_reads=ok$/m, "the wrapper's own trace is checked");
+    assert.equal(existsSync(join(nested, "outer.log")), false, "and the inherited log is never written");
+  } finally {
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
   }
 });
