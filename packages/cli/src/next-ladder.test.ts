@@ -969,3 +969,29 @@ test("W-275-b2 behaviour 2: a dispatch the gate holds prints the derivation's ow
   commit(w.wt, "studio: a traditio whose stage is no string");
   held(next(w, [OPUS, "--budget", "100000"]), "a fresh traditio with a non-string stage", /^stale handover: run bisellium handoff first \(the record's traditio is malformed: it needs string sella, stage, next and blocked_on and an ISO at\)$/);
 });
+
+test("W-275-b3 behaviour 3: the done rung names each of its two performs", { timeout: 1_800_000 }, () => {
+  const w = world("w275-b3", "cleanup");
+  scenario(w, { list: mergedList(w) });
+  const first = next(w, [OPUS]);
+  expectStep(first, "done", "named", "the done commit is named");
+  assert.match(first.out, /^perform 1 of 2: commit; rerun to land$/m, ran("the commit is the first of two performs", first));
+  assert.doesNotMatch(first.out, /^perform 2 of 2:/m, ran("and not the second", first));
+  expectStep(next(w, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the done commit is made");
+  const second = next(w, [OPUS]);
+  expectStep(second, "done", "named", "the landing is named");
+  assert.match(second.out, /^perform 2 of 2: land$/m, ran("the landing is the second of two performs", second));
+  assert.doesNotMatch(second.out, /^perform 1 of 2:/m, ran("and not the first", second));
+  // the certify perform commits too (W-259); a ui opus is named verify, a command of its own, and no perform line
+  const a = world("w275-b3-certify", "cleanup", { automated: true });
+  scenario(a, { list: mergedList(a) });
+  const certify = next(a, [OPUS]);
+  expectStep(certify, "done", "named", "the certify perform is named");
+  assert.equal(certify.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("it is the done perform", certify));
+  assert.match(certify.out, /^perform 1 of 2: commit; rerun to land$/m, ran("the certify perform is the first of two", certify));
+  editRecord(a, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  const verify = next(a, [OPUS]);
+  expectStep(verify, "done", "named", "a ui opus with no certificate is named verify");
+  assert.equal(verify.kv.get("command"), `bisellium verify ${OPUS} --studio studio --repo .`, ran("the rung names verify", verify));
+  assert.doesNotMatch(verify.out, /^perform \d of 2:/m, ran("verify is no perform", verify));
+});
