@@ -558,6 +558,11 @@ const PINNED_B: PinnedB[] = [
     disposition: "guarded",
     why: "W-124: same guarded opus as recordRel#1; read-only (git pathspec or readContainedRegularFile), never a write",
   },
+  {
+    key: "packages/cli/src/next.ts:dispatch#1",
+    disposition: "guarded",
+    why: "W-338: same guarded opus as recordRel#1; the ui-lead's prompt name is only printed in the order, never read or written by next",
+  },
   { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived", why: 'id is branch.replace(/^opus\\//, ""); git refuses ".." in a ref name' },
   {
     key: "packages/cli/src/prune.ts:pruneCiLogs#1",
