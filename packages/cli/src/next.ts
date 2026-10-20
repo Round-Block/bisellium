@@ -924,7 +924,7 @@ export function deriveNext(f: Facts): Derived {
         phase: "1",
         resume: bs.list(`ci/reds/${id}`).length > 0,
         inputs: [briefRel(id)],
-        extra: [["missing", missing.join(",") || "(none; see why)"], ...fixes],
+        extra: [["missing", missing.join(",") || "(none; see why)"], ...fixes, ...(replay !== undefined && "why" in replay ? [["prototype", `not replayed: ${replay.why}`] as [string, string]] : [])],
         ...(missing.length > 0 ? { behaviour: { from: missing[0]!, through: n } } : {}),
       });
     }
