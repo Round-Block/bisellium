@@ -1,0 +1,255 @@
+certifies: tree:1110aa269c2e9a738accb4ed678fd80950af7d1a
+command: certify, the merge queue's mint: CI run 39359640788, PR #601, merge commit b4cef0fe33114cdfb6f149effc1bc6a967fd127b, receipt sha256:019f3d968039887784a43a9f0278b1709e20571d1d85ac61314d721eab9da11d
+exit code: 0
+
+{
+  "sella": "builder.W-241",
+  "sessionId": "20261020T023506386Z-0d71",
+  "startedAt": "2026-10-20T02:35:06.386Z",
+  "cwd": "disposable-clone (pending)",
+  "cmd": [
+    "true"
+  ],
+  "harness": "run",
+  "endedAt": "2026-10-20T02:47:40.806Z",
+  "exitCode": 0,
+  "durationMs": 754388,
+  "completion": {
+    "schema": 1,
+    "origin": "host-producer",
+    "opus": "W-241",
+    "branch": "opus/W-241",
+    "builder": "builder.W-241",
+    "producer": "producer",
+    "baseCommit": "********",
+    "finalCommit": "********",
+    "finalSourceTree": "tree:********",
+    "toolingCommit": "********",
+    "redReplays": [
+      {
+        "behaviour": 1,
+        "commit": "********",
+        "sourceTree": "tree:********",
+        "replayedTree": "tree:********",
+        "command": "node --test-reporter=tap --test-name-pattern=^W-241-b1\\s --import tsx packages/cli/src/rules/prompts.test.ts",
+        "assertionFailed": true
+      },
+      {
+        "behaviour": 2,
+        "commit": "********",
+        "sourceTree": "tree:********",
+        "replayedTree": "tree:********",
+        "command": "node --test-reporter=tap --test-name-pattern=^W-241-b2\\s --import tsx packages/cli/src/rules/prompts.test.ts",
+        "assertionFailed": true
+      }
+    ],
+    "gates": {
+      "ci": true,
+      "verify": true,
+      "check": true
+    },
+    "teardownComplete": true,
+    "completed": true
+  }
+}
+
+  petitio.subject            petitiones/P-009.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-010.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-011.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-012.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-013.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-014.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-015.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-016.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-017.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-018.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-019.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-020.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-021.md            no subject (falls back to the derived legacy subject)
+  petitio.subject            petitiones/P-022.md            no subject (falls back to the derived legacy subject)
+  acta.daily                 acta/#production               magister "producer" last daily 3.1 days ago
+  acta.daily                 acta/#design                   magister "architect" last daily 13.7 days ago
+  acta.daily                 acta/#engineering              magister "eng-lead" last daily 24.7 days ago
+  acta.daily                 acta/#qa                       magister "qa-lead" last daily 32.6 days ago
+  acta.daily                 acta/#ops                      magister "ops-lead" has no daily acta
+  aerarium.missing           aerarium/2026-W38.yml          collegium "design" has no allowance this period
+  aerarium.missing           aerarium/2026-W38.yml          collegium "ops" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "production" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "design" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "engineering" has no allowance this period
+  aerarium.missing           aerarium/2026-W41.yml          collegium "qa" has no allowance this period
+  process.review_tier        opera/W-016.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-017.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-018.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-019.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-020.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-021.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-023.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-024.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-025.md                 review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.review_tier        opera/W-027.md                 review gate (sella "qa-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+  process.cascade            opera/W-030.md                 sella "qa-lead" recorded for both spec and review — one context built and reviewed its own work
+  process.cascade            opera/W-031.md                 sella "qa-lead" recorded for both spec and review — one context built and reviewed its own work
+  process.review_tier        opera/W-039.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-046.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-047.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-050.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-065.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-067.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-069.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-071.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-075.md                 review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  process.review_tier        opera/W-077.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-085.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-087.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-096.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-101.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-102.md                 review sella "qa-lead" ran on gpt-6-astra, not an opus-tier model
+  process.review_tier        opera/W-103.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-104.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-105.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-107.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-108.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-109.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-110.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-114.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-120.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-121.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-123.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-124.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-125.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-126.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-127.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-128.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-129.md                 review sella "qa-lead" ran on claude-sonnet-5-5, not an opus-tier model
+  process.review_tier        opera/W-131.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-137.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-139.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-140.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-141.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-142.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-152.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-153.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-161.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-162.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-163.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-166.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-167.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-168.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-178.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-179.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-182.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-186.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-196.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-197.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-199.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-203.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-205.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-206.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-209.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-211.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-214.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-215.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-221.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-233.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-236.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-240.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-241.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-243.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-246.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-253.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-255.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-259.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-264.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-265.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-267.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-274.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-279.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-292.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-293.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-297.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-302.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-303.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-306.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-311.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-312.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-313.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-314.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-315.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-316.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-319.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-322.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  process.review_tier        opera/W-323.md                 review sella "qa-lead" ran on gpt-5.6-sol, not an opus-tier model
+  lesson.recurrent           lessons/                       class "tests×one-sided-bound-assertion" recurs across 2 cascades (L-034, L-066) — addressed by W-138 (greenlit), not yet done
+  lesson.recurrent           lessons/                       class "design×********" recurs across 2 cascades (L-044, L-053) — addressed by W-117 (halted), not yet done
+  process.checkpoint         HEAD                           last commit changed opera without updating SESSION-HANDOFF.md or dossier progress
+  lex.unchecked              leges/design.md                4 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.marker_unknown         leges/design.md                1 clause(s) cite a rule that does not exist: docs.arch.stale
+  lex.unchecked              leges/engineering.md           11 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/ops.md                   7 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/production.md            5 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/qa.md                    11 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+
+PASS — 0 blocking, 534 advisory
+check /********  (now 2026-10-20T02:35:24.546Z)
+
+advisories (28)
+  probatio.certifies.stale   opera/W-002.md                 gate "tests" certifies tree:********, current tree is tree:********
+  probatio.certifies.stale   opera/W-002.md                 gate "lint" certifies tree:********, current tree is tree:********
+  probatio.certifies.stale   opera/W-002.md                 gate "types" certifies tree:********, current tree is tree:********
+  traditio.stale             opera/W-002.md                 handoff is 32.7 days old
+  traditio.stale             opera/W-003.md                 handoff is 32.7 days old
+  probatio.certifies.stale   opera/W-004.md                 gate "tests" certifies tree:********, current tree is tree:********
+  probatio.certifies.stale   opera/W-004.md                 gate "lint" certifies tree:********, current tree is tree:********
+  probatio.certifies.stale   opera/W-004.md                 gate "types" certifies tree:********, current tree is tree:********
+  probatio.certifies.mismatch opera/W-004.md                 gates certify different trees: tree:********, tree:********
+  traditio.stale             opera/W-004.md                 handoff is 32.7 days old
+  probatio.certifies.stale   opera/W-005.md                 gate "tests" certifies tree:********, current tree is tree:********
+  probatio.certifies.stale   opera/W-005.md                 gate "lint" certifies tree:********, current tree is tree:********
+  probatio.certifies.stale   opera/W-005.md                 gate "types" certifies tree:********, current tree is tree:********
+  traditio.stale             opera/W-005.md                 handoff is 32.7 days old
+  petitio.subject            petitiones/A-1.md              no subject (falls back to the derived legacy subject)
+  petitio.age                petitiones/A-1.md              needs you for 32.7 days
+  petitio.subject            petitiones/A-2.md              no subject (falls back to the derived legacy subject)
+  acta.daily                 acta/#production               magister "producer" last daily 32.8 days ago
+  acta.daily                 acta/#design                   magister "architect" has no daily acta
+  acta.daily                 acta/#engineering              magister "eng-lead" last daily 32.8 days ago
+  acta.daily                 acta/#art                      magister "art-lead" last daily 32.8 days ago
+  acta.daily                 acta/#qa                       magister "qa-lead" last daily 32.8 days ago
+  aerarium.missing           aerarium/2026-W38.yml          collegium "design" has no allowance this period
+  process.checkpoint         HEAD                           last commit changed opera without updating SESSION-HANDOFF.md or dossier progress
+  lex.unchecked              leges/design.md                4 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/engineering.md           10 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  instructions.stale         CLAUDE.md                      CLAUDE.md differs from the current render — run `bisellium instructions --write`
+  instructions.stale         AGENTS.md                      AGENTS.md differs from the current render — run `bisellium instructions --write`
+
+PASS — 0 blocking, 28 advisory
+tests: passed  ci/W-241-tests-1110aa26.log
+lint: passed  ci/W-241-lint-1110aa26.log
+types: passed  ci/W-241-types-1110aa26.log
+run-builder-host: browser cache bound read-only at /browsers from /home/runner/.cache/ms-playwright
+bisellium ci: step npm run -s format:check: start 2026-10-20T02:35:20.262Z
+bisellium ci: step npm run -s format:check: end 2026-10-20T02:35:21.523Z after 0m01s, exited 0
+bisellium ci: step npm run -s check -- studio --repo .: start 2026-10-20T02:35:21.523Z
+bisellium ci: step npm run -s check -- studio --repo .: end 2026-10-20T02:35:24.270Z after 0m02s, exited 0
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: start 2026-10-20T02:35:24.270Z
+bisellium ci: step npm run -s check -- examples/sample-studio --repo .: end 2026-10-20T02:35:25.513Z after 0m01s, exited 0
+bisellium verify: gate tests: start 2026-10-20T02:35:25.702Z
+bisellium verify: gate tests: running 1m00s at 2026-10-20T02:36:25.705Z, 411112 bytes of output, last line: PASS  b6 physical officina rejects a symlinked record directory without writing through it        {"status":1,"stdout":"","stderr":"path reaches its target through a symlink\n"}
+bisellium verify: gate tests: running 2m00s at 2026-10-20T02:37:25.707Z, 595112 bytes of output, last line: ...
+bisellium verify: gate tests: running 3m00s at 2026-10-20T02:38:25.713Z, 604508 bytes of output, last line: TAP version 13
+bisellium verify: gate tests: running 4m00s at 2026-10-20T02:39:25.738Z, 604508 bytes of output, last line: TAP version 13
+bisellium verify: gate tests: running 5m00s at 2026-10-20T02:40:25.798Z, 604508 bytes of output, last line: TAP version 13
+bisellium verify: gate tests: running 6m00s at 2026-10-20T02:41:25.859Z, 604508 bytes of output, last line: TAP version 13
+bisellium verify: gate tests: running 7m00s at 2026-10-20T02:42:25.919Z, 604508 bytes of output, last line: TAP version 13
+bisellium verify: gate tests: running 8m00s at 2026-10-20T02:43:25.979Z, 604508 bytes of output, last line: TAP version 13
+bisellium verify: gate tests: running 9m00s at 2026-10-20T02:44:26.040Z, 604508 bytes of output, last line: TAP version 13
+bisellium verify: gate tests: running 10m00s at 2026-10-20T02:45:26.045Z, 703745 bytes of output, last line: # duration_ms 7960.543236
+bisellium verify: gate tests: running 11m00s at 2026-10-20T02:46:26.045Z, 798273 bytes of output, last line: bisellium ci: step npm run -s format:check: start 2026-10-20T02:46:26.021Z
+bisellium verify: gate tests: end 2026-10-20T02:47:17.162Z after 11m51s, exited 0
+bisellium verify: gate lint: start 2026-10-20T02:47:17.168Z
+bisellium verify: gate lint: end 2026-10-20T02:47:22.841Z after 0m05s, exited 0
+bisellium verify: gate types: start 2026-10-20T02:47:22.841Z
+bisellium verify: gate types: end 2026-10-20T02:47:38.323Z after 0m15s, exited 0
+certify: the mint exited 0
+
