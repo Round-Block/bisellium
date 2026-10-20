@@ -1,8 +1,8 @@
 /**
  * packages/cli/src/rules/docs.ts — W-019 (2/2): the docs registry as a check
  * rule. Both `doc.fields` and `doc.link` are advisory only — documentation
- * drift never blocks a build (docs.ts's own header); the one exception is
- * W-152's `docs.dossier.shrink`, below. `root` (Seam S2) is
+ * drift never blocks a build (docs.ts's own header); the exceptions are
+ * W-152's `docs.dossier.shrink` and W-288's `doc.cap`, below. `root` (Seam S2) is
  * the OFFICINA; README.md, GLOSSARY.md and docs/*.md live at the REPO ROOT,
  * reached only via `opts.repo` — same reasoning as rules/instructions.ts.
  * Never throws.
@@ -135,15 +135,44 @@ function checkDossierShrink(repo: string): Finding[] {
   return out;
 }
 
+// ---- W-288: doc.cap ---------------------------------------------------------
+// D-083 B: bisellium.yml's `doc_caps` caps the lines of each top-level docs/*.md, front matter included: a
+// `docs/<name>.md` key caps that file, `default` every other one. No key, no rule: an officina opts in, and the
+// manifest is the Patron's (CODEOWNERS), so removing the key or raising a cap is the Patron's diff.
+
+const TOP_DOC = /^docs\/[^/]+\.md$/;
+const isCap = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v > 0;
+
+function checkDocCaps(docs: DocFile[], manifest: unknown): Finding[] {
+  const caps = isDict(manifest) ? manifest["doc_caps"] : undefined;
+  if (caps === undefined) return [];
+  if (!isDict(caps)) return [];
+  const out: Finding[] = [];
+  for (const doc of docs) {
+    if (!TOP_DOC.test(doc.path)) continue;
+    const cap = caps[doc.path] ?? caps["default"];
+    if (!isCap(cap) || doc.lines <= cap) continue;
+    out.push({
+      rule: "doc.cap",
+      level: "block",
+      where: doc.path,
+      message: `${doc.lines} lines, over its cap of ${cap} (bisellium.yml doc_caps); cut it, or raise its cap in bisellium.yml`,
+    });
+  }
+  return out;
+}
+
 export function checkDocs(_root: string, opts: RuleOpts): Finding[] {
   if (!opts.repo) return [];
   if (!existsSync(opts.repo)) return [];
 
   const findings: Finding[] = [];
-  for (const doc of collectDocFiles(opts.repo)) {
+  const docs = collectDocFiles(opts.repo);
+  for (const doc of docs) {
     findings.push(...checkFields(doc, opts));
     findings.push(...checkLinks(doc, opts.repo));
   }
+  findings.push(...checkDocCaps(docs, opts.manifest));
   try {
     findings.push(...checkDossierShrink(opts.repo));
   } catch {

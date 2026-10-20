@@ -44,7 +44,11 @@ export interface DocFile {
   path: string;
   data?: Dict;
   body: string;
+  /** W-288: the whole file's lines, front matter included; a last line with no newline counts. */
+  lines: number;
 }
+
+const lineCount = (raw: string): number => (raw.length === 0 ? 0 : raw.split("\n").length - (raw.endsWith("\n") ? 1 : 0));
 
 /** README.md, GLOSSARY.md (repo root) and the top-level `docs/*.md` files
  *  (never recursing into docs/design/, which holds HTML, not markdown) —
@@ -81,18 +85,19 @@ export function collectDocFiles(repoRoot: string): DocFile[] {
       continue;
     }
     const split = splitFront(raw);
+    const lines = lineCount(raw);
     if (!split) {
-      out.push({ path: relPath, body: raw });
+      out.push({ path: relPath, body: raw, lines });
       continue;
     }
     let data: unknown;
     try {
       data = parseYaml(split.front);
     } catch {
-      out.push({ path: relPath, body: split.body });
+      out.push({ path: relPath, body: split.body, lines });
       continue;
     }
-    out.push({ path: relPath, data: isDict(data) ? data : undefined, body: split.body });
+    out.push({ path: relPath, data: isDict(data) ? data : undefined, body: split.body, lines });
   }
   return out;
 }
