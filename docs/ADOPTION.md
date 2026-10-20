@@ -414,7 +414,7 @@ not assertion-level evidence.
 ### UI policy
 
 A UI opus requires a live `ui-lead` seat in the design collegium and current,
-substantive spec input from that seat before `ready`; active and done records
+substantive spec input from that seat (its newest spec log, W-338) before `ready`; active and done records
 are checked for the same evidence. The input's `design_digest` binds the exact
 decoded title and the raw bytes of the current brief, so either kind of edit
 makes it stale. The substantive check uses NFKC followed by Unicode 17 full
@@ -825,21 +825,21 @@ With `spec_reviewer: <sella>` in `bisellium.yml`, `next` names no `branch` until
 recorded review by that seat has passed after the architect's newest signature
 (W-162, D-046). The seat must be a declared, live `kind: agent` row on the `codex`
 harness with `model: gpt-5.6-sol` exactly, and not the design magister. An absent
-key keeps the ladder as it was. A malformed or unsuitable setting, or a `kind: ui`
-opus, holds the `spec` step and names the cause; it never disables the gate. The
+key keeps the ladder as it was. A malformed or unsuitable setting holds the `spec`
+step and names the cause; it never disables the gate (a `kind: ui` opus too). The
 gate applies while the trunk record is `greenlit`; once the merged record is past
 `ready` (`building`, `verifying`, `review`, `done`) today's signature check applies.
 
 Architect signatures and reviews are both `bisellium verdict <opus> --phase spec`
 logs, `ci/<opus>-spec-<n>.log`, ordered by round, and each records
 `# brief: briefs/<opus>.md blob:<sha1>` (a spec verdict is refused, exit 2, when the
-brief is unreadable). With the setting present `next` reads every such log
-strictly. The newest valid signature naming the current brief's blob anchors the
-sequence; at most one valid review of the configured seat, with exact model, may
-follow it, and every log above the anchor must be that review:
+brief is unreadable); a `ui-lead` log there is a `kind: ui` opus's UI input, read only as
+that (W-338). With the setting present `next` reads every other such log strictly. The
+newest valid signature naming the current brief's blob anchors the sequence; at most one
+valid review of the configured seat, with exact model, may follow it, and every log above the anchor must be that review:
 
 - no review: the spec-reviewer is ordered at the next round, with the packet and dispute lines and `--session` in the record command. A fresh one-shot dispatch (`resume: false`) when the reviewer has no recorded session; otherwise `resume <seat>'s session <id>` and a `session:` line (W-215);
-- `passed`: `branch`, which commits the brief and every round;
+- `passed`: for a `kind: ui` opus with no current UI input, the `ui-lead` at the next round, its prompt kept as `ci/<opus>-ui-prompt-<n>.md`; then `branch`, which commits the brief, every round and that prompt;
 - `failed`: the architect is ordered to revise and sign again; a newer signature needs a newer review;
 - two failed reviews since the newest re-spec (the count starts above the newer of the newest passed review and a signature that stood by the split; W-246, D-061 §4, D-063 §7): the architect is ordered with a `split:` line naming `bisellium new … --parent <opus>`; the producer files the remainder, the architect cuts the brief and signs, and that signature stands without a third review (the commit carries the brief, the signature and the failed logs);
 - an edited brief, or no valid signature: the architect is ordered to sign at the next round;

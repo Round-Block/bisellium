@@ -844,6 +844,8 @@ export function deriveNext(f: Facts): Derived {
       const [, rel, n] = m as unknown as [string, string, string];
       const text = f.branch?.read(rel);
       if (text === undefined) return true;
+      // W-338: the ui-lead's input is judged by uiSpecProblems, after the spec, never as a signature or a review
+      if (isUiLeadLog(text)) return false;
       const brief = ownBrief(text, id, rel);
       // ponytail: the pin's shape only; an intermediate brief is never in Git, so which blob it names is not checked
       if (!new RegExp(`^${esc(briefRel(id))} blob:[0-9a-f]{40}$`).test(brief)) return true;

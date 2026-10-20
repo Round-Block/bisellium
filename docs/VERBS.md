@@ -25,20 +25,23 @@ sella and free-text outcome, optional model, timestamp, and the capture-time
 state of the repository containing `--studio`. Header values cannot contain
 CR or LF. An existing target is never overwritten.
 
-For a native `kind: ui` opus, a spec verdict is the required `ui-lead`
-design input. Its outcome is exactly `passed`, `failed`, or `revise`; none of
+For a native `kind: ui` opus, the `ui-lead`'s spec verdict is its required
+design input; any other seat's spec verdict (the architect's signature, the
+spec review) is an ordinary one, refused `--dispatch-prompt` (W-338). The
+input's outcome is exactly `passed`, `failed`, or `revise`; none of
 those values itself signs or vetoes a gate. `--dispatch-prompt` must name a
 contained regular file under `ci/`. The writer validates the Findings and
 Recommendation structure and records both that prompt and a `design_digest`
-of the exact title plus raw current brief. A UI build verdict instead requires
-`--ui-input` naming the current highest-round UI input and a nonblank
+of the exact title plus raw current brief (`briefs/<opus>.md` before `ready`
+writes `spec:`). A UI build verdict instead requires
+`--ui-input` naming the newest `ui-lead` spec log and a nonblank
 `## UI input disposition`; it records the citation and the same digest. These
 references reject symlinks, non-regular files, traversal and stale design
 bytes. Non-UI verdict behavior is unchanged.
 
-For a non-`ui` spec verdict by the design collegium's magister (W-306; no
+For a spec verdict by the design collegium's magister on any opus (W-306; no
 design row means `architect`; a design row that is duplicated or whose
-magister is not a nonblank string refuses every non-`ui` spec verdict), the
+magister is not a nonblank string refuses every spec verdict but a UI input), the
 writer refuses a signature whose brief names a CLI verb in inline code unless
 it cites a promise ledger. A promise line is a brief line holding an inline-code
 span whose whole text is a verb of the usage text. The signature carries one
