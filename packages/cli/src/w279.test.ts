@@ -248,7 +248,7 @@ function readsRepo(record: string): string {
   mkdirSync(join(dir, "studio"));
   for (const name of ["test-reads.mjs", "record-reads.mjs", "ci-scope.mjs"]) copyFileSync(join(SCRIPTS, name), join(dir, "scripts", name));
   writeFileSync(join(dir, "studio", "x.md"), "x\n");
-  for (const name of ["a", "b"]) writeFileSync(join(dir, `${name}.test.mjs`), 'import { readFileSync } from "node:fs";\nreadFileSync(new URL("./studio/x.md", import.meta.url));\n');
+  for (const name of ["a", "b"]) writeFileSync(join(dir, `${name}.test.mjs`), `import { readFileSync } from "node:fs";\nreadFileSync(new URL("./studio/x.md", import.meta.url));\nconsole.error("${name}.test.mjs on stderr");\n`);
   const scripts: Record<string, string> = Object.fromEntries(["audit", "typecheck", "lint", "format:check", "check"].map((s) => [s, `node ci-marker.mjs ${s}`]));
   scripts["test"] = "node ci-marker.mjs test && node a.test.mjs && node b.test.mjs";
   scripts["test:record"] = record;
@@ -284,6 +284,7 @@ test("W-335-b2 behaviour 2: where package.json declares test:record, ci runs npm
     assert.match(log, /^command: node scripts\/test-reads\.mjs$/m, "the tests gate ran the wrapper");
     assert.match(log, /--check-reads/, "its log names the check");
     assert.match(log, /^record_reads=ok$/m, "and the check's verdict");
+    assert.match(log, /\ntest-reads: node scripts\/ci-scope\.mjs --check-reads \S+\nrecord_reads=ok\n+$/, "at the log's end, after every test's stderr");
   }
   // (b) ci --opus: a test missing from test:record fails the tests gate, and ci
   {
@@ -293,7 +294,7 @@ test("W-335-b2 behaviour 2: where package.json declares test:record, ci runs npm
     assert.equal(result.exitCode, 1, "an unlisted reader fails ci --opus");
     const tests = gateRecord(studio, id, "tests");
     assert.equal(tests["status"], "failed", "the tests gate fails");
-    assert.match(readFileSync(join(studio, String(tests["evidence"])), "utf8"), /^unlisted: a\.test\.mjs \(read studio\/x\.md\)$/m, "its log names the unlisted test");
+    assert.match(readFileSync(join(studio, String(tests["evidence"])), "utf8"), /\nunlisted: a\.test\.mjs \(read studio\/x\.md\)\n+$/, "its log ends naming the unlisted test");
   }
   // (c) plain ci: the loop's npm test step runs the wrapper, and a failure names it
   {

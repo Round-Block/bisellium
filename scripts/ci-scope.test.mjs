@@ -657,7 +657,7 @@ function readsCheckout(test, record) {
   for (const name of ["a", "b"])
     writeFileSync(
       join(dir, `${name}.test.mjs`),
-      'import { readFileSync } from "node:fs";\nreadFileSync(new URL("./studio/x.md", import.meta.url));\n',
+      `import { readFileSync } from "node:fs";\nreadFileSync(new URL("./studio/x.md", import.meta.url));\nconsole.error("${name}.test.mjs on stderr");\n`,
     );
   writeFileSync(
     join(dir, "package.json"),
@@ -694,29 +694,29 @@ test("W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test s
     const exact = run(checkout(both, both));
     assert.equal(exact.status, 0, `an exact test:record passes: ${exact.stdout}${exact.stderr}`);
     assert.match(
-      exact.stdout,
-      /^test-reads: node scripts\/ci-scope\.mjs --check-reads \S+record-reads\.log$/m,
-      "it names the check it runs",
+      exact.stderr,
+      /(^|\n)test-reads: node scripts\/ci-scope\.mjs --check-reads \S+record-reads\.log\nrecord_reads=ok\n$/,
+      "its stderr ends with the check it runs and the check's verdict, after every test's stderr",
     );
-    assert.match(exact.stdout, /^record_reads=ok$/m, "and the check's verdict");
+    assert.doesNotMatch(exact.stdout, /test-reads: |record_reads=/, "and neither is on stdout");
 
     const unlisted = run(checkout(both, "node b.test.mjs"));
     assert.equal(unlisted.status, 1, "a test missing from test:record fails");
     assert.match(
-      unlisted.stdout,
-      /^unlisted: a\.test\.mjs \(read studio\/x\.md\)$/m,
-      "naming the test and what it read",
+      unlisted.stderr,
+      /(^|\n)unlisted: a\.test\.mjs \(read studio\/x\.md\)\n$/,
+      "its stderr ends naming the test and what it read",
     );
 
     const failing = run(checkout(`${both} && node -e "process.exit(3)"`, both));
     assert.notEqual(failing.status, 0, "a failing npm test fails the command");
-    assert.doesNotMatch(failing.stdout, /test-reads: /, "and the check does not run after it");
+    assert.doesNotMatch(`${failing.stdout}${failing.stderr}`, /test-reads: /, "and the check does not run after it");
 
     const bare = checkout(both, both);
     rmSync(join(bare, "scripts", "record-reads.mjs"));
     const missing = run(bare);
     assert.notEqual(missing.status, 0, "a missing preload fails closed");
-    assert.doesNotMatch(missing.stdout, /record_reads=ok/, "and nothing reports the reads checked");
+    assert.doesNotMatch(`${missing.stdout}${missing.stderr}`, /record_reads=ok/, "and nothing reports the reads checked");
 
     const nested = checkout(both, both);
     writeFileSync(
@@ -730,7 +730,7 @@ test("W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test s
       BISELLIUM_RECORD_READS: join(nested, "outer.log"),
     });
     assert.equal(inherited.status, 0, `an inherited trace is ignored: ${inherited.stdout}${inherited.stderr}`);
-    assert.match(inherited.stdout, /^record_reads=ok$/m, "the wrapper's own trace is checked");
+    assert.match(inherited.stderr, /^record_reads=ok$/m, "the wrapper's own trace is checked");
     assert.equal(existsSync(join(nested, "outer.log")), false, "and the inherited log is never written");
   } finally {
     for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
