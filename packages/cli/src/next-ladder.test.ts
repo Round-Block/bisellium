@@ -995,3 +995,44 @@ test("W-275-b3 behaviour 3: the done rung names each of its two performs", { tim
   assert.equal(verify.kv.get("command"), `bisellium verify ${OPUS} --studio studio --repo .`, ran("the rung names verify", verify));
   assert.doesNotMatch(verify.out, /^perform \d of 2:/m, ran("verify is no perform", verify));
 });
+
+test("W-275-b4 behaviour 4: before pr, a handover older than the newest review log holds with the handoff command, and the pr command names --body-file's roots", { timeout: 1_800_000 }, () => {
+  const w = world("w275-b4", "review");
+  const PR = `bisellium next ${OPUS} --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>`;
+  const plain = next(w, [OPUS]);
+  expectStep(plain, "pr", "named", "no traditio: pr is named as before");
+  assert.equal(plain.kv.get("command"), PR, ran("the command names --body-file's roots", plain));
+  handoffAt(w, "wt", T.handoffStale);
+  const held = next(w, [OPUS]);
+  expectStep(held, "pr", "held", "a traditio older than the newest review log holds pr");
+  assert.equal(held.status, 1, ran("held exit", held));
+  assert.equal(
+    held.kv.get("why"),
+    `stale handover: traditio at ${T.handoffStale} predates the newest red or review log; run: bisellium handoff --opus ${OPUS} --sella producer --next "<what moves next>" --studio .worktrees/${OPUS}/studio, commit opera/${OPUS}.md on opus/${OPUS}, then rerun`,
+    ran("the why names the handoff command", held),
+  );
+  const body = join(w.root, "body.md");
+  writeFileSync(body, "PR body\n");
+  const tried = next(w, [OPUS, "--perform", "--expect", "pr", "--title", "t", "--body-file", body, ...FAST]);
+  expectHeld(tried, "the pr perform holds too");
+  assert.deepEqual(mutating(w), [], "nothing is pushed or created");
+  const MALFORMED = `^stale handover: the record's traditio is malformed: it needs string sella, stage, next and blocked_on and an ISO at; run: bisellium handoff --opus ${OPUS} `;
+  // r2: a fresh ISO at does not carry a traditio whose other fields are not strings
+  handoffAt(w, "wt", T.review1);
+  editRecord(w, "wt", (doc) => doc.setIn(["traditio", "next"], 7));
+  commit(w.wt, "studio: a fresh traditio whose next is no string");
+  const fieldless = next(w, [OPUS]);
+  expectStep(fieldless, "pr", "held", "a fresh traditio with a non-string next holds pr");
+  assert.match(fieldless.kv.get("why") ?? "", new RegExp(MALFORMED), ran("the why names the malformed traditio and the handoff command", fieldless));
+  expectHeld(next(w, [OPUS, "--perform", "--expect", "pr", "--title", "t", "--body-file", body, ...FAST]), "the pr perform holds on it too");
+  assert.deepEqual(mutating(w), [], "still nothing is pushed or created");
+  editRecord(w, "wt", (doc) => doc.setIn(["traditio", "at"], "not a time"));
+  commit(w.wt, "studio: a traditio with no ISO at");
+  const malformed = next(w, [OPUS]);
+  expectStep(malformed, "pr", "held", "a traditio with no ISO at holds pr");
+  assert.match(malformed.kv.get("why") ?? "", new RegExp(MALFORMED), ran("the why names the handoff command", malformed));
+  handoffAt(w, "wt", T.review1);
+  const level = next(w, [OPUS]);
+  expectStep(level, "pr", "named", "a traditio at the newest review log's own time names pr again");
+  assert.equal(level.kv.get("command"), PR, ran("with the same command", level));
+});
