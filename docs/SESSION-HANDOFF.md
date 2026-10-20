@@ -50,7 +50,7 @@ Now, one builds at a time until the re-rank opens a second lane (allowed since t
 10. W-183 (record trimmed to its signed brief, D-080 B; re-anchor) → W-169 (r7, design approved by D-087 C: claim by pushing the opus ref, origin's refs count as in flight, no per-lane handoff sections; re-sign and re-review before branch) — the second lane (D-075 F)
 11. W-331 — `next.ts` split by region (derive, perform, health, report), no behaviour change, so two or three `next.ts` opera can run at once (D-087 D)
 12. W-309 — the review-perform remainder, split at spec (amended by D-086 D: the fix check runs before a fix round's suite); its hand-script deletion last (it removes its own review path)
-13. W-310 + W-290 — one opus: the PreToolUse dispatch hook and the orchestrator write guard (no logger, D-080 C; W-242 rides it; `.claude/`: Patron merges)
+13. W-310 + W-290 — one opus: the PreToolUse dispatch hook and the orchestrator write guard (no logger, D-080 C; W-242 rides it; also refuses an unbounded background wait loop, Patron 2026-10-20; `.claude/`: Patron merges)
 14. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
 15. W-268 — the certify rules (high; after W-299)
 
