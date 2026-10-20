@@ -1207,20 +1207,27 @@ const packetLine = (phase: "spec" | "build", id: string, round: number | undefin
 const disputeLine = (studioRel: string): string =>
   `If the author disputes a finding with evidence, send ${studioRel}/prompts/rebuttal.md and the author's ## Rebuttal into the same session and record the reviewer's ## Ruling in the same verdict.`;
 
-/** The cap, the declaration and the handover: a dispatch order needs all three. */
+/** W-275: a traditio's time when `handoverLine` reads it whole (check's five string keys, `at` an ISO time), else why not:
+ *  the dispatch gate and the pr rung judge one shape. */
+function handoverAt(t: unknown): number | string {
+  if (t === undefined) return "the record carries no traditio";
+  const read = handoverLine(t);
+  return "error" in read ? `the record's traditio ${read.error}` : instant((t as Dict)["at"])!.getTime();
+}
+
+/** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too. */
 function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived {
   if (d.status !== "named" || d.order === undefined) return d;
-  const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [] });
+  const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [["underlying", d.why]] });
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
   if (d.order.resume) {
     // W-293: before opus/<id> exists the handover is only the main checkout's record (`handoff` writes it there, D-021): an absent
     // or unparsable one holds, never falling back to an older trunk handover
     const rec = f.tip === undefined ? recordOf(f.work, f.id) : (f.branchRecord ?? f.trunkRecord);
-    const t = rec?.["traditio"];
-    const at = isDict(t) ? (instant(t["at"])?.getTime() ?? Number.NaN) : Number.NaN;
+    const at = handoverAt(rec?.["traditio"]);
     if (f.tip === undefined && rec === undefined) return refuse(`stale handover: run bisellium handoff first (${recordRel(f.id)} cannot be read)`);
-    if (Number.isNaN(at)) return refuse("stale handover: run bisellium handoff first (the record carries no traditio)");
+    if (typeof at === "string") return refuse(`stale handover: run bisellium handoff first (${at})`);
     if (at < f.evidenceAt()) return refuse(`stale handover: run bisellium handoff first (traditio at ${new Date(at).toISOString()} predates the newest red or review log)`);
   }
   return { ...d, order: { ...d.order, budget } };
