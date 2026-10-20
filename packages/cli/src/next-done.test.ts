@@ -1023,11 +1023,11 @@ test("W-259-b1 behaviour 1: the done perform records the merge queue's certify c
   heldWith("a mint that failed", /does not show PR #901's mint exiting 0/);
   ci({ files: { "certify.log": certifyLog() } });
   heldWith("no receipt", /holds 0 receipt\(s\) and 1 certify\.log/);
-  // master's source moved since the merge: certify's tree is not master's
+  // master's source moved since the merge by a commit no merge-queue run certifies (W-330: a certified one is a chain, W-330-b1)
   put(w.repo, "source.txt", "a later source change\n");
   git(w.repo, ["commit", "-q", "-m", "feat: later", "--", "source.txt"]);
   ci();
-  heldWith("source moved since the merge", /master's source changed since the merge commit [0-9a-f]{12} \(source\.txt\)/);
+  heldWith("source moved since the merge", /master's source changed since the merge commit [0-9a-f]{12} at [0-9a-f]{12} \(source\.txt\), and 0 merge-queue CI runs name the commit [0-9a-f]{12}/);
   git(w.repo, ["reset", "-q", "--hard", merge]);
   // a records-only commit that changes what the certificate must cover: a new automated gate, or the opus's own record
   put(w.studio, "bisellium.yml", readFileSync(join(w.studio, "bisellium.yml"), "utf8").replace("source_excludes:", '  - { id: lint, name: Lint, kind: automated, command: "node -e 0" }\nsource_excludes:'));

@@ -539,26 +539,48 @@ function certificate(repo: string, studioRel: string, studioAbs: string, exclude
 }
 const refExists = (repo: string, ref: string): boolean => git(repo, ["show-ref", "--verify", "-q", ref]).status === 0;
 
+/** W-330: a first-parent commit on master after the opus's merge commit whose own diff is not records-only, with its source paths. */
+type SourceCommit = { sha: string; source: string[] };
 /**
  * W-259: the source tree of the opus's merge commit, when master changed nothing but officina records since it
  * (`recordOnly`) and neither of the two records that decide which gates a certificate must cover: the manifest and the
  * opus's own record (its `kind`). The one diff-bound certificate acceptance: `certificate` and `recordCertify` both call
  * it (D-076 D, class mechanism×certification-coverage-not-diff-bound; pinned by W-259-b1).
+ * W-330 (D-087 B): when master's source did change since, the tree of the newest first-parent commit after the merge
+ * commit whose own diff is not records-only, with every such commit, oldest first, in `chain`; `recordCertify` then asks
+ * each for its successful certify run (pinned by W-330-b1 and W-330-b2). The two policy refusals stand either way.
  */
-function mergedTree(repo: string, studioRel: string, excludes: string[], merged: string, id: string): { tree: string } | { why: string } {
+function mergedTree(repo: string, studioRel: string, excludes: string[], merged: string, id: string): { tree: string; chain?: SourceCommit[] } | { why: string } {
   const since = diffPaths(repo, merged, TRUNK);
   if (since === undefined) return { why: `could not read what master changed since the merge commit ${merged.slice(0, 12)}` };
+  let chain: SourceCommit[] | undefined;
   if (since.length > 0 && !recordOnly(since, studioRel)) {
-    const source = since.filter((p) => !recordOnly([p], studioRel));
-    return { why: `master's source changed since the merge commit ${merged.slice(0, 12)} (${source.slice(0, 5).map((p) => clean(p)).join(", ")})` };
+    const walked = sourceCommits(repo, studioRel, merged);
+    if ("why" in walked) return walked;
+    chain = walked.chain;
   }
   const policy = since.filter((p) => p === `${studioRel}/bisellium.yml` || p === `${studioRel}/${recordRel(id)}`);
   if (policy.length > 0) return { why: `master changed ${policy.map((p) => clean(p)).join(", ")} since the merge commit ${merged.slice(0, 12)}, which certify's run did not judge` };
+  const at = chain?.[chain.length - 1]?.sha ?? merged;
   try {
-    return { tree: `tree:${sourceTreeHash(repo, excludes, merged)}` };
+    return { tree: `tree:${sourceTreeHash(repo, excludes, at)}`, ...(chain === undefined ? {} : { chain }) };
   } catch {
-    return { why: `could not hash the merge commit ${merged.slice(0, 12)}'s source tree` };
+    return { why: `could not hash the merge commit ${at.slice(0, 12)}'s source tree` };
   }
+}
+/** W-330: the first-parent commits after `merged` up to master whose own diff (against their first parent) is not records-only, oldest first. */
+function sourceCommits(repo: string, studioRel: string, merged: string): { chain: SourceCommit[] } | { why: string } {
+  const listed = git(repo, ["rev-list", "--first-parent", "--parents", "--reverse", `${merged}..${TRUNK}`]);
+  if (listed.status !== 0 || listed.error !== undefined) return { why: `could not list master's commits since the merge commit ${merged.slice(0, 12)}` };
+  const rows = listed.stdout.split("\n").filter((l) => l !== "").map((l) => l.split(" "));
+  const chain: SourceCommit[] = [];
+  for (const [sha = "", parent = ""] of rows) {
+    const paths = diffPaths(repo, parent, sha);
+    if (paths === undefined) return { why: `could not read what ${sha.slice(0, 12)} changed on master` };
+    if (!recordOnly(paths, studioRel)) chain.push({ sha, source: paths.filter((p) => !recordOnly([p], studioRel)) });
+  }
+  if (chain.length === 0) return { why: `master's source changed since the merge commit ${merged.slice(0, 12)}, but no first-parent commit since changed it` };
+  return { chain };
 }
 /** The merge commit of the opus's settled PR, read through the memoised `pr()`. */
 const mergeOf = (f: Pick<Facts, "pr">): string | undefined => {
@@ -1915,12 +1937,33 @@ function receiptProblem(r: unknown, id: string, tree: string): string | undefine
   return undefined;
 }
 
+/** W-259: the one merge_group CI run of ci.yml whose head is `sha` (`what` names it), completed with success, with one successful `certify` job. */
+function certifyRun(repo: string, slug: string, sha: string, what: string): { runId: number } | { why: string } {
+  const list = ghRead(repo, ["run", "list", "-R", slug, "--workflow", "ci.yml", "--event", "merge_group", "--commit", sha, "--limit", "20", "--json", "databaseId,headSha,event,status,conclusion"]);
+  if ("why" in list) return list;
+  if (!Array.isArray(list.value)) return { why: "gh run list did not return an array" };
+  const runs = list.value.filter((r): r is Dict => isDict(r) && r["headSha"] === sha && r["event"] === "merge_group");
+  if (runs.length !== 1) return { why: `${runs.length} merge-queue CI runs name ${what}` };
+  const run = runs[0]!;
+  const runId = run["databaseId"];
+  if (typeof runId !== "number" || !Number.isSafeInteger(runId) || runId < 1) return { why: "the CI run's databaseId is not a positive integer" };
+  if (run["status"] !== "completed" || run["conclusion"] !== "success") return { why: `CI run ${runId} is ${clean(String(run["status"]))}, ${clean(String(run["conclusion"]))}` };
+  const view = ghRead(repo, ["run", "view", String(runId), "-R", slug, "--json", "jobs"]);
+  if ("why" in view) return view;
+  const jobs = isDict(view.value) && Array.isArray(view.value["jobs"]) ? view.value["jobs"].filter((j): j is Dict => isDict(j) && j["name"] === "certify") : [];
+  if (jobs.length !== 1 || jobs[0]!["conclusion"] !== "success") return { why: `CI run ${runId} has no one successful certify job` };
+  return { runId };
+}
+
 /**
  * W-259: the merge queue's certify certificate for the opus's merge commit, recorded as `verify` records its own: one
  * log per automated gate under ci/ and each gate's status, evidence and certifies on the record, uncommitted. Read from
  * the one merge_group CI run whose head is the merge commit: its `certify` job succeeded, and its `certify-<run>`
  * artifact holds one receipt that certifies the merge commit's source tree and a certify.log naming the PR. Any
  * failure writes nothing, and the caller names the full `verify` instead.
+ * W-330 (D-087 B): when master's source changed since (`mergedTree`'s chain), every source commit of the chain needs its
+ * own such run, and the newest one's run, PR (its squash subject's `(#<n>)`) and receipt (the opus its log rebased) are
+ * read instead: the certificate names that commit's source tree.
  */
 function recordCertify(f: Facts): { lines: string[] } | { why: string } {
   const { repo, id } = f;
@@ -1929,19 +1972,24 @@ function recordCertify(f: Facts): { lines: string[] } | { why: string } {
   const oid = p.pr.mergeOid;
   const m = mergedTree(repo, f.studioRel, f.excludes, oid, id);
   if ("why" in m) return m;
-  const list = ghRead(repo, ["run", "list", "-R", p.pr.repo, "--workflow", "ci.yml", "--event", "merge_group", "--commit", oid, "--limit", "20", "--json", "databaseId,headSha,event,status,conclusion"]);
-  if ("why" in list) return list;
-  if (!Array.isArray(list.value)) return { why: "gh run list did not return an array" };
-  const runs = list.value.filter((r): r is Dict => isDict(r) && r["headSha"] === oid && r["event"] === "merge_group");
-  if (runs.length !== 1) return { why: `${runs.length} merge-queue CI runs name the merge commit ${oid.slice(0, 12)}` };
-  const run = runs[0]!;
-  const runId = run["databaseId"];
-  if (typeof runId !== "number" || !Number.isSafeInteger(runId) || runId < 1) return { why: "the CI run's databaseId is not a positive integer" };
-  if (run["status"] !== "completed" || run["conclusion"] !== "success") return { why: `CI run ${runId} is ${clean(String(run["status"]))}, ${clean(String(run["conclusion"]))}` };
-  const view = ghRead(repo, ["run", "view", String(runId), "-R", p.pr.repo, "--json", "jobs"]);
-  if ("why" in view) return view;
-  const jobs = isDict(view.value) && Array.isArray(view.value["jobs"]) ? view.value["jobs"].filter((j): j is Dict => isDict(j) && j["name"] === "certify") : [];
-  if (jobs.length !== 1 || jobs[0]!["conclusion"] !== "success") return { why: `CI run ${runId} has no one successful certify job` };
+  const chain = m.chain ?? [];
+  const reads: SourceCommit[] = chain.length > 0 ? chain : [{ sha: oid, source: [] }];
+  const moved = (c: SourceCommit, why: string): { why: string } => ({ why: `master's source changed since the merge commit ${oid.slice(0, 12)} at ${c.sha.slice(0, 12)} (${c.source.slice(0, 5).map((s) => clean(s)).join(", ") || "an empty diff"}), and ${why}` });
+  let runId = 0;
+  for (const c of reads.slice(-1)) {
+    const r = certifyRun(repo, p.pr.repo, c.sha, chain.length > 0 ? `the commit ${c.sha.slice(0, 12)}` : `the merge commit ${oid.slice(0, 12)}`);
+    if ("why" in r) return chain.length > 0 ? moved(c, r.why) : r;
+    runId = r.runId;
+  }
+  const head = reads[reads.length - 1]!.sha;
+  // the PR whose mint the run is: the opus's own, or the one the newest source commit's squash subject names
+  let pr = p.pr.number;
+  if (chain.length > 0) {
+    const subject = git(repo, ["log", "-1", "--format=%s", head]);
+    const n = subject.status === 0 ? /\(#([1-9][0-9]*)\)$/.exec(subject.stdout.trim()) : null;
+    if (n === null) return { why: `the commit ${head.slice(0, 12)}'s subject names no PR as (#<n>)` };
+    pr = Number(n[1]);
+  }
   // the artifact lands under <repo>/.bisellium/certify/ (ignored, never an officina), removed afterwards
   const dir = mkdtempSync(join(ensureRealDirectory(repo, ".bisellium", "certify"), `${id}-`));
   try {
@@ -1963,17 +2011,22 @@ function recordCertify(f: Facts): { lines: string[] } | { why: string } {
     } catch {
       return { why: `certify-${runId}'s receipt is not JSON` };
     }
-    const bad = receiptProblem(receipt, id, m.tree);
-    if (bad !== undefined) return { why: bad };
     const text = logFile.bytes.toString("utf8");
     const lines = text.split("\n");
-    if (!lines.includes(`certify: merge group for PR #${p.pr.number}`) || !lines.includes("certify: the mint exited 0")) return { why: `certify-${runId}'s certify.log does not show PR #${p.pr.number}'s mint exiting 0` };
+    // a chain's receipt is the opus whose head the newest run's certify rebased; without a chain, this opus's
+    const owners = chain.length === 0 ? [id] : lines.flatMap((l) => /^certify: rebasing opus\/(\S+) onto [0-9a-f]+$/.exec(l)?.[1] ?? []);
+    if (owners.length !== 1) return { why: `certify-${runId}'s certify.log does not name the one opus head it rebased` };
+    const bad = receiptProblem(receipt, owners[0]!, m.tree);
+    if (bad !== undefined) return { why: bad };
+    if (!lines.includes(`certify: merge group for PR #${pr}`) || !lines.includes("certify: the mint exited 0")) return { why: `certify-${runId}'s certify.log does not show PR #${pr}'s mint exiting 0` };
     const rec = recordOf(fsSrc(f.studioAbs), id);
     const gates = [...new Set([...automatedGates(f.manifest, rec), ...automatedGates(f.manifest, f.trunkRecord)])];
     const ci = ensureRealDirectory(f.studioAbs, "ci");
     const digest = createHash("sha256").update(receiptFile.bytes).digest("hex");
-    const body = [`certifies: ${m.tree}`, `command: certify, the merge queue's mint: CI run ${runId}, PR #${p.pr.number}, merge commit ${oid}, receipt sha256:${digest}`, "exit code: 0", "", redact(receiptFile.bytes.toString("utf8").trimEnd()), "", redact(lines.slice(-200).join("\n")), ""].join("\n");
-    const out: string[] = [`certificate: certify run ${runId}, PR #${p.pr.number}, merge commit ${oid.slice(0, 12)}, ${m.tree}`];
+    const via = chain.length === 0 ? "" : ` (the newest of ${chain.length} certified source commit(s) on master since ${id}'s merge commit ${oid})`;
+    const body = [`certifies: ${m.tree}`, `command: certify, the merge queue's mint: CI run ${runId}, PR #${pr}, merge commit ${head}${via}, receipt sha256:${digest}`, "exit code: 0", "", redact(receiptFile.bytes.toString("utf8").trimEnd()), "", redact(lines.slice(-200).join("\n")), ""].join("\n");
+    const out: string[] = [`certificate: certify run ${runId}, PR #${pr}, merge commit ${head.slice(0, 12)}, ${m.tree}`];
+    if (chain.length > 0) out.push(`certificate: the certified chain since ${id}'s merge commit ${oid.slice(0, 12)}: ${chain.map((c) => c.sha.slice(0, 12)).join(", ")}`);
     const evidence = new Map<string, string>();
     for (const gate of gates) {
       const name = `${id}-${gate}-${m.tree.slice(5)}.log`;
