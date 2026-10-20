@@ -848,3 +848,44 @@ test("W-338-b1 behaviour 1: on a kind: ui opus the ui-lead's spec verdict is the
   assert.match(logAt(w.studio, 3), /^# dispatch_prompt: ci\/prompt\.md$/m, "the input records its prompt");
   assert.match(logAt(w.studio, 3), /^# design_digest: sha256:[0-9a-f]{64}$/m, "the input records the design digest");
 });
+
+test("W-338-b2 behaviour 2: the UI input is the newest ui-lead spec log, whatever other seats' logs sit above it, and its brief is briefs/<id>.md before ready", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b2");
+  putBrief(w);
+  const first = uiInput(w, 1);
+  assert.equal(first.status, 0, `the ui-lead's input is recorded on a record with no spec pointer\n${first.out}`);
+  const read = (row: string) => {
+    const r = inspect(w);
+    return { ...r, row };
+  };
+  let r = read("the input alone");
+  assert.equal(r.input?.relative, `ci/${OPUS}-spec-1.log`, `${r.row}: the input\n${r.problems.join("\n")}`);
+  assert.deepEqual(r.problems, [], `${r.row}: the writer and the reader agree on the digest of briefs/W-900.md`);
+
+  // the architect's signature and the review above it never mask it
+  sign(w, 2);
+  review(w, 3, "passed");
+  r = read("a signature and a review above the input");
+  assert.equal(r.input?.relative, `ci/${OPUS}-spec-1.log`, `${r.row}: still the input\n${r.problems.join("\n")}`);
+  assert.deepEqual(r.problems, [], `${r.row}: no problem`);
+
+  // the newest ui-lead log is judged, never skipped for an older one: stale after a brief edit, then replaced
+  appendFileSync(briefPath(w), "\nEdited after the input.\n");
+  r = read("an edited brief");
+  assert.equal(r.input, undefined, `${r.row}: no current input`);
+  assert.match(r.problems.join("\n"), /stale design_digest/, `${r.row}: the input is stale`);
+  const second = uiInput(w, 4);
+  assert.equal(second.status, 0, `a second input is recorded\n${second.out}`);
+  r = read("a second input");
+  assert.equal(r.input?.relative, `ci/${OPUS}-spec-4.log`, `${r.row}: the newest input\n${r.problems.join("\n")}`);
+  writeFileSync(join(w.studio, "ci", `${OPUS}-spec-5.log`), logAt(w.studio, 4).replace("# round: 4", "# round: 9"));
+  r = read("a malformed newest ui-lead log");
+  assert.equal(r.input, undefined, `${r.row}: no input`);
+  assert.match(r.problems.join("\n"), /does not match its opus, phase, round and sella/, `${r.row}: it is named`);
+  // an unreadable spec log is a candidate, so it fails closed rather than being passed over
+  rmSync(join(w.studio, "ci", `${OPUS}-spec-5.log`));
+  mkdirSync(join(w.studio, "ci", `${OPUS}-spec-6.log`));
+  r = read("an unreadable newest spec log");
+  assert.equal(r.input, undefined, `${r.row}: no input`);
+  assert.match(r.problems.join("\n"), /unsafe or unreadable/, `${r.row}: it is named`);
+});
