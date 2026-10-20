@@ -1,0 +1,152 @@
+/**
+ * W-268 rows b1-b3 (studio/briefs/W-268.md): ladder.ticket. node:test TAP, selected by `--test-name-pattern='^W-268-b<n>\s'`.
+ * Every row builds its own officina under the OS tmp dir and reads no studio/ file.
+ */
+import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { after, test } from "node:test";
+import { checkStudio } from "../check.js";
+import { initStudio } from "../init.js";
+
+const NOW = new Date("2026-10-20T12:00:00Z");
+const ID = "W-900";
+const HEX = "0123456789abcdef0123456789abcdef01234567";
+
+const dirs: string[] = [];
+after(() => {
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+});
+
+interface Ticket { opus?: string; action?: string; round?: number; at: string }
+/** The canonical line `ticketLine` writes. */
+const ticket = (t: Ticket): string =>
+  JSON.stringify({ opus: t.opus ?? ID, step: "spec", action: t.action ?? "verdict-spec", round: t.round ?? 1, actor: "architect", studio: "studio", head: HEX, brief: HEX, at: t.at });
+/** A verdict log: `# opus`, `# phase`, `# round`, `# at`, then each ticket line given. */
+function verdict(root: string, name: string, h: { opus?: string; phase: string; round: number; at: string }, tickets: string[]): void {
+  mkdirSync(join(root, "ci"), { recursive: true });
+  const lines = [`# opus: ${h.opus ?? ID}`, `# phase: ${h.phase}`, `# round: ${h.round}`, "# sella: architect", "# outcome: passed", `# at: ${h.at}`, ...tickets.map((t) => `# ticket: ${t}`)];
+  writeFileSync(join(root, "ci", name), `${lines.join("\n")}\n\n## Findings\nNo findings\n`);
+}
+/** A red log under ci/reds/<opus>/. */
+function red(root: string, opus: string, name: string, behaviour: number, at: string, tickets: string[]): void {
+  mkdirSync(join(root, "ci", "reds", opus), { recursive: true });
+  const lines = [`# behaviour: ${behaviour}`, "# command: node --test x", "# exit: 1", `# at: ${at}`, "# sella: builder", ...tickets.map((t) => `# ticket: ${t}`)];
+  writeFileSync(join(root, "ci", "reds", opus, name), `${lines.join("\n")}\n\nnot ok 1 - x\n`);
+}
+function record(root: string, id: string, state: string): void {
+  writeFileSync(join(root, "opera", `${id}.md`), `---\nid: "${id}"\ntitle: "An opus"\nkind: "feature"\ncollegium: "production"\nstate: ${state}\n---\n`);
+}
+/** An officina with `step_tickets` (default required) and W-900 in `state`, its spec, red and build logs each ticketed. */
+function officina(w: { state?: string; tickets?: string | null } = {}): string {
+  const root = mkdtempSync(join(tmpdir(), "bisellium-w268-"));
+  dirs.push(root);
+  assert.ok(initStudio(root, { now: NOW }).root);
+  if (w.tickets !== null) {
+    const manifest = join(root, "bisellium.yml");
+    writeFileSync(manifest, `${readFileSync(manifest, "utf8")}step_tickets: ${w.tickets ?? "required"}\n`);
+  }
+  record(root, ID, w.state ?? "greenlit");
+  verdict(root, `${ID}-spec-1.log`, { phase: "spec", round: 1, at: "2026-10-15T00:00:10.000Z" }, [ticket({ at: "2026-10-15T00:00:05.000Z" })]);
+  red(root, ID, "01.log", 1, "2026-10-15T00:10:10.000Z", [ticket({ action: "red", round: 1, at: "2026-10-15T00:10:05.000Z" })]);
+  verdict(root, `${ID}-review-1.log`, { phase: "build", round: 1, at: "2026-10-15T00:20:10.000Z" }, [ticket({ action: "verdict-build", round: 1, at: "2026-10-15T00:20:05.000Z" })]);
+  return root;
+}
+const LATE = "2026-10-15T00:30:10.000Z";
+/** W-900's round-2 spec log at LATE with the tickets given. */
+const spec2 = (root: string, tickets: string[], at = LATE): string => {
+  verdict(root, `${ID}-spec-2.log`, { phase: "spec", round: 2, at }, tickets);
+  return root;
+};
+const ladder = (root: string) => checkStudio(root, NOW).findings.filter((f) => f.rule === "ladder.ticket");
+const found = (root: string): string[] => ladder(root).map((f) => `${f.level} ${f.where}`);
+const SPEC2 = [`block ci/${ID}-spec-2.log`];
+
+test("W-268-b1 behaviour 1: a covered log with no ticket, two, or one that is not a step ticket line blocks ladder.ticket at the log", () => {
+  const bare = spec2(officina(), []);
+  assert.deepEqual(found(bare), SPEC2, "an un-ticketed spec verdict log: one block at the log");
+  assert.match(ladder(bare)[0]!.message, /carries 0 # ticket: lines, want exactly one: run bisellium next W-900 before the write/, "the message names the count and the next call");
+  const twice = officina();
+  red(twice, ID, "02.log", 2, LATE, [ticket({ action: "red", round: 2, at: "2026-10-15T00:30:05.000Z" }), ticket({ action: "red", round: 2, at: "2026-10-15T00:30:06.000Z" })]);
+  assert.deepEqual(found(twice), [`block ci/reds/${ID}/02.log`], "a red log with two ticket lines blocks");
+  assert.match(ladder(twice)[0]!.message, /carries 2 # ticket: lines, want exactly one/, "the message names the count");
+  const loose = officina();
+  verdict(loose, `${ID}-review-2.log`, { phase: "build", round: 2, at: LATE }, [ticket({ action: "verdict-build", round: 2, at: "2026-10-15T00:30:05.000Z" }).replace(",", ", ")]);
+  assert.deepEqual(found(loose), [`block ci/${ID}-review-2.log`], "a build verdict log whose ticket is not canonical blocks");
+  assert.match(ladder(loose)[0]!.message, /is not a step ticket line \(not the canonical line/, "the message names parseTicketLine's reason");
+  assert.deepEqual(found(officina()), [], "every covered log ticketed: no finding");
+  const other = officina();
+  verdict(other, `${ID}-handoff-1.log`, { phase: "handoff", round: 1, at: LATE }, []);
+  writeFileSync(join(other, "ci", `${ID}-tests-${HEX}.log`), `certifies: tree:${HEX}\nexit code: 0\n`);
+  assert.deepEqual(found(other), [], "a handoff-phase log and a gate log are not covered");
+  assert.deepEqual(found(spec2(officina({ tickets: null }), [])), [], "no step_tickets: the rule is off");
+});
+
+test("W-268-b2 behaviour 2: a ticket naming another opus, action or round, issued after its log, or not after the opus's previous covered log blocks", () => {
+  const foreign = spec2(officina(), [ticket({ opus: "W-901", round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  assert.deepEqual(found(foreign), SPEC2, "a ticket naming another opus blocks");
+  assert.match(ladder(foreign)[0]!.message, /its ticket names W-901 verdict-spec round 2, want W-900 verdict-spec round 2/, "the message names both");
+  assert.deepEqual(found(spec2(officina(), [ticket({ action: "verdict-build", round: 2, at: "2026-10-15T00:30:05.000Z" })])), SPEC2, "a ticket for another action blocks");
+  assert.deepEqual(found(spec2(officina(), [ticket({ round: 1, at: "2026-10-15T00:30:05.000Z" })])), SPEC2, "a ticket for another round blocks");
+  const behaviour = officina();
+  red(behaviour, ID, "02.log", 2, LATE, [ticket({ action: "red", round: 1, at: "2026-10-15T00:30:05.000Z" })]);
+  assert.deepEqual(found(behaviour), [`block ci/reds/${ID}/02.log`], "a red ticket for another behaviour blocks");
+  const late = spec2(officina(), [ticket({ round: 2, at: "2026-10-15T00:30:11.000Z" })]);
+  assert.deepEqual(found(late), SPEC2, "a ticket issued after its log blocks");
+  assert.match(ladder(late)[0]!.message, /issued at 2026-10-15T00:30:11\.000Z, after the log \(2026-10-15T00:30:10\.000Z\)/, "the message names both times");
+  const spent = spec2(officina(), [ticket({ round: 2, at: "2026-10-15T00:20:00.000Z" })]);
+  assert.deepEqual(found(spent), SPEC2, "a ticket issued before the opus's previous covered log blocks");
+  assert.match(ladder(spent)[0]!.message, /is not after W-900's previous covered log ci\/W-900-review-1\.log \(2026-10-15T00:20:10\.000Z\)/, "the message names the previous log");
+  const lanes = officina();
+  record(lanes, "W-901", "building");
+  verdict(lanes, "W-901-spec-1.log", { opus: "W-901", phase: "spec", round: 1, at: "2026-10-15T00:05:10.000Z" }, [ticket({ opus: "W-901", at: "2026-10-15T00:00:07.000Z" })]);
+  assert.deepEqual(found(lanes), [], "another opus's logs between this one's are no finding: the order is per opus");
+  assert.deepEqual(found(spec2(officina(), [ticket({ round: 2, at: "2026-10-15T00:30:05.000Z" })])), [], "the matching, fresh ticket is no finding");
+});
+
+test("W-268-b3 behaviour 3: only an open opus's logs from the officina's first ticket on are judged, a malformed step_tickets blocks, and a judged log needs an exact UTC at", () => {
+  const before = officina();
+  record(before, "W-902", "greenlit");
+  verdict(before, "W-902-spec-1.log", { opus: "W-902", phase: "spec", round: 1, at: "2026-10-14T00:00:00.000Z" }, []);
+  assert.deepEqual(found(before), [], "a log written before the officina's first ticket is no finding");
+  const lone = (): string => {
+    const root = officina();
+    rmSync(join(root, "ci", "reds"), { recursive: true });
+    rmSync(join(root, "ci", `${ID}-review-1.log`));
+    return root;
+  };
+  const late = lone();
+  verdict(late, `${ID}-spec-1.log`, { phase: "spec", round: 1, at: "2026-10-15T00:00:10.000Z" }, [ticket({ at: "2026-10-16T00:00:00.000Z" })]);
+  assert.deepEqual(found(late), [`block ci/${ID}-spec-1.log`], "a lone ticket issued after its own log blocks: the boundary never passes over a log that carries a ticket");
+  assert.match(ladder(late)[0]!.message, /issued at 2026-10-16T00:00:00\.000Z, after the log \(2026-10-15T00:00:10\.000Z\)/, "the message names both times");
+  record(late, "W-902", "greenlit");
+  verdict(late, "W-902-spec-1.log", { opus: "W-902", phase: "spec", round: 1, at: "2026-10-15T12:00:00.000Z" }, []);
+  assert.deepEqual(found(late), [`block ci/${ID}-spec-1.log`, "block ci/W-902-spec-1.log"], "an un-ticketed log after the first ticketed log but before its late ticket's at is judged");
+  const garbled = lone();
+  verdict(garbled, `${ID}-spec-1.log`, { phase: "spec", round: 1, at: "2026-10-15T00:00:10.000Z" }, ["{not a ticket}"]);
+  assert.deepEqual(found(garbled), [`block ci/${ID}-spec-1.log`], "a lone ticket line that is not canonical, with no canonical ticket anywhere, blocks");
+  // spec round 4's S2: no exact time among the candidates, so the boundary is +Infinity (not NaN, not a throw)
+  const inexact = lone();
+  verdict(inexact, `${ID}-spec-1.log`, { phase: "spec", round: 1, at: "2026-10-15T00:00:10+00:00" }, ["{not a ticket}"]);
+  record(inexact, "W-902", "greenlit");
+  verdict(inexact, "W-902-spec-1.log", { opus: "W-902", phase: "spec", round: 1, at: "2026-10-15T12:00:00.000Z" }, []);
+  record(inexact, "W-904", "greenlit");
+  verdict(inexact, "W-904-spec-1.log", { opus: "W-904", phase: "spec", round: 1, at: "2026-10-15T12:00:00+00:00" }, []);
+  assert.deepEqual(found(inexact), [`block ci/${ID}-spec-1.log`, "block ci/W-904-spec-1.log"], "no exact time among the candidates: the boundary is +Infinity, so only logs with an inexact at are judged");
+  for (const state of ["done", "halted", "backlog"]) assert.deepEqual(found(spec2(officina({ state }), [])), [], `${state}: not judged`);
+  for (const state of ["building", "verifying", "review"]) assert.deepEqual(found(spec2(officina({ state }), [])), SPEC2, `${state}: judged`);
+  const orphan = officina();
+  verdict(orphan, "W-903-spec-1.log", { opus: "W-903", phase: "spec", round: 1, at: LATE }, []);
+  assert.deepEqual(found(orphan), [], "a log of an opus with no record is not judged");
+  const malformed = officina({ tickets: "yes" });
+  assert.deepEqual(found(malformed), ["block bisellium.yml"], "a malformed step_tickets blocks at bisellium.yml");
+  assert.match(ladder(malformed)[0]!.message, /step_tickets is malformed \(step_tickets must be exactly "required", or absent/, "the message names readStepTickets' reason");
+  const offset = spec2(officina(), [ticket({ round: 2, at: "2026-10-15T00:30:05.000Z" })], "2026-10-15T00:30:10+00:00");
+  assert.deepEqual(found(offset), SPEC2, "a judged log whose at is not exact UTC blocks");
+  assert.match(ladder(offset)[0]!.message, /has no exact UTC # at: \(2026-10-15T00:30:10\+00:00\)/, "the message names the at");
+  const fresh = officina();
+  for (const f of [`${ID}-spec-1.log`, `${ID}-review-1.log`]) verdict(fresh, f, { phase: f.includes("spec") ? "spec" : "build", round: 1, at: "2026-10-15T00:00:10+00:00" }, []);
+  rmSync(join(fresh, "ci", "reds"), { recursive: true });
+  assert.deepEqual(found(fresh), [], "an officina with no ticket yet judges nothing, not even a log with no exact UTC at");
+});
