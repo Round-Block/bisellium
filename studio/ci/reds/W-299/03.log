@@ -1,0 +1,50 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-299-b3\s --import tsx packages/cli/src/next-ladder.test.ts
+# exit: 1
+# at: 2026-10-20T03:16:13.429Z
+# sella: builder.W-299
+# tree: tree:bd67512e3d79be2039830091691009687c1f5173
+# ticket: {"opus":"W-299","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-299/studio","head":"3725747b51c5d2c6b141077155ed16ed171c5f53","brief":"597dbaa969ab7d9303953810555d38ffa5aa9205","at":"2026-10-20T03:16:09.197Z"}
+
+TAP version 13
+# Subtest: W-299-b3 behaviour 3: next --all prints every open opus's derived next step, in id order, and writes nothing
+not ok 1 - W-299-b3 behaviour 3: next --all prints every open opus's derived next step, in id order, and writes nothing
+  ---
+  duration_ms: 1583.89542
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-299/packages/cli/src/next-ladder.test.ts:5:16529'
+  failureType: 'testCodeFailure'
+  error: |-
+    next --all exits 0
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    unknown flag "--all"
+    usage: bisellium next <opus> [--perform [--chain]] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]
+           bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-299/packages/cli/src/next-ladder.test.ts:877:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1599.801572
