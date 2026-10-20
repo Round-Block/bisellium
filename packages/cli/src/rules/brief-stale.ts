@@ -2,7 +2,9 @@
  * `checkBriefStale` (W-317) — `brief.stale`, advise. An open opus (greenlit, building, verifying, review) whose record title was
  * amended (`amend --title`, an `amendments` entry with `field: title`) after its newest architect signature
  * (`ci/<id>-spec-<n>.log`: phase spec, this opus, the design magister, outcome passed; the highest such n) carries a brief that
- * may no longer match its record (W-183 and W-179 drifted). Reads the checked tree only; never throws.
+ * may no longer match its record (W-183 and W-179 drifted). The title as signed is the `superseded` of the first title amendment after the signature;
+ * it is no finding when that equals the current title, or when `briefs/<id>.md` holds the current title (whitespace runs read
+ * as one space): a retitle to the brief's own record title line is not drift. Reads the checked tree only; never throws.
  */
 import { readdirSync } from "node:fs";
 import { basename, join } from "node:path";
@@ -27,6 +29,7 @@ const names = (list: () => string[]): string[] => {
     return [];
   }
 };
+const spaced = (s: string): string => s.replace(/\s+/g, " ").trim();
 
 export function checkBriefStale(root: string, opts: RuleOpts): Finding[] {
   const collegia = isDict(opts.manifest) ? opts.manifest["collegia"] : undefined;
@@ -57,6 +60,8 @@ export function checkBriefStale(root: string, opts: RuleOpts): Finding[] {
     const later = (Array.isArray(d["amendments"]) ? d["amendments"] : []).filter((a): a is Dict => isDict(a) && a["field"] === "title" && (instant(a["at"])?.getTime() ?? 0) > signedAt.getTime());
     const first = later[0];
     if (first === undefined) continue;
+    if (first["superseded"] === d["title"]) continue;
+    if (spaced(read(root, `briefs/${name}`, "briefs") ?? "").includes(spaced(d["title"]))) continue;
     findings.push({
       rule: "brief.stale",
       level: "advise",
