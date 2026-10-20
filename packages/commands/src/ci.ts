@@ -37,9 +37,14 @@
  * tree-hashing logic here. W-279: it first asks `runVerify` (`plan`) which
  * commands it will run, and leaves exactly those steps out of the loop, so
  * each check runs once; a refusal ends `ci` before any step.
+ *
+ * W-335: in a checkout whose package.json declares `test:record` (W-139), the `npm test` step runs as
+ * `node scripts/test-reads.mjs`: ci.yml's traced `npm test` and its records-read guard as one command. The loop runs
+ * it in the step's place, and `--opus` hands it to `verify` (`commandOverride`) for each gate `verify` would run as
+ * `npm test`, so a test missing from `test:record` fails the tests gate, not the merge queue.
  */
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { GATE_TIMEOUT_MS, runWatched, type MergePipeline } from "@bisellium/pipeline";
@@ -70,6 +75,23 @@ export const CI_STEPS: readonly string[] = [
 // shortened — noUncheckedIndexedAccess makes both changes typecheck clean.
 const CHECK_STUDIO_STEP = CI_STEPS.find((s) => s.includes("check -- studio"));
 if (CHECK_STUDIO_STEP === undefined) throw new Error("CI_STEPS has no 'check -- studio' step");
+
+// W-335: the CI_STEPS entry ci.yml runs under the read log, and the one command that runs it so with the guard after it.
+const TEST_STEP = "npm test";
+const TEST_READS = "node scripts/test-reads.mjs";
+if (!CI_STEPS.includes(TEST_STEP)) throw new Error("CI_STEPS has no 'npm test' step");
+
+/** W-335: the command ci runs for TEST_STEP in `repo`: `npm test` when package.json parses and its `scripts` hold no
+ *  `test:record` key, else TEST_READS; an unreadable or unparsable package.json gets TEST_READS, which then fails. */
+function testCommand(repo: string): string {
+  try {
+    const scripts: unknown = (JSON.parse(readFileSync(join(repo, "package.json"), "utf8")) as { scripts?: unknown } | null)?.scripts;
+    if (typeof scripts === "object" && scripts !== null && !Object.hasOwn(scripts, "test:record")) return TEST_STEP;
+  } catch {
+    // fails closed: TEST_READS
+  }
+  return TEST_READS;
+}
 
 export interface RunCiOptions {
   /** Override worktree provider — mainly for tests. Defaults to selectProvider(). */
@@ -129,12 +151,12 @@ async function runStep(command: string, cwd: string): Promise<number> {
 
 /** W-279: true when `verify` will run a command equal to `step`, comparing space-split tokens with npm's `-s`
  *  (before the first `--`) dropped. Any other difference fails to match: a mismatch can only cause a second run. */
+function norm(command: string): string {
+  const tokens = command.split(" ");
+  const end = tokens.indexOf("--");
+  return tokens.filter((t, i) => t !== "-s" || (end !== -1 && i > end)).join(" ");
+}
 function handedToVerify(step: string, planned: Readonly<Record<string, string>>): boolean {
-  const norm = (command: string): string => {
-    const tokens = command.split(" ");
-    const end = tokens.indexOf("--");
-    return tokens.filter((t, i) => t !== "-s" || (end !== -1 && i > end)).join(" ");
-  };
   return Object.values(planned).some((command) => norm(command) === norm(step));
 }
 
@@ -191,6 +213,7 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
         return { exitCode: 1 };
       }
     }
+    const testCmd = testCommand(execRepo);
 
     const verifyArgs = opusId === undefined ? [] : [opusId, "--repo", execRepo];
     const verifyOpts: RunVerifyOptions = {};
@@ -218,15 +241,19 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
       const plan = await runVerify(verifyArgs, { ...verifyOpts, plan: true });
       if (plan.exitCode !== 0) return plan;
       planned = plan.commands ?? {};
+      // W-335: each gate verify would run as `npm test` runs it as the loop would
+      if (testCmd !== TEST_STEP)
+        verifyOpts.commandOverride = Object.fromEntries(Object.entries(planned).filter(([, c]) => norm(c) === TEST_STEP).map(([gate]) => [gate, testCmd]));
     }
 
     // W-240: --offline skips the one step that needs the registry; the receipt
     // host recomputes ci in a network-isolated cell and is the only caller.
     const steps = (offline ? CI_STEPS.filter((s) => s !== AUDIT_STEP) : CI_STEPS).filter((s) => !handedToVerify(s, planned));
     for (const step of steps) {
-      const status = await runStep(step, execRepo);
+      const command = step === TEST_STEP ? testCmd : step;
+      const status = await runStep(command, execRepo);
       if (status !== 0) {
-        console.error(`bisellium ci: step failed (exit ${status}): ${step}`);
+        console.error(`bisellium ci: step failed (exit ${status}): ${command}`);
         // Step 5 is officina-wide by construction (it's the line ci.yml
         // runs); it blocks on any opus's missing red or handoff, not just
         // the one a reviewer has in mind. `verify <opus>` is the narrower,

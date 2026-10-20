@@ -846,6 +846,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/builder-run.ts:runBuilderCommand:readFileSync#1", disposition: "outside", why: "reads the host result file and removes the result directory and lease under OS temp and .bisellium/" },
   { key: "packages/commands/src/builder-run.ts:runBuilderCommand:rmSync#1", disposition: "outside", why: "reads the host result file and removes the result directory and lease under OS temp and .bisellium/" },
   { key: "packages/commands/src/builder-run.ts:runBuilderCommand:rmSync#2", disposition: "outside", why: "reads the host result file and removes the result directory and lease under OS temp and .bisellium/" },
+  { key: "packages/commands/src/ci.ts:testCommand:readFileSync#1", disposition: "outside", why: "reads the checkout's own package.json, a fixed repo file, never an officina" },
   { key: "packages/commands/src/ci.ts:defaultInstallDeps:rmSync#1", disposition: "outside", why: "removes a cache directory the run made under OS temp" },
   { key: "packages/commands/src/delegate.ts:runDelegate:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml), read and rewritten; no id or flag builds the path" },
   { key: "packages/commands/src/delegate.ts:runDelegate:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml), read and rewritten; no id or flag builds the path" },

@@ -317,7 +317,8 @@ test("W-335-b2 behaviour 2: where package.json declares test:record, ci runs npm
     const args = [id, "--repo", repo, "--studio", studio];
     const ok = await runVerify(args, { plan: true, commandOverride: { tests: TEST_READS } });
     assert.equal(ok.commands?.["tests"], TEST_READS, "a planned gate takes its override");
-    for (const commandOverride of [{ nope: TEST_READS }, { tests: "" }]) {
+    const bad: Record<string, string>[] = [{ nope: TEST_READS }, { tests: "" }];
+    for (const commandOverride of bad) {
       const { result, stderr } = await quietly(() => runVerify(args, { plan: true, commandOverride }));
       assert.equal(result.exitCode, 2, `${JSON.stringify(commandOverride)} is refused`);
       assert.match(stderr, /commandOverride/, "naming the option");
