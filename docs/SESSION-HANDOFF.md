@@ -39,18 +39,18 @@ signature to done, no hand-run evidence scripts, no required handoff edits (unme
 interruption); early stop if a cycle is over 180 min after the chain (#540), or at two calendar weeks. One builder per opus; a second lane
 after the chain (#540) and the test-file split (done 2026-10-19). Older items: `studio/acta/2026-10-09-queue-review.md`.
 
-Now, one builds at a time until the re-rank opens a second lane (allowed since the test-file split; W-169 adds more lanes; order D-082 D, by cycle minutes saved; a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, W-241 p1; two lanes run since 2026-10-19):
-1. (done 2026-10-20, PR #594: the review tags end extra rounds; its part 2 is W-329, in Later until the Patron greenlights it)
-2. W-299 — the queue is a record, split at spec: first the handoff trim (no Resume point, no required handoff edit at done) and a read-only `next --all`, then `studio/queue.yml`; the first half unblocks W-308, W-300, W-268 and W-169 (D-077 B)
+Now, one builds at a time until the re-rank opens a second lane (allowed since the test-file split; W-169 adds more lanes; order D-082 D, by cycle minutes saved; a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, W-241 p1, a list retired when W-169 lands (D-087 A); two lanes run since 2026-10-19):
+1. W-299 — the queue is a record, split at spec: first the handoff trim (no Resume point, no required handoff edit at done) and a read-only `next --all`, then `studio/queue.yml`; the first half unblocks W-308, W-300, W-268 and W-169 (D-077 B)
+2. W-330 — the done step accepts a certified chain: master moved on after the merge only by records or certified merge-queue merges, so no 24-minute `verify` for the first-merged opus of a close pair (D-087 B; until it lands, each opus's done runs before the other lane's merge)
 3. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
 4. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read; carries the merge-perform and health clauses struck from W-183 (high)
 5. W-288 part 1 — `docs/ADOPTION.md` split: the contract stays code-owned, six per-command reference files leave it, a line-cap check rule (D-083 B; about 15 min of Patron review wait saved per opus)
 6. W-317 — a check rule marks a signed brief stale when its record's title or Files owned change after the signature
 7. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline` (after W-299, D-077 C)
-8. (done 2026-10-20, PR #595: `ci` and `verify` print each gate's start, end and a per-minute progress line)
-9. W-241 part 1 — the prompt templates in `studio/prompts/` (its brief is to be re-signed: it calls build-review.md new, which exists; prompts are code-owned)
-10. W-258 — the builder checks its own diff once before handing off, no Codex call (D-080 G; after W-241 part 1)
-11. W-183 (record trimmed to its signed brief, D-080 B; re-anchor) → W-169 (re-anchored) — the second lane (D-075 F)
+8. W-241 part 1 — the prompt templates in `studio/prompts/` (its brief is to be re-signed: it calls build-review.md new, which exists; prompts are code-owned)
+9. W-258 — the builder checks its own diff once before handing off, no Codex call (D-080 G; after W-241 part 1)
+10. W-183 (record trimmed to its signed brief, D-080 B; re-anchor) → W-169 (r7, design approved by D-087 C: claim by pushing the opus ref, origin's refs count as in flight, no per-lane handoff sections; re-sign and re-review before branch) — the second lane (D-075 F)
+11. W-331 — `next.ts` split by region (derive, perform, health, report), no behaviour change, so two or three `next.ts` opera can run at once (D-087 D)
 12. W-309 — the review-perform remainder, split at spec (amended by D-086 D: the fix check runs before a fix round's suite); its hand-script deletion last (it removes its own review path)
 13. W-310 + W-290 — one opus: the PreToolUse dispatch hook and the orchestrator write guard (no logger, D-080 C; W-242 rides it; `.claude/`: Patron merges)
 14. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
@@ -62,7 +62,8 @@ Next, the console MVP (after the block, same functions):
 18. W-298 — the `petitio` verb to the Patron (its older signed brief, reused); `next` holds on an open one (D-080 D)
 19. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route (the Board may write these, D-080 E)
 20. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-21. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
+21. W-261 — woken orchestration: the cascade loop waits on a GitHub event and runs one fresh session per wake, no model polling (D-087 F; it changes `scripts/cascade-loop.sh` in the Patron's folder)
+22. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
@@ -87,8 +88,8 @@ Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into No
 - Console screens, M5 and later (after the MVP): W-073, W-078, W-113, W-116, W-090, W-091, W-092, W-145, W-146, W-147, W-148, W-202, W-136, W-143,
   W-144, W-154, W-158, W-160, W-040, W-051, W-094, W-115, W-133, W-175, W-176, W-216, W-286.
 - Adopters and remote, not on the path: an OTLP exporter of the existing OTel-style events (D-077 D); W-135, W-284, W-291, W-070, W-151.
-- Deferred or held: W-261, W-263 (more lanes, after W-169); W-231 (orchestrator self-refresh, after the W-118 split);
-  W-294, W-295 stay in the backlog (D-069 C).
+- Deferred or held: W-294 (leads as real agents, trimmed: no lead coordinates lanes, D-087 A) and W-295 stay in the backlog (D-069 C);
+  W-160's memo leads with the cross-machine claim contract, written when a cloud lane is planned (D-087 G).
 
 ## Open Patron choices
 - The dead `dispatch-guard.sh` hook entry in your `~/.claude/settings.json` (it runs a missing script on every Bash and Agent call; D-080 C): yours to remove.
