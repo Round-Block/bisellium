@@ -436,7 +436,7 @@ if (runs(6)) {
     assert.equal(control.step, "checkpoint", "6a: the done opus lands on the checkpoint rung");
     assert.equal(control.status, "complete", "6a: a done commit that changed the handoff is complete, heading or not");
     const named = checkpoint("## Where things stand\n\n- W-900 is done.\n", false);
-    assert.equal(named.status, "named", "6b: a heading naming W-900 does not complete a done commit that left the handoff unchanged");
+    assert.equal(named.status, "complete", "6b: W-299: a done commit that left the handoff unchanged is complete too");
     assert.equal(checkpoint(undefined, false).status, "complete", "6c: no handoff on master: complete once the record is done");
   });
 }

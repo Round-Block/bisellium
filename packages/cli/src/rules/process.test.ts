@@ -207,12 +207,12 @@ interface HandoffParts {
   queue?: string[];
   extra?: string[];
 }
-/** A handoff shaped like today's: a Resume section with a Next field, then the Queue. */
+/** A handoff with a Boot section holding a Next field (W-299: no rule reads it), then the Queue. */
 function handoff(p: HandoffParts = {}): string {
   const lines = [
     "# Session handoff",
     "",
-    p.resume ?? "## Resume point (2026-10-10)",
+    p.resume ?? "## Boot",
     "",
     ...(p.next ?? ["- **Next, in order:** W-3 first,", "  then W-5."]),
     ...(p.extra ?? []),
@@ -251,47 +251,49 @@ test("W-186-b1 behaviour 23: check blocks a stale, relative, oversized or unread
   // a handoff shaped like today's, naming a queued greenlit opus in its Next field
   assert.deepEqual(handoffFindings(base, handoff()), []);
 
-  // the Queue names a done opus, then a halted one; a greenlit opus is never named
+  // the Queue names a done opus, then a halted one (W-299: no finding); a greenlit opus is never named
   let text = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-1 - gone."] });
-  assert.deepEqual(handoffFindings(base, text), [["process.handoff.queue", at(text, "W-1 - gone")]]);
+  assert.deepEqual(handoffFindings(base, text), [], "W-299: a done Queue id is no finding");
   text = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-2 - stopped."] });
-  assert.deepEqual(handoffFindings(base, text), [["process.handoff.queue", at(text, "W-2 - stopped")]]);
+  assert.deepEqual(handoffFindings(base, text), [], "W-299: a halted Queue id is no finding");
   assert.deepEqual(handoffFindings({ ...base, "W-6": record("W-6", "greenlit") }, handoff()), [["process.handoff.queue", HANDOFF]]);
 
-  // an id with no record is input, in the Queue, in a Next field and in a status claim
+  // an id with no record is input in the Queue; W-299: a Next field and a status claim are no longer read
   text = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-77 - nobody."] });
   assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-77")]]);
   text = handoff({ next: ["- **Next:** W-3, W-78."] });
-  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-78")]]);
+  assert.deepEqual(handoffFindings(base, text), [], "W-299: a Next field is not read");
   text = handoff({ extra: ["- **W-79** is building."] });
-  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-79")]]);
+  assert.deepEqual(handoffFindings(base, text), [], "W-299: a status claim is not read");
 
-  // Next fields, under both labels: a done id on a continuation line, and a backlog id the Queue does not name
+  // Next fields, under both labels: W-299: a done id on a continuation line and an unqueued backlog id are no finding
   for (const label of ["**Next:**", "**Next, in order:**"]) {
     text = handoff({ next: [`- ${label} W-3 first,`, "  then W-1."] });
-    assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "then W-1")]], `${label} done id`);
+    assert.deepEqual(handoffFindings(base, text), [], `${label} done id`);
     text = handoff({ next: [`- ${label} W-3 first,`, "  then W-4,", "  then W-5."] });
-    assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "then W-4")]], `${label} backlog id`);
+    assert.deepEqual(handoffFindings(base, text), [], `${label} backlog id`);
   }
-  // a claim that a done opus is building
+  // a claim that a done opus is building: W-299: not read
   text = handoff({ extra: ["- **W-1** is building."] });
-  assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "**W-1**")]]);
+  assert.deepEqual(handoffFindings(base, text), []);
 
-  // Resume dates against the newest done end (UTC)
+  // W-299: a Resume point blocks whatever its date
   text = handoff({ resume: "## Resume point (2026-10-08)" });
   assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "## Resume point")]], "one day before the newest done end");
-  assert.deepEqual(handoffFindings(base, handoff({ resume: "## Resume point (2026-10-09)" })), [], "the same UTC date passes");
-  assert.deepEqual(handoffFindings({ ...base, "W-1": record("W-1", "done") }, handoff({ resume: "## Resume point (2000-01-01)" })), [], "no done end: the comparison is skipped");
+  text = handoff({ resume: "## Resume point (2026-10-09)" });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "## Resume point")]], "the same UTC date");
+  text = handoff({ resume: "## Resume point (2000-01-01)" });
+  assert.deepEqual(handoffFindings({ ...base, "W-1": record("W-1", "done") }, text), [["process.handoff.resume", at(text, "## Resume point")]], "no done end");
 
   // headings
-  const noQueue = ["# Session handoff", "", "## Resume point (2026-10-10)", "", "- **Next:** W-3."].join("\n");
+  const noQueue = ["# Session handoff", "", "## Boot", "", "- **Next:** W-3."].join("\n");
   assert.deepEqual(handoffFindings(base, noQueue), [["process.handoff.input", HANDOFF]], "no Queue heading");
   const twoQueues = `${handoff()}\n\n## Queue\n\n- again`;
   assert.deepEqual(handoffFindings(base, twoQueues), [["process.handoff.input", `${HANDOFF}:${twoQueues.split("\n").lastIndexOf("## Queue") + 1}`]], "a duplicate Queue heading");
   text = handoff({ resume: "## Resume point" });
-  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "## Resume point")]], "a Resume heading without a date");
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "## Resume point")]], "a Resume heading without a date (W-299: a Resume point)");
   text = handoff({ resume: "## Resume point (2026-02-30)" });
-  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "## Resume point")]], "an impossible date");
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "## Resume point")]], "an impossible date (W-299: a Resume point)");
 
   // the three relative phrases, and the 100-line cap
   for (const phrase of ["see this one", "as in this PR", "the list (above)"]) {
@@ -324,11 +326,36 @@ test("W-186-b1 behaviour 23: check blocks a stale, relative, oversized or unread
 
   // an absent handoff with valid records is none; other officinae and a run with no repo are outside the rule
   assert.deepEqual(handoffFindings(base, null), []);
-  const stale = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-1 - gone."] });
+  // W-299: stale is a Queue that omits greenlit W-5 (a done id in it is no longer a finding)
+  const stale = handoff({ queue: ["1. W-3 - one."] });
   assert.deepEqual(handoffFindings(base, null, { studioDir: "other" }), []);
   assert.deepEqual(handoffFindings(base, stale, { studioDir: "other" }), []);
   assert.deepEqual(handoffFindings(base, stale, { repo: false }), []);
   assert.equal(handoffFindings(base, stale).length, 1, "control: the same handoff blocks in <repo>/studio");
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+// W-299 behaviour 1 (D-077 B): the handoff keeps no Resume point, and a done or halted opus in its Queue is no finding.
+test("W-299-b1 behaviour 1: the handoff keeps no Resume point, and making an opus done asks no Queue edit", () => {
+  const base = baseRecords();
+  const plain = (queue: string[], extra: string[] = []): string => ["# Session handoff", "", "## Boot", "", "- read next --all", ...extra, "", "## Queue", "", ...queue].join("\n");
+  // no Resume point, and a Queue that still names a done opus and a halted one beside the greenlit ones
+  const kept = plain(["1. W-3 - one.", "2. W-5 - two.", "3. W-1 - done since.", "4. W-2 - halted since."]);
+  assert.deepEqual(handoffFindings(base, kept), [], "no Resume point is asked for, and a done or halted Queue id is no finding");
+  // any line starting ## Resume point blocks, dated or not, at its own line
+  for (const heading of ["## Resume point (2026-10-10)", "## Resume point", "## Resume point (2026-02-30)"]) {
+    const text = plain(["1. W-3 - one.", "2. W-5 - two."], ["", heading, "", "- **Next:** W-3."]);
+    assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, heading)]], `a Resume point blocks: ${heading}`);
+  }
+  // two Resume points: one finding each
+  const twice = plain(["1. W-3 - one.", "2. W-5 - two."], ["", "## Resume point (2026-10-10)", "", "## Resume point (2026-10-11)"]);
+  assert.deepEqual(handoffFindings(base, twice), [["process.handoff.resume", at(twice, "(2026-10-10)")], ["process.handoff.resume", at(twice, "(2026-10-11)")]], "one finding per Resume point");
+  // the Queue keeps its other checks: an id with no record, a greenlit opus it omits, and exactly one Queue heading
+  let text = plain(["1. W-3 - one.", "2. W-5 - two.", "3. W-77 - nobody."]);
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-77")]], "a Queue id with no record");
+  assert.deepEqual(handoffFindings(base, plain(["1. W-3 - one."])), [["process.handoff.queue", HANDOFF]], "a greenlit opus the Queue omits");
+  text = ["# Session handoff", "", "## Boot", "", "- read next --all"].join("\n");
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", HANDOFF]], "no Queue heading");
   for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 

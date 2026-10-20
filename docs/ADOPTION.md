@@ -943,11 +943,10 @@ with `--repo <repo>` on `<repo>/studio`; any other officina is outside the rule)
 Every `opera/*.md` record is loaded first and must have a lifecycle `state`; then
 `docs/SESSION-HANDOFF.md` is read, and an absent file is no finding. Unreadable
 records or handoff (`process.handoff.input`), a handoff with other than one
-`## Queue` line or one `## Resume point (YYYY-MM-DD)` line, an id that names no
-record, a Queue that names a `done` or `halted` opus or omits a `greenlit` one
-(`process.handoff.queue`), a `Next` field that names a `done`, `halted` or unqueued
-opus, a `**W-n** is building` claim about a `done` opus, or a Resume date earlier
-than the newest `done` record's `end` in UTC (`process.handoff.resume`), the phrases
+`## Queue` line, a Queue id that names no record, a Queue that omits a `greenlit`
+opus (`process.handoff.queue`; W-299: a `done` or `halted` id in it is no finding),
+any line starting `## Resume point` (`process.handoff.resume`; W-299, D-077 B: work
+state is the opus records, read by `next --all`), the phrases
 `this one`, `this PR` and `above)` (`process.handoff.reference`), and more than 100
 split lines (`process.handoff.lines`) all block.
 
@@ -1499,7 +1498,21 @@ change.
 ```bash
 npm run bisellium -- next <opus> [--perform [--chain]] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]
 npm run bisellium -- next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]
+npm run bisellium -- next --all [--studio <dir>] [--repo <dir>]
 ```
+
+**`--all` (W-299, D-077 B).** Read-only: for every record in the main checkout's `opera/` whose state is `greenlit`,
+`building`, `verifying` or `review`, in id order (numeric within the id), one line `next: <opus> <step> <status> · actor:
+<actor> · why: <why> · traditio: <sella> at <at>: <next>[; blocked on <what>]` (or `traditio: none`), the step derived
+as `next <opus>` derives it before the dispatch gate (so no budget or handover hold and no step health) and the traditio
+read from the record that gate reads, then `open: <n>`. It writes no ticket, marker or step log. A record that cannot be read or carries no
+lifecycle state prints `next: <opus> unreadable`; a record in neither `master` nor `opus/<opus>` (which `next <opus>`
+refuses as unknown), a present traditio without string `sella`, `stage`, `next` and `blocked_on` and an ISO `at`, and a
+derivation that throws each print `next: <opus> failed`; a held derivation prints its line as is. Any of these exits 1
+after every line is printed (a traditio `blocked_on` other than `none` is reported on its line and does not itself fail the run);
+otherwise (no derivation held) it exits 0. It takes no `<opus>` and no flag but `--studio` and `--repo` (exit 2), and
+refuses a linked worktree as `next <opus>` does. A fresh session reads it, with the handoff's Queue, instead of a
+Resume point.
 
 `next` is the cascade order as a verb (`packages/cli/src/next.ts`). From the
 record and its evidence alone it derives the one legal next step of the
@@ -1575,9 +1588,8 @@ has no `tree:` certificate the `done` rung of a non-`ui` opus names `bisellium n
 record, names `bisellium verify <opus> --studio <dir> --repo .`; performed `done` then creates `chore/done-<opus>` from the
 `master` tip, runs `done`, and commits the record, verify's
 `ci/<opus>-<probatio>-<hash>.log` files and the tracked handoff and dossier-page changes together
-(it refuses without a tracked change to `docs/SESSION-HANDOFF.md`: the checkpoint
-rides the done commit, and the checkpoint rung reads complete once the commit that
-made the record `done` also changed the handoff; it likewise refuses, while `master` keeps `docs/design/dossier/progress-body.html`, unless the working tree adds a line to that page naming the opus id, the history row), and returns to `master`. Before `done` runs, performed `done` holds (`handoff: <rule> <where>: <message>` lines) when the real `studio/`'s working-tree handoff, read as if the opus were `done` now, would block `check` (see "Session handoff" under "Running check"); only `performDone` is held, and the step marker and log are written as for any perform. A path
+(W-299: a handoff change may ride and none is required, and the checkpoint rung reads complete once the trunk
+record is `done` and its retro is filed or not owed; it refuses, while `master` keeps `docs/design/dossier/progress-body.html`, unless the working tree adds a line to that page naming the opus id, the history row), and returns to `master`. Before `done` runs, performed `done` holds (`handoff: <rule> <where>: <message>` lines) when the real `studio/`'s working-tree handoff, read as if the opus were `done` now, would block `check` (see "Session handoff" under "Running check"); only `performDone` is held, and the step marker and log are written as for any perform. A path
 under `.claude/` or `.github/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
 stops before the tree and prints `patron: git -C <repo> merge --ff-only <oid>`; a
 dirty tracked Patron path prints `patron: git -C <repo> checkout -- <path>`.

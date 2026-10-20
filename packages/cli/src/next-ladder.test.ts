@@ -9,7 +9,7 @@ import { open } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
-import { BRANCH, CAND, FAST, Json, NOW_ISO, NOW_MS, OID_UNFETCHED, OPUS, Out, PROC_ENV, RunOpts, T, World, addReview, advanceSource, branchExists, briefText, calls, cand, commit, deadPid, editRecord, expectHeld, expectStep, fakeProc, ghCalls, ghMerges, git, gitArgs, gitCalls, gitOk, gitq, handoffAt, landMerge, liveChild, markDone, markerJson, markerPath, markerText, mergedList, mutating, next, nextAsync, only, openList, outputPath, performMerge, pushed, put, putMarker, putOutput, ran, recordOf, runs, scenario, snap, sourceTree, statLine, stepsDir, tickOf, tipOf, touchHandoff, verb, world, writeGates, writeReds, writeTranscript, zombiePid } from "./next-world.test.js";
+import { BRANCH, CAND, FAST, Json, NOW_ISO, NOW_MS, OID_UNFETCHED, OPUS, Out, PROC_ENV, RunOpts, T, World, addReview, advanceSource, branchExists, briefText, calls, cand, commit, deadPid, editRecord, expectHeld, expectStep, fakeProc, ghCalls, ghMerges, git, gitArgs, gitCalls, gitOk, gitq, handoffAt, landMerge, liveChild, markDone, markerJson, markerPath, markerText, mergedList, mutating, next, nextAsync, only, openList, outputPath, performMerge, pushed, put, putMarker, putOutput, ran, recordOf, recordText, runs, scenario, snap, sourceTree, statLine, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, world, writeGates, writeReds, writeTranscript, zombiePid } from "./next-world.test.js";
 
 
 // ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ if (runs(1)) {
 
     // 12 checkpoint: the committed trunk record `done` settles everything before it without any gh call
     const doneWorld = world("b1-checkpoint", "done");
-    rung(doneWorld, "trunk record done and no checkpoint names checkpoint", "checkpoint", "named");
+    rung(doneWorld, "trunk record done reads the checkpoint complete with no handoff edit (W-299)", "checkpoint", "complete");
     assert.equal(ghCalls(doneWorld).length, 0, "a done trunk record settles the earlier rungs without a gh call");
     const complete = world("b1-complete", "checkpoint");
     const completeOut = next(complete, [OPUS, ...budget]);
@@ -236,7 +236,7 @@ if (runs(2)) {
     assert.equal(recordOf(gl), glRecord, "the backlog record is untouched: the verb never acts as the patron");
     const cp = world("b2-checkpoint", "done");
     const cpDocs = readFileSync(join(cp.repo, "docs/SESSION-HANDOFF.md"), "utf8");
-    expectStep(next(cp, [OPUS, "--perform"]), "checkpoint", "named", "--perform stops at the checkpoint rung");
+    expectStep(next(cp, [OPUS, "--perform"]), "checkpoint", "complete", "--perform stops at the checkpoint rung, complete (W-299)");
     assert.equal(readFileSync(join(cp.repo, "docs/SESSION-HANDOFF.md"), "utf8"), cpDocs, "the checkpoint rung writes nothing");
 
     // --perform does one rung per call: branch, then it stops (ready is not performed)
@@ -857,3 +857,85 @@ if (runs(6)) {
     assert.doesNotMatch(plain.kv.get("command") ?? "", /--ui-input/, ran("a non-ui order carries no --ui-input", plain));
   });
 }
+
+// ---------------------------------------------------------------------------
+// W-299 behaviour 3: next --all prints every open opus's derived next step and writes nothing (D-077 B)
+// ---------------------------------------------------------------------------
+test("W-299-b3 behaviour 3: next --all prints every open opus's derived next step, in id order, and writes nothing", { timeout: 1_800_000 }, () => {
+  const w = world("w299-b3", "cleanup");
+  scenario(w, { list: mergedList(w) });
+  ticketed(w);
+  const other = (id: string, state: string | undefined): void => put(w.studio, `opera/${id}.md`, recordText({ id, title: `W-299 fixture ${state ?? "stateless"}`, state, probationes: {} }));
+  put(w.studio, "opera/W-12.md", recordText({ id: "W-12", title: "W-299 fixture greenlit", state: "greenlit", probationes: {}, traditio: { sella: "producer", stage: "greenlit", next: "spec it", blocked_on: "the Patron's ruling", at: "2026-10-02T09:00:00.000Z" } }));
+  other("W-1000", "review");
+  for (const [id, state] of [["W-13", "backlog"], ["W-14", "halted"], ["W-15", "done"]] as const) other(id, state);
+  commit(w.repo, "test: W-299 opera");
+  git(w.repo, ["push", "-q", "origin", "master"]);
+  const tickets = join(w.repo, ".git", "bisellium", "tickets");
+  const before = snap(w);
+  const all = next(w, ["--all"], { clock: false });
+  assert.equal(all.status, 0, ran("next --all exits 0", all));
+  const lines = all.out.trimEnd().split("\n");
+  assert.deepEqual(lines.map((l) => /^next: (\S+) /.exec(l)?.[1] ?? l), ["W-12", OPUS, "W-1000", "open: 3"], ran("the open opera, in id order, then the count", all));
+  for (const l of lines.slice(0, 3)) assert.match(l, /^next: \S+ \S+ (named|held|complete) · actor: \S+ · why: \S.* · traditio: \S/, ran("one line per opus: step, status, actor, why and traditio", all));
+  assert.ok(lines[0]!.endsWith(" · traditio: producer at 2026-10-02T09:00:00.000Z: spec it; blocked on the Patron's ruling"), ran("the traditio: sella, time, next and what blocks it", all));
+  assert.ok(lines[2]!.endsWith(" · traditio: none"), ran("a record with no traditio says none", all));
+  assert.equal(snap(w), before, "next --all writes nothing: records, ci/, .bisellium/, refs and status byte-identical");
+  assert.equal(existsSync(tickets), false, "next --all writes no ticket");
+  // each line is the step next <opus> derives (a report-mode run with a budget, which writes its ticket: the control)
+  for (const [i, id] of ["W-12", OPUS, "W-1000"].entries()) {
+    const one = next(w, [id, "--budget", "400000"], { clock: false });
+    assert.ok(lines[i]!.startsWith(`${one.first} · `), ran(`${id}: the --all line names the step next ${id} names`, one));
+  }
+  assert.equal(existsSync(join(tickets, "W-12.json")), true, "control: next <opus> does write a ticket in this world");
+  // a record that cannot be read is printed and exits 1, after every other line
+  other("W-16", undefined);
+  commit(w.repo, "test: W-299 a stateless record");
+  const bad = next(w, ["--all"], { clock: false });
+  assert.equal(bad.status, 1, ran("an unreadable record exits 1", bad));
+  const badLines = bad.out.trimEnd().split("\n");
+  const stateless = "next: W-16 unreadable · why: opera/W-16.md cannot be read or carries no lifecycle state";
+  assert.equal(badLines[1], stateless, ran("the stateless record's line, in id order", bad));
+  assert.deepEqual(badLines.filter((l) => l !== stateless), lines, ran("every other line is printed as before", bad));
+  other("W-17", "greenlitt");
+  commit(w.repo, "test: W-299 a state that is no lifecycle state");
+  const typo = next(w, ["--all"], { clock: false });
+  assert.equal(typo.status, 1, ran("a state that is no lifecycle state exits 1", typo));
+  assert.ok(typo.out.split("\n").includes("next: W-17 unreadable · why: opera/W-17.md cannot be read or carries no lifecycle state"), ran("its line is printed", typo));
+  // each later case alone: the unreadable records go first, so the case's own line is what exits 1
+  git(w.repo, ["rm", "-q", "studio/opera/W-16.md", "studio/opera/W-17.md"]);
+  commit(w.repo, "test: W-299 drop the unreadable records");
+  assert.equal(next(w, ["--all"], { clock: false }).status, 0, "control: without them the run exits 0 again");
+  // a present traditio that is malformed fails its line
+  put(w.studio, "opera/W-18.md", recordText({ id: "W-18", title: "W-299 fixture", state: "greenlit", probationes: {}, traditio: { sella: "producer" } }));
+  commit(w.repo, "test: W-299 a malformed traditio");
+  const malformed = next(w, ["--all"], { clock: false });
+  assert.equal(malformed.status, 1, ran("a malformed traditio exits 1", malformed));
+  assert.ok(malformed.out.split("\n").includes("next: W-18 failed · why: opera/W-18.md#traditio is malformed: it needs string sella, stage, next and blocked_on and an ISO at"), ran("its failed line is printed", malformed));
+  git(w.repo, ["rm", "-q", "studio/opera/W-18.md"]);
+  commit(w.repo, "test: W-299 drop the malformed traditio");
+  // a derivation held for a rejected setting (a spec_reviewer naming no seat) is printed held and exits 1
+  const manifest = readFileSync(join(w.studio, "bisellium.yml"), "utf8");
+  writeFileSync(join(w.studio, "bisellium.yml"), `${manifest}spec_reviewer: qa-leed\n`);
+  commit(w.repo, "test: W-299 a typo in spec_reviewer");
+  const rejected = next(w, ["--all"], { clock: false });
+  assert.equal(rejected.status, 1, ran("a rejected derivation exits 1", rejected));
+  assert.match(rejected.out, /^next: W-12 spec held · actor: \S+ · why: bisellium\.yml#spec_reviewer: qa-leed is not a declared seat · /m, ran("the held line is printed as next W-12 holds", rejected));
+  writeFileSync(join(w.studio, "bisellium.yml"), manifest);
+  commit(w.repo, "test: W-299 the setting restored");
+  // a record in the working tree only (in neither master nor opus/<id>) is refused as next <opus> refuses it
+  other("W-19", "greenlit");
+  const working = next(w, ["--all"], { clock: false });
+  assert.equal(working.status, 1, ran("a working-only record exits 1", working));
+  assert.ok(working.out.split("\n").includes("next: W-19 failed · why: unknown opus: opera/W-19.md is in the working tree only, in neither master nor opus/W-19, so next W-19 refuses it"), ran("the working-only id is refused", working));
+  const alone = next(w, ["W-19", "--budget", "400000"], { clock: false });
+  assert.equal(alone.status, 2, ran("next W-19 refuses it too", alone));
+  assert.ok(alone.err.includes("unknown opus: W-19"), ran("as an unknown opus", alone));
+  rmSync(join(w.studio, "opera", "W-19.md"));
+  // --all takes no <opus> and no flag but --studio and --repo
+  for (const [args, why] of [[["--all", "W-12"], "--all takes no <opus>"], [["--all", "--budget", "400000"], "--all takes only --studio and --repo"], [["--all", "--perform"], "--all takes only --studio and --repo"]] as const) {
+    const o = next(w, [...args], { clock: false });
+    assert.equal(o.status, 2, ran(`${args.join(" ")}: exit 2`, o));
+    assert.ok(o.err.includes(why), ran(`${args.join(" ")}: ${why}`, o));
+  }
+});

@@ -1,0 +1,19 @@
+# opus: W-299
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15718-e5da-7801-a2ab-d791b30e3c59
+# outcome: failed
+# at: 2026-10-20T02:22:23.210Z
+# tree: tree:6760e1f0e8406471ebc497fcc315525375b25133
+# brief: briefs/W-299.md blob:69fef83d99e1fe0f049127c9af1108c80b0db9f4
+# ticket: {"opus":"W-299","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"5cf227758682401af626165bab03514ead05de8c","brief":"69fef83d99e1fe0f049127c9af1108c80b0db9f4","at":"2026-10-20T02:22:22.436Z"}
+
+## Findings
+1. blocking — brief:80 [severity: S1] [design: changes] A plausible typo in `bisellium.yml#spec_reviewer` makes `deriveNext` return `held`, while malformed present `traditio` fields render as `?` or empty; the producer’s `next --all` still exits 0 because `runAll` marks only throws and unreadable lifecycle states as failures, and `W-299-b3` tests neither case. Replace brief:80 with: `| 7. Each listed opus's facts, as gather and deriveNext read them, and its traditio as runAll reads it | as for next <opus> (reused unchanged); traditio is absent, or a mapping whose sella, next and blocked_on are strings and at is an ISO time | runAll (new): a thrown derivation or present malformed traditio prints a failed line; a derived held line is retained but marks the aggregate failed; either case exits 1 after every line: pinned by W-299-b3 "a rejected derivation exits 1" and "a malformed traditio exits 1", alongside the same-step, read-only and valid-or-absent-traditio cases |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-ladder.test.ts
+2. blocking — brief:25 [severity: S1] [design: changes] A plausible untracked open `opera/<id>.md` exists in the main working tree but in neither trunk nor an opus branch; `next --all` derives and reports a held greenlight line for it, while `next <id>` refuses it as unknown, so the same-step promise fails and `W-299-b3` has no reader-disagreement case. Replace brief:25 with: `Promise same-step: each next --all line names the step, status and actor next <opus> would derive before the dispatch gate, and the traditio of the record that gate reads; runAll first applies runNext's unknown-opus refusal, so a working-only id absent from both trunk and branch prints failed and makes exit 1. The open set trusts the main checkout's working-tree state while derivation trusts next <opus>'s trunk/branch records: when they disagree, inclusion follows the working record and the step follows trunk/branch. Limit: no --budget or stale-handover hold, no step health and no command; the open states are greenlit, building, verifying and review, so a done opus whose retro is owed is not listed.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-ladder.test.ts
+
+## Verdict
+The signed brief fails because the new aggregate reader can report success for rejected inputs and cannot guarantee parity with `next <opus>` for a working-only record.
+VERDICT: FAIL

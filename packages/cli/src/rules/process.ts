@@ -453,7 +453,7 @@ function sectionOf(lines: string[], from: number): number[] {
   return out;
 }
 
-/** W-186: every `block` finding for one handoff text against the opera, keyed by filename id. Pure; never throws. */
+/** W-186, W-299: every `block` finding for one handoff text against the opera, keyed by filename id. Pure; never throws. */
 export function sessionHandoffFindings(text: string, opera: ReadonlyMap<string, HandoffOpus>): Finding[] {
   const findings: Finding[] = [];
   const add = (rule: string, line: number | undefined, message: string): void => {
@@ -462,75 +462,24 @@ export function sessionHandoffFindings(text: string, opera: ReadonlyMap<string, 
   const lines = text.split("\n");
   const headings = (re: RegExp): number[] => lines.flatMap((l, i) => (re.test(l) ? [i] : []));
   const queueAt = headings(/^## Queue\s*$/);
-  const resumeAt = headings(/^## Resume point/);
-  const stateOf = (id: string): string | undefined => opera.get(id)?.state;
 
-  let headed = true;
+  // W-299 (D-077 B): work state is the opus records, read by `next --all`; the handoff keeps no Resume point
+  for (const i of headings(/^## Resume point/)) add("process.handoff.resume", i + 1, "the handoff keeps no Resume point: work state is the opus records, read by next --all (D-077 B)");
+
   if (queueAt.length !== 1) {
-    headed = false;
     add("process.handoff.input", queueAt[1] === undefined ? undefined : queueAt[1] + 1, queueAt.length === 0 ? "no ## Queue heading" : "more than one ## Queue heading");
-  }
-  let resumeDate = "";
-  if (resumeAt.length !== 1) {
-    headed = false;
-    add("process.handoff.input", resumeAt[1] === undefined ? undefined : resumeAt[1] + 1, resumeAt.length === 0 ? "no ## Resume point heading" : "more than one ## Resume point heading");
   } else {
-    const m = /^## Resume point \((\d{4})-(\d{2})-(\d{2})\)\s*$/.exec(lines[resumeAt[0]!]!);
-    resumeDate = m === null ? "" : `${m[1]}-${m[2]}-${m[3]}`;
-    // a real calendar date: it survives a Date.UTC round trip
-    if (m === null || new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).toISOString().slice(0, 10) !== resumeDate) {
-      headed = false;
-      add("process.handoff.input", resumeAt[0]! + 1, "the Resume heading must be ## Resume point (YYYY-MM-DD) with a real date");
-    }
-  }
-
-  if (headed) {
-    // Queue: every id token in the section; a done or halted one is stale, and every greenlit opus must be named
+    // Queue: every id token names a record and every greenlit opus is named; W-299: a done or halted id is no finding,
+    // so making an opus done asks no handoff edit (the Queue moves to studio/queue.yml in W-299 part 2)
     const queued = new Set<string>();
     for (const i of sectionOf(lines, queueAt[0]!)) {
       for (const id of lines[i]!.match(ID_TOKEN) ?? []) {
         if (queued.has(id)) continue;
         queued.add(id);
-        const state = stateOf(id);
-        if (state === undefined) add("process.handoff.input", i + 1, `${id} has no record`);
-        else if (state === "done" || state === "halted") add("process.handoff.queue", i + 1, `the Queue names ${id}, which is ${state}`);
+        if (!opera.has(id)) add("process.handoff.input", i + 1, `${id} has no record`);
       }
     }
     for (const id of [...opera.keys()].sort()) if (opera.get(id)!.state === "greenlit" && !queued.has(id)) add("process.handoff.queue", undefined, `${id} is greenlit and the Queue does not name it`);
-
-    // Resume: the Next field, status claims about a done opus, and the date
-    const resume = sectionOf(lines, resumeAt[0]!);
-    const seen = new Set<string>();
-    for (let k = 0; k < resume.length; k++) {
-      if (!/^(- )?(\*\*)?Next\b[^:\n]*:/.test(lines[resume[k]!]!)) continue;
-      let end = k;
-      while (end + 1 < resume.length && /^\s+\S/.test(lines[resume[end + 1]!]!)) end++;
-      for (const i of resume.slice(k, end + 1)) {
-        for (const id of lines[i]!.match(ID_TOKEN) ?? []) {
-          if (seen.has(id)) continue;
-          seen.add(id);
-          const state = stateOf(id);
-          if (state === undefined) add("process.handoff.input", i + 1, `${id} has no record`);
-          else if (state === "done" || state === "halted") add("process.handoff.resume", i + 1, `Next names ${id}, which is ${state}`);
-          else if (!queued.has(id)) add("process.handoff.resume", i + 1, `Next names ${id}, which the Queue does not name`);
-        }
-      }
-      k = end;
-    }
-    for (const i of resume) {
-      for (const m of lines[i]!.matchAll(/\*\*(W-\d+)\*\*[^.\n]*\b(is building|in review|waits? to merge)/g)) {
-        const id = m[1]!;
-        const state = stateOf(id);
-        if (state === undefined) add("process.handoff.input", i + 1, `${id} has no record`);
-        else if (state === "done") add("process.handoff.resume", i + 1, `${id} is claimed ${m[2]}, but it is done`);
-      }
-    }
-    let newest = "";
-    for (const o of opera.values()) {
-      const at = o.state === "done" ? instant(o.end) : undefined;
-      if (at !== undefined && at.toISOString().slice(0, 10) > newest) newest = at.toISOString().slice(0, 10);
-    }
-    if (newest !== "" && resumeDate < newest) add("process.handoff.resume", resumeAt[0]! + 1, `the Resume date ${resumeDate} is earlier than ${newest}, the day the newest opus was done`);
   }
 
   // Whole file: relative references and the line cap
