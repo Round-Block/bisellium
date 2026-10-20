@@ -10,7 +10,7 @@ import { test } from "node:test";
 import { sourceTreeHash } from "@bisellium/shim";
 import { runDone } from "@bisellium/commands/lifecycle.js";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, recordText, remoteBranchExists, reviewed, scenario, scratch, sourceTree, stagedPaths, touchHandoff, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
+import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitYesNo, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, recordText, remoteBranchExists, reviewed, scenario, scratch, sourceTree, stagedPaths, touchHandoff, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
 
 
 // ---------------------------------------------------------------------------
@@ -1106,4 +1106,163 @@ test("W-299-b2 behaviour 2: the done rung asks no handoff edit: the perform comm
   const complete = next(d, [OPUS]);
   expectStep(complete, "checkpoint", "complete", "a done commit that left the handoff unchanged reads the checkpoint complete");
   assert.equal(complete.status, 0, ran("complete exits 0", complete));
+});
+
+// ---------------------------------------------------------------------------
+// W-330: the done perform accepts a certified chain (D-087 B)
+// ---------------------------------------------------------------------------
+/** A cleaned-up W-900 with one automated gate, master at its merge commit, and helpers that move master on. */
+function chainWorld(tag: string) {
+  const w = world(tag, "cleanup", { automated: true });
+  const merge = w.mergeOid!;
+  /** A later lane's merge-queue squash merge on master: a source file, its subject naming PR #<pr>. */
+  const lane = (file: string, pr: number, subject = `feat(W-${pr - 1}): a later lane (#${pr})`, more: string[] = []): string => {
+    put(w.repo, file, `${file}: a later lane's source\n`);
+    git(w.repo, ["add", "--", file, ...more]);
+    git(w.repo, ["commit", "-q", "-m", subject]);
+    return git(w.repo, ["rev-parse", "HEAD"]);
+  };
+  /** A records PR on master that changes the handoff, which the source tree hashes (as #607 did after #605). */
+  const records = (): string => {
+    touchHandoff(w);
+    git(w.repo, ["commit", "-q", "-m", "chore(studio): a records PR (#990)", "--", "docs/SESSION-HANDOFF.md"]);
+    return git(w.repo, ["rev-parse", "HEAD"]);
+  };
+  const treeOf = (sha: string): string => `tree:${sourceTreeHash(w.repo, ["studio", ".bisellium"], sha)}`;
+  return { w, merge, lane, records, treeOf };
+}
+const CHAIN_RUN = 4343;
+/** A branch read with two valid answers (git show-ref: 0 present, 1 absent); any other failure throws, so "no chore branch" cannot pass on a git error. */
+const chainBranchExists = (w: World, name: string): boolean => gitYesNo(w.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${name}`]);
+const chainRun = (sha: string, databaseId = CHAIN_RUN, conclusion = "success"): Json => ({ databaseId, headSha: sha, event: "merge_group", status: "completed", conclusion });
+const chainReceipt = (opus: string, tree: string): string =>
+  JSON.stringify({ sella: `builder.${opus}`, harness: "run", exitCode: 0, completion: { schema: 1, origin: "host-producer", opus, branch: `opus/${opus}`, builder: `builder.${opus}`, producer: "producer", finalSourceTree: tree, redReplays: [], gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true } });
+/** certify.log as ci-certify.mjs writes it for an opus head (artifact-605's shape). */
+const chainLog = (pr: number, opus: string, base: string): string => `certify: merge group for PR #${pr}\ncertify: fetching refs/pull/${pr}/head and master\ncertify: rebasing opus/${opus} onto ${base.slice(0, 12)}\ncertify: running the mint\ncertify: the mint exited 0\n`;
+function chainScenario(w: World, o: { runs?: Json[]; runList?: SlotValue; jobs?: Json[]; files: Record<string, string> }): void {
+  scenario(w, {
+    list: mergedList(w),
+    runList: o.runList ?? { stdout: o.runs ?? [] },
+    runView: { stdout: { jobs: o.jobs ?? [{ name: "gates", conclusion: "success" }, { name: "certify", conclusion: "success" }] } },
+    runDownload: { stdout: "", files: o.files },
+  });
+}
+
+test("W-330-b1 behaviour 1: when master's source moved since the merge only by a certified merge-queue merge and records, the done perform records that merge's certify certificate, naming its tree", { timeout: 1_800_000 }, () => {
+  const { w, merge, lane, records, treeOf } = chainWorld("w330-b1");
+  // W-317 merged (#606), then W-299 (#605), then a records PR (#607): the live case on master cf8a96f8
+  const later = lane("lane.txt", 903);
+  records();
+  const tree = treeOf(later);
+  assert.notEqual(tree, treeOf(merge), "the fixture: the later merge changed source");
+  assert.notEqual(sourceTree(w.repo), tree, "the fixture: master's tree is not the later merge's (the records PR changed the handoff)");
+  chainScenario(w, { runs: [chainRun(later)], files: { "receipts/r.json": chainReceipt("W-902", tree), "certify.log": chainLog(903, "W-902", merge) } });
+  const named = next(w, [OPUS]);
+  assert.equal(named.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("the chain's rung names the done perform", named));
+  const done = next(w, [OPUS, "--perform", "--expect", "done"]);
+  assert.equal(done.status, 0, ran("the certified chain's certificate is recorded: exit 0", done));
+  expectStep(done, "done", "performed", "the certified chain's certificate is recorded");
+  assert.ok(outLines(done).includes(`certificate: certify run ${CHAIN_RUN}, PR #903, merge commit ${later.slice(0, 12)}, ${tree}`), ran("the certificate names the later merge's run, PR, commit and tree", done));
+  assert.ok(outLines(done).includes(`certificate: the certified chain since ${OPUS}'s merge commit ${merge.slice(0, 12)}: ${later.slice(0, 12)}`), ran("the chain line", done));
+  const chore = `chore/done-${OPUS}`;
+  const logName = `studio/ci/${OPUS}-tests-${tree.slice(5)}.log`;
+  const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `refs/heads/${chore}`]).split("\n").sort();
+  assert.deepEqual(paths, [logName, `studio/opera/${OPUS}.md`], "the done commit carries certify's log and the record");
+  const committed = git(w.repo, ["show", `refs/heads/${chore}:${logName}`]);
+  assert.equal(committed.split("\n")[0], `certifies: ${tree}`, "the log certifies the later merge's tree");
+  assert.match(committed, new RegExp(`CI run ${CHAIN_RUN}, PR #903, merge commit ${later} \\(the newest of 1 certified source commit\\(s\\) on master since ${OPUS}'s merge commit ${merge}\\)`), "the log names the run, the PR, the later merge and the opus's merge commit");
+  const rec = parseFrontMatter(git(w.repo, ["show", `refs/heads/${chore}:studio/opera/${OPUS}.md`])).data as Json;
+  assert.deepEqual((rec["probationes"] as Json)["tests"], { status: "passed", evidence: `ci/${OPUS}-tests-${tree.slice(5)}.log`, certifies: tree }, "the record's tests gate certifies the later merge's tree");
+  assert.equal(rec["state"], "done", "the record is done");
+  const runCalls = ghCalls(w).filter((a) => a[0] === "run");
+  assert.deepEqual(runCalls.map((a) => a[1]), ["list", "view", "download"], "one run list, view and download");
+  assert.ok(runCalls[0]!.includes(later) && !runCalls[0]!.includes(merge), "the run list names the later merge, not the opus's merge commit");
+});
+
+test("W-330-b2 behaviour 2: every source commit of the chain needs its own certify run, and a link the perform cannot read holds and names verify", { timeout: 1_800_000 }, () => {
+  const { w, merge, lane, records, treeOf } = chainWorld("w330-b2");
+  const verify = `bisellium verify ${OPUS} --studio studio --repo .`;
+  const record = readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8");
+  const heldWith = (row: string, why: RegExp): void => {
+    const o = next(w, [OPUS, "--perform", "--expect", "done"]);
+    expectHeld(o, row);
+    const line = outLines(o).find((l) => l.startsWith("why: ")) ?? "";
+    assert.match(line, why, ran(`${row}: the reason`, o));
+    assert.ok(line.includes(verify), ran(`${row}: the why line names verify`, o));
+    assert.equal(readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8"), record, `${row}: the record is unchanged`);
+    assert.equal(chainBranchExists(w, `chore/done-${OPUS}`), false, `${row}: no chore/done-<id>`);
+  };
+  const reset = (): void => void git(w.repo, ["reset", "-q", "--hard", merge]);
+  const h = (sha: string): string => sha.slice(0, 12);
+
+  // a chain with a non-certified source commit refuses, even when the newest is certified
+  let early = lane("early.txt", 902);
+  let later = lane("lane.txt", 903);
+  chainScenario(w, { runs: [chainRun(later)], files: { "receipts/r.json": chainReceipt("W-902", treeOf(later)), "certify.log": chainLog(903, "W-902", early) } });
+  heldWith("a chain with a non-certified source commit refuses", new RegExp(`master's source changed since the merge commit ${h(merge)} at ${h(early)} \\(early\\.txt\\), and 0 merge-queue CI runs name the commit ${h(early)}`));
+  chainScenario(w, { runs: [chainRun(early, 4342, "failure"), chainRun(later)], files: { "receipts/r.json": chainReceipt("W-902", treeOf(later)), "certify.log": chainLog(903, "W-902", early) } });
+  heldWith("an older source commit whose run failed refuses", new RegExp(`at ${h(early)} \\(early\\.txt\\), and CI run 4342 is completed, failure`));
+  reset();
+
+  // the merge commit off master's first-parent line refuses
+  git(w.repo, ["checkout", "-q", "--detach", `${merge}~1`]);
+  put(w.repo, "side.txt", "a side line's source\n");
+  git(w.repo, ["add", "--", "side.txt"]);
+  git(w.repo, ["commit", "-q", "-m", "feat: a side line (#904)"]);
+  git(w.repo, ["merge", "-q", "--no-ff", "-m", "merge the opus in from the side (#905)", merge]);
+  git(w.repo, ["branch", "-f", "master", "HEAD"]);
+  git(w.repo, ["switch", "-q", "master"]);
+  const side = git(w.repo, ["rev-parse", "HEAD"]);
+  chainScenario(w, { runs: [chainRun(side)], files: { "receipts/r.json": chainReceipt("W-904", treeOf(side)), "certify.log": chainLog(905, "W-904", merge) } });
+  heldWith("the merge commit off master's first-parent line", new RegExp(`the merge commit ${h(merge)} is not on master's first-parent line`));
+  reset();
+
+  // the newest certified merge's own links: its run, the PR its subject names, the log, the receipt
+  later = lane("lane.txt", 903);
+  records();
+  const tree = treeOf(later);
+  const files = (pr = 903, opus = "W-902", receiptTree = tree, receiptOpus = opus): Record<string, string> => ({ "receipts/r.json": chainReceipt(receiptOpus, receiptTree), "certify.log": chainLog(pr, opus, merge) });
+  chainScenario(w, { runs: [chainRun(later)], jobs: [{ name: "certify", conclusion: "skipped" }], files: files() });
+  heldWith("the later merge's certify job skipped", new RegExp(`at ${h(later)} \\(lane\\.txt\\), and CI run ${CHAIN_RUN} has no one successful certify job`));
+  chainScenario(w, { runList: { exit: 1, stderr: "HTTP 502" }, files: files() });
+  heldWith("gh run list failing", new RegExp(`at ${h(later)} \\(lane\\.txt\\), and gh run list failed`));
+  chainScenario(w, { runs: [chainRun(later)], files: files(904) });
+  heldWith("a log for another PR than the subject names", /certify\.log does not show PR #903's mint exiting 0/);
+  chainScenario(w, { runs: [chainRun(later)], files: files(903, "W-902", tree, "W-777") });
+  heldWith("a receipt of another opus than the log rebased", /the receipt is not W-902's/);
+  chainScenario(w, { runs: [chainRun(later)], files: files(903, "W-902", sourceTree(w.repo)) });
+  heldWith("a receipt of master's tree, not the later merge's", new RegExp(`not the merge commit's ${tree}`));
+  reset();
+  later = lane("lane.txt", 903, "feat(W-902): a later lane with no PR number");
+  chainScenario(w, { runs: [chainRun(later)], files: files() });
+  heldWith("a subject that names no PR", new RegExp(`the commit ${h(later)}'s subject names no PR as \\(#<n>\\)`));
+  reset();
+
+  // the policy refusals stand inside a chain: a certified merge that adds a gate, or edits the opus's record
+  put(w.studio, "bisellium.yml", readFileSync(join(w.studio, "bisellium.yml"), "utf8").replace("source_excludes:", '  - { id: lint, name: Lint, kind: automated, command: "node -e 0" }\nsource_excludes:'));
+  later = lane("lane.txt", 903, undefined, ["studio/bisellium.yml"]);
+  chainScenario(w, { runs: [chainRun(later)], files: files(903, "W-902", treeOf(later)) });
+  heldWith("a certified merge that adds a gate", new RegExp(`master changed studio/bisellium\\.yml since the merge commit ${h(merge)}, which certify's run did not judge`));
+  reset();
+  editRecord(w, "repo", (doc) => doc.setIn(["title"], "W-124 fixture: retitled by a later lane"));
+  later = lane("lane.txt", 903, undefined, [`studio/opera/${OPUS}.md`]);
+  const retitled = readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8");
+  chainScenario(w, { runs: [chainRun(later)], files: files(903, "W-902", treeOf(later)) });
+  const o = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(o, "a certified merge that edits the opus's record");
+  assert.match(outLines(o).find((l) => l.startsWith("why: ")) ?? "", new RegExp(`master changed studio/opera/${OPUS}\\.md since the merge commit ${h(merge)}`), ran("a certified merge that edits the opus's record: the reason", o));
+  assert.equal(readFileSync(join(w.studio, "opera", `${OPUS}.md`), "utf8"), retitled, "a certified merge that edits the opus's record: the record is unchanged");
+  reset();
+
+  // two certified merges: each one's run is read, and the newest one's receipt names the tree
+  early = lane("early.txt", 902);
+  later = lane("lane.txt", 903);
+  chainScenario(w, { runs: [chainRun(early, 4342), chainRun(later)], files: { "receipts/r.json": chainReceipt("W-902", treeOf(later)), "certify.log": chainLog(903, "W-902", early) } });
+  const done = next(w, [OPUS, "--perform", "--expect", "done"]);
+  assert.equal(done.status, 0, ran("two certified merges: exit 0", done));
+  assert.ok(outLines(done).includes(`certificate: certify run ${CHAIN_RUN}, PR #903, merge commit ${h(later)}, ${treeOf(later)}`), ran("two certified merges: the newest one's certificate", done));
+  assert.ok(outLines(done).includes(`certificate: the certified chain since ${OPUS}'s merge commit ${h(merge)}: ${h(early)}, ${h(later)}`), ran("two certified merges: the chain line names both", done));
+  const runCalls = ghCalls(w).filter((a) => a[0] === "run");
+  assert.deepEqual(runCalls.map((a) => a[1]), ["list", "view", "list", "view", "download"], "two certified merges: each one's run is read, the newest one's artifact downloaded");
+  assert.ok(runCalls[0]!.includes(early) && runCalls[2]!.includes(later) && runCalls[4]!.includes(String(CHAIN_RUN)), "two certified merges: oldest first, the newest run's artifact");
 });
