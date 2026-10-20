@@ -32,7 +32,7 @@ import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/buil
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
-import { SESSION_ID, buildReviewDrift, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
@@ -156,7 +156,7 @@ interface SpecReviewer {
   design: string;
 }
 /** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
-type SpecGate = { kind: "signature" } | { kind: "review"; signature: string; brief: string } | { kind: "failed"; review: string; failed: string[] } | { kind: "ready"; review: string } | { kind: "split"; failed: string[] } | { kind: "invalid" };
+type SpecGate = { kind: "signature" } | { kind: "review"; signature: string; brief: string } | { kind: "failed"; review: string; failed: string[] } | { kind: "ready"; review: string } | { kind: "keeps"; review: string; fixes: string[] } | { kind: "split"; failed: string[] } | { kind: "invalid" };
 interface SpecEvidence {
   ok: boolean;
   why: string;
@@ -269,8 +269,12 @@ function readSpecSignature(text: string, id: string, round: number, design: stri
   return { round, log: rel };
 }
 
-/** A spec review: strict syntax, the configured reviewer and exact model, `passed` or `failed`, findings that agree with it. */
-function readSpecReview(text: string, id: string, round: number, reviewer: SpecReviewer, brief: string, rel: string): { round: number; log: string; outcome: "passed" | "failed" } | { error: string } {
+/**
+ * A spec review: strict syntax, the configured reviewer and exact model, `passed` or `failed`, findings that agree with it.
+ * W-297 (D-086 A): `keeps` names each standing blocker (`<log> #<n>`) of a failed review whose every standing blocker carries
+ * `[design: keeps]`; otherwise it is empty.
+ */
+function readSpecReview(text: string, id: string, round: number, reviewer: SpecReviewer, brief: string, rel: string): { round: number; log: string; outcome: "passed" | "failed"; keeps: string[] } | { error: string } {
   const p = parseVerdictLog(text, id, rel);
   if ("error" in p) return p;
   const problem = specLogProblem(p, rel, round, reviewer.sella, brief, ["phase", "round", "sella", "model", "outcome"]);
@@ -282,7 +286,9 @@ function readSpecReview(text: string, id: string, round: number, reviewer: SpecR
   if (outcome === "failed" && !standingBlocker(p)) return { error: `${rel}: outcome failed with no blocking finding` };
   const unchecked = p.findings.find((f) => !/\bcheck: \S/.test(f.text));
   if (unchecked !== undefined) return { error: `${rel}: finding ${unchecked.n} names no check ("check: <value>")` };
-  return { round, log: rel, outcome };
+  const blockers = p.findings.filter((f) => f.blocking);
+  const keeps = outcome === "failed" && blockers.every((f) => designOf(f.text) === "keeps") ? blockers.map((f) => `${rel} #${f.n}`) : [];
+  return { round, log: rel, outcome, keeps };
 }
 
 /**
@@ -339,7 +345,7 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
   const anchor = [...read].reverse().find((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, expected, l.rel)));
   if (anchor === undefined) return result(`no ${reviewer.design} signature names the current ${briefRel(id)} (ci/${id}-spec-<n>.log, phase spec, passed)`, { kind: "signature" });
   const above = read.filter((l) => l.n > anchor.n);
-  const reviews: { round: number; log: string; outcome: "passed" | "failed" }[] = [];
+  const reviews: { round: number; log: string; outcome: "passed" | "failed"; keeps: string[] }[] = [];
   for (const l of above) {
     const r = l.text === undefined ? { error: `${l.rel} is unreadable` } : readSpecReview(l.text, id, l.n, reviewer, expected, l.rel);
     if ("error" in r) return result(r.error, { kind: "invalid" });
@@ -351,6 +357,8 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
   if (review === undefined && failed.length >= 2) return { ...signed({ kind: "split", failed }, `${briefRel(id)}, ${anchor.rel} stand without a third review (D-061 §4)`), ok: true };
   if (review === undefined) return signed({ kind: "review", signature: anchor.rel, brief }, `${anchor.rel} is signed and awaits the spec review`);
   if (reviews.length > 1) return result(`${reviews[1]!.log} is a second reviewer verdict after ${anchor.rel} with no signature between them; a newer signature must come first`, { kind: "invalid" });
+  // W-297 (D-086 A): blockers that all keep the design are required build fixes, not a second spec round
+  if (review.keeps.length > 0) return { ...signed({ kind: "keeps", review: review.log, fixes: review.keeps }, `${review.log} failed ${anchor.rel} only on blockers that keep the design: they are required build fixes (D-086 A)`), ok: true };
   if (review.outcome === "failed") return signed({ kind: "failed", review: review.log, failed }, `${review.log} failed ${anchor.rel}; the architect revises and signs again`);
   return { ...signed({ kind: "ready", review: review.log }, `${briefRel(id)}, ${anchor.rel} and ${review.log} are the signed, reviewed spec`), ok: true };
 }
@@ -841,6 +849,8 @@ export function deriveNext(f: Facts): Derived {
   if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
   const spec = committed ?? specEvidence(pending, id, f.design, reviewer, admit, pre);
   const ui = spec.ok ? f.uiSpecProblems() : [];
+  // W-297 (D-086 A): the branch, reds, build and review orders name the required fixes a keeps-only failed spec review left
+  const fixes: [string, string][] = spec.gate?.kind === "keeps" ? [["required-fixes", spec.gate.fixes.join(", ")]] : [];
   if (onOpus && !spec.ok) {
     if (!f.wt.usable) return hold("spec", `${spec.why}; ${join(".worktrees", id)} is not a usable worktree on opus/${id}, so no spec write is ordered`);
     if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
@@ -865,7 +875,7 @@ export function deriveNext(f: Facts): Derived {
       // D-039 §1: no new opus starts while a retro is owed
       const owing = retroHold(f);
       if (owing !== undefined) return hold("branch", owing);
-      return { ...named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`), ticket: { action: "branch", round: 0 } };
+      return { ...named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`, fixes), ticket: { action: "branch", round: 0 } };
     }
   }
 
@@ -896,7 +906,7 @@ export function deriveNext(f: Facts): Derived {
         phase: "1",
         resume: bs.list(`ci/reds/${id}`).length > 0,
         inputs: [briefRel(id)],
-        extra: [["missing", missing.join(",") || "(none; see why)"]],
+        extra: [["missing", missing.join(",") || "(none; see why)"], ...fixes],
         ...(missing.length > 0 ? { behaviour: { from: missing[0]!, through: n } } : {}),
       });
 
@@ -925,6 +935,9 @@ export function deriveNext(f: Facts): Derived {
     const current = (g: Gate): boolean => g.tree === cur && (g.brief === undefined || g.brief === pin);
     const failedNow = gate !== undefined && gate.status === "failed" && current(gate);
     const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
+    // W-297 (D-085 C): a class loop goes to the architect to state the limit, not back to a builder
+    const loop = failedNow ? classLoop(f, read.rounds) : undefined;
+    if (loop !== undefined) return hold("build", loop);
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
     if ((gates !== undefined && !gates.ok) || failedNow)
@@ -932,7 +945,7 @@ export function deriveNext(f: Facts): Derived {
         phase: failedNow ? "fix" : "2",
         resume: automatedGates(f.manifest, b).some((g) => isDict(b["probationes"]) && isDict(b["probationes"][g]) && b["probationes"][g]["certifies"] !== undefined) || reviewRounds(f).length > 0,
         inputs: [briefRel(id), ...(failedNow && gate?.evidence !== undefined ? [gate.evidence] : [])],
-        extra: boundary,
+        extra: [...boundary, ...fixes],
       });
 
     // 7 review
@@ -948,7 +961,7 @@ export function deriveNext(f: Facts): Derived {
         inputs: [briefRel(id), ...(uiIn === undefined ? [] : [uiIn]), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
         ...(uiIn === undefined ? {} : { uiInput: uiIn }),
         ...(session === undefined ? {} : { session }),
-        extra: session === undefined ? [] : [["session", session]],
+        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...fixes],
       });
     }
 
@@ -1039,6 +1052,36 @@ function afterDone(f: Facts): Derived {
     command: `update ${HANDOFF}, the progress row and the masthead for ${id}, then republish`,
     extra: [],
   };
+}
+
+/**
+ * W-297 (D-085 A, C): why the fix of the newest failed build-review round is held for the architect, or undefined. It holds when
+ * the newest two rounds failed, pin one `# brief:` and share a `[class:]` tag on their standing blockers, or the newest three
+ * failed; it does not when a standing blocker of the newest round opens exactly `blocking (security)` or `blocking (evidence)`
+ * (bare or wrapped in `**`) or carries a well-formed `[class: security×<slug>]` tag, nor once an architect signature in opus/<id>'s ci/ is newer than that round.
+ */
+/** W-297: an exempt blocker's opener, exactly: `blocking (security)` or `blocking (evidence)`, any case, bare or wrapped in `**` (r2). */
+const EXEMPT = /^(?:blocking \((?:security|evidence)\)(?!\*)|\*\*blocking \((?:security|evidence)\)\*\*(?!\*))/i;
+function classLoop(f: Facts, rounds: BuildReviewRound[]): string | undefined {
+  const [a, b, c] = [...rounds].reverse();
+  if (a?.outcome !== "failed" || b?.outcome !== "failed") return undefined;
+  if (a.blockers.some((x) => EXEMPT.test(x.text) || [...x.text.matchAll(CLASS_TAG)].some((m) => m[1]!.startsWith("security×")))) return undefined;
+  const classes = (r: BuildReviewRound): string[] => r.blockers.flatMap((x) => [...x.text.matchAll(CLASS_TAG)].map((m) => m[1]!));
+  const shared = a.brief !== undefined && a.brief === b.brief ? classes(a).find((k) => classes(b).includes(k)) : undefined;
+  if (shared === undefined && c?.outcome !== "failed") return undefined;
+  if (signedAfter(f, a.at)) return undefined;
+  const loop = shared !== undefined ? `${b.log} and ${a.log} failed on class ${shared} against one brief` : `${c!.log}, ${b.log} and ${a.log} failed in a row`;
+  return `${loop}: a class loop goes to the architect, not a builder (D-085): state the limit in ${briefRel(f.id)} (the forms the rule recognises, every other form a limit) and sign it again in ${join(".worktrees", f.id, f.studioRel)}, or sign it unchanged when the form is inside the stated domain; a security or evidence blocker opens blocking (security) or blocking (evidence)`;
+}
+
+/** W-297: some valid architect signature in opus/<id>'s ci/ (the worktree's when usable) records an `# at:` after `at` (ms). */
+function signedAfter(f: Facts, at: number): boolean {
+  return (f.branch?.list("ci") ?? []).some((name) => {
+    const m = new RegExp(`^${esc(f.id)}-spec-([1-9][0-9]*)\\.log$`).exec(name);
+    const text = m === null ? undefined : f.branch!.read(`ci/${name}`);
+    if (m === null || text === undefined || "error" in readSpecSignature(text, f.id, Number(m[1]), f.design, ownBrief(text, f.id, `ci/${name}`), `ci/${name}`)) return false;
+    return (instant(parseLogHeader(text).get("at") ?? "")?.getTime() ?? 0) > at;
+  });
 }
 
 /** The lowest-numbered standing blocker that names a class (L-069): the whole word `class` or `classes`. */

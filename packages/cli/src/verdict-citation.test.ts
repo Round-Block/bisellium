@@ -123,7 +123,7 @@ function verdict(dir: string, body: string, outcome = "passed", extra: string[] 
 
 /** A findings-shaped body: one numbered line per entry, each ending in a check. */
 function findings(...lines: string[]): string {
-  return `## Findings\n${lines.map((line, i) => `${i + 1}. ${line} — check: none: x`).join("\n")}\n`;
+  return `## Findings\n${lines.map((line, i) => `${i + 1}. ${line} [severity: S1] [design: changes] — check: none: x`).join("\n")}\n`;
 }
 
 const BLOB = `blob:${createHash("sha1").update(`blob ${Buffer.byteLength(BRIEF)}\0`).update(BRIEF).digest("hex")}`;

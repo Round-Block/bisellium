@@ -1,0 +1,33 @@
+# opus: W-297
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-19T23:38:20.045Z
+# tree: tree:43416b0b53faa370768ece9e5c86f4814b94faf6
+# brief: briefs/W-297.md blob:a3956e212482b6ebbe59dbff4740e215b0218e9d
+# ticket: {"opus":"W-297","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"14b1b8831feba833c3cadca11ffbacdb9fd6834e","brief":"a3956e212482b6ebbe59dbff4740e215b0218e9d","at":"2026-10-19T23:38:16.314Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-297-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2 finding 1 answered in revision 2: the hold's exemption reads one exact opener, `blocking (security)` or `blocking (evidence)` in any case, bare or wrapped in two asterisks closed right after the parenthesis (`EXEMPT`), and a security class only as a whole well-formed tag through `CLASS_TAG` (area `security`, a slug, the closing bracket); brief:60 states it, stricter than the reviewer's replacement only in requiring the closing `**`, with the pin in the code-span form — check: brief:60, prototype-src.diff, apply-src.py
+2. advisory — the class, closed in this brief: the exemption is the one place where a malformed record could fail open (dispatch a builder instead of holding); every form its parser accepts is listed on brief:60 and every other form holds (brief:63); the other readers already fail closed on malformed input: a malformed severity or design tag reads as no tag and is refused (brief:50), a design tag that is not exactly one keeps is not keeps and returns the brief to the architect (Input domain row 2), a malformed class tag shares no class and so cannot exempt, only fail to hold early, and the run-of-three rule still holds at the third round (brief:69); `W-297-b3` rejects `*blocking (security)`, `***blocking (evidence)`, `[class: security×]` and an unclosed `[class: security×x`, and accepts `**blocking (security)**`; revision 1's prototype fails the row at the first malformed case (`row-b3-r1.out`), revision 2's passes it and all of next-review.test.ts (16 of 16) — check: reds-r2.out, row-b3-r1.out, row-b3-proto.out, flips-proto-r2.out
+3. advisory — class review×fail-open-on-malformed-records-patched-per-site recurs as an S1 (D-076 D): its cause fix is W-185 (greenlit: records, verdict logs among them, are checked once at load, D-049), named here rather than patched per site beyond this brief's own reader — check: none: W-185 is the check that should exist
+4. advisory — the split (the record's title, D-061 §6): part 1 is the three changes that end extra rounds, chosen by cycle minutes saved: the writer's tag refusals (a build finding's severity, D-085 C; a spec blocker's design tag, D-086 A; a blocker tagged S2-S4, D-086 C), the keeps-only failed spec review going to branch with its blockers named as required fixes on the branch, reds, build and review orders (D-086 A), and the class-loop hold (D-085 A and C); part 2, for the producer to file, is the class tag on every finding (D-070 B), the later-round closure of the required fixes (D-086 A), the recurring-class cause-fix hold (D-070 C, D-076 D), the retro's removal and the prompts naming blocking (security) and blocking (evidence); part 1 is 3 points, so it proceeds on this signature — check: brief:1, brief:116, brief:119
+5. advisory — the reds: each row fails by assertion on master and is accepted by the replay classifier (W-297-b1 at "a build advisory with no severity: exit", W-297-b2 at "two keeps blockers name branch", W-297-b3 at "two rounds sharing a class against one brief"); b2 also fails on stage s1 and b3 on s2; each passes on its own stage and on the prototype — check: reds.out, row-b1-master.out, row-b2-s1.out, row-b3-s2.out, row-b3-proto.out
+6. advisory — the flips: 57 existing rows (27 of them verdict-citation's, through its one findings helper) fail unedited on the prototype at the writer's new refusal and pass with the tags added to their fixtures; W-246-b3, one of them, flips by design (three failed rounds now hold the fix) and its edit answers each hold with an architect signature; the Codex test check names the same rows and no unnamed flip — check: light-proto-unedited.out, next-proto-unedited.out, flips-proto.out, fixture-census.md
+7. advisory — every other test file that mentions a verdict passes unedited on the prototype, among them next.test.ts, next-done, next-queue, ladder-followon, retro-opus, containment and review-packet; lint, format, typecheck and both officina checks pass — check: neighbours-proto.out, lint-proto.out, format-proto.out, typecheck-proto.out, check-studio.out, check-sample.out
+8. advisory — measured on master's 771 recorded spec and build logs: W-179's spec round 8 is the one failed review that would have gone to branch; the hold would have stopped W-178 after round 2 and six other opera after a third failed round in a row; 22 of the 86 logs since 2026-10-17 lack a required tag, each a reissue under D-086 C — check: census.out
+9. advisory — unchanged code stays a stated limit, not a guarantee (D-076 E); the review prompts do not yet name the exempt forms, stated as a limit and moved to part 2; no code-owned path is touched — check: brief:74, brief:75
+10. advisory — the brief passes admission, and its ledger covers every Input domain row and promise through master's writer, every row pinned or unpinned and scoped, both forms clauses citing pinned grammar lines — check: admission.out, ledger-check.out, promise-ledger.md
+
+## Earlier findings
+
+- ci/W-297-spec-2.log #1: closed — brief:60 now admits only `blocking (security)`/`blocking (evidence)` bare or as `**…**` and a well-formed `[class: security×<slug>]`; next.ts `EXEMPT` and `CLASS_TAG` parse exactly that, and W-297-b3 holds on `*blocking (security)`, `***blocking (evidence)`, `[class: security×]` and an unclosed `[class: security×x` (row-b3-r1.out fails at the first, row-b3-proto.out passes)
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), W-297 part 1 brief revision 2 at `studio/briefs/W-297.md`, prototype on master 53cdc015.

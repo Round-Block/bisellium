@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-297-b1\s --import tsx packages/cli/src/verdict-findings.test.ts
+# exit: 1
+# at: 2026-10-19T23:41:14.673Z
+# sella: builder.W-297
+# tree: tree:b35ab644fb27751de36792815f3b65a1eb005272
+# ticket: {"opus":"W-297","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-297/studio","head":"6504440d1089c0cbabe445a72272bf697c0e2171","brief":"a3956e212482b6ebbe59dbff4740e215b0218e9d","at":"2026-10-19T23:41:10.199Z"}
+
+TAP version 13
+# Subtest: W-297-b1 behaviour 1: verdict refuses a build finding without a severity, a blocker tagged S2-S4 and a spec blocker without a design tag
+not ok 1 - W-297-b1 behaviour 1: verdict refuses a build finding without a severity, a blocker tagged S2-S4 and a spec blocker without a design tag
+  ---
+  duration_ms: 20.846097
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/verdict-findings.test.ts:150:70'
+  failureType: 'testCodeFailure'
+  error: |-
+    a build advisory with no severity: exit (stderr "")
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/verdict-findings.test.ts:478:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-297/packages/cli/src/verdict-findings.test.ts:492:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 122.753091

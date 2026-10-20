@@ -454,7 +454,7 @@ export function writeReceipt(w: World, kind: "current" | "stale"): void {
     }),
   );
 }
-export function addReview(w: World, outcome: "passed" | "failed", round: number, at: string, body = outcome === "failed" ? "1. blocking: fixture defect at brief:1. check: none: fixture" : "No findings", extra: string[] = []): void {
+export function addReview(w: World, outcome: "passed" | "failed", round: number, at: string, body = outcome === "failed" ? "1. blocking: fixture defect at brief:1 [severity: S1]. check: none: fixture" : "No findings", extra: string[] = []): void {
   verb(w.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(w, `review-${round}.md`, body), "--studio", w.wtStudio, "--now", at, ...extra]);
   verb(w.wt, ["review", OPUS, outcome === "passed" ? "--pass" : "--fail", "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", w.wtStudio, "--now", at]);
   commit(w.wt, `studio(${OPUS}): review round ${round} ${outcome}`);
@@ -914,7 +914,7 @@ export const SR_ROW = `  - { id: ${SR}, collegium: qa, kind: agent, model: ${SR_
 export const QA_ROW = "  - { id: qa-lead, collegium: qa, kind: agent }";
 export const BUDGET = ["--budget", "100000"];
 export const NO_FINDINGS = "## Findings\nNo findings\n";
-export const BLOCKER = "## Findings\n1. blocking brief:7 the Input domain omits a record it reads. check: none: no rule\n";
+export const BLOCKER = "## Findings\n1. blocking brief:7 the Input domain omits a record it reads [design: changes]. check: none: no rule\n";
 export const BRIEF_REL = "studio/briefs/W-900.md";
 export const specLog = (n: number): string => `studio/ci/${OPUS}-spec-${n}.log`;
 
@@ -984,7 +984,7 @@ export const landed = (w: World): void => commit(w.repo, "spec: signed and revie
 // ---------------------------------------------------------------------------
 /** Round n's recorded time: 04:00 for round 1, then every half hour (all before the 09:00 handover). */
 export const rt = (n: number): string => new Date(Date.parse("2026-10-02T03:30:00.000Z") + n * 30 * 60_000).toISOString();
-export const plain = (t = "fixture defect"): string => `blocking: ${t} at brief:1. check: none: fixture`;
+export const plain = (t = "fixture defect"): string => `blocking: ${t} at brief:1 [severity: S1]. check: none: fixture`;
 /** A Findings body: each line is numbered in order; "pass" is a passed round. */
 export const found = (...lines: string[]): string => lines.map((l, i) => `${i + 1}. ${l}`).join("\n");
 export const F = found(plain());

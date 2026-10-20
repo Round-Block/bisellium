@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BLOCKER, BRANCH, BRIEF_REL, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, w167, world } from "./next-world.test.js";
+import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
 const readLog = (w: World, n: number): string => readFileSync(join(w.repo, specLog(n)), "utf8");
@@ -461,7 +461,7 @@ test("W-246-b1 behaviour 1: an advisory-only spec review passes", { timeout: 1_8
   const rows: [string, string][] = [
     ["advisory", "## Findings\n1. advisory brief:7 a wording note. check: none: x\n"],
     ["none", NO_FINDINGS],
-    ["uncited", "## Findings\n1. blocking the Input domain omits a record. check: none: x\n"],
+    ["uncited", "## Findings\n1. blocking the Input domain omits a record [design: changes]. check: none: x\n"],
   ];
   for (const [name, body] of rows) {
     const w = srWorld(`w246-b1-${name}`);
@@ -544,10 +544,18 @@ test("W-246-b2 behaviour 2: two failed spec reviews since the newest re-spec end
 
 test("W-246-b3 behaviour 3: build review has no cap", { timeout: 1_800_000 }, () => {
   const w = w167("w246-b3", [F, F, F]);
+  // W-297 (D-085 C): three failed rounds in a row hold the fix until the architect signs again; that is routing, not a cap
+  const resign = (n: number, after: number): void => {
+    verb(w.wt, ["verdict", OPUS, "--round", String(n), "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, `w246-resign-${n}.md`), "--studio", w.wtStudio, "--now", new Date(Date.parse(rt(after)) + 10 * 60_000).toISOString()]);
+    commit(w.wt, `studio(${OPUS}): the architect signs again`);
+  };
+  expectStep(n167(w), "build", "held", "three failures hold the fix for the architect");
+  resign(2, 3);
   buildFix(n167(w), "three failures name build, phase fix");
   advanceSource(w);
   reviewNamed(n167(w), 4, "a fix names round 4");
   addReview(w, "failed", 4, rt(4), F);
+  resign(3, 4);
   buildFix(n167(w), "a fourth failure names build, phase fix again");
   trial(w, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", "\nround_rulings: nonsense\n---\n") }], () => buildFix(n167(w), "round_rulings is no longer read"));
   const order = w167("w246-b3-order", [F]);
@@ -704,4 +712,65 @@ test("W-264-b2 behaviour 2: with no limit declared, next's signature gates admit
   sign(alone, 1);
   landed(alone);
   expectStep(specNext(alone), "branch", "named", "no limit, no reviewer: a signed, committed light brief names branch");
+});
+
+// ---------------------------------------------------------------------------
+// W-297 (D-086 A): a failed spec review whose every standing blocker keeps the design goes to branch, its blockers
+// the required fixes the branch, reds, build and review orders name.
+// ---------------------------------------------------------------------------
+test("W-297-b2 behaviour 2: a failed spec review whose blockers all keep the design goes to branch, its blockers named as required fixes", { timeout: 1_800_000 }, () => {
+  const KEEPS = (t: string): string => `blocking brief:7 ${t} [severity: S1] [design: keeps]. check: none: no rule`;
+  const CHANGES = (t: string): string => `blocking brief:7 ${t} [severity: S1] [design: changes]. check: none: no rule`;
+  const reviewed = (tag: string, ...lines: string[]): World => {
+    const w = srWorld(tag);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed", { body: `## Findings\n${lines.map((l, i) => `${i + 1}. ${l}`).join("\n")}\n` });
+    return w;
+  };
+  const FIXES = "ci/W-900-spec-2.log #1, ci/W-900-spec-2.log #2";
+
+  const keeps = reviewed("w297-b2-keeps", KEEPS("the Input domain omits a record"), KEEPS("a script's ratio is rounded"), "advisory brief:7 a nit [severity: S4] [design: changes]. check: none: no rule");
+  const o = specNext(keeps);
+  expectStep(o, "branch", "named", "two keeps blockers name branch");
+  assert.equal(o.kv.get("required-fixes"), FIXES, ran("the branch order names both blockers as required fixes", o));
+  assert.equal(o.kv.has("role"), false, ran("no architect or reviewer order", o));
+
+  // one blocker that changes the design returns the brief to the architect, as today
+  const mixed = reviewed("w297-b2-mixed", KEEPS("the Input domain omits a record"), CHANGES("the promise needs a new interface"));
+  const m = specNext(mixed);
+  architectOrder(m, 3, "a changes blocker beside a keeps blocker");
+  assert.equal(m.kv.has("required-fixes"), false, ran("no required fixes", m));
+  architectOrder(specNext(reviewed("w297-b2-changes", CHANGES("the promise needs a new interface"))), 3, "a lone changes blocker");
+  // a recorded blocker with no design tag (a log the writer did not judge) keeps today's route
+  const bare = reviewed("w297-b2-bare", KEEPS("the Input domain omits a record"));
+  const log2 = join(bare.repo, specLog(2));
+  writeFileSync(log2, readFileSync(log2, "utf8").replace(" [design: keeps]", ""));
+  architectOrder(specNext(bare), 3, "a blocker with no design tag");
+  // an uncited keeps blocker is advisory, so the round passed (W-246) and leaves no required fix
+  const uncited = reviewed("w297-b2-uncited", "blocking the Input domain omits a record [severity: S1] [design: keeps]. check: none: no rule");
+  const u = specNext(uncited);
+  expectStep(u, "branch", "named", "an uncited blocker is converted and the round passes");
+  assert.equal(u.kv.has("required-fixes"), false, ran("no required fixes", u));
+
+  // after the branch, the reds, build-fix and review orders name the same fixes
+  landed(keeps);
+  git(keeps.repo, ["branch", BRANCH]);
+  git(keeps.repo, ["worktree", "add", "-q", keeps.wt, BRANCH]);
+  verb(keeps.wt, ["ready", OPUS, "--sella", "architect", "--studio", keeps.wtStudio, "--now", T.ready]);
+  commit(keeps.wt, `studio(${OPUS}): ready`);
+  handoffAt(keeps, "wt", T.handoffFresh);
+  const reds = next(keeps, [OPUS, ...BUDGET]);
+  expectStep(reds, "reds", "named", "the reds order");
+  assert.equal(reds.kv.get("required-fixes"), FIXES, ran("the reds order names the required fixes", reds));
+  writeReds(keeps);
+  writeReceipt(keeps, "current");
+  addReview(keeps, "failed", 1, T.review1, "1. blocking: fixture defect at brief:1 [severity: S1]. check: none: fixture");
+  const fix = next(keeps, [OPUS, ...BUDGET]);
+  buildFix(fix, "a failed build round names the fix");
+  assert.equal(fix.kv.get("required-fixes"), FIXES, ran("the build order names the required fixes", fix));
+  advanceSource(keeps);
+  const again = next(keeps, [OPUS, ...BUDGET]);
+  reviewNamed(again, 2, "the next review round");
+  assert.equal(again.kv.get("required-fixes"), FIXES, ran("the review order names the required fixes", again));
 });
