@@ -99,3 +99,82 @@ Classes in more than one opus, 2026-10-05..2026-10-19:
 - class spec×input-domain-missing-or-unenforceable seen in 5 opera: W-274, W-292, W-306, W-312, W-316
 - class spec×promise-unattainable-under-accepted-domain seen in 5 opera: W-264, W-274, W-293, W-302, W-312
 - class tests×ruled-case-uncovered seen in 3 opera: W-178, W-292, W-322
+
+### 2026-10-20
+
+| Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
+|---|---|---|---|---|
+| W-241 | 9904 | 21 | 2 | untagged 5 |
+| W-268 | 232 | 19 | 1 | S1 1 |
+| W-288 | 140 | 76 | 2 | S1 2 |
+| W-297 | 121 | 19 | 1 | S1 1 |
+| W-299 | 178 | 70 | 1 | S1 2 |
+| W-313 | 107 | 30 | 0 |  |
+| W-317 | 90 | 19 | 1 | S1 1 |
+| W-330 | 84 | 19 | 1 | S1 1 |
+| W-334 | 298 | 29 | 4 | S1 8 |
+| W-335 | 200 | 19 | 1 | S1 1 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-241 | review | 1 | passed | - |  |
+| W-241 | spec | 5 | passed | 9785 |  |
+| W-241 | spec | 6 | failed | 6 | spec×prose-contradiction-under-revision untagged, spec×promise-unattainable-under-accepted-domain untagged, spec×promise-unattainable-under-accepted-domain untagged |
+| W-241 | spec | 7 | passed | 4 |  |
+| W-241 | spec | 8 | passed | 2 |  |
+| W-268 | review | 1 | passed | - |  |
+| W-268 | spec | 1 | passed | - |  |
+| W-268 | spec | 2 | failed | 94 | spec×promise-unattainable-under-accepted-domain S1 |
+| W-268 | spec | 3 | passed | 11 |  |
+| W-268 | spec | 4 | passed | 3 |  |
+| W-268 | spec | 5 | passed | 48 |  |
+| W-268 | spec | 6 | passed | 29 |  |
+| W-288 | review | 1 | passed | - |  |
+| W-288 | review | 2 | passed | 56 |  |
+| W-288 | spec | 1 | passed | - |  |
+| W-288 | spec | 2 | failed | 7 | spec×input-without-named-rejector S1 |
+| W-288 | spec | 3 | passed | 17 |  |
+| W-288 | spec | 4 | failed | 3 | spec×input-without-named-rejector S1 |
+| W-297 | review | 1 | passed | - |  |
+| W-299 | review | 1 | passed | - |  |
+| W-299 | review | 2 | passed | 16 |  |
+| W-299 | spec | 1 | passed | - |  |
+| W-299 | spec | 2 | failed | 6 | spec×input-domain-missing-or-unenforceable S1, spec×promise-unattainable-under-accepted-domain S1 |
+| W-299 | spec | 3 | passed | 16 |  |
+| W-299 | spec | 4 | passed | 29 |  |
+| W-313 | review | 1 | passed | - |  |
+| W-317 | review | 1 | failed | - | tests×one-sided-bound-assertion S1 |
+| W-317 | review | 2 | passed | 18 |  |
+| W-317 | spec | 1 | passed | - |  |
+| W-317 | spec | 2 | passed | 5 |  |
+| W-330 | review | 1 | failed | - | tests×one-sided-bound-assertion S1 |
+| W-330 | review | 2 | passed | 25 |  |
+| W-330 | spec | 1 | passed | - |  |
+| W-330 | spec | 2 | passed | 6 |  |
+| W-334 | review | 1 | failed | - | mechanism×cycle-guard-not-propagated S1, mechanism×regex-metadata-counted-as-digits S1, mechanism×shadowed-global-treated-as-builtin S1 |
+| W-334 | review | 2 | failed | 26 | mechanism×shadowed-global-treated-as-builtin S1 |
+| W-334 | review | 3 | passed | 33 |  |
+| W-334 | spec | 1 | passed | - |  |
+| W-334 | spec | 2 | failed | 10 | spec×input-domain-missing-or-unenforceable S1, spec×input-domain-missing-or-unenforceable S1, spec×input-domain-missing-or-unenforceable S1 |
+| W-334 | spec | 3 | passed | 31 |  |
+| W-334 | spec | 4 | failed | 8 | spec×input-domain-missing-or-unenforceable S1 |
+| W-334 | spec | 5 | passed | 191 |  |
+| W-335 | review | 1 | failed | - | tests×ruled-case-uncovered S1 |
+| W-335 | review | 2 | passed | 22 |  |
+| W-335 | spec | 1 | passed | - |  |
+| W-335 | spec | 2 | passed | 8 |  |
+| W-335 | spec | 3 | passed | 120 |  |
+| W-335 | spec | 4 | passed | 4 |  |
+
+- LOOP W-334 review: class mechanism×shadowed-global-treated-as-builtin, rounds 1-2 (minutes since previous round: r1 -, r2 26)
+
+Classes in more than one opus, 2026-10-06..2026-10-20:
+- class review×evidence-backfilled-or-absent seen in 3 opera: W-178, W-179, W-312
+- class security×symlink-parent-write-escape seen in 2 opera: W-259, W-274
+- class spec×input-domain-missing-or-unenforceable seen in 8 opera: W-179, W-274, W-292, W-299, W-306, W-312, W-316, W-334
+- class spec×promise-unattainable-under-accepted-domain seen in 8 opera: W-241, W-264, W-268, W-274, W-293, W-299, W-302, W-312
+- class spec×prose-contradiction-under-revision seen in 2 opera: W-241, W-274
+- class tests×one-sided-bound-assertion seen in 2 opera: W-317, W-330
+- class tests×ruled-case-uncovered seen in 4 opera: W-178, W-292, W-322, W-335
