@@ -1,0 +1,25 @@
+# opus: W-317
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T03:38:57.675Z
+# tree: tree:dd73944f9a413ff52fdf880ba6541e6b3be76312
+# brief: briefs/W-317.md blob:5de5e42bbd88a7521e29eb05990b6610bd617a1b
+# ticket: {"opus":"W-317","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"9cb1d71d185c434093eab9bb45e3227ebb065dd0","brief":"5de5e42bbd88a7521e29eb05990b6610bd617a1b","at":"2026-10-20T03:38:51.481Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-317-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the signature pins nothing new: the newest architect signature's `# at:` and the record's title amendments (`at`, `superseded`) give the title the brief was signed under; `# ticket:`'s head was weighed and left (a git read at a commit, absent before tickets, and an uncommitted pre-signing amend would read as drift) — check: brief:17, probe.out
+2. advisory — "Files owned change" is narrowed out: Files owned lives in the brief, whose blob pin voids a signature at next's spec gate while the trunk record is greenlit (W-162, W-293); on master no brief differs from its newest signature's pin; past ready an edit rides the opus's diff (a stated limit), and a blob check here would copy next.ts's unexported pin reader in W-299's lane, so it goes to the Defaults 3 follow-on; the record title is to be narrowed to the brief's Record title line, which the rule then reads as no drift — check: brief:19, brief:21, probe.out
+3. advisory — the probe over every record with a spec log: the rule advises exactly W-169, W-183, W-208, W-229 and W-276 (greenlit, each retitled after its signature to a scope its brief does not name); done W-132, W-206, W-297 and W-313 are history and not judged; W-297 and W-313 (retitled to their briefs' own words at spec) would be no finding even if open — check: census.out, probe-detail.out, brief:23, brief:27
+4. advisory — advise, not block, and no next hold in this opus: a block would fail master's officina check for every lane until five re-signatures; next.ts belongs to W-299 part 1, so the hold is a follow-on (Defaults 3) — check: brief:25
+5. advisory — the prototype on master 7ee93389: each red fails by assertion on the stage before its own and passes on its own; eight guard mutants killed; lint, typecheck, format and both officina checks unchanged in blocking set; the neighbours and the other checkStudio callers pass, check.test.ts's two W-089 rows fail identically on the master stage — check: reds.out, mutants.out, gates-master.out, gates-proto.out, neighbours.out, check-master.out
+6. advisory — the Codex test check (run on the first draft) lists no flip; running its must-stay-green files on the prototype found `containment.test.ts`'s inventory B counting the rule's three `${id}.md` joins, so the rule now reads each record and brief by the listed file name and the inventory stays at 48; every listed file then passes — check: fixture-census.md, neighbours-census.out, brief:54
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-317.md`, prototype and census on master 7ee93389; no code-owned path touched.
