@@ -40,6 +40,7 @@ Now, one builds at a time until the re-rank opens a second lane (allowed since t
 1. (part 1 done 2026-10-20, PR #605: no Resume point, no handoff edit at done, a read-only `next --all`; part 2, the queue as a record in `studio/queue.yml`, is W-333, Now 2d)
 2. (done 2026-10-20, PR #612: the done step accepts a certified chain; no verify for the first-merged opus of a close pair)
 2a. W-334 — high (D-039): number strings of unbounded length are parsed exactly, never through `Number()`, with a check for the cause (the same S1 failed W-317 and W-330 build reviews on 2026-10-20); starts right after W-330
+2a2. W-335 — high (D-039): `ci --opus` runs W-139's records-read check, so a test missing from `test:record` fails before review, not in the merge queue (#488, #614); split out of W-250
 2b. W-283 — the Status page served, not republished: the Patron said yes to serving it publicly on GitHub Pages (2026-10-20; its `.github` change is the Patron's); trial opus 2
 2c. W-332 — step tickets close the retired dispatch guard's gap: tickets only from the gated step, a Patron-held opus refuses `amend`/`handoff`/`halt`/`waive`/`emit`, a dispatch on a held opus refused or named a limit (greenlit 2026-10-20)
 2d. W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, read by `next --all` and checked by a rule (greenlit 2026-10-20)
