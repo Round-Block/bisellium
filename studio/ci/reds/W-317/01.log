@@ -1,0 +1,47 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-317-b1\s --import tsx packages/cli/src/rules/brief-stale.test.ts
+# exit: 1
+# at: 2026-10-20T03:45:16.348Z
+# sella: builder.W-317
+# tree: tree:1fd96faf0fd6d65108e9193870f1ddff6be6f6bb
+# ticket: {"opus":"W-317","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-317/studio","head":"b765e8cb410189d54ca280c86fed90803668ceed","brief":"5de5e42bbd88a7521e29eb05990b6610bd617a1b","at":"2026-10-20T03:45:09.994Z"}
+
+TAP version 13
+# Subtest: W-317-b1 behaviour 1: an open opus retitled after its newest architect signature is advised stale
+not ok 1 - W-317-b1 behaviour 1: an open opus retitled after its newest architect signature is advised stale
+  ---
+  duration_ms: 44.79221
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-317/packages/cli/src/rules/brief-stale.test.ts:23:199'
+  failureType: 'testCodeFailure'
+  error: |-
+    a greenlit opus retitled after its signature: one advise at its record
+    + actual - expected
+    
+    + []
+    - [
+    -   'advise opera/W-900.md'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'advise opera/W-900.md'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-317/packages/cli/src/rules/brief-stale.test.ts:58:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 196.791015
