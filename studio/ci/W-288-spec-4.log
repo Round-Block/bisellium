@@ -1,0 +1,24 @@
+# opus: W-288
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15800-6caa-7161-a006-a9b4d798afd1
+# outcome: failed
+# at: 2026-10-20T06:56:14.302Z
+# tree: tree:35260c97318e2e56063f40fb6400222b26211bad
+# brief: briefs/W-288.md blob:f55ca947ffb192e0e1fcaaaf0b9e786b8367c7c7
+# ticket: {"opus":"W-288","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"84ce273efe33b1564fc7f2b24b8abc75aa119bca","brief":"f55ca947ffb192e0e1fcaaaf0b9e786b8367c7c7","at":"2026-10-20T06:56:13.500Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-288-spec/proto/split-adoption.mjs:84 [severity: S1] [design: keeps] Reached by the earlier finding’s class: `parseSplitArgs` accepts the explicitly malformed `["--repo", "--repo"]`; if the working directory contains `--repo/docs/ADOPTION.md`, it splits that directory instead of refusing before I/O as promised at brief:78 and brief:158. The test passes only because its fixture lacks that directory. [class: spec×input-without-named-rejector] — check: packages/cli/src/rules/doc-cap.test.ts
+2. advisory — studio/briefs/W-288.md:158 [severity: S2] The row also says a missing directory or an ADOPTION-file path is refused before any I/O, but those are syntactically accepted arguments and `main` must attempt `readFileSync` to reject them; the test observes only exit and unchanged files, not whether a read occurred. [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/rules/doc-cap.test.ts
+3. advisory — studio/briefs/W-288.md:47 [severity: S2] Writing the contract last preserves it when an earlier reference-file write fails, but a failure during the final `writeFileSync` can truncate or partially write the contract, so the parenthetical promise that it “stays whole” is not guaranteed. [class: spec×promise-unattainable-under-accepted-domain] — check: none: add write-fault coverage if contract preservation remains promised
+
+## Earlier findings
+- ci/W-288-spec-2.log #1: open — /home/edckt/.bisellium-evidence/W-288-spec/proto/split-adoption.mjs:84 still accepts the expressly malformed `--repo --repo`, while /home/edckt/.bisellium-evidence/W-288-spec/proto/doc-cap.test.ts:103 passes only because no `--repo` directory exists in its working fixture
+
+## Verdict
+The original input-boundary blocker remains open for an explicitly ruled malformed argv form.
+
+VERDICT: FAIL

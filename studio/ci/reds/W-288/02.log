@@ -1,0 +1,47 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-288-b2\s --import tsx packages/cli/src/rules/doc-cap.test.ts
+# exit: 1
+# at: 2026-10-20T07:10:40.820Z
+# sella: builder.W-288
+# tree: tree:9f0424b762ec38ebd98d6bfa86f5275dd0d91779
+# ticket: {"opus":"W-288","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-288/studio","head":"65aeac963d2bef5ef8f6e776b95e50896d546bb2","brief":"f55ca947ffb192e0e1fcaaaf0b9e786b8367c7c7","at":"2026-10-20T07:10:39.948Z"}
+
+TAP version 13
+# Subtest: W-288-b2 behaviour 2: a doc_caps the rule cannot read blocks at bisellium.yml\#doc_caps and judges no doc
+not ok 1 - W-288-b2 behaviour 2: a doc_caps the rule cannot read blocks at bisellium.yml\#doc_caps and judges no doc
+  ---
+  duration_ms: 5.608805
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-288/packages/cli/src/rules/doc-cap.test.ts:2:1845'
+  failureType: 'testCodeFailure'
+  error: |-
+    doc_caps null: not a mapping
+    + actual - expected
+    
+    + []
+    - [
+    -   'block bisellium.yml#doc_caps: doc_caps must be a mapping of "default" and docs/<name>.md keys to positive whole line caps'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'block bisellium.yml#doc_caps: doc_caps must be a mapping of "default" and docs/<name>.md keys to positive whole line caps'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-288/packages/cli/src/rules/doc-cap.test.ts:62:50)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17.030113

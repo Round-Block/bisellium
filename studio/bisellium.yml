@@ -48,6 +48,11 @@ spec_reviewer: spec-reviewer
 # W-127 (briefs/W-127.md): brief admission — one decree family per brief, at most
 # this many numbered behaviours, one genuine red each; `ready` and `check` enforce it.
 brief_behaviour_limit: 6
+# W-288 (D-083 B): doc.cap's line caps for top-level docs/*.md, front matter included. docs/ADOPTION.md is capped at
+# its size after part 1's move; part 2's cut lowers it to 700.
+doc_caps:
+  default: 450
+  docs/ADOPTION.md: 1032
 # W-209: the dossier's HTML pages are checkpoint records; a new page joins this list in a records PR.
 source_excludes:
   - examples/

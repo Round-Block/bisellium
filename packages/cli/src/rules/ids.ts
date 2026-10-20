@@ -40,6 +40,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "decision.shape",
   "design.review-prompt",
   "design.screen-map",
+  "doc.cap",
   "doc.fields",
   "doc.link",
   "docs.dossier.shrink",

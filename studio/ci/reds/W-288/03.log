@@ -1,0 +1,38 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-288-b3\s --import tsx packages/cli/src/rules/doc-cap.test.ts
+# exit: 1
+# at: 2026-10-20T07:11:11.746Z
+# sella: builder.W-288
+# tree: tree:e805dda0a187e2719dba94908febff0afb1f138a
+# ticket: {"opus":"W-288","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-288/studio","head":"27177d7ea18855882bb68da44c7db552b2f41e78","brief":"f55ca947ffb192e0e1fcaaaf0b9e786b8367c7c7","at":"2026-10-20T07:11:10.934Z"}
+
+TAP version 13
+# Subtest: W-288-b3 behaviour 3: docs/ADOPTION.md keeps the contract and each per-command section lives in its reference file
+not ok 1 - W-288-b3 behaviour 3: docs/ADOPTION.md keeps the contract and each per-command section lives in its reference file
+  ---
+  duration_ms: 3.316736
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-288/packages/cli/src/rules/doc-cap.test.ts:2:3131'
+  failureType: 'testCodeFailure'
+  error: 'docs/ADOPTION.md names docs/CHECK.md'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-288/packages/cli/src/rules/doc-cap.test.ts:87:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14.279311

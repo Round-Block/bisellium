@@ -1011,6 +1011,8 @@ const PINNED_D: PinnedSite[] = [
   { key: "scripts/served-e2e.mjs:<module>:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/served-e2e.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/served-e2e.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/split-adoption.mjs:main:readFileSync#1", disposition: "outside", why: "W-288: reads docs/ADOPTION.md in the repo, never an officina" },
+  { key: "scripts/split-adoption.mjs:main:writeFileSync#1", disposition: "outside", why: "W-288: writes the seven docs/*.md files in the repo, never an officina" },
   { key: "scripts/status-page.mjs:readFrontMatter:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
   { key: "scripts/status-page.mjs:readOfficina:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
   { key: "scripts/status-page.mjs:readMilestones:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },

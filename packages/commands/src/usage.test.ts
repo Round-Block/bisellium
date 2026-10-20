@@ -118,8 +118,9 @@ check("scanned every known usage constant", seen === 42, `${seen}`);
   check("ADOPTION.md §bisellium.yml contains tiers:", biselliumYmlSection.includes("tiers:"));
   check("ADOPTION.md §bisellium.yml contains munera:", biselliumYmlSection.includes("munera:"));
 
-  const runningServeSection = adoption.slice(adoption.indexOf("\n## Running serve"), adoption.indexOf("\n## ", adoption.indexOf("\n## Running serve") + 1));
-  check("ADOPTION.md §Running serve's write-route list contains POST /api/delegate", runningServeSection.includes("POST /api/delegate"));
+  const serve = readFileSync(join(repo, "docs", "SERVE.md"), "utf8");
+  const runningServeSection = serve.slice(serve.indexOf("\n## Running serve"), serve.indexOf("\n## ", serve.indexOf("\n## Running serve") + 1));
+  check("SERVE.md §Running serve's write-route list contains POST /api/delegate", runningServeSection.includes("POST /api/delegate"));
 }
 
 // W-064 behaviour 11: §Running serve names `lifecycle` on the /api/officina
@@ -127,27 +128,27 @@ check("scanned every known usage constant", seen === 42, `${seen}`);
 // semantics — three things the repo had never written down (and revisions 1
 // and 2 of the brief each got wrong in a different direction).
 {
-  const adoption = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
-  const runningServeSection = adoption.slice(adoption.indexOf("\n## Running serve"), adoption.indexOf("\n## ", adoption.indexOf("\n## Running serve") + 1));
+  const serve = readFileSync(join(repo, "docs", "SERVE.md"), "utf8");
+  const runningServeSection = serve.slice(serve.indexOf("\n## Running serve"), serve.indexOf("\n## ", serve.indexOf("\n## Running serve") + 1));
 
   const officinaLine = runningServeSection.split("\n").find((l) => l.includes("GET  /api/officina"));
-  check11("ADOPTION.md §Running serve's /api/officina line names lifecycle", officinaLine?.includes("lifecycle") === true, officinaLine ?? "(line not found)");
+  check11("SERVE.md §Running serve's /api/officina line names lifecycle", officinaLine?.includes("lifecycle") === true, officinaLine ?? "(line not found)");
 
   const eventsLine = runningServeSection.split("\n").find((l) => l.includes("GET  /api/events"));
-  check11("ADOPTION.md §Running serve's /api/events line names item=", eventsLine?.includes("item=") === true, eventsLine ?? "(line not found)");
+  check11("SERVE.md §Running serve's /api/events line names item=", eventsLine?.includes("item=") === true, eventsLine ?? "(line not found)");
 
   check11(
-    "ADOPTION.md §Running serve states an omitted limit is unlimited",
+    "SERVE.md §Running serve states an omitted limit is unlimited",
     /omitted.{0,20}limit.{0,40}unlimited/is.test(runningServeSection),
     "(sentence not found)",
   );
   check11(
-    "ADOPTION.md §Running serve states a supplied limit returns the earliest",
+    "SERVE.md §Running serve states a supplied limit returns the earliest",
     /supplied.{0,80}earliest/is.test(runningServeSection),
     "(sentence not found)",
   );
   check11(
-    "ADOPTION.md §Running serve states since is a numeric seq only",
+    "SERVE.md §Running serve states since is a numeric seq only",
     /since.{0,30}numeric/is.test(runningServeSection),
     "(sentence not found)",
   );

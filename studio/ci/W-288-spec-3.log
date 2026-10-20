@@ -1,0 +1,30 @@
+# opus: W-288
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T06:53:21.838Z
+# tree: tree:35260c97318e2e56063f40fb6400222b26211bad
+# brief: briefs/W-288.md blob:f55ca947ffb192e0e1fcaaaf0b9e786b8367c7c7
+# ticket: {"opus":"W-288","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"84ce273efe33b1564fc7f2b24b8abc75aa119bca","brief":"f55ca947ffb192e0e1fcaaaf0b9e786b8367c7c7","at":"2026-10-20T06:53:17.371Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-288-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2 finding 1 adopted, the whole input class closed: `parseSplitArgs` accepts only an empty argv or exactly `--repo <non-empty dir>` and refuses every other form (an unknown flag, `--repo=<dir>`, a bare path, `--repo` alone, an empty value, an extra argument) before any file is read; `main` routes an unreadable contract (a missing or non-directory repo) to `fail`; every refusal exits 1 through `fail` before the write loop; row 4 takes the reviewer's text with the forms the script recognises — check: brief:78, brief:123, mutants.out
+2. advisory — the S1's case is pinned in `W-288-b3`: nine malformed argvs run from one unsplit repository against another each exit 1, are refused by name and leave both byte-identical, and `--repo <dir>` then splits that repository alone; the strict-argv, argv-length, empty-value and read-refusal mutants are killed, and b3 still fails by assertion on every stage before its own — check: brief:158, row-b3-proto.out, reds.out, mutants.out
+3. advisory — round 2 advisories 2 to 4 adopted with their text: the partial-write limit (the contract is now written last, so a failed write leaves it whole), and rows 5 and 6 name `main`'s `existsSync` with `fail`, and the assertion functions of `W-288-b3` and the flipped suites — check: brief:116, brief:124, brief:125, brief:47
+4. advisory — reruns on the revised prototype: 6 reds accepted, 18 of 18 mutants killed, lint, both typechecks and format pass, the census and the script's rerun hold, the flipped readers and the test check's must-stay-green files pass (`check.test.ts`'s two W-089 rows fail identically on the master stage), and admission and the ledger pass — check: reds.out, mutants.out, gates-proto.out, census.out, neighbours-proto.out, neighbours-census-proto.out, admission.out, ledger-check.out
+
+## Earlier findings
+
+- ci/W-288-spec-2.log #1: closed — brief:78 and brief:123 refuse every argv but none or exactly `--repo <dir>` before I/O and route read failures to `fail`; pinned in W-288-b3 by "refused by name" and "neither repository changes", mutants killed (mutants.out)
+- ci/W-288-spec-2.log #2: closed — brief:116 states the partial-write limit in the reviewer's words, and brief:47's promise carries it
+- ci/W-288-spec-2.log #3: closed — brief:124 is the reviewer's row 5
+- ci/W-288-spec-2.log #4: closed — brief:125 is the reviewer's row 6
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-288.md`, prototype and census on master 3f3ad6ac; code-owned `docs/ADOPTION.md` and `studio/bisellium.yml` are touched, so the Patron merges.
