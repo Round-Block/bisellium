@@ -1237,6 +1237,11 @@ test("W-330-b2 behaviour 2: every source commit of the chain needs its own certi
   chainScenario(w, { runs: [chainRun(later)], files: files() });
   heldWith("a subject that names no PR", new RegExp(`the commit ${h(later)}'s subject names no PR as \\(#<n>\\)`));
   reset();
+  // adjacent PR numbers past Number.MAX_SAFE_INTEGER are different PRs: the subject binds to the log exactly
+  later = lane("lane.txt", 903, "feat(W-902): a later lane (#9007199254740993)");
+  chainScenario(w, { runs: [chainRun(later)], files: files(9007199254740992, "W-902", treeOf(later)) });
+  heldWith("a log for the adjacent PR number past the safe integers", /certify\.log does not show PR #9007199254740993's mint exiting 0/);
+  reset();
 
   // the policy refusals stand inside a chain: a certified merge that adds a gate, or edits the opus's record
   put(w.studio, "bisellium.yml", readFileSync(join(w.studio, "bisellium.yml"), "utf8").replace("source_excludes:", '  - { id: lint, name: Lint, kind: automated, command: "node -e 0" }\nsource_excludes:'));
