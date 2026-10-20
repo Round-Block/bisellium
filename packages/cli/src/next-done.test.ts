@@ -1138,7 +1138,7 @@ const chainRun = (sha: string, databaseId = CHAIN_RUN, conclusion = "success"): 
 const chainReceipt = (opus: string, tree: string): string =>
   JSON.stringify({ sella: `builder.${opus}`, harness: "run", exitCode: 0, completion: { schema: 1, origin: "host-producer", opus, branch: `opus/${opus}`, builder: `builder.${opus}`, producer: "producer", finalSourceTree: tree, redReplays: [], gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true } });
 /** certify.log as ci-certify.mjs writes it for an opus head (artifact-605's shape). */
-const chainLog = (pr: number, opus: string, base: string): string => `certify: merge group for PR #${pr}\ncertify: fetching refs/pull/${pr}/head and master\ncertify: rebasing opus/${opus} onto ${base.slice(0, 12)}\ncertify: running the mint\ncertify: the mint exited 0\n`;
+const chainLog = (pr: number | string, opus: string, base: string): string => `certify: merge group for PR #${pr}\ncertify: fetching refs/pull/${pr}/head and master\ncertify: rebasing opus/${opus} onto ${base.slice(0, 12)}\ncertify: running the mint\ncertify: the mint exited 0\n`;
 function chainScenario(w: World, o: { runs?: Json[]; runList?: SlotValue; jobs?: Json[]; files: Record<string, string> }): void {
   scenario(w, {
     list: mergedList(w),
@@ -1270,4 +1270,16 @@ test("W-330-b2 behaviour 2: every source commit of the chain needs its own certi
   const runCalls = ghCalls(w).filter((a) => a[0] === "run");
   assert.deepEqual(runCalls.map((a) => a[1]), ["list", "view", "list", "view", "download"], "two certified merges: each one's run is read, the newest one's artifact downloaded");
   assert.ok(runCalls[0]!.includes(early) && runCalls[2]!.includes(later) && runCalls[4]!.includes(String(CHAIN_RUN)), "two certified merges: oldest first, the newest run's artifact");
+});
+
+test("W-330-b2 behaviour 2 review round 2: an exactly matching PR number past the safe integers performs (W-334, ci/W-330-review-2.log #1)", { timeout: 1_800_000 }, () => {
+  const { w, merge, lane, treeOf } = chainWorld("w334-w330-b2");
+  // the other side of W-330-b2's adjacent-number case: a reader that refused every suffix past the safe integers would hold here
+  const later = lane("lane.txt", 903, "feat(W-902): a later lane (#9007199254740993)");
+  const tree = treeOf(later);
+  chainScenario(w, { runs: [chainRun(later)], files: { "receipts/r.json": chainReceipt("W-902", tree), "certify.log": chainLog("9007199254740993", "W-902", merge) } });
+  const done = next(w, [OPUS, "--perform", "--expect", "done"]);
+  assert.equal(done.status, 0, ran("an exactly matching unbounded PR number performs: exit 0", done));
+  expectStep(done, "done", "performed", "an exactly matching unbounded PR number performs");
+  assert.ok(outLines(done).includes(`certificate: certify run ${CHAIN_RUN}, PR #9007199254740993, merge commit ${later.slice(0, 12)}, ${tree}`), ran("the certificate names the PR as the subject wrote it", done));
 });
