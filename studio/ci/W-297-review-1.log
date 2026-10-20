@@ -1,0 +1,18 @@
+# opus: W-297
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a156b6-40a8-7e90-91da-347732055ac2
+# outcome: passed
+# at: 2026-10-20T00:32:17.776Z
+# tree: tree:2352a820c261c19c4073053d803ed9f9475a7de8
+# brief: briefs/W-297.md blob:a3956e212482b6ebbe59dbff4740e215b0218e9d
+# ticket: {"opus":"W-297","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-297/studio","head":"d1f64381c8a5588e5e292dff05ed634b0d090fef","brief":"a3956e212482b6ebbe59dbff4740e215b0218e9d","at":"2026-10-20T00:29:04.767Z"}
+
+## Findings
+1. advisory — packages/cli/src/next.ts:1064 [severity: S3] `EXEMPT` treats malformed suffix forms such as `blocking (security)x` and `**blocking (security)**x` as exempt, dispatching a builder instead of holding; add these limit cases to `packages/cli/src/next-review.test.ts`. — check: packages/cli/src/next-review.test.ts [class: review×fail-open-on-malformed-records-patched-per-site]
+
+## Verdict
+The specified behaviors and evidence otherwise align; the remaining defect affects an excluded malformed form and is advisory.
+VERDICT: PASS
