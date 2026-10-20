@@ -34,7 +34,9 @@ export function captureGroup(pattern, k) {
     } else if (c === "(") {
       const capturing =
         pattern[i + 1] !== "?" || (pattern[i + 2] === "<" && pattern[i + 3] !== "=" && pattern[i + 3] !== "!");
-      open.push({ at: i, n: capturing ? ++n : 0 });
+      // the group's pattern starts after a named group's `?<name>`: a name is never counted
+      const named = capturing && pattern[i + 1] === "?" && pattern.indexOf(">", i) > 0;
+      open.push({ at: named ? pattern.indexOf(">", i) : i, n: capturing ? ++n : 0 });
     } else if (c === ")") {
       const g = open.pop();
       if (g !== undefined && g.n === k) return pattern.slice(g.at + 1, i);
@@ -76,7 +78,7 @@ export function maxDigits(src) {
       i +=
         src[i + 1] === "?"
           ? src[i + 2] === "<" && src[i + 3] !== "=" && src[i + 3] !== "!"
-            ? src.indexOf(">", i) + 1 - i
+            ? Math.max(src.indexOf(">", i) + 1 - i, 3)
             : 3
           : 1;
       continue;
@@ -122,7 +124,8 @@ function variableOf(scope, name) {
 /** Every value written to the variable `id` names, each with the for-of statement it is the iterable of, if any. */
 function writesOf(id, scope, depth) {
   const v = variableOf(scope, id.name);
-  // ponytail: a depth cap, not a visited set, stops a cycle (`a = b; b = a`): 16 hops is past any real chain
+  // ponytail: a depth cap, not a visited set, stops a cycle (`a = b; b = a`): 16 hops is past any real chain; every caller
+  // that follows a variable passes its incremented depth on, so one depth bounds the whole recursion
   if (v === undefined || depth > 16 || v.defs.length !== 1) return undefined;
   const loop = v.defs[0].node.parent?.parent;
   const forOf = loop?.type === "ForOfStatement" && loop.left === v.defs[0].node.parent ? loop : undefined;
@@ -149,7 +152,7 @@ function stringOf(node, scope, depth) {
   if (node.type === "BinaryExpression" && node.operator === "+")
     return stringOf(node.left, scope, depth) + stringOf(node.right, scope, depth);
   if (node.type === "Identifier") {
-    const w = writesOf(node, scope, depth + 1);
+    const w = writesOf(node, scope, ++depth);
     return w?.writes.length === 1 && !w.writes[0].forOf ? stringOf(w.writes[0].expr, scope, depth) : "";
   }
   return "";
@@ -170,7 +173,7 @@ function regexOf(node, scope, depth) {
     return { pattern: stringOf(node.arguments[0], scope, depth), global: flags.includes("g") };
   }
   if (node.type === "Identifier") {
-    const w = writesOf(node, scope, depth + 1);
+    const w = writesOf(node, scope, ++depth);
     return w?.writes.length === 1 && !w.writes[0].forOf ? regexOf(w.writes[0].expr, scope, depth) : undefined;
   }
   return undefined;
@@ -204,7 +207,7 @@ function matchOf(node, scope, depth) {
   if (method(node, ["at", "find", "findLast"])) return matchesOf(node.callee.object, scope, depth);
   if (node.type === "MemberExpression" && node.computed) return matchesOf(node.object, scope, depth);
   if (node.type !== "Identifier") return undefined;
-  const w = writesOf(node, scope, depth + 1);
+  const w = writesOf(node, scope, ++depth);
   if (w === undefined) return undefined;
   if (w.def.type === "Parameter") {
     const fn = w.def.node;
@@ -244,7 +247,7 @@ function matchesOf(node, scope, depth) {
   if (method(node, ["sort", "toSorted", "filter", "slice", "reverse", "toReversed"]))
     return matchesOf(node.callee.object, scope, depth);
   if (node.type !== "Identifier") return undefined;
-  const w = writesOf(node, scope, depth + 1);
+  const w = writesOf(node, scope, ++depth);
   if (w === undefined || w.def.type === "Parameter" || w.writes.length === 0 || w.writes.some((x) => x.forOf))
     return undefined;
   const all = w.writes.map((x) => matchesOf(x.expr, scope, depth));
@@ -273,18 +276,22 @@ function captureOf(node, scope) {
 
 const NUMERIC = new Set(["Number", "parseInt", "parseFloat"]);
 
-/** The argument a numeric read converts: `Number(x)`, `parseInt(x…)`, `parseFloat(x)`, `Number.parseInt`/`Number.parseFloat`, `+x`. */
-function converted(node) {
+/** Whether `name` resolves to the global in `scope`: no local binding (a declaration, import or parameter) up the scope chain. */
+const isGlobal = (scope, name) => (variableOf(scope, name)?.defs.length ?? 0) === 0;
+
+/** The argument a numeric read converts: `Number(x)`, `parseInt(x…)`, `parseFloat(x)`, `Number.parseInt`/`Number.parseFloat`, `+x`; a shadowed reader is none. */
+function converted(node, scope) {
   if (node.type === "UnaryExpression" && node.operator === "+") return node.argument;
   if (node.type !== "CallExpression" || node.arguments[0] === undefined) return undefined;
   const c = node.callee;
-  if (c.type === "Identifier" && NUMERIC.has(c.name)) return node.arguments[0];
+  if (c.type === "Identifier" && NUMERIC.has(c.name)) return isGlobal(scope, c.name) ? node.arguments[0] : undefined;
   if (
     c.type === "MemberExpression" &&
     !c.computed &&
     c.object.type === "Identifier" &&
     c.object.name === "Number" &&
-    (c.property.name === "parseInt" || c.property.name === "parseFloat")
+    (c.property.name === "parseInt" || c.property.name === "parseFloat") &&
+    isGlobal(scope, "Number")
   )
     return node.arguments[0];
   return undefined;
@@ -302,8 +309,9 @@ export const exactDigits = {
   },
   create(context) {
     const check = (node) => {
-      const arg = converted(node);
-      const capture = arg === undefined ? undefined : captureOf(strip(arg), context.sourceCode.getScope(node));
+      const scope = context.sourceCode.getScope(node);
+      const arg = converted(node, scope);
+      const capture = arg === undefined ? undefined : captureOf(strip(arg), scope);
       if (capture === undefined) return;
       for (const pattern of capture.patterns) {
         const group = captureGroup(pattern, capture.k);
