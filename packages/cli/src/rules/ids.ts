@@ -52,6 +52,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "instructions.present",
   "instructions.stale",
   "integration.pr.reviewer",
+  "ladder.ticket",
   "lesson.addressed_by",
   "lesson.evidence",
   "lesson.recurrent",
