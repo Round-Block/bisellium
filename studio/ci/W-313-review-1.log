@@ -1,0 +1,18 @@
+# opus: W-313
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a156b9-9ee7-77a0-84f6-7c3c2babe645
+# outcome: passed
+# at: 2026-10-20T00:37:53.959Z
+# tree: tree:3068311034d7da508c14bc0e49d6694a1f1b60e4
+# brief: briefs/W-313.md blob:7319b35c897e79c8bc987bcaefa73452e39fb810
+# ticket: {"opus":"W-313","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-313/studio","head":"0f3c97e4dcde77b116d2668de93093b08679f40c","brief":"7319b35c897e79c8bc987bcaefa73452e39fb810","at":"2026-10-20T00:32:46.714Z"}
+
+## Findings
+1. advisory — packages/pipeline/test/gate-timeout.test.ts:29 [severity: S2] The fixture uses an unannotated listening socket, not the `sleep-waiver: fixture` required by brief:104; adding that waiver would flip the existing W-121 cap row, so the implementation is correct but the Acceptance rationale is stale. Amend brief:104 to name the listening-socket mechanism. [class: spec×promise-unattainable-under-accepted-domain] — check: none: acceptance wording must match the fixture mechanism
+
+## Verdict
+Both behaviours pass with genuine reds, matching gate certificates, no regression flips, and a source diff confined to the owned files. The stale fixture rationale is advisory only.
+VERDICT: PASS
