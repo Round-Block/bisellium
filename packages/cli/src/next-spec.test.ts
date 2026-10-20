@@ -991,3 +991,21 @@ test("W-338-b5 behaviour 5: the UI design digest is the caller's opus: a record 
   const findings = (JSON.parse(checked.stdout) as { findings: { rule: string; message: string }[] }).findings;
   assert.ok(findings.some((f) => f.rule === "opus.ui.design" && /record's id to be W-900/.test(f.message)), `a copied id W-901: check names the id under opus.ui.design\n${checked.stdout.slice(0, 2000)}`);
 });
+
+test("W-338-b6 behaviour 6: on an opus that is not kind: ui a ui-lead spec log stays in the strict signature-and-review sequence, before the branch and after", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b6", { kind: "opus" });
+  putBrief(w);
+  sign(w, 1);
+  const plain = specRun(w, 2, "ui-lead", "passed", NO_FINDINGS);
+  assert.equal(plain.status, 0, `a plain ui-lead verdict on a kind: opus record is recorded\n${plain.out}`);
+  specHeld(specNext(w), "a ui-lead log above the signature of a kind: opus holds", /spec-2\.log/);
+
+  const b = uiWorld("w338-b6-wt", { kind: "opus" });
+  putBrief(b);
+  sign(b, 1);
+  review(b, 2, "passed");
+  expectStep(next(b, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "branch commits the spec");
+  const after = specRun(b, 3, "ui-lead", "passed", NO_FINDINGS, [], b.wtStudio);
+  assert.equal(after.status, 0, `a plain ui-lead verdict in the worktree is recorded\n${after.out}`);
+  specHeld(specNext(b), "a new ui-lead log in the worktree of a kind: opus holds", /W-900-spec-3\.log is not a valid signature or spec review/);
+});
