@@ -726,7 +726,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       return { exitCode: 2 };
     }
     // W-338: the digest's one reader, which `inspectUiDesignInput` shares (briefs/<id>.md before ready)
-    const design = currentDesign(root, record);
+    const design = currentDesign(root, record, opusId);
     if (design.digest === undefined) {
       console.error(`UI spec input: ${design.error ?? "the current design cannot be read"}`);
       return { exitCode: 2 };
@@ -768,7 +768,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error("UI build verdict requires --ui-input <ci-relative-path>");
       return { exitCode: 2 };
     }
-    const inspected = inspectUiDesignInput(root, record);
+    const inspected = inspectUiDesignInput(root, record, opusId);
     if (!inspected.digest || !inspected.input || inspected.problems.length) {
       console.error(inspected.problems.map((problem) => `opus.ui.design: ${problem}`).join("\n"));
       return { exitCode: 2 };

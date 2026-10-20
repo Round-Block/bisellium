@@ -661,9 +661,9 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
       }
     }),
     // W-338: the checkout that carries the spec: the main checkout before the branch, its worktree after (as uiReviewProblems)
-    uiSpecProblems: memo(() => (tip === undefined ? uiProblems(branchRecord ?? trunkRecord, studioAbs) : usable ? uiProblems(branchRecord, wt.studio) : [])),
-    uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio) : [])),
-    uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
+    uiSpecProblems: memo(() => (tip === undefined ? uiProblems(branchRecord ?? trunkRecord, studioAbs, id) : usable ? uiProblems(branchRecord, wt.studio, id) : [])),
+    uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio, id) : [])),
+    uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio, id) : undefined)),
     pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
     owed: memo(() => owedRetros(studioAbs)),
     wtCiProblem: memo(() => {
@@ -707,19 +707,19 @@ function trackedOnly<T>(fn: () => T): T {
   }
 }
 
-function uiProblems(rec: Dict | undefined, root: string): string[] {
+function uiProblems(rec: Dict | undefined, root: string, id: string): string[] {
   if (rec?.["kind"] !== "ui") return [];
   try {
-    return inspectUiDesignInput(root, rec as NativeRecord).problems;
+    return inspectUiDesignInput(root, rec as NativeRecord, id).problems;
   } catch (e) {
     return [(e as Error).message];
   }
 }
 
-function uiInput(rec: Dict | undefined, root: string): string | undefined {
+function uiInput(rec: Dict | undefined, root: string, id: string): string | undefined {
   if (rec?.["kind"] !== "ui") return undefined;
   try {
-    return inspectUiDesignInput(root, rec as NativeRecord).input?.relative;
+    return inspectUiDesignInput(root, rec as NativeRecord, id).input?.relative;
   } catch {
     return undefined;
   }

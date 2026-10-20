@@ -597,6 +597,8 @@ export interface UiPolicyContext {
   record: NativeRecord;
   manifest: Pick<Manifest, "collegia" | "sellae" | "probationes"> & { review_probatio?: unknown };
   phase: "check" | "ready" | "review" | "done";
+  /** W-338: the opus id the record is read for (the CLI id, or the record's file name) */
+  id: string;
 }
 
 export function validateRecordReferences(root: string, record: NativeRecord): OpusModelProblem[] {
@@ -622,10 +624,12 @@ interface UiInput {
 /** W-338: a spec log whose header block's (first) `# sella:` is ui-lead: the UI input's, never a signature's or a review's. */
 export const isUiLeadLog = (text: string): boolean => parseVerdictHeader(text).values.get("sella") === "ui-lead";
 
-/** The design digest's title and brief; W-338: before `ready` writes `spec:`, the brief is `briefs/<id>.md`, the path `ready` defaults to. */
-export function currentDesign(root: string, record: NativeRecord): { digest?: string; error?: string } {
+/** The design digest's title and brief; W-338: the record is `id`'s (the CLI opus id, or the record's file name), and before
+ *  `ready` writes `spec:` the brief is `briefs/<id>.md`, the path `ready` defaults to. */
+export function currentDesign(root: string, record: NativeRecord, id: string): { digest?: string; error?: string } {
+  if (record.id !== id) return { error: `UI design digest requires the record's id to be ${id}, its opus id and file name` };
   if (typeof record.title !== "string") return { error: "UI design digest requires a string title" };
-  const spec = record.spec === undefined && typeof record.id === "string" ? `briefs/${record.id}.md` : record.spec;
+  const spec = record.spec === undefined ? `briefs/${id}.md` : record.spec;
   if (typeof spec !== "string") return { error: "UI design digest requires a current spec pointer" };
   const brief = readContainedRegularFile(root, spec, "briefs");
   if ("error" in brief) return { error: `current brief is unsafe or unreadable: ${brief.error}` };
@@ -678,12 +682,12 @@ function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest
   return { input: { relative: latest.relative, header: h, round: latest.round, at, digest }, problems };
 }
 
-export function inspectUiDesignInput(root: string, record: NativeRecord): {
+export function inspectUiDesignInput(root: string, record: NativeRecord, id: string): {
   digest?: string;
   input?: { relative: string; round: number; at: string };
   problems: string[];
 } {
-  const design = currentDesign(root, record);
+  const design = currentDesign(root, record, id);
   if (!design.digest) return { problems: [design.error ?? "current design could not be read"] };
   const inspected = authoritativeUiInput(root, record, design.digest);
   return {
@@ -838,7 +842,8 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   const problems: OpusModelProblem[] = [];
   const state = typeof record.state === "string" ? record.state : "";
   const needsInput = phase === "ready" || phase === "done" || ["building", "verifying", "review", "done"].includes(state) || (state === "halted" && record.start !== undefined);
-  const id = typeof record.id === "string" ? record.id : "";
+  // W-338: the candidates are the caller's opus's, never the record's own id
+  const id = context.id;
   let hasInputCandidate = false;
   try {
     const pattern = new RegExp(`^${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-spec-[1-9][0-9]*\\.log$`);
@@ -859,7 +864,7 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   if (needsRoute && (!uiSeat || uiSeat.retired === true || uiSeat.collegium !== "design"))
     problems.push({ rule: "opus.ui.route", message: "ui-lead must be a live design-collegium seat" });
   problems.push(...effectiveProbationes("ui", manifest.probationes).problems);
-  const design = validateDesign ? currentDesign(root, record) : {};
+  const design = validateDesign ? currentDesign(root, record, context.id) : {};
   let input: ReturnType<typeof authoritativeUiInput> = { problems: [] };
   if (validateDesign && !design.digest) {
     problems.push({ rule: "opus.ui.design", message: design.error ?? "current design could not be read" });
@@ -920,7 +925,7 @@ export function validateStudioNativeModel(
   for (const entry of loaded.entries) {
     for (const problem of validateNativeRecord(entry.data, loaded.records)) out.push({ where: entry.path, problem });
     for (const problem of validateRecordReferences(root, entry.data)) out.push({ where: entry.path, problem });
-    for (const problem of validateUiPolicy({ root, record: entry.data, manifest, phase: "check" })) out.push({ where: entry.path, problem });
+    for (const problem of validateUiPolicy({ root, record: entry.data, manifest, phase: "check", id: basename(entry.path, ".md") })) out.push({ where: entry.path, problem });
   }
   return out;
 }
