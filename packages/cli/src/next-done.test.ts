@@ -806,8 +806,8 @@ test("W-137-b4 behaviour 4: next names the retro after done and holds every new 
 // ---------------------------------------------------------------------------
 // W-186 behaviour 2: performed done holds on a stale working-tree handoff before performDone runs
 // ---------------------------------------------------------------------------
-/** The base world's handoff (nothing queued, a far-future Resume date), with an edit that names no opus: the checkpoint a perform commits. */
-const HANDOFF_FRESH = "# Handoff\n\n## Resume point (9999-12-31)\n\n- (nothing recorded)\n\n## Queue\n\n- (nothing queued)\n- checkpoint line\n";
+/** The base world's handoff (nothing queued, no Resume point, W-299), with an edit that names no opus: a change that may ride a perform. */
+const HANDOFF_FRESH = "# Handoff\n\n## Queue\n\n- (nothing queued)\n- checkpoint line\n";
 const handoffHolds = (o: Out): string[] => outLines(o).filter((l) => l.startsWith("handoff: "));
 /** The master tip, the chore heads and the tracked changes: what a hold must leave exactly as it found them. */
 const choreHeads = (w: World): string => git(w.repo, ["for-each-ref", "--format=%(refname)", "refs/heads/chore/"]);
@@ -817,12 +817,12 @@ test("W-186-b2 behaviour 2: performed done holds on a stale working-tree handoff
   expectStep(next(w, [OPUS]), "done", "named", "the fixture names done");
   const tip = git(w.repo, ["rev-parse", "refs/heads/master"]);
 
-  // (a) the Queue names the opus, which the perform is about to make done
+  // (a) W-299: the Queue names the opus, which the perform is about to make done (no finding), beside a Resume point (a finding)
   put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Resume point (9999-12-31)\n\n- (nothing recorded)\n\n## Queue\n\n1. W-900 — fixture\n");
   const stale = next(w, [OPUS, "--perform", "--expect", "done"]);
-  expectHeld(stale, "a Queue that names the opus");
+  expectHeld(stale, "a handoff that keeps a Resume point");
   assert.ok(outLines(stale).some((l) => l.startsWith("why: refusing: docs/SESSION-HANDOFF.md is stale")), ran("the why line", stale));
-  assert.ok(handoffHolds(stale).some((l) => l.startsWith("handoff: process.handoff.queue ")), ran("a queue finding is printed", stale));
+  assert.deepEqual(handoffHolds(stale).map((l) => l.split(" ")[1]), ["process.handoff.resume"], ran("a resume finding is printed, and no queue finding", stale));
   assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), tip, "the master tip is unchanged");
   assert.equal(choreHeads(w), "", "no chore head");
   assert.equal(git(w.repo, ["status", "--porcelain", "--untracked-files=no"]), "M docs/SESSION-HANDOFF.md", "only the handoff edit is in the tree");

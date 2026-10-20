@@ -943,11 +943,10 @@ with `--repo <repo>` on `<repo>/studio`; any other officina is outside the rule)
 Every `opera/*.md` record is loaded first and must have a lifecycle `state`; then
 `docs/SESSION-HANDOFF.md` is read, and an absent file is no finding. Unreadable
 records or handoff (`process.handoff.input`), a handoff with other than one
-`## Queue` line or one `## Resume point (YYYY-MM-DD)` line, an id that names no
-record, a Queue that names a `done` or `halted` opus or omits a `greenlit` one
-(`process.handoff.queue`), a `Next` field that names a `done`, `halted` or unqueued
-opus, a `**W-n** is building` claim about a `done` opus, or a Resume date earlier
-than the newest `done` record's `end` in UTC (`process.handoff.resume`), the phrases
+`## Queue` line, a Queue id that names no record, a Queue that omits a `greenlit`
+opus (`process.handoff.queue`; W-299: a `done` or `halted` id in it is no finding),
+any line starting `## Resume point` (`process.handoff.resume`; W-299, D-077 B: work
+state is the opus records, read by `next --all`), the phrases
 `this one`, `this PR` and `above)` (`process.handoff.reference`), and more than 100
 split lines (`process.handoff.lines`) all block.
 
