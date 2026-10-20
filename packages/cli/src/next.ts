@@ -413,8 +413,6 @@ export interface Facts {
   wt: { dir: string; studio: string; usable: boolean };
   trunk: Src | undefined;
   trunkRecord: Dict | undefined;
-  /** the oldest master commit that reads the record `done` also changed docs/SESSION-HANDOFF.md */
-  checkpointed(): boolean;
   /** every automated probatio has a `tree:` certificate on the trunk record or the main checkout's record */
   certified(): boolean;
   branch: Src | undefined;
@@ -422,7 +420,6 @@ export interface Facts {
   /** W-293: the main checkout's studio: before opus/<id> exists, the committed trunk plus the uncommitted spec rounds */
   work: Src;
   choreDone: boolean;
-  handoff: string | undefined;
   residue: boolean;
   /** the branch has been pushed (a remote-tracking ref exists), so a PR may exist */
   pushed: boolean;
@@ -589,10 +586,6 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const remoteTracking = refExists(repo, `refs/remotes/origin/opus/${id}`);
   const choreRef = `refs/heads/chore/done-${id}`;
   const choreDone = trunkRecord?.["state"] !== "done" && refExists(repo, choreRef) && recordOf(gitSrc(repo, choreRef, studioRel), id)?.["state"] === "done";
-  const handoff = (() => {
-    const r = git(repo, ["show", "refs/heads/master:docs/SESSION-HANDOFF.md"]);
-    return r.status === 0 ? r.stdout : undefined;
-  })();
   const facts: Facts = {
     id,
     repo,
@@ -607,18 +600,9 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     trunkRecord,
     branch,
     branchRecord,
-    checkpointed: memo(() => {
-      const log = git(repo, ["log", "--reverse", "--format=%H", TRUNK, "--", `${studioRel}/${recordRel(id)}`]);
-      for (const c of log.stdout.split("\n").filter(Boolean)) {
-        if (recordOf(gitSrc(repo, c, studioRel), id)?.["state"] !== "done") continue;
-        return git(repo, ["show", "--first-parent", "--format=", "--name-only", c, "--", HANDOFF]).stdout.trim() !== "";
-      }
-      return false;
-    }),
     certified: memo(() => certificate(repo, studioRel, studioAbs, excludes, manifest, trunkRecord, id, mergeOf(facts)).ok),
     work: fsSrc(studioAbs),
     choreDone,
-    handoff,
     residue: tip !== undefined || entry !== undefined || remoteTracking,
     pushed: remoteTracking,
     manifest,
@@ -1028,7 +1012,7 @@ function retroHold(f: Facts): string | undefined {
   return owed.owed.length > 0 ? `retro owed: ${owed.owed.join(", ")}; file them before a new opus starts` : undefined;
 }
 
-/** The checkpoint rides the done commit: complete once the commit that made the record `done` also changed the handoff. */
+/** After done: the retro, then the checkpoint, complete once the trunk record is done (W-299: no handoff edit is asked; the done perform carries the history row, W-214). */
 function afterDone(f: Facts): Derived {
   const { id } = f;
   const owed = f.owed();
@@ -1042,16 +1026,7 @@ function afterDone(f: Facts): Derived {
       command: `bisellium retro --opus ${id} --from <triage.json> --studio ${f.studioRel}`,
       extra: [],
     };
-  if (f.handoff === undefined) return { step: "checkpoint", status: "complete", actor: "producer", why: "the trunk record is done and master has no handoff", extra: [] };
-  if (f.checkpointed()) return { step: "checkpoint", status: "complete", actor: "producer", why: `the trunk record is done and its done commit changed ${HANDOFF}`, extra: [] };
-  return {
-    step: "checkpoint",
-    status: "named",
-    actor: "producer",
-    why: `${id} is done on the trunk; the commit that made it done did not change ${HANDOFF}`,
-    command: `update ${HANDOFF}, the progress row and the masthead for ${id}, then republish`,
-    extra: [],
-  };
+  return { step: "checkpoint", status: "complete", actor: "producer", why: "the trunk record is done; the checkpoint asks no handoff edit (W-299)", extra: [] };
 }
 
 /**
@@ -2036,10 +2011,6 @@ function performDone(f: Facts, d: Derived): StepResult {
     }
     if ("why" in c) return heldResult(`refusing: the merge queue's certify certificate cannot be recorded: ${c.why}; run: bisellium verify ${id} --studio ${f.studioRel} --repo .`);
     recorded = c.lines;
-  }
-  if (f.handoff !== undefined) {
-    const changes = trackedChanges(repo);
-    if (typeof changes === "string" || !changes.some((c) => c.path === HANDOFF)) return heldResult(`refusing: the checkpoint rides the done commit, and ${HANDOFF} has no tracked change; edit it, then re-run`);
   }
   const row = historyRowRefusal(repo, id);
   if (row !== undefined) return heldResult(`refusing: ${row}`);

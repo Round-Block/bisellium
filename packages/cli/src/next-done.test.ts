@@ -294,13 +294,13 @@ test("W-141-b3 behaviour 3: the checkpoint rides the done commit", { timeout: 1_
   assert.equal(complete.first, `next: ${OPUS} checkpoint complete`, ran("the done commit carried the handoff: complete, with no heading", complete));
   assert.equal(complete.status, 0, ran("complete exits 0", complete));
 
-  // a done commit that left the handoff unchanged reads named, even when a later commit names the opus under the old heading
+  // W-299: a done commit that left the handoff unchanged reads complete, and a later handoff edit changes nothing
   const n = world("w141-b3-named", "done");
-  expectStep(next(n, [OPUS]), "checkpoint", "named", "the done commit left the handoff unchanged");
+  expectStep(next(n, [OPUS]), "checkpoint", "complete", "the done commit left the handoff unchanged: complete (W-299)");
   put(n.repo, "docs/SESSION-HANDOFF.md", HANDOFF_DONE);
   commit(n.repo, "chore: a later handoff edit");
   git(n.repo, ["push", "-q", "origin", "master"]);
-  expectStep(next(n, [OPUS]), "checkpoint", "named", "a later edit that names the opus under the old heading does not complete it");
+  expectStep(next(n, [OPUS]), "checkpoint", "complete", "a later handoff edit leaves it complete");
 
   // master without a handoff: complete once the record is done
   const none = world("w141-b3-none", "cleanup");
@@ -310,17 +310,15 @@ test("W-141-b3 behaviour 3: the checkpoint rides the done commit", { timeout: 1_
   markDone(none, false);
   assert.equal(next(none, [OPUS]).first, `next: ${OPUS} checkpoint complete`, "no handoff on master: complete once the record is done");
 
-  // --perform --expect done refuses when the handoff has no tracked change; nothing is mutated
+  // W-299: --perform --expect done commits with no tracked handoff change, and a handoff change still rides
   const r = world("w141-b3-refuse", "cleanup", { patron: true });
   scenario(r, { list: mergedList(r) });
-  const was = frozen(r);
-  const refused = next(r, [OPUS, "--perform", "--expect", "done"]);
-  expectHeld(refused, "done without a handoff change");
-  assert.ok(outLines(refused).some((l) => /^why: .*checkpoint/.test(l)), ran("the why line names the checkpoint", refused));
-  assert.equal(frozen(r), was, ran("nothing is mutated", refused));
-  assert.equal(branchExists(r, `chore/done-${OPUS}`), false, "no chore branch");
-  touchHandoff(r);
-  expectStep(next(r, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "with a handoff change the perform commits");
+  expectStep(next(r, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "without a handoff change the perform commits (W-299)");
+  assert.equal(branchExists(r, `chore/done-${OPUS}`), true, "the chore branch holds the done commit");
+  const t = world("w141-b3-rides", "cleanup", { patron: true });
+  scenario(t, { list: mergedList(t) });
+  touchHandoff(t);
+  expectStep(next(t, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "with a handoff change the perform commits");
 });
 
 // ---------------------------------------------------------------------------
@@ -784,12 +782,12 @@ test("W-137-b4 behaviour 4: next names the retro after done and holds every new 
   put(w.studio, "acta/2026-10-06-retro-W-900.md", `---\nauthor: producer\nkind: decision\ntitle: "Retro W-900"\nat: 2026-10-06T13:00:00Z\nopus: W-900\n---\nFiled.\n`);
   commit(w.repo, "chore(studio): retro W-900 filed");
   git(w.repo, ["push", "-q", "origin", "master"]);
-  expectStep(next(w, [OPUS]), "checkpoint", "named", "once the retro is filed the ladder goes on to the checkpoint");
+  expectStep(next(w, [OPUS]), "checkpoint", "complete", "once the retro is filed the ladder goes on to the checkpoint, complete (W-299)");
   expectOther(next(w, [OTHER]), "branch", "named", "and the next opus may start");
 
   const none = world("w137-b4-none", "done");
   addSpecced(none);
-  expectStep(next(none, [OPUS]), "checkpoint", "named", "with no retro key the done opus goes straight to the checkpoint");
+  expectStep(next(none, [OPUS]), "checkpoint", "complete", "with no retro key the done opus goes straight to the checkpoint, complete (W-299)");
   expectOther(next(none, [OTHER]), "branch", "named", "with no retro key a new start is named as today");
 
   const bad = world("w137-b4-bad", "done");

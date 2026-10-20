@@ -166,7 +166,7 @@ if (runs(1)) {
 
     // 12 checkpoint: the committed trunk record `done` settles everything before it without any gh call
     const doneWorld = world("b1-checkpoint", "done");
-    rung(doneWorld, "trunk record done and no checkpoint names checkpoint", "checkpoint", "named");
+    rung(doneWorld, "trunk record done reads the checkpoint complete with no handoff edit (W-299)", "checkpoint", "complete");
     assert.equal(ghCalls(doneWorld).length, 0, "a done trunk record settles the earlier rungs without a gh call");
     const complete = world("b1-complete", "checkpoint");
     const completeOut = next(complete, [OPUS, ...budget]);
@@ -236,7 +236,7 @@ if (runs(2)) {
     assert.equal(recordOf(gl), glRecord, "the backlog record is untouched: the verb never acts as the patron");
     const cp = world("b2-checkpoint", "done");
     const cpDocs = readFileSync(join(cp.repo, "docs/SESSION-HANDOFF.md"), "utf8");
-    expectStep(next(cp, [OPUS, "--perform"]), "checkpoint", "named", "--perform stops at the checkpoint rung");
+    expectStep(next(cp, [OPUS, "--perform"]), "checkpoint", "complete", "--perform stops at the checkpoint rung, complete (W-299)");
     assert.equal(readFileSync(join(cp.repo, "docs/SESSION-HANDOFF.md"), "utf8"), cpDocs, "the checkpoint rung writes nothing");
 
     // --perform does one rung per call: branch, then it stops (ready is not performed)

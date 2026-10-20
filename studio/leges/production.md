@@ -206,9 +206,9 @@ names each step and writes the step ticket the next record write consumes
 6. **Done:** no `verify` after the merge queue's `certify`: the done perform
    records certify's certificate (D-082 B); only a `kind: ui` opus, which
    certify cannot vouch for, runs `verify <id>` on master (~24 min, nothing
-   heavy alongside) when `next` names it; edit
-   `docs/SESSION-HANDOFF.md` (the done perform refuses without a tracked
-   handoff edit and runs W-186's rule on it); `next --perform --expect done`
+   heavy alongside) when `next` names it; a `docs/SESSION-HANDOFF.md`
+   edit may ride the done commit and none is required (W-299; the perform
+   runs W-186's rule on the handoff); `next --perform --expect done`
    (commits on `chore/done-<id>`); `next --perform --expect done` again
    (lands).
 7. **Daily retro (D-076 F).** The reviewer names each finding's class
@@ -324,4 +324,5 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-18 | §9 step 6: no `verify` on master after `certify` except for a `kind: ui` opus; the done perform records certify's certificate (D-082 B) | Patron |
 | 2026-10-19 | §9 step 4: only a real defect blocks a build review round, as for spec (D-084) | Patron |
 | 2026-10-19 | §9 steps 2 and 4: a design-keeping spec blocker goes to the build; S2-S4 blockers are reissued; the fix check runs before a fix round's suite (D-086) | Patron |
+| 2026-10-20 | §9 step 6: the done rung asks no handoff edit (W-299, D-077 B) | Patron |
 | 2026-10-20 | §9 steps 1, 3 and 4: the architect's dispatch, the first builder brief and the round-1 build review are filled from `studio/prompts/` (W-241 part 1) | Patron |
