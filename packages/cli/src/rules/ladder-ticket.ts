@@ -50,7 +50,8 @@ interface Covered { where: string; opus: string; action: "verdict-spec" | "verdi
 export function checkLadderTicket(root: string, opts: RuleOpts): Finding[] {
   const block = (where: string, message: string): Finding => ({ rule: "ladder.ticket", level: "block", where, message });
   const setting = readStepTickets(opts.manifest);
-  if ("error" in setting || !setting.required) return [];
+  if ("error" in setting) return [{ rule: "ladder.ticket", level: "block", where: "bisellium.yml", message: `step_tickets is malformed (${setting.error}): fix the setting; next holds every opus on it` }];
+  if (!setting.required) return [];
   const logs: Covered[] = [];
   for (const name of names(() => readdirSync(join(root, "ci")))) {
     if (!name.endsWith(".log")) continue;
@@ -75,7 +76,10 @@ export function checkLadderTicket(root: string, opts: RuleOpts): Finding[] {
   }
   // the boundary: the officina's first ticket, the earliest # at: of a log carrying a # ticket: line or `at` of a canonical
   // line it carries, so every log carrying one is at or after it (W-268 r3); a log before it with none predates the switch
+  // no candidate time exact (every ticket line noncanonical, every carrying log's # at: inexact): Math.min of nothing is
+  // +Infinity, so no exact-time log is at or after it and only logs with an inexact # at: are judged (spec round 4's S2)
   const ticketed = logs.filter((l) => l.tickets.length > 0);
+  if (ticketed.length === 0) return [];
   const first = Math.min(...ticketed.flatMap((l) => [l.at, ...l.tickets.map((s) => parseTicketLine(s)).map((t) => ("error" in t ? undefined : exact(t.at)))]).filter((n): n is number => n !== undefined));
   const open = new Set<string>();
   for (const path of names(() => listMd(join(root, "opera")))) {
@@ -88,12 +92,13 @@ export function checkLadderTicket(root: string, opts: RuleOpts): Finding[] {
       /* an unparseable record is the record rules' */
     }
   }
-  const covered = logs;
+  const covered = logs.filter((l) => open.has(l.opus) && (l.at === undefined || l.at >= first));
   const findings: Finding[] = [];
   const previous = new Map<string, Covered>();
   for (const l of [...covered].sort((a, b) => (a.at ?? 0) - (b.at ?? 0) || (a.where < b.where ? -1 : 1))) {
     const want = `${l.opus} ${l.action} round ${l.round ?? "none"}`;
-    if (l.tickets.length !== 1) findings.push(block(l.where, `carries ${l.tickets.length} # ticket: lines, want exactly one: run bisellium next ${l.opus} before the write`));
+    if (l.at === undefined) findings.push(block(l.where, `${l.opus}'s ${l.action} log has no exact UTC # at: (${l.atText ?? "none"}), so its ticket cannot be judged`));
+    else if (l.tickets.length !== 1) findings.push(block(l.where, `carries ${l.tickets.length} # ticket: lines, want exactly one: run bisellium next ${l.opus} before the write`));
     else if (l.ticket === undefined) findings.push(block(l.where, `its # ticket: is not a step ticket line (${(parseTicketLine(l.tickets[0]!) as { error: string }).error})`));
     else if (l.ticket.opus !== l.opus || l.ticket.action !== l.action || l.ticket.round !== l.round) findings.push(block(l.where, `its ticket names ${l.ticket.opus} ${l.ticket.action} round ${l.ticket.round}, want ${want}`));
     else if (l.issued! > l.at) findings.push(block(l.where, `its ticket was issued at ${l.ticket.at}, after the log (${l.atText})`));
