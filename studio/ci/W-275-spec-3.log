@@ -1,0 +1,25 @@
+# opus: W-275
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T23:24:34.691Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-275.md blob:f442cc60737c754ea1b8529d8a389baca0c40506
+# ticket: {"opus":"W-275","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"f442cc60737c754ea1b8529d8a389baca0c40506","at":"2026-10-20T23:24:31.444Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-275-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 closes the round-2 blocker (ci/W-275-spec-2.log #1): one reader, `handoverAt`, reads a traditio whole through `handoverLine` (string sella, stage, next and blocked_on and an ISO at) for both paths that act on one, the pr rung and the dispatch gate, which had the same at-only read; a fresh at beside a non-string field now holds both — check: brief:3, brief:53, brief:71, brief:88, brief:90
+2. advisory — the round-2 cases are reds against revision 1: on its prototype W-275-b4 fails at "a fresh traditio with a non-string next holds pr" and W-275-b2 at "a fresh traditio with a non-string stage: the gate's why", and both pass on revision 2; every row still fails by assertion on master and on every earlier stage — check: reds.out, row-b4-r1.out, row-b2-r1.out
+3. advisory — 19 of 19 mutants are killed, among them the pr rung and the gate each given back revision 1's at-only read — check: mutants.out
+4. advisory — the Codex test check on revision 2 lists the same five flips, all named and edited, and none unnamed; every neighbouring file passes on the revision-2 prototype — check: fixture-census.md, neighbours-proto.out
+5. advisory — the scope cut stands from revision 1: part 2 (re-arming auto-merge on a CLEAN unqueued PR; the health line under a pid namespace) is named in Out of scope for the producer to file, and `--chain` stops at pr on a handover older than its own review (Defaults 1; production lex §9 steps 4 and 5, code-owned, untouched) — check: brief:79, brief:124, brief:128
+6. advisory — this brief's own ledger passes the prototype's writer, the full admission admits it, and lint, typecheck, format and both officina checks match master's blocking set — check: ledger-check.out, admission.out, gates-proto.out, gates-master.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-275.md`, prototype on master 9b23b0f3; part 1 of 2, no code-owned path touched, 3 points.

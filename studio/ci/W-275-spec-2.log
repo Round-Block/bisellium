@@ -1,0 +1,18 @@
+# opus: W-275
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15b7a-d234-75a0-aa97-deaaf9c476f5
+# outcome: failed
+# at: 2026-10-20T22:45:07.370Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-275.md blob:9d673298652f182f0e8d905f9db1e11222382c05
+# ticket: {"opus":"W-275","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"9d673298652f182f0e8d905f9db1e11222382c05","at":"2026-10-20T22:45:06.666Z"}
+
+## Findings
+1. blocking — brief:88 [severity: S1] [design: changes] A committed `traditio` with a fresh ISO `at` but a missing or non-string `sella`, `stage`, `next`, or `blocked_on` is a plausible record mistake; a producer calling `bisellium next <id>` at `pr` gets a named PR and `--perform` can push/create it, while W-275-b4 tests only malformed `at`. Replace brief:88 with: `| 4. The branch record's traditio at the pr rung (f.branchRecord, the opus worktree's opera/<id>.md) | absent, or a mapping with string sella, stage, next and blocked_on and an ISO at at or after the newest red or review log | deriveNext (extended, using handoverLine): any malformed present traditio or older at holds pr with the handoff line; pinned by W-275-b4 for a fresh at with a missing next as well as an unreadable at |` [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/next-ladder.test.ts
+
+## Verdict
+The new pre-PR reader fails open on a plausible malformed handover record, so the signed brief needs a design-changing boundary fix before build.
+VERDICT: FAIL

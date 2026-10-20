@@ -1,0 +1,24 @@
+# opus: W-275
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T17:28:27.996Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-275.md blob:9d673298652f182f0e8d905f9db1e11222382c05
+# ticket: {"opus":"W-275","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"9d673298652f182f0e8d905f9db1e11222382c05","at":"2026-10-20T17:28:24.440Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-275-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the record's scope is cut at spec into part 1 (clauses a to e) and part 2 (the merge perform re-arming auto-merge on a CLEAN unqueued PR, and the health line under a pid namespace), named in Out of scope for the producer to file; the traditio-source half of clause b already holds on master since W-293 and W-293-b3 pins it, and the spec rung has one perform since W-293, so only the done rung prints the two perform lines — check: brief:25, brief:26, brief:29, brief:122
+2. advisory — the pr hold changes the one-call review-then-pr flow: a `--chain` review stamps its log with the wall clock, so a handover written before it holds pr until it is refreshed and committed; W-292-b1's fixture moves its handover past the wall clock, and production lex §9 steps 4 and 5 become stale, the Patron's to amend (code-owned, not touched) — check: brief:77, brief:126, brief:135, flip-W-292-b1-unedited.log
+3. advisory — each red fails by assertion on master and on every stage before its behaviour and passes on its own and every later stage, accepted by the replay classifier; 17 of 17 mutants are killed at their rows — check: reds.out, mutants.out
+4. advisory — five existing rows flip, the five the Codex test check lists, each edited in Files owned; every other neighbouring file passes unedited on the prototype, and on master the same files pass but for the four new rows and W-306-b1's edited case — check: fixture-census.md, neighbours-proto.out, neighbours-master.out
+5. advisory — this brief's own ledger passes the prototype's writer and the full admission admits the brief; lint, typecheck, format and both officina checks match master's blocking set — check: ledger-check.out, admission.out, gates-proto.out, gates-master.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-275.md`, prototype on master 9b23b0f3; part 1 of 2, no code-owned path touched, 3 points.
