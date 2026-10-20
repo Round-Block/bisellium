@@ -636,7 +636,7 @@ function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest
   } catch {
     return { problems: ["ci/ is unreadable; no ui-lead input can be established"] };
   }
-  const pattern = new RegExp(`^${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-spec-([1-9][0-9]*)\\.log$`);
+  const pattern = new RegExp(`^${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-spec-([1-9][0-9]{0,14})\\.log$`);
   for (const name of names) {
     const match = pattern.exec(name);
     if (!match) continue;
@@ -732,10 +732,10 @@ function shotManifestProblems(root: string, id: string): string[] {
   if ("error" in manifest)
     return [manifest.code === "ENOENT" ? "served-e2e evidence carries no screenshot manifest" : `served-e2e screenshot manifest is unsafe or unreadable: ${refusalTail(manifest)}`];
   const text = manifest.bytes.toString("utf8");
-  const header = /^shots: (\d+) (ci\/shots\/[A-Za-z0-9][A-Za-z0-9._-]{0,21})$/m.exec(text);
+  const header = /^shots: (\d{1,15}) (ci\/shots\/[A-Za-z0-9][A-Za-z0-9._-]{0,21})$/m.exec(text);
   if (!header) return ["served-e2e screenshot manifest has no header"];
   if (header[2] !== dir) return ["served-e2e screenshot manifest names another opus's directory"];
-  const entries = [...text.matchAll(/^shot: ([a-z][a-z0-9-]{0,21}\.png) (\d+)x(\d+) (\d+)$/gm)];
+  const entries = [...text.matchAll(/^shot: ([a-z][a-z0-9-]{0,21}\.png) (\d{1,15})x(\d{1,15}) (\d{1,15})$/gm)];
   if ((text.match(/^shot: /gm) ?? []).length !== entries.length) return ["served-e2e screenshot manifest has a malformed entry"];
   if (entries.length === 0 || entries.length !== Number(header[1])) return ["served-e2e screenshot manifest count disagrees with its entries"];
   if (entries.length > SHOT_MAX_ENTRIES) return [`served-e2e screenshot manifest declares more than ${SHOT_MAX_ENTRIES} screenshots`];

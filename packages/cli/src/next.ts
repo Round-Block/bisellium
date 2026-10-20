@@ -331,13 +331,13 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
   const logs: { n: number; rel: string }[] = [];
   let badName: string | undefined;
   for (const name of names) {
-    const m = new RegExp(`^${esc(id)}-spec-([1-9][0-9]*)\\.log$`).exec(name);
+    const m = new RegExp(`^${esc(id)}-spec-([1-9][0-9]{0,14})\\.log$`).exec(name);
     if (m === null) badName ??= name;
     else logs.push({ n: Number(m[1]), rel: `ci/${name}` });
   }
   logs.sort((a, b) => a.n - b.n);
   const result = (why: string, gate: SpecGate): SpecEvidence => ({ ok: false, why, maxRound: Math.max(0, ...logs.map((l) => l.n)), anyLog: names.length > 0, gate });
-  if (badName !== undefined) return result(`ci/${badName}: a spec log is named ${id}-spec-<n>.log, n a positive integer with no leading zero`, { kind: "invalid" });
+  if (badName !== undefined) return result(`ci/${badName}: a spec log is named ${id}-spec-<n>.log, n a positive integer of at most 15 digits with no leading zero`, { kind: "invalid" });
   const brief = src.read(briefRel(id));
   const sections = specSectionsProblem(brief, briefRel(id), admit);
   if (brief === undefined || sections !== undefined) return result(sections ?? "", { kind: "signature" });
@@ -375,7 +375,7 @@ function signedSpec(src: Src | undefined, id: string, design: string, admit: (br
   let anyLog = false;
   let best: { n: number; sella: string; log: string } | undefined;
   for (const name of src.list("ci")) {
-    const m = new RegExp(`^${esc(id)}-spec-([1-9][0-9]*)\\.log$`).exec(name);
+    const m = new RegExp(`^${esc(id)}-spec-([1-9][0-9]{0,14})\\.log$`).exec(name);
     if (m === null) continue;
     anyLog = true;
     const n = Number(m[1]);
@@ -725,7 +725,7 @@ function uiInput(rec: Dict | undefined, root: string): string | undefined {
 
 function reviewLogs(src: Src | undefined, id: string): { n: number; name: string }[] {
   return (src?.list("ci") ?? []).flatMap((name) => {
-    const m = new RegExp(`^${esc(id)}-review-([1-9][0-9]*)\\.log$`).exec(name);
+    const m = new RegExp(`^${esc(id)}-review-([1-9][0-9]{0,14})\\.log$`).exec(name);
     return m === null ? [] : [{ n: Number(m[1]), name }];
   });
 }
@@ -737,7 +737,7 @@ function reviewLogs(src: Src | undefined, id: string): { n: number; name: string
 function reviewSession(src: Src | undefined, id: string, kind: "spec" | "review", sella: string): string | undefined {
   let newest: { n: number; session: string | undefined } | undefined;
   for (const name of src?.list("ci") ?? []) {
-    const m = new RegExp(`^${esc(id)}-${kind}-([1-9][0-9]*)\\.log$`).exec(name);
+    const m = new RegExp(`^${esc(id)}-${kind}-([1-9][0-9]{0,14})\\.log$`).exec(name);
     if (m === null || (newest !== undefined && Number(m[1]) < newest.n)) continue;
     const h = parseLogHeader(src?.read(`ci/${name}`) ?? "");
     if (h.get("sella") === sella) newest = { n: Number(m[1]), session: h.get("session") };
@@ -836,8 +836,9 @@ export function deriveNext(f: Facts): Derived {
     if (changed.bad.length > 0) return hold("spec", `${changed.bad.join(", ")}: the brief may only be edited and a spec log only added on opus/${id}; restore the committed one or stop ignoring it`);
     // every new spec log, history included, must pass the strict readers against the brief it names
     const loose = changed.spec.find((p) => {
-      const m = /(?:^|\/)(ci\/[^/]+-spec-([1-9][0-9]*)\.log)$/.exec(p);
-      if (m === null) return false;
+      const m = /(?:^|\/)(ci\/[^/]+-spec-([1-9][0-9]{0,14})\.log)$/.exec(p);
+      // W-334: a spec log whose round is past 15 digits is outside the grammar: it holds as one no strict reader accepts
+      if (m === null) return /(?:^|\/)ci\/[^/]+-spec-[1-9][0-9]*\.log$/.test(p);
       const [, rel, n] = m as unknown as [string, string, string];
       const text = f.branch?.read(rel);
       if (text === undefined) return true;
@@ -1076,7 +1077,7 @@ function classLoop(f: Facts, rounds: BuildReviewRound[]): string | undefined {
 /** W-297: some valid architect signature in opus/<id>'s ci/ (the worktree's when usable) records an `# at:` after `at` (ms). */
 function signedAfter(f: Facts, at: number): boolean {
   return (f.branch?.list("ci") ?? []).some((name) => {
-    const m = new RegExp(`^${esc(f.id)}-spec-([1-9][0-9]*)\\.log$`).exec(name);
+    const m = new RegExp(`^${esc(f.id)}-spec-([1-9][0-9]{0,14})\\.log$`).exec(name);
     const text = m === null ? undefined : f.branch!.read(`ci/${name}`);
     if (m === null || text === undefined || "error" in readSpecSignature(text, f.id, Number(m[1]), f.design, ownBrief(text, f.id, `ci/${name}`), `ci/${name}`)) return false;
     return (instant(parseLogHeader(text).get("at") ?? "")?.getTime() ?? 0) > at;

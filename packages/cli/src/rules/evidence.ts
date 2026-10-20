@@ -471,8 +471,9 @@ function checkBehaviourCitations(root: string): Finding[] {
     const declared = countBehaviours(briefText);
     if (declared === 0) continue;
     for (const match of citationProse(briefText).matchAll(/\bBehaviour (\d+)\b/g)) {
-      const cited = Number(match[1]);
-      if (cited <= declared) continue;
+      // W-334: compared exactly, so a citation past the safe integers is named as written
+      const cited = BigInt(match[1]!);
+      if (cited <= BigInt(declared)) continue;
       findings.push({
         rule: "brief.behaviour_citation",
         level: "block",

@@ -660,7 +660,7 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
     if (existing === undefined) {
       ctx.log("gh pr create");
       const created = sh("gh", ["pr", "create", "-R", slug.slug, "--base", "master", "--head", branch, "--title", title ?? "", "--body-file", bodyFile ?? ""], wt, GH_MAX_BYTES);
-      const found = /\/pull\/([1-9][0-9]*)\s*$/.exec(created.stdout.trim());
+      const found = /\/pull\/([1-9][0-9]{0,14})\s*$/.exec(created.stdout.trim());
       if (created.status !== 0 || found === null) return held(`pr create failed: ${why(created)}`);
       number = Number(found[1]);
     }
