@@ -1,0 +1,56 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-338-b4\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-20T23:44:23.158Z
+# sella: builder.W-338
+# tree: tree:61dbde143031ca86d6c6b0a1adaa0ecffe336912
+# ticket: {"opus":"W-338","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-338/studio","head":"cc1d5c19fbc60185e2f0f55c5b7430b96e1ce3b3","brief":"af00f38bdac5ee68ecc41da79812543d83185e21","at":"2026-10-20T23:44:22.101Z"}
+
+TAP version 13
+# Subtest: W-338-b4 behaviour 4: after the branch, a ui-lead input recorded in the worktree passes its spec check and is committed with its prompt
+not ok 1 - W-338-b4 behaviour 4: after the branch, a ui-lead input recorded in the worktree passes its spec check and is committed with its prompt
+  ---
+  duration_ms: 2939.679389
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:28:849'
+  failureType: 'testCodeFailure'
+  error: |-
+    the uncommitted input is committed with the spec
+    --- exit 1
+    --- stdout
+    next: W-900 spec held
+    actor: producer
+    why: studio/ci/W-900-spec-3.log is not a valid signature or spec review
+    head: opus/W-900 2afa31444390
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 spec held'
+    - 'next: W-900 spec named'
+                        ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec named'
+  actual: 'next: W-900 spec held'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-world.test.ts:762:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:955:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2956.160383
