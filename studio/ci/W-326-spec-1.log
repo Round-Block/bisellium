@@ -1,0 +1,25 @@
+# opus: W-326
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T14:59:05.539Z
+# tree: tree:84ad11e6fcc7b2d733cf94170cfd77a99b7f5425
+# brief: briefs/W-326.md blob:4fe27a32445fbd2601ecc0148977e3834093f40d
+# ticket: {"opus":"W-326","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"ef1f00d14037e7883ebeb28e3d7b333d981d5456","brief":"4fe27a32445fbd2601ecc0148977e3834093f40d","at":"2026-10-20T14:59:01.468Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-326-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — design question a is settled for a perform, `next <id> --perform --expect reds`, over a kept script (D-042): the rung names it only when the brief's signed Prototype line, the series at that sha256, its grammar, one single-quote-only red command per behaviour, no recorded red and a whole-series `git apply --check --index` all hold, and every other state is the builder's order naming why — check: brief:21, brief:23, brief:98, brief:101
+2. advisory — design questions b and c: the replay applies only the bytes the signed brief's digest names, each patch by `git am` with no three-way merge, and records each red on its own ticket issued at the commit before its implementation; each row fails by assertion on master and on each stage before its own and passes from its own stage on, and the classifier accepts every red — check: reds.out, row-b1-master.out, row-b2-s1.out, row-b3-s2.out
+3. advisory — design question d: a keeps-only failed spec review still replays the signed prototype, and its required fixes go to the builder at the build rung (pinned by W-326-b3); folding them into the prototype would need a new signature and review, the round D-086 saves — check: brief:25, mutants.out
+4. advisory — seventeen guard mutants are killed at their rows, and none fails to load — check: mutants.out
+5. advisory — no existing row flips; inventory D of `containment.test.ts` gains one pinned entry for `loadSeries`'s read, and W-179-b1's seven-file guard is kept by appending the rows to `next-branch.test.ts`; no brief in master's, the main checkout's or W-336's officina names a Prototype line, so no reds order in flight changes — check: neighbours-proto.out, neighbours-master.out, probes.out, fixture-census.md
+6. advisory — the lex (§9 steps 0 and 3, §10, §12) and `studio/prompts/spec-draft.md` are code-owned: the Patron merges; W-310's dispatch roles are only named as a seam — check: brief:27, brief:29
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-326.md`, prototype on master 8267b00d (ef1f00d1's source), 3 points; code-owned paths touched, so the Patron merges.

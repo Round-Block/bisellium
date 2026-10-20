@@ -1,0 +1,23 @@
+# opus: W-326
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a159e9-d35c-7213-992d-741538e01284
+# outcome: passed
+# at: 2026-10-20T16:25:39.881Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-326.md blob:b2dd77eca48c481340b189397cc6882944e2c4af
+# ticket: {"opus":"W-326","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"b2dd77eca48c481340b189397cc6882944e2c4af","at":"2026-10-20T16:25:39.420Z"}
+
+## Findings
+1. advisory — studio/briefs/W-326.md:23 Reached from ci/W-326-spec-2.log #2’s class: the unchanged perform framework writes its step marker/log before `performReds`, and `writeAttempt` may create parent directories before creating the attempt file, so “before its first write,” “nothing written,” and the claim that every crash leaves the attempt marker overpromise the implementation. Replace brief:23 with: `**Fail closed (design question b).** No Prototype line keeps the old builder order; every other preflight rejection names the builder and its reason. The unchanged perform framework first writes its step marker and log; performReds then creates or checks the attempt-marker directories and exclusively creates .bisellium/prototype-replay/<id>.attempted before any replay commit or officina write. Failure before that marker lands may leave host bookkeeping and may be retried; once it lands, a hold or crash keeps completed commits and every later derivation names the builder. The replay otherwise runs once per opus.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-branch.test.ts W-326-b2 failure before attempt-file creation
+
+## Earlier findings
+- ci/W-326-spec-2.log #1: closed — brief:62 and brief:105 specify `readReplayReds`, which rejects unreadable, symlinked and non-directory red paths; brief:138 and the revision-1 regression evidence exercise the defect.
+- ci/W-326-spec-2.log #2: closed — brief:63-64 and brief:70 add the exclusive per-opus attempt marker before replay work, and brief:140 verifies that a first `git am` failure leaves the next order to the builder.
+
+## Verdict
+Both earlier blockers are closed; the remaining marker-order overstatement is advisory.
+
+VERDICT: PASS
