@@ -146,7 +146,19 @@ const isCap = (v: unknown): v is number => typeof v === "number" && Number.isInt
 function checkDocCaps(docs: DocFile[], manifest: unknown): Finding[] {
   const caps = isDict(manifest) ? manifest["doc_caps"] : undefined;
   if (caps === undefined) return [];
-  if (!isDict(caps)) return [];
+  // A cap the rule cannot read fails closed: it blocks at the manifest and no doc is judged against it.
+  const where = "bisellium.yml#doc_caps";
+  const bad: string[] = [];
+  if (!isDict(caps)) bad.push('doc_caps must be a mapping of "default" and docs/<name>.md keys to positive whole line caps');
+  else {
+    const listed = new Set(docs.map((d) => d.path).filter((p) => TOP_DOC.test(p)));
+    if (caps["default"] === undefined) bad.push('doc_caps has no "default" cap');
+    for (const [key, cap] of Object.entries(caps)) {
+      if (!isCap(cap)) bad.push(`doc_caps "${key}" must be a positive whole number of lines, not ${JSON.stringify(cap)}`);
+      if (key !== "default" && !listed.has(key)) bad.push(`doc_caps "${key}" names no top-level docs/*.md file in this repo`);
+    }
+  }
+  if (bad.length > 0 || !isDict(caps)) return bad.map((message) => ({ rule: "doc.cap", level: "block", where, message }));
   const out: Finding[] = [];
   for (const doc of docs) {
     if (!TOP_DOC.test(doc.path)) continue;
