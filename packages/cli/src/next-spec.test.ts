@@ -964,3 +964,30 @@ test("W-338-b4 behaviour 4: after the branch, a ui-lead input recorded in the wo
   );
   expectStep(next(w, [OPUS]), "ready", "named", "the worktree's input admits ready");
 });
+test("W-338-b5 behaviour 5: the UI design digest is the caller's opus: a record whose id is not its opus id and file name gives no digest, so no input is written or read for another brief", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b5");
+  putBrief(w);
+  // a copied record: opera/W-900.md says id W-901, and briefs/W-901.md exists with other bytes
+  put(w.studio, "briefs/W-901.md", "# another opus's brief\n");
+  editRecord(w, "repo", (doc) => doc.setIn(["id"], "W-901"));
+  for (const [name, pointer] of [["no spec pointer", false], ["a spec pointer", true]] as const) {
+    if (pointer) editRecord(w, "repo", (doc) => doc.setIn(["spec"], "briefs/W-900.md"));
+    const copied = uiInput(w, 1);
+    assert.equal(copied.status, 2, `a copied id W-901 with ${name}: the ui-lead's input exits 2\n${copied.out}`);
+    assert.match(copied.out, /record's id to be W-900/, `a copied id W-901 with ${name}: the refusal names the id`);
+    assert.equal(existsSync(join(w.repo, specLog(1))), false, `a copied id W-901 with ${name}: no input is written`);
+  }
+  // the reader: an input written for W-900 is not read through a record whose id is not W-900
+  editRecord(w, "repo", (doc) => doc.setIn(["id"], OPUS));
+  const input = uiInput(w, 1);
+  assert.equal(input.status, 0, `the matching id: the input is recorded\n${input.out}`);
+  assert.equal(inspect(w).input?.relative, `ci/${OPUS}-spec-1.log`, "the matching id: the input is read");
+  editRecord(w, "repo", (doc) => doc.setIn(["id"], "W-901"));
+  const r = inspect(w);
+  assert.equal(r.input, undefined, "a copied id W-901: no input is read");
+  assert.match(r.problems.join("\n"), /record's id to be W-900/, "a copied id W-901: the reader names the id");
+  // the officina check reads the record for its file name, W-900, too
+  const checked = spawnSync(process.execPath, ["--import", TSX, MAIN, "check", w.studio, "--json"], { cwd: w.repo, env: SETUP_ENV, encoding: "utf8" });
+  const findings = (JSON.parse(checked.stdout) as { findings: { rule: string; message: string }[] }).findings;
+  assert.ok(findings.some((f) => f.rule === "opus.ui.design" && /record's id to be W-900/.test(f.message)), `a copied id W-901: check names the id under opus.ui.design\n${checked.stdout.slice(0, 2000)}`);
+});
