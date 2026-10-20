@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-275-b1\s --import tsx packages/cli/src/verdict-findings.test.ts
+# exit: 1
+# at: 2026-10-20T23:27:09.679Z
+# sella: builder.W-275
+# tree: tree:3508c65d1827bbd4d26b3bec91fdbead243f5766
+# ticket: {"opus":"W-275","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-275/studio","head":"3427b5843ea5560fb99d490330370bcaa069a70d","brief":"f442cc60737c754ea1b8529d8a389baca0c40506","at":"2026-10-20T23:27:04.095Z"}
+
+TAP version 13
+# Subtest: W-275-b1 behaviour 1: verdict refuses a spec log next's reader would refuse, before any write
+not ok 1 - W-275-b1 behaviour 1: verdict refuses a spec log next's reader would refuse, before any write
+  ---
+  duration_ms: 21.497118
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/verdict-findings.test.ts:155:535'
+  failureType: 'testCodeFailure'
+  error: |-
+    prose after No findings: exit (stderr "")
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/verdict-findings.test.ts:560:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/verdict-findings.test.ts:565:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 132.798954
