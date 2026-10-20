@@ -1984,12 +1984,13 @@ function recordCertify(f: Facts): { lines: string[] } | { why: string } {
   }
   const head = reads[reads.length - 1]!.sha;
   // the PR whose mint the run is: the opus's own, or the one the newest source commit's squash subject names
-  let pr = p.pr.number;
+  // a string: the subject's digits are unbounded, so they are compared exactly, never through a double
+  let pr = String(p.pr.number);
   if (chain.length > 0) {
     const subject = git(repo, ["log", "-1", "--format=%s", head]);
     const n = subject.status === 0 ? /\(#([1-9][0-9]*)\)$/.exec(subject.stdout.trim()) : null;
     if (n === null) return { why: `the commit ${head.slice(0, 12)}'s subject names no PR as (#<n>)` };
-    pr = Number(n[1]);
+    pr = n[1]!;
   }
   // the artifact lands under <repo>/.bisellium/certify/ (ignored, never an officina), removed afterwards
   const dir = mkdtempSync(join(ensureRealDirectory(repo, ".bisellium", "certify"), `${id}-`));
