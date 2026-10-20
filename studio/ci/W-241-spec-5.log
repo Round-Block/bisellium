@@ -1,0 +1,26 @@
+# opus: W-241
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T01:51:39.603Z
+# tree: tree:6760e1f0e8406471ebc497fcc315525375b25133
+# brief: briefs/W-241.md blob:02a6c5b033bc3cab76e47b46bf33f5feae5a9ac6
+# ticket: {"opus":"W-241","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"5cf227758682401af626165bab03514ead05de8c","brief":"02a6c5b033bc3cab76e47b46bf33f5feae5a9ac6","at":"2026-10-20T01:51:34.058Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-241-spec/r3/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 re-anchors revision 2 on master e04a622d: `studio/prompts/build-review.md` exists (W-274) and leaves Files owned; the rule requires next's seven build-review slots, `<STUDIO>` included, held equal to next's list through `fillSlots`; spec-draft is the architect's dispatch (D-072) and builder-brief the D-082 builder model; the Ops clause names the orchestrator, not lead agents (D-069 C, D-087 A); the production lex runbook names the templates — check: brief:3, r3/prototype.diff
+2. advisory — both reds fail by assertion and are accepted by the replay classifier, with zero poison matches: W-241-b1 on the rows-only commit at "each absent template blocks once", W-241-b2 at behaviour 1 at "an absent Ops lex blocks"; each passes on its stage — check: r3/reds.out, r3/row-b1-master.out, r3/row-b2-s1.out, r3/row-b1-s1.out, r3/row-b2-s2.out
+3. advisory — every mutant is killed: the rule dropping `<STUDIO>` or the phrase, ignoring the marker, needing one path, applying without the ops collegium; next's slot list gaining or losing a slot — check: r3/mutants.out
+4. advisory — no flip: the Codex test check lists none and no unnamed row; its must-stay-green files pass on the prototype (lex, check, containment, w267, ci-scope, rules/process, rules/tests, safe-helpers, officina-truth); a split commit fails lex.test behaviour 7 or the real studio's check, as Acceptance says — check: fixture-census.md, r3/neighbours.out, r3/splits.out
+5. advisory — typecheck, lint, format:check and both officina checks pass on the prototype, the real studio with master's findings unchanged at both stages and the sample studio untouched by the rule — check: r3/typecheck-proto.out, r3/lint-proto.out, r3/format-proto.out, r3/check-studio.out, r3/check-studio-s1.out, r3/check-sample.out
+6. advisory — unchanged code stays a stated limit, not a guarantee (D-076 E): readContainedRegularFile, bulletClauses, fillSlots and checkStudio's manifest checks are reused as they are — check: brief:17, brief:19, brief:21
+7. advisory — the brief passes admission and its ledger covers every promise and Input domain row through master's writer; 2 points; it touches code-owned `studio/prompts/` and `studio/leges/`, so the Patron merges — check: r3/admission.out, r3/ledger-check.out, r3/promise-ledger.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-241.md`, prototype on master e04a622d.
