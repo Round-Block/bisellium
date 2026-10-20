@@ -459,7 +459,9 @@ function chainWorld(tag: string, handoff = true): World {
   git(w.repo, ["push", "-q", "origin", "master"]);
   git(w.wt, ["rebase", "-q", "master"]);
   writeReds(w);
-  if (handoff) handoffAt(w, "wt", T.handoffFresh);
+  // W-275: pr holds on a handover older than the newest review log; the review perform stamps its log with the wall clock,
+  // so this handover is dated a day past it and the chain runs on through pr
+  if (handoff) handoffAt(w, "wt", new Date(Date.now() + 86_400_000).toISOString());
   return w;
 }
 const performChain = (w: World, extra: string[] = prArgs, env: Record<string, string> = {}): Out =>

@@ -979,15 +979,21 @@ export function deriveNext(f: Facts): Derived {
     if (p.kind === "held") return hold("pr", p.reason);
     if (p.kind === "open") return { ...named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
-    if (p.kind !== "settled")
+    if (p.kind !== "settled") {
+      // W-275: the PR carries the record, so a handover older than the newest red or review log, or malformed, is refreshed first
+      const t = b["traditio"];
+      const at = t === undefined ? undefined : handoverAt(t);
+      if (at !== undefined && (typeof at === "string" || at < f.evidenceAt()))
+        return hold("pr", `stale handover: ${typeof at === "string" ? at : `traditio at ${new Date(at).toISOString()} predates the newest red or review log`}; run: bisellium handoff --opus ${id} --sella producer --next "<what moves next>" --studio ${join(".worktrees", id, f.studioRel)}, commit ${recordRel(id)} on opus/${id}, then rerun`);
       return named(
         "pr",
         "producer",
         p.kind === "open-stale" ? `PR #${p.pr.number} is OPEN but not on the local tip` : p.kind === "unrelated" ? `a MERGED PR settles nothing: ${p.reason}` : "review is met and no PR exists for the head",
-        `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <path>`,
+        `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>`,
         [],
         p.kind === "open-stale" ? p.pr : undefined,
       );
+    }
   }
 
   // 10 cleanup, 11 done
