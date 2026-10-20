@@ -1,0 +1,24 @@
+# opus: W-268
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T09:44:18.770Z
+# tree: tree:79b02141da440ae602988fd3d64b41951f76a6c7
+# brief: briefs/W-268.md blob:092400f48a8043edfeebdd8a9eec389f7c999c09
+# ticket: {"opus":"W-268","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b3c524d232fc16c534a47cb6ec00855c654c9443","brief":"092400f48a8043edfeebdd8a9eec389f7c999c09","at":"2026-10-20T09:44:15.066Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-268-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — split at spec: part 1 is `ladder.ticket` for verdict and red logs, a blocking officina check; the officina check runs in the merge queue's required `officina` job, so it is the wall W-233 drew for certify, built from the tree and touching no code-owned path; the other rules are later parts, one line each, with what each still needs after W-299 and W-317 — check: brief:17, brief:142
+2. advisory — the migration boundary is the officina's first ticket and the open states: on master every covered log after 2026-10-14T22:48:53.331Z carries a ticket, W-265's un-ticketed build verdict precedes it and is done, seven open opera's pre-switch spec logs are not judged; master, the main checkout and W-334's and W-335's worktrees give no finding — check: census.out, judged.out, probes.out
+3. advisory — the prototype on master b3c524d2: each red fails by assertion on every stage before its own and passes from its own; fifteen guard mutants killed; the neighbour files and the Codex test check's must-stay-green files pass; lint, typecheck and format pass; the studio check's one block is the detached stage's, identical on the master stage — check: reds.out, mutants.out, neighbours-proto.out, neighbours-census.out, gates-proto.out
+4. advisory — the rule uses its own header reader (keeps repeated keys so two ticket lines count as two) and `instant` after `utcTimestampProblem`, not a raw date parse, so containment.test.ts's inventory C stays as pinned; the rule id is a `rule:` literal so lex.test.ts's drift guard harvests it — check: brief:57, neighbours-proto.out
+5. advisory — the Codex test check lists no flip and no unnamed one — check: fixture-census.md, brief:133
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-268.md`, part 1 of W-268, prototype on master b3c524d2; no code-owned path touched, 2 points.

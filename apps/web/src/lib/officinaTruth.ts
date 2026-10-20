@@ -34,6 +34,7 @@ export const RULE_FAMILY_LABELS: Readonly<Record<string, string>> = {
   hook: "Agent hooks",
   instructions: "Agent instruction files",
   integration: "Pull request reviews",
+  ladder: "Step tickets",
   lesson: "Lessons",
   lex: "Team charters",
   link: "Broken links",

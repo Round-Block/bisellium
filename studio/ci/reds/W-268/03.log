@@ -1,0 +1,47 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-268-b3\s --import tsx packages/cli/src/rules/ladder-ticket.test.ts
+# exit: 1
+# at: 2026-10-20T11:49:26.689Z
+# sella: builder.W-268
+# tree: tree:3b11dab17fd07bbf2aef199089f1e199da0f3252
+# ticket: {"opus":"W-268","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-268/studio","head":"34ab852cc7293db584e8619de98c6366d5f6ee5d","brief":"00952f6e66e17a7df20e5354cb8163c049593ec6","at":"2026-10-20T11:49:23.574Z"}
+
+TAP version 13
+# Subtest: W-268-b3 behaviour 3: only an open opus's logs from the officina's first ticket on are judged, a malformed step_tickets blocks, and a judged log needs an exact UTC at
+not ok 1 - W-268-b3 behaviour 3: only an open opus's logs from the officina's first ticket on are judged, a malformed step_tickets blocks, and a judged log needs an exact UTC at
+  ---
+  duration_ms: 34.046569
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-268/packages/cli/src/rules/ladder-ticket.test.ts:18:2317'
+  failureType: 'testCodeFailure'
+  error: |-
+    a log written before the officina's first ticket is no finding
+    + actual - expected
+    
+    + [
+    +   'block ci/W-902-spec-1.log'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'block ci/W-902-spec-1.log'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-268/packages/cli/src/rules/ladder-ticket.test.ts:112:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 41.378913

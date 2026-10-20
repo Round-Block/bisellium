@@ -1,0 +1,47 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-268-b2\s --import tsx packages/cli/src/rules/ladder-ticket.test.ts
+# exit: 1
+# at: 2026-10-20T11:49:17.889Z
+# sella: builder.W-268
+# tree: tree:9f64f1be60e56798743a22d3a3ad07d913eab002
+# ticket: {"opus":"W-268","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-268/studio","head":"69450bd8944a5625ca1134e1a98c12a56f76d66b","brief":"00952f6e66e17a7df20e5354cb8163c049593ec6","at":"2026-10-20T11:49:14.677Z"}
+
+TAP version 13
+# Subtest: W-268-b2 behaviour 2: a ticket naming another opus, action or round, issued after its log, or not after the opus's previous covered log blocks
+not ok 1 - W-268-b2 behaviour 2: a ticket naming another opus, action or round, issued after its log, or not after the opus's previous covered log blocks
+  ---
+  duration_ms: 35.003073
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-268/packages/cli/src/rules/ladder-ticket.test.ts:18:191'
+  failureType: 'testCodeFailure'
+  error: |-
+    a ticket naming another opus blocks
+    + actual - expected
+    
+    + []
+    - [
+    -   'block ci/W-900-spec-2.log'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'block ci/W-900-spec-2.log'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-268/packages/cli/src/rules/ladder-ticket.test.ts:88:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 42.993674
