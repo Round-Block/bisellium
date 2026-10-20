@@ -276,8 +276,20 @@ function captureOf(node, scope) {
 
 const NUMERIC = new Set(["Number", "parseInt", "parseFloat"]);
 
-/** Whether `name` resolves to the global in `scope`: no local binding (a declaration, import or parameter) up the scope chain. */
-const isGlobal = (scope, name) => (variableOf(scope, name)?.defs.length ?? 0) === 0;
+/** A definition that binds no runtime value: a type alias, interface or type parameter (`Type`), or an `import type`. */
+const typeOnly = (d) =>
+  d.type === "Type" ||
+  (d.type === "ImportBinding" && (d.node.importKind === "type" || d.parent?.importKind === "type"));
+
+/**
+ * Whether `name` resolves to the global in `scope`: no value binding of it up the scope chain. A shadow is a variable,
+ * function, class, parameter, catch parameter, enum, namespace or value import; a type-only binding is passed over.
+ */
+// ponytail: an ambient `declare` value and a types-only namespace count as shadows (a stated limit, brief Interfaces 1)
+function isGlobal(scope, name) {
+  for (let s = scope; s !== null; s = s.upper) if (s.set.get(name)?.defs.some((d) => !typeOnly(d))) return false;
+  return true;
+}
 
 /** The argument a numeric read converts: `Number(x)`, `parseInt(x…)`, `parseFloat(x)`, `Number.parseInt`/`Number.parseFloat`, `+x`; a shadowed reader is none. */
 function converted(node, scope) {
