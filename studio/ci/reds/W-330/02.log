@@ -1,0 +1,54 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-330-b2\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-10-20T05:55:34.355Z
+# sella: builder.W-330
+# tree: tree:b78a0e09ff7188bb3081ed6dfe7917de5e8195a7
+# ticket: {"opus":"W-330","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-330/studio","head":"8f9a5941df6ec0e89e04157435aecacf2f2b76f6","brief":"2832213680c596a6a2c9266be19aa4346afb412c","at":"2026-10-20T05:55:29.145Z"}
+
+TAP version 13
+# Subtest: W-330-b2 behaviour 2: every source commit of the chain needs its own certify run, and a link the perform cannot read holds and names verify
+not ok 1 - W-330-b2 behaviour 2: every source commit of the chain needs its own certify run, and a link the perform cannot read holds and names verify
+  ---
+  duration_ms: 2299.555581
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-330/packages/cli/src/next-done.test.ts:33:3165'
+  failureType: 'testCodeFailure'
+  error: |-
+    a chain with a non-certified source commit refuses
+    --- exit 0
+    --- stdout
+    next: W-900 done performed
+    certificate: certify run 4343, PR #903, merge commit 8e6a805be8bc, tree:9f090a9b8d18ba0e99ee9aa989d4ee65963dd509
+    certificate: the certified chain since W-900's merge commit 2fd5edbec811: 8e8932fb8ea8, 8e6a805be8bc
+    certificate: tests ci/W-900-tests-9f090a9b8d18ba0e99ee9aa989d4ee65963dd509.log
+    branch: chore/done-W-900
+    commit: 48a5048
+    done: W-900: done
+    next-step: done
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 done performed'
+  operator: 'match'
+  stack: |-
+    expectHeld (/home/edckt/agents/bisellium/.worktrees/W-330/packages/cli/src/next-world.test.ts:864:10)
+    heldWith (/home/edckt/agents/bisellium/.worktrees/W-330/packages/cli/src/next-done.test.ts:1188:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-330/packages/cli/src/next-done.test.ts:1202:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2318.650502

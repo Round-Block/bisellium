@@ -1,0 +1,50 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-330-b1\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-10-20T05:54:45.514Z
+# sella: builder.W-330
+# tree: tree:520ba95d1ebb51f5d495166b156cb92045c417db
+# ticket: {"opus":"W-330","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-330/studio","head":"3135a6ec8ea24dfb89719a134d62bdc9e33da5f4","brief":"2832213680c596a6a2c9266be19aa4346afb412c","at":"2026-10-20T05:54:39.053Z"}
+
+TAP version 13
+# Subtest: W-330-b1 behaviour 1: when master's source moved since the merge only by a certified merge-queue merge and records, the done perform records that merge's certify certificate, naming its tree
+not ok 1 - W-330-b1 behaviour 1: when master's source moved since the merge only by a certified merge-queue merge and records, the done perform records that merge's certify certificate, naming its tree
+  ---
+  duration_ms: 2176.727205
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-330/packages/cli/src/next-done.test.ts:33:299'
+  failureType: 'testCodeFailure'
+  error: |-
+    the certified chain's certificate is recorded: exit 0
+    --- exit 1
+    --- stdout
+    next: W-900 done held
+    why: refusing: the merge queue's certify certificate cannot be recorded: master's source changed since the merge commit 7b7b6b7cf761 (lane.txt); run: bisellium verify W-900 --studio studio --repo .
+    next-step: done
+    
+    --- stderr
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-330/packages/cli/src/next-done.test.ts:1163:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2192.32255

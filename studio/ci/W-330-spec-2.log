@@ -1,0 +1,19 @@
+# opus: W-330
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a157d9-c423-7832-b524-4cfaa1708d4f
+# outcome: passed
+# at: 2026-10-20T05:52:44.122Z
+# tree: tree:1e49271ce7441bb5da936ee0394736357a49e4ef
+# brief: briefs/W-330.md blob:2832213680c596a6a2c9266be19aa4346afb412c
+# ticket: {"opus":"W-330","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"3f3ad6acc7916b431c760c0a86d2b86247ea8562","brief":"2832213680c596a6a2c9266be19aa4346afb412c","at":"2026-10-20T05:52:43.585Z"}
+
+## Findings
+1. advisory — brief:81 The table omits the changed `mergedTree` reader `sourceTreeHash(repo, excludes, at)`. Replace brief:81 with: `| 6. What master changed since the merge commit, and the source tree selected by mergedTree | diffPaths returns a path list containing no <studio>/bisellium.yml or <studio>/opera/<id>.md; at is the newest chain commit or merged, resolves to a commit, and sourceTreeHash(repo, excludes, at) succeeds | mergedTree: an unreadable diff, either policy path, or a hash failure returns its stated why and holds |`. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief.input.reader-census
+2. advisory — brief:84 The added W-330 tests’ Git, filesystem, source-tree, output, call-log and branch-ref readers have no input row; moreover, `branchExists` maps every Git failure to false, so it can falsely prove that no chore branch exists. Replace brief:84 with: `| 9. W-330-b1/b2 fixture observations through git, sourceTreeHash/sourceTree, readFileSync/parseFrontMatter, next/outLines, ghCalls and a checked branch-ref reader | fixture commands and reads succeed; generated records parse; outputs and calls have the asserted forms; the chore ref is absent after a hold | throwing readers and node:test assertions fail the row; replace branchExists with gitYesNo(show-ref), where exits 0 and 1 are the only valid answers and every other failure throws |` followed by the existing reused-gates row renumbered 10. [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-done.test.ts
+
+## Verdict
+The production design is feasible and fails closed; the two non-blocking boundary omissions should be adopted during the build.
+VERDICT: PASS

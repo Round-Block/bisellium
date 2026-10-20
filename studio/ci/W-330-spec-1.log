@@ -1,0 +1,26 @@
+# opus: W-330
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T05:47:07.324Z
+# tree: tree:1e49271ce7441bb5da936ee0394736357a49e4ef
+# brief: briefs/W-330.md blob:2832213680c596a6a2c9266be19aa4346afb412c
+# ticket: {"opus":"W-330","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"3f3ad6acc7916b431c760c0a86d2b86247ea8562","brief":"2832213680c596a6a2c9266be19aa4346afb412c","at":"2026-10-20T05:47:03.524Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-330-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — records-only is `recordOnly` (scripts/ci-scope.mjs), the list the merge queue's scope step, certify and next's done and landing guards already read, applied to each first-parent commit's own diff through `diffPaths`; an empty diff needs a run — check: brief:19, brief:77
+2. advisory — a source commit is tied to its certify run by its sha as the merge_group run's headSha (the reads the perform already makes for the merge commit, extracted unchanged into `certifyRun`); the newest one's PR is its squash subject's `(#<n>)`, which its certify.log must name, and its receipt is the opus the log rebased; every link fails closed to today's verify request — check: brief:20, brief:22, mutants.out
+3. advisory — the certificate names the newest certified merge's source tree, not master's tip: #607 (a records commit after #605) changed the handoff, which the source tree hashes, so master's tree differs from the tree certify ran; this is W-259's rule for the merge commit applied to the newest merge, and `certificate` accepts it through `mergedTree` unchanged (Defaults 1 puts the reading to the Patron) — check: brief:21, probes.out
+4. advisory — the live case on the real repository: on the prototype, W-317's done perform at 5e7dbb0c records certify run 39371121437 (#605) naming tree ba319cb0…, the receipt's own, also with #607's records committed after it; a further local source commit with no run is refused naming it; on master the same perform holds — check: probes.out, probe-proto-chain.out, probe-master-chain.out
+5. advisory — the prototype on master cf8a96f8 (master is now 3f3ad6ac, records only since): each red fails by assertion on the stage before its own and passes on its own; ten guard mutants killed; the neighbour files, containment.test.ts and certify's tests pass whole; lint, typecheck and format pass, and the studio check's one block is the detached stage's, identical on the master stage — check: reds.out, mutants.out, neighbours.out, gates-proto.out
+6. advisory — the Codex test check lists W-259-b1's "source moved since the merge" as the one flip, named in the brief, and no unnamed one; its must-stay-green rows (W-259-b1's other cases, containment.test.ts W-163-b6, the next-world stub and the gh fixtures) are in files that pass on the prototype — check: fixture-census.md, neighbours.out, brief:120
+7. advisory — docs/ADOPTION.md's done-certify paragraph still says a later source change holds; it is code-owned and left out of scope so the PR merges on the ordinary path (Defaults 3) — check: brief:128
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-330.md`, prototype on master cf8a96f8, live probe on the real repository; no code-owned path touched.
