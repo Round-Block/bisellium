@@ -348,6 +348,43 @@ test("W-334-b1 behaviour 1: the lint refuses a regex capture of more than 15 dig
   ];
   for (const [name, code] of passed) assert.deepEqual(await lossy(DECL + code), [], `${name}: not reported`);
 
+  // review round 1 fix: a cyclic chain of writes is unjudged (never a RangeError), whichever form it runs through
+  const READ = "export const n = Number(m![1]);\n";
+  const cyclic: [string, string][] = [
+    ["a match", `let a: any = b;\nlet b: any = a;\nconst m = a.exec(s);\n${READ}`],
+    ["a self-write", `let a: any = a;\nconst m = a.exec(s);\n${READ}`],
+    ["a regex", `let r: any = q;\nlet q: any = r;\nconst m = r.exec(s);\n${READ}`],
+    ["a pattern string", `let t: any = u;\nlet u: any = t;\nconst m = new RegExp(t).exec(s);\n${READ}`],
+    ["a ?: side", `let a: any = id ? a : null;\nconst m = a;\n${READ}`],
+    ["a list", `let l: any = k;\nlet k: any = l;\nconst m = l.at(0);\n${READ}`],
+    ["a for-of list", `let l: any = k;\nlet k: any = l;\nfor (const m of l) console.log(Number(m[1]));\n`],
+    ["a callback list", `let l: any = k;\nlet k: any = l;\nl.map((m: any) => Number(m[1]));\n`],
+  ];
+  for (const [name, code] of cyclic) assert.deepEqual(await lossy(DECL + code), [], `a cycle through ${name}: not judged, no throw`);
+
+  // review round 1 fix: only a group's pattern is counted, never its name
+  const named = (re: string, k = 1): string => `const m = ${re}.exec(s);\nexport const n = m ? Number(m[${k}]) : 0;\n`;
+  assert.deepEqual(await lossy(DECL + named("/(?<group1234567890123456>a)/")), [], "a named group whose name holds 16 digits and whose pattern holds none: not reported");
+  assert.deepEqual(await lossy(DECL + named("/(?<g1234567890123456>\\d{4})-(\\d{4})/")), [], "a 16-digit name over a 4-digit pattern: not reported");
+  assert.deepEqual(await lossy(DECL + named("/(?<g1234567890123456>\\d{4})-(\\d{4})/", 2)), [], "the group after a long-named one is counted by its index");
+  assert.match((await lossy(DECL + named("/(?<n>\\d{16})/")))[0] ?? "", /can hold 16 digits/, "a named group whose pattern holds 16 digits: reported");
+  assert.match((await lossy(DECL + named("/(?<n>(?<inner1234>\\d)+)/")))[0] ?? "", /unboundedly many digits/, "a named group nesting a named group: the pattern is counted");
+  assert.deepEqual(await lossy(DECL + `const m = new RegExp("((?<))").exec(s);\n${READ}`), [], "an unterminated group name is no hang and no verdict");
+
+  // review round 1 fix: a reader that is not the global is not a numeric reader
+  const shadowed: [string, string][] = [
+    ["a local Number function", `function Number(x: string): string {\n  return x;\n}\n${DECL}const m = /^v(\\d+)$/.exec(s);\nexport const n = Number(m![1]!);\n`],
+    ["an imported Number", `import { Number } from "./reader.js";\n${DECL}const m = /^v(\\d+)$/.exec(s);\nexport const n = Number(m![1]!);\n`],
+    ["a Number parameter", `${DECL}export const f = (Number: (x: string) => string) => Number(/^v(\\d+)$/.exec(s)![1]!);\n`],
+    ["a local parseInt", `import parseInt from "./reader.js";\n${DECL}const m = /^v(\\d+)$/.exec(s);\nexport const n = parseInt(m![1]!, 10);\n`],
+    ["a local parseFloat", `const parseFloat = (x: string): string => x;\n${DECL}const m = /^v(\\d+)$/.exec(s);\nexport const n = parseFloat(m![1]!);\n`],
+    ["a local Number's parseInt", `const Number = { parseInt: (x: string, r: number): string => x + r };\n${DECL}const m = /^v(\\d+)$/.exec(s);\nexport const n = Number.parseInt(m![1]!, 10);\n`],
+    ["a local Number's parseFloat", `import * as Number from "./reader.js";\n${DECL}const m = /^v(\\d+)$/.exec(s);\nexport const n = Number.parseFloat(m![1]!);\n`],
+  ];
+  for (const [name, code] of shadowed) assert.deepEqual(await lossy(code), [], `${name}: a shadowed reader is not judged`);
+  const sibling = `${DECL}export const f = (Number: string): string => Number;\nconst m = /^v(\\d+)$/.exec(s);\nexport const n = Number(m![1]!);\nexport const p = Number.parseInt(m![1]!, 10);\n`;
+  assert.equal((await lossy(sibling)).length, 2, "a Number declared in a sibling scope leaves the global reported");
+
   // where it runs: source, not tests (they read their own fixtures), and not the Patron's scripts/ci-certify.mjs (a stated limit)
   const plain = "const s = process.argv[2] ?? '';\nconst m = /^v(\\d+)$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n";
   assert.equal((await lossy(plain, "scripts/w334-probe.mjs")).length, 1, "a script is linted");
