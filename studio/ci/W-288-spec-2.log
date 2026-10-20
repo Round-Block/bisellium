@@ -1,0 +1,22 @@
+# opus: W-288
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15800-6caa-7161-a006-a9b4d798afd1
+# outcome: failed
+# at: 2026-10-20T06:36:35.042Z
+# tree: tree:e1ec8858dd8307dc7567ad8c1044f1a657e75573
+# brief: briefs/W-288.md blob:5c5bb7e2e739145465a0c7e16e676430c2f5a4a4
+# ticket: {"opus":"W-288","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"4f2ff2f6a5b013e09ade9e68e7f49060bc07c06a","brief":"5c5bb7e2e739145465a0c7e16e676430c2f5a4a4","at":"2026-10-20T06:36:34.292Z"}
+
+## Findings
+1. blocking — brief:121 [severity: S1] [design: changes] A mistyped, missing-value, or extra `--repo` argument is silently accepted, so the builder can split the current working repository instead of the intended checkout; no existing test catches this fail-open caller mistake. Replace brief:121 with: `| 4. The script argv and docs/ADOPTION.md, as parseSplitArgs and main read them | argv is empty or exactly --repo <non-empty directory>; that repository's ADOPTION is readable text satisfying the stated heading, fence and final-newline domain | parseSplitArgs (new) rejects every other argv before I/O; main (new) routes read and validation failures to fail, which exits 1 before writes |`. [class: spec×input-without-named-rejector] — check: none: add a behaviour-3 row proving unknown, missing-value and extra arguments exit non-zero without changing either repository
+2. advisory — brief:114 [severity: S2] The unconditional “exits 1 and writes nothing” promise exceeds the sequential seven-file implementation: an operating-system failure after an earlier `writeFileSync` succeeds can leave a partial split. Replace brief:114 with: `A validation rejection fails closed: the rule blocks, so the officina check exits 1 and judges no doc against an unreadable policy; the script's fail function exits 1 before its write loop. An operating-system failure during the sequential writes can leave a partial split; the builder restores docs/ADOPTION.md, removes newly created reference files and reruns after correcting the cause: a stated limit.` [class: spec×promise-unattainable-under-accepted-domain] — check: none: add fault-injection coverage if all-or-nothing writes remain promised
+3. advisory — brief:122 [severity: S4] The row names an executable’s exit rather than the real rejecting function and overstates what rerun checks: it trusts `existsSync`, not file type or content. Replace brief:122 with: `| 5. The six reference paths, as main checks them with existsSync before writing or declaring an existing split | existsSync is false for all six before a split; after a split it is true for all six, with file type and content not revalidated on rerun: a limit | fail rejects any path for which existsSync is true before a split, or false after one, before writing; unpinned, a kept script |`. [class: spec×input-without-named-rejector] — check: none: add a rerun fixture if regular-file or content validation is intended
+4. advisory — brief:123 [severity: S4] The changed doc readers are covered collectively, but the row names only a test command rather than their rejecting functions. Replace brief:123 with: `| 6. The split docs, as W-288-b3 and the changed ci-workflow, usage and provider-portability readers read them | each mapped heading is in its reference file alone, ADOPTION has its pointer and retained headings, and every flipped reader finds its unchanged needles | assert.ok and assert.deepEqual in W-288-b3, and check/check11 in the flipped suites, reject mismatches; their test runners return non-zero |`. [class: spec×input-without-named-rejector] — check: none: name the existing assertion functions from the four suites
+
+## Verdict
+The malformed-argv path is a design-changing S1 that can modify the wrong checkout, so the brief requires revision and another spec review.
+
+VERDICT: FAIL
