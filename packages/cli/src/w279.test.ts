@@ -1,15 +1,17 @@
 /**
  * W-279: `ci --opus` hands a step to `verify` only when `verify` will run it, a
  * failing `verify` gate prints its log tail, and lint/format ignore foreign
- * worktree roots. Rows are named `W-279-b<n> behaviour <n>: …` and selected with
+ * worktree roots. W-335-b2: in a checkout whose package.json declares `test:record`, ci runs
+ * `npm test` as scripts/test-reads.mjs. Rows are named `W-279-b<n> behaviour <n>: …` and selected with
  * `--test-name-pattern='^W-279-b<n> '`. node:test TAP. The fixtures are scratch
  * git repos and studios under os.tmpdir(); no timers, sleeps or polling.
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import { ESLint } from "eslint";
 import * as prettier from "prettier";
@@ -231,4 +233,94 @@ test("W-313-b2 behaviour 2: ci --opus prints each step's and each gate's start a
     from = at("a gate prints its end", "err", new RegExp(`^bisellium verify: gate ${gate}: end ${ISO} after \\d+m\\d\\ds, exited 0\n$`), start);
   }
   assert.ok(!seen.some((e) => e.stream === "out" && /^marker (test|lint|typecheck)\n$/.test(e.text)), "a gate's output goes to its log, not the terminal");
+});
+
+const TEST_READS = "node scripts/test-reads.mjs";
+const SCRIPTS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "scripts");
+
+/** W-335: orderRepo's checkout, plus scripts/test-reads.mjs and the two scripts it runs, `studio/x.md`, two tests that
+ *  read it and a `test:record` naming `record`; `test` runs the marker and both tests. */
+function readsRepo(record: string): string {
+  const dir = tmp("w335-repo-");
+  writeFileSync(join(dir, "ci-marker.mjs"), ORDER_MARKER);
+  writeFileSync(join(dir, ".gitignore"), "order.log\n");
+  mkdirSync(join(dir, "scripts"));
+  mkdirSync(join(dir, "studio"));
+  for (const name of ["test-reads.mjs", "record-reads.mjs", "ci-scope.mjs"]) copyFileSync(join(SCRIPTS, name), join(dir, "scripts", name));
+  writeFileSync(join(dir, "studio", "x.md"), "x\n");
+  for (const name of ["a", "b"]) writeFileSync(join(dir, `${name}.test.mjs`), 'import { readFileSync } from "node:fs";\nreadFileSync(new URL("./studio/x.md", import.meta.url));\n');
+  const scripts: Record<string, string> = Object.fromEntries(["audit", "typecheck", "lint", "format:check", "check"].map((s) => [s, `node ci-marker.mjs ${s}`]));
+  scripts["test"] = "node ci-marker.mjs test && node a.test.mjs && node b.test.mjs";
+  scripts["test:record"] = record;
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "w335-fixture", private: true, scripts }, null, 2));
+  commitRepo(dir);
+  return dir;
+}
+
+async function quietly<T>(run: () => Promise<T>): Promise<{ result: T; stderr: string }> {
+  const { error } = console;
+  let stderr = "";
+  console.error = (...a: unknown[]) => void (stderr += `${a.join(" ")}\n`);
+  try {
+    return { result: await run(), stderr };
+  } finally {
+    console.error = error;
+  }
+}
+
+test("W-335-b2 behaviour 2: where package.json declares test:record, ci runs npm test as scripts/test-reads.mjs, in its loop and as the tests gate of ci --opus", async () => {
+  assert.equal(existsSync(join(SCRIPTS, "test-reads.mjs")), true, "scripts/test-reads.mjs exists");
+  const exact = "node a.test.mjs && node b.test.mjs";
+  // (a) ci --opus: the tests gate runs the wrapper once, and its log names the check and its verdict
+  {
+    const repo = readsRepo(exact);
+    const { studio, id } = writeStudio(THREE_GATES, "w335 a");
+    const result = await runCi(["--repo", repo, "--studio", studio, "--opus", id]);
+    assert.equal(result.exitCode, 0, "an exact test:record passes ci --opus");
+    assert.deepEqual(orderLog(repo), [...LOOP_ONLY, "test", "lint", "typecheck"], "npm test runs once, as the gate");
+    const tests = gateRecord(studio, id, "tests");
+    assert.equal(tests["status"], "passed");
+    const log = readFileSync(join(studio, String(tests["evidence"])), "utf8");
+    assert.match(log, /^command: node scripts\/test-reads\.mjs$/m, "the tests gate ran the wrapper");
+    assert.match(log, /--check-reads/, "its log names the check");
+    assert.match(log, /^record_reads=ok$/m, "and the check's verdict");
+  }
+  // (b) ci --opus: a test missing from test:record fails the tests gate, and ci
+  {
+    const repo = readsRepo("node b.test.mjs");
+    const { studio, id } = writeStudio(THREE_GATES, "w335 b");
+    const { result } = await quietly(() => runCi(["--repo", repo, "--studio", studio, "--opus", id]));
+    assert.equal(result.exitCode, 1, "an unlisted reader fails ci --opus");
+    const tests = gateRecord(studio, id, "tests");
+    assert.equal(tests["status"], "failed", "the tests gate fails");
+    assert.match(readFileSync(join(studio, String(tests["evidence"])), "utf8"), /^unlisted: a\.test\.mjs \(read studio\/x\.md\)$/m, "its log names the unlisted test");
+  }
+  // (c) plain ci: the loop's npm test step runs the wrapper, and a failure names it
+  {
+    const repo = readsRepo("node b.test.mjs");
+    const { result, stderr } = await quietly(() => runCi(["--repo", repo]));
+    assert.equal(result.exitCode, 1, "an unlisted reader fails plain ci");
+    assert.deepEqual(orderLog(repo), ["audit", "typecheck", "lint", "format:check", "test"], "at the test step");
+    assert.match(stderr, /step failed \(exit 1\): node scripts\/test-reads\.mjs/, "naming the wrapper");
+  }
+  // (d) a checkout whose package.json declares no test:record runs npm test as before
+  {
+    const repo = orderRepo();
+    const result = await runCi(["--repo", repo]);
+    assert.equal(result.exitCode, 0, "no test:record: plain ci passes without the wrapper");
+    assert.deepEqual(orderLog(repo), ["audit", "typecheck", "lint", "format:check", "test", "check:studio", "check:examples/sample-studio"], "running npm test");
+  }
+  // (e) validateCommandOverride: a key that is not a planned gate, or an empty command, is refused before anything runs
+  {
+    const repo = readsRepo("node a.test.mjs && node b.test.mjs");
+    const { studio, id } = writeStudio(THREE_GATES, "w335 e");
+    const args = [id, "--repo", repo, "--studio", studio];
+    const ok = await runVerify(args, { plan: true, commandOverride: { tests: TEST_READS } });
+    assert.equal(ok.commands?.["tests"], TEST_READS, "a planned gate takes its override");
+    for (const commandOverride of [{ nope: TEST_READS }, { tests: "" }]) {
+      const { result, stderr } = await quietly(() => runVerify(args, { plan: true, commandOverride }));
+      assert.equal(result.exitCode, 2, `${JSON.stringify(commandOverride)} is refused`);
+      assert.match(stderr, /commandOverride/, "naming the option");
+    }
+  }
 });
