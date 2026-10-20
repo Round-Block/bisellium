@@ -1,0 +1,44 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-338-b2\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-20T23:42:55.130Z
+# sella: builder.W-338
+# tree: tree:a7822653a2343b690990a921487c5d5955a7919c
+# ticket: {"opus":"W-338","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-338/studio","head":"d6605658f4f7d2942546ba512fec21148e7e45e6","brief":"af00f38bdac5ee68ecc41da79812543d83185e21","at":"2026-10-20T23:42:49.037Z"}
+
+TAP version 13
+# Subtest: W-338-b2 behaviour 2: the UI input is the newest ui-lead spec log, whatever other seats' logs sit above it, and its brief is briefs/<id>.md before ready
+not ok 1 - W-338-b2 behaviour 2: the UI input is the newest ui-lead spec log, whatever other seats' logs sit above it, and its brief is briefs/<id>.md before ready
+  ---
+  duration_ms: 884.06472
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:20:232'
+  failureType: 'testCodeFailure'
+  error: |-
+    the ui-lead's input is recorded on a record with no spec pointer
+    UI spec input requires a string title and current spec pointer
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:856:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 906.995987
