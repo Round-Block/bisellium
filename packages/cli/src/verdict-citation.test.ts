@@ -743,3 +743,79 @@ test("W-322-b2 behaviour 2: a row ruling any text or any string lists the forms 
   setBrief(GRAMMAR_BRIEF);
   admitted("every form listed and pinned; any text in a Rejected by cell", ledger);
 });
+// W-336: a row ruling a path, a command line or an environment value holds a forms clause, and its line or a line the
+// clause cites names a space, a quote, a non-ASCII name and a symlinked parent, each pinned or a stated limit
+const PATH_DOMAIN = "a checkout path; recognises brief:3-4; every other form is a limit";
+const HOSTILE_NAMED = "a space, a quote, a non-ASCII name and a symlinked parent exit 0";
+const PATH_BRIEF = [
+  "# W-300 fixture brief",
+  "## Interfaces",
+  '- an absolute checkout, pinned by `W-300-b1` "absolute"',
+  '- a relative checkout under the repository, pinned by `W-300-b1` "relative"',
+  "- a parent reached through a link, pinned by `W-300-b1` \"linked\"",
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  `| the checkout | ${PATH_DOMAIN} | \`runIt\`: exit 2 on a missing one; ${HOSTILE_NAMED}, pinned by \`W-300-b1\` "checkout" |`,
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b1` "flag" |',
+  "## Behaviours to test",
+  "",
+].join("\n");
+const PATH_COVERING = [10, 11].map((n) => `brief:${n}, a reader: packages/x.ts:${n} exits 2 — holds`).join("\n");
+const pathFormless = (row: number): string =>
+  `W-300: promise ledger: brief:${row} rules a path, a command line or an environment value and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"\n`;
+
+test("W-336-b1 behaviour 1: an architect spec signature is refused for a row ruling a path, a command line or an environment value with no forms clause", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(PATH_BRIEF);
+  const ledger = cite(PATH_COVERING);
+  const anyTextFormless = `W-300: promise ledger: brief:10 rules any text or any string and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"\n`;
+
+  // each word of the vocabulary, in the Valid domain cell, with no forms clause: one problem at the row
+  for (const [name, domain] of [
+    ["path", "a checkout path"],
+    ["paths, capitalised", "two Paths"],
+    ["directory", "a writable directory"],
+    ["directories", "existing directories"],
+    ["command line", "a command line"],
+    ["command-line", "a command-line flag"],
+    ["argv", "an argv of two tokens"],
+    ["argument", "one argument"],
+    ["arguments", "two arguments"],
+    ["environment", "an environment value"],
+    ["a clause with no form", "a checkout path; recognises whatever it is given; every other form is a limit"],
+    ["the limit before the forms", "a checkout path; every other form is a limit; recognises brief:3-4"],
+  ] as const) {
+    setBrief(PATH_BRIEF.replace(PATH_DOMAIN, domain));
+    refused(`a ${name} row with no forms clause`, ledger, pathFormless(10));
+  }
+  // a line a path row's clause cites holds a pin of its own, as W-322 rules for an any-text row's
+  setBrief(PATH_BRIEF.replace(', pinned by `W-300-b1` "absolute"', ""));
+  refused(
+    "a cited line of a path row with no pin",
+    ledger,
+    `W-300: promise ledger: brief:3 is a grammar line brief:10 recognises, with no pin: name its test row and assertion as pinned by \`<row>\` "<assertion>"\n`,
+  );
+  // a row that is any text and path-typed, with no clause, has the any-text problem only
+  setBrief(PATH_BRIEF.replace(PATH_DOMAIN, "any text naming a path"));
+  refused("an any-text path row with no clause: the any-text problem only", ledger, anyTextFormless);
+
+  // the vocabulary is whole words in the Valid domain cell only
+  for (const [name, domain] of [
+    ["a pathname", "a pathname"],
+    ["a file-path", "a file-path"],
+    ["xpath", "an xpath"],
+    ["a regular file", "a regular file"],
+    ["command-lines", "two command-lines"],
+  ] as const) {
+    setBrief(PATH_BRIEF.replace(PATH_DOMAIN, domain));
+    admitted(name === "command-lines" ? "command-lines is not path-typed" : `${name}: not path-typed, no clause needed`, ledger);
+  }
+  setBrief(PATH_BRIEF.replace(PATH_DOMAIN, "a string").replace("`runIt`: exit 2", "`runIt`: exit 2 on a bad path"));
+  admitted("path in a Rejected by cell only: no clause needed", ledger);
+  setBrief(PATH_BRIEF.replace(PATH_DOMAIN, "a checkout path"));
+  admitted("another seat's spec verdict needs no clause", NO, "qa-lead");
+  setBrief(PATH_BRIEF);
+  admitted("a path row with its forms clause and every hostile form named", ledger);
+});
+
