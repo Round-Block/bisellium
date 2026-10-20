@@ -344,8 +344,10 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
   const read = logs.map((l) => ({ ...l, text: src.read(l.rel) }));
   const anchor = [...read].reverse().find((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, expected, l.rel)));
   if (anchor === undefined) return result(`no ${reviewer.design} signature names the current ${briefRel(id)} (ci/${id}-spec-<n>.log, phase spec, passed)`, { kind: "signature" });
-  // W-338: the ui-lead's UI input is read by inspectUiDesignInput alone, never as this sequence's review
-  const above = read.filter((l) => l.n > anchor.n && !(l.text !== undefined && isUiLeadLog(l.text)));
+  // W-338: on a kind: ui opus (its record in this source) the ui-lead's UI input is read by inspectUiDesignInput alone, never
+  // as this sequence's review; on any other kind a ui-lead log stays in the strict sequence
+  const ui = recordOf(src, id)?.["kind"] === "ui";
+  const above = read.filter((l) => l.n > anchor.n && !(ui && l.text !== undefined && isUiLeadLog(l.text)));
   const reviews: { round: number; log: string; outcome: "passed" | "failed"; keeps: string[] }[] = [];
   for (const l of above) {
     const r = l.text === undefined ? { error: `${l.rel} is unreadable` } : readSpecReview(l.text, id, l.n, reviewer, expected, l.rel);
@@ -844,8 +846,8 @@ export function deriveNext(f: Facts): Derived {
       const [, rel, n] = m as unknown as [string, string, string];
       const text = f.branch?.read(rel);
       if (text === undefined) return true;
-      // W-338: the ui-lead's input is judged by uiSpecProblems, after the spec, never as a signature or a review
-      if (isUiLeadLog(text)) return false;
+      // W-338: on a kind: ui opus the ui-lead's input is judged by uiSpecProblems, after the spec, never as a signature or a review
+      if (f.branchRecord?.["kind"] === "ui" && isUiLeadLog(text)) return false;
       const brief = ownBrief(text, id, rel);
       // ponytail: the pin's shape only; an intermediate brief is never in Git, so which blob it names is not checked
       if (!new RegExp(`^${esc(briefRel(id))} blob:[0-9a-f]{40}$`).test(brief)) return true;
