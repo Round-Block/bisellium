@@ -1,0 +1,19 @@
+# opus: W-317
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15764-81d5-7d01-babd-7711a9599f7e
+# outcome: passed
+# at: 2026-10-20T03:43:57.675Z
+# tree: tree:dd73944f9a413ff52fdf880ba6541e6b3be76312
+# brief: briefs/W-317.md blob:5de5e42bbd88a7521e29eb05990b6610bd617a1b
+# ticket: {"opus":"W-317","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"9cb1d71d185c434093eab9bb45e3227ebb065dd0","brief":"5de5e42bbd88a7521e29eb05990b6610bd617a1b","at":"2026-10-20T03:43:56.926Z"}
+
+## Findings
+1. advisory — brief:66 `checkBriefStale` and W-317-b2 remove the advisory as soon as the brief names the current title, without requiring a newer signature, so “stay advised until re-signed” is not guaranteed. Replace brief:66 with `- The five greenlit opera flagged today stay advised until their briefs name their current titles or their titles return to the signed ones; for greenlit records, next's separate blob-pin gate still requires a changed brief to be re-signed and reviewed (Defaults 2).`; replace brief:127 with `2. On today's records the check warns about five greenlit tasks whose titles were changed after their briefs were signed: W-169, W-183, W-208, W-229 and W-276. Each warning clears when the brief names its current title or the title returns; changing a greenlit brief separately voids its signature, so the task still requires architect re-signature and the required spec review. Agree?` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/rules/brief-stale.test.ts
+2. advisory — brief:76 The row says every malformed `# at:` is a non-signature that leaves an older signature newest, but the specified implementation selects the highest passing architect header before parsing `at`, so such a log hides older signatures and skips the record, as brief:29 states. Replace brief:76 with `| 3. ci/<id>-spec-<n>.log, as the signature reader reads names and headers | any text; the rule selects the highest n matching [1-9][0-9]* whose leading header has phase spec, opus equal to the id, sella equal to the design magister and outcome starting passed; if that selected log's at is not a strict ISO instant, the record is skipped and older signatures remain hidden; every other name or header is absent: a limit | checkBriefStale (new): no selected signature or an unreadable selected at produces no finding; W-317-b1 pins non-signature logs and no log; an unreadable selected at hiding older signatures is a stated limit |` [severity: S2] [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/rules/brief-stale.test.ts
+
+## Verdict
+The input boundary and numbered behaviours are feasible, with two advisory corrections needed to make the stated limits match the specified reader.
+VERDICT: PASS
