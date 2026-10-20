@@ -36,26 +36,22 @@ signature to done, no hand-run evidence scripts, no required handoff edits (met 
 interruption); early stop if a cycle is over 180 min after the chain (#540), or at two calendar weeks. One builder per opus; a second lane
 after the chain (#540) and the test-file split (done 2026-10-19). Older items: `studio/acta/2026-10-09-queue-review.md`.
 
-Now, one builds at a time until the re-rank opens a second lane (allowed since the test-file split; W-169 adds more lanes; order D-082 D, by cycle minutes saved; a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, a list retired when W-169 lands (D-087 A); two lanes run since 2026-10-19):
-1. (part 1 done 2026-10-20, PR #605: no Resume point, no handoff edit at done, a read-only `next --all`; part 2, the queue as a record in `studio/queue.yml`, is W-333, Now 2d)
-2. (done 2026-10-20, PR #612: the done step accepts a certified chain; no verify for the first-merged opus of a close pair)
-2a. W-334 — high (D-039): number strings of unbounded length are parsed exactly, never through `Number()`, with a check for the cause (the same S1 failed W-317 and W-330 build reviews on 2026-10-20); starts right after W-330
-2a2. W-335 — high (D-039): `ci --opus` runs W-139's records-read check, so a test missing from `test:record` fails before review, not in the merge queue (#488, #614); split out of W-250
-2b. W-283 — the Status page served, not republished: the Patron said yes to serving it publicly on GitHub Pages (2026-10-20; its `.github` change is the Patron's); trial opus 2
-2c. W-332 — step tickets close the retired dispatch guard's gap: tickets only from the gated step, a Patron-held opus refuses `amend`/`handoff`/`halt`/`waive`/`emit`, a dispatch on a held opus refused or named a limit (greenlit 2026-10-20)
-2d. W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, read by `next --all` and checked by a rule (greenlit 2026-10-20)
-3. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
-4. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read; carries the merge-perform and health clauses struck from W-183 (high)
-5. (part 1 done 2026-10-20, PR #614: ADOPTION split into the contract and six reference docs, a `doc.cap` check; part 2, the editorial cut under 700 lines, stays under Later)
-6. (done 2026-10-20, PR #606: `brief.stale` advises a brief its record was retitled past)
-7. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline` (after W-299, D-077 C)
-8. (done 2026-10-20, PR #601: the prompt templates in `studio/prompts/`)
-9. W-258 — the builder checks its own diff once before handing off, no Codex call (D-080 G; the prompt templates it needed are in)
+Now, one builds at a time until the re-rank opens a second lane (allowed since the test-file split; W-169 adds more lanes; order D-082 D, by cycle minutes saved (re-ranked 2026-10-20 on the 10-17 and 10-19 Fable audits; D-039 high items first); a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, a list retired when W-169 lands (D-087 A); two lanes run since 2026-10-19):
+1. W-334 — high (D-039): number strings of unbounded length are parsed exactly, never through `Number()`, with a check for the cause (the same S1 failed W-317 and W-330 build reviews on 2026-10-20); starts right after W-330
+2. W-335 — high (D-039): `ci --opus` runs W-139's records-read check, so a test missing from `test:record` fails before review, not in the merge queue (#488, #614); split out of W-250
+3. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read; carries the merge-perform and health clauses struck from W-183 (high)
+4. W-268 — the certify rules (high; after W-299)
+5. W-326 — the branch replay of the architect's staged prototype as a kept script, a builder only for fix rounds (greenlit 2026-10-20 by the re-rank: the 10-19 audit's top remaining saver, 10-25 min per opus; both prerequisites have landed).
+6. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
+7. W-258 — the builder checks its own diff once before handing off, no Codex call (D-080 G; the prompt templates it needed are in)
+8. W-309 — the review-perform remainder, split at spec (amended by D-086 D: the fix check runs before a fix round's suite); its hand-script deletion last (it removes its own review path)
+9. W-331 — `next.ts` split by region (derive, perform, health, report), no behaviour change, so two or three `next.ts` opera can run at once (D-087 D)
 10. W-183 (record trimmed to its signed brief, D-080 B; re-anchor) → W-169 (r7, design approved by D-087 C: claim by pushing the opus ref, origin's refs count as in flight, no per-lane handoff sections; re-sign and re-review before branch) — the second lane (D-075 F)
-11. W-331 — `next.ts` split by region (derive, perform, health, report), no behaviour change, so two or three `next.ts` opera can run at once (D-087 D)
-12. W-309 — the review-perform remainder, split at spec (amended by D-086 D: the fix check runs before a fix round's suite); its hand-script deletion last (it removes its own review path)
-13. W-310 + W-290 — one opus: the PreToolUse dispatch hook and the orchestrator write guard (no logger, D-080 C; W-242 rides it; also refuses an unbounded background wait loop, Patron 2026-10-20; `.claude/`: Patron merges)
-15. W-268 — the certify rules (high; after W-299)
+11. W-310 + W-290 — one opus: the PreToolUse dispatch hook and the orchestrator write guard (no logger, D-080 C; W-242 rides it; also refuses an unbounded background wait loop and stops an agent left idle on its own background work after its report, Patron 2026-10-20; `.claude/`: Patron merges)
+12. W-332 — step tickets close the retired dispatch guard's gap: tickets only from the gated step, a Patron-held opus refuses `amend`/`handoff`/`halt`/`waive`/`emit`, a dispatch on a held opus refused or named a limit (greenlit 2026-10-20)
+13. W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, read by `next --all` and checked by a rule (greenlit 2026-10-20)
+14. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline` (after W-299, D-077 C)
+15. W-283 — the Status page served, not republished: the Patron said yes to serving it publicly on GitHub Pages (2026-10-20; its `.github` change is the Patron's) (last: the Patron put the process work first, 2026-10-20); trial opus 2
 
 Next, the console MVP (after the block, same functions):
 16. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
@@ -72,7 +68,6 @@ Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into No
 - W-324 — a spec round counts as one architect signature plus its review (backlog: a Patron decision point, deferred 2026-10-19; it does not break the workflow, since the caps and the loop hold already count reviews).
 - W-328 — `next` orders a re-review when a failed build round's fix is evidence-only, outside the source tree (backlog, D-086 B's enforcement; found when the test-file split's timing rerun could not reach review without a brief correction).
 - W-327 — a pull request's checks that run nothing on a PR show as skipped, named for the merge queue that runs them, not as a 0-3 s pass (backlog; Patron 2026-10-19).
-- W-326 — the branch replay of the architect's staged prototype as a kept script, a builder only for fix rounds (backlog, D-086: trial once the split suite and the review-tag enforcement are measured).
 - W-321 — the review packet builds a later spec round even when the previous round's packet was never built (backlog; found when a spec review's round 10 needed a hand rebuild).
 - W-288 part 2 — the ADOPTION editorial cut: ids and round narrative out, limits kept, caps lowered (D-083 B).
 - Speed experiments: W-276 — the builder brief under step tickets; W-260 — build verdicts reconcile after rulings; W-250 — ci.yml runs `bisellium ci` once.
