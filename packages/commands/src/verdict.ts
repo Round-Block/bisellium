@@ -919,6 +919,15 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
   }
 
+  // W-275: a non-UI spec log is written only when parseVerdictLog, the reader `next` judges it with, accepts it whole
+  if (!isUi && phase === "spec") {
+    const read = parseVerdictLog(`${header}\n\n${transcript.toString("utf8")}`, opusId, `ci/${opusId}-${filenamePhase}-${round}.log`);
+    if ("error" in read) {
+      console.error(`${opusId}: not a spec log next can read: ${read.error}`);
+      return { exitCode: 2 };
+    }
+  }
+
   // W-233: spec and build verdicts need the step ticket of their round (handoff verdicts stay unticketed); its line is the header block's last
   let claim: { claimed?: string } = {};
   if (phase !== "handoff") {

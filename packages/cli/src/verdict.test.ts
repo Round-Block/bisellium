@@ -151,7 +151,8 @@ try {
   if (only === undefined || only === 1) {
     const dir = studio("write", ["W-201", "W-202"]);
     const outside = join(tmpdir(), `bisellium-verdict-source-${process.pid}.txt`);
-    const body = Buffer.from("## Findings\r\nNo findings\r\nsecond line\n\u0000tail");
+    // W-275: a spec log is written only when next's reader accepts it; the CR and NUL bytes ride after the Findings section
+    const body = Buffer.from("## Findings\nNo findings\n\n## Notes\r\nsecond line\n\u0000tail");
     writeFileSync(outside, body);
     roots.push(outside);
     const from = runVerdict(
@@ -179,7 +180,7 @@ try {
         raw.subarray(split + marker.length).equals(body),
       raw.toString("utf8"),
     );
-    const stdinBody = Buffer.from("## Findings\nNo findings\nstdin transcript\n");
+    const stdinBody = Buffer.from("## Findings\nNo findings\n\n## Notes\nstdin transcript\n");
     const stdin = runVerdict(["W-202", "--phase", "spec", "--round", "3", "--sella", "qa-lead", "--outcome", "DISPATCH", "--studio", dir], {
       now: NOW,
       stdin: stdinBody,
