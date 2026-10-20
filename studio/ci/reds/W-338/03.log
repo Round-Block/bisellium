@@ -1,0 +1,53 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-338-b3\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-20T23:43:35.243Z
+# sella: builder.W-338
+# tree: tree:7106fcb0d2e50b6ed825afafa1dc8ff3e9496f25
+# ticket: {"opus":"W-338","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-338/studio","head":"84bc335f622df7ced1905523490b2ae1ee822fef","brief":"af00f38bdac5ee68ecc41da79812543d83185e21","at":"2026-10-20T23:43:34.180Z"}
+
+TAP version 13
+# Subtest: W-338-b3 behaviour 3: before the branch, a kind: ui opus takes the spec review, the ui-lead is ordered once it passes, and branch carries the input and its prompt
+not ok 1 - W-338-b3 behaviour 3: before the branch, a kind: ui opus takes the spec review, the ui-lead is ordered once it passes, and branch carries the input and its prompt
+  ---
+  duration_ms: 1258.840625
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:25:614'
+  failureType: 'testCodeFailure'
+  error: |-
+    a signed kind: ui spec goes to the reviewer: role: spec-reviewer
+    --- exit 1
+    --- stdout
+    next: W-900 spec held
+    actor: producer
+    why: bisellium.yml#spec_reviewer: a kind: ui opus cannot take a spec review yet: the spec-phase verdict writer reserves every UI verdict for ui-lead, and authoritativeUiInput reads the highest spec log as the UI input
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + undefined
+    - 'spec-reviewer'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'spec-reviewer'
+  operator: 'strictEqual'
+  stack: |-
+    reviewerOrder (/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-world.test.ts:957:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:897:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1279.82688
