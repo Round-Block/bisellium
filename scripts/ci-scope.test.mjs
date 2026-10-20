@@ -716,7 +716,11 @@ test("W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test s
     rmSync(join(bare, "scripts", "record-reads.mjs"));
     const missing = run(bare);
     assert.notEqual(missing.status, 0, "a missing preload fails closed");
-    assert.doesNotMatch(`${missing.stdout}${missing.stderr}`, /record_reads=ok/, "and nothing reports the reads checked");
+    assert.doesNotMatch(
+      `${missing.stdout}${missing.stderr}`,
+      /record_reads=ok/,
+      "and nothing reports the reads checked",
+    );
 
     const nested = checkout(both, both);
     writeFileSync(
