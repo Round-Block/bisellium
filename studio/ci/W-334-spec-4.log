@@ -1,0 +1,24 @@
+# opus: W-334
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15851-6114-7443-b0da-ae3df5e0c0fe
+# outcome: failed
+# at: 2026-10-20T08:47:01.341Z
+# tree: tree:341c7d4772fdeb3b6f203c0e152e492cc06ed1d5
+# brief: briefs/W-334.md blob:e42b290f0319d55409c8af86646eb4a830b5d9a8
+# ticket: {"opus":"W-334","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"9262eeb7f57cac3da61ab2200380dfe5cb7284d9","brief":"e42b290f0319d55409c8af86646eb4a830b5d9a8","at":"2026-10-20T08:47:00.824Z"}
+
+## Findings
+1. blocking — studio/briefs/W-334.md:87 brief:87 [severity: S1] [design: keeps] Reached through `ci/W-334-spec-2.log` #1’s class: despite row 8’s digit-token domain, the prototype accepts an ordinary `Total tokens: 12x` typo as 12 at `packages/cli/src/retro.ts:253`, producing a wrong retro trend, and accepts `brief:2x` as line 2 at `packages/commands/src/verdict.ts:155`, wrongly preserving a blocker; the revised rows test only excess digits, not these malformed tokens. Replace brief:87 with: “| 8. Other bounded census inputs: PR URL; lesson cascade; retro filename and total; review evidence and optional flag round; UI-input round; screenshot numeric fields; verdict citation/exchange/ledger references; Playwright count; red header behaviour | each contextual numeric token is whole and consists of 1–15 digits, with positive/no-leading-zero grammars where Interfaces 3 specifies them; paired round readers must agree | `openPr`, `existingLessonsByClass`, `previousRetroTotalTokens`, `reviewRounds`, `runReview`, `authoritativeUiInput`, `shotManifestProblems`, `reconcileFindings`, `parseVerdictLog`, `promiseLedgerProblems`, `classifyReplay`, and specified `readRedBehaviour`; `previousRetroTotalTokens` requires the complete generated `- Total tokens: <n>` line, and `reconcileFindings` applies the whole-token right boundary used by `CITATION_TOKEN`; `runReview` trusts the bounded evidence-path round, refuses a supplied flag that is out of domain or differs, and emits that trusted round; pinned by `W-334-b2` for malformed retro totals and brief citations as well as the listed boundary cases; the other readers are unpinned per site, a stated limit (Promise bounded-reads), with their 15-digit bounds checked by `bound-audit.out` |” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/retro.test.ts and packages/cli/src/verdict-citation.test.ts
+
+## Earlier findings
+- ci/W-334-spec-2.log #1: closed — studio/briefs/W-334.md:64 now trusts the evidence round, rejects an invalid or differing flag before ticket claim or write, and brief:110 pins the refusals and emitted round.
+- ci/W-334-spec-2.log #2: closed — studio/briefs/W-334.md:61 adds the non-digit lookahead, and brief:111 pins absence for a 16-digit total and exact reading at 15 digits.
+- ci/W-334-spec-2.log #3: closed — studio/briefs/W-334.md:67 recognizes the complete Playwright digit run before generic assertions, and brief:112 pins refusal of malformed counts and red headers.
+
+## Verdict
+Revision 2 closes all three earlier blockers, but row 8 still fails closed neither of two ordinary malformed numeric-token cases.
+
+VERDICT: FAIL

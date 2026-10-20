@@ -1,0 +1,26 @@
+# opus: W-334
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T07:57:46.228Z
+# tree: tree:e098bff31186fb7c6660c2f1b9c3070082a98048
+# brief: briefs/W-334.md blob:4ac1e9a2ab1dcfcd902bb88af02c53b62a1df274
+# ticket: {"opus":"W-334","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"12709492ea244c40233578e75a6f8bf5730ff67a","brief":"4ac1e9a2ab1dcfcd902bb88af02c53b62a1df274","at":"2026-10-20T07:57:42.726Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-334-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the cause fix is a lint rule, `local/exact-digits`, in the lint step every lane already runs: a numeric read of a regex capture that can hold more than 15 digits fails it, and a site passes by a 15-digit bound or an exact compare; an architect-prompt rule was weighed and left as prose a reader can still get wrong (Defaults 1) — check: brief:17, brief:45
+2. advisory — the census: on master the rule reports 38 reads at 33 lines in 10 source files; the prototype bounds each to 15 digits, or compares exactly where a bound would change the reader (`brief.behaviour_citation`, a detector; the admission's clamp), and bounds the verdict writer's round to match; on the prototype the rule reports none, and the numeric reads it does not judge are judged by hand — check: census.out, census-s1.out, census-unjudged.md, brief:58
+3. advisory — both sides are pinned: two adjacent rounds past the safe integers are not rounds (never one), a round at the bound is read exactly, two adjacent citations past them are named as written, and W-330's advisory (an exactly matching unbounded PR number performs) is its own row, which kills a reader that refuses every long suffix — check: brief:105, brief:116, pin-w330.out, mutants.out
+4. advisory — the prototype on master cc13a1ae (master is now 12709492, records only since): each red fails by assertion on the stage before its own and passes on its own; ten guard mutants killed; every neighbour file passes whole, `check.test.ts` failing only the detached stage's two W-089 rows as on the master stage; lint over the whole tree, typecheck and format pass — check: reds.out, mutants.out, neighbours.out, gates-proto.out
+5. advisory — the neighbours caught one prototype error before signing: the worktree's changed-spec guard also sees the brief, so a non-matching path must stay passed over; the guard now holds only a spec log whose round is past 15 digits, and the W-206 rows pass — check: brief:59, nb-next-branch.log
+6. advisory — the Codex test check lists no flip and no unnamed row; every file on its must-stay-green list passes on the prototype — check: fixture-census.md, neighbours.out, brief:118
+7. advisory — no code-owned path is touched and no `ids.ts` or `package.json` line is needed, so the PR stays off W-288's files and merges on the ordinary path; `scripts/ci-certify.mjs`'s PR number is excluded from the rule and left to the Patron (Defaults 3) — check: brief:39, brief:138
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-334.md`, prototype on master cc13a1ae; no code-owned path touched.
