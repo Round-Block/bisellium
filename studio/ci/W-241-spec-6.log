@@ -1,0 +1,22 @@
+# opus: W-241
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a133e0-326c-7a63-8f05-3d42de05f7e5
+# outcome: failed
+# at: 2026-10-20T01:57:32.319Z
+# tree: tree:6760e1f0e8406471ebc497fcc315525375b25133
+# brief: briefs/W-241.md blob:02a6c5b033bc3cab76e47b46bf33f5feae5a9ac6
+# ticket: {"opus":"W-241","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":"studio","head":"5cf227758682401af626165bab03514ead05de8c","brief":"02a6c5b033bc3cab76e47b46bf33f5feae5a9ac6","at":"2026-10-20T01:57:31.727Z"}
+
+## Findings
+1. blocking — studio/briefs/W-241.md:63 brief:63 The blanket rejection contract is false for Input-domain row 4: `fillSlots` returns an error that `next` converts to a held review, not a blocking `bisellium check` finding with exit 1. [design: changes] [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/next-review.test.ts
+2. blocking — studio/briefs/W-241.md:68 brief:68 The promise that an Ops clause inside a fenced block or HTML comment passes is false for the ordinary multiline forms: `bulletClauses` appends the closing delimiter to the clause, so the required end-marker no longer matches. [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/rules/prompts.test.ts
+3. blocking — studio/briefs/W-241.md:68 brief:68 The stated grammar admits a bullet marker followed by a continued clause, but `bulletClauses` requires a nonblank character on the bullet’s own trimmed line; a `- ` line followed by the required text is therefore rejected. [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/rules/prompts.test.ts
+
+## Earlier findings
+
+## Verdict
+The revision still contains three false promises for forms inside its stated input domain.
+VERDICT: FAIL

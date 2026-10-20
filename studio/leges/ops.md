@@ -15,6 +15,12 @@ slow or flaky step at its cause. No check is cut to save time (D-054 §1).
   CI and verdict logs, opus records); an estimate is not evidence
 - A flake is fixed at its cause, never rerun as the remedy (production
   lex §11)
+- `ops-lead` owns the per-opus prompt templates `studio/prompts/spec-draft.md`
+  (the architect's spec dispatch), `studio/prompts/builder-brief.md` (the
+  first builder's brief) and `studio/prompts/build-review.md` (the round-1
+  build review): the orchestrator fills a copy of the first two for each
+  dispatch, `next`'s review perform fills the third, and a change to any
+  lands by PR like code (check: process.prompt_templates)
 
 ## 3. Digests
 
@@ -54,3 +60,4 @@ The magister's daily acta is the heartbeat.
 | Date | Change | Authority |
 |---|---|---|
 | 2026-10-10 | Adopted (D-055, W-208) | Patron |
+| 2026-10-20 | §2: ops-lead owns the per-opus prompt templates; `process.prompt_templates` blocks when one or this clause is missing (W-241 part 1) | Patron |

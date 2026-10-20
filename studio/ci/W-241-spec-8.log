@@ -1,0 +1,23 @@
+# opus: W-241
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a133e0-326c-7a63-8f05-3d42de05f7e5
+# outcome: passed
+# at: 2026-10-20T02:04:00.330Z
+# tree: tree:6760e1f0e8406471ebc497fcc315525375b25133
+# brief: briefs/W-241.md blob:c856b2747ce6902d3e887cd830406751a563ec3c
+# ticket: {"opus":"W-241","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":"studio","head":"5cf227758682401af626165bab03514ead05de8c","brief":"c856b2747ce6902d3e887cd830406751a563ec3c","at":"2026-10-20T02:03:59.724Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-241-spec-6.log #1: closed — brief:64 and brief:71 now state that `fillSlots` errors hold next’s review and produce no check finding.
+- ci/W-241-spec-6.log #2: closed — brief:21 and brief:69 now exclude fenced and commented forms unless a blank line ends the clause before the delimiter.
+- ci/W-241-spec-6.log #3: closed — brief:69 now requires `^[-*]\s+\S` and explicitly limits and tests a bare bullet followed by the clause.
+
+## Verdict
+The revision closes all three earlier blockers without introducing a substantive defect.
+VERDICT: PASS

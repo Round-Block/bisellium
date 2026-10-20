@@ -1,0 +1,47 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-241-b2\s --import tsx packages/cli/src/rules/prompts.test.ts
+# exit: 1
+# at: 2026-10-20T02:05:36.145Z
+# sella: builder.W-241
+# tree: tree:14502d508e6aca61f496cd96b7b620dba4f94125
+# ticket: {"opus":"W-241","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-241/studio","head":"871bc223663ec1e7c8be4e88ed92f8c6f6c94200","brief":"c856b2747ce6902d3e887cd830406751a563ec3c","at":"2026-10-20T02:05:30.723Z"}
+
+TAP version 13
+# Subtest: W-241-b2 behaviour 2: the Ops lex names the templates in one checked clause
+not ok 1 - W-241-b2 behaviour 2: the Ops lex names the templates in one checked clause
+  ---
+  duration_ms: 30.269774
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-241/packages/cli/src/rules/prompts.test.ts:12:1318'
+  failureType: 'testCodeFailure'
+  error: |-
+    an absent Ops lex blocks
+    + actual - expected
+    
+    + []
+    - [
+    -   'block leges/ops.md'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'block leges/ops.md'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-241/packages/cli/src/rules/prompts.test.ts:80:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 38.241104

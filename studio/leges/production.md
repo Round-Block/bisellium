@@ -151,7 +151,7 @@ names each step and writes the step ticket the next record write consumes
    flight, in a scratch worktree; changed Files owned are re-reviewed before
    `branch` (D-057). The Opus architect drafts, prototypes the reds and
    signs (`verdict --phase spec`), uncommitted (D-072, replacing D-027's
-   Codex draft). Before signing, the architect runs Codex's test check,
+   Codex draft), dispatched with `studio/prompts/spec-draft.md` filled. Before signing, the architect runs Codex's test check,
    `~/.bisellium-evidence/codex-passes/fixture-census.sh <id>`, and names in
    the brief every existing test row or fixture it lists as flipped (W-162's
    and W-293's builders stopped on unnamed ones).
@@ -178,14 +178,14 @@ names each step and writes the step ticket the next record write consumes
    all keep the design goes to `branch` with them as required build fixes, and a blocker tagged S2-S4 is
    sent back to its reviewer session, never downgraded (D-086).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
-   in the worktree, `ready` (commit), then a Sonnet builder (brief model:
-   `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
+   in the worktree, `ready` (commit), then a Sonnet builder (brief:
+   `studio/prompts/builder-brief.md`, filled): reds recorded one
    behaviour at a time on the commit of the previous behaviour, build, gates; then, after recording `handoff`, `npm run -s bisellium -- ci --opus <id> --studio studio --repo .` in the worktree (the one full suite), the record and its gate logs committed (`chore(studio): <id> gates`). A fresh
    builder past ~250k; dispatch builders in the background so a Patron
    message cannot cut one off. `next` orders the reds one behaviour at a
    time (W-166, D-036); each `red` needs its own `next` ticket first.
-4. **Review:** `next` orders review only when the branch record's automated gates passed at the branch's current source tree, with their logs committed (the builder's `ci --opus`, step 3); no host mint runs before review: the merge queue's `certify` is the one mint, and it replays the reds (D-071 E). `next <id> --perform --chain --budget 400000 --title <t> --body-file <f> --studio studio --repo .`, in one background call, runs the review round and the pr. Codex `gpt-5.6-sol`, prompt modelled on
-   `~/.bisellium-evidence/W-162-review/r1/prompt.md`; packet
+4. **Review:** `next` orders review only when the branch record's automated gates passed at the branch's current source tree, with their logs committed (the builder's `ci --opus`, step 3); no host mint runs before review: the merge queue's `certify` is the one mint, and it replays the reds (D-071 E). `next <id> --perform --chain --budget 400000 --title <t> --body-file <f> --studio studio --repo .`, in one background call, runs the review round and the pr. Codex `gpt-5.6-sol`, round-1 prompt
+   `studio/prompts/build-review.md`, filled by the perform; packet
    `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
    `censor.sh <id> <round>`; the orchestrator records with
    `scripts/record-review.sh <id> <round> <passed|failed> <session>` (`next`,
@@ -324,3 +324,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-18 | §9 step 6: no `verify` on master after `certify` except for a `kind: ui` opus; the done perform records certify's certificate (D-082 B) | Patron |
 | 2026-10-19 | §9 step 4: only a real defect blocks a build review round, as for spec (D-084) | Patron |
 | 2026-10-19 | §9 steps 2 and 4: a design-keeping spec blocker goes to the build; S2-S4 blockers are reissued; the fix check runs before a fix round's suite (D-086) | Patron |
+| 2026-10-20 | §9 steps 1, 3 and 4: the architect's dispatch, the first builder brief and the round-1 build review are filled from `studio/prompts/` (W-241 part 1) | Patron |

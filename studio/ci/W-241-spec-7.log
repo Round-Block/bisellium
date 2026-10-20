@@ -1,0 +1,28 @@
+# opus: W-241
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T02:01:49.765Z
+# tree: tree:6760e1f0e8406471ebc497fcc315525375b25133
+# brief: briefs/W-241.md blob:c856b2747ce6902d3e887cd830406751a563ec3c
+# ticket: {"opus":"W-241","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"5cf227758682401af626165bab03514ead05de8c","brief":"c856b2747ce6902d3e887cd830406751a563ec3c","at":"2026-10-20T02:01:44.532Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-241-spec/r3/promise-ledger.md
+
+## Earlier findings
+
+- ci/W-241-spec-6.log #1: closed — the contract now splits by row: rows 1 to 3 are blocking check findings with exit 1, and row 4 says `fillSlots` returns an error that next's review perform turns into a held review recording nothing, no check finding (brief:64, brief:71; next.ts:1774)
+- ci/W-241-spec-6.log #2: closed — the fenced or commented clause is no longer promised: fences and comments are stated as not recognised, a delimiter on the line after the clause joins it and blocks, one a blank line separates is not seen (brief:21, brief:69, the Limits line); `W-241-b2` pins both ("a fence line joined to the clause blocks", "a fence is not recognised") (r3/row-b2-s2.out)
+- ci/W-241-spec-6.log #3: closed — row 2 states `bulletClauses`'s own start form, `^[-*]\s+\S` on the trimmed line, and makes a bare `-` with the clause on the next line a limit that blocks, pinned by `W-241-b2` "a bare bullet marker is not a clause"; the class is closed for every reused helper: `readContainedRegularFile`'s admission (brief:17, brief:68) and `fillSlots`'s literal-substring slots (brief:19, brief:71) are stated as their code does them (r3/r3-r4.diff)
+
+## Findings
+
+1. advisory — revision 4 keeps revision 3's design (no behaviour, interface, Files owned entry or promise beyond the corrected limits changes); the brief edit is the kept script `r3/brief-r4.py`, its change `r3/r3-r4.diff` — check: r3/brief-r4.py, r3/r3-r4.diff
+2. advisory — the reds are rerun on the revised rows: W-241-b1 fails by assertion on the rows-only commit, W-241-b2 on the behaviour-1 commit, both accepted by the replay classifier; both pass at behaviour 2; every mutant is still killed — check: r3/reds.out, r3/row-b1-master.out, r3/row-b2-s1.out, r3/row-b2-s2.out, r3/mutants.out
+3. advisory — typecheck, lint, format:check and both officina checks pass on the revised prototype; admission passes and the ledger covers every promise and Input domain row through master's writer — check: r3/typecheck-proto.out, r3/lint-proto.out, r3/format-proto.out, r3/check-studio.out, r3/check-sample.out, r3/admission.out, r3/ledger-check.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 4 at `studio/briefs/W-241.md`, prototype on master e04a622d.
