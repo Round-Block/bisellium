@@ -231,8 +231,10 @@ const ATTEMPT_DIR = [".bisellium", "prototype-replay"] as const;
 
 /**
  * Whether the replay of <id> may start: undefined only when no attempt marker is there and one can be created. The perform
- * writes the marker before its first write (`writeAttempt`), so a perform that holds, crashes or is killed leaves the
- * builder's order: the replay runs once per opus. A marker present, or a level that cannot be read or written, is a reason.
+ * creates the marker (`writeAttempt`) before any replay commit or officina write; once it has landed, a perform that holds,
+ * crashes or is killed leaves the builder's order: the replay runs once per opus. A failure before it lands may leave host
+ * bookkeeping (the perform framework's step marker and log, created directories) and may be retried. A marker present, or a
+ * level that cannot be read or written, is a reason.
  */
 export function readAttempt(repo: string, id: string): string | undefined {
   const rel = `${ATTEMPT_DIR.join("/")}/${id}.attempted`;

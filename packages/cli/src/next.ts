@@ -959,6 +959,15 @@ export function deriveNext(f: Facts): Derived {
     if (loop !== undefined) return hold("build", loop);
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
+    // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
+    if (gates !== undefined && !gates.ok && !failedNow && fixes.length === 0 && replayed(f, bs, n))
+      return named(
+        "build",
+        "producer",
+        gates.error,
+        `from .worktrees/${id}: bisellium handoff --opus ${id} --sella producer --next "ready for review" --studio ${f.studioRel}, committed (studio only); then bisellium ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, in the background); then commit the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
+        [["replayed", `every red of ${id} was recorded by the prototype replay`]],
+      );
     if ((gates !== undefined && !gates.ok) || failedNow)
       return dispatch(f, "build", failedNow ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
         phase: failedNow ? "fix" : "2",
@@ -1009,6 +1018,14 @@ export function deriveNext(f: Facts): Derived {
     return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded: the perform records the merge queue's certify certificate`, `bisellium next ${id} --perform --expect done`), act: "certify", ticket: { action: "done", round: 0 } };
   }
   return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`), ticket: { action: "done", round: 0 } };
+}
+
+/** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
+function replayed(f: Facts, bs: Src, n: number): boolean {
+  const p = readPrototype(bs.read(briefRel(f.id)) ?? "");
+  if (p === undefined || "error" in p) return false;
+  for (let k = 1; k <= n; k++) if (parseLogHeader(bs.read(`ci/reds/${f.id}/${pad(k)}.log`) ?? "").get("sella") !== f.design) return false;
+  return true;
 }
 
 /** A red the reds rung counts: an integer, non-zero exit on a clean tree, not a module-load failure. */
@@ -1614,8 +1631,9 @@ async function captureAsync(fn: () => Promise<{ exitCode: number }>): Promise<{ 
 /**
  * W-326: the reds rung performed from the brief's signed prototype. For each behaviour in order: its test patch committed
  * (`git am`, no three-way merge), its red recorded with its own ticket on that commit under the design sella and the log
- * committed alone, then its implementation committed. The attempt marker is written before the first write, so the first
- * failure (or a crash) holds with what was committed kept, and every later derivation names a builder: no order loop.
+ * committed alone, then its implementation committed. The attempt marker is created before any replay commit or officina
+ * write (the perform framework's own step marker and log come first); once it has landed, the first failure (or a crash) holds
+ * with what was committed kept, and every later derivation names a builder: no order loop.
  */
 async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (line: string) => void): Promise<StepResult> {
   const { repo, studioAbs, id } = f0;

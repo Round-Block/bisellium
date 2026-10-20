@@ -137,9 +137,14 @@ names each step and writes the step ticket the next record write consumes
    reads, and runs every record write and perform itself through the
    `npm run -s bisellium --` verbs and `scripts/*.sh`; a harness permission
    refusal is reported as a workflow conflict, never answered with a settings
-   change or a retry through another agent. Builders (Sonnet, background)
-   write code, reds and their `handoff`, running `next` before each `red`.
-   The architect (Opus 5.5) signs specs. Codex `gpt-5.6-sol` is the single
+   change or a retry through another agent. The reds and code are replayed
+   from the architect's signed prototype by `next <id> --perform --expect
+   reds` (W-326), each red on its own ticket; a builder (Sonnet, background)
+   is dispatched only where an order names one (no prototype, or one the
+   replay cannot reproduce), for required fixes (D-086 A) and for fix
+   rounds, and writes code, reds and their `handoff`, running `next` before
+   each `red`. The architect (Opus 5.5) signs specs and stages the
+   prototype. Codex `gpt-5.6-sol` is the single
    review gate for specs and builds (D-066 C) and tags each finding's class (D-070);
    the orchestrator records their verdicts. A clerk (no shell) edits handoff
    and dossier text only; a Haiku general-purpose agent republishes. The
@@ -178,9 +183,9 @@ names each step and writes the step ticket the next record write consumes
    all keep the design goes to `branch` with them as required build fixes, and a blocker tagged S2-S4 is
    sent back to its reviewer session, never downgraded (D-086).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
-   in the worktree, `ready` (commit), then a Sonnet builder (brief:
+   in the worktree, `ready` (commit), then the reds and code. When the brief's `Prototype:` line names a series at its signed sha256 that applies at the worktree's HEAD and no red is recorded, `next` names `next <id> --perform --expect reds` (W-326): for each behaviour in order it commits the test patch, records the red with its own ticket on that commit and commits the log alone, then commits the implementation; then the orchestrator records `handoff`, runs `npm run -s bisellium -- ci --opus <id> --studio studio --repo .` in the worktree (the one full suite, in the background) and commits the record and its gate logs (`chore(studio): <id> gates`), as the build order names. Otherwise, when the perform holds, when a required fix stands (D-086 A) or when that `ci --opus` exits non-zero, a Sonnet builder (brief:
    `studio/prompts/builder-brief.md`, filled): reds recorded one
-   behaviour at a time on the commit of the previous behaviour, build, gates; then, after recording `handoff`, `npm run -s bisellium -- ci --opus <id> --studio studio --repo .` in the worktree (the one full suite), the record and its gate logs committed (`chore(studio): <id> gates`). A fresh
+   behaviour at a time on the commit of the previous behaviour, build, gates; then, after recording `handoff`, the same `ci --opus`, the record and its gate logs committed. A fresh
    builder past ~250k; dispatch builders in the background so a Patron
    message cannot cut one off. `next` orders the reds one behaviour at a
    time (W-166, D-036); each `red` needs its own `next` ticket first.
@@ -229,8 +234,9 @@ names each step and writes the step ticket the next record write consumes
 
 Specs: Claude Opus 5.5 architect drafts and signs (D-072). Spec review,
 build review, security, the test check at spec and the fix check before a
-re-review: Codex `gpt-5.6-sol` high. Builds: Claude
-Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
+re-review: Codex `gpt-5.6-sol` high. Builds: replayed from the
+architect's signed prototype (W-326); Claude Sonnet 5.5 where the replay
+cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 `gpt-5.6-terra`. Security fixes are mandatory (D-044).
 
 ## 11. Standing rules
@@ -326,3 +332,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-19 | §9 steps 2 and 4: a design-keeping spec blocker goes to the build; S2-S4 blockers are reissued; the fix check runs before a fix round's suite (D-086) | Patron |
 | 2026-10-20 | §9 step 6: the done rung asks no handoff edit (W-299, D-077 B) | Patron |
 | 2026-10-20 | §9 steps 1, 3 and 4: the architect's dispatch, the first builder brief and the round-1 build review are filled from `studio/prompts/` (W-241 part 1) | Patron |
+| 2026-10-20 | §9 steps 0 and 3, §10: the reds and code are replayed from the architect's signed prototype by a reds perform; a builder only where the replay cannot run, for required fixes and for fix rounds (W-326) | Patron |
