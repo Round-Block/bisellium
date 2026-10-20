@@ -66,6 +66,7 @@ Next, the console MVP (after the block, same functions):
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
+- W-329 — W-297 part 2, split at spec: a class tag on every finding, the build review closes a keeps-only spec round's required fixes, the recurring-class cause-fix hold, the per-opus retro dropped, the exemption's trailing-text advisory (backlog: awaits the Patron's greenlight; W-297 was greenlit whole).
 - W-324 — a spec round counts as one architect signature plus its review (backlog: a Patron decision point, deferred 2026-10-19; it does not break the workflow, since the caps and the loop hold already count reviews).
 - W-328 — `next` orders a re-review when a failed build round's fix is evidence-only, outside the source tree (backlog, D-086 B's enforcement; found when the test-file split's timing rerun could not reach review without a brief correction).
 - W-327 — a pull request's checks that run nothing on a PR show as skipped, named for the merge queue that runs them, not as a 0-3 s pass (backlog; Patron 2026-10-19).
