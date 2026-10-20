@@ -332,6 +332,30 @@ test("W-186-b1 behaviour 23: check blocks a stale, relative, oversized or unread
   for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
+// W-299 behaviour 1 (D-077 B): the handoff keeps no Resume point, and a done or halted opus in its Queue is no finding.
+test("W-299-b1 behaviour 1: the handoff keeps no Resume point, and making an opus done asks no Queue edit", () => {
+  const base = baseRecords();
+  const plain = (queue: string[], extra: string[] = []): string => ["# Session handoff", "", "## Boot", "", "- read next --all", ...extra, "", "## Queue", "", ...queue].join("\n");
+  // no Resume point, and a Queue that still names a done opus and a halted one beside the greenlit ones
+  const kept = plain(["1. W-3 - one.", "2. W-5 - two.", "3. W-1 - done since.", "4. W-2 - halted since."]);
+  assert.deepEqual(handoffFindings(base, kept), [], "no Resume point is asked for, and a done or halted Queue id is no finding");
+  // any line starting ## Resume point blocks, dated or not, at its own line
+  for (const heading of ["## Resume point (2026-10-10)", "## Resume point", "## Resume point (2026-02-30)"]) {
+    const text = plain(["1. W-3 - one.", "2. W-5 - two."], ["", heading, "", "- **Next:** W-3."]);
+    assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, heading)]], `a Resume point blocks: ${heading}`);
+  }
+  // two Resume points: one finding each
+  const twice = plain(["1. W-3 - one.", "2. W-5 - two."], ["", "## Resume point (2026-10-10)", "", "## Resume point (2026-10-11)"]);
+  assert.deepEqual(handoffFindings(base, twice), [["process.handoff.resume", at(twice, "(2026-10-10)")], ["process.handoff.resume", at(twice, "(2026-10-11)")]], "one finding per Resume point");
+  // the Queue keeps its other checks: an id with no record, a greenlit opus it omits, and exactly one Queue heading
+  let text = plain(["1. W-3 - one.", "2. W-5 - two.", "3. W-77 - nobody."]);
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-77")]], "a Queue id with no record");
+  assert.deepEqual(handoffFindings(base, plain(["1. W-3 - one."])), [["process.handoff.queue", HANDOFF]], "a greenlit opus the Queue omits");
+  text = ["# Session handoff", "", "## Boot", "", "- read next --all"].join("\n");
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", HANDOFF]], "no Queue heading");
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
 // behaviour 24 (W-221): shellPipeLine finds the first unquoted pipeline operator and nothing else.
 test("W-221-b1 behaviour 24: the classifier finds an unquoted pipeline and nothing else", () => {
   assert.equal(typeof rules.shellPipeLine, "function");

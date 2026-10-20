@@ -1089,3 +1089,23 @@ test("W-259-b1 behaviour 1: the done perform records the merge queue's certify c
   assert.deepEqual(runCalls.map((a) => a[1]), ["list", "view", "download"], "one run list, view and download");
   assert.ok(runCalls[0]!.includes(merge) && runCalls[0]!.includes("merge_group"), "the run list names the merge commit and the merge_group event");
 });
+
+// ---------------------------------------------------------------------------
+// W-299 behaviour 2: the done rung asks no handoff edit (D-077 B, absorbing W-247)
+// ---------------------------------------------------------------------------
+test("W-299-b2 behaviour 2: the done rung asks no handoff edit: the perform commits without one and the checkpoint reads complete", { timeout: 1_800_000 }, () => {
+  const w = world("w299-b2", "cleanup");
+  scenario(w, { list: mergedList(w) });
+  const handoff = readFileSync(join(w.repo, "docs/SESSION-HANDOFF.md"), "utf8");
+  const done = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectStep(done, "done", "performed", "the perform commits with no handoff change");
+  const chore = `chore/done-${OPUS}`;
+  const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", git(w.repo, ["rev-parse", `refs/heads/${chore}`])]).split("\n").sort();
+  assert.deepEqual(paths, [`studio/opera/${OPUS}.md`], "the done commit holds the record alone");
+  assert.equal(readFileSync(join(w.repo, "docs/SESSION-HANDOFF.md"), "utf8"), handoff, "the handoff is untouched");
+  // a trunk done record whose commit left the handoff unchanged completes the ladder, with no later handoff edit
+  const d = world("w299-b2-done", "done");
+  const complete = next(d, [OPUS]);
+  expectStep(complete, "checkpoint", "complete", "a done commit that left the handoff unchanged reads the checkpoint complete");
+  assert.equal(complete.status, 0, ran("complete exits 0", complete));
+});
