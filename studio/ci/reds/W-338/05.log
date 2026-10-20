@@ -1,0 +1,44 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-338-b5\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-20T23:45:02.148Z
+# sella: builder.W-338
+# tree: tree:4dc4858ffed4f04942b9c0bc5899df567d9a3a86
+# ticket: {"opus":"W-338","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-338/studio","head":"b57df35010be29e47d587d8466368ce7fcb3c7e1","brief":"af00f38bdac5ee68ecc41da79812543d83185e21","at":"2026-10-20T23:45:01.025Z"}
+
+TAP version 13
+# Subtest: W-338-b5 behaviour 5: the UI design digest is the caller's opus: a record whose id is not its opus id and file name gives no digest, so no input is written or read for another brief
+not ok 1 - W-338-b5 behaviour 5: the UI design digest is the caller's opus: a record whose id is not its opus id and file name gives no digest, so no input is written or read for another brief
+  ---
+  duration_ms: 793.779917
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:29:731'
+  failureType: 'testCodeFailure'
+  error: |-
+    a copied id W-901 with no spec pointer: the ui-lead's input exits 2
+    W-900: spec verdict round 1 -> ci/W-900-spec-1.log
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:976:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 808.112095
