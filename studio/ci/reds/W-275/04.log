@@ -1,0 +1,55 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-275-b4\s --import tsx packages/cli/src/next-ladder.test.ts
+# exit: 1
+# at: 2026-10-20T23:28:22.857Z
+# sella: builder.W-275
+# tree: tree:5bdcd348c7f5c97164a0c20b41caa54072c4ce7b
+# ticket: {"opus":"W-275","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-275/studio","head":"59d02820d353de4e7cfa4a5b651673dcd84d9f30","brief":"f442cc60737c754ea1b8529d8a389baca0c40506","at":"2026-10-20T23:28:19.362Z"}
+
+TAP version 13
+# Subtest: W-275-b4 behaviour 4: before pr, a handover older than the newest review log holds with the handoff command, and the pr command names --body-file's roots
+not ok 1 - W-275-b4 behaviour 4: before pr, a handover older than the newest review log holds with the handoff command, and the pr command names --body-file's roots
+  ---
+  duration_ms: 1524.060722
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/next-ladder.test.ts:6:4803'
+  failureType: 'testCodeFailure'
+  error: |-
+    the command names --body-file's roots
+    --- exit 0
+    --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: review is met and no PR exists for the head
+    head: opus/W-900 0d68f2b58d41
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>'
+    - 'bisellium next W-900 --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'bisellium next W-900 --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>'
+  actual: 'bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/next-ladder.test.ts:1004:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1535.558864
