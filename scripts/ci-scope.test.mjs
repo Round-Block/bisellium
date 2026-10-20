@@ -16,6 +16,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -736,6 +737,22 @@ test("W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test s
     assert.equal(inherited.status, 0, `an inherited trace is ignored: ${inherited.stdout}${inherited.stderr}`);
     assert.match(inherited.stderr, /^record_reads=ok$/m, "the wrapper's own trace is checked");
     assert.equal(existsSync(join(nested, "outer.log")), false, "and the inherited log is never written");
+
+    const parent = mkdtempSync(join(tmpdir(), "w335 spaced-"));
+    dirs.push(parent);
+    const spaced = join(parent, "repo");
+    renameSync(checkout(both, both), spaced);
+    const under = run(spaced);
+    assert.equal(
+      under.status,
+      0,
+      `an exact test:record passes in a checkout path with a space: ${under.stdout}${under.stderr}`,
+    );
+    assert.match(
+      under.stderr,
+      /(^|\n)test-reads: node scripts\/ci-scope\.mjs --check-reads \S+record-reads\.log\nrecord_reads=ok\n$/,
+      "and its stderr ends with the check and its verdict",
+    );
   } finally {
     for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
   }
