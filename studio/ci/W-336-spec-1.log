@@ -1,0 +1,24 @@
+# opus: W-336
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T13:44:16.340Z
+# tree: tree:f929ffc9c0818597bec3e425694f40d4a8efde69
+# brief: briefs/W-336.md blob:0296424de251cdd6567b082637fc3f6fcf5b7e30
+# ticket: {"opus":"W-336","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"8267b00deea62b3db71bf9a95ba70e97928f906e","brief":"0296424de251cdd6567b082637fc3f6fcf5b7e30","at":"2026-10-20T13:44:12.150Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-336-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the record's design is kept with one narrowing: the rule extends W-322's any-text mechanism in `ruledCases` and the signature's ledger check only, not brief admission, so the 45 briefs already signed with 100 path-typed rows lacking a form are not sent back; a fixed vocabulary in the Valid domain cell (path, directory, command line, argv, argument, environment) marks a row path-typed, and `file` is left out — check: brief:17, brief:19, census.out, census-vocab.out
+2. advisory — the rule would not have caught W-335's own slip (a checkout ruled in Interfaces prose; a NODE_OPTIONS row whose Valid domain says any values), and the brief states both as limits rather than claiming them — check: brief:21, brief:65
+3. advisory — each red fails by assertion on master and on the stage before its behaviour and passes on its own (b1 at "a path row with no forms clause", b2 at "a space not named"), accepted by the replay classifier; 21 of 21 guard mutants are killed at their rows — check: reds.out, mutants.out
+4. advisory — no existing row flips: the Codex test check lists none, every neighbouring file passes unedited on the prototype, the fixture census finds no path-typed row in any test file, and the gates' blocking set matches master's (one `opus.records_unchanged` at W-096, a detached-stage artefact) — check: fixture-census.md, neighbours-proto.out, neighbours-extra.out, neighbours-census.out, gates-proto.out, gates-master.out
+5. advisory — this brief's own ledger passes the prototype's writer, so the brief meets the rule it adds, and the full admission admits it — check: ledger-check.out, admission.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-336.md`, prototype on master 776f751e (8267b00d changes none of its files); no code-owned path touched, 2 points.

@@ -137,6 +137,15 @@ const UNPINNED = /(?<![\w-])unpinned(?![\w-])/i;
 const ANY_TEXT = /(?<![\w-])any (?:text|string)(?![\w-])/i;
 const FORMS = /(?<![\w-])recogni[sz]es(?![\w-])(.*?)(?<![\w-])every other form(?![\w-]).*?(?<![\w-])limits?(?![\w-])/i;
 const GRAMMAR_CITE = /(?<![\w./~-])brief:([1-9]\d*)(?:-([1-9]\d*))?(?![\w/~-]|\.[\w./~-])/g;
+/** W-336 (D-076 D): a Valid domain naming a filesystem path, a command line or an environment value, by this fixed
+ *  vocabulary; such a row holds a forms clause too, and its line or a line the clause cites names each hostile form. */
+const PATH_TYPED = /(?<![\w-])(?:paths?|director(?:y|ies)|command(?: lines?|-line)|argv|arguments?|environment)(?![\w-])/i;
+const HOSTILE: readonly (readonly [form: string, word: RegExp])[] = [
+  ["a space", /(?<![\w-])(?:spaces?|whitespace)(?![\w-])/i],
+  ["a quote", /(?<![\w-])quot(?:e|es|ed)(?![\w-])/i],
+  ["a non-ASCII name", /(?<![\w-])non-ASCII(?![\w-])/i],
+  ["a symlinked parent", /(?<![\w-])symlink(?:s|ed)?(?![\w-])/i],
+];
 
 /** W-322: one pin: the test row's name and a text of the assertion that exercises the case. */
 export interface Pin {
@@ -151,9 +160,18 @@ export interface RuledCase {
   unpinned: boolean;
 }
 
+/** W-336: a path-typed row with no forms clause (`formless`, unless it is an any-text row, already formless), or whose
+ *  line and cited lines do not name every hostile-but-valid form (`missing`, in `HOSTILE` order). */
+export interface PathGap {
+  row: number;
+  formless: boolean;
+  missing: string[];
+}
+
 /** W-322: the brief's ruled cases in brief order, each with the pins its real line holds; `formless`, the rows whose
- *  Valid domain says any text or any string and which hold no forms clause. Text only, like `inputDomainRows`. */
-export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[] } {
+ *  Valid domain says any text or any string and which hold no forms clause; W-336: `pathGaps`, the path-typed rows'.
+ *  Text only, like `inputDomainRows`. */
+export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[]; pathGaps: PathGap[] } {
   const real = realLines(briefText);
   // W-334: a line number past 15 digits is past any brief's last line, so it clamps without a double
   const clamp = (digits: string): number => (digits.length > 15 ? real.length : Math.min(Number(digits), real.length));
@@ -161,10 +179,14 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
     [...(real[n - 1] ?? "").matchAll(PIN)].map((m) => ({ row: m[1]!, assertion: m[2]! }));
   const cases: RuledCase[] = [];
   const formless: number[] = [];
+  const pathGaps: PathGap[] = [];
   for (const n of inputDomainRows(briefText)) {
     const text = real[n - 1]!;
     cases.push({ line: n, row: n, pins: pinsOf(n), unpinned: UNPINNED.test(text) });
-    if (!ANY_TEXT.test(cellsOf(text)[1] ?? "")) continue;
+    const domain = cellsOf(text)[1] ?? "";
+    const anyText = ANY_TEXT.test(domain);
+    const pathTyped = PATH_TYPED.test(domain);
+    if (!anyText && !pathTyped) continue;
     const clause = FORMS.exec(text)?.[1];
     // a cited range is clamped to the brief's last line: a start past it cites the last line alone
     const cited = [...(clause ?? "").matchAll(GRAMMAR_CITE)].flatMap((m) => {
@@ -172,10 +194,17 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
       const b = Math.max(a, m[2] === undefined ? a : clamp(m[2]));
       return Array.from({ length: b - a + 1 }, (_, i) => a + i);
     });
-    if (clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause))) formless.push(n);
+    const noForms = clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause));
+    if (anyText && noForms) formless.push(n);
+    if (pathTyped) {
+      // the row's real line and each line its clause cites; a form named after "every other form" counts as a limit
+      const named = [text, ...cited.map((m) => real[m - 1] ?? "")].join("\n");
+      const missing = HOSTILE.filter(([, word]) => !word.test(named)).map(([form]) => form);
+      if ((!anyText && noForms) || missing.length > 0) pathGaps.push({ row: n, formless: !anyText && noForms, missing });
+    }
     for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
   }
-  return { cases, formless };
+  return { cases, formless, pathGaps };
 }
 
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its

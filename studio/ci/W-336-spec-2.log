@@ -1,0 +1,19 @@
+# opus: W-336
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15991-fe57-75a2-8a80-44766af175ff
+# outcome: failed
+# at: 2026-10-20T13:51:46.721Z
+# tree: tree:f929ffc9c0818597bec3e425694f40d4a8efde69
+# brief: briefs/W-336.md blob:0296424de251cdd6567b082637fc3f6fcf5b7e30
+# ticket: {"opus":"W-336","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"8267b00deea62b3db71bf9a95ba70e97928f906e","brief":"0296424de251cdd6567b082637fc3f6fcf5b7e30","at":"2026-10-20T13:51:46.247Z"}
+
+## Findings
+1. blocking — brief:42 [severity: S1] The prototype’s `PATH_TYPED` regex also matches the unlisted `command-lines`; an architect can plausibly use that spelling and receive an erroneous refusal, while no test catches it. Replace brief:42 with: “- the trigger: one of the words path, paths, directory, directories, command line, command lines, command-line, argv, argument, arguments or environment, whole (no word character or `-` on either side), any case, in the row's second cell (Valid domain) only; `command-lines` is not a trigger — pinned by `W-336-b1` "row with no forms clause", pinned by `W-336-b1` "path in a Rejected by cell only" and pinned by `W-336-b1` "command-lines is not path-typed"” [design: keeps] [class: tests×ruled-case-uncovered] — check: packages/cli/src/verdict-citation.test.ts W-336-b1
+2. blocking — brief:44 [severity: S1] The prototype’s space regex also accepts unlisted `whitespaces`; an architect can plausibly use only that word and have a signature recorded without naming one of the promised space forms, while no test catches it. Replace brief:44 with: “- the hostile words, whole, any case: `space`, `spaces` or `whitespace`; `quote`, `quotes` or `quoted`; `non-ASCII`; `symlink`, `symlinks` or `symlinked`; `whitespaces` names nothing — pinned by `W-336-b2` "not named", pinned by `W-336-b2` "names nothing", pinned by `W-336-b2` "name the forms" and pinned by `W-336-b2` "whitespaces names nothing"” [design: keeps] [class: tests×ruled-case-uncovered] — check: packages/cli/src/verdict-citation.test.ts W-336-b2
+
+## Verdict
+The brief has two design-preserving S1 regex-boundary gaps that must be fixed during the build.
+VERDICT: FAIL

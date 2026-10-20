@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-336-b2\s --import tsx packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-20T13:53:47.196Z
+# sella: builder.W-336
+# tree: tree:7aa0111ffdb1feb167695af0a5d517ae5708c2ba
+# ticket: {"opus":"W-336","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-336/studio","head":"893607da6fed94a46e643eb63876efe1e3ba1df4","brief":"0296424de251cdd6567b082637fc3f6fcf5b7e30","at":"2026-10-20T13:53:43.357Z"}
+
+TAP version 13
+# Subtest: W-336-b2 behaviour 2: a path-typed row's line, or a line its forms clause cites, names a space, a quote, a non-ASCII name and a symlinked parent, or the signature is refused
+not ok 1 - W-336-b2 behaviour 2: a path-typed row's line, or a line its forms clause cites, names a space, a quote, a non-ASCII name and a symlinked parent, or the signature is refused
+  ---
+  duration_ms: 23.299392
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-336/packages/cli/src/verdict-citation.test.ts:56:18'
+  failureType: 'testCodeFailure'
+  error: |-
+    a space not named: exit (stderr "")
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-336/packages/cli/src/verdict-citation.test.ts:600:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-336/packages/cli/src/verdict-citation.test.ts:837:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 31.784927
