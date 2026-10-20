@@ -37,7 +37,7 @@ signature to done, no hand-run evidence scripts, no required handoff edits (met 
 interruption); early stop if a cycle is over 180 min after the chain (#540), or at two calendar weeks. One builder per opus; a second lane
 after the chain (#540) and the test-file split (done 2026-10-19). Older items: `studio/acta/2026-10-09-queue-review.md`.
 
-Now, three lanes, two engineering and one UI (D-089; W-169 adds more lanes; order D-082 D, by cycle minutes saved (re-ranked 2026-10-20 on the 10-17 and 10-19 Fable audits; D-039 high items first); a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, a list retired when W-169 lands (D-087 A); two lanes ran from 2026-10-19; three lanes since D-089 (2026-10-20): two engineering, one UI, the UI lane W-344 then W-338 then the UI opera as the Patron rules):
+Engineering queue, two lanes (D-089; the UI queue below is ranked on its own, Patron 2026-10-20; W-169 adds more lanes; order D-082 D, by cycle minutes saved (re-ranked 2026-10-20 on the 10-17 and 10-19 Fable audits; D-039 high items first); a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, a list retired when W-169 lands (D-087 A); two lanes ran from 2026-10-19; three lanes since D-089 (2026-10-20): two engineering, one UI, the UI lane W-344 then W-338 then the UI opera as the Patron rules):
 1. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read; carries the merge-perform and health clauses struck from W-183 (high)
 2. W-337 — `next` checks for a real git conflict before review (`git merge-tree --write-tree`, by its exit code) against master and every opus further along, and orders a rebase or a wait, so a reviewed tree is never rebased afterwards (D-088 A, B; greenlit 2026-10-20); until it lands the orchestrator runs the check by hand before each review (D-088 D; three lanes, D-089); W-331 follows it (D-088 C)
 3. The remaining certify rules (high), to be filed under a new id when they start: listed in the Out of scope of `studio/briefs/W-268.md` (part 1, `ladder.ticket`, done 2026-10-20, PR #626)
@@ -49,25 +49,25 @@ Now, three lanes, two engineering and one UI (D-089; W-169 adds more lanes; orde
 9. W-183 (record trimmed to its signed brief, D-080 B; re-anchor) → W-169 (r7, design approved by D-087 C: claim by pushing the opus ref, origin's refs count as in flight, no per-lane handoff sections; re-sign and re-review before branch) — the second lane (D-075 F)
 10. W-310 + W-290 — one opus: the PreToolUse dispatch hook and the orchestrator write guard (no logger, D-080 C; W-242 rides it; also refuses an unbounded background wait loop and stops an agent left idle on its own background work after its report, Patron 2026-10-20; `.claude/`: Patron merges)
 11. W-332 — step tickets close the retired dispatch guard's gap: tickets only from the gated step, a Patron-held opus refuses `amend`/`handoff`/`halt`/`waive`/`emit`, a dispatch on a held opus refused or named a limit (greenlit 2026-10-20)
-12. W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, read by `next --all` and checked by a rule (greenlit 2026-10-20)
+12. W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, one ranked list per lane queue (engineering, UI), read by `next --all` by queue and checked by a rule (greenlit 2026-10-20; per-queue lists, Patron 2026-10-20)
 13. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline` (after W-299, D-077 C)
 14. W-283 — the Status page served, not republished: the Patron said yes to serving it publicly on GitHub Pages (2026-10-20; its `.github` change is the Patron's) (last: the Patron put the process work first, 2026-10-20); trial opus 2
+Then the console MVP's server side (after the block):
+15. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
+16. W-298 — the `petitio` verb to the Patron (its older signed brief, reused); `next` holds on an open one (D-080 D)
+17. W-280 — Inbox and `newItem` fail-open fixes (its `newItem` half; the Inbox half is W-345's: narrow at spec)
+18. W-261 — woken orchestration: the cascade loop waits on a GitHub event and runs one fresh session per wake, no model polling (D-087 F; it changes `scripts/cascade-loop.sh` in the Patron's folder)
+19. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
-UI lane (D-089; order D-090 B; every opus here `kind: ui` when it starts, D-088 E, except W-338):
-15. W-338 — a `kind: ui` opus takes the Codex spec review: `next` refuses every spec review for `kind: ui` today (`packages/cli/src/next.ts:202`), so no UI opus can reach branch under D-088 E (found filing D-088 F, greenlit 2026-10-20)
-16. W-339 — UI check 1: deterministic screenshot baselines (1280 and 390 per screen, fixed content, time and fonts, generated on the CI runner) and a colour rule over every CSS colour form and TSX inline styles in `apps/web/src` outside `tokens.css`, today's literals fixed (D-088 F, reshaped by D-090 B)
-17. W-340 — UI check 2: the screenshots or their pixel diff in the build review packet, with a UI slot in `studio/prompts/build-review.md`, after a probe of whether the Codex seat reads images (D-088 F)
-18. W-341 — UI check 3: one states matrix on all four screens (loading, empty, error, refused, stale, live, pending) as brief acceptance rows, each a served test with an `aria-live` row, and an axe scan (`@axe-core/playwright`) on the named states that fails the task (D-088 F, D-090 B, C)
-19. W-342 — UI check 4: `apps/web/README.md` names the live screens and the two suites and points to `docs/design/DIRECTION.md` (D-088 F)
-20. W-345 — Inbox truth and safety: shortcuts ignore keys typed in a field, one submission at a time, the reason bound to its petition, no invented petitions on a failed read, the answer pane reachable at phone width, defer and delegate made distinct or removed (D-090 A, B; from W-344)
-21. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route (the Board may write these, D-080 E)
-Next, the console MVP (after the block, same functions):
-22. W-304 — seats read live from one settings store (a file now, a database later), no PR to take effect (D-074)
-23. W-280 — Inbox and `newItem` fail-open fixes
-24. W-298 — the `petitio` verb to the Patron (its older signed brief, reused); `next` holds on an open one (D-080 D)
-25. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-26. W-261 — woken orchestration: the cascade loop waits on a GitHub event and runs one fresh session per wake, no model polling (D-087 F; it changes `scripts/cascade-loop.sh` in the Patron's folder)
-27. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
+UI queue, one lane (D-089; order D-090 B; every opus here `kind: ui` when it starts, D-088 E, except W-338):
+1. W-338 — a `kind: ui` opus takes the Codex spec review: `next` refuses every spec review for `kind: ui` today (`packages/cli/src/next.ts:202`), so no UI opus can reach branch under D-088 E (found filing D-088 F, greenlit 2026-10-20)
+2. W-339 — UI check 1: deterministic screenshot baselines (1280 and 390 per screen, fixed content, time and fonts, generated on the CI runner) and a colour rule over every CSS colour form and TSX inline styles in `apps/web/src` outside `tokens.css`, today's literals fixed (D-088 F, reshaped by D-090 B)
+3. W-340 — UI check 2: the screenshots or their pixel diff in the build review packet, with a UI slot in `studio/prompts/build-review.md`, after a probe of whether the Codex seat reads images (D-088 F)
+4. W-341 — UI check 3: one states matrix on all four screens (loading, empty, error, refused, stale, live, pending) as brief acceptance rows, each a served test with an `aria-live` row, and an axe scan (`@axe-core/playwright`) on the named states that fails the task (D-088 F, D-090 B, C)
+5. W-342 — UI check 4: `apps/web/README.md` names the live screens and the two suites and points to `docs/design/DIRECTION.md` (D-088 F)
+6. W-345 — Inbox truth and safety: shortcuts ignore keys typed in a field, one submission at a time, the reason bound to its petition, no invented petitions on a failed read, the answer pane reachable at phone width, defer and delegate made distinct or removed (D-090 A, B; from W-344)
+7. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route (the Board may write these, D-080 E)
+8. W-300 — the drawer shows `next`'s read-only step, actor, round and health
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
@@ -88,7 +88,7 @@ Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into No
   `Red order: one at a time`, re-sign, spec review), then the W-118 split (M3's exit); a slice "execute and resume one opus" is filed only if the trial's interruption case fails.
 - Milestone exits: W-045 + W-185 — atomic writes, records checked at load (M2); W-099 + W-093 — realpath anchor, security review on every change (M8);
   W-149 + W-150 — outside-adapter test and guide (M9); W-159 — model per seat, after W-245 (M6); W-157 — the decide verb.
-- Console screens, M5 and later (after the MVP): W-073, W-078, W-113, W-116, W-090, W-091, W-092, W-145, W-146, W-147, W-148, W-202, W-136, W-143,
+- UI queue, later: console screens, M5 and later (after the MVP): W-073, W-078, W-113, W-116, W-090, W-091, W-092, W-145, W-146, W-147, W-148, W-202, W-136, W-143,
   W-144, W-154, W-158, W-160, W-040, W-051, W-094, W-115, W-133, W-175, W-176, W-216, W-286.
 - Adopters and remote, not on the path: an OTLP exporter of the existing OTel-style events (D-077 D); W-135, W-284, W-291, W-070, W-151.
 - Deferred or held: W-294 (leads as real agents, trimmed: no lead coordinates lanes, D-087 A) and W-295 stay in the backlog (D-069 C);
