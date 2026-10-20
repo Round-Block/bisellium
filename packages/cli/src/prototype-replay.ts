@@ -15,6 +15,7 @@ import { accessSync, constants, lstatSync, readdirSync, readFileSync, realpathSy
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
+import { behaviourItems } from "@bisellium/commands/brief-admission.js";
 import { countBehaviours } from "./rules/evidence.js";
 
 /** The cap on the series file: a prototype is a few source files, never a vendored tree. */
@@ -163,17 +164,10 @@ export function commandWords(text: string): string[] | { error: string } {
   return out;
 }
 
-/** Behaviour k's red command: the words after " -- " in its one code span that opens "bisellium red <id> --behaviour <k> ". */
+/** Behaviour k's red command: the words after " -- " in its one code span that opens "bisellium red <id> --behaviour <k> ",
+ *  read from admission's own items (`behaviourItems`: one parser of the behaviours section, W-140). */
 export function redCommand(brief: string, id: string, k: number): string[] | { error: string } {
-  const real = unfenced(brief);
-  const start = real.findIndex((l) => l.trim() === "## Behaviours to test");
-  const end = real.findIndex((l, i) => i > start && /^## /.test(l));
-  const items: string[][] = [];
-  for (const line of start === -1 ? [] : real.slice(start + 1, end === -1 ? undefined : end)) {
-    if (/^\s{0,3}\d+\.\s/.test(line)) items.push([]);
-    items[items.length - 1]?.push(line);
-  }
-  if (items.length !== countBehaviours(brief)) return { error: `the replay reads ${items.length} behaviours where the brief counts ${countBehaviours(brief)}` };
+  const items = behaviourItems(brief);
   const opening = `bisellium red ${id} --behaviour ${k} `;
   const spans = (items[k - 1] ?? []).flatMap((l) => [...l.matchAll(/`([^`]+)`/g)].map((m) => m[1]!)).filter((s) => s.startsWith(opening));
   if (spans.length !== 1) return { error: `behaviour ${k} names ${spans.length} red commands opening "${opening.trim()}", want one` };
