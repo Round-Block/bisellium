@@ -37,9 +37,12 @@ interruption); early stop if a cycle is over 180 min after the chain (#540), or 
 after the chain (#540) and the test-file split (done 2026-10-19). Older items: `studio/acta/2026-10-09-queue-review.md`.
 
 Now, one builds at a time until the re-rank opens a second lane (allowed since the test-file split; W-169 adds more lanes; order D-082 D, by cycle minutes saved; a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, a list retired when W-169 lands (D-087 A); two lanes run since 2026-10-19):
-1. (part 1 done 2026-10-20, PR #605: no Resume point, no handoff edit at done, a read-only `next --all`; part 2, the queue as a record in `studio/queue.yml`, is W-333 under Later)
+1. (part 1 done 2026-10-20, PR #605: no Resume point, no handoff edit at done, a read-only `next --all`; part 2, the queue as a record in `studio/queue.yml`, is W-333, Now 2d)
 2. (done 2026-10-20, PR #612: the done step accepts a certified chain; no verify for the first-merged opus of a close pair)
 2a. W-334 — high (D-039): number strings of unbounded length are parsed exactly, never through `Number()`, with a check for the cause (the same S1 failed W-317 and W-330 build reviews on 2026-10-20); starts right after W-330
+2b. W-283 — the Status page served, not republished: the Patron said yes to serving it publicly on GitHub Pages (2026-10-20; its `.github` change is the Patron's); trial opus 2
+2c. W-332 — step tickets close the retired dispatch guard's gap: tickets only from the gated step, a Patron-held opus refuses `amend`/`handoff`/`halt`/`waive`/`emit`, a dispatch on a held opus refused or named a limit (greenlit 2026-10-20)
+2d. W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, read by `next --all` and checked by a rule (greenlit 2026-10-20)
 3. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
 4. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read; carries the merge-perform and health clauses struck from W-183 (high)
 5. W-288 part 1 — `docs/ADOPTION.md` split: the contract stays code-owned, six per-command reference files leave it, a line-cap check rule (D-083 B; about 15 min of Patron review wait saved per opus)
@@ -51,7 +54,6 @@ Now, one builds at a time until the re-rank opens a second lane (allowed since t
 11. W-331 — `next.ts` split by region (derive, perform, health, report), no behaviour change, so two or three `next.ts` opera can run at once (D-087 D)
 12. W-309 — the review-perform remainder, split at spec (amended by D-086 D: the fix check runs before a fix round's suite); its hand-script deletion last (it removes its own review path)
 13. W-310 + W-290 — one opus: the PreToolUse dispatch hook and the orchestrator write guard (no logger, D-080 C; W-242 rides it; also refuses an unbounded background wait loop, Patron 2026-10-20; `.claude/`: Patron merges)
-14. W-283 — the Status page served, not republished (its `.github` change is the Patron's); trial opus 2
 15. W-268 — the certify rules (high; after W-299)
 
 Next, the console MVP (after the block, same functions):
@@ -65,8 +67,6 @@ Next, the console MVP (after the block, same functions):
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
-- W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, read by `next --all` and checked by a rule (backlog: awaits the Patron's greenlight; W-299 was greenlit whole, D-077 B).
-- W-332 — step tickets close the retired dispatch guard's gap: tickets only from the gated step, a Patron-held opus refuses `amend`/`handoff`/`halt`/`waive`/`emit`, and a dispatch on a held opus refused or named a limit (backlog: awaits the Patron's greenlight; found 2026-10-20).
 - W-329 — part 2 of the review-tag enforcement, split at spec: a class tag on every finding, the build review closes a keeps-only spec round's required fixes, the recurring-class cause-fix hold, the per-opus retro dropped, the exemption's trailing-text advisory (backlog: awaits the Patron's greenlight; its part 1 was greenlit whole).
 - W-324 — a spec round counts as one architect signature plus its review (backlog: a Patron decision point, deferred 2026-10-19; it does not break the workflow, since the caps and the loop hold already count reviews).
 - W-328 — `next` orders a re-review when a failed build round's fix is evidence-only, outside the source tree (backlog, D-086 B's enforcement; found when the test-file split's timing rerun could not reach review without a brief correction).
@@ -92,6 +92,4 @@ Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into No
   W-160's memo leads with the cross-machine claim contract, written when a cloud lane is planned (D-087 G).
 
 ## Open Patron choices
-- The dead `dispatch-guard.sh` hook entry in your `~/.claude/settings.json` (it runs a missing script on every Bash and Agent call; D-080 C): yours to remove.
-- W-283: serving the Status page on GitHub Pages publishes officina record text (the remote is public, `studio/leges/production.md` §8); a yes or no on publishing it when it is specced.
-- None other. D-078 (Patron 2026-10-18): D-066 A (the orchestrator runs record writes; it named W-267) and D-076 E (the architect line in each dispatch; it named W-292) both run until W-310 lands, since W-267 and W-292 landed only part 1 and W-310 carries their remainders.
+- None. D-078 (Patron 2026-10-18): D-066 A (the orchestrator runs record writes; it named W-267) and D-076 E (the architect line in each dispatch; it named W-292) both run until W-310 lands, since W-267 and W-292 landed only part 1 and W-310 carries their remainders.
