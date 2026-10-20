@@ -95,6 +95,12 @@ export function checkLadderTicket(root: string, opts: RuleOpts): Finding[] {
     const want = `${l.opus} ${l.action} round ${l.round ?? "none"}`;
     if (l.tickets.length !== 1) findings.push(block(l.where, `carries ${l.tickets.length} # ticket: lines, want exactly one: run bisellium next ${l.opus} before the write`));
     else if (l.ticket === undefined) findings.push(block(l.where, `its # ticket: is not a step ticket line (${(parseTicketLine(l.tickets[0]!) as { error: string }).error})`));
+    else if (l.ticket.opus !== l.opus || l.ticket.action !== l.action || l.ticket.round !== l.round) findings.push(block(l.where, `its ticket names ${l.ticket.opus} ${l.ticket.action} round ${l.ticket.round}, want ${want}`));
+    else if (l.issued! > l.at) findings.push(block(l.where, `its ticket was issued at ${l.ticket.at}, after the log (${l.atText})`));
+    else {
+      const prev = previous.get(l.opus);
+      if (prev?.at !== undefined && l.issued! <= prev.at) findings.push(block(l.where, `its ticket (${l.ticket.at}) is not after ${l.opus}'s previous covered log ${prev.where} (${prev.atText}): one ticket is spent by one write`));
+    }
     if (l.at !== undefined) previous.set(l.opus, l);
   }
   return findings;
