@@ -992,13 +992,15 @@ export function deriveNext(f: Facts): Derived {
 
   // 10 cleanup, 11 done
   if (f.residue) return named("cleanup", "producer", `${id} is MERGED and fetched; its local branch, worktree or remote-tracking branch remain`, `bisellium next ${id} --perform --expect cleanup`);
-  if (f.choreDone) return { ...named("done", "producer", `done committed on chore/done-${id}, not on master`, `bisellium next ${id} --perform --expect done`), act: "land" };
+  // W-275: the done perform commits on chore/done-<id>, then lands it: the rung says which of the two it is
+  const PERFORM_1: [string, string][] = [["perform 1 of 2", "commit; rerun to land"]];
+  if (f.choreDone) return { ...named("done", "producer", `done committed on chore/done-${id}, not on master`, `bisellium next ${id} --perform --expect done`, [["perform 2 of 2", "land"]]), act: "land" };
   if (!f.certified()) {
     // W-259: certify's artifact cannot vouch for a ui opus's served-e2e gate, so a ui opus (on either record, the stricter kind) is named verify, as before
     if ([recordOf(f.work, id), f.trunkRecord].some((r) => str(r?.["kind"]) === "ui")) return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded`, `bisellium verify ${id} --studio ${f.studioRel} --repo .`), act: "verify" };
-    return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded: the perform records the merge queue's certify certificate`, `bisellium next ${id} --perform --expect done`), act: "certify", ticket: { action: "done", round: 0 } };
+    return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded: the perform records the merge queue's certify certificate`, `bisellium next ${id} --perform --expect done`, PERFORM_1), act: "certify", ticket: { action: "done", round: 0 } };
   }
-  return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`), ticket: { action: "done", round: 0 } };
+  return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`, PERFORM_1), ticket: { action: "done", round: 0 } };
 }
 
 /** The order a reviewer-configured spec step names, from the source that holds the newest signature. */
