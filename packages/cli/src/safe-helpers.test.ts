@@ -11,13 +11,16 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { doneAt } from "@bisellium/core";
+import { doneAt, EVENTS_LOG_REL } from "@bisellium/core";
+import { ruledCases } from "@bisellium/commands/brief-admission.js";
 import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { readSequence, reconcileFindings } from "@bisellium/commands/verdict.js";
 import * as schema from "@bisellium/schema";
 import { fakeProfile, type HarnessProfile } from "@bisellium/shim";
 import { ESLint } from "eslint";
 import { checkStudio } from "./check.js";
+import { draftRetro } from "./retro.js";
 import { initStudio } from "./init.js";
 import { pruneCiLogs } from "./prune.js";
 import { runTalk } from "./talk.js";
@@ -350,4 +353,134 @@ test("W-334-b1 behaviour 1: the lint refuses a regex capture of more than 15 dig
   assert.equal((await lossy(plain, "scripts/w334-probe.mjs")).length, 1, "a script is linted");
   assert.deepEqual(await lossy(DECL + reported[0]![1], "packages/cli/src/w334-probe.test.ts"), [], "a test file is not");
   assert.deepEqual(await lossy(plain, "scripts/ci-certify.mjs"), [], "scripts/ci-certify.mjs is not (the Patron's file)");
+});
+
+test("W-334-b2 behaviour 2: a bounded reader holds no round past 15 digits and reads one at the bound exactly; an exact reader names a longer number as written", async () => {
+  // the verdict sequence (W-215), a bounded reader: two adjacent rounds past the safe integers are not rounds, never one
+  const root = scratch("w334-b2");
+  const ci = join(root, "ci");
+  const put = (n: string, session: string): void => writeFileSync(join(ci, `W-900-spec-${n}.log`), `# opus: W-900\n# phase: spec\n# round: ${n}\n# sella: spec-reviewer\n# session: ${session}\n\n## Findings\nNo findings\n\n## Verdict\npassed\n`);
+  mkdirSync(ci);
+  put("9007199254740992", "s-992");
+  put("9007199254740993", "s-993");
+  assert.deepEqual(readSequence(root, "W-900", "spec", "spec-reviewer"), { last: undefined }, "rounds past 15 digits are not rounds of the sequence");
+  rmSync(ci, { recursive: true });
+  mkdirSync(ci);
+  put("999999999999998", "s-998");
+  put("999999999999999", "s-999");
+  const at = readSequence(root, "W-900", "spec", "spec-reviewer");
+  assert.ok(!("error" in at), `the bound is read: ${JSON.stringify(at)}`);
+  assert.deepEqual([at.last?.round, at.last?.log, at.last?.session], [999999999999999, "ci/W-900-spec-999999999999999.log", "s-999"], "the newest round at the bound is read exactly");
+
+  // the verdict writer holds the same grammar
+  const w = officina("w334-b2-verdict");
+  const verdict = (round: string): string => cli(w, "verdict", "W-1", "--round", round, "--sella", "qa-lead", "--outcome", "passed", "--studio", w).stderr;
+  assert.match(verdict("1000000000000000"), /--round must be a positive integer of at most 15 digits/, "the writer refuses a 16-digit round");
+  assert.doesNotMatch(verdict("999999999999999"), /--round must be/, "the writer takes a 15-digit round");
+
+  // review, a paired reader: the evidence path's bounded round is trusted, and a supplied --round must be in domain and the same
+  const review = (evidence: string, ...round: string[]): { status: number | null; stderr: string } => cli(w, "review", "W-1", "--pass", "--evidence", evidence, ...round, "--sella", "qa-lead", "--studio", w);
+  const roundsEmitted = (): unknown[] => (existsSync(join(w, EVENTS_LOG_REL)) ? readFileSync(join(w, EVENTS_LOG_REL), "utf8").split("\n").filter((l) => l.includes("workflow.gate_evaluated")).map((l) => (JSON.parse(l) as { attrs: Record<string, unknown> }).attrs["workflow.review.round"]) : []);
+  mkdirSync(join(w, "ci"), { recursive: true });
+  for (const n of ["3", "1234567890123456"]) writeFileSync(join(w, "ci", `W-1-review-${n}.log`), "review notes\n");
+  assert.match(review("ci/W-1-review-3.log", "--round", "2").stderr, /--round 2 differs from ci\/W-1-review-3\.log's round 3/, "review refuses a --round that differs from the evidence's round");
+  assert.match(review("ci/W-1-review-3.log", "--round", "1000000000000000").stderr, /--round must be a positive integer of at most 15 digits/, "review refuses a --round past 15 digits");
+  assert.match(review("ci/W-1-review-1234567890123456.log").stderr, /names a round past 15 digits/, "review refuses an evidence round past 15 digits");
+  assert.deepEqual(roundsEmitted(), [], "no refused review emitted an event");
+  const reviewed = review("ci/W-1-review-3.log");
+  assert.equal(reviewed.status, 0, `review with the evidence's round alone: ${reviewed.stderr}`);
+  assert.deepEqual(roundsEmitted(), [3], "review emits the evidence's own round");
+
+  // the previous retro's total, a bounded reader: a 16-digit total is absent, never its 15-digit prefix
+  const usage = { agents: [{ label: "b", role: "builder", model: "m", tokens: 10, minutes: 1 }], totalTokens: 10, byModel: { m: 10 }, byRole: { builder: 10 }, waste: { reruns: 0, refused: 0, fixRounds: 0 } };
+  const retroWith = (total: string): string => {
+    const r = scratch("w334-retro");
+    mkdirSync(join(r, "acta"));
+    writeFileSync(join(r, "acta", "2026-10-01-retro-1.md"), `# Retro 1\n\n## Usage\n\n- Total tokens: ${total}\n`);
+    return draftRetro(r, 2, { verifierIssues: 0, reviewFindings: [], agents: [], tests: 0, fixRounds: 0, mutationsCaught: 0, usage }, NOW).markdown;
+  };
+  assert.match(retroWith("1234567890123456"), /no prior retro found for comparison/, "a 16-digit previous total is absent, not truncated");
+  assert.match(retroWith("999999999999999"), /vs cascade 1 \(999999999999999 → 10\)/, "a 15-digit previous total is read exactly");
+
+  // the replay classifier and the red header, exact readers of a digit run (the specifier is a variable, so no types are needed)
+  const host = "../../../scripts/replay-accept.mjs";
+  const { classifyReplay, readRedBehaviour } = (await import(host)) as {
+    classifyReplay: (r: { status: number; output: string }) => { accepted: boolean; reason: string };
+    readRedBehaviour: (text: string, name: string) => number | undefined;
+  };
+  const pw = (count: string): { accepted: boolean; reason: string } => classifyReplay({ status: 1, output: `AssertionError: x\n  ${count} failed\nError: expect(received).toBe(expected)\n` });
+  assert.deepEqual(pw("1"), { accepted: true, reason: "assertion-level failure" }, "a playwright count of exactly 1 is accepted");
+  for (const count of ["1000000000000001", "01", "2"])
+    assert.equal(pw(count).accepted, false, `a playwright count of ${count} is refused`);
+  assert.match(pw("1000000000000001").reason, /playwright reported 1000000000000001 failed tests/, "a 16-digit playwright count is named as written");
+  assert.equal(readRedBehaviour("# behaviour: 2\n", "02.log"), 2, "a red's behaviour header that matches its file is read");
+  for (const [text, name] of [["# behaviour: 0000000000000002\n", "02.log"], ["# behaviour: 3\n", "02.log"], ["# command: x\n", "02.log"], ["# behaviour: 2\n", "2.log"]])
+    assert.equal(readRedBehaviour(text!, name!), undefined, `a red's behaviour header ${JSON.stringify(text)} in ${name} is refused`);
+
+  // brief.behaviour_citation, an exact reader: two adjacent citations past the safe integers are named as written
+  mkdirSync(join(w, "briefs"), { recursive: true });
+  writeFileSync(join(w, "briefs", "W-1.md"), "# W-1\n\nIt cites Behaviour 9007199254740992, Behaviour 9007199254740993 and Behaviour 1.\n\n## Behaviours to test\n\n1. **One.**\n");
+  const cited = checkStudio(w, NOW).findings.filter((f) => f.rule === "brief.behaviour_citation").map((f) => f.message);
+  assert.deepEqual(cited.sort(), ["brief cites Behaviour 9007199254740992 but declares 1 behaviours", "brief cites Behaviour 9007199254740993 but declares 1 behaviours"], "each citation past the declared count is named exactly; Behaviour 1 is accepted");
+
+  // ruledCases, an exact clamp: a cited line past 15 digits is past the brief's last line, as before
+  const brief = ["# W-9", "", "## Interfaces", "", "### Input domain", "", "A rejection fails closed.", "", "| Record | Valid domain | Rejected by |", "|---|---|---|", "| 1. x | any text; it recognises brief:99999999999999999999 and brief:2-99999999999999999999; every other form is a limit | `f` |", "last"].join("\n");
+  const lines = ruledCases(brief).cases.filter((c) => c.row === 11).map((c) => c.line);
+  assert.deepEqual(lines, [11, 12, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "the row, then its cited lines, each clamped to the last line");
+});
+
+
+test("W-334-b2 malformed tokens: a digit run followed by a word character is not a number, at every bounded reader (ci/W-334-spec-4.log #1)", async () => {
+  // each case names itself when it fails, so one run shows every reader that reads a prefix of a malformed token
+  const failed: string[] = [];
+  const holds = (name: string, ok: boolean): void => {
+    if (!ok) failed.push(name);
+  };
+
+  // the previous retro's total: `Total tokens: 12x` is absent, not 12; so is a line that is not the generated one
+  const usage = { agents: [{ label: "b", role: "builder", model: "m", tokens: 10, minutes: 1 }], totalTokens: 10, byModel: { m: 10 }, byRole: { builder: 10 }, waste: { reruns: 0, refused: 0, fixRounds: 0 } };
+  const trendAfter = (line: string): string => {
+    const r = scratch("w334-malformed-retro");
+    mkdirSync(join(r, "acta"));
+    writeFileSync(join(r, "acta", "2026-10-01-retro-1.md"), `# Retro 1\n\n## Usage\n\n${line}\n`);
+    return draftRetro(r, 2, { verifierIssues: 0, reviewFindings: [], agents: [], tests: 0, fixRounds: 0, mutationsCaught: 0, usage }, NOW).markdown;
+  };
+  holds("retro total '12x' is absent", /no prior retro found for comparison/.test(trendAfter("- Total tokens: 12x")));
+  holds("retro total '12 (est)' is absent", /no prior retro found for comparison/.test(trendAfter("- Total tokens: 12 (est)")));
+  holds("retro total without the generated '- ' is absent", /no prior retro found for comparison/.test(trendAfter("Total tokens: 12")));
+  holds("retro total '- Total tokens: 12' is read", /vs cascade 1 \(12 → 10\)/.test(trendAfter("- Total tokens: 12")));
+
+  // a blocker's brief citation: `brief:2x` is no line 2, so the blocker converts to advisory; `brief:2` and `brief:2.` hold
+  const brief = { spec: "briefs/W-1.md", text: "one\ntwo\nthree\n" };
+  const converted = (cite: string): number => reconcileFindings(`1. blocking — see ${cite} here\n`, "failed", brief).converted.length;
+  holds("citation 'brief:2x' is no citation", converted("brief:2x") === 1);
+  holds("citation 'brief:2_' is no citation", converted("brief:2_") === 1);
+  holds("citation 'brief:2' is line 2", converted("brief:2") === 0);
+  holds("citation 'brief:2.' is line 2", converted("brief:2.") === 0);
+
+  // the verdict sequence: a spec log whose round is `12x` is no round
+  const root = scratch("w334-malformed-seq");
+  mkdirSync(join(root, "ci"));
+  writeFileSync(join(root, "ci", "W-900-spec-12x.log"), "# opus: W-900\n# phase: spec\n# round: 12\n# sella: spec-reviewer\n# session: s-12\n\n## Findings\nNo findings\n\n## Verdict\npassed\n");
+  holds("spec log 'W-900-spec-12x.log' is no round", JSON.stringify(readSequence(root, "W-900", "spec", "spec-reviewer")) === JSON.stringify({ last: undefined }));
+
+  // the verdict writer's and review's --round, and a review log named `3x`
+  const w = officina("w334-malformed-verdict");
+  const ran = (...argv: string[]): { status: number | null; stderr: string } => cli(w, ...argv, "--studio", w);
+  holds("writer refuses '--round 12x'", /--round must be a positive integer of at most 15 digits/.test(ran("verdict", "W-1", "--round", "12x", "--sella", "qa-lead", "--outcome", "passed").stderr));
+  mkdirSync(join(w, "ci"), { recursive: true });
+  writeFileSync(join(w, "ci", "W-1-review-3x.log"), "review notes\n");
+  const sloppy = ran("review", "W-1", "--pass", "--evidence", "ci/W-1-review-3x.log", "--round", "2", "--sella", "qa-lead");
+  holds(`review treats 'W-1-review-3x.log' as no round of its own: ${sloppy.stderr}`, sloppy.status === 0);
+
+  // the red header
+  const host = "../../../scripts/replay-accept.mjs";
+  const { readRedBehaviour } = (await import(host)) as { readRedBehaviour?: (text: string, name: string) => number | undefined };
+  holds("readRedBehaviour is exported", typeof readRedBehaviour === "function");
+  if (typeof readRedBehaviour === "function") {
+    holds("red header '# behaviour: 2x' is not 2", readRedBehaviour("# behaviour: 2x\n", "02.log") === undefined);
+    holds("red header '# behaviour: 2' is read", readRedBehaviour("# behaviour: 2\n", "02.log") === 2);
+  }
+
+  assert.deepEqual(failed, [], "a malformed token is read as the number of its digit prefix");
 });
