@@ -3,7 +3,7 @@
  *
  *   node scripts/test-reads.mjs
  *
- * runs `npm test` in this checkout with NODE_OPTIONS `--import <checkout>/scripts/record-reads.mjs` and
+ * runs `npm test` in this checkout with NODE_OPTIONS `--import <checkout's file URL>/scripts/record-reads.mjs` (a file URL, so a path with a space survives NODE_OPTIONS' splitting) and
  * BISELLIUM_RECORD_READS a fresh log, then, only when that exits 0, `node scripts/ci-scope.mjs --check-reads <log>`,
  * and exits with the first non-zero status (1 for a signal). `bisellium ci` runs it in place of CI_STEPS' `npm test`
  * in a checkout whose package.json declares `test:record`, and `ci --opus` runs it as the gate `verify` would have run
@@ -31,7 +31,11 @@ export function runTestReads(repo, log) {
   const plain = { ...process.env };
   for (const key of ["NODE_OPTIONS", "BISELLIUM_RECORD_READS", "BISELLIUM_RECORD_ROOT", "BISELLIUM_RECORD_OWNER"])
     delete plain[key];
-  const env = { ...plain, NODE_OPTIONS: `--import ${join(repo, PRELOAD)}`, BISELLIUM_RECORD_READS: log };
+  const env = {
+    ...plain,
+    NODE_OPTIONS: `--import ${pathToFileURL(join(repo, PRELOAD)).href}`,
+    BISELLIUM_RECORD_READS: log,
+  };
   const [bin, ...args] = TEST.split(" ");
   const status = spawnSync(bin, args, { cwd: repo, env, stdio: "inherit" }).status ?? 1;
   if (status !== 0) return status;
