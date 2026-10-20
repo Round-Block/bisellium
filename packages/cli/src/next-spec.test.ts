@@ -4,9 +4,11 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { readFront } from "@bisellium/adapter-native";
+import { inspectUiDesignInput, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
@@ -773,4 +775,76 @@ test("W-297-b2 behaviour 2: a failed spec review whose blockers all keep the des
   const again = next(keeps, [OPUS, ...BUDGET]);
   reviewNamed(again, 2, "the next review round");
   assert.equal(again.kv.get("required-fixes"), FIXES, ran("the review order names the required fixes", again));
+});
+
+// ---------------------------------------------------------------------------
+// W-338 (D-088 E): a kind: ui opus takes the Codex spec review. The ui-lead's spec verdict is the UI input and every other
+// seat's is a plain spec verdict; the input is the newest ui-lead spec log; next orders the ui-lead once the spec passes,
+// before the branch and after it. Rows are selectable with --test-name-pattern='^W-338-b<n>\s'.
+// ---------------------------------------------------------------------------
+const UI_SEAT = "  - { id: ui-lead, collegium: design, kind: agent, model: gpt-6-astra, harness: codex }";
+const UI_PROMPT = "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n";
+const UI_BODY = ["## Findings", "No findings", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "## Recommendation", "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: passed", ""].join("\n");
+/** A spec-reviewer world with a ui-lead seat whose record is kind: ui (and, with `pointer`, carries `spec:`), committed on the trunk. */
+function uiWorld(tag: string, o: { pointer?: boolean; kind?: "ui" | "opus" } = {}): World {
+  const w = srWorld(tag, { edit: (t) => t.replace(ARCHITECT_ROW, `${ARCHITECT_ROW}\n${UI_SEAT}`) });
+  editRecord(w, "repo", (doc) => {
+    doc.setIn(["kind"], o.kind ?? "ui");
+    if (o.pointer === true) doc.setIn(["spec"], BRIEF_REL.slice("studio/".length));
+  });
+  commit(w.repo, "studio: W-900's kind and pointer");
+  return w;
+}
+/** A spec-phase verdict through the real writer, its exit and output returned (never thrown), in `studio` (the main checkout's by default). */
+function specRun(w: World, round: number, sella: string, outcome: string, body: string, extra: string[] = [], studio = w.studio): { status: number | null; out: string } {
+  const from = join(w.root, `w338-${round}-${sella}.md`);
+  writeFileSync(from, body);
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "verdict", OPUS, "--round", String(round), "--sella", sella, "--outcome", outcome, "--phase", "spec", "--from", from, "--studio", studio, "--now", T.spec, ...extra], { cwd: w.repo, env: SETUP_ENV, encoding: "utf8" });
+  return { status: r.status, out: `${r.stderr}${r.stdout}` };
+}
+/** The ui-lead's input at `round`, its prompt kept where the order names it. */
+function uiInput(w: World, round: number, studio = w.studio): { status: number | null; out: string } {
+  put(studio, `ci/${OPUS}-ui-prompt-${round}.md`, UI_PROMPT);
+  return specRun(w, round, "ui-lead", "passed", UI_BODY, ["--dispatch-prompt", `ci/${OPUS}-ui-prompt-${round}.md`], studio);
+}
+// the third argument is revision 2's opus id (revision 1's reader takes two and ignores it)
+const inspect = (w: World, studio = w.studio) => (inspectUiDesignInput as (root: string, record: NativeRecord, id: string) => ReturnType<typeof inspectUiDesignInput>)(studio, readFront<NativeRecord>(join(studio, "opera", `${OPUS}.md`)).data, OPUS);
+const logAt = (dir: string, n: number): string => readFileSync(join(dir, "ci", `${OPUS}-spec-${n}.log`), "utf8");
+
+test("W-338-b1 behaviour 1: on a kind: ui opus the ui-lead's spec verdict is the UI input and every other seat's is a plain spec verdict", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b1", { pointer: true });
+  putBrief(w);
+  const signed = specRun(w, 1, "architect", "passed", NO_FINDINGS);
+  assert.equal(signed.status, 0, `the architect's signature on a kind: ui opus is recorded\n${signed.out}`);
+  const signature = logAt(w.studio, 1);
+  assert.match(signature, /^# brief: briefs\/W-900\.md blob:[0-9a-f]{40}$/m, "the signature pins the brief, as on any opus");
+  assert.doesNotMatch(signature, /^# (?:design_digest|dispatch_prompt):/m, "the signature is no UI input");
+  const reviewed = specRun(w, 2, SR, "passed", NO_FINDINGS, ["--model", SR_MODEL]);
+  assert.equal(reviewed.status, 0, `the spec review on a kind: ui opus is recorded\n${reviewed.out}`);
+  assert.match(logAt(w.studio, 2), new RegExp(`^# model: ${SR_MODEL}$`, "m"), "the review records its model");
+
+  // a plain spec verdict is judged as on any opus: its Findings shape, and no --dispatch-prompt
+  put(w.studio, "ci/prompt.md", UI_PROMPT);
+  for (const [name, sella, body, extra, why] of [
+    ["the architect with --dispatch-prompt", "architect", NO_FINDINGS, ["--dispatch-prompt", "ci/prompt.md"], /--dispatch-prompt is valid only for the ui-lead's spec input/],
+    ["the reviewer with --dispatch-prompt", SR, NO_FINDINGS, ["--model", SR_MODEL, "--dispatch-prompt", "ci/prompt.md"], /--dispatch-prompt is valid only for the ui-lead's spec input/],
+    ["the architect with no Findings section", "architect", "## Notes\nNo findings\n", [], /Findings/],
+  ] as [string, string, string, string[], RegExp][]) {
+    const r = specRun(w, 3, sella, "passed", body, extra);
+    assert.equal(r.status, 2, `${name} exits 2\n${r.out}`);
+    assert.match(r.out, why, `${name}: why`);
+    assert.equal(existsSync(join(w.repo, specLog(3))), false, `${name}: no log is written`);
+  }
+
+  // the ui-lead's spec verdict is still the UI input: it needs the prompt and a substantive transcript, and records both
+  const bare = specRun(w, 3, "ui-lead", "passed", UI_BODY);
+  assert.equal(bare.status, 2, `the ui-lead with no prompt exits 2\n${bare.out}`);
+  assert.match(bare.out, /requires --dispatch-prompt/, "the ui-lead needs its prompt");
+  const thin = specRun(w, 3, "ui-lead", "passed", NO_FINDINGS, ["--dispatch-prompt", "ci/prompt.md"]);
+  assert.equal(thin.status, 2, `a thin ui-lead transcript exits 2\n${thin.out}`);
+  assert.match(thin.out, /opus\.ui\.design/, "the substantive check applies");
+  const input = specRun(w, 3, "ui-lead", "passed", UI_BODY, ["--dispatch-prompt", "ci/prompt.md"]);
+  assert.equal(input.status, 0, `the ui-lead's input is recorded\n${input.out}`);
+  assert.match(logAt(w.studio, 3), /^# dispatch_prompt: ci\/prompt\.md$/m, "the input records its prompt");
+  assert.match(logAt(w.studio, 3), /^# design_digest: sha256:[0-9a-f]{64}$/m, "the input records the design digest");
 });
