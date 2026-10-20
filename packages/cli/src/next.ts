@@ -25,7 +25,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync, type Dirent } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
@@ -72,7 +72,8 @@ export const STEP_SILENCE_SECONDS: Record<Step, number> = {
 
 const NEXT_USAGE =
   "usage: bisellium next <opus> [--perform [--chain]] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
-  "       bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]";
+  "       bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
+  "       bisellium next --all [--studio <dir>] [--repo <dir>]";
 
 const TRUNK = "refs/heads/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
@@ -1434,6 +1435,8 @@ function installMarker(read: MarkerRead | undefined, path: string, marker: Marke
 
 interface Args {
   id: string;
+  /** W-299: every open opus's derived next step, read-only */
+  all?: boolean;
   perform: boolean;
   /** W-292: perform the review and pr rungs in turn, stopping at the first that is not performed. */
   chain: boolean;
@@ -1452,9 +1455,17 @@ interface Args {
 const isStep = (v: string): v is Step => (STEPS as readonly string[]).includes(v);
 
 function parseArgs(argv: string[], env: NodeJS.ProcessEnv): Args | { error: string } {
-  const parsed = parseFlags(argv, { valued: ["--expect", "--budget", "--title", "--body-file", "--poll-ms", "--max-polls", "--studio", "--repo", "--now", "--track", "--pid", "--output"], boolean: ["--perform", "--chain"] });
+  const parsed = parseFlags(argv, { valued: ["--expect", "--budget", "--title", "--body-file", "--poll-ms", "--max-polls", "--studio", "--repo", "--now", "--track", "--pid", "--output"], boolean: ["--perform", "--chain", "--all"] });
   if ("error" in parsed) return { error: parsed.error };
   const { values, flags, positionals } = parsed;
+  if (flags.has("--all")) {
+    // W-299: --all reads only, so it takes no <opus> and no flag but where to read
+    const other = [...flags, ...values.keys()].filter((k) => k !== "--all" && k !== "--studio" && k !== "--repo");
+    if (positionals.length > 0) return { error: "--all takes no <opus>" };
+    if (other.length > 0) return { error: `--all takes only --studio and --repo, not ${other.join(", ")}` };
+    const repo = resolve(values.get("--repo") ?? ".");
+    return { id: "", all: true, perform: false, chain: false, pollMs: 0, maxPolls: 0, repo, studio: resolve(values.get("--studio") ?? join(repo, "studio")), nowMs: Date.now(), testClock: false };
+  }
   const id = positionals[0];
   if (id === undefined || positionals.length !== 1) return { error: "exactly one <opus> is required" };
   if (!ID_RE.test(id)) return { error: `invalid opus id "${id}"` };
@@ -2093,6 +2104,75 @@ function render(id: string, d: Derived, f: Facts, status: string): string[] {
   return out;
 }
 
+/** W-299: the states `next --all` lists: greenlit up to review (never backlog, done or halted). */
+const OPEN_STATES = new Set(["greenlit", "building", "verifying", "review"]);
+
+/** W-299: a traditio as one line, `none` when absent; any other shape than check's five string keys (`at` an ISO time) is an error. */
+function handoverLine(t: unknown): { line: string } | { error: string } {
+  if (t === undefined) return { line: "none" };
+  if (!isDict(t)) return { error: "is not a mapping" };
+  const [sella, stage, said, blocked] = ["sella", "stage", "next", "blocked_on"].map((k) => str(t[k]));
+  const at = instant(t["at"]);
+  if (sella === undefined || stage === undefined || said === undefined || blocked === undefined || !at) return { error: "is malformed: it needs string sella, stage, next and blocked_on and an ISO at" };
+  return { line: `${sella} at ${at.toISOString()}: ${said}${blocked === "none" ? "" : `; blocked on ${blocked}`}` };
+}
+
+/**
+ * W-299 (D-077 B): every open opus's derived next step, one line each in id order: the main checkout's records in
+ * `opera/` whose state is open, each derived as `next <opus>` derives it before the dispatch gate (no budget or
+ * handover hold, no step health). Reads only: no ticket, marker or step log. An unreadable record, an unknown opus, a
+ * malformed traditio, a held derivation or a throw makes the run exit 1, after every line is printed.
+ */
+function runAll(repo: string, studioAbs: string): { exitCode: number } {
+  let names: string[];
+  try {
+    names = readdirSync(join(studioAbs, "opera"));
+  } catch (e) {
+    console.log(`next: --all held\nwhy: ${clean(`opera/ cannot be listed: ${(e as Error).message}`, 1000)}`);
+    return { exitCode: 1 };
+  }
+  const ids = names.filter((n) => n.endsWith(".md") && ID_RE.test(n.slice(0, -3))).map((n) => n.slice(0, -3)).sort((x, y) => x.localeCompare(y, "en", { numeric: true }));
+  const lines: string[] = [];
+  let failed = false;
+  let open = 0;
+  for (const id of ids) {
+    const state = recordOf(fsSrc(studioAbs), id)?.["state"];
+    if (typeof state !== "string" || !STATES.some((s) => s.id === state)) {
+      failed = true;
+      lines.push(`next: ${id} unreadable · why: ${recordRel(id)} cannot be read or carries no lifecycle state`);
+      continue;
+    }
+    if (!OPEN_STATES.has(state)) continue;
+    open++;
+    try {
+      const f = gather(repo, studioAbs, id);
+      // the refusal next <opus> makes first: a record in neither master nor opus/<id> is an unknown opus, never derived
+      if (f.trunkRecord === undefined && f.branchRecord === undefined) {
+        failed = true;
+        lines.push(`next: ${id} failed · why: unknown opus: ${recordRel(id)} is in the working tree only, in neither master nor opus/${id}, so next ${id} refuses it`);
+        continue;
+      }
+      const d = deriveNext(f);
+      // D-077 B: the opus's traditio, from the record the dispatch gate reads it from (the main checkout's before opus/<id>)
+      const handover = handoverLine((f.tip === undefined ? recordOf(f.work, id) : (f.branchRecord ?? f.trunkRecord))?.["traditio"]);
+      if ("error" in handover) {
+        failed = true;
+        lines.push(`next: ${id} failed · why: ${recordRel(id)}#traditio ${handover.error}`);
+        continue;
+      }
+      // a held derivation is printed as next <opus> prints it, and the run exits 1: something must be fixed or decided
+      if (d.status === "held") failed = true;
+      lines.push(`next: ${id} ${d.step} ${d.status} · actor: ${d.actor} · why: ${one(d.why)} · traditio: ${one(handover.line)}`);
+    } catch (e) {
+      failed = true;
+      lines.push(`next: ${id} failed · why: ${one((e as Error).message)}`);
+    }
+  }
+  lines.push(`open: ${open}`);
+  console.log(lines.map((l) => clean(l, 1000)).join("\n"));
+  return { exitCode: failed ? 1 : 0 };
+}
+
 export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   const usage = (msg: string): { exitCode: number } => {
     console.error(`${msg}\n${NEXT_USAGE}`);
@@ -2108,26 +2188,28 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   if (resolve(repo, gd.stdout.trim()) !== resolve(repo, cd.stdout.trim())) return usage(`${repo} is a linked worktree; run next from the repository's main checkout`);
   const opened = openStudio(a.studio);
   if ("error" in opened) return usage(opened.error);
-  const opusPath = safeItemPath(join(opened.root, "opera"), id);
+  const opusPath = a.all ? "" : safeItemPath(join(opened.root, "opera"), id);
   if (typeof opusPath !== "string") return usage(`invalid opus id "${id}"`);
   const rel = relative(realpathSync(repo), realpathSync(opened.root));
   if (rel.startsWith("..") || isAbsolute(rel)) return usage(`--studio ${opened.root} is outside the repository`);
+  const label = a.all ? "--all" : id;
 
   // W-166: one validator for every reader of source_excludes (brief:108). A malformed value holds here, before
   // `gather`, `deriveNext` (and its lazy gh reads), --track, markers, perform or dispatch: nothing is derived, so
   // the held line carries no step. `gather` reads the same value through the same validator and spreads only a valid list.
   const declaredExcludes = readSourceExcludes(opened.manifest);
   if ("error" in declaredExcludes) {
-    console.log(`next: ${id} held\nwhy: ${clean(`bisellium.yml#source_excludes is malformed (${declaredExcludes.error})`, 1000)}`);
+    console.log(`next: ${label} held\nwhy: ${clean(`bisellium.yml#source_excludes is malformed (${declaredExcludes.error})`, 1000)}`);
     return { exitCode: 1 };
   }
 
   // W-233: the same hold for a malformed step_tickets, before `gather` and every derivation
   const ticketSetting = readStepTickets(opened.manifest);
   if ("error" in ticketSetting) {
-    console.log(`next: ${id} held\nwhy: ${clean(`bisellium.yml#step_tickets is malformed (${ticketSetting.error})`, 1000)}`);
+    console.log(`next: ${label} held\nwhy: ${clean(`bisellium.yml#step_tickets is malformed (${ticketSetting.error})`, 1000)}`);
     return { exitCode: 1 };
   }
+  if (a.all) return runAll(repo, opened.root);
 
   let f = gather(repo, opened.root, id);
   if (f.trunkRecord === undefined && f.branchRecord === undefined) return usage(`unknown opus: ${id}`);

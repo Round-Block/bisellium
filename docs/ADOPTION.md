@@ -1498,7 +1498,21 @@ change.
 ```bash
 npm run bisellium -- next <opus> [--perform [--chain]] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]
 npm run bisellium -- next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]
+npm run bisellium -- next --all [--studio <dir>] [--repo <dir>]
 ```
+
+**`--all` (W-299, D-077 B).** Read-only: for every record in the main checkout's `opera/` whose state is `greenlit`,
+`building`, `verifying` or `review`, in id order (numeric within the id), one line `next: <opus> <step> <status> · actor:
+<actor> · why: <why> · traditio: <sella> at <at>: <next>[; blocked on <what>]` (or `traditio: none`), the step derived
+as `next <opus>` derives it before the dispatch gate (so no budget or handover hold and no step health) and the traditio
+read from the record that gate reads, then `open: <n>`. It writes no ticket, marker or step log. A record that cannot be read or carries no
+lifecycle state prints `next: <opus> unreadable`; a record in neither `master` nor `opus/<opus>` (which `next <opus>`
+refuses as unknown), a present traditio without string `sella`, `stage`, `next` and `blocked_on` and an ISO `at`, and a
+derivation that throws each print `next: <opus> failed`; a held derivation prints its line as is. Any of these exits 1
+after every line is printed (a traditio `blocked_on` other than `none` is reported on its line and does not itself fail the run);
+otherwise (no derivation held) it exits 0. It takes no `<opus>` and no flag but `--studio` and `--repo` (exit 2), and
+refuses a linked worktree as `next <opus>` does. A fresh session reads it, with the handoff's Queue, instead of a
+Resume point.
 
 `next` is the cascade order as a verb (`packages/cli/src/next.ts`). From the
 record and its evidence alone it derives the one legal next step of the
