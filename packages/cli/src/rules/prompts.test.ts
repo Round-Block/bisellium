@@ -72,3 +72,33 @@ test("W-241-b1 behaviour 1: an officina with an ops collegium carries the three 
   mkdirSync(join(root, "prompts", "spec-draft.md"));
   assert.deepEqual(found(root), ["block prompts/spec-draft.md"], "a directory at a template path blocks");
 });
+
+test("W-241-b2 behaviour 2: the Ops lex names the templates in one checked clause", () => {
+  const root = officina();
+  declareOps(root);
+  templates(root);
+  assert.deepEqual(found(root), ["block leges/ops.md"], "an absent Ops lex blocks");
+  mkdirSync(join(root, "leges", "ops.md"));
+  assert.deepEqual(found(root), ["block leges/ops.md"], "a directory at leges/ops.md blocks");
+  rmSync(join(root, "leges", "ops.md"), { recursive: true });
+  lex(root, "- An unrelated clause (check: acta.daily)");
+  assert.deepEqual(found(root), ["block leges/ops.md"], "no clause names the templates");
+  for (const p of PATHS) {
+    lex(root, CLAUSE.replace(`\`studio/${p}\``, "a template"));
+    assert.deepEqual(found(root), ["block leges/ops.md"], `a clause without ${p} blocks`);
+  }
+  lex(root, CLAUSE.replace(MARKER, ""));
+  assert.deepEqual(found(root), ["block leges/ops.md"], "a clause without the marker blocks");
+  lex(root, CLAUSE.replace("- ", "1. "));
+  assert.deepEqual(found(root), ["block leges/ops.md"], "a numbered item is not a clause");
+  lex(root, CLAUSE.replace("- ", "-\n"));
+  assert.deepEqual(found(root), ["block leges/ops.md"], "a bare bullet marker is not a clause");
+  lex(root, `\`\`\`\n${CLAUSE}\n\`\`\``);
+  assert.deepEqual(found(root), ["block leges/ops.md"], "a fence line joined to the clause blocks");
+  lex(root, `\`\`\`\n${CLAUSE}\n\n\`\`\``);
+  assert.deepEqual(found(root), [], "a fence is not recognised: a clause a blank line ends clears it");
+  lex(root, CLAUSE);
+  assert.deepEqual(found(root), [], "the complete clause clears it");
+  lex(root, `${CLAUSE.replace(` ${MARKER}`, "")}\n  continued ${MARKER}`);
+  assert.deepEqual(found(root), [], "a clause wrapped onto a continuation line clears it");
+});
