@@ -57,14 +57,13 @@ test("W-162-b1 behaviour 1: a valid reviewer setting sends a signed spec to the 
     specHeld(specNext(b), `${name} holds at spec`, /spec_reviewer|spec-reviewer/);
   }
 
-  // a kind: ui opus holds and names the verdict-writer / UI-input limit
+  // W-338: a kind: ui opus takes the spec review: signed, it goes to the reviewer
   const ui = srWorld("w162-b1-ui");
   editRecord(ui, "repo", (doc) => doc.setIn(["kind"], "ui"));
   commit(ui.repo, "studio: W-900 is a ui opus");
   putBrief(ui);
-  const held = specNext(ui);
-  specHeld(held, "a kind: ui opus holds at spec", /UI input/);
-  assert.match(held.kv.get("why") ?? "", /verdict/i, ran("it names the verdict writer", held));
+  sign(ui, 1);
+  reviewerOrder(specNext(ui), 2, "a signed kind: ui opus goes to the reviewer");
 });
 
 test("W-162-b1 behaviour 1 review round 1: a duplicate reviewer-seat row holds at spec even when the first row is valid", { timeout: 1_800_000 }, () => {
@@ -888,4 +887,47 @@ test("W-338-b2 behaviour 2: the UI input is the newest ui-lead spec log, whateve
   r = read("an unreadable newest spec log");
   assert.equal(r.input, undefined, `${r.row}: no input`);
   assert.match(r.problems.join("\n"), /unsafe or unreadable/, `${r.row}: it is named`);
+});
+
+test("W-338-b3 behaviour 3: before the branch, a kind: ui opus takes the spec review, the ui-lead is ordered once it passes, and branch carries the input and its prompt", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b3");
+  putBrief(w);
+  const signed = specRun(w, 1, "architect", "passed", NO_FINDINGS);
+  assert.equal(signed.status, 0, `the architect's signature is recorded\n${signed.out}`);
+  reviewerOrder(specNext(w), 2, "a signed kind: ui spec goes to the reviewer");
+
+  // a ui-lead log above the signature is not the review: the reviewer is still ordered
+  const early = uiWorld("w338-b3-early");
+  putBrief(early);
+  sign(early, 1);
+  const before = uiInput(early, 2);
+  assert.equal(before.status, 0, `an input above the signature is recorded\n${before.out}`);
+  reviewerOrder(specNext(early), 3, "an input above the signature holds nothing");
+
+  review(w, 2, "passed");
+  const o = specNext(w);
+  expectStep(o, "spec", "named", "a passed review with no UI input orders the ui-lead");
+  assert.equal(o.kv.get("actor"), "ui-lead", ran("actor", o));
+  assert.equal(o.kv.get("role"), "ui-lead", ran("role", o));
+  assert.equal(o.kv.get("sella"), "ui-lead", ran("sella", o));
+  assert.equal(o.kv.get("round"), "3", ran("round", o));
+  assert.match(o.kv.get("why") ?? "", /no ui-lead spec input exists/, ran("why", o));
+  assert.equal(o.kv.get("inputs"), "briefs/W-900.md", ran("the brief is the one input (no handover)", o));
+  assert.match(o.kv.get("command") ?? "", /keep the dispatch prompt as ci\/W-900-ui-prompt-3\.md under studio; record with: bisellium verdict W-900 --round 3 --sella ui-lead --outcome <passed\|failed\|revise> --phase spec --dispatch-prompt ci\/W-900-ui-prompt-3\.md --from <file> --studio studio$/, ran("the exact command", o));
+
+  const input = uiInput(w, 3);
+  assert.equal(input.status, 0, `the ordered input is recorded\n${input.out}`);
+  const named = specNext(w);
+  expectStep(named, "branch", "named", "the input above the passed review names branch");
+  const master = git(w.repo, ["rev-parse", "master"]);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "branch commits the spec");
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), master, "opus/<id> is master plus one commit");
+  assert.deepEqual(
+    git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(),
+    [BRIEF_REL, specLog(1), specLog(2), specLog(3), `studio/ci/${OPUS}-ui-prompt-3.md`].sort(),
+    "the brief, the three logs and the ui-lead's prompt",
+  );
+  const ready = next(w, [OPUS]);
+  expectStep(ready, "ready", "named", "ready follows branch");
+  assert.match(ready.out, /^attributed: architect \(signed ci\/W-900-spec-1\.log\)$/m, ran("attributed to the signer, never the ui-lead", ready));
 });
