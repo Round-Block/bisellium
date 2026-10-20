@@ -573,6 +573,7 @@ function sourceCommits(repo: string, studioRel: string, merged: string): { chain
   const listed = git(repo, ["rev-list", "--first-parent", "--parents", "--reverse", `${merged}..${TRUNK}`]);
   if (listed.status !== 0 || listed.error !== undefined) return { why: `could not list master's commits since the merge commit ${merged.slice(0, 12)}` };
   const rows = listed.stdout.split("\n").filter((l) => l !== "").map((l) => l.split(" "));
+  if (rows[0]?.[1] !== merged) return { why: `the merge commit ${merged.slice(0, 12)} is not on master's first-parent line` };
   const chain: SourceCommit[] = [];
   for (const [sha = "", parent = ""] of rows) {
     const paths = diffPaths(repo, parent, sha);
@@ -1976,7 +1977,7 @@ function recordCertify(f: Facts): { lines: string[] } | { why: string } {
   const reads: SourceCommit[] = chain.length > 0 ? chain : [{ sha: oid, source: [] }];
   const moved = (c: SourceCommit, why: string): { why: string } => ({ why: `master's source changed since the merge commit ${oid.slice(0, 12)} at ${c.sha.slice(0, 12)} (${c.source.slice(0, 5).map((s) => clean(s)).join(", ") || "an empty diff"}), and ${why}` });
   let runId = 0;
-  for (const c of reads.slice(-1)) {
+  for (const c of reads) {
     const r = certifyRun(repo, p.pr.repo, c.sha, chain.length > 0 ? `the commit ${c.sha.slice(0, 12)}` : `the merge commit ${oid.slice(0, 12)}`);
     if ("why" in r) return chain.length > 0 ? moved(c, r.why) : r;
     runId = r.runId;
