@@ -54,3 +54,17 @@ test("W-288-b1 behaviour 1: doc.cap blocks a top-level docs/*.md over its cap, t
   assert.deepEqual(caps(repo({ ...files, "docs/A.md": text(99) }), undefined), [], "no doc_caps key: no rule");
   assert.deepEqual(checkDocs("x", { now: NOW, manifest: { doc_caps: policy } }), [], "no --repo: no rule");
 });
+
+test("W-288-b2 behaviour 2: a doc_caps the rule cannot read blocks at bisellium.yml#doc_caps and judges no doc", () => {
+  const dir = repo({ "docs/A.md": text(9), "docs/B.md": text(1), "README.md": text(1) });
+  const at = (m: string) => `block bisellium.yml#doc_caps: ${m}`;
+  const SHAPE = 'doc_caps must be a mapping of "default" and docs/<name>.md keys to positive whole line caps';
+  for (const v of [null, [], "450", 450]) assert.deepEqual(caps(dir, v), [at(SHAPE)], `doc_caps ${JSON.stringify(v)}: not a mapping`);
+  assert.deepEqual(caps(dir, { "docs/A.md": 20 }), [at('doc_caps has no "default" cap')], "no default");
+  for (const v of [0, -1, 1.5, "450", null, true])
+    assert.deepEqual(caps(dir, { default: 5, "docs/B.md": v }), [at(`doc_caps "docs/B.md" must be a positive whole number of lines, not ${JSON.stringify(v)}`)], `a cap of ${JSON.stringify(v)}`);
+  assert.deepEqual(caps(dir, { default: "5" }), [at('doc_caps "default" must be a positive whole number of lines, not "5"')], "a malformed default");
+  for (const k of ["docs/GONE.md", "README.md", "docs/design/deep.md", "docs/../docs/A.md"])
+    assert.deepEqual(caps(dir, { default: 50, [k]: 5 }), [at(`doc_caps "${k}" names no top-level docs/*.md file in this repo`)], `the key ${k}`);
+  assert.deepEqual(caps(dir, { default: 5, "docs/GONE.md": 0 }).length, 2, "a bad cap and a bad key on one entry are both named");
+});
