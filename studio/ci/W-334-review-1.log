@@ -1,0 +1,21 @@
+# opus: W-334
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15904-ac71-7d81-bc63-157bdc3a7c2b
+# outcome: failed
+# at: 2026-10-20T11:22:51.934Z
+# tree: tree:437400e699de7b6c2cea83970739ed324c4e5d57
+# brief: briefs/W-334.md blob:e42b290f0319d55409c8af86646eb4a830b5d9a8
+# ticket: {"opus":"W-334","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-334/studio","head":"63b84958fbe6097806ac245450c468030faf0243","brief":"e42b290f0319d55409c8af86646eb4a830b5d9a8","at":"2026-10-20T11:22:50.996Z"}
+
+## Findings
+1. blocking — scripts/exact-digits.mjs:174 The recursion depth is not advanced when following variable writes, so a cyclic chain such as `let a = b; let b = a; const m = a.exec(s); Number(m[1])` makes `npm run lint` fail with `RangeError: Maximum call stack size exceeded` instead of leaving the unrecognised form unjudged, contrary to brief:80. [severity: S1] [class: mechanism×cycle-guard-not-propagated] — check: packages/cli/src/safe-helpers.test.ts
+2. blocking — scripts/exact-digits.mjs:40 `captureGroup` includes a named group’s `?<name>` prefix in the text passed to `maxDigits`, so `Number(m[1])` for `/(?<group1234567890123456>a)/` is falsely reported as a 16-digit capture even though the capture contains no digits; named groups are inside the declared grammar at brief:52. [severity: S1] [class: mechanism×regex-metadata-counted-as-digits] — check: packages/cli/src/safe-helpers.test.ts
+3. blocking — scripts/exact-digits.mjs:281 The rule identifies numeric readers solely by identifier spelling, so a locally shadowed `Number` function that returns a string is treated as the built-in double conversion and fails lint; source text is the declared input domain and unrecognised forms must remain unjudged at brief:80. [severity: S1] [class: mechanism×shadowed-global-treated-as-builtin] — check: packages/cli/src/safe-helpers.test.ts
+4. advisory — scripts/exact-digits.mjs:61 A mixed character class such as `[0-9A-F]+` can match an arbitrarily long all-digit value, but `digitClass` excludes it and `Number(m[1])` is unreported. This form is outside the brief’s listed digit-only-class grammar; a lint case in the behaviour-1 row would pin it if the architect rules it in. [severity: S3] [class: mechanism×unpinned-by-test] — check: packages/cli/src/safe-helpers.test.ts
+
+## Verdict
+The recorded rows, reds, gates, packet, and owned-file boundary are present, but the new lint gate crashes or rejects valid source on three inputs within the brief’s domain.
+VERDICT: FAIL
