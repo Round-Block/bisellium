@@ -37,7 +37,7 @@ interruption); early stop if a cycle is over 180 min after the chain (#540), or 
 after the chain (#540) and the test-file split (done 2026-10-19). Older items: `studio/acta/2026-10-09-queue-review.md`.
 
 Now, one builds at a time until the re-rank opens a second lane (allowed since the test-file split; W-169 adds more lanes; order D-082 D, by cycle minutes saved; a high opus filed since (D-039) starts right after the one in flight; ten opera share `next.ts`'s derive and perform region and run one at a time; second-lane safe: W-280, W-283, W-304, a list retired when W-169 lands (D-087 A); two lanes run since 2026-10-19):
-1. (part 1 done 2026-10-20, PR #605: no Resume point, no handoff edit at done, a read-only `next --all`; part 2, the queue as a record in `studio/queue.yml`, is to be filed)
+1. (part 1 done 2026-10-20, PR #605: no Resume point, no handoff edit at done, a read-only `next --all`; part 2, the queue as a record in `studio/queue.yml`, is W-333 under Later)
 2. W-330 — the done step accepts a certified chain: master moved on after the merge only by records or certified merge-queue merges, so no 24-minute `verify` for the first-merged opus of a close pair (D-087 B; until it lands, each opus's done runs before the other lane's merge)
 3. W-305 — fast lane: a one-behaviour light brief signed by the architect goes to branch with no Codex spec round (D-075 D)
 4. W-275 — `next` names two-perform rungs and body-file roots; `verdict` refuses a signature `next` cannot read; carries the merge-perform and health clauses struck from W-183 (high)
@@ -64,6 +64,8 @@ Next, the console MVP (after the block, same functions):
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
+- W-333 — W-299 part 2: the queue as a record, `studio/queue.yml`, read by `next --all` and checked by a rule (backlog: awaits the Patron's greenlight; W-299 was greenlit whole, D-077 B).
+- W-332 — step tickets close the retired dispatch guard's gap: tickets only from the gated step, a Patron-held opus refuses `amend`/`handoff`/`halt`/`waive`/`emit`, and a dispatch on a held opus refused or named a limit (backlog: awaits the Patron's greenlight; found 2026-10-20).
 - W-329 — part 2 of the review-tag enforcement, split at spec: a class tag on every finding, the build review closes a keeps-only spec round's required fixes, the recurring-class cause-fix hold, the per-opus retro dropped, the exemption's trailing-text advisory (backlog: awaits the Patron's greenlight; its part 1 was greenlit whole).
 - W-324 — a spec round counts as one architect signature plus its review (backlog: a Patron decision point, deferred 2026-10-19; it does not break the workflow, since the caps and the loop hold already count reviews).
 - W-328 — `next` orders a re-review when a failed build round's fix is evidence-only, outside the source tree (backlog, D-086 B's enforcement; found when the test-file split's timing rerun could not reach review without a brief correction).
