@@ -1,0 +1,23 @@
+# opus: W-338
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15a53-9f7f-7251-899a-28b6d022329a
+# outcome: passed
+# at: 2026-10-20T23:40:04.496Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-338.md blob:af00f38bdac5ee68ecc41da79812543d83185e21
+# ticket: {"opus":"W-338","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"af00f38bdac5ee68ecc41da79812543d83185e21","at":"2026-10-20T23:40:03.858Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-338-spec-2.log #1: closed — brief:26, brief:48, brief:79 and W-338-b5 bind every digest reader to the caller’s opus id and refuse mismatched record ids.
+- ci/W-338-spec-2.log #2: closed — brief:26, brief:51, brief:59 and W-338-b6 gate both sequence skips on `kind: ui` from the same source as the logs.
+
+## Verdict
+The revision closes both earlier blockers with pinned fail-closed behaviours and introduces no new finding.
+
+VERDICT: PASS

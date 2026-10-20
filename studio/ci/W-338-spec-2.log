@@ -1,0 +1,21 @@
+# opus: W-338
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15a53-9f7f-7251-899a-28b6d022329a
+# outcome: failed
+# at: 2026-10-20T22:41:52.023Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-338.md blob:b30696cfed938f2dca521bf10da761e9fcc97c52
+# ticket: {"opus":"W-338","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"b30696cfed938f2dca521bf10da761e9fcc97c52","at":"2026-10-20T22:41:51.412Z"}
+
+## Findings
+1. blocking — brief:75 The new pre-`ready` fallback reads `record.id`, but the row omits it: a copied `id: W-Y` in `opera/W-X.md`, with `briefs/W-Y.md` present, lets `runVerdict W-X` claim its ticket and write a digest for the wrong brief; the evidence tests only the matching-id case. Replace brief:75 with: “| 1. The opus record’s `id`, `title`, `kind` and `spec:`, as `currentDesign` and `runVerdict` read them | `id` is a string equal to the CLI opus id and record filename; a string title; `kind: ui` or any other kind; `spec:` absent (the brief `briefs/<id>.md`) or a contained brief | `currentDesign` and `runVerdict` (extended): an absent, non-string or mismatched `id`, a non-string title or `spec:`, or an unreadable brief is a problem and the ui-lead’s verdict exits 2; pinned by `W-338-b2` for both matching and mismatched record ids |”. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-spec.test.ts
+2. blocking — brief:55 `reviewedSpec` and the worktree guard skip every first-header `ui-lead` log without checking the opus kind, so an ordinary opus’s ticketed plain verdict can be silently removed from its strict signature/review sequence; `next` is the real caller and no row covers this non-UI case. Replace brief:55 with: “Every other form is a limit: another seat’s log, a log with no first `# sella: ui-lead`, differently cased or spaced values, a later duplicate, or body text; only on a `kind: ui` opus is a ui-lead log skipped by `reviewedSpec` and the worktree signature/review guard, while on every other kind it remains in the strict plain-spec sequence.” [severity: S1] [design: changes] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/next-spec.test.ts
+3. advisory — brief:76 “Any string” overstates the accepted `--sella` domain because `runVerdict` rejects blank and multiline values before routing. Replace brief:76 with: “| 2. A spec verdict’s `--sella` on a `kind: ui` opus, as `runVerdict` routes it | any nonblank, single-line string; recognises `ui-lead`, exactly, as the UI input; every other accepted form is a plain spec verdict | `runVerdict` (extended): blank or multiline values and failures of the selected plain or UI route exit 2; pinned by `W-338-b1` ‘the architect’s signature on a kind: ui opus is recorded’ and ‘the ui-lead needs its prompt’ |”. [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict.test.ts
+
+## Verdict
+The signed brief is not build-ready because two plausible record-routing mistakes remain fail-open or produce the wrong evidence.
+
+VERDICT: FAIL
