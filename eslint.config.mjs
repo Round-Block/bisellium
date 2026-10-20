@@ -21,6 +21,7 @@
  *   once a builder owns the files that would need fixing.
  */
 import tseslint from "typescript-eslint";
+import exactDigits from "./scripts/exact-digits.mjs";
 
 export default tseslint.config(
   {
@@ -47,5 +48,14 @@ export default tseslint.config(
       "no-undef": "off",
       "no-console": "off",
     },
+  },
+  {
+    // W-334: in source, a regex capture of more than 15 digits is never read through a double (scripts/exact-digits.mjs).
+    // Tests read their own fixtures. scripts/ci-certify.mjs is the Patron's (CODEOWNERS): its queue ref's PR number
+    // (line 55) is read through Number, a stated limit until the Patron bounds it.
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.mjs", "**/*.cjs"],
+    ignores: ["**/*.test.*", "**/test/**", "**/tests-serve/**", "scripts/ci-certify.mjs"],
+    plugins: { local: exactDigits },
+    rules: { "local/exact-digits": "error" },
   },
 );
