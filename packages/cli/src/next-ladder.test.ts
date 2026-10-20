@@ -939,3 +939,33 @@ test("W-299-b3 behaviour 3: next --all prints every open opus's derived next ste
     assert.ok(o.err.includes(why), ran(`${args.join(" ")}: ${why}`, o));
   }
 });
+
+// ---------------------------------------------------------------------------
+// W-275: next tells the truth about each step
+// ---------------------------------------------------------------------------
+test("W-275-b2 behaviour 2: a dispatch the gate holds prints the derivation's own why beside the gate's", { timeout: 1_800_000 }, () => {
+  const w = world("w275-b2", "ready");
+  writeReds(w);
+  rmSync(join(w.wtStudio, "ci", "reds", OPUS, "02.log"));
+  commit(w.wt, "studio: only one red so far");
+  const MISSING = /^no usable red for behaviour\(s\) 2 /;
+  const held = (o: Out, row: string, gate: RegExp): void => {
+    expectStep(o, "reds", "held", row);
+    assert.equal(o.status, 1, ran(`${row}: exit`, o));
+    assert.match(o.kv.get("why") ?? "", gate, ran(`${row}: the gate's why`, o));
+    assert.match(o.kv.get("underlying") ?? "", MISSING, ran(`${row}: the derivation's why is printed beside it`, o));
+  };
+  const stale = next(w, [OPUS, "--budget", "100000"]);
+  held(stale, "a resume with no traditio", /^stale handover: run bisellium handoff first/);
+  held(next(w, [OPUS]), "an undeclared budget", /^dispatch budget undeclared$/);
+  held(next(w, [OPUS, "--budget", String(DISPATCH_TOKEN_CAP + 1)]), "a budget over the cap", /exceeds DISPATCH_TOKEN_CAP/);
+  handoffAt(w, "wt", T.handoffFresh);
+  const named = next(w, [OPUS, "--budget", "100000"]);
+  expectStep(named, "reds", "named", "a fresh handover names the order");
+  assert.equal(named.kv.has("underlying"), false, ran("a named order prints no underlying line", named));
+  assert.equal(stale.kv.get("underlying"), named.kv.get("why"), "the underlying why is the named order's why, word for word");
+  // r2: a fresh traditio is read whole: a non-string stage holds the order as an unreadable one does
+  editRecord(w, "wt", (doc) => doc.setIn(["traditio", "stage"], 3));
+  commit(w.wt, "studio: a traditio whose stage is no string");
+  held(next(w, [OPUS, "--budget", "100000"]), "a fresh traditio with a non-string stage", /^stale handover: run bisellium handoff first \(the record's traditio is malformed: it needs string sella, stage, next and blocked_on and an ISO at\)$/);
+});
