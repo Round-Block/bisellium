@@ -87,6 +87,15 @@ a pin is found when one changed file's added lines hold its row name and its
 assertion text, anywhere in that file's added lines; an `unpinned` row and a
 pin to an unchanged test are listed too.
 
+A row whose Valid domain names a filesystem path, a command line or an
+environment value (W-336), by the words path, directory, command line, argv,
+argument or environment, holds the forms clause too, and its line or a line its
+clause cites names each hostile-but-valid form by its word: space, quote,
+non-ASCII and symlink (a space, a quote, a non-ASCII name, a symlinked parent),
+each as a recognised form with its pin or as a stated limit. The check reads
+words: a row ruling a path in other words needs no clause, and whether a named
+form is recognised or a limit stays the spec review's.
+
 For a build-phase, non-`ui` verdict (W-126) the writer reconciles each
 `blocking` finding with the opus's declared brief. A blocking finding stays
 blocking only when it cites a non-blank line of that brief, as `brief:<n>`,

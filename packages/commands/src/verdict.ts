@@ -515,9 +515,12 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const n of formless)
     problems.push(`brief:${n} rules any text or any string and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"`);
   const PATH = "rules a path, a command line or an environment value";
-  for (const g of pathGaps)
+  for (const g of pathGaps) {
     if (g.formless)
       problems.push(`brief:${g.row} ${PATH} and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"`);
+    if (g.missing.length > 0)
+      problems.push(`brief:${g.row} ${PATH} and does not name ${g.missing.join(", ")}: name each by the word space, quote, non-ASCII or symlink, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit`);
+  }
   return problems;
 }
 

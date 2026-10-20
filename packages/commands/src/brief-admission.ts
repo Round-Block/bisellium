@@ -140,6 +140,12 @@ const GRAMMAR_CITE = /(?<![\w./~-])brief:([1-9]\d*)(?:-([1-9]\d*))?(?![\w/~-]|\.
 /** W-336 (D-076 D): a Valid domain naming a filesystem path, a command line or an environment value, by this fixed
  *  vocabulary; such a row holds a forms clause too, and its line or a line the clause cites names each hostile form. */
 const PATH_TYPED = /(?<![\w-])(?:paths?|director(?:y|ies)|command(?: lines?|-line)|argv|arguments?|environment)(?![\w-])/i;
+const HOSTILE: readonly (readonly [form: string, word: RegExp])[] = [
+  ["a space", /(?<![\w-])(?:spaces?|whitespace)(?![\w-])/i],
+  ["a quote", /(?<![\w-])quot(?:e|es|ed)(?![\w-])/i],
+  ["a non-ASCII name", /(?<![\w-])non-ASCII(?![\w-])/i],
+  ["a symlinked parent", /(?<![\w-])symlink(?:s|ed)?(?![\w-])/i],
+];
 
 /** W-322: one pin: the test row's name and a text of the assertion that exercises the case. */
 export interface Pin {
@@ -190,7 +196,12 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
     });
     const noForms = clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause));
     if (anyText && noForms) formless.push(n);
-    if (!anyText && noForms) pathGaps.push({ row: n, formless: true, missing: [] });
+    if (pathTyped) {
+      // the row's real line and each line its clause cites; a form named after "every other form" counts as a limit
+      const named = [text, ...cited.map((m) => real[m - 1] ?? "")].join("\n");
+      const missing = HOSTILE.filter(([, word]) => !word.test(named)).map(([form]) => form);
+      if ((!anyText && noForms) || missing.length > 0) pathGaps.push({ row: n, formless: !anyText && noForms, missing });
+    }
     for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
   }
   return { cases, formless, pathGaps };
