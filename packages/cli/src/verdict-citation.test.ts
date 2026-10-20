@@ -819,3 +819,53 @@ test("W-336-b1 behaviour 1: an architect spec signature is refused for a row rul
   admitted("a path row with its forms clause and every hostile form named", ledger);
 });
 
+const pathUnnamed = (row: number, missing: string): string =>
+  `W-300: promise ledger: brief:${row} rules a path, a command line or an environment value and does not name ${missing}: name each by the word space, quote, non-ASCII or symlink, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit\n`;
+
+test("W-336-b2 behaviour 2: a path-typed row's line, or a line its forms clause cites, names a space, a quote, a non-ASCII name and a symlinked parent, or the signature is refused", () => {
+  const { refused, admitted, cite, setBrief } = specSigner(PATH_BRIEF);
+  const ledger = cite(PATH_COVERING);
+
+  // each hostile form not named on the row's line: one problem naming it
+  for (const [form, text] of [
+    ["a space", "a space, "],
+    ["a quote", "a quote, "],
+    ["a non-ASCII name", "a non-ASCII name and "],
+    ["a symlinked parent", " and a symlinked parent"],
+  ] as const) {
+    setBrief(PATH_BRIEF.replace(HOSTILE_NAMED, HOSTILE_NAMED.replace(text, "")));
+    refused(`${form} not named`, ledger, pathUnnamed(10, form));
+  }
+  setBrief(PATH_BRIEF.replace(HOSTILE_NAMED, "every one exits 0"));
+  refused("none named, in order", ledger, pathUnnamed(10, "a space, a quote, a non-ASCII name, a symlinked parent"));
+  setBrief(PATH_BRIEF.replace(PATH_DOMAIN, "a checkout path").replace(HOSTILE_NAMED, "every one exits 0"));
+  refused("no clause and none named: both problems, the clause first", ledger, pathFormless(10) + pathUnnamed(10, "a space, a quote, a non-ASCII name, a symlinked parent"));
+  setBrief(PATH_BRIEF.replace(PATH_DOMAIN, "any text naming a path; recognises brief:3-4; every other form is a limit").replace(HOSTILE_NAMED, "every one exits 0"));
+  refused("an any-text path row with a clause still names the hostile forms", ledger, pathUnnamed(10, "a space, a quote, a non-ASCII name, a symlinked parent"));
+
+  // whole words only: a word run into another, or in an HTML comment, names nothing
+  for (const [name, from, to] of [
+    ["namespace", "a space,", "a namespace,"],
+    ["unquoted", "a quote,", "an unquoted one,"],
+    ["symlinkless", "a symlinked parent", "a symlinkless parent"],
+    ["a comment", "a symlinked parent", "<!-- a symlinked parent -->"],
+    ["whitespaces", "a space,", "whitespaces,"],
+  ] as const) {
+    setBrief(PATH_BRIEF.replace(from, to));
+    refused(`${name} names nothing`, ledger, pathUnnamed(10, name === "namespace" || name === "whitespaces" ? "a space" : name === "unquoted" ? "a quote" : "a symlinked parent"));
+  }
+  // other inflections and cases name the form
+  setBrief(PATH_BRIEF.replace("a space, a quote, a non-ASCII name and a symlinked parent", "whitespace, Quoted names, a NON-ASCII name and symlinks"));
+  admitted("whitespace, Quoted, NON-ASCII and symlinks name the forms", ledger);
+  setBrief(PATH_BRIEF.replace("a space,", "spaces,").replace("a symlinked parent", "a symlink"));
+  admitted("spaces and symlink name the forms", ledger);
+
+  // a line the clause cites names a form; a line it does not cite, or cites after "every other form", does not
+  const ON_LINE_5 = PATH_BRIEF.replace(" and a symlinked parent", "").replace("a parent reached through a link", "a symlinked parent");
+  setBrief(ON_LINE_5.replace("brief:3-4", "brief:3-5"));
+  admitted("a form named on a cited grammar line", ledger);
+  setBrief(ON_LINE_5);
+  refused("a form named on a line the clause does not cite", ledger, pathUnnamed(10, "a symlinked parent"));
+  setBrief(ON_LINE_5.replace("every other form is a limit", "every other form is a limit (brief:5)"));
+  refused("a form named on a line cited after every other form", ledger, pathUnnamed(10, "a symlinked parent"));
+});
