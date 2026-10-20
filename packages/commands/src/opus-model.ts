@@ -619,10 +619,15 @@ interface UiInput {
   digest: string;
 }
 
-function currentDesign(root: string, record: NativeRecord): { digest?: string; error?: string } {
+/** W-338: a spec log whose header block's (first) `# sella:` is ui-lead: the UI input's, never a signature's or a review's. */
+export const isUiLeadLog = (text: string): boolean => parseVerdictHeader(text).values.get("sella") === "ui-lead";
+
+/** The design digest's title and brief; W-338: before `ready` writes `spec:`, the brief is `briefs/<id>.md`, the path `ready` defaults to. */
+export function currentDesign(root: string, record: NativeRecord): { digest?: string; error?: string } {
   if (typeof record.title !== "string") return { error: "UI design digest requires a string title" };
-  if (typeof record.spec !== "string") return { error: "UI design digest requires a current spec pointer" };
-  const brief = readContainedRegularFile(root, record.spec, "briefs");
+  const spec = record.spec === undefined && typeof record.id === "string" ? `briefs/${record.id}.md` : record.spec;
+  if (typeof spec !== "string") return { error: "UI design digest requires a current spec pointer" };
+  const brief = readContainedRegularFile(root, spec, "briefs");
   if ("error" in brief) return { error: `current brief is unsafe or unreadable: ${brief.error}` };
   return { digest: designDigest(record.title, brief.bytes) };
 }
@@ -640,6 +645,9 @@ function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest
   for (const name of names) {
     const match = pattern.exec(name);
     if (!match) continue;
+    // W-338: another seat's spec log (the architect's signature, the spec review) never masks the input; an unreadable one stays a candidate, so the strict read names it
+    const log = readContainedRegularFile(root, `ci/${name}`, "ci");
+    if (!("error" in log) && !isUiLeadLog(log.bytes.toString("utf8"))) continue;
     candidates.push({ relative: `ci/${name}`, round: Number(match[1]) });
   }
   if (candidates.length === 0) return { problems: ["no ui-lead spec input exists"] };

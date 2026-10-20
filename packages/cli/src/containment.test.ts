@@ -625,6 +625,11 @@ const PINNED_B: PinnedB[] = [
   },
   { key: "packages/commands/src/lifecycle.ts:runWaive#1", disposition: "guarded", why: "decisionId passed patronDecisionProblem -> safeItemPath and readContainedRegularFile" },
   {
+    key: "packages/commands/src/opus-model.ts:currentDesign#1",
+    disposition: "guarded",
+    why: "W-338: id is the caller's opus id (the CLI id after safeItemPath, or a contained record's file name) and equals the record's id; the brief is read only through readContainedRegularFile under briefs/",
+  },
+  {
     key: "packages/commands/src/opus-model.ts:ruling#1",
     disposition: "guarded",
     why: "decisionId matches ^D-[0-9]{3,}$ then passes readContainedRegularFile under decisions/",

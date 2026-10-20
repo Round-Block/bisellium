@@ -14,7 +14,7 @@ import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest
 import {
   censorSella,
   contentLines,
-  designDigest,
+  currentDesign,
   inspectUiDesignInput,
   readContainedRegularFile,
   substantiveUiTranscript,
@@ -725,16 +725,13 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error(`--dispatch-prompt is unsafe or unreadable: ${prompt.error}`);
       return { exitCode: 2 };
     }
-    if (typeof record.title !== "string" || typeof record.spec !== "string") {
-      console.error("UI spec input requires a string title and current spec pointer");
+    // W-338: the digest's one reader, which `inspectUiDesignInput` shares (briefs/<id>.md before ready)
+    const design = currentDesign(root, record);
+    if (design.digest === undefined) {
+      console.error(`UI spec input: ${design.error ?? "the current design cannot be read"}`);
       return { exitCode: 2 };
     }
-    const brief = readContainedRegularFile(root, record.spec, "briefs");
-    if ("error" in brief) {
-      console.error(`current brief is unsafe or unreadable: ${brief.error}`);
-      return { exitCode: 2 };
-    }
-    uiDigest = designDigest(record.title, brief.bytes);
+    uiDigest = design.digest;
     const contentProblems = substantiveUiTranscript(transcript.toString("utf8"), outcome, prompt.bytes.toString("utf8"));
     if (contentProblems.length) {
       console.error(contentProblems.map((problem) => `opus.ui.design: ${problem}`).join("\n"));
