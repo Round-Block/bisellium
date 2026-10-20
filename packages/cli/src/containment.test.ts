@@ -1020,6 +1020,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "scripts/status-page.mjs:main:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
   { key: "scripts/status-page.mjs:main:writeFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
   { key: "scripts/sweep-traditio-stage.mjs:readFrontMatter:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/test-reads.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/usage-from-workflow.mjs:readJson:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/usage-from-workflow.mjs:main:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/w030-usage-guard-mutation.mjs:mutate:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
