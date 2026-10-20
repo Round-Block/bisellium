@@ -217,7 +217,7 @@ check(
 );
 
 const norm = (s) => s.replace(/\s+/g, " ");
-const adoption = readFileSync(join(REPO_ROOT, "docs/ADOPTION.md"), "utf8").split(/\r?\n/);
+const adoption = readFileSync(join(REPO_ROOT, "docs/PIPELINE.md"), "utf8").split(/\r?\n/);
 const adoptionHeadingIndex = adoption.indexOf("## Running ci");
 const adoptionSectionEnd =
   adoptionHeadingIndex === -1
@@ -236,30 +236,30 @@ const previousAdoptionHeading =
     ? undefined
     : adoption.slice(0, adoptionHeadingIndex).findLast((line) => line.startsWith("## "));
 check(
-  'ADOPTION.md: "## Running ci" follows "## Running run and verify"',
+  'PIPELINE.md: "## Running ci" follows "## Running run and verify"',
   adoptionHeadingIndex !== -1 && previousAdoptionHeading === "## Running run and verify",
 );
 
 const ciSource = readFileSync(join(REPO_ROOT, "packages/commands/src/ci.ts"), "utf8");
 const usageMatch = ciSource.match(/const USAGE = "usage: bisellium ci ([^"]*)";/);
 check(
-  'ADOPTION "Running ci" shows ci\'s usage',
+  'PIPELINE "Running ci" shows ci\'s usage',
   usageMatch !== null && section.includes("npm run bisellium -- ci " + usageMatch[1]),
   usageMatch === null ? "USAGE not found in ci.ts" : "",
 );
 
 for (const step of ciSteps) {
-  check(`ADOPTION "Running ci" names step: ${step}`, section.includes(step));
+  check(`PIPELINE "Running ci" names step: ${step}`, section.includes(step));
 }
 
 check(
-  'ADOPTION "Running ci" names CI_STEPS, ci.ts and this guard',
+  'PIPELINE "Running ci" names CI_STEPS, ci.ts and this guard',
   section.includes("`CI_STEPS`") &&
     section.includes("`packages/commands/src/ci.ts`") &&
     section.includes("`scripts/ci-workflow.test.mjs`"),
 );
 check(
-  'ADOPTION "Running ci" names the gates and officina jobs',
+  'PIPELINE "Running ci" names the gates and officina jobs',
   section.includes("`gates`") && section.includes("`officina`"),
 );
 

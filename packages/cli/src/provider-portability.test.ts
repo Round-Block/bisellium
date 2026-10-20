@@ -540,7 +540,7 @@ try {
 
   // ---- 6: the documented contract names the codex policy and its limits --
   if (runs(6)) {
-    const doc = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
+    const doc = readFileSync(join(repo, "docs", "TALK.md"), "utf8");
     // Prose is hard-wrapped at ~80 columns, so a literal can straddle a line
     // break (a newline where prose would render a plain space) — collapse
     // whitespace before matching so a check names a genuinely missing claim,
@@ -874,7 +874,7 @@ try {
     // about a mismatched model must name BOTH diagnostics scenario A proves
     // are printed, and promise nothing scenario A doesn't check.
     {
-      const doc = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
+      const doc = readFileSync(join(repo, "docs", "TALK.md"), "utf8");
       const section = extractSection(doc, "## Running talk").replace(/\s+/g, " ").toLowerCase();
       check("behaviour 7 doc: names the envelope's own error text", section.includes("the envelope's own error text"), section);
       check("behaviour 7 doc: names the vendor's stderr line", section.includes("the vendor's stderr line"), section);
@@ -885,7 +885,7 @@ try {
   // (round 2, censor F-1). Same mechanism as behaviour 6, numbered
   // separately because `red` overwrites 06.log by behaviour number.
   if (runs(8)) {
-    const doc = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
+    const doc = readFileSync(join(repo, "docs", "TALK.md"), "utf8");
     const docSection = extractSection(doc, "## Running talk").replace(/\s+/g, " ");
     const codexSource = readFileSync(join(repo, "packages/shim/src/harness/codex.ts"), "utf8");
     const codexHeader = extractHeaderComment(codexSource).replace(/\s+/g, " ");
@@ -893,7 +893,7 @@ try {
     check("behaviour 8: codex.ts header comment found", codexHeader.length > 0);
 
     const texts: [string, string][] = [
-      ["docs/ADOPTION.md 'Running talk'", docSection],
+      ["docs/TALK.md 'Running talk'", docSection],
       ["codex.ts header", codexHeader],
     ];
     for (const [label, text] of texts) {
