@@ -1,0 +1,26 @@
+# opus: W-299
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T02:16:15.868Z
+# tree: tree:6760e1f0e8406471ebc497fcc315525375b25133
+# brief: briefs/W-299.md blob:69fef83d99e1fe0f049127c9af1108c80b0db9f4
+# ticket: {"opus":"W-299","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"5cf227758682401af626165bab03514ead05de8c","brief":"69fef83d99e1fe0f049127c9af1108c80b0db9f4","at":"2026-10-20T02:16:10.894Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-299-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — design: part 1 removes every way a done asks for a handoff edit (the done perform's tracked-change refusal, the checkpoint rung reading the done commit's handoff change, and W-186's done-or-halted Queue check and Resume date) and blocks a `## Resume point` line, so the trial's "zero required handoff edits" can be met from the next opus on; the boot reading is both, records first: the handoff's standing instructions, then `next --all` (each open opus's derived step and traditio, D-077 B, D-087 C), then the Queue, which stays until part 2 gives it a record (`studio/queue.yml`) — check: brief:17, brief:19, brief:21, brief:31
+2. advisory — red order one at a time: each row fails by assertion on master and on the stage before its own behaviour and passes from its own stage on, every red accepted by the host replay classifier — check: reds.out, row-b1-master.out, row-b2-s1.out, row-b3-s2.out, row-b3-proto.out
+3. advisory — flips: W-186-b1, W-186-b2 (a), W-141-b3, W-137-b4, W-124 behaviours 1 and 2, W-128 behaviour 6, the usage-line count and two handoff fixtures are edited to the new contract, none removed or retitled; the seven next row files (119 of 119), ladder-followon, process, usage, ids, lex, tests, instructions, review-packet, status-slate, ci-scope, cli, talk-boundary, verdict-citation and w267 pass on the prototype; the Codex test check names the same flips and no unnamed one — check: neighbours-proto.out, neighbours-census.out, fixture-census.md
+4. advisory — `next --all` on the real studio at master 5cf22775 lists all 99 open opera, exit 0, in 8 to 13 s, and leaves the tickets directory, `.bisellium/steps/`, git status and refs unchanged; the handoff script applies to master 5cf22775's handoff and is idempotent — check: all-census.out, handoff-try.out, brief:57, brief:58
+5. advisory — code-owned paths: `docs/ADOPTION.md` (the W-186 paragraph, the done perform's sentence, the `--all` usage and paragraph) and `studio/leges/production.md` (§9 step 6's handoff sentence and one amendment row), the minimum that keeps both true; the Patron merges — check: brief:59, prototype.diff
+6. advisory — unchanged code stays a stated limit, not a guarantee (D-076 E): `gather`, `deriveNext`, `handoffInputs`, `handoffHold` and the done perform's other refusals are reused as they are — check: brief:61
+7. advisory — the brief passes admission and its ledger covers every Input domain row and CLI-verb line through master's writer; lint, typecheck and format pass on the prototype, and the officina check finds no `process.handoff` finding there (its one block, `opus.records_unchanged`, is the detached stage's, as on detached master); size 3 points, proceeding on this signature with a Patron merge — check: admission.out, ledger-check.out, gates-proto.out, check-master-detached.out, brief:116
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-299.md` (blob 69fef83d), prototype on master cbabc613, census at master 5cf22775.

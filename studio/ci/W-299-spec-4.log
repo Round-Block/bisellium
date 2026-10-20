@@ -1,0 +1,22 @@
+# opus: W-299
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15718-e5da-7801-a2ab-d791b30e3c59
+# outcome: passed
+# at: 2026-10-20T03:07:00.082Z
+# tree: dirty:31fcb90b689f6ce6ca8720f25e0c5759ca720a13
+# brief: briefs/W-299.md blob:597dbaa969ab7d9303953810555d38ffa5aa9205
+# ticket: {"opus":"W-299","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"7ee93389aa31b85fb4fdb2e65a62c2e2c19084c0","brief":"597dbaa969ab7d9303953810555d38ffa5aa9205","at":"2026-10-20T03:06:59.337Z"}
+
+## Findings
+1. advisory — studio/briefs/W-299.md:133 [severity: S2] Reached from ci/W-299-spec-2.log #2’s class: “any task is stuck” includes a task with a valid non-`none` `traditio.blocked_on`, but `runAll` does not fail for that condition—`W-299-b3` has `blocked_on: the Patron's ruling` and exits 0. Replace brief:133 with the same text except “when any derivation is held” for “when any task is stuck,” and state that a non-`none` blocker is reported but does not itself fail the run. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-ladder.test.ts
+
+## Earlier findings
+- ci/W-299-spec-2.log #1: closed — brief:57 and brief:80 now make held derivations fail the aggregate run and reject malformed present traditio through `handoverLine`; W-299-b3 pins both cases and `mutants.out` kills both bypasses
+- ci/W-299-spec-2.log #2: closed — brief:25 and brief:79 now state the reader disagreement and make `runAll` reject a working-only record before derivation; W-299-b3 compares that refusal with `next W-19`, and `mutants.out` kills its bypass
+
+## Verdict
+Revision 2 closes both prior blockers; only the advisory overstatement about `blocked_on` remains.
+VERDICT: PASS
