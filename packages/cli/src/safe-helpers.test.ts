@@ -16,6 +16,7 @@ import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import * as schema from "@bisellium/schema";
 import { fakeProfile, type HarnessProfile } from "@bisellium/shim";
+import { ESLint } from "eslint";
 import { checkStudio } from "./check.js";
 import { initStudio } from "./init.js";
 import { pruneCiLogs } from "./prune.js";
@@ -289,4 +290,64 @@ test("W-163-b5 round 2: talk refuses a symlinked sessions directory and writes n
   assert.notEqual(r.exitCode, 0, "talk refuses a symlinked sessions/");
   assert.deepEqual(r.calls, { start: 0, resume: 0 }, "no harness turn is spent");
   assert.deepEqual(listing(outside), [], "the outside dir stays empty");
+});
+
+// W-334: the lint rule `local/exact-digits` through the repo's own ESLint config, and the census readers on both sides of
+// the 15-digit bound. Rows are `node:test`, named `W-334-b<n> behaviour <n>: …`; select one with
+// --test-name-pattern='^W-334-b<n>\s'.
+const REPO = join(here, "..", "..", "..");
+const ESL = new ESLint({ cwd: REPO });
+/** The messages `local/exact-digits` reports on `code`, linted as the repo file `file` by the repo's config. */
+async function lossy(code: string, file = "packages/cli/src/w334-probe.ts"): Promise<string[]> {
+  const [r] = await ESL.lintText(code, { filePath: join(REPO, file) });
+  return (r?.messages ?? []).filter((m) => m.ruleId === "local/exact-digits").map((m) => m.message);
+}
+const DECL = "declare const s: string;\ndeclare const id: string;\n";
+
+test("W-334-b1 behaviour 1: the lint refuses a regex capture of more than 15 digits read through a double, and passes a bounded or exact one", async () => {
+  // the two S1 reads of 2026-10-20: a spec log's round (W-317 round 1) and a squash subject's PR number (W-330 round 1)
+  const w317 = await lossy(`${DECL}const m = new RegExp(\`^\${id}-spec-([1-9][0-9]*)\\\\.log$\`).exec(s);\nexport const n = m === null ? 0 : Number(m[1]);\n`);
+  assert.equal(w317.length, 1, `a spec log's round read through Number is reported: ${JSON.stringify(w317)}`);
+  assert.match(w317[0]!, /^capture 1 of \/\^-spec-\(\[1-9\]\[0-9\]\*\)\\\.log\$\/ can hold unboundedly many digits, and a double is exact only to 15: bound the grammar to at most 15 digits or compare the capture exactly/);
+  const w330 = await lossy(`${DECL}const n = s !== "" ? /\\(#([1-9][0-9]*)\\)$/.exec(s) : null;\nexport const pr = n === null ? 0 : Number(n[1]);\n`);
+  assert.equal(w330.length, 1, `a subject's PR number read through Number is reported: ${JSON.stringify(w330)}`);
+
+  const reported: [string, string][] = [
+    ["parseInt", "const m = /^v(\\d+)$/.exec(s);\nexport const n = parseInt(m![1]!, 10);\n"],
+    ["Number.parseInt", "const m = /^v(\\d+)$/.exec(s);\nexport const n = Number.parseInt(m?.[1] ?? '0', 10);\n"],
+    ["parseFloat", "const m = /^v(\\d+)$/.exec(s);\nexport const n = parseFloat(m![1]!);\n"],
+    ["Number.parseFloat", "const m = /^v(\\d+)$/.exec(s);\nexport const n = Number.parseFloat(m![1]!);\n"],
+    ["a unary +", "export const n = +(/^v(\\d+)$/.exec(s) ?? [])[1]!;\n"],
+    ["{1,}", "const m = /^v(\\d{1,})$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["16 digits", "const m = /^v([1-9]\\d{0,15})$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["a regex constant", "const RE = /^v([0-9]+)$/;\nconst m = RE.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["a non-global match", "const m = s.match(/^v(\\d+)$/);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["a matchAll callback", "export const ns = [...s.matchAll(/v(\\d+)/g)].map((m) => Number(m[1]));\n"],
+    ["a for-of over matchAll", "for (const m of s.matchAll(/v(\\d+)/g)) console.log(Number(m[1]));\n"],
+    ["a destructured capture", "const m = /^v(\\d+)$/.exec(s);\nif (m) {\n  const [, v] = m;\n  console.log(Number(v));\n}\n"],
+    ["String.raw and a constant", "const END = String.raw`(?!\\d)`;\nconst RE = new RegExp(String.raw`v([1-9]\\d*)` + END, \"g\");\nexport const ns = [...s.matchAll(RE)].map((m) => Number(m[1]));\n"],
+    ["the last of a list", "const last = [...s.matchAll(/(\\d+) failed/g)].at(-1);\nexport const n = last === undefined ? 0 : Number(last[1]);\n"],
+    ["a group counted after a named one", "const m = /(?<y>\\d{4})-(\\d+)/.exec(s);\nexport const n = m ? Number(m[2]) : 0;\n"],
+  ];
+  for (const [name, code] of reported) assert.equal((await lossy(DECL + code)).length, 1, `${name}: reported`);
+  assert.match((await lossy(DECL + reported[6]![1]))[0] ?? "", /can hold 16 digits/, "16 digits: the count is named");
+
+  const passed: [string, string][] = [
+    ["a round bounded to 15 digits", "const m = new RegExp(`^${id}-spec-([1-9][0-9]{0,14})\\\\.log$`).exec(s);\nexport const n = m === null ? 0 : Number(m[1]);\n"],
+    ["four digits", "const m = /^(\\d{4})$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["fifteen digits", "const m = /^(\\d{1,15})$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["BigInt", "const m = /^v(\\d+)$/.exec(s);\nexport const n = m ? BigInt(m[1]!) : 0n;\n"],
+    ["a string compare", "const m = /^v(\\d+)$/.exec(s);\nexport const same = m !== null && m[1] === '3';\n"],
+    ["a group with no digit", "const m = /^(a+)-(\\d+)$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["a non-capturing group", "const m = /^(?:\\d+)-(\\d{2})$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["escaped parentheses", "const m = /^\\((\\d{2})\\)\\d+$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+    ["a named group", "const m = /(?<y>\\d{4})-(\\d+)/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n"],
+  ];
+  for (const [name, code] of passed) assert.deepEqual(await lossy(DECL + code), [], `${name}: not reported`);
+
+  // where it runs: source, not tests (they read their own fixtures), and not the Patron's scripts/ci-certify.mjs (a stated limit)
+  const plain = "const s = process.argv[2] ?? '';\nconst m = /^v(\\d+)$/.exec(s);\nexport const n = m ? Number(m[1]) : 0;\n";
+  assert.equal((await lossy(plain, "scripts/w334-probe.mjs")).length, 1, "a script is linted");
+  assert.deepEqual(await lossy(DECL + reported[0]![1], "packages/cli/src/w334-probe.test.ts"), [], "a test file is not");
+  assert.deepEqual(await lossy(plain, "scripts/ci-certify.mjs"), [], "scripts/ci-certify.mjs is not (the Patron's file)");
 });
