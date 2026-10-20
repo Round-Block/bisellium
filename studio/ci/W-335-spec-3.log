@@ -1,0 +1,23 @@
+# opus: W-335
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T11:24:42.434Z
+# tree: tree:3279789fa5ccbf53242cd8026d49f03adabc4526
+# brief: briefs/W-335.md blob:167e40ecd2d81ee952c8e7b9f791a4727362742b
+# ticket: {"opus":"W-335","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-335/studio","head":"c3119ca5a1a1eeba44e64f2766b1ba224b77f1c2","brief":"167e40ecd2d81ee952c8e7b9f791a4727362742b","at":"2026-10-20T11:24:34.034Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-335-spec/r2/promise-ledger.md
+
+## Findings
+
+1. advisory — ruling on question 2: revision 1's promise that the tests gate log ends with the check was false on the real suite, because localPipeline writes stdout then stderr and keeps 200 lines while the suite writes about 1271 stderr lines; the wrapper now prints its `test-reads:` line on stderr and runs the guard with its stdout on its stderr, so the check line and the guard's problems or `record_reads=ok` are the log's last lines; ci-scope.mjs and localPipeline are unchanged, and amending the promise was rejected because it would leave a failing check's cause out of the log — check: brief:20, tail-model.out
+2. advisory — the changed rows pin the log's end, not only its content: W-335-b1 reads the check line and the guard's output at the end of the wrapper's stderr after each fixture test's own stderr line, and W-335-b2 reads them at the gate log's end; both fail by assertion on c3119ca5 with the row edits and pass with the change, and the check-line and guard-stdout mutants are killed at both rows — check: reds.out, mutants.out
+3. advisory — revision 2 names what spec review 2's advisories asked for and the build adopted (`runTestReads` as the rejecting function, `validateCommandOverride` refusing a malformed override with exit 2, W-335-b2 (e), the guard's post-test package.json read as the authority) and adds the names-the-cause promise with localPipeline's order and tail as a stated limit (D-076 E) — check: brief:24, brief:28, brief:49, brief:59, brief:63
+4. advisory — no row outside W-335's own two flips: the wrapper's only readers are W-335-b1, W-335-b2 and containment.test.ts's unchanged rmSync pin; ci-scope.test.mjs, w279.test.ts, ci-workflow.test.mjs and containment.test.ts pass whole on the change, with lint, the cli typecheck and format:check of the three changed files; the Codex test check is not re-run — check: neighbours.out, brief:111
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-335.md` on opus/W-335, the ruling's change prototyped on c3119ca5; no code-owned path touched.

@@ -1,0 +1,21 @@
+# opus: W-335
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15899-f48e-7b31-af7d-ecf9212541d0
+# outcome: passed
+# at: 2026-10-20T11:29:11.942Z
+# tree: tree:3279789fa5ccbf53242cd8026d49f03adabc4526
+# brief: briefs/W-335.md blob:167e40ecd2d81ee952c8e7b9f791a4727362742b
+# ticket: {"opus":"W-335","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-335/studio","head":"c3119ca5a1a1eeba44e64f2766b1ba224b77f1c2","brief":"167e40ecd2d81ee952c8e7b9f791a4727362742b","at":"2026-10-20T11:29:11.462Z"}
+
+## Findings
+1. advisory — brief:79 [severity: S4] The revised row still decomposes the reused guard subprocess into its internal log read instead of naming the call result and `runTestReads` refusal required by D-050. Reached through ci/W-335-spec-2.log #4’s class. Replace brief:79 with: `| 5. The reused node <CHECK> <log> subprocess result | exit 0 | runTestReads (new): returns a non-zero or null status or spawn failure as non-zero, so the wrapper and step or gate fail |`. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: scripts/ci-scope.test.mjs
+2. advisory — brief:82 [severity: S4] The revision adds stdout/stderr and gate-log reads to both W-335 rows, but the Input domain still omits those test readers. Reached through ci/W-335-spec-2.log #5’s class. Replace brief:82 with: `| 8a. reads-probe.sh (the read enumeration) | the proto stage; the two changed test files run traced | reads-probe.sh exits non-zero on failure; otherwise its output is unpinned |` and `| 8b. W-335-b1/b2 inputs: imported and copied scripts, workflow data, generated scratch repositories and studios, subprocess status/stdout/stderr, order logs, gate records and gate logs | sources are readable and executable; generated records parse; helpers return the asserted statuses and contents | node:test: import, copy, read or helper failures throw, and assert.equal/assert.match/assert.deepEqual reject every mismatch |`. [class: spec×input-domain-missing-or-unenforceable] — check: scripts/ci-scope.test.mjs and packages/cli/src/w279.test.ts
+
+## Earlier findings
+
+## Verdict
+The tail fix is feasible and fail-closed; the remaining input-boundary defects are advisory.
+VERDICT: PASS

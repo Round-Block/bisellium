@@ -1,0 +1,18 @@
+# opus: W-335
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15923-3645-7902-b04e-1b400c6f14ac
+# outcome: failed
+# at: 2026-10-20T11:51:40.895Z
+# tree: tree:8ec3f77bb4e8da9bbfe61c732edd64b7e0914dbc
+# brief: briefs/W-335.md blob:167e40ecd2d81ee952c8e7b9f791a4727362742b
+# ticket: {"opus":"W-335","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-335/studio","head":"6a7a202fe0d59824e85ce77a79740217c71639de","brief":"167e40ecd2d81ee952c8e7b9f791a4727362742b","at":"2026-10-20T11:51:40.038Z"}
+
+## Findings
+1. blocking — scripts/test-reads.mjs:34 [severity: S1] The preload is placed in `NODE_OPTIONS` as an unquoted filesystem path. In a valid checkout whose path contains a space, Node splits the path and fails before `npm test`, violating brief:51; encode the preload as a file URL and cover a spaced-checkout fixture. — check: scripts/ci-scope.test.mjs [class: tests×ruled-case-uncovered]
+
+## Verdict
+The wrapper fails on an ordinary checkout path within the brief’s stated domain.
+VERDICT: FAIL

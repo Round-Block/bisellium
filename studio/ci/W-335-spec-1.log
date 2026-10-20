@@ -1,0 +1,24 @@
+# opus: W-335
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T09:17:01.061Z
+# tree: tree:79b02141da440ae602988fd3d64b41951f76a6c7
+# brief: briefs/W-335.md blob:79bd2e23a2faea36dde609e14cd7df8537fa892a
+# ticket: {"opus":"W-335","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b3c524d232fc16c534a47cb6ec00855c654c9443","brief":"79bd2e23a2faea36dde609e14cd7df8537fa892a","at":"2026-10-20T09:16:57.748Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-335-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the check reaches the builder's gate, not only ci's exit: W-312's review admits a gate log with `exit code: 0`, so a guard run after the gate could not stop review; `ci --opus` hands the `tests` gate `node scripts/test-reads.mjs` through a new `RunVerifyOptions.commandOverride` (set only by ci.ts), and plain ci runs it in the `npm test` step's place, both only where package.json declares `test:record` — check: brief:15, brief:56, mutants.out
+2. advisory — the wrapper is ci.yml's two steps as one command (traced `npm test`, then `node scripts/ci-scope.mjs --check-reads <log>` unchanged), its log names the check and its verdict, and it fails closed on a missing preload, a failing npm test, an absent log and an inherited trace; the prototype found and fixed one real defect, the guard inheriting an outer NODE_OPTIONS — check: brief:19-21, reds.out, mutants.out
+3. advisory — one source without touching code-owned files: `W-335-b1` pins the wrapper's TEST, PRELOAD and CHECK exports to ci.yml's gates step and guard step; ci.yml, studio/bisellium.yml and the docs stay as they are, so the PR merges on the ordinary path (Defaults 2 and 3 put the manifest and docs follow-ups to the Patron) — check: brief:22, brief:116-118
+4. advisory — the prototype on master b3c524d2: each red fails by assertion on master and on the stage before its own and passes on its own; nine guard mutants killed; the neighbour files pass whole; lint, typecheck and format pass; the studio check's one block is the detached stage's, the same on the master stage; the preload costs nothing measurable on check.test.ts — check: reds.out, mutants.out, neighbours.out, gates-proto.out, reads-probe.out
+5. advisory — the Codex test check lists containment.test.ts's W-163-b6 (inventory D) as the one flip, named with its two pins, and no unnamed one; ci-scope.test.mjs stays in test:record and w279.test.ts reads no record path — check: fixture-census.md, reads-probe.out, brief:108
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-335.md`, prototype on master b3c524d2; no code-owned path touched.

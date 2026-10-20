@@ -51,12 +51,26 @@ export interface RunVerifyOptions {
   /** W-279: `ci --opus` asks which commands this run would execute. Does every read and refusal, then returns
    *  `commands` and runs, writes and prints nothing. Not a flag: only `ci.ts` sets it. */
   plan?: boolean;
+  /** W-335: gate id to the command run in place of the manifest's, for a gate this run does not skip as waived. Not a
+   *  flag: only `ci.ts` sets it, to run `npm test` as scripts/test-reads.mjs. */
+  commandOverride?: Readonly<Record<string, string>>;
 }
 
 export interface RunVerifyResult {
   exitCode: number;
   /** Set only on a `plan` return: gate id to the command this run would execute (waived gates are left out). */
   commands?: Readonly<Record<string, string>>;
+}
+
+/** W-335: why `override` is not a valid RunVerifyOptions.commandOverride for `planned` (the commands this run would
+ *  execute, waived gates left out), or undefined when it is: every key must be a planned gate and every value a
+ *  non-empty command. Run before the plan returns and before any gate, so a malformed map runs nothing. */
+function validateCommandOverride(override: Readonly<Record<string, string>> | undefined, planned: Readonly<Record<string, string>>): string | undefined {
+  for (const [gate, command] of Object.entries(override ?? {})) {
+    if (!Object.hasOwn(planned, gate)) return `${gate} is not a planned gate`;
+    if (typeof command !== "string" || command.trim() === "") return `${gate} has no command`;
+  }
+  return undefined;
 }
 
 const USAGE =
@@ -298,9 +312,14 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   for (const [gateId, command] of Object.entries(commands)) {
     const currentStatus = doc.getIn(["probationes", gateId, "status"]);
     if (currentStatus === "waived") waivedIds.push(gateId);
-    else runCommands[gateId] = command;
+    else runCommands[gateId] = opts.commandOverride?.[gateId] ?? command;
   }
 
+  const badOverride = validateCommandOverride(opts.commandOverride, runCommands);
+  if (badOverride !== undefined) {
+    console.error(`verify: commandOverride: ${badOverride}`);
+    return { exitCode: 2 };
+  }
   if (opts.plan) return { exitCode: 0, commands: runCommands };
 
   // The own-tree rule: only a run that certifies THIS checkout's HEAD, not a `ci --ref` scratch tree, and aimed at
