@@ -51,8 +51,8 @@ export function checkBriefStale(root: string, opts: RuleOpts): Finding[] {
     if (!isDict(d) || !OPEN.has(String(d["state"])) || typeof d["title"] !== "string") continue;
     const sig = logs
       .filter((name) => name.startsWith(`${id}-spec-`) && /^[1-9][0-9]*\.log$/.test(name.slice(id.length + 6)))
-      .map((name) => ({ name, n: Number(name.slice(id.length + 6, -4)) }))
-      .sort((a, b) => b.n - a.n)
+      .map((name) => ({ name, n: BigInt(name.slice(id.length + 6, -4)) }))
+      .sort((a, b) => (a.n < b.n ? 1 : a.n > b.n ? -1 : 0))
       .map((l) => ({ ...l, h: parseLogHeader(read(root, `ci/${l.name}`, "ci") ?? "") }))
       .find((l) => l.h.get("phase") === "spec" && l.h.get("opus") === id && l.h.get("sella") === architect && (l.h.get("outcome") ?? "").startsWith("passed"));
     const signedAt = instant(sig?.h.get("at"));

@@ -46,7 +46,7 @@ function officina(w: World = {}): string {
   log(root, 1, "architect", "passed", SIGNED);
   return root;
 }
-function log(root: string, n: number, sella: string, outcome: string, at: string): void {
+function log(root: string, n: number | bigint, sella: string, outcome: string, at: string): void {
   mkdirSync(join(root, "ci"), { recursive: true });
   writeFileSync(join(root, "ci", `${ID}-spec-${n}.log`), `# opus: ${ID}\n# phase: spec\n# round: ${n}\n# sella: ${sella}\n# outcome: ${outcome}\n# at: ${at}\n# brief: briefs/${ID}.md blob:0\n\n## Findings\nNo findings\n`);
 }
@@ -73,6 +73,10 @@ test("W-317-b1 behaviour 1: an open opus retitled after its newest architect sig
   rmSync(join(unsigned, "ci"), { recursive: true });
   assert.deepEqual(found(unsigned), [], "no spec log: no signature, no finding");
   assert.deepEqual(found(officina({ design: false })), [], "no design collegium: no architect, no finding");
+  const huge = officina();
+  log(huge, 9007199254740992n, "architect", "passed", SIGNED);
+  log(huge, 9007199254740993n, "architect", "passed", NEWER);
+  assert.deepEqual(found(huge), [], "rounds above the safe-integer range order exactly: the highest n is the newest signature");
 });
 
 test("W-317-b2 behaviour 2: a brief that names the current title, or a title back as signed, is no finding", () => {
