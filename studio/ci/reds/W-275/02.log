@@ -1,0 +1,50 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-275-b2\s --import tsx packages/cli/src/next-ladder.test.ts
+# exit: 1
+# at: 2026-10-20T23:27:32.106Z
+# sella: builder.W-275
+# tree: tree:a3063fe2e563e9f87a05155bc89c9829e75f93b1
+# ticket: {"opus":"W-275","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-275/studio","head":"27745252803f1ffd2a29637f522453a13a3bf0ea","brief":"f442cc60737c754ea1b8529d8a389baca0c40506","at":"2026-10-20T23:27:25.244Z"}
+
+TAP version 13
+# Subtest: W-275-b2 behaviour 2: a dispatch the gate holds prints the derivation's own why beside the gate's
+not ok 1 - W-275-b2 behaviour 2: a dispatch the gate holds prints the derivation's own why beside the gate's
+  ---
+  duration_ms: 904.352126
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/next-ladder.test.ts:6:1490'
+  failureType: 'testCodeFailure'
+  error: |-
+    a resume with no traditio: the derivation's why is printed beside it
+    --- exit 1
+    --- stdout
+    next: W-900 reds held
+    actor: builder
+    why: stale handover: run bisellium handoff first (the record carries no traditio)
+    head: opus/W-900 1f5f13cbaa0f
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    held (/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/next-ladder.test.ts:956:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-275/packages/cli/src/next-ladder.test.ts:959:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1030.44805
