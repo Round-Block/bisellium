@@ -105,7 +105,20 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   assert.throws(() => readWoff2Identity(new Uint8Array()), /not a WOFF2 font/, "an arbitrary file is not accepted as a font");
 
   const { parse } = await import("yaml");
-  const ci = parse(workflow) as { jobs: { "web-e2e": { "runs-on": string; steps: { run?: string; uses?: string; if?: string; env?: Record<string, string> }[] } } };
+  const ci = parse(workflow) as {
+    jobs: {
+      "web-e2e": {
+        "runs-on": string;
+        steps: {
+          run?: string;
+          uses?: string;
+          if?: string;
+          env?: Record<string, string>;
+          with?: Record<string, string>;
+        }[];
+      };
+    };
+  };
   const webE2e = ci.jobs["web-e2e"];
   const fullPath = "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'";
   const refreshEnv = { BISELLIUM_UPDATE_SCREENSHOTS: "${{ inputs.refresh_screenshots && '1' || '0' }}" };
@@ -118,8 +131,20 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
     { if: fullPath, env: refreshEnv },
     "the rendering identity runs on every full path and derives writes only from the dispatch input",
   );
-  const upload = webE2e.steps.find((step) => step.uses === "actions/upload-artifact@v4");
-  assert.equal(upload?.if, "github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots", "baseline upload is dispatch-refresh only");
+  const upload = webE2e.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.deepEqual(
+    upload,
+    {
+      if: "github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots",
+      uses: "actions/upload-artifact@v4",
+      with: {
+        name: "web-screenshot-baselines-${{ github.sha }}",
+        "if-no-files-found": "error",
+        path: "apps/web/tests-serve/screenshots.spec.ts-snapshots/",
+      },
+    },
+    "baseline upload pins the exact action, dispatch-refresh condition and artifact with map",
+  );
 
   const { readRenderingEnvironmentMode } = await import("../tests-serve/rendering-environment.js");
   assert.equal(readRenderingEnvironmentMode("0", "true"), "compare", "the full-path identity step compares when refresh is off");
