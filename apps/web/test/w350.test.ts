@@ -18,6 +18,8 @@ const read = (rel: string): string => {
   }
 };
 
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 function fixtureWoff2(family: string, weight: number): Uint8Array {
   const familyBytes = Buffer.from([...family].flatMap((char) => [0, char.charCodeAt(0)]));
   const name = Buffer.alloc(18 + familyBytes.length);
@@ -71,7 +73,7 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
     "InstrumentSans-Regular.woff2",
     "InstrumentSans-Medium.woff2",
     "IBMPlexMono-Regular.woff2",
-  ]) assert.match(fonts, new RegExp(name.replace(/\./g, "\\.")), `${name} is an authenticated input`);
+  ]) assert.match(fonts, new RegExp(escapeRegExp(name)), `${name} is an authenticated input`);
   assert.match(fonts, /readWoff2Identity/, "font identity comes from the WOFF2's own tables");
   assert.match(fonts, /OFL\.txt/, "each family carries its SIL OFL licence");
   assert.doesNotMatch(html, /fonts\.(?:googleapis|gstatic)\.com/, "index.html makes no external font request");
@@ -119,21 +121,43 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   assert.throws(() => readWoff2Identity(new Uint8Array()), /not a WOFF2 font/, "an arbitrary file is not accepted as a font");
 
   const { parse } = await import("yaml");
+  type WorkflowStep = {
+    run?: string;
+    uses?: string;
+    if?: string;
+    env?: Record<string, string>;
+    with?: Record<string, string>;
+  };
+  type WorkflowJob = {
+    if?: string;
+    needs?: string;
+    "runs-on": string;
+    steps: WorkflowStep[];
+  };
   const ci = parse(workflow) as {
-    jobs: {
-      "web-e2e": {
-        "runs-on": string;
-        steps: {
-          run?: string;
-          uses?: string;
-          if?: string;
-          env?: Record<string, string>;
-          with?: Record<string, string>;
-        }[];
-      };
-    };
+    jobs: Record<string, WorkflowJob> & { "web-e2e": WorkflowJob };
   };
   const webE2e = ci.jobs["web-e2e"];
+  const dispatchMaster = "github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'";
+  const dispatchGuard = ci.jobs["dispatch-guard"];
+  assert.deepEqual(
+    dispatchGuard?.steps,
+    [
+      {
+        name: "Reject a non-master screenshot dispatch",
+        if: "github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master'",
+        run: 'echo "workflow_dispatch must target refs/heads/master" >&2\nexit 1\n',
+      },
+    ],
+    "a non-master dispatch fails before any checkout or cache-affecting step",
+  );
+  for (const jobName of ["gates", "officina", "web-e2e"]) {
+    const job = ci.jobs[jobName];
+    assert.equal(job?.needs, "dispatch-guard", `${jobName} waits for the dispatch ref guard`);
+    assert.equal(job?.if, dispatchMaster, `${jobName} cannot save a cache on a non-master dispatch`);
+    for (const checkout of job?.steps.filter((step) => step.uses?.startsWith("actions/checkout@")) ?? [])
+      assert.equal(checkout.with?.ref, "${{ github.sha }}", `${jobName} checks out the event's immutable commit`);
+  }
   const fullPath = "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'";
   const refreshEnv = { BISELLIUM_UPDATE_SCREENSHOTS: "${{ inputs.refresh_screenshots && '1' || '0' }}" };
   assert.equal(webE2e["runs-on"], "ubuntu-24.04", "the screenshot job pins its OS family");

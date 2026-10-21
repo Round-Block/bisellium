@@ -25,7 +25,7 @@
  * for the entries they carry, and officina's one step is exactly the studio
  * entry.
  *
- * W-168: a fourth job, `certify`, runs only on a merge group (see
+ * W-168: the `certify` job runs only on a merge group (see
  * scripts/ci-certify.test.mjs). It carries no CI_STEPS entry, so the step
  * comparisons below read only `gates` and `officina`.
  */
@@ -134,8 +134,8 @@ const studioStep = ciSteps.find((s) => s.includes("check -- studio") && !s.inclu
 check("CI_STEPS has a 'check -- studio' entry", studioStep !== undefined, JSON.stringify(ciSteps));
 
 check(
-  "workflow has exactly four jobs: gates, officina, web-e2e, certify",
-  Object.keys(doc?.jobs ?? {}).join(",") === "gates,officina,web-e2e,certify",
+  "workflow has the dispatch guard and four required jobs",
+  Object.keys(doc?.jobs ?? {}).join(",") === "dispatch-guard,gates,officina,web-e2e,certify",
 );
 
 // W-131: gates also carries steps that are not CI_STEPS entries. Each is named
