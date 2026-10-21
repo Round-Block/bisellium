@@ -718,6 +718,12 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
 
   const record = readFront<NativeRecord>(opusPath).data;
   const isUi = record.kind === "ui";
+  // W-348: the atomic UI pair is an input boundary for every verdict path, including the ui-lead input and build/handoff.
+  const uiPair = isUi ? readUiSpecPairing(manifest) : { pairing: undefined };
+  if ("error" in uiPair) {
+    console.error(`${opusId}: ${uiPair.error}`);
+    return { exitCode: 2 };
+  }
   const dispatchPrompt = values.get("--dispatch-prompt");
   const uiInput = values.get("--ui-input");
   // W-338: on a kind: ui opus only the ui-lead's spec verdict is the UI input; every other seat's (the architect's
@@ -861,11 +867,6 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     const design = readDesignMagister(manifest);
     if ("error" in design) {
       console.error(`${opusId}: ${design.error}`);
-      return { exitCode: 2 };
-    }
-    const uiPair = isUi ? readUiSpecPairing(manifest) : { pairing: undefined };
-    if ("error" in uiPair) {
-      console.error(`${opusId}: ${uiPair.error}`);
       return { exitCode: 2 };
     }
     const signer = uiPair.pairing?.signer ?? design.magister;
