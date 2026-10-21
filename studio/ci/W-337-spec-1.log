@@ -1,0 +1,25 @@
+# opus: W-337
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T05:54:20.126Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-337.md blob:67eb0f5ef78b54bb524e51daf40af3e3c014f2a3
+# ticket: {"opus":"W-337","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"67eb0f5ef78b54bb524e51daf40af3e3c014f2a3","at":"2026-10-21T05:54:19.687Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-337-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the design puts one exit-code-only `git merge-tree --write-tree` guard at the last safe point, after current gates and before review dispatch; master conflict takes precedence over other lanes, so no tree is reviewed before a known rebase — check: brief:15, brief:17, brief:19, brief:34, brief:40, brief:42
+2. advisory — the later-lane set is bounded and deterministic: local `opus/*` refs, open main-checkout records, pushed or current-reviewed tips, numeric id order, first conflict; earlier unpushed and closed branches are stated limits — check: brief:36, brief:38, brief:44, brief:53, brief:55, brief:56
+3. advisory — every merge classification is status 0 or 1 and every other status holds; the required host floor is explicitly git 2.38, and merge-tree text is outside the decision — check: brief:34, brief:46, brief:48, brief:66, brief:96
+4. advisory — both new rows use real temporary repositories and `writeGates(w)` is the exact fixture helper that records the automated gate passed at the current source tree; the host's two genuine reds reached review before failing their conflict assertions — check: brief:74, brief:78, host-row-b1-red.out, host-row-b2-red.out, packages/cli/src/next-world.test.ts:1199
+5. advisory — the first host greens exposed fixture assumptions rather than source defects: Git classified the deleted ref with status 1, and report mode derived twice; the rebuilt rows inject status 2 explicitly and pin both ordered traces — check: host-row-b1-green.out, host-row-b1-final.out, host-row-b2-green.out, prototype-test.diff
+6. advisory — the rebuilt mailbox has the required test/feature order and co-author trailers, replays onto master 47bd357e, and focused lint, CLI typecheck and formatting pass; scratch git metadata remains read-only and corrected green selectors remain a host rerun requirement — check: prototype.mbox, prototype-src-s1.diff, prototype-src.diff, gates-proto.out, brief:3, brief:84
+
+## Verdict
+
+passed — signed by Codex (`gpt-5.6-sol`, D-094), brief revision 1 at `studio/briefs/W-337.md`, corrected prototype on master 47bd357e; two behaviors, 2 points, no Patron-owned path touched, corrected green selectors awaiting the producer's host rerun.

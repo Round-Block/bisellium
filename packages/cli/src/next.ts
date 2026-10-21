@@ -545,6 +545,108 @@ function certificate(repo: string, studioRel: string, studioAbs: string, exclude
 }
 const refExists = (repo: string, ref: string): boolean => git(repo, ["show-ref", "--verify", "-q", ref]).status === 0;
 
+/** D-088: `merge-tree --write-tree` has exactly two decision exits: 0 clean, 1 conflict. */
+function mergeTreeConflict(repo: string, left: string, right: string): { conflict: boolean } | { error: string } {
+  const r = git(repo, ["merge-tree", "--write-tree", left, right]);
+  if (r.error !== undefined || (r.status !== 0 && r.status !== 1)) return { error: `git merge-tree --write-tree could not compare ${left} with ${right} (exit ${r.status ?? "unknown"})` };
+  return { conflict: r.status === 1 };
+}
+
+const CONFLICT_OPEN_STATES = new Set(["greenlit", "building", "verifying", "review"]);
+
+/** One lane record, distinguishing valid absence from an unreadable or unclassifiable file. */
+function laneRecord(root: string, id: string, absent: "allowed" | "error"): { record: Dict | undefined } | { error: string } {
+  const rel = recordRel(id);
+  const file = readContainedRegularFile(root, rel, "opera");
+  if ("error" in file) {
+    if (absent === "allowed" && file.code === "ENOENT") return { record: undefined };
+    return { error: `${rel}: ${file.error}` };
+  }
+  let value: unknown;
+  try {
+    value = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
+  } catch (e) {
+    return { error: `${rel}: ${(e as Error).message.split("\n")[0]}` };
+  }
+  if (!isDict(value)) return { error: `${rel}: front matter must be a mapping` };
+  const state = value["state"];
+  if (typeof state !== "string" || !STATES.some((s) => s.id === state)) return { error: `${rel}: state must be one of ${STATES.map((s) => s.id).join(", ")}` };
+  return { record: value };
+}
+
+/** A ref read with exactly the documented present/absent answers; every other result is an error. */
+function refPresence(repo: string, ref: string): { present: boolean } | { error: string } {
+  const r = git(repo, ["show-ref", "--verify", "-q", ref]);
+  if (r.error !== undefined || (r.status !== 0 && r.status !== 1)) return { error: `git could not classify ${ref} (exit ${r.status ?? "unknown"})` };
+  return { present: r.status === 0 };
+}
+
+/** A local opus branch whose ref source tree already has a passed build-review gate, or why qualification is unreadable. */
+function reviewedAtTip(f: Facts): { reviewed: boolean } | { error: string } {
+  if (!f.wt.usable || f.branch === undefined) return { reviewed: false };
+  const record = laneRecord(f.wt.studio, f.id, "error");
+  if ("error" in record) return record;
+  // Input-domain row 6: read the lane's own manifest once, then reject every malformed setting before classifying it.
+  const worktree = readWorktreeManifest(f.wt.studio);
+  if ("error" in worktree) return worktree;
+  const drift = buildReviewDrift(f.manifest, worktree.manifest);
+  if (drift !== undefined) return { error: drift };
+  const config = readBuildReviewConfig(worktree.manifest);
+  if ("error" in config) return config;
+  const tickets = readStepTickets(worktree.manifest);
+  if ("error" in tickets) return { error: `bisellium.yml#step_tickets is malformed (${tickets.error})` };
+  const rounds = readBuildRounds(f.wt.studio, f.id, config.config);
+  const read = "error" in rounds ? rounds : { config: config.config, rounds: rounds.rounds };
+  const cur = f.curTree();
+  if ("error" in read) return read;
+  if (cur === undefined) return { error: `refs/heads/opus/${f.id}: source tree cannot be read` };
+  const gate = reviewGate(f, record.record!, read, tickets.required);
+  if (gate === undefined || "unrecorded" in gate) return { reviewed: false };
+  if ("error" in gate) return gate;
+  if (gate.status !== "passed" || gate.tree !== cur) return { reviewed: false };
+  const specRel = str(record.record!["spec"]);
+  if (specRel === undefined) return { error: `${recordRel(f.id)}#spec must name the current brief` };
+  const brief = readContainedRegularFile(f.wt.studio, specRel, "briefs");
+  if ("error" in brief) return { error: `${specRel}: ${brief.error}` };
+  const pin = `${one(specRel)} blob:${blobOf(brief.bytes.toString("utf8"))}`;
+  return { reviewed: gate.brief === pin };
+}
+
+/**
+ * Other open opus branches further along than an about-to-start review: a pushed branch (the PR/queue path only
+ * receives the reviewed head) or a local usable worktree whose passed review still certifies its tip.
+ */
+function furtherAlongBranches(f: Facts): { refs: string[] } | { error: string } {
+  const listed = git(f.repo, ["for-each-ref", "--format=%(refname)", "refs/heads/opus/"]);
+  if (listed.error !== undefined || listed.status !== 0) return { error: `git could not list the other opus branches (exit ${listed.status ?? "unknown"})` };
+  const refs = listed.stdout.split("\n").filter(Boolean).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  const out: string[] = [];
+  for (const ref of refs) {
+    const id = ref.startsWith("refs/heads/opus/") ? ref.slice("refs/heads/opus/".length) : "";
+    if (!ID_RE.test(id)) return { error: `git listed an opus branch whose id is outside the opus grammar` };
+    if (id === f.id) continue;
+    const main = laneRecord(f.studioAbs, id, "allowed");
+    if ("error" in main) return { error: main.error };
+    if (main.record === undefined || !CONFLICT_OPEN_STATES.has(main.record["state"] as string)) continue;
+    const pushed = refPresence(f.repo, `refs/remotes/origin/opus/${id}`);
+    if ("error" in pushed) return pushed;
+    if (pushed.present) {
+      out.push(ref);
+      continue;
+    }
+    let other: Facts;
+    try {
+      other = gather(f.repo, f.studioAbs, id);
+    } catch (e) {
+      return { error: `opus/${id}: local review qualification failed (${(e as Error).message.split("\n")[0]})` };
+    }
+    const reviewed = reviewedAtTip(other);
+    if ("error" in reviewed) return { error: `opus/${id}: ${reviewed.error}` };
+    if (reviewed.reviewed) out.push(ref);
+  }
+  return { refs: out };
+}
+
 /** W-330: a first-parent commit on master after the opus's merge commit whose own diff is not records-only, with its source paths. */
 type SourceCommit = { sha: string; source: string[] };
 /**
@@ -992,6 +1094,26 @@ export function deriveNext(f: Facts): Derived {
     // 7 review
     const uiBranch = f.uiReviewProblems();
     if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
+      const branchRef = `refs/heads/opus/${id}`;
+      const trunkConflict = mergeTreeConflict(f.repo, "refs/remotes/origin/master", branchRef);
+      if ("error" in trunkConflict) return hold("review", `${trunkConflict.error}; no review is ordered`);
+      if (trunkConflict.conflict)
+        return named(
+          "build",
+          "producer",
+          `opus/${id} conflicts with origin/master; rebase before review so the reviewed tree is never rebased afterwards`,
+          `from .worktrees/${id}: git rebase origin/master`,
+        );
+      const later = furtherAlongBranches(f);
+      if ("error" in later) return hold("review", `${later.error}; no review is ordered`);
+      for (const ref of later.refs) {
+        const laneConflict = mergeTreeConflict(f.repo, ref, branchRef);
+        if ("error" in laneConflict) return hold("review", `${laneConflict.error}; no review is ordered`);
+        if (laneConflict.conflict) {
+          const other = ref.slice("refs/heads/opus/".length);
+          return hold("review", `opus/${id} conflicts with opus/${other}, which is further along; wait for ${other} to land before review`);
+        }
+      }
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");

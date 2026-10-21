@@ -1,0 +1,23 @@
+# opus: W-337
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15d06-829a-7861-8fde-af1217154bb2
+# outcome: passed
+# at: 2026-10-21T06:54:48.126Z
+# tree: tree:dce3185667f62d28ebe0782a91b55b1bfbe4cac4
+# brief: briefs/W-337.md blob:49d50ddbdc1cc0e9c482f1f3e86bc54fa2e236cd
+# ticket: {"opus":"W-337","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"47f4105c30b1e7d9e1d2d6ec12d54a5bf35bde96","brief":"49d50ddbdc1cc0e9c482f1f3e86bc54fa2e236cd","at":"2026-10-21T06:54:47.621Z"}
+
+## Findings
+1. advisory — studio/briefs/W-337.md:71 The bundled fixture inputs name only `execFileSync` as rejector, although it does not reject `advanceOrigin` Git failures, `snap` filesystem failures, or mismatched `next` and shim-log results. Replace the Rejected-by cell with: `git and execFileSync throw on failed setup or REAL_GIT resolution; snap and filesystem reads throw; expectStep and assert.* reject every next result or gitCalls trace mismatch`. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.reused-call-coverage
+2. advisory — studio/briefs/W-337.md:87 The touched Acceptance text still says the `host-r2-*` files are unusable EPERM attempts awaiting overwrite, but the supplied files now contain the exact assertion reds and passing greens. Replace the final sentence with: `The host-r2 outputs record both assertion reds, both staged greens and the final b1 green.` [severity: S2] [class: spec×prose-contradiction-under-revision] — check: none: verify Acceptance’s evidence status against host-r2-row-b{1,2}-{master,red,green}.out
+
+## Earlier findings
+- ci/W-337-spec-2.log #1: closed — brief:68 and prototype-src.diff:19-35 now distinguish absent and valid lifecycle states from malformed records; prototype-test.diff:106-109 pins valid and `buidling` states, and host-r2-row-b2-green.out passes.
+- ci/W-337-spec-2.log #2: closed — brief:69 and prototype-src.diff:46-65 propagate malformed local-review inputs as errors; prototype-test.diff:112-139 pins valid-unreviewed, current-reviewed and truncated-evidence cases, and host-r2-row-b2-green.out passes.
+
+## Verdict
+Both earlier blockers are closed; the remaining touched defects are advisory boundary and evidence wording.
+VERDICT: PASS
