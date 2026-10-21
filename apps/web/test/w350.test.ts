@@ -101,6 +101,18 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
     FONT_ASSETS.map(({ family, style, weight, path }) => ({ family, style, weight, src: `./assets/fonts/${path}` })),
     "exactly five local CSS faces bind each authenticated family, style and weight to its FONT_ASSETS path",
   );
+  const root = /:root\s*\{([\s\S]*?)\}/.exec(tokens)?.[1] ?? "";
+  const fontRoles = [...root.matchAll(/(--font-(?:display|body|mono)):\s*([^;]+);/g)].map((match) => [match[1], match[2]?.trim()]);
+  assert.equal(fontRoles.length, 3, "exactly three production font role variables are declared");
+  assert.deepEqual(
+    Object.fromEntries(fontRoles),
+    {
+      "--font-display": '"Bricolage Grotesque", sans-serif',
+      "--font-body": '"Instrument Sans", sans-serif',
+      "--font-mono": '"IBM Plex Mono", monospace',
+    },
+    "display, body and mono roles bind the exact production families and fallbacks",
+  );
   assert.deepEqual(readWoff2Identity(fixtureWoff2("Bricolage Grotesque", 600)), { family: "Bricolage Grotesque", weight: 600 }, "family and weight come from the font's own tables");
   assert.throws(() => readWoff2Identity(new Uint8Array()), /not a WOFF2 font/, "an arbitrary file is not accepted as a font");
 
