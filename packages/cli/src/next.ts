@@ -1366,7 +1366,7 @@ function readMarker(repo: string, id: string): MarkerRead | undefined {
   return typeof m === "string" ? { path, ident, invalid: m } : { path, ident, marker: m };
 }
 
-/** `/proc/<pid>/stat`: absent (ENOENT) is a proven absence; a failed or unparseable read is `unknown`, never dead. */
+/** `/proc/<pid>/stat`: ENOENT proves absence from this pid namespace; `assess` decides whether that proves death. */
 function readProc(root: string, pid: number | "self"): ProcRead {
   let text: string;
   try {
@@ -1414,7 +1414,7 @@ type Health =
   | { kind: "invalid"; reason: string }
   | { kind: "finished"; step: Step }
   | { kind: "stale" }
-  | { kind: "running"; m: Marker; ageS: number; last?: string }
+  | { kind: "running"; m: Marker; ageS: number; pidVisible?: boolean; last?: string }
   | { kind: "dead"; m?: Marker; reason: string; ageS?: number; last?: string; stalled?: boolean }
   | { kind: "unknown"; reason: string }
   | { kind: "anomaly"; ageS: number };
@@ -1432,15 +1432,21 @@ function assess(read: MarkerRead | undefined, derived: Step, env: Env): Health {
   const dead = (reason: string, stalled = false): Health => ({ kind: "dead", m, reason, ...seen, ...(stalled ? { stalled } : {}) });
   const p = readProc(env.procRoot, m.pid);
   if (p.kind === "unknown") return { kind: "unknown", reason: p.reason };
-  if (p.kind === "absent") return dead(`pid ${m.pid} is gone`);
-  if (p.state === "Z") return dead(`pid ${m.pid} is a zombie`);
-  if (p.ticks !== m.start_ticks) return dead(`pid ${m.pid} was reused (start time ${p.ticks}, the marker recorded ${m.start_ticks})`);
+  // W-347: a perform runs inside the Bash call's pid namespace. A later call cannot see that live pid,
+  // so ENOENT alone proves a tracked pid dead, but a perform stays live while its output stays fresh.
+  if (p.kind === "absent" && m.writer === "track") return dead(`pid ${m.pid} is gone`);
+  if (p.kind === "ok" && p.state === "Z") return dead(`pid ${m.pid} is a zombie`);
+  if (p.kind === "ok" && p.ticks !== m.start_ticks) return dead(`pid ${m.pid} was reused (start time ${p.ticks}, the marker recorded ${m.start_ticks})`);
   if ("error" in out) return dead(`output ${m.output} is missing or unreadable (${out.error})`);
   const age = Math.floor((env.nowMs - out.mtimeMs) / 1000);
   if (age < -5) return { kind: "anomaly", ageS: age };
   const clamped = Math.max(0, age);
-  if (clamped > m.budget_seconds) return dead(`stalled: no output for ${clamped}s (budget ${m.budget_seconds}s); pid ${m.pid} is still alive and was not killed`, true);
-  return { kind: "running", m, ageS: clamped, ...(out.last === undefined ? {} : { last: out.last }) };
+  if (clamped > m.budget_seconds)
+    return dead(
+      `stalled: no output for ${clamped}s (budget ${m.budget_seconds}s); pid ${m.pid} ${p.kind === "absent" ? "is outside this namespace" : "is still alive and was not killed"}`,
+      true,
+    );
+  return { kind: "running", m, ageS: clamped, ...(p.kind === "absent" ? { pidVisible: false } : {}), ...(out.last === undefined ? {} : { last: out.last }) };
 }
 
 /** W-316: seconds a dispatch order with no marker may go with no file of its opus changing before its health reads stalled. */
@@ -2462,7 +2468,11 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       const lines = (status: string): string[] => render(id, d1, f, status);
       switch (h.kind) {
         case "running":
-          return sayT(0, [`next: ${id} ${d1.step} running`, `health: running (pid ${h.m.pid}, writer ${h.m.writer}, last output ${h.ageS}s ago)`, ...(h.last === undefined ? [] : [`last-output: ${JSON.stringify(h.last)}`])]);
+          return sayT(0, [
+            `next: ${id} ${d1.step} running`,
+            `health: running (${h.pidVisible === false ? `writer ${h.m.writer}, pid ${h.m.pid} is outside this namespace` : `pid ${h.m.pid}, writer ${h.m.writer}`}, last output ${h.ageS}s ago)`,
+            ...(h.last === undefined ? [] : [`last-output: ${JSON.stringify(h.last)}`]),
+          ]);
         case "dead":
           return sayT(1, [`next: ${id} ${d1.step} dead`, `health: dead (${h.reason})`, ...(h.m === undefined ? [] : [`pid: ${h.m.pid}`]), ...(h.ageS === undefined ? [] : [`age: ${h.ageS}s`]), ...(h.last === undefined ? [] : [`last-output: ${JSON.stringify(h.last)}`]), `resume: ${resume(d1)}`]);
         case "invalid":
