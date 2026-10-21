@@ -1104,3 +1104,106 @@ test("W-337-b1 behaviour 1: a conflict with origin/master orders a rebase before
   assert.match(unreadable.kv.get("why") ?? "", /git merge-tree --write-tree could not compare refs\/remotes\/origin\/master .* no review is ordered$/, ran("the failed comparison is not called clean or conflicting", unreadable));
   assert.equal(unreadable.kv.has("role"), false, ran("a failed comparison orders no reviewer", unreadable));
 });
+
+test("W-337-b2 behaviour 2: a conflict with every later open opus is checked and orders a wait", { timeout: 1_800_000 }, () => {
+  const ready = (tag: string, records: [string, string][]): World => {
+    const w = world(tag, "build", { automated: true });
+    put(w.wt, "source.txt", "the current opus\n");
+    commit(w.wt, "feat: change the current opus source");
+    writeGates(w);
+    handoffAt(w, "wt", T.handoffFresh);
+    for (const [id, state] of records) put(w.studio, `opera/${id}.md`, recordText({ id, title: `${id} lane fixture`, state, builder_runtime: "isolated", probationes: {} }));
+    commit(w.repo, "studio: add the other open opera");
+    git(w.repo, ["push", "-q", "origin", "master"]);
+    return w;
+  };
+  const lane = (w: World, id: string, file: string, text: string, pushed: boolean, reviewed = false): string => {
+    const branch = `opus/${id}`;
+    const dir = join(w.repo, ".worktrees", id);
+    git(w.repo, ["branch", branch, "origin/master"]);
+    git(w.repo, ["worktree", "add", "-q", dir, branch]);
+    put(dir, file, text);
+    commit(dir, `feat(${id}): lane source`);
+    if (reviewed) {
+      const briefRel = `briefs/${id}.md`;
+      put(dir, `studio/${briefRel}`, `# ${id} fixture brief\n`);
+      const tree = sourceTree(dir);
+      const brief = `${briefRel} blob:${git(dir, ["hash-object", `studio/${briefRel}`])}`;
+      const evidence = `ci/${id}-review-1.log`;
+      put(
+        dir,
+        `studio/${evidence}`,
+        [`# opus: ${id}`, "# phase: build", "# round: 1", "# sella: qa-lead", "# outcome: passed", `# at: ${T.review1}`, `# tree: ${tree}`, `# brief: ${brief}`, "", "## Findings", "No findings", "", "## Verdict", "Fixture pass.", ""].join("\n"),
+      );
+      put(dir, `studio/opera/${id}.md`, recordText({ id, title: `${id} lane fixture`, state: "building", builder_runtime: "isolated", spec: briefRel, probationes: { review: { status: "passed", sella: "qa-lead", evidence } } }));
+      commit(dir, `studio(${id}): reviewed at the branch tip`);
+    }
+    if (pushed) git(dir, ["push", "-q", "-u", "origin", branch]);
+    return dir;
+  };
+
+  const base = ready("w337-b2-lanes", [["W-899", "done"], ["W-901", "building"], ["W-902", "building"], ["W-903", "building"]]);
+  lane(base, "W-899", "source.txt", "a closed conflicting lane\n", true);
+  lane(base, "W-901", "source.txt", "an unpushed conflicting lane\n", false);
+  lane(base, "W-902", "other.txt", "a clean pushed lane\n", true);
+  lane(base, "W-903", "source.txt", "the pushed conflicting lane\n", true);
+  const baseBefore = snap(base);
+  const baseOut = next(base, [OPUS, "--budget", "100000"]);
+  const baseUnchanged = snap(base) === baseBefore;
+
+  const states = ready("w337-b2-states", [["W-899", "done"], ["W-901", "building"]]);
+  lane(states, "W-899", "source.txt", "a closed conflicting lane\n", true);
+  lane(states, "W-901", "source.txt", "an open conflicting lane\n", true);
+  const validState = next(states, [OPUS, "--budget", "100000"]);
+  const statePath = join(states.studio, "opera/W-901.md");
+  writeFileSync(statePath, readFileSync(statePath, "utf8").replace('state: "building"', 'state: "buidling"'));
+  commit(states.repo, "studio: malformed lane state");
+  const malformedState = next(states, [OPUS, "--budget", "100000"]);
+
+  const reviews = ready("w337-b2-reviews", [["W-896", "building"], ["W-897", "building"]]);
+  lane(reviews, "W-896", "source.txt", "a valid unreviewed conflict\n", false);
+  const reviewedDir = lane(reviews, "W-897", "source.txt", "a reviewed conflict at the ref\n", false, true);
+  writeFileSync(join(reviewedDir, "source.txt"), "the current opus\n");
+  const reviewedBefore = snap(reviews);
+  const localReviewed = next(reviews, [OPUS, "--budget", "100000"]);
+  const reviewedUnchanged = snap(reviews) === reviewedBefore;
+  writeFileSync(join(reviewedDir, "studio/ci/W-897-review-1.log"), "# opus: W-897\n");
+  const evidenceBefore = snap(reviews);
+  const malformedEvidence = next(reviews, [OPUS, "--budget", "100000"]);
+  const evidenceUnchanged = snap(reviews) === evidenceBefore;
+
+  const summary = (o: Out): string => `${o.first} · ${o.kv.get("why") ?? ""}`;
+  const evidenceSummary = /opus\/W-897: ci\/W-897-review-1\.log: .*; no review is ordered$/.test(malformedEvidence.kv.get("why") ?? "")
+    ? `next: ${OPUS} review held · malformed W-897 review evidence holds`
+    : summary(malformedEvidence);
+  assert.deepEqual(
+    [summary(baseOut), summary(validState), summary(malformedState), summary(localReviewed), evidenceSummary],
+    [
+      `next: ${OPUS} review held · opus/${OPUS} conflicts with opus/W-903, which is further along; wait for W-903 to land before review`,
+      `next: ${OPUS} review held · opus/${OPUS} conflicts with opus/W-901, which is further along; wait for W-901 to land before review`,
+      `next: ${OPUS} review held · opera/W-901.md: state must be one of backlog, greenlit, building, verifying, review, done, halted; no review is ordered`,
+      `next: ${OPUS} review held · opus/${OPUS} conflicts with opus/W-897, which is further along; wait for W-897 to land before review`,
+      `next: ${OPUS} review held · malformed W-897 review evidence holds`,
+    ],
+    "pushed, current-reviewed and malformed lanes are distinguished after every scenario has run",
+  );
+  assert.match(malformedEvidence.kv.get("why") ?? "", /opus\/W-897: ci\/W-897-review-1\.log: .*; no review is ordered$/, ran("malformed local-review evidence holds instead of omitting the lane", malformedEvidence));
+  for (const o of [baseOut, validState, malformedState, localReviewed, malformedEvidence]) {
+    assert.equal(o.kv.has("role"), false, ran("no reviewer is ordered while a lane waits or cannot be classified", o));
+    assert.equal(o.status, 1, ran("a lane wait or classification error is held", o));
+  }
+  assert.equal(baseUnchanged && reviewedUnchanged && evidenceUnchanged, true, "the checks move no ref, index or worktree file");
+  const compared = gitCalls(base).filter((a) => a[0] === "merge-tree" && a[1] === "--write-tree").map((a) => a.slice(2));
+  assert.deepEqual(
+    compared,
+    [
+      ["refs/remotes/origin/master", `refs/heads/${BRANCH}`],
+      ["refs/heads/opus/W-902", `refs/heads/${BRANCH}`],
+      ["refs/heads/opus/W-903", `refs/heads/${BRANCH}`],
+      ["refs/remotes/origin/master", `refs/heads/${BRANCH}`],
+      ["refs/heads/opus/W-902", `refs/heads/${BRANCH}`],
+      ["refs/heads/opus/W-903", `refs/heads/${BRANCH}`],
+    ],
+    ran("each report derivation skips the earlier closed and unpushed lanes, then checks pushed lanes in order", baseOut),
+  );
+});
