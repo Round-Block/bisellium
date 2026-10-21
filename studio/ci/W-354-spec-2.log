@@ -1,0 +1,20 @@
+# opus: W-354
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15d15-de46-7650-b976-675c1649e262
+# outcome: passed
+# at: 2026-10-21T06:17:20.035Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-354.md blob:0b54775033d8893f0cf76fdc456502c395e159ba
+# ticket: {"opus":"W-354","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"0b54775033d8893f0cf76fdc456502c395e159ba","at":"2026-10-21T06:17:19.580Z"}
+
+## Findings
+1. advisory — brief:76 [severity: S2] The row falsely says a relative or empty `PLAYWRIGHT_BROWSERS_PATH` becomes absent; `browserCache` instead ignores it and may resolve the host-home fallback. Replace brief:76 with: `| 1. browsers, the cache input to producerCell | exactly undefined or an absolute directory realpath returned by browserCache; browserCache selects an absolute named directory, otherwise the host-home fallback, so relative or empty named text is ignored and may still yield that fallback; spaces, quotes, non-ASCII names and symlinked parents are supported path forms | browserCache returns undefined when the selected named path or fallback is missing, unreadable or not a directory, and realpathSync canonicalises the selected directory; W-130 behaviour 1 pins these resolver classifications and W-354-b1 pins the resulting defined/absent producer descriptors |` [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/host-cells.test.mjs
+2. advisory — brief:77 [severity: S2] The row calls all paths absolute although `scratch` preserves a relative `TMPDIR`, and “existing path producers and bwrap” is not a named fail-closed boundary. Replace brief:77 with: `| 2. candidate, tooling, root, etc[*][0] and nodeBin, host path inputs | candidate, tooling, root and etc source paths are exactly those returned or derived from scratch/mkdtempSync, clone placement and etcFor, and may inherit a relative TMPDIR; nodeBin is the absolute dirname of realpathSync(process.execPath); spaces, quotes, non-ASCII names and symlinked parents remain individual bwrap argv data | scratch/mkdtempSync, checked git clone/checkout results, etcFor and realpathSync throw or refuse before construction; after construction, launch plus gate.status !== 0 refuses any bwrap bind or command failure; producerCell adds no lexical validator, a stated limit (D-076 E) |` [class: spec×input-without-named-rejector] — check: none: brief.input.named-rejector
+3. advisory — brief:82 [severity: S4] `readFileSync` rejects an unreadable runner, but the host module is loaded through a caught dynamic import and rejected by an assertion instead. Replace brief:82 with: `| 7. New-row source inputs | a loadable host module exporting producerCell and readable UTF-8 runner text with exactly one imported/called producerCell and one complete gateCell spread | the caught dynamic import yields undefined and assert.ok rejects an absent or unloadable producerCell; readFileSync throws on an unreadable runner, while sourceHas and assert.equal reject absent or duplicate wiring; pinned by W-354-b1 |` [class: spec×input-without-named-rejector] — check: scripts/host-cells.test.mjs
+
+## Verdict
+The design is feasible and no finding is blocking; the advisory replacements align the input boundary with the existing readers and rejectors.
+VERDICT: PASS
