@@ -207,6 +207,29 @@ test("W-168-b4 behaviour 4: a queued CLEAN PR gets no second merge call", { time
   assert.match(o.out, /state=QUEUE_TIMEOUT/, ran("and the poll runs out", o));
 });
 
+test("W-347-b1 behaviour 1: a CLEAN PR outside the merge queue has auto-merge re-armed once", { timeout: 3_600_000 }, () => {
+  const w = pushed("w347-b1-clean-not-queued");
+  const rearmed = join(w.root, "rearmed.flag");
+  const m = landMerge(w, false);
+  scenario(w, {
+    rules: { stdout: QUEUE_RULES },
+    list: openList(w),
+    view: {
+      replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN", queued: false })) }],
+      alts: [{ ifExists: rearmed, replies: [{ stdout: viewOf(cand(w, { state: "MERGED", merge: m })) }] }],
+    },
+    merge: { replies: [{ stdout: "" }, { stdout: "" }, { stdout: "", touch: rearmed }] },
+  });
+  const o = performMerge(w);
+  assert.match(o.out, /state=MERGED/, ran("the re-armed PR enters the queue and lands", o));
+  assert.deepEqual(mutating(w), ["gh pr merge --squash --auto", "gh pr merge --disable-auto", "gh pr merge --squash --auto", "git fetch master:master"], ran("auto-merge is disabled then enabled once", o));
+  const merges = ghMerges(w);
+  assert.equal(merges[1]?.includes("--disable-auto"), true, ran("the middle call disables auto-merge", o));
+  assert.equal(merges[1]?.includes("--squash"), false, ran("the disable call carries no merge method", o));
+  assert.equal(merges[2]?.[merges[2]!.indexOf("--match-head-commit") + 1], tipOf(w), ran("the enabling call pins the reviewed head", o));
+  assert.deepEqual(unmatched(w), [], "the fixture saw every gh call");
+});
+
 test("W-168-b4 behaviour 4: a DIRTY PR holds as a conflict in queue mode", { timeout: 3_600_000 }, () => {
   const before = pushed("w168-b4-dirty");
   scenario(before, { rules: { stdout: QUEUE_RULES }, list: openList(before), view: { stdout: viewOf(cand(before, { state: "OPEN", mss: "DIRTY" })) } });
