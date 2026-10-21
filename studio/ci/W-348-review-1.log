@@ -1,0 +1,19 @@
+# opus: W-348
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15d2f-a94b-74a2-bc28-74e98dd2fc12
+# outcome: failed
+# at: 2026-10-21T06:42:28.989Z
+# tree: tree:b1145839a7ce5572bffeeab10eee5e103fa12f36
+# brief: briefs/W-348.md blob:599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf
+# ticket: {"opus":"W-348","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-348/studio","head":"e9e01b859a8cdfcd4bda2127d99aa014f044dc98","brief":"599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf","at":"2026-10-21T06:39:25.257Z"}
+
+## Findings
+1. blocking — packages/commands/src/verdict.ts:851 Pair validation is nested under `plain && phase === "spec"`, so a `ui-lead` spec verdict bypasses `readUiSpecPairing` and can write despite a partial or unsuitable UI pair, contrary to brief:55 and brief:68. [severity: S1] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/verdict-citation.test.ts
+
+## Verdict
+The atomic pairing contract has an in-domain fail-open path through UI-lead verdict recording.
+
+VERDICT: FAIL
