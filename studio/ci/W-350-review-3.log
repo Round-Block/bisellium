@@ -1,0 +1,29 @@
+# opus: W-350
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15dbc-95f9-7ac1-8d19-2543a8f413af
+# outcome: passed
+# at: 2026-10-21T10:49:54.085Z
+# tree: tree:be0162e1c9c9e41a3df9d17701c245312e361f1e
+# ui_input: ci/W-350-spec-8.log
+# design_digest: sha256:485973711efc37ed07c917ba7781dab8c43657601979a1639d8274e55c863159
+# ticket: {"opus":"W-350","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-350/studio","head":"52f3ee663cb01507f26edab9efab0b2deb28b44a","brief":"a6247df7c497d0af63f4ba2f97c90df4b38474f6","at":"2026-10-21T10:49:50.795Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-350-review-2.log #1: closed — the supplied ref census shows no stale dispatch-capable ref remains; .github/workflows/ci.yml:53 blocks the sole dispatchable non-master ref before checkout, while apps/web/tests-serve/rendering-environment.ts:43 rejects any retained pre-fix artifact lacking master-dispatch provenance.
+
+## UI input disposition
+1. Honoured — the desktop Inbox asserts the selected detail and four verbs, while phone asserts the loaded queue and hidden detail at apps/web/tests-serve/screenshots.spec.ts:68 and apps/web/tests-serve/screenshots.spec.ts:73.
+2. Honoured — Officina awaits the resolved Completion text within `.panel--completion` at apps/web/tests-serve/screenshots.spec.ts:91.
+3. Honoured — zero counted-pixel tolerance remains configured at apps/web/playwright.serve.config.ts:43, with screenshot retries disabled at apps/web/tests-serve/screenshots.spec.ts:19.
+4. Honoured — the runner OS remains pinned at .github/workflows/ci.yml:144 and complete-set rendering identity is compared at apps/web/tests-serve/screenshots.spec.ts:118; the new provenance validation does not alter the UI contract accepted by spec-8.
+
+## Verdict
+The fix closes the selectable-ref and retained-artifact paths without changing the approved UI behavior.
+
+VERDICT: PASS
