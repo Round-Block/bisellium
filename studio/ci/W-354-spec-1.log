@@ -1,0 +1,26 @@
+# opus: W-354
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T06:11:08.151Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-354.md blob:0b54775033d8893f0cf76fdc456502c395e159ba
+# ticket: {"opus":"W-354","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"0b54775033d8893f0cf76fdc456502c395e159ba","at":"2026-10-21T06:11:07.695Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-354-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the certify path reaches the producer CI/verify/check recomputation, whose hand-built third cell omitted both the `/browsers` read-only bind and `PLAYWRIGHT_BROWSERS_PATH`; later filter, gate, npm and Playwright hops preserve the name, so the loss is at that descriptor and not a downstream spawn — check: brief:17, brief:19, brief:22, brief:23, brief:24, scripts/run-builder-host.mjs:816
+2. advisory — `producerCell` derives the browser-aware replay descriptor and adds only immutable tooling plus `NODE_PATH`, and the runner spreads that complete descriptor into the one producer bwrap launch; this removes the duplicate construction at the common cell boundary — check: brief:27, brief:45, brief:47, scripts/host-cells.mjs:120, scripts/run-builder-host.mjs:817
+3. advisory — W-354-b1 pins cache-present and cache-absent descriptor shapes, exact read-only selection and source wiring; it fails by one ERR_ASSERTION on master, passes on the feature stage, and all six rows in the owned test file pass — check: brief:87, brief:89, brief:93, brief:94, row-b1-master.out, row-b1-proto.out, host-cells-proto.out
+4. advisory — the inspected Playwright 1.63.0 dependency and cache both name Chromium/headless-shell revision 1243, while cache completeness and future revisions are deliberately outside the fix — check: brief:25, brief:51, brief:65, brief:81, node_modules/playwright-core/browsers.json:5
+5. advisory — a real Chromium launch inside bwrap cannot run in this drafter sandbox; the merge queue's certify run after W-354 lands alone is the end-to-end proof, and only then is W-339 #651 requeued — check: brief:29, brief:59, brief:63, brief:98, brief:116
+6. advisory — lint, formatting and the owned test file pass; master and prototype share the same W-096 studio blocker and advisory count, the sample officina passes, and the two-commit mbox applies to d0fc0ed7 with an identical tree — check: brief:95, brief:96, gates-master.out, gates-proto.out, mbox-check.out, admission.out, ledger-check.out
+7. advisory — the sandbox made the shared worktree Git index read-only, so the requested test/feature commits are retained on the evidence-local `spec-scratch/W-354` clone and in the verified mbox while the scratch worktree holds the identical uncommitted diff — check: brief:39, brief:68, prototype-repo, prototype.mbox, mbox-check.out
+
+## Verdict
+
+passed — signature prepared by Codex `gpt-5.6-sol` under D-094 for `studio/briefs/W-354.md`, prototype two commits after master d0fc0ed7; one behaviour, 2 points, no code-owned path touched.

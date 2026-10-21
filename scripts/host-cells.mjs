@@ -116,3 +116,13 @@ export const replayCell = ({ checkout, root, etc, nodeBin, browsers }) => {
     },
   };
 };
+
+/** The producer-gates cell: the replay cell's browser-aware confinement plus immutable master tooling. */
+export const producerCell = ({ candidate, tooling, root, etc, nodeBin, browsers }) => {
+  const cell = replayCell({ checkout: candidate, root, etc, nodeBin, browsers });
+  return {
+    ...cell,
+    roBinds: [[tooling, "/tooling"], ...cell.roBinds],
+    env: { ...cell.env, NODE_PATH: "/tooling/node_modules" },
+  };
+};

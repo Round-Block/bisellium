@@ -605,3 +605,73 @@ if (only === undefined) {
     assert.ok(occurrences(runner, /"--offline"/g) === 1, "no other runner call passes --offline");
   });
 }
+
+// W-354: outside W-130's --behaviour selector. Select with
+// --test-name-pattern='^W-354-b1\s' so a pre-change checkout fails by assertion.
+if (only === undefined) {
+  test("W-354-b1 behaviour 1: producer gates use the shared browser-aware cell descriptor", async () => {
+    const mod = await import("./host-cells.mjs").catch(() => undefined);
+    assert.ok(mod?.producerCell, "the host module exports producerCell");
+
+    const input = {
+      candidate: "/h/check/candidate",
+      tooling: "/h/check/tooling",
+      root: "/h/check",
+      etc: ETC,
+      nodeBin: "/n/bin",
+      browsers: "/h/playwright",
+    };
+    const producer = mod.producerCell(input);
+    const replay = mod.replayCell({
+      checkout: input.candidate,
+      root: input.root,
+      etc: input.etc,
+      nodeBin: input.nodeBin,
+      browsers: input.browsers,
+    });
+
+    assert.deepEqual(producer.binds, replay.binds, "producer gates reuse the replay cell's writable binds");
+    assert.equal(producer.chdir, replay.chdir, "producer gates reuse the replay cell's working directory");
+    assert.deepEqual(
+      producer.roBinds,
+      [[input.tooling, "/tooling"], ...replay.roBinds],
+      "producer gates add immutable tooling without losing the browser mount",
+    );
+    assert.deepEqual(
+      producer.env,
+      { ...replay.env, NODE_PATH: "/tooling/node_modules" },
+      "producer gates add tooling resolution without losing the browser environment",
+    );
+    assert.equal(producer.env[BROWSER_ENV], "/browsers", "producer gates point Playwright at the mounted cache");
+    assert.deepEqual(
+      producer.roBinds.filter(([, to]) => to === "/browsers"),
+      [[input.browsers, "/browsers"]],
+      "producer gates bind the resolved cache read-only exactly once",
+    );
+
+    const absent = mod.producerCell({ ...input, browsers: undefined });
+    assert.equal(BROWSER_ENV in absent.env, false, "no resolved cache adds no Playwright environment name");
+    assert.equal(
+      absent.roBinds.some(([, to]) => to === "/browsers"),
+      false,
+      "no resolved cache adds no browser mount",
+    );
+
+    const runner = readFileSync(RUNNER, "utf8");
+    sourceHas(
+      runner,
+      /import\s*\{[^}]*\bproducerCell\b[^}]*\}\s*from\s*"\.\/host-cells\.mjs"/,
+      "the runner imports producerCell from the host-owned module",
+    );
+    assert.equal(
+      occurrences(runner, /const gateCell = producerCell\(/g),
+      1,
+      "the runner constructs one producer gate cell",
+    );
+    sourceHas(
+      runner,
+      /sandboxArgs\(\{\s*\.\.\.gateCell,\s*cmd:/,
+      "the producer CI launch uses that complete cell descriptor",
+    );
+  });
+}
