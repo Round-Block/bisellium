@@ -586,11 +586,19 @@ function reviewedAtTip(f: Facts): { reviewed: boolean } | { error: string } {
   if (!f.wt.usable || f.branch === undefined) return { reviewed: false };
   const record = laneRecord(f.wt.studio, f.id, "error");
   if ("error" in record) return record;
-  const read = f.buildRounds();
-  const tickets = readStepTickets(f.manifest);
+  // Input-domain row 6: read the lane's own manifest once, then reject every malformed setting before classifying it.
+  const worktree = readWorktreeManifest(f.wt.studio);
+  if ("error" in worktree) return worktree;
+  const drift = buildReviewDrift(f.manifest, worktree.manifest);
+  if (drift !== undefined) return { error: drift };
+  const config = readBuildReviewConfig(worktree.manifest);
+  if ("error" in config) return config;
+  const tickets = readStepTickets(worktree.manifest);
+  if ("error" in tickets) return { error: `bisellium.yml#step_tickets is malformed (${tickets.error})` };
+  const rounds = readBuildRounds(f.wt.studio, f.id, config.config);
+  const read = "error" in rounds ? rounds : { config: config.config, rounds: rounds.rounds };
   const cur = f.curTree();
   if ("error" in read) return read;
-  if ("error" in tickets) return tickets;
   if (cur === undefined) return { error: `refs/heads/opus/${f.id}: source tree cannot be read` };
   const gate = reviewGate(f, record.record!, read, tickets.required);
   if (gate === undefined || "unrecorded" in gate) return { reviewed: false };
@@ -1084,28 +1092,28 @@ export function deriveNext(f: Facts): Derived {
       });
 
     // 7 review
-    const branchRef = `refs/heads/opus/${id}`;
-    const trunkConflict = mergeTreeConflict(f.repo, "refs/remotes/origin/master", branchRef);
-    if ("error" in trunkConflict) return hold("review", `${trunkConflict.error}; no review is ordered`);
-    if (trunkConflict.conflict)
-      return named(
-        "build",
-        "producer",
-        `opus/${id} conflicts with origin/master; rebase before review so the reviewed tree is never rebased afterwards`,
-        `from .worktrees/${id}: git rebase origin/master`,
-      );
-    const later = furtherAlongBranches(f);
-    if ("error" in later) return hold("review", `${later.error}; no review is ordered`);
-    for (const ref of later.refs) {
-      const laneConflict = mergeTreeConflict(f.repo, ref, branchRef);
-      if ("error" in laneConflict) return hold("review", `${laneConflict.error}; no review is ordered`);
-      if (laneConflict.conflict) {
-        const other = ref.slice("refs/heads/opus/".length);
-        return hold("review", `opus/${id} conflicts with opus/${other}, which is further along; wait for ${other} to land before review`);
-      }
-    }
     const uiBranch = f.uiReviewProblems();
     if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
+      const branchRef = `refs/heads/opus/${id}`;
+      const trunkConflict = mergeTreeConflict(f.repo, "refs/remotes/origin/master", branchRef);
+      if ("error" in trunkConflict) return hold("review", `${trunkConflict.error}; no review is ordered`);
+      if (trunkConflict.conflict)
+        return named(
+          "build",
+          "producer",
+          `opus/${id} conflicts with origin/master; rebase before review so the reviewed tree is never rebased afterwards`,
+          `from .worktrees/${id}: git rebase origin/master`,
+        );
+      const later = furtherAlongBranches(f);
+      if ("error" in later) return hold("review", `${later.error}; no review is ordered`);
+      for (const ref of later.refs) {
+        const laneConflict = mergeTreeConflict(f.repo, ref, branchRef);
+        if ("error" in laneConflict) return hold("review", `${laneConflict.error}; no review is ordered`);
+        if (laneConflict.conflict) {
+          const other = ref.slice("refs/heads/opus/".length);
+          return hold("review", `opus/${id} conflicts with opus/${other}, which is further along; wait for ${other} to land before review`);
+        }
+      }
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");
