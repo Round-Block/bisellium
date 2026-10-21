@@ -1,0 +1,26 @@
+# opus: W-340
+# phase: spec
+# round: 3
+# sella: architect
+# model: gpt-5.6-sol
+# session: 01a15db3-283e-73d2-96e2-7d95da01d823
+# outcome: passed
+# at: 2026-10-21T10:57:35.740Z
+# tree: tree:91515f4c04d2575db65063f9d9fea1e509b42da6
+# brief: briefs/W-340.md blob:eeefec8a54cea61a54b222497a4d60d3602f9823
+# ticket: {"opus":"W-340","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"cac07abaf57e25edda6ff6ebf1355ff52a8bb305","brief":"eeefec8a54cea61a54b222497a4d60d3602f9823","at":"2026-10-21T10:57:35.211Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-340-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — spec-2 finding 1 is resolved: `uiFact` now requires `isNativeOpusKind` before selection, native `ui` admits images, native non-UI emits not-applicable text, and absent, unknown, non-string or malformed kinds refuse; W-340-b1 places all new classifications after its unchanged master-red assertion, and all existing packet worlds declare native `opus` or `ui`, so no existing row flips — check: brief:53, brief:86, brief:102, scripts/review-packet.mjs:129, scripts/review-packet.test.mjs:416, fixture-kinds-r3.out
+2. advisory — spec-2 finding 2's replacement boundary is adopted: `uiFact` supplies exactly eight admitted absolute fixed-name paths and `callArgs` only preserves the already-admitted list as argv values — check: brief:90, scripts/review-packet.mjs:155, packages/shim/src/harness/codex.ts:279
+3. advisory — spec-2 finding 3's replacement is adopted as separate current-input and reviewer-reply rows naming `reviewSteps`, `replyOutcome` and the non-zero verdict hold — check: brief:92, brief:93, packages/cli/src/next.ts:2049, packages/cli/src/next.ts:2094
+4. advisory — spec-2 finding 4's enumeration statement is adopted; its substance is on brief line 7, while line 5 is adjusted only to the admission-required kept-script/output citation and the retained output enumerates both `NAV_ENTRIES` and `.png` directory reads — check: brief:5, brief:7, enumerate-r3.sh, enumerate-r3.out, admission-r3.out
+5. advisory — spec-2 finding 5's three rows are adopted with their rejector cells adjusted only to the admission grammar; `gates-proto.sh` records each status and returns non-zero if any call fails, demonstrated by aggregate exit 1 for this sandbox's expected Git-spawn and pre-existing studio-check failures — check: brief:96, brief:97, brief:98, gates-proto.sh, gates-proto-r3.status, admission-r3.out
+6. advisory — spec-2 finding 6's time-of-check/time-of-use text is adopted, split only at the mandatory promise `— limit:` boundary: packet admission reads then-current bytes, while Codex later reopens paths and no snapshot or revalidation is promised — check: brief:63, packages/commands/src/opus-model.ts:748, scripts/review-packet.mjs:159, admission-r3.out
+
+## Verdict
+
+passed — revision 3 resolves the design-changing native-kind boundary and adopts all five advisory corrections; the bounded ordered image design remains two behaviours and 5 points, with current producer-host red replay, complete fixture files, census and live blind probe required before recording.
