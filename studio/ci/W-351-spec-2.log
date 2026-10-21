@@ -1,0 +1,19 @@
+# opus: W-351
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15ccc-e817-7852-b6a7-fe5d89dade42
+# outcome: passed
+# at: 2026-10-21T04:56:02.840Z
+# tree: tree:65af3fb7ea81155483ff5cecae7e22b713a66cee
+# brief: briefs/W-351.md blob:9dcff67cd3f03ed94de3d70c357e9e2a02275ba3
+# ticket: {"opus":"W-351","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"47bd357ec0a76e375b6c9aa25542109796cb9b29","brief":"9dcff67cd3f03ed94de3d70c357e9e2a02275ba3","at":"2026-10-21T04:56:02.387Z"}
+
+## Findings
+1. advisory — brief:75 The row claims fixture readers throw, but `calls` converts an absent call log to `[]`; the assertions, not the reader, provide refusal. Replace brief:75 with: `| 6. New-row fake GitHub scenario and call log | scenario JSON emitted by scenario with queue Reply/Rule values and stub-log entries for every expected call; no real GitHub call | writeFileSync and the stub's readFileSync/JSON.parse reject scenario failures; W-351-b1's assert.ok/assert.deepEqual and W-351-b2's assert.deepEqual reject absent expected calls or unmatched calls |` [severity: S2] [class: spec×input-without-named-rejector] — check: packages/cli/src/next-queue.test.ts
+2. advisory — brief:80 `W-351-b1` rejects fields outside the accepted vocabulary but never asserts that all seven required fields remain, so the stated test is one-sided. Replace brief:80 with: `1. **Every fixed PR view uses exactly the seven gh 2.101.0-compatible fields.** In W-351-b1, each fixed read's --json tokens are asserted equal to number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit, and every token is also checked against the copied complete Available fields set.` [severity: S4] [class: tests×one-sided-bound-assertion] — check: packages/cli/src/next-queue.test.ts
+
+## Verdict
+The production design is feasible and fail-closed; both findings are advisory boundary corrections.
+VERDICT: PASS

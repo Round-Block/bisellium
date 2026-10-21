@@ -16,6 +16,56 @@ const queueParams = (rules: Json[]): Json => rules.find((r) => r["type"] === "me
 const checksRule = (rules: Json[]): Json => rules.find((r) => r["type"] === "required_status_checks")!["parameters"] as Json;
 const bound = (w: World): string => readFileSync(bindingPath(w), "utf8");
 
+/** Fixed copy of gh 2.101.0's `pr view --json` "Available fields" output; the offline row cannot ask gh for it. */
+const GH_2_101_PR_VIEW_FIELDS = new Set([
+  "additions",
+  "assignees",
+  "author",
+  "autoMergeRequest",
+  "baseRefName",
+  "baseRefOid",
+  "body",
+  "changedFiles",
+  "closed",
+  "closedAt",
+  "closingIssuesReferences",
+  "comments",
+  "commits",
+  "createdAt",
+  "deletions",
+  "files",
+  "fullDatabaseId",
+  "headRefName",
+  "headRefOid",
+  "headRepository",
+  "headRepositoryOwner",
+  "id",
+  "isCrossRepository",
+  "isDraft",
+  "labels",
+  "latestReviews",
+  "maintainerCanModify",
+  "mergeCommit",
+  "mergeStateStatus",
+  "mergeable",
+  "mergedAt",
+  "mergedBy",
+  "milestone",
+  "number",
+  "potentialMergeCommit",
+  "projectCards",
+  "projectItems",
+  "reactionGroups",
+  "reviewDecision",
+  "reviewRequests",
+  "reviews",
+  "state",
+  "statusCheckRollup",
+  "title",
+  "updatedAt",
+  "url",
+]);
+
 test("W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge (W-199-b1)", { timeout: 3_600_000 }, () => {
   const w = queueWorld("w168-b3-queue", { stdout: QUEUE_RULES });
   const head = tipOf(w);
@@ -207,6 +257,24 @@ test("W-168-b4 behaviour 4: a queued CLEAN PR gets no second merge call", { time
   assert.match(o.out, /state=QUEUE_TIMEOUT/, ran("and the poll runs out", o));
 });
 
+test("W-351-b1 behaviour 1: every fixed pr view field is accepted by gh 2.101.0", { timeout: 3_600_000 }, () => {
+  const w = pushed("w351-b1-view-fields");
+  scenario(w, { rules: { stdout: QUEUE_RULES }, list: openList(w), view: { stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN" })) } });
+  const o = performMerge(w);
+  const reads = ghCalls(w).filter((a) => a[0] === "pr" && a[1] === "view");
+  assert.ok(reads.length > 0, ran("the merge performed a fixed pr view read", o));
+  for (const read of reads) {
+    const at = read.indexOf("--json");
+    assert.notEqual(at, -1, ran("the fixed view names its JSON fields", o));
+    const fields = (read[at + 1] ?? "").split(",");
+    assert.deepEqual(
+      fields.filter((field) => !GH_2_101_PR_VIEW_FIELDS.has(field)),
+      [],
+      ran("every fixed pr view field is accepted by gh 2.101.0", o),
+    );
+  }
+});
+
 test("W-347-b1 behaviour 1: a CLEAN PR outside the merge queue has auto-merge re-armed once", { timeout: 3_600_000 }, () => {
   const w = pushed("w347-b1-clean-not-queued");
   const rearmed = join(w.root, "rearmed.flag");
@@ -215,9 +283,10 @@ test("W-347-b1 behaviour 1: a CLEAN PR outside the merge queue has auto-merge re
     rules: { stdout: QUEUE_RULES },
     list: openList(w),
     view: {
-      replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN", queued: false })) }],
+      replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN" })) }],
       alts: [{ ifExists: rearmed, replies: [{ stdout: viewOf(cand(w, { state: "MERGED", merge: m })) }] }],
     },
+    queue: { stdout: { data: { repository: { pullRequest: { isInMergeQueue: false } } } } },
     merge: { replies: [{ stdout: "" }, { stdout: "" }, { stdout: "", touch: rearmed }] },
   });
   const o = performMerge(w);
@@ -228,6 +297,34 @@ test("W-347-b1 behaviour 1: a CLEAN PR outside the merge queue has auto-merge re
   assert.equal(merges[1]?.includes("--squash"), false, ran("the disable call carries no merge method", o));
   assert.equal(merges[2]?.[merges[2]!.indexOf("--match-head-commit") + 1], tipOf(w), ran("the enabling call pins the reviewed head", o));
   assert.deepEqual(unmatched(w), [], "the fixture saw every gh call");
+});
+
+test("W-351-b2 behaviour 2: queue membership is read through GraphQL and an unreadable answer holds", { timeout: 3_600_000 }, () => {
+  const variants: [string, SlotValue][] = [
+    ["a missing pull request", { stdout: { data: { repository: { pullRequest: null } } } }],
+    ["text instead of a boolean", { stdout: { data: { repository: { pullRequest: { isInMergeQueue: "false" } } } } }],
+    ["a GraphQL command failure", { exit: 1, stderr: "graphql denied" }],
+  ];
+  for (const [label, queue] of variants) {
+    const w = pushed(`w351-b2-${label.replaceAll(" ", "-")}`);
+    scenario(w, {
+      rules: { stdout: QUEUE_RULES },
+      list: openList(w),
+      view: { stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN" })) },
+      queue,
+    });
+    const o = performMerge(w);
+    assert.equal(o.status, 1, ran(`${label}: the merge holds`, o));
+    assert.match(o.out, /queue membership unreadable after the merge was requested; auto-merge was not re-armed/, ran(`${label}: the hold states the closed failure`, o));
+    assert.deepEqual(mutating(w), ["gh pr merge --squash --auto"], ran(`${label}: no recovery write follows the unreadable answer`, o));
+    const reads = ghCalls(w).filter((a) => a[0] === "api" && a[1] === "graphql");
+    assert.equal(reads.length, 1, ran(`${label}: membership is read once`, o));
+    const [owner, name] = SLUG.split("/");
+    assert.ok(reads[0]?.includes(`owner=${owner}`), ran(`${label}: the owner is a GraphQL variable`, o));
+    assert.ok(reads[0]?.includes(`name=${name}`), ran(`${label}: the repository name is a GraphQL variable`, o));
+    assert.ok(reads[0]?.includes(`number=${PR_NUMBER}`), ran(`${label}: the PR number is a GraphQL variable`, o));
+    assert.deepEqual(unmatched(w), [], `${label}: the fixture saw every gh call`);
+  }
 });
 
 test("W-168-b4 behaviour 4: a DIRTY PR holds as a conflict in queue mode", { timeout: 3_600_000 }, () => {

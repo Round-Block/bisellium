@@ -26,7 +26,7 @@ const PR_STATES = new Set(["OPEN", "MERGED", "CLOSED"]);
 const MERGE_STATES = new Set(["BEHIND", "BLOCKED", "CLEAN", "DIRTY", "DRAFT", "HAS_HOOKS", "UNKNOWN", "UNSTABLE"]);
 const BUCKETS = new Set(["pass", "fail", "pending", "skipping", "cancel"]);
 const PR_LIST_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,isCrossRepository,headRepositoryOwner,headRepository,mergeCommit";
-const PR_VIEW_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit,isInMergeQueue";
+const PR_VIEW_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit";
 
 // ---------------------------------------------------------------------------
 // spawning
@@ -408,8 +408,6 @@ export interface Pr {
   headRefOid: string;
   baseRefName: string;
   repo: string;
-  /** Present on the fixed `pr view` read; true only while GitHub reports this PR in the merge queue. */
-  isInMergeQueue?: boolean;
   /** Only set (and well formed) for a MERGED PR. */
   mergeOid?: string;
 }
@@ -433,7 +431,6 @@ function checkShape(o: unknown, keys: string[]): string | undefined {
   for (const k of keys) if (!(k in o)) return `a PR entry has no ${k}`;
   if (typeof o["state"] !== "string" || !PR_STATES.has(o["state"])) return `unknown PR state ${clean(JSON.stringify(o["state"]))}`;
   if (typeof o["mergeStateStatus"] !== "string" || !MERGE_STATES.has(o["mergeStateStatus"])) return `unknown mergeStateStatus ${clean(JSON.stringify(o["mergeStateStatus"]))}`;
-  if (keys.includes("isInMergeQueue") && typeof o["isInMergeQueue"] !== "boolean") return "isInMergeQueue is not a boolean";
   for (const k of ["headRefName", "baseRefName"]) if (typeof o[k] !== "string") return `${k} is not a string`;
   if (!wellFormedOid(o["headRefOid"])) return "headRefOid is not a 40-hex commit id";
   return undefined;
@@ -449,7 +446,6 @@ function toPr(o: Json, slug: string): Pr | string {
     headRefOid: o["headRefOid"] as string,
     baseRefName: o["baseRefName"] as string,
     repo: slug,
-    ...(typeof o["isInMergeQueue"] === "boolean" ? { isInMergeQueue: o["isInMergeQueue"] } : {}),
   };
   if (state === "MERGED") {
     const mc = o["mergeCommit"];
@@ -468,6 +464,21 @@ export function readView(repo: string, pr: Pr): { ok: true; view: Pr } | { ok: f
   if (bad !== undefined) return { ok: false, reason: bad };
   const view = toPr(v.value as Json, pr.repo);
   return typeof view === "string" ? { ok: false, reason: view } : { ok: true, view };
+}
+
+/** Queue membership is not a `gh pr view --json` field in gh 2.101.0; read it only for the CLEAN recovery. */
+function readQueueMembership(repo: string, pr: Pr): { ok: true; queued: boolean } | { ok: false; reason: string } {
+  const slash = pr.repo.indexOf("/");
+  const owner = pr.repo.slice(0, slash);
+  const name = pr.repo.slice(slash + 1);
+  const query = "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){isInMergeQueue}}}";
+  const v = ghJson(repo, ["api", "graphql", "-f", `query=${query}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${pr.number}`]);
+  if (!v.ok) return v;
+  const data = isObj(v.value) ? v.value["data"] : undefined;
+  const repository = isObj(data) ? data["repository"] : undefined;
+  const pullRequest = isObj(repository) ? repository["pullRequest"] : undefined;
+  const queued = isObj(pullRequest) ? pullRequest["isInMergeQueue"] : undefined;
+  return typeof queued === "boolean" ? { ok: true, queued } : { ok: false, reason: "gh api graphql returned no boolean data.repository.pullRequest.isInMergeQueue" };
 }
 
 interface Cand {
@@ -795,15 +806,19 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
     } else if (v.headRefOid !== pinned) return headMoved(v.headRefOid);
     if (queued) {
       if (v.mss === "DIRTY") return conflict();
-      if (v.mss === "CLEAN" && v.isInMergeQueue === false && !rearmed) {
-        // W-347: GitHub can leave an approved, green PR outside the queue with auto-merge still enabled.
-        // Disable then enable once, the same recovery as the operator runbook; the enabling call keeps the head pin.
-        ctx.log("re-arm auto-merge (CLEAN, not in merge queue)");
-        const disabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--disable-auto"], repo);
-        if (disabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: disabling auto-merge before re-arming it failed: ${why(disabled)}`] };
-        const enabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pinned], repo);
-        if (enabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: re-enabling auto-merge failed: ${why(enabled)}`] };
-        rearmed = true;
+      if (v.mss === "CLEAN" && !rearmed) {
+        const membership = readQueueMembership(repo, v);
+        if (!membership.ok) return held(`${membership.reason} (queue membership unreadable after the merge was requested; auto-merge was not re-armed)`);
+        if (!membership.queued) {
+          // W-347: GitHub can leave an approved, green PR outside the queue with auto-merge still enabled.
+          // Disable then enable once, the same recovery as the operator runbook; the enabling call keeps the head pin.
+          ctx.log("re-arm auto-merge (CLEAN, not in merge queue)");
+          const disabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--disable-auto"], repo);
+          if (disabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: disabling auto-merge before re-arming it failed: ${why(disabled)}`] };
+          const enabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pinned], repo);
+          if (enabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: re-enabling auto-merge failed: ${why(enabled)}`] };
+          rearmed = true;
+        }
       }
     } else if (v.mss === "BEHIND") {
       ctx.log("update-branch (BEHIND while queued)");
