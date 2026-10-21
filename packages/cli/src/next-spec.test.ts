@@ -963,6 +963,34 @@ test("W-338-b4 behaviour 4: after the branch, a ui-lead input recorded in the wo
     "the input and its prompt",
   );
   expectStep(next(w, [OPUS]), "ready", "named", "the worktree's input admits ready");
+
+  // review round 1 #1: an input next refuses is ordered again after the branch, never committed as spec evidence
+  for (const [name, spoil] of [
+    ["a malformed log", (w: World) => writeFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-3.log`), logAt(w.wtStudio, 3).replace("# round: 3", "# round: 9"))],
+    ["a stale log", (w: World) => writeFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-3.log`), logAt(w.wtStudio, 3).replace(/^# design_digest: sha256:[0-9a-f]{64}$/m, `# design_digest: sha256:${"0".repeat(64)}`))],
+    ["a log with no prompt file", (w: World) => rmSync(join(w.wtStudio, "ci", `${OPUS}-ui-prompt-3.md`))],
+  ] as [string, (w: World) => void][]) {
+    const bad = uiWorld("w338-b4-bad", { kind: "opus" });
+    putBrief(bad);
+    sign(bad, 1);
+    review(bad, 2, "passed");
+    expectStep(next(bad, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", `${name}: branch commits the spec`);
+    editRecord(bad, "wt", (doc) => doc.setIn(["kind"], "ui"));
+    commit(bad.wt, "studio: W-900 is a ui opus");
+    assert.equal(uiInput(bad, 3, bad.wtStudio).status, 0, `${name}: the input is recorded in the worktree`);
+    spoil(bad);
+    const tip = git(bad.repo, ["rev-parse", BRANCH]);
+    const tree = git(bad.repo, ["ls-tree", "-r", BRANCH]);
+    const refused = specNext(bad);
+    expectStep(refused, "spec", "named", `${name}: next orders the ui-lead again`);
+    assert.equal(refused.kv.get("role"), "ui-lead", ran(`${name}: role`, refused));
+    assert.doesNotMatch(refused.kv.get("why") ?? "", /is not committed/, ran(`${name}: the why is not the commit's`, refused));
+    assert.doesNotMatch(refused.kv.get("command") ?? "", /--perform --expect spec/, ran(`${name}: the command is not the commit's`, refused));
+    const performed = next(bad, [OPUS, "--perform", "--expect", "spec"]);
+    assert.doesNotMatch(performed.out, /performed/, ran(`${name}: --perform --expect spec commits nothing`, performed));
+    assert.equal(git(bad.repo, ["rev-parse", BRANCH]), tip, `${name}: the branch's tip is unchanged`);
+    assert.equal(git(bad.repo, ["ls-tree", "-r", BRANCH]), tree, `${name}: the branch's committed tree is unchanged`);
+  }
 });
 test("W-338-b5 behaviour 5: the UI design digest is the caller's opus: a record whose id is not its opus id and file name gives no digest, so no input is written or read for another brief", { timeout: 1_800_000 }, () => {
   const w = uiWorld("w338-b5");

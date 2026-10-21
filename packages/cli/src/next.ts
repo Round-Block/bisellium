@@ -871,7 +871,12 @@ export function deriveNext(f: Facts): Derived {
     if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
     return hold("spec", spec.why);
   }
-  if (onOpus && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
+  // W-338: a pending ui-lead log (or prompt) that uiSpecProblems refuses is never carried as spec evidence: the ui-lead is ordered below
+  const uiPending = ui.length > 0 && f.branchRecord?.["kind"] === "ui" && changed !== undefined && !("error" in changed) && changed.spec.some((p) => {
+    const m = /(?:^|\/)(ci\/[^/]+-(?:ui-prompt-[1-9][0-9]*\.md|spec-[1-9][0-9]*\.log))$/.exec(p);
+    return m !== null && (m[1]!.endsWith(".md") || isUiLeadLog(f.branch?.read(m[1]!) ?? ""));
+  });
+  if (onOpus && !uiPending && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
   // W-338: a signed (and reviewed) kind: ui spec still needs the ui-lead's input on the current brief, where the spec is carried
   if (spec.ok && ui.length > 0) return dispatch(f, "spec", ui.join("; "), { phase: "spec", round: spec.maxRound + 1, resume: false, inputs: [briefRel(id)], uiLead: true, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
   if (!spec.ok) {
