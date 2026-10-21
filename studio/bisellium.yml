@@ -50,8 +50,6 @@ wip_limit: 4
 # W-162 (D-046): `next` names no branch until this seat's review has passed after the architect's newest signature.
 spec_reviewer: spec-reviewer
 # W-348 (D-091 D): atomic override for kind: ui; both keys or neither.
-ui_spec_signer: ui-architect
-ui_spec_reviewer: ui-spec-reviewer
 # W-127 (briefs/W-127.md): brief admission — one decree family per brief, at most
 # this many numbered behaviours, one genuine red each; `ready` and `check` enforce it.
 brief_behaviour_limit: 6
