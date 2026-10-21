@@ -1,0 +1,24 @@
+# opus: W-347
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T03:43:09.644Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-347.md blob:db8b956ea8e1eac461af05c2f9227ab6dd2c34d7
+# ticket: {"opus":"W-347","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"db8b956ea8e1eac461af05c2f9227ab6dd2c34d7","at":"2026-10-21T03:43:09.218Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-347-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the queue recovery reads `isInMergeQueue` through the same fixed, fail-closed PR view as state and identity, and only `CLEAN` plus false toggles disable-auto then pinned auto once; queued CLEAN and direct mode retain their pinned existing cases — check: brief:40, brief:42, brief:56, row-b1-proto.out, next-queue-proto.out
+2. advisory — namespace absence is scoped by marker writer: a perform uses its contained output budget, a track remains dead immediately, and visible zombie/reuse rules remain; the unavoidable recent-output ambiguity is stated as the promise limit and Patron default — check: brief:52, brief:60, brief:62, brief:91, row-b2-proto.out
+3. advisory — the two legacy W-124 cases that intended same-namespace pid absence now declare `writer: track`; they were the only existing flips found, and the complete owned files pass 18 of 18 and 13 of 13 — check: brief:98, brief:99, next-queue-proto.out, next-ladder-proto.out
+4. advisory — both reds fail by assertion on master and every earlier stage, then pass on their own stage; the replay classifier accepts all three failing runs — check: reds.out, row-b1-master.out, row-b2-master.out, row-b2-s1.out
+5. advisory — full brief admission and the promise-ledger writer pass; lint, CLI typecheck, owned-file formatting and the sample officina pass, while master and prototype share only the same studio blocker at `opera/W-096.md` — check: admission.out, ledger-check.out, gates-master.out, gates-proto.out
+
+## Verdict
+
+passed — signature prepared by Codex `gpt-5.6-sol` under D-094 for `studio/briefs/W-347.md`, prototype four commits on master 6c7593db; two behaviours, 2 points, no code-owned path touched.
