@@ -40,6 +40,20 @@ permissions:
   contents: read
 
 jobs:
+  # W-350: workflow_dispatch can select any branch in GitHub's UI. Fail a
+  # non-master dispatch before any checkout, dependency install or cache can
+  # consume that branch. The three dispatch-capable jobs below repeat the
+  # master condition at job scope so no cache-affecting step can run if this
+  # guard is weakened or reordered.
+  dispatch-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a non-master screenshot dispatch
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master'
+        run: |
+          echo "workflow_dispatch must target refs/heads/master" >&2
+          exit 1
+
   # Required status check. On a push and a source-change merge group it runs
   # everything `bisellium ci` runs except the studio officina check (see the
   # `officina` job below); a records-only merge group runs the studio check and
@@ -47,11 +61,13 @@ jobs:
   # the npm audit (W-236), typecheck and lint (W-205). It is the job a branch protection rule can
   # require, since every step that runs here is expected to pass on a clean tree.
   gates:
+    needs: dispatch-guard
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
@@ -104,12 +120,14 @@ jobs:
   # marked continue-on-error. On a pull request every step skips (W-205), so the
   # job still concludes success; a merge group and a push run the studio check.
   officina:
+    needs: dispatch-guard
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - if: github.event_name != 'pull_request'
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - if: github.event_name != 'pull_request'
         uses: actions/setup-node@v5
@@ -132,11 +150,14 @@ jobs:
   # the build and E2E steps skip (W-205, W-203); a push and a source-change merge
   # group run them.
   web-e2e:
+    needs: dispatch-guard
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
     steps:
       - if: github.event_name != 'pull_request'
         uses: actions/checkout@v5
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 2
       - if: github.event_name != 'pull_request'
         uses: actions/setup-node@v5
