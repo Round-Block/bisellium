@@ -1,0 +1,27 @@
+# opus: W-348
+# phase: spec
+# round: 3
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T04:30:31.550Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-348.md blob:bad94e1fd34df751981db31614c3dfeb65e830e1
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"bad94e1fd34df751981db31614c3dfeb65e830e1","at":"2026-10-21T04:30:17.549Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-348-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — studio/ci/W-348-spec-2.log #1 is adopted in full at brief:19: before the branch, `gather` selects manifest and kind from the main checkout carrying the pending evidence; afterward it selects both from the registered worktree, or from the branch ref only when no usable worktree exists; an unreadable post-branch manifest holds instead of falling back — check: brief:19, brief:21, brief:41, brief:57, brief:103
+2. advisory — row W-348-b6 closes every route through the source boundary: it asserts a working main-checkout kind against a differing trunk kind, a worktree pair against the differing main pair, committed branch-ref evidence without a usable worktree, and fail-closed handling of an unreadable branch manifest; it fails by assertion on revision 1 and every earlier source stage, then passes on revision 2 — check: row-b6-s5.out, red-b6-accept.out, reds.out, row-b6-r2-green.out
+3. advisory — the source owner now selects both `specManifest` and `specRecord` before `readSpecReviewer`; all signature reads, re-sign orders, ready attribution and later signature consumers therefore use the same signer that worktree verdict charges for the ledger — check: packages/cli/src/next.ts:632, packages/cli/src/next.ts:647, packages/cli/src/next.ts:869, brief:42
+4. advisory — round 2 listed no advisories besides blocker #1, and revision 2 adds no fallback to the main pairing after a branch exists; the no-worktree path reads committed branch policy but still cannot dispatch a spec write without a usable worktree — check: studio/ci/W-348-spec-2.log, brief:57
+5. advisory — all six behaviors preserve test-first staged evidence: b1–b5 keep their original assertion reds and b6 adds the revision-1 red; every row passes on its implementation stage and after — check: reds.out, red-b1-accept.out, red-b2-accept.out, red-b3-accept.out, red-b4-accept.out, red-b5-accept.out, red-b6-accept.out
+6. advisory — full admission and the revision-2 signer ledger pass, covering all nine Input domain rows and the new same-source promise — check: admission-r2.out, ledger-check-r2.out, promise-ledger.md
+7. advisory — targeted rows, lint, both package typechecks and formatting pass; both real officina checks have zero blockers, while the scoped archive retains only its two explained artificial studio blocks — check: gates-proto.out, typecheck-cli-r2.out, check-studio-working-r2.out, check-sample-working-r2.out, check-studio-proto.out
+8. advisory — the prototype bundle contains twelve ordered commits and its digest is pinned in revision 2; lasting code-owned wording remains for the Patron to merge and `.claude/agents/architect.md` remains the explicit later Patron change — check: prototype.mbox, prototype.sha256, brief:5, brief:117
+
+## Verdict
+
+passed — signed by the UI architect (`gpt-5.6-sol`, D-094), brief revision 2 at `studio/briefs/W-348.md`, prototype on master 3308e8c8; six behaviours, 3 points; spec review round 2's only finding is closed; code-owned studio/docs files are touched, so the Patron merges.

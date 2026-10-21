@@ -1,0 +1,22 @@
+# opus: W-348
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15c9f-df23-7ed3-93e0-dfc8b4078840
+# outcome: failed
+# at: 2026-10-21T04:33:44.967Z
+# tree: tree:56c754fb8af1644fa344ea06939c6586b6cb26b5
+# brief: briefs/W-348.md blob:bad94e1fd34df751981db31614c3dfeb65e830e1
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"06521a4d2ba8f62553057cd7253af76b974a1cad","brief":"bad94e1fd34df751981db31614c3dfeb65e830e1","at":"2026-10-21T04:33:44.532Z"}
+
+## Findings
+1. blocking — brief:71 Row 1 does not distinguish a readable record with absent `kind` from an absent, unreadable, malformed, or non-mapping evidence-owner record. The prototype maps all those failures to `undefined`, then `deriveNext(f.specRecord ?? rec)` falls back to trunk and can dispatch the wrong signer; `W-348-b6` injects `Facts` and never exercises `gather`, so no test catches this path. Replace brief:71 with: `| 1. The evidence-owning opus record and its kind | a readable front-matter mapping; kind may be any text or absent, recognising exactly ui and treating every other value as the default-pair limit | gather (extended) returns an error when next's evidence-owning record is absent, unreadable, malformed or not a mapping, so next holds instead of falling back to trunk; the four consumers select readable kind through readUiSpecPairing; pinned by W-348-b1 "every other kind keeps the design magister and spec_reviewer" and W-348-b6 "an unreadable evidence-owning record holds" |` [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-spec.test.ts
+
+## Earlier findings
+- ci/W-348-spec-2.log #1: open — readable main/worktree manifests now align, but `recordOf` still collapses an unreadable evidence-owner record to `undefined` and `deriveNext` falls back to the trunk record; `W-348-b6` never calls `gather`.
+
+## Verdict
+Revision 2 fixes manifest ownership but still fails open at the paired record boundary.
+
+VERDICT: FAIL

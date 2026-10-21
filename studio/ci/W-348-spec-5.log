@@ -1,0 +1,27 @@
+# opus: W-348
+# phase: spec
+# round: 5
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T06:00:03.333Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-348.md blob:d5d5b3a60034da120621be18c15b5a9d99a55ca3
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"d5d5b3a60034da120621be18c15b5a9d99a55ca3","at":"2026-10-21T05:59:56.455Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-348-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the last review's blocker is answered by removing behaviour 6, row W-348-b6 and the evidence-owner `recordOf`/`specRecord` selection; W-355 now owns the complete before/after-branch route, fail-closed bad-owner read and `gather` pin — check: brief:3, brief:19, brief:39, brief:112
+2. advisory — next explicitly keeps today's manifest and record selection as a limit, so the cut promises only classification of the inputs its caller already supplies and does not retain revision 2's rejected same-source guarantee — check: brief:19, brief:39, brief:53
+3. advisory — the retained scope is exactly the five passed behaviours: atomic pair selection, next's strict UI sequence, UI-signer promise ledger, retro classification and brief staleness; only W-348-b1 through W-348-b5 remain selectable — check: brief:77, brief:99, reds-r3.out
+4. advisory — all ten retained stage commits replayed cleanly onto origin/master 33da750d; no stage ceased to apply, and the regenerated bundle contains only the five red/implementation pairs — check: rebase-cut-r3.sh, prototype.mbox, prototype.sha256
+5. advisory — every retained row fails by assertion on master and its preceding cumulative stage, passes on its implementation stage and remains green through the prototype — check: reds-r3.out, row-b1-master.out, row-b2-s1.out, row-b3-s2.out, row-b4-s3.out, row-b5-s4.out
+6. advisory — the refreshed ledger covers all nine Input domain rows and four promises, and both brief admission and the writer-backed ledger check pass — check: promise-ledger.md, ledger-r3.out, admission-r3.out, ledger-check-r3.out
+7. advisory — all five targeted rows, lint, both package typechecks and formatting pass; the adjacent W-306, W-253 and W-317 pins remain green, and both real officina checks have zero blockers while the archive stage retains only its two documented context artifacts — check: gates-proto-r3.out, neighbour-w306-r3.out, neighbour-w253-r3.out, neighbour-w317-r3.out, check-studio-working-r3.out, check-sample-working-r3.out
+8. advisory — lasting code-owned wording remains in the manifest, design and production leges, spec-review prompt and adoption guide for the Patron to merge; `.claude/agents/architect.md` remains the explicit later Patron-merged change — check: brief:31, brief:32, brief:34, brief:109
+
+## Verdict
+
+passed — signed by the UI architect (`gpt-5.6-sol`, D-094), brief revision 3 at `studio/briefs/W-348.md`, prototype rebased onto origin/master 33da750d; five behaviours, 3 points; the rejected owner-selection remainder is cut to W-355 and no third review is requested.
