@@ -1,0 +1,21 @@
+# opus: W-340
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15e28-aac3-7710-bad6-77bf14acc96f
+# outcome: failed
+# at: 2026-10-21T12:09:10.495Z
+# tree: tree:fa974dcd013193579a7c12e47fd403ab5b1372c4
+# brief: briefs/W-340.md blob:eeefec8a54cea61a54b222497a4d60d3602f9823
+# ticket: {"opus":"W-340","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-340/studio","head":"07922ec09489d20c77e5af7d56bb58f9bdcb9e15","brief":"eeefec8a54cea61a54b222497a4d60d3602f9823","at":"2026-10-21T12:08:00.678Z"}
+
+## Findings
+1. blocking — package.json:18 [severity: S1] The fix changes `test:record`, but `package.json` is outside W-340’s declared Files owned, contradicting brief:43. [class: workflow×files-owned-boundary-exceeded] — check: probatio.declared
+
+## Earlier findings
+- ci/W-340-review-1.log #1: closed — scripts/review-packet.mjs:404 now fills `<UI>` only for build packets with admitted images, and scripts/review-packet.test.mjs covers later spec, handoff, non-UI build, and UI build rounds.
+
+## Verdict
+The original blocker is closed, but the fix introduces an undeclared source-file change.
+VERDICT: FAIL
