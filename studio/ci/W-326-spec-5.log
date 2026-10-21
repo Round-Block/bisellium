@@ -1,0 +1,23 @@
+# opus: W-326
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T23:27:00.809Z
+# tree: tree:dfa9edb7f53a509f23f6ba61e4aed0c04563914c
+# brief: briefs/W-326.md blob:4e9bd708bcafe8b7c80614e99ea581fe34619c0d
+# ticket: {"opus":"W-326","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-326/studio","head":"49360d4df12437da4d9538e08ff4dbcb153ed747","brief":"4e9bd708bcafe8b7c80614e99ea581fe34619c0d","at":"2026-10-20T23:26:55.931Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-326-spec/promise-ledger-r5.md
+
+## Findings
+
+1. advisory — the build's `ci --opus` failure is fixed at its cause, not by weakening W-140-b2: `redCommand` held its own copy of the behaviours-section reader and the heading literal; it now reads `behaviourItems`, a new export of `brief-admission.ts` built on the same `realLines` and `behavioursSection` as `countBehaviours`, so the literal stays in that one source and the redundant item-count check goes — check: brief:44, brief:60, brief:61, amend-r5.patch
+2. advisory — W-140-b2 fails by assertion on the built branch 49360d4d and passes with the amendment, the row unedited; the one reading change is that a red command span inside an HTML comment is now blanked, as admission blanks it, which row 4 states — check: brief:106, brief:157, w140-b2-built-r5.out, w140-b2-amended-r5.out
+3. advisory — every test file in the tree that reads brief text or `packages/commands` (71 files, grep over the whole tree) was run alone on the amended branch, all exit 0, and no flip or unnamed row is listed when the Codex test check was rerun on this revision — check: sweep-files-r5.txt, sweep-amended-r5.out, gates-amended-r5.out, fixture-census.md
+4. advisory — only the delta is new: the replay design, rows, prototype series and the round-4 review's advisory on brief:23 (the marker-order wording, already reflected in the built module's comment) are unchanged from revision 3 — check: brief:3, brief:23, ci/W-326-spec-4.log
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 5 at `studio/briefs/W-326.md` on opus/W-326 (built through 49360d4d), the amendment `amend-r5.patch` for the builder; a third spec review judges this delta at the Patron's ruling of 2026-10-20; code-owned paths touched, so the Patron merges.

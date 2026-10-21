@@ -815,6 +815,8 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/next.ts:log:appendFileSync#1", disposition: "outside", why: "appends to the step output file under .bisellium/" },
   { key: "packages/cli/src/next.ts:once:readFileSync#2", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
   { key: "packages/cli/src/next.ts:once:unlinkSync#1", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
+  { key: "packages/cli/src/prototype-replay.ts:loadSeries:readFileSync#1", disposition: "outside", why: "reads the architect's prototype series the signed brief names by absolute or ~/ path, a host evidence file outside any officina, after statSync proves it a regular file under the cap" },
+  { key: "packages/cli/src/prototype-replay.ts:writeAttempt:writeFileSync#1", disposition: "outside", why: "writes the replay's attempt marker under <repo>/.bisellium/prototype-replay/, whose real directories ensureRealDirectory proves first, exclusive create; never an officina" },
   { key: "packages/cli/src/prune.ts:pruneCiLogs:unlinkSync#1", disposition: "contained", why: "the log was just read through readContainedRegularFile, which refuses a symlink and an escape; its absolute path is what is unlinked" },
   { key: "packages/cli/src/retro.ts:draftRetro:writeFileSync#1", disposition: "contained", why: "acta/<date>-retro-<n>.md in a real acta/ checked by ensureRealDirectory before the write" },
   { key: "packages/cli/src/retro.ts:readRetroSetting:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },

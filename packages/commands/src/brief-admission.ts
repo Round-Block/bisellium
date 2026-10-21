@@ -56,6 +56,18 @@ export function countBehaviours(briefText: string): number {
   return (behavioursSection(realLines(briefText)) ?? []).filter((l) => /^\s{0,3}\d+\.\s/.test(l)).length;
 }
 
+/** W-326: the numbered behaviours `countBehaviours` counts, each as its real lines from its item line up to the next
+ *  item or the section's end (continuation lines kept; fences and HTML comments blank), so a reader of one behaviour's
+ *  text (`redCommand`) shares admission's parser and its section heading. */
+export function behaviourItems(briefText: string): string[][] {
+  const items: string[][] = [];
+  for (const line of behavioursSection(realLines(briefText)) ?? []) {
+    if (/^\s{0,3}\d+\.\s/.test(line)) items.push([]);
+    items[items.length - 1]?.push(line);
+  }
+  return items;
+}
+
 /** Genuine-red markers per numbered behaviour (and before item 1), bounded like `countBehaviours`. */
 function redMarkers(section: string[]): { before: number; per: number[] } {
   const per: number[] = [];

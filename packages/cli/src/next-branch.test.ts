@@ -3,12 +3,14 @@
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, appendFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseFrontMatter } from "@bisellium/adapter-native";
 import { parseVerdictLog } from "@bisellium/commands/verdict.js";
+import { sourceTreeHash } from "@bisellium/shim";
 import { BRANCH, BRIEF_REL, BUDGET, Json, NOW_ISO, OPUS, Out, PROC_ENV, SR, SR_MODEL, T, WT_BRIEF, WT_STUDIO_REL, World, addReview, amend, architectOrder, branchExists, briefPath, briefText, calls, commit, deadPid, direct, editRecord, excludesHeld, expectHeld, expectStep, failingGit, fakeProc, ghCalls, git, gitCalls, handoffAt, landed, liveChild, markerPath, mergedList, mutating, next, put, putBrief, putMarker, putOutput, ran, recordOf, review, reviewHeld, reviewerOrder, scenario, scratch, sign, snap, sourceTree, specHeld, specLog, specNext, srWorld, stagedPaths, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, w206World, walk, world, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
 
@@ -1028,4 +1030,258 @@ test("W-293-b3 behaviour 3: before the branch, the dispatch gate reads the hando
   specHeld(specNext(t), "an unparsable record holds", /stale handover/);
   writeFileSync(rec, text);
   architectOrder(specNext(t), 3, "the restored record admits the order again");
+});
+
+// ---------------------------------------------------------------------------
+// W-326: the reds and the code are replayed from the architect's signed prototype by `next --perform --expect reds`
+// (studio/briefs/W-326.md); a builder only where the replay cannot run, for required fixes and for fix rounds.
+// ---------------------------------------------------------------------------
+const W326_TEST = [
+  'import { test } from "node:test";',
+  'import assert from "node:assert/strict";',
+  'import { readFileSync } from "node:fs";',
+  'const source = readFileSync(new URL("./source.txt", import.meta.url), "utf8");',
+  'test("W-900-b1 fixture behaviour 1", () => assert.match(source, /behaviour 1/));',
+  'test("W-900-b2 fixture behaviour 2", () => assert.match(source, /behaviour 2/));',
+  "",
+].join("\n");
+const w326Red = (k: number, quote = "'"): string =>
+  `\`bisellium red ${OPUS} --behaviour ${k} --sella builder --studio studio -- node --test-reporter=tap --test-name-pattern=${quote}^W-900-b${k}\\s${quote} w326.test.mjs\``;
+/** briefText(2) with a Prototype line, the red order and one Genuine red per behaviour. */
+function w326Brief(prototype: string[], quote = "'"): string {
+  return briefText(2)
+    .replace(`# ${OPUS} fixture brief\n`, `# ${OPUS} fixture brief\n\n${prototype.join("\n")}\n\nRed order: one at a time\n`)
+    .replace(/^([12])\. \*\*Fixture behaviour \1\.\*\*$/gm, (_, k: string) => `${k}. **Fixture behaviour ${k}.** **Genuine red:** ${w326Red(Number(k), quote)}`);
+}
+interface Staged {
+  path: string;
+  digest: string;
+  line: string;
+  /** the source tree of the architect's last staged commit */
+  tree: string;
+}
+/** Stage the prototype as commits in `dir` (a test patch, then one implementation per behaviour), cut the series, take them off again. */
+function stageSeries(w: World, dir: string, o: { name?: string; passing?: boolean; only?: number; moduleLoad?: boolean; noTest?: boolean } = {}): Staged {
+  let base = git(dir, ["rev-parse", "HEAD"]);
+  put(dir, "w326.test.mjs", o.passing ? W326_TEST.replace("/behaviour 1/", "/candidate/") : o.moduleLoad ? `import "./w326-absent.mjs";\n${W326_TEST}` : W326_TEST);
+  commit(dir, `test(${OPUS}): row b1, red`);
+  // a series with no test patch: the rows are committed in the base, outside the series
+  if (o.noTest) base = git(dir, ["rev-parse", "HEAD"]);
+  for (let k = 1; k <= (o.only ?? 2); k++) {
+    appendFileSync(join(dir, "source.txt"), `behaviour ${k}\n`);
+    commit(dir, `feat(${OPUS}): behaviour ${k}`);
+  }
+  const tree = `tree:${sourceTreeHash(dir, ["studio", ".bisellium"], "HEAD")}`;
+  const path = join(w.root, o.name ?? "series.mbox");
+  writeFileSync(path, `${git(dir, ["format-patch", "--stdout", `${base}..HEAD`])}\n`);
+  git(dir, ["reset", "-q", "--hard", base]);
+  const digest = createHash("sha256").update(readFileSync(path)).digest("hex");
+  return { path, digest, line: `${path} sha256:${digest}`, tree };
+}
+/** A ready, automated world whose committed brief on opus/<id> names the staged series. */
+function w326World(tag: string, o: { tickets?: boolean; lines?: (s: Staged) => string[]; quote?: string; stage?: { passing?: boolean; only?: number; moduleLoad?: boolean; noTest?: boolean } } = {}): { w: World; s: Staged } {
+  const w = world(tag, "ready", { automated: true });
+  if (o.tickets) ticketed(w);
+  const s = stageSeries(w, w.wt, o.stage);
+  put(w.wt, BRIEF_REL, w326Brief(o.lines?.(s) ?? [`Prototype: ${s.line}`], o.quote));
+  commit(w.wt, `spec(${OPUS}): the prototype line`);
+  return { w, s };
+}
+const subjects = (w: World, n: number): string[] => git(w.wt, ["log", "--format=%s", `-${n}`]).split("\n").reverse();
+const redHeader = (w: World, k: number): Map<string, string> =>
+  new Map(
+    readFileSync(join(w.wtStudio, "ci", "reds", OPUS, `0${k}.log`), "utf8")
+      .split("\n\n")[0]!
+      .split("\n")
+      .map((l) => [l.slice(2, l.indexOf(":")), l.slice(l.indexOf(":") + 2)] as [string, string]),
+  );
+const performReds = (w: World): Out => next(w, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+/** The builder's reds order, as before W-326, naming why the prototype was not replayed. */
+function builderReds(o: Out, why: RegExp, row: string): void {
+  expectStep(o, "reds", "named", row);
+  assert.match(o.kv.get("prototype") ?? "", why, ran(`${row}: the order names why the prototype is not replayed`, o));
+  assert.equal(o.kv.get("role"), "builder", ran(`${row}: a builder's order`, o));
+  assert.equal(o.kv.get("phase"), "1", ran(`${row}: phase 1`, o));
+}
+
+test("W-326-b1 behaviour 1: a reds perform replays the signed prototype one behaviour at a time, each red on its own ticket", { timeout: 1_800_000 }, () => {
+  const { w, s } = w326World("w326-b1", { tickets: true });
+  const before = git(w.wt, ["rev-parse", "HEAD"]);
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "reds", "named", "a signed prototype that applies names the replay");
+  assert.equal(o.kv.get("actor"), "producer", ran("the producer performs it", o));
+  assert.equal(o.kv.get("command"), `bisellium next ${OPUS} --perform --expect reds`, ran("the command is the reds perform", o));
+  assert.equal(o.kv.get("prototype"), s.line, ran("the order names the series and its signed digest", o));
+  assert.equal(o.kv.has("role"), false, ran("no builder order", o));
+  assert.equal(git(w.wt, ["rev-parse", "HEAD"]), before, "report mode commits nothing");
+
+  const p = performReds(w);
+  expectStep(p, "reds", "performed", "the replay is performed");
+  assert.equal(p.status, 0, ran("exit 0", p));
+  assert.equal(p.kv.get("next-step"), "build", ran("every red is recorded: build follows", p));
+  assert.deepEqual(subjects(w, 6), [`spec(${OPUS}): the prototype line`, `test(${OPUS}): row b1, red`, `chore(studio): ${OPUS} red b1`, `feat(${OPUS}): behaviour 1`, `chore(studio): ${OPUS} red b2`, `feat(${OPUS}): behaviour 2`], "test, red, implementation, red, implementation, in order");
+  const sha = (back: number): string => git(w.wt, ["rev-parse", `HEAD~${back}`]);
+  for (const [k, logCommit, redOn] of [[1, 3, 4], [2, 1, 2]] as const) {
+    assert.deepEqual(git(w.wt, ["diff-tree", "--no-commit-id", "--name-only", "-r", sha(logCommit)]).split("\n"), [`studio/ci/reds/${OPUS}/0${k}.log`], `red ${k}'s commit holds its log alone`);
+    const h = redHeader(w, k);
+    assert.equal(h.get("tree"), `tree:${sourceTreeHash(w.wt, ["studio", ".bisellium"], sha(redOn))}`, `red ${k} certifies the commit before its implementation`);
+    assert.equal(h.get("exit"), "1", `red ${k} failed`);
+    assert.equal(h.get("sella"), "architect", `red ${k} is recorded under the design sella`);
+    assert.equal(h.get("command"), `node --test-reporter=tap --test-name-pattern=^W-900-b${k}\\s w326.test.mjs`, `red ${k} runs the brief's command, its quotes taken off`);
+    const t = JSON.parse(h.get("ticket") ?? "{}") as { action?: string; round?: number; head?: string };
+    assert.deepEqual([t.action, t.round, t.head], ["red", k, sha(redOn)], `red ${k} carries its own ticket, issued at the commit it records`);
+  }
+  assert.match(readFileSync(join(w.wtStudio, "ci", "reds", OPUS, "02.log"), "utf8"), /^not ok 1 - W-900-b2 fixture behaviour 2$/m, "red 2 fails by assertion on behaviour 1's commit");
+  assert.equal(`tree:${sourceTreeHash(w.wt, ["studio", ".bisellium"], "HEAD")}`, s.tree, "the branch's source is the architect's last staged tree");
+  assert.equal(git(w.wt, ["status", "--porcelain"]), "", "the worktree is clean");
+});
+
+test("W-326-b2 behaviour 2: a prototype the replay cannot reproduce names the builder and the reason, and a perform that cannot finish holds at its first failed step while keeping completed commits", { timeout: 1_800_000 }, () => {
+  // a digest the series does not have
+  const bad = w326World("w326-b2-digest", { lines: (s) => [`Prototype: ${s.path} sha256:${"0".repeat(64)}`] });
+  const head = git(bad.w.wt, ["rev-parse", "HEAD"]);
+  builderReds(next(bad.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: .*series\\.mbox has sha256 ${bad.s.digest}, not the 0{64} the signed brief names$`), "a digest mismatch");
+  expectStep(performReds(bad.w), "reds", "named", "a perform on an unreplayable prototype only names the builder's order");
+  assert.equal(git(bad.w.wt, ["rev-parse", "HEAD"]), head, "nothing is committed");
+  assert.equal(existsSync(join(bad.w.wtStudio, "ci", "reds")), false, "no red is recorded");
+
+  builderReds(next(w326World("w326-b2-two", { lines: (s) => [`Prototype: ${s.line}`, `Prototype: ${s.line}`] }).w, [OPUS, ...BUDGET]), /^not replayed: the brief has 2 Prototype lines; one only$/, "two Prototype lines");
+  builderReds(next(w326World("w326-b2-form", { lines: (s) => [`Prototype: ${s.path} sha1:${s.digest.slice(0, 40)}`] }).w, [OPUS, ...BUDGET]), /^not replayed: the Prototype line ".*" is not "Prototype: <absolute or ~\/ path> sha256:<64 lowercase hex>"$/, "a line in another form");
+  builderReds(next(w326World("w326-b2-short", { stage: { only: 1 } }).w, [OPUS, ...BUDGET]), /^not replayed: the series covers behaviours 1 to 1; the brief lists 2$/, "a series short of a behaviour");
+  builderReds(next(w326World("w326-b2-notest", { stage: { noTest: true } }).w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: patch 1 \\("feat\\(${OPUS}\\): behaviour 1"\\) is out of order: behaviour 1 wants its test patch first$`), "a series whose first patch is an implementation");
+  builderReds(next(w326World("w326-b2-quote", { quote: '"' }).w, [OPUS, ...BUDGET]), /^not replayed: the red command holds "\\"" outside single quotes$/, "a red command a shell would read");
+
+  // master moved under the series: a hunk no longer applies
+  const moved = w326World("w326-b2-moved");
+  put(moved.w.wt, "source.txt", "master moved this line\n");
+  commit(moved.w.wt, "feat: master moved");
+  builderReds(next(moved.w, [OPUS, ...BUDGET]), /^not replayed: the series does not apply at the worktree's HEAD: error: patch failed: source\.txt:1$/, "a series that no longer applies");
+
+  // a red already recorded: the replay starts only from no red
+  const begun = w326World("w326-b2-begun");
+  put(begun.w.wtStudio, `ci/reds/${OPUS}/01.log`, "# behaviour: 1\n# exit: 1\n\nnot ok 1 - x\n");
+  commit(begun.w.wt, "studio: a red by hand");
+  handoffAt(begun.w, "wt", T.handoffFresh);
+  builderReds(next(begun.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: ci/reds/${OPUS}/ already holds 1 entry; the replay starts only where no red is recorded$`), "a red already recorded");
+
+  // a reds directory that cannot be read as one is not "no red": a file in its place, a symlink out of the officina, no read permission
+  const unread = (w: World, what: string, row: string): void => builderReds(next(w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: ci/reds/${OPUS}/ ${what}; whether a red is recorded cannot be read$`), row);
+  const asFile = w326World("w326-b2-reds-file");
+  put(asFile.w.wtStudio, `ci/reds/${OPUS}`, "not a directory\n");
+  unread(asFile.w, "is not a directory", "an unreadable reds directory: a file in its place");
+  const linked = w326World("w326-b2-reds-link");
+  mkdirSync(join(linked.w.root, "elsewhere"));
+  mkdirSync(join(linked.w.wtStudio, "ci", "reds"), { recursive: true });
+  symlinkSync(join(linked.w.root, "elsewhere"), join(linked.w.wtStudio, "ci", "reds", OPUS));
+  unread(linked.w, "is reached through a symlink", "an unreadable reds directory: a symlink out of the officina");
+  if (process.getuid?.() !== 0) {
+    const locked = w326World("w326-b2-reds-locked");
+    const dir = join(locked.w.wtStudio, "ci", "reds", OPUS);
+    mkdirSync(dir, { recursive: true });
+    chmodSync(dir, 0o100); // traversable but not listable
+    // the builder's order it then derives is held by W-316's silence read of the same directory; the replay is never performed
+    const before = git(locked.w.wt, ["rev-parse", "HEAD"]);
+    try {
+      const o = performReds(locked.w);
+      expectStep(o, "reds", "held", "an unreadable reds directory: no read permission");
+      assert.equal(git(locked.w.wt, ["rev-parse", "HEAD"]), before, ran("an unreadable reds directory: the perform replays nothing", o));
+    } finally {
+      chmodSync(dir, 0o755);
+    }
+  }
+
+  // a first `git am` that fails (an applypatch-msg hook here; a missing committer identity alike) commits nothing,
+  // and the attempt marker written before it turns every later order into the builder's: no order loop
+  const refused = w326World("w326-b2-am");
+  const hooks = join(refused.w.root, "hooks");
+  mkdirSync(hooks);
+  writeFileSync(join(hooks, "applypatch-msg"), "#!/bin/sh\necho 'applypatch-msg: refused' >&2\nexit 1\n", { mode: 0o755 });
+  git(refused.w.wt, ["config", "core.hooksPath", hooks]);
+  const at = git(refused.w.wt, ["rev-parse", "HEAD"]);
+  const amHeld = performReds(refused.w);
+  expectStep(amHeld, "reds", "held", "a first git am failure holds the perform");
+  assert.match(amHeld.kv.get("why") ?? "", /^behaviour 1's test patch did not apply: /, ran("the why names the behaviour and the step", amHeld));
+  assert.equal(git(refused.w.wt, ["rev-parse", "HEAD"]), at, "nothing is committed");
+  builderReds(next(refused.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: a replay of ${OPUS} was already attempted `), "after a first git am failure the builder's order, not the replay again");
+  expectStep(performReds(refused.w), "reds", "named", "a second perform only names the builder's order");
+  assert.equal(git(refused.w.wt, ["rev-parse", "HEAD"]), at, "a second perform commits nothing");
+
+  // a test that passes on its own commit: the perform holds on the red, keeps the test commit, and the builder takes over
+  const passing = w326World("w326-b2-passing", { stage: { passing: true } });
+  const held = performReds(passing.w);
+  expectStep(held, "reds", "held", "a red that passes holds the perform");
+  assert.equal(held.status, 1, ran("exit 1", held));
+  assert.match(held.kv.get("why") ?? "", /^behaviour 1's red was not recorded: red: command exited 0/, ran("the why names the behaviour and the red's refusal", held));
+  assert.equal(subjects(passing.w, 1)[0], `test(${OPUS}): row b1, red`, "the test commit stays");
+  assert.equal(existsSync(join(passing.w.wtStudio, "ci", "reds", OPUS, "01.log")), false, "no red is recorded");
+  builderReds(next(passing.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: a replay of ${OPUS} was already attempted \\(\\.bisellium/prototype-replay/${OPUS}\\.attempted\\); the replay runs once$`), "after the hold the builder's order");
+
+  // a red that fails by module load is not a red: the perform holds and leaves its log uncommitted for the builder
+  const load = w326World("w326-b2-load", { stage: { moduleLoad: true } });
+  const unusable = performReds(load.w);
+  expectStep(unusable, "reds", "held", "a module-load red holds the perform");
+  assert.equal(unusable.kv.get("why"), `behaviour 1's red is not usable (a dirty-tree, module-load or exit-0 red); ci/reds/${OPUS}/01.log is left uncommitted`, ran("the why names the log", unusable));
+  assert.equal(git(load.w.wt, ["status", "--porcelain", "-uall"]), `?? studio/ci/reds/${OPUS}/01.log`, "the log is left uncommitted");
+  handoffAt(load.w, "wt", NOW_ISO);
+  builderReds(next(load.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: a replay of ${OPUS} was already attempted `), "after a module-load red the builder's order");
+
+  // an unrelated untracked entry passes apply and am, then the red verb holds on it: the test commit stays and the builder takes over
+  const stray = w326World("w326-b2-stray");
+  put(stray.w.wt, "stray.txt", "unrelated\n");
+  const strayHeld = performReds(stray.w);
+  expectStep(strayHeld, "reds", "held", "an unrelated untracked entry holds the perform at the red");
+  assert.match(strayHeld.kv.get("why") ?? "", /^behaviour 1's red was not recorded: /, ran("the why names the red", strayHeld));
+  assert.equal(subjects(stray.w, 1)[0], `test(${OPUS}): row b1, red`, "the test commit stays");
+  builderReds(next(stray.w, [OPUS, ...BUDGET]), new RegExp(`^not replayed: a replay of ${OPUS} was already attempted `), "after an unrelated untracked entry the builder's order");
+});
+
+test("W-326-b3 behaviour 3: after a replay the gates are the producer's; a builder only for a required fix or reds a builder recorded", { timeout: 1_800_000 }, () => {
+  const { w } = w326World("w326-b3");
+  expectStep(performReds(w), "reds", "performed", "the replay");
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "build", "named", "after the replay the build rung names the gates");
+  assert.equal(o.kv.get("actor"), "producer", ran("the producer runs them", o));
+  assert.equal(o.kv.has("role"), false, ran("no builder order", o));
+  assert.equal(o.kv.get("replayed"), `every red of ${OPUS} was recorded by the prototype replay`, ran("the order says why", o));
+  const command = o.kv.get("command") ?? "";
+  assert.match(command, new RegExp(`^from \\.worktrees/${OPUS}: bisellium handoff --opus ${OPUS} --sella producer --next "ready for review" --studio studio, committed \\(studio only\\); then bisellium ci --opus ${OPUS} --studio studio --repo \\. \\(the one full suite, in the background\\); then commit the record and its gate logs`), ran("handoff, then ci --opus, then the gate commit", o));
+  assert.match(command, /A ci --opus that exits non-zero is a builder's: dispatch builder \(phase 2\) through the host seam/, ran("a failing suite goes to a builder", o));
+
+  // a red recorded by a builder: the build rung's builder order, as before
+  const mixed = w326World("w326-b3-mixed");
+  expectStep(performReds(mixed.w), "reds", "performed", "the replay");
+  const log2 = join(mixed.w.wtStudio, "ci", "reds", OPUS, "02.log");
+  writeFileSync(log2, readFileSync(log2, "utf8").replace("# sella: architect\n", `# sella: builder.${OPUS}\n`));
+  commit(mixed.w.wt, "studio: red 2 re-recorded by a builder");
+  handoffAt(mixed.w, "wt", T.handoffFresh);
+  const m = next(mixed.w, [OPUS, ...BUDGET]);
+  expectStep(m, "build", "named", "a builder's red");
+  assert.equal(m.kv.get("role"), "builder", ran("the builder's phase 2 order", m));
+  assert.equal(m.kv.has("replayed"), false, ran("not a replay", m));
+
+  // a failed spec review whose blockers keep the design (D-086 A): the replay runs, and the required fixes are a builder's
+  const KEEPS = "1. blocking brief:7 a script's ratio is rounded [severity: S1] [design: keeps]. check: none: no rule";
+  const k = srWorld("w326-b3-keeps");
+  const manifest = join(k.studio, "bisellium.yml");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes:", '  - { id: tests, name: Tests, kind: automated, command: "node -e 0" }\nsource_excludes:'));
+  commit(k.repo, "studio: an automated gate");
+  const ks = stageSeries(k, k.repo);
+  put(k.repo, BRIEF_REL, w326Brief([`Prototype: ${ks.line}`]));
+  sign(k, 1);
+  review(k, 2, "failed", { body: `## Findings\n${KEEPS}\n` });
+  landed(k);
+  git(k.repo, ["branch", BRANCH]);
+  git(k.repo, ["worktree", "add", "-q", k.wt, BRANCH]);
+  verb(k.wt, ["ready", OPUS, "--sella", "architect", "--studio", k.wtStudio, "--now", T.ready]);
+  commit(k.wt, `studio(${OPUS}): ready`);
+  const kr = next(k, [OPUS, ...BUDGET]);
+  expectStep(kr, "reds", "named", "keeps: the replay is named");
+  assert.equal(kr.kv.get("prototype"), ks.line, ran("keeps: the replay order", kr));
+  assert.equal(kr.kv.get("required-fixes"), `ci/${OPUS}-spec-2.log #1`, ran("keeps: the replay order names the required fix", kr));
+  expectStep(performReds(k), "reds", "performed", "keeps: the replay");
+  handoffAt(k, "wt", T.handoffFresh);
+  const kb = next(k, [OPUS, ...BUDGET]);
+  expectStep(kb, "build", "named", "keeps: build");
+  assert.equal(kb.kv.get("role"), "builder", ran("keeps: the required fix is a builder's", kb));
+  assert.equal(kb.kv.get("required-fixes"), `ci/${OPUS}-spec-2.log #1`, ran("keeps: the builder's order names it", kb));
 });

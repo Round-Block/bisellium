@@ -1,0 +1,58 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-326-b2\s --import tsx packages/cli/src/next-branch.test.ts
+# exit: 1
+# at: 2026-10-20T16:27:54.210Z
+# sella: builder.W-326
+# tree: tree:c8be6668a71ece7e59aa011b01f1d74518fbf7c0
+# ticket: {"opus":"W-326","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-326/studio","head":"4bb87d214fb56c32b874dd66c9b371f9842db868","brief":"b2dd77eca48c481340b189397cc6882944e2c4af","at":"2026-10-20T16:27:49.113Z"}
+
+TAP version 13
+# Subtest: W-326-b2 behaviour 2: a prototype the replay cannot reproduce names the builder and the reason, and a perform that cannot finish holds at its first failed step while keeping completed commits
+not ok 1 - W-326-b2 behaviour 2: a prototype the replay cannot reproduce names the builder and the reason, and a perform that cannot finish holds at its first failed step while keeping completed commits
+  ---
+  duration_ms: 1047.747029
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-326/packages/cli/src/next-branch.test.ts:25:3903'
+  failureType: 'testCodeFailure'
+  error: |-
+    a digest mismatch: the order names why the prototype is not replayed
+    --- exit 0
+    --- stdout
+    next: W-900 reds named
+    actor: builder
+    why: no usable red for behaviour(s) 1, 2 (a dirty-tree, module-load or exit-0 red counts as missing)
+    head: opus/W-900 fbdfbe53805a
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: 1
+    missing: 1,2
+    inputs: briefs/W-900.md, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase 1, one behaviour at a time, D-036), in .worktrees/W-900, from behaviour 1 through 2, for each in turn: 1. commit the behaviour's test, its rows failing; 2. from .worktrees/W-900: bisellium red W-900 --behaviour <b> --sella builder.W-900 --studio studio -- <cmd…> 3. commit the red log alone (studio files only), before any implementation; 4. implement the behaviour until its rows and every earlier behaviour's rows pass, and commit. If red refuses, finish the earlier behaviour it names; never re-record a red at the tip. A red recorded on the wrong tree is re-recorded with --cwd in a detached worktree at the commit it belongs on, after the branch's last rebase, and its log committed at the tip; never rewrite history.
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    builderReds (/home/edckt/agents/bisellium/.worktrees/W-326/packages/cli/src/next-branch.test.ts:1102:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-326/packages/cli/src/next-branch.test.ts:1143:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1065.211276

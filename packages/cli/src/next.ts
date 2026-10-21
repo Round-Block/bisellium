@@ -41,7 +41,8 @@ import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs";
 import { clean, cleanup, dirtyHold, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
-import { runDone, runReady, runReview } from "./lifecycle.js";
+import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
+import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
 import { runVerdict } from "./verdict.js";
 import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
@@ -79,7 +80,7 @@ const TRUNK = "refs/heads/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
-const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review"]);
+const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec", "review", "reds"]);
 /** W-292: the rungs --chain performs in turn (W-312: no mint before review). */
 const CHAIN = new Set<Step>(["review", "pr"]);
 const BEHAVIOURS = "Behaviours to test";
@@ -431,6 +432,8 @@ export interface Facts {
   /** W-312: the worktree record's automated gates passed at the branch's current source tree (`admitCurrentGates`), or why not */
   gates(): { ok: true } | { ok: false; error: string } | undefined;
   redFindings(): string[];
+  /** W-326: the replay the brief's signed prototype allows, or why not; undefined when the brief names none */
+  replay(): Replay | { why: string } | undefined;
   uiSpecProblems(): string[];
   uiReviewProblems(): string[];
   /** the authoritative ui-lead input (`ci/<id>-spec-<n>.log`) of a kind: ui opus whose branch carries a valid one */
@@ -675,6 +678,10 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     }),
     wtChanges: memo(() => specChanges(wt.dir, studioRel, id)),
     mainChanges: memo(() => specChanges(repo, studioRel, id)),
+    replay: memo(() => {
+      const brief = branch?.read(briefRel(id));
+      return brief === undefined ? undefined : readReplay(brief, id, wt, repo);
+    }),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(instant(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at"))?.getTime() ?? Number.NaN);
@@ -791,7 +798,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "certify" | "commit-opus" | "land";
+  act?: "verify" | "certify" | "commit-opus" | "land" | "replay";
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
@@ -905,19 +912,22 @@ export function deriveNext(f: Facts): Derived {
     const missing: number[] = [];
     for (let k = 1; k <= n; k++) {
       const text = bs.read(`ci/reds/${id}/${pad(k)}.log`);
-      const h = parseLogHeader(text ?? "");
-      const exit = h.get("exit") ?? "";
-      if (text === undefined || !/^-?\d+$/.test(exit) || exit === "0" || (h.get("tree") ?? "").startsWith("dirty:") || isModuleLoadFailure(text)) missing.push(k);
+      if (text === undefined || !usableRed(text)) missing.push(k);
     }
     const findings = f.redFindings();
-    if (missing.length > 0 || findings.length > 0)
+    if (missing.length > 0 || findings.length > 0) {
+      // W-326: with no red recorded, the brief's signed prototype is replayed by a perform instead of a builder
+      const replay = f.replay();
+      if (replay !== undefined && !("why" in replay))
+        return { ...named("reds", "producer", "no red is recorded and the brief's signed prototype applies at the worktree's HEAD", `bisellium next ${id} --perform --expect reds`, [["prototype", replay.line], ...fixes]), act: "replay", ticket: { action: "red", round: 1 } };
       return dispatch(f, "reds", missing.length > 0 ? `no usable red for behaviour(s) ${missing.join(", ")} (a dirty-tree, module-load or exit-0 red counts as missing)` : findings.join("; "), {
         phase: "1",
         resume: bs.list(`ci/reds/${id}`).length > 0,
         inputs: [briefRel(id)],
-        extra: [["missing", missing.join(",") || "(none; see why)"], ...fixes],
+        extra: [["missing", missing.join(",") || "(none; see why)"], ...fixes, ...(replay !== undefined && "why" in replay ? [["prototype", `not replayed: ${replay.why}`] as [string, string]] : [])],
         ...(missing.length > 0 ? { behaviour: { from: missing[0]!, through: n } } : {}),
       });
+    }
 
     // 6 build
     if (!f.wt.usable) return hold("build", `${join(".worktrees", id)} is not a worktree on opus/${id}; run: git worktree add .worktrees/${id} opus/${id}`);
@@ -949,6 +959,15 @@ export function deriveNext(f: Facts): Derived {
     if (loop !== undefined) return hold("build", loop);
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
+    // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
+    if (gates !== undefined && !gates.ok && !failedNow && fixes.length === 0 && replayed(f, bs, n))
+      return named(
+        "build",
+        "producer",
+        gates.error,
+        `from .worktrees/${id}: bisellium handoff --opus ${id} --sella producer --next "ready for review" --studio ${f.studioRel}, committed (studio only); then bisellium ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, in the background); then commit the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
+        [["replayed", `every red of ${id} was recorded by the prototype replay`]],
+      );
     if ((gates !== undefined && !gates.ok) || failedNow)
       return dispatch(f, "build", failedNow ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
         phase: failedNow ? "fix" : "2",
@@ -999,6 +1018,21 @@ export function deriveNext(f: Facts): Derived {
     return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded: the perform records the merge queue's certify certificate`, `bisellium next ${id} --perform --expect done`), act: "certify", ticket: { action: "done", round: 0 } };
   }
   return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`), ticket: { action: "done", round: 0 } };
+}
+
+/** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
+function replayed(f: Facts, bs: Src, n: number): boolean {
+  const p = readPrototype(bs.read(briefRel(f.id)) ?? "");
+  if (p === undefined || "error" in p) return false;
+  for (let k = 1; k <= n; k++) if (parseLogHeader(bs.read(`ci/reds/${f.id}/${pad(k)}.log`) ?? "").get("sella") !== f.design) return false;
+  return true;
+}
+
+/** A red the reds rung counts: an integer, non-zero exit on a clean tree, not a module-load failure. */
+function usableRed(text: string): boolean {
+  const h = parseLogHeader(text);
+  const exit = h.get("exit") ?? "";
+  return /^-?\d+$/.test(exit) && exit !== "0" && !(h.get("tree") ?? "").startsWith("dirty:") && !isModuleLoadFailure(text);
 }
 
 /** The order a reviewer-configured spec step names, from the source that holds the newest signature. */
@@ -1577,6 +1611,77 @@ function capture(fn: () => { exitCode: number }): { exit: number; out: string[];
   }
 }
 const heldResult = (why: string, ...lines: string[]): StepResult => ({ ok: false, lines: [`why: ${why}`, ...lines] });
+
+/** `capture` for an async verb (`runRed`). */
+async function captureAsync(fn: () => Promise<{ exitCode: number }>): Promise<{ exit: number; out: string[]; err: string[] }> {
+  const log = console.log;
+  const error = console.error;
+  const out: string[] = [];
+  const err: string[] = [];
+  console.log = (...a: unknown[]): void => void out.push(a.join(" "));
+  console.error = (...a: unknown[]): void => void err.push(a.join(" "));
+  try {
+    return { exit: (await fn()).exitCode, out, err };
+  } finally {
+    console.log = log;
+    console.error = error;
+  }
+}
+
+/**
+ * W-326: the reds rung performed from the brief's signed prototype. For each behaviour in order: its test patch committed
+ * (`git am`, no three-way merge), its red recorded with its own ticket on that commit under the design sella and the log
+ * committed alone, then its implementation committed. The attempt marker is created before any replay commit or officina
+ * write (the perform framework's own step marker and log come first); once it has landed, the first failure (or a crash) holds
+ * with what was committed kept, and every later derivation names a builder: no order loop.
+ */
+async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (line: string) => void): Promise<StepResult> {
+  const { repo, studioAbs, id } = f0;
+  const replay = f0.replay();
+  if (replay === undefined || "why" in replay) return heldResult(`refusing: ${replay === undefined ? `${briefRel(id)} names no prototype` : replay.why}`);
+  const wt = f0.wt.dir;
+  const done: string[] = [];
+  const held = (why: string): StepResult => heldResult(why, ...done);
+  const marked = writeAttempt(repo, id, `${new Date(testClock ? nowMs : Date.now()).toISOString()} ${replay.line}\n`);
+  if (marked !== undefined) return heldResult(`refusing: ${marked}; nothing is replayed`);
+  const head = (): string | undefined => {
+    const r = git(wt, ["rev-parse", "--short", "HEAD"]);
+    const h = r.stdout.trim();
+    return r.status === 0 && r.error === undefined && /^[0-9a-f]+$/.test(h) ? h : undefined;
+  };
+  const apply = (k: number, role: "test" | "feat"): string | undefined => {
+    for (const p of replay.patches.filter((x) => x.behaviour === k && x.role === role)) {
+      const bad = amPatch(wt, p.text);
+      if (bad !== undefined) return `behaviour ${k}'s ${role === "test" ? "test patch" : "implementation"} did not apply: ${bad}`;
+      const h = head();
+      if (h === undefined) return `HEAD cannot be read after behaviour ${k}'s ${role === "test" ? "test patch" : "implementation"}`;
+      done.push(`${role}: behaviour ${k} ${h}`);
+    }
+    return undefined;
+  };
+  for (let k = 1; k <= replay.argv.length; k++) {
+    const tested = apply(k, "test");
+    if (tested !== undefined) return held(tested);
+    const at = testClock ? nowMs : Date.now();
+    const f = gather(repo, studioAbs, id);
+    for (const l of refreshTicket(f, { step: "reds", status: "named", actor: "producer", why: "", extra: [], ticket: { action: "red", round: k } }, at)) log(l);
+    const red = await captureAsync(() => runRed([id, "--behaviour", String(k), "--sella", f.design, "--studio", f.wt.studio, "--cwd", wt, ...(testClock ? ["--now", new Date(at).toISOString()] : []), "--", ...replay.argv[k - 1]!]));
+    if (red.exit !== 0) return held(`behaviour ${k}'s red was not recorded: ${one(red.err.find((l) => l.trim() !== "") ?? `red exited ${red.exit}`)}`);
+    const name = `ci/reds/${id}/${pad(k)}.log`;
+    const text = f.branch?.read(name);
+    if (text === undefined || !usableRed(text)) return held(`behaviour ${k}'s red is not usable (a dirty-tree, module-load or exit-0 red); ${name} is left uncommitted`);
+    const rel = `${f.studioRel}/${name}`;
+    const added = git(wt, ["add", "--", rel]);
+    const committed = added.status === 0 ? git(wt, ["commit", "-q", "-m", `chore(studio): ${id} red b${k}`, "-m", `Co-Authored-By: ${f.design} (bisellium next) <noreply@anthropic.com>`, "--", rel]) : added;
+    if (committed.status !== 0) return held(`could not commit ${rel}: ${one(committed.stderr)}`);
+    const h = head();
+    if (h === undefined) return held(`HEAD cannot be read after behaviour ${k}'s red log commit`);
+    done.push(`red: behaviour ${k} ${name} ${h}`);
+    const built = apply(k, "feat");
+    if (built !== undefined) return held(built);
+  }
+  return { ok: true, lines: done };
+}
 
 function performBranch(f: Facts): StepResult {
   const { repo, id, wt } = f;
@@ -2307,7 +2412,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     }
 
     // W-292: --chain performs review and pr, and no other rung (W-312: no mint before review)
-    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (!a.chain || CHAIN.has(d.step)) && (d.step !== "spec" || d.act !== undefined);
+    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (!a.chain || CHAIN.has(d.step)) && (d.step !== "spec" || d.act !== undefined) && (d.step !== "reds" || d.act === "replay");
     // a `pr` that must be created needs --title and --body-file; without them it only names the command
     const needsText = (d: Derived): boolean => d.step === "pr" && d.pr === undefined && (a.title === undefined || a.bodyFile === undefined);
 
@@ -2396,6 +2501,9 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
             break;
           case "cleanup":
             result = cleanup(ctx);
+            break;
+          case "reds":
+            result = await performReds(f, a.nowMs, a.testClock, log);
             break;
           case "review":
             result = await performReview(f, d2, a.nowMs, a.testClock, log);
