@@ -81,7 +81,7 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
     await expect(page.locator(".board__column[data-column-id]")).toHaveCount(lifecyclePhases.size + 1);
     await expect.poll(() => page.locator("[data-card-id]").count()).toBeGreaterThan(0);
     await expect.poll(() => page.locator(".gate-ladder").count()).toBeGreaterThan(0);
-    await expect(page.locator('[data-column-id="needs_you"]')).toBeInViewport();
+    await expect(page.locator('.board__column[data-column-id="needs_you"]')).toBeInViewport();
     await expect(page.locator(".board__liveness")).toContainText(/connected|live/);
   } else if (route === "seats") {
     await expect.poll(() => page.locator('select[aria-label^="model for seat "]').count()).toBeGreaterThan(0);
