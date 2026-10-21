@@ -139,22 +139,15 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   };
   const webE2e = ci.jobs["web-e2e"];
   const dispatchMaster = "github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'";
-  const dispatchGuard = ci.jobs["dispatch-guard"];
   assert.deepEqual(
-    dispatchGuard?.steps,
-    [
-      {
-        name: "Reject a non-master screenshot dispatch",
-        if: "github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master'",
-        run: 'echo "workflow_dispatch must target refs/heads/master" >&2\nexit 1\n',
-      },
-    ],
-    "a non-master dispatch fails before any checkout or cache-affecting step",
+    Object.keys(ci.jobs),
+    ["gates", "officina", "web-e2e", "certify"],
+    "the workflow retains exactly its four established jobs",
   );
   for (const jobName of ["gates", "officina", "web-e2e"]) {
     const job = ci.jobs[jobName];
-    assert.equal(job?.needs, "dispatch-guard", `${jobName} waits for the dispatch ref guard`);
-    assert.equal(job?.if, dispatchMaster, `${jobName} cannot save a cache on a non-master dispatch`);
+    assert.equal(job?.needs, undefined, `${jobName} has no prerequisite job`);
+    assert.equal(job?.if, dispatchMaster, `${jobName} skips every step on a non-master dispatch`);
     for (const checkout of job?.steps.filter((step) => step.uses?.startsWith("actions/checkout@")) ?? [])
       assert.equal(checkout.with?.ref, "${{ github.sha }}", `${jobName} checks out the event's immutable commit`);
   }

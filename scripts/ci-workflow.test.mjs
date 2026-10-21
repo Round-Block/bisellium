@@ -134,8 +134,8 @@ const studioStep = ciSteps.find((s) => s.includes("check -- studio") && !s.inclu
 check("CI_STEPS has a 'check -- studio' entry", studioStep !== undefined, JSON.stringify(ciSteps));
 
 check(
-  "workflow has the dispatch guard and four required jobs",
-  Object.keys(doc?.jobs ?? {}).join(",") === "dispatch-guard,gates,officina,web-e2e,certify",
+  "workflow has exactly four jobs: gates, officina, web-e2e, certify",
+  Object.keys(doc?.jobs ?? {}).join(",") === "gates,officina,web-e2e,certify",
 );
 
 // W-131: gates also carries steps that are not CI_STEPS entries. Each is named

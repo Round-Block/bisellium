@@ -595,20 +595,12 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
   );
   assert.deepEqual(doc.on.push?.branches, ["master"], "push names only master");
   assert.deepEqual(doc.on.merge_group?.types, ["checks_requested"], "merge_group on checks_requested");
-  assert.deepEqual(
-    Object.keys(doc.jobs),
-    ["dispatch-guard", "gates", "officina", "web-e2e", "certify"],
-    "the dispatch guard and four required jobs",
-  );
+  assert.deepEqual(Object.keys(doc.jobs), ["gates", "officina", "web-e2e", "certify"], "the four required jobs");
   for (const [name, job] of Object.entries(doc.jobs)) {
     const expectedIf =
       name === "certify" ? MERGE_GROUP : ["gates", "officina", "web-e2e"].includes(name) ? DISPATCH_MASTER : undefined;
     assert.equal(job.if, expectedIf, `${name}'s job-level if`);
-    assert.equal(
-      job.needs,
-      ["gates", "officina", "web-e2e"].includes(name) ? "dispatch-guard" : undefined,
-      `${name}'s prerequisite`,
-    );
+    assert.equal(job.needs, undefined, `${name} has no prerequisite job`);
     assert.equal(job["continue-on-error"], undefined, `${name} has no job-level continue-on-error`);
     for (const step of job.steps)
       assert.equal(step["continue-on-error"], undefined, `${name}: no step continue-on-error`);
@@ -616,16 +608,6 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
   const table = (name) =>
     doc.jobs[name].steps.map((step) => [step.id === "scope" ? "scope" : (step.run ?? step.uses), step.if ?? null]);
   const SCOPE = ["scope", MERGE_GROUP];
-  assert.deepEqual(
-    table("dispatch-guard"),
-    [
-      [
-        'echo "workflow_dispatch must target refs/heads/master" >&2\nexit 1\n',
-        "github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master'",
-      ],
-    ],
-    "dispatch-guard fails a non-master manual run before checkout",
-  );
   assert.deepEqual(
     table("gates"),
     [
