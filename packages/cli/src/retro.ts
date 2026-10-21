@@ -22,7 +22,7 @@ import { createNextRecord, ensureRealDirectory, requireRealDirectory } from "@bi
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
 import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
-import { LOG_MAX_BYTES, parseVerdictLog, type RecordedFinding } from "@bisellium/commands/verdict.js";
+import { LOG_MAX_BYTES, parseVerdictLog, readUiSpecPairing, type RecordedFinding } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
 import { RULE_IDS } from "./rules/ids.js";
@@ -543,7 +543,9 @@ function readVerdictLog(root: string, id: string, rel: string, signedBy?: string
 /** The verdict logs and reds of one opus (D-039 §2), or the first record outside the domain. */
 export function readOpusVerdicts(root: string, id: string): Verdicts | Refusal {
   if (!OPUS_ID.test(id)) return { error: `${id}: not an opus id` };
-  const magister = designMagister(root);
+  const opus = readOpus(root, id);
+  if (isRefusal(opus)) return opus;
+  const magister = designMagister(root, opus["kind"]);
   if (isRefusal(magister)) return magister;
   const sources: string[] = [];
   const findings: RecordedFinding[] = [];
@@ -614,13 +616,19 @@ function headerBlock(text: string): Map<string, string> {
 }
 
 /** The design magister, whose spec logs are signatures and not reviews: none declared means every spec log is a review. */
-function designMagister(root: string): { design: string | undefined } | Refusal {
+function designMagister(root: string, kind?: unknown): { design: string | undefined } | Refusal {
   try {
-    const collegia: unknown = (readManifest(root) as unknown as Dict)["collegia"];
+    const manifest = readManifest(root);
+    const collegia: unknown = (manifest as unknown as Dict)["collegia"];
     const rows = (Array.isArray(collegia) ? collegia : []).filter((c): c is Dict => isDict(c) && c["id"] === "design");
     if (rows.length > 1) return { error: `bisellium.yml: the design collegium is declared ${rows.length} times; exactly one row names the magister` };
     const magister = rows[0]?.["magister"];
     if (rows.length === 1 && (typeof magister !== "string" || magister === "")) return { error: "bisellium.yml: the design collegium declares no magister" };
+    if (kind === "ui") {
+      const ui = readUiSpecPairing(manifest);
+      if (isRefusal(ui)) return ui;
+      if (ui.pairing !== undefined) return { design: ui.pairing.signer };
+    }
     return { design: typeof magister === "string" ? magister : undefined };
   } catch (e) {
     return { error: `bisellium.yml: ${(e as Error).message.split("\n")[0]}` };
@@ -633,8 +641,6 @@ function designMagister(root: string): { design: string | undefined } | Refusal 
  * `# session:` is after; each log carrying `# session:` also parses with `parseVerdictLog`, every other is read by its header block only.
  */
 export function reviewRounds(root: string): { lines: string[]; opus: Map<string, OpusReviewRounds> } | Refusal {
-  const magister = designMagister(root);
-  if (isRefusal(magister)) return magister;
   let names: string[] = [];
   try {
     names = readdirSync(join(root, "ci")).sort();
@@ -653,8 +659,14 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
     const phase = m[2] as RoundLog["phase"];
     // the table lists every opus with a spec or review log, signature logs included
     if (phase !== "handoff") tabled.add(m[1]!);
-    // a design magister's spec log is a signature, not a review round
-    if (phase === "spec" && magister.design !== undefined && h.get("sella") === magister.design) continue;
+    // W-348: each kind's signer is a signature, not a review round. A historical fixture with no readable record keeps
+    // the design-magister fallback; reviewRounds did not previously require an opus record.
+    if (phase === "spec") {
+      const record = readOpus(root, m[1]!);
+      const signer = designMagister(root, isRefusal(record) ? undefined : record["kind"]);
+      if (isRefusal(signer)) return signer;
+      if (signer.design !== undefined && h.get("sella") === signer.design) continue;
+    }
     logs.push({ opus: m[1]!, phase, n: Number(m[3]), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
   }
   const after = new Set(logs.filter((l) => l.session).map((l) => `${l.opus} ${l.phase}`));
