@@ -1,0 +1,19 @@
+# opus: W-337
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15d48-36b7-71d3-9447-45eff32abc61
+# outcome: failed
+# at: 2026-10-21T07:10:39.331Z
+# tree: tree:00aae28650a7628c055c370393c56f024a4a8a32
+# brief: briefs/W-337.md blob:49d50ddbdc1cc0e9c482f1f3e86bc54fa2e236cd
+# ticket: {"opus":"W-337","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-337/studio","head":"65c6a1b95d1ef76434f7f7091738efe6ac16d9fa","brief":"49d50ddbdc1cc0e9c482f1f3e86bc54fa2e236cd","at":"2026-10-21T07:06:13.074Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:1087 The conflict guards run before line 1108 determines that the current tree already has a passed review. A newly conflicting master or later lane therefore diverts a reviewed tree from PR, contrary to the requirement that passed current review proceeds to PR without another conflict check (brief:19). [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/cli/src/next-ladder.test.ts
+2. blocking — packages/cli/src/next.ts:590 `reviewedAtTip` reads `step_tickets` from the main-checkout manifest: `gather` was called with `f.studioAbs`, while the parsed worktree manifest is used only for a drift comparison that excludes `step_tickets`. A YAML-valid but malformed ticket setting in an open unpushed lane therefore does not hold classification as required by brief:69. [severity: S1] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/next-ladder.test.ts
+
+## Verdict
+The implementation violates the promised post-review boundary and fails closed incompletely for other-lane local-review qualification.
+VERDICT: FAIL
