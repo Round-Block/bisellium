@@ -1,0 +1,24 @@
+# opus: W-350
+# phase: build
+# round: 4
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15dbc-95f9-7ac1-8d19-2543a8f413af
+# outcome: passed
+# at: 2026-10-21T11:47:19.278Z
+# tree: tree:4f1f152c78de7931710c21578b0d8e496fc8bf5b
+# ui_input: ci/W-350-spec-8.log
+# design_digest: sha256:485973711efc37ed07c917ba7781dab8c43657601979a1639d8274e55c863159
+# ticket: {"opus":"W-350","step":"review","action":"verdict-build","round":4,"actor":"censor","studio":".worktrees/W-350/studio","head":"519f0a62e28a2bf54f8751a5e603f336ce23f11b","brief":"a6247df7c497d0af63f4ba2f97c90df4b38474f6","at":"2026-10-21T11:47:16.556Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## UI input disposition
+Honoured — the desktop Inbox still exposes record detail and verbs, while the phone layout keeps the queue primary and detail hidden in `apps/web/test/screenshots.spec.ts:68` and `apps/web/test/screenshots.spec.ts:73`. Officina completion remains represented at `apps/web/test/screenshots.spec.ts:91`; zero counted-pixel tolerance remains at `apps/web/playwright.serve.config.ts:43`; the runner remains pinned at `.github/workflows/ci.yml:151`; and complete-set rendering identity remains checked at `apps/web/test/screenshots.spec.ts:118`, preserving the ui-lead finding from spec-3 as confirmed in spec-6 and spec-8.
+
+## Verdict
+The merge-queue repair attaches the immutable event commit before Git-backed checks and isolates policy-test environment state without changing the approved UI behavior.
+VERDICT: PASS
