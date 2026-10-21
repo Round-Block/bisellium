@@ -1,6 +1,6 @@
 # Design Lex
 
-Magister: `architect` · Adopted: 2026-09-18 · Amended: see §9
+Magister: `architect` · UI spec signer: `ui-architect` (D-091 A) · Adopted: 2026-09-18 · Amended: see §9
 
 ## 1. Mandate
 
@@ -59,3 +59,4 @@ moves to `building`.
 | 2026-09-18 | Adopted; Design collegium established (W-018) | Patron |
 | 2026-09-19 | Architecture doc kept current per cascade; module graph script-generated (check rule ships with W-023) | Patron |
 | 2026-10-14 | Definition of ready names the light brief form: four sections, never for security, sandbox, branch-protection or pipeline work (W-255, D-063 §4) | Patron |
+| 2026-10-21 | A `kind: ui` brief is drafted, prototyped and signed by `ui-architect` (Codex Sol), with the ui-lead's input; the design magister remains the signer for every other kind (D-091, W-348) | Patron |

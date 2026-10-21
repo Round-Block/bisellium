@@ -1118,15 +1118,6 @@ test("W-348-b1 behaviour 1: the UI spec pair is an atomic exact-model override, 
   }, /signer and reviewer must be different seats/);
 });
 
-function uiPairWorld(tag: string): World {
-  const w = srWorld(tag, {
-    edit: (t) => `${t.replace(ARCHITECT_ROW, `${ARCHITECT_ROW}\n${UI_SEAT}\n  - { id: ${UI_ARCHITECT}, collegium: design, kind: agent, model: ${UI_ARCHITECT_MODEL}, harness: codex }`).replace(QA_ROW, `${QA_ROW}\n  - { id: ${UI_REVIEWER}, collegium: qa, kind: agent, model: ${UI_REVIEWER_MODEL}, harness: claude-code }`)}ui_spec_signer: ${UI_ARCHITECT}\nui_spec_reviewer: ${UI_REVIEWER}\n`,
-  });
-  editRecord(w, "repo", (doc) => doc.setIn(["kind"], "ui"));
-  commit(w.repo, "studio: W-900 uses the UI spec pair");
-  return w;
-}
-
 test("W-348-b2 behaviour 2: next reads every UI signature as ui-architect and every UI spec review as ui-spec-reviewer, then attributes ready to the UI signer", { timeout: 1_800_000 }, () => {
   const brief = briefText(1);
   const pin = `briefs/${OPUS}.md blob:${createHash("sha1").update(`blob ${Buffer.byteLength(brief)}\0`).update(brief).digest("hex")}`;
@@ -1188,4 +1179,9 @@ test("W-348-b2 behaviour 2: next reads every UI signature as ui-architect and ev
   const lead = deriveNext(facts(passedFiles, ["no ui-lead spec input exists"]));
   assert.equal(lead.order?.sella, "ui-lead", "the passed UI review then orders ui-lead");
   assert.equal(lead.order?.round, 3, "the UI input is the next round");
+
+  const ready = deriveNext({ ...facts(passedFiles), tip: "branch-tip", branch: src(passedFiles), branchRecord: rec });
+  assert.equal(ready.step, "ready", "a passed UI spec on the branch reaches ready");
+  assert.match(ready.command ?? "", /--sella ui-architect\b/, "ready names the UI signer");
+  assert.deepEqual(ready.extra, [["attributed", "ui-architect (signed ci/W-900-spec-1.log)"]], "ready is attributed to the UI signer");
 });

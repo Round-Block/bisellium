@@ -143,9 +143,10 @@ names each step and writes the step ticket the next record write consumes
    is dispatched only where an order names one (no prototype, or one the
    replay cannot reproduce), for required fixes (D-086 A) and for fix
    rounds, and writes code, reds and their `handoff`, running `next` before
-   each `red`. The architect (Opus 5.5) signs specs and stages the
-   prototype. Codex `gpt-5.6-sol` is the single
-   review gate for specs and builds (D-066 C) and tags each finding's class (D-070);
+   each `red`. The architect (Opus 5.5) signs engineering specs and stages the
+   prototype; for `kind: ui`, `ui-architect` (Codex `gpt-5.6-sol`) does so (D-091 A).
+   Codex `gpt-5.6-sol` is the engineering spec and every build review gate (D-066 C);
+   `ui-spec-reviewer` (Claude Opus 5.5) is the UI spec gate. Each tags findings' classes (D-070);
    the orchestrator records their verdicts. A clerk (no shell) edits handoff
    and dossier text only; a Haiku general-purpose agent republishes. The
    Patron greenlights, holds, and merges PRs touching `.claude/`,
@@ -156,14 +157,15 @@ names each step and writes the step ticket the next record write consumes
    flight, in a scratch worktree; changed Files owned are re-reviewed before
    `branch` (D-057). The Opus architect drafts, prototypes the reds and
    signs (`verdict --phase spec`), uncommitted (D-072, replacing D-027's
-   Codex draft), dispatched with `studio/prompts/spec-draft.md` filled. Before signing, the architect runs Codex's test check,
+   Codex draft); for `kind: ui`, Codex Sol is the UI architect and does all three with Astra's ui-lead input (D-091 A).
+   The signer is dispatched with `studio/prompts/spec-draft.md` filled. Before signing, it runs Codex's test check,
    `~/.bisellium-evidence/codex-passes/fixture-census.sh <id>`, and names in
    the brief every existing test row or fixture it lists as flipped (W-162's
    and W-293's builders stopped on unnamed ones).
-2. **Spec review (D-046, W-162):** `next` orders it. Codex `gpt-5.6-sol`,
-   prompt `studio/prompts/spec-review.md` (filled per round); record with
-   `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --session <codex session id> --from <$TMPDIR copy>`
-   (`--session` on every reviewer verdict, spec, build and handoff, or the W-215
+2. **Spec review (D-046, W-162):** `next` orders the configured pair's reviewer: Codex `gpt-5.6-sol`
+   (`spec-reviewer`) for engineering, Claude Opus 5.5 (`ui-spec-reviewer`) for `kind: ui` (D-091 A), with
+   `studio/prompts/spec-review.md` filled per round; record with the sella, model and session `next` names.
+   `--session` is present on every reviewer verdict, spec, build and handoff, or the W-215
    measurement counts nothing; later rounds resume that session, whose id the
    round's `session.log` under `~/.bisellium-evidence/W-<id>-specreview/` holds,
    and `multilane-spec/{review,resume}.sh` there run and resume them). A verdict
@@ -232,9 +234,9 @@ names each step and writes the step ticket the next record write consumes
 
 ## 10. Models
 
-Specs: Claude Opus 5.5 architect drafts and signs (D-072). Spec review,
-build review, security, the test check at spec and the fix check before a
-re-review: Codex `gpt-5.6-sol` high. Builds: replayed from the
+Engineering specs: Claude Opus 5.5 architect drafts and signs, Codex `gpt-5.6-sol` reviews (D-072, D-066 C).
+UI specs: Codex `gpt-5.6-sol` drafts and signs with Astra's ui-lead input, Claude Opus 5.5 reviews (D-091 A).
+Build review, security, the test check at spec and the fix check before a re-review stay Codex `gpt-5.6-sol` high. Builds: replayed from the
 architect's signed prototype (W-326); Claude Sonnet 5.5 where the replay
 cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 `gpt-5.6-terra`. Security fixes are mandatory (D-044).
@@ -333,3 +335,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-10-20 | §9 step 6: the done rung asks no handoff edit (W-299, D-077 B) | Patron |
 | 2026-10-20 | §9 steps 1, 3 and 4: the architect's dispatch, the first builder brief and the round-1 build review are filled from `studio/prompts/` (W-241 part 1) | Patron |
 | 2026-10-20 | §9 steps 0 and 3, §10: the reds and code are replayed from the architect's signed prototype by a reds perform; a builder only where the replay cannot run, for required fixes and for fix rounds (W-326) | Patron |
+| 2026-10-21 | §9 steps 0-2, §10: `kind: ui` uses the D-091 pair—Codex Sol signs with Astra's input, Claude Opus reviews; engineering and build review stay unchanged (W-348) | Patron |

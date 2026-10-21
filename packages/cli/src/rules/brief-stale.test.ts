@@ -105,4 +105,11 @@ test("W-348-b5 behaviour 5: brief stale uses the configured UI signer, never the
 
   log(root, 4, "ui-architect", "passed", NEWER);
   assert.deepEqual(found(root), [], "a newer UI signature after the amendment clears the finding");
+
+  const broken = officina();
+  const brokenManifest = join(broken, "bisellium.yml");
+  writeFileSync(brokenManifest, `${readFileSync(brokenManifest, "utf8")}ui_spec_signer: ui-architect\n`);
+  const brokenRecord = join(broken, "opera", `${ID}.md`);
+  writeFileSync(brokenRecord, readFileSync(brokenRecord, "utf8").replace('kind: "feature"', 'kind: "ui"'));
+  assert.deepEqual(found(broken), [`block opera/${ID}.md`], "a malformed UI pairing makes the advisory reader fail closed");
 });

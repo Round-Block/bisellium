@@ -11,6 +11,7 @@ import { basename, join } from "node:path";
 import { listMd, parseFrontMatter } from "@bisellium/adapter-native";
 import { instant } from "@bisellium/schema";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { readUiSpecPairing } from "@bisellium/commands/verdict.js";
 import type { Finding, RuleOpts } from "../check.js";
 import { parseLogHeader } from "./evidence.js";
 
@@ -49,12 +50,18 @@ export function checkBriefStale(root: string, opts: RuleOpts): Finding[] {
       continue;
     }
     if (!isDict(d) || !OPEN.has(String(d["state"])) || typeof d["title"] !== "string") continue;
+    const ui = d["kind"] === "ui" ? readUiSpecPairing(opts.manifest) : { pairing: undefined };
+    if ("error" in ui) {
+      findings.push({ rule: "brief.stale", level: "block", where: `opera/${name}`, message: ui.error });
+      continue;
+    }
+    const signer = ui.pairing?.signer ?? architect;
     const sig = logs
       .filter((name) => name.startsWith(`${id}-spec-`) && /^[1-9][0-9]*\.log$/.test(name.slice(id.length + 6)))
       .map((name) => ({ name, n: BigInt(name.slice(id.length + 6, -4)) }))
       .sort((a, b) => (a.n < b.n ? 1 : a.n > b.n ? -1 : 0))
       .map((l) => ({ ...l, h: parseLogHeader(read(root, `ci/${l.name}`, "ci") ?? "") }))
-      .find((l) => l.h.get("phase") === "spec" && l.h.get("opus") === id && l.h.get("sella") === architect && (l.h.get("outcome") ?? "").startsWith("passed"));
+      .find((l) => l.h.get("phase") === "spec" && l.h.get("opus") === id && l.h.get("sella") === signer && (l.h.get("outcome") ?? "").startsWith("passed"));
     const signedAt = instant(sig?.h.get("at"));
     if (sig === undefined || signedAt === undefined) continue;
     const later = (Array.isArray(d["amendments"]) ? d["amendments"] : []).filter((a): a is Dict => isDict(a) && a["field"] === "title" && (instant(a["at"])?.getTime() ?? 0) > signedAt.getTime());
