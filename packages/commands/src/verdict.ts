@@ -857,13 +857,19 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error(`${opusId}: the brief ${briefRel} is unreadable, so a spec verdict cannot pin it: ${read.error}`);
       return { exitCode: 2 };
     }
-    // W-306: the design magister's signature cites a promise ledger covering every caller the brief names in code
+    // W-306/W-348: the signer for this kind cites a promise ledger covering every caller the brief names in code
     const design = readDesignMagister(manifest);
     if ("error" in design) {
       console.error(`${opusId}: ${design.error}`);
       return { exitCode: 2 };
     }
-    if (sella === design.magister) {
+    const uiPair = isUi ? readUiSpecPairing(manifest) : { pairing: undefined };
+    if ("error" in uiPair) {
+      console.error(`${opusId}: ${uiPair.error}`);
+      return { exitCode: 2 };
+    }
+    const signer = uiPair.pairing?.signer ?? design.magister;
+    if (sella === signer) {
       const problems = promiseLedgerProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), briefRel);
       if (problems.length > 0) {
         console.error(problems.map((p) => `${opusId}: promise ledger: ${p}`).join("\n"));
