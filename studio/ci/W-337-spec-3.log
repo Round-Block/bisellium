@@ -1,0 +1,21 @@
+# opus: W-337
+# phase: spec
+# round: 3
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T06:50:54.977Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-337.md blob:49d50ddbdc1cc0e9c482f1f3e86bc54fa2e236cd
+# ticket: {"opus":"W-337","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"49d50ddbdc1cc0e9c482f1f3e86bc54fa2e236cd","at":"2026-10-21T06:50:54.550Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-337-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Input-domain row 8 now names a space, a quote, a non-ASCII name and a symlinked parent individually as stated limits of the reused fixture paths, not newly recognised forms — check: brief:71, promise-ledger.md
+2. advisory — this admission-only correction changes no prototype source, row or pin; the 33da750d unnumbered mailbox remains byte-identical at SHA-256 d4ba24eaafcd80f8fa4f862c2fda663fa378ba17d97dce32c1356904df982925 — check: brief:5, prototype.mbox
+
+## Verdict
+
+passed — signed by Codex (`gpt-5.6-sol`, D-094), W-337 brief revision 2 at `studio/briefs/W-337.md`; the W-336 path-form admission refusal is corrected and no prototype change is required.
