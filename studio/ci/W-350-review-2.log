@@ -1,0 +1,28 @@
+# opus: W-350
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15dbc-95f9-7ac1-8d19-2543a8f413af
+# outcome: failed
+# at: 2026-10-21T10:28:19.809Z
+# tree: tree:bf9153d80c2a17cc33cf19b0980044c629665aa9
+# ui_input: ci/W-350-spec-8.log
+# design_digest: sha256:485973711efc37ed07c917ba7781dab8c43657601979a1639d8274e55c863159
+# ticket: {"opus":"W-350","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-350/studio","head":"49680e2c2d3cfefba98f1a04cb9bc9ec5681d83d","brief":"a6247df7c497d0af63f4ba2f97c90df4b38474f6","at":"2026-10-21T10:28:17.230Z"}
+
+## Findings
+1. blocking — .github/workflows/ci.yml:53 brief:75 The master-only guard is loaded from the ref selected by `workflow_dispatch`; selecting a stale non-master ref whose `ci.yml` predates this delta omits the guard and can still execute its checkout, installation, and refresh steps. The structural tests inspect only the current workflow, so they cannot establish the claimed cross-ref security boundary. [severity: S1] [class: security×self-certifying-workflow-change] — check: none: dispatch a stale non-master ref and assert that no job begins
+
+## Earlier findings
+
+## UI input disposition
+1. Honoured — the desktop Inbox asserts the selected detail and four verbs, while phone asserts the loaded queue and hidden detail at apps/web/tests-serve/screenshots.spec.ts:68 and apps/web/tests-serve/screenshots.spec.ts:73.
+2. Honoured — Officina awaits the resolved Completion text within `.panel--completion` at apps/web/tests-serve/screenshots.spec.ts:91.
+3. Honoured — zero counted-pixel tolerance is configured at apps/web/playwright.serve.config.ts:39, with screenshot retries disabled at apps/web/tests-serve/screenshots.spec.ts:19.
+4. Honoured — the runner OS remains pinned at .github/workflows/ci.yml:144 and complete-set rendering identity is compared at apps/web/tests-serve/screenshots.spec.ts:118; spec-8 accepts deferring the actual baseline comparison to the follow-up opus.
+
+## Verdict
+The new guard cannot enforce the intended restriction across selectable workflow refs, so the security fix remains incomplete.
+
+VERDICT: FAIL
