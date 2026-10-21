@@ -1,0 +1,23 @@
+# opus: W-350
+# phase: spec
+# round: 3
+# sella: ui-lead
+# outcome: revise
+# at: 2026-10-21T05:53:54.624Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# dispatch_prompt: ci/W-350-ui-prompt-3.md
+# design_digest: sha256:e39569e8910811e3a24272a71119470c9ebe9fccec03b43ae54e493444f978b1
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"64cc30a2b9d9a26b5d512feb5cb399314b4c4e0f","at":"2026-10-21T05:53:54.169Z"}
+
+## Findings
+
+1. blocking — brief:21 — The promised phone answering state cannot be captured: `w025.css:622` hides `.inbox__detail` below 900px, including the reason and verbs; layout changes are excluded by brief:112. — replace with: “Desktop Inbox captures A-1/W-004 selected with its question, reason and four verbs visible. Phone Inbox captures the current loaded queue; its hidden answering pane is a known limitation owned by W-341. Apply this distinction to the readiness assertions and acceptance criteria.” — check: apps/web/src/components/w025.css:618; apps/web/tests-serve/screenshots.spec.ts
+2. blocking — brief:21 — Officina’s topmost Completion panel is omitted from the loaded-state contract. Its independent request can still show loading or failure when the budget, health and acta assertions pass, allowing an incomplete initial view to become the baseline. — replace with: “Officina receives fixed budget, health and acta records and awaits Completion’s resolved fixture state. For the unchanged sample fixture, assert ‘No milestone records’ within `.panel--completion` before capture; loading or request failure cannot satisfy readiness.” — check: apps/web/src/screens/Officina.tsx:89; apps/web/tests-serve/screenshots.spec.ts
+3. advisory — brief:64 — “No differing pixel” overstates the comparison: Playwright uses pixelmatch, whose default excludes detected anti-aliasing differences. Zero thresholds remain strict for counted differences. ([Playwright](https://playwright.dev/docs/test-snapshots), [pixelmatch](https://github.com/mapbox/pixelmatch#api)) — replace with: “Use `threshold: 0` and `maxDiffPixels: 0`, retaining the comparator’s anti-aliasing exclusion. Any counted pixel difference fails. Acceptance demonstrates failure for a changed solid pixel, a shifted layout edge and a changed production font weight.” — check: apps/web/playwright.serve.config.ts; apps/web/tests-serve/screenshots.spec.ts
+4. advisory — brief:100 — A second run on the same ref does not establish rendering consistency across runner-image updates; the workflow uses `ubuntu-latest`. Playwright requires matching rendering environments for reliable comparisons. ([Playwright](https://playwright.dev/docs/test-snapshots)) — replace with: “Generate and compare in the same pinned browser and OS rendering environment; record its identity with the baseline artifact and verify an independent comparison run without retries. Environment upgrades require an explicit reviewed refresh.” — check: .github/workflows/ci.yml; apps/web/playwright.serve.config.ts
+
+## Recommendation
+
+Revise the phone-state promise and Completion readiness.
+The five declared faces match production and the design direction, all four live routes are covered, and no new Patron-owned visual choice is required.
+Verdict: revise

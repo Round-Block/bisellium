@@ -1,0 +1,22 @@
+# opus: W-350
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15ce2-429b-7483-beb2-1f9ef85e265c
+# outcome: failed
+# at: 2026-10-21T05:49:34.623Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-350.md blob:64cc30a2b9d9a26b5d512feb5cb399314b4c4e0f
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"64cc30a2b9d9a26b5d512feb5cb399314b4c4e0f","at":"2026-10-21T05:49:34.032Z"}
+
+## Findings
+1. blocking — brief:72 [severity: S1] [design: keeps] `W-350-b1` checks only that `workflow_dispatch` and `refresh_screenshots` occur somewhere; a plausible workflow edit can leave those forms present while setting `BISELLIUM_UPDATE_SCREENSHOTS=1` on every event, causing a master push or source-changing merge group to rewrite mismatching PNGs and pass instead of refusing. Replace brief:72 with: “Promise runner-ownership: a baseline write requires explicit workflow dispatch plus GitHub Actions and produces an artifact for review; `W-350-b1` pins the `test:serve` step’s refresh environment to `inputs.refresh_screenshots` and the upload step’s dispatch-only condition; every master push, source-changing merge group and non-refresh dispatch that reaches `web-e2e` compares and fails on a diff, while pull requests and records-only merge groups retain their existing skips — limit: GitHub permissions, artifact retention and the Patron’s code-owned workflow merge are reused, not guaranteed (D-076 E).” [class: tests×ruled-case-uncovered] — check: apps/web/test/w350.test.ts W-350-b1
+2. blocking — brief:66 [severity: S1] [design: keeps] The policy does not bind each CSS family/style/weight to its authenticated file: swapping the SemiBold and Bold `src` values still passes `W-350-b1`, `expectFontAssets` and `document.fonts.load`, so a runner refresh blesses the wrong production weights. Replace brief:66 with: “Promise font-authenticity: `W-350-b1` binds exactly five `@font-face` family/style/weight/local-`src` tuples to `FONT_ASSETS`, permits no other declared or external face, and the browser loads each table-authenticated tuple before capture; the three licences contain the SIL OFL 1.1 heading and `index.html` makes no Google Fonts request — limit: the upstream URLs and binaries are builder inputs unavailable to this no-network draft.” [class: tests×ruled-case-uncovered] — check: apps/web/test/w350.test.ts W-350-b1
+3. advisory — brief:84 [severity: S4] The fixture row omits the changed harness’s reused `node --import tsx … serve --studio <temp> --port 0 --now <fixed>` subprocess boundary, although `startServed` and `waitForReady` fail closed. Replace brief:84 with the current fixture row followed by: “| 6. Reused `bisellium serve --studio <temp> --port 0 --now 2026-09-25T09:35:43.947Z` call | successful spawn, valid fixed instant, printed port/token and readiness HTTP 200 | `startServed` rejects spawn error, non-zero early exit or missing port/token; `waitForReady` rejects failure to become ready |”. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+4. advisory — brief:88 [severity: S4] The collective CI row covers only `web-e2e`, contrary to the required one-row-per-unchanged-job treatment of the new trigger, and omits the added policy call, changed browser-step environment and added upload action. Replace brief:88 with separate rows for: “`gates` under `workflow_dispatch` (`github.event_name`, empty `github.head_ref`, selected `github.ref_name`, absent scope output); `officina` under the same context; skipped `certify`; the added `npm run -s test:policy` step; the changed `test:serve` step and boolean refresh input; and `actions/upload-artifact@v4` with a present baseline directory—each command/action requires success, and the GitHub Actions runner fails the job on a non-zero unguarded step or action failure.” [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.changed-reader-coverage
+
+## Verdict
+Two design-preserving S1 gaps let plausible workflow and font-map mistakes pass the promised guards, so both are required fixes.
+
+VERDICT: FAIL

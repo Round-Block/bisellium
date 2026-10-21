@@ -1,0 +1,26 @@
+# opus: W-350
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15ce2-429b-7483-beb2-1f9ef85e265c
+# outcome: failed
+# at: 2026-10-21T06:27:03.363Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-350.md blob:f09d512aeb5e9bfe0173f2d2feed1a0c5e8015db
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"f09d512aeb5e9bfe0173f2d2feed1a0c5e8015db","at":"2026-10-21T06:27:02.888Z"}
+
+## Findings
+1. blocking — brief:98 [severity: S1] [design: keeps] Reached from ci/W-350-spec-2.log #1’s class: `W-350-b1` checks the upload condition but not `upload.with.path`; changing it to an existing wrong directory such as `apps/web/dist/` still passes every cited guard because the rendering command supplies the expected snapshot-path text, and a refresh then succeeds with an artifact containing no baselines. Replace brief:98 with: “| 16. `actions/upload-artifact@v4` and baseline directory | recognises the exact action, dispatch-refresh-only condition, `if-no-files-found: error`, artifact name and `path: apps/web/tests-serve/screenshots.spec.ts-snapshots/`, all structurally pinned by `W-350-b1`; every other form is a limit | runner: `web-e2e` fails on an action failure; `W-350-b1` rejects an absent or changed action, condition or `with` map |”. [class: tests×ruled-case-uncovered] — check: apps/web/test/w350.test.ts W-350-b1
+2. blocking — brief:35 [severity: S1] [design: keeps] Reached from ci/W-350-spec-2.log #2’s class: the exact face-map assertion never checks the production role variables, so a plausible swap of `--font-display` and `--font-body` passes the policy and loaded-face gates while the first runner refresh blesses typography rendered with the wrong families. Replace brief:35 with: “`apps/web/src/tokens.css`: exactly five local `@font-face` declarations and exact `--font-display`, `--font-body` and `--font-mono` bindings preserving the production family, style and weight assignments, all pinned by `W-350-b1`; after W-339 lands, its colour-token changes are retained.” [class: tests×ruled-case-uncovered] — check: apps/web/test/w350.test.ts W-350-b1
+3. advisory — brief:93 [severity: S4] Rows 11–12 misstate the unchanged workflow: `officina` is independent of `gates`, and `certify` is skipped because its actual condition is `github.event_name == 'merge_group'`, not the claimed `github.event_name != 'workflow_dispatch'`. Replace brief:93 with “recognises the same dispatch context independently of `gates`” and brief:94 with “recognises the existing `github.event_name == 'merge_group'` condition evaluating false under `workflow_dispatch` and skips certification.” [class: spec×prose-contradiction-under-revision] — check: scripts/ci-scope.test.mjs W-205-b1
+4. advisory — brief:90 [severity: S4] The new rendering-identity reader executes the reused Chromium `<executable> --version` subprocess, but the input table does not name that call, its zero-exit/nonempty-output domain, or `renderingEnvironment` as its rejector. Append: “| 8a. Reused Chromium executable `--version` call | exit zero with a nonempty version string | `execFileSync` and `renderingEnvironment` throw on non-zero execution or empty output |”. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+
+## Earlier findings
+- ci/W-350-spec-2.log #1: closed — apps/web/test/w350.test.ts:107 structurally parses the workflow, line 114 binds `test:serve` to the dispatch-derived environment, and `mutant-refresh-always-r2.out` records the always-refresh mutation failing that assertion.
+- ci/W-350-spec-2.log #2: closed — apps/web/test/w350.test.ts:99 deep-compares all five CSS tuples with `FONT_ASSETS`, and `mutant-swapped-font-src-r2.out` records the SemiBold/Bold swap failing that assertion.
+
+## Verdict
+Both earlier blockers are closed, but two design-preserving sibling gaps still allow plausible workflow and typography mistakes to pass.
+
+VERDICT: FAIL

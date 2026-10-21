@@ -1,0 +1,25 @@
+# opus: W-350
+# phase: spec
+# round: 4
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T06:22:45.887Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-350.md blob:f09d512aeb5e9bfe0173f2d2feed1a0c5e8015db
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"f09d512aeb5e9bfe0173f2d2feed1a0c5e8015db","at":"2026-10-21T06:22:41.190Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-350-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — the producer's complete host run found that the revision-2 rendering-identity command used a refresh-only condition where unchanged `W-131 behaviour 6` requires every web-e2e run step to use the full-path condition — check: gates-host-r2.out
+2. advisory — the correction restores the identity step's full-path condition; `syncRenderingEnvironment` compares on ordinary full paths and writes only for refresh `1` with `GITHUB_ACTIONS=true`, while upload remains dispatch-refresh-only — check: .github/workflows/ci.yml:164, apps/web/tests-serve/rendering-environment.ts:36, apps/web/test/w350.test.ts:115
+3. advisory — only existing `W-205-b1`'s expected step table changes to name the restored full-path condition; focused `W-131 behaviour 6` and `W-205-b1` both pass, while `W-203-b1` and the workflow guard are not weakened and the producer reruns both complete guards with `gates-host.sh` — check: scope-structural-r3.out, gates-host.sh
+4. advisory — `W-350-b1` remains a genuine assertion red on base 33da750d and passes on the feature stage; both blocker mutants still fail by assertion, and focused typecheck, lint, formatting, admission and the refreshed promise ledger pass — check: row-b1-r3-master.out, row-b1-r3-proto.out, red-b1-r3-accept.out, mutants-r2.out, admission-r3.out, ledger-check-r3.out
+5. advisory — this sandbox still cannot spawn the two complete workflow guards or Chromium; the producer's host script and browser acceptance script retain those commands without performing record writes — check: gates-host.sh, browser-acceptance-r2.sh
+6. advisory — `.github/workflows/ci.yml` remains the sole code-owned path and the Patron merges it; the stage commits were cut in the evidence-local `spec-scratch/W-350` clone because the scratch worktree git metadata refuses `index.lock` — check: brief:42, git-metadata-probe.out, prototype.mbox
+
+## Verdict
+
+passed — signature prepared by Codex `gpt-5.6-sol` under D-094 for corrected brief revision 2 at `studio/briefs/W-350.md`, prototype rebuilt from master 33da750d with `git format-patch --no-numbered` (`96d05c71`, `5d38da3a`, mbox SHA-256 `db9e4f64392ec71589bf3f07e937954ea48e68a7e15535d25ccd439f5994f0a1`); the producer runs `gates-host.sh`, signs and records.
