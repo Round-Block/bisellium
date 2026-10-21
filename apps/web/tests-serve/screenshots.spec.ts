@@ -75,7 +75,10 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
       await expect(page.locator(".inbox__detail")).toBeHidden();
     }
   } else if (route === "board") {
-    await expect(page.locator("[data-column-id]")).toHaveCount(7);
+    const officina = await page.request.get(`${served!.baseURL}/api/officina`);
+    const fixture = (await officina.json()) as { lifecycle: { states: { phase: string }[] } };
+    const lifecyclePhases = new Set(fixture.lifecycle.states.map(({ phase }) => phase).filter((phase) => phase !== "backlog"));
+    await expect(page.locator(".board__column[data-column-id]")).toHaveCount(lifecyclePhases.size + 1);
     await expect.poll(() => page.locator("[data-card-id]").count()).toBeGreaterThan(0);
     await expect.poll(() => page.locator(".gate-ladder").count()).toBeGreaterThan(0);
     await expect(page.locator('[data-column-id="needs_you"]')).toBeInViewport();
