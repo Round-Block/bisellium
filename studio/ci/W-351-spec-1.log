@@ -1,0 +1,25 @@
+# opus: W-351
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T04:51:33.755Z
+# tree: tree:65af3fb7ea81155483ff5cecae7e22b713a66cee
+# brief: briefs/W-351.md blob:9dcff67cd3f03ed94de3d70c357e9e2a02275ba3
+# ticket: {"opus":"W-351","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"47bd357ec0a76e375b6c9aa25542109796cb9b29","brief":"9dcff67cd3f03ed94de3d70c357e9e2a02275ba3","at":"2026-10-21T04:51:33.329Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-351-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — fixed PR identity and state remain on the seven-field `gh pr view` boundary, while queue membership is read only at the queue-mode CLEAN recovery through GraphQL variables; this restores every ordinary PR read without broadening the new API call — check: brief:37, brief:39, brief:45, packages/cli/src/integrate.ts:29, packages/cli/src/integrate.ts:470, packages/cli/src/integrate.ts:809
+2. advisory — the GraphQL boundary admits only the exact nested boolean; null, text and command failure each hold after the initial request but before disable or pinned enable, with the stated no-rearm reason — check: brief:43, brief:53, brief:72, brief:73, row-b2-proto.out
+3. advisory — the compatibility pin copies all fields printed by installed gh 2.101.0 and rejects any fixed-view token outside that set; its deliberate limitation to this frozen vocabulary and future joint update are stated — check: brief:49, brief:60, brief:70, row-b1-master.out, row-b1-proto.out
+4. advisory — both reds fail by assertion on master and every earlier stage, then pass on their own feature stage; the replay classifier accepts all three failing runs — check: reds.out, row-b1-master.out, row-b2-master.out, row-b2-s1.out
+5. advisory — W-347-b1 now supplies false through the fake GraphQL slot and keeps its exact recovery, while the default true reply keeps queued CLEAN from a second merge; the complete owned test file passes 20 of 20 — check: brief:47, brief:91, next-queue-proto.out
+6. advisory — the mbox applies as four commits to master 06521a4d with an identical tree; brief admission and the promise ledger pass, as do lint, CLI typecheck, owned formatting and the sample officina, while master and prototype share the same studio blocker — check: mbox-check.out, admission.out, ledger-check.out, gates-master.out, gates-proto.out
+
+## Verdict
+
+passed — signature prepared by Codex `gpt-5.6-sol` under D-094 for `studio/briefs/W-351.md`, prototype four commits on master 06521a4d; two behaviours, 2 points, no code-owned path touched.
