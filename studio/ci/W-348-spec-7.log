@@ -1,0 +1,22 @@
+# opus: W-348
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15c9f-df23-7ed3-93e0-dfc8b4078840
+# outcome: passed
+# at: 2026-10-21T06:15:36.980Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-348.md blob:a54dd3519efa614607db062d75137bc90d01fbd2
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":".worktrees/W-348/studio","head":"9b2e2fcf1b324824cdeff1223a19f1177934034b","brief":"a54dd3519efa614607db062d75137bc90d01fbd2","at":"2026-10-21T06:15:36.490Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-348-spec-4.log #1: closed — behaviour 6 and the evidence-owner `recordOf`/`specRecord` selection are absent from the prototype; brief:19, brief:39, brief:53 and brief:112 state the unchanged selection as a limit and assign the fail-closed route to W-355.
+
+## Verdict
+The cut leaves behaviours 1–5 internally consistent, truthfully limits source selection to today’s behavior, and the re-cut prototype matches its recorded digest and replay shape.
+
+VERDICT: PASS
