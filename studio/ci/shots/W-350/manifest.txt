@@ -1,5 +1,5 @@
 shots: 4 ci/shots/W-350
-shot: board.png 1280x900 42377
-shot: inbox.png 1280x900 37333
-shot: officina.png 1280x900 39312
+shot: board.png 1280x900 42596
+shot: inbox.png 1280x900 37346
+shot: officina.png 1280x900 39326
 shot: seats.png 1280x900 67613
