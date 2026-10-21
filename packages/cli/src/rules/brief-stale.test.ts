@@ -84,3 +84,25 @@ test("W-317-b2 behaviour 2: a brief that names the current title, or a title bac
   assert.deepEqual(found(officina({ title: OLD, brief: `# ${ID}\n`, amendments: [{ at: LATER, superseded: OLD }, { at: NEWER, superseded: "Mid" }] })), [], "a title back as signed is no finding");
   assert.deepEqual(found(officina({ brief: `# ${ID} — ${OLD}\n` })), FINDING, "a brief that names only the title as signed is stale");
 });
+
+test("W-348-b5 behaviour 5: brief stale uses the configured UI signer, never the design magister or UI reviewer", () => {
+  const root = officina();
+  const manifest = join(root, "bisellium.yml");
+  writeFileSync(
+    manifest,
+    readFileSync(manifest, "utf8")
+      .replace("sellae:\n", "sellae:\n  - { id: ui-architect, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }\n  - { id: ui-spec-reviewer, collegium: qa, kind: agent, model: claude-opus-5-5, harness: claude-code }\n") +
+      "ui_spec_signer: ui-architect\nui_spec_reviewer: ui-spec-reviewer\n",
+  );
+  const record = join(root, "opera", `${ID}.md`);
+  writeFileSync(record, readFileSync(record, "utf8").replace('kind: "feature"', 'kind: "ui"'));
+  assert.deepEqual(found(root), [], "the design magister's engineering signature is no UI signature");
+
+  log(root, 2, "ui-architect", "passed", SIGNED);
+  log(root, 3, "ui-spec-reviewer", "passed", NEWER);
+  assert.deepEqual(found(root), FINDING, "the UI signer before the amendment makes the retitled brief stale");
+  assert.match(stale(root)[0]!.message, /ci\/W-900-spec-2\.log/, "the message names the UI signature, not the newer review");
+
+  log(root, 4, "ui-architect", "passed", NEWER);
+  assert.deepEqual(found(root), [], "a newer UI signature after the amendment clears the finding");
+});
