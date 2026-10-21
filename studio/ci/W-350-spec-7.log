@@ -1,0 +1,25 @@
+# opus: W-350
+# phase: spec
+# round: 7
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T08:27:31.805Z
+# tree: tree:78bf0e5d0c3cbb1dfed7924ab53721b227b9d860
+# brief: briefs/W-350.md blob:a6247df7c497d0af63f4ba2f97c90df4b38474f6
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-350/studio","head":"f9429357c2cf426fea8644a8248dfefec719ba80","brief":"a6247df7c497d0af63f4ba2f97c90df4b38474f6","at":"2026-10-21T08:27:27.307Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-350-build/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — revision 3 adopts the Patron's option 1: W-350 lands authenticated production fonts and all-or-none screenshot machinery, while the named follow-up opus owns the reviewed eight-PNG-plus-identity artifact and visual coverage — check: brief:3, brief:23, brief:129
+2. advisory — the exact five CSS tuples are retained with five named files; Bricolage's pair deliberately shares variable bytes with `fvar wght` 200–800, Instrument Sans's pair shares variable bytes with `fvar wght` 400–700, and IBM Plex Mono is static 400; real files and OFL licences authenticate — check: font-auth-r3.out, sources.tsv
+3. advisory — new `W-350-b2` is a genuine assertion red on opus tree f9429357, then passes with `W-350-b1`; it pins absent bootstrap, partial failure, complete comparison routing and font/readiness ordering before the one skip reason — check: row-b2-red.out, rows-r3-green.out
+4. advisory — `r3-tests.patch` applies first and reproduces the assertion red; binary-safe `r3-impl.patch` then applies the code and font assets and turns both rows green — check: row-b2-replay-red.out, rows-r3-replay-green.out, r3-tests.patch, r3-impl.patch
+5. advisory — focused typecheck, ESLint, Prettier, brief admission, rendering-identity absent routing and the refreshed promise ledger pass; no host-runner source changes and revision 2's runner-ownership and exact face-map fixes remain — check: typecheck-r3.out, lint-r3.out, format-r3.out, admission-r3.out, rendering-bootstrap-r3.out, ledger-check-r3.out
+6. advisory — Chromium is installed and Vite builds the committed fonts, but browser launch fails in this sandbox at `sandbox_host_linux.cc` with operation not permitted; the producer runs the focused screenshot suite and two existing workflow guards through the retained host script — check: gates.sh, studio/ci/W-350-served-e2e-78bf0e5d.log
+
+## Verdict
+
+passed — signature prepared by Codex `gpt-5.6-sol` under D-094 for W-350 brief revision 3 in the uncommitted opus worktree; tests patch SHA-256 `32d2ca3603efc8ba3f288973ab5ab16ef99358d06e611d5b68cd5458e4848f85`, implementation patch SHA-256 `c11d374d5523496d72f9da8752827c07f42bc443626e1321ea5a8d72a7334e91`; the producer runs `gates.sh`, applies the two patches after the spec commit, signs and records.
