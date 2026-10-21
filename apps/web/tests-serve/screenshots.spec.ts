@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NAV_ENTRIES } from "../src/lib/nav.js";
+import { BASELINE_BOOTSTRAP_REASON, baselineSetState } from "./baseline-set.js";
 import { expectFontAssets, FONT_ASSETS } from "./font-assets.js";
 import { REPO_ROOT, startServed, type ServedInstance } from "./harness.js";
 import { expectRenderingEnvironment } from "./rendering-environment.js";
@@ -108,7 +109,10 @@ async function settleInitialView(page: Page, width: number): Promise<void> {
 }
 
 test("the live screens match their fixed desktop and phone initial-view baselines", async ({ page }) => {
-  if (process.env["BISELLIUM_UPDATE_SCREENSHOTS"] !== "1") expectRenderingEnvironment(join(REPO_ROOT, "apps", "web", "tests-serve", "screenshots.spec.ts-snapshots", "rendering-environment.json"));
+  const baselineRoot = join(REPO_ROOT, "apps", "web", "tests-serve", "screenshots.spec.ts-snapshots");
+  const baselineState = baselineSetState(baselineRoot);
+  const refreshing = process.env["BISELLIUM_UPDATE_SCREENSHOTS"] === "1";
+  if (!refreshing && baselineState === "complete") expectRenderingEnvironment(join(baselineRoot, "rendering-environment.json"));
   expectFontAssets(join(REPO_ROOT, "apps", "web", "src", "assets", "fonts"));
   served = await startServed("screenshots", { now: FIXED_NOW, prepareStudio });
   await page.clock.setFixedTime(new Date(FIXED_NOW));
@@ -124,11 +128,14 @@ test("the live screens match their fixed desktop and phone initial-view baseline
       if (mutant === "solid") await page.addStyleTag({ content: "body::after{content:'';position:fixed;left:0;top:0;width:1px;height:1px;background:#000;z-index:2147483647}" });
       if (mutant === "edge") await page.addStyleTag({ content: ".shell__main{transform:translateX(1px)}" });
       if (mutant === "font-weight") await page.addStyleTag({ content: ".inbox__title,.board__title,.seats__heading,.officina__title{font-weight:600!important}" });
-      await expect(page).toHaveScreenshot(`${entry.route}-${width}.png`, {
-        animations: "disabled",
-        caret: "hide",
-        fullPage: false,
-      });
+      if (baselineState === "complete" || refreshing) {
+        await expect(page).toHaveScreenshot(`${entry.route}-${width}.png`, {
+          animations: "disabled",
+          caret: "hide",
+          fullPage: false,
+        });
+      }
     }
   }
+  if (baselineState === "absent" && !refreshing) test.skip(true, BASELINE_BOOTSTRAP_REASON);
 });

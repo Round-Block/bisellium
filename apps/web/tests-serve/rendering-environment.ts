@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
+import { BASELINE_BOOTSTRAP_REASON, baselineSetState } from "./baseline-set.js";
 import { REPO_ROOT } from "./harness.js";
 
 export interface RenderingEnvironment {
@@ -55,6 +56,10 @@ export function syncRenderingEnvironment(
 ): void {
   if (readRenderingEnvironmentMode(refresh, githubActions) === "write") {
     writeRenderingEnvironment(path);
+    return;
+  }
+  if (baselineSetState(dirname(path)) === "absent") {
+    process.stdout.write(`${BASELINE_BOOTSTRAP_REASON}\n`);
     return;
   }
   expectRenderingEnvironment(path);
