@@ -122,7 +122,10 @@ export function commit(dir: string, message: string): void {
 /** A REAL bisellium verb, run the way an operator would, in `cwd`. */
 export function verb(cwd: string, args: string[]): void {
   const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, env: SETUP_ENV, encoding: "utf8", timeout: 120_000 });
-  if (r.status !== 0) throw new Error(`fixture bisellium ${args.join(" ")} (cwd ${cwd}) exited ${r.status}: ${r.stderr}${r.stdout}`);
+  if (r.error !== undefined || r.status !== 0)
+    throw new Error(
+      `fixture bisellium ${args.join(" ")} (cwd ${cwd}) exited ${r.status ?? "without status"}${r.error === undefined ? "" : `: ${r.error.message}`}\n--- stderr\n${r.stderr ?? ""}\n--- stdout\n${r.stdout ?? ""}`,
+    );
 }
 
 // ---------------------------------------------------------------------------
