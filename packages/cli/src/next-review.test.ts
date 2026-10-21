@@ -266,6 +266,16 @@ function reviewWorld(tag: string, templates: Record<string, string> = { [BUILD_R
   return w;
 }
 
+function writeUiGate(w: World): void {
+  writeGates(w, {
+    gate: "served-e2e",
+    log: (tree) => `certifies: ${tree}\ncommand: node scripts/served-e2e.mjs\nexit code: 0\n`,
+    commit: false,
+  });
+  editRecord(w, "wt", (doc) => doc.setIn(["probationes", "served-e2e", "at"], T.reds));
+  commit(w.wt, `studio(${OPUS}): served UI gates`);
+}
+
 /** A review-rung kind:ui world with current ui-lead input and the fixed desktop/phone served-shot matrix. */
 function uiReviewWorld(tag: string): World {
   const w = reviewWorld(tag);
@@ -299,13 +309,7 @@ function uiReviewWorld(tag: string): World {
     lines.push(`shot: ${name} ${width}x900 ${shot.length}`);
   }
   writeFileSync(join(shots, "manifest.txt"), `${lines.join("\n")}\n`);
-  writeGates(w, {
-    gate: "served-e2e",
-    log: (tree) => `certifies: ${tree}\ncommand: node scripts/served-e2e.mjs\nexit code: 0\n`,
-    commit: false,
-  });
-  editRecord(w, "wt", (doc) => doc.setIn(["probationes", "served-e2e", "at"], T.reds));
-  commit(w.wt, `studio(${OPUS}): served UI gates`);
+  writeUiGate(w);
   return w;
 }
 const performReview = (w: World, env: Record<string, string> = {}): Out => next(w, [OPUS, "--perform", "--expect", "review", "--budget", "400000"], { env: { ...CODEX_PATH, ...env } });
@@ -359,6 +363,7 @@ test("W-340-b2 behaviour 2: next attaches the fixed UI image matrix, fills its j
   const first = performReview(resumed);
   assert.equal(first.kv.get("review"), "round 1 failed", ran("the resumed fixture's first UI round fails", first));
   advanceSource(resumed);
+  writeUiGate(resumed);
   handoffAt(resumed, "wt", new Date(Date.now() + 60_000).toISOString());
   codexSays(resumed, {
     session: "s-340-2",
