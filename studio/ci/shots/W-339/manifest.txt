@@ -1,0 +1,5 @@
+shots: 4 ci/shots/W-339
+shot: board.png 1280x900 49883
+shot: inbox.png 1280x900 45667
+shot: officina.png 1280x900 47659
+shot: seats.png 1280x900 81954
