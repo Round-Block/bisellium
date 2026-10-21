@@ -51,13 +51,14 @@ async function waitForReady(baseURL: string, timeoutMs = 20_000): Promise<void> 
  *  so nothing ever points them at studio/ — scrapes the bound port and the
  *  write-auth token off its own stdout, and waits for readiness before
  *  resolving. */
-export async function startServed(tag: string): Promise<ServedInstance> {
+export async function startServed(tag: string, options: { now?: string; prepareStudio?: (studioDir: string) => void } = {}): Promise<ServedInstance> {
   const studioDir = mkdtempSync(join(tmpdir(), `bisellium-w067-${tag}-`));
   cpSync(SAMPLE_STUDIO, studioDir, { recursive: true });
+  options.prepareStudio?.(studioDir);
 
   const child: ChildProcessWithoutNullStreams = spawn(
     process.execPath,
-    ["--import", "tsx", MAIN_TS, "serve", "--studio", studioDir, "--port", "0"],
+    ["--import", "tsx", MAIN_TS, "serve", "--studio", studioDir, "--port", "0", ...(options.now === undefined ? [] : ["--now", options.now])],
     { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] },
   );
 

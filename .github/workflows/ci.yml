@@ -28,6 +28,13 @@ on:
   pull_request:
   merge_group:
     types: [checks_requested]
+  workflow_dispatch:
+    inputs:
+      refresh_screenshots:
+        description: Generate screenshot baselines on the CI runner and upload them for review
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -125,7 +132,7 @@ jobs:
   # the build and E2E steps skip (W-205, W-203); a push and a source-change merge
   # group run them.
   web-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - if: github.event_name != 'pull_request'
         uses: actions/checkout@v5
@@ -143,6 +150,8 @@ jobs:
           BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
+        run: npm run -s test:policy --workspace @bisellium/web
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: rm -rf apps/web/dist
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s build --workspace @bisellium/web
@@ -150,6 +159,18 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s test:serve --workspace @bisellium/web
+        env:
+          BISELLIUM_UPDATE_SCREENSHOTS: ${{ inputs.refresh_screenshots && '1' || '0' }}
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
+        run: node --import tsx apps/web/tests-serve/rendering-environment.ts apps/web/tests-serve/screenshots.spec.ts-snapshots/rendering-environment.json
+        env:
+          BISELLIUM_UPDATE_SCREENSHOTS: ${{ inputs.refresh_screenshots && '1' || '0' }}
+      - if: github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-screenshot-baselines-${{ github.sha }}
+          if-no-files-found: error
+          path: apps/web/tests-serve/screenshots.spec.ts-snapshots/
 
   # W-168: the merge queue's certification. Runs only on a merge group. The
   # certifying code is master's (`tooling`, checked out at the merge group's

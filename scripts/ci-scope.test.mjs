@@ -36,6 +36,7 @@ const SHORT = "steps.scope.outputs.record_only == 'true'";
 const NOT_PR = "github.event_name != 'pull_request'";
 const DEFERRED = `${NOT_PR} && ${FULL}`;
 const MERGE_GROUP = "github.event_name == 'merge_group'";
+const REFRESH_SCREENSHOTS = "github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots";
 
 const git = (cwd, ...args) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
@@ -516,7 +517,11 @@ test("W-139 round 2 finding 1: the guard CLI fails when <log>.fail exists beside
 test("W-203-b1 behaviour 1: merge groups classify against their base", async () => {
   const mod = await import("./ci-scope.mjs").catch(() => ({}));
   const doc = workflow();
-  assert.deepEqual(Object.keys(doc.on).sort(), ["merge_group", "pull_request", "push"], "the trigger set");
+  assert.deepEqual(
+    Object.keys(doc.on).sort(),
+    ["merge_group", "pull_request", "push", "workflow_dispatch"],
+    "the trigger set",
+  );
   assert.deepEqual(doc.on.push?.branches, ["master"], "push names only master");
   for (const job of ["gates", "web-e2e"]) {
     const scopeSteps = doc.jobs[job].steps.filter((step) => step.id === "scope");
@@ -582,7 +587,11 @@ test("W-203-b1 behaviour 1: merge groups classify against their base", async () 
 
 test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge-group and push steps are today's", () => {
   const doc = workflow();
-  assert.deepEqual(Object.keys(doc.on).sort(), ["merge_group", "pull_request", "push"], "the trigger set");
+  assert.deepEqual(
+    Object.keys(doc.on).sort(),
+    ["merge_group", "pull_request", "push", "workflow_dispatch"],
+    "the trigger set",
+  );
   assert.deepEqual(doc.on.push?.branches, ["master"], "push names only master");
   assert.deepEqual(doc.on.merge_group?.types, ["checks_requested"], "merge_group on checks_requested");
   assert.deepEqual(Object.keys(doc.jobs), ["gates", "officina", "web-e2e", "certify"], "the four required jobs");
@@ -633,10 +642,16 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
       ["actions/setup-node@v5", NOT_PR],
       ["npm ci", NOT_PR],
       SCOPE,
+      ["npm run -s test:policy --workspace @bisellium/web", DEFERRED],
       ["rm -rf apps/web/dist", DEFERRED],
       ["npm run -s build --workspace @bisellium/web", DEFERRED],
       ["npx playwright install --with-deps chromium", DEFERRED],
       ["npm run -s test:serve --workspace @bisellium/web", DEFERRED],
+      [
+        "node --import tsx apps/web/tests-serve/rendering-environment.ts apps/web/tests-serve/screenshots.spec.ts-snapshots/rendering-environment.json",
+        DEFERRED,
+      ],
+      ["actions/upload-artifact@v4", REFRESH_SCREENSHOTS],
     ],
     "web-e2e: every step skips on a pull request",
   );

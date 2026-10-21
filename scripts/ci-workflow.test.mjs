@@ -292,6 +292,11 @@ check(
 );
 
 check(
+  "web-e2e: runs the web screenshot policy row",
+  webE2eSteps.some((s) => s.includes("test:policy")),
+);
+
+check(
   "web-e2e: runs test:serve",
   webE2eSteps.some((s) => s.includes("test:serve")),
 );
