@@ -16,6 +16,56 @@ const queueParams = (rules: Json[]): Json => rules.find((r) => r["type"] === "me
 const checksRule = (rules: Json[]): Json => rules.find((r) => r["type"] === "required_status_checks")!["parameters"] as Json;
 const bound = (w: World): string => readFileSync(bindingPath(w), "utf8");
 
+/** Fixed copy of gh 2.101.0's `pr view --json` "Available fields" output; the offline row cannot ask gh for it. */
+const GH_2_101_PR_VIEW_FIELDS = new Set([
+  "additions",
+  "assignees",
+  "author",
+  "autoMergeRequest",
+  "baseRefName",
+  "baseRefOid",
+  "body",
+  "changedFiles",
+  "closed",
+  "closedAt",
+  "closingIssuesReferences",
+  "comments",
+  "commits",
+  "createdAt",
+  "deletions",
+  "files",
+  "fullDatabaseId",
+  "headRefName",
+  "headRefOid",
+  "headRepository",
+  "headRepositoryOwner",
+  "id",
+  "isCrossRepository",
+  "isDraft",
+  "labels",
+  "latestReviews",
+  "maintainerCanModify",
+  "mergeCommit",
+  "mergeStateStatus",
+  "mergeable",
+  "mergedAt",
+  "mergedBy",
+  "milestone",
+  "number",
+  "potentialMergeCommit",
+  "projectCards",
+  "projectItems",
+  "reactionGroups",
+  "reviewDecision",
+  "reviewRequests",
+  "reviews",
+  "state",
+  "statusCheckRollup",
+  "title",
+  "updatedAt",
+  "url",
+]);
+
 test("W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge (W-199-b1)", { timeout: 3_600_000 }, () => {
   const w = queueWorld("w168-b3-queue", { stdout: QUEUE_RULES });
   const head = tipOf(w);
@@ -205,6 +255,24 @@ test("W-168-b4 behaviour 4: a queued CLEAN PR gets no second merge call", { time
   assert.equal(ghMerges(w).length, 1, ran("exactly one gh pr merge call", o));
   assert.deepEqual(mutating(w), ["gh pr merge --squash --auto"], "no direct merge and no update-branch");
   assert.match(o.out, /state=QUEUE_TIMEOUT/, ran("and the poll runs out", o));
+});
+
+test("W-351-b1 behaviour 1: every fixed pr view field is accepted by gh 2.101.0", { timeout: 3_600_000 }, () => {
+  const w = pushed("w351-b1-view-fields");
+  scenario(w, { rules: { stdout: QUEUE_RULES }, list: openList(w), view: { stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN" })) } });
+  const o = performMerge(w);
+  const reads = ghCalls(w).filter((a) => a[0] === "pr" && a[1] === "view");
+  assert.ok(reads.length > 0, ran("the merge performed a fixed pr view read", o));
+  for (const read of reads) {
+    const at = read.indexOf("--json");
+    assert.notEqual(at, -1, ran("the fixed view names its JSON fields", o));
+    const fields = (read[at + 1] ?? "").split(",");
+    assert.deepEqual(
+      fields.filter((field) => !GH_2_101_PR_VIEW_FIELDS.has(field)),
+      [],
+      ran("every fixed pr view field is accepted by gh 2.101.0", o),
+    );
+  }
 });
 
 test("W-347-b1 behaviour 1: a CLEAN PR outside the merge queue has auto-merge re-armed once", { timeout: 3_600_000 }, () => {
