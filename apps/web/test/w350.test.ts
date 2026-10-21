@@ -178,16 +178,67 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   );
 
   const { readRenderingEnvironmentMode } = await import("../tests-serve/rendering-environment.js");
+  const readModeWithSource = readRenderingEnvironmentMode as (...args: (string | undefined)[]) => "compare" | "write";
   assert.equal(readRenderingEnvironmentMode("0", "true"), "compare", "the full-path identity step compares when refresh is off");
-  assert.equal(readRenderingEnvironmentMode("1", "true"), "write", "the full-path identity step writes on an authorised runner refresh");
+  assert.equal(
+    readModeWithSource("1", "true", "workflow_dispatch", "refs/heads/master", "a".repeat(40)),
+    "write",
+    "the full-path identity step writes on an authorised runner refresh",
+  );
   assert.throws(() => readRenderingEnvironmentMode("1", undefined), /GitHub Actions/, "the rendering identity cannot be written by a developer machine");
 
   const { readRefreshScreenshots } = await import("../playwright.serve.config.js");
+  const readRefreshWithSource = readRefreshScreenshots as (...args: (string | undefined)[]) => boolean;
   assert.equal(readRefreshScreenshots(undefined, undefined), false, "an absent refresh value compares only");
   assert.equal(readRefreshScreenshots("0", "true"), false, "zero compares only");
-  assert.equal(readRefreshScreenshots("1", "true"), true, "one refreshes on GitHub Actions");
+  assert.equal(
+    readRefreshWithSource("1", "true", "workflow_dispatch", "refs/heads/master", "a".repeat(40)),
+    true,
+    "one refreshes on a master GitHub Actions dispatch",
+  );
   assert.throws(() => readRefreshScreenshots("1", undefined), /GitHub Actions/, "a developer machine cannot refresh");
   assert.throws(() => readRefreshScreenshots("true", "true"), /0 or 1/, "every other refresh value fails closed");
+});
+
+test("W-350-sec3: baseline artifacts prove a master workflow dispatch before the follow-up can consume them", async () => {
+  const sha = "a".repeat(40);
+  const oldUnprovenancedRecord = {
+    runnerOs: "Linux",
+    imageOs: "ubuntu24",
+    imageVersion: "20261015.1.0",
+    node: "v25.0.0",
+    playwright: "1.55.0",
+    chromium: "Chromium 140.0.7339.16",
+  };
+  const source = { eventName: "workflow_dispatch", ref: "refs/heads/master", sha };
+
+  const config = await import("../playwright.serve.config.js");
+  const readRefreshWithSource = config.readRefreshScreenshots as (...args: (string | undefined)[]) => boolean;
+  assert.throws(
+    () => readRefreshWithSource("1", "true", "workflow_dispatch", "refs/heads/opus/W-350", sha),
+    /refs\/heads\/master/,
+    "a non-master runner cannot generate screenshot baselines",
+  );
+  assert.equal(
+    readRefreshWithSource("1", "true", "workflow_dispatch", "refs/heads/master", sha),
+    true,
+    "a master workflow dispatch can generate screenshot baselines",
+  );
+
+  const rendering = await import("../tests-serve/rendering-environment.js");
+  const readRecord = (rendering as { readRenderingEnvironmentRecord?: (value: unknown) => unknown }).readRenderingEnvironmentRecord;
+  assert.equal(typeof readRecord, "function", "the baseline identity has a provenance reader");
+  if (readRecord === undefined) return;
+  assert.throws(
+    () => readRecord(oldUnprovenancedRecord),
+    /baseline provenance/,
+    "an artifact made by the stale workflow cannot become the follow-up baseline",
+  );
+  assert.deepEqual(
+    readRecord({ ...oldUnprovenancedRecord, baselineSource: source }),
+    { ...oldUnprovenancedRecord, baselineSource: source },
+    "a master dispatch's source ref and immutable commit remain in the reviewed baseline identity",
+  );
 });
 
 test("W-350-b2 behaviour 2: baseline bootstrap skips only an empty set, rejects a partial set and compares a complete set", async () => {
