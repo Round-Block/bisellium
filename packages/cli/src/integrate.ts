@@ -26,7 +26,7 @@ const PR_STATES = new Set(["OPEN", "MERGED", "CLOSED"]);
 const MERGE_STATES = new Set(["BEHIND", "BLOCKED", "CLEAN", "DIRTY", "DRAFT", "HAS_HOOKS", "UNKNOWN", "UNSTABLE"]);
 const BUCKETS = new Set(["pass", "fail", "pending", "skipping", "cancel"]);
 const PR_LIST_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,isCrossRepository,headRepositoryOwner,headRepository,mergeCommit";
-const PR_VIEW_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit,isInMergeQueue";
+const PR_VIEW_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit";
 
 // ---------------------------------------------------------------------------
 // spawning
@@ -408,7 +408,7 @@ export interface Pr {
   headRefOid: string;
   baseRefName: string;
   repo: string;
-  /** Present on the fixed `pr view` read; true only while GitHub reports this PR in the merge queue. */
+  /** Present only when a caller supplies queue membership beside a PR view. */
   isInMergeQueue?: boolean;
   /** Only set (and well formed) for a MERGED PR. */
   mergeOid?: string;
