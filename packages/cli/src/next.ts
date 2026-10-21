@@ -545,6 +545,13 @@ function certificate(repo: string, studioRel: string, studioAbs: string, exclude
 }
 const refExists = (repo: string, ref: string): boolean => git(repo, ["show-ref", "--verify", "-q", ref]).status === 0;
 
+/** D-088: `merge-tree --write-tree` has exactly two decision exits: 0 clean, 1 conflict. */
+function mergeTreeConflict(repo: string, left: string, right: string): { conflict: boolean } | { error: string } {
+  const r = git(repo, ["merge-tree", "--write-tree", left, right]);
+  if (r.error !== undefined || (r.status !== 0 && r.status !== 1)) return { error: `git merge-tree --write-tree could not compare ${left} with ${right} (exit ${r.status ?? "unknown"})` };
+  return { conflict: r.status === 1 };
+}
+
 /** W-330: a first-parent commit on master after the opus's merge commit whose own diff is not records-only, with its source paths. */
 type SourceCommit = { sha: string; source: string[] };
 /**
@@ -990,6 +997,16 @@ export function deriveNext(f: Facts): Derived {
       });
 
     // 7 review
+    const branchRef = `refs/heads/opus/${id}`;
+    const trunkConflict = mergeTreeConflict(f.repo, "refs/remotes/origin/master", branchRef);
+    if ("error" in trunkConflict) return hold("review", `${trunkConflict.error}; no review is ordered`);
+    if (trunkConflict.conflict)
+      return named(
+        "build",
+        "producer",
+        `opus/${id} conflicts with origin/master; rebase before review so the reviewed tree is never rebased afterwards`,
+        `from .worktrees/${id}: git rebase origin/master`,
+      );
     const uiBranch = f.uiReviewProblems();
     if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
       const rounds = reviewRounds(f);
