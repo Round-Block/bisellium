@@ -4,12 +4,14 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { readFront } from "@bisellium/adapter-native";
+import { readFront, type Manifest } from "@bisellium/adapter-native";
 import { inspectUiDesignInput, type NativeRecord } from "@bisellium/commands/opus-model.js";
-import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
+import { deriveNext, readSpecReviewer, type Facts } from "./next.js";
+import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, briefText, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
 const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
@@ -1037,4 +1039,149 @@ test("W-338-b6 behaviour 6: on an opus that is not kind: ui a ui-lead spec log s
   const after = specRun(b, 3, "ui-lead", "passed", NO_FINDINGS, [], b.wtStudio);
   assert.equal(after.status, 0, `a plain ui-lead verdict in the worktree is recorded\n${after.out}`);
   specHeld(specNext(b), "a new ui-lead log in the worktree of a kind: opus holds", /W-900-spec-3\.log is not a valid signature or spec review/);
+});
+
+// ---------------------------------------------------------------------------
+// W-348 (D-091 D): a kind: ui opus has its own spec signer and reviewer pair.
+// Rows are selectable with --test-name-pattern='^W-348-b<n>\s'.
+// ---------------------------------------------------------------------------
+const UI_ARCHITECT = "ui-architect";
+const UI_ARCHITECT_MODEL = "gpt-5.6-sol";
+const UI_REVIEWER = "ui-spec-reviewer";
+const UI_REVIEWER_MODEL = "claude-opus-5-5";
+const UI_ARCHITECT_ROW = { id: UI_ARCHITECT, collegium: "design", kind: "agent", model: UI_ARCHITECT_MODEL, harness: "codex" } as const;
+const UI_REVIEWER_ROW = { id: UI_REVIEWER, collegium: "qa", kind: "agent", model: UI_REVIEWER_MODEL, harness: "claude-code" } as const;
+
+function pairingManifest(edit: (m: Manifest & Record<string, unknown>) => void = () => {}): Manifest {
+  const m = {
+    bisellium: 1,
+    studio: "pairing",
+    collegia: [
+      { id: "design", name: "Design", magister: "architect" },
+      { id: "qa", name: "QA", magister: "qa-lead" },
+    ],
+    sellae: [
+      { id: "architect", collegium: "design", kind: "agent", model: "claude-opus-5-5" },
+      { id: SR, collegium: "qa", kind: "agent", model: SR_MODEL, harness: "codex" },
+      { ...UI_ARCHITECT_ROW },
+      { ...UI_REVIEWER_ROW },
+    ],
+    probationes: [],
+    spec_reviewer: SR,
+    ui_spec_signer: UI_ARCHITECT,
+    ui_spec_reviewer: UI_REVIEWER,
+  } as unknown as Manifest & Record<string, unknown>;
+  edit(m);
+  return m;
+}
+
+test("W-348-b1 behaviour 1: the UI spec pair is an atomic exact-model override, while every other kind keeps the design magister and configured reviewer", () => {
+  const valid = readSpecReviewer(pairingManifest(), { state: "greenlit", kind: "ui" });
+  assert.deepEqual(valid, {
+    signer: UI_ARCHITECT,
+    reviewer: { sella: UI_REVIEWER, model: UI_REVIEWER_MODEL, design: UI_ARCHITECT },
+  }, "kind ui selects the configured UI signer and reviewer");
+
+  const engineering = readSpecReviewer(pairingManifest(), { state: "greenlit", kind: "feature" });
+  assert.deepEqual(engineering, {
+    signer: "architect",
+    reviewer: { sella: SR, model: SR_MODEL, design: "architect" },
+  }, "every other kind keeps the design magister and spec_reviewer");
+
+  const compatible = pairingManifest((m) => {
+    delete m["ui_spec_signer"];
+    delete m["ui_spec_reviewer"];
+  });
+  assert.deepEqual(readSpecReviewer(compatible, { state: "greenlit", kind: "ui" }), engineering, "both UI keys absent preserve the existing pair");
+
+  const bad = (name: string, edit: (m: Manifest & Record<string, unknown>) => void, why: RegExp): void => {
+    const got = readSpecReviewer(pairingManifest(edit), { state: "greenlit", kind: "ui" });
+    assert.ok("error" in got, `${name}: the pairing is refused`);
+    assert.match(got.error, why, `${name}: the refusal names the cause`);
+  };
+  bad("only the signer", (m) => delete m["ui_spec_reviewer"], /ui_spec_signer.*ui_spec_reviewer|ui_spec_reviewer.*ui_spec_signer/);
+  bad("only the reviewer", (m) => delete m["ui_spec_signer"], /ui_spec_signer.*ui_spec_reviewer|ui_spec_reviewer.*ui_spec_signer/);
+  bad("a non-string signer", (m) => (m["ui_spec_signer"] = 7), /ui_spec_signer/);
+  bad("an unknown signer", (m) => (m["ui_spec_signer"] = "ghost"), /ghost.*not a declared seat/);
+  bad("a duplicate signer", (m) => m.sellae.push({ ...UI_ARCHITECT_ROW }), /ui-architect is declared 2 times/);
+  bad("a retired signer", (m) => (m.sellae.find((s) => s.id === UI_ARCHITECT)!.retired = true), /ui-architect is retired/);
+  bad("a non-agent signer", (m) => (m.sellae.find((s) => s.id === UI_ARCHITECT)!.kind = "human"), /ui-architect must be kind: agent/);
+  bad("a signer on another harness", (m) => (m.sellae.find((s) => s.id === UI_ARCHITECT)!.harness = "claude-code"), /ui-architect must be on the codex harness/);
+  bad("a signer on another model", (m) => (m.sellae.find((s) => s.id === UI_ARCHITECT)!.model = "gpt-5.6-terra"), /ui-architect must declare model gpt-5\.6-sol/);
+  bad("a reviewer on another harness", (m) => (m.sellae.find((s) => s.id === UI_REVIEWER)!.harness = "codex"), /ui-spec-reviewer must be on the claude-code harness/);
+  bad("a reviewer on another model", (m) => (m.sellae.find((s) => s.id === UI_REVIEWER)!.model = SR_MODEL), /ui-spec-reviewer must declare model claude-opus-5-5/);
+  bad("one seat for both roles", (m) => {
+    m["ui_spec_reviewer"] = UI_ARCHITECT;
+    const row = m.sellae.find((s) => s.id === UI_ARCHITECT)!;
+    row.model = UI_REVIEWER_MODEL;
+    row.harness = "claude-code";
+  }, /signer and reviewer must be different seats/);
+});
+
+test("W-348-b2 behaviour 2: next reads every UI signature as ui-architect and every UI spec review as ui-spec-reviewer, then attributes ready to the UI signer", { timeout: 1_800_000 }, () => {
+  const brief = briefText(1);
+  const pin = `briefs/${OPUS}.md blob:${createHash("sha1").update(`blob ${Buffer.byteLength(brief)}\0`).update(brief).digest("hex")}`;
+  const log = (round: number, sella: string, outcome: "passed" | "failed", body = NO_FINDINGS, model?: string): string =>
+    [`# opus: ${OPUS}`, "# phase: spec", `# round: ${round}`, `# sella: ${sella}`, ...(model === undefined ? [] : [`# model: ${model}`]), `# outcome: ${outcome}`, `# at: 2026-10-21T00:00:0${round}.000Z`, `# brief: ${pin}`, "", body.trimEnd(), ""].join("\n");
+  const src = (files: Record<string, string>) => ({
+    read: (rel: string) => files[rel],
+    list: (dir: string) => Object.keys(files).filter((rel) => rel.startsWith(`${dir}/`)).map((rel) => rel.slice(dir.length + 1)),
+  });
+  const manifest = pairingManifest();
+  const rec = { id: OPUS, title: "UI fixture", kind: "ui", state: "greenlit", probationes: {} };
+  const facts = (files: Record<string, string>, ui: string[] = []): Facts => ({
+    id: OPUS,
+    repo: "/fixture",
+    studioRel: "studio",
+    studioAbs: "/fixture/studio",
+    excludes: [],
+    design: "architect",
+    tip: undefined,
+    wt: { dir: "/fixture/.worktrees/W-900", studio: "/fixture/.worktrees/W-900/studio", usable: false },
+    trunk: src({}),
+    trunkRecord: rec,
+    certified: () => false,
+    branch: undefined,
+    branchRecord: undefined,
+    work: src(files),
+    choreDone: false,
+    residue: false,
+    pushed: false,
+    manifest,
+    curTree: () => undefined,
+    buildRounds: () => ({ error: "unused" }),
+    gates: () => undefined,
+    redFindings: () => [],
+    replay: () => undefined,
+    uiSpecProblems: () => ui,
+    uiReviewProblems: () => [],
+    uiReviewInput: () => undefined,
+    pr: () => ({ kind: "none" }),
+    owed: () => ({ owed: [] }),
+    evidenceAt: () => 0,
+    wtCiProblem: () => undefined,
+    wtChanges: () => ({ spec: [], other: [], bad: [] }),
+    mainChanges: () => ({ spec: [], other: [], bad: [] }),
+  });
+  const unsigned = deriveNext(facts({ [`briefs/${OPUS}.md`]: brief }));
+  assert.equal(unsigned.order?.sella, UI_ARCHITECT, "an unsigned UI brief orders ui-architect");
+
+  const signedFiles = { [`briefs/${OPUS}.md`]: brief, [`ci/${OPUS}-spec-1.log`]: log(1, UI_ARCHITECT, "passed") };
+  const reviewOrder = deriveNext(facts(signedFiles));
+  assert.equal(reviewOrder.order?.sella, UI_REVIEWER, "the UI signature orders ui-spec-reviewer");
+  assert.equal(reviewOrder.order?.extra.find(([k]) => k === "model")?.[1], UI_REVIEWER_MODEL, "the order names the Claude model");
+  assert.match(reviewOrder.order?.command ?? "", new RegExp(`--sella ${UI_REVIEWER} --model ${UI_REVIEWER_MODEL}`), "the record command names the UI reviewer pair");
+
+  const failedFiles = { ...signedFiles, [`ci/${OPUS}-spec-2.log`]: log(2, UI_REVIEWER, "failed", BLOCKER, UI_REVIEWER_MODEL) };
+  assert.equal(deriveNext(facts(failedFiles)).order?.sella, UI_ARCHITECT, "a failed UI review returns to ui-architect");
+
+  const passedFiles = { ...signedFiles, [`ci/${OPUS}-spec-2.log`]: log(2, UI_REVIEWER, "passed", NO_FINDINGS, UI_REVIEWER_MODEL) };
+  const lead = deriveNext(facts(passedFiles, ["no ui-lead spec input exists"]));
+  assert.equal(lead.order?.sella, "ui-lead", "the passed UI review then orders ui-lead");
+  assert.equal(lead.order?.round, 3, "the UI input is the next round");
+
+  const ready = deriveNext({ ...facts(passedFiles), tip: "branch-tip", branch: src(passedFiles), branchRecord: rec });
+  assert.equal(ready.step, "ready", "a passed UI spec on the branch reaches ready");
+  assert.match(ready.command ?? "", /--sella ui-architect\b/, "ready names the UI signer");
+  assert.deepEqual(ready.extra, [["attributed", "ui-architect (signed ci/W-900-spec-1.log)"]], "ready is attributed to the UI signer");
 });

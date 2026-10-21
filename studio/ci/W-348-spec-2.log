@@ -1,0 +1,19 @@
+# opus: W-348
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15c9f-df23-7ed3-93e0-dfc8b4078840
+# outcome: failed
+# at: 2026-10-21T04:06:48.191Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-348.md blob:b26b60a0a17efe62830eec31144b96576b0a1535
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"b26b60a0a17efe62830eec31144b96576b0a1535","at":"2026-10-21T04:06:47.744Z"}
+
+## Findings
+1. blocking — brief:19 The prototype’s `gather` selects the pair from the main-checkout manifest even when branch-side spec evidence belongs to the worktree, while the ordered `verdict --studio <worktree>` trusts the worktree manifest. An ordinary branch-side pairing change can make `next` accept signer A while `runVerdict` trusts signer B, allowing A’s signature without the required ledger; replace brief:19 with: `Next and verdict trust the manifest pairing and opus kind from the same source that owns the spec evidence—main before the branch, worktree on the branch—and verdict charges the ledger to that same selected signer. Next uses that signer for every signature reader, re-sign order, ready attribution, prototype-red attribution and later class-loop signature, and uses the selected reviewer and model for review. Retro and brief-stale trust the studio they inspect.` [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-spec.test.ts
+
+## Verdict
+The signed brief needs a shared manifest source for branch-side pairing before its routing and ledger promises are feasible.
+
+VERDICT: FAIL

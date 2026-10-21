@@ -1,0 +1,21 @@
+# opus: W-348
+# phase: spec
+# round: 9
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15c9f-df23-7ed3-93e0-dfc8b4078840
+# outcome: passed
+# at: 2026-10-21T06:20:12.091Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-348.md blob:599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":9,"actor":"spec-reviewer","studio":".worktrees/W-348/studio","head":"c019c32b4a088d8b18aae1cf1f5416615b47e413","brief":"599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf","at":"2026-10-21T06:20:11.581Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+All five prefixes name W-348, the matching behaviour 1–5, builder, and studio, and each preserves its original Node command after `--`.
+
+VERDICT: PASS

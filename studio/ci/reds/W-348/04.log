@@ -1,0 +1,42 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-348-b4\s --import tsx packages/cli/src/retro-opus.test.ts
+# exit: 1
+# at: 2026-10-21T06:28:52.011Z
+# sella: architect
+# tree: tree:db65297dc5b447b3c1e60e9f5e5cc06d0b893b42
+# ticket: {"opus":"W-348","step":"reds","action":"red","round":4,"actor":"producer","studio":".worktrees/W-348/studio","head":"016042f902af8e5b7523a28b36f691e1c628663e","brief":"599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf","at":"2026-10-21T06:28:51.979Z"}
+
+TAP version 13
+# Subtest: W-348-b4 behaviour 4: retro treats the configured signer of a kind ui opus as its signature and the configured reviewer as its spec review
+not ok 1 - W-348-b4 behaviour 4: retro treats the configured signer of a kind ui opus as its signature and the configured reviewer as its spec review
+  ---
+  duration_ms: 28.420084
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-348/packages/cli/src/retro-opus.test.ts:53:339'
+  failureType: 'testCodeFailure'
+  error: |-
+    the UI architect's signing note is not a retro finding
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-348/packages/cli/src/retro-opus.test.ts:681:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 153.721088

@@ -1,0 +1,27 @@
+# opus: W-348
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T04:02:17.898Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-348.md blob:b26b60a0a17efe62830eec31144b96576b0a1535
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"b26b60a0a17efe62830eec31144b96576b0a1535","at":"2026-10-21T04:02:17.451Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-348-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — one atomic manifest pair is the smallest shared seam: both keys absent preserve adopters, either key present makes both exact live seats mandatory, and all four changed consumers call the same exported classifier — check: brief:17, brief:38, brief:67, row-b1-proto.out
+2. advisory — next carries the selected signer through signature reads, re-signing, ready attribution and later signing work, and carries the selected reviewer with its Claude model through strict review reads and orders; the pure row now asserts ready attribution directly — check: brief:19, brief:40, brief:83, row-b2-ready-green.out
+3. advisory — the UI signer alone owes the promise ledger, while retro excludes that signer and brief-stale anchors on it; the engineering default and historical unreadable-record fallback are explicit limits, not guarantees — check: brief:41, brief:42, brief:43, brief:55, brief:57, brief:59
+4. advisory — all nine Input domain rows are admitted and covered by the signer ledger; both path-typed rows name space, quote, non-ASCII and symlinked-parent forms, and the two unpinned reused domains are scoped — check: admission.out, ledger-check.out, promise-ledger.md
+5. advisory — each of the five rows fails by assertion on master and immediately before its implementation, passes on its cumulative stage, and the secondary malformed-pair red also fails by assertion before the fail-closed fix — check: reds.out, red-b1-accept.out, red-b2-accept.out, red-b3-accept.out, red-b4-accept.out, red-b5-accept.out, red-b5-config-accept.out
+6. advisory — no existing adjacent pin is known to flip: the writer-ledger, retro-signature and brief-stale neighbours pass; the producer's fixture census remains authoritative — check: neighbour-w306.out, neighbour-w253.out, neighbour-w317.out, brief:102
+7. advisory — targeted rows, lint, both package typechecks and formatting pass; both real officina checks have zero blockers, while the scoped archive explains its two artificial studio blockers — check: gates-proto.out, check-studio-working.out, check-sample-working.out, check-studio-proto.out
+8. advisory — lasting code-owned wording is included for the Patron to merge, while `.claude/agents/architect.md` is explicitly deferred so this opus does not create an unmergeable agent-authored `.claude/` change — check: brief:31, brief:32, brief:34, brief:109
+
+## Verdict
+
+passed — signed by the UI architect (`gpt-5.6-sol`, D-094), brief revision 1 at `studio/briefs/W-348.md`, prototype on master 3308e8c8; five behaviours, 3 points; code-owned studio/docs files are touched, so the Patron merges.

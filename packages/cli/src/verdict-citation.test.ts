@@ -313,6 +313,82 @@ describe("behaviour 4", () => {
   });
 });
 
+test("W-348-b3 behaviour 3: on a kind ui opus the configured UI signer alone owes the promise ledger, while the design magister and reviewer do not", () => {
+  const dir = studio();
+  const manifest = join(dir, "bisellium.yml");
+  writeFileSync(
+    manifest,
+    readFileSync(manifest, "utf8")
+      .replace("collegia:\n", "collegia:\n  - { id: design, name: Design, magister: architect }\n  - { id: qa, name: QA, magister: qa-lead }\n")
+      .replace("sellae:\n", "sellae:\n  - { id: architect, collegium: design, kind: agent, model: claude-opus-5-5, harness: claude-code }\n  - { id: ui-architect, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }\n  - { id: ui-spec-reviewer, collegium: qa, kind: agent, model: claude-opus-5-5, harness: claude-code }\n") +
+      "ui_spec_signer: ui-architect\nui_spec_reviewer: ui-spec-reviewer\n",
+  );
+  writeFileSync(join(dir, "opera", "W-300.md"), readFileSync(join(dir, "opera", "W-300.md"), "utf8").replace("kind: feature", "kind: ui"));
+  writeFileSync(join(dir, "briefs", "W-300.md"), LEDGER_BRIEF);
+  const ledgerPath = join(dir, "promise-ledger.md");
+  writeFileSync(ledgerPath, COVERING);
+  const log = join(dir, "ci", "W-300-spec-1.log");
+  let input = 0;
+  const sign = (sella: string, body: string): { exit: number; stderr: string; written: boolean } => {
+    const from = join(dir, `w348-${++input}.md`);
+    writeFileSync(from, body);
+    const r = capture(() => runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", from, "--studio", dir], { now: NOW }));
+    const written = existsSync(log);
+    if (written) rmSync(log);
+    return { exit: r.result.exitCode, stderr: r.stderr, written };
+  };
+  const no = "## Findings\nNo findings\n";
+  const missing = sign("ui-architect", no);
+  assert.equal(missing.exit, 2, `the UI signer without a ledger is refused: ${missing.stderr}`);
+  assert.match(missing.stderr, /promise ledger/, "the refusal names the promise ledger");
+  assert.equal(missing.written, false, "the refused signature writes no log");
+
+  const covered = sign("ui-architect", `Promise ledger: ${ledgerPath}\n\n${no}`);
+  assert.equal(covered.exit, 0, `the UI signer with a covering ledger signs: ${covered.stderr}`);
+  assert.equal(covered.written, true, "the signature is written");
+  for (const seat of ["architect", "ui-spec-reviewer"]) {
+    const other = sign(seat, no);
+    assert.equal(other.exit, 0, `${seat} owes no signer ledger: ${other.stderr}`);
+    assert.equal(other.written, true, `${seat}'s plain spec verdict is written`);
+  }
+});
+
+test("W-348-fix1 a ui-lead spec verdict rejects a partial UI spec pair before writing", () => {
+  const dir = studio();
+  const manifest = join(dir, "bisellium.yml");
+  writeFileSync(
+    manifest,
+    readFileSync(manifest, "utf8").replace("sellae:\n", "sellae:\n  - { id: ui-architect, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }\n") +
+      "ui_spec_signer: ui-architect\n",
+  );
+  writeFileSync(join(dir, "opera", "W-300.md"), readFileSync(join(dir, "opera", "W-300.md"), "utf8").replace("kind: feature", "kind: ui"));
+  mkdirSync(join(dir, "ci"));
+  writeFileSync(join(dir, "ci", "ui-prompt.md"), "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n");
+  const from = join(dir, "ui-input.md");
+  writeFileSync(
+    from,
+    [
+      "## Findings",
+      "No findings",
+      "The navigation relationships remain legible across the complete narrow viewport arrangement.",
+      "## Recommendation",
+      "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.",
+      "Additional original observations cover focus movement responsive density and stable content grouping throughout.",
+      "Verdict: passed",
+      "",
+    ].join("\n"),
+  );
+  const r = capture(() =>
+    runVerdict(
+      ["W-300", "--round", "1", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--dispatch-prompt", "ci/ui-prompt.md", "--from", from, "--studio", dir],
+      { now: NOW },
+    ),
+  );
+  assert.equal(r.result.exitCode, 2, `the partial pair is refused: ${r.stderr}`);
+  assert.match(r.stderr, /ui_spec_signer and ui_spec_reviewer must be declared together/, "the refusal names the partial pair");
+  assert.equal(existsSync(join(dir, "ci", "W-300-spec-1.log")), false, "the refused UI input writes no log");
+});
+
 describe("review round 1 rows", () => {
   test("a git-root officina does not admit an absolute citation", () => {
     const dir = studio({ git: "root" });

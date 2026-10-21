@@ -1,0 +1,23 @@
+# opus: W-348
+# phase: spec
+# round: 6
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T06:13:17.273Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-348.md blob:a54dd3519efa614607db062d75137bc90d01fbd2
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-348/studio","head":"9b2e2fcf1b324824cdeff1223a19f1177934034b","brief":"a54dd3519efa614607db062d75137bc90d01fbd2","at":"2026-10-21T06:13:13.002Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-348-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the prototype mailbox was rebuilt from the unchanged ten stage commits on 33da750d with `git format-patch --no-numbered`, eliminating git's zero-padded ten-patch series subjects — check: recut-r4.sh, recut-r4.out, prototype.mbox
+2. advisory — every mailbox subject is exactly `[PATCH] test(W-348): row b<k>, red` or `[PATCH] feat(W-348): behaviour <k>` in alternating b1 through b5 order, and the production replay parser accepts all ten — check: recut-r4.out, replay-parse-r4.out
+3. advisory — the prototype base, ten commits, five behaviours, source diff and revision-3 design are unchanged; revision 4 changes only mailbox serialization and the brief's status and digest lines — check: recut-r4.sh, prototype.sha256, brief:3, brief:5
+4. advisory — revision 3's admission, promise ledger, red matrix, targeted gates, adjacent pins and both real officina checks remain applicable because neither the brief promises nor the committed prototype content changed — check: admission-r3.out, ledger-check-r3.out, reds-r3.out, gates-proto-r3.out, check-studio-working-r3.out, check-sample-working-r3.out
+
+## Verdict
+
+passed — signed by the UI architect (`gpt-5.6-sol`, D-094), brief revision 4 at `studio/briefs/W-348.md`; the unchanged five-behaviour prototype is re-cut unnumbered for replay with sha256 `4e3d4828e24c4f8d4ce9a55c26b71c8e33dc6f79371ae20d784e27709df5c069`.

@@ -62,7 +62,7 @@ export const HERE = dirname(fileURLToPath(import.meta.url));
 export const MAIN = join(HERE, "main.ts");
 export const REPO_ROOT = join(HERE, "..", "..", "..");
 export const TSX = import.meta.resolve("tsx");
-export const REAL_GIT = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+export const REAL_GIT = process.env["BISELLIUM_TEST_GIT"] ?? execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
 export const FAST = ["--poll-ms", "1", "--max-polls", "3"];
 
 // ---------------------------------------------------------------------------

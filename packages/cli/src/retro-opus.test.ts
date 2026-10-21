@@ -662,3 +662,25 @@ test("W-253-b1 behaviour 1: an architect-signed spec log with signing notes neit
   refuses(withDesign("spec-reviewer"), "the same log signed by spec-reviewer", COVER);
   refuses(withDesign("architect", false), "the same architect log with no design collegium", COVER);
 });
+
+test("W-348-b4 behaviour 4: retro treats the configured signer of a kind ui opus as its signature and the configured reviewer as its spec review", () => {
+  const paired = manifest("{ since: 2026-10-06T00:00:00Z, high_greenlit_by: D-1 }")
+    .replace("collegia:\n", "collegia:\n  - { id: design, name: Design, magister: architect }\n")
+    .replace("sellae:\n", "sellae:\n  - { id: architect, collegium: design, kind: agent, model: claude-opus-5-5, harness: claude-code }\n  - { id: ui-architect, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }\n  - { id: ui-spec-reviewer, collegium: qa, kind: agent, model: claude-opus-5-5, harness: claude-code }\n") +
+    "ui_spec_signer: ui-architect\nui_spec_reviewer: ui-spec-reviewer\n";
+  const root = fixture({
+    files: {
+      "bisellium.yml": paired,
+      "opera/W-1.md": '---\nid: "W-1"\ntitle: "UI fixture"\nkind: "ui"\ncollegium: "engineering"\nstate: done\nprobationes: {}\nstart: 2026-10-06T10:00:00Z\nend: 2026-10-06T12:00:00Z\n---\n',
+      "ci/W-1-spec-1.log": vlog("W-1", "spec", 1, "ui-architect", "passed", "## Findings\n1. advisory — signing census note — check: none: x"),
+      "ci/W-1-spec-2.log": vlog("W-1", "spec", 2, "ui-spec-reviewer", "failed", BLOCKER),
+    },
+  });
+  const verdicts = retroModule.readOpusVerdicts(root, "W-1");
+  if ("error" in verdicts) assert.fail(`the UI verdicts are readable: ${verdicts.error}`);
+  assert.equal(verdicts.findings.some((f) => f.log === "ci/W-1-spec-1.log"), false, "the UI architect's signing note is not a retro finding");
+  assert.equal(verdicts.findings.some((f) => f.log === "ci/W-1-spec-2.log"), true, "the Claude UI review remains a retro finding");
+  const rounds = retroModule.reviewRounds(root);
+  if ("error" in rounds) assert.fail(`the review rounds are readable: ${rounds.error}`);
+  assert.equal(rounds.opus.get("W-1")?.spec, 1, "only the configured reviewer counts as a spec-review round");
+});
