@@ -1,0 +1,23 @@
+# opus: W-348
+# phase: spec
+# round: 8
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T06:19:38.242Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# brief: briefs/W-348.md blob:599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf
+# ticket: {"opus":"W-348","step":"spec","action":"verdict-spec","round":8,"actor":"architect","studio":".worktrees/W-348/studio","head":"c019c32b4a088d8b18aae1cf1f5416615b47e413","brief":"599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf","at":"2026-10-21T06:19:37.723Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-348-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — each of the five Genuine red spans now opens `bisellium red W-348 --behaviour <k> --sella builder --studio studio --` and retains its original node test command after the separator — check: brief:81, brief:85, brief:89, brief:93, brief:97
+2. advisory — the production replay parser finds exactly one record command per behaviour and returns the intended whitespace-free argv for b1 through b5 — check: red-command-parse-r5.out
+3. advisory — revision 5 changes only the status line and five Genuine red command prefixes; the ten-stage prototype and its sha256 remain unchanged from revision 4 — check: brief:3, brief:5, prototype.sha256
+4. advisory — revision 3's promise ledger, assertion reds and gates and revision 4's unnumbered-subject replay validation remain applicable because neither the promises, commands after the record separator nor prototype bytes changed — check: promise-ledger.md, reds-r3.out, gates-proto-r3.out, replay-parse-r4.out
+
+## Verdict
+
+passed — signed by the UI architect (`gpt-5.6-sol`, D-094), brief revision 5 at `studio/briefs/W-348.md`; all five Genuine red commands now carry the record prefix required by replay, and the prototype remains sha256 `4e3d4828e24c4f8d4ce9a55c26b71c8e33dc6f79371ae20d784e27709df5c069`.
