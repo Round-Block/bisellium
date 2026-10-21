@@ -1,0 +1,26 @@
+# opus: W-339
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15c7d-ea2f-74b2-98ba-de219dba1a81
+# outcome: failed
+# at: 2026-10-21T04:01:37.387Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-339.md blob:2cee4891d4b107cccdb515c0f26be017ebb1e75c
+# ticket: {"opus":"W-339","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"2cee4891d4b107cccdb515c0f26be017ebb1e75c","at":"2026-10-21T04:01:36.910Z"}
+
+## Findings
+1. blocking — brief:62 The revised stripper still treats `//` in valid unquoted CSS `url(https://cdn/x)` as a line comment, so a later `color:red` is hidden and the real `test:policy` caller passes. Replace brief:62 with: “A fixture proves both quoted and unquoted `https://` URLs before a later colour still report that colour; CSS scanning removes block comments only, while TSX inline-style scanning handles JavaScript line comments quote-aware.” [severity: S1] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/test/w339.test.ts
+2. blocking — brief:17 `page.clock.install({time})` advances `Date` with real elapsed time, so loading or request delays can change displayed timestamps despite the new fixed-time promise; `W-339-b1` currently pins that wrong mechanism. Replace in brief:17 “The server and browser clock are fixed at `2026-09-25T09:35:43.947Z`” with: “The server receives fixed `--now`, and the browser calls `page.clock.setFixedTime("2026-09-25T09:35:43.947Z")` before navigation so displayed time remains constant while native timers and loading continue.” [severity: S1] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/tests-serve/screenshots.spec.ts
+3. blocking — brief:44 `apps/web/index.html` still contains Google Fonts preconnects and stylesheet loading but is absent from Files owned, so the changed browser path does call an external font service and can race the committed faces. Replace brief:44 with: “- `apps/web/src/assets/fonts/{bricolage-grotesque,instrument-sans,ibm-plex-mono}/*.woff2` and each directory’s `OFL.txt`: reviewed committed font inputs under SIL Open Font License 1.1.\n- `apps/web/index.html`: remove the Google Fonts stylesheet and preconnects so only committed font assets can load.” [severity: S1] [design: changes] [class: workflow×files-owned-boundary-exceeded] — check: apps/web/test/w339.test.ts
+4. blocking — brief:90 The font row accepts any files at the named paths: Vite and `document.fonts.load` can succeed for a wrong font or an incomplete weight set, silently synthesizing production typography. Replace brief:90 with: “| 13. Production font assets and licences | the reviewed family/style/weight tuples and exact WOFF2/OFL SHA-256 values recorded by `W-339-b1`; every required production weight is declared | `assertFontAssets` rejects an absent or hash-mismatched file, and the browser assertion rejects a missing declared face or weight before capture |” [severity: S1] [design: keeps] [class: spec×input-domain-missing-or-unenforceable] — check: apps/web/test/w339.test.ts
+5. advisory — brief:106 “Colophons remain visible” conflicts with the new initial-view limit and the explicit assignment of bottom-of-scroll colophons to W-341. Replace brief:106 with: “Inbox, Board, Seats and Officina meet every loaded-state assertion at both widths; phone Inbox answer controls are in view, and the stable path is fixed wherever rendered. W-341 owns bottom-of-scroll colophon capture.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/tests-serve/screenshots.spec.ts
+
+## Earlier findings
+- ci/W-339-spec-2.log #1: closed — brief:29, brief:62 and brief:98 specify quote-aware stripping and the quoted-URL regression fixture; `row-b2-r2-proto.out` records the revised row passing.
+
+## Verdict
+Revision 2 closes the earlier blocker but introduces four real defects in its expanded determinism and font contracts, including one design-changing Files-owned omission.
+
+VERDICT: FAIL

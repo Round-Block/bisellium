@@ -1,0 +1,23 @@
+# opus: W-339
+# phase: spec
+# round: 7
+# sella: ui-lead
+# outcome: passed
+# at: 2026-10-21T04:08:59.526Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# dispatch_prompt: ci/W-339-ui-prompt-7.md
+# design_digest: sha256:81e5cdb8d869c28a96a6f1af3b64c73c26befd4006101d47b5264f144517d3df
+# ticket: {"opus":"W-339","step":"spec","action":"verdict-spec","round":7,"actor":"ui-lead","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"8c5f6df82043cd0fc862f0cabe7e54adb5b55aee","at":"2026-10-21T04:08:59.074Z"}
+
+## Findings
+
+1. Revision 3 matches the approved token ruling: only `--surface: #ffffff`, `--transparent: transparent` and `--shadow-drawer: rgba(22,33,30,.18)` are added, with the shadow token restricted to `0 0 0 1px var(--rule), 0 16px 48px var(--shadow-drawer)` on the drawer.
+2. The brief correctly rejects `--shadow-subtle`: `.seats__confirm-bar` loses its shadow and retains its `1px solid var(--rule)` top separator, preserving separation within DIRECTION’s flat-layer rule.
+3. The brief correctly rejects all three amber variants. `.board-drawer__banner` uses surface and ink, no enclosing border, a 2px left rule in existing amber and radius 0; its Inbox link stays verdigris and amber age numerals retain the existing token. This matches the earlier restyling ruling without removing the message or changing its action.
+4. The cut introduces no specified visual or interaction regression. Screenshot, font and fixture requirements are explicitly assigned to W-350; the colour rule retains its stated lexical limits and does not claim to establish palette compliance by itself.
+
+## Recommendation
+
+Proceed with revision 3 as written; its token migration and two component restyles satisfy the earlier UI ruling and DIRECTION.
+Carry the separated typography and baseline requirements into W-350 without treating this approval as approval of screenshot coverage or verification of the finished implementation.
+Verdict: passed

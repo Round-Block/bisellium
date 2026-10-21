@@ -1,0 +1,22 @@
+# opus: W-339
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15c7d-ea2f-74b2-98ba-de219dba1a81
+# outcome: failed
+# at: 2026-10-21T03:32:42.449Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-339.md blob:52ffc9ee6b180815ea0c65d3bb71d15256379327
+# ticket: {"opus":"W-339","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"52ffc9ee6b180815ea0c65d3bb71d15256379327","at":"2026-10-21T03:32:41.971Z"}
+
+## Findings
+1. blocking — brief:85 The lexical `//` stripping treats the slashes in valid CSS such as `.x{background:url("https://cdn/x");color:red}` as a comment, so the real `test:policy` caller misses `red` and passes; the forms fixture does not catch this plausible source mistake. Replace brief:85 with: “2. **No recognised hard-coded colour remains below `apps/web/src` outside `tokens.css`, including a direct TSX inline style.** `W-339-b2` pins every recognised form and exclusion, recursively scans the real source, and proves with a fixture that a quoted `https://` URL before a later colour cannot make comment stripping hide that colour; a comment, `var(--red)`, `currentColor` and `white-space` do not report.” [severity: S1] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/test/w339.test.ts
+2. advisory — brief:53 Playwright defaults to perceptual threshold `0.2` and a snapshot template containing the nonempty project name, so the proposed call guarantees neither exact pixels nor filenames exactly `<route>-<width>.png`. Replace brief:53 with: “The screenshot matrix is `NAV_ENTRIES × [1280, 390]`, height 900 and full page; the served config sets `expect.toHaveScreenshot.threshold: 0` and `pathTemplate: "{snapshotDir}/{testFilePath}-snapshots/{arg}{ext}"`, and the row fixes both clocks and font declarations, waits on `document.fonts.ready`, disables animations, hides carets and compares each `<route>-<width>.png` with zero pixel tolerance.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/test/w339.test.ts
+3. advisory — brief:72 `refreshScreenshots` is a boolean constant, not the required rejecting function, and malformed values such as `BISELLIUM_UPDATE_SCREENSHOTS=true` silently become compare mode. Replace brief:72 with: “| 4. Refresh environment and workflow input | workflow boolean false/true; environment absent or exact `0`/`1`, with `1` valid only when `GITHUB_ACTIONS=true` | `readRefreshScreenshots`: returns false for absent/`0`, true for valid `1`, and throws for every other value or context |” [severity: S4] [class: spec×input-without-named-rejector] — check: apps/web/test/w339.test.ts
+4. advisory — brief:77 The table omits `W-339-b1`’s three direct source-file reads and the unchanged `gates` and `officina` jobs newly run by `workflow_dispatch`; its collective CI row also fails to name the differing manual-event contexts required by D-050. Replace brief:77 with: “| 9. `W-339-b1` reads of `screenshots.spec.ts`, `playwright.serve.config.ts` and `ci.yml` | readable UTF-8 source satisfying the behaviour-1 markers | `readFileSync` throws or the named `assert.match` fails | \n| 10. `workflow_dispatch` `gates` job | `event_name=workflow_dispatch`, empty `head_ref`, selected `ref_name`, absent scope output, and every unchanged step exits zero | GitHub runner step failure fails `gates` | \n| 11. `workflow_dispatch` `officina` job | the same manual ref context and every unchanged step exits zero | GitHub runner step failure fails `officina` | \n| 12. `workflow_dispatch` `web-e2e` job | the same manual context, row 4’s boolean input, a GitHub commit SHA, and every policy/build/browser/upload step exits zero | GitHub runner step failure fails `web-e2e` |” [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.reader-coverage should compare every added reader and newly triggered job with an Input-domain row
+
+## Verdict
+The brief has one design-keeping fail-open blocker that must be fixed during the build, plus advisory contract and input-boundary corrections.
+
+VERDICT: FAIL
