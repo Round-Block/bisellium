@@ -194,24 +194,29 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
   const filledAt = await page.locator(".fasti-strip__column").evaluateAll((els) => els.findIndex((e) => e.querySelector(".fasti-strip__tick--filled") !== null));
   expect(filledAt, "the filled tick is among the most recent days").toBeGreaterThanOrEqual(12);
 
-  // (f) one full-page screenshot per rail entry, named by route, 1280 wide and at least 900 tall.
+  // (f) the review set: every screen at the fixed desktop and phone viewports, with stable route-width names.
   const entries = navEntries();
   expect(entries, "nav.NAV_ENTRIES is exported").toBeTruthy();
   const dir = process.env["BISELLIUM_SHOTS_DIR"] ?? join(REPO_ROOT, "apps", "web", "test-results", "shots");
   mkdirSync(dir, { recursive: true });
-  for (const entry of entries!) {
-    await page.locator(`.sidebar__link[href="${entry.href}"]`).click();
-    await expect(page.locator(SCREEN_ROOT[entry.route]!), `${entry.route} is mounted before its screenshot`).toHaveCount(1);
-    await page.screenshot({ path: join(dir, `${entry.route}.png`), fullPage: true });
+  for (const width of [1280, 390] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const entry of entries!) {
+      await page.goto(`${s.baseURL}/${entry.href}`);
+      await expect(page.locator(".token-prompt"), `${entry.route}-${width}: the prompt stays closed`).toBeHidden();
+      await expect(page.locator(SCREEN_ROOT[entry.route]!), `${entry.route}-${width}: screen mounted before capture`).toHaveCount(1);
+      await page.screenshot({ path: join(dir, `${entry.route}-${width}.png`), fullPage: false });
+    }
   }
-  expect(readdirSync(dir).filter((n) => n.endsWith(".png")).sort(), "the *.png names are exactly the rail's routes").toEqual(entries!.map((e) => `${e.route}.png`).sort());
-  for (const entry of entries!) {
-    const file = join(dir, `${entry.route}.png`);
-    expect(existsSync(file), `${entry.route}.png exists`).toBe(true);
+  const names = ["inbox-1280.png", "board-1280.png", "seats-1280.png", "officina-1280.png", "inbox-390.png", "board-390.png", "seats-390.png", "officina-390.png"];
+  expect(readdirSync(dir).filter((n) => n.endsWith(".png")).sort(), "the *.png names are exactly the fixed desktop and phone review set").toEqual([...names].sort());
+  for (const name of names) {
+    const file = join(dir, name);
+    expect(existsSync(file), `${name} exists`).toBe(true);
     const bytes = readFileSync(file);
-    expect(bytes.subarray(0, 8).toString("hex"), `${entry.route}.png has the PNG signature`).toBe("89504e470d0a1a0a");
-    expect(bytes.readUInt32BE(16), `${entry.route}.png is 1280 wide`).toBe(1280);
-    expect(bytes.readUInt32BE(20), `${entry.route}.png is at least 900 tall`).toBeGreaterThanOrEqual(900);
+    expect(bytes.subarray(0, 8).toString("hex"), `${name} has the PNG signature`).toBe("89504e470d0a1a0a");
+    expect(bytes.readUInt32BE(16), `${name} has its named width`).toBe(Number(/-(\d+)\.png$/.exec(name)![1]));
+    expect(bytes.readUInt32BE(20), `${name} is 900 high`).toBe(900);
   }
 });
 

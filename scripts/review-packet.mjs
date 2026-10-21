@@ -18,9 +18,10 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseFrontMatter } from "@bisellium/adapter-native";
 import { briefAdmissionProblems } from "../packages/commands/src/lifecycle.ts";
 import { readBriefLimit, ruledCases } from "../packages/commands/src/brief-admission.ts";
-import { readContainedRegularFile } from "../packages/commands/src/opus-model.ts";
+import { isNativeOpusKind, readContainedRegularFile, readServedShots } from "../packages/commands/src/opus-model.ts";
 import { readSequence } from "../packages/commands/src/verdict.ts";
 import { openStudio, safeItemPath } from "../packages/commands/src/writes.ts";
 import { handoffInputs, sessionHandoffFindings } from "../packages/cli/src/rules/process.ts";
@@ -33,6 +34,31 @@ const FLAGS = ["--phase", "--opus", "--round", "--sella", "--studio", "--repo", 
 const MAX_BYTES = 4 * 1024 * 1024;
 const SLOTS = ["ID", "ROUND", "PREVIOUS", "PACKET", "STUDIO"];
 const HANDOFF_REL = "docs/SESSION-HANDOFF.md";
+const UI_REVIEW_SHOTS = [
+  [
+    "inbox-1280.png",
+    1280,
+    "desktop",
+    "navigation, selected work, detail hierarchy, reason input and the four record actions",
+  ],
+  ["board-1280.png", 1280, "desktop", "column hierarchy, card density, gate marks, status and horizontal composition"],
+  ["seats-1280.png", 1280, "desktop", "seat grouping, model controls, labels, density and pending-change affordances"],
+  [
+    "officina-1280.png",
+    1280,
+    "desktop",
+    "completion, posture, pending-action and integrity panels, provenance and scan order",
+  ],
+  [
+    "inbox-390.png",
+    390,
+    "phone",
+    "responsive navigation, queue legibility, selection and absence of clipped or unreachable controls",
+  ],
+  ["board-390.png", 390, "phone", "responsive columns, card identity, overflow cues and reachable status information"],
+  ["seats-390.png", 390, "phone", "responsive grouping, control labels, touch spacing and horizontal overflow"],
+  ["officina-390.png", 390, "phone", "panel order, dense values, wrapping, provenance and vertical scanning"],
+];
 const USAGE = `usage: node --import tsx scripts/review-packet.mjs ${FLAGS.map((f) => `${f} <${f.slice(2)}>`).join(" ")}`;
 
 /** Thrown for every refusal; `main` prints it and exits 2 with nothing written. */
@@ -96,6 +122,45 @@ function runGit(cwd, args, okCodes = [0]) {
   if (r.error !== undefined || r.status === null || !okCodes.includes(r.status))
     refuse(`git ${args.join(" ")}: ${r.error?.message ?? r.stderr.trim() ?? `exit ${r.status}`}`);
   return r.stdout;
+}
+
+/** The fixed ordered image attachments and the text that identifies what the reviewer judges in each one. */
+function uiFact(studio, opus) {
+  const record = readContainedRegularFile(studio, `opera/${opus}.md`, "opera");
+  if ("error" in record) refuse(`opera/${opus}.md: ${record.error}`);
+  let data;
+  try {
+    data = parseFrontMatter(record.bytes.toString("utf8"), `opera/${opus}.md`).data;
+  } catch (e) {
+    refuse(`opera/${opus}.md: ${e.message}`);
+  }
+  if (typeof data !== "object" || data === null || Array.isArray(data))
+    refuse(`opera/${opus}.md: front matter is not a mapping`);
+  if (!isNativeOpusKind(data.kind))
+    refuse(`opera/${opus}.md: kind ${JSON.stringify(data.kind)} is not a native opus kind`);
+  if (data.kind !== "ui")
+    return { text: `UI evidence: not applicable (kind ${JSON.stringify(data.kind)}).\n`, images: [] };
+  const served = readServedShots(studio, opus);
+  if ("problems" in served) refuse(served.problems.join("; "));
+  const byName = new Map(served.shots.map((shot) => [shot.name, shot]));
+  const expected = new Set(UI_REVIEW_SHOTS.map(([name]) => name));
+  const absent = UI_REVIEW_SHOTS.map(([name]) => name).filter((name) => !byName.has(name));
+  const extra = served.shots.map(({ name }) => name).filter((name) => !expected.has(name));
+  if (absent.length > 0 || extra.length > 0)
+    refuse(
+      `UI review screenshots must be exactly ${UI_REVIEW_SHOTS.map(([name]) => name).join(", ")}; missing ${absent.join(", ") || "none"}; unexpected ${extra.join(", ") || "none"}`,
+    );
+  const images = [];
+  const lines = ["Attached UI screenshots in codex -i order (eight files, each at most 4194304 bytes):"];
+  for (const [name, width, viewport, judgment] of UI_REVIEW_SHOTS) {
+    const shot = byName.get(name);
+    if (shot.width !== width || shot.height !== 900)
+      refuse(`UI review screenshot ${name} must be ${width}x900, got ${shot.width}x${shot.height}`);
+    const path = join(studio, "ci", "shots", opus, name);
+    images.push(path);
+    lines.push(`${images.length}. ${name} — ${viewport} ${width}x900 — judge ${judgment}.`);
+  }
+  return { text: `${lines.join("\n")}\n`, images };
 }
 
 /** One command's output and exit, as a block of facts.txt. A spawn error, a signal or oversize output is a refusal, never a fact. */
@@ -263,6 +328,7 @@ export function buildPacket(args) {
   const previous = sequence.last?.session === undefined ? undefined : sequence.last;
 
   const files = new Map();
+  let images = [];
   let subject;
   if (phase === "spec") {
     const brief = readContainedRegularFile(studio, `briefs/${opus}.md`, "briefs");
@@ -274,6 +340,11 @@ export function buildPacket(args) {
     subject = handoff.bytes.toString("utf8");
   }
   if (subject !== undefined) files.set("subject", subject);
+  if (phase === "build") {
+    const ui = uiFact(studio, opus);
+    files.set("ui.txt", ui.text);
+    images = ui.images;
+  }
 
   let delta;
   if (phase === "build") {
@@ -337,7 +408,7 @@ export function buildPacket(args) {
       }),
     );
   }
-  return { packet, files };
+  return { packet, files, images };
 }
 
 function main(argv) {
