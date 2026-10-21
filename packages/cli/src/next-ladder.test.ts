@@ -9,7 +9,7 @@ import { open } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
-import { BRANCH, CAND, FAST, Json, NOW_ISO, NOW_MS, OID_UNFETCHED, OPUS, Out, PROC_ENV, RunOpts, T, World, addReview, advanceSource, branchExists, briefText, calls, cand, commit, deadPid, editRecord, expectHeld, expectStep, fakeProc, ghCalls, ghMerges, git, gitArgs, gitCalls, gitOk, gitq, handoffAt, landMerge, liveChild, markDone, markerJson, markerPath, markerText, mergedList, mutating, next, nextAsync, only, openList, outputPath, performMerge, pushed, put, putMarker, putOutput, ran, recordOf, recordText, runs, scenario, snap, sourceTree, statLine, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, world, writeGates, writeReds, writeTranscript, zombiePid } from "./next-world.test.js";
+import { BRANCH, CAND, FAST, Json, NOW_ISO, NOW_MS, OID_UNFETCHED, OPUS, Out, PROC_ENV, REAL_GIT, RunOpts, T, World, addReview, advanceOrigin, advanceSource, branchExists, briefText, calls, cand, commit, deadPid, editRecord, expectHeld, expectStep, fakeProc, ghCalls, ghMerges, git, gitArgs, gitCalls, gitOk, gitq, handoffAt, landMerge, liveChild, markDone, markerJson, markerPath, markerText, mergedList, mutating, next, nextAsync, only, openList, outputPath, performMerge, pushed, put, putMarker, putOutput, ran, recordOf, recordText, runs, scenario, snap, sourceTree, statLine, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, world, writeGates, writeReds, writeTranscript, zombiePid } from "./next-world.test.js";
 
 
 // ---------------------------------------------------------------------------
@@ -1065,4 +1065,42 @@ test("W-347-b2 behaviour 2: fresh perform output stays running when its pid is o
   putOutput(w, "fresh again\n", 10);
   const reused = next(w, [OPUS, ...budget], { env: PROC_ENV(visible) });
   expectStep(reused, "build", "dead", "a visible pid with another start time is still reused");
+});
+
+// ---------------------------------------------------------------------------
+// W-337: a real merge conflict holds review behind the tree it would meet
+// ---------------------------------------------------------------------------
+test("W-337-b1 behaviour 1: a conflict with origin/master orders a rebase before review", { timeout: 1_800_000 }, () => {
+  const w = world("w337-b1-master", "build", { automated: true });
+  put(w.wt, "source.txt", "the opus branch\n");
+  commit(w.wt, "feat: change the source on the opus branch");
+  writeGates(w);
+  handoffAt(w, "wt", T.handoffFresh);
+  advanceOrigin(w, "source.txt", "origin master\n");
+  git(w.repo, ["fetch", "-q", "origin", "master:refs/remotes/origin/master"]);
+
+  const before = snap(w);
+  const o = next(w, [OPUS, "--budget", "100000"]);
+  expectStep(o, "build", "named", "the conflict replaces the review order with rebase");
+  assert.equal(o.kv.get("actor"), "producer", ran("the producer rebases before dispatching review", o));
+  assert.equal(o.kv.get("why"), `opus/${OPUS} conflicts with origin/master; rebase before review so the reviewed tree is never rebased afterwards`, ran("the why names the two refs and the invariant", o));
+  assert.equal(o.kv.get("command"), `from .worktrees/${OPUS}: git rebase origin/master`, ran("the rebase command names the opus worktree", o));
+  assert.equal(o.kv.has("role"), false, ran("no reviewer is ordered", o));
+  assert.equal(o.status, 0, ran("a named rebase exits zero", o));
+  assert.equal(snap(w), before, "the check moves no ref, index or worktree file");
+  assert.ok(
+    gitCalls(w).some((a) => a.join("\x00") === ["merge-tree", "--write-tree", "refs/remotes/origin/master", `refs/heads/${BRANCH}`].join("\x00")),
+    ran("git merge-tree is called with two literal refs; its exit status decides", o),
+  );
+
+  const clear = world("w337-b1-clear", "build", { automated: true });
+  handoffAt(clear, "wt", T.handoffFresh);
+  const named = next(clear, [OPUS, "--budget", "100000"]);
+  expectStep(named, "review", "named", "a clean synthetic merge still names review");
+  const failedGit = join(clear.root, "git-merge-tree-exit-2");
+  writeFileSync(failedGit, `#!/bin/sh\ncase "$*" in\n  *"merge-tree --write-tree"*) exit 2;;\nesac\nexec "${REAL_GIT}" "$@"\n`, { mode: 0o755 });
+  const unreadable = next(clear, [OPUS, "--budget", "100000"], { env: { GIT_STUB_REAL: failedGit } });
+  expectStep(unreadable, "review", "held", "an exit outside zero and one holds instead of guessing");
+  assert.match(unreadable.kv.get("why") ?? "", /git merge-tree --write-tree could not compare refs\/remotes\/origin\/master .* no review is ordered$/, ran("the failed comparison is not called clean or conflicting", unreadable));
+  assert.equal(unreadable.kv.has("role"), false, ran("a failed comparison orders no reviewer", unreadable));
 });
