@@ -1,0 +1,26 @@
+# opus: W-339
+# phase: spec
+# round: 3
+# sella: ui-lead
+# outcome: revise
+# at: 2026-10-21T03:36:02.902Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# dispatch_prompt: ci/W-339-ui-prompt-3.md
+# design_digest: sha256:184fb421dbbee1121e3b4ef887bd9ab63577302ebe155b790699877a08d76d2c
+# ticket: {"opus":"W-339","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"52ffc9ee6b180815ea0c65d3bb71d15256379327","at":"2026-10-21T03:36:02.456Z"}
+
+## Findings
+1. Replace the Arial/Courier screenshot contract with pinned local Bricolage Grotesque, Instrument Sans and IBM Plex Mono assets, preserving production family assignments and weights. Await successful loading; external font services and silent fallbacks must not determine baselines. Remove the universal font override and `[class*="value"]` mono override: they conceal typography, wrapping and density regressions.
+2. Keep Inbox, Board, Seats and Officina at 1280×900 and 390×900. Define loaded fixture states: Inbox with A-1/W-004 selected, question, reason field and verbs visible; Board with populated columns, gate marks and needs-you initially visible; Seats with manifest selections loaded and no unsaved edit; Officina with explicit fixed budget, health and acta records. Assert content before capture; mounted roots and a hidden token prompt do not establish readiness. Phone Inbox must expose answering controls.
+3. Fix browser/server time to `2026-09-25T09:35:43.947Z`, locale to `en-GB`, timezone to `UTC` and DPR to 1. Use an isolated, repeatable fixture and hold displayed time constant while allowing loading to finish. Stabilize the displayed fixture path and any provenance hash without hiding the colophon. Baselines must never depend on random temporary-directory suffixes, checkout paths, elapsed test time, live studio churn, request timing or previous tests’ writes. Set scroll, selection and focus deliberately; park the pointer off interactive content.
+4. Describe the eight captures as initial-view baselines: `.shell__main` scrolls independently, so `fullPage: true` does not expose all offscreen content or horizontally scrolled Board columns. Retain geometry/interaction checks. W-341 should add 800px tablet navigation, 390×844 answering, Board drawer open, Seats confirmation open with the last row reachable, Inbox empty, Officina stale/error states, bottom-of-scroll colophons and keyboard focus.
+5. Approve `--surface: #ffffff` for all twelve white surfaces and the body, `--transparent: transparent` for reserved card-border space, and `--shadow-drawer: rgba(22,33,30,.18)` exclusively in `0 0 0 1px var(--rule), 0 16px 48px var(--shadow-drawer)`. These express permitted roles.
+6. Reject `--shadow-subtle: rgba(22,33,30,.06)`. DIRECTION §3 permits shadow only on the drawer. Give `.seats__confirm-bar` `box-shadow: none` and retain its `1px solid var(--rule)` top separator; tokenizing its shadow would legitimize an existing violation.
+7. Reject `--amber-wash: #fbf3e4`, `--amber-rule: #ead9b8` and `--amber-ink: #96621a`: they preserve unauthorized palette variants. Give `.board-drawer__banner` `background: var(--surface)`, `color: var(--ink)`, no enclosing border, `border-left: 2px solid var(--amber)` and radius 0. Keep its Inbox link verdigris; amber age numerals use existing `--amber: #b7791f`. Preserve the waiting message and link behavior, with one amber attention region plus the nav count. Amend “seven tokens/eighteen replacements” accordingly; source-colour compliance does not establish palette compliance.
+
+## Recommendation
+
+Before proceeding, change the brief to preserve production typography and define repeatable, loaded baseline states with stable content and explicit capture boundaries.
+Replace the prohibited amber variants and confirmation shadow rather than canonizing them as tokens, and update the migration count accordingly.
+The existing spec-review corrections still apply.
+Verdict: revise

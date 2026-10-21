@@ -1,0 +1,26 @@
+# opus: W-339
+# phase: spec
+# round: 4
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T03:54:19.578Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-339.md blob:2cee4891d4b107cccdb515c0f26be017ebb1e75c
+# ticket: {"opus":"W-339","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"2cee4891d4b107cccdb515c0f26be017ebb1e75c","at":"2026-10-21T03:54:19.129Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-339-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 adopts all four spec-review replacements: quote-aware comment stripping preserves a later colour after a quoted https URL, screenshots have zero tolerance and stable names, refresh parsing rejects every malformed value/context, and the three source reads plus all manual-job contexts have ruled input rows — check: studio/briefs/W-339.md, admission-r2.out, ledger-check-r2.out
+2. advisory — the ui-lead input is adopted as production fonts and named loaded fixture states with fixed time, locale, timezone, DPR, displayed path, scroll, selection, focus and pointer; the eight captures are explicitly initial views and W-341 owns the further states — check: studio/briefs/W-339.md, apps/web/tests-serve/screenshots.spec.ts, apps/web/playwright.serve.config.ts
+3. advisory — only `--surface`, `--transparent` and drawer-only `--shadow-drawer` remain new; the confirmation shadow is removed and the banner uses surface/ink, no enclosing border, a 2px existing-amber left rule and radius zero — check: apps/web/src/tokens.css, apps/web/src/components/w025.css, row-b2-r2-proto.out
+4. advisory — both reds fail by assertion on master, behaviour 2 also fails after behaviour 1, and each row passes on its own stage; focused rows, token test, served-config test, typecheck, lint, format and both officina checks pass — check: red-b1-r2-accept.out, red-b2-r2-accept.out, red-b2-r2-s1-accept.out, gates-proto.out
+5. advisory — the required font binaries are not in the repository and cannot be fetched in this no-network session; the brief requires reviewed committed WOFF2 inputs with each family's SIL Open Font License 1.1 text, and baseline acceptance stays blocked until they land — check: studio/briefs/W-339.md, promise-ledger.md
+6. advisory — the focused Playwright file built successfully but Chromium cannot launch in this sandbox (`sandbox_host_linux.cc:41`, operation not permitted), so no PNG was generated or compared here — check: playwright-r2.out
+7. advisory — the flipped W-205 workflow row passes and the new workflow-policy assertion passes, while W-203's later spawned Git fixture and `ci-workflow.test.mjs`'s child Node read are blocked by this sandbox's process restriction — check: ci-scope-w205-r2.out, ci-scope-w203-r2.out, ci-workflow-r2.out
+
+## Verdict
+
+passed — revision 2 of `studio/briefs/W-339.md` adopts `studio/ci/W-339-spec-2.log` and `studio/ci/W-339-spec-3.log`; prototype `ae2ff41b` on master 826a101f, with runner font/PNG acceptance explicitly outstanding.

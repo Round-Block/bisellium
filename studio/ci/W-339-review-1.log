@@ -1,0 +1,24 @@
+# opus: W-339
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15ccd-f0b9-74b0-b582-b8d979dcf06f
+# outcome: passed
+# at: 2026-10-21T04:55:25.453Z
+# tree: tree:6fb04c89ba48fc8f86f559bc7f9a738364e403af
+# ui_input: ci/W-339-spec-7.log
+# design_digest: sha256:81e5cdb8d869c28a96a6f1af3b64c73c26befd4006101d47b5264f144517d3df
+# ticket: {"opus":"W-339","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-339/studio","head":"3eb57bcd1808ddbd0d1fdcfdc2677b50185ee37c","brief":"8c5f6df82043cd0fc862f0cabe7e54adb5b55aee","at":"2026-10-21T04:55:24.478Z"}
+
+## Findings
+1. advisory — apps/web/test/tokens.test.ts:140 The forms fixture checks only an aggregate count and samples few named colours, leaving the promised complete named-colour set plus case-insensitive and optional-whitespace spellings unpinned; the implementation currently handles them correctly. [severity: S3] [class: tests×one-sided-bound-assertion] — check: apps/web/test/tokens.test.ts W-339-b1 with exact expected literals, every named colour, uppercase, and pre-parenthesis whitespace
+2. advisory — apps/web/test/tokens.test.ts:145 Because `tokens.css` is exempt, the row does not assert exactly the three approved token declarations, drawer-only shadow consumption, confirmation-bar treatment, or Board-banner restyle; the implementation is correct but the migration regression row is incomplete. [severity: S3] [class: tests×ruled-case-uncovered] — check: apps/web/test/tokens.test.ts W-339-b1 migration assertions
+
+## UI input disposition
+Honoured. `apps/web/src/tokens.css:14`, `:15`, and `:16` add only the three approved tokens; `apps/web/src/components/w025.css:1147`–`:1149` restrict the shadow token to the drawer, `:880`–`:882` remove the confirmation shadow while retaining the top rule, and `:1204`–`:1217` implement the approved surface/ink/left-amber/radius-zero banner while preserving the verdigris link. Screenshot baselines remain outside this opus.
+
+## Verdict
+The colour rule and migration satisfy the brief and UI ruling; the two incomplete regression assertions are advisory under the QA charter.
+
+VERDICT: PASS

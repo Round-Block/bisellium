@@ -1,0 +1,26 @@
+# opus: W-339
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T03:25:06.623Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-339.md blob:52ffc9ee6b180815ea0c65d3bb71d15256379327
+# ticket: {"opus":"W-339","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"3308e8c8f179cda11f7eb7accaece4f9d3d8c780","brief":"52ffc9ee6b180815ea0c65d3bb71d15256379327","at":"2026-10-21T03:25:06.164Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-339-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the visual contract extends the served-dist suite and derives its eight-cell matrix from `NAV_ENTRIES`; server and browser time, viewport, fonts, animation and caret are fixed, while ordinary runs use `updateSnapshots: none` — check: brief:17-19, brief:47-53, brief:81
+2. advisory — baseline production is a manual GitHub Actions refresh that uploads an artifact for review; the supported developer command cannot write, and normal CI fails on a missing or changed image — check: brief:19, brief:47-49, brief:92-93
+3. advisory — the colour rule extends the existing web token-test mechanism because an officina check does not judge repository source and ESLint does not parse the CSS half; its lexical forms and every other form as a limit are explicit — check: brief:21-23, brief:55, brief:74-76
+4. advisory — both reds fail by assertion and are accepted by the replay classifier; b1 passes after its screenshot contract lands and b2 reports eighteen master literals then passes after their mechanical token migration — check: red-b1-accept.out, red-b2-accept.out, row-b1-s1.out, row-b2-proto.out
+5. advisory — focused rows, token test, served-config test, W-205's updated exact workflow row, web typecheck, lint, formatting and both officina checks pass; W-203's later spawned fixture and the real Playwright row are blocked by this sandbox's process restrictions, so the initial eight PNGs and compare run remain a CI-runner acceptance item — check: gates-proto.out, ci-scope-focused.out, playwright-refresh.out
+6. advisory — the main worktree's linked Git metadata was read-only despite the declared writable root, so the required four commits were reproduced on 826a101f in the evidence-local `spec-scratch/W-339` clone and exported as the named mbox; the brief and source remain uncommitted in the requested scratch worktree — check: prototype.mbox, brief:11
+7. advisory — full admission and this brief's promise ledger pass; unchanged Playwright, Vite, served harness, manifest checker and GitHub artifact service are stated limits rather than guarantees — check: admission.out, ledger-check.out, brief:57-61
+
+## Verdict
+
+passed — W-339 spec revision 1 is ready for the producer's fixture census and signature record; the builder must obtain and commit the CI-runner baseline artifact before build completion.

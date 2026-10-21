@@ -1,0 +1,24 @@
+# opus: W-339
+# phase: spec
+# round: 6
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T04:08:14.247Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-339.md blob:8c5f6df82043cd0fc862f0cabe7e54adb5b55aee
+# ticket: {"opus":"W-339","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"8c5f6df82043cd0fc862f0cabe7e54adb5b55aee","at":"2026-10-21T04:08:13.793Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-339-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 cuts every screenshot, baseline, font, clock, served-suite and refresh-workflow concern; W-350 owns the removed work and carries spec-5 blockers 2–4 plus the ui-lead font and loaded-state findings — check: studio/briefs/W-339.md
+2. advisory — spec-5 blocker 1 is closed by separate quoted and unquoted `https://` fixtures; CSS removes block comments only, while direct TSX inline styles remove JavaScript line comments quote-aware — check: apps/web/test/tokens.test.ts, row-b1-r3-proto.out
+3. advisory — the rule extends the existing `tokens.test.ts` mechanism, already reached by root `npm test` in the existing `gates` job, so no package script or `.github/workflows/ci.yml` change remains — check: studio/briefs/W-339.md, package.json, .github/workflows/ci.yml
+4. advisory — the red fails by assertion on base 3308e8c8 with all eighteen literals, the feature stage passes, and the replay classifier accepts it; focused row, existing token checks, web typecheck, lint, format and both officina checks pass — check: row-b1-r3-master.out, row-b1-r3-proto.out, red-b1-r3-accept.out, gates-proto.out
+5. advisory — the migration adds only `--surface`, `--transparent` and drawer-only `--shadow-drawer`; the confirmation shadow is removed and the Board banner uses the ruled surface/ink/no-border/left-amber/radius-zero treatment — check: apps/web/src/tokens.css, apps/web/src/components/w025.css
+
+## Verdict
+
+passed — revision 3 of `studio/briefs/W-339.md` is the D-061 final-review cut: one colour-rule behaviour, prototype `70fbac97` on base 3308e8c8, with all screenshot work assigned to W-350.
