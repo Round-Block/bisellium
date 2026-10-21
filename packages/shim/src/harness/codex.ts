@@ -275,10 +275,11 @@ function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; m
   });
 }
 
-/** The per-call flags: `-m <model>` and, W-274, `-c model_reasoning_effort=<v>`, each only when given. */
-const callArgs = (opts: { model?: string; reasoningEffort?: string }): string[] => [
+/** The per-call flags: model, reasoning effort and, W-340, ordered image attachments, each only when given. */
+const callArgs = (opts: { model?: string; reasoningEffort?: string; images?: readonly string[] }): string[] => [
   ...(opts.model ? ["-m", opts.model] : []),
   ...(opts.reasoningEffort ? ["-c", `model_reasoning_effort=${opts.reasoningEffort}`] : []),
+  ...(opts.images ?? []).flatMap((path) => ["-i", path]),
 ];
 
 export const codexProfile: HarnessProfile = {

@@ -15,7 +15,7 @@ const MARKER = /\(check:\s*process\.prompt_templates\)\s*$/;
 export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA],
-  "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<STUDIO>", DATA],
+  "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>", DATA],
 };
 
 export function checkPromptTemplates(root: string, opts: RuleOpts): Finding[] {

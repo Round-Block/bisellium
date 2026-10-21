@@ -1971,7 +1971,7 @@ function performOpusSpecCommit(f: Facts): StepResult {
  * studio, where the reviewer reads the charter and the lessons, never the opus branch's copies (W-315).
  */
 const BUILD_REVIEW_PROMPT = "prompts/build-review.md";
-const BUILD_REVIEW_SLOTS = ["ID", "ROUND", "WORKTREE", "PACKET", "REVIEWED_HEAD", "FOCUS", "STUDIO"] as const;
+const BUILD_REVIEW_SLOTS = ["ID", "ROUND", "WORKTREE", "PACKET", "REVIEWED_HEAD", "FOCUS", "UI", "STUDIO"] as const;
 /** Under STEP_SILENCE_SECONDS.review, so a live round never reads stalled: the perform logs before and after the call. */
 const REVIEW_TIMEOUT_MS = 25 * 60_000;
 const VERDICT_LINE = /^VERDICT: (PASS|FAIL)$/;
@@ -2025,7 +2025,6 @@ async function performReview(f: Facts, d: Readonly<Derived>, nowMs: number, test
 
 async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testClock: boolean, log: (line: string) => void): Promise<StepResult> {
   const { id, wt, studioRel } = f;
-  if (f.branchRecord?.["kind"] === "ui") return heldResult("refusing: a UI opus's review round is not performed; dispatch it as the order names");
   if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
   const dirty = dirtyHold(wt.dir);
   if (dirty !== undefined) return dirty;
@@ -2036,16 +2035,19 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     if (round < 1) return heldResult("refusing: the review order names no round");
     let packet: string;
     let files: Map<string, string>;
+    let images: string[];
     try {
       const packets = packetBase(f);
       rmSync(join(packets, `r${round}`), { recursive: true, force: true });
-      ({ packet, files } = buildPacket({ phase: "build", opus: id, round, sella: censor, studio: wt.studio, repo: wt.dir, packets, promptStudio: f.studioAbs }));
+      ({ packet, files, images } = buildPacket({ phase: "build", opus: id, round, sella: censor, studio: wt.studio, repo: wt.dir, packets, promptStudio: f.studioAbs }));
     } catch (e) {
       return heldResult(`the review packet could not be built: ${one((e as Error).message)}`);
     }
     const seq = readSequence(wt.studio, id, "build", censor);
     if ("error" in seq) return heldResult(`the review sequence cannot be read: ${seq.error}`);
     const previous = seq.last?.session;
+    const uiInput = f.branchRecord?.["kind"] === "ui" ? f.uiReviewInput() : undefined;
+    if (f.branchRecord?.["kind"] === "ui" && uiInput === undefined) return heldResult("the UI review input cannot be read; nothing is recorded");
     let prompt = files.get("prompt.md");
     if (previous === undefined || prompt === undefined) {
       const template = readContainedRegularFile(f.studioAbs, BUILD_REVIEW_PROMPT, "prompts");
@@ -2057,6 +2059,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
         PACKET: packet,
         REVIEWED_HEAD: f.tip ?? "",
         STUDIO: f.studioAbs,
+        UI: files.get("ui.txt") ?? "UI evidence is unavailable.",
         FOCUS: [
           `1. Each numbered behaviour under ## ${BEHAVIOURS} in ${wt.studio}/${briefRel(id)}, as its rows assert.`,
           "2. The existing rows its Acceptance names as flipped, and no other.",
@@ -2076,7 +2079,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     const timeoutMs = testClock && Number.isSafeInteger(override) && override > 0 ? override : REVIEW_TIMEOUT_MS;
     // W-316: codex runs in the main checkout, never the opus worktree: it loads AGENTS.md from its working directory,
     // on a resume too, so an opus cannot edit its own reviewer's standing instructions
-    const call = { cwd: f.repo, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt };
+    const call = { cwd: f.repo, sella: censor, env: process.env, model: REVIEWER_MODEL, reasoningEffort: "high" as const, timeoutMs, message: prompt, images };
     log(`review: ${previous === undefined ? "codex started" : `codex resumed ${previous}`} (round ${round})`);
     const turn = previous === undefined ? await codexProfile.start({ ...call, systemPrompt: "" }) : await codexProfile.resume({ ...call, sessionId: previous });
     log(`review: codex exited ${turn.exitCode}`);
@@ -2090,7 +2093,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     if (previous !== undefined && turn.sessionId !== previous) return heldResult(`codex resumed ${previous} but reported session ${clean(turn.sessionId)}; nothing is recorded`);
     const replied = replyOutcome(turn.reply);
     if (replied === undefined) return heldResult(`the reply's last line is not "VERDICT: PASS" or "VERDICT: FAIL" (${packet}/verdict.md); nothing is recorded`);
-    const v = capture(() => runVerdict([id, "--round", String(round), "--sella", censor, "--outcome", replied, "--model", REVIEWER_MODEL, "--session", turn.sessionId, "--from", join(packet, "verdict.md"), "--studio", wt.studio]));
+    const v = capture(() => runVerdict([id, "--round", String(round), "--sella", censor, "--outcome", replied, "--model", REVIEWER_MODEL, "--session", turn.sessionId, "--from", join(packet, "verdict.md"), ...(uiInput === undefined ? [] : ["--ui-input", uiInput]), "--studio", wt.studio]));
     if (v.exit !== 0) return heldResult(`verdict refused: ${[...v.err, ...v.out].map(one).filter(Boolean)[0] ?? `exit ${v.exit}`}`, ...v.err.slice(1, 6).map((l) => `verdict: ${one(l)}`));
   } else if (d.ticket?.action === "review") round = d.ticket.round;
   else return heldResult(`refusing: the review rung names neither an order nor a recorded verdict to cite`);

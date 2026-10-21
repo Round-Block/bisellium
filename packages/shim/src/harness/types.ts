@@ -48,6 +48,8 @@ export interface HarnessStartOpts {
   timeoutMs?: number;
   /** W-274: the vendor's reasoning effort; only the codex profile passes it (`-c model_reasoning_effort=<v>`), the others ignore it. */
   reasoningEffort?: "low" | "medium" | "high";
+  /** W-340: absolute, already-validated image paths attached in this order; only the codex profile passes them as repeated `-i` pairs. */
+  images?: readonly string[];
 }
 
 export interface HarnessResumeOpts {
@@ -63,6 +65,8 @@ export interface HarnessResumeOpts {
   timeoutMs?: number;
   /** W-274: the vendor's reasoning effort; only the codex profile passes it (`-c model_reasoning_effort=<v>`), the others ignore it. */
   reasoningEffort?: "low" | "medium" | "high";
+  /** W-340: see HarnessStartOpts.images. */
+  images?: readonly string[];
 }
 
 export interface HarnessProfile {

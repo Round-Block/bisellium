@@ -505,17 +505,17 @@ document the opus is no longer built against — survived untouched.
 
 ## The build-review loop (W-167, W-246, D-053)
 
-Build review has no cap: `bisellium next` names a fix and then the next review round for as long as the
-censor fails the build, and `amend --round-ruling` and the `round_rulings` records are no longer read (D-061 §4).
-A round is read only from a strictly parsed `ci/<id>-review-<n>.log` whose outcome agrees with its standing
-findings (converted blockers are advisory). When the failed
-current round has a standing class blocker, the fix order carries a `boundary:`
-line: fix the class with one check at the input boundary the brief's Input
-domain names, not a patch at the cited site (L-069). `next` holds, naming the
-problem, on any unreadable or out-of-domain review record, on a worktree
-manifest that differs from the main checkout's on a review key, and on an
-uncomputable source tree. The tool cannot judge whether a finding truly is a
-class; that word is the censor's claim (D-045).
+Build review has no cap: `bisellium next` names a fix and the next round for as long as the censor fails; the old
+round-ruling records are not read (D-061 §4). A round is a strictly parsed `ci/<id>-review-<n>.log` whose outcome
+agrees with its standing findings (converted blockers are advisory). Before review, a UI packet admits exactly eight bounded served screenshots: Inbox, Board, Seats and Officina at 1280×900, then the same order at 390×900. The packet's
+`ui.txt` names that fixed attachment order and what the censor judges in each; other kinds receive an explicit
+not-applicable line. A missing, unreadable, symlinked, over-limit, misnamed or dimensionally wrong shot refuses packet
+construction. `next --perform --expect review` passes those paths to Codex as ordered `-i` arguments, passes the
+authoritative UI input to `verdict`, and requires the censor's nonblank UI-input disposition. When a failed current
+round has a standing class blocker, the fix order carries a `boundary:`
+line: fix the class at the Input-domain boundary, not only the cited site (L-069). `next` also holds on an unreadable
+or out-of-domain review record, review-key manifest drift, or an uncomputable source tree. The tool cannot judge
+whether a finding truly is a class; that word is the censor's claim (D-045).
 
 ## opera/<id>.md
 
