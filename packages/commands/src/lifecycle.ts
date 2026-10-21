@@ -165,7 +165,7 @@ function nativePreflight(
       ),
     );
   problems.push(...validateRecordReferences(root, record));
-  problems.push(...validateUiPolicy({ root, record, manifest, phase }));
+  problems.push(...validateUiPolicy({ root, record, manifest, phase, id: opusId }));
   return problems;
 }
 

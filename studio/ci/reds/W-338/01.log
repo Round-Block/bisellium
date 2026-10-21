@@ -1,0 +1,44 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-338-b1\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-20T23:41:57.271Z
+# sella: builder.W-338
+# tree: tree:6a70e2070f9b5a46bcee69b5d147197744de738f
+# ticket: {"opus":"W-338","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-338/studio","head":"1a37be6f4c0e3ba4341f1be2cfaa80cb5b7e1092","brief":"af00f38bdac5ee68ecc41da79812543d83185e21","at":"2026-10-20T23:41:53.152Z"}
+
+TAP version 13
+# Subtest: W-338-b1 behaviour 1: on a kind: ui opus the ui-lead's spec verdict is the UI input and every other seat's is a plain spec verdict
+not ok 1 - W-338-b1 behaviour 1: on a kind: ui opus the ui-lead's spec verdict is the UI input and every other seat's is a plain spec verdict
+  ---
+  duration_ms: 752.201548
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:14:1193'
+  failureType: 'testCodeFailure'
+  error: |-
+    the architect's signature on a kind: ui opus is recorded
+    UI spec input must be attributed to ui-lead
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-338/packages/cli/src/next-spec.test.ts:818:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 915.861574

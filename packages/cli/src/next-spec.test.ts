@@ -4,10 +4,13 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { readFront } from "@bisellium/adapter-native";
+import { inspectUiDesignInput, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
+const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
 const readLog = (w: World, n: number): string => readFileSync(join(w.repo, specLog(n)), "utf8");
@@ -55,14 +58,13 @@ test("W-162-b1 behaviour 1: a valid reviewer setting sends a signed spec to the 
     specHeld(specNext(b), `${name} holds at spec`, /spec_reviewer|spec-reviewer/);
   }
 
-  // a kind: ui opus holds and names the verdict-writer / UI-input limit
+  // W-338: a kind: ui opus takes the spec review: signed, it goes to the reviewer
   const ui = srWorld("w162-b1-ui");
   editRecord(ui, "repo", (doc) => doc.setIn(["kind"], "ui"));
   commit(ui.repo, "studio: W-900 is a ui opus");
   putBrief(ui);
-  const held = specNext(ui);
-  specHeld(held, "a kind: ui opus holds at spec", /UI input/);
-  assert.match(held.kv.get("why") ?? "", /verdict/i, ran("it names the verdict writer", held));
+  sign(ui, 1);
+  reviewerOrder(specNext(ui), 2, "a signed kind: ui opus goes to the reviewer");
 });
 
 test("W-162-b1 behaviour 1 review round 1: a duplicate reviewer-seat row holds at spec even when the first row is valid", { timeout: 1_800_000 }, () => {
@@ -773,4 +775,266 @@ test("W-297-b2 behaviour 2: a failed spec review whose blockers all keep the des
   const again = next(keeps, [OPUS, ...BUDGET]);
   reviewNamed(again, 2, "the next review round");
   assert.equal(again.kv.get("required-fixes"), FIXES, ran("the review order names the required fixes", again));
+});
+
+// ---------------------------------------------------------------------------
+// W-338 (D-088 E): a kind: ui opus takes the Codex spec review. The ui-lead's spec verdict is the UI input and every other
+// seat's is a plain spec verdict; the input is the newest ui-lead spec log; next orders the ui-lead once the spec passes,
+// before the branch and after it. Rows are selectable with --test-name-pattern='^W-338-b<n>\s'.
+// ---------------------------------------------------------------------------
+const UI_SEAT = "  - { id: ui-lead, collegium: design, kind: agent, model: gpt-6-astra, harness: codex }";
+const UI_PROMPT = "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n";
+const UI_BODY = ["## Findings", "No findings", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "## Recommendation", "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: passed", ""].join("\n");
+/** A spec-reviewer world with a ui-lead seat whose record is kind: ui (and, with `pointer`, carries `spec:`), committed on the trunk. */
+function uiWorld(tag: string, o: { pointer?: boolean; kind?: "ui" | "opus" } = {}): World {
+  const w = srWorld(tag, { edit: (t) => t.replace(ARCHITECT_ROW, `${ARCHITECT_ROW}\n${UI_SEAT}`) });
+  editRecord(w, "repo", (doc) => {
+    doc.setIn(["kind"], o.kind ?? "ui");
+    if (o.pointer === true) doc.setIn(["spec"], BRIEF_REL.slice("studio/".length));
+  });
+  commit(w.repo, "studio: W-900's kind and pointer");
+  return w;
+}
+/** A spec-phase verdict through the real writer, its exit and output returned (never thrown), in `studio` (the main checkout's by default). */
+function specRun(w: World, round: number, sella: string, outcome: string, body: string, extra: string[] = [], studio = w.studio): { status: number | null; out: string } {
+  const from = join(w.root, `w338-${round}-${sella}.md`);
+  writeFileSync(from, body);
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "verdict", OPUS, "--round", String(round), "--sella", sella, "--outcome", outcome, "--phase", "spec", "--from", from, "--studio", studio, "--now", T.spec, ...extra], { cwd: w.repo, env: SETUP_ENV, encoding: "utf8" });
+  return { status: r.status, out: `${r.stderr}${r.stdout}` };
+}
+/** The ui-lead's input at `round`, its prompt kept where the order names it. */
+function uiInput(w: World, round: number, studio = w.studio): { status: number | null; out: string } {
+  put(studio, `ci/${OPUS}-ui-prompt-${round}.md`, UI_PROMPT);
+  return specRun(w, round, "ui-lead", "passed", UI_BODY, ["--dispatch-prompt", `ci/${OPUS}-ui-prompt-${round}.md`], studio);
+}
+// the third argument is revision 2's opus id (revision 1's reader takes two and ignores it)
+const inspect = (w: World, studio = w.studio) => (inspectUiDesignInput as (root: string, record: NativeRecord, id: string) => ReturnType<typeof inspectUiDesignInput>)(studio, readFront<NativeRecord>(join(studio, "opera", `${OPUS}.md`)).data, OPUS);
+const logAt = (dir: string, n: number): string => readFileSync(join(dir, "ci", `${OPUS}-spec-${n}.log`), "utf8");
+
+test("W-338-b1 behaviour 1: on a kind: ui opus the ui-lead's spec verdict is the UI input and every other seat's is a plain spec verdict", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b1", { pointer: true });
+  putBrief(w);
+  const signed = specRun(w, 1, "architect", "passed", NO_FINDINGS);
+  assert.equal(signed.status, 0, `the architect's signature on a kind: ui opus is recorded\n${signed.out}`);
+  const signature = logAt(w.studio, 1);
+  assert.match(signature, /^# brief: briefs\/W-900\.md blob:[0-9a-f]{40}$/m, "the signature pins the brief, as on any opus");
+  assert.doesNotMatch(signature, /^# (?:design_digest|dispatch_prompt):/m, "the signature is no UI input");
+  const reviewed = specRun(w, 2, SR, "passed", NO_FINDINGS, ["--model", SR_MODEL]);
+  assert.equal(reviewed.status, 0, `the spec review on a kind: ui opus is recorded\n${reviewed.out}`);
+  assert.match(logAt(w.studio, 2), new RegExp(`^# model: ${esc(SR_MODEL)}$`, "m"), "the review records its model");
+
+  // a plain spec verdict is judged as on any opus: its Findings shape, and no --dispatch-prompt
+  put(w.studio, "ci/prompt.md", UI_PROMPT);
+  for (const [name, sella, body, extra, why] of [
+    ["the architect with --dispatch-prompt", "architect", NO_FINDINGS, ["--dispatch-prompt", "ci/prompt.md"], /--dispatch-prompt is valid only for the ui-lead's spec input/],
+    ["the reviewer with --dispatch-prompt", SR, NO_FINDINGS, ["--model", SR_MODEL, "--dispatch-prompt", "ci/prompt.md"], /--dispatch-prompt is valid only for the ui-lead's spec input/],
+    ["the architect with no Findings section", "architect", "## Notes\nNo findings\n", [], /Findings/],
+  ] as [string, string, string, string[], RegExp][]) {
+    const r = specRun(w, 3, sella, "passed", body, extra);
+    assert.equal(r.status, 2, `${name} exits 2\n${r.out}`);
+    assert.match(r.out, why, `${name}: why`);
+    assert.equal(existsSync(join(w.repo, specLog(3))), false, `${name}: no log is written`);
+  }
+
+  // the ui-lead's spec verdict is still the UI input: it needs the prompt and a substantive transcript, and records both
+  const bare = specRun(w, 3, "ui-lead", "passed", UI_BODY);
+  assert.equal(bare.status, 2, `the ui-lead with no prompt exits 2\n${bare.out}`);
+  assert.match(bare.out, /requires --dispatch-prompt/, "the ui-lead needs its prompt");
+  const thin = specRun(w, 3, "ui-lead", "passed", NO_FINDINGS, ["--dispatch-prompt", "ci/prompt.md"]);
+  assert.equal(thin.status, 2, `a thin ui-lead transcript exits 2\n${thin.out}`);
+  assert.match(thin.out, /opus\.ui\.design/, "the substantive check applies");
+  const input = specRun(w, 3, "ui-lead", "passed", UI_BODY, ["--dispatch-prompt", "ci/prompt.md"]);
+  assert.equal(input.status, 0, `the ui-lead's input is recorded\n${input.out}`);
+  assert.match(logAt(w.studio, 3), /^# dispatch_prompt: ci\/prompt\.md$/m, "the input records its prompt");
+  assert.match(logAt(w.studio, 3), /^# design_digest: sha256:[0-9a-f]{64}$/m, "the input records the design digest");
+});
+
+test("W-338-b2 behaviour 2: the UI input is the newest ui-lead spec log, whatever other seats' logs sit above it, and its brief is briefs/<id>.md before ready", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b2");
+  putBrief(w);
+  const first = uiInput(w, 1);
+  assert.equal(first.status, 0, `the ui-lead's input is recorded on a record with no spec pointer\n${first.out}`);
+  const read = (row: string) => {
+    const r = inspect(w);
+    return { ...r, row };
+  };
+  let r = read("the input alone");
+  assert.equal(r.input?.relative, `ci/${OPUS}-spec-1.log`, `${r.row}: the input\n${r.problems.join("\n")}`);
+  assert.deepEqual(r.problems, [], `${r.row}: the writer and the reader agree on the digest of briefs/W-900.md`);
+
+  // the architect's signature and the review above it never mask it
+  sign(w, 2);
+  review(w, 3, "passed");
+  r = read("a signature and a review above the input");
+  assert.equal(r.input?.relative, `ci/${OPUS}-spec-1.log`, `${r.row}: still the input\n${r.problems.join("\n")}`);
+  assert.deepEqual(r.problems, [], `${r.row}: no problem`);
+
+  // the newest ui-lead log is judged, never skipped for an older one: stale after a brief edit, then replaced
+  appendFileSync(briefPath(w), "\nEdited after the input.\n");
+  r = read("an edited brief");
+  assert.equal(r.input, undefined, `${r.row}: no current input`);
+  assert.match(r.problems.join("\n"), /stale design_digest/, `${r.row}: the input is stale`);
+  const second = uiInput(w, 4);
+  assert.equal(second.status, 0, `a second input is recorded\n${second.out}`);
+  r = read("a second input");
+  assert.equal(r.input?.relative, `ci/${OPUS}-spec-4.log`, `${r.row}: the newest input\n${r.problems.join("\n")}`);
+  writeFileSync(join(w.studio, "ci", `${OPUS}-spec-5.log`), logAt(w.studio, 4).replace("# round: 4", "# round: 9"));
+  r = read("a malformed newest ui-lead log");
+  assert.equal(r.input, undefined, `${r.row}: no input`);
+  assert.match(r.problems.join("\n"), /does not match its opus, phase, round and sella/, `${r.row}: it is named`);
+  // an unreadable spec log is a candidate, so it fails closed rather than being passed over
+  rmSync(join(w.studio, "ci", `${OPUS}-spec-5.log`));
+  mkdirSync(join(w.studio, "ci", `${OPUS}-spec-6.log`));
+  r = read("an unreadable newest spec log");
+  assert.equal(r.input, undefined, `${r.row}: no input`);
+  assert.match(r.problems.join("\n"), /unsafe or unreadable/, `${r.row}: it is named`);
+});
+
+test("W-338-b3 behaviour 3: before the branch, a kind: ui opus takes the spec review, the ui-lead is ordered once it passes, and branch carries the input and its prompt", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b3");
+  putBrief(w);
+  const signed = specRun(w, 1, "architect", "passed", NO_FINDINGS);
+  assert.equal(signed.status, 0, `the architect's signature is recorded\n${signed.out}`);
+  reviewerOrder(specNext(w), 2, "a signed kind: ui spec goes to the reviewer");
+
+  // a ui-lead log above the signature is not the review: the reviewer is still ordered
+  const early = uiWorld("w338-b3-early");
+  putBrief(early);
+  sign(early, 1);
+  const before = uiInput(early, 2);
+  assert.equal(before.status, 0, `an input above the signature is recorded\n${before.out}`);
+  reviewerOrder(specNext(early), 3, "an input above the signature holds nothing");
+
+  review(w, 2, "passed");
+  const o = specNext(w);
+  expectStep(o, "spec", "named", "a passed review with no UI input orders the ui-lead");
+  assert.equal(o.kv.get("actor"), "ui-lead", ran("actor", o));
+  assert.equal(o.kv.get("role"), "ui-lead", ran("role", o));
+  assert.equal(o.kv.get("sella"), "ui-lead", ran("sella", o));
+  assert.equal(o.kv.get("round"), "3", ran("round", o));
+  assert.match(o.kv.get("why") ?? "", /no ui-lead spec input exists/, ran("why", o));
+  assert.equal(o.kv.get("inputs"), "briefs/W-900.md", ran("the brief is the one input (no handover)", o));
+  assert.match(o.kv.get("command") ?? "", /keep the dispatch prompt as ci\/W-900-ui-prompt-3\.md under studio; record with: bisellium verdict W-900 --round 3 --sella ui-lead --outcome <passed\|failed\|revise> --phase spec --dispatch-prompt ci\/W-900-ui-prompt-3\.md --from <file> --studio studio$/, ran("the exact command", o));
+
+  const input = uiInput(w, 3);
+  assert.equal(input.status, 0, `the ordered input is recorded\n${input.out}`);
+  const named = specNext(w);
+  expectStep(named, "branch", "named", "the input above the passed review names branch");
+  const master = git(w.repo, ["rev-parse", "master"]);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "branch commits the spec");
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), master, "opus/<id> is master plus one commit");
+  assert.deepEqual(
+    git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(),
+    [BRIEF_REL, specLog(1), specLog(2), specLog(3), `studio/ci/${OPUS}-ui-prompt-3.md`].sort(),
+    "the brief, the three logs and the ui-lead's prompt",
+  );
+  const ready = next(w, [OPUS]);
+  expectStep(ready, "ready", "named", "ready follows branch");
+  assert.match(ready.out, /^attributed: architect \(signed ci\/W-900-spec-1\.log\)$/m, ran("attributed to the signer, never the ui-lead", ready));
+});
+
+test("W-338-b4 behaviour 4: after the branch, a ui-lead input recorded in the worktree passes its spec check and is committed with its prompt", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b4", { kind: "opus" });
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  expectStep(next(w, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "branch commits the spec");
+  // D-088 E: UI work is amended to kind: ui when it starts, on the branch that owns the record
+  editRecord(w, "wt", (doc) => doc.setIn(["kind"], "ui"));
+  commit(w.wt, "studio: W-900 is a ui opus");
+
+  const wtRel = ".worktrees/W-900/studio";
+  const o = specNext(w);
+  expectStep(o, "spec", "named", "a branch record amended to kind: ui orders the ui-lead");
+  assert.equal(o.kv.get("role"), "ui-lead", ran("role", o));
+  assert.equal(o.kv.get("round"), "3", ran("round", o));
+  assert.match(o.kv.get("command") ?? "", new RegExp(`--dispatch-prompt ci/W-900-ui-prompt-3\\.md --from <file> --studio ${esc(wtRel)}$`), ran("the order names the worktree", o));
+
+  const input = uiInput(w, 3, w.wtStudio);
+  assert.equal(input.status, 0, `the input is recorded in the worktree\n${input.out}`);
+  const pending = specNext(w);
+  expectStep(pending, "spec", "named", "the uncommitted input is committed with the spec");
+  assert.match(pending.kv.get("why") ?? "", /is not committed \(2 path\(s\)\)/, ran("the log and its prompt", pending));
+  const tip = git(w.repo, ["rev-parse", BRANCH]);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the spec commit");
+  assert.equal(git(w.repo, ["rev-parse", `${BRANCH}^`]), tip, "one commit on the branch");
+  assert.deepEqual(
+    git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", BRANCH]).split("\n").sort(),
+    [specLog(3), `studio/ci/${OPUS}-ui-prompt-3.md`].sort(),
+    "the input and its prompt",
+  );
+  expectStep(next(w, [OPUS]), "ready", "named", "the worktree's input admits ready");
+
+  // review round 1 #1: an input next refuses is ordered again after the branch, never committed as spec evidence
+  for (const [name, spoil] of [
+    ["a malformed log", (w: World) => writeFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-3.log`), logAt(w.wtStudio, 3).replace("# round: 3", "# round: 9"))],
+    ["a stale log", (w: World) => writeFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-3.log`), logAt(w.wtStudio, 3).replace(/^# design_digest: sha256:[0-9a-f]{64}$/m, `# design_digest: sha256:${"0".repeat(64)}`))],
+    ["a log with no prompt file", (w: World) => rmSync(join(w.wtStudio, "ci", `${OPUS}-ui-prompt-3.md`))],
+  ] as [string, (w: World) => void][]) {
+    const bad = uiWorld("w338-b4-bad", { kind: "opus" });
+    putBrief(bad);
+    sign(bad, 1);
+    review(bad, 2, "passed");
+    expectStep(next(bad, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", `${name}: branch commits the spec`);
+    editRecord(bad, "wt", (doc) => doc.setIn(["kind"], "ui"));
+    commit(bad.wt, "studio: W-900 is a ui opus");
+    assert.equal(uiInput(bad, 3, bad.wtStudio).status, 0, `${name}: the input is recorded in the worktree`);
+    spoil(bad);
+    const tip = git(bad.repo, ["rev-parse", BRANCH]);
+    const tree = git(bad.repo, ["ls-tree", "-r", BRANCH]);
+    const refused = specNext(bad);
+    expectStep(refused, "spec", "named", `${name}: next orders the ui-lead again`);
+    assert.equal(refused.kv.get("role"), "ui-lead", ran(`${name}: role`, refused));
+    assert.doesNotMatch(refused.kv.get("why") ?? "", /is not committed/, ran(`${name}: the why is not the commit's`, refused));
+    assert.doesNotMatch(refused.kv.get("command") ?? "", /--perform --expect spec/, ran(`${name}: the command is not the commit's`, refused));
+    const performed = next(bad, [OPUS, "--perform", "--expect", "spec"]);
+    assert.doesNotMatch(performed.out, /performed/, ran(`${name}: --perform --expect spec commits nothing`, performed));
+    assert.equal(git(bad.repo, ["rev-parse", BRANCH]), tip, `${name}: the branch's tip is unchanged`);
+    assert.equal(git(bad.repo, ["ls-tree", "-r", BRANCH]), tree, `${name}: the branch's committed tree is unchanged`);
+  }
+});
+test("W-338-b5 behaviour 5: the UI design digest is the caller's opus: a record whose id is not its opus id and file name gives no digest, so no input is written or read for another brief", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b5");
+  putBrief(w);
+  // a copied record: opera/W-900.md says id W-901, and briefs/W-901.md exists with other bytes
+  put(w.studio, "briefs/W-901.md", "# another opus's brief\n");
+  editRecord(w, "repo", (doc) => doc.setIn(["id"], "W-901"));
+  for (const [name, pointer] of [["no spec pointer", false], ["a spec pointer", true]] as const) {
+    if (pointer) editRecord(w, "repo", (doc) => doc.setIn(["spec"], "briefs/W-900.md"));
+    const copied = uiInput(w, 1);
+    assert.equal(copied.status, 2, `a copied id W-901 with ${name}: the ui-lead's input exits 2\n${copied.out}`);
+    assert.match(copied.out, /record's id to be W-900/, `a copied id W-901 with ${name}: the refusal names the id`);
+    assert.equal(existsSync(join(w.repo, specLog(1))), false, `a copied id W-901 with ${name}: no input is written`);
+  }
+  // the reader: an input written for W-900 is not read through a record whose id is not W-900
+  editRecord(w, "repo", (doc) => doc.setIn(["id"], OPUS));
+  const input = uiInput(w, 1);
+  assert.equal(input.status, 0, `the matching id: the input is recorded\n${input.out}`);
+  assert.equal(inspect(w).input?.relative, `ci/${OPUS}-spec-1.log`, "the matching id: the input is read");
+  editRecord(w, "repo", (doc) => doc.setIn(["id"], "W-901"));
+  const r = inspect(w);
+  assert.equal(r.input, undefined, "a copied id W-901: no input is read");
+  assert.match(r.problems.join("\n"), /record's id to be W-900/, "a copied id W-901: the reader names the id");
+  // the officina check reads the record for its file name, W-900, too
+  const checked = spawnSync(process.execPath, ["--import", TSX, MAIN, "check", w.studio, "--json"], { cwd: w.repo, env: SETUP_ENV, encoding: "utf8" });
+  const findings = (JSON.parse(checked.stdout) as { findings: { rule: string; message: string }[] }).findings;
+  assert.ok(findings.some((f) => f.rule === "opus.ui.design" && /record's id to be W-900/.test(f.message)), `a copied id W-901: check names the id under opus.ui.design\n${checked.stdout.slice(0, 2000)}`);
+});
+
+test("W-338-b6 behaviour 6: on an opus that is not kind: ui a ui-lead spec log stays in the strict signature-and-review sequence, before the branch and after", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w338-b6", { kind: "opus" });
+  putBrief(w);
+  sign(w, 1);
+  const plain = specRun(w, 2, "ui-lead", "passed", NO_FINDINGS);
+  assert.equal(plain.status, 0, `a plain ui-lead verdict on a kind: opus record is recorded\n${plain.out}`);
+  specHeld(specNext(w), "a ui-lead log above the signature of a kind: opus holds", /spec-2\.log/);
+
+  const b = uiWorld("w338-b6-wt", { kind: "opus" });
+  putBrief(b);
+  sign(b, 1);
+  review(b, 2, "passed");
+  expectStep(next(b, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "branch commits the spec");
+  const after = specRun(b, 3, "ui-lead", "passed", NO_FINDINGS, [], b.wtStudio);
+  assert.equal(after.status, 0, `a plain ui-lead verdict in the worktree is recorded\n${after.out}`);
+  specHeld(specNext(b), "a new ui-lead log in the worktree of a kind: opus holds", /W-900-spec-3\.log is not a valid signature or spec review/);
 });

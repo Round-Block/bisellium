@@ -29,7 +29,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { censorSella, effectiveProbationes, inspectUiDesignInput, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -200,7 +200,6 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: Spe
   const state = str(rec["state"]);
   if (state !== undefined && PAST_READY.has(state)) return { reviewer: undefined };
   if (state !== "greenlit") return bad(`the trunk record's state ${state ?? "(absent)"} is outside the gate's domain`);
-  if (rec["kind"] === "ui") return bad("a kind: ui opus cannot take a spec review yet: the spec-phase verdict writer reserves every UI verdict for ui-lead, and authoritativeUiInput reads the highest spec log as the UI input");
   return { reviewer: { sella, model: REVIEWER_MODEL, design: magister } };
 }
 
@@ -346,7 +345,10 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
   const read = logs.map((l) => ({ ...l, text: src.read(l.rel) }));
   const anchor = [...read].reverse().find((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, expected, l.rel)));
   if (anchor === undefined) return result(`no ${reviewer.design} signature names the current ${briefRel(id)} (ci/${id}-spec-<n>.log, phase spec, passed)`, { kind: "signature" });
-  const above = read.filter((l) => l.n > anchor.n);
+  // W-338: on a kind: ui opus (its record in this source) the ui-lead's UI input is read by inspectUiDesignInput alone, never
+  // as this sequence's review; on any other kind a ui-lead log stays in the strict sequence
+  const ui = recordOf(src, id)?.["kind"] === "ui";
+  const above = read.filter((l) => l.n > anchor.n && !(ui && l.text !== undefined && isUiLeadLog(l.text)));
   const reviews: { round: number; log: string; outcome: "passed" | "failed"; keeps: string[] }[] = [];
   for (const l of above) {
     const r = l.text === undefined ? { error: `${l.rel} is unreadable` } : readSpecReview(l.text, id, l.n, reviewer, expected, l.rel);
@@ -458,7 +460,8 @@ function specChanges(dir: string, studioRel: string, id: string): Changes {
   if (r.status !== 0 || r.error !== undefined) return { error: `git status failed in ${dir}` };
   const brief = `${studioRel}/${briefRel(id)}`;
   const record = `${studioRel}/${recordRel(id)}`;
-  const specLog = new RegExp(`^${esc(studioRel)}/ci/${esc(id)}-spec-[1-9][0-9]*\\.log$`);
+  // W-338: the ui-lead's dispatch prompt, at the name its order gives, rides with the spec logs
+  const specLog = new RegExp(`^${esc(studioRel)}/ci/${esc(id)}-(?:spec-[1-9][0-9]*\\.log|ui-prompt-[1-9][0-9]*\\.md)$`);
   const out = { spec: [] as string[], other: [] as string[], bad: [] as string[] };
   const fields = r.stdout.split("\0");
   for (let i = 0; i < fields.length; i++) {
@@ -662,9 +665,10 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
         return [];
       }
     }),
-    uiSpecProblems: memo(() => uiProblems(branchRecord ?? trunkRecord, studioAbs)),
-    uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio) : [])),
-    uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
+    // W-338: the checkout that carries the spec: the main checkout before the branch, its worktree after (as uiReviewProblems)
+    uiSpecProblems: memo(() => (tip === undefined ? uiProblems(branchRecord ?? trunkRecord, studioAbs, id) : usable ? uiProblems(branchRecord, wt.studio, id) : [])),
+    uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio, id) : [])),
+    uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio, id) : undefined)),
     pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
     owed: memo(() => owedRetros(studioAbs)),
     wtCiProblem: memo(() => {
@@ -712,19 +716,19 @@ function trackedOnly<T>(fn: () => T): T {
   }
 }
 
-function uiProblems(rec: Dict | undefined, root: string): string[] {
+function uiProblems(rec: Dict | undefined, root: string, id: string): string[] {
   if (rec?.["kind"] !== "ui") return [];
   try {
-    return inspectUiDesignInput(root, rec as NativeRecord).problems;
+    return inspectUiDesignInput(root, rec as NativeRecord, id).problems;
   } catch (e) {
     return [(e as Error).message];
   }
 }
 
-function uiInput(rec: Dict | undefined, root: string): string | undefined {
+function uiInput(rec: Dict | undefined, root: string, id: string): string | undefined {
   if (rec?.["kind"] !== "ui") return undefined;
   try {
-    return inspectUiDesignInput(root, rec as NativeRecord).input?.relative;
+    return inspectUiDesignInput(root, rec as NativeRecord, id).input?.relative;
   } catch {
     return undefined;
   }
@@ -849,6 +853,8 @@ export function deriveNext(f: Facts): Derived {
       const [, rel, n] = m as unknown as [string, string, string];
       const text = f.branch?.read(rel);
       if (text === undefined) return true;
+      // W-338: on a kind: ui opus the ui-lead's input is judged by uiSpecProblems, after the spec, never as a signature or a review
+      if (f.branchRecord?.["kind"] === "ui" && isUiLeadLog(text)) return false;
       const brief = ownBrief(text, id, rel);
       // ponytail: the pin's shape only; an intermediate brief is never in Git, so which blob it names is not checked
       if (!new RegExp(`^${esc(briefRel(id))} blob:[0-9a-f]{40}$`).test(brief)) return true;
@@ -872,10 +878,17 @@ export function deriveNext(f: Facts): Derived {
     if (spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound, join(".worktrees", id, f.studioRel), f.branch);
     return hold("spec", spec.why);
   }
-  if (onOpus && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
-  if (!spec.ok || ui.length > 0) {
-    if (pre && reviewer !== undefined && !spec.ok && spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound);
-    return dispatch(f, "spec", spec.ok ? ui.join("; ") : spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
+  // W-338: a pending ui-lead log (or prompt) that uiSpecProblems refuses is never carried as spec evidence: the ui-lead is ordered below
+  const uiPending = ui.length > 0 && f.branchRecord?.["kind"] === "ui" && changed !== undefined && !("error" in changed) && changed.spec.some((p) => {
+    const m = /(?:^|\/)(ci\/[^/]+-(?:ui-prompt-[1-9][0-9]*\.md|spec-[1-9][0-9]*\.log))$/.exec(p);
+    return m !== null && (m[1]!.endsWith(".md") || isUiLeadLog(f.branch?.read(m[1]!) ?? ""));
+  });
+  if (onOpus && !uiPending && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
+  // W-338: a signed (and reviewed) kind: ui spec still needs the ui-lead's input on the current brief, where the spec is carried
+  if (spec.ok && ui.length > 0) return dispatch(f, "spec", ui.join("; "), { phase: "spec", round: spec.maxRound + 1, resume: false, inputs: [briefRel(id)], uiLead: true, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
+  if (!spec.ok) {
+    if (pre && reviewer !== undefined && spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound);
+    return dispatch(f, "spec", spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
 
   // 3 branch: the PR is read early only when the branch or its worktree cannot carry the evidence,
@@ -1168,7 +1181,7 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; session?: string; behaviour?: { from: number; through: number }; studio?: string }): Derived {
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; uiLead?: boolean; session?: string; behaviour?: { from: number; through: number }; studio?: string }): Derived {
   const { id, manifest } = f;
   const studioRel = o.studio ?? f.studioRel;
   const builder = (() => {
@@ -1177,7 +1190,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     return minted !== undefined && "sella" in minted ? minted.sella : "builder";
   })();
   const censor = censorSella(manifest) ?? "qa-lead";
-  const inputs = [...o.inputs, ...(o.reviewer === undefined ? [`${recordRel(id)}#traditio`] : [])];
+  const inputs = [...o.inputs, ...(o.reviewer === undefined && o.uiLead !== true ? [`${recordRel(id)}#traditio`] : [])];
   let role: string;
   let sella: string;
   let command: string;
@@ -1193,6 +1206,12 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
       disputeLine(f.studioRel),
       `Record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --model ${o.reviewer.model} --outcome <passed|failed> --phase spec --from <file> --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}`,
     ].join("\n");
+  } else if (step === "spec" && o.uiLead === true) {
+    // W-338 (D-088 E): the ui-lead's input on the signed brief; the prompt is kept at the name branch and the spec commit carry
+    role = "ui-lead";
+    sella = "ui-lead";
+    const prompt = `ci/${id}-ui-prompt-${o.round}.md`;
+    command = `dispatch ${sella} for its UI input on the signed brief; keep the dispatch prompt as ${prompt} under ${studioRel}; record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed|revise> --phase spec --dispatch-prompt ${prompt} --from <file> --studio ${studioRel}`;
   } else if (step === "spec") {
     role = "architect";
     sella = f.design;
@@ -1226,7 +1245,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     sella = censor;
     command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(f.studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Use the word class in a blocker that recurs across sites (L-069).`;
   }
-  const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
+  const actor = step === "review" ? "censor" : step === "spec" ? (o.uiLead === true ? "ui-lead" : o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
   // W-233: the verb a dispatched session closes out with; a build session records none, and a reds order with only findings names no behaviour
   const ticket: Derived["ticket"] =
     step === "spec" && o.round !== undefined ? { action: "verdict-spec", round: o.round } : step === "reds" && o.behaviour !== undefined ? { action: "red", round: o.behaviour.from } : step === "review" && o.round !== undefined ? { action: "verdict-build", round: o.round } : undefined;

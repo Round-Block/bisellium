@@ -14,7 +14,7 @@ import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest
 import {
   censorSella,
   contentLines,
-  designDigest,
+  currentDesign,
   inspectUiDesignInput,
   readContainedRegularFile,
   substantiveUiTranscript,
@@ -679,8 +679,15 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   const isUi = record.kind === "ui";
   const dispatchPrompt = values.get("--dispatch-prompt");
   const uiInput = values.get("--ui-input");
+  // W-338: on a kind: ui opus only the ui-lead's spec verdict is the UI input; every other seat's (the architect's
+  // signature, the spec review) is a plain spec verdict, judged as on any other opus
+  const plain = !isUi || (phase === "spec" && sella !== "ui-lead");
   if (!isUi && (dispatchPrompt !== undefined || uiInput !== undefined)) {
     console.error("--dispatch-prompt and --ui-input are UI-only flags");
+    return { exitCode: 2 };
+  }
+  if (plain && dispatchPrompt !== undefined) {
+    console.error("--dispatch-prompt is valid only for the ui-lead's spec input");
     return { exitCode: 2 };
   }
   if (phase === "spec" && uiInput !== undefined) {
@@ -704,11 +711,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   let uiDigest: string | undefined;
   let promptHeader: string | undefined;
   let inputHeader: string | undefined;
-  if (isUi && phase === "spec") {
-    if (sella !== "ui-lead") {
-      console.error("UI spec input must be attributed to ui-lead");
-      return { exitCode: 2 };
-    }
+  if (!plain && phase === "spec") {
     if (!/^(passed|failed|revise)$/.test(outcome)) {
       console.error("UI spec outcome must be exactly passed, failed or revise");
       return { exitCode: 2 };
@@ -722,16 +725,13 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error(`--dispatch-prompt is unsafe or unreadable: ${prompt.error}`);
       return { exitCode: 2 };
     }
-    if (typeof record.title !== "string" || typeof record.spec !== "string") {
-      console.error("UI spec input requires a string title and current spec pointer");
+    // W-338: the digest's one reader, which `inspectUiDesignInput` shares (briefs/<id>.md before ready)
+    const design = currentDesign(root, record, opusId);
+    if (design.digest === undefined) {
+      console.error(`UI spec input: ${design.error ?? "the current design cannot be read"}`);
       return { exitCode: 2 };
     }
-    const brief = readContainedRegularFile(root, record.spec, "briefs");
-    if ("error" in brief) {
-      console.error(`current brief is unsafe or unreadable: ${brief.error}`);
-      return { exitCode: 2 };
-    }
-    uiDigest = designDigest(record.title, brief.bytes);
+    uiDigest = design.digest;
     const contentProblems = substantiveUiTranscript(transcript.toString("utf8"), outcome, prompt.bytes.toString("utf8"));
     if (contentProblems.length) {
       console.error(contentProblems.map((problem) => `opus.ui.design: ${problem}`).join("\n"));
@@ -739,7 +739,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
     promptHeader = prompt.relative;
   }
-  if (!isUi || phase === "handoff") {
+  if (plain || phase === "handoff") {
     const problem = findingsProblem(transcript.toString("utf8"));
     if (problem !== undefined) {
       console.error(problem);
@@ -747,7 +747,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
   }
   // W-297: a spec or build finding carries the tags D-085 C and D-086 require, before anything is written or claimed
-  if (!isUi && phase !== "handoff") {
+  if (plain && phase !== "handoff") {
     const problems = findingTagProblems(transcript.toString("utf8"), phase);
     if (problems.length > 0) {
       console.error(problems.map((p) => `${opusId}: finding tags: ${p}`).join("\n"));
@@ -768,7 +768,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error("UI build verdict requires --ui-input <ci-relative-path>");
       return { exitCode: 2 };
     }
-    const inspected = inspectUiDesignInput(root, record);
+    const inspected = inspectUiDesignInput(root, record, opusId);
     if (!inspected.digest || !inspected.input || inspected.problems.length) {
       console.error(inspected.problems.map((problem) => `opus.ui.design: ${problem}`).join("\n"));
       return { exitCode: 2 };
@@ -807,7 +807,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     if (conversions.length > 0) convertedHeader = conversions.map((c) => `${c.finding} (${c.reason})`).join("; ");
   }
 
-  if (!isUi && phase === "spec") {
+  if (plain && phase === "spec") {
     // W-162: a spec verdict pins the brief it was recorded against, so an edit after it voids it
     // the id is already contained (safeItemPath above): the brief shares the record's file name
     const briefRel = join("briefs", basename(opusPath));
@@ -904,7 +904,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     const rel = relative(root, target).split(sep).join("/");
     // W-246: a spec review is reconciled on its raw lines above, before the session's rulings apply; one submitted `failed`
     // whose every cited blocker a ruling withdrew has nothing standing, so it passes as it does without a session
-    if (!isUi && phase === "spec" && recorded === "failed") {
+    if (plain && phase === "spec" && recorded === "failed") {
       const read = parseVerdictLog(`${header}\n\n${transcript.toString("utf8")}`, opusId, rel);
       if (!("error" in read) && !read.findings.some((f) => f.blocking) && !read.earlier.some((e) => e.status === "open")) {
         recorded = "passed";

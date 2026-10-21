@@ -1,0 +1,27 @@
+# opus: W-338
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T23:27:41.975Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-338.md blob:af00f38bdac5ee68ecc41da79812543d83185e21
+# ticket: {"opus":"W-338","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"af00f38bdac5ee68ecc41da79812543d83185e21","at":"2026-10-20T23:27:38.135Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-338-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ci/W-338-spec-2.log #1 addressed: the design digest is read for the caller's opus; `currentDesign(root, record, id)` refuses a record whose id is not the CLI opus id or the record's file name, every reader passes the caller's id, row 1 is the reviewer's text, and behaviour 5 pins the copied id with and without `spec:`, the reader and the officina check — check: brief:26, brief:79, brief:106
+2. advisory — ci/W-338-spec-2.log #2 addressed: a ui-lead log leaves the strict sequence only on a `kind: ui` opus, the kind read from the record in the source the logs come from (`reviewedSpec`) and from the branch's record (the worktree check); the limit line is the reviewer's text and behaviour 6 pins both sites on a `kind: opus` record — check: brief:26, brief:59, brief:110
+3. advisory — ci/W-338-spec-2.log #3 addressed: row 2 is the reviewer's text, its pins in the brief's pin form — check: brief:80
+4. advisory — revision 2 closes both round-2 blockers at their one shared reader each (the digest's id, the sequence's kind), never per call site; each new red fails by assertion on revision 1's whole prototype and passes on revision 2 (b5 and b6 on s4, b6 on s5), and 19 of 19 guard mutants are killed, five of them revision 2's — check: reds.out, mutants.out, brief:106, brief:110
+5. advisory — the neighbours run found that W-163's inventory B lists every template ending `.md`, so the default brief and the order's prompt name are pinned `guarded` in `containment.test.ts` with their code; revision 1's report missed that containment failed without them — check: brief:37, nb-proto-containment.test.ts.log
+6. advisory — one existing row flips (W-162-b1's kind: ui block), named in Acceptance; the Codex test check, rerun on this revision, lists only it and nothing unnamed; the gates' blocking set matches master's — check: brief:117, fixture-census.md, gates-proto.out
+7. advisory — the Patron's ruling of 2026-10-20 (D-091, Sol signs and Opus reviews a kind: ui spec) is split out as W-338 part 2 with every fixed site named, code-owned ones marked; `docs/ADOPTION.md` is touched line-neutrally and is code-owned, so the Patron merges — check: brief:125, brief:39
+8. advisory — this brief's own ledger passes the prototype's writer and the full admission admits it — check: ledger-check.out, admission.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-338.md`, prototype on master 9b23b0f3; six behaviours, 3 points; `docs/ADOPTION.md` (code-owned) touched, so the Patron merges.

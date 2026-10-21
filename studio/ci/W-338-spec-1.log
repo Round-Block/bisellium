@@ -1,0 +1,25 @@
+# opus: W-338
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-20T17:19:20.503Z
+# tree: tree:13795f595f4ab7a3905c61e9bef39a2b2d3dedad
+# brief: briefs/W-338.md blob:b30696cfed938f2dca521bf10da761e9fcc97c52
+# ticket: {"opus":"W-338","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"5e641d00c91d7be2a23f33016e2492c07ad000a9","brief":"b30696cfed938f2dca521bf10da761e9fcc97c52","at":"2026-10-20T17:19:16.702Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-338-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the design keeps one log family (D-042): a spec log is the ui-lead's UI input when its first `# sella:` is ui-lead, as every other spec-log reader already tells the signature from the review by that header; the input reader skips other seats' logs and the signature-and-review sequence skips the ui-lead's, so neither masks the other; a separate log name was rejected because the step tickets, the session sequence and the branch's change split would each learn a new family — check: brief:20, brief:43, brief:45
+2. advisory — four rungs stopped a kind: ui opus before branch (next's hold, the writer's seat check, the masking readers, the missing ui-lead order with its spec pointer and checkout); all four are fixed, and the later rungs (the build review's prompt and record script, served-e2e, the Patron's UI ruling, the post-merge verify) are named in Out of scope with the rung — check: brief:13, brief:114, brief:115, brief:116
+3. advisory — the Patron's ruling of 2026-10-20 (to be D-091: Sol signs and Opus reviews a kind: ui spec) arrived while drafting; this opus keeps today's signer and reviewer and makes the three logs coexist by seat, and the pairing is split out at spec as W-338 part 2 with every place it is fixed named, code-owned ones marked — check: brief:24, brief:113
+4. advisory — each red fails by assertion on master and on the stage before its behaviour and passes on its own and after, accepted by the replay classifier; 14 of 14 guard mutants are killed at their rows — check: reds.out, mutants.out
+5. advisory — one existing row flips, W-162-b1's kind: ui block, named in Acceptance and replaced in the prototype; the neighbouring files pass on the prototype, the Codex test check's list is reconciled in Acceptance, and the gates' blocking set matches master's — check: brief:105, neighbours-proto.out, fixture-census.md, gates-proto.out
+6. advisory — this brief's own ledger passes the prototype's writer and the full admission admits it; `docs/ADOPTION.md` is touched line-neutrally and is code-owned, so the Patron merges — check: ledger-check.out, admission.out, brief:35
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-338.md`, prototype on master 9b23b0f3; 3 points; `docs/ADOPTION.md` (code-owned) touched, so the Patron merges.

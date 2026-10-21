@@ -558,6 +558,11 @@ const PINNED_B: PinnedB[] = [
     disposition: "guarded",
     why: "W-124: same guarded opus as recordRel#1; read-only (git pathspec or readContainedRegularFile), never a write",
   },
+  {
+    key: "packages/cli/src/next.ts:dispatch#1",
+    disposition: "guarded",
+    why: "W-338: same guarded opus as recordRel#1; the ui-lead's prompt name is only printed in the order, never read or written by next",
+  },
   { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived", why: 'id is branch.replace(/^opus\\//, ""); git refuses ".." in a ref name' },
   {
     key: "packages/cli/src/prune.ts:pruneCiLogs#1",
@@ -624,6 +629,11 @@ const PINNED_B: PinnedB[] = [
     why: "decisionId passes safeItemPath and readContainedRegularFile before the decision is read",
   },
   { key: "packages/commands/src/lifecycle.ts:runWaive#1", disposition: "guarded", why: "decisionId passed patronDecisionProblem -> safeItemPath and readContainedRegularFile" },
+  {
+    key: "packages/commands/src/opus-model.ts:currentDesign#1",
+    disposition: "guarded",
+    why: "W-338: id is the caller's opus id (the CLI id after safeItemPath, or a contained record's file name) and equals the record's id; the brief is read only through readContainedRegularFile under briefs/",
+  },
   {
     key: "packages/commands/src/opus-model.ts:ruling#1",
     disposition: "guarded",
