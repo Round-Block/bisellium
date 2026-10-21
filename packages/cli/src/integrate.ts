@@ -26,7 +26,7 @@ const PR_STATES = new Set(["OPEN", "MERGED", "CLOSED"]);
 const MERGE_STATES = new Set(["BEHIND", "BLOCKED", "CLEAN", "DIRTY", "DRAFT", "HAS_HOOKS", "UNKNOWN", "UNSTABLE"]);
 const BUCKETS = new Set(["pass", "fail", "pending", "skipping", "cancel"]);
 const PR_LIST_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,isCrossRepository,headRepositoryOwner,headRepository,mergeCommit";
-const PR_VIEW_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit";
+const PR_VIEW_FIELDS = "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit,isInMergeQueue";
 
 // ---------------------------------------------------------------------------
 // spawning
@@ -408,6 +408,8 @@ export interface Pr {
   headRefOid: string;
   baseRefName: string;
   repo: string;
+  /** Present on the fixed `pr view` read; true only while GitHub reports this PR in the merge queue. */
+  isInMergeQueue?: boolean;
   /** Only set (and well formed) for a MERGED PR. */
   mergeOid?: string;
 }
@@ -431,6 +433,7 @@ function checkShape(o: unknown, keys: string[]): string | undefined {
   for (const k of keys) if (!(k in o)) return `a PR entry has no ${k}`;
   if (typeof o["state"] !== "string" || !PR_STATES.has(o["state"])) return `unknown PR state ${clean(JSON.stringify(o["state"]))}`;
   if (typeof o["mergeStateStatus"] !== "string" || !MERGE_STATES.has(o["mergeStateStatus"])) return `unknown mergeStateStatus ${clean(JSON.stringify(o["mergeStateStatus"]))}`;
+  if (keys.includes("isInMergeQueue") && typeof o["isInMergeQueue"] !== "boolean") return "isInMergeQueue is not a boolean";
   for (const k of ["headRefName", "baseRefName"]) if (typeof o[k] !== "string") return `${k} is not a string`;
   if (!wellFormedOid(o["headRefOid"])) return "headRefOid is not a 40-hex commit id";
   return undefined;
@@ -446,6 +449,7 @@ function toPr(o: Json, slug: string): Pr | string {
     headRefOid: o["headRefOid"] as string,
     baseRefName: o["baseRefName"] as string,
     repo: slug,
+    ...(typeof o["isInMergeQueue"] === "boolean" ? { isInMergeQueue: o["isInMergeQueue"] } : {}),
   };
   if (state === "MERGED") {
     const mc = o["mergeCommit"];
@@ -721,6 +725,7 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
   const conflict = (): StepResult => ({ ok: false, lines: ["state=CONFLICT", `why: PR #${pr.number} conflicts with master; rebase ${ctx.head} and resolve it there: that changes the SOURCE tree and needs its gates (bisellium ci --opus) and review again`] });
   const n = String(pr.number);
   let pinned = pr.headRefOid;
+  let rearmed = false;
   const headMoved = (now: string): StepResult => ({ ok: false, lines: [`state=HEAD_MOVED pinned=${pinned.slice(0, 12)} now=${now.slice(0, 12)}`] });
   /** A head other than the reviewed pin is adopted only if it descends from the pin (fetched first); anything unprovable is not. */
   const descends = (head: string): boolean => {
@@ -790,6 +795,16 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
     } else if (v.headRefOid !== pinned) return headMoved(v.headRefOid);
     if (queued) {
       if (v.mss === "DIRTY") return conflict();
+      if (v.mss === "CLEAN" && v.isInMergeQueue === false && !rearmed) {
+        // W-347: GitHub can leave an approved, green PR outside the queue with auto-merge still enabled.
+        // Disable then enable once, the same recovery as the operator runbook; the enabling call keeps the head pin.
+        ctx.log("re-arm auto-merge (CLEAN, not in merge queue)");
+        const disabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--disable-auto"], repo);
+        if (disabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: disabling auto-merge before re-arming it failed: ${why(disabled)}`] };
+        const enabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pinned], repo);
+        if (enabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: re-enabling auto-merge failed: ${why(enabled)}`] };
+        rearmed = true;
+      }
     } else if (v.mss === "BEHIND") {
       ctx.log("update-branch (BEHIND while queued)");
       if (sh("gh", ["pr", "update-branch", n, "-R", pr.repo], repo).status === 0) moved = true;
