@@ -1062,8 +1062,8 @@ function pairingManifest(edit: (m: Manifest & Record<string, unknown>) => void =
     sellae: [
       { id: "architect", collegium: "design", kind: "agent", model: "claude-opus-5-5" },
       { id: SR, collegium: "qa", kind: "agent", model: SR_MODEL, harness: "codex" },
-      UI_ARCHITECT_ROW,
-      UI_REVIEWER_ROW,
+      { ...UI_ARCHITECT_ROW },
+      { ...UI_REVIEWER_ROW },
     ],
     probationes: [],
     spec_reviewer: SR,

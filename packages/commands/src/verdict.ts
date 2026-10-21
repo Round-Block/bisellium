@@ -433,6 +433,47 @@ function readDesignMagister(manifest: unknown): { magister: string } | { error: 
   return typeof magister === "string" && magister.trim() !== "" ? { magister } : { error: "bisellium.yml#collegia: the design row's magister must be a nonblank string" };
 }
 
+export interface UiSpecPairing {
+  signer: string;
+  reviewer: { sella: string; model: "claude-opus-5-5"; design: string };
+}
+
+/**
+ * W-348 (D-091 D): the optional, atomic signer/reviewer override for `kind: ui` opera. Both keys absent preserve the
+ * design-magister/spec_reviewer pair; once either is present, both seats are exact and fail closed.
+ */
+export function readUiSpecPairing(manifest: unknown): { pairing: UiSpecPairing | undefined } | { error: string } {
+  if (typeof manifest !== "object" || manifest === null) return { pairing: undefined };
+  const m = manifest as Record<string, unknown>;
+  const hasSigner = Object.prototype.hasOwnProperty.call(m, "ui_spec_signer");
+  const hasReviewer = Object.prototype.hasOwnProperty.call(m, "ui_spec_reviewer");
+  if (!hasSigner && !hasReviewer) return { pairing: undefined };
+  const bad = (why: string): { error: string } => ({ error: `bisellium.yml#ui_spec_signer/ui_spec_reviewer: ${why}` });
+  if (!hasSigner || !hasReviewer) return bad("ui_spec_signer and ui_spec_reviewer must be declared together");
+  const signer = typeof m["ui_spec_signer"] === "string" && m["ui_spec_signer"] !== "" ? m["ui_spec_signer"] : undefined;
+  const reviewer = typeof m["ui_spec_reviewer"] === "string" && m["ui_spec_reviewer"] !== "" ? m["ui_spec_reviewer"] : undefined;
+  if (signer === undefined) return bad("ui_spec_signer must be the id of one declared seat (a non-empty string)");
+  if (reviewer === undefined) return bad("ui_spec_reviewer must be the id of one declared seat (a non-empty string)");
+  if (signer === reviewer) return bad("the signer and reviewer must be different seats");
+  const declared = (id: string): Record<string, unknown>[] => (Array.isArray(m["sellae"]) ? m["sellae"] : []).filter((r): r is Record<string, unknown> => typeof r === "object" && r !== null && (r as Record<string, unknown>)["id"] === id);
+  const seat = (id: string, role: "signer" | "reviewer", model: string, harness: string): { row: Record<string, unknown> } | { error: string } => {
+    const rows = declared(id);
+    const row = rows[0];
+    if (row === undefined) return bad(`${id} is not a declared seat`);
+    if (rows.length > 1) return bad(`${id} is declared ${rows.length} times; the UI spec ${role} must be one seat`);
+    if (row["retired"] !== undefined && row["retired"] !== false) return bad(`${id} is retired; the UI spec ${role} must be a live seat`);
+    if (row["kind"] !== "agent") return bad(`${id} must be kind: agent`);
+    if (row["harness"] !== harness) return bad(`${id} must be on the ${harness} harness`);
+    if (row["model"] !== model) return bad(`${id} must declare model ${model}, exactly`);
+    return { row };
+  };
+  const signed = seat(signer, "signer", "gpt-5.6-sol", "codex");
+  if ("error" in signed) return signed;
+  const reviewed = seat(reviewer, "reviewer", "claude-opus-5-5", "claude-code");
+  if ("error" in reviewed) return reviewed;
+  return { pairing: { signer, reviewer: { sella: reviewer, model: "claude-opus-5-5", design: signer } } };
+}
+
 /**
  * W-306: why an architect's spec signature cannot be recorded. A brief line that names a CLI verb as a whole inline-code span
  * (`ready`, `next`) is a promise line; the signature's raw lines before its one level-2 Findings heading (as `contentLines` finds

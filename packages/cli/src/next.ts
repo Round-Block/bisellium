@@ -32,7 +32,7 @@ import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/buil
 import { censorSella, effectiveProbationes, inspectUiDesignInput, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
-import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
@@ -154,7 +154,7 @@ function recordOf(src: Src | undefined, id: string): Dict | undefined {
 
 interface SpecReviewer {
   sella: string;
-  model: typeof REVIEWER_MODEL;
+  model: string;
   design: string;
 }
 /** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
@@ -177,10 +177,24 @@ const declared = (list: unknown, id: string): Dict[] => (Array.isArray(list) ? l
  * declared, live codex agent on exactly `gpt-5.6-sol` who is not the design magister, or `next` holds at `spec`.
  * The trunk record's state says whether the gate still applies: `greenlit` yes, a PAST_READY state passed it at `ready`.
  */
-export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: SpecReviewer | undefined } | { error: string } {
+export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: string; reviewer: SpecReviewer | undefined } | { error: string } {
   const m: unknown = manifest;
   // a studio with no readable manifest object declares no setting: today's ladder
-  if (!isDict(m) || !("spec_reviewer" in m)) return { reviewer: undefined };
+  if (!isDict(m)) return { signer: "architect", reviewer: undefined };
+  if (rec["kind"] === "ui") {
+    const ui = readUiSpecPairing(m);
+    if ("error" in ui) return ui;
+    if (ui.pairing !== undefined) {
+      const state = str(rec["state"]);
+      if (state !== undefined && PAST_READY.has(state)) return { signer: ui.pairing.signer, reviewer: undefined };
+      if (state !== "greenlit") return { error: `bisellium.yml#ui_spec_signer/ui_spec_reviewer: the trunk record's state ${state ?? "(absent)"} is outside the gate's domain` };
+      return { signer: ui.pairing.signer, reviewer: ui.pairing.reviewer };
+    }
+  }
+  const designs = declared(m["collegia"], "design");
+  const magister = str(designs[0]?.["magister"]);
+  const signer = magister ?? "architect";
+  if (!("spec_reviewer" in m)) return { signer, reviewer: undefined };
   const bad = (why: string): { error: string } => ({ error: `bisellium.yml#spec_reviewer: ${why}` });
   const sella = str(m["spec_reviewer"]);
   if (sella === undefined) return bad("must be the id of one declared seat (a non-empty string)");
@@ -192,15 +206,13 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: Spe
   if (row["kind"] !== "agent") return bad(`${sella} must be kind: agent`);
   if (row["harness"] !== "codex") return bad(`${sella} must be on the codex harness`);
   if (row["model"] !== REVIEWER_MODEL) return bad(`${sella} must declare model ${REVIEWER_MODEL}, exactly`);
-  const designs = declared(m["collegia"], "design");
   if (designs.length > 1) return bad(`the design collegium is declared ${designs.length} times; exactly one row names the magister`);
-  const magister = str(designs[0]?.["magister"]);
   if (magister === undefined) return bad("the design collegium declares no magister to sign the spec");
   if (magister === sella) return bad(`${sella} is the design magister; the reviewer must be another seat`);
   const state = str(rec["state"]);
-  if (state !== undefined && PAST_READY.has(state)) return { reviewer: undefined };
+  if (state !== undefined && PAST_READY.has(state)) return { signer: magister, reviewer: undefined };
   if (state !== "greenlit") return bad(`the trunk record's state ${state ?? "(absent)"} is outside the gate's domain`);
-  return { reviewer: { sella, model: REVIEWER_MODEL, design: magister } };
+  return { signer: magister, reviewer: { sella, model: REVIEWER_MODEL, design: magister } };
 }
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
