@@ -11,6 +11,9 @@
   --amber: #b7791f;
   --ok: #2e9e64;
   --bad: #c64a3a;
+  --surface: #ffffff;
+  --transparent: transparent;
+  --shadow-drawer: rgba(22, 33, 30, 0.18);
 
   --font-display: "Bricolage Grotesque", sans-serif;
   --font-body: "Instrument Sans", sans-serif;
@@ -27,7 +30,7 @@
 
 body {
   margin: 0;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
   font-family: var(--font-body);
 }

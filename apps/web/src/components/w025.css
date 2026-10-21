@@ -154,7 +154,7 @@
   padding: 0 8px;
   border: 1px solid var(--rule);
   border-radius: 2px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -171,7 +171,7 @@
   padding: 0 12px;
   border-radius: 2px;
   border: 1px solid var(--rule);
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
 }
@@ -706,7 +706,7 @@
   font-family: var(--font-body);
   font-size: 13px;
   padding: 0 8px;
-  background: #ffffff;
+  background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: 2px;
   color: var(--ink);
@@ -732,7 +732,7 @@
   padding: 0 12px;
   border-radius: 2px;
   border: 1px solid var(--rule);
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
   display: flex;
@@ -843,7 +843,7 @@
   padding: 4px 6px;
   border: 1px solid var(--rule);
   border-radius: 2px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -877,9 +877,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 24px;
-  background: #ffffff;
+  background: var(--surface);
   border-top: 1px solid var(--rule);
-  box-shadow: 0 -2px 8px rgba(22, 33, 30, 0.06);
+  box-shadow: none;
 }
 
 @media (max-width: 899px) {
@@ -916,7 +916,7 @@
   padding: 0 12px;
   border-radius: 2px;
   border: 1px solid var(--rule);
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
 }
@@ -985,7 +985,7 @@
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--ink-2);
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .board__project-select-reason {
@@ -1028,7 +1028,7 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .board__column-head {
@@ -1083,8 +1083,8 @@
   gap: 4px;
   cursor: pointer;
   box-shadow: none;
-  border-left: 2px solid transparent;
-  background: #ffffff;
+  border-left: 2px solid var(--transparent);
+  background: var(--surface);
 }
 
 .board__card--amber {
@@ -1142,11 +1142,11 @@
 .board-drawer {
   min-width: 0;
   height: 100%;
-  background: #ffffff;
+  background: var(--surface);
   border-left: 1px solid var(--rule);
   box-shadow:
     0 0 0 1px var(--rule),
-    0 16px 48px rgba(22, 33, 30, 0.18);
+    0 16px 48px var(--shadow-drawer);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -1201,11 +1201,12 @@
 
 .board-drawer__banner {
   margin: var(--sp-4) var(--sp-6) 0;
-  background: #fbf3e4;
-  border: 1px solid #ead9b8;
-  border-radius: 2px;
+  background: var(--surface);
+  border: none;
+  border-left: 2px solid var(--amber);
+  border-radius: 0;
   padding: var(--sp-3) var(--sp-4);
-  color: #96621a;
+  color: var(--ink);
   font-size: 13px;
 }
 
@@ -1313,7 +1314,7 @@
     flex-shrink: 0;
     border: 1px solid var(--rule);
     border-radius: 2px;
-    background: #ffffff;
+    background: var(--surface);
     font-size: 12px;
     padding: 4px 8px;
     white-space: nowrap;
