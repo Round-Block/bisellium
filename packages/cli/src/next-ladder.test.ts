@@ -562,7 +562,8 @@ if (runs(5)) {
     putMarker(w, { step: "build", pid: Number(pid), start_ticks: 5554 });
     expectStep(next(w, [OPUS, ...budget], { env: PROC_ENV(proc) }), "build", "dead", "and dead by its true field 22");
     // BISELLIUM_TEST_PROC without BISELLIUM_TEST_CLOCK=1 is ignored: the real /proc has no such pid
-    putMarker(w, { step: "build", pid: gone, start_ticks: 777 });
+    // W-347: make this the tracked-pid boundary this assertion means to pin; a perform pid can be outside this namespace
+    putMarker(w, { step: "build", pid: gone, start_ticks: 777, writer: "track" });
     proc = fakeProc(w, { [String(gone)]: statLine(gone, "x", "S", 777) });
     writeFileSync(outputPath(w), "fresh\n");
     const ignored = next(w, [OPUS, ...budget], { clock: false, env: PROC_ENV(proc) });
@@ -638,7 +639,8 @@ if (runs(5)) {
     const unknownPerform = next(p, [OPUS, "--perform", "--expect", "branch"], { env: PROC_ENV(fakeProc(p, { [pid]: "dir" })) });
     assert.equal(unknownPerform.status, 1, ran("--perform refuses an unknown marker", unknownPerform));
     assert.equal(branchExists(p), false, "and performs nothing");
-    putMarker(p, { step: "branch", pid: gone, start_ticks: 777, budget: 120 });
+    // W-347: takeover by pid absence remains the contract for a tracked process; a perform waits on its output budget
+    putMarker(p, { step: "branch", pid: gone, start_ticks: 777, budget: 120, writer: "track" });
     const replaced = next(p, [OPUS, "--perform", "--expect", "branch"]);
     assert.equal(replaced.status, 0, ran("--perform replaces a dead marker", replaced));
     assert.match(replaced.out, /dead|replac|took over/i, ran("and says so", replaced));
@@ -1035,4 +1037,32 @@ test("W-275-b4 behaviour 4: before pr, a handover older than the newest review l
   const level = next(w, [OPUS]);
   expectStep(level, "pr", "named", "a traditio at the newest review log's own time names pr again");
   assert.equal(level.kv.get("command"), PR, ran("with the same command", level));
+});
+
+test("W-347-b2 behaviour 2: fresh perform output stays running when its pid is outside this namespace", { timeout: 1_800_000 }, () => {
+  const budget = ["--budget", "100000"];
+  const w = world("w347-b2-perform-namespace", "reds", { automated: true });
+  const pid = 4242;
+  const proc = fakeProc(w, {});
+  putMarker(w, { step: "build", pid, start_ticks: 777, budget: 120, writer: "perform" });
+  putOutput(w, "suite 3 still running\n", 10);
+  const live = next(w, [OPUS, ...budget], { env: PROC_ENV(proc) });
+  expectStep(live, "build", "running", "a fresh perform is running when this pid namespace has no entry for it");
+  assert.match(live.kv.get("health") ?? "", /pid 4242 is outside this namespace, last output 10s ago/, ran("health names the evidence and namespace limit", live));
+  assert.equal(live.kv.has("command"), false, ran("no resume command is named while it runs", live));
+
+  putMarker(w, { step: "build", pid, start_ticks: 777, budget: 120, writer: "track" });
+  const tracked = next(w, [OPUS, ...budget], { env: PROC_ENV(proc) });
+  expectStep(tracked, "build", "dead", "an absent tracked pid is still dead");
+
+  putMarker(w, { step: "build", pid, start_ticks: 777, budget: 120, writer: "perform" });
+  putOutput(w, "last perform output\n", 121);
+  const stale = next(w, [OPUS, ...budget], { env: PROC_ENV(proc) });
+  expectStep(stale, "build", "dead", "an invisible perform beyond its output budget is stalled");
+  assert.match(stale.kv.get("health") ?? "", /stalled: no output for 121s \(budget 120s\); pid 4242 is outside this namespace/, ran("the stale output, not absence alone, proves the resumable stop", stale));
+
+  const visible = fakeProc(w, { [String(pid)]: statLine(pid, "next", "S", 778) });
+  putOutput(w, "fresh again\n", 10);
+  const reused = next(w, [OPUS, ...budget], { env: PROC_ENV(visible) });
+  expectStep(reused, "build", "dead", "a visible pid with another start time is still reused");
 });

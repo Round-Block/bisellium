@@ -1,0 +1,57 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-347-b2\s --import tsx packages/cli/src/next-ladder.test.ts
+# exit: 1
+# at: 2026-10-21T03:49:31.432Z
+# sella: architect
+# tree: tree:41b60602f927016d776688ad9feae6748e51a039
+# ticket: {"opus":"W-347","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-347/studio","head":"c9aea6e1de6da7a1c1afa606069dbd6c743d78a5","brief":"db8b956ea8e1eac461af05c2f9227ab6dd2c34d7","at":"2026-10-21T03:49:31.401Z"}
+
+TAP version 13
+# Subtest: W-347-b2 behaviour 2: fresh perform output stays running when its pid is outside this namespace
+not ok 1 - W-347-b2 behaviour 2: fresh perform output stays running when its pid is outside this namespace
+  ---
+  duration_ms: 886.028563
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-347/packages/cli/src/next-ladder.test.ts:6:7473'
+  failureType: 'testCodeFailure'
+  error: |-
+    a fresh perform is running when this pid namespace has no entry for it
+    --- exit 1
+    --- stdout
+    next: W-900 build dead
+    health: dead (pid 4242 is gone)
+    pid: 4242
+    age: 10s
+    last-output: "suite 3 still running"
+    resume: dispatch builder.W-900 (phase 2) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 build dead'
+    - 'next: W-900 build running'
+                         ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 build running'
+  actual: 'next: W-900 build dead'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-347/packages/cli/src/next-world.test.ts:765:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-347/packages/cli/src/next-ladder.test.ts:1050:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1015.747718

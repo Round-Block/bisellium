@@ -1,0 +1,20 @@
+# opus: W-347
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15c8e-5b6c-7132-96bb-2b0036c55198
+# outcome: passed
+# at: 2026-10-21T03:48:52.690Z
+# tree: tree:a47a5f7ba97e1642d437768d10872b2032bb5ef3
+# brief: briefs/W-347.md blob:db8b956ea8e1eac461af05c2f9227ab6dd2c34d7
+# ticket: {"opus":"W-347","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"135ec4ff500f4008848c9266b1bcf498f1ccac3d","brief":"db8b956ea8e1eac461af05c2f9227ab6dd2c34d7","at":"2026-10-21T03:48:52.247Z"}
+
+## Findings
+1. advisory — brief:82 The changed `viewOf` reader converts present non-boolean queue membership to `true`, and the changed call-log classifier lacks the named exact-call rejector required for fixture inputs. Replace brief:82 with `| 7. Fake PR candidates, captured call logs, proc worlds and output files | queue membership is absent only for the legacy default (meaning true) or exactly boolean; call logs contain the exact expected argv; proc/output files are contained in the temporary world | viewOf rejects present non-booleans; W-347-b1 assert.deepEqual/assert.equal reject absent or non-exact calls; writeFileSync and fixture helpers throw on proc/output failure |`. [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/next-queue.test.ts
+2. advisory — brief:83 The Input domain omits both added `gh pr merge` subprocess results, despite each reused call requiring its zero-exit domain and refusal function. Replace brief:83 with `| 8. gh pr merge --disable-auto result | sh returns status 0; output is diagnostic only | gate returns MERGE_FAILED for status !== 0, including null |`, `| 9. gh pr merge --squash --auto --match-head-commit result | sh returns status 0; output is diagnostic only | gate returns MERGE_FAILED for status !== 0, including null |`, followed by the existing reused-gates row renumbered 10. [severity: S4] [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief admission should require an Input-domain row for every added subprocess call
+
+## Verdict
+The behaviours and promises are feasible; both findings are advisory input-boundary corrections.
+
+VERDICT: PASS

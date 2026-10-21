@@ -219,6 +219,7 @@ export interface CandOpts {
   cross?: boolean;
   headRepo?: string;
   mss?: string;
+  queued?: boolean;
   head?: string;
   drop?: string[];
 }
@@ -233,6 +234,7 @@ export function cand(w: World, o: CandOpts): Json {
     baseRefName: o.base ?? "master",
     isCrossRepository: o.cross ?? false,
     mergeStateStatus: o.mss ?? (o.state === "OPEN" ? "CLEAN" : "UNKNOWN"),
+    isInMergeQueue: o.queued ?? true,
     mergeCommit: o.state === "MERGED" ? (o.merge === undefined ? { oid: w.mergeOid ?? OID_UNFETCHED } : o.merge === null ? null : { oid: o.merge }) : null,
     headRepository: { ...(CAND["headRepository"] as Json), nameWithOwner: o.headRepo ?? SLUG },
   };
@@ -243,6 +245,7 @@ export function cand(w: World, o: CandOpts): Json {
 export function viewOf(c: Json): Json {
   const out: Json = {};
   for (const key of ["number", "state", "mergeStateStatus", "headRefName", "headRefOid", "baseRefName", "mergeCommit"]) if (key in c) out[key] = c[key];
+  out["isInMergeQueue"] = typeof c["isInMergeQueue"] === "boolean" ? c["isInMergeQueue"] : true;
   return out;
 }
 export const greens = (n = 6): Json[] => Array.from({ length: n }, (_, i) => ({ ...CHECKS[i % CHECKS.length]!, name: `${CHECKS[i % CHECKS.length]!.name} ${i}` }));
@@ -714,7 +717,7 @@ export function mutating(w: World): string[] {
       const a = c.slice(1).filter((x, i, all) => x !== "-R" && all[i - 1] !== "-R");
       if (a[0] === "pr" && a[1] === "create") out.push("gh pr create");
       else if (a[0] === "pr" && a[1] === "update-branch") out.push("gh pr update-branch");
-      else if (a[0] === "pr" && a[1] === "merge") out.push(a.includes("--auto") ? "gh pr merge --squash --auto" : "gh pr merge --squash");
+      else if (a[0] === "pr" && a[1] === "merge") out.push(a.includes("--disable-auto") ? "gh pr merge --disable-auto" : a.includes("--auto") ? "gh pr merge --squash --auto" : "gh pr merge --squash");
     } else if (c[0] === "git") {
       const a = gitArgs(c.slice(1));
       if (a[0] === "fetch" && a.includes("master:master")) out.push("git fetch master:master");
