@@ -2,8 +2,9 @@
  * assertion failure even though the browser spec and font helper do not yet
  * exist there. */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { brotliCompressSync } from "node:zlib";
@@ -86,7 +87,7 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   assert.match(workflow, /run: npm run -s test:policy --workspace @bisellium\/web/, "web-e2e runs the focused policy step");
   assert.match(workflow, /screenshots\.spec\.ts-snapshots/, "the runner uploads the generated baseline directory");
 
-  const { FONT_ASSETS, readWoff2Identity } = await import("../tests-serve/font-assets.js");
+  const { expectFontAssets, FONT_ASSETS, readWoff2Identity } = await import("../tests-serve/font-assets.js");
   const faces = [...tokens.matchAll(/@font-face\s*\{([\s\S]*?)\}/g)].map((match) => {
     const block = match[1] ?? "";
     return {
@@ -101,6 +102,7 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
     FONT_ASSETS.map(({ family, style, weight, path }) => ({ family, style, weight, src: `./assets/fonts/${path}` })),
     "exactly five local CSS faces bind each authenticated family, style and weight to its FONT_ASSETS path",
   );
+  assert.doesNotThrow(() => expectFontAssets(resolve(ROOT, "apps/web/src/assets/fonts")), "real font files and licences authenticate");
   const root = /:root\s*\{([\s\S]*?)\}/.exec(tokens)?.[1] ?? "";
   const fontRoles = [...root.matchAll(/(--font-(?:display|body|mono)):\s*([^;]+);/g)].map((match) => [match[1], match[2]?.trim()]);
   assert.equal(fontRoles.length, 3, "exactly three production font role variables are declared");
@@ -169,4 +171,33 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   assert.equal(readRefreshScreenshots("1", "true"), true, "one refreshes on GitHub Actions");
   assert.throws(() => readRefreshScreenshots("1", undefined), /GitHub Actions/, "a developer machine cannot refresh");
   assert.throws(() => readRefreshScreenshots("true", "true"), /0 or 1/, "every other refresh value fails closed");
+});
+
+test("W-350-b2 behaviour 2: baseline bootstrap skips only an empty set, rejects a partial set and compares a complete set", async () => {
+  const helper = read("apps/web/tests-serve/baseline-set.ts");
+  const spec = read("apps/web/tests-serve/screenshots.spec.ts");
+  const rendering = read("apps/web/tests-serve/rendering-environment.ts");
+  assert.match(helper, /BASELINE_BOOTSTRAP_REASON/, "the baseline-set classifier pins one bootstrap skip reason");
+
+  const { BASELINE_FILES, BASELINE_BOOTSTRAP_REASON, baselineSetState } = await import("../tests-serve/baseline-set.js");
+  const root = mkdtempSync(join(tmpdir(), "w350-baselines-"));
+  try {
+    assert.equal(baselineSetState(root), "absent", "an entirely absent baseline set enters the bootstrap state");
+    writeFileSync(join(root, BASELINE_FILES[0]!), "partial");
+    assert.throws(() => baselineSetState(root), /partial screenshot baseline set/, "a partial baseline set fails closed");
+    rmSync(root, { recursive: true, force: true });
+    mkdirSync(root, { recursive: true });
+    for (const file of BASELINE_FILES) writeFileSync(join(root, file), file);
+    assert.equal(baselineSetState(root), "complete", "all eight PNGs and the rendering identity enable comparison");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+
+  assert.match(spec, /test\.skip\(true, BASELINE_BOOTSTRAP_REASON\)/, "the empty-set path skips with the one pinned reason");
+  assert.match(spec, /baselineState === "complete" \|\| refreshing/, "pixel comparison runs only for a complete set or an authorised refresh");
+  const skipAt = spec.lastIndexOf("test.skip(true, BASELINE_BOOTSTRAP_REASON)");
+  assert.ok(spec.indexOf("expectFontAssets(join") < skipAt, "font authentication runs before the empty-set skip");
+  assert.ok(spec.indexOf("await expectLoadedState") < skipAt, "every screen readiness assertion runs before the empty-set skip");
+  assert.match(rendering, /baselineSetState\(dirname\(path\)\)/, "rendering-identity comparison uses the same all-or-none baseline gate");
+  assert.match(BASELINE_BOOTSTRAP_REASON, /follow-up opus/, "the skip reason names the follow-up ownership boundary");
 });
