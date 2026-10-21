@@ -353,6 +353,42 @@ test("W-348-b3 behaviour 3: on a kind ui opus the configured UI signer alone owe
   }
 });
 
+test("W-348-fix1 a ui-lead spec verdict rejects a partial UI spec pair before writing", () => {
+  const dir = studio();
+  const manifest = join(dir, "bisellium.yml");
+  writeFileSync(
+    manifest,
+    readFileSync(manifest, "utf8").replace("sellae:\n", "sellae:\n  - { id: ui-architect, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }\n") +
+      "ui_spec_signer: ui-architect\n",
+  );
+  writeFileSync(join(dir, "opera", "W-300.md"), readFileSync(join(dir, "opera", "W-300.md"), "utf8").replace("kind: feature", "kind: ui"));
+  mkdirSync(join(dir, "ci"));
+  writeFileSync(join(dir, "ci", "ui-prompt.md"), "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n");
+  const from = join(dir, "ui-input.md");
+  writeFileSync(
+    from,
+    [
+      "## Findings",
+      "No findings",
+      "The navigation relationships remain legible across the complete narrow viewport arrangement.",
+      "## Recommendation",
+      "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.",
+      "Additional original observations cover focus movement responsive density and stable content grouping throughout.",
+      "Verdict: passed",
+      "",
+    ].join("\n"),
+  );
+  const r = capture(() =>
+    runVerdict(
+      ["W-300", "--round", "1", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--dispatch-prompt", "ci/ui-prompt.md", "--from", from, "--studio", dir],
+      { now: NOW },
+    ),
+  );
+  assert.equal(r.result.exitCode, 2, `the partial pair is refused: ${r.stderr}`);
+  assert.match(r.stderr, /ui_spec_signer and ui_spec_reviewer must be declared together/, "the refusal names the partial pair");
+  assert.equal(existsSync(join(dir, "ci", "W-300-spec-1.log")), false, "the refused UI input writes no log");
+});
+
 describe("review round 1 rows", () => {
   test("a git-root officina does not admit an absolute citation", () => {
     const dir = studio({ git: "root" });
