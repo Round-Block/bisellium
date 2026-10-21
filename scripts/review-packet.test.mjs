@@ -24,6 +24,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { deflateSync } from "node:zlib";
 import { buildPacket } from "./review-packet.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -97,6 +98,41 @@ const blob = (text) =>
     .update(`blob ${Buffer.byteLength(text)}\0`)
     .update(text)
     .digest("hex");
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function pngChunk(type, data) {
+  const head = Buffer.alloc(8);
+  head.writeUInt32BE(data.length, 0);
+  head.write(type, 4, "latin1");
+  const tail = Buffer.alloc(4);
+  tail.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), data])), 0);
+  return Buffer.concat([head, data, tail]);
+}
+/** A decodable 8-bit grayscale PNG; `first` changes exactly the first pixel. */
+function png(width = 800, height = 600, first = 0) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 0;
+  const raw = Buffer.alloc(height * (width + 1));
+  raw[1] = first;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", deflateSync(raw)),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
 
 /** A sessioned review log, header block and `No findings` body, as the verdict writer would record it. */
 function sessioned(opus, kind, round, sella, session, phase = kind === "review" ? "build" : kind) {
@@ -303,6 +339,194 @@ test("W-215-b4 behaviour 4: a bad request exits 2 and writes nothing", () => {
       bare.packets,
     ]),
   );
+});
+
+test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and phone image set in fixed order and refuses unsafe evidence", () => {
+  const matrix = [
+    ["inbox-1280.png", 1280],
+    ["board-1280.png", 1280],
+    ["seats-1280.png", 1280],
+    ["officina-1280.png", 1280],
+    ["inbox-390.png", 390],
+    ["board-390.png", 390],
+    ["seats-390.png", 390],
+    ["officina-390.png", 390],
+  ];
+  const makeUi = (tag) => {
+    const w = world();
+    const record = join(w.studio, "opera/W-1.md");
+    writeFileSync(record, readFileSync(record, "utf8").replace("kind: opus", "kind: ui"));
+    w.git("add", "-A");
+    w.git("commit", "-q", "-m", `W-340 ${tag} base`);
+    w.git("checkout", "-q", "-b", `opus-${tag}`);
+    const dir = join(w.studio, "ci/shots/W-1");
+    mkdirSync(dir, { recursive: true });
+    const shots = matrix.map(([name, width]) => {
+      const bytes = png(width, 900);
+      writeFileSync(join(dir, name), bytes);
+      return { name, width, bytes };
+    });
+    writeFileSync(
+      join(dir, "manifest.txt"),
+      [
+        "shots: 8 ci/shots/W-1",
+        ...[...shots].reverse().map(({ name, width, bytes }) => `shot: ${name} ${width}x900 ${bytes.length}`),
+        "",
+      ].join("\n"),
+    );
+    w.git("add", "-A");
+    w.git("commit", "-q", "-m", `W-340 ${tag} shots`);
+    return { w, dir };
+  };
+  const packet = (w) => {
+    try {
+      return {
+        status: 0,
+        built: buildPacket({
+          phase: "build",
+          opus: "W-1",
+          round: 1,
+          sella: "qa-lead",
+          studio: w.studio,
+          repo: w.repo,
+          packets: w.packets,
+        }),
+        err: "",
+      };
+    } catch (error) {
+      return { status: 2, err: error.message };
+    }
+  };
+  const refuse = (label, fixture, reason) => {
+    const before = tree(fixture.w.packets);
+    const r = packet(fixture.w);
+    assert.equal(r.status, 2, `${label}: exit ${r.status}\n${r.err}`);
+    assert.match(r.err, reason, `${label}: stated reason`);
+    assert.deepEqual(tree(fixture.w.packets), before, `${label}: no partial packet`);
+  };
+
+  const good = makeUi("good");
+  const r = packet(good.w);
+  assert.equal(r.status, 0, `the fixed desktop and phone set builds: ${r.err}`);
+  assert.ok(r.built.files.has("ui.txt"), "the UI packet carries its attachment description");
+  const summary = r.built.files.get("ui.txt");
+  assert.match(
+    summary,
+    /^Attached UI screenshots in codex -i order \(eight files, each at most 4194304 bytes\):$/m,
+    "the packet states the count and per-file bound",
+  );
+  assert.deepEqual(
+    r.built.images.map((path) => relative(good.dir, path)),
+    matrix.map(([name]) => name),
+    "the attachment paths use the fixed desktop-then-phone order inside the served-shot directory",
+  );
+  for (const [name, width] of matrix) {
+    assert.match(
+      summary,
+      new RegExp(
+        `^[1-8]\\. ${name.replace(".", "\\.")} — ${width === 1280 ? "desktop" : "phone"} ${width}x900 — judge .+\\.$`,
+        "m",
+      ),
+      `${name}: the prompt names its viewport and judgment`,
+    );
+  }
+  assert.doesNotMatch(
+    summary,
+    /pixel diff|baseline|different [0-9]/i,
+    "the attachment description makes no text pixel-diff claim",
+  );
+
+  const nonUi = world();
+  const ordinary = packet(nonUi);
+  assert.equal(ordinary.status, 0, `a declared native non-UI kind builds: ${ordinary.err}`);
+  assert.deepEqual(ordinary.built.images, [], "a declared native non-UI kind attaches no images");
+  assert.equal(
+    ordinary.built.files.get("ui.txt"),
+    'UI evidence: not applicable (kind "opus").\n',
+    "a declared native non-UI kind is identified",
+  );
+
+  const malformedKind = (tag, mutate, reason) => {
+    const fixture = world();
+    const record = join(fixture.studio, "opera/W-1.md");
+    writeFileSync(record, mutate(readFileSync(record, "utf8")));
+    refuse(tag, { w: fixture }, reason);
+  };
+  malformedKind("absent kind", (text) => text.replace("kind: opus\n", ""), /kind undefined is not a native opus kind/);
+  malformedKind(
+    "unknown kind",
+    (text) => text.replace("kind: opus", "kind: UI"),
+    /kind "UI" is not a native opus kind/,
+  );
+  malformedKind(
+    "non-string kind",
+    (text) => text.replace("kind: opus", "kind: [ui]"),
+    /kind \["ui"\] is not a native opus kind/,
+  );
+  malformedKind("malformed kind", (text) => text.replace("kind: opus", "kind: [ui"), /opera\/W-1\.md:/);
+
+  const walk = readFileSync(join(HERE, "../apps/web/tests-serve/walk.spec.ts"), "utf8");
+  assert.match(walk, /for \(const width of \[1280, 390\] as const\)/, "the served walk captures desktop then phone");
+  for (const [name] of matrix) assert.ok(walk.includes(name), `${name}: the served walk pins the review filename`);
+
+  const missing = makeUi("missing");
+  rmSync(join(missing.dir, "inbox-390.png"));
+  refuse("missing", missing, /served-e2e screenshot inbox-390\.png is missing/);
+
+  const unreadable = makeUi("unreadable");
+  rmSync(join(unreadable.dir, "inbox-390.png"));
+  mkdirSync(join(unreadable.dir, "inbox-390.png"));
+  refuse(
+    "non-regular",
+    unreadable,
+    /served-e2e screenshot inbox-390\.png is unsafe or unreadable: target is not a regular file/,
+  );
+
+  const linked = makeUi("linked");
+  const outside = join(linked.w.root, "outside.png");
+  writeFileSync(outside, png(390, 900));
+  rmSync(join(linked.dir, "inbox-390.png"));
+  symlinkSync(outside, join(linked.dir, "inbox-390.png"));
+  refuse(
+    "symlink",
+    linked,
+    /served-e2e screenshot inbox-390\.png is unsafe or unreadable: path reaches its target through a symlink/,
+  );
+
+  const oversized = makeUi("oversized");
+  const tooLarge = Buffer.concat([png(390, 900), Buffer.alloc(4 * 1024 * 1024)]);
+  writeFileSync(join(oversized.dir, "inbox-390.png"), tooLarge);
+  writeFileSync(
+    join(oversized.dir, "manifest.txt"),
+    readFileSync(join(oversized.dir, "manifest.txt"), "utf8").replace(
+      /^shot: inbox-390\.png .*$/m,
+      `shot: inbox-390.png 390x900 ${tooLarge.length}`,
+    ),
+  );
+  refuse(
+    "over-size",
+    oversized,
+    /served-e2e screenshot inbox-390\.png is unsafe or unreadable: target exceeds 4194304 bytes/,
+  );
+
+  const outsideName = makeUi("outside-name");
+  writeFileSync(
+    join(outsideName.dir, "manifest.txt"),
+    readFileSync(join(outsideName.dir, "manifest.txt"), "utf8").replace(
+      "shot: inbox-390.png ",
+      "shot: ../outside.png ",
+    ),
+  );
+  refuse("outside path", outsideName, /served-e2e screenshot manifest has a malformed entry/);
+
+  const incomplete = makeUi("incomplete");
+  const manifest = readFileSync(join(incomplete.dir, "manifest.txt"), "utf8");
+  rmSync(join(incomplete.dir, "officina-390.png"));
+  writeFileSync(
+    join(incomplete.dir, "manifest.txt"),
+    manifest.replace("shots: 8 ", "shots: 7 ").replace(/^shot: officina-390\.png .*\n/m, ""),
+  );
+  refuse("incomplete matrix", incomplete, /UI review screenshots must be exactly .*missing officina-390\.png/);
 });
 
 test("W-215-b4 behaviour 4: a --packets at or under --studio exits 2 and writes nothing", () => {

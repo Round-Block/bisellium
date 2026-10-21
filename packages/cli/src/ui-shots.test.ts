@@ -321,7 +321,7 @@ if (runs(7)) {
     const tinyBytes = png(2, 2);
     writeFileSync(join(tiny.dir, "seats.png"), tinyBytes);
     edit(tiny, (t) => t.replace(/^shot: seats\.png .*$/m, `shot: seats.png 2x2 ${tinyBytes.length}`));
-    assert.deepEqual(served(tiny), one("served-e2e screenshot seats.png is smaller than 800x600"), "(f) a truthful 2x2 PNG gives exactly one 'smaller' finding");
+    assert.deepEqual(served(tiny), one("served-e2e screenshot seats.png is smaller than 390x600"), "(f) a truthful 2x2 PNG gives exactly one 'smaller' finding");
 
     // (g) correct dimensions in the line but no PNG signature.
     const notPng = four("7g");
