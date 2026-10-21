@@ -614,7 +614,6 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   // W-166: only the validated list is spread; `runNext` holds on a malformed one before it gets here.
   const declaredExcludes = readSourceExcludes(manifest);
   const excludes = [studioRel, ".bisellium", ...("excludes" in declaredExcludes ? declaredExcludes.excludes : [])];
-  const design = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
   const branchRef = `refs/heads/opus/${id}`;
   const tipRead = readTip(repo, id);
   const tip = tipRead.kind === "tip" ? tipRead.oid : undefined;
@@ -625,6 +624,9 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const branch = usable ? fsSrc(wt.studio) : tip !== undefined ? gitSrc(repo, branchRef, studioRel) : undefined;
   const trunkRecord = recordOf(trunk, id);
   const branchRecord = recordOf(branch, id);
+  const defaultDesign = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
+  const uiPair = readUiSpecPairing(manifest);
+  const design = (branchRecord ?? trunkRecord)?.["kind"] === "ui" && !("error" in uiPair) && uiPair.pairing !== undefined ? uiPair.pairing.signer : defaultDesign;
   const remoteTracking = refExists(repo, `refs/remotes/origin/opus/${id}`);
   const choreRef = `refs/heads/chore/done-${id}`;
   const choreDone = trunkRecord?.["state"] !== "done" && refExists(repo, choreRef) && recordOf(gitSrc(repo, choreRef, studioRel), id)?.["state"] === "done";
@@ -838,8 +840,9 @@ export function deriveNext(f: Facts): Derived {
   if (state === "backlog") return named("greenlight", "patron", `${id} is in the backlog; only the Patron greenlights`, `bisellium greenlight ${id} --studio ${f.studioRel}`);
 
   // 2 spec (the committed trunk)
-  const gate = readSpecReviewer(f.manifest, f.trunkRecord ?? {});
+  const gate = readSpecReviewer(f.manifest, { ...rec, state: f.trunkRecord?.["state"] });
   if ("error" in gate) return hold("spec", gate.error);
+  const signer = gate.signer;
   const reviewer = gate.reviewer;
   const admit = lightAdmission(f);
   // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
@@ -877,11 +880,11 @@ export function deriveNext(f: Facts): Derived {
   // an unlistable worktree ci/ cannot carry the spec, so the committed branch is judged instead: once it has passed, the later rungs'
   // worktree handling is unchanged (the review rung holds on the same ci/); until then nothing can be ordered
   const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
-  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, f.design, reviewer, admit);
+  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, signer, reviewer, admit);
   if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
   // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
   if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
-  const spec = committed ?? specEvidence(pending, id, f.design, reviewer, admit, pre);
+  const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, pre);
   const ui = spec.ok ? f.uiSpecProblems() : [];
   // W-297 (D-086 A): the branch, reds, build and review orders name the required fixes a keeps-only failed spec review left
   const fixes: [string, string][] = spec.gate?.kind === "keeps" ? [["required-fixes", spec.gate.fixes.join(", ")]] : [];
@@ -926,7 +929,7 @@ export function deriveNext(f: Facts): Derived {
     // 4 ready
     if (!(PAST_READY.has(str(b["state"]) ?? "") && isDict(b["probationes"]) && isDict(b["probationes"]["spec"]) && b["probationes"]["spec"]["status"] === "passed")) {
       const where = f.wt.usable ? join(".worktrees", id, f.studioRel) : f.studioRel;
-      return { ...named("ready", "producer", `${id} is ${str(b["state"]) ?? "unstated"} and the spec gate is not recorded passed on the branch`, `bisellium ready ${id} --sella ${spec.sella ?? f.design} --studio ${where}`, [["attributed", `${spec.sella ?? f.design} (signed ${spec.log})`]]), ticket: { action: "ready", round: 0 } };
+      return { ...named("ready", "producer", `${id} is ${str(b["state"]) ?? "unstated"} and the spec gate is not recorded passed on the branch`, `bisellium ready ${id} --sella ${spec.sella ?? signer} --studio ${where}`, [["attributed", `${spec.sella ?? signer} (signed ${spec.log})`]]), ticket: { action: "ready", round: 0 } };
     }
     if (b["builder_runtime"] !== "isolated") return hold("ready", `${id} is past ready but its record carries no builder_runtime marker (a legacy record is outside the ladder)`);
 
@@ -1081,6 +1084,7 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
       studio,
       resume: ev.anyLog,
       inputs: [briefRel(id), ev.gate.review],
+      signer: reviewer.design,
       ...(ended ? { extra: [["split", `bisellium new --kind <kind> --collegium <collegium> --title <the remainder> --parent ${id} ${f.studioRel}`]] as [string, string][] } : {}),
     });
   }
@@ -1090,11 +1094,11 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
     const limit = readBriefLimit(f.manifest.brief_behaviour_limit);
     if ("error" in limit) return { step: "spec", status: "held", actor: "producer", why: `brief.admission: ${limit.error}`, extra: [] };
     const problems = limit.limit === undefined ? [] : briefAdmissionProblems(f.studioAbs, f.manifest, id, ev.gate.brief, limit.limit);
-    if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature] });
+    if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature], signer: reviewer.design });
     const session = reviewSession(src, id, "spec", reviewer.sella);
     return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model], ...(session === undefined ? [] : [["session", session] as [string, string]])], ...(session === undefined ? {} : { session }) });
   }
-  return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id)] });
+  return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id)], signer: reviewer.design });
 }
 
 /** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. */
@@ -1193,7 +1197,7 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; uiLead?: boolean; session?: string; behaviour?: { from: number; through: number }; studio?: string }): Derived {
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; uiLead?: boolean; signer?: string; session?: string; behaviour?: { from: number; through: number }; studio?: string }): Derived {
   const { id, manifest } = f;
   const studioRel = o.studio ?? f.studioRel;
   const builder = (() => {
@@ -1226,7 +1230,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     command = `dispatch ${sella} for its UI input on the signed brief; keep the dispatch prompt as ${prompt} under ${studioRel}; record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed|revise> --phase spec --dispatch-prompt ${prompt} --from <file> --studio ${studioRel}`;
   } else if (step === "spec") {
     role = "architect";
-    sella = f.design;
+    sella = o.signer ?? f.design;
     command = `dispatch ${sella} to sign the spec for ${id}; close out with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome passed --phase spec --studio ${studioRel}`;
   } else if (step === "reds") {
     role = "builder";
