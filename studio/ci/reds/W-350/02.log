@@ -1,0 +1,38 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-350-b2\s --import tsx apps/web/test/w350.test.ts
+# exit: 1
+# at: 2026-10-21T08:29:40.912Z
+# sella: builder.W-350
+# tree: tree:92765e33ad310b933d2aea85275392a34a9ce71d
+# ticket: {"opus":"W-350","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-350/studio","head":"cf521decbf65dfd2f2e160622c99fece0729ac8d","brief":"a6247df7c497d0af63f4ba2f97c90df4b38474f6","at":"2026-10-21T08:29:40.146Z"}
+
+TAP version 13
+# Subtest: W-350-b2 behaviour 2: baseline bootstrap skips only an empty set, rejects a partial set and compares a complete set
+not ok 1 - W-350-b2 behaviour 2: baseline bootstrap skips only an empty set, rejects a partial set and compares a complete set
+  ---
+  duration_ms: 2.72023
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-350/apps/web/test/w350.test.ts:1:8922'
+  failureType: 'testCodeFailure'
+  error: 'the baseline-set classifier pins one bootstrap skip reason'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-350/apps/web/test/w350.test.ts:180:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.227215
