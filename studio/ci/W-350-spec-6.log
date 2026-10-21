@@ -1,0 +1,22 @@
+# opus: W-350
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a15d03-4103-7770-8d5a-7201ab41667d
+# outcome: passed
+# at: 2026-10-21T06:28:03.661Z
+# tree: tree:afdc2b9c1f20882d744af215cf27baec2b7c305e
+# dispatch_prompt: ci/W-350-ui-prompt-6.md
+# design_digest: sha256:28d396a24ece536eb61bc4a7421c3cbcd277d7d336a8fb9444dff4f58191c34b
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"33da750d07e16ddb7361b1ebb99ec552be2a89d9","brief":"f09d512aeb5e9bfe0173f2d2feed1a0c5e8015db","at":"2026-10-21T06:28:03.179Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Revision 2 incorporates all four requested changes: distinct desktop and phone Inbox states, resolved Completion readiness, zero counted-pixel tolerance with anti-aliasing exclusion, and a pinned rendering environment with an independent comparison without retries.
+No additional UI defect blocks the specified initial-view baselines; the two blockers in W-350-spec-5 remain required build fixes, and actual baseline validation remains a build acceptance requirement.
+Verdict: passed

@@ -28,6 +28,13 @@ on:
   pull_request:
   merge_group:
     types: [checks_requested]
+  workflow_dispatch:
+    inputs:
+      refresh_screenshots:
+        description: Generate screenshot baselines on the CI runner and upload them for review
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,13 +46,21 @@ jobs:
   # `test:record` instead (W-203), and a pull request runs only setup,
   # the npm audit (W-236), typecheck and lint (W-205). It is the job a branch protection rule can
   # require, since every step that runs here is expected to pass on a clean tree.
+  # W-350: workflow_dispatch can select any ref in GitHub's UI. This job-level
+  # condition admits a dispatch only on master, before checkout, dependency
+  # installation or any cache-affecting step. Each checkout pins github.sha,
+  # then attaches that exact commit to a constant local branch so Git-backed
+  # checks can read a symbolic current branch without trusting an input ref.
   gates:
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
+      - name: Attach the exact event commit to a CI branch
+        run: git switch --force-create ci-event "$GITHUB_SHA"
       - uses: actions/setup-node@v5
         with:
           node-version: 25
@@ -96,14 +111,20 @@ jobs:
   # that debt cleared (0 blocking findings) and it was required since. Never
   # marked continue-on-error. On a pull request every step skips (W-205), so the
   # job still concludes success; a merge group and a push run the studio check.
+  # W-350 repeats the dispatch boundary at job scope so a non-master dispatch
+  # reaches neither checkout nor npm ci.
   officina:
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - if: github.event_name != 'pull_request'
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
+      - name: Attach the exact event commit to a CI branch
+        if: github.event_name != 'pull_request'
+        run: git switch --force-create ci-event "$GITHUB_SHA"
       - if: github.event_name != 'pull_request'
         uses: actions/setup-node@v5
         with:
@@ -123,14 +144,20 @@ jobs:
   # continue-on-error, and never merged into the separate
   # `officina` job above. On a pull request, and in a records-only merge group,
   # the build and E2E steps skip (W-205, W-203); a push and a source-change merge
-  # group run them.
+  # group run them. W-350 applies the same dispatch boundary before this job's
+  # checkout, install, browser cache and artifact steps.
   web-e2e:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
     steps:
       - if: github.event_name != 'pull_request'
         uses: actions/checkout@v5
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 2
+      - name: Attach the exact event commit to a CI branch
+        if: github.event_name != 'pull_request'
+        run: git switch --force-create ci-event "$GITHUB_SHA"
       - if: github.event_name != 'pull_request'
         uses: actions/setup-node@v5
         with:
@@ -143,6 +170,8 @@ jobs:
           BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
+        run: npm run -s test:policy --workspace @bisellium/web
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: rm -rf apps/web/dist
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s build --workspace @bisellium/web
@@ -150,6 +179,18 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s test:serve --workspace @bisellium/web
+        env:
+          BISELLIUM_UPDATE_SCREENSHOTS: ${{ inputs.refresh_screenshots && '1' || '0' }}
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
+        run: node --import tsx apps/web/tests-serve/rendering-environment.ts apps/web/tests-serve/screenshots.spec.ts-snapshots/rendering-environment.json
+        env:
+          BISELLIUM_UPDATE_SCREENSHOTS: ${{ inputs.refresh_screenshots && '1' || '0' }}
+      - if: github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-screenshot-baselines-${{ github.sha }}
+          if-no-files-found: error
+          path: apps/web/tests-serve/screenshots.spec.ts-snapshots/
 
   # W-168: the merge queue's certification. Runs only on a merge group. The
   # certifying code is master's (`tooling`, checked out at the merge group's

@@ -1,0 +1,372 @@
+/** W-350's policy row reads source text first, so its master red is an
+ * assertion failure even though the browser spec and font helper do not yet
+ * exist there. */
+import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { brotliCompressSync } from "node:zlib";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const read = (rel: string): string => {
+  try {
+    return readFileSync(resolve(ROOT, rel), "utf8");
+  } catch {
+    return "";
+  }
+};
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const SCREENSHOT_ENV_KEYS = [
+  "BISELLIUM_UPDATE_SCREENSHOTS",
+  "GITHUB_ACTIONS",
+  "GITHUB_EVENT_NAME",
+  "GITHUB_REF",
+  "GITHUB_SHA",
+] as const;
+type ScreenshotEnvironment = Record<(typeof SCREENSHOT_ENV_KEYS)[number], string | undefined>;
+
+async function withScreenshotEnvironment<T>(environment: ScreenshotEnvironment, run: () => T | Promise<T>): Promise<T> {
+  const saved = new Map(SCREENSHOT_ENV_KEYS.map((key) => [key, process.env[key]]));
+  try {
+    for (const key of SCREENSHOT_ENV_KEYS) {
+      const value = environment[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    return await run();
+  } finally {
+    for (const key of SCREENSHOT_ENV_KEYS) {
+      const value = saved.get(key);
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+function fixtureWoff2(family: string, weight: number): Uint8Array {
+  const familyBytes = Buffer.from([...family].flatMap((char) => [0, char.charCodeAt(0)]));
+  const name = Buffer.alloc(18 + familyBytes.length);
+  name.writeUInt16BE(1, 2);
+  name.writeUInt16BE(18, 4);
+  name.writeUInt16BE(3, 6);
+  name.writeUInt16BE(1, 8);
+  name.writeUInt16BE(0x409, 10);
+  name.writeUInt16BE(16, 12);
+  name.writeUInt16BE(familyBytes.length, 14);
+  familyBytes.copy(name, 18);
+  const os2 = Buffer.alloc(6);
+  os2.writeUInt16BE(weight, 4);
+  const compressed = brotliCompressSync(Buffer.concat([name, os2]));
+  const directory = Buffer.from([5, name.length, 6, os2.length]);
+  const out = Buffer.alloc(48 + directory.length + compressed.length);
+  out.write("wOF2", 0, "latin1");
+  out.writeUInt32BE(0x00010000, 4);
+  out.writeUInt32BE(out.length, 8);
+  out.writeUInt16BE(2, 12);
+  out.writeUInt32BE(compressed.length, 20);
+  directory.copy(out, 48);
+  compressed.copy(out, 48 + directory.length);
+  return out;
+}
+
+test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owned desktop and phone baselines", async () => {
+  const spec = read("apps/web/tests-serve/screenshots.spec.ts");
+  const fonts = read("apps/web/tests-serve/font-assets.ts");
+  const config = read("apps/web/playwright.serve.config.ts");
+  const tokens = read("apps/web/src/tokens.css");
+  const html = read("apps/web/index.html");
+  const workflow = read(".github/workflows/ci.yml");
+
+  assert.match(spec, /const VIEWPORTS = \[1280, 390\] as const/, "the screenshot row names the exact desktop and phone widths");
+  assert.match(spec, /NAV_ENTRIES/, "the screenshot row enumerates the live navigation table");
+  assert.match(spec, /clock\.setFixedTime\(new Date\(FIXED_NOW\)\)/, "the browser clock stays fixed while loading continues");
+  assert.doesNotMatch(spec, /clock\.install/, "the screenshot row does not install an advancing fake clock");
+  assert.match(spec, /expectLoadedState/, "every screen has a loaded-fixture assertion before capture");
+  assert.match(spec, /expectFontAssets/, "font files are authenticated before the served browser starts");
+  assert.match(spec, /document\.fonts\.load/, "every declared production face and weight is loaded before capture");
+  assert.match(spec, /toHaveScreenshot\(`\$\{entry\.route\}-\$\{width\}\.png`/, "the matrix uses Playwright screenshot assertions");
+  assert.match(spec, /scrollTo\(0, 0\)/, "scroll positions are reset for the initial view");
+  assert.match(spec, /document\.activeElement/, "focus is cleared deliberately");
+  assert.match(spec, /getSelection\(\)\?\.removeAllRanges/, "selection is cleared deliberately");
+  assert.match(spec, /page\.mouse\.move\(width - 1, 899\)/, "the pointer is parked away from controls");
+
+  for (const name of [
+    "BricolageGrotesque-SemiBold.woff2",
+    "BricolageGrotesque-Bold.woff2",
+    "InstrumentSans-Regular.woff2",
+    "InstrumentSans-Medium.woff2",
+    "IBMPlexMono-Regular.woff2",
+  ]) assert.match(fonts, new RegExp(escapeRegExp(name)), `${name} is an authenticated input`);
+  assert.match(fonts, /readWoff2Identity/, "font identity comes from the WOFF2's own tables");
+  assert.match(fonts, /OFL\.txt/, "each family carries its SIL OFL licence");
+  assert.doesNotMatch(html, /fonts\.(?:googleapis|gstatic)\.com/, "index.html makes no external font request");
+  assert.match(tokens, /@font-face[\s\S]*Bricolage Grotesque[\s\S]*Instrument Sans[\s\S]*IBM Plex Mono/, "production families are declared from local assets");
+
+  assert.match(config, /deviceScaleFactor: 1/, "DPR is one");
+  assert.match(config, /locale: "en-GB"/, "locale is en-GB");
+  assert.match(config, /timezoneId: "UTC"/, "timezone is UTC");
+  assert.match(config, /threshold: 0/, "pixel threshold is zero");
+  assert.match(config, /maxDiffPixels: 0/, "no differing pixel is accepted");
+  assert.match(config, /updateSnapshots: refreshScreenshots \? "all" : "none"/, "baseline writes default off");
+  assert.match(workflow, /workflow_dispatch:[\s\S]*refresh_screenshots:/, "only an explicit runner dispatch requests refresh");
+  assert.match(workflow, /run: npm run -s test:policy --workspace @bisellium\/web/, "web-e2e runs the focused policy step");
+  assert.match(workflow, /screenshots\.spec\.ts-snapshots/, "the runner uploads the generated baseline directory");
+
+  const { expectFontAssets, FONT_ASSETS, readWoff2Identity } = await import("../tests-serve/font-assets.js");
+  const faces = [...tokens.matchAll(/@font-face\s*\{([\s\S]*?)\}/g)].map((match) => {
+    const block = match[1] ?? "";
+    return {
+      family: /font-family:\s*"([^"]+)"/.exec(block)?.[1],
+      style: /font-style:\s*([^;]+);/.exec(block)?.[1]?.trim(),
+      weight: Number(/font-weight:\s*(\d+);/.exec(block)?.[1]),
+      src: /src:\s*url\("([^"]+)"\)\s*format\("woff2"\)/.exec(block)?.[1],
+    };
+  });
+  assert.deepEqual(
+    faces,
+    FONT_ASSETS.map(({ family, style, weight, path }) => ({ family, style, weight, src: `./assets/fonts/${path}` })),
+    "exactly five local CSS faces bind each authenticated family, style and weight to its FONT_ASSETS path",
+  );
+  assert.doesNotThrow(() => expectFontAssets(resolve(ROOT, "apps/web/src/assets/fonts")), "real font files and licences authenticate");
+  const root = /:root\s*\{([\s\S]*?)\}/.exec(tokens)?.[1] ?? "";
+  const fontRoles = [...root.matchAll(/(--font-(?:display|body|mono)):\s*([^;]+);/g)].map((match) => [match[1], match[2]?.trim()]);
+  assert.equal(fontRoles.length, 3, "exactly three production font role variables are declared");
+  assert.deepEqual(
+    Object.fromEntries(fontRoles),
+    {
+      "--font-display": '"Bricolage Grotesque", sans-serif',
+      "--font-body": '"Instrument Sans", sans-serif',
+      "--font-mono": '"IBM Plex Mono", monospace',
+    },
+    "display, body and mono roles bind the exact production families and fallbacks",
+  );
+  assert.deepEqual(readWoff2Identity(fixtureWoff2("Bricolage Grotesque", 600)), { family: "Bricolage Grotesque", weight: 600 }, "family and weight come from the font's own tables");
+  assert.throws(() => readWoff2Identity(new Uint8Array()), /not a WOFF2 font/, "an arbitrary file is not accepted as a font");
+
+  const { parse } = await import("yaml");
+  type WorkflowStep = {
+    name?: string;
+    run?: string;
+    uses?: string;
+    if?: string;
+    env?: Record<string, string>;
+    with?: Record<string, string>;
+  };
+  type WorkflowJob = {
+    if?: string;
+    needs?: string;
+    "runs-on": string;
+    steps: WorkflowStep[];
+  };
+  const ci = parse(workflow) as {
+    jobs: Record<string, WorkflowJob> & { "web-e2e": WorkflowJob };
+  };
+  const webE2e = ci.jobs["web-e2e"];
+  const dispatchMaster = "github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'";
+  const attachEventCommit = 'git switch --force-create ci-event "$GITHUB_SHA"';
+  assert.deepEqual(
+    Object.keys(ci.jobs),
+    ["gates", "officina", "web-e2e", "certify"],
+    "the workflow retains exactly its four established jobs",
+  );
+  for (const jobName of ["gates", "officina", "web-e2e"]) {
+    const job = ci.jobs[jobName];
+    assert.equal(job?.needs, undefined, `${jobName} has no prerequisite job`);
+    assert.equal(job?.if, dispatchMaster, `${jobName} skips every step on a non-master dispatch`);
+    for (const [index, checkout] of (job?.steps ?? []).entries()) {
+      if (!checkout.uses?.startsWith("actions/checkout@")) continue;
+      assert.equal(checkout.with?.ref, "${{ github.sha }}", `${jobName} checks out the event's immutable commit`);
+      assert.deepEqual(
+        job?.steps[index + 1],
+        {
+          name: "Attach the exact event commit to a CI branch",
+          ...(checkout.if === undefined ? {} : { if: checkout.if }),
+          run: attachEventCommit,
+        },
+        `${jobName} gives the exact event commit a symbolic branch before any setup or install`,
+      );
+    }
+  }
+  const fullPath = "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'";
+  const refreshEnv = { BISELLIUM_UPDATE_SCREENSHOTS: "${{ inputs.refresh_screenshots && '1' || '0' }}" };
+  assert.equal(webE2e["runs-on"], "ubuntu-24.04", "the screenshot job pins its OS family");
+  const serve = webE2e.steps.find((step) => step.run?.includes("test:serve"));
+  assert.deepEqual(serve?.env, refreshEnv, "the test:serve step derives refresh only from the dispatch input");
+  const rendering = webE2e.steps.find((step) => step.run?.includes("rendering-environment.ts"));
+  assert.deepEqual(
+    { if: rendering?.if, env: rendering?.env },
+    { if: fullPath, env: refreshEnv },
+    "the rendering identity runs on every full path and derives writes only from the dispatch input",
+  );
+  const upload = webE2e.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.deepEqual(
+    upload,
+    {
+      if: "github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots",
+      uses: "actions/upload-artifact@v4",
+      with: {
+        name: "web-screenshot-baselines-${{ github.sha }}",
+        "if-no-files-found": "error",
+        path: "apps/web/tests-serve/screenshots.spec.ts-snapshots/",
+      },
+    },
+    "baseline upload pins the exact action, dispatch-refresh condition and artifact with map",
+  );
+
+  const sha = "a".repeat(40);
+  const mergeGroupEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "0",
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "merge_group",
+    GITHUB_REF: "refs/heads/gh-readonly-queue/master/pr-663-x",
+    GITHUB_SHA: sha,
+  };
+  const masterRefreshEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "1",
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "workflow_dispatch",
+    GITHUB_REF: "refs/heads/master",
+    GITHUB_SHA: sha,
+  };
+  const developerRefreshEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "1",
+    GITHUB_ACTIONS: undefined,
+    GITHUB_EVENT_NAME: undefined,
+    GITHUB_REF: undefined,
+    GITHUB_SHA: undefined,
+  };
+
+  const { readRenderingEnvironmentMode } = await withScreenshotEnvironment(mergeGroupEnvironment, () =>
+    import("../tests-serve/rendering-environment.js"),
+  );
+  assert.equal(
+    await withScreenshotEnvironment(mergeGroupEnvironment, () => readRenderingEnvironmentMode()),
+    "compare",
+    "the full-path identity step compares when refresh is off",
+  );
+  assert.equal(
+    await withScreenshotEnvironment(masterRefreshEnvironment, () => readRenderingEnvironmentMode()),
+    "write",
+    "the full-path identity step writes on an authorised runner refresh",
+  );
+  await withScreenshotEnvironment(developerRefreshEnvironment, () =>
+    assert.throws(() => readRenderingEnvironmentMode(), /GitHub Actions/, "the rendering identity cannot be written by a developer machine"),
+  );
+
+  const { readRefreshScreenshots } = await withScreenshotEnvironment(mergeGroupEnvironment, () =>
+    import("../playwright.serve.config.js"),
+  );
+  await withScreenshotEnvironment(
+    {
+      BISELLIUM_UPDATE_SCREENSHOTS: undefined,
+      GITHUB_ACTIONS: undefined,
+      GITHUB_EVENT_NAME: undefined,
+      GITHUB_REF: undefined,
+      GITHUB_SHA: undefined,
+    },
+    () => assert.equal(readRefreshScreenshots(), false, "an absent refresh value compares only"),
+  );
+  assert.equal(
+    await withScreenshotEnvironment(mergeGroupEnvironment, () => readRefreshScreenshots()),
+    false,
+    "zero compares only",
+  );
+  assert.equal(
+    await withScreenshotEnvironment(masterRefreshEnvironment, () => readRefreshScreenshots()),
+    true,
+    "one refreshes on a master GitHub Actions dispatch",
+  );
+  await withScreenshotEnvironment(developerRefreshEnvironment, () =>
+    assert.throws(() => readRefreshScreenshots(), /GitHub Actions/, "a developer machine cannot refresh"),
+  );
+  await withScreenshotEnvironment(
+    { ...masterRefreshEnvironment, BISELLIUM_UPDATE_SCREENSHOTS: "true" },
+    () => assert.throws(() => readRefreshScreenshots(), /0 or 1/, "every other refresh value fails closed"),
+  );
+});
+
+test("W-350-sec3: baseline artifacts prove a master workflow dispatch before the follow-up can consume them", async () => {
+  const sha = "a".repeat(40);
+  const oldUnprovenancedRecord = {
+    runnerOs: "Linux",
+    imageOs: "ubuntu24",
+    imageVersion: "20261015.1.0",
+    node: "v25.0.0",
+    playwright: "1.55.0",
+    chromium: "Chromium 140.0.7339.16",
+  };
+  const source = { eventName: "workflow_dispatch", ref: "refs/heads/master", sha };
+
+  const nonMasterRefreshEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "1",
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "workflow_dispatch",
+    GITHUB_REF: "refs/heads/opus/W-350",
+    GITHUB_SHA: sha,
+  };
+  const masterRefreshEnvironment: ScreenshotEnvironment = {
+    ...nonMasterRefreshEnvironment,
+    GITHUB_REF: "refs/heads/master",
+  };
+  const config = await withScreenshotEnvironment(masterRefreshEnvironment, () => import("../playwright.serve.config.js"));
+  await withScreenshotEnvironment(nonMasterRefreshEnvironment, () =>
+    assert.throws(
+      () => config.readRefreshScreenshots(),
+      /refs\/heads\/master/,
+      "a non-master runner cannot generate screenshot baselines",
+    ),
+  );
+  assert.equal(
+    await withScreenshotEnvironment(masterRefreshEnvironment, () => config.readRefreshScreenshots()),
+    true,
+    "a master workflow dispatch can generate screenshot baselines",
+  );
+
+  const rendering = await import("../tests-serve/rendering-environment.js");
+  const readRecord = (rendering as { readRenderingEnvironmentRecord?: (value: unknown) => unknown }).readRenderingEnvironmentRecord;
+  assert.equal(typeof readRecord, "function", "the baseline identity has a provenance reader");
+  if (readRecord === undefined) return;
+  assert.throws(
+    () => readRecord(oldUnprovenancedRecord),
+    /baseline provenance/,
+    "an artifact made by the stale workflow cannot become the follow-up baseline",
+  );
+  assert.deepEqual(
+    readRecord({ ...oldUnprovenancedRecord, baselineSource: source }),
+    { ...oldUnprovenancedRecord, baselineSource: source },
+    "a master dispatch's source ref and immutable commit remain in the reviewed baseline identity",
+  );
+});
+
+test("W-350-b2 behaviour 2: baseline bootstrap skips only an empty set, rejects a partial set and compares a complete set", async () => {
+  const helper = read("apps/web/tests-serve/baseline-set.ts");
+  const spec = read("apps/web/tests-serve/screenshots.spec.ts");
+  const rendering = read("apps/web/tests-serve/rendering-environment.ts");
+  assert.match(helper, /BASELINE_BOOTSTRAP_REASON/, "the baseline-set classifier pins one bootstrap skip reason");
+
+  const { BASELINE_FILES, BASELINE_BOOTSTRAP_REASON, baselineSetState } = await import("../tests-serve/baseline-set.js");
+  const root = mkdtempSync(join(tmpdir(), "w350-baselines-"));
+  try {
+    assert.equal(baselineSetState(root), "absent", "an entirely absent baseline set enters the bootstrap state");
+    writeFileSync(join(root, BASELINE_FILES[0]!), "partial");
+    assert.throws(() => baselineSetState(root), /partial screenshot baseline set/, "a partial baseline set fails closed");
+    rmSync(root, { recursive: true, force: true });
+    mkdirSync(root, { recursive: true });
+    for (const file of BASELINE_FILES) writeFileSync(join(root, file), file);
+    assert.equal(baselineSetState(root), "complete", "all eight PNGs and the rendering identity enable comparison");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+
+  assert.match(spec, /test\.skip\(true, BASELINE_BOOTSTRAP_REASON\)/, "the empty-set path skips with the one pinned reason");
+  assert.match(spec, /baselineState === "complete" \|\| refreshing/, "pixel comparison runs only for a complete set or an authorised refresh");
+  const skipAt = spec.lastIndexOf("test.skip(true, BASELINE_BOOTSTRAP_REASON)");
+  assert.ok(spec.indexOf("expectFontAssets(join") < skipAt, "font authentication runs before the empty-set skip");
+  assert.ok(spec.indexOf("await expectLoadedState") < skipAt, "every screen readiness assertion runs before the empty-set skip");
+  assert.match(rendering, /baselineSetState\(dirname\(path\)\)/, "rendering-identity comparison uses the same all-or-none baseline gate");
+  assert.match(BASELINE_BOOTSTRAP_REASON, /follow-up opus/, "the skip reason names the follow-up ownership boundary");
+});

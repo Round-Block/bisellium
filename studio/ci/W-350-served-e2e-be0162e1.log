@@ -1,0 +1,77 @@
+certifies: tree:be0162e1c9c9e41a3df9d17701c245312e361f1e
+command: node scripts/served-e2e.mjs
+exit code: 0
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 40 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+********.woff2       14.70 kB
+********.woff2     30.09 kB
+********.woff2   41.34 kB
+dist/assets/index-mBKC072s.css                       20.73 kB │ gzip:  4.12 kB
+dist/assets/index-enhM2hdI.js                       261.60 kB │ gzip: 81.47 kB
+
+✓ built in 133ms
+
+Running 45 tests using 12 workers
+
+  ✓   1 [chromium] › tests-serve/auth.spec.ts:90:3 › token delivery, mounted (W-067 behaviour 2) › the built dist carries no copy of the live write-auth token (429ms)
+  ✓   4 [chromium] › tests-serve/auth.spec.ts:39:3 › token delivery, mounted (W-067 behaviour 2) › prompts for a token when sessionStorage is empty (1.6s)
+W-007: greenlit
+  ✓  13 [chromium] › tests-serve/board.spec.ts:437:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › ArrowRight/ArrowLeft move to the nearest card in the next/previous non-empty column (2.0s)
+  ✓   9 [chromium] › tests-serve/board.spec.ts:237:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › renders every column, each count equal to the spec's own computation from GET /api/opera (2.0s)
+  ✓   5 [chromium] › tests-serve/auth.spec.ts:68:3 › token delivery, mounted (W-067 behaviour 2) › a wrong token in sessionStorage produces a 401 that reopens the prompt, and the replacement then succeeds (2.1s)
+  ✓   2 [chromium] › tests-serve/answer.spec.ts:36:3 › the answer button, end to end (W-067 acceptance) › W-024's Inbox answer button writes through the served console (2.1s)
+  ✓   3 [chromium] › tests-serve/auth.spec.ts:45:3 › token delivery, mounted (W-067 behaviour 2) › the entered token is used on the next write and survives a reload without re-prompting (2.1s)
+  ✓   8 [chromium] › tests-serve/board.spec.ts:252:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › live case: an SSE-delivered greenlight moves the card, no reload, within two poll intervals (2.1s)
+  ✓  12 [chromium] › tests-serve/board.spec.ts:384:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays mounted beside the drawer (2.3s)
+  ✓   6 [chromium] › tests-serve/board.spec.ts:353:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › coalescing: a poll delivering several frames issues exactly one /api/opera request (2.4s)
+W-007: greenlit
+  ✓  16 [chromium] › tests-serve/board.spec.ts:537:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible (1.5s)
+  ✓  18 [chromium] › tests-serve/board.spec.ts:599:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column (1.4s)
+  ✓  14 [chromium] › tests-serve/board.spec.ts:459:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › removal: the drawer closes and focus lands on a remaining card in that column, or the column head — never document.body (1.8s)
+  ✓  20 [chromium] › tests-serve/board.spec.ts:628:3 › W-087 behaviour 1: bounded titles retain their native full-title affordance › a 300-character mixed title clamps to four lines while a short card remains 64px (1.5s)
+  ✓  15 [chromium] › tests-serve/board.spec.ts:487:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator (1.7s)
+  ✓  21 [chromium] › tests-serve/board.spec.ts:747:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › an exact 64 KiB body is retained whole without a truncation marker (1.5s)
+  ✓  17 [chromium] › tests-serve/board.spec.ts:695:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › the collection and drawer cap a long literal body, mark truncation, refuse linked bodies and expose an honest empty state (1.7s)
+  ✓  22 [chromium] › tests-serve/board.spec.ts:767:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › a UTF-8 character split by the 64 KiB cap is dropped before the exact marker (1.5s)
+  ✓  19 [chromium] › tests-serve/board.spec.ts:558:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling (1.8s)
+  ✓  23 [chromium] › tests-serve/board.spec.ts:793:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › authored spaces, tabs, blank lines and trailing spaces survive the response and pre-wrap drawer (1.3s)
+  ✓  10 [chromium] › tests-serve/board.spec.ts:317:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload (5.0s)
+  ✓  24 [chromium] › tests-serve/board.spec.ts:822:3 › W-087 behaviour 3: every generated Board time has the viewer-local shape › four timestamp fields localize without touching ISO-like authored content or raw ordering (1.5s)
+  ✓  25 [chromium] › tests-serve/board.spec.ts:901:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the keyboard-focused close ring remains visible while live resize toggles Board inert at 613/612 (1.5s)
+  ✓   7 [chromium] › tests-serve/board.spec.ts:333:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening (5.2s)
+  ✓  27 [chromium] › tests-serve/layout.spec.ts:23:3 › computed layout (W-065 behaviour 15) › 1280px: the rail is 220px, link text visible (2.2s)
+  ✓  28 [chromium] › tests-serve/layout.spec.ts:32:3 › computed layout (W-065 behaviour 15) › 800px: the rail is 72px, labels present at 11px (not display:none) (2.2s)
+  ✓  32 [chromium] › tests-serve/layout.spec.ts:104:3 › shell geometry with the token prompt open (W-075 behaviour 1) › the prompt does not displace the sidebar or main columns (1.2s)
+  ✓  29 [chromium] › tests-serve/layout.spec.ts:44:3 › computed layout (W-065 behaviour 15) › 500px: the shell is a top row, labels still readable (2.2s)
+  ✓  30 [chromium] › tests-serve/layout.spec.ts:55:3 › computed layout (W-065 behaviour 15) › a focused model select has a visible focus indicator (2.3s)
+  ✓  31 [chromium] › tests-serve/layout.spec.ts:69:3 › computed layout (W-065 behaviour 15) › with the confirm bar open, the last roster row does not sit under it (2.3s)
+  ✓  26 [chromium] › tests-serve/board.spec.ts:955:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold (3.2s)
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+  ✓  36 [chromium] › tests-serve/seats.spec.ts:113:3 › the decree surface, end to end (W-065 behaviour 14) › Enter from the confirm bar submits identically to a click (2.1s)
+  ✓  35 [chromium] › tests-serve/seats.spec.ts:77:3 › the decree surface, end to end (W-065 behaviour 14) › Confirm clicked three times overlapping still issues exactly 1 request; Enter submits identically (2.1s)
+  ✓  34 [chromium] › tests-serve/seats.spec.ts:26:3 › the decree surface, end to end (W-065 behaviour 14) › draft-and-confirm: only Confirm ever writes, exactly once (2.3s)
+  ✓  42 [chromium] › tests-serve/walk.spec.ts:218:1 › W-077 behaviour 6: the Officina tells the truth about a stale tick snapshot and an empty aerarium (1.5s)
+  -  33 [chromium] › tests-serve/screenshots.spec.ts:114:1 › the live screens match their fixed desktop and phone initial-view baselines
+  ✓  43 [chromium] › tests-serve/walk.spec.ts:289:1 › W-077 behaviour 7: a failed read never shows demo data (1.2s)
+  ✓  38 [chromium] › tests-serve/seats.spec.ts:166:3 › the decree surface, end to end (W-065 behaviour 14) › a transport error re-opens the token prompt, draft retained (2.3s)
+  ✓  37 [chromium] › tests-serve/seats.spec.ts:130:3 › the decree surface, end to end (W-065 behaviour 14) › a real stale draft: the manifest changes under the console, Confirm reports the conflict and keeps the draft (2.4s)
+  ✓  39 [chromium] › tests-serve/seats.spec.ts:184:3 › the decree surface, end to end (W-065 behaviour 14) › editing while a request is pending issues no second request (2.4s)
+  ✓  44 [chromium] › tests-serve/walk.spec.ts:317:1 › W-077 behaviour 6 round 2: the integrity rows look openable and the panel reads as two sentences over a tight list (1.3s)
+  ✓  45 [chromium] › tests-serve/walk.spec.ts:343:1 › W-077 behaviour 3 round 2: a hostile, multiline or huge due name renders as escaped text and does not break the layout (1.3s)
+  ✓  41 [chromium] › tests-serve/walk.spec.ts:126:1 › W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen (3.3s)
+  ✓  40 [chromium] › tests-serve/walk.spec.ts:58:1 › W-110 behaviour 2: the rail reaches every screen it lists, says which one is current, and survives Back, Forward and a reload (3.6s)
+  ✓  11 [chromium] › tests-serve/board.spec.ts:274:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › negative: with /api/live blocked after the initial connection, the card's state never changes and no further /api/opera requests are issued (14.4s)
+
+  1 skipped
+  44 passed (16.3s)
+shots: 4 ci/shots/W-350
+shot: board.png 1280x900 42596
+shot: inbox.png 1280x900 37346
+shot: officina.png 1280x900 39326
+shot: seats.png 1280x900 67613
+

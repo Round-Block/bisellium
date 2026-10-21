@@ -1,4 +1,17 @@
 import { defineConfig, devices } from "@playwright/test";
+import { readBaselineWriteSource } from "./tests-serve/baseline-set.js";
+
+export function readRefreshScreenshots(
+  value = process.env["BISELLIUM_UPDATE_SCREENSHOTS"],
+  githubActions = process.env["GITHUB_ACTIONS"],
+  eventName = process.env["GITHUB_EVENT_NAME"],
+  ref = process.env["GITHUB_REF"],
+  sha = process.env["GITHUB_SHA"],
+): boolean {
+  return readBaselineWriteSource(value, githubActions, eventName, ref, sha) !== undefined;
+}
+
+const refreshScreenshots = readRefreshScreenshots();
 
 /**
  * apps/web/playwright.serve.config.ts — W-067. Unlike playwright.config.ts
@@ -25,6 +38,14 @@ export default defineConfig({
   forbidOnly: !!process.env["CI"],
   retries: process.env["CI"] ? 2 : 0,
   reporter: "list",
+  updateSnapshots: refreshScreenshots ? "all" : "none",
+  expect: {
+    toHaveScreenshot: {
+      threshold: 0,
+      maxDiffPixels: 0,
+      pathTemplate: "{snapshotDir}/{testFilePath}-snapshots/{arg}{ext}",
+    },
+  },
   timeout: 30_000,
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], locale: "en-GB", timezoneId: "UTC", deviceScaleFactor: 1 } }],
 });

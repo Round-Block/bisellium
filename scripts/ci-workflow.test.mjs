@@ -25,7 +25,7 @@
  * for the entries they carry, and officina's one step is exactly the studio
  * entry.
  *
- * W-168: a fourth job, `certify`, runs only on a merge group (see
+ * W-168: the `certify` job runs only on a merge group (see
  * scripts/ci-certify.test.mjs). It carries no CI_STEPS entry, so the step
  * comparisons below read only `gates` and `officina`.
  */
@@ -143,6 +143,7 @@ check(
 // studio check (found by its exact `if`), and the full-path prerequisites below.
 const RECORD_ONLY_IF = "steps.scope.outputs.record_only == 'true'";
 const PREREQUISITE_RUNS = new Set([
+  'git switch --force-create ci-event "$GITHUB_SHA"',
   "sudo apt-get update && sudo apt-get install -y bubblewrap",
   "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0",
 ]);
@@ -289,6 +290,11 @@ check(
 check(
   "web-e2e: provisions chromium with playwright install --with-deps",
   webE2eSteps.some((s) => s.includes("playwright install") && s.includes("--with-deps") && s.includes("chromium")),
+);
+
+check(
+  "web-e2e: runs the web screenshot policy row",
+  webE2eSteps.some((s) => s.includes("test:policy")),
 );
 
 check(

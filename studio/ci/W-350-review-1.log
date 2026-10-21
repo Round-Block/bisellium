@@ -1,0 +1,27 @@
+# opus: W-350
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15dbc-95f9-7ac1-8d19-2543a8f413af
+# outcome: passed
+# at: 2026-10-21T09:17:40.442Z
+# tree: tree:4108f631b43bdcaa45e62c1d161496039ee5647d
+# ui_input: ci/W-350-spec-8.log
+# design_digest: sha256:485973711efc37ed07c917ba7781dab8c43657601979a1639d8274e55c863159
+# ticket: {"opus":"W-350","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-350/studio","head":"775cce1a416fe991134562da163cbe0e7347deb2","brief":"a6247df7c497d0af63f4ba2f97c90df4b38474f6","at":"2026-10-21T09:17:39.607Z"}
+
+## Findings
+1. advisory — apps/web/test/w350.test.ts:198 `W-350-b2` checks textual ordering only: moving the pinned skip inside the route loop after the first `expectLoadedState` still passes lines 199–200 while bypassing the other seven screen/viewport readiness checks. [severity: S3] [class: tests×ruled-case-uncovered] — check: apps/web/test/w350.test.ts W-350-b2 control-flow mutation
+2. advisory — apps/web/test/w350.test.ts:197 The row pins the downstream `baselineState === "complete" || refreshing` guard but not how `refreshing` is derived; changing screenshots.spec.ts:117 from `"1"` to `"0"` passes both policy rows while making an authorised first refresh follow the absent-set skip path. [severity: S3] [class: tests×ruled-case-uncovered] — check: apps/web/test/w350.test.ts W-350-b2 refresh-mode mutation
+
+## UI input disposition
+1. Honoured — the desktop Inbox asserts the selected detail and four verbs, while phone asserts the loaded queue and hidden detail at apps/web/tests-serve/screenshots.spec.ts:68 and apps/web/tests-serve/screenshots.spec.ts:73.
+2. Honoured — Officina awaits the resolved Completion text within `.panel--completion` at apps/web/tests-serve/screenshots.spec.ts:91.
+3. Honoured — zero counted-pixel tolerance is configured at apps/web/playwright.serve.config.ts:39, with screenshot retries disabled at apps/web/tests-serve/screenshots.spec.ts:19.
+4. Honoured — the runner OS is pinned at .github/workflows/ci.yml:135 and complete-set rendering identity is compared at apps/web/tests-serve/screenshots.spec.ts:118; spec-8 accepts deferring the actual baseline comparison to the follow-up opus.
+
+## Verdict
+The amended build currently implements the D-097 absent/partial/complete behavior, authenticates the fetched hashes and variable-weight ranges, pins both spec-5 fixes, and uses Board selectors matching BoardView. The two incomplete mutation guards are advisory and do not show current wrong behavior.
+
+VERDICT: PASS

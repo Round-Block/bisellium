@@ -1,0 +1,25 @@
+# opus: W-350
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T05:14:36.340Z
+# tree: tree:65af3fb7ea81155483ff5cecae7e22b713a66cee
+# brief: briefs/W-350.md blob:64cc30a2b9d9a26b5d512feb5cb399314b4c4e0f
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"47bd357ec0a76e375b6c9aa25542109796cb9b29","brief":"64cc30a2b9d9a26b5d512feb5cb399314b4c4e0f","at":"2026-10-21T05:14:35.900Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-350-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the design keeps the W-339 revision-2 shape but closes spec-5 blockers 2–4: `setFixedTime` replaces the advancing clock, `index.html` loses Google Fonts, and five WOFF2 family/weight tuples are authenticated from their own `name` and `OS/2` tables before capture — check: brief:15, brief:17, brief:19, brief:54-62
+2. advisory — the eight PNGs are explicitly initial-view baselines at 1280×900 and 390×900; each screen has a loaded fixture assertion, phone Inbox exposes its answering controls, and W-341 retains every further state and bottom-of-scroll capture — check: brief:21, brief:64, brief:92, brief:110-111
+3. advisory — `W-350-b1` fails by assertion on master at the missing exact viewport matrix, passes on the feature stage and is accepted by the replay classifier; admission and this brief's promise ledger both pass — check: row-b1-master.out, row-b1-proto.out, red-b1-accept.out, admission.out, ledger-check.out
+4. advisory — the production WOFF2/OFL files and runner-generated PNGs are intentionally absent in the no-network draft, and Chromium cannot launch in this sandbox; therefore Vite build, the real font assertion, the browser comparison and pixel-mutant check remain acceptance work, while the focused row, web typecheck, ESLint and Prettier pass — check: brief:23, brief:98-103, gates-proto.out
+5. advisory — `.github/workflows/ci.yml` is the sole code-owned path and the Patron merges it; its focused structural assertions pass, while the two whole workflow guard files cannot complete locally because this sandbox refuses their child-process spawns with EPERM — check: brief:41-44, gates-proto.out
+6. advisory — the scratch worktree's advertised git metadata mount refused `index.lock` as read-only, so the two required stage commits were cut on `spec-scratch/W-350` in the evidence-local clone and exported as the ruled mbox; the scratch worktree itself remains at base with the prototype and brief uncommitted — check: git-metadata-probe.out, prototype-repo log, prototype.mbox
+
+## Verdict
+
+passed — signature prepared by Codex `gpt-5.6-sol` under D-094 for brief revision 1 at `studio/briefs/W-350.md`, prototype on master 47bd357e (`25ad37e0`, `7633f3ed`, mbox SHA-256 `acb7514e371f2dc589a105fb214dfa748238ad689ea2aee43eaf6eae43e3da55`); the producer runs the fixture census, signs and records.
