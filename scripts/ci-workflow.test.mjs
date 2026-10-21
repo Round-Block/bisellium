@@ -143,6 +143,7 @@ check(
 // studio check (found by its exact `if`), and the full-path prerequisites below.
 const RECORD_ONLY_IF = "steps.scope.outputs.record_only == 'true'";
 const PREREQUISITE_RUNS = new Set([
+  'git switch --force-create ci-event "$GITHUB_SHA"',
   "sudo apt-get update && sudo apt-get install -y bubblewrap",
   "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0",
 ]);

@@ -38,6 +38,7 @@ const DEFERRED = `${NOT_PR} && ${FULL}`;
 const MERGE_GROUP = "github.event_name == 'merge_group'";
 const REFRESH_SCREENSHOTS = "github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots";
 const DISPATCH_MASTER = "github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'";
+const ATTACH_EVENT_COMMIT = 'git switch --force-create ci-event "$GITHUB_SHA"';
 
 const git = (cwd, ...args) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
@@ -93,7 +94,12 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
     );
     assert.equal(scopeSteps[0].if, MERGE_GROUP, `${job}'s scope step runs on a merge group`);
     for (const step of steps.filter(
-      (s) => typeof s.run === "string" && s.id !== "scope" && s.run !== "npm ci" && s.if !== SHORT,
+      (s) =>
+        typeof s.run === "string" &&
+        s.id !== "scope" &&
+        s.run !== "npm ci" &&
+        s.run !== ATTACH_EVENT_COMMIT &&
+        s.if !== SHORT,
     ))
       assert.equal(
         step.if,
@@ -612,6 +618,7 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
     table("gates"),
     [
       ["actions/checkout@v5", null],
+      [ATTACH_EVENT_COMMIT, null],
       ["actions/setup-node@v5", null],
       ["npm ci", null],
       SCOPE,
@@ -633,6 +640,7 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
     table("officina"),
     [
       ["actions/checkout@v5", NOT_PR],
+      [ATTACH_EVENT_COMMIT, NOT_PR],
       ["actions/setup-node@v5", NOT_PR],
       ["npm ci", NOT_PR],
       ["npm run -s check -- studio --repo .", NOT_PR],
@@ -643,6 +651,7 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
     table("web-e2e"),
     [
       ["actions/checkout@v5", NOT_PR],
+      [ATTACH_EVENT_COMMIT, NOT_PR],
       ["actions/setup-node@v5", NOT_PR],
       ["npm ci", NOT_PR],
       SCOPE,

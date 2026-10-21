@@ -20,6 +20,33 @@ const read = (rel: string): string => {
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const SCREENSHOT_ENV_KEYS = [
+  "BISELLIUM_UPDATE_SCREENSHOTS",
+  "GITHUB_ACTIONS",
+  "GITHUB_EVENT_NAME",
+  "GITHUB_REF",
+  "GITHUB_SHA",
+] as const;
+type ScreenshotEnvironment = Record<(typeof SCREENSHOT_ENV_KEYS)[number], string | undefined>;
+
+async function withScreenshotEnvironment<T>(environment: ScreenshotEnvironment, run: () => T | Promise<T>): Promise<T> {
+  const saved = new Map(SCREENSHOT_ENV_KEYS.map((key) => [key, process.env[key]]));
+  try {
+    for (const key of SCREENSHOT_ENV_KEYS) {
+      const value = environment[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    return await run();
+  } finally {
+    for (const key of SCREENSHOT_ENV_KEYS) {
+      const value = saved.get(key);
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
 function fixtureWoff2(family: string, weight: number): Uint8Array {
   const familyBytes = Buffer.from([...family].flatMap((char) => [0, char.charCodeAt(0)]));
   const name = Buffer.alloc(18 + familyBytes.length);
@@ -122,6 +149,7 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
 
   const { parse } = await import("yaml");
   type WorkflowStep = {
+    name?: string;
     run?: string;
     uses?: string;
     if?: string;
@@ -139,6 +167,7 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   };
   const webE2e = ci.jobs["web-e2e"];
   const dispatchMaster = "github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'";
+  const attachEventCommit = 'git switch --force-create ci-event "$GITHUB_SHA"';
   assert.deepEqual(
     Object.keys(ci.jobs),
     ["gates", "officina", "web-e2e", "certify"],
@@ -148,8 +177,19 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
     const job = ci.jobs[jobName];
     assert.equal(job?.needs, undefined, `${jobName} has no prerequisite job`);
     assert.equal(job?.if, dispatchMaster, `${jobName} skips every step on a non-master dispatch`);
-    for (const checkout of job?.steps.filter((step) => step.uses?.startsWith("actions/checkout@")) ?? [])
+    for (const [index, checkout] of (job?.steps ?? []).entries()) {
+      if (!checkout.uses?.startsWith("actions/checkout@")) continue;
       assert.equal(checkout.with?.ref, "${{ github.sha }}", `${jobName} checks out the event's immutable commit`);
+      assert.deepEqual(
+        job?.steps[index + 1],
+        {
+          name: "Attach the exact event commit to a CI branch",
+          ...(checkout.if === undefined ? {} : { if: checkout.if }),
+          run: attachEventCommit,
+        },
+        `${jobName} gives the exact event commit a symbolic branch before any setup or install`,
+      );
+    }
   }
   const fullPath = "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'";
   const refreshEnv = { BISELLIUM_UPDATE_SCREENSHOTS: "${{ inputs.refresh_screenshots && '1' || '0' }}" };
@@ -177,27 +217,76 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
     "baseline upload pins the exact action, dispatch-refresh condition and artifact with map",
   );
 
-  const { readRenderingEnvironmentMode } = await import("../tests-serve/rendering-environment.js");
-  const readModeWithSource = readRenderingEnvironmentMode as (...args: (string | undefined)[]) => "compare" | "write";
-  assert.equal(readRenderingEnvironmentMode("0", "true"), "compare", "the full-path identity step compares when refresh is off");
+  const sha = "a".repeat(40);
+  const mergeGroupEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "0",
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "merge_group",
+    GITHUB_REF: "refs/heads/gh-readonly-queue/master/pr-663-x",
+    GITHUB_SHA: sha,
+  };
+  const masterRefreshEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "1",
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "workflow_dispatch",
+    GITHUB_REF: "refs/heads/master",
+    GITHUB_SHA: sha,
+  };
+  const developerRefreshEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "1",
+    GITHUB_ACTIONS: undefined,
+    GITHUB_EVENT_NAME: undefined,
+    GITHUB_REF: undefined,
+    GITHUB_SHA: undefined,
+  };
+
+  const { readRenderingEnvironmentMode } = await withScreenshotEnvironment(mergeGroupEnvironment, () =>
+    import("../tests-serve/rendering-environment.js"),
+  );
   assert.equal(
-    readModeWithSource("1", "true", "workflow_dispatch", "refs/heads/master", "a".repeat(40)),
+    await withScreenshotEnvironment(mergeGroupEnvironment, () => readRenderingEnvironmentMode()),
+    "compare",
+    "the full-path identity step compares when refresh is off",
+  );
+  assert.equal(
+    await withScreenshotEnvironment(masterRefreshEnvironment, () => readRenderingEnvironmentMode()),
     "write",
     "the full-path identity step writes on an authorised runner refresh",
   );
-  assert.throws(() => readRenderingEnvironmentMode("1", undefined), /GitHub Actions/, "the rendering identity cannot be written by a developer machine");
+  await withScreenshotEnvironment(developerRefreshEnvironment, () =>
+    assert.throws(() => readRenderingEnvironmentMode(), /GitHub Actions/, "the rendering identity cannot be written by a developer machine"),
+  );
 
-  const { readRefreshScreenshots } = await import("../playwright.serve.config.js");
-  const readRefreshWithSource = readRefreshScreenshots as (...args: (string | undefined)[]) => boolean;
-  assert.equal(readRefreshScreenshots(undefined, undefined), false, "an absent refresh value compares only");
-  assert.equal(readRefreshScreenshots("0", "true"), false, "zero compares only");
+  const { readRefreshScreenshots } = await withScreenshotEnvironment(mergeGroupEnvironment, () =>
+    import("../playwright.serve.config.js"),
+  );
+  await withScreenshotEnvironment(
+    {
+      BISELLIUM_UPDATE_SCREENSHOTS: undefined,
+      GITHUB_ACTIONS: undefined,
+      GITHUB_EVENT_NAME: undefined,
+      GITHUB_REF: undefined,
+      GITHUB_SHA: undefined,
+    },
+    () => assert.equal(readRefreshScreenshots(), false, "an absent refresh value compares only"),
+  );
   assert.equal(
-    readRefreshWithSource("1", "true", "workflow_dispatch", "refs/heads/master", "a".repeat(40)),
+    await withScreenshotEnvironment(mergeGroupEnvironment, () => readRefreshScreenshots()),
+    false,
+    "zero compares only",
+  );
+  assert.equal(
+    await withScreenshotEnvironment(masterRefreshEnvironment, () => readRefreshScreenshots()),
     true,
     "one refreshes on a master GitHub Actions dispatch",
   );
-  assert.throws(() => readRefreshScreenshots("1", undefined), /GitHub Actions/, "a developer machine cannot refresh");
-  assert.throws(() => readRefreshScreenshots("true", "true"), /0 or 1/, "every other refresh value fails closed");
+  await withScreenshotEnvironment(developerRefreshEnvironment, () =>
+    assert.throws(() => readRefreshScreenshots(), /GitHub Actions/, "a developer machine cannot refresh"),
+  );
+  await withScreenshotEnvironment(
+    { ...masterRefreshEnvironment, BISELLIUM_UPDATE_SCREENSHOTS: "true" },
+    () => assert.throws(() => readRefreshScreenshots(), /0 or 1/, "every other refresh value fails closed"),
+  );
 });
 
 test("W-350-sec3: baseline artifacts prove a master workflow dispatch before the follow-up can consume them", async () => {
@@ -212,15 +301,27 @@ test("W-350-sec3: baseline artifacts prove a master workflow dispatch before the
   };
   const source = { eventName: "workflow_dispatch", ref: "refs/heads/master", sha };
 
-  const config = await import("../playwright.serve.config.js");
-  const readRefreshWithSource = config.readRefreshScreenshots as (...args: (string | undefined)[]) => boolean;
-  assert.throws(
-    () => readRefreshWithSource("1", "true", "workflow_dispatch", "refs/heads/opus/W-350", sha),
-    /refs\/heads\/master/,
-    "a non-master runner cannot generate screenshot baselines",
+  const nonMasterRefreshEnvironment: ScreenshotEnvironment = {
+    BISELLIUM_UPDATE_SCREENSHOTS: "1",
+    GITHUB_ACTIONS: "true",
+    GITHUB_EVENT_NAME: "workflow_dispatch",
+    GITHUB_REF: "refs/heads/opus/W-350",
+    GITHUB_SHA: sha,
+  };
+  const masterRefreshEnvironment: ScreenshotEnvironment = {
+    ...nonMasterRefreshEnvironment,
+    GITHUB_REF: "refs/heads/master",
+  };
+  const config = await withScreenshotEnvironment(masterRefreshEnvironment, () => import("../playwright.serve.config.js"));
+  await withScreenshotEnvironment(nonMasterRefreshEnvironment, () =>
+    assert.throws(
+      () => config.readRefreshScreenshots(),
+      /refs\/heads\/master/,
+      "a non-master runner cannot generate screenshot baselines",
+    ),
   );
   assert.equal(
-    readRefreshWithSource("1", "true", "workflow_dispatch", "refs/heads/master", sha),
+    await withScreenshotEnvironment(masterRefreshEnvironment, () => config.readRefreshScreenshots()),
     true,
     "a master workflow dispatch can generate screenshot baselines",
   );
