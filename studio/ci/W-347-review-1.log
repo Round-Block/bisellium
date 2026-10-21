@@ -1,0 +1,19 @@
+# opus: W-347
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15ca1-bc18-76a1-99ae-117c524c8de7
+# outcome: passed
+# at: 2026-10-21T04:08:12.860Z
+# tree: tree:56c754fb8af1644fa344ea06939c6586b6cb26b5
+# brief: briefs/W-347.md blob:db8b956ea8e1eac461af05c2f9227ab6dd2c34d7
+# ticket: {"opus":"W-347","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-347/studio","head":"d2497f5622ee26137f8ff7d553cf40c4cb50baf7","brief":"db8b956ea8e1eac461af05c2f9227ab6dd2c34d7","at":"2026-10-21T04:04:24.573Z"}
+
+## Findings
+1. advisory — packages/cli/src/next-ladder.test.ts:1052 brief:91 promises no resume command, but the assertion checks the unrelated `command` key; a running report could wrongly gain a `resume:` line while `W-347-b2` remained green. [severity: S4] [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/next-ladder.test.ts
+
+## Verdict
+The implementation, declared-file boundary, gate certificates, and both assertion-failing reds are sound. The incomplete assertion is advisory only.
+
+VERDICT: PASS
