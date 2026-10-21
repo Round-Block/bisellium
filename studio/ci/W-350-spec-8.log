@@ -1,0 +1,23 @@
+# opus: W-350
+# phase: spec
+# round: 8
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a15d03-4103-7770-8d5a-7201ab41667d
+# outcome: passed
+# at: 2026-10-21T08:28:38.086Z
+# tree: tree:78bf0e5d0c3cbb1dfed7924ab53721b227b9d860
+# dispatch_prompt: ci/W-350-ui-prompt-8.md
+# design_digest: sha256:485973711efc37ed07c917ba7781dab8c43657601979a1639d8274e55c863159
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":8,"actor":"ui-lead","studio":".worktrees/W-350/studio","head":"1dba3694064b870aec03913d75a05d69afd99859","brief":"a6247df7c497d0af63f4ba2f97c90df4b38474f6","at":"2026-10-21T08:28:37.609Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Revision 3 preserves the approved normal-style faces: Bricolage Grotesque 600/700, Instrument Sans 400/500 and IBM Plex Mono 400; the shared variable files support the requested weights without adding CSS faces.
+All eight route-and-viewport combinations retain font-loading and readiness checks before the absent-set skip, including desktop Inbox’s selected detail, phone Inbox’s loaded queue and Officina’s resolved Completion state.
+The Patron-approved deferral leaves no blocking UI defect in this stage: partial sets fail, while the follow-up owns reviewed baselines, rendering-identity comparison and visual-regression acceptance.
+Verdict: passed
