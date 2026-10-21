@@ -10,6 +10,7 @@ import { test } from "node:test";
 import { readFront } from "@bisellium/adapter-native";
 import { inspectUiDesignInput, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
+const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
 const readLog = (w: World, n: number): string => readFileSync(join(w.repo, specLog(n)), "utf8");
@@ -820,7 +821,7 @@ test("W-338-b1 behaviour 1: on a kind: ui opus the ui-lead's spec verdict is the
   assert.doesNotMatch(signature, /^# (?:design_digest|dispatch_prompt):/m, "the signature is no UI input");
   const reviewed = specRun(w, 2, SR, "passed", NO_FINDINGS, ["--model", SR_MODEL]);
   assert.equal(reviewed.status, 0, `the spec review on a kind: ui opus is recorded\n${reviewed.out}`);
-  assert.match(logAt(w.studio, 2), new RegExp(`^# model: ${SR_MODEL}$`, "m"), "the review records its model");
+  assert.match(logAt(w.studio, 2), new RegExp(`^# model: ${esc(SR_MODEL)}$`, "m"), "the review records its model");
 
   // a plain spec verdict is judged as on any opus: its Findings shape, and no --dispatch-prompt
   put(w.studio, "ci/prompt.md", UI_PROMPT);
@@ -947,7 +948,7 @@ test("W-338-b4 behaviour 4: after the branch, a ui-lead input recorded in the wo
   expectStep(o, "spec", "named", "a branch record amended to kind: ui orders the ui-lead");
   assert.equal(o.kv.get("role"), "ui-lead", ran("role", o));
   assert.equal(o.kv.get("round"), "3", ran("round", o));
-  assert.match(o.kv.get("command") ?? "", new RegExp(`--dispatch-prompt ci/W-900-ui-prompt-3\\.md --from <file> --studio ${wtRel.replace(/\./g, "\\.")}$`), ran("the order names the worktree", o));
+  assert.match(o.kv.get("command") ?? "", new RegExp(`--dispatch-prompt ci/W-900-ui-prompt-3\\.md --from <file> --studio ${esc(wtRel)}$`), ran("the order names the worktree", o));
 
   const input = uiInput(w, 3, w.wtStudio);
   assert.equal(input.status, 0, `the input is recorded in the worktree\n${input.out}`);
