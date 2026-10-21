@@ -1,6 +1,6 @@
 # Build review prompt, round 1 (W-274; the slot set W-241 part 1 checks)
 
-Used by `bisellium next <id> --perform --expect review` for the first round of a reviewer session: it fills the seven slots and starts Codex `gpt-5.6-sol` with the result, in the main checkout, never the opus worktree (W-316). Later rounds of the same session take `later-round.md`.
+Used by `bisellium next <id> --perform --expect review` for the first round of a reviewer session: it fills the eight slots and starts Codex `gpt-5.6-sol` with the result, in the main checkout, never the opus worktree (W-316). Later rounds of the same session take `later-round.md`.
 
 ---
 

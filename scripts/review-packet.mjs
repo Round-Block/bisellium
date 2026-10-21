@@ -32,7 +32,7 @@ const MAIN = join(CHECKOUT, "packages/cli/src/main.ts");
 const PHASES = ["spec", "build", "handoff"];
 const FLAGS = ["--phase", "--opus", "--round", "--sella", "--studio", "--repo", "--packets"];
 const MAX_BYTES = 4 * 1024 * 1024;
-const SLOTS = ["ID", "ROUND", "PREVIOUS", "PACKET", "STUDIO"];
+const SLOTS = ["ID", "ROUND", "PREVIOUS", "PACKET", "UI", "STUDIO"];
 const HANDOFF_REL = "docs/SESSION-HANDOFF.md";
 const UI_REVIEW_SHOTS = [
   [
@@ -171,11 +171,11 @@ function factOf(name, argv) {
   return [`== ${name}`, argv.join(" "), `${r.stdout}${r.stderr}`.trimEnd(), `exit ${r.status}`, ""].join("\n");
 }
 
-/** `template` with the five slots filled in one pass (a value is never re-scanned); a missing slot is a refusal. */
+/** `template` with the six slots filled in one pass (a value is never re-scanned); a missing slot is a refusal. */
 export function fillTemplate(template, values) {
   for (const slot of SLOTS)
     if (!template.includes(`<${slot}>`)) refuse(`prompts/later-round.md lacks the slot <${slot}>`);
-  return template.replace(/<(ID|ROUND|PREVIOUS|PACKET|STUDIO)>/g, (_, slot) => values[slot]);
+  return template.replace(/<(ID|ROUND|PREVIOUS|PACKET|UI|STUDIO)>/g, (_, slot) => values[slot]);
 }
 
 /** The previous packet's `subject`: a regular file, never a fallback to the full subject. */
@@ -404,6 +404,10 @@ export function buildPacket(args) {
         ROUND: String(round),
         PREVIOUS: previous.log,
         PACKET: packet,
+        UI:
+          phase === "build" && images.length > 0
+            ? `Read \`${packet}/ui.txt\`; it names the eight current desktop and phone screenshots attached to this turn, in attachment order, and states what to judge in each. Inspect every image. Include a nonblank \`## UI input disposition\` section after Findings, stating how the authoritative ui-lead input and the attached images affected the verdict.`
+            : "",
         STUDIO: promptStudio,
       }),
     );
