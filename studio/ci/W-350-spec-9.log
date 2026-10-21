@@ -1,0 +1,23 @@
+# opus: W-350
+# phase: spec
+# round: 9
+# sella: architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-21T09:32:01.393Z
+# tree: tree:4c88b57f9d870f9b59e4d448aff9bce58e307901
+# brief: briefs/W-350.md blob:ce8a7bfb34c8064059eae9974455256e15c87a46
+# ticket: {"opus":"W-350","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":".worktrees/W-350/studio","head":"34c71db57efbb9f71f46b8484538bcb6ac633566","brief":"ce8a7bfb34c8064059eae9974455256e15c87a46","at":"2026-10-21T09:32:00.918Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-350-spec/promise-ledger-r4-security.md
+
+## Findings
+
+1. advisory — the amended brief truthfully makes `refs/heads/master` the only dispatch path to checkout, dependency/cache work and artifact publication; its explicit limit is that GitHub may offer another ref, whose run fails in the checkout-free guard, and brief:94 now names W-350-b1's exact pinning assertion — check: brief:51, brief:94, brief:121, apps/web/test/w350.test.ts:143
+2. advisory — all dispatch-runnable jobs need the guard, repeat the master condition and check out immutable `${{ github.sha }}`; `certify` remains merge-group-only, so arbitrary-ref dispatch code cannot write a default-branch cache — check: apps/web/test/w350.test.ts:141, scripts/ci-scope.test.mjs:595, gates-sec-host.out
+3. advisory — the pre-fix workflow and scope guards fail on the missing boundary and both pass after `34c71db5`, preserving the existing workflow rows — check: wf-red.out, sc-red.out, gates-sec-host.out
+4. advisory — D-097's post-merge master refresh remains reachable: a true dispatch input drives both screenshot and rendering-identity writes, then uploads the SHA-named complete artifact; non-refresh and bootstrap behavior is unchanged — check: D-097 A, .github/workflows/ci.yml:31, .github/workflows/ci.yml:182, .github/workflows/ci.yml:189
+
+## Verdict
+
+passed — W-350 brief revision 4's D-095 amendment states and pins the dispatch boundary truthfully, includes its non-master-UI limit, preserves D-097's explicit refresh on `refs/heads/master`, and passes brief admission plus promise-ledger admission; signature reissued by Codex `gpt-5.6-sol` under D-094 from commits `a4c60faf` and `34c71db5` plus the recorded before/after host guards.
