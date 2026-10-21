@@ -1,10 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
+import { readBaselineWriteSource } from "./tests-serve/baseline-set.js";
 
-export function readRefreshScreenshots(value = process.env["BISELLIUM_UPDATE_SCREENSHOTS"], githubActions = process.env["GITHUB_ACTIONS"]): boolean {
-  if (value === undefined || value === "0") return false;
-  if (value !== "1") throw new Error("BISELLIUM_UPDATE_SCREENSHOTS must be absent, 0 or 1");
-  if (githubActions !== "true") throw new Error("screenshot baselines may be written only by GitHub Actions");
-  return true;
+export function readRefreshScreenshots(
+  value = process.env["BISELLIUM_UPDATE_SCREENSHOTS"],
+  githubActions = process.env["GITHUB_ACTIONS"],
+  eventName = process.env["GITHUB_EVENT_NAME"],
+  ref = process.env["GITHUB_REF"],
+  sha = process.env["GITHUB_SHA"],
+): boolean {
+  return readBaselineWriteSource(value, githubActions, eventName, ref, sha) !== undefined;
 }
 
 const refreshScreenshots = readRefreshScreenshots();
