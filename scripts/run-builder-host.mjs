@@ -44,6 +44,7 @@ import {
   browserMounts,
   builderCell,
   prepFailure,
+  producerCell,
   replayCell,
 } from "./host-cells.mjs";
 import { classifyReplay, readRedBehaviour } from "./replay-accept.mjs";
@@ -813,26 +814,18 @@ try {
       throw new Error("immutable tooling checkout failed");
     copyModules(tooling);
     for (const dir of ["home", "tmp"]) mkdirSync(join(checkRoot, dir), { mode: 0o700 });
+    const gateCell = producerCell({
+      candidate,
+      tooling,
+      root: checkRoot,
+      etc: etcFor(checkRoot),
+      nodeBin: NODE_BIN,
+      browsers: BROWSERS,
+    });
     const gate = await launch(
       "bwrap",
       sandboxArgs({
-        binds: [
-          [candidate, "/candidate"],
-          [join(checkRoot, "home"), "/home/builder"],
-          [join(checkRoot, "tmp"), "/tmp"],
-        ],
-        roBinds: [[tooling, "/tooling"], ...etcFor(checkRoot)],
-        chdir: "/candidate",
-        env: {
-          PATH: `${NODE_BIN}:/usr/local/bin:/usr/bin:/bin`,
-          HOME: "/home/builder",
-          TMPDIR: "/tmp",
-          CI: "1",
-          LANG: "C.UTF-8",
-          LC_ALL: "C.UTF-8",
-          TZ: "UTC",
-          NODE_PATH: "/tooling/node_modules",
-        },
+        ...gateCell,
         cmd: [
           NODE,
           "--import",
