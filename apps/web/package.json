@@ -8,7 +8,8 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:serve": "playwright test --config=playwright.serve.config.ts"
+    "test:serve": "playwright test --config=playwright.serve.config.ts",
+    "test:policy": "node --test-reporter=tap --import tsx test/w350.test.ts"
   },
   "dependencies": {
     "react": "^19.3.0",
