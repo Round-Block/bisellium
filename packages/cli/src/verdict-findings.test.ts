@@ -524,3 +524,60 @@ test("W-297-b1 behaviour 1: verdict refuses a build finding without a severity, 
   recorded("a spec advisory with no tag", body("advisory — brief:3 a nit"), "spec", "passed");
   recorded("a handoff finding with no tag", body("advisory — docs/SESSION-HANDOFF.md:3 a nit"), "handoff", "passed");
 });
+
+// ---------------------------------------------------------------------------
+// W-275: a spec log is written only when next's reader, parseVerdictLog, accepts it whole
+// ---------------------------------------------------------------------------
+/** A spec verdict on a fresh officina holding a one-line brief: exit code, stderr, and the written log's parse, if any. */
+function recordSpec(body: string, sella = "architect"): { exitCode: number; stderr: string; written: boolean; parse?: string } {
+  const dir = studio();
+  mkdirSync(join(dir, "briefs"));
+  writeFileSync(join(dir, "briefs", "W-300.md"), "# W-300 brief\n");
+  const input = join(dir, "input.md");
+  writeFileSync(input, body);
+  let stderr = "";
+  const old = console.error;
+  const oldLog = console.log;
+  console.error = (...args: unknown[]) => {
+    stderr += `${args.map(String).join(" ")}\n`;
+  };
+  console.log = () => {};
+  try {
+    const result = runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW });
+    const log = join(dir, "ci", "W-300-spec-1.log");
+    const written = existsSync(log);
+    const parsed = written ? parseVerdictLog(readFileSync(log, "utf8"), "W-300", "ci/W-300-spec-1.log") : undefined;
+    return { exitCode: result.exitCode, stderr, written, ...(parsed === undefined ? {} : { parse: "error" in parsed ? parsed.error : "ok" }) };
+  } finally {
+    console.error = old;
+    console.log = oldLog;
+  }
+}
+
+test("W-275-b1 behaviour 1: verdict refuses a spec log next's reader would refuse, before any write", () => {
+  const refused = (name: string, body: string, why: RegExp, sella?: string): void => {
+    const r = recordSpec(body, sella);
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.match(r.stderr, new RegExp(`^W-300: not a spec log next can read: ci/W-300-spec-1\\.log: ${why.source}`, "m"), `${name}: the reader's own refusal is printed`);
+  };
+  const OUT = /line under "## Findings" out of domain/;
+  refused("prose after No findings", "## Findings\nNo findings\nthe brief is ready to build\n", OUT);
+  refused("prose after a finding", "## Findings\n1. advisory — a note — check: none: x\nthe note in more words\n", OUT);
+  refused("a bulleted line in the section", "## Findings\n1. advisory — a note — check: none: x\n- and a bullet\n", OUT);
+  refused("CRLF line ends", "## Findings\r\nNo findings\r\n", /expected exactly one "## Findings" heading, found 0/);
+  refused("a header line in the body", "## Findings\nNo findings\n\n# outcome: failed\n", /a header line outside the header block/);
+  refused("a spec reviewer's log too", "## Findings\nNo findings\nthe brief is ready to build\n", OUT, "qa-lead");
+
+  const admitted = (name: string, body: string): void => {
+    const r = recordSpec(body);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.parse, "ok", `${name}: the written log parses`);
+  };
+  admitted("No findings alone", "## Findings\nNo findings\n");
+  admitted("prose above and after the section", "Signed after the prototype.\n\n## Findings\n\n1. advisory — a note — check: none: x\n\n## Verdict\n\npassed — the prose after the section is free\n");
+
+  // a build log is judged as on master: the rule is the spec log's
+  const build = record("## Findings\nNo findings\nprose\n");
+  assert.equal(build.exitCode, 0, `a build verdict with prose in its section is recorded as before (stderr ${JSON.stringify(build.stderr)})`);
+});

@@ -425,7 +425,8 @@ test("W-306-b1 behaviour 1: an architect spec signature cites a promise ledger c
   refused("the ledger line under Findings", `${NO}Promise ledger: ${ledger(COVERING)}\n`, MISSING);
   const trailing = NO.replace("## Findings\n", "## Findings   \n");
   refused("the ledger line under a Findings heading with trailing spaces", `${trailing}Promise ledger: ${ledger(COVERING)}\n`, MISSING);
-  admitted("a covering ledger above a Findings heading with trailing spaces", `Promise ledger: ${ledger(COVERING)}\n\n${trailing}`);
+  // W-275: the ledger reader finds this heading, but next's reader does not, so the writer refuses the log
+  refused("a covering ledger above a Findings heading with trailing spaces", `Promise ledger: ${ledger(COVERING)}\n\n${trailing}`, 'W-300: not a spec log next can read: ci/W-300-spec-1.log: expected exactly one "## Findings" heading, found 0\n');
   const two = ledger(COVERING);
   refused("two ledger lines", `Promise ledger: ${two}\nPromise ledger: ${two}\n\n${NO}`, 'W-300: promise ledger: 2 "Promise ledger:" lines above "## Findings"; one only\n');
   refused("a relative path", `Promise ledger: ledger.md\n\n${NO}`, 'W-300: promise ledger: "ledger.md" is not an absolute or ~/ path\n');

@@ -998,26 +998,34 @@ export function deriveNext(f: Facts): Derived {
     if (p.kind === "held") return hold("pr", p.reason);
     if (p.kind === "open") return { ...named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
-    if (p.kind !== "settled")
+    if (p.kind !== "settled") {
+      // W-275: the PR carries the record, so a handover older than the newest red or review log, or malformed, is refreshed first
+      const t = b["traditio"];
+      const at = t === undefined ? undefined : handoverAt(t);
+      if (at !== undefined && (typeof at === "string" || at < f.evidenceAt()))
+        return hold("pr", `stale handover: ${typeof at === "string" ? at : `traditio at ${new Date(at).toISOString()} predates the newest red or review log`}; run: bisellium handoff --opus ${id} --sella producer --next "<what moves next>" --studio ${join(".worktrees", id, f.studioRel)}, commit ${recordRel(id)} on opus/${id}, then rerun`);
       return named(
         "pr",
         "producer",
         p.kind === "open-stale" ? `PR #${p.pr.number} is OPEN but not on the local tip` : p.kind === "unrelated" ? `a MERGED PR settles nothing: ${p.reason}` : "review is met and no PR exists for the head",
-        `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <path>`,
+        `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>`,
         [],
         p.kind === "open-stale" ? p.pr : undefined,
       );
+    }
   }
 
   // 10 cleanup, 11 done
   if (f.residue) return named("cleanup", "producer", `${id} is MERGED and fetched; its local branch, worktree or remote-tracking branch remain`, `bisellium next ${id} --perform --expect cleanup`);
-  if (f.choreDone) return { ...named("done", "producer", `done committed on chore/done-${id}, not on master`, `bisellium next ${id} --perform --expect done`), act: "land" };
+  // W-275: the done perform commits on chore/done-<id>, then lands it: the rung says which of the two it is
+  const PERFORM_1: [string, string][] = [["perform 1 of 2", "commit; rerun to land"]];
+  if (f.choreDone) return { ...named("done", "producer", `done committed on chore/done-${id}, not on master`, `bisellium next ${id} --perform --expect done`, [["perform 2 of 2", "land"]]), act: "land" };
   if (!f.certified()) {
     // W-259: certify's artifact cannot vouch for a ui opus's served-e2e gate, so a ui opus (on either record, the stricter kind) is named verify, as before
     if ([recordOf(f.work, id), f.trunkRecord].some((r) => str(r?.["kind"]) === "ui")) return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded`, `bisellium verify ${id} --studio ${f.studioRel} --repo .`), act: "verify" };
-    return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded: the perform records the merge queue's certify certificate`, `bisellium next ${id} --perform --expect done`), act: "certify", ticket: { action: "done", round: 0 } };
+    return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded: the perform records the merge queue's certify certificate`, `bisellium next ${id} --perform --expect done`, PERFORM_1), act: "certify", ticket: { action: "done", round: 0 } };
   }
-  return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`), ticket: { action: "done", round: 0 } };
+  return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`, PERFORM_1), ticket: { action: "done", round: 0 } };
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
@@ -1241,20 +1249,27 @@ const packetLine = (phase: "spec" | "build", id: string, round: number | undefin
 const disputeLine = (studioRel: string): string =>
   `If the author disputes a finding with evidence, send ${studioRel}/prompts/rebuttal.md and the author's ## Rebuttal into the same session and record the reviewer's ## Ruling in the same verdict.`;
 
-/** The cap, the declaration and the handover: a dispatch order needs all three. */
+/** W-275: a traditio's time when `handoverLine` reads it whole (check's five string keys, `at` an ISO time), else why not:
+ *  the dispatch gate and the pr rung judge one shape. */
+function handoverAt(t: unknown): number | string {
+  if (t === undefined) return "the record carries no traditio";
+  const read = handoverLine(t);
+  return "error" in read ? `the record's traditio ${read.error}` : instant((t as Dict)["at"])!.getTime();
+}
+
+/** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too. */
 function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived {
   if (d.status !== "named" || d.order === undefined) return d;
-  const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [] });
+  const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [["underlying", d.why]] });
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
   if (d.order.resume) {
     // W-293: before opus/<id> exists the handover is only the main checkout's record (`handoff` writes it there, D-021): an absent
     // or unparsable one holds, never falling back to an older trunk handover
     const rec = f.tip === undefined ? recordOf(f.work, f.id) : (f.branchRecord ?? f.trunkRecord);
-    const t = rec?.["traditio"];
-    const at = isDict(t) ? (instant(t["at"])?.getTime() ?? Number.NaN) : Number.NaN;
+    const at = handoverAt(rec?.["traditio"]);
     if (f.tip === undefined && rec === undefined) return refuse(`stale handover: run bisellium handoff first (${recordRel(f.id)} cannot be read)`);
-    if (Number.isNaN(at)) return refuse("stale handover: run bisellium handoff first (the record carries no traditio)");
+    if (typeof at === "string") return refuse(`stale handover: run bisellium handoff first (${at})`);
     if (at < f.evidenceAt()) return refuse(`stale handover: run bisellium handoff first (traditio at ${new Date(at).toISOString()} predates the newest red or review log)`);
   }
   return { ...d, order: { ...d.order, budget } };

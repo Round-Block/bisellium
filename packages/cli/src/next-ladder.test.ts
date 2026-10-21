@@ -939,3 +939,100 @@ test("W-299-b3 behaviour 3: next --all prints every open opus's derived next ste
     assert.ok(o.err.includes(why), ran(`${args.join(" ")}: ${why}`, o));
   }
 });
+
+// ---------------------------------------------------------------------------
+// W-275: next tells the truth about each step
+// ---------------------------------------------------------------------------
+test("W-275-b2 behaviour 2: a dispatch the gate holds prints the derivation's own why beside the gate's", { timeout: 1_800_000 }, () => {
+  const w = world("w275-b2", "ready");
+  writeReds(w);
+  rmSync(join(w.wtStudio, "ci", "reds", OPUS, "02.log"));
+  commit(w.wt, "studio: only one red so far");
+  const MISSING = /^no usable red for behaviour\(s\) 2 /;
+  const held = (o: Out, row: string, gate: RegExp): void => {
+    expectStep(o, "reds", "held", row);
+    assert.equal(o.status, 1, ran(`${row}: exit`, o));
+    assert.match(o.kv.get("why") ?? "", gate, ran(`${row}: the gate's why`, o));
+    assert.match(o.kv.get("underlying") ?? "", MISSING, ran(`${row}: the derivation's why is printed beside it`, o));
+  };
+  const stale = next(w, [OPUS, "--budget", "100000"]);
+  held(stale, "a resume with no traditio", /^stale handover: run bisellium handoff first/);
+  held(next(w, [OPUS]), "an undeclared budget", /^dispatch budget undeclared$/);
+  held(next(w, [OPUS, "--budget", String(DISPATCH_TOKEN_CAP + 1)]), "a budget over the cap", /exceeds DISPATCH_TOKEN_CAP/);
+  handoffAt(w, "wt", T.handoffFresh);
+  const named = next(w, [OPUS, "--budget", "100000"]);
+  expectStep(named, "reds", "named", "a fresh handover names the order");
+  assert.equal(named.kv.has("underlying"), false, ran("a named order prints no underlying line", named));
+  assert.equal(stale.kv.get("underlying"), named.kv.get("why"), "the underlying why is the named order's why, word for word");
+  // r2: a fresh traditio is read whole: a non-string stage holds the order as an unreadable one does
+  editRecord(w, "wt", (doc) => doc.setIn(["traditio", "stage"], 3));
+  commit(w.wt, "studio: a traditio whose stage is no string");
+  held(next(w, [OPUS, "--budget", "100000"]), "a fresh traditio with a non-string stage", /^stale handover: run bisellium handoff first \(the record's traditio is malformed: it needs string sella, stage, next and blocked_on and an ISO at\)$/);
+});
+
+test("W-275-b3 behaviour 3: the done rung names each of its two performs", { timeout: 1_800_000 }, () => {
+  const w = world("w275-b3", "cleanup");
+  scenario(w, { list: mergedList(w) });
+  const first = next(w, [OPUS]);
+  expectStep(first, "done", "named", "the done commit is named");
+  assert.match(first.out, /^perform 1 of 2: commit; rerun to land$/m, ran("the commit is the first of two performs", first));
+  assert.doesNotMatch(first.out, /^perform 2 of 2:/m, ran("and not the second", first));
+  expectStep(next(w, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the done commit is made");
+  const second = next(w, [OPUS]);
+  expectStep(second, "done", "named", "the landing is named");
+  assert.match(second.out, /^perform 2 of 2: land$/m, ran("the landing is the second of two performs", second));
+  assert.doesNotMatch(second.out, /^perform 1 of 2:/m, ran("and not the first", second));
+  // the certify perform commits too (W-259); a ui opus is named verify, a command of its own, and no perform line
+  const a = world("w275-b3-certify", "cleanup", { automated: true });
+  scenario(a, { list: mergedList(a) });
+  const certify = next(a, [OPUS]);
+  expectStep(certify, "done", "named", "the certify perform is named");
+  assert.equal(certify.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("it is the done perform", certify));
+  assert.match(certify.out, /^perform 1 of 2: commit; rerun to land$/m, ran("the certify perform is the first of two", certify));
+  editRecord(a, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  const verify = next(a, [OPUS]);
+  expectStep(verify, "done", "named", "a ui opus with no certificate is named verify");
+  assert.equal(verify.kv.get("command"), `bisellium verify ${OPUS} --studio studio --repo .`, ran("the rung names verify", verify));
+  assert.doesNotMatch(verify.out, /^perform \d of 2:/m, ran("verify is no perform", verify));
+});
+
+test("W-275-b4 behaviour 4: before pr, a handover older than the newest review log holds with the handoff command, and the pr command names --body-file's roots", { timeout: 1_800_000 }, () => {
+  const w = world("w275-b4", "review");
+  const PR = `bisellium next ${OPUS} --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>`;
+  const plain = next(w, [OPUS]);
+  expectStep(plain, "pr", "named", "no traditio: pr is named as before");
+  assert.equal(plain.kv.get("command"), PR, ran("the command names --body-file's roots", plain));
+  handoffAt(w, "wt", T.handoffStale);
+  const held = next(w, [OPUS]);
+  expectStep(held, "pr", "held", "a traditio older than the newest review log holds pr");
+  assert.equal(held.status, 1, ran("held exit", held));
+  assert.equal(
+    held.kv.get("why"),
+    `stale handover: traditio at ${T.handoffStale} predates the newest red or review log; run: bisellium handoff --opus ${OPUS} --sella producer --next "<what moves next>" --studio .worktrees/${OPUS}/studio, commit opera/${OPUS}.md on opus/${OPUS}, then rerun`,
+    ran("the why names the handoff command", held),
+  );
+  const body = join(w.root, "body.md");
+  writeFileSync(body, "PR body\n");
+  const tried = next(w, [OPUS, "--perform", "--expect", "pr", "--title", "t", "--body-file", body, ...FAST]);
+  expectHeld(tried, "the pr perform holds too");
+  assert.deepEqual(mutating(w), [], "nothing is pushed or created");
+  const MALFORMED = `^stale handover: the record's traditio is malformed: it needs string sella, stage, next and blocked_on and an ISO at; run: bisellium handoff --opus ${OPUS} `;
+  // r2: a fresh ISO at does not carry a traditio whose other fields are not strings
+  handoffAt(w, "wt", T.review1);
+  editRecord(w, "wt", (doc) => doc.setIn(["traditio", "next"], 7));
+  commit(w.wt, "studio: a fresh traditio whose next is no string");
+  const fieldless = next(w, [OPUS]);
+  expectStep(fieldless, "pr", "held", "a fresh traditio with a non-string next holds pr");
+  assert.match(fieldless.kv.get("why") ?? "", new RegExp(MALFORMED), ran("the why names the malformed traditio and the handoff command", fieldless));
+  expectHeld(next(w, [OPUS, "--perform", "--expect", "pr", "--title", "t", "--body-file", body, ...FAST]), "the pr perform holds on it too");
+  assert.deepEqual(mutating(w), [], "still nothing is pushed or created");
+  editRecord(w, "wt", (doc) => doc.setIn(["traditio", "at"], "not a time"));
+  commit(w.wt, "studio: a traditio with no ISO at");
+  const malformed = next(w, [OPUS]);
+  expectStep(malformed, "pr", "held", "a traditio with no ISO at holds pr");
+  assert.match(malformed.kv.get("why") ?? "", new RegExp(MALFORMED), ran("the why names the handoff command", malformed));
+  handoffAt(w, "wt", T.review1);
+  const level = next(w, [OPUS]);
+  expectStep(level, "pr", "named", "a traditio at the newest review log's own time names pr again");
+  assert.equal(level.kv.get("command"), PR, ran("with the same command", level));
+});
