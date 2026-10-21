@@ -1,0 +1,20 @@
+# opus: W-340
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a15e28-aac3-7710-bad6-77bf14acc96f
+# outcome: failed
+# at: 2026-10-21T11:15:21.034Z
+# tree: tree:578060f6cbe7754b8dd172d3cf521a2d2b6b22cf
+# brief: briefs/W-340.md blob:eeefec8a54cea61a54b222497a4d60d3602f9823
+# ticket: {"opus":"W-340","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-340/studio","head":"910544cabdd6c17ebcfe3dd64db03e6097ebcd4a","brief":"eeefec8a54cea61a54b222497a4d60d3602f9823","at":"2026-10-21T11:11:23.520Z"}
+
+## Findings
+1. blocking — studio/prompts/later-round.md:9 [severity: S1] This template serves spec, build, and handoff rounds, but `buildPacket` creates `ui.txt` only for build; later spec and handoff rounds are therefore told to read a nonexistent artifact, and UI rounds to inspect unattached images, breaking brief:21. [class: review×fix-round-census-misses-reachable-paths] — check: scripts/review-packet.test.mjs
+2. advisory — packages/cli/src/next-review.test.ts:319 [severity: S3] `W-340-b2` exercises only a fresh round, while the resume row uses a non-UI opus, so the resumed UI image transport promised at brief:65 is unpinned. [class: tests×one-sided-bound-assertion] — check: packages/cli/src/next-review.test.ts
+3. advisory — studio/prompts/build-review.md:3 [severity: S4] The prompt still says it fills seven slots although `<UI>` makes the required set eight. [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/rules/prompts.test.ts
+
+## Verdict
+The shared later-round prompt breaks ordinary spec and handoff review sessions, so this round fails.
+VERDICT: FAIL
