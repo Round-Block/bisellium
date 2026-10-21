@@ -55,7 +55,7 @@ const MANIFEST = [
   "",
 ].join("\n");
 const TEMPLATE =
-  "Round <ROUND> of <ID>. Previous round: <PREVIOUS>. Packet: <PACKET>. Lessons: <STUDIO>/lessons/.\nJudge delta.diff only. Number each earlier finding <k>.\n";
+  "Round <ROUND> of <ID>. Previous round: <PREVIOUS>. Packet: <PACKET>. Lessons: <STUDIO>/lessons/.\nJudge delta.diff only. <UI> Number each earlier finding <k>.\n";
 const HANDOFF = [
   "# Handoff",
   "",
@@ -436,6 +436,40 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
     "the attachment description makes no text pixel-diff claim",
   );
 
+  const later = (fixture, phase, sella, kind) => {
+    mkdirSync(join(fixture.w.packets, "r1"));
+    if (phase !== "build")
+      writeFileSync(
+        join(fixture.w.packets, "r1/subject"),
+        phase === "spec" ? readFileSync(join(fixture.w.studio, "briefs/W-1.md"), "utf8") : HANDOFF,
+      );
+    fixture.w.put(fixture.w.studio, `ci/W-1-${kind}-1.log`, sessioned("W-1", kind, 1, sella, `W-340-${phase}`, phase));
+    if (phase === "build") {
+      fixture.w.git("add", "-A");
+      fixture.w.git("commit", "-q", "-m", `W-340 ${phase} predecessor`);
+    }
+    return buildPacket({
+      phase,
+      opus: "W-1",
+      round: 2,
+      sella,
+      studio: fixture.w.studio,
+      repo: fixture.w.repo,
+      packets: fixture.w.packets,
+    }).files.get("prompt.md");
+  };
+  const uiMaterial = /<UI>|ui\.txt|UI input disposition|desktop and phone screenshots/i;
+  const uiSpec = later(makeUi("later-spec"), "spec", "spec-reviewer", "spec");
+  assert.doesNotMatch(uiSpec, uiMaterial, "a later spec round of a UI opus carries no UI material");
+  const uiHandoff = later(makeUi("later-handoff"), "handoff", "qa-lead", "handoff");
+  assert.doesNotMatch(uiHandoff, uiMaterial, "a later handoff round of a UI opus carries no UI material");
+  const nonUiBuild = later({ w: world() }, "build", "qa-lead", "review");
+  assert.doesNotMatch(nonUiBuild, uiMaterial, "a later build round of a non-UI opus carries no UI material");
+  const uiBuild = later(makeUi("later-build"), "build", "qa-lead", "review");
+  assert.match(uiBuild, /ui\.txt/, "a later build round of a UI opus names its attached UI material");
+  assert.match(uiBuild, /## UI input disposition/, "a later build round of a UI opus requires its UI disposition");
+  assert.doesNotMatch(uiBuild, /<UI>/, "a later build round fills the UI slot");
+
   const nonUi = world();
   const ordinary = packet(nonUi);
   assert.equal(ordinary.status, 0, `a declared native non-UI kind builds: ${ordinary.err}`);
@@ -468,6 +502,11 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
   const walk = readFileSync(join(HERE, "../apps/web/tests-serve/walk.spec.ts"), "utf8");
   assert.match(walk, /for \(const width of \[1280, 390\] as const\)/, "the served walk captures desktop then phone");
   for (const [name] of matrix) assert.ok(walk.includes(name), `${name}: the served walk pins the review filename`);
+  assert.match(
+    readFileSync(join(REPO_ROOT, "studio/prompts/build-review.md"), "utf8"),
+    /fills the eight slots/,
+    "the first-round prompt states its eight-slot contract",
+  );
 
   const missing = makeUi("missing");
   rmSync(join(missing.dir, "inbox-390.png"));
@@ -671,7 +710,7 @@ test("W-314-b2 behaviour 2: a build round's delta carries the officina's change 
 test("W-315-b2 behaviour 2: a hand-run later-round packet for a linked worktree's studio reads later-round.md from the main work tree and fills <STUDIO> with it", () => {
   assert.ok(existsSync(SCRIPT), "scripts/review-packet.mjs exists");
   const w = world();
-  const main = "Round <ROUND> of <ID>. Previous round: <PREVIOUS>. Packet: <PACKET>. Lessons: <STUDIO>/lessons/.\n";
+  const main = "Round <ROUND> of <ID>. Previous round: <PREVIOUS>. Packet: <PACKET>. Lessons: <STUDIO>/lessons/.<UI>\n";
   w.put(w.studio, "prompts/later-round.md", main);
   w.git("add", "-A");
   w.git("commit", "-q", "-m", "the main checkout's template");
