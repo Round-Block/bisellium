@@ -245,7 +245,6 @@ export function cand(w: World, o: CandOpts): Json {
 export function viewOf(c: Json): Json {
   const out: Json = {};
   for (const key of ["number", "state", "mergeStateStatus", "headRefName", "headRefOid", "baseRefName", "mergeCommit"]) if (key in c) out[key] = c[key];
-  out["isInMergeQueue"] = typeof c["isInMergeQueue"] === "boolean" ? c["isInMergeQueue"] : true;
   return out;
 }
 export const greens = (n = 6): Json[] => Array.from({ length: n }, (_, i) => ({ ...CHECKS[i % CHECKS.length]!, name: `${CHECKS[i % CHECKS.length]!.name} ${i}` }));
@@ -269,7 +268,7 @@ export interface Rule {
   replies: Reply[];
   alts?: Alt[];
 }
-export type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "alerts" | "update" | "merge" | "create" | "runList" | "runView" | "runDownload";
+export type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "queue" | "alerts" | "update" | "merge" | "create" | "runList" | "runView" | "runDownload";
 export const SLOT_MATCH: Record<SlotName, string[]> = {
   repoView: ["repo", "view"],
   list: ["pr", "list"],
@@ -277,6 +276,7 @@ export const SLOT_MATCH: Record<SlotName, string[]> = {
   checks: ["pr", "checks"],
   // W-168: master's active rules. Ahead of `alerts`, whose ["api"] matches every `gh api` call.
   rules: ["api", `repos/${SLUG}/rules/branches/master?per_page=100`],
+  queue: ["api", "graphql"],
   alerts: ["api"],
   update: ["pr", "update-branch"],
   merge: ["pr", "merge"],
@@ -606,6 +606,7 @@ export function scenario(w: World, over: Partial<Record<SlotName, SlotValue>>): 
     view: { stdout: viewOf(CAND) },
     checks: { stdout: greens() },
     rules: { stdout: [] },
+    queue: { stdout: { data: { repository: { pullRequest: { isInMergeQueue: true } } } } },
     alerts: { stdout: [] },
     update: { stdout: "" },
     merge: { stdout: "" },
