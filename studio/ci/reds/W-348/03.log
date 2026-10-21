@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-348-b3\s --import tsx packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-21T06:28:50.719Z
+# sella: architect
+# tree: tree:4e2440adb5fd51697880659966fa42db8b2cd3aa
+# ticket: {"opus":"W-348","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-348/studio","head":"aa3960d7a187237248172f7fd89f9934842780a5","brief":"599cd4d4f8efa2d12d8e857c507a88d2bbfc95cf","at":"2026-10-21T06:28:50.688Z"}
+
+TAP version 13
+# Subtest: W-348-b3 behaviour 3: on a kind ui opus the configured UI signer alone owes the promise ledger, while the design magister and reviewer do not
+not ok 1 - W-348-b3 behaviour 3: on a kind ui opus the configured UI signer alone owes the promise ledger, while the design magister and reviewer do not
+  ---
+  duration_ms: 19.203841
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-348/packages/cli/src/verdict-citation.test.ts:23:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    the UI signer without a ledger is refused: 
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-348/packages/cli/src/verdict-citation.test.ts:342:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 148.076341
