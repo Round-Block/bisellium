@@ -559,6 +559,11 @@ const PINNED_B: PinnedB[] = [
     why: "W-124: same guarded opus as recordRel#1; read-only (git pathspec or readContainedRegularFile), never a write",
   },
   {
+    key: "packages/cli/src/next.ts:readFixCheck#1",
+    disposition: "guarded",
+    why: "W-309: same guarded opus as recordRel#1; read-only, through readContainedRegularFile under <repo>/.bisellium (reviews/), never a write",
+  },
+  {
     key: "packages/cli/src/next.ts:dispatch#1",
     disposition: "guarded",
     why: "W-338: same guarded opus as recordRel#1; the ui-lead's prompt name is only printed in the order, never read or written by next",

@@ -926,7 +926,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "certify" | "commit-opus" | "land" | "replay";
+  act?: "verify" | "certify" | "commit-opus" | "land" | "replay" | "fix-check";
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
@@ -1104,16 +1104,29 @@ export function deriveNext(f: Facts): Derived {
     // W-297 (D-085 C): a class loop goes to the architect to state the limit, not back to a builder
     const loop = failedNow ? classLoop(f, read.rounds) : undefined;
     if (loop !== undefined) return hold("build", loop);
+    // W-309 (D-072 C, D-086 D): after a failed round's fix commits, its fix check at this tree comes before the suite and the
+    // re-review: none recorded at this tree is the review rung's fix-check perform; an open path goes back to the builder
+    const fixRound = gate !== undefined && gate.status === "failed" && gate.tree !== cur ? gate.round : undefined;
+    const fixCheck = fixRound === undefined ? undefined : readFixCheck(f, fixRound, cur);
+    if (fixRound !== undefined && fixCheck === undefined)
+      return { ...named("review", "producer", `review round ${fixRound} failed at an older tree and no fix check of its findings is recorded at this tree (D-086 D)`, `bisellium next ${id} --perform --expect review`, [["fix-check", `round ${fixRound} at ${cur}`]]), act: "fix-check" };
+    if (fixRound !== undefined && fixCheck !== undefined && fixCheck.open.length > 0)
+      return dispatch(f, "build", `the fix check of review round ${fixRound} lists ${fixCheck.open.length} open path(s) at this tree`, {
+        phase: "fix",
+        resume: true,
+        inputs: [briefRel(id), ...(gate?.evidence === undefined ? [] : [gate.evidence]), fixCheck.census],
+        extra: [["open", fixCheck.open.join(" | ")], ...fixes],
+      });
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
     // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
-    if (gates !== undefined && !gates.ok && !failedNow && fixes.length === 0 && replayed(f, bs, n))
+    if (gates !== undefined && !gates.ok && !failedNow && (fixCheck !== undefined || (fixes.length === 0 && replayed(f, bs, n))))
       return named(
         "build",
         "producer",
         gates.error,
         `from .worktrees/${id}: bisellium handoff --opus ${id} --sella producer --next "ready for review" --studio ${f.studioRel}, committed (studio only); then bisellium ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, in the background); then commit the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
-        [["replayed", `every red of ${id} was recorded by the prototype replay`]],
+        fixCheck !== undefined ? [["fix-check", `no open path at this tree (${fixCheck.census})`]] : [["replayed", `every red of ${id} was recorded by the prototype replay`]],
       );
     if ((gates !== undefined && !gates.ok) || failedNow)
       return dispatch(f, "build", failedNow ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
@@ -1331,6 +1344,24 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
   return { status: g["status"], evidence, tree: round.tree, round: round.n, brief: round.brief };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
+/**
+ * W-309: the fix check of round `n` at tree `cur`, `<repo>/.bisellium/reviews/<id>/fix-<n>/check.json` as the perform writes it.
+ * A file that cannot be read through the containment reader or parsed, or that names another round or tree, or whose `open`
+ * is not a list of strings, reads as none recorded: the check is ordered again, never read as clean.
+ */
+function readFixCheck(f: Facts, n: number, cur: string): { open: string[]; census: string } | undefined {
+  const dir = `reviews/${f.id}/fix-${n}`;
+  const file = readContainedRegularFile(join(f.repo, ".bisellium"), `${dir}/check.json`, "reviews");
+  if ("error" in file) return undefined;
+  let v: unknown;
+  try {
+    v = JSON.parse(file.bytes.toString("utf8"));
+  } catch {
+    return undefined;
+  }
+  if (!isDict(v) || v["round"] !== n || v["tree"] !== cur || !Array.isArray(v["open"]) || !v["open"].every((l) => typeof l === "string")) return undefined;
+  return { open: v["open"] as string[], census: `.bisellium/${dir}/census.md` };
+}
 
 // ---------------------------------------------------------------------------
 // dispatch orders and the context cap
@@ -1394,7 +1425,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else if (step === "build") {
     role = "builder";
     sella = builder;
-    command = `dispatch ${sella} (phase ${o.phase === "fix" ? "fix" : "2"}) through the host seam: bisellium run --sella builder --opus ${id} --studio ${studioRel} -- <builder command…>`;
+    command = `dispatch ${sella} (phase ${o.phase === "fix" ? "fix" : "2"}) through the host seam: bisellium run --sella builder --opus ${id} --studio ${studioRel} -- <builder command…>${o.phase === "fix" ? "; the fix round stops after its fix commits, with no handoff and no ci --opus: next orders the fix check first (D-086 D)" : ""}`;
   } else {
     role = "censor";
     sella = censor;
