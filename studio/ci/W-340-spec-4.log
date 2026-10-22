@@ -1,0 +1,22 @@
+# opus: W-340
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a15e08-586f-7b71-b305-4fbae40dfbbe
+# outcome: failed
+# at: 2026-10-21T11:00:04.259Z
+# tree: tree:91515f4c04d2575db65063f9d9fea1e509b42da6
+# brief: briefs/W-340.md blob:eeefec8a54cea61a54b222497a4d60d3602f9823
+# ticket: {"opus":"W-340","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"cac07abaf57e25edda6ff6ebf1355ff52a8bb305","brief":"eeefec8a54cea61a54b222497a4d60d3602f9823","at":"2026-10-21T11:00:03.721Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-340-spec/mbox-check.out:1 The retained apply-check predates the revised `prototype.mbox` and reports the old tree `199375f…`; the round-3 rebuild changed the prototype, so brief:116’s fresh-clone exact-tree claim lacks current evidence. [severity: S1] [design: keeps] [class: review×evidence-backfilled-or-absent] — check: /home/edckt/.bisellium-evidence/W-340-spec/mbox-check.sh
+2. advisory — studio/briefs/W-340.md:98 `assert.match` and `assert.ok` reject mismatched readable source, but an unreadable fixture fails earlier through `readFileSync`, so the named rejector is inaccurate. State that `readFileSync` plus the Node test runner rejects unreadable input and the assertions reject unmatched content. [severity: S4] [class: spec×input-without-named-rejector] — check: scripts/review-packet.test.mjs
+
+## Earlier findings
+- ci/W-340-spec-2.log #1: closed — scripts/review-packet.mjs:139 now requires `isNativeOpusKind` before selection, and W-340-b1 covers native non-UI plus absent, unknown, non-string and malformed kinds without creating a partial packet.
+
+## Verdict
+The design-changing earlier blocker is closed, but the rebuilt prototype lacks its required current fresh-clone application evidence.
+VERDICT: FAIL

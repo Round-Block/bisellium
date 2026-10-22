@@ -61,7 +61,7 @@ const DIGEST = /^sha256:[0-9a-f]{64}$/;
 /** The reserved gate id (and its command, below): `verify` scopes the gate's environment by it (W-110). */
 export const SERVED_E2E_PROBATIO = "served-e2e";
 // W-110 screenshot-manifest bounds. validateServed runs inside every checkStudio, so every read it makes is capped.
-const SHOT_MIN_WIDTH = 800;
+const SHOT_MIN_WIDTH = 390;
 const SHOT_MIN_HEIGHT = 600;
 const SHOT_MAX_ENTRIES = 64;
 const SHOT_MAX_BYTES = 4 * 1024 * 1024;
@@ -737,22 +737,31 @@ function refusalTail(failure: { error: string; code?: string }): string {
  * re-read from disk (the manifest's own numbers are never trusted). A fail-fast clause ladder: each of steps 1-3
  * stops the whole clause at its first problem; step 4 visits every entry and each contributes at most one problem.
  */
-function shotManifestProblems(root: string, id: string): string[] {
-  if (id.length > SHOT_OPUS_ID_MAX) return [`served-e2e screenshot manifest needs an opus id of at most ${SHOT_OPUS_ID_MAX} characters`];
+export interface ServedShot {
+  name: string;
+  width: number;
+  height: number;
+  bytes: Buffer;
+}
+
+/** The served screenshot evidence, in filename order, through the same bounded containment reads `check` uses. */
+export function readServedShots(root: string, id: string): { shots: ServedShot[] } | { problems: string[] } {
+  if (id.length > SHOT_OPUS_ID_MAX) return { problems: [`served-e2e screenshot manifest needs an opus id of at most ${SHOT_OPUS_ID_MAX} characters`] };
   const dir = `ci/shots/${id}`;
   const manifest = readContainedRegularFile(root, `${dir}/manifest.txt`, "ci", MANIFEST_MAX_BYTES);
   if ("error" in manifest)
-    return [manifest.code === "ENOENT" ? "served-e2e evidence carries no screenshot manifest" : `served-e2e screenshot manifest is unsafe or unreadable: ${refusalTail(manifest)}`];
+    return { problems: [manifest.code === "ENOENT" ? "served-e2e evidence carries no screenshot manifest" : `served-e2e screenshot manifest is unsafe or unreadable: ${refusalTail(manifest)}`] };
   const text = manifest.bytes.toString("utf8");
   const header = /^shots: (\d{1,15}) (ci\/shots\/[A-Za-z0-9][A-Za-z0-9._-]{0,21})$/m.exec(text);
-  if (!header) return ["served-e2e screenshot manifest has no header"];
-  if (header[2] !== dir) return ["served-e2e screenshot manifest names another opus's directory"];
+  if (!header) return { problems: ["served-e2e screenshot manifest has no header"] };
+  if (header[2] !== dir) return { problems: ["served-e2e screenshot manifest names another opus's directory"] };
   const entries = [...text.matchAll(/^shot: ([a-z][a-z0-9-]{0,21}\.png) (\d{1,15})x(\d{1,15}) (\d{1,15})$/gm)];
-  if ((text.match(/^shot: /gm) ?? []).length !== entries.length) return ["served-e2e screenshot manifest has a malformed entry"];
-  if (entries.length === 0 || entries.length !== Number(header[1])) return ["served-e2e screenshot manifest count disagrees with its entries"];
-  if (entries.length > SHOT_MAX_ENTRIES) return [`served-e2e screenshot manifest declares more than ${SHOT_MAX_ENTRIES} screenshots`];
-  if (new Set(entries.map((entry) => entry[1])).size !== entries.length) return ["served-e2e screenshot manifest repeats a file name"];
+  if ((text.match(/^shot: /gm) ?? []).length !== entries.length) return { problems: ["served-e2e screenshot manifest has a malformed entry"] };
+  if (entries.length === 0 || entries.length !== Number(header[1])) return { problems: ["served-e2e screenshot manifest count disagrees with its entries"] };
+  if (entries.length > SHOT_MAX_ENTRIES) return { problems: [`served-e2e screenshot manifest declares more than ${SHOT_MAX_ENTRIES} screenshots`] };
+  if (new Set(entries.map((entry) => entry[1])).size !== entries.length) return { problems: ["served-e2e screenshot manifest repeats a file name"] };
   const problems: string[] = [];
+  const shots: ServedShot[] = [];
   for (const entry of [...entries].sort((a, b) => (a[1]! < b[1]! ? -1 : 1))) {
     const name = entry[1]!;
     const shot = readContainedRegularFile(root, `${dir}/${name}`, "ci", SHOT_MAX_BYTES);
@@ -766,8 +775,14 @@ function shotManifestProblems(root: string, id: string): string[] {
       problems.push(`served-e2e screenshot ${name} does not match its recorded size`);
     else if (bytes.readUInt32BE(16) < SHOT_MIN_WIDTH || bytes.readUInt32BE(20) < SHOT_MIN_HEIGHT)
       problems.push(`served-e2e screenshot ${name} is smaller than ${SHOT_MIN_WIDTH}x${SHOT_MIN_HEIGHT}`);
+    else shots.push({ name, width: Number(entry[2]), height: Number(entry[3]), bytes });
   }
-  return problems;
+  return problems.length > 0 ? { problems } : { shots };
+}
+
+function shotManifestProblems(root: string, id: string): string[] {
+  const read = readServedShots(root, id);
+  return "problems" in read ? read.problems : [];
 }
 
 function reviewIdentity(

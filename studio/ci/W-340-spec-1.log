@@ -1,0 +1,28 @@
+# opus: W-340
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-5.6-sol
+# session: 01a15db3-283e-73d2-96e2-7d95da01d823
+# outcome: passed
+# at: 2026-10-21T10:35:59.463Z
+# tree: tree:91515f4c04d2575db65063f9d9fea1e509b42da6
+# brief: briefs/W-340.md blob:a1feadaf0c9e8d4c0fac0108d9206f93ac06fcaf
+# ticket: {"opus":"W-340","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"cac07abaf57e25edda6ff6ebf1355ff52a8bb305","brief":"a1feadaf0c9e8d4c0fac0108d9206f93ac06fcaf","at":"2026-10-21T10:35:54.413Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-340-spec/promise-ledger-r2.md
+
+## Findings
+
+1. advisory — the producer's blind probe copied one served PNG into an empty directory, attached it to Codex Sol under a read-only sandbox and scored 11/11 visible strings; the recorded answer and session establish that this review seat reads images, and the probe remains a live acceptance step that must print `RESULT: reads images` — check: brief:17, brief:63, brief:71, probe-images-blind.sh, probe-blind-answer.txt, probe-blind-session.log
+2. advisory — revision 2 drops the base pixel-diff fallback and admits exactly eight current served files: four named screens at 1280×900 followed by the same four at 390×900; each is bounded to 4 MiB and the prompt names a screen-specific judgment — check: brief:19, brief:21, brief:23, brief:47, brief:51, scripts/review-packet.mjs:37
+3. advisory — W-340-b1 pins reverse-manifest normalization into the fixed attachment order, the eight prompt descriptions, no pixel-diff claim, exact served-walk names and fail-closed missing/directory/symlink/over-size/traversal/incomplete cases — check: brief:97, brief:99, scripts/review-packet.test.mjs:344
+4. advisory — W-340-b2 asks next to mint the round-2 spec ticket, declares the live ui-lead route, uses W-348's admitted both-pairing-keys-absent form and supplies the admitted transcript grammar before the unchanged performer assertion; the shared non-UI fixture declares native kind `opus`, so its prompt expectation now names `opus` rather than the nonexistent fixture kind `feature` — check: brief:57, brief:101, brief:103, packages/cli/src/next-world.test.ts:392, packages/cli/src/next-review.test.ts:216, packages/cli/src/next-review.test.ts:323
+5. advisory — named flips are W-110 behaviours 3 and 7, W-274-b1, W-314-b1 and W-241-b1; the census's W-274-b2, W-292-b1, W-315-b1, W-316-b1, W-316-b2 and W-241-b2 are explicitly named kept-green fixture edits, and their prior finished-prototype census rows all pass — check: brief:108, fixture-census.md, census-rows-proto-review.tap, census-rows-proto-prompts.tap
+6. advisory — typecheck, lint, formatting, prompt tests and both UI-shot rows pass; studio and sample checks have zero blockers, admission and round-2 ledger/signature validation pass, and the four non-numbered-subject patches reapply with identical prototype/applied tree 199375f00eecc596f731c3e273fb63b8eb5073a7 — check: brief:110, brief:111, admission-r2.out, ledger-check-r2.out, signature-check-r2.out, check-studio-scratch-r2.out, check-sample-scratch-r2.out, mbox-check.out
+7. advisory — the producer's pre-census-fix revision-3 replay proved both assertion reds and every cumulative green (`red1=1 stage1=0 b1_on_red2=0 red2=1 b1_proto=0 b2_proto=0`); the kept-green expectation changes row 2's commit, and Node receives EPERM spawning Git here, so current `reds-host.sh` must rerun the exact matrix plus both complete files on the rebuilt prototype before signature — check: brief:76, brief:107, brief:112, reds-host-r3.out, reds-host.sh
+8. advisory — the Patron-owned changes remain limited to `studio/prompts/build-review.md`, `studio/prompts/later-round.md` and `docs/ADOPTION.md`; the new diagnostic helper is test code, and no other listed code-owned path changes — check: brief:35, brief:37, brief:38, brief:113
+
+## Verdict
+
+passed — signature revision 2 reissued by Codex `gpt-5.6-sol` under D-094 for `studio/briefs/W-340.md`; direct bounded image attachment design, two behaviours, 5 points, with the rebuilt producer-host red replay and blind-probe acceptance required before recording.

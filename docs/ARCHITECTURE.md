@@ -208,6 +208,9 @@ tree its brief names.
 The lifecycle review edge is now guarded by that receipt. Both pass and fail
 call the same read-only admission seam before evidence parsing or mutation;
 there is still one independent censor and no automatic review transition.
+For a UI opus, the build-review packet admits a fixed bounded matrix of
+desktop and phone served screenshots, and the Codex harness attaches those
+exact files in named order; packet construction is the fail-closed visual-evidence seam.
 
 ## 4. Console read path
 
