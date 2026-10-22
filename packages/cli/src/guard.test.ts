@@ -212,3 +212,65 @@ test("W-310-b2 behaviour 2: the guard refuses a background while/until loop with
   for (const c of allowed) assert.equal((await guard(bash(c, {}, true))).code, 0, `allowed: ${c}`);
   assert.equal((await guard(bash(refused[0]!))).code, 0, "a foreground loop is not judged");
 });
+
+/** A checkout (a `.git` directory) under tmp, with a linked worktree, a symlink into packages/ and a directory outside it. */
+function checkout(): string {
+  const t = tmp();
+  const root = join(t, "repo");
+  for (const d of [".git", "packages/cli/src", "studio/decisions", "studio/briefs", "docs", ".worktrees/W-1"]) mkdirSync(join(root, d), { recursive: true });
+  writeFileSync(join(root, ".git/HEAD"), "ref: refs/heads/master\n");
+  writeFileSync(join(root, ".worktrees/W-1/.git"), "gitdir: ../../.git/worktrees/W-1\n");
+  mkdirSync(join(root, "packages/.git"));
+  symlinkSync(join(root, "packages"), join(root, "studio", "evil"));
+  mkdirSync(join(t, "outside"));
+  symlinkSync(join(root, "packages"), join(t, "outside", "link"));
+  mkdirSync(join(t, "plain"));
+  return root;
+}
+const write = (file_path: string, extra: Record<string, unknown> = {}, tool = "Write", cwd = "/tmp") => ({
+  hook_event_name: "PreToolUse",
+  tool_name: tool,
+  tool_input: tool === "NotebookEdit" ? { notebook_path: file_path } : { file_path, content: "x" },
+  cwd,
+  ...extra,
+});
+const CLERK = { agent_id: "c1", agent_type: "clerk" };
+const BUILDER = { agent_id: "b1", agent_type: "builder" };
+
+test("W-310-b3 behaviour 3: the guard refuses the main thread's source and test writes, and anyone but a clerk's decision and handoff writes", async () => {
+  const root = checkout();
+  const t = dirname(root);
+  const source = [
+    join(root, "packages/cli/src/x.ts"),
+    join(root, "packages/cli/src/x.test.ts"),
+    join(root, "scripts/a.sh"),
+    join(root, "package.json"),
+    join(root, "packages/my dir/x.ts"),
+    join(root, "packages/it's.ts"),
+    join(root, "packages/ünï/x.ts"),
+    join(root, "studio/evil/x.ts"),
+    join(t, "outside/link/x.ts"),
+    `${root}/studio/../packages/x.ts`,
+    join(root, ".worktrees/W-1/packages/x.ts"),
+  ];
+  for (const p of source) {
+    const r = await guard(write(p));
+    assert.equal(r.code, 2, `main thread refused: ${p}`);
+    assert.match(r.err, /does not write source or tests/, p);
+  }
+  assert.equal((await guard(write(source[0]!, {}, "Edit"))).code, 2, "Edit");
+  assert.equal((await guard(write(join(root, "apps/x.ipynb"), {}, "NotebookEdit"))).code, 2, "NotebookEdit");
+  assert.equal((await guard(write("packages/x.ts", {}, "Write", root))).code, 2, "a relative path against the input's cwd");
+  const clerkOnly = [join(root, "studio/decisions/D-999.md"), join(root, "docs/SESSION-HANDOFF.md"), join(root, ".worktrees/W-1/studio/decisions/D-1.md")];
+  for (const p of clerkOnly) {
+    for (const who of [{}, BUILDER, { agent_type: "clerk" }]) {
+      const r = await guard(write(p, who));
+      assert.equal(r.code, 2, `refused for ${JSON.stringify(who)}: ${p}`);
+      assert.match(r.err, /written only by a dispatched clerk subagent/, p);
+    }
+    assert.equal((await guard(write(p, CLERK))).code, 0, `a clerk writes ${p}`);
+  }
+  for (const p of [join(root, "studio/briefs/W-1.md"), join(root, "docs/ADOPTION.md"), join(t, "plain/x.ts")])
+    assert.equal((await guard(write(p))).code, 0, `main thread allowed: ${p}`);
+  for (const p of source.slice(0, 3)) assert.equal((await guard(write(p, BUILDER))).code, 0, `a builder writes ${p}`);
+});
