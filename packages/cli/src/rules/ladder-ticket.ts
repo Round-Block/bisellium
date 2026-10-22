@@ -7,6 +7,13 @@
  * (`ci/*.log`, `# phase: spec` or `build`) and a red log (`ci/reds/<id>/*.log`). The officina check runs in the merge
  * queue's required `officina` job, so a write `next` never ticketed does not reach master (W-233's wall, judged from the
  * tree, not the diff). A malformed `step_tickets` blocks, as next holds on it. Reads the checked tree only; never throws.
+ *
+ * W-358 (W-268 part 2): `ladder.ticket` also judges every record's `tickets:` entries, whatever the record's state (an
+ * entry exists only since the switch, so there is no history to spare): each is a step ticket line naming the record's
+ * opus, the action `ready`, `review` or `done`, round 0 for `ready` and `done`, and for `review` the round of a build
+ * verdict log `ci/<opus>-review-<n>.log` of that opus. `ladder.order` (W-233) judges the record sequences: a judged
+ * verdict log's round follows its `# at:` within its opus and phase (W-183's late verdict), and a record's entries are in
+ * time order.
  */
 import { readdirSync } from "node:fs";
 import { basename, join } from "node:path";
@@ -45,6 +52,26 @@ const one = (h: Map<string, string[]>, k: string): string | undefined => (h.get(
 const exact = (v: string | undefined): number | undefined => (v !== undefined && utcTimestampProblem(v) === undefined ? instant(v)?.getTime() : undefined);
 const count = (v: string | undefined): number | undefined => (v !== undefined && /^(0|[1-9][0-9]{0,8})$/.test(v) ? Number(v) : undefined);
 
+const ENTRY_ACTIONS = new Set(["ready", "review", "done"]);
+/** W-358: one record's `tickets:` entries, each judged alone (`ladder.ticket`); one finding per entry, the first reason found. */
+function entryFindings(where: string, id: string, value: unknown, logs: Covered[]): Finding[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) return [{ rule: "ladder.ticket", level: "block", where, message: `${id}'s tickets: is not a list of step ticket lines` }];
+  const findings: Finding[] = [];
+  const entry = (n: number, why: string): void => void findings.push({ rule: "ladder.ticket", level: "block", where, message: `${id}'s tickets: entry ${n} ${why}` });
+  value.forEach((v: unknown, i) => {
+    const t = typeof v === "string" ? parseTicketLine(v) : { error: "not a string" };
+    if ("error" in t) entry(i + 1, `is not a step ticket line (${t.error})`);
+    else if (t.opus !== id) entry(i + 1, `names ${t.opus}, want ${id}`);
+    else if (!ENTRY_ACTIONS.has(t.action)) entry(i + 1, `is a ${t.action} ticket; a record's tickets: holds only ready, review and done`);
+    else if (t.action !== "review" && t.round !== 0) entry(i + 1, `(${t.action}) names round ${t.round}, want round 0`);
+    // the named log's own unique # opus:, # phase: and # round: headers must say this opus, build and this round (spec round 2)
+    else if (t.action === "review" && !logs.some((l) => l.where === `ci/${id}-review-${t.round}.log` && l.opus === id && l.action === "verdict-build" && l.round === t.round))
+      entry(i + 1, `(review) names round ${t.round}, but ci/${id}-review-${t.round}.log is not ${id}'s build verdict log for round ${t.round}`);
+  });
+  return findings;
+}
+
 interface Covered { where: string; opus: string; action: "verdict-spec" | "verdict-build" | "red"; round?: number; at?: number; atText?: string; tickets: string[]; ticket?: StepTicket; issued?: number }
 
 export function checkLadderTicket(root: string, opts: RuleOpts): Finding[] {
@@ -78,22 +105,24 @@ export function checkLadderTicket(root: string, opts: RuleOpts): Finding[] {
   // line it carries, so every log carrying one is at or after it (W-268 r3); a log before it with none predates the switch
   // no candidate time exact (every ticket line noncanonical, every carrying log's # at: inexact): Math.min of nothing is
   // +Infinity, so no exact-time log is at or after it and only logs with an inexact # at: are judged (spec round 4's S2)
-  const ticketed = logs.filter((l) => l.tickets.length > 0);
-  if (ticketed.length === 0) return [];
-  const first = Math.min(...ticketed.flatMap((l) => [l.at, ...l.tickets.map((s) => parseTicketLine(s)).map((t) => ("error" in t ? undefined : exact(t.at)))]).filter((n): n is number => n !== undefined));
-  const open = new Set<string>();
+  // the records, read once: every record's tickets: entries are judged (W-358), the open ones' logs below (W-268)
+  const records = new Map<string, { d: Dict; where: string }>();
   for (const path of names(() => listMd(join(root, "opera")))) {
     const id = basename(path, ".md");
     const text = read(root, `opera/${basename(path)}`, "opera");
     try {
       const d = text === undefined ? undefined : parseFrontMatter<unknown>(text, id).data;
-      if (isDict(d) && OPEN.has(String(d["state"]))) open.add(id);
+      if (isDict(d)) records.set(id, { d, where: `opera/${basename(path)}` });
     } catch {
       /* an unparseable record is the record rules' */
     }
   }
+  const findings: Finding[] = [...records].flatMap(([id, r]) => entryFindings(r.where, id, r.d["tickets"], logs));
+  const ticketed = logs.filter((l) => l.tickets.length > 0);
+  if (ticketed.length === 0) return findings;
+  const first = Math.min(...ticketed.flatMap((l) => [l.at, ...l.tickets.map((s) => parseTicketLine(s)).map((t) => ("error" in t ? undefined : exact(t.at)))]).filter((n): n is number => n !== undefined));
+  const open = new Set([...records].filter(([, r]) => OPEN.has(String(r.d["state"]))).map(([id]) => id));
   const covered = logs.filter((l) => open.has(l.opus) && (l.at === undefined || l.at >= first));
-  const findings: Finding[] = [];
   const previous = new Map<string, Covered>();
   for (const l of [...covered].sort((a, b) => (a.at ?? 0) - (b.at ?? 0) || (a.where < b.where ? -1 : 1))) {
     const want = `${l.opus} ${l.action} round ${l.round ?? "none"}`;
