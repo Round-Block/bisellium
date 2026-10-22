@@ -5,6 +5,7 @@ import { formatPosture } from "../lib/posture.js";
 import { healthStamp, integritySummary } from "../lib/officinaTruth.js";
 import { FastiStrip } from "../components/FastiStrip.js";
 import type { ActaEntry } from "../lib/fasti.js";
+import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 
 function fmt(n: number): string {
   return n.toLocaleString();
@@ -113,11 +114,13 @@ function CompletionPanel({ completion }: { completion: OfficinaViewProps["comple
   );
 }
 
-export function Officina() {
+export function Officina({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}) {
   const [, setOfficina] = useState<OfficinaResponse>();
   const [aerarium, setAerarium] = useState<OfficinaViewProps["aerarium"]>();
   const [health, setHealth] = useState<OfficinaViewProps["health"]>();
   const [acta, setActa] = useState<ActaEntry[]>([]);
+  // W-341: the strip's read settles too (a failed one degrades to no ticks, as before).
+  const [actaSettled, setActaSettled] = useState(false);
   const [completion, setCompletion] = useState<OfficinaViewProps["completion"]>();
 
   const demo = location.search.includes("demo");
@@ -128,14 +131,28 @@ export function Officina() {
       setHealth(DEV_HEALTH);
       setActa(DEV_ACTA);
       setCompletion(DEV_COMPLETION);
+      setActaSettled(true);
       return;
     }
     fetchOfficina().then(setOfficina).catch(() => undefined);
     fetchAerarium().then(setAerarium).catch(() => setAerarium("failed"));
     fetchHealth().then(setHealth).catch(() => setHealth("failed"));
-    fetchActa().then(setActa).catch(() => undefined);
+    fetchActa()
+      .then(setActa)
+      .catch(() => undefined)
+      .finally(() => setActaSettled(true));
     fetchCompletion().then(setCompletion).catch(() => setCompletion("failed"));
   }, [demo]);
+
+  // The panels keep their own loading, failed and empty copy; the screen's one status reaches the shell's region.
+  const parts = [aerarium, health, completion];
+  const status = screenStatus("officina", {
+    loaded: actaSettled && parts.every((p) => p !== undefined),
+    failed: parts.includes("failed") || undefined,
+    empty:
+      Array.isArray(aerarium) && aerarium.length === 0 && typeof completion === "object" && completion.meter === null && acta.length === 0 && typeof health === "object" && health.due.length === 0,
+  });
+  useEffect(() => onStatus?.(status), [status.state, status.text]);
 
   return <OfficinaView aerarium={aerarium} health={health} completion={completion} acta={acta} now={new Date()} />;
 }
