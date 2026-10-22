@@ -1,0 +1,38 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-342-b1\s --import tsx apps/web/src/lib/nav-source.test.ts
+# exit: 1
+# at: 2026-10-22T12:29:14.876Z
+# sella: architect
+# tree: tree:e67d43f143648bf091ffca2ee094976727ecd1a8
+# ticket: {"opus":"W-342","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-342/studio","head":"dd4503784809a7a9bb190ac64b66ad80647b8599","brief":"f6b5b8378b5314605599a32bce1bc0fc52755511","at":"2026-10-22T12:29:14.843Z"}
+
+TAP version 13
+# Subtest: W-342-b1 behaviour 1: apps/web/README.md names the live screens, the two suites and points to docs/design/DIRECTION.md
+not ok 1 - W-342-b1 behaviour 1: apps/web/README.md names the live screens, the two suites and points to docs/design/DIRECTION.md
+  ---
+  duration_ms: 2.00948
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-342/apps/web/src/lib/nav-source.test.ts:1:2630'
+  failureType: 'testCodeFailure'
+  error: 'the README names the Inbox route `#/inbox`'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-342/apps/web/src/lib/nav-source.test.ts:86:14)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 182.951499
