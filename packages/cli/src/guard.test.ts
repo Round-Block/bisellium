@@ -179,6 +179,11 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   assert.equal(own.code, 2, "scripts/record-review.sh is refused");
   assert.match(own.err, /`verdict --phase build \(in scripts\/record-review\.sh\)`/, "scripts/record-review.sh names the build verdict");
   assert.equal((await guard(bash("bash scripts/record-review.sh W-900 1 passed", { cwd: REPO, ...RUNNER }))).code, 0, "a ladder-runner records the review");
+  // a `-c` after the script operand is that script's argument, not a shell option (review round 1, finding 1)
+  const late = await guard(bash("bash scripts/record-review.sh W-310 1 passed session-1 -c harmless", { cwd: REPO }));
+  assert.equal(late.code, 2, "a -c after the script operand does not hide the script");
+  assert.match(late.err, /\(in scripts\/record-review\.sh\)/, "the late -c names the script");
+  assert.equal((await guard(bash("bash -o pipefail -c 'bisellium merge W-900'"))).code, 2, "a -c after -o with its value is still the shell's script");
   assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
