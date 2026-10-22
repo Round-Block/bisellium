@@ -1,0 +1,24 @@
+# opus: W-310
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T09:55:15.933Z
+# tree: tree:4a77965f538f8d7d52bb929996bb467ea24b947a
+# brief: briefs/W-310.md blob:5e9015b051d7cd5b2ed0cb8c03dbc30c05351f35
+# ticket: {"opus":"W-310","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"e6a2a82bfcf435cc32591966853a89828dbbfa43","brief":"5e9015b051d7cd5b2ed0cb8c03dbc30c05351f35","at":"2026-10-22T09:55:12.717Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-310-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the guard is CLI code reached by `bisellium hook-event guard`, run from the Patron's install outside the agent clone (`~/projects/bisellium-guard`), refreshed by a new `scripts/agent-workspace.sh guard` step and probed by `hooks check --repo`; no hook points into the agent clone, and no parallel install path is added — check: brief:24, packages/cli/src/hooks.ts:331, scripts/agent-workspace.sh:144
+2. advisory — the SubagentStop mechanism is Claude Code's own: its input carries `background_tasks`, `agent_transcript_path` and `stop_hook_active`, and exit 2 keeps the subagent running; ownership is read from the agent's transcript because the task list is the session's; whether it fires before a SubagentHandback delivery is a stated limit with a post-merge trial (Defaults 5) — check: brief:28, brief:38, packages/cli/src/guard.ts:207
+3. advisory — W-242's code cuts are cut at spec to W-242 itself (six behaviours already meet the brief limit; they share no code with the guard); its settings side lands here, so W-242 needs no `.claude/` change — check: brief:145, brief:54
+4. advisory — each row fails by assertion on master and on every stage before its own and passes from its own; every earlier row passes on each later red commit; the mbox applies to master e6a2a82b with an identical tree — check: brief:136, reds.out:1, mbox-check.out:1
+5. advisory — five existing rows flip, each named and edited in Files owned; the Codex test check lists the same five and no unnamed flip, and every must-stay-green row it lists passes on the prototype; the only neighbour failures are check.test.ts W-089 rows, identical on master (detached clone) — check: brief:137, fixture-census.md:1, census-neighbours-proto.out:1, gates-master.out:1, gates-proto.out:1
+
+## Verdict
+
+passed — W-310 (with W-290 and W-242's settings side) signed by the architect (`claude-opus-5-5`, D-072): six behaviours on master e6a2a82b, twelve prototype commits in prototype.mbox; code-owned, so the design and Defaults go to the Patron before branch.
