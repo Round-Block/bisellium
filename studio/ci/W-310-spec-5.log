@@ -1,0 +1,27 @@
+# opus: W-310
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16309-bbea-7a61-9621-5e13ad985e31
+# outcome: failed
+# at: 2026-10-22T11:27:27.958Z
+# tree: tree:d6e07bea4d17a752aadfa07655260cfd659db67a
+# brief: briefs/W-310.md blob:e42f7fc6acfbf8050d5e8ab20a0ad481e065f077
+# converted: 5 (cites no line of briefs/W-310.md)
+# ticket: {"opus":"W-310","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"b005fcb99d3689d45341b5c6ee2b043fa31bd21b","brief":"e42f7fc6acfbf8050d5e8ab20a0ad481e065f077","at":"2026-10-22T11:27:27.466Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-310-spec/prototype-repo/scripts/agent-workspace.sh:196 Reached through ci/W-310-spec-2.log #2’s installer-input class: when `GUARD_BIN` is initially absent and another `bisellium` occurs later on PATH, `command -v` finds the later executable and rejects it, although brief:109 excludes only an executable earlier than `GUARD_BIN`; this makes a valid first installation fail. [severity: S1] [design: changes] [class: spec×input-without-named-rejector] — check: packages/cli/src/guard.test.ts W-310-b6
+2. blocking — /home/edckt/.bisellium-evidence/W-310-spec/prototype-repo/scripts/agent-workspace.sh:172 Reached through ci/W-310-spec-2.log #2’s installer-input class: `GUARD_DIR=$PATRON_DIR` passes the common-directory test, after which `guard` detaches and moves the Patron’s own checkout instead of the separate guard worktree promised at brief:79; no test covers this ordinary variable mix-up. [severity: S1] [design: changes] [class: spec×input-without-named-rejector] — check: packages/cli/src/guard.test.ts W-310-b6
+3. blocking — /home/edckt/.bisellium-evidence/W-310-spec/prototype-repo/scripts/agent-settings-merge.mjs:27 The new brief:38 sandbox guarantee is false when existing user settings contain `sandbox.enabled: false`: `merge` deliberately preserves false, `settings_merged` accepts it, and the source-directory deny never operates; the existing test even pins this failing configuration. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/agent-settings-merge.test.mjs “merge keeps unrelated keys and an explicit sandbox.enabled”
+4. blocking — /home/edckt/.bisellium-evidence/W-310-spec/final/guard.ts:103 Reached through ci/W-310-spec-2.log #4’s wrapper-domain class: brief:97 explicitly admits `env -S`, but `strip` discards both `-S` and its split-string operand, so `env -S 'bisellium merge W-900'` performs the record write without refusal. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/guard.test.ts W-310-b1
+5. blocking — /home/edckt/.bisellium-evidence/W-310-spec/final/guard.ts:155 Brief:112 admits shell flags before a script file, but `scriptOf` handles operands only for `-o` and `+o`; ordinary `bash -O extglob scripts/record-review.sh …` makes it inspect `extglob` instead of the executed script and permits the review record writes. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/guard.test.ts W-310-b1
+
+## Earlier findings
+- ci/W-310-spec-2.log #1: closed — brief:104, guard.ts:367 and W-310-b5 now require and test type `command`, timeout 2 and SubagentStop matcher `*`.
+- ci/W-310-spec-2.log #2: open — scripts/agent-workspace.sh:184-199 and brief:109 still permit `GUARD_BIN` inside `AGENT_DIR`; the link and probe resolve to the outside target and pass, although the agent can replace the in-clone link, so the installer still fails to enforce the required trusted install boundary.
+
+## Verdict
+The wiring blocker is closed, but the installer blocker remains open and the revision introduces four additional in-domain or sandbox failures.
+VERDICT: FAIL

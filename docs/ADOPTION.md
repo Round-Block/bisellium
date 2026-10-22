@@ -942,8 +942,8 @@ anything else, including a thrown network failure).
 
 ```bash
 npm run bisellium -- hooks print --harness claude-code --sella <sella> [--studio <dir>]
-npm run bisellium -- hooks check --harness claude-code [--studio <dir>]
-npm run bisellium -- hook-event <start|stop|tool|compact> --sella <sella> [--studio <dir>]
+npm run bisellium -- hooks check --harness claude-code [--studio <dir>] [--repo <dir>]
+npm run bisellium -- hook-event <start|stop|tool|compact|guard> --sella <sella> [--studio <dir>]
 ```
 
 Where `talk` drives a harness directly, hooks let the harness drive itself:

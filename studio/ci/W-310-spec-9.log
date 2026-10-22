@@ -1,0 +1,22 @@
+# opus: W-310
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T14:36:28.259Z
+# tree: tree:0038e60e6caec44830861e678b9bd1f8a4829e7d
+# brief: briefs/W-310.md blob:e88ee6d19fc6a3a7b8149b31bb72953e7436a8f8
+# ticket: {"opus":"W-310","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":".worktrees/W-310/studio","head":"a9bcabce888cae1792dbf522bbd4171a59c0a056","brief":"e88ee6d19fc6a3a7b8149b31bb72953e7436a8f8","at":"2026-10-22T14:36:27.359Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-310-spec/promise-ledger-r9.md
+
+## Findings
+
+1. advisory — spec round 8 finding 1 (a leading `cd -` reads the inherited `OLDPWD`) adopted, stricter than the reviewer's text: `cd -` returns to a held directory only once a certain `cd` on the same line has moved the directory; every other `cd -`, `popd` and `pushd` with no directory operand make the directory unknown, and `ladderWrite` refuses every later relative script path on the line, in `-c` scripts and script files too, with a stated refusal line; an absolute path is still judged by its text; the Promise's limit names the false refusal; pinned by `W-310-b1` "cd - with no certain cd before it: the directory is unknown", "popd or pushd with no directory: the directory is unknown" and "after an unknown directory an absolute script is judged by its text" — check: brief:30, brief:67, brief:103, brief:109
+2. advisory — spec round 8 finding 2 (the forty `/nope<i>` decoys never become candidates) adopted in the reviewer's text: forty distinct enterable fixture directories are added by uncertain `cd` commands, the recorder exists only in the fortieth, and its relative invocation exits 2 naming the script in all three nesting forms; the same forty candidates before `echo ok` exit 0; Acceptance names the flip — check: brief:109, brief:136
+3. advisory — kept from revision 5: the one certain `cd` form, every other `cd` and `pushd` adding directories judged with no cap, build review round 2's finding 1 refused, finding 2 a stated false refusal, finding 3's cap dropped; every other row, promise, pin and Default unchanged; no existing `cd` assertion changes its exit code; the builder's changes are in `fix-r2-for-builder.md` — check: brief:3, brief:103, promise-ledger-r9.md:31
+
+## Verdict
+
+passed — W-310 revision 5 amended after spec round 8, signed by the architect (`claude-opus-5-5`, D-072): a `cd -`, `popd` or `pushd` that reads a directory the line did not set makes the directory unknown and refuses a later relative script path, and the no-cap evidence runs over forty enterable candidates with the recorder only in the fortieth; the builder makes the code match.

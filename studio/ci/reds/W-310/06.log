@@ -1,0 +1,40 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=^W-310-b6\s --import tsx packages/cli/src/guard.test.ts
+# exit: 1
+# at: 2026-10-22T12:29:06.875Z
+# sella: architect
+# tree: tree:e6c576df6e698b695ada5cbe98480e3bf094b806
+# ticket: {"opus":"W-310","step":"reds","action":"red","round":6,"actor":"producer","studio":".worktrees/W-310/studio","head":"a625c21b772a9066b75c0aaaf0a236a694988eaf","brief":"68b249f1bf4827b9ab16cb52ed1feac568881c5a","at":"2026-10-22T12:29:06.835Z"}
+
+TAP version 13
+# Subtest: W-310-b6 behaviour 6: hooks check --repo reports the guard wired, installed outside the repo and live
+not ok 1 - W-310-b6 behaviour 6: hooks check --repo reports the guard wired, installed outside the repo and live
+  ---
+  duration_ms: 4.31668
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-310/packages/cli/src/guard.test.ts:2:12292'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-310/packages/cli/src/guard.test.ts:380:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12.508957

@@ -1,0 +1,27 @@
+# opus: W-310
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T10:23:17.671Z
+# tree: tree:5052f4d8f5f4d9a3eac3419c93a824907213f388
+# brief: briefs/W-310.md blob:47b044fbf6bb4f873375c8f192dfa090d952a3be
+# ticket: {"opus":"W-310","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"8be5e114aa51347a5f35210f700a1e1267a56c46","brief":"47b044fbf6bb4f873375c8f192dfa090d952a3be","at":"2026-10-22T10:23:11.305Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-310-spec/promise-ledger-r2.md
+
+## Findings
+
+1. advisory — spec round 2 finding 1 (S1) closed: `guardWiring` now requires each guard hook to be type `command` with timeout 2 and the SubagentStop group's matcher to be `*`; row 10 takes the round's replacement text, and `W-310-b5` pins a narrowed matcher, a non-command type and a non-2 timeout — check: brief:104, packages/cli/src/guard.ts:358, packages/cli/src/guard.ts:366, packages/cli/src/guard.test.ts:289
+2. advisory — spec round 2 finding 2 (S1) closed: `guard_inputs` judges AGENT_DIR, PATRON_DIR, GUARD_DIR and GUARD_BIN by real path before any change (an unrelated clone, a nested guard, an earlier bisellium on PATH, a relative, off-PATH or regular-file GUARD_BIN, no origin/master, no checkout); the steps after it stop on any non-zero exit under `set -euo pipefail`, and the link must lead into GUARD_DIR; rows 15a and 15b replace row 15, pinned in `W-310-b6` with an install that changes nothing — check: brief:109, brief:110, scripts/agent-workspace.sh:156, scripts/agent-workspace.sh:206, packages/cli/src/guard.test.ts:351
+3. advisory — spec round 2 advisory 3 adopted: Promise fail-open takes the replacement text (a stale install that refuses the canned merge passes the probe) — check: brief:50
+4. advisory — spec round 2 advisory 4 answered by fixing, not limiting: `env -u`/`-C`/`-S`, `nice -n`, `exec -a`, `xargs` and `npx -p`/`--package`/`-c` are recognised with their operands and pinned in `W-310-b1`; row 3 lists them and leaves only deliberate evasion and unlisted wrappers as limits — check: brief:97, packages/cli/src/guard.ts:81, packages/cli/src/guard.test.ts:62
+5. advisory — the Patron's gap a closed: `next --perform` is judged as the rung it performs (`--expect` branch, ready, done, merge or spec, or no `--expect` and no `--chain`, are refused from the main thread; `--chain` runs, since it performs only review and pr) — check: brief:32, brief:98, packages/cli/src/guard.ts:194
+6. advisory — the Patron's gap b closed: a script file a Bash command runs (`bash`/`sh`/`zsh`/`dash <file>`, `source`, `.`, a path command) is read (a regular file up to 256 KiB, no NUL, resolved against `cwd` as `cd` moves it, `~` and `$HOME` expanded) and judged by its text three deep; `scripts/opus-start.sh` is refused, `record-review.sh` (a build verdict and a review) runs — check: brief:112, packages/cli/src/guard.ts:176, packages/cli/src/guard.ts:215
+7. advisory — the Patron's gap c closed through the sandbox, with its cost stated: the user settings merge denies writing the agent clone's packages/, apps/, adapters/ and scripts/; the sandbox is session-wide, so builders in .worktrees/ are unaffected but an in-session git pull of source is refused and the Patron pulls (Defaults 3 asks it plainly) — check: brief:28, brief:38, brief:167, scripts/agent-settings-merge.mjs:30
+8. advisory — each row fails by assertion on master and on every stage before its own and passes from its own; every earlier row passes on each later red commit; the mbox applies to master e6a2a82b with an identical tree; the Codex test check reran on revision 2 — check: brief:145, brief:146, reds.out:1, mbox-check.out:1, fixture-census.md:1
+
+## Verdict
+
+passed — W-310 revision 2 (with W-290 and W-242's settings side) signed by the architect (`claude-opus-5-5`, D-072): round 2's two S1 blockers and both advisories closed, the Patron's three gaps closed in this opus; six behaviours on master e6a2a82b, twelve prototype commits in prototype.mbox; code-owned, so the design and Defaults go to the Patron before branch.

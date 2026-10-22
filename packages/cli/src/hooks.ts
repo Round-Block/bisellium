@@ -4,8 +4,8 @@
  * purpose (same as verify.ts/writes.ts) — the integrator wires:
  *
  *   bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
- *   bisellium hooks check --harness claude-code [--studio <dir>]
- *   bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+ *   bisellium hooks check --harness claude-code [--studio <dir>] [--repo <dir>]
+ *   bisellium hook-event <start|stop|tool|compact|context|guard> --sella <id> [--studio <dir>]
  *
  * `hooks print`/`hooks check` are ordinary administrative commands (usage
  * errors exit 2, like every other command in this CLI). `hook-event` is
@@ -14,14 +14,16 @@
  * (JSON, bounded by @bisellium/shim's 2s self-timeout) and always exits 0,
  * printing at most one line to stderr on any failure (malformed payload,
  * missing session_id, an unreadable studio, …). All writes go through the
- * existing shim helpers: receipts.ts (writeReceiptStart/writeReceiptEnd),
+ * existing shim helpers (W-310: `guard` is the one exception to "always exits 0": it exits 2 on a
+ * refusal, see handleGuard): receipts.ts (writeReceiptStart/writeReceiptEnd),
  * redact.ts (redact), @bisellium/core's appendEvents into EVENTS_LOG_REL
  * (`<studio>/.bisellium/events.jsonl` — the same file a running Store
  * reads/appends to, so a hook-emitted event and a CLI/Store one never fork
  * the log).
  */
-import { appendFileSync, readFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { accessSync, appendFileSync, constants, readFileSync, realpathSync } from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, instant, type GantryEvent } from "@bisellium/schema";
@@ -37,6 +39,7 @@ import {
   writeReceiptStart,
 } from "@bisellium/shim";
 import { buildContext } from "./context.js";
+import { guardRefusal, guardWiring } from "./guard.js";
 import { diagnosticLabel } from "./reporting.js";
 
 export interface HooksResult {
@@ -93,7 +96,7 @@ function projectIdFor(manifest: Manifest): string {
 
 const HOOKS_USAGE =
   "usage: bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +
-  "       bisellium hooks check --harness claude-code [--studio <dir>]";
+  "       bisellium hooks check --harness claude-code [--studio <dir>] [--repo <dir>]";
 
 export function runHooks(args: string[], _opts: Record<string, never> = {}): HooksResult {
   const [sub, ...rest] = args;
@@ -132,7 +135,7 @@ function runHooksPrint(args: string[]): HooksResult {
 }
 
 function runHooksCheck(args: string[]): HooksResult {
-  const parsed = parseFlags(args, ["--harness", "--studio"]);
+  const parsed = parseFlags(args, ["--harness", "--studio", "--repo"]);
   if ("error" in parsed) {
     console.error(`hooks check: ${parsed.error}\n${HOOKS_USAGE}`);
     return { exitCode: 2 };
@@ -169,7 +172,56 @@ function runHooksCheck(args: string[]): HooksResult {
     const last = s.lastReceipt ? `${s.lastReceipt.sessionId} (started ${s.lastReceipt.startedAt})` : "none";
     console.log(`${label}: harness=${s.harness} last=${last} ${s.dead ? "dead" : "alive"}`);
   }
-  return { exitCode: 0 };
+  const repo = parsed.values.get("--repo");
+  return { exitCode: repo === undefined || guardProbe(resolve(repo), studio) ? 0 : 1 };
+}
+
+/** A main-thread `bisellium merge`, which a live guard refuses. */
+const PROBE = { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-0 --studio studio --repo ." } };
+
+/** The first executable `name` on PATH, or undefined. */
+function onPath(name: string): string | undefined {
+  for (const dir of (process.env["PATH"] ?? "").split(":")) {
+    if (!dir) continue;
+    try {
+      accessSync(join(dir, name), constants.X_OK);
+      return join(dir, name);
+    } catch {
+      // not here
+    }
+  }
+  return undefined;
+}
+
+/** `hooks check --repo` (W-310): one line each for whether `<repo>/.claude/settings.json` wires the guard,
+ *  whether the `bisellium` on PATH lives outside `<repo>` (hooks run unsandboxed, so the guard must not
+ *  be code the agent clone can change), and whether it is live (it refuses a main-thread `bisellium merge`
+ *  with exit 2). True when all three hold. */
+function guardProbe(repo: string, studio: string): boolean {
+  const file = readContainedRegularFile(repo, ".claude/settings.json", ".claude");
+  let settings: unknown;
+  try {
+    settings = "error" in file ? undefined : JSON.parse(file.bytes.toString("utf8"));
+  } catch {
+    settings = undefined;
+  }
+  const missing = guardWiring(settings);
+  console.log(missing.length ? `guard: not wired: ${missing.join("; ")}` : "guard: wired");
+  const bin = onPath("bisellium");
+  const real = bin ? realpathSync(bin) : undefined;
+  const rel = real ? relative(realpathSync(repo), real) : "..";
+  const inside = rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+  if (!bin || !real) console.log("guard: not installed: no bisellium on PATH");
+  else if (inside) console.log(`guard: installed inside ${repo} (${real}): hooks run unsandboxed, so the guard must live outside the agent clone`);
+  else console.log(`guard: installed at ${real}`);
+  if (!bin || inside) {
+    console.log(`guard: dead (not run: ${bin ? "the bisellium on PATH is inside the repo" : "no bisellium on PATH"}): a main-thread bisellium merge was not tried`);
+    return false;
+  }
+  const r = spawnSync(bin, ["hook-event", "guard", "--studio", studio], { input: JSON.stringify(PROBE), encoding: "utf8", timeout: 10_000 });
+  const live = r.status === 2 && r.stderr.includes("ladder-runner");
+  console.log(live ? "guard: live (a main-thread bisellium merge is refused)" : `guard: dead (exit ${r.status ?? r.signal ?? r.error?.message}): a main-thread bisellium merge was not refused`);
+  return missing.length === 0 && live;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +237,7 @@ export interface HookEventOptions {
   stdinTimeoutMs?: number;
 }
 
-const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]";
+const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context|guard> --sella <id> [--studio <dir>]";
 
 /** `receipts/<sella>/<sessionId>.json` and `timeline/<sella>.jsonl` both
  *  join these two values straight into a filesystem path — `sella` is
@@ -206,7 +258,7 @@ function isSafePathSegment(s: string): boolean {
 
 export async function runHookEvent(args: string[], opts: HookEventOptions = {}): Promise<HooksResult> {
   const [sub, ...rest] = args;
-  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context") {
+  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context" && sub !== "guard") {
     console.error(`hook-event: unknown subcommand ${JSON.stringify(sub ?? "")}\n${HOOK_EVENT_USAGE}`);
     return { exitCode: 0 }; // a hook target never blocks the harness, even on a usage error
   }
@@ -264,6 +316,7 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
   }
 
   try {
+    if (sub === "guard") return handleGuard(payload.data);
     if (sub === "start") return handleStart(studio, sella, payload.data, now);
     if (sub === "stop") return handleStop(studio, sella, payload.data, now);
     if (sub === "tool") return handleTool(studio, sella, payload.data, now);
@@ -273,6 +326,16 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
     console.error(`hook-event ${sub}: ${(e as Error).message}`);
     return { exitCode: 0 };
   }
+}
+
+/** `hook-event guard` (W-310): the refusal on stderr and exit 2, which Claude Code shows the model and
+ *  turns into a refused tool call (PreToolUse) or a subagent kept running (SubagentStop); exit 0 otherwise.
+ *  Deny-only and fail-open: a throw lands in runHookEvent's catch, which exits 0. */
+function handleGuard(payload: Record<string, unknown>): HooksResult {
+  const why = guardRefusal(payload);
+  if (!why) return { exitCode: 0 };
+  console.error(why);
+  return { exitCode: 2 };
 }
 
 function stringField(payload: Record<string, unknown>, key: string): string | undefined {

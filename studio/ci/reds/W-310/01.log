@@ -1,0 +1,40 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-310-b1\s --import tsx packages/cli/src/guard.test.ts
+# exit: 1
+# at: 2026-10-22T12:29:00.708Z
+# sella: architect
+# tree: tree:eb8abaa005935dfa13961dec2507b5283d311207
+# ticket: {"opus":"W-310","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-310/studio","head":"b5c77574a26797d757bcc446dd82cc06024891de","brief":"68b249f1bf4827b9ab16cb52ed1feac568881c5a","at":"2026-10-22T12:29:00.672Z"}
+
+TAP version 13
+# Subtest: W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the build review's included, from the main thread only, direct, through next's perform, or in a script the command runs
+not ok 1 - W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the build review's included, from the main thread only, direct, through next's perform, or in a script the command runs
+  ---
+  duration_ms: 2.887416
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-310/packages/cli/src/guard.test.ts:1:1601'
+  failureType: 'testCodeFailure'
+  error: |-
+    main thread refused: bisellium merge W-900 --studio studio --repo .
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-310/packages/cli/src/guard.test.ts:98:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 197.460666

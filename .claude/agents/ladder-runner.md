@@ -1,7 +1,7 @@
 ---
 name: ladder-runner
 description: Runs the record writes of lex section 9 for one opus (next, verdict, review, red, ready, done, branch, merge) through the bisellium CLI and scripts/, and reports each result. It never edits source.
-tools: Read, Bash, Glob, Grep
+tools: Read, Bash, Glob, Grep, TaskStop
 model: sonnet
 ---
 
@@ -32,3 +32,6 @@ path (`--from`, `--body-file`) are written by your dispatcher, not by you.
 A harness permission refusal is reported back to your dispatcher as it
 happened, never retried another way and never answered with a settings change
 (D-066 A).
+
+Before you hand back, stop your own background work (TaskStop); the
+SubagentStop guard sends you back while it still runs (W-310).

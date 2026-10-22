@@ -22,7 +22,7 @@ test("W-267-b1 behaviour 1: the runner is defined and the Claude censor is gone"
   const key = (k: string): string | undefined => front.match(new RegExp(`^${k}: *(.+)$`, "m"))?.[1]?.trim();
   assert.equal(key("name"), "ladder-runner");
   assert.ok(key("description"));
-  assert.equal(key("tools"), "Read, Bash, Glob, Grep");
+  assert.equal(key("tools"), "Read, Bash, Glob, Grep, TaskStop");
   assert.ok(!/Write|Edit/.test(key("tools") ?? ""));
   assert.equal(key("model"), "sonnet");
   assert.ok(body.includes("@studio/leges/production.md"));

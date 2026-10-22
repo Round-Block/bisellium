@@ -1,0 +1,601 @@
+/**
+ * W-310 rows b1-b6 (studio/briefs/W-310.md): the guard `bisellium hook-event guard`, its wiring and
+ * its probe. node:test TAP, selected by `--test-name-pattern='^W-310-b<n>\s'`. Rows b1-b4 feed hook
+ * inputs to `runHookEvent`; b5 checks a fixture repo and reads the real `.claude/`; b6 runs
+ * `hooks check --repo` with PATH pointing at a `bisellium` it chose. Fixtures live under the OS tmp dir.
+ */
+import assert from "node:assert/strict";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { Readable } from "node:stream";
+import { fileURLToPath } from "node:url";
+import { after, test } from "node:test";
+import { runHookEvent, runHooks } from "./hooks.js";
+import { checkStudio } from "./check.js";
+import { initStudio } from "./init.js";
+
+const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const NOW = new Date("2026-10-22T12:00:00Z");
+const dirs: string[] = [];
+const tmp = (): string => {
+  const d = mkdtempSync(join(tmpdir(), "w310-"));
+  dirs.push(d);
+  return d;
+};
+const lockedDirs: string[] = [];
+after(() => {
+  for (const d of lockedDirs) chmodSync(d, 0o700);
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+});
+
+/** Runs `console.*` writes into arrays while `fn` runs. */
+async function capture<T>(fn: () => Promise<T> | T): Promise<{ value: T; out: string; err: string }> {
+  const out: string[] = [];
+  const err: string[] = [];
+  const log = console.log;
+  const error = console.error;
+  console.log = (...a: unknown[]) => void out.push(a.join(" "));
+  console.error = (...a: unknown[]) => void err.push(a.join(" "));
+  try {
+    const value = await fn();
+    return { value, out: out.join("\n"), err: err.join("\n") };
+  } finally {
+    console.log = log;
+    console.error = error;
+  }
+}
+/** The guard on one hook input (a string is sent as is): its exit code and stderr. */
+async function guard(input: unknown): Promise<{ code: number; err: string }> {
+  const text = typeof input === "string" ? input : JSON.stringify(input);
+  const r = await capture(() => runHookEvent(["guard", "--studio", "studio"], { stdin: Readable.from([text]), stdinTimeoutMs: 1000 }));
+  return { code: r.value.exitCode, err: r.err };
+}
+const bash = (command: string, extra: Record<string, unknown> = {}, bg = false) => ({
+  hook_event_name: "PreToolUse",
+  tool_name: "Bash",
+  tool_input: { command, ...(bg ? { run_in_background: true } : {}) },
+  cwd: "/tmp",
+  ...extra,
+});
+const RUNNER = { agent_id: "a1b2c3", agent_type: "ladder-runner" };
+
+test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the build review's included, from the main thread only, direct, through next's perform, or in a script the command runs", async () => {
+  const refused = [
+    "bisellium merge W-900 --studio studio --repo .",
+    "npm run -s bisellium -- branch W-900 --studio studio --repo .",
+    "cd /home/u/agents/bisellium && npm run --silent bisellium -- ready W-900 --studio studio",
+    "node packages/cli/bin/bisellium.mjs done W-900 --studio studio",
+    "node --import tsx packages/cli/src/main.ts merge W-900 --studio studio --repo .",
+    "npx bisellium done W-900",
+    "/home/u/.local/bin/bisellium branch W-900 --studio studio",
+    "FOO=1 timeout 600 bisellium merge W-900 --studio studio --repo .",
+    "bash -c 'npm run -s bisellium -- merge W-900 --studio studio --repo .'",
+    "npm run -s bisellium -- verdict W-900 --round 1 --sella architect --outcome passed --phase spec --from /tmp/s.md --studio studio",
+    "x=$(bisellium done W-900 --studio studio)",
+    '"/home/u/my bin/bisellium" merge W-900',
+    "'/home/u/it'\\''s/bisellium' merge W-900",
+    "/home/ü/bin/bisellium ready W-900",
+    "env -u NAME bisellium merge W-900",
+    "nice -n 10 bisellium done W-900",
+    "npx --package bisellium bisellium branch W-900",
+    "npx -c 'bisellium merge W-900'",
+    "echo W-900 | xargs -n 1 bisellium ready",
+    "npm run -s bisellium -- next W-900 --perform --expect branch --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --expect=merge --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --expect done --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --expect ready --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --expect spec --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --studio studio --repo .",
+    "npm run -s bisellium -- verdict W-900 --round 1 --sella censor --outcome passed --phase build --from /tmp/r.md --studio studio",
+    "npm run -s bisellium -- verdict W-900 --round 1 --sella qa-lead --outcome passed --model gpt-5.6-sol --from /tmp/r.md --studio .worktrees/W-900/studio",
+    "npm run -s bisellium -- verdict W-900 --round 2 --sella qa-lead --model gpt-5.6-sol --outcome failed --phase=spec --from /tmp/r.md --studio studio",
+    "npm run -s bisellium -- review W-900 --pass --evidence ci/W-900-review-1.log --round 1 --sella qa-lead --model gpt-5.6-sol --studio .worktrees/W-900/studio",
+    "npm run -s bisellium -- next W-900 --perform --expect review --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --chain --budget 400000 --studio studio --repo .",
+    "npm run -s bisellium -- verdict W-900 --round 1 --sella qa-lead --outcome passed --phase handoff --phase build --from /tmp/r.md --studio studio",
+  ];
+  for (const c of refused) {
+    const r = await guard(bash(c));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.match(r.err, /ladder record write, run only by a dispatched ladder-runner/, c);
+  }
+  assert.match((await guard(bash("bisellium merge W-900"))).err, /`merge`/, "the refusal names the verb");
+  assert.match((await guard(bash(refused[9]!))).err, /`verdict --phase spec`/, "the refusal names the spec verdict");
+  assert.match((await guard(bash(refused[19]!))).err, /`next --perform --expect branch`/, "the refusal names the perform's step");
+  assert.match((await guard(bash(refused[24]!))).err, /`next --perform without --expect`/, "a perform with no named step is refused");
+  assert.match((await guard(bash(refused[25]!))).err, /`verdict --phase build`/, "the refusal names the build verdict");
+  assert.match((await guard(bash(refused[26]!))).err, /`verdict --phase build`/, "a verdict with no --phase is a build verdict");
+  assert.match((await guard(bash(refused[27]!))).err, /`verdict --phase spec`/, "a spec reviewer's verdict is a spec verdict");
+  assert.match((await guard(bash(refused[28]!))).err, /`review`/, "the refusal names the review");
+  assert.match((await guard(bash(refused[29]!))).err, /`next --perform --expect review`/, "the review perform is refused");
+  assert.match((await guard(bash(refused[30]!))).err, /`next --perform --chain`/, "the chain is refused");
+  assert.match((await guard(bash(refused[31]!))).err, /`verdict --phase build`/, "the last --phase counts");
+  const allowed = [
+    "npm run -s bisellium -- verdict W-900 --round 1 --sella producer --outcome passed --phase handoff --studio studio",
+    "npm run -s bisellium -- next W-900 --budget 400000 --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --expect review --studio studio --repo .",
+    "npm run -s bisellium -- red W-900 --behaviour 1 --sella builder --studio studio -- node --test x",
+    'git commit -m "chore: bisellium merge W-900"',
+    "echo bisellium done W-900",
+    'grep -rn "npm run -s bisellium -- merge" docs',
+    "git merge origin/master",
+    "npm run -s bisellium -- next W-900 --perform --expect reds --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --expect cleanup --studio studio --repo .",
+    "npm run -s bisellium -- next W-900 --perform --expect pr --title t --body-file /tmp/b.md --studio studio --repo .",
+    "# bisellium merge W-900",
+    "command -v bisellium",
+  ];
+  for (const c of allowed) assert.equal((await guard(bash(c))).code, 0, `main thread allowed: ${c}`);
+  for (const c of refused) assert.equal((await guard(bash(c, RUNNER))).code, 0, `a subagent runs it: ${c}`);
+  assert.equal((await guard(bash("bisellium merge W-900", { agent_id: "x9", agent_type: "architect" }))).code, 0, "any subagent: not the main thread");
+  assert.equal((await guard(bash("bisellium merge W-900", { agent_type: "ladder-runner" }))).code, 2, "agent_type without agent_id is the main thread (--agent)");
+  // scripts the command runs are judged by their text
+  const t = join(tmp(), "scripts dir ü");
+  mkdirSync(join(t, "scripts"), { recursive: true });
+  const script = (name: string, text: string): string => {
+    writeFileSync(join(t, "scripts", name), text);
+    chmodSync(join(t, "scripts", name), 0o755);
+    return join(t, "scripts", name);
+  };
+  script("opus-start.sh", "#!/usr/bin/env bash\nset -eu\nID=$1\nnpm run -s bisellium -- next $ID --perform --expect branch --studio studio --repo . | tail -3\n");
+  script("record-review.sh", "#!/usr/bin/env bash\nnpm run -s bisellium -- verdict $1 --round $2 --sella qa-lead --outcome passed --from x --studio s\nnpm run -s bisellium -- review $1 --pass --evidence ci/x.log --studio s\n");
+  script("outer.sh", "#!/bin/sh\n# calls the start script\nbash scripts/opus-start.sh W-900\n");
+  script("big.sh", `${"# pad\n".repeat(50_000)}bisellium merge W-900\n`);
+  writeFileSync(join(t, "scripts", "bin.sh"), "bisellium merge W-900\0\n");
+  writeFileSync(join(t, "scripts", "it's.sh"), "bisellium done W-900\n");
+  const inT = { cwd: t };
+  for (const c of ["bash scripts/opus-start.sh W-900", "bash scripts/record-review.sh W-900 1", "sh -e scripts/opus-start.sh W-900", "./scripts/opus-start.sh W-900", "source scripts/opus-start.sh", ". scripts/opus-start.sh", "bash scripts/outer.sh", `cd /tmp && bash '${join(t, "scripts", "opus-start.sh")}'`, `cd '${t}' && bash scripts/opus-start.sh`, "bash \"scripts/it's.sh\""]) {
+    const r = await guard(bash(c, inT));
+    assert.equal(r.code, 2, `a script holding a ladder write is refused: ${c}`);
+    assert.match(r.err, /\(in /, c);
+  }
+  for (const c of ["bash scripts/big.sh", "bash scripts/bin.sh", "bash scripts/missing.sh", 'bash "$EV/opus-start.sh"', "cd /tmp && bash scripts/opus-start.sh W-900"])
+    assert.equal((await guard(bash(c, inT))).code, 0, `a script that is not judged or holds no ladder write runs: ${c}`);
+  const symlinked = join(tmp(), "link");
+  symlinkSync(join(t, "scripts"), symlinked);
+  assert.equal((await guard(bash(`bash ${join(symlinked, "opus-start.sh")}`))).code, 2, "a script reached through a symlinked parent");
+  const home = process.env["HOME"];
+  process.env["HOME"] = t;
+  try {
+    assert.equal((await guard(bash("bash ~/scripts/opus-start.sh W-900"))).code, 2, "a script under ~ is read");
+    assert.equal((await guard(bash("bash $HOME/scripts/opus-start.sh W-900"))).code, 2, "a script under $HOME is read");
+    // the orchestrator's review recorder, its CLI lines as written in ~/.bisellium-evidence/record-review.sh
+    mkdirSync(join(t, ".bisellium-evidence"));
+    writeFileSync(
+      join(t, ".bisellium-evidence", "record-review.sh"),
+      "set -e\ncd ~/agents/bisellium\nnpm run -s bisellium -- next $ID --budget 400000 --studio ~/agents/bisellium/studio --repo ~/agents/bisellium | tail -1\nnpm run -s bisellium -- verdict $ID --round $N --sella qa-lead --outcome $OUT --model gpt-5.6-sol --from $TMPDIR/$ID-r$N.md ${4:+--session $4} --studio .worktrees/$ID/studio | tail -1\nnpm run -s bisellium -- review $ID $F --evidence ci/$ID-review-$N.log --round $N --sella qa-lead --model gpt-5.6-sol --studio .worktrees/$ID/studio | tail -1\n",
+    );
+    chmodSync(join(t, ".bisellium-evidence", "record-review.sh"), 0o755);
+    for (const c of ["~/.bisellium-evidence/record-review.sh W-900 1 passed", "bash ~/.bisellium-evidence/record-review.sh W-900 1 passed s-1"]) {
+      const r = await guard(bash(c));
+      assert.equal(r.code, 2, `~/.bisellium-evidence/record-review.sh is refused: ${c}`);
+      assert.match(r.err, /`verdict --phase build \(in ~\/\.bisellium-evidence\/record-review\.sh\)`/, c);
+    }
+  } finally {
+    process.env["HOME"] = home;
+  }
+  assert.equal((await guard(bash("bash scripts/opus-start.sh W-900", { ...inT, ...RUNNER }))).code, 0, "a subagent runs the script");
+  // the repo's own scripts/record-review.sh, read from this checkout
+  const own = await guard(bash("bash scripts/record-review.sh W-900 1 passed", { cwd: REPO }));
+  assert.equal(own.code, 2, "scripts/record-review.sh is refused");
+  assert.match(own.err, /`verdict --phase build \(in scripts\/record-review\.sh\)`/, "scripts/record-review.sh names the build verdict");
+  assert.equal((await guard(bash("bash scripts/record-review.sh W-900 1 passed", { cwd: REPO, ...RUNNER }))).code, 0, "a ladder-runner records the review");
+  // a `-c` after the script operand is that script's argument, not a shell option (review round 1, finding 1)
+  const late = await guard(bash("bash scripts/record-review.sh W-310 1 passed session-1 -c harmless", { cwd: REPO }));
+  assert.equal(late.code, 2, "a -c after the script operand does not hide the script");
+  assert.match(late.err, /\(in scripts\/record-review\.sh\)/, "the late -c names the script");
+  assert.equal((await guard(bash("bash -o pipefail -c 'bisellium merge W-900'"))).code, 2, "a -c after -o with its value is still the shell's script");
+  // a `cd` the guard cannot confirm enters a directory leaves the shell where it was (review round 1, finding 2)
+  for (const c of ["cd /missing; bash scripts/record-review.sh W-310 1 passed", "cd /missing && bash scripts/record-review.sh W-310 1 passed", "cd /etc/hostname; bash scripts/record-review.sh W-310 1 passed"]) {
+    const r = await guard(bash(c, { cwd: REPO }));
+    assert.equal(r.code, 2, `an unconfirmed cd does not move the search root: ${c}`);
+    assert.match(r.err, /\(in scripts\/record-review\.sh\)/, c);
+  }
+  // a late `-c`/`--call` is the CLI's argument for every launcher that takes an inline command, npx included, on every path
+  const lateNpx = ["npx bisellium merge W-310 -c harmless", "npx bisellium merge W-310 --call harmless", "npx -p bisellium bisellium done W-310 -c harmless"];
+  for (const c of lateNpx) {
+    assert.equal((await guard(bash(c))).code, 2, `a late npx -c/--call is an argument: ${c}`);
+    assert.equal((await guard(bash(`bash -c '${c}'`))).code, 2, `... inside a bash -c script: ${c}`);
+    assert.equal((await guard(bash(`sh -e -c "${c}"`))).code, 2, `... inside a second shell script: ${c}`);
+  }
+  const lateDir = tmp();
+  writeFileSync(join(lateDir, "late.sh"), `${lateNpx[0]}\n`);
+  assert.equal((await guard(bash("bash late.sh", { cwd: lateDir }))).code, 2, "... inside a script file");
+  assert.equal((await guard(bash("npx -c 'bisellium merge W-900'"))).code, 2, "a leading npx -c is still the inline script");
+  assert.equal((await guard(bash("npx --call 'bisellium merge W-900'"))).code, 2, "a leading npx --call is still the inline script");
+  // one form of `cd` moves the directory (a leading run of `cd <dir>` joined by `;` or `&&`, to a directory the guard can enter);
+  // every other `cd` adds the directories it may enter, and a relative script is judged in all of them (row 16; review rounds 1 and 2)
+  const REC = "bash scripts/record-review.sh W-310 1 passed";
+  const locked = join(tmp(), "locked");
+  mkdirSync(locked);
+  chmodSync(locked, 0o000);
+  lockedDirs.push(locked);
+  const nocd = [
+    `cd ${locked}; ${REC}`,
+    `cd /tmp extra; ${REC}`,
+    `cd /tmp -P; ${REC}`,
+    `cd /tmp | ${REC}`,
+    `cd /tmp & ${REC}`,
+    `(cd /tmp); ${REC}`,
+    `x=$(cd /tmp); ${REC}`,
+    `\`cd /tmp\`; ${REC}`,
+    `false && cd /tmp; ${REC}`,
+    `true || cd /tmp; ${REC}`,
+    `cd /tmp || true; ${REC}`,
+    `if true; then cd /tmp; fi; ${REC}`,
+  ];
+  for (const c of nocd) {
+    if (c.includes(locked) && process.getuid?.() === 0) continue; // root enters a mode-000 directory
+    const r = await guard(bash(c, { cwd: REPO }));
+    assert.equal(r.code, 2, `a cd that is not the one moving form does not hide the script: ${c}`);
+    assert.match(r.err, /\(in scripts\/record-review\.sh\)/, c);
+  }
+  assert.equal((await guard(bash(`cd -P ${REPO}; ${REC}`, { cwd: "/tmp" }))).code, 2, "cd -P <checkout>: the literal target is judged too");
+  assert.equal((await guard(bash(`cd ${REPO} | ${REC}`, { cwd: "/tmp" }))).code, 2, "a pipeline cd: the literal target is judged too");
+  assert.equal((await guard(bash(`false && cd ${REPO}; ${REC}`, { cwd: "/tmp" }))).code, 2, "a skipped cd: the literal target is judged too");
+  assert.equal((await guard(bash(`cd ${REPO}; ${REC}`, { cwd: "/tmp" }))).code, 2, "the moving form: a script under the new root");
+  assert.equal((await guard(bash(`cd /tmp; ${REC}`, { cwd: "/tmp" }))).code, 0, "the moving form: nothing to find under the new root");
+  const cdDir = tmp();
+  mkdirSync(join(cdDir, "scripts"));
+  writeFileSync(join(cdDir, "scripts", "record-review.sh"), readFileSync(join(REPO, "scripts", "record-review.sh")));
+  chmodSync(join(cdDir, "scripts", "record-review.sh"), 0o755);
+  for (const c of ["cd /tmp | ", "(cd /tmp); ", "false && cd /tmp; ", `cd ${locked}; `].filter((x) => process.getuid?.() !== 0 || !x.includes(locked))) {
+    writeFileSync(join(cdDir, "wrap.sh"), `${c}${REC}\n`);
+    assert.equal((await guard(bash(`bash -c '${c}${REC}'`, { cwd: cdDir }))).code, 2, `through a -c script: ${c}`);
+    assert.equal((await guard(bash("bash wrap.sh", { cwd: cdDir }))).code, 2, `through a script file: ${c}`);
+  }
+  // the shell's valued long options are consumed with their value before the leading-option scan looks for -c (review round 1, census pass 3)
+  for (const opt of ["--init-file", "--rcfile"]) {
+    const r = await guard(bash(`bash ${opt} /tmp/no-rc -c "bisellium merge W-310"`));
+    assert.equal(r.code, 2, `bash ${opt} <file> -c is still the inline script`);
+    assert.match(r.err, /`merge`/, opt);
+    assert.equal((await guard(bash(`bash ${opt} /tmp/no-rc -c "while true; do sleep 1; done"`, {}, true))).code, 2, `a background loop behind ${opt} <file> -c`);
+    assert.equal((await guard(bash(`bash ${opt} /tmp/no-rc ${REC.slice(5)}`, { cwd: REPO }))).code, 2, `bash ${opt} <file> <script> reads the script`);
+  }
+  assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
+  assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
+  assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
+});
+
+// W-310 row 16, the cd domain (review round 2; spec rounds 8 and 10): each group is its own test, so each has its own red
+const RECORDER = readFileSync(join(REPO, "scripts", "record-review.sh"));
+const RECORD = "bash scripts/record-review.sh W-310 1 passed";
+const UNKNOWN_DIR = /a directory the guard cannot know/;
+/** A fresh directory holding `scripts/<name>` with the recorder's lines (or `text`). */
+function withScript(name: string, text: string | Buffer = RECORDER, dir = tmp()): string {
+  mkdirSync(join(dir, "scripts"), { recursive: true });
+  writeFileSync(join(dir, "scripts", name), text);
+  return dir;
+}
+const inDir = async (command: string, cwd: string): Promise<{ code: number; err: string }> => guard(bash(command, { cwd }));
+
+test("W-310-b1 behaviour 1 (cd domain): an uncertain cd keeps every directory held and adds the ones it may enter", async () => {
+  const D = tmp();
+  withScript("custom-review.sh", RECORDER, join(D, "sub"));
+  const F = tmp();
+  const chain = `false || cd ${D}; cd sub || true; bash scripts/custom-review.sh`;
+  for (const [name, command] of [
+    ["directly", chain],
+    ["inside bash -c", `bash -c '${chain}'`],
+  ] as const) {
+    const r = await inDir(command, F);
+    assert.equal(r.code, 2, `an uncertain cd: every directory the shell may be in is judged, ${name}`);
+    assert.match(r.err, /\(in scripts\/custom-review\.sh\)/, name);
+  }
+  const kept = await inDir(`cd /tmp || true; ${RECORD}`, REPO);
+  assert.equal(kept.code, 2, "an uncertain cd keeps the directories held before it (a false refusal)");
+  assert.match(kept.err, /\(in scripts\/record-review\.sh\)/, "... and names the recorder");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): a cd after another command is uncertain", async () => {
+  const E = tmp();
+  const r = await inDir(`git status; cd ${E}; ${RECORD}`, REPO);
+  assert.equal(r.code, 2, "a cd after another command is uncertain");
+  assert.match(r.err, /\(in scripts\/record-review\.sh\)/, "... and the checkout stays a candidate");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): a subshell, cd - and pushd do not move the shell, they add", async () => {
+  const E = withScript("custom-review.sh");
+  mkdirSync(join(E, "sub"));
+  const T = tmp();
+  const sub = await inDir(`(cd ${T}; cd sub; true); bash scripts/custom-review.sh`, E);
+  assert.equal(sub.code, 2, "a cd inside a subshell does not move the shell");
+  assert.match(sub.err, /\(in scripts\/custom-review\.sh\)/, "a subshell cd names the script");
+  assert.equal((await inDir(`cd ${T}; cd -; bash scripts/custom-review.sh`, E)).code, 2, "cd - returns to a directory held before");
+  assert.equal((await inDir(`pushd ${E}; bash scripts/custom-review.sh`, T)).code, 2, "pushd is an uncertain cd");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): no cap on the directories judged", async () => {
+  const D = Array.from({ length: 40 }, (_, i) => {
+    const d = join(tmp(), `d${i + 1}`);
+    mkdirSync(d);
+    return d;
+  });
+  withScript("custom-review.sh", RECORDER, D[39]!);
+  const G = tmp();
+  const decoys = D.map((d) => `cd '${d}' || true; `).join("");
+  const line = `${decoys}bash scripts/custom-review.sh`;
+  writeFileSync(join(G, "many.sh"), `${line}\n`);
+  for (const [name, command] of [
+    ["directly", line],
+    ["inside bash -c", `bash -c '${line}'`],
+    ["in a script file", "bash many.sh"],
+  ] as const) {
+    const r = await inDir(command, G);
+    assert.equal(r.code, 2, `no cap on the directories judged, ${name}`);
+    assert.match(r.err, /\(in scripts\/custom-review\.sh\)/, name);
+  }
+});
+
+test("W-310-b1 behaviour 1 (cd domain): many cd targets and no ladder write: the line runs", async () => {
+  const dirs = Array.from({ length: 40 }, () => tmp());
+  const r = await inDir(`${dirs.map((d) => `cd '${d}' || true; `).join("")}echo ok`, tmp());
+  assert.equal(r.code, 0, "many cd targets and no ladder write: the line runs");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): cd - with no certain cd before it: the directory is unknown", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  const rec = await inDir(`cd -; ${RECORD}`, REPO);
+  assert.equal(rec.code, 2, "cd - with no certain cd before it: the directory is unknown (the recorder)");
+  assert.match(rec.err, UNKNOWN_DIR, "... with the unknown-directory line");
+  const none = await inDir("cd -; bash scripts/holds-nothing.sh", U);
+  assert.equal(none.code, 2, "cd - with no certain cd before it: the directory is unknown (a script holding nothing)");
+  assert.match(none.err, UNKNOWN_DIR, "... with the unknown-directory line");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): popd or pushd with no directory: the directory is unknown", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  for (const c of ["popd; bash scripts/holds-nothing.sh", "pushd; bash scripts/holds-nothing.sh", "bash -c 'popd; bash scripts/holds-nothing.sh'"]) {
+    const r = await inDir(c, U);
+    assert.equal(r.code, 2, `popd or pushd with no directory: the directory is unknown: ${c}`);
+    assert.match(r.err, UNKNOWN_DIR, c);
+  }
+});
+
+test("W-310-b1 behaviour 1 (cd domain): after an unknown directory an absolute script is judged by its text", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  const N = tmp();
+  writeFileSync(join(N, "nothing.sh"), "echo hi\n");
+  assert.equal((await inDir(`cd -; bash '${join(N, "nothing.sh")}'`, U)).code, 0, "after an unknown directory an absolute script is judged by its text");
+  assert.equal((await inDir("cd -; echo ok", U)).code, 0, "... and a command that runs no script runs");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): the unknown directory crosses -c bodies and script files", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  const N = tmp();
+  writeFileSync(join(N, "wrapper.sh"), `${RECORD}\n`);
+  const cases: [string, string, string][] = [
+    [`cd -; bash -c '${RECORD}'`, REPO, "the recorder inside bash -c"],
+    [`cd -; bash '${join(N, "wrapper.sh")}'`, REPO, "an absolute wrapper invoking the relative recorder"],
+    ["cd -; bash -c 'bash scripts/holds-nothing.sh'", U, "a script holding nothing inside bash -c"],
+    ["popd; sh -c \"bash -c 'bash scripts/holds-nothing.sh'\"", U, "two -c bodies deep"],
+  ];
+  for (const [command, cwd, name] of cases) {
+    const r = await inDir(command, cwd);
+    assert.equal(r.code, 2, `the unknown directory crosses -c bodies and script files: ${name}`);
+    assert.match(r.err, UNKNOWN_DIR, name);
+  }
+});
+
+test("W-310-b2 behaviour 2: the guard refuses a background while/until loop with no hard bound", async () => {
+  const refused = [
+    "until test -s /tmp/x.exit; do sleep 20; done",
+    "while true; do sleep 5; done",
+    "bash -c 'until [ -f /tmp/x ]; do sleep 1; done'",
+    "cd /tmp && while :; do sleep 1; done",
+    "timeout 0 bash -c 'while true; do sleep 1; done'",
+    "timeout 60 sleep 1; until test -f x; do sleep 1; done",
+    'until grep -q done "/tmp/my dir/ü.log"; do sleep 3; done',
+  ];
+  for (const c of refused) {
+    const r = await guard(bash(c, {}, true));
+    assert.equal(r.code, 2, `refused: ${c}`);
+    assert.match(r.err, /needs a hard bound/, c);
+  }
+  assert.equal((await guard(bash(refused[0]!, RUNNER, true))).code, 2, "a subagent's background loop is refused too");
+  const allowed = [
+    "timeout 600 bash -c 'until test -s /tmp/x.exit; do sleep 20; done'",
+    "timeout -k 5 10m bash -c 'while true; do sleep 1; done'",
+    "~/.bisellium-evidence/wait-until.sh 30 test -s ~/x.exit",
+    "bash /home/u/.bisellium-evidence/wait-until.sh 30 'test -s /tmp/x'",
+    "npm test",
+    "for i in 1 2 3; do sleep 1; done",
+    'echo "while true"',
+  ];
+  for (const c of allowed) assert.equal((await guard(bash(c, {}, true))).code, 0, `allowed: ${c}`);
+  assert.equal((await guard(bash(refused[0]!))).code, 0, "a foreground loop is not judged");
+});
+
+/** A checkout (a `.git` directory) under tmp, with a linked worktree, a symlink into packages/ and a directory outside it. */
+function checkout(): string {
+  const t = tmp();
+  const root = join(t, "repo");
+  for (const d of [".git", "packages/cli/src", "studio/decisions", "studio/briefs", "docs", ".worktrees/W-1"]) mkdirSync(join(root, d), { recursive: true });
+  writeFileSync(join(root, ".git/HEAD"), "ref: refs/heads/master\n");
+  writeFileSync(join(root, ".worktrees/W-1/.git"), "gitdir: ../../.git/worktrees/W-1\n");
+  mkdirSync(join(root, "packages/.git"));
+  symlinkSync(join(root, "packages"), join(root, "studio", "evil"));
+  mkdirSync(join(t, "outside"));
+  symlinkSync(join(root, "packages"), join(t, "outside", "link"));
+  mkdirSync(join(t, "plain"));
+  return root;
+}
+const write = (file_path: string, extra: Record<string, unknown> = {}, tool = "Write", cwd = "/tmp") => ({
+  hook_event_name: "PreToolUse",
+  tool_name: tool,
+  tool_input: tool === "NotebookEdit" ? { notebook_path: file_path } : { file_path, content: "x" },
+  cwd,
+  ...extra,
+});
+const CLERK = { agent_id: "c1", agent_type: "clerk" };
+const BUILDER = { agent_id: "b1", agent_type: "builder" };
+
+test("W-310-b3 behaviour 3: the guard refuses the main thread's source and test writes, and anyone but a clerk's decision and handoff writes", async () => {
+  const root = checkout();
+  const t = dirname(root);
+  const source = [
+    join(root, "packages/cli/src/x.ts"),
+    join(root, "packages/cli/src/x.test.ts"),
+    join(root, "scripts/a.sh"),
+    join(root, "package.json"),
+    join(root, "packages/my dir/x.ts"),
+    join(root, "packages/it's.ts"),
+    join(root, "packages/ünï/x.ts"),
+    join(root, "studio/evil/x.ts"),
+    join(t, "outside/link/x.ts"),
+    `${root}/studio/../packages/x.ts`,
+    join(root, ".worktrees/W-1/packages/x.ts"),
+  ];
+  for (const p of source) {
+    const r = await guard(write(p));
+    assert.equal(r.code, 2, `main thread refused: ${p}`);
+    assert.match(r.err, /does not write source or tests/, p);
+  }
+  assert.equal((await guard(write(source[0]!, {}, "Edit"))).code, 2, "Edit");
+  assert.equal((await guard(write(join(root, "apps/x.ipynb"), {}, "NotebookEdit"))).code, 2, "NotebookEdit");
+  assert.equal((await guard(write("packages/x.ts", {}, "Write", root))).code, 2, "a relative path against the input's cwd");
+  const clerkOnly = [join(root, "studio/decisions/D-999.md"), join(root, "docs/SESSION-HANDOFF.md"), join(root, ".worktrees/W-1/studio/decisions/D-1.md")];
+  for (const p of clerkOnly) {
+    for (const who of [{}, BUILDER, { agent_type: "clerk" }]) {
+      const r = await guard(write(p, who));
+      assert.equal(r.code, 2, `refused for ${JSON.stringify(who)}: ${p}`);
+      assert.match(r.err, /written only by a dispatched clerk subagent/, p);
+    }
+    assert.equal((await guard(write(p, CLERK))).code, 0, `a clerk writes ${p}`);
+  }
+  for (const p of [join(root, "studio/briefs/W-1.md"), join(root, "docs/ADOPTION.md"), join(t, "plain/x.ts")])
+    assert.equal((await guard(write(p))).code, 0, `main thread allowed: ${p}`);
+  for (const p of source.slice(0, 3)) assert.equal((await guard(write(p, BUILDER))).code, 0, `a builder writes ${p}`);
+});
+
+const stop = (transcript: string, tasks: unknown[], extra: Record<string, unknown> = {}) => ({
+  hook_event_name: "SubagentStop",
+  agent_id: "b1",
+  agent_type: "builder",
+  agent_transcript_path: transcript,
+  stop_hook_active: false,
+  background_tasks: tasks,
+  ...extra,
+});
+
+test("W-310-b4 behaviour 4: at SubagentStop the guard sends back an agent whose own background work still runs", async () => {
+  const t = tmp();
+  const transcript = join(t, "agent ü.jsonl");
+  writeFileSync(transcript, '{"type":"tool_result","content":"Command running in background with ID: bash_ab12cd"}\n{"x":"mon_77ee"}\n');
+  const shell = { id: "bash_ab12cd", type: "shell", status: "running", description: "wait", command: "sleep 600" };
+  const r = await guard(stop(transcript, [shell]));
+  assert.equal(r.code, 2, "its own shell still runs: sent back");
+  assert.match(r.err, /bash_ab12cd/);
+  assert.match(r.err, /TaskStop/);
+  assert.equal((await guard(stop(transcript, [{ id: "mon_77ee", type: "monitor", status: "running", description: "m" }]))).code, 2, "its own monitor");
+  assert.equal((await guard(stop(transcript, [{ id: "bash_zz99", type: "shell", status: "running", description: "x" }]))).code, 0, "another thread's shell");
+  assert.equal((await guard(stop(transcript, [{ id: "bash_ab12cd", type: "subagent", status: "running", description: "x" }]))).code, 0, "a subagent task is not judged");
+  assert.equal((await guard(stop(transcript, [shell], { stop_hook_active: true }))).code, 0, "sent back once only");
+  assert.equal((await guard(stop(transcript, []))).code, 0, "nothing in flight");
+  assert.equal((await guard(stop(join(t, "missing.jsonl"), [shell]))).code, 0, "fail-open: no transcript");
+});
+
+const SETTINGS_PATH = join(REPO, ".claude", "settings.json");
+const realSettings = (): Record<string, unknown> => JSON.parse(readFileSync(SETTINGS_PATH, "utf8")) as Record<string, unknown>;
+/** A studio and a repo whose .claude/settings.json is `settings` (absent when undefined); the hook.guard findings. */
+function hookGuard(settings: string | undefined): { where: string; message: string; level: string }[] {
+  const t = tmp();
+  const studio = join(t, "studio");
+  assert.ok(initStudio(studio, { now: NOW }).root);
+  if (settings !== undefined) {
+    mkdirSync(join(t, ".claude"));
+    writeFileSync(join(t, ".claude", "settings.json"), settings);
+  }
+  return checkStudio(studio, NOW, { repo: t }).findings.filter((f) => f.rule === "hook.guard");
+}
+
+test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard when it is not wired, and the agents carry the stated-limit line and TaskStop", () => {
+  const unwired = realSettings();
+  const hooks = unwired["hooks"] as Record<string, unknown>;
+  delete hooks["SubagentStop"];
+  const f = hookGuard(JSON.stringify(unwired));
+  assert.equal(f.length, 1, "no SubagentStop group: one block");
+  assert.equal(f[0]?.level, "block");
+  assert.equal(f[0]?.where, ".claude/settings.json");
+  assert.match(f[0]?.message ?? "", /SubagentStop/);
+  assert.equal(hookGuard(JSON.stringify({ hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }] }] } })).length, 4, "Bash only: Write, Edit, NotebookEdit and SubagentStop");
+  assert.equal(hookGuard("{ not json").length, 1, "an unparseable settings file blocks");
+  const narrowed = realSettings();
+  (narrowed["hooks"] as Record<string, { matcher: string }[]>)["SubagentStop"]![0]!.matcher = "builder";
+  assert.match(hookGuard(JSON.stringify(narrowed))[0]?.message ?? "", /SubagentStop \*/, "a narrowed SubagentStop matcher blocks");
+  const typed = realSettings();
+  (typed["hooks"] as Record<string, { hooks: { type: string }[] }[]>)["SubagentStop"]![0]!.hooks[0]!.type = "prompt";
+  assert.equal(hookGuard(JSON.stringify(typed)).length, 1, "a non-command hook type blocks");
+  const slow = realSettings();
+  (slow["hooks"] as Record<string, { hooks: { timeout: number }[] }[]>)["PreToolUse"]![1]!.hooks[0]!.timeout = 5;
+  assert.equal(hookGuard(JSON.stringify(slow)).length, 4, "a timeout other than 2 blocks each tool");
+  assert.deepEqual(hookGuard(undefined), [], "no settings file: not judged");
+  assert.deepEqual(hookGuard(readFileSync(SETTINGS_PATH, "utf8")), [], "the repo's own settings wire the guard");
+  const real = realSettings()["hooks"] as Record<string, { matcher: string; hooks: { command: string }[] }[]>;
+  assert.deepEqual(Object.keys(real).sort(), ["PreToolUse", "SessionStart", "SubagentStop"], "W-242's settings side: no PreCompact, Stop or PostToolUse");
+  assert.deepEqual(real["SessionStart"]?.flatMap((g) => g.hooks.map((h) => h.command)), ["bisellium context --studio studio"]);
+  const agent = (name: string): string => readFileSync(join(REPO, ".claude", "agents", `${name}.md`), "utf8");
+  assert.match(agent("architect"), /Unchanged code gets a stated limit, not a guarantee/);
+  for (const name of ["builder", "architect", "ladder-runner"]) assert.match(agent(name), /^tools: .*\bTaskStop\b/m, `${name} can stop its own background work`);
+});
+
+/** `hooks check --repo` with PATH holding only `bin`: exit code and stdout. */
+async function probe(repo: string, bin: string): Promise<{ code: number; out: string }> {
+  const path = process.env["PATH"];
+  process.env["PATH"] = `${bin}:${dirname(process.execPath)}`;
+  try {
+    const r = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", join(REPO, "examples", "sample-studio"), "--repo", repo]));
+    return { code: r.value.exitCode, out: r.out };
+  } finally {
+    process.env["PATH"] = path;
+  }
+}
+function repoWith(settings: string): string {
+  const r = join(tmp(), "agent clone");
+  mkdirSync(join(r, ".claude"), { recursive: true });
+  writeFileSync(join(r, ".claude", "settings.json"), settings);
+  return r;
+}
+function binWith(target: string | undefined, script?: string): string {
+  const b = join(tmp(), "bin");
+  mkdirSync(b);
+  if (script !== undefined) {
+    writeFileSync(join(b, "bisellium"), script);
+    chmodSync(join(b, "bisellium"), 0o755);
+  } else if (target !== undefined) symlinkSync(target, join(b, "bisellium"));
+  return b;
+}
+
+test("W-310-b6 behaviour 6: hooks check --repo reports the guard wired, installed outside the repo and live", async () => {
+  const settings = readFileSync(SETTINGS_PATH, "utf8");
+  const cli = join(REPO, "packages", "cli", "bin", "bisellium.mjs");
+  const ok = await probe(repoWith(settings), binWith(cli));
+  assert.equal(ok.code, 0, ok.out);
+  assert.match(ok.out, /^guard: wired$/m);
+  assert.match(ok.out, /^guard: installed at .*bisellium\.mjs$/m);
+  assert.match(ok.out, /^guard: live/m);
+  const unwired = await probe(repoWith('{"hooks":{}}'), binWith(cli));
+  assert.equal(unwired.code, 1);
+  assert.match(unwired.out, /^guard: not wired: PreToolUse Bash/m);
+  const dead = await probe(repoWith(settings), binWith(undefined, "#!/bin/sh\ncat >/dev/null\nexit 0\n"));
+  assert.equal(dead.code, 1);
+  assert.match(dead.out, /^guard: dead/m);
+  const none = await probe(repoWith(settings), binWith(undefined));
+  assert.equal(none.code, 1);
+  assert.match(none.out, /^guard: not installed/m);
+  assert.match(none.out, /^guard: dead \(not run/m, "no bisellium: the live line is still printed");
+  assert.equal(none.out.match(/^guard: /gm)?.length, 3, "no bisellium: wired, installed and live lines");
+  const inside = repoWith(settings);
+  mkdirSync(join(inside, "bin"));
+  writeFileSync(join(inside, "bin", "bisellium"), "#!/bin/sh\nexit 2\n");
+  chmodSync(join(inside, "bin", "bisellium"), 0o755);
+  const r = await probe(inside, join(inside, "bin"));
+  assert.equal(r.code, 1);
+  assert.match(r.out, /^guard: installed inside .*hooks run unsandboxed/m);
+  assert.match(r.out, /^guard: dead \(not run/m, "inside the repo: the live line is still printed");
+  assert.equal(r.out.match(/^guard: /gm)?.length, 3, "inside the repo: wired, installed and live lines");
+  const plain = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", join(REPO, "examples", "sample-studio")]));
+  assert.equal(plain.value.exitCode, 0, "without --repo: today's report only");
+  assert.doesNotMatch(plain.out, /^guard:/m);
+});
