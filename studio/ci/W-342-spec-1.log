@@ -1,0 +1,22 @@
+# opus: W-342
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T11:34:55.047Z
+# tree: dirty:d6e07bea4d17a752aadfa07655260cfd659db67a
+# brief: briefs/W-342.md blob:f6b5b8378b5314605599a32bce1bc0fc52755511
+# ticket: {"opus":"W-342","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b005fcb99d3689d45341b5c6ee2b043fa31bd21b","brief":"f6b5b8378b5314605599a32bce1bc0fc52755511","at":"2026-10-22T11:34:51.594Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-342-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — light brief on W-305's fast lane: one behaviour, two Files owned (`apps/web/README.md`, `apps/web/src/lib/nav-source.test.ts`), kind task, no refused path; admission returns no problem — check: brief:5, brief:34, admission.out
+2. advisory — the red is assertion-level on master plus the row and passes on behaviour 1's commit; W-110 behaviour 1 stays green by default and under --behaviour 1; Codex's fixture census lists no flip — check: brief:45, brief:49, brief:50, reds.out, fixture-census.md, gates-proto.out
+3. advisory — lint, Prettier and typecheck green and the check results identical on master b005fcb9 and the prototype; the mbox applies in a fresh clone to the prototype tree exactly — check: brief:51, brief:52, gates-master.out, gates-proto.out, mbox-check.out
+
+## Verdict
+
+passed — round 1 signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-342.md`, prototype two commits after master b005fcb9; one behaviour, 1 point, a light brief, no code-owned path touched.
