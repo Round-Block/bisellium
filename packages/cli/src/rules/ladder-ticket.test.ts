@@ -254,3 +254,16 @@ test("W-358-b2 behaviour 2: ladder.order blocks a judged verdict log whose round
   verdict(off, `${ID}-spec-2.log`, { phase: "spec", round: 2, at: "2026-10-14T23:00:00.000Z" }, []);
   assert.deepEqual(at(orderRule(off)), [], "no step_tickets: the rule is off");
 });
+
+test("W-358-b3 behaviour 3: ladder.order blocks a record's tickets: entry that is not after the entry before it", () => {
+  const swapped = entries(officina(), [REVIEW, READY]);
+  assert.deepEqual(at(orderRule(swapped)), RECORD, "an entry earlier than the entry before it blocks at the record");
+  assert.match(orderRule(swapped)[0]!.message, /W-900's tickets: entry 2 \(ready, 2026-10-15T00:05:00\.000Z\) is not after entry 1 \(review, 2026-10-15T00:25:00\.000Z\): entries are appended in time order/, "the message names the opus, both entries and both times");
+  assert.deepEqual(at(orderRule(entries(officina(), [READY, entryLine("review", "2026-10-15T00:05:00.000Z")]))), RECORD, "an entry at the same instant as the one before it blocks");
+  assert.deepEqual(at(orderRule(entries(officina(), [READY, DONE, REVIEW], "done"))), RECORD, "a done record's entries are judged");
+  const gap = entries(officina(), [READY, READY.replace(",", ", "), REVIEW]);
+  assert.deepEqual(at(orderRule(gap)), [], "an entry that is not a ticket line is ladder.ticket's; the order compares the canonical entries around it");
+  assert.deepEqual(at(ticketRule(gap)), RECORD, "and ladder.ticket blocks it");
+  assert.deepEqual(at(orderRule(entries(officina(), [READY, REVIEW, DONE], "done"))), [], "entries in time order: no finding");
+  assert.deepEqual(at(orderRule(entries(officina({ tickets: null }), [REVIEW, READY]))), [], "no step_tickets: the rule is off");
+});
