@@ -1,0 +1,29 @@
+# opus: W-361
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a163b0-3bf8-7061-be1e-a8a20cef3b4a
+# outcome: failed
+# at: 2026-10-22T13:01:55.514Z
+# tree: tree:2a8daeaec097f8b955a84e85a8b05754e89f894e
+# ui_input: ci/W-361-spec-13.log
+# design_digest: sha256:e83feadf4b4b941dc5c40ba44fd0232787c2be12c49d764266d3d5a0b35278e3
+# ticket: {"opus":"W-361","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-361/studio","head":"d3c038ec474ce00069fa78e60817ebc07666a7e7","brief":"8a0720c0d31722765636bffad7c9d86abf3e6b43","at":"2026-10-22T13:01:53.724Z"}
+
+## Findings
+
+1. blocking — studio/ci/reds/W-361/01.log:5 Both reds name `ui-architect`, not the declared builder; behavior 1 also uses the superseded pre-D-101 oracle, while the D-101 palette, underline, and rendered-navigation assertions were added alongside their implementation without amended source or served reds, contrary to brief:117 and brief:121. — check: none: review admission must require each red to contain the final behavior assertions and declared sella [severity: S1] [class: review×evidence-backfilled-or-absent]
+2. advisory — apps/web/tests-serve/board.spec.ts:548 The desktop and phone rows prove underline presence and contrast but never prove the rendered decoration color equals `--ink`; another sufficiently contrasting color could pass. — check: apps/web/tests-serve/board.spec.ts [severity: S3] [class: tests×ruled-case-uncovered]
+3. advisory — apps/web/src/components/w025.css:871 At 390px the roster selects have no width constraint; `seats-390.png` shows values and dropdown arrows clipped beyond the viewport. — check: apps/web/tests-serve/layout.spec.ts: add a 390px roster case asserting every select remains within the viewport [severity: S3] [class: tests×ruled-case-uncovered]
+4. advisory — apps/web/tests-serve/walk.spec.ts:207 The capture loop waits only for screen mount; both Board images retain loading copy over populated cards, while both Officina images leave several sections loading, preventing assessment of their settled hierarchy and provenance. — check: apps/web/tests-serve/walk.spec.ts: wait for each screen’s loaded-state evidence before capture [severity: S3] [class: tests×ruled-case-uncovered]
+
+## UI input disposition
+
+The passed ui-lead verdict supported the amended palette, semantic-color treatment, and persistent current-page underline. Comparing all four desktop/phone pairs confirmed those visual choices, while the images exposed the roster overflow and unsettled captures above; the phone Inbox’s list-only presentation is established earlier behavior outside W-361’s layout scope. The UI evidence did not cure the missing amended reds.
+
+## Verdict
+
+The implementation and current-tree gates support the intended behavior, but the required D-101 test-first evidence is absent. That evidence defect blocks this round.
+
+VERDICT: FAIL
