@@ -204,8 +204,8 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   assert.equal((await guard(bash("bash late.sh", { cwd: lateDir }))).code, 2, "... inside a script file");
   assert.equal((await guard(bash("npx -c 'bisellium merge W-900'"))).code, 2, "a leading npx -c is still the inline script");
   assert.equal((await guard(bash("npx --call 'bisellium merge W-900'"))).code, 2, "a leading npx --call is still the inline script");
-  // one form of `cd` moves the search root (a top-level `cd <dir>` joined by `;` or `&&`, to a directory the guard can enter);
-  // every other form judges the script against the original root and the literal target (review round 1, fix census class A)
+  // one form of `cd` moves the directory (a leading run of `cd <dir>` joined by `;` or `&&`, to a directory the guard can enter);
+  // every other `cd` adds the directories it may enter, and a relative script is judged in all of them (row 16; review rounds 1 and 2)
   const REC = "bash scripts/record-review.sh W-310 1 passed";
   const locked = join(tmp(), "locked");
   mkdirSync(locked);
@@ -245,23 +245,6 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
     assert.equal((await guard(bash(`bash -c '${c}${REC}'`, { cwd: cdDir }))).code, 2, `through a -c script: ${c}`);
     assert.equal((await guard(bash("bash wrap.sh", { cwd: cdDir }))).code, 2, `through a script file: ${c}`);
   }
-  // more literal cd targets than the guard judges: refused for that reason, never a root dropped (review round 1, fix census class C)
-  const decoys = (n: number): string => Array.from({ length: n }, (_, i) => `cd /nope${i} || true; `).join("");
-  const many = `${decoys(16)}false || cd ${REPO}; ${REC}`;
-  const manyDir = tmp();
-  writeFileSync(join(manyDir, "many.sh"), `${many}\n`);
-  for (const [name, input] of [
-    ["directly", bash(many, { cwd: "/tmp" })],
-    ["inside bash -c", bash(`bash -c '${many}'`, { cwd: "/tmp" })],
-    ["in a script file", bash("bash many.sh", { cwd: manyDir })],
-  ] as const) {
-    const r = await guard(input);
-    assert.equal(r.code, 2, `sixteen decoy cd targets and the checkout, ${name}`);
-    assert.match(r.err, /too many cd targets to judge/, name);
-  }
-  const fits = await guard(bash(`${decoys(15)}false || cd ${REPO}; ${REC}`, { cwd: "/tmp" }));
-  assert.equal(fits.code, 2, "sixteen cd targets in all are still judged");
-  assert.match(fits.err, /\(in scripts\/record-review\.sh\)/, "... and the recorder is found");
   // the shell's valued long options are consumed with their value before the leading-option scan looks for -c (review round 1, census pass 3)
   for (const opt of ["--init-file", "--rcfile"]) {
     const r = await guard(bash(`bash ${opt} /tmp/no-rc -c "bisellium merge W-310"`));
@@ -273,6 +256,109 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
+});
+
+// W-310 row 16, the cd domain (review round 2; spec rounds 8 and 10): each group is its own test, so each has its own red
+const RECORDER = readFileSync(join(REPO, "scripts", "record-review.sh"));
+const RECORD = "bash scripts/record-review.sh W-310 1 passed";
+const UNKNOWN_DIR = /a directory the guard cannot know/;
+/** A fresh directory holding `scripts/<name>` with the recorder's lines (or `text`). */
+function withScript(name: string, text: string | Buffer = RECORDER, dir = tmp()): string {
+  mkdirSync(join(dir, "scripts"), { recursive: true });
+  writeFileSync(join(dir, "scripts", name), text);
+  return dir;
+}
+const inDir = async (command: string, cwd: string): Promise<{ code: number; err: string }> => guard(bash(command, { cwd }));
+
+test("W-310-b1 behaviour 1 (cd domain): an uncertain cd keeps every directory held and adds the ones it may enter", async () => {
+  const D = tmp();
+  withScript("custom-review.sh", RECORDER, join(D, "sub"));
+  const F = tmp();
+  const chain = `false || cd ${D}; cd sub || true; bash scripts/custom-review.sh`;
+  for (const [name, command] of [
+    ["directly", chain],
+    ["inside bash -c", `bash -c '${chain}'`],
+  ] as const) {
+    const r = await inDir(command, F);
+    assert.equal(r.code, 2, `an uncertain cd: every directory the shell may be in is judged, ${name}`);
+    assert.match(r.err, /\(in scripts\/custom-review\.sh\)/, name);
+  }
+  const kept = await inDir(`cd /tmp || true; ${RECORD}`, REPO);
+  assert.equal(kept.code, 2, "an uncertain cd keeps the directories held before it (a false refusal)");
+  assert.match(kept.err, /\(in scripts\/record-review\.sh\)/, "... and names the recorder");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): a cd after another command is uncertain", async () => {
+  const E = tmp();
+  const r = await inDir(`git status; cd ${E}; ${RECORD}`, REPO);
+  assert.equal(r.code, 2, "a cd after another command is uncertain");
+  assert.match(r.err, /\(in scripts\/record-review\.sh\)/, "... and the checkout stays a candidate");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): a subshell, cd - and pushd do not move the shell, they add", async () => {
+  const E = withScript("custom-review.sh");
+  mkdirSync(join(E, "sub"));
+  const T = tmp();
+  const sub = await inDir(`(cd ${T}; cd sub; true); bash scripts/custom-review.sh`, E);
+  assert.equal(sub.code, 2, "a cd inside a subshell does not move the shell");
+  assert.match(sub.err, /\(in scripts\/custom-review\.sh\)/, "a subshell cd names the script");
+  assert.equal((await inDir(`cd ${T}; cd -; bash scripts/custom-review.sh`, E)).code, 2, "cd - returns to a directory held before");
+  assert.equal((await inDir(`pushd ${E}; bash scripts/custom-review.sh`, T)).code, 2, "pushd is an uncertain cd");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): no cap on the directories judged", async () => {
+  const D = Array.from({ length: 40 }, (_, i) => {
+    const d = join(tmp(), `d${i + 1}`);
+    mkdirSync(d);
+    return d;
+  });
+  withScript("custom-review.sh", RECORDER, D[39]!);
+  const G = tmp();
+  const decoys = D.map((d) => `cd '${d}' || true; `).join("");
+  const line = `${decoys}bash scripts/custom-review.sh`;
+  writeFileSync(join(G, "many.sh"), `${line}\n`);
+  for (const [name, command] of [
+    ["directly", line],
+    ["inside bash -c", `bash -c '${line}'`],
+    ["in a script file", "bash many.sh"],
+  ] as const) {
+    const r = await inDir(command, G);
+    assert.equal(r.code, 2, `no cap on the directories judged, ${name}`);
+    assert.match(r.err, /\(in scripts\/custom-review\.sh\)/, name);
+  }
+});
+
+test("W-310-b1 behaviour 1 (cd domain): many cd targets and no ladder write: the line runs", async () => {
+  const dirs = Array.from({ length: 40 }, () => tmp());
+  const r = await inDir(`${dirs.map((d) => `cd '${d}' || true; `).join("")}echo ok`, tmp());
+  assert.equal(r.code, 0, "many cd targets and no ladder write: the line runs");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): cd - with no certain cd before it: the directory is unknown", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  const rec = await inDir(`cd -; ${RECORD}`, REPO);
+  assert.equal(rec.code, 2, "cd - with no certain cd before it: the directory is unknown (the recorder)");
+  assert.match(rec.err, UNKNOWN_DIR, "... with the unknown-directory line");
+  const none = await inDir("cd -; bash scripts/holds-nothing.sh", U);
+  assert.equal(none.code, 2, "cd - with no certain cd before it: the directory is unknown (a script holding nothing)");
+  assert.match(none.err, UNKNOWN_DIR, "... with the unknown-directory line");
+});
+
+test("W-310-b1 behaviour 1 (cd domain): popd or pushd with no directory: the directory is unknown", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  for (const c of ["popd; bash scripts/holds-nothing.sh", "pushd; bash scripts/holds-nothing.sh", "bash -c 'popd; bash scripts/holds-nothing.sh'"]) {
+    const r = await inDir(c, U);
+    assert.equal(r.code, 2, `popd or pushd with no directory: the directory is unknown: ${c}`);
+    assert.match(r.err, UNKNOWN_DIR, c);
+  }
+});
+
+test("W-310-b1 behaviour 1 (cd domain): after an unknown directory an absolute script is judged by its text", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  const N = tmp();
+  writeFileSync(join(N, "nothing.sh"), "echo hi\n");
+  assert.equal((await inDir(`cd -; bash '${join(N, "nothing.sh")}'`, U)).code, 0, "after an unknown directory an absolute script is judged by its text");
+  assert.equal((await inDir("cd -; echo ok", U)).code, 0, "... and a command that runs no script runs");
 });
 
 test("W-310-b2 behaviour 2: the guard refuses a background while/until loop with no hard bound", async () => {
