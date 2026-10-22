@@ -184,6 +184,12 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   assert.equal(late.code, 2, "a -c after the script operand does not hide the script");
   assert.match(late.err, /\(in scripts\/record-review\.sh\)/, "the late -c names the script");
   assert.equal((await guard(bash("bash -o pipefail -c 'bisellium merge W-900'"))).code, 2, "a -c after -o with its value is still the shell's script");
+  // a `cd` the guard cannot confirm enters a directory leaves the shell where it was (review round 1, finding 2)
+  for (const c of ["cd /missing; bash scripts/record-review.sh W-310 1 passed", "cd /missing && bash scripts/record-review.sh W-310 1 passed", "cd /etc/hostname; bash scripts/record-review.sh W-310 1 passed"]) {
+    const r = await guard(bash(c, { cwd: REPO }));
+    assert.equal(r.code, 2, `an unconfirmed cd does not move the search root: ${c}`);
+    assert.match(r.err, /\(in scripts\/record-review\.sh\)/, c);
+  }
   assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
