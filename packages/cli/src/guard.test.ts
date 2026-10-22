@@ -245,6 +245,23 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
     assert.equal((await guard(bash(`bash -c '${c}${REC}'`, { cwd: cdDir }))).code, 2, `through a -c script: ${c}`);
     assert.equal((await guard(bash("bash wrap.sh", { cwd: cdDir }))).code, 2, `through a script file: ${c}`);
   }
+  // more literal cd targets than the guard judges: refused for that reason, never a root dropped (review round 1, fix census class C)
+  const decoys = (n: number): string => Array.from({ length: n }, (_, i) => `cd /nope${i} || true; `).join("");
+  const many = `${decoys(16)}false || cd ${REPO}; ${REC}`;
+  const manyDir = tmp();
+  writeFileSync(join(manyDir, "many.sh"), `${many}\n`);
+  for (const [name, input] of [
+    ["directly", bash(many, { cwd: "/tmp" })],
+    ["inside bash -c", bash(`bash -c '${many}'`, { cwd: "/tmp" })],
+    ["in a script file", bash("bash many.sh", { cwd: manyDir })],
+  ] as const) {
+    const r = await guard(input);
+    assert.equal(r.code, 2, `sixteen decoy cd targets and the checkout, ${name}`);
+    assert.match(r.err, /too many cd targets to judge/, name);
+  }
+  const fits = await guard(bash(`${decoys(15)}false || cd ${REPO}; ${REC}`, { cwd: "/tmp" }));
+  assert.equal(fits.code, 2, "sixteen cd targets in all are still judged");
+  assert.match(fits.err, /\(in scripts\/record-review\.sh\)/, "... and the recorder is found");
   assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
