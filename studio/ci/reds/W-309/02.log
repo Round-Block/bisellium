@@ -1,0 +1,50 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-309-b2\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-10-22T23:13:20.065Z
+# sella: architect
+# tree: tree:46d34b1cb987ed4721f3905cb2df36ddf325eaae
+# ticket: {"opus":"W-309","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-309/studio","head":"60d51c000d0e0fa9ef1fc81d194e2eb324e5865e","brief":"d0dd49eca843f40966d9556d281c8d514929c630","at":"2026-10-22T23:13:20.013Z"}
+
+TAP version 13
+# Subtest: W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a fresh session over the fix diff and writes the check next reads, or holds with no check written
+not ok 1 - W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a fresh session over the fix diff and writes the check next reads, or holds with no check written
+  ---
+  duration_ms: 2914.026654
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-309/packages/cli/src/next-review.test.ts:90:363'
+  failureType: 'testCodeFailure'
+  error: |-
+    clean: exit 0
+    --- exit 1
+    --- stdout
+    next: W-900 review held
+    why: refusing: the review rung names neither an order nor a recorded verdict to cite
+    next-step: review
+    
+    --- stderr
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-309/packages/cli/src/next-review.test.ts:1231:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2931.990377

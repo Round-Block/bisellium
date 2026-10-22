@@ -1,0 +1,18 @@
+# opus: W-309
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a165f1-c8cc-7432-a689-12b3d8794b83
+# outcome: passed
+# at: 2026-10-22T23:31:59.308Z
+# tree: tree:6fe335d25670119d90d91f3c29001018a6b1fbae
+# brief: briefs/W-309.md blob:d0dd49eca843f40966d9556d281c8d514929c630
+# ticket: {"opus":"W-309","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-309/studio","head":"48d72ce63266659758bc7c4ebabf12a6ed3a16de","brief":"d0dd49eca843f40966d9556d281c8d514929c630","at":"2026-10-22T23:28:25.109Z"}
+
+## Findings
+No findings
+
+## Verdict
+The two behaviours, declared-file boundary, genuine reds, and current-tree gate evidence satisfy the signed brief.
+VERDICT: PASS

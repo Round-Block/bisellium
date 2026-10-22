@@ -465,11 +465,30 @@ export function addReview(w: World, outcome: "passed" | "failed", round: number,
   verb(w.wt, ["review", OPUS, outcome === "passed" ? "--pass" : "--fail", "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", w.wtStudio, "--now", at]);
   commit(w.wt, `studio(${OPUS}): review round ${round} ${outcome}`);
 }
-/** A new SOURCE commit on the opus branch; the receipt follows it unless asked not to. */
-export function advanceSource(w: World, refresh = true): void {
+/**
+ * A new SOURCE commit on the opus branch; the receipt follows it unless asked not to, and, once a review round is recorded,
+ * so does a clean fix check (W-309) unless asked not to.
+ */
+export function advanceSource(w: World, refresh = true, checked = true): void {
   appendFileSync(join(w.wt, "source.txt"), `change ${Date.now()}\n`);
   commit(w.wt, `feat(${OPUS}): source change`);
   if (refresh) writeReceipt(w, "current");
+  if (checked && existsSync(join(w.wtStudio, "ci")) && readdirSync(join(w.wtStudio, "ci")).some((n) => n.startsWith(`${OPUS}-review-`))) fixChecked(w);
+}
+/**
+ * W-309: the fix check the review rung's fix-check perform writes, `<repo>/.bisellium/reviews/<id>/fix-<n>/check.json`: for
+ * the newest review round (or `round`), at the worktree's current tree (or `tree`), clean unless `open` names paths; `as`
+ * writes it under another round's directory.
+ */
+export function fixChecked(w: World, open: string[] = [], o: { round?: number; tree?: string; as?: number } = {}): void {
+  const rounds = readdirSync(join(w.wtStudio, "ci")).flatMap((n) => {
+    const m = new RegExp(`^${OPUS}-review-([1-9][0-9]*)\\.log$`).exec(n);
+    return m === null ? [] : [Number(m[1])];
+  });
+  const n = o.round ?? Math.max(0, ...rounds);
+  const dir = join(w.repo, ".bisellium", "reviews", OPUS, `fix-${o.as ?? n}`);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "check.json"), `${JSON.stringify({ round: n, tree: o.tree ?? sourceTree(w.wt), session: "s-fixture", open })}\n`);
 }
 export function landMerge(w: World, fetched: boolean, moved = false): string {
   const side = join(scratch(`${w.tag}-side`), "c");
