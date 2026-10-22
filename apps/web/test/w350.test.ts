@@ -207,7 +207,7 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
     upload,
     {
       if: "github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots",
-      uses: "actions/upload-artifact@v4",
+      uses: "actions/upload-artifact@v6",
       with: {
         name: "web-screenshot-baselines-${{ github.sha }}",
         "if-no-files-found": "error",

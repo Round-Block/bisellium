@@ -113,7 +113,7 @@ test("W-168-b1 behaviour 1: ci.yml triggers merge_group and carries the certify 
   assert.equal(steps[8]["working-directory"], "tooling");
   assert.equal(steps[8].shell, "bash", "step 9 runs under bash so pipefail applies");
   assert.deepEqual(steps[8].env, { GH_TOKEN: "${{ github.token }}" });
-  assert.equal(steps[9].uses, "actions/upload-artifact@v4");
+  assert.equal(steps[9].uses, "actions/upload-artifact@v6");
   assert.equal(steps[9].if, "always()");
   assert.equal(steps[9].with.name, "certify-${{ github.run_id }}");
   assert.equal(steps[9].with["if-no-files-found"], "warn");

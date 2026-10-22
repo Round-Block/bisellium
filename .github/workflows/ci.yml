@@ -53,7 +53,7 @@ jobs:
   # checks can read a symbolic current branch without trusting an input ref.
   gates:
     if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
         with:
@@ -81,7 +81,7 @@ jobs:
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s format:check
       # W-131: the live run.test.ts rows need bubblewrap and unprivileged user
-      # namespaces; ubuntu-latest has neither out of the box, and the guard row
+      # namespaces; the Ubuntu runner has neither out of the box, and the guard row
       # fails if one still skips under BISELLIUM_REQUIRE_LIVE_ROWS=1.
       - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: sudo apt-get update && sudo apt-get install -y bubblewrap
@@ -115,7 +115,7 @@ jobs:
   # reaches neither checkout nor npm ci.
   officina:
     if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - if: github.event_name != 'pull_request'
         uses: actions/checkout@v5
@@ -186,7 +186,7 @@ jobs:
         env:
           BISELLIUM_UPDATE_SCREENSHOTS: ${{ inputs.refresh_screenshots && '1' || '0' }}
       - if: github.event_name == 'workflow_dispatch' && inputs.refresh_screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: web-screenshot-baselines-${{ github.sha }}
           if-no-files-found: error
@@ -202,7 +202,7 @@ jobs:
   # counts as passing.
   certify:
     if: github.event_name == 'merge_group'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 100
     permissions:
       contents: read
@@ -233,7 +233,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: certify-${{ github.run_id }}
           if-no-files-found: warn

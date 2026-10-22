@@ -665,7 +665,7 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
         "node --import tsx apps/web/tests-serve/rendering-environment.ts apps/web/tests-serve/screenshots.spec.ts-snapshots/rendering-environment.json",
         DEFERRED,
       ],
-      ["actions/upload-artifact@v4", REFRESH_SCREENSHOTS],
+      ["actions/upload-artifact@v6", REFRESH_SCREENSHOTS],
     ],
     "web-e2e: every step skips on a pull request",
   );
