@@ -234,7 +234,9 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0): stri
     const { words: w } = strip(words);
     const here = { ...ctx, cwd };
     if (w[0] === "cd") {
-      cwd = (w[1] === undefined ? ctx.home : wordPath(w[1], here)) ?? cwd;
+      // a target the guard cannot confirm is a directory leaves the root: a failed cd leaves the shell in place
+      const target = w[1] === undefined ? ctx.home : wordPath(w[1], here);
+      if (target !== undefined && statSync(target, { throwIfNoEntry: false })?.isDirectory()) cwd = target;
       continue;
     }
     const inner = shellScript(w);
