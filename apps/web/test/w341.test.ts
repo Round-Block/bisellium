@@ -108,3 +108,21 @@ test("W-341-b1 behaviour 1: one states matrix, one status by fixed precedence, o
   const rule = /\.shell__status \{([^}]*)\}/.exec(css)?.[1] ?? "";
   for (const decl of ["position: absolute;", "width: 1px;", "height: 1px;", "overflow: hidden;", "clip-path: inset(50%);"]) assert.ok(rule.includes(decl), `.shell__status is visually hidden and out of flow: ${decl}`);
 });
+
+test("W-341-b2 behaviour 2: the Inbox shows and reports loading, empty, error, refused and pending, and never invents petitions", async () => {
+  await matrix();
+  const view = (await load("src/screens/InboxView.tsx"))["InboxView"];
+  const base = { petitiones: [], opera: [], focusIndex: 0, reason: "", onReasonChange: () => undefined, onFocusChange: () => undefined, onSubmit: () => undefined };
+  assert.match(render(view, { ...base, notice: "Loading the inbox…" }), /<p class="inbox__empty">Loading the inbox…<\/p>/, "a notice replaces the empty copy while loading");
+  assert.match(render(view, base), /<p class="inbox__empty">Nothing waiting on you<\/p>/, "the empty copy stands without a notice");
+  const one = { ...base, petitiones: [{ id: "A-1", opus: "W-1", from: "architect", subject: "s", body: "b" }] };
+  assert.match(render(view, { ...one, notice: "Sending your answer…" }), /<div class="inbox__decision-panel"><p class="screen-notice">Sending your answer…<\/p>/, "a pending notice sits in the decision panel");
+  assert.equal(count(render(view, one), "screen-notice"), 0, "no notice at rest");
+  wired("Inbox");
+  const source = read("src/screens/Inbox.tsx");
+  assert.doesNotMatch(source, /catch\(\(\) => setData\(DEV_DATA\)\)/, "a failed read never substitutes the demo petitions");
+  assert.match(source, /\.catch\(\(\) => setReadFailed\(true\)\)/, "a failed read is the error state");
+  assert.match(source, /screenStatus\("inbox", \{/, "the Inbox derives its one status from the matrix");
+  assert.match(source, /pending: sending/, "an answer in flight is the pending state");
+  assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Inbox reports each status change");
+});
