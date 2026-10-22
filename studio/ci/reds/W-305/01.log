@@ -1,0 +1,47 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-305-b1\s --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-22T07:49:27.489Z
+# sella: architect
+# tree: tree:f4bb9676014210ebd9824178d2753ea122359b06
+# ticket: {"opus":"W-305","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-305/studio","head":"3bea7128055356dab828a0049ad069b55eb98fa2","brief":"25998b91d7c62429b5088e5a52956af7015573f3","at":"2026-10-22T07:49:27.447Z"}
+
+TAP version 13
+# Subtest: W-305-b1 behaviour 1: a light brief has one behaviour and one to three Files owned bullets, or it is refused
+not ok 1 - W-305-b1 behaviour 1: a light brief has one behaviour and one to three Files owned bullets, or it is refused
+  ---
+  duration_ms: 9.608312
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-305/packages/cli/src/brief-admission.test.ts:45:1427'
+  failureType: 'testCodeFailure'
+  error: |-
+    two behaviours
+    + actual - expected
+    
+    + []
+    - [
+    -   'a light brief has one behaviour, but it numbers 2; use the full template (D-075 D)'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'a light brief has one behaviour, but it numbers 2; use the full template (D-075 D)'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-305/packages/cli/src/brief-admission.test.ts:955:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 242.033066
