@@ -1,0 +1,25 @@
+# opus: W-305
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T07:18:46.371Z
+# tree: tree:792e99bded871b01d53fd73fd2a99f18e80425b8
+# brief: briefs/W-305.md blob:f4092732a5222a4a18c81bb95d21862e559f361f
+# ticket: {"opus":"W-305","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"15e5c7591cde6aaf8676dfd240541e46acd13356","brief":"f4092732a5222a4a18c81bb95d21862e559f361f","at":"2026-10-22T07:18:42.502Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-305-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — "light" is defined once, in `briefForm`, which ready, check and next's signature gates already read; a brief that claims light with more than one behaviour or outside one to three Files owned bullets is `{ light: true, error }` and every reader refuses it with the reason, so no parallel reader is added — check: brief:21, brief:48, packages/commands/src/brief-admission.ts:525, packages/cli/src/next.ts:234
+2. advisory — the fast lane is the one reviewer choice in deriveNext: a non-ui opus whose brief reads as light walks today's no-reviewer path (`signedSpec`, blob-bound before the branch), so a signed light brief names branch and every other brief keeps the reviewer order, the model and the split — check: brief:22, brief:50, brief:52, packages/cli/src/next.ts:960
+3. advisory — both rows fail by ERR_ASSERTION on their red commits (b1 on master plus the row, b2 on behaviour 1's commit plus the row), pass on their feature commits, and b1 still passes on both later commits; the classifier accepts both as assertion-level — check: brief:85, brief:89, reds.out, row-b1-red1.out, row-b2-red2.out
+4. advisory — five existing rows flip and are updated in the feature commit that flips them (W-255-b1, W-255-b2, W-264-b1, W-255-b3, W-264-b2), exactly the census's flips, none unnamed; both owned test files pass whole on the prototype, lint, format and typecheck pass, and both officina checks match master — check: brief:94, brief:95, gates-proto.out, gates-master.out, fixture-census.md, census-green.out
+5. advisory — the design lex's §1 light-brief text is Patron-owned and is left for the Patron to amend (Default 3); no code-owned path is in the patch — check: brief:60, brief:101, brief:115
+6. advisory — the four-commit mbox applies to c675e04b in a fresh clone with an identical tree; admission of the brief passes and the ledger passes the verdict writer — check: brief:11, mbox-check.out, admission.out, ledger-check.out
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-305.md`, prototype four commits after master c675e04b; two behaviours, 3 points, no code-owned path touched.

@@ -1,0 +1,20 @@
+# opus: W-305
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-22T07:48:54.325Z
+# tree: tree:c30f4d1a3fc79d3c9ebbdd5a3a28f6826143a320
+# brief: briefs/W-305.md blob:25998b91d7c62429b5088e5a52956af7015573f3
+# ticket: {"opus":"W-305","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"dda0f02039f5b14a03b5ba4dac32075f42a31f06","brief":"25998b91d7c62429b5088e5a52956af7015573f3","at":"2026-10-22T07:48:53.651Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-305-spec-2.log #1: closed — brief:75 now requires every read record kind to pass `isNativeOpusKind` and be non-`ui`; prototype `packages/cli/src/next.ts:963`, W-305-b2 malformed trunk/branch cases, and `kind-guard-mutation-r3.out` demonstrate fail-closed behavior.
+
+## Verdict
+The revision closes the prior blocker without introducing a new substantive finding.
+VERDICT: PASS
