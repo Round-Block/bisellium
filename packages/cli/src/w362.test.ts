@@ -1,5 +1,5 @@
 /**
- * W-362 row b3 (studio/briefs/W-362.md): the guard installer `scripts/agent-workspace.sh guard` and its input
+ * W-362 rows b3-b4 (studio/briefs/W-362.md): the guard installer `scripts/agent-workspace.sh guard` and its input
  * checks, and the merge rung under the sandbox's deny on the agent clone's source. node:test TAP, selected by
  * `--test-name-pattern='^W-362-b<n>\s'`. Every fixture (clones, a home, a PATH) lives under the OS tmp dir; nothing
  * here reads or writes the real ~/.claude, ~/projects or the agent clone.
@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
+import { fetchTrunk, quoted } from "./integrate.js";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const dirs: string[] = [];
@@ -190,4 +191,61 @@ test("W-362-b3 behaviour 3: the guard installer judges its inputs before any cha
   const dead = install(f, { W362_PROBE_FAIL: "1" }, "guard");
   assert.equal(dead.code, 1, "a failing probe stops the install");
   assert.match(dead.out, /is not wired, not outside .* or not live/, "a failing probe names the guard: lines");
+});
+
+/** A main checkout on master with `packages/a`, `studio/s` and `root`, and a bare origin; `advance` pushes a commit
+ *  changing the named files from a second clone, fetched into the main checkout as the reviewed merge commit. */
+function mainCheckout(): { main: string; advance: (...files: string[]) => string } {
+  const t = join(tmp(), "main it's ü");
+  mkdirSync(t);
+  git(t, "init", "-q", "--bare", "origin.git");
+  git(t, "clone", "-q", join(t, "origin.git"), "main");
+  const main = join(t, "main");
+  for (const [file, text] of [["packages/a", "a\n"], ["studio/s", "s\n"], ["root", "r\n"]] as const) {
+    mkdirSync(dirname(join(main, file)), { recursive: true });
+    writeFileSync(join(main, file), text);
+  }
+  git(main, "add", ".");
+  git(main, "commit", "-qm", "one");
+  git(main, "push", "-q", "origin", "master");
+  git(t, "clone", "-q", join(t, "origin.git"), "other");
+  const other = join(t, "other");
+  let n = 0;
+  const advance = (...files: string[]): string => {
+    n++;
+    for (const file of files) writeFileSync(join(other, file), `${n}\n`);
+    git(other, "commit", "-qam", `change ${n}`);
+    git(other, "push", "-q", "origin", "master");
+    git(main, "fetch", "-q", "origin");
+    return git(other, "rev-parse", "HEAD");
+  };
+  return { main, advance };
+}
+
+test("W-362-b4 behaviour 4: the merge rung hands the Patron a fast-forward that would write a folder the session may not write, before touching the main checkout", (t) => {
+  if (process.getuid?.() === 0) return t.skip("root writes a read-only directory");
+  const { main, advance } = mainCheckout();
+  chmodSync(join(main, "packages"), 0o555);
+  try {
+    // a change only to folders the session may write still moves master
+    const writable = advance("studio/s", "root");
+    assert.deepEqual(fetchTrunk(main, writable), { ok: true }, "a fast-forward into writable folders runs");
+    assert.equal(git(main, "rev-parse", "HEAD"), writable);
+    const target = advance("packages/a", "root");
+    const held = fetchTrunk(main, target);
+    assert.equal(held.ok, false, "a fast-forward into a folder the session may not write is held");
+    assert.ok(!held.ok);
+    assert.match(held.reason, /^refusing: this session may not write incoming paths \(packages\/a\) in the main checkout/, "the reason names the denied path");
+    assert.match(held.reason, /the main checkout is untouched$/);
+    assert.deepEqual(held.after, [`patron: git -C ${quoted(main)} merge --ff-only ${target}`], "the Patron's one command");
+    assert.equal(git(main, "rev-parse", "HEAD"), writable, "master did not move");
+    assert.equal(git(main, "status", "--porcelain"), "", "nothing in the main checkout changed");
+    assert.equal(readFileSync(join(main, "root"), "utf8"), "1\n", "not even a file the session may write");
+  } finally {
+    chmodSync(join(main, "packages"), 0o755);
+  }
+  // with the folder writable (the Patron's terminal), the same fast-forward runs
+  const source = git(main, "rev-parse", "origin/master");
+  assert.deepEqual(fetchTrunk(main, source), { ok: true }, "a writable source folder runs");
+  assert.equal(readFileSync(join(main, "packages", "a"), "utf8"), "2\n");
 });
