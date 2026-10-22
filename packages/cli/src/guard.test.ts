@@ -183,3 +183,32 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
 });
+
+test("W-310-b2 behaviour 2: the guard refuses a background while/until loop with no hard bound", async () => {
+  const refused = [
+    "until test -s /tmp/x.exit; do sleep 20; done",
+    "while true; do sleep 5; done",
+    "bash -c 'until [ -f /tmp/x ]; do sleep 1; done'",
+    "cd /tmp && while :; do sleep 1; done",
+    "timeout 0 bash -c 'while true; do sleep 1; done'",
+    "timeout 60 sleep 1; until test -f x; do sleep 1; done",
+    'until grep -q done "/tmp/my dir/ü.log"; do sleep 3; done',
+  ];
+  for (const c of refused) {
+    const r = await guard(bash(c, {}, true));
+    assert.equal(r.code, 2, `refused: ${c}`);
+    assert.match(r.err, /needs a hard bound/, c);
+  }
+  assert.equal((await guard(bash(refused[0]!, RUNNER, true))).code, 2, "a subagent's background loop is refused too");
+  const allowed = [
+    "timeout 600 bash -c 'until test -s /tmp/x.exit; do sleep 20; done'",
+    "timeout -k 5 10m bash -c 'while true; do sleep 1; done'",
+    "~/.bisellium-evidence/wait-until.sh 30 test -s ~/x.exit",
+    "bash /home/u/.bisellium-evidence/wait-until.sh 30 'test -s /tmp/x'",
+    "npm test",
+    "for i in 1 2 3; do sleep 1; done",
+    'echo "while true"',
+  ];
+  for (const c of allowed) assert.equal((await guard(bash(c, {}, true))).code, 0, `allowed: ${c}`);
+  assert.equal((await guard(bash(refused[0]!))).code, 0, "a foreground loop is not judged");
+});
