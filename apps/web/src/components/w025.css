@@ -44,6 +44,16 @@
   border: 0;
 }
 
+/* W-341: a screen's visible status line, rendered only in a non-rest state (loading, empty, error, pending). */
+.screen-notice {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+  margin: 0;
+  padding: var(--sp-2) 0;
+}
+
 /* ── Sidebar ──────────────────────────────────────────────────────── */
 
 .sidebar {
