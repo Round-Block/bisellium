@@ -248,8 +248,10 @@ function ladderStep(argv: string[]): string | undefined {
   return PERFORM_LADDER.has(step) ? `next --perform --expect ${step}` : undefined;
 }
 
-/** The most literal `cd` targets other than the moving form one command may add to the roots judged. */
+/** The most literal `cd` targets other than the moving form one command may add to the roots judged;
+ *  one more is refused as `TOO_MANY_CD`, never judged on a subset. */
 const EXTRA_ROOTS = 16;
+const TOO_MANY_CD = "too many cd targets to judge";
 
 /** True when the guard can enter the directory: it exists and its execute bit is open to this process. */
 function enterable(path: string): boolean {
@@ -284,9 +286,13 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0): stri
     const moving = c.words[0] === "cd" && w.length === 2 && operands.length === 1 && /^[;\n]*$/.test(c.before) && /^(?:[;\n]*|&&\n*)$/.test(c.after);
     const target = wordPath(operands[0] ?? "~", here);
     if (moving && target !== undefined && enterable(target)) cwd = target;
-    else for (const x of operands.length ? operands : ["~"]) if (extra.size < EXTRA_ROOTS) extra.add(wordPath(x, here) ?? "");
+    else
+      for (const x of operands.length ? operands : ["~"]) {
+        const root = wordPath(x, here);
+        if (root !== undefined) extra.add(root);
+        if (extra.size > EXTRA_ROOTS) return TOO_MANY_CD;
+      }
   }
-  extra.delete("");
   for (const [k, { words }] of seq.entries()) {
     const { words: w } = strip(words);
     if (w[0] === "cd") continue;
@@ -405,6 +411,7 @@ export function guardRefusal(input: Dict): string | undefined {
     const command = str(args["command"]);
     if (!command) return undefined;
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
+    if (write?.startsWith(TOO_MANY_CD)) return `refused: ${TOO_MANY_CD} (more than ${EXTRA_ROOTS} in one command line): split the command, or dispatch a ladder-runner (W-310)`;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
     if (args["run_in_background"] === true && unboundedLoop(command))
       return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
