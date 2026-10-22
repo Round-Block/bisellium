@@ -1,0 +1,22 @@
+# opus: W-310
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16309-bbea-7a61-9621-5e13ad985e31
+# outcome: failed
+# at: 2026-10-22T14:38:25.057Z
+# tree: tree:0038e60e6caec44830861e678b9bd1f8a4829e7d
+# brief: briefs/W-310.md blob:e88ee6d19fc6a3a7b8149b31bb72953e7436a8f8
+# ticket: {"opus":"W-310","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":".worktrees/W-310/studio","head":"a9bcabce888cae1792dbf522bbd4171a59c0a056","brief":"e88ee6d19fc6a3a7b8149b31bb72953e7436a8f8","at":"2026-10-22T14:38:24.551Z"}
+
+## Findings
+1. blocking — studio/briefs/W-310.md:109 Reached through ci/W-310-spec-8.log #1’s class: the tests never propagate an already-unknown directory into a later `-c` body or absolute wrapper script, so a builder could reset the state at recursion and pass every named assertion while permitting `cd -; bash -c 'bash scripts/record-review.sh …'`, contrary to brief:103. Add to brief:109: “`cd -; bash -c 'bash scripts/record-review.sh …'` and `cd -; bash <absolute wrapper invoking that relative recorder>` exit 2 with the unknown-directory line.” [severity: S1] [design: keeps] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-310-b1
+
+## Earlier findings
+- ci/W-310-spec-8.log #1: closed — brief:103 makes inherited directory state unknown and refuses subsequent relative script paths.
+- ci/W-310-spec-8.log #2: closed — brief:109 and brief:136 now exercise forty distinct enterable candidates with the recorder only in the fortieth.
+
+## Verdict
+The two round-8 blockers are closed, but unknown-directory state still lacks evidence across recursive shell and script boundaries.
+VERDICT: FAIL

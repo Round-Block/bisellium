@@ -1,0 +1,24 @@
+# opus: W-310
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T14:27:59.946Z
+# tree: tree:0038e60e6caec44830861e678b9bd1f8a4829e7d
+# brief: briefs/W-310.md blob:47d89a0a5cbb2de72e0742991309c34fb634bae3
+# ticket: {"opus":"W-310","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-310/studio","head":"a9bcabce888cae1792dbf522bbd4171a59c0a056","brief":"47d89a0a5cbb2de72e0742991309c34fb634bae3","at":"2026-10-22T14:27:55.632Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-310-spec/promise-ledger-r7.md
+
+## Findings
+
+1. advisory — build review round 2 finding 1 (`false || cd /tmp; cd w310-sub || true; bash scripts/custom-review.sh` judged against too few directories) is now a ruled case: after the first `cd` the rule does not read as certain, every `cd` or `pushd` only adds directories, each resolved against every directory held so far, and the script is judged in all of them, so the command is refused; pinned by `W-310-b1` "an uncertain cd: every directory the shell may be in is judged" — check: brief:103, brief:109, fix-r2-for-builder.md:1
+2. advisory — build review round 2 finding 2 (`cd /tmp || true; bash scripts/record-review.sh` from the checkout refused) is a stated false refusal on the safe side: only a plain `cd <one operand>` in the line's leading run of such `cd`s, joined by `;`, `&&` or a newline, moves the directory; the guard is a habit stop, not a sandbox against a hostile agent (D-045); pinned by `W-310-b1` "an uncertain cd keeps the directories held before it (a false refusal)" — check: brief:30, brief:103
+3. advisory — build review round 2 finding 3 (the undeclared sixteen-target refusal) is closed by dropping the cap: the directories judged have no cap, and a line slow enough to pass the 2 s timeout runs under Promise fail-open's existing limit; the three cap assertions flip, named in Acceptance; pinned by `W-310-b1` "no cap on the directories judged" and "many cd targets and no ladder write: the line runs" — check: brief:3, brief:103, brief:136
+4. advisory — the same class, found while ruling it and closed by the same rule: a plain `cd` after another command or inside a subshell, `cd -` and `pushd` no longer move or escape the judged directories (pinned by "a cd after another command is uncertain", "a cd inside a subshell does not move the shell", "cd - returns to a directory held before", "pushd is an uncertain cd"); `CDPATH`, `env -C`, bash's `autocd`, a `cd` inside a sourced script, a `cd` target built from a variable and a sandbox-denied directory are stated limits — check: brief:103
+5. advisory — every other row, promise, pin and Default is unchanged; no existing `cd` assertion changes its exit code (the `nocd` list, the moving-form pins and the unconfirmed-cd pins keep theirs); the code and test changes are the builder's, test-first, in `fix-r2-for-builder.md` — check: brief:136, promise-ledger-r7.md:31
+
+## Verdict
+
+passed — W-310 revision 5, the `cd` domain after build review round 2, signed by the architect (`claude-opus-5-5`, D-072): row 16 states the one certain `cd` form and judges every other `cd` and `pushd` by every directory the shell may be in, with no cap; finding 1 is refused, finding 2 is a stated false refusal, the sixteen-target cap is dropped; the builder makes the code match.

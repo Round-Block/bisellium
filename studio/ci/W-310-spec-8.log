@@ -1,0 +1,27 @@
+# opus: W-310
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16309-bbea-7a61-9621-5e13ad985e31
+# outcome: failed
+# at: 2026-10-22T14:34:22.241Z
+# tree: tree:0038e60e6caec44830861e678b9bd1f8a4829e7d
+# brief: briefs/W-310.md blob:47d89a0a5cbb2de72e0742991309c34fb634bae3
+# ticket: {"opus":"W-310","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-310/studio","head":"a9bcabce888cae1792dbf522bbd4171a59c0a056","brief":"47d89a0a5cbb2de72e0742991309c34fb634bae3","at":"2026-10-22T14:34:21.188Z"}
+
+## Findings
+1. blocking — studio/briefs/W-310.md:103 Reached through ci/W-310-review-2.log #1’s class: brief:103 claims `cd -` and `popd` remain within held candidates, but a leading `cd -` reads inherited `OLDPWD`; a main-thread caller can return to the checkout and run its relative review recorder while `ladderWrite` searches only `cwd` and home. Replace brief:103’s clause with: “`cd -` and `popd` return to a held directory when one exists; otherwise the directory is unknown and `ladderWrite` refuses a later relative script invocation.” [severity: S1] [design: changes] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-310-b1
+2. blocking — studio/briefs/W-310.md:109 Reached through ci/W-310-review-2.log #3’s class: brief:109’s forty `/nope<i>` targets are not enterable, so they never become candidates under brief:103; a retained sixteen-candidate truncation could pass the named evidence while missing a recorder in candidate seventeen. Replace brief:109’s forty-decoy clause with: “Forty distinct enterable fixture directories are added by uncertain `cd` commands, the recorder exists only in the fortieth and its relative invocation exits 2 in all three nesting forms; the same forty candidates before `echo ok` exit 0.” [severity: S1] [design: keeps] [class: spec×fix-opens-new-surface] — check: packages/cli/src/guard.test.ts W-310-b1
+
+## Earlier findings
+- ci/W-310-spec-5.log #1: closed — brief:148 moves the installer and its PATH checks to W-362.
+- ci/W-310-spec-5.log #2: closed — brief:148 moves `GUARD_DIR` installation and validation to W-362.
+- ci/W-310-spec-5.log #3: closed — brief:148 moves the user-settings sandbox merge to W-362.
+- ci/W-310-spec-5.log #4: closed — brief:90 and brief:148 make `env -S` a stated W-362 limit.
+
+## Verdict
+The `bash -O`/`+O` operand is a stated W-362 limit.
+The ci/W-310-spec-2.log #2 installer-boundary finding is closed because brief:148 removes the installer from W-310.
+The cut closes every inherited blocker, but the revised `cd` domain misses inherited `OLDPWD` and its no-cap evidence never creates the promised candidate set.
+VERDICT: FAIL
