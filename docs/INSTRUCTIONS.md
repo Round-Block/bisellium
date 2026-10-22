@@ -95,9 +95,9 @@ or monitor task, named in its transcript, still runs (once per stop). The
 command classifier is lexical: it recognises the CLI as `bisellium`,
 `npx bisellium`, `npm run bisellium --` and `node …/bisellium.mjs`, behind
 assignments, `env`, `command`, `exec`, `nice`, `xargs`, `timeout` and
-`bash -c`; deliberate evasion (eval, aliases, functions, a command or script
-path built from a variable; W-362: `env -S`'s split string and `bash -O`'s
-option operand) is not judged. `check --repo` blocks `hook.guard` when the repo's
+`bash -c`, and reads `env -S`'s split string and a shell option's operand
+before a script file (W-362); deliberate evasion (eval, aliases, functions, a
+command or script path built from a variable) is not judged. `check --repo` blocks `hook.guard` when the repo's
 `.claude/settings.json` exists and does not wire it. `hooks check --repo
 <dir>` prints a `guard:` line each for wired, installed outside `<dir>`
 (hooks run unsandboxed) and live (it refuses a main-thread `bisellium merge`),
