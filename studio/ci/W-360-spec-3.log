@@ -1,0 +1,27 @@
+# opus: W-360
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: revise
+# at: 2026-10-22T15:39:06.636Z
+# tree: tree:27f17d33fa9442840c1539ba1be0a30b57eb22ef
+# dispatch_prompt: ci/W-360-ui-prompt-3.md
+# design_digest: sha256:b4b6c1c9d924cf91b20f1ff078075b2a76964373598ca61542be832085a206b5
+# ticket: {"opus":"W-360","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"d85b652f279768291dd57af508f3213b518fc5b8","brief":"ea2f1435eaa9920f31b432e3580f4b5822889c90","at":"2026-10-22T15:39:05.913Z"}
+
+## Findings
+
+1. blocking — brief:50 — The baseline Board gate can pass while `/api/inbox` is still loading: cards and ladders already exist, “connected” satisfies its liveness check, and the regex represented as `Loading(?:U+2026|three dots)` does not match “Loading the board” followed by an ellipsis. This affects both widths. — replace with: Require Board’s completed `live` shell state in both capture paths, retain the baseline fixture checks, and reject the actual loading sentences. — check: apps/web/tests-serve/screenshots.spec.ts; hold Board’s `/api/inbox` response at both widths and prove capture cannot proceed until release.
+
+2. blocking — brief:19 — Seats’ `ready` state and model selects establish only that `/api/officina` loaded; `/api/models` resolves independently and can subsequently change selected labels and available choices. Both capture paths can therefore record an unfinished Seats read. — replace with: Before each Seats capture, require the roster and model-list read to finish and their resulting labels to render; neither shell readiness nor select existence alone establishes completion. — check: apps/web/tests-serve/capture-state.spec.ts and apps/web/tests-serve/screenshots.spec.ts; hold `/api/models` at both widths, then release it and verify the rendered result before capture.
+
+3. advisory — brief:54 — The prototype’s 390px capture contains the controls and arrows, but equal-width roster columns reduce different model values to “claude-”. The containment assertion does not establish value readability. — replace with: Keep the phone containment rules and provide enough space, or adjacent wrapping text, to identify each selected model fully while retaining its visible arrow and the existing desktop layout. — check: apps/web/src/components/w025.css; apps/web/tests-serve/layout.spec.ts; the 390px Seats capture.
+
+## Recommendation
+
+The architect can close the two readiness gaps without a new visual design; Inbox and Officina’s named evidence otherwise matches their settled initial views.
+The frozen instant produces coherent September 25 dates, a Friday day strip, current health ages and consistent Board footer times.
+The phone fix preserves desktop styling and contains the arrows, but selected model identities need better readability.
+Retain W-361’s approved palette, leave accent placement to W-366, and follow D-103’s refresh order with the Patron approving the resulting screen pairs.
+Verdict: revise
