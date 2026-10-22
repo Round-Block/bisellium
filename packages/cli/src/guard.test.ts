@@ -23,7 +23,9 @@ const tmp = (): string => {
   dirs.push(d);
   return d;
 };
+const lockedDirs: string[] = [];
 after(() => {
+  for (const d of lockedDirs) chmodSync(d, 0o700);
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 });
 
@@ -208,6 +210,7 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   const locked = join(tmp(), "locked");
   mkdirSync(locked);
   chmodSync(locked, 0o000);
+  lockedDirs.push(locked);
   const nocd = [
     `cd ${locked}; ${REC}`,
     `cd /tmp extra; ${REC}`,
