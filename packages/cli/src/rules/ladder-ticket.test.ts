@@ -1,5 +1,6 @@
 /**
  * W-268 rows b1-b3 (studio/briefs/W-268.md): ladder.ticket. node:test TAP, selected by `--test-name-pattern='^W-268-b<n>\s'`.
+ * W-358 rows b1-b3 (studio/briefs/W-358.md): ladder.ticket on the record's tickets: entries, and ladder.order.
  * Every row builds its own officina under the OS tmp dir and reads no studio/ file.
  */
 import assert from "node:assert/strict";
@@ -149,4 +150,66 @@ test("W-268-b3 behaviour 3: only an open opus's logs from the officina's first t
   for (const f of [`${ID}-spec-1.log`, `${ID}-review-1.log`]) verdict(fresh, f, { phase: f.includes("spec") ? "spec" : "build", round: 1, at: "2026-10-15T00:00:10+00:00" }, []);
   rmSync(join(fresh, "ci", "reds"), { recursive: true });
   assert.deepEqual(found(fresh), [], "an officina with no ticket yet judges nothing, not even a log with no exact UTC at");
+});
+
+// ---- W-358 (W-268 part 2): the record's tickets: entries and ladder.order
+/** A record entry's canonical line: `ready`/`done` at round 0, `review` at its evidence round. */
+const entryLine = (action: string, at: string, w: { opus?: string; round?: number } = {}): string =>
+  JSON.stringify({ opus: w.opus ?? ID, step: action, action, round: w.round ?? (action === "review" ? 1 : 0), actor: "producer", studio: "studio", head: HEX, brief: HEX, at });
+/** W-900's record in `state` with the `tickets:` value given (a list or any other YAML value), written as JSON flow. */
+function entries(root: string, value: unknown, state = "greenlit"): string {
+  writeFileSync(join(root, "opera", `${ID}.md`), `---\nid: "${ID}"\ntitle: "An opus"\nkind: "feature"\ncollegium: "production"\nstate: ${state}\ntickets: ${JSON.stringify(value)}\n---\n`);
+  return root;
+}
+const READY = entryLine("ready", "2026-10-15T00:05:00.000Z");
+const REVIEW = entryLine("review", "2026-10-15T00:25:00.000Z");
+const DONE = entryLine("done", "2026-10-15T00:40:00.000Z");
+const RECORD = [`block opera/${ID}.md`];
+const of = (rule: string) => (root: string) => checkStudio(root, NOW).findings.filter((f) => f.rule === rule);
+const ticketRule = of("ladder.ticket");
+const orderRule = of("ladder.order");
+const at = (fs: { level: string; where: string }[]): string[] => fs.map((f) => `${f.level} ${f.where}`);
+
+test("W-358-b1 behaviour 1: ladder.ticket blocks a record's tickets: entry that is not a step ticket line, names another opus, or names another action or round", () => {
+  const loose = entries(officina(), [READY.replace(",", ", "), REVIEW]);
+  assert.deepEqual(at(ticketRule(loose)), RECORD, "an entry that is not the canonical line blocks at the record");
+  assert.match(ticketRule(loose)[0]!.message, /W-900's tickets: entry 1 is not a step ticket line \(not the canonical line/, "the message names the entry and parseTicketLine's reason");
+  assert.deepEqual(at(ticketRule(entries(officina(), { ready: READY }))), RECORD, "a tickets: value that is not a list blocks");
+  assert.deepEqual(at(ticketRule(entries(officina(), [READY, 7]))), RECORD, "an entry that is not a string blocks");
+  const foreign = entries(officina(), [entryLine("ready", "2026-10-15T00:05:00.000Z", { opus: "W-901" })]);
+  assert.deepEqual(at(ticketRule(foreign)), RECORD, "an entry naming another opus blocks");
+  assert.match(ticketRule(foreign)[0]!.message, /entry 1 names W-901, want W-900/, "the message names both");
+  const action = entries(officina(), [READY, entryLine("red", "2026-10-15T00:25:00.000Z", { round: 1 })]);
+  assert.deepEqual(at(ticketRule(action)), RECORD, "an entry for an action a record does not hold blocks");
+  assert.match(ticketRule(action)[0]!.message, /entry 2 is a red ticket; a record's tickets: holds only ready, review and done/, "the message names the action");
+  const ready = entries(officina(), [entryLine("ready", "2026-10-15T00:05:00.000Z", { round: 1 })]);
+  assert.deepEqual(at(ticketRule(ready)), RECORD, "a ready entry for round 1 blocks");
+  assert.match(ticketRule(ready)[0]!.message, /entry 1 \(ready\) names round 1, want round 0/, "the message names the round");
+  const review = entries(officina(), [READY, entryLine("review", "2026-10-15T00:25:00.000Z", { round: 2 })]);
+  assert.deepEqual(at(ticketRule(review)), RECORD, "a review entry whose round has no build verdict log blocks");
+  assert.match(ticketRule(review)[0]!.message, /entry 2 \(review\) names round 2, but ci\/W-900-review-2\.log is not W-900's build verdict log for round 2/, "the message names the missing log");
+  // spec round 2: the named log's own headers must agree with the entry, in a done record too
+  const copied = entries(officina(), [READY, REVIEW, entryLine("review", "2026-10-15T00:35:00.000Z", { round: 2 }), entryLine("done", "2026-10-15T00:40:00.000Z")], "done");
+  verdict(copied, `${ID}-review-2.log`, { phase: "build", round: 1, at: "2026-10-15T00:30:10.000Z" }, [ticket({ action: "verdict-build", round: 1, at: "2026-10-15T00:30:05.000Z" })]);
+  assert.deepEqual(at(ticketRule(copied)), RECORD, "a review entry whose named log has another header round blocks");
+  assert.match(ticketRule(copied)[0]!.message, /entry 3 \(review\) names round 2, but ci\/W-900-review-2\.log is not W-900's build verdict log for round 2/, "the message names the log and the round");
+  const borrowed = entries(officina(), [READY, REVIEW, entryLine("review", "2026-10-15T00:35:00.000Z", { round: 2 })], "done");
+  verdict(borrowed, `${ID}-review-2.log`, { opus: "W-901", phase: "build", round: 2, at: "2026-10-15T00:30:10.000Z" }, [ticket({ opus: "W-901", action: "verdict-build", round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  assert.deepEqual(at(ticketRule(borrowed)), RECORD, "a review entry whose named log has another header opus blocks");
+  const specLog = entries(officina(), [READY, REVIEW, entryLine("review", "2026-10-15T00:35:00.000Z", { round: 2 })], "done");
+  verdict(specLog, `${ID}-review-2.log`, { phase: "spec", round: 2, at: "2026-10-15T00:30:10.000Z" }, [ticket({ round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  assert.deepEqual(at(ticketRule(specLog)), RECORD, "a review entry whose named log has another header phase blocks");
+  const twoRounds = entries(officina(), [READY, REVIEW, entryLine("review", "2026-10-15T00:35:00.000Z", { round: 2 })], "done");
+  writeFileSync(join(twoRounds, "ci", `${ID}-review-2.log`), `# opus: ${ID}\n# phase: build\n# round: 2\n# round: 2\n# at: 2026-10-15T00:30:10.000Z\n\n## Findings\nNo findings\n`);
+  assert.deepEqual(at(ticketRule(twoRounds)), RECORD, "a review entry whose named log repeats its round header blocks");
+  const agreeing = entries(officina(), [READY, REVIEW, entryLine("review", "2026-10-15T00:35:00.000Z", { round: 2 })], "done");
+  verdict(agreeing, `${ID}-review-2.log`, { phase: "build", round: 2, at: "2026-10-15T00:30:10.000Z" }, [ticket({ action: "verdict-build", round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  assert.deepEqual(at(ticketRule(agreeing)), [], "a done record's review entry whose named log's headers agree: no finding");
+  const doneRound = entries(officina(), [READY, REVIEW, entryLine("done", "2026-10-15T00:40:00.000Z", { round: 3 })], "done");
+  assert.deepEqual(at(ticketRule(doneRound)), RECORD, "a done record's entries are judged: a done entry for round 3 blocks");
+  const two = entries(officina(), [READY.replace(",", ", "), entryLine("ready", "2026-10-15T00:06:00.000Z", { opus: "W-901" })]);
+  assert.deepEqual(at(ticketRule(two)), [...RECORD, ...RECORD], "one finding per entry");
+  assert.deepEqual(at(ticketRule(entries(officina(), [READY, REVIEW]))), [], "a ready and a review entry whose round has its build verdict log: no finding");
+  assert.deepEqual(at(ticketRule(entries(officina(), [READY, REVIEW, DONE], "done"))), [], "a done record's ready, review and done entries: no finding");
+  assert.deepEqual(at(ticketRule(entries(officina({ tickets: null }), [READY.replace(",", ", ")]))), [], "no step_tickets: the entries are not judged");
 });
