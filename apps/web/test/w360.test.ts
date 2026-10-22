@@ -67,3 +67,19 @@ test("W-360-b2 behaviour 2: every route proves its own settled data and has no l
   assert.notEqual(baselineCaptureAt, -1, "the baseline loop contains its screenshot assertion");
   assert.ok(baselineGateAt < baselineCaptureAt, "the baseline gate precedes comparison or refresh");
 });
+
+test("W-360-b3 behaviour 3: every Seats select is constrained inside the 390px viewport", () => {
+  const css = read("apps/web/src/components/w025.css");
+  const layout = read("apps/web/tests-serve/layout.spec.ts");
+
+  assert.match(css, /@media \(max-width: 599px\)[\s\S]*?\.seats__table\s*\{[\s\S]*?table-layout: fixed;/, "phone Seats tables use fixed layout");
+  assert.match(css, /@media \(max-width: 599px\)[\s\S]*?\.seats__row select\s*\{[\s\S]*?width: 100%;[\s\S]*?max-width: 100%;[\s\S]*?box-sizing: border-box;/, "phone Seats selects cannot outgrow their cells");
+  assert.match(css, /\.seats__card--roster \.seats__row\s*\{[\s\S]*?display: grid;[\s\S]*?grid-template-columns:/, "phone roster rows reserve a full-width line for model identity");
+  assert.match(css, /\.seats__card--roster \.seats__row td:last-child\s*\{[\s\S]*?grid-column: 1 \/ -1;/, "the phone model control spans the roster row");
+  assert.match(layout, /W-360-b3 390px Seats keeps every select inside the viewport/, "the computed-layout row names the ruled phone width");
+  assert.match(layout, /select\[aria-label\]/, "the row measures every Seats select");
+  assert.match(layout, /box!\.x \+ box!\.width/, "the row asserts each select's right edge");
+  assert.match(layout, /leaves room for its full model identity and arrow/, "the row measures readable selected-model room");
+  assert.match(layout, /keeps its native arrow/, "the row preserves the native select affordance");
+  assert.match(layout, /documentElement\.scrollWidth - document\.documentElement\.clientWidth/, "the row rejects page-level horizontal overflow");
+});
