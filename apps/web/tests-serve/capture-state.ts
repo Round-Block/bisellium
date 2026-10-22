@@ -18,3 +18,8 @@ const LOADING_COPY = /Loading[^\r\n]*(?:\u2026|\.{3})/u;
 export async function freezeCaptureClock(page: Page): Promise<void> {
   await page.clock.setFixedTime(new Date(CAPTURE_NOW));
 }
+
+/** A mounted screen is not yet proof that its data has settled. */
+export async function expectCapturedScreenSettled(page: Page, route: CaptureRoute): Promise<void> {
+  await expect(page.locator(SCREEN_ROOT[route]), `${route}: screen mounted`).toHaveCount(1);
+}

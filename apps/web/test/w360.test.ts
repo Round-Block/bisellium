@@ -36,3 +36,34 @@ test("W-360-b1 behaviour 1: every served-browser capture uses one frozen server 
   assert.match(baselines, /startServed\("screenshots", \{ now: FIXED_NOW, prepareStudio \}\)/, "the baseline server clock remains fixed");
   assert.match(pkg.scripts?.["test:policy"] ?? "", /test\/w360\.test\.ts/, "the runner's focused policy step includes W-360");
 });
+
+test("W-360-b2 behaviour 2: every route proves its own settled data and has no loading copy before capture", () => {
+  const capture = read("apps/web/tests-serve/capture-state.ts");
+  const walk = read("apps/web/tests-serve/walk.spec.ts");
+  const baselines = read("apps/web/tests-serve/screenshots.spec.ts");
+  const seats = read("apps/web/src/screens/Seats.tsx");
+
+  for (const evidence of [".inbox__row", "[data-card-id]", ".gate-ladder", 'select[aria-label^="model for seat "]', ".officina__panel-heading", ".officina__loading"]) {
+    assert.ok(capture.includes(evidence), `${evidence} is named as route-owned loaded evidence`);
+  }
+  assert.ok(capture.includes('data-state="ready"'), "non-live screens wait for their settled shell status");
+  assert.ok(capture.includes('data-state="live"'), "Board waits for the completed live reconciliation");
+  assert.ok(capture.includes('seats: its roster and model reads have settled'), "Seats waits for both independent reads");
+  assert.match(seats, /modelsSettled[\s\S]*?finally\(\(\) => setModelsSettled\(true\)\)/, "the models read records its settled state");
+  assert.match(seats, /loaded: loaded && modelsSettled/, "Seats reports ready only after officina and models settle");
+  assert.match(capture, /Object\.hasOwn\(SCREEN_ROOT, route\)/, "an unknown route fails before it can use Officina evidence");
+  assert.ok(capture.includes("/Loading[^\\r\\n]*(?:\\u2026|\\.{3})/u"), "the verify gate recognises both loading terminators after the full sentence");
+  assert.match(capture, /page\.locator\("body"\)[\s\S]*?not\.toContainText\(LOADING_COPY\)/, "the verify gate rejects loading copy anywhere in the page");
+  assert.match(walk, /await expectCapturedScreenSettled\(page, entry\.route\)/, "the verify walk applies the route gate");
+  assert.ok(walk.indexOf("await expectCapturedScreenSettled(page, entry.route)") < walk.indexOf("await page.screenshot"), "the verify gate precedes capture");
+  assert.match(baselines, /async function expectLoadedState/, "the baseline matrix retains its fixture-specific route gate");
+  assert.match(baselines, /board: its complete reconciliation is live/, "the baseline Board gate requires the completed live shell");
+  assert.match(baselines, /seats: its roster and model reads have settled/, "the baseline Seats gate requires both independent reads");
+  assert.ok(baselines.includes("/Loading[^\\r\\n]*(?:\\u2026|\\.{3})/u"), "the baseline gate recognises both loading terminators after the full sentence");
+  assert.match(baselines, /no loading copy remains/, "the baseline route gate explicitly rejects placeholders");
+  const baselineGateAt = baselines.indexOf("await expectLoadedState(page, entry.route, width)");
+  const baselineCaptureAt = baselines.indexOf("toHaveScreenshot");
+  assert.notEqual(baselineGateAt, -1, "the baseline loop calls its loaded-state gate");
+  assert.notEqual(baselineCaptureAt, -1, "the baseline loop contains its screenshot assertion");
+  assert.ok(baselineGateAt < baselineCaptureAt, "the baseline gate precedes comparison or refresh");
+});

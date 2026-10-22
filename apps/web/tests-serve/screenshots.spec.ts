@@ -142,3 +142,78 @@ test("the live screens match their fixed desktop and phone initial-view baseline
   }
   if (baselineState === "absent" && !refreshing) test.skip(true, BASELINE_BOOTSTRAP_REASON);
 });
+
+// W-360-b2 focused baseline readiness rows.
+test("W-360-b2 baseline Board waits for inbox at both capture widths", async ({ page }) => {
+  for (const width of VIEWPORTS) {
+    let sawRead!: () => void;
+    const readRequested = new Promise<void>((resolve) => {
+      sawRead = resolve;
+    });
+    let releaseRead!: () => void;
+    const holdRead = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+    await page.route("**/api/inbox", async (route) => {
+      sawRead();
+      await holdRead;
+      await route.continue();
+    });
+    served = await startServed(`w360-baseline-board-${width}`, { now: FIXED_NOW, prepareStudio });
+    await page.clock.setFixedTime(new Date(FIXED_NOW));
+    await page.setViewportSize({ width, height: 900 });
+    await signIn(page, "board");
+    let settled = false;
+    const wait = expectLoadedState(page, "board", width).then(() => {
+      settled = true;
+    });
+    await readRequested;
+    try {
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      expect(settled, `baseline Board ${width}: inbox must settle before capture`).toBe(false);
+    } finally {
+      releaseRead();
+      await wait;
+      await page.unroute("**/api/inbox");
+      await served.close();
+      served = undefined;
+    }
+  }
+});
+
+test("W-360-b2 baseline Seats waits for models at both capture widths", async ({ page }) => {
+  for (const width of VIEWPORTS) {
+    let sawRead!: () => void;
+    const readRequested = new Promise<void>((resolve) => {
+      sawRead = resolve;
+    });
+    let releaseRead!: () => void;
+    const holdRead = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+    await page.route("**/api/models", async (route) => {
+      sawRead();
+      await holdRead;
+      await route.continue();
+    });
+    served = await startServed(`w360-baseline-seats-${width}`, { now: FIXED_NOW, prepareStudio });
+    await page.clock.setFixedTime(new Date(FIXED_NOW));
+    await page.setViewportSize({ width, height: 900 });
+    await signIn(page, "seats");
+    let settled = false;
+    const wait = expectLoadedState(page, "seats", width).then(() => {
+      settled = true;
+    });
+    await readRequested;
+    try {
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      expect(settled, `baseline Seats ${width}: models must settle before capture`).toBe(false);
+    } finally {
+      releaseRead();
+      await wait;
+      await page.unroute("**/api/models");
+      await served.close();
+      served = undefined;
+    }
+  }
+});
