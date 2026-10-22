@@ -141,3 +141,16 @@ test("W-341-b3 behaviour 3: Seats shows and reports loading, empty, error, refus
   assert.match(source, /refused: outcome === "refused"/, "a refused change is the refused state");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "Seats reports each status change");
 });
+
+test("W-341-b4 behaviour 4: the Board shows and reports loading, empty, error, stale and live", async () => {
+  await matrix();
+  const view = (await load("src/screens/BoardView.tsx"))["BoardView"];
+  const base = { studio: "s", model: { columns: [] }, focusedByColumn: {}, onSelectCard: () => undefined };
+  assert.match(render(view, { ...base, notice: "Could not load the board." }), /<\/div><p class="screen-notice board__notice">Could not load the board.<\/p><div class="board__strip">/, "the notice sits under the header");
+  assert.equal(count(render(view, base), "screen-notice"), 0, "no notice at rest");
+  wired("Board");
+  const source = read("src/screens/Board.tsx");
+  assert.equal(count(source, "setReadFailed(true);"), 2, "both reconciliation paths catch a failed read");
+  assert.match(source, /screenStatus\("board", \{ loaded: everLoaded, empty: opera\.length === 0, failed: readFailed \|\| undefined, live: everLoaded \? connected : undefined \}\)/, "the Board derives stale and live from its feed");
+  assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Board reports each status change");
+});
