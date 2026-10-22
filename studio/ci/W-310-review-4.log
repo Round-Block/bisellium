@@ -1,0 +1,21 @@
+# opus: W-310
+# phase: build
+# round: 4
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a163a1-319d-7962-8c60-b3e46ba91774
+# outcome: passed
+# at: 2026-10-22T15:06:54.196Z
+# tree: tree:43b4cf6c22d9551740ef61cbeaa1a2103e454ac6
+# brief: briefs/W-310.md blob:43f3884c844100637e55175cf6345a4c0062e384
+# ticket: {"opus":"W-310","step":"review","action":"verdict-build","round":4,"actor":"censor","studio":".worktrees/W-310/studio","head":"a177865511986d54bfe22efd27dfa63cd67eee70","brief":"43f3884c844100637e55175cf6345a4c0062e384","at":"2026-10-22T15:06:41.734Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-310-review-3.log #1: closed — studio/briefs/W-310.md:109 now pins unknown-directory propagation through nested `-c` bodies and absolute wrappers, and studio/ci/W-310-spec-11.log:15 records the architect’s passing closure.
+
+## Verdict
+The round-three evidence gap is closed with no new defects in the delta.
+VERDICT: PASS
