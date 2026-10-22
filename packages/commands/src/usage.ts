@@ -43,7 +43,7 @@ export const USAGE =
   "       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>\n" +
   "       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]\n" +
   "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +
-  "       bisellium hooks check --harness claude-code [--studio <dir>]\n" +
+  "       bisellium hooks check --harness claude-code [--studio <dir>] [--repo <dir>]\n" +
   "       bisellium hook-event <start|stop|tool|compact|context|guard> --sella <id> [--studio <dir>]\n" +
   "       bisellium branch <opus-id> --studio <dir> [--repo <dir>]\n" +
   "       bisellium merge <opus-id> --studio <dir> --repo <dir>\n" +

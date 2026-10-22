@@ -77,6 +77,33 @@ the guard on `Bash|Write|Edit|NotebookEdit` and at `SubagentStop`, and
 Structurally tested in `instructions.test.ts` (behaviour 9), not compared
 byte-for-byte against the real renderer.
 
+**The guard (W-310).** `hook-event guard` is the one hook target that can
+refuse: wired for `PreToolUse` on `Bash|Write|Edit|NotebookEdit` and for
+`SubagentStop`, it exits 2 with one stderr line (Claude Code refuses the tool
+call, or keeps the subagent running, and shows the line), and exits 0 on
+anything else, an unreadable input or its own error included (deny-only,
+fail-open). It refuses: a hand ladder record write (`branch`, `ready`, `done`,
+`merge`, `review`, `verdict` but at `--phase handoff`, and `next --perform`
+with `--chain`, with `--expect` naming one of them, `spec` or `review`, or with
+no `--expect`), direct or in a script file the command runs (read up to 256 KiB), from the main thread, a
+hook input without `agent_id`, so a dispatched ladder-runner runs them; a `run_in_background`
+`while`/`until` loop outside `timeout <N>` (N above zero); in a git checkout,
+the main thread's Write, Edit or NotebookEdit outside `studio/` and `docs/`,
+and anyone's write to `studio/decisions/` or `docs/SESSION-HANDOFF.md` but a
+dispatched clerk's (W-290); and, at `SubagentStop`, an agent whose own shell
+or monitor task, named in its transcript, still runs (once per stop). The
+command classifier is lexical: it recognises the CLI as `bisellium`,
+`npx bisellium`, `npm run bisellium --` and `node …/bisellium.mjs`, behind
+assignments, `env`, `command`, `exec`, `nice`, `xargs`, `timeout` and
+`bash -c`; deliberate evasion (eval, aliases, functions, a command or script
+path built from a variable; W-362: `env -S`'s split string and `bash -O`'s
+option operand) is not judged. `check --repo` blocks `hook.guard` when the repo's
+`.claude/settings.json` exists and does not wire it. `hooks check --repo
+<dir>` prints a `guard:` line each for wired, installed outside `<dir>`
+(hooks run unsandboxed) and live (it refuses a main-thread `bisellium merge`),
+and exits 1 when any fails. The Patron's install outside the agent clone,
+`~/projects/bisellium-guard`, carries it (W-362 adds the install step).
+
 **Close step CS-2** (integrator, after W-016 lands): re-render this file
 from `claudeCodeHooksBlock({ studio: "studio" })` and append a deep-equal
 assertion of the rendered `hooks` block to `instructions.test.ts`, so the
