@@ -190,6 +190,18 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
     assert.equal(r.code, 2, `an unconfirmed cd does not move the search root: ${c}`);
     assert.match(r.err, /\(in scripts\/record-review\.sh\)/, c);
   }
+  // a late `-c`/`--call` is the CLI's argument for every launcher that takes an inline command, npx included, on every path
+  const lateNpx = ["npx bisellium merge W-310 -c harmless", "npx bisellium merge W-310 --call harmless", "npx -p bisellium bisellium done W-310 -c harmless"];
+  for (const c of lateNpx) {
+    assert.equal((await guard(bash(c))).code, 2, `a late npx -c/--call is an argument: ${c}`);
+    assert.equal((await guard(bash(`bash -c '${c}'`))).code, 2, `... inside a bash -c script: ${c}`);
+    assert.equal((await guard(bash(`sh -e -c "${c}"`))).code, 2, `... inside a second shell script: ${c}`);
+  }
+  const lateDir = tmp();
+  writeFileSync(join(lateDir, "late.sh"), `${lateNpx[0]}\n`);
+  assert.equal((await guard(bash("bash late.sh", { cwd: lateDir }))).code, 2, "... inside a script file");
+  assert.equal((await guard(bash("npx -c 'bisellium merge W-900'"))).code, 2, "a leading npx -c is still the inline script");
+  assert.equal((await guard(bash("npx --call 'bisellium merge W-900'"))).code, 2, "a leading npx --call is still the inline script");
   assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
