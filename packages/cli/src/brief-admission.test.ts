@@ -17,7 +17,7 @@ import { after, describe, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
-import { readBriefAdmission } from "@bisellium/commands/brief-admission.js";
+import { readBriefAdmission, readBriefForm } from "@bisellium/commands/brief-admission.js";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { checkStudio } from "./check.js";
 import { runReady } from "./lifecycle.js";
@@ -757,11 +757,11 @@ test("W-196-b3 behaviour 3: D-050's three row forms are admitted, and nothing lo
 // ---------------------------------------------------------------------------
 const MARK = "Brief: light";
 const redCommand = (i: number, token = String(i)): string => `   Red command: \`bisellium red W-900 --behaviour ${token} --sella builder -- node x\``;
-/** A light brief: the marker, no Input domain, no Read enumeration, one red command per behaviour. */
+/** A light brief: the marker, no Input domain, no Read enumeration, one red command per behaviour; one behaviour by default (W-305). */
 function light(s: BriefSpec = {}): string {
   const cmds: Record<number, string[]> = {};
-  (s.reds ?? [1, 1]).forEach((_, i) => (cmds[i + 1] = [redCommand(i + 1)]));
-  return brief({ domain: [], reads: [], ...s, intent: s.intent ?? [MARK], after: { ...cmds, ...s.after } });
+  (s.reds ?? [1]).forEach((_, i) => (cmds[i + 1] = [redCommand(i + 1)]));
+  return brief({ domain: [], reads: [], ...s, reds: s.reds ?? [1], intent: s.intent ?? [MARK], after: { ...cmds, ...s.after } });
 }
 const FULL_PROBLEMS = [NO_DOMAIN, NO_READS];
 const FORM = (l: string): string => `brief form line "${l}" is not exactly "Brief: light"`;
@@ -776,10 +776,10 @@ test("W-255-b1 behaviour 1: a brief marked light is admitted without Input domai
   refused(ready(light({ intent: [MARK, MARK] })), [...FULL_PROBLEMS, 'has 2 brief form lines; one line "Brief: light" or none'], "two marker lines");
   refused(ready(light({ intent: [], tail: ["```", MARK, "```"] })), FULL_PROBLEMS, "marker in a fence");
   refused(ready(light({ intent: [], tail: ["<!--", MARK, "-->"] })), FULL_PROBLEMS, "marker in a comment");
-  refused(ready(light({ after: { 2: [] } })), [NAMES(2, 0)], "command dropped");
-  refused(ready(light({ after: { 2: [redCommand(2), redCommand(2)] } })), [NAMES(2, 2)], "command doubled");
-  refused(ready(light({ after: { 2: ["   xbisellium red W-900 --behaviour 2"] } })), [NAMES(2, 0)], "xbisellium is no command");
-  for (const token of ["2a", "2.5", "1", "02"]) refused(ready(light({ after: { 2: [redCommand(2, token)] } })), [NOT_CMD(2)], `--behaviour ${token}`);
+  refused(ready(light({ after: { 1: [] } })), [NAMES(1, 0)], "command dropped");
+  refused(ready(light({ after: { 1: [redCommand(1), redCommand(1)] } })), [NAMES(1, 2)], "command doubled");
+  refused(ready(light({ after: { 1: ["   xbisellium red W-900 --behaviour 1"] } })), [NAMES(1, 0)], "xbisellium is no command");
+  for (const token of ["1a", "1.5", "2", "01"]) refused(ready(light({ after: { 1: [redCommand(1, token)] } })), [NOT_CMD(1)], `--behaviour ${token}`);
 });
 
 const EXCLUDED = (signal: string): string =>
@@ -908,15 +908,16 @@ test("W-303-b2 behaviour 2: bisellium new --brief writes the standard diff promi
 test("W-264-b1 behaviour 1: with no limit declared, ready and check admit a light brief by every rule but the count, and check blocks an unreadable spec", () => {
   accepted(ready(light(), ABSENT), "no limit: a light brief");
   refused(ready(light({ families: [] }), ABSENT), [NO_FAMILY], "no limit: no family");
-  refused(ready(light({ after: { 2: [] } }), ABSENT), [NAMES(2, 0)], "no limit: a red command dropped");
-  refused(ready(light({ reds: [1, 0] }), ABSENT), [`behaviour 2 names 0 genuine reds; ${TAIL}`], "no limit: a genuine red dropped");
+  refused(ready(light({ after: { 1: [] } }), ABSENT), [NAMES(1, 0)], "no limit: a red command dropped");
+  refused(ready(light({ reds: [0] }), ABSENT), [`behaviour 1 names 0 genuine reds; ${TAIL}`], "no limit: a genuine red dropped");
   refused(ready(light({ families: ["ci-gate"] }), ABSENT), [EXCLUDED('decree family "ci-gate" names "ci"')], "no limit: pipeline work");
   refused(ready(light({ redOrder: [] }), ABSENT), ['declares no red order; add the line "Red order: one at a time"'], "no limit: no red order");
   const diff = light({ tail: ["The diff is the Files owned."] });
   refused(ready(diff, ABSENT), [CONFINES(diff.split("\n").length, "The diff")], "no limit: a whole-diff promise");
   refused(ready(light({ intent: ["Brief: Light"] }), ABSENT), [...FULL_PROBLEMS, FORM("Brief: Light")], "no limit: a refused marker");
-  accepted(ready(light({ reds: SEVEN }), ABSENT), "no limit: no count");
-  accepted(ready(light({ reds: SEVEN, exceptions: ["D-404"] }), ABSENT), "no limit: an exception line is not read");
+  // W-305 (D-075 D): with no limit a light brief is read with no count, and its own one-behaviour rule still refuses seven
+  refused(ready(light({ reds: SEVEN }), ABSENT), [ONE(7)], "no limit: no count, but one behaviour");
+  refused(ready(light({ reds: SEVEN, exceptions: ["D-404"] }), ABSENT), [ONE(7)], "no limit: an exception line is not read");
   accepted(ready(brief({ families: [], domain: [], reads: [] }), ABSENT), "no limit: a full brief is not read");
 
   const front = (state: string, spec: string): string =>
@@ -926,7 +927,7 @@ test("W-264-b1 behaviour 1: with no limit declared, ready and check admit a ligh
   assert.equal(bad[0]!.level, "block");
   assert.equal(bad[0]!.message, `${BRIEF_REL} ${NO_FAMILY}`);
   assert.equal(checked("building", light(), ABSENT).admission.length, 0, "check, no limit: a light brief");
-  assert.equal(checked("building", light({ reds: SEVEN }), ABSENT).admission.length, 0, "check, no limit: no count");
+  assert.deepEqual(checked("building", light({ reds: SEVEN }), ABSENT).admission.map((f) => f.message), [`${BRIEF_REL} ${ONE(7)}`], "check, no limit: no count, but one behaviour");
   assert.equal(checked("building", brief({ families: [] }), ABSENT).admission.length, 0, "check, no limit: a full brief is not read");
   assert.equal(checked("done", light({ families: [] }), ABSENT).admission.length, 0, "check, no limit: a done opus");
   const unreadable = checked("building", light(), ABSENT, front("building", "spec: briefs/W-901.md\n")).admission;
@@ -935,4 +936,41 @@ test("W-264-b1 behaviour 1: with no limit declared, ready and check admit a ligh
   assert.ok(unreadable[0]!.message.startsWith("briefs/W-901.md unreadable: "), unreadable[0]!.message);
   for (const spec of ["", "spec: 7\n"])
     assert.equal(checked("building", light(), ABSENT, front("building", spec)).admission.length, 0, `check, no limit: no spec ${JSON.stringify(spec)}`);
+});
+
+// ---------------------------------------------------------------------------
+// W-305 (D-075 D): a light brief has one behaviour and owns one to three files, one bullet each; a brief that claims
+// light and is not is refused by the one form reader every path reads. Rows are selectable with --test-name-pattern=W-305-b<n>.
+// ---------------------------------------------------------------------------
+const ONE = (n: number): string => `a light brief has one behaviour, but it numbers ${n}; use the full template (D-075 D)`;
+const OWNS = (k: number): string =>
+  `a light brief owns one to three files, one "- " bullet each under "## Files owned", but it lists ${k}; use the full template (D-075 D)`;
+
+test("W-305-b1 behaviour 1: a light brief has one behaviour and one to three Files owned bullets, or it is refused", () => {
+  const problems = (text: string): string[] => readBriefAdmission(text, 6).problems;
+  const one = (s: BriefSpec = {}): string => light({ reds: [1], ...s });
+  assert.deepEqual(problems(one()), [], "one behaviour, one bullet");
+  assert.deepEqual(readBriefForm(one()), { light: true }, "the form reader: light");
+  assert.deepEqual(problems(one({ owned: ["- `a.ts`", "* `b.ts`", "+ `c.ts`"] })), [], "three bullets, each list marker");
+  assert.deepEqual(problems(one({ owned: ["   - `a.ts`", "", "The source diff touches only these.", "```", "- `b.ts`", "- `c.ts`", "- `d.ts`", "```", "<!-- - `e.ts` -->"] })), [], "prose, fenced and commented bullets are not counted");
+  assert.deepEqual(problems(one({ reds: [1, 1] })), [ONE(2)], "two behaviours");
+  assert.deepEqual(readBriefForm(one({ reds: [1, 1] })), { error: ONE(2) }, "the form reader: two behaviours");
+  assert.deepEqual(problems(one({ reds: [1, 1, 1] })), [ONE(3)], "three behaviours");
+  assert.deepEqual(problems(one({ reds: [] })), ['numbers no behaviours under "## Behaviours to test"'], "zero behaviours: admission's own problem only");
+  assert.deepEqual(problems(one({ owned: ["- `a.ts`", "- `b.ts`", "- `c.ts`", "- `d.ts`"] })), [OWNS(4)], "four bullets");
+  assert.deepEqual(problems(one({ owned: [] })), [OWNS(0)], "no bullet");
+  assert.deepEqual(problems(one({ owned: ["The file `a.ts`."] })), [OWNS(0)], "a prose path is no bullet");
+  assert.deepEqual(problems(one({ owned: ["- `a.ts`", "- `b.ts`"], tail: ["## Files owned", "- `c.ts`", "- `d.ts`"] })), [OWNS(4)], "every Files owned section is counted");
+  assert.deepEqual(problems(one({ reds: [1, 1], owned: OWNED("package.json") })), [EXCLUDED("Files owned names `package.json`")], "a refused path is the one problem");
+  assert.deepEqual(problems(brief({ owned: ["- a", "- b", "- c", "- d"], reds: [1, 1, 1] })), [], "an unmarked brief is full: neither is read");
+
+  accepted(ready(one()), "ready: a one-behaviour light brief");
+  refused(ready(one({ reds: [1, 1] })), [ONE(2)], "ready: two behaviours");
+  refused(ready(one({ owned: ["- a", "- b", "- c", "- d"] })), [OWNS(4)], "ready: four bullets");
+  refused(ready(light({ reds: SEVEN }), ABSENT), [ONE(7)], "ready, no limit: seven behaviours");
+  const found = checked("building", one({ reds: [1, 1] })).admission;
+  assert.equal(found.length, 1, JSON.stringify(found));
+  assert.equal(found[0]!.level, "block");
+  assert.equal(found[0]!.message, `${BRIEF_REL} ${ONE(2)}`);
+  assert.equal(checked("building", one()).admission.length, 0, "check: a one-behaviour light brief");
 });

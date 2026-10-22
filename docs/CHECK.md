@@ -182,7 +182,14 @@ light brief is refused for security, sandbox, branch-protection and pipeline
 work: a decree family token (`security`, `secret`, `auth`, `sandbox`,
 `protection`, `pipeline`, `ci`, `certify`) or a backticked `## Files owned` path
 on a fixed list. Limit: the list is the whole of the check; other work rests on
-the signing architect and the build review. Without the marker a brief is full.
+the signing architect and the build review. A light brief also numbers one
+behaviour and lists one to three `## Files owned` bullets (a line opening with
+`-`, `*` or `+`; prose paths are not counted) (W-305, D-075 D); the form reader
+refuses anything else, so a brief that claims light and is not never reads as
+light. Where `bisellium.yml` declares `spec_reviewer`, `next` names `branch` on
+the architect's signature of a light brief with no spec review (the fast lane);
+a full brief, and any `kind: ui` opus, keeps the spec review. Without the
+marker a brief is full.
 
 For every red, `--repo` may only confirm the repository the command runs in (a
 different Git root is refused; a non-Git `--repo` keeps `# tree: unknown`); a

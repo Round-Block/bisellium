@@ -1,0 +1,19 @@
+# opus: W-305
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-22T07:23:47.956Z
+# tree: tree:792e99bded871b01d53fd73fd2a99f18e80425b8
+# brief: briefs/W-305.md blob:f4092732a5222a4a18c81bb95d21862e559f361f
+# ticket: {"opus":"W-305","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"15e5c7591cde6aaf8676dfd240541e46acd13356","brief":"f4092732a5222a4a18c81bb95d21862e559f361f","at":"2026-10-22T07:23:47.345Z"}
+
+## Findings
+1. blocking — brief:75 The new `fast` choice treats absent, non-string, or unregistered `kind` values as non-UI: a plausible `kind: UI` mistake lets `bisellium next` name branch after only the architect signature, bypassing the configured reviewer and UI path; W-305-b2 tests only exact `ui`. Replace brief:75 with `| 7. The opus record's kind | A value accepted by \`isNativeOpusKind\`; exact \`ui\` keeps the review, and only another native kind may take the lane; absent, non-string and unregistered values never take it | \`deriveNext\` via \`isNativeOpusKind\`, retaining the reviewer on rejection; pinned by \`W-305-b2\` "a signed light kind: ui brief goes to the reviewer" and "a malformed kind does not take the fast lane" |`. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-spec.test.ts
+2. advisory — brief:50 `readBriefForm` returning light is insufficient to guarantee branch: the tested missing-family and missing-red-order briefs satisfy it but `specSectionsProblem` returns them to the architect. Replace brief:50 with `Promise fast-lane-branch: with \`spec_reviewer\` configured, a native non-\`ui\` opus whose current brief \`readBriefForm\` reads as light and whose \`specSectionsProblem\` (including \`lightAdmission\`) returns no problem, carrying the design magister's passed spec signature that names the brief's blob, is named \`branch\` with no reviewer order and no reviewer model — limit: \`signedSpec\`, \`readSpecReviewer\`, the blob pin and the branch perform are reused unchanged (D-076 E).` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-spec.test.ts
+3. advisory — brief:52 A brief that claims light and is invalid does not keep the reviewer order immediately after its signature; W-305-b2 requires the architect to be ordered first with no reviewer model. Replace brief:52 with `Promise others-keep-review: a full brief and any \`kind: ui\` opus keep today's reviewer sequence after a valid signature; a brief that claims light and is not light stays outside the fast lane but its signature gate first returns it to the architect with the reason — limit: the sequence after that choice (\`reviewedSpec\`, the split, the keeps route, the UI pairing) is reused unchanged and not re-proved here (D-076 E).` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-spec.test.ts
+
+## Verdict
+The malformed-kind fail-open is a design-changing S1, so the brief requires revision and another review.
+VERDICT: FAIL

@@ -506,16 +506,36 @@ function riskySignal(real: string[]): string | undefined {
   return undefined;
 }
 
+/** W-305 (D-075 D): the bullets of every real `## Files owned` section (to the next real `^## `): a line opening, after
+ *  at most three spaces, with `-`, `*` or `+` and a space before text. Prose, fenced and commented lines are not counted. */
+function ownedBullets(real: string[]): number {
+  let owned = false;
+  let n = 0;
+  for (const line of real) {
+    if (/^## /.test(line)) owned = line.trim() === "## Files owned";
+    else if (owned && /^ {0,3}[-*+] +\S/.test(line)) n++;
+  }
+  return n;
+}
+
 /** The brief's form with its error, if any. An excluded light brief is `{ light: true, error }`: it is checked as light
- *  (its own sections were never asked for an Input domain), and the exclusion is the one problem it adds. */
+ *  (its own sections were never asked for an Input domain), and the exclusion is the one problem it adds. W-305 (D-075 D):
+ *  a light brief also has at most one numbered behaviour (none is admission's own problem) and one to three Files owned
+ *  bullets; the first rule it breaks is its error. */
 function briefForm(real: string[]): { light: boolean; error?: string } {
   const attempts = real.map((l) => l.trim()).filter((l) => /^brief[\s_-]*:/i.test(l));
   if (attempts.length === 0) return { light: false };
   if (attempts.length > 1) return { light: false, error: `has ${attempts.length} brief form lines; one line "${BRIEF_FORM_LINE}" or none` };
   if (attempts[0] !== BRIEF_FORM_LINE) return { light: false, error: `brief form line "${attempts[0]}" is not exactly "${BRIEF_FORM_LINE}"` };
   const signal = riskySignal(real);
-  if (signal === undefined) return { light: true };
-  return { light: true, error: `a light brief is not for security, sandbox, branch-protection or pipeline work (D-063 §4): ${signal}; use the full template` };
+  if (signal !== undefined)
+    return { light: true, error: `a light brief is not for security, sandbox, branch-protection or pipeline work (D-063 §4): ${signal}; use the full template` };
+  const behaviours = (behavioursSection(real) ?? []).filter((l) => /^\s{0,3}\d+\.\s/.test(l)).length;
+  if (behaviours > 1) return { light: true, error: `a light brief has one behaviour, but it numbers ${behaviours}; use the full template (D-075 D)` };
+  const owned = ownedBullets(real);
+  if (owned < 1 || owned > 3)
+    return { light: true, error: `a light brief owns one to three files, one "- " bullet each under "## Files owned", but it lists ${owned}; use the full template (D-075 D)` };
+  return { light: true };
 }
 
 /** W-255 (D-063 §4): whether the architect marked the brief light. An attempt is a real line (outside fences and

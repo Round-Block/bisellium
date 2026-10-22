@@ -1,0 +1,23 @@
+# opus: W-305
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T07:40:53.875Z
+# tree: tree:c30f4d1a3fc79d3c9ebbdd5a3a28f6826143a320
+# brief: briefs/W-305.md blob:25998b91d7c62429b5088e5a52956af7015573f3
+# ticket: {"opus":"W-305","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"4e91a9207c9aba999f64a7b65f9fa67767188968","brief":"25998b91d7c62429b5088e5a52956af7015573f3","at":"2026-10-22T07:40:53.134Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-305-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — closes ci/W-305-spec-2.log #1: the fast lane now fails closed on the kind; every record read (the trunk's, and the branch's once opus/<id> exists, the sibling read of the same input) must carry a kind `isNativeOpusKind` accepts other than exact ui, so an absent, non-string (42), unregistered (widget) or mis-cased (UI) kind keeps the reviewer; W-305-b2 pins each, and reverting the guard to round 1's check fails the row at the absent case — check: brief:22, brief:75, packages/cli/src/next.ts:963, kind-guard-mutation-r3.out, reds-r3.out
+2. advisory — closes ci/W-305-spec-2.log #2: the fast-lane-branch promise now also requires `specSectionsProblem`, including `lightAdmission`, to return no problem, matching the tested missing-family and missing-red-order cases that return to the architect — check: brief:50, packages/cli/src/next.ts:230
+3. advisory — closes ci/W-305-spec-2.log #3: the others-keep-review promise now says a brief that claims light and is not is first returned to the architect with its reason, while full briefs, ui and malformed-kind opera keep the reviewer sequence after a valid signature — check: brief:52, packages/cli/src/next.ts:234
+4. advisory — re-proved on master 15e5c759 (officina-only movement): both reds assertion-level on their red commits, both rows pass on their feature commits, owned test files whole, lint, format and typecheck green, checks unchanged against master, the r3 mbox applies with an identical tree, and the fixture census rerun — check: brief:94, brief:95, brief:96, gates-proto-r3.out, gates-master-r3.out, mbox-check-r3.out, fixture-census-r3.md, census-green-r3.out
+
+## Verdict
+
+passed — round 3 signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-305.md`, prototype four commits after master 15e5c759; two behaviours, 3 points, no code-owned path touched.
