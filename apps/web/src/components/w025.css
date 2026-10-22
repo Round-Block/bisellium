@@ -94,6 +94,8 @@
 .sidebar__link--active {
   font-weight: 500;
   background: var(--rule);
+  text-decoration-line: underline;
+  text-decoration-color: var(--ink);
 }
 
 .sidebar__link--disabled {

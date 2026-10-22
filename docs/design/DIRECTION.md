@@ -101,16 +101,20 @@ lighter wash, never by a lighter-on-darker card sandwich.
   focus ring, the current selection. At most **one verdigris fill per screen**
   (the primary action, where one exists). Never a decorative fill, never a tint
   wash.
-- **Amber `#E0A24A`** — waiting on a human, and nothing else, ever. Budget: one
-  amber region per screen plus the nav count. Rendered as a **2px left rule** on
-  the row plus the age numeral in amber. Never a pill, never a background, never
-  on a duration that is not yours.
-- **ok `#5BD192` / bad `#E8766A`** — inside a gate mark only, at 6px, and always
-  paired with a **shape** difference so the state survives colour blindness
+- **Amber `#FFB86C` (Dracula Orange)** — waiting on a human, and nothing else,
+  ever. Budget: one amber region per screen plus the nav count. Rendered as a
+  **2px left rule** on the row plus the age numeral in amber. Never a pill,
+  never a background, never on a duration that is not yours.
+- **ok `#50FA7B` (Dracula Green) / bad `#FF5555` (Dracula Red)** — inside a
+  gate mark only, at 6px, and always paired with a **shape** difference so the
+  state survives colour blindness
   ([don't rely on colour alone](https://carbondesignsystem.com/patterns/status-indicator-pattern/)).
-- **Contrast floor** (the Patron, 2026-10-22, W-341): every text colour reaches 4.5:1 and every UI-component
-  colour 3:1 on both surfaces (`#282A36` and `wash`); `ink-3`, amber, ok and bad were darkened for it, hue and saturation kept. The
-  ratios are computed from `tokens.css` by a test, and the console's axe scan runs with colour contrast on.
+- **Contrast floor** (the Patron, 2026-10-22, W-341): ruled text roles reach
+  4.5:1 and UI-component colours 3:1 on both surfaces (`#282A36` and `wash`);
+  `bad` remains gate-only, never text. The ratios are computed from
+  `tokens.css` by a test, including the Inbox count in amber on both the
+  selected and hovered `rule` navigation fills, and the console's axe scan runs
+  with colour contrast on.
 - Ceiling: **≤3 semantic colours visible at once**. Projects are named, never
   colour-coded — the per-project dot is deleted.
 
