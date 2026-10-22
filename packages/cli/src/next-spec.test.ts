@@ -638,17 +638,14 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   refuse("nofamily", w255Light({ family: false }), /declares no decree family/);
   refuse("nored", w255Light({ redOrder: false }), /declares no red order; add the line "Red order: one at a time"/);
   refuse("noaccept", w255Light({ acceptance: false }), /lacks the four light-brief sections/);
-  refuse("seven", w255Light({ behaviours: 7 }), /numbers 7 behaviours; the limit is 6/);
+  // W-305 (D-075 D): a light brief has one behaviour, so seven are refused by the form reader, before the limit is read
+  refuse("seven", w255Light({ behaviours: 7 }), /a light brief has one behaviour, but it numbers 7; use the full template \(D-075 D\)/);
   const grant = (w: World): void => {
     put(w.studio, "decisions/D-900.md", "---\nid: D-900\nby: architect\n---\nW-900 may hold seven behaviours.\n");
     commit(w.repo, "studio: D-900");
   };
-  const granted = w196World("w255-b3-granted", "6");
-  grant(granted);
-  put(granted.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
-  sign(granted, 1);
-  reviewerOrder(specNext(granted), 2, "seven behaviours with an exception go to the reviewer");
-  refuse("badgrant", w255Light({ behaviours: 7, exception: "D-901" }), /behaviour limit exception: decision "D-901" not found/, grant);
+  // W-305: an exception lifts the limit, never a light brief's one behaviour
+  refuse("granted", w255Light({ behaviours: 7, exception: "D-900" }), /a light brief has one behaviour, but it numbers 7; use the full template \(D-075 D\)/, grant);
 
   const solo = (tag: string): World => srWorld(tag, { row: null, setting: null, edit: (t) => `${t}brief_behaviour_limit: 6\n` });
   const alone = solo("w255-b3-solo");
@@ -662,31 +659,17 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   landed(over);
   const o = specNext(over);
   architectOrder(o, 2, "no reviewer: seven behaviours and no exception go back to the architect");
-  assert.match(o.kv.get("why") ?? "", /numbers 7 behaviours; the limit is 6/, ran("the limit", o));
+  assert.match(o.kv.get("why") ?? "", /a light brief has one behaviour, but it numbers 7; use the full template \(D-075 D\)/, ran("the one-behaviour rule", o));
 
-  // an over-limit light brief with a valid exception: no reviewer, signedSpec passes as for a full brief
+  // W-305: with no reviewer too, a valid exception never makes a seven-behaviour light brief signable
   const soloGranted = solo("w255-b3-solo-granted");
   grant(soloGranted);
   put(soloGranted.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
   sign(soloGranted, 1);
   landed(soloGranted);
-  expectStep(specNext(soloGranted), "branch", "named", "no reviewer: seven behaviours with a valid exception name branch");
-
-  // W-246's split path: two failed reviews, split standing; the signed over-limit light brief stands without a third review
-  const split = w196World("w255-b3-split", "6");
-  grant(split);
-  put(split.repo, BRIEF_REL, w255Light({ behaviours: 7, exception: "D-900" }));
-  sign(split, 1);
-  review(split, 2, "failed");
-  sign(split, 3);
-  review(split, 4, "failed");
-  const splitOrder = specNext(split);
-  architectOrder(splitOrder, 5, "two failed reviews end review");
-  assert.match(splitOrder.kv.get("split") ?? "", /^bisellium new /, ran("the split line", splitOrder));
-  sign(split, 5);
-  const standing = specNext(split);
-  expectStep(standing, "branch", "named", "split: the signed over-limit light brief with a valid exception stands");
-  assert.equal(standing.kv.has("role"), false, ran("split: no reviewer is ordered", standing));
+  const g = specNext(soloGranted);
+  architectOrder(g, 2, "no reviewer: seven behaviours with a valid exception go back to the architect");
+  assert.match(g.kv.get("why") ?? "", /a light brief has one behaviour, but it numbers 7; use the full template \(D-075 D\)/, ran("no reviewer: the one-behaviour rule", g));
 });
 
 // W-264 (D-070 C, L-186): with no brief_behaviour_limit, next's signature gates admit a light brief by every rule but the count.
@@ -698,7 +681,9 @@ test("W-264-b2 behaviour 2: with no limit declared, next's signature gates admit
   const seven = srWorld("w264-b2-seven");
   put(seven.repo, BRIEF_REL, w255Light({ behaviours: 7 }));
   sign(seven, 1);
-  reviewerOrder(specNext(seven), 2, "no limit: seven behaviours go to the reviewer");
+  const s7 = specNext(seven);
+  architectOrder(s7, 2, "no limit: seven behaviours go back to the architect (W-305)");
+  assert.match(s7.kv.get("why") ?? "", /a light brief has one behaviour, but it numbers 7; use the full template \(D-075 D\)/, ran("no limit: the one-behaviour rule", s7));
   const nofamily = srWorld("w264-b2-nofamily");
   put(nofamily.repo, BRIEF_REL, w255Light({ family: false }));
   sign(nofamily, 1);
