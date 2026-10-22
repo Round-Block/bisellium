@@ -29,7 +29,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { censorSella, effectiveProbationes, inspectUiDesignInput, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -236,6 +236,14 @@ function specSectionsProblem(brief: string | undefined, rel: string, admit: (bri
   if (!hasSections(brief, LIGHT_SECTIONS)) return `${rel} lacks the four light-brief sections`;
   const problems = admit(brief);
   return problems.length > 0 ? `${rel} ${problems.join("; ")}` : undefined;
+}
+
+/** W-305: whether a source's brief is one `readBriefForm` reads as light, with no error. */
+function lightIn(src: Src | undefined, id: string): boolean {
+  const brief = src?.read(briefRel(id));
+  if (brief === undefined) return false;
+  const form = readBriefForm(brief);
+  return !("error" in form) && form.light;
 }
 
 /** W-255: what a light brief must also satisfy, built once per derivation: `ready`'s admission under the declared limit (W-264:
@@ -945,7 +953,16 @@ export function deriveNext(f: Facts): Derived {
   const gate = readSpecReviewer(f.manifest, { ...rec, state: f.trunkRecord?.["state"] });
   if ("error" in gate) return hold("spec", gate.error);
   const signer = gate.signer;
-  const reviewer = gate.reviewer;
+  // W-305 (D-075 D): the fast lane. A brief that `readBriefForm` reads as light (one behaviour, one to three Files owned, no
+  // refused path) on a non-ui opus is judged on the architect's signature alone: no spec review is ordered. Before opus/<id> the
+  // main checkout's brief decides; after it, the worktree's and the committed branch's both must be light. A brief that claims
+  // light and is not keeps the reviewer, and the sequence's own section check then names its reason to the architect.
+  // The kind fails closed: every record read (trunk, and the branch once it exists) must carry a registered kind other than
+  // `ui`; an absent, non-string, unregistered or mis-cased one keeps the reviewer.
+  const records = [f.trunkRecord, ...(f.tip === undefined ? [] : [f.branchRecord])];
+  const lane = records.every((r) => r !== undefined && isNativeOpusKind(r["kind"]) && r["kind"] !== "ui");
+  const fast = gate.reviewer !== undefined && lane && (f.tip === undefined ? lightIn(f.work, id) : lightIn(f.branch, id) && lightIn(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id));
+  const reviewer = fast ? undefined : gate.reviewer;
   const admit = lightAdmission(f);
   // W-206: once opus/<id> exists the branch owns the spec (D-021): it is judged there, and every order names its worktree
   // ponytail: only with a reviewer; without one signedSpec pins no brief, so an amendment never un-passes the spec (today's rung)

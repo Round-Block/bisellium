@@ -618,10 +618,10 @@ test("W-255-b3 behaviour 3: next's signature gates accept a signed light brief a
   const ok = w196World("w255-b3", "6");
   put(ok.repo, BRIEF_REL, w255Light());
   sign(ok, 1);
-  reviewerOrder(specNext(ok), 2, "a signed light brief goes to the reviewer");
-  review(ok, 2, "passed");
+  // W-305 (D-075 D): the fast lane: a signed light brief names branch with no spec review
   const named = specNext(ok);
-  expectStep(named, "branch", "named", "a reviewed light brief names branch");
+  expectStep(named, "branch", "named", "a signed light brief names branch");
+  assert.equal(named.kv.has("role"), false, ran("no reviewer is ordered", named));
   expectStep(next(ok, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "the light spec rides branch");
   expectStep(next(ok, [OPUS]), "ready", "named", "the branch carries the light spec: ready follows");
 
@@ -680,7 +680,8 @@ test("W-264-b2 behaviour 2: with no limit declared, next's signature gates admit
   const ok = srWorld("w264-b2");
   put(ok.repo, BRIEF_REL, w255Light());
   sign(ok, 1);
-  reviewerOrder(specNext(ok), 2, "no limit: a signed light brief goes to the reviewer");
+  // W-305 (D-075 D): the fast lane holds with no limit declared
+  expectStep(specNext(ok), "branch", "named", "no limit: a signed light brief names branch");
   const seven = srWorld("w264-b2-seven");
   put(seven.repo, BRIEF_REL, w255Light({ behaviours: 7 }));
   sign(seven, 1);
