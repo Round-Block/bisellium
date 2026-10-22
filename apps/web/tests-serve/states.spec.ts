@@ -223,3 +223,30 @@ test("W-341 the live region is one node across a state change, so the change is 
   const box = await region.boundingBox();
   expect(box === null || (box.width <= 1 && box.height <= 1)).toBe(true);
 });
+
+// A write that fails (HTTP 500 -> postWrite's { kind: "error" }) is announced by the shell's one live region.
+for (const width of VIEWPORTS) {
+  test(`W-341 inbox write error at ${width}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    served = await startServed("states-inbox-write-error");
+    await fail(page, "**/api/answer");
+    await signIn(page, "inbox");
+    await answerFirst(page);
+    const region = page.locator(".shell > .shell__status");
+    await expect(region).toHaveAttribute("data-state", "error");
+    await expect(region).toHaveText("Could not send the answer.");
+    await expect(page.locator(".inbox__error")).toHaveText("error submitting the answer");
+  });
+
+  test(`W-341 seats write error at ${width}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    served = await startServed("states-seats-write-error");
+    await fail(page, "**/api/delegate");
+    await signIn(page, "seats");
+    await draftSeat(page);
+    const region = page.locator(".shell > .shell__status");
+    await expect(region).toHaveAttribute("data-state", "error");
+    await expect(region).toHaveText("Could not record the change.");
+    await expect(page.locator(".seats__confirm-error")).toHaveText("error submitting the change");
+  });
+}
