@@ -568,6 +568,11 @@ const PINNED_B: PinnedB[] = [
     disposition: "guarded",
     why: "W-338: same guarded opus as recordRel#1; the ui-lead's prompt name is only printed in the order, never read or written by next",
   },
+  {
+    key: "packages/cli/src/next.ts:fixCheckSteps#1",
+    disposition: "guarded",
+    why: "W-309: same guarded opus as recordRel#1; the census location is only printed in the perform's output, never read or written through it",
+  },
   { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived", why: 'id is branch.replace(/^opus\\//, ""); git refuses ".." in a ref name' },
   {
     key: "packages/cli/src/prune.ts:pruneCiLogs#1",
@@ -825,6 +830,11 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/next.ts:reviewSteps:mkdirSync#1", disposition: "outside", why: "writes the review packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
   { key: "packages/cli/src/next.ts:reviewSteps:writeFileSync#1", disposition: "outside", why: "writes the review packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
   { key: "packages/cli/src/next.ts:reviewSteps:writeFileSync#2", disposition: "outside", why: "writes the review packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
+  { key: "packages/cli/src/next.ts:fixCheckSteps:rmSync#1", disposition: "outside", why: "writes the fix-check packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
+  { key: "packages/cli/src/next.ts:fixCheckSteps:mkdirSync#1", disposition: "outside", why: "writes the fix-check packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
+  { key: "packages/cli/src/next.ts:fixCheckSteps:writeFileSync#1", disposition: "outside", why: "writes the fix-check packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
+  { key: "packages/cli/src/next.ts:fixCheckSteps:writeFileSync#2", disposition: "outside", why: "writes the fix-check packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
+  { key: "packages/cli/src/next.ts:fixCheckSteps:writeFileSync#3", disposition: "outside", why: "writes the fix-check packet under <repo>/.bisellium/reviews/<id>/, whose containment packetBase proves first; never an officina" },
   { key: "packages/cli/src/next.ts:recordCertify:openSync#1", disposition: "guarded", why: "creates certify's gate log in ci/, which ensureRealDirectory proves a real directory of the officina first; O_NOFOLLOW refuses a symlink planted at the log's name" },
   { key: "packages/cli/src/next.ts:recordCertify:writeFileSync#1", disposition: "guarded", why: "writes only to the descriptor opened with O_NOFOLLOW just before in ci/, never to a path" },
   { key: "packages/cli/src/next.ts:recordCertify:rmSync#1", disposition: "outside", why: "removes the downloaded certify artifact under <repo>/.bisellium/certify/; never an officina" },
