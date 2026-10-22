@@ -58,6 +58,7 @@ function entryFindings(where: string, id: string, value: unknown, logs: Covered[
   if (value === undefined) return [];
   if (!Array.isArray(value)) return [{ rule: "ladder.ticket", level: "block", where, message: `${id}'s tickets: is not a list of step ticket lines` }];
   const findings: Finding[] = [];
+  let last: { n: number; t: StepTicket } | undefined;
   const entry = (n: number, why: string): void => void findings.push({ rule: "ladder.ticket", level: "block", where, message: `${id}'s tickets: entry ${n} ${why}` });
   value.forEach((v: unknown, i) => {
     const t = typeof v === "string" ? parseTicketLine(v) : { error: "not a string" };
@@ -68,6 +69,11 @@ function entryFindings(where: string, id: string, value: unknown, logs: Covered[
     // the named log's own unique # opus:, # phase: and # round: headers must say this opus, build and this round (spec round 2)
     else if (t.action === "review" && !logs.some((l) => l.where === `ci/${id}-review-${t.round}.log` && l.opus === id && l.action === "verdict-build" && l.round === t.round))
       entry(i + 1, `(review) names round ${t.round}, but ci/${id}-review-${t.round}.log is not ${id}'s build verdict log for round ${t.round}`);
+    // ladder.order: each canonical entry's at is after the previous canonical entry's (one ticket per write, appended)
+    if ("error" in t) return;
+    if (last !== undefined && exact(t.at)! <= exact(last.t.at)!)
+      findings.push({ rule: "ladder.order", level: "block", where, message: `${id}'s tickets: entry ${i + 1} (${t.action}, ${t.at}) is not after entry ${last.n} (${last.t.action}, ${last.t.at}): entries are appended in time order` });
+    last = { n: i + 1, t };
   });
   return findings;
 }
