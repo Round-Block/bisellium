@@ -1,0 +1,24 @@
+# opus: W-258
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T09:26:16.355Z
+# tree: tree:4a77965f538f8d7d52bb929996bb467ea24b947a
+# brief: briefs/W-258.md blob:828ee6ae20a779ae8dbe12b424cd782e842aecca
+# ticket: {"opus":"W-258","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"e6a2a82bfcf435cc32591966853a89828dbbfa43","brief":"828ee6ae20a779ae8dbe12b424cd782e842aecca","at":"2026-10-22T09:26:11.344Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-258-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the self-review lives as one paragraph in the first builder's prompt template, between Order and Gates, so every first builder reads it before the gates and `ci --opus` run on the fixed tree; it makes no Codex call and records nothing (D-080 G), and the Codex build review stays the single gate — check: brief:19, brief:25, studio/prompts/builder-brief.md
+2. advisory — the presence of the instruction is pinned by extending process.prompt_templates' builder brief texts with the eight self-review texts, with no new rule id, verb or record field; that a builder follows it is a stated limit — check: brief:21, brief:23, packages/cli/src/rules/prompts.ts
+3. advisory — W-258-b1 fails by ERR_ASSERTION on master plus the row and passes on the feature commit; the classifier accepts it as assertion-level; with prompts.ts reverted it fails — check: brief:48, reds.out, row-W-258-b1-red1.out, flip-check.out
+4. advisory — W-241-b1 and W-241-b2 flip and are fixed by the one NEEDS fixture edit in the feature commit, exactly the census's two flips, both named; W-340-b1 passes and the real studio gains no process.prompt_templates finding — check: brief:53, fixture-census.md, census-green.out, gates-proto.out
+5. advisory — a light brief (one behaviour, three Files owned, kind feature, no refused path); admission passes, the mbox applies to e6a2a82b with an identical tree, and studio/prompts/ is code-owned so the Patron merges — check: brief:5, admission.out, mbox-check.out
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-258.md`, prototype two commits after master e6a2a82b; one behaviour, light brief, 1 point.
