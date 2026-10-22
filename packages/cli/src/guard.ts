@@ -138,12 +138,18 @@ function cliArgv(w: string[]): string[] | undefined {
   return undefined;
 }
 
-/** The inline script of `bash|sh|zsh|dash … -c <script>` (any single-dash flag word holding `c`)
- *  or `npx … -c|--call <script>`. */
+/** The inline script of `bash|sh|zsh|dash [flags] -c <script>` (a single-dash flag word holding `c`,
+ *  among the shell's leading options: a `-c` after the script operand is that script's argument) or
+ *  `npx … -c|--call <script>`. */
 function shellScript(w: string[]): string | undefined {
   const b = base(w[0]);
-  const c = SHELLS.has(b) ? w.findIndex((x, k) => k > 0 && /^-[a-z]*c[a-z]*$/.test(x)) : b === "npx" ? w.findIndex((x) => x === "-c" || x === "--call") : -1;
-  return c > 0 ? w[c + 1] : undefined;
+  if (b === "npx") {
+    const c = w.findIndex((x) => x === "-c" || x === "--call");
+    return c > 0 ? w[c + 1] : undefined;
+  }
+  if (!SHELLS.has(b)) return undefined;
+  for (let j = 1; w[j] !== undefined && w[j] !== "--" && /^[-+]/.test(w[j]!); j += /^[-+][oO]$/.test(w[j]!) ? 2 : 1) if (/^-[a-z]*c[a-z]*$/.test(w[j]!)) return w[j + 1];
+  return undefined;
 }
 
 /** The script file the words run: `bash|sh|zsh|dash [flags] <file>` (`-o`/`+o` with their value),
