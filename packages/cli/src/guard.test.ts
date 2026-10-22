@@ -345,3 +345,59 @@ test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard wh
   assert.match(agent("architect"), /Unchanged code gets a stated limit, not a guarantee/);
   for (const name of ["builder", "architect", "ladder-runner"]) assert.match(agent(name), /^tools: .*\bTaskStop\b/m, `${name} can stop its own background work`);
 });
+
+/** `hooks check --repo` with PATH holding only `bin`: exit code and stdout. */
+async function probe(repo: string, bin: string): Promise<{ code: number; out: string }> {
+  const path = process.env["PATH"];
+  process.env["PATH"] = `${bin}:${dirname(process.execPath)}`;
+  try {
+    const r = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", join(REPO, "examples", "sample-studio"), "--repo", repo]));
+    return { code: r.value.exitCode, out: r.out };
+  } finally {
+    process.env["PATH"] = path;
+  }
+}
+function repoWith(settings: string): string {
+  const r = join(tmp(), "agent clone");
+  mkdirSync(join(r, ".claude"), { recursive: true });
+  writeFileSync(join(r, ".claude", "settings.json"), settings);
+  return r;
+}
+function binWith(target: string | undefined, script?: string): string {
+  const b = join(tmp(), "bin");
+  mkdirSync(b);
+  if (script !== undefined) {
+    writeFileSync(join(b, "bisellium"), script);
+    chmodSync(join(b, "bisellium"), 0o755);
+  } else if (target !== undefined) symlinkSync(target, join(b, "bisellium"));
+  return b;
+}
+
+test("W-310-b6 behaviour 6: hooks check --repo reports the guard wired, installed outside the repo and live", async () => {
+  const settings = readFileSync(SETTINGS_PATH, "utf8");
+  const cli = join(REPO, "packages", "cli", "bin", "bisellium.mjs");
+  const ok = await probe(repoWith(settings), binWith(cli));
+  assert.equal(ok.code, 0, ok.out);
+  assert.match(ok.out, /^guard: wired$/m);
+  assert.match(ok.out, /^guard: installed at .*bisellium\.mjs$/m);
+  assert.match(ok.out, /^guard: live/m);
+  const unwired = await probe(repoWith('{"hooks":{}}'), binWith(cli));
+  assert.equal(unwired.code, 1);
+  assert.match(unwired.out, /^guard: not wired: PreToolUse Bash/m);
+  const dead = await probe(repoWith(settings), binWith(undefined, "#!/bin/sh\ncat >/dev/null\nexit 0\n"));
+  assert.equal(dead.code, 1);
+  assert.match(dead.out, /^guard: dead/m);
+  const none = await probe(repoWith(settings), binWith(undefined));
+  assert.equal(none.code, 1);
+  assert.match(none.out, /^guard: not installed/m);
+  const inside = repoWith(settings);
+  mkdirSync(join(inside, "bin"));
+  writeFileSync(join(inside, "bin", "bisellium"), "#!/bin/sh\nexit 2\n");
+  chmodSync(join(inside, "bin", "bisellium"), 0o755);
+  const r = await probe(inside, join(inside, "bin"));
+  assert.equal(r.code, 1);
+  assert.match(r.out, /^guard: installed inside .*hooks run unsandboxed/m);
+  const plain = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", join(REPO, "examples", "sample-studio")]));
+  assert.equal(plain.value.exitCode, 0, "without --repo: today's report only");
+  assert.doesNotMatch(plain.out, /^guard:/m);
+});
