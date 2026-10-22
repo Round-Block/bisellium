@@ -274,3 +274,30 @@ test("W-310-b3 behaviour 3: the guard refuses the main thread's source and test 
     assert.equal((await guard(write(p))).code, 0, `main thread allowed: ${p}`);
   for (const p of source.slice(0, 3)) assert.equal((await guard(write(p, BUILDER))).code, 0, `a builder writes ${p}`);
 });
+
+const stop = (transcript: string, tasks: unknown[], extra: Record<string, unknown> = {}) => ({
+  hook_event_name: "SubagentStop",
+  agent_id: "b1",
+  agent_type: "builder",
+  agent_transcript_path: transcript,
+  stop_hook_active: false,
+  background_tasks: tasks,
+  ...extra,
+});
+
+test("W-310-b4 behaviour 4: at SubagentStop the guard sends back an agent whose own background work still runs", async () => {
+  const t = tmp();
+  const transcript = join(t, "agent ü.jsonl");
+  writeFileSync(transcript, '{"type":"tool_result","content":"Command running in background with ID: bash_ab12cd"}\n{"x":"mon_77ee"}\n');
+  const shell = { id: "bash_ab12cd", type: "shell", status: "running", description: "wait", command: "sleep 600" };
+  const r = await guard(stop(transcript, [shell]));
+  assert.equal(r.code, 2, "its own shell still runs: sent back");
+  assert.match(r.err, /bash_ab12cd/);
+  assert.match(r.err, /TaskStop/);
+  assert.equal((await guard(stop(transcript, [{ id: "mon_77ee", type: "monitor", status: "running", description: "m" }]))).code, 2, "its own monitor");
+  assert.equal((await guard(stop(transcript, [{ id: "bash_zz99", type: "shell", status: "running", description: "x" }]))).code, 0, "another thread's shell");
+  assert.equal((await guard(stop(transcript, [{ id: "bash_ab12cd", type: "subagent", status: "running", description: "x" }]))).code, 0, "a subagent task is not judged");
+  assert.equal((await guard(stop(transcript, [shell], { stop_hook_active: true }))).code, 0, "sent back once only");
+  assert.equal((await guard(stop(transcript, []))).code, 0, "nothing in flight");
+  assert.equal((await guard(stop(join(t, "missing.jsonl"), [shell]))).code, 0, "fail-open: no transcript");
+});
