@@ -1,0 +1,20 @@
+# opus: W-358
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-22T07:37:03.415Z
+# tree: tree:792e99bded871b01d53fd73fd2a99f18e80425b8
+# brief: briefs/W-358.md blob:9eea24831372f7751f98ebd05a86505e49d1f9b4
+# ticket: {"opus":"W-358","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"15e5c7591cde6aaf8676dfd240541e46acd13356","brief":"9eea24831372f7751f98ebd05a86505e49d1f9b4","at":"2026-10-22T07:37:02.856Z"}
+
+## Findings
+1. advisory — /home/edckt/.bisellium-evidence/W-358-spec/prototype-repo-r3/packages/cli/src/rules/ladder-ticket.ts:70 [severity: S3] Reached through the earlier finding’s class: brief:67 accepts any canonical review round n, but the revised comparison uses part 1’s `count`, which accepts at most nine digits, so matching 10–15-digit rounds allowed by W-334 are rejected. Replace brief:67’s valid-domain text with: “review at round n only when the named log has unique matching opus and phase headers and its unique `# round:` decimal text equals `String(n)`, independently of part 1’s narrower numeric round reader; the remaining verdict grammar is not revalidated here, a stated limit.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/rules/ladder-ticket.test.ts: W-358-b1 matching ten-digit review entry and header round produces no finding
+
+## Earlier findings
+- ci/W-358-spec-2.log #1: closed — brief:67 and /home/edckt/.bisellium-evidence/W-358-spec/prototype-repo-r3/packages/cli/src/rules/ladder-ticket.ts:70 now require the named log’s unique opus, phase and round headers to agree, and W-358-b1 pins the copied round-1 log against a round-2 entry in a done record
+
+## Verdict
+The earlier S1 is closed; the remaining same-class issue requires an implausibly large but listed round and is advisory.
+VERDICT: PASS

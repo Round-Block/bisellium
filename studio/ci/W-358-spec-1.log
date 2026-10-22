@@ -1,0 +1,26 @@
+# opus: W-358
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T07:09:46.391Z
+# tree: tree:1c96a2d644bae3a4e2c4c21d49b8a9d3255d4a13
+# brief: briefs/W-358.md blob:0349b70df0bf0be4190326cbc225ed7978ed9220
+# ticket: {"opus":"W-358","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"fa53e27965c7f2a33c2fa38c1a936b2fb1a02331","brief":"0349b70df0bf0be4190326cbc225ed7978ed9220","at":"2026-10-22T07:09:43.457Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-358-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — both rules extend part 1's one reader, `checkLadderTicket`: the records are read once before the no-ticket-yet return, the entries are judged from that read in every state, and the round order reuses part 1's judged set; no new module, wiring, package.json line or label is needed, and next.ts is not touched — check: brief:21, brief:35, brief:41, packages/cli/src/rules/ladder-ticket.ts:125
+2. advisory — the entries are not merged into part 1's per-opus log timeline because the chain issues a review ticket at the same instant as the verdict-build ticket it follows (W-354, 06:28:40.731Z both); the entry order is the list's own — check: brief:17, brief:29, studio/opera/W-354.md:1
+3. advisory — W-183's late verdict (spec round 8 after round 9) passes part 1 when each ticket binds its own log; row W-358-b2 pins that shape with ladder.ticket silent and ladder.order blocking — check: brief:19, brief:27, packages/cli/src/rules/ladder-ticket.test.ts:200
+4. advisory — each row fails by assertion on master and on every stage before its own and passes from its own; every earlier row passes on each later red commit; 15 of 15 guard mutants are killed — check: brief:103, brief:104, reds.out:1, mutants.out:1
+5. advisory — the census and probes find no ladder finding on master (47 records, 170 entries), the main checkout with its uncommitted W-350 files, or W-340's worktree; the only round inversion in the officina is W-183's, before the first ticket — check: brief:23, brief:72, census.out:1, probes.out:1
+6. advisory — no existing row or fixture flips; the only neighbour failures (check.test.ts W-089, tests.test.ts W-178-b4) are the detached stage clone's missing master ref and appear identically on master; the Codex test check lists no flip and no unnamed row — check: brief:105, gates-master.out:1, gates-proto.out:1, fixture-census.md:1
+7. advisory — the first build of the stage-1 prototype named the record by a raw id join, which containment.test.ts inventory B caught; the finding now names the record's contained read path, and inventory B passes — check: brief:105, packages/cli/src/rules/ladder-ticket.ts:120
+
+## Verdict
+
+passed — W-358 (W-268 part 2) signed by the architect (`claude-opus-5-5`, D-072): three behaviours on master fa53e279, six prototype commits in prototype.mbox, 2 points, no code-owned path touched.

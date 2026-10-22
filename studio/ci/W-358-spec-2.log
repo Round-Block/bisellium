@@ -1,0 +1,17 @@
+# opus: W-358
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-22T07:17:52.162Z
+# tree: tree:792e99bded871b01d53fd73fd2a99f18e80425b8
+# brief: briefs/W-358.md blob:0349b70df0bf0be4190326cbc225ed7978ed9220
+# ticket: {"opus":"W-358","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"15e5c7591cde6aaf8676dfd240541e46acd13356","brief":"0349b70df0bf0be4190326cbc225ed7978ed9220","at":"2026-10-22T07:17:51.552Z"}
+
+## Findings
+1. blocking — brief:67 [severity: S1] [design: changes] A plausible copied or edited `ci/W-900-review-2.log` can retain `# round: 1`; `checkStudio`’s new `entryFindings` accepts the review/2 entry because it checks only path, opus and phase, and for a done opus neither existing ladder rule catches the disagreement. Replace brief:67 with: `| 5. The entry's action and round | ready or done at round 0; review at round n only when ci/<opus>-review-<n>.log has unique # opus:, # phase: and # round: headers equal to the record id, build and n; the remaining verdict grammar is not revalidated here, a stated limit | entryFindings (new): every mismatch blocks; pinned by W-358-b1 "a review entry whose named log has another header round blocks", plus the existing action, round-zero and missing-log cases |`. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/rules/ladder-ticket.test.ts
+
+## Verdict
+The signed brief has one design-changing fail-open input boundary and requires revision before build.
+VERDICT: FAIL
