@@ -401,6 +401,8 @@ test("W-310-b6 behaviour 6: hooks check --repo reports the guard wired, installe
   const none = await probe(repoWith(settings), binWith(undefined));
   assert.equal(none.code, 1);
   assert.match(none.out, /^guard: not installed/m);
+  assert.match(none.out, /^guard: dead \(not run/m, "no bisellium: the live line is still printed");
+  assert.equal(none.out.match(/^guard: /gm)?.length, 3, "no bisellium: wired, installed and live lines");
   const inside = repoWith(settings);
   mkdirSync(join(inside, "bin"));
   writeFileSync(join(inside, "bin", "bisellium"), "#!/bin/sh\nexit 2\n");
@@ -408,6 +410,8 @@ test("W-310-b6 behaviour 6: hooks check --repo reports the guard wired, installe
   const r = await probe(inside, join(inside, "bin"));
   assert.equal(r.code, 1);
   assert.match(r.out, /^guard: installed inside .*hooks run unsandboxed/m);
+  assert.match(r.out, /^guard: dead \(not run/m, "inside the repo: the live line is still printed");
+  assert.equal(r.out.match(/^guard: /gm)?.length, 3, "inside the repo: wired, installed and live lines");
   const plain = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", join(REPO, "examples", "sample-studio")]));
   assert.equal(plain.value.exitCode, 0, "without --repo: today's report only");
   assert.doesNotMatch(plain.out, /^guard:/m);
