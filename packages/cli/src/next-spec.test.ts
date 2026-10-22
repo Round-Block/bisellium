@@ -579,6 +579,8 @@ interface LightOpts {
   family?: boolean;
   redOrder?: boolean;
   owned?: string;
+  /** W-305: more Files owned bullets after the first. */
+  moreOwned?: string[];
   behaviours?: number;
   exception?: string;
   acceptance?: boolean;
@@ -602,6 +604,7 @@ function w255Light(o: LightOpts = {}): string {
     "## Files owned",
     "",
     `- \`${o.owned ?? "source.txt"}\``,
+    ...(o.moreOwned ?? []).map((p) => `- \`${p}\``),
     "",
     "## Behaviours to test",
     "",
@@ -701,6 +704,99 @@ test("W-264-b2 behaviour 2: with no limit declared, next's signature gates admit
   sign(alone, 1);
   landed(alone);
   expectStep(specNext(alone), "branch", "named", "no limit, no reviewer: a signed, committed light brief names branch");
+});
+
+// ---------------------------------------------------------------------------
+// W-305 (D-075 D): the fast lane. With a spec reviewer configured, a signed light brief (one behaviour, one to three Files
+// owned, no refused path) goes to branch with no spec review; every other brief keeps today's sequence. Rows are selectable
+// with --test-name-pattern=W-305-b<n>.
+// ---------------------------------------------------------------------------
+test("W-305-b2 behaviour 2: with a reviewer configured, a signed light brief names branch and every other brief keeps the spec review", { timeout: 1_800_000 }, () => {
+  const fast = w196World("w305-b2", "6");
+  put(fast.repo, BRIEF_REL, w255Light({ moreOwned: ["b.txt", "c.txt"] }));
+  sign(fast, 1);
+  const o = specNext(fast);
+  expectStep(o, "branch", "named", "a signed light brief names branch with no spec review");
+  assert.equal(o.kv.has("role"), false, ran("no architect or reviewer order", o));
+  assert.equal(o.out.includes(SR_MODEL), false, ran("no reviewer model is named", o));
+  expectStep(next(fast, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "the light spec rides branch");
+  expectStep(next(fast, [OPUS]), "ready", "named", "the branch carries the signed light spec: ready follows");
+  // once branched, a worktree edit that makes the brief claim light and not be light leaves the fast lane: the architect revises
+  put(fast.wt, BRIEF_REL, w255Light({ behaviours: 2 }));
+  const back = specNext(fast);
+  architectOrder(back, 2, "a branched light brief edited to two behaviours goes back to the architect");
+  assert.match(back.kv.get("why") ?? "", /a light brief has one behaviour, but it numbers 2/, ran("the branched edit: why", back));
+
+  // an edit after the signature voids it before the branch (W-293): the architect signs again, never the reviewer
+  const edited = w196World("w305-b2-edited", "6");
+  put(edited.repo, BRIEF_REL, w255Light());
+  sign(edited, 1);
+  appendFileSync(join(edited.repo, BRIEF_REL), "\nEdited after the signature.\n");
+  const e = specNext(edited);
+  architectOrder(e, 2, "a light brief edited after its signature");
+  assert.equal(e.out.includes(SR_MODEL), false, ran("edited: no reviewer model is named", e));
+
+  // the same studio's full brief keeps the spec review
+  const full = srWorld("w305-b2-full");
+  putBrief(full);
+  sign(full, 1);
+  reviewerOrder(specNext(full), 2, "a signed full brief goes to the reviewer");
+
+  // a brief that claims light and is not stays with the architect, the reason named: never the fast lane, never the reviewer
+  const claims: [string, string, RegExp][] = [
+    ["two", w255Light({ behaviours: 2 }), /a light brief has one behaviour, but it numbers 2; use the full template \(D-075 D\)/],
+    ["four", w255Light({ moreOwned: ["b.txt", "c.txt", "d.txt"] }), /a light brief owns one to three files, one "- " bullet each under "## Files owned", but it lists 4/],
+    ["pipeline", w255Light({ owned: "scripts/ci-certify.mjs" }), /a light brief is not for security, sandbox, branch-protection or pipeline work/],
+    ["variant", w255Light({ mark: "Brief: Light" }), /brief form line "Brief: Light" is not exactly "Brief: light"/],
+    ["nored", w255Light({ redOrder: false }), /declares no red order/],
+  ];
+  for (const [tag, text, why] of claims) {
+    const w = w196World(`w305-b2-${tag}`, "6");
+    put(w.repo, BRIEF_REL, text);
+    sign(w, 1);
+    const c = specNext(w);
+    architectOrder(c, 2, `${tag} goes back to the architect`);
+    assert.match(c.kv.get("why") ?? "", why, ran(`${tag}: why`, c));
+    assert.equal(c.out.includes(SR_MODEL), false, ran(`${tag}: no reviewer model is named`, c));
+  }
+
+  // a kind: ui opus keeps its spec review, light or not
+  const ui = w196World("w305-b2-ui", "6");
+  editRecord(ui, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  commit(ui.repo, "studio: W-900 is a ui opus");
+  put(ui.repo, BRIEF_REL, w255Light());
+  sign(ui, 1);
+  reviewerOrder(specNext(ui), 2, "a signed light kind: ui brief goes to the reviewer");
+
+  // the kind fails closed: only a registered non-ui kind takes the lane; an absent, non-string, unregistered or mis-cased
+  // kind keeps the spec review
+  const kinds: [string, (doc: { setIn(path: string[], value: unknown): void }) => void][] = [
+    ["absent", (doc) => (doc as unknown as { deleteIn(path: string[]): void }).deleteIn(["kind"])],
+    ["number", (doc) => doc.setIn(["kind"], 42)],
+    ["unregistered", (doc) => doc.setIn(["kind"], "widget")],
+    ["mis-cased", (doc) => doc.setIn(["kind"], "UI")],
+  ];
+  for (const [tag, edit] of kinds) {
+    const k = w196World(`w305-b2-kind-${tag}`, "6");
+    editRecord(k, "repo", edit);
+    commit(k.repo, `studio: W-900 kind ${tag}`);
+    put(k.repo, BRIEF_REL, w255Light());
+    sign(k, 1);
+    const ko = specNext(k);
+    assert.notEqual(ko.first, `next: ${OPUS} branch named`, ran(`a malformed kind does not take the fast lane (${tag}): no branch`, ko));
+    reviewerOrder(ko, 2, `a malformed kind does not take the fast lane (${tag})`);
+  }
+
+  // the same input on the branch: a branch record whose kind is mis-cased leaves the lane, so the spec rung returns
+  const back2 = w196World("w305-b2-kind-branch", "6");
+  put(back2.repo, BRIEF_REL, w255Light());
+  sign(back2, 1);
+  expectStep(next(back2, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "the kind-branch world rides branch");
+  expectStep(next(back2, [OPUS]), "ready", "named", "the kind-branch world reaches ready");
+  editRecord(back2, "wt", (doc) => doc.setIn(["kind"], "UI"));
+  commit(back2.wt, "studio: W-900 kind mis-cased on the branch");
+  const kb = specNext(back2);
+  assert.match(kb.first, new RegExp(`^next: ${OPUS} spec `), ran("a mis-cased branch record kind does not take the fast lane", kb));
 });
 
 // ---------------------------------------------------------------------------
