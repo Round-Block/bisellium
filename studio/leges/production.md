@@ -119,7 +119,7 @@ detection. The Aedile owns the road, not the work travelling on it.
 - `gh` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`. Records PRs:
   `~/.bisellium-evidence/chore-pr.sh <n>` waits for CI and merges.
 - Codex: `codex exec -c model_provider=openai -m <model> -c model_reasoning_effort=high -s read-only --skip-git-repo-check -C <dir> -o <out.md> - < prompt.md`
-  (no git, node servers or browsers inside it). Runs inside the Bash
+  (no git inside it; no node servers or browsers either, except that the UI architect and the UI builder add `-s workspace-write -c sandbox_workspace_write.network_access=true` to run served browser rows in their own worktree, D-105). Runs inside the Bash
   sandbox with `allowed_domains` `api.openai.com`, `chatgpt.com`,
   `auth.openai.com`; unsandboxed commands are disabled in settings.
 
@@ -336,3 +336,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-10-20 | §9 steps 1, 3 and 4: the architect's dispatch, the first builder brief and the round-1 build review are filled from `studio/prompts/` (W-241 part 1) | Patron |
 | 2026-10-20 | §9 steps 0 and 3, §10: the reds and code are replayed from the architect's signed prototype by a reds perform; a builder only where the replay cannot run, for required fixes and for fix rounds (W-326) | Patron |
 | 2026-10-21 | §9 steps 0-2, §10: `kind: ui` uses the D-091 pair—Codex Sol signs with Astra's input, Claude Opus reviews; engineering and build review stay unchanged (W-348) | Patron |
+| 2026-10-22 | §8: the UI architect and the UI builder run Codex with its network sandbox lifted to run served browser rows; reviewers stay read-only (D-105) | Patron |
