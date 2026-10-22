@@ -10,9 +10,9 @@
  * is left unjudged is deliberate evasion (D-045): eval, an alias, a function, a command or script
  * path built from a variable, a command substitution inside double quotes: a limit.
  */
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -267,6 +267,44 @@ export function unboundedLoop(command: string, bounded = false, depth = 0): bool
   return false;
 }
 
+/** The path with its longest existing prefix resolved through symlinks. */
+function realOf(path: string): string {
+  const tail: string[] = [];
+  for (let head = path; ; ) {
+    try {
+      return join(realpathSync(head), ...[...tail].reverse());
+    } catch {
+      const parent = dirname(head);
+      if (parent === head) return path;
+      tail.push(basename(head));
+      head = parent;
+    }
+  }
+}
+
+/** The nearest ancestor directory holding `.git/HEAD` (a checkout) or a `.git` file (a linked worktree). */
+function checkoutOf(path: string): string | undefined {
+  for (let d = dirname(path); ; d = dirname(d)) {
+    if (existsSync(join(d, ".git", "HEAD")) || statSync(join(d, ".git"), { throwIfNoEntry: false })?.isFile()) return d;
+    if (dirname(d) === d) return undefined;
+  }
+}
+
+/** W-290: in a git checkout, `studio/decisions/**` and `docs/SESSION-HANDOFF.md` are written only
+ *  by a dispatched clerk; the main thread writes nothing outside `studio/` and `docs/`. A path
+ *  outside every checkout is not judged. */
+export function writeRefusal(filePath: string, cwd: string | undefined, main: boolean, clerk: boolean): string | undefined {
+  const real = realOf(resolve(cwd ?? process.cwd(), filePath));
+  const top = checkoutOf(real);
+  if (!top) return undefined;
+  const rel = relative(top, real).split(sep).join("/");
+  if (rel.startsWith("studio/decisions/") || rel === "docs/SESSION-HANDOFF.md")
+    return clerk ? undefined : `refused: ${rel} is written only by a dispatched clerk subagent (W-290): dispatch a clerk with the text`;
+  if (main && !rel.startsWith("studio/") && !rel.startsWith("docs/"))
+    return `refused: the orchestrator session does not write source or tests (${rel}) (W-290): dispatch a builder subagent`;
+  return undefined;
+}
+
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */
 export function guardRefusal(input: Dict): string | undefined {
   const event = input["hook_event_name"];
@@ -282,6 +320,11 @@ export function guardRefusal(input: Dict): string | undefined {
     if (args["run_in_background"] === true && unboundedLoop(command))
       return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
     return undefined;
+  }
+  if (tool === "Write" || tool === "Edit" || tool === "NotebookEdit") {
+    const path = str(args["file_path"]) ?? str(args["notebook_path"]);
+    const clerk = !main && input["agent_type"] === "clerk";
+    return path ? writeRefusal(path, str(input["cwd"]), main, clerk) : undefined;
   }
   return undefined;
 }
