@@ -1,0 +1,19 @@
+# opus: W-309
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16394-8830-7272-83c7-984fe2b582f7
+# outcome: passed
+# at: 2026-10-22T12:33:45.126Z
+# tree: dirty:d6e07bea4d17a752aadfa07655260cfd659db67a
+# brief: briefs/W-309.md blob:d0dd49eca843f40966d9556d281c8d514929c630
+# ticket: {"opus":"W-309","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"b005fcb99d3689d45341b5c6ee2b043fa31bd21b","brief":"d0dd49eca843f40966d9556d281c8d514929c630","at":"2026-10-22T12:33:37.774Z"}
+
+## Findings
+1. advisory — brief:29 The promise gives Codex both commit-derived evidence and the filesystem worktree without naming their disagreement: `dirtyHold` ignores untracked and ignored entries, while Codex can read them, and `sourceTreeHash` excludes paths that the worktree exposes. Replace brief:29 with: `Promise fix-perform: at that rung, next <id> --perform --expect review runs Codex through the harness adapter (codexProfile.start, model gpt-5.6-sol, reasoning effort high, read-only, the main checkout as its working directory, 25 minutes) in a fresh session on the census prompt naming the failing log, brief, fix diff and worktree, and writes check.json (round, tree, session, open entries) only after a normal exit 0, a valid session absent from the failed round's # session: headers, and exactly one nonempty ## Open section; lone None or None. means clean and every other line is open. The prompt trusts the committed fix.diff and branch-ref source tree as fix evidence and uses the worktree only for navigation: untracked or ignored entries, and paths excluded from sourceTreeHash, can appear in the worktree but are not fix evidence and go under ## Not judged; dirtyHold refuses tracked changes only. Limits: the truth of Codex's census and its other sections are not judged; fix-census.sh's optional host facts are not carried; another round's session is not refused.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-review.test.ts (W-309-b2 pins the committed-evidence instruction and the untracked/ignored disagreement)
+2. advisory — brief:31 A pre-existing stale or malformed `check.json` can remain when `packetBase` or `rmSync` throws before deletion, so “no check.json” is stronger than the fail-closed implementation. Replace brief:31 with: `Promise records-nothing: the fix-check perform writes nothing under either studio, takes no step ticket and makes no commit; a refusal or thrown step error is next: <id> review held with exit 1, writes no new current-tree check.json and releases the step marker — limit: a pre-existing stale or malformed check.json may remain when failure precedes packet removal, but readFixCheck never accepts it as current; a held attempt's fix.diff, prompt.md and census.md stay until the next attempt removes them; packet containment is W-274's unchanged packetBase (D-076 E).` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-review.test.ts (W-309-b2 stale-check pre-removal failure)
+
+## Verdict
+The brief is feasible with these two advisory promise corrections; neither is blocking.
+VERDICT: PASS

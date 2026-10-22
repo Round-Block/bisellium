@@ -1,0 +1,25 @@
+# opus: W-309
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T12:24:34.902Z
+# tree: dirty:d6e07bea4d17a752aadfa07655260cfd659db67a
+# brief: briefs/W-309.md blob:d0dd49eca843f40966d9556d281c8d514929c630
+# ticket: {"opus":"W-309","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b005fcb99d3689d45341b5c6ee2b043fa31bd21b","brief":"d0dd49eca843f40966d9556d281c8d514929c630","at":"2026-10-22T12:24:31.481Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-309-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — W-309's title holds six parts across next.ts, verdict.ts, the done path, four scripts, the lex and ADOPTION.md; this revision is part 1 only, the fix check D-086 D's kill condition names, and the five later parts are under Out of scope with the hand-script deletion last — check: brief:23, brief:106
+2. advisory — the fix check is the review rung's second perform (act fix-check), so W-310's guard, which refuses next --perform with --expect review, no --expect or --chain from the main thread, sends it to a ladder-runner with no guard.ts change; Files owned do not overlap W-310's and neither ADOPTION.md nor a lex is touched — check: brief:21, brief:37
+3. advisory — each row fails by assertion on master and on each stage before its own and passes from its own; row b1 passes on row b2's red commit (matrix exit 0) — check: reds.out:1, brief:91, brief:95
+4. advisory — nine existing rows would flip without the advanceSource fixture change, which Files owned names; with it next-review, next-ladder, next-spec, next-branch, next, next-done, next-queue, ladder-followon and containment pass whole on the prototype, and the first three pass on master — check: flips.out:1, brief:100
+5. advisory — the Codex test check lists eleven flips; ten were named, and the eleventh, W-124 behaviour 1, passed without the fixture only through a loose round regex and is now named in Acceptance; its must-stay-green rows lie in the files run whole above — check: fixture-census.md:1, brief:100
+6. advisory — two inventory B and five inventory D containment pins land with the code that needs them; the officina checks' blocking set equals master's (the detached clone's W-096 finding) — check: gates-proto.out:1, gates-master.out:1, brief:38
+
+## Verdict
+
+passed — W-309 part 1 signed by the architect (`claude-opus-5-5`, D-072): two behaviours on master b005fcb9, four prototype commits in prototype.mbox, 3 points, no code-owned path touched.
