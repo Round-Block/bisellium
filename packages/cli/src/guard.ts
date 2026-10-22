@@ -252,6 +252,21 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0): stri
   return undefined;
 }
 
+/** True when a simple command starts a `while` or `until` loop outside any `timeout` with a
+ *  duration above zero, searched through `-c` scripts three deep (a `timeout` before the shell
+ *  bounds its script). `~/.bisellium-evidence/wait-until.sh` runs its loop inside the script, so its
+ *  command line holds no loop. */
+export function unboundedLoop(command: string, bounded = false, depth = 0): boolean {
+  for (const words of simpleCommands(command)) {
+    const { words: w, timed } = strip(words);
+    const inBound = bounded || timed;
+    if ((w[0] === "while" || w[0] === "until") && !inBound) return true;
+    const inner = shellScript(w);
+    if (inner !== undefined && depth < 3 && unboundedLoop(inner, inBound, depth + 1)) return true;
+  }
+  return false;
+}
+
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */
 export function guardRefusal(input: Dict): string | undefined {
   const event = input["hook_event_name"];
@@ -264,6 +279,8 @@ export function guardRefusal(input: Dict): string | undefined {
     if (!command) return undefined;
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
+    if (args["run_in_background"] === true && unboundedLoop(command))
+      return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
     return undefined;
   }
   return undefined;
