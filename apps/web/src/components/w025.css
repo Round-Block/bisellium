@@ -987,6 +987,10 @@
   flex-shrink: 0;
 }
 
+.board__notice {
+  padding: var(--sp-2) var(--sp-6);
+}
+
 .board__title {
   font-family: var(--font-display);
   font-weight: 700;
