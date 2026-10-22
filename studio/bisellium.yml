@@ -24,6 +24,8 @@ sellae:
   # dispatch target.
   - { id: builder, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: builder-codex, collegium: engineering, kind: agent, model: gpt-5.6-sol, harness: codex }
+  # D-099 B: the kind: ui builder.
+  - { id: builder-terra, collegium: engineering, kind: agent, model: gpt-5.6-terra, harness: codex }
   - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
   - { id: builder-b, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
   - { id: builder-c, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
