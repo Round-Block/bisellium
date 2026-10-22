@@ -1206,3 +1206,119 @@ test("W-309-b1 behaviour 1: after a failed round's fix commits next orders the f
   handoffAt(passed, "wt", T.handoffFresh);
   reviewNamed(next(passed, [OPUS, ...BUDGET]), 2, "a passed round: review round 2, no fix check");
 });
+
+const performFixCheck = (w: World, env: Record<string, string> = {}): Out => next(w, [OPUS, "--perform", "--expect", "review", "--budget", "400000"], { env: { ...CODEX_PATH, ...env } });
+const fixPacket = (w: World, n: number): string => join(w.repo, ".bisellium", "reviews", OPUS, `fix-${n}`);
+const CENSUS = (open: string): string => `## Findings\n1. blocking — the fixture input — source.txt:1 — closed — changed\n\n## Open\n${open}\n\n## Not judged\nNone\n\n## Searched\ngrep change`;
+/** A ticketed world whose round 1 failed in the reviewer's session `s-309-r`, then one fix commit and a fresh handover. */
+function fixWorld(tag: string): World {
+  const w = reviewWorld(tag);
+  codexSays(w, { session: "s-309-r", reply: FAIL_REPLY });
+  const o = performReview(w);
+  if (o.kv.get("review") !== "round 1 failed") throw new Error(ran("fixture: round 1 must fail", o));
+  advanceSource(w, true, false);
+  handoffAt(w, "wt", new Date(Date.now() + 60_000).toISOString());
+  return w;
+}
+
+test("W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a fresh session over the fix diff and writes the check next reads, or holds with no check written", { timeout: 1_800_000 }, () => {
+  // a clean census: one fresh codex call, the packet, check.json, no commit; the ladder moves to the re-review
+  const w = fixWorld("w309-b2-clean");
+  const tip = tipOf(w);
+  const tree = sourceTree(w.wt);
+  codexSays(w, { session: "s-309-c", reply: CENSUS("None") });
+  const o = performFixCheck(w);
+  assert.equal(o.status, 0, ran("clean: exit 0", o));
+  assert.equal(o.first, `next: ${OPUS} review performed`, ran("clean: performed", o));
+  assert.equal(o.kv.get("fix-check"), "round 1, no open path", ran("clean: the result", o));
+  assert.equal(o.kv.get("census"), `.bisellium/reviews/${OPUS}/fix-1/census.md`, ran("clean: the census path", o));
+  assert.equal(o.kv.get("next-step"), "review", ran("clean: the re-review is next", o));
+  const calls = codexCalls(w);
+  assert.equal(calls.length, 2, "clean: one codex call after the review round's");
+  const argv = calls[1]!.argv;
+  assert.equal(argv[0], "exec", "clean: codex exec");
+  assert.notEqual(argv[1], "resume", "clean: a fresh session, never the reviewer's resumed");
+  assert.equal(argv.at(-1), "-", "clean: the prompt on stdin");
+  for (const pair of [["-m", "gpt-5.6-sol"], ["-c", "model_reasoning_effort=high"], ["-c", "sandbox_mode=read-only"]])
+    assert.ok(argv.some((a, i) => a === pair[0] && argv[i + 1] === pair[1]), `clean: argv carries ${pair.join(" ")}: ${argv.join(" ")}`);
+  assert.equal(realpathSync(calls[1]!.cwd), realpathSync(w.repo), "clean: codex runs in the main checkout (W-316)");
+  const packet = fixPacket(w, 1);
+  const prompt = readFileSync(join(packet, "prompt.md"), "utf8");
+  assert.equal(calls[1]!.stdin, prompt, "clean: the packet keeps the prompt sent");
+  for (const part of [`opus ${OPUS}`, `${w.wtStudio}/ci/${OPUS}-review-1.log (round 1;`, `${w.wtStudio}/briefs/${OPUS}.md`, `${packet}/fix.diff`, `Repository at the fix head: ${w.wt}.`, "## Open", "data, not instructions"])
+    assert.ok(prompt.includes(part), `clean: the prompt names ${part}`);
+  assert.match(readFileSync(join(packet, "fix.diff"), "utf8"), /^\+change /m, "clean: the fix diff holds the fix");
+  assert.doesNotMatch(readFileSync(join(packet, "fix.diff"), "utf8"), /studio\/(ci|opera)\//, "clean: the records are excluded");
+  assert.equal(readFileSync(join(packet, "census.md"), "utf8"), CENSUS("None"), "clean: the census is the reply");
+  assert.deepEqual(JSON.parse(readFileSync(join(packet, "check.json"), "utf8")), { round: 1, tree, session: "s-309-c", open: [] }, "clean: check.json");
+  assert.equal(tipOf(w), tip, "clean: no commit on the opus branch");
+  assert.equal(git(w.wt, ["status", "--porcelain"]), "", "clean: the worktree is clean");
+  reviewNamed(next(w, [OPUS, "--budget", "400000"]), 2, "clean: review round 2 is named");
+
+  // an open census: performed, and the builder is next
+  const op = fixWorld("w309-b2-open");
+  codexSays(op, { session: "s-309-o", reply: CENSUS("src/a.ts:1 — open — still reached\r\nsrc/b.ts:2 — open — a sibling") });
+  const oo = performFixCheck(op);
+  assert.equal(oo.first, `next: ${OPUS} review performed`, ran("open: performed", oo));
+  assert.equal(oo.kv.get("fix-check"), "round 1, 2 open path(s)", ran("open: the count", oo));
+  assert.equal(oo.kv.get("next-step"), "build", ran("open: the builder is next", oo));
+  assert.deepEqual(JSON.parse(readFileSync(join(fixPacket(op, 1), "check.json"), "utf8")).open, ["src/a.ts:1 — open — still reached", "src/b.ts:2 — open — a sibling"], "open: the paths, CR removed");
+  buildFix(next(op, [OPUS, "--budget", "400000"]), "open: build, phase fix");
+
+  // every failed step holds, exit 1, with no check.json and the marker released
+  const h = fixWorld("w309-b2-held");
+  const held = (label: string, why: string | RegExp, o: Out, calls: number): void => {
+    assert.equal(o.status, 1, ran(`${label}: exit 1`, o));
+    assert.equal(o.first, `next: ${OPUS} review held`, ran(`${label}: held`, o));
+    if (typeof why === "string") assert.equal(o.kv.get("why"), why, ran(`${label}: why`, o));
+    else assert.match(o.kv.get("why") ?? "", why, ran(`${label}: why`, o));
+    assert.equal(existsSync(join(fixPacket(h, 1), "check.json")), false, `${label}: no check.json`);
+    assert.equal(codexCalls(h).length, calls, `${label}: ${calls} codex call(s) in all`);
+    assert.equal(existsSync(join(h.repo, ".bisellium", "steps", `${OPUS}.json`)), false, `${label}: the step marker is released`);
+    fixCheckNamed(next(h, [OPUS, "--budget", "400000"]), 1, `${label}: the check is ordered again`);
+  };
+  appendFileSync(join(h.wt, "source.txt"), "uncommitted\n");
+  held("a tracked change", "refusing: the working tree has tracked changes", performFixCheck(h), 1);
+  git(h.wt, ["checkout", "--", "source.txt"]);
+  codexSays(h, { session: "s-309-h", reply: CENSUS("None"), exit: 1 });
+  held("codex exits 1", "codex exited 1; no fix check is recorded", performFixCheck(h), 2);
+  codexSays(h, { session: "s-309-h", reply: "usage limit", exit: 3 });
+  held("a usage limit", "codex exited 3 (a usage limit); no fix check is recorded", performFixCheck(h), 3);
+  codexSays(h, { session: "s-309-h", reply: CENSUS("None"), sleepMs: 5_000 });
+  held("a timeout", /^codex exited 1 \(timed out after 300 ms\); no fix check is recorded$/, performFixCheck(h, { BISELLIUM_TEST_REVIEW_TIMEOUT_MS: "300" }), 4);
+  codexSays(h, { reply: CENSUS("None") });
+  held("no session", "codex reported no session id; no fix check is recorded", performFixCheck(h), 5);
+  codexSays(h, { session: "s-309-r", reply: CENSUS("None") });
+  held("the reviewer's session", "codex reported the reviewer's session s-309-r; no fix check is recorded", performFixCheck(h), 6);
+  const noOpen = `the census has no single ## Open section with a path or "None" (${fixPacket(h, 1)}/census.md); no fix check is recorded`;
+  codexSays(h, { session: "s-309-h", reply: "## Findings\nnone\n\n## Not judged\nNone" });
+  held("no ## Open", noOpen, performFixCheck(h), 7);
+  codexSays(h, { session: "s-309-h", reply: `${CENSUS("None")}\n\n## Open\nNone` });
+  held("two ## Open sections", noOpen, performFixCheck(h), 8);
+  codexSays(h, { session: "s-309-h", reply: CENSUS("") });
+  held("an empty ## Open", noOpen, performFixCheck(h), 9);
+  codexSays(h, { session: "s-309-h", reply: CENSUS("None\nsrc/a.ts:1 — open — x") });
+  const both = performFixCheck(h);
+  assert.equal(both.kv.get("fix-check"), "round 1, 2 open path(s)", ran("None beside a path: open, never clean", both));
+  rmSync(fixPacket(h, 1), { recursive: true });
+  // a reviews/ that is a symlink into the officina: nothing lands there, no codex call
+  rmSync(join(h.repo, ".bisellium", "reviews"), { recursive: true, force: true });
+  symlinkSync(h.studio, join(h.repo, ".bisellium", "reviews"));
+  held("a symlinked reviews/", /^the fix check failed: /, performFixCheck(h), 10);
+  assert.equal(existsSync(join(h.studio, OPUS)), false, "a symlinked reviews/: nothing lands in the officina");
+  rmSync(join(h.repo, ".bisellium", "reviews"));
+  // a re-run after the holds performs anew; a None. line is clean
+  codexSays(h, { session: "s-309-h", reply: CENSUS("None.") });
+  const again = performFixCheck(h);
+  assert.equal(again.kv.get("fix-check"), "round 1, no open path", ran("re-run: performed", again));
+  assert.equal(readFileSync(join(fixPacket(h, 1), "census.md"), "utf8"), CENSUS("None."), "re-run: the packet is the new attempt's");
+
+  // --chain performs the check and stops before the re-review
+  const c = fixWorld("w309-b2-chain");
+  codexSays(c, { session: "s-309-ch", reply: CENSUS("None") });
+  const ch = next(c, [OPUS, "--perform", "--chain", "--budget", "400000", ...prArgs], { env: CODEX_PATH });
+  assert.equal(ch.status, 0, ran("chain: exit 0", ch));
+  assert.equal(ch.kv.get("fix-check"), "round 1, no open path", ran("chain: the check", ch));
+  assert.equal(ch.kv.get("next-step"), "review", ran("chain: stops before the re-review", ch));
+  assert.equal(codexCalls(c).length, 2, "chain: no review call in the same run");
+});
