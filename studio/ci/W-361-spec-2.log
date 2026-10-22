@@ -1,0 +1,18 @@
+# opus: W-361
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T08:22:02.308Z
+# tree: tree:52ac36e6a3e5e97c80d75f42805fe4d39a365622
+# brief: briefs/W-361.md blob:a764e6cf29b6499cb3e29109dfc1239033063d08
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"b80af879730f01d42f17ff234bf17efbc2f1277e","brief":"a764e6cf29b6499cb3e29109dfc1239033063d08","at":"2026-10-22T08:22:01.779Z"}
+
+## Findings
+1. advisory — brief:68 [severity: S2] The page declares no `color-scheme`, so browser-drawn colours keep the light scheme: placeholder text such as `.inbox__input-ratio`'s "Ratio decidendi", scrollbars and native `<select>` option popups. With Chromium's light-scheme placeholder default (#757575), placeholder text is about 3.1:1 on `--surface`. The computed-contrast promise counts only token pairs, so its limit should say so. Replacement: "Promise computed-contrast: every ruled text pair is computed from `tokens.css` and meets 4.5:1, and every ruled UI-component pair meets 3:1, without trusting copied ratios — limit: `--rule` is decorative; alpha compositing beyond the fixed drawer shadow (including the 0.4 disabled-button opacity), arbitrary nested backgrounds and user-agent default colours (placeholder text, scrollbars, native option popups, since no `color-scheme` is declared) are not classified." [class: spec×promise-unattainable-under-accepted-domain] — check: none: a served row that asserts `getComputedStyle(document.documentElement).colorScheme` or the placeholder's computed colour against `--surface`
+2. advisory — brief:72 [severity: S2] The text says the left rule is the blocked card's non-colour cue. That holds only against plain cards, whose 2px rule is `--transparent`. `.board__card--amber` also draws a visible 2px left rule, so a blocked card and an amber card differ by rule colour alone (ink vs amber). The shape difference that remains is the card's diagonal gate mark. Replacement: "Promise readable-state-cues: confirmation error text uses `--ink`; blocked cards keep a visible 2px left rule (in ink) that sets them apart from unflagged cards, and against an amber card the shape cue is the diagonal failed-gate mark, not the rule; budget burn uses ink/amber and keeps its posture word plus numeric burn/allowance reason — limit: unchanged React data loading, CSS layout, screen-reader treatment and browser rendering are reused, not guaranteed (D-076 E)." [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/test/tokens.test.ts W-361-b2
+
+## Verdict
+The input section names every file the opus reads, and each has a rejector that fails closed. The prototype's red, green and gate outputs agree with the brief. No W-024 or W-087 literal-colour fixture is left unmigrated. The two findings only ask for wording or a stated limit; neither blocks.
+VERDICT: PASS

@@ -1,0 +1,22 @@
+# opus: W-361
+# phase: spec
+# round: 12
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T11:19:27.338Z
+# tree: tree:ac785ec197de8301325e1920d68e2279e3a500a1
+# brief: briefs/W-361.md blob:8a0720c0d31722765636bffad7c9d86abf3e6b43
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":12,"actor":"spec-reviewer","studio":".worktrees/W-361/studio","head":"717abeae565b1efd24d4f51b31f1f9fd5304a174","brief":"8a0720c0d31722765636bffad7c9d86abf3e6b43","at":"2026-10-22T11:19:26.764Z"}
+
+## Findings
+1. advisory — brief:66 [severity: S2] The served Inbox-count ratio can pass without testing anything. `.sidebar__badge` sets no background, so its computed `backgroundColor` is `rgba(0, 0, 0, 0)`. The reused `rgbContrast()` (board.spec.ts:38) keeps the first three channels and drops alpha, so it reads that background as black, and any amber clears 4.5:1. If the builder takes the badge's own background, which is the obvious first try, "each actual fill" proves nothing. The source-level b1 amber/rule pair still catches a token regression, so this is advisory. Replacement for the sentence: "The owned 1280px Board row computes the Inbox badge's rendered amber `color` against the computed `backgroundColor` of its enclosing `.sidebar__link` (never the badge's own transparent background), first while the link is hovered and then while it is selected, and asserts that the background's alpha is 1 before requiring 4.5:1 for each fill; `rgbContrast()` does not composite alpha, which is a stated limit." [class: test×vacuous-oracle] — check: none: an assertion in the 1280px row that the background it samples is opaque and equals the computed `--rule`
+2. advisory — brief:36 [severity: S4] On the rebased branch, the historical prototype commits already declare the five control-sweep selectors. W-064 behaviour 9's 390px strip-contrast assertion is in place too (board.spec.ts:589), and `var(--bad)` is used only at w025.css:283. The brief describes all of these as changes this build makes (brief:25, brief:34, brief:36), so a builder could look for a diff that does not exist. Replacement: "- `apps/web/src/components/w025.css`: the rebased branch already carries the pre-D-101 sweep, the ink confirmation/blocked-card rules and the verdigris drawer-evidence rules; this build adds `.sidebar__link--active`'s persistent ink underline and changes nothing else in the file unless a W-361-b2 assertion fails." [class: spec×stale-baseline] — check: none: a brief-admission rule comparing Files owned claims with the branch head's diff against master
+
+## Earlier findings
+- Round-8 finding 1 (undeclared W-064 behaviour 9 flip): closed. Acceptance (brief:125) now names the file's 390px composition row, and the strip assertion already passes on the rebased branch, where `.board__strip-item` declares ink.
+- Round-8 finding 2 (no Input domain row for the rendered served pair): partly closed and still open. Row 9 (brief:111) now covers the rendered navigation states, but no row states that `rgbContrast()` ignores alpha. Finding 1 above carries that gap for the new badge reader.
+
+## Verdict
+Revision 11 brings in D-101 consistently. I recomputed the official Dracula values: amber 8.36/6.92/5.37, ok 10.38/8.59, bad 4.53/3.75 and the ink underline 8.59 on rule all match, the pair counts (13 text, 9 component) add up, the W-341-b6 and W-024 migrations are owned, and the active underline cannot be overridden by `.sidebar__link:hover`, which sets only background. The two remaining findings are advisory.
+VERDICT: PASS

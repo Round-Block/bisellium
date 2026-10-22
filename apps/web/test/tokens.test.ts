@@ -11,6 +11,9 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(resolve(HERE, "..", "src", "tokens.css"), "utf8");
+const direction = readFileSync(resolve(HERE, "..", "..", "..", "docs", "design", "DIRECTION.md"), "utf8");
+const componentCss = readFileSync(resolve(HERE, "..", "src", "components", "w025.css"), "utf8");
+const officinaSource = readFileSync(resolve(HERE, "..", "src", "screens", "Officina.tsx"), "utf8");
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -26,16 +29,28 @@ function hasVar(name: string, value: string): boolean {
   return re.test(root);
 }
 
+const d101Colors: [string, string][] = [
+  ["ink", "#F8F8F2"],
+  ["ink-2", "#C6C9D8"],
+  ["ink-3", "#9EA4C4"],
+  ["rule", "#44475A"],
+  ["wash", "#343746"],
+  ["verdigris", "#3FB9A3"],
+  ["amber", "#FFB86C"],
+  ["ok", "#50FA7B"],
+  ["bad", "#FF5555"],
+];
+
 const colors: [string, string][] = [
-  ["ink", "#16211E"],
-  ["ink-2", "#4A5654"],
-  ["ink-3", "#677270"],
-  ["rule", "#DDE3E1"],
-  ["wash", "#F4F7F6"],
-  ["verdigris", "#0B6E5F"],
-  ["amber", "#99651A"],
-  ["ok", "#257F51"],
-  ["bad", "#C14738"],
+  ["ink", "#F8F8F2"],
+  ["ink-2", "#C6C9D8"],
+  ["ink-3", "#9EA4C4"],
+  ["rule", "#44475A"],
+  ["wash", "#343746"],
+  ["verdigris", "#3FB9A3"],
+  ["amber", "#FFB86C"],
+  ["ok", "#50FA7B"],
+  ["bad", "#FF5555"],
 ];
 
 for (const [name, value] of colors) {
@@ -55,6 +70,140 @@ const spaces: [string, string][] = [
 for (const [name, value] of spaces) {
   check(`tokens.css --${name} is ${value}`, hasVar(name, value));
 }
+
+function token(name: string): string {
+  const value = new RegExp(`--${name}\\s*:\\s*(#[0-9a-f]{6})\\s*;`, "i").exec(root)?.[1];
+  assert.ok(value, `tokens.css declares a six-digit --${name}`);
+  return value;
+}
+
+function luminance(hex: string): number {
+  const channels = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255);
+  const linear = channels.map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+}
+
+function contrast(foreground: string, background: string): number {
+  const [lighter, darker] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  return (lighter! + 0.05) / (darker! + 0.05);
+}
+
+test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and component contrast floors", () => {
+  const actual = Object.fromEntries(d101Colors.map(([name]) => [name, token(name).toUpperCase()]));
+  assert.deepEqual(actual, Object.fromEntries(d101Colors), "tokens.css carries D-100 A as amended by D-101 A exactly");
+  assert.match(root, /--surface\s*:\s*#282a36\s*;/i, "surface is Dracula background");
+  assert.match(root, /--shadow-drawer\s*:\s*rgba\(0,\s*0,\s*0,\s*0\.45\)\s*;/i, "the drawer uses the darker alpha shadow");
+
+  const backgrounds = ["surface", "wash"];
+  const textTokens = ["ink", "ink-2", "ink-3", "verdigris", "amber", "ok"];
+  const componentTokens = ["verdigris", "amber", "ok", "bad"];
+  for (const background of backgrounds) {
+    for (const foreground of textTokens) {
+      const ratio = contrast(token(foreground), token(background));
+      assert.ok(ratio >= 4.5, `computed ${foreground} on ${background} text contrast ${ratio.toFixed(4)} is at least 4.5:1`);
+    }
+    for (const foreground of componentTokens) {
+      const ratio = contrast(token(foreground), token(background));
+      assert.ok(ratio >= 3, `computed ${foreground} on ${background} component contrast ${ratio.toFixed(4)} is at least 3:1`);
+    }
+  }
+  const amberOnRule = contrast(token("amber"), token("rule"));
+  assert.ok(amberOnRule >= 4.5, `computed amber on rule text contrast ${amberOnRule.toFixed(4)} is at least 4.5:1 for selected and hovered Inbox counts`);
+  const inkUnderlineOnRule = contrast(token("ink"), token("rule"));
+  assert.ok(inkUnderlineOnRule >= 3, `computed ink on rule current-page underline contrast ${inkUnderlineOnRule.toFixed(4)} is at least 3:1`);
+
+  assert.match(direction, /`ink #F8F8F2` · `ink-2 #C6C9D8` · `ink-3 #9EA4C4` · `rule #44475A` ·\n`wash #343746`\. Surfaces are `#282A36`;/, "DIRECTION section 3 names the dark neutral and surface values");
+  assert.match(direction, /Verdigris `#3FB9A3`/, "DIRECTION section 3 names dark verdigris");
+  assert.match(direction, /Amber `#FFB86C` \(Dracula Orange\)/, "DIRECTION section 3 names official Dracula orange");
+  assert.match(direction, /ok `#50FA7B` \(Dracula Green\) \/ bad `#FF5555` \(Dracula Red\)/, "DIRECTION section 3 names the official Dracula gate colours");
+  assert.match(direction, /Inbox count in amber on both the\s+selected and hovered `rule` navigation fills/, "DIRECTION section 3 excludes bad from text and includes the navigation count");
+  assert.match(direction, /0 16px 48px rgba\(0,0,0,\.45\)/, "DIRECTION section 3 names the dark drawer shadow");
+});
+
+function cssRule(selector: string): string {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const declarations = new RegExp(`${escaped}\\s*{([^}]*)}`).exec(componentCss)?.[1];
+  assert.ok(declarations, `${selector} exists in w025.css`);
+  return declarations;
+}
+
+function badTokenConsumers(): { source: string; selector: string; declarations: string }[] {
+  const src = resolve(HERE, "..", "src");
+  const out: { source: string; selector: string; declarations: string }[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const file = resolve(dir, entry.name);
+      if (entry.isDirectory()) walk(file);
+      else if (entry.name.endsWith(".css") && entry.name !== "tokens.css") {
+        const text = readFileSync(file, "utf8");
+        for (const match of text.matchAll(/([^{}]+){([^{}]*var\(--bad\)[^{}]*)}/g)) {
+          out.push({ source: file.slice(src.length + 1), selector: match[1]!.trim(), declarations: match[2]!.trim() });
+        }
+      } else if (entry.name.endsWith(".tsx")) {
+        const text = readFileSync(file, "utf8");
+        if (text.includes("var(--bad)")) out.push({ source: file.slice(src.length + 1), selector: "<inline TSX>", declarations: text });
+      }
+    }
+  };
+  walk(src);
+  return out;
+}
+
+test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and budget states keep readable cues", () => {
+  const badConsumers = badTokenConsumers();
+  assert.deepEqual(
+    badConsumers.map(({ source, selector }) => `${source}: ${selector}`),
+    ["components/w025.css: .gate-ladder__mark--bad-diagonal"],
+    "only the diagonal failed-gate selector consumes --bad",
+  );
+  for (const { source, selector, declarations } of badConsumers) {
+    assert.doesNotMatch(declarations, /(?:^|;)\s*color\s*:/i, `${source}: ${selector} never sets text colour from --bad`);
+  }
+  assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /background\s*:\s*var\(--bad\)/, "the failed gate keeps its bad fill");
+  assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /clip-path\s*:/, "the failed gate keeps its diagonal shape cue");
+  assert.match(cssRule(".seats__confirm-error"), /color\s*:\s*var\(--ink\)/, "confirmation error copy uses the highest-contrast text token");
+  assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--ink\)/, "a blocked card keeps its non-colour left-rule cue without consuming bad");
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--verdigris\)/, "drawer evidence links and their visited state use verdigris");
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*text-decoration\s*:\s*underline/, "drawer evidence links retain their underline");
+  assert.match(cssRule(".sidebar__badge"), /color\s*:\s*var\(--amber\)/, "the Inbox badge uses amber");
+  assert.match(cssRule(".sidebar__link:hover"), /background\s*:\s*var\(--rule\)/, "hovered navigation uses the rule fill");
+  const activeLink = cssRule(".sidebar__link--active");
+  assert.match(activeLink, /background\s*:\s*var\(--rule\)/, "active navigation uses the rule fill");
+  assert.match(activeLink, /text-decoration-line\s*:\s*underline/, "the active page alone has the persistent ink underline");
+  assert.match(activeLink, /text-decoration-color\s*:\s*var\(--ink\)/, "the active page underline uses ink");
+  assert.doesNotMatch(cssRule(".sidebar__link:hover"), /text-decoration(?:-line|-color)?\s*:/, "hovering a non-current page does not add the active underline");
+
+  const interactiveTextTokens = [
+    [".sidebar__link", "ink"],
+    [".sidebar__link--disabled", "ink-3"],
+    [".token-prompt__input", "ink"],
+    [".token-prompt__submit", "ink"],
+    [".officina__row--link", "ink"],
+    [".inbox__input-ratio", "ink"],
+    [".inbox__input-ratio::placeholder", "ink-3"],
+    [".inbox__btn-action", "ink"],
+    [".seats__row select", "ink"],
+    [".seats__row select option", "ink"],
+    [".seats__confirm-btn,\n.seats__cancel-btn", "ink"],
+    [".board__project-select", "ink-2"],
+    [".board__project-select option", "ink-2"],
+    [".board__strip-item", "ink"],
+    [".board-drawer__close", "ink-2"],
+    [".board-drawer__banner-link", "verdigris"],
+    [".board-drawer__gate-evidence,\n.board-drawer__gate-evidence:visited", "verdigris"],
+  ] as const;
+  for (const [selector, textToken] of interactiveTextTokens) {
+    assert.match(cssRule(selector), new RegExp(`color\\s*:\\s*var\\(--${textToken}\\)`), `${selector.replaceAll("\n", " ")} declares its dark-surface text token`);
+  }
+  assert.match(cssRule(".inbox__input-ratio::placeholder"), /opacity\s*:\s*1/, "the tokenized placeholder is not dimmed by a browser default");
+  assert.match(cssRule(".seats__row select option"), /background\s*:\s*var\(--surface\)/, "seat options declare the dark surface");
+  assert.match(cssRule(".board__project-select option"), /background\s*:\s*var\(--surface\)/, "Board project options declare the dark surface");
+
+  assert.doesNotMatch(officinaSource, /var\(--bad\)/, "the Officina budget graphic never consumes bad");
+  assert.match(officinaSource, /function pieColor\(spent: number, allowance: number\)[\s\S]*?return spent >= allowance \? "var\(--amber\)" : "var\(--ink\)";/, "budget burn is ink under allowance and amber at or over allowance");
+  assert.match(officinaSource, /const color = pieColor\(spent, allowance\);/, "the budget graphic takes its colour from the allowance boundary");
+  assert.match(officinaSource, /const \{ word, reason \} = formatPosture\(entry\);[\s\S]*?officina__posture-word">\{word}[\s\S]*?officina__posture-reason">\{reason}/, "the adjacent posture word and numeric burn/allowance reason are the non-colour budget cue");
+});
 
 const NAMED = new Set(
   (`aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato transparent turquoise violet wheat white whitesmoke yellow yellowgreen`).split(" "),

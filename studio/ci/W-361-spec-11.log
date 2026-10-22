@@ -1,0 +1,26 @@
+# opus: W-361
+# phase: spec
+# round: 11
+# sella: ui-architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-22T11:17:40.174Z
+# tree: tree:ac785ec197de8301325e1920d68e2279e3a500a1
+# brief: briefs/W-361.md blob:8a0720c0d31722765636bffad7c9d86abf3e6b43
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":11,"actor":"architect","studio":".worktrees/W-361/studio","head":"717abeae565b1efd24d4f51b31f1f9fd5304a174","brief":"8a0720c0d31722765636bffad7c9d86abf3e6b43","at":"2026-10-22T11:17:39.610Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-361-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The rebase correction remains intact: Files owned includes the one-line W-341-b6 change, with `bad` removed only from the 4.5:1 text loop and retained in the 3:1 component loop under D-100 B — check: studio/briefs/W-361.md:33, rebase-w341-diff.txt, rebase-9772bfee-tests.out
+2. advisory — Acceptance retains the inherited flips, naming W-024's exact-value rows, W-341-b6's text loop and W-087's verdigris fixture, now ending the semantic exact values at D-101's official Dracula accents — check: studio/briefs/W-361.md:125
+3. advisory — D-101 A is reconciled everywhere the brief names or tests the palette: Orange `#FFB86C`, Green `#50FA7B` and Red `#FF5555`, 13 text and nine component/state-cue pairs, amended DIRECTION wording, and Red's continued exclusion from text at 3.75:1 on wash — check: studio/decisions/D-101.md:14, studio/briefs/W-361.md:15, studio/briefs/W-361.md:48, studio/briefs/W-361.md:62, studio/briefs/W-361.md:127, studio/briefs/W-361.md:128
+4. advisory — D-101 B is executable in the brief: `.sidebar__link--active` alone gains the persistent ink underline, source assertions distinguish it from hover, and owned desktop/phone rows pin rendered underline and Inbox-count contrast on selected and hovered fills — check: studio/decisions/D-101.md:15, studio/briefs/W-361.md:25, studio/briefs/W-361.md:64, studio/briefs/W-361.md:66, studio/briefs/W-361.md:130
+5. advisory — Files owned carries `studio/decisions/D-101.md` as the sole Patron-approved code-owned exception and preserves the prior source boundary for every other path — check: studio/briefs/W-361.md:3, studio/briefs/W-361.md:29, studio/briefs/W-361.md:38, studio/briefs/W-361.md:135
+6. advisory — Prototype provenance is no longer overstated: the signed mbox remains the historical pre-W-341 series, while Codex Terra under D-099 builds the D-101 amendment directly and the promise ledger records changed guarantees as pending builder evidence rather than backfilling them — check: studio/briefs/W-361.md:11, studio/briefs/W-361.md:44, studio/briefs/W-361.md:133, /home/edckt/.bisellium-evidence/W-361-spec/promise-ledger.md
+7. advisory — Input domain row 9 now opens its rejection cell with the admitted `runner: test:serve` form while retaining the Playwright state and contrast rejection semantics — check: studio/briefs/W-361.md:111
+
+## Verdict
+
+passed — the W-361 brief preserves the rebase correction, fully incorporates the Patron's D-101 palette and current-page rulings, assigns the amended test-first build to Codex Terra under D-099, and keeps historical evidence distinct from the new builder-owned guarantees.

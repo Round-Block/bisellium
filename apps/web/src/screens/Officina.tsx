@@ -11,16 +11,14 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
-function pieColor(ratio: number): string {
-  if (ratio < 0.5) return "var(--ok)";
-  if (ratio < 0.8) return "var(--amber)";
-  return "var(--bad)";
+function pieColor(spent: number, allowance: number): string {
+  return spent >= allowance ? "var(--amber)" : "var(--ink)";
 }
 
 function pieStyle(spent: number, allowance: number): React.CSSProperties {
   const ratio = allowance > 0 ? Math.min(spent / allowance, 1) : 0;
   const deg = Math.round(ratio * 360);
-  const color = pieColor(ratio);
+  const color = pieColor(spent, allowance);
   return { background: `conic-gradient(${color} 0deg ${deg}deg, var(--rule) ${deg}deg 360deg)` };
 }
 

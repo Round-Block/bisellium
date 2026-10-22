@@ -1,0 +1,36 @@
+# opus: W-361
+# phase: spec
+# round: 13
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a16356-bb57-7802-963b-3bbc53a0b48b
+# session_reason: fresh ui-lead session after D-101 changed the palette values
+# outcome: passed
+# at: 2026-10-22T11:22:23.110Z
+# tree: tree:ac785ec197de8301325e1920d68e2279e3a500a1
+# dispatch_prompt: ci/W-361-ui-prompt-13.md
+# design_digest: sha256:e83feadf4b4b941dc5c40ba44fd0232787c2be12c49d764266d3d5a0b35278e3
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":13,"actor":"ui-lead","studio":".worktrees/W-361/studio","head":"5de4efabdf0ab794e4137d54d6886135aa90b588","brief":"8a0720c0d31722765636bffad7c9d86abf3e6b43","at":"2026-10-22T11:22:22.533Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+The revised spec preserves palette A’s stepped surfaces, one verdigris identity colour, readable text hierarchy and existing gate shapes; I found no missed light-palette token or surface.
+The darker drawer shadow, verdigris focus ring, neutral hover fills, ink confirmation errors and ink/amber budget treatment fit the Patron’s direction, without introducing a new layout decision.
+Amber retains its human-waiting meaning; the existing four-colour Board combination and absent Inbox waiting ages remain explicitly documented follow-ups at brief:92–93, so full compliance is not established by this palette change.
+
+Dracula recommendations 1, 7 and 8 are carried: amber `#FFB86C`, ok `#50FA7B` and bad `#FF5555`, with bad confined to diagonal gate marks.
+Recommendations 3–6 are carried: the Dracula base neutrals, lighter secondary text, intermediate wash and custom verdigris identity remain unchanged.
+Recommendation 9’s transparent utility and drawer shadow are retained; drawer-open visual verification remains build guidance.
+Recommendation 10 is carried by the persistent ink current-page underline and specified desktop/phone assertions.
+Recommendation 11’s neutral hierarchy, dark controls and accent changes are carried in the spec; fresh screenshot verification belongs to W-360.
+Recommendation 2’s research-attribution correction is not carried—the research still contains the disputed attribution—but the specified palette imports no Alucard colour.
+Recommendation 12 is partly carried through W-360’s loaded recaptures; combined-state coverage, the three-colour ceiling and waiting-age restoration remain follow-up work.
+
+The round-9 Inbox-count concern is resolved by D-101’s brighter amber, superseding my earlier background-change suggestion: I recomputed 5.37:1 against the retained selection fill, and 8.59:1 for the ink underline.
+Rounds 8 and 12 remain passed, with their advisories carried as build guidance without re-judgment.
+This is approval of the revised spec: the inspected source still contains the earlier accents and lacks the new underline, which the amended build must implement.
+Verdict: passed

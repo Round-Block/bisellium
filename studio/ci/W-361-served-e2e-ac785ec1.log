@@ -1,0 +1,22 @@
+certifies: tree:ac785ec197de8301325e1920d68e2279e3a500a1
+command: node scripts/served-e2e.mjs
+exit code: 1
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+********.woff2       14.70 kB
+********.woff2     30.09 kB
+********.woff2   41.34 kB
+dist/assets/index-cKTw3pcX.css                       21.57 kB │ gzip:  4.25 kB
+dist/assets/index-BPgIIvkJ.js                       265.47 kB │ gzip: 82.66 kB
+
+✓ built in 108ms
+Error: Cannot find package '@axe-core/playwright' imported from /home/edckt/agents/bisellium/.********.spec.ts
+    at eval (<anonymous>:1:1)
+
+served-e2e: the walk produced no screenshot
+

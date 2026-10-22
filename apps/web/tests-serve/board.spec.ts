@@ -35,6 +35,24 @@ const REPO_ROOT = resolve(HERE, "..", "..", "..");
 const MAIN_TS = join(REPO_ROOT, "packages", "cli", "src", "main.ts");
 const SAMPLE_STUDIO = join(REPO_ROOT, "examples", "sample-studio");
 
+function rgbContrast(foreground: string, background: string): number {
+  const luminance = (rgb: string): number => {
+    const channels = [...rgb.matchAll(/\d+(?:\.\d+)?/g)].slice(0, 3).map((match) => Number(match[0]) / 255);
+    expect(channels).toHaveLength(3);
+    const linear = channels.map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+  };
+  const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  return (values[0]! + 0.05) / (values[1]! + 0.05);
+}
+
+function rgbAlpha(color: string): number {
+  const channels = [...color.matchAll(/\d+(?:\.\d+)?/g)].map((match) => Number(match[0]));
+  expect(channels.length).toBeGreaterThanOrEqual(3);
+  expect(channels.length).toBeLessThanOrEqual(4);
+  return channels[3] ?? 1;
+}
+
 async function forcePoll(served: { baseURL: string }): Promise<void> {
   const res = await fetch(`${served.baseURL}/api/_poll`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
   if (res.status !== 200) throw new Error(`/api/_poll answered ${res.status} — is NODE_ENV=test reaching the spawned server?`);
@@ -522,6 +540,47 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const outline = await card.evaluate((el) => getComputedStyle(el).outlineStyle);
     expect(outline).not.toBe("none");
 
+    const boardLink = page.locator('a.sidebar__link[href="#/board"]');
+    const activeDecoration = await boardLink.evaluate((el) => {
+      const style = getComputedStyle(el);
+      // `--ink` is declared as a hex; a probe element normalises it to rgb().
+      const probe = document.createElement("span");
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue("--ink");
+      document.body.append(probe);
+      const ink = getComputedStyle(probe).color;
+      probe.remove();
+      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor, ink };
+    });
+    expect(activeDecoration.line).toContain("underline");
+    expect(activeDecoration.color).toBe(activeDecoration.ink);
+    expect(rgbContrast(activeDecoration.color, activeDecoration.background)).toBeGreaterThanOrEqual(3);
+
+    const inboxLink = page.locator('a.sidebar__link[href="#/inbox"]');
+    const inboxBadge = inboxLink.locator(".sidebar__badge");
+    await inboxLink.hover();
+    const hoveredInbox = await inboxBadge.evaluate((badge) => {
+      const link = badge.closest(".sidebar__link");
+      if (link === null) throw new Error("Inbox badge has no enclosing sidebar link");
+      return { color: getComputedStyle(badge).color, background: getComputedStyle(link).backgroundColor };
+    });
+    expect(rgbAlpha(hoveredInbox.background)).toBe(1);
+    expect(rgbContrast(hoveredInbox.color, hoveredInbox.background)).toBeGreaterThanOrEqual(4.5);
+    const hoveredDecoration = await inboxLink.evaluate((el) => getComputedStyle(el).textDecorationLine);
+    expect(hoveredDecoration).not.toContain("underline");
+
+    await inboxLink.click();
+    await expect(inboxLink).toHaveAttribute("aria-current", "page");
+    const selectedInbox = await inboxBadge.evaluate((badge) => {
+      const link = badge.closest(".sidebar__link");
+      if (link === null) throw new Error("Inbox badge has no enclosing sidebar link");
+      return { color: getComputedStyle(badge).color, background: getComputedStyle(link).backgroundColor };
+    });
+    expect(rgbAlpha(selectedInbox.background)).toBe(1);
+    expect(rgbContrast(selectedInbox.color, selectedInbox.background)).toBeGreaterThanOrEqual(4.5);
+
+    await boardLink.click();
+    await expect(card).toBeVisible();
+
     // "Shadow exists once, on the drawer" (DIRECTION §3) — actually open it
     // and check, rather than only asserting the CARD's absence of one.
     await card.click();
@@ -571,6 +630,26 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const strip = page.locator(".board__strip");
     await expect(strip).toBeVisible();
     const lastItem = strip.locator(".board__strip-item").last();
+    const stripColours = await lastItem.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { foreground: style.color, background: style.backgroundColor };
+    });
+    expect(rgbContrast(stripColours.foreground, stripColours.background)).toBeGreaterThanOrEqual(4.5);
+
+    const boardLink = page.locator('a.sidebar__link[href="#/board"]');
+    const activeDecoration = await boardLink.evaluate((el) => {
+      const style = getComputedStyle(el);
+      // `--ink` is declared as a hex; a probe element normalises it to rgb().
+      const probe = document.createElement("span");
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue("--ink");
+      document.body.append(probe);
+      const ink = getComputedStyle(probe).color;
+      probe.remove();
+      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor, ink };
+    });
+    expect(activeDecoration.line).toContain("underline");
+    expect(activeDecoration.color).toBe(activeDecoration.ink);
+    expect(rgbContrast(activeDecoration.color, activeDecoration.background)).toBeGreaterThanOrEqual(3);
     const lastName = await lastItem.textContent();
     await lastItem.click();
     await expect(page.locator(".board__column").last()).toBeInViewport();
@@ -926,8 +1005,8 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     });
     expect(focusRing.outlineStyle).not.toBe("none");
     expect(focusRing.outlineWidth).toBe("2px");
-    expect(focusRing.verdigris).toBe("#0b6e5f");
-    expect(focusRing.outlineColor).toBe("rgb(11, 110, 95)");
+    expect(focusRing.verdigris).toBe("#3fb9a3");
+    expect(focusRing.outlineColor).toBe("rgb(63, 185, 163)");
 
     const board = page.locator(".board");
     const drawer = page.locator(".board-drawer");

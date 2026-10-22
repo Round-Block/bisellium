@@ -1,0 +1,25 @@
+# opus: W-361
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: revise
+# at: 2026-10-22T08:25:02.265Z
+# tree: tree:52ac36e6a3e5e97c80d75f42805fe4d39a365622
+# dispatch_prompt: ci/W-361-ui-prompt-3.md
+# design_digest: sha256:d6a56756a9de0835ac8eef6becec0d01a6d1de4c4209e45f54ba5e5ab169bfe8
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"b80af879730f01d42f17ff234bf17efbc2f1277e","brief":"a764e6cf29b6499cb3e29109dfc1239033063d08","at":"2026-10-22T08:25:01.718Z"}
+
+## Findings
+
+1. blocking — brief:33 — Board drawer evidence links have no colour declaration, leaving browser blue/purple outside D-100’s palette and poorly legible on the dark surface; the accepted `color-scheme` guidance does not establish verdigris identity — replace with: “Also set `.board-drawer__gate-evidence`, including its visited state, to `color: var(--verdigris)`; retain its underline.” — check: `apps/web/src/screens/BoardDrawer.tsx:59`, `apps/web/src/components/w025.css`; pin the declaration in `apps/web/test/tokens.test.ts`.
+
+2. advisory — brief:81 — The existing Board can show four semantic colours together: verdigris identity/focus, amber waiting, green human-passed gates and red failed gates; token contrast checks do not establish the three-colour ceiling — replace with: “The existing simultaneous human-passed/failed/waiting Board state remains a separate UI follow-up against D-100’s three-colour ceiling; W-361 does not resolve it.” — check: `apps/web/src/components/GateLadder.tsx`, `apps/web/src/lib/gateLadder.ts`, `apps/web/src/screens/BoardView.tsx`.
+
+3. advisory — brief:81 — Inbox waiting-age legibility cannot be assessed as a rendered state: age styles exist, but `InboxView` renders no age numeral; this predates the palette change — replace with: “Inbox waiting ages are currently absent from the rendered rows. Their restoration and weight escalation remain a separate UI follow-up, not a dark-palette guarantee.” — check: `apps/web/src/screens/InboxView.tsx:53`, `apps/web/src/components/w025.css:674`.
+
+## Recommendation
+
+Candidate A and the proposed defaults preserve the intended dark hierarchy without introducing a new layout.
+The brief must assign drawer evidence links the existing verdigris token before branch.
+Verdict: revise

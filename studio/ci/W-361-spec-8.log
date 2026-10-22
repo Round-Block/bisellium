@@ -1,0 +1,22 @@
+# opus: W-361
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T09:20:09.860Z
+# tree: tree:4a77965f538f8d7d52bb929996bb467ea24b947a
+# brief: briefs/W-361.md blob:4579729d793fb1423a9fec63d68872131a75a09f
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":"studio","head":"e6a2a82bfcf435cc32591966853a89828dbbfa43","brief":"4579729d793fb1423a9fec63d68872131a75a09f","at":"2026-10-22T09:20:09.313Z"}
+
+## Findings
+1. advisory — brief:120 [severity: S2] The flipped-row list leaves out one existing row. The prototype's `test(W-361): row b2, red` commit adds the 390px strip-contrast assertion inside `board.spec.ts` W-064 behaviour 9 (`390x844: one column visible, ...`). At base, `.board__strip-item` declares `background: var(--surface)` but no `color`, so the button keeps its default dark text on `#282A36` (about 1.4:1). That row is therefore red from the b2-red commit until behaviour 2. The `bisellium red` payload runs only `tokens.test.ts`, so nothing records that red, and the brief itself says the row's green is host-pending (brief:91, brief:128). Replacement: "- Flipped rows are new `W-361-b1`, new `W-361-b2`, existing `apps/web/test/tokens.test.ts` W-024 behaviour 1's nine top-level exact-colour checks, existing `apps/web/tests-serve/board.spec.ts` W-087 behaviour 4 (`the keyboard-focused close ring remains visible while live resize toggles Board inert at 613/612`), and existing `board.spec.ts` W-064 behaviour 9 `390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling`, which gains the strip-contrast assertion in the b2-red commit and passes after behaviour 2 on the host. W-024 and W-087 migrate in behaviour 1's feature commit; b1 remains green at the b2 red." [class: spec×fixture-census-incomplete] — check: none: a ladder rule that runs every served row a red commit touches and requires each failing row to be named among the flipped rows
+2. advisory — brief:106 [severity: S3] The Input domain has no row for the new served reader: the computed `color`/`backgroundColor` pair that `rgbContrast()` parses. That parser takes the first three numbers and ignores alpha, so a transparent `rgba(0, 0, 0, 0)` background would be read as black and pass against ink. Replacement (add after brief:106): "| 9. W-064 behaviour 9 phone strip rendered pair | recognises Chromium's opaque `rgb(r, g, b)` serialisation of `.board__strip-item`'s computed `color` and `backgroundColor` at 390px, pinned by the `rgbContrast(...) >= 4.5` assertion in `390x844: one column visible, ...`; a translucent or transparent background is a limit (alpha is not composited) | `rgbContrast()` and `expect(channels).toHaveLength(3)` reject an unparsable value; `toBeGreaterThanOrEqual(4.5)` rejects a low ratio |" [class: input×row-missing] — check: none: a brief-admission rule that requires one Input domain row for every reader added to an owned test file
+
+## Earlier findings
+- Round-5 finding 1 (behaviour 2 overclaimed the blocked card's diagonal mark): closed. brief:114 now carries the replacement text and names the reused `boardModel`/`GateLadder` behaviour as D-076 E.
+- Round-5 finding 2 (stale claim that the sandbox could not run the census browser rows): closed. brief:91 and brief:128 now cite `browser-focused-worktree-r4.out` (six pass, one bootstrap skip), and only the new 390px assertion is still host-pending.
+
+## Verdict
+Revision 7 closes the ui-lead's phone-strip omission (`.board__strip-item` now uses ink and is pinned by the sweep and by a rendered 390px ratio), the 17-entry sweep pins all 19 selector spellings, and both round-5 advisories are closed. The two remaining findings are an undeclared W-064 behaviour 9 flip and a missing input row for that same assertion; both are advisory.
+VERDICT: PASS

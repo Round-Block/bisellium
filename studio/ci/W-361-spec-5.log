@@ -1,0 +1,22 @@
+# opus: W-361
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T08:34:35.356Z
+# tree: tree:52ac36e6a3e5e97c80d75f42805fe4d39a365622
+# brief: briefs/W-361.md blob:6ea66069bd7078d682b904a6326eda668ad3abd2
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"b80af879730f01d42f17ff234bf17efbc2f1277e","brief":"6ea66069bd7078d682b904a6326eda668ad3abd2","at":"2026-10-22T08:34:34.819Z"}
+
+## Findings
+1. advisory — brief:110 [severity: S2] Behaviour 2 says `W-361-b2` pins the blocked card's "diagonal gate-mark distinction from amber cards". The row does not do that. It pins only that `.gate-ladder__mark--bad-diagonal` has a `clip-path`. Whether a blocked card actually shows that mark depends on unchanged code: `cardRow` sets `blocked` from any failed probatio, and `boardModel`/`GateLadder` fill marks in the order the manifest declares. A failed probatio outside that declared list makes the card blocked but draws no diagonal mark. Replacement: "... It pins `--ink` confirmation copy, the blocked card's ink left rule, the failed-gate selector's diagonal `clip-path` (that a blocked card renders that mark is reused `boardModel`/`GateLadder` behaviour, not pinned here, D-076 E), underlined verdigris for drawer evidence links including `:visited`, ..." [class: tests×ruled-case-uncovered] — check: none: a `lib/board.test.ts` case asserting that every `blocked` card's `gates` contains a failed mark
+2. advisory — brief:87 [severity: S4] This line and brief:123 still say the drafter's sandbox could not run the census browser rows. The signer's `browser-focused-worktree-r4.out` now records all seven host runs: six passed, and `screenshots.spec.ts` reached its bootstrap skip. Replacement for brief:87: "The census browser rows were run on the host from the prototype worktree (`browser-focused-worktree-r4.out`): six pass and `screenshots.spec.ts` reaches its no-baseline bootstrap skip; `browser-focused-host.sh` keeps the exact commands." Make the matching edit at brief:123. [class: spec×stale-citation-residue] — check: none: a brief-admission rule that rejects an evidence claim contradicted by a newer cited `.out` file
+
+## Earlier findings
+1. Round-2 finding 1 (brief:68, user-agent default colours and the missing `color-scheme` not named in the computed-contrast limit): closed. The adopted replacement text is now the Promise computed-contrast line.
+2. Round-2 finding 2 (brief:72, the left rule separates a blocked card from plain cards but not from amber cards): closed. The adopted replacement text is now Promise readable-state-cues, and Acceptance matches it. The new behaviour-2 wording overclaims what the test pins (finding 1 above).
+
+## Verdict
+The delta adds one owned CSS rule: drawer evidence links, including visited ones, take underlined verdigris, as the ui-lead required. A source regex pins it, and verdigris on surface is already inside the computed 4.5:1 set. The rule adds no new reader. Both round-2 advisories are closed. The two new findings ask only for wording, and neither blocks.
+VERDICT: PASS

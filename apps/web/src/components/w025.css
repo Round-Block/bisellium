@@ -94,6 +94,8 @@
 .sidebar__link--active {
   font-weight: 500;
   background: var(--rule);
+  text-decoration-line: underline;
+  text-decoration-color: var(--ink);
 }
 
 .sidebar__link--disabled {
@@ -502,7 +504,7 @@
 
 .officina__row--link {
   text-decoration: none;
-  color: inherit;
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -737,6 +739,11 @@
   margin-bottom: 12px;
 }
 
+.inbox__input-ratio::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
 .inbox__input-ratio:focus,
 .inbox__btn-action:focus {
   outline: 2px solid var(--verdigris);
@@ -871,6 +878,11 @@
   color: var(--ink);
 }
 
+.seats__row select option {
+  background: var(--surface);
+  color: var(--ink);
+}
+
 .seats__row select:focus {
   outline: 2px solid var(--verdigris);
   outline-offset: 2px;
@@ -927,7 +939,7 @@
 }
 
 .seats__confirm-error {
-  color: var(--bad);
+  color: var(--ink);
   font-size: 12px;
 }
 
@@ -1012,6 +1024,11 @@
   padding: 4px 8px;
   font-family: var(--font-body);
   font-size: 13px;
+  color: var(--ink-2);
+  background: var(--surface);
+}
+
+.board__project-select option {
   color: var(--ink-2);
   background: var(--surface);
 }
@@ -1120,7 +1137,7 @@
 }
 
 .board__card--bad {
-  border-left-color: var(--bad);
+  border-left-color: var(--ink);
 }
 
 .board__card > .gate-ladder {
@@ -1245,6 +1262,12 @@
   text-decoration: underline;
 }
 
+.board-drawer__gate-evidence,
+.board-drawer__gate-evidence:visited {
+  color: var(--verdigris);
+  text-decoration: underline;
+}
+
 .board-drawer__gates,
 .board-drawer__events,
 .board-drawer__record {
@@ -1343,6 +1366,7 @@
     border: 1px solid var(--rule);
     border-radius: 2px;
     background: var(--surface);
+    color: var(--ink);
     font-size: 12px;
     padding: 4px 8px;
     white-space: nowrap;

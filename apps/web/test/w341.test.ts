@@ -205,7 +205,7 @@ test("W-341-b6 behaviour 6: the served states suite drives every served cell at 
     return value!;
   };
   for (const bg of ["surface", "wash"]) {
-    for (const fg of ["ink", "ink-2", "ink-3", "verdigris", "amber", "ok", "bad"])
+    for (const fg of ["ink", "ink-2", "ink-3", "verdigris", "amber", "ok"])
       assert.ok(contrast(token(fg), token(bg)) >= 4.5, `text --${fg} reaches 4.5:1 on --${bg} (${contrast(token(fg), token(bg)).toFixed(2)})`);
     for (const fg of ["verdigris", "amber", "ok", "bad"])
       assert.ok(contrast(token(fg), token(bg)) >= 3, `component --${fg} reaches 3:1 on --${bg}`);
