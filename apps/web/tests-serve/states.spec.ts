@@ -225,19 +225,20 @@ test("W-341 the live region is one node across a state change, so the change is 
 });
 
 // A write that fails (HTTP 500 -> postWrite's { kind: "error" }) is announced by the shell's one live region.
-for (const width of VIEWPORTS) {
-  test(`W-341 inbox write error at ${width}`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
-    served = await startServed("states-inbox-write-error");
-    await fail(page, "**/api/answer");
-    await signIn(page, "inbox");
-    await answerFirst(page);
-    const region = page.locator(".shell > .shell__status");
-    await expect(region).toHaveAttribute("data-state", "error");
-    await expect(region).toHaveText("Could not send the answer.");
-    await expect(page.locator(".inbox__error")).toHaveText("error submitting the answer");
-  });
+// The Inbox answer pane is hidden at phone width (states-policy.ts, W-345), so its write error is 1280 only.
+test("W-341 inbox write error at 1280", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  served = await startServed("states-inbox-write-error");
+  await fail(page, "**/api/answer");
+  await signIn(page, "inbox");
+  await answerFirst(page);
+  const region = page.locator(".shell > .shell__status");
+  await expect(region).toHaveAttribute("data-state", "error");
+  await expect(region).toHaveText("Could not send the answer.");
+  await expect(page.locator(".inbox__error")).toHaveText("error submitting the answer");
+});
 
+for (const width of VIEWPORTS) {
   test(`W-341 seats write error at ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     served = await startServed("states-seats-write-error");
