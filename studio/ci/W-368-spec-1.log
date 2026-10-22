@@ -1,0 +1,24 @@
+# opus: W-368
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T22:40:02.408Z
+# tree: tree:e63a1eb29767a24d03f13d7cff25c31bd3e7e38b
+# brief: briefs/W-368.md blob:ef79138606d3bb1c4be09b3a99902f7717ff3f1f
+# ticket: {"opus":"W-368","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"fe33b4cee9671f19f2ab8e2c3ecc292f643e71f8","brief":"ef79138606d3bb1c4be09b3a99902f7717ff3f1f","at":"2026-10-22T22:39:59.438Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-368-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — a full brief, not a light one: the change is pipeline work under `.github/`, which the design lex §1 and the form reader's `riskySignal` (`.github/` in `RISKY_PREFIXES`) refuse to a light brief, so W-305's fast lane cannot take it; the brief keeps the light size (one behaviour, four owned files) and says why — check: brief:3, packages/commands/src/brief-admission.ts:472, studio/leges/design.md:13
+2. advisory — the three ubuntu-latest jobs move to ubuntu-24.04 and both upload steps to actions/upload-artifact@v6 with their inputs unchanged; no other workflow line changes — check: brief:21, brief:45, brief:47, brief:49, mbox-check.out
+3. advisory — one new row W-368-b1 in the existing workflow-shape test file reads the same `workflow()` parse and fails closed on any runs-on other than ubuntu-24.04 and any action outside NODE24_MAJOR or below its major; it fails by ERR_ASSERTION on master with the row, passes on behaviour 1's commit, and each of three ci.yml mutations fails it again — check: brief:22, brief:64, brief:65, brief:71, reds.out, row-b1-red1.out
+4. advisory — three existing rows flip and are updated in behaviour 1's commit (W-168-b1, W-205-b1, W-350-b1), exactly the census's flips, none unnamed; the census's must-stay-green rows, all three owned test files, lint, Prettier and typecheck pass on the prototype, and both officina checks match master — check: brief:76, brief:77, flip-check.out, fixture-census.md, gates-proto.out, gates-master.out
+5. advisory — `.github/` is code-owned, so the Patron reviews and merges the pull request (Default 1) — check: brief:94, .github/CODEOWNERS:2
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-368.md`, prototype two commits after master aa14d5b8; one behaviour, 1 point, a full brief because `.github/` is pipeline work.
