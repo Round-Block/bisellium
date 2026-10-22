@@ -25,6 +25,7 @@ import { dirname, join, relative } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
+import { PROMPT_TEMPLATES } from "../packages/cli/src/rules/prompts.js";
 import { buildPacket } from "./review-packet.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -502,11 +503,12 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
   const walk = readFileSync(join(HERE, "../apps/web/tests-serve/walk.spec.ts"), "utf8");
   assert.match(walk, /for \(const width of \[1280, 390\] as const\)/, "the served walk captures desktop then phone");
   for (const [name] of matrix) assert.ok(walk.includes(name), `${name}: the served walk pins the review filename`);
-  assert.match(
-    readFileSync(join(REPO_ROOT, "studio/prompts/build-review.md"), "utf8"),
-    /fills the eight slots/,
-    "the first-round prompt states its eight-slot contract",
-  );
+  // The real prompt is guarded by `bisellium check` (process.prompt_templates, packages/cli/src/rules/prompts.ts):
+  // it refuses a build-review.md lacking the sentence or any of the eight slots. This test reads nothing under studio/
+  // (W-203), so it pins the rule's list instead.
+  const reviewNeeds = PROMPT_TEMPLATES["prompts/build-review.md"];
+  assert.ok(reviewNeeds.includes("fills the eight slots"), "the template rule requires the eight-slot sentence");
+  assert.equal(reviewNeeds.filter((n) => /^<[A-Z_]+>$/.test(n)).length, 8, "the template rule requires eight slots");
 
   const missing = makeUi("missing");
   rmSync(join(missing.dir, "inbox-390.png"));
