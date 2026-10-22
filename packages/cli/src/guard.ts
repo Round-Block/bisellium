@@ -131,7 +131,10 @@ function strip(words: string[]): { words: string[]; timed: boolean } {
 }
 
 const NPX_OPERAND = new Set(["-p", "--package"]);
-const SHELL_OPERAND = new Set(["-o", "+o", "-O", "+O"]);
+/** The bash options that take a value: `-o`/`+o` and the long `--init-file`/`--rcfile`; any other long
+ *  option is read as taking none (a limit). `-O`/`+O` are skipped before `-c` only (W-362 closes them before a file). */
+const SHELL_VALUED = ["-o", "+o", "--init-file", "--rcfile"];
+const SHELL_OPERAND = new Set([...SHELL_VALUED, "-O", "+O"]);
 const SHELL_INLINE = /^-[a-z]*c[a-z]*$/;
 const NPX_INLINE = /^(?:-c|--call)$/;
 
@@ -182,7 +185,7 @@ function shellScript(w: string[]): string | undefined {
 function scriptOf(w: string[]): string | undefined {
   const b = base(w[0]);
   if (SHELLS.has(b)) {
-    return w[leading(w, new Set(["-o", "+o"])).operand];
+    return w[leading(w, new Set(SHELL_VALUED)).operand];
   }
   if (b === "source" || w[0] === ".") return w[1];
   return w[0]?.includes("/") ? w[0] : undefined;
