@@ -301,3 +301,47 @@ test("W-310-b4 behaviour 4: at SubagentStop the guard sends back an agent whose 
   assert.equal((await guard(stop(transcript, []))).code, 0, "nothing in flight");
   assert.equal((await guard(stop(join(t, "missing.jsonl"), [shell]))).code, 0, "fail-open: no transcript");
 });
+
+const SETTINGS_PATH = join(REPO, ".claude", "settings.json");
+const realSettings = (): Record<string, unknown> => JSON.parse(readFileSync(SETTINGS_PATH, "utf8")) as Record<string, unknown>;
+/** A studio and a repo whose .claude/settings.json is `settings` (absent when undefined); the hook.guard findings. */
+function hookGuard(settings: string | undefined): { where: string; message: string; level: string }[] {
+  const t = tmp();
+  const studio = join(t, "studio");
+  assert.ok(initStudio(studio, { now: NOW }).root);
+  if (settings !== undefined) {
+    mkdirSync(join(t, ".claude"));
+    writeFileSync(join(t, ".claude", "settings.json"), settings);
+  }
+  return checkStudio(studio, NOW, { repo: t }).findings.filter((f) => f.rule === "hook.guard");
+}
+
+test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard when it is not wired, and the agents carry the stated-limit line and TaskStop", () => {
+  const unwired = realSettings();
+  const hooks = unwired["hooks"] as Record<string, unknown>;
+  delete hooks["SubagentStop"];
+  const f = hookGuard(JSON.stringify(unwired));
+  assert.equal(f.length, 1, "no SubagentStop group: one block");
+  assert.equal(f[0]?.level, "block");
+  assert.equal(f[0]?.where, ".claude/settings.json");
+  assert.match(f[0]?.message ?? "", /SubagentStop/);
+  assert.equal(hookGuard(JSON.stringify({ hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }] }] } })).length, 4, "Bash only: Write, Edit, NotebookEdit and SubagentStop");
+  assert.equal(hookGuard("{ not json").length, 1, "an unparseable settings file blocks");
+  const narrowed = realSettings();
+  (narrowed["hooks"] as Record<string, { matcher: string }[]>)["SubagentStop"]![0]!.matcher = "builder";
+  assert.match(hookGuard(JSON.stringify(narrowed))[0]?.message ?? "", /SubagentStop \*/, "a narrowed SubagentStop matcher blocks");
+  const typed = realSettings();
+  (typed["hooks"] as Record<string, { hooks: { type: string }[] }[]>)["SubagentStop"]![0]!.hooks[0]!.type = "prompt";
+  assert.equal(hookGuard(JSON.stringify(typed)).length, 1, "a non-command hook type blocks");
+  const slow = realSettings();
+  (slow["hooks"] as Record<string, { hooks: { timeout: number }[] }[]>)["PreToolUse"]![1]!.hooks[0]!.timeout = 5;
+  assert.equal(hookGuard(JSON.stringify(slow)).length, 4, "a timeout other than 2 blocks each tool");
+  assert.deepEqual(hookGuard(undefined), [], "no settings file: not judged");
+  assert.deepEqual(hookGuard(readFileSync(SETTINGS_PATH, "utf8")), [], "the repo's own settings wire the guard");
+  const real = realSettings()["hooks"] as Record<string, { matcher: string; hooks: { command: string }[] }[]>;
+  assert.deepEqual(Object.keys(real).sort(), ["PreToolUse", "SessionStart", "SubagentStop"], "W-242's settings side: no PreCompact, Stop or PostToolUse");
+  assert.deepEqual(real["SessionStart"]?.flatMap((g) => g.hooks.map((h) => h.command)), ["bisellium context --studio studio"]);
+  const agent = (name: string): string => readFileSync(join(REPO, ".claude", "agents", `${name}.md`), "utf8");
+  assert.match(agent("architect"), /Unchanged code gets a stated limit, not a guarantee/);
+  for (const name of ["builder", "architect", "ladder-runner"]) assert.match(agent(name), /^tools: .*\bTaskStop\b/m, `${name} can stop its own background work`);
+});
