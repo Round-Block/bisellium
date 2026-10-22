@@ -65,7 +65,7 @@ test("merge into {} adds every entry", async () => {
   });
 });
 
-test("merge keeps unrelated keys and an explicit sandbox.enabled", async () => {
+test("merge keeps unrelated keys and turns an explicit sandbox.enabled false on (W-362)", async () => {
   const { merge } = await load();
   const input = {
     model: "opus",
@@ -78,7 +78,7 @@ test("merge keeps unrelated keys and an explicit sandbox.enabled", async () => {
   assert.deepEqual(out.env, { ...input.env, GH_CONFIG_DIR: OPTS.agentGh });
   assert.deepEqual(out.permissions.allow, ["Bash(ls)"]);
   assert.deepEqual(out.permissions.deny, ["Bash(rm -rf /)", ...PERM_DENY]);
-  assert.equal(out.sandbox.enabled, false);
+  assert.equal(out.sandbox.enabled, true);
   assert.deepEqual(out.sandbox.network, { allowedDomains: ["a.example"] });
 });
 
