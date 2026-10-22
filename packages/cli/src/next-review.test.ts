@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, found, ghCalls, git, gitYesNo, handoffAt, n167, next, plain, prArgs, put, ran, record167, reviewHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, plain, prArgs, put, ran, record167, reviewHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
 const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1 [severity: S1]. check: none: fixture`;
 const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1 [severity: S1]. check: none: fixture`;
@@ -1115,4 +1115,94 @@ test("W-297-b3 behaviour 3: a class loop or three failed build rounds hold the f
   verb(shared.wt, ["verdict", OPUS, "--round", "3", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(shared, "w297-resign.md"), "--studio", shared.wtStudio, "--now", after]);
   commit(shared.wt, `studio(${OPUS}): the architect signs again`);
   buildFix(n167(shared), "a newer architect signature releases the fix");
+});
+
+// ---------------------------------------------------------------------------
+// W-309 (D-072 C, D-086 D): after a failed round's fix commits, the fix check at the current tree comes before the suite and
+// the re-review; `fixChecked` writes what the perform writes. The real codex never runs.
+// ---------------------------------------------------------------------------
+const fixCheckFile = (w: World, n: number): string => join(w.repo, ".bisellium", "reviews", OPUS, `fix-${n}`, "check.json");
+const fixCheckNamed = (o: Out, round: number, label: string): void => {
+  expectStep(o, "review", "named", label);
+  assert.equal(o.status, 0, ran(`${label}: exit 0`, o));
+  assert.equal(o.kv.get("actor"), "producer", ran(`${label}: the producer's perform`, o));
+  assert.equal(o.kv.get("command"), `bisellium next ${OPUS} --perform --expect review`, ran(`${label}: the perform`, o));
+  assert.equal(o.kv.get("why"), `review round ${round} failed at an older tree and no fix check of its findings is recorded at this tree (D-086 D)`, ran(`${label}: why`, o));
+  assert.equal(o.kv.has("role"), false, ran(`${label}: no dispatch`, o));
+};
+
+test("W-309-b1 behaviour 1: after a failed round's fix commits next orders the fix check, sends an open path back to the builder, and orders the suite or the re-review only after a clean check at the current tree", { timeout: 1_800_000 }, () => {
+  // the fix round itself (failed at the current tree): the builder stops after its fix commits
+  const w = w167("w309-b1", [F]);
+  const fix = n167(w);
+  buildFix(fix, "failed at the current tree: build, phase fix");
+  assert.match(fix.kv.get("command") ?? "", /; the fix round stops after its fix commits, with no handoff and no ci --opus: next orders the fix check first \(D-086 D\)$/, ran("the fix order stops before the suite", fix));
+  // a fix commit and no check: the fix check is the review rung's perform
+  advanceSource(w, true, false);
+  const tree = sourceTree(w.wt);
+  const none = n167(w);
+  fixCheckNamed(none, 1, "no fix check at this tree");
+  assert.equal(none.kv.get("fix-check"), `round 1 at ${tree}`, ran("no fix check: the round and the tree", none));
+  // a check that cannot be read as this round's at this tree is none recorded, never clean
+  const forms: [string, () => void][] = [
+    ["another tree", () => fixChecked(w, [], { tree: `tree:${"0".repeat(40)}` })],
+    ["another round", () => fixChecked(w, [], { round: 2, as: 1 })],
+    ["not JSON", () => writeFileSync(fixCheckFile(w, 1), "{ round: 1")],
+    ["open is not a list", () => writeFileSync(fixCheckFile(w, 1), JSON.stringify({ round: 1, tree, session: "s", open: "None" }))],
+    ["an open entry that is not a string", () => writeFileSync(fixCheckFile(w, 1), JSON.stringify({ round: 1, tree, session: "s", open: [1] }))],
+    ["a directory where check.json goes", () => mkdirSync(fixCheckFile(w, 1), { recursive: true })],
+  ];
+  for (const [label, write] of forms) {
+    rmSync(join(w.repo, ".bisellium", "reviews"), { recursive: true, force: true });
+    mkdirSync(dirname(fixCheckFile(w, 1)), { recursive: true });
+    write();
+    fixCheckNamed(n167(w), 1, `${label}: none recorded`);
+  }
+  // a reviews/ that is a symlink is not read through
+  rmSync(join(w.repo, ".bisellium", "reviews"), { recursive: true, force: true });
+  const elsewhere = join(w.root, "elsewhere");
+  mkdirSync(join(elsewhere, OPUS, "fix-1"), { recursive: true });
+  writeFileSync(join(elsewhere, OPUS, "fix-1", "check.json"), JSON.stringify({ round: 1, tree, session: "s", open: [] }));
+  symlinkSync(elsewhere, join(w.repo, ".bisellium", "reviews"));
+  fixCheckNamed(n167(w), 1, "a symlinked reviews/: none recorded");
+  rmSync(join(w.repo, ".bisellium", "reviews"));
+  // an open path: back to the builder, phase fix, with the census as an input
+  fixChecked(w, ["src/a.ts:1 — open — the input still reaches the defect", "src/b.ts:2 — open — a sibling"]);
+  const open = n167(w);
+  buildFix(open, "an open path: build, phase fix");
+  assert.equal(open.kv.get("why"), "the fix check of review round 1 lists 2 open path(s) at this tree", ran("open: why", open));
+  assert.equal(open.kv.get("open"), "src/a.ts:1 — open — the input still reaches the defect | src/b.ts:2 — open — a sibling", ran("open: the paths", open));
+  assert.match(open.kv.get("inputs") ?? "", new RegExp(`ci/${OPUS}-review-1\\.log, \\.bisellium/reviews/${OPUS}/fix-1/census\\.md`), ran("open: the verdict and the census are inputs", open));
+  // a clean check at this tree: the re-review (no automated gates in this world)
+  fixChecked(w);
+  const clean = n167(w);
+  reviewNamed(clean, 2, "a clean check: review round 2");
+  assert.equal(clean.kv.get("role"), "censor", ran("a clean check: the censor's order", clean));
+  // a further fix commit: the check is of an older tree, so it is ordered again
+  advanceSource(w, true, false);
+  fixCheckNamed(n167(w), 1, "a newer tree than the clean check");
+
+  // with automated gates: the suite is ordered only after a clean check, as the producer's order
+  const g = world("w309-b1-gates", "reds", { automated: true });
+  handoffAt(g, "wt", T.handoffFresh);
+  writeGates(g);
+  addReview(g, "failed", 1, T.review1);
+  advanceSource(g, true, false);
+  fixCheckNamed(next(g, [OPUS, ...BUDGET]), 1, "gates: no check, no suite");
+  fixChecked(g, ["src/a.ts:1 — open — x"]);
+  buildFix(next(g, [OPUS, ...BUDGET]), "gates: an open path is the builder's");
+  fixChecked(g);
+  const suite = next(g, [OPUS, ...BUDGET]);
+  expectStep(suite, "build", "named", "gates: a clean check orders the suite");
+  assert.equal(suite.kv.get("actor"), "producer", ran("gates: the producer runs the suite", suite));
+  assert.match(suite.kv.get("command") ?? "", new RegExp(`then bisellium ci --opus ${OPUS} --studio studio --repo \\. \\(the one full suite, in the background\\)`), ran("gates: ci --opus", suite));
+  assert.equal(suite.kv.get("fix-check"), `no open path at this tree (.bisellium/reviews/${OPUS}/fix-1/census.md)`, ran("gates: the clean check is named", suite));
+  writeGates(g);
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 2, "gates passed after a clean check: review round 2");
+
+  // a passed round at an older tree orders no fix check
+  const passed = world("w309-b1-passed", "review");
+  advanceSource(passed, true, false);
+  handoffAt(passed, "wt", T.handoffFresh);
+  reviewNamed(next(passed, [OPUS, ...BUDGET]), 2, "a passed round: review round 2, no fix check");
 });
