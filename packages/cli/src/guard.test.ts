@@ -361,6 +361,23 @@ test("W-310-b1 behaviour 1 (cd domain): after an unknown directory an absolute s
   assert.equal((await inDir("cd -; echo ok", U)).code, 0, "... and a command that runs no script runs");
 });
 
+test("W-310-b1 behaviour 1 (cd domain): the unknown directory crosses -c bodies and script files", async () => {
+  const U = withScript("holds-nothing.sh", "echo hi\n");
+  const N = tmp();
+  writeFileSync(join(N, "wrapper.sh"), `${RECORD}\n`);
+  const cases: [string, string, string][] = [
+    [`cd -; bash -c '${RECORD}'`, REPO, "the recorder inside bash -c"],
+    [`cd -; bash '${join(N, "wrapper.sh")}'`, REPO, "an absolute wrapper invoking the relative recorder"],
+    ["cd -; bash -c 'bash scripts/holds-nothing.sh'", U, "a script holding nothing inside bash -c"],
+    ["popd; sh -c \"bash -c 'bash scripts/holds-nothing.sh'\"", U, "two -c bodies deep"],
+  ];
+  for (const [command, cwd, name] of cases) {
+    const r = await inDir(command, cwd);
+    assert.equal(r.code, 2, `the unknown directory crosses -c bodies and script files: ${name}`);
+    assert.match(r.err, UNKNOWN_DIR, name);
+  }
+});
+
 test("W-310-b2 behaviour 2: the guard refuses a background while/until loop with no hard bound", async () => {
   const refused = [
     "until test -s /tmp/x.exit; do sleep 20; done",
