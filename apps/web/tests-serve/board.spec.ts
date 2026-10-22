@@ -543,9 +543,16 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const boardLink = page.locator('a.sidebar__link[href="#/board"]');
     const activeDecoration = await boardLink.evaluate((el) => {
       const style = getComputedStyle(el);
-      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor };
+      // `--ink` is declared as a hex; a probe element normalises it to rgb().
+      const probe = document.createElement("span");
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue("--ink");
+      document.body.append(probe);
+      const ink = getComputedStyle(probe).color;
+      probe.remove();
+      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor, ink };
     });
     expect(activeDecoration.line).toContain("underline");
+    expect(activeDecoration.color).toBe(activeDecoration.ink);
     expect(rgbContrast(activeDecoration.color, activeDecoration.background)).toBeGreaterThanOrEqual(3);
 
     const inboxLink = page.locator('a.sidebar__link[href="#/inbox"]');
@@ -632,9 +639,16 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const boardLink = page.locator('a.sidebar__link[href="#/board"]');
     const activeDecoration = await boardLink.evaluate((el) => {
       const style = getComputedStyle(el);
-      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor };
+      // `--ink` is declared as a hex; a probe element normalises it to rgb().
+      const probe = document.createElement("span");
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue("--ink");
+      document.body.append(probe);
+      const ink = getComputedStyle(probe).color;
+      probe.remove();
+      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor, ink };
     });
     expect(activeDecoration.line).toContain("underline");
+    expect(activeDecoration.color).toBe(activeDecoration.ink);
     expect(rgbContrast(activeDecoration.color, activeDecoration.background)).toBeGreaterThanOrEqual(3);
     const lastName = await lastItem.textContent();
     await lastItem.click();
