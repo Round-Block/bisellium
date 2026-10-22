@@ -10,7 +10,7 @@
  * is left unjudged is deliberate evasion (D-045): eval, an alias, a function, a command or script
  * path built from a variable, a command substitution inside double quotes: a limit.
  */
-import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
@@ -23,7 +23,20 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.leng
  *  quotes, a `#` comment opening a word, and the breaks `;` `&` `|` newline `(` `)` backtick and
  *  `$(` outside quotes. */
 export function simpleCommands(line: string): string[][] {
-  const out: string[][] = [];
+  return commandSeq(line).map((c) => c.words);
+}
+
+/** A simple command with the break characters (`;` `&` `|` newline `(` `)` backtick `$(`) that
+ *  precede and follow it. */
+interface Command {
+  words: string[];
+  before: string;
+  after: string;
+}
+
+function commandSeq(line: string): Command[] {
+  const out: Command[] = [];
+  let run = "";
   let words: string[] = [];
   let word = "";
   let inWord = false;
@@ -34,7 +47,10 @@ export function simpleCommands(line: string): string[][] {
   };
   const endCommand = (): void => {
     endWord();
-    if (words.length) out.push(words);
+    if (words.length) {
+      out.push({ words, before: run, after: "" });
+      run = "";
+    }
     words = [];
   };
   for (let i = 0; i < line.length; i++) {
@@ -59,15 +75,19 @@ export function simpleCommands(line: string): string[][] {
       inWord = true;
     } else if (c === "$" && line[i + 1] === "(") {
       endCommand();
+      run += "$(";
       i++;
-    } else if (";&|\n()`".includes(c)) endCommand();
-    else if (c === " " || c === "\t") endWord();
+    } else if (";&|\n()`".includes(c)) {
+      endCommand();
+      run += c;
+    } else if (c === " " || c === "\t") endWord();
     else {
       word += c;
       inWord = true;
     }
   }
   endCommand();
+  out.forEach((c, k) => (c.after = out[k + 1]?.before ?? run));
   return out;
 }
 
@@ -228,24 +248,55 @@ function ladderStep(argv: string[]): string | undefined {
   return PERFORM_LADDER.has(step) ? `next --perform --expect ${step}` : undefined;
 }
 
+/** The most literal `cd` targets other than the moving form one command may add to the roots judged. */
+const EXTRA_ROOTS = 16;
+
+/** True when the guard can enter the directory: it exists and its execute bit is open to this process. */
+function enterable(path: string): boolean {
+  try {
+    if (!statSync(path).isDirectory()) return false;
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** The hand ladder record write a command runs, or undefined: in each simple command, through
- *  `-c` scripts and the script files it runs (read by `scriptText`, resolved against `cwd` as `cd`
- *  moves it), three deep. */
+ *  `-c` scripts and the script files it runs (read by `scriptText`, resolved against the root as
+ *  `cd` moves it), three deep. Exactly one `cd` form moves the root: a top-level `cd <one operand>`
+ *  with no option, written by itself, joined to what follows only by `;` or `&&` (a pipeline, a
+ *  subshell, a substitution, a background job, a branch after `&&`/`||` or a keyword may leave the
+ *  shell where it was), to a directory the guard can enter. Every other `cd` leaves the root, and
+ *  its literal targets (its operands that are not options) are roots as well, for every command in
+ *  the line: the script is judged against each, so a `cd` the shell never ran hides nothing. */
 export function ladderWrite(command: string, ctx: ShellContext, depth = 0): string | undefined {
+  const seq = commandSeq(command);
   let cwd = ctx.cwd;
-  for (const words of simpleCommands(command)) {
-    const { words: w } = strip(words);
+  const roots: string[] = [];
+  const extra = new Set<string>();
+  for (const c of seq) {
+    roots.push(cwd);
+    const { words: w } = strip(c.words);
+    if (w[0] !== "cd") continue;
     const here = { ...ctx, cwd };
-    if (w[0] === "cd") {
-      // a target the guard cannot confirm is a directory leaves the root: a failed cd leaves the shell in place
-      const target = w[1] === undefined ? ctx.home : wordPath(w[1], here);
-      if (target !== undefined && statSync(target, { throwIfNoEntry: false })?.isDirectory()) cwd = target;
-      continue;
-    }
+    const operands = w.slice(1).filter((x) => !x.startsWith("-"));
+    const moving = c.words[0] === "cd" && w.length === 2 && operands.length === 1 && /^[;\n]*$/.test(c.before) && /^(?:[;\n]*|&&\n*)$/.test(c.after);
+    const target = wordPath(operands[0] ?? "~", here);
+    if (moving && target !== undefined && enterable(target)) cwd = target;
+    else for (const x of operands.length ? operands : ["~"]) if (extra.size < EXTRA_ROOTS) extra.add(wordPath(x, here) ?? "");
+  }
+  extra.delete("");
+  for (const [k, { words }] of seq.entries()) {
+    const { words: w } = strip(words);
+    if (w[0] === "cd") continue;
+    const here = [...new Set([roots[k]!, ...extra])].map((cwd) => ({ ...ctx, cwd }));
     const inner = shellScript(w);
     if (inner !== undefined) {
-      const found = depth < 3 ? ladderWrite(inner, here, depth + 1) : undefined;
-      if (found) return found;
+      for (const h of here) {
+        const found = depth < 3 ? ladderWrite(inner, h, depth + 1) : undefined;
+        if (found) return found;
+      }
       continue;
     }
     const argv = cliArgv(w);
@@ -255,10 +306,12 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0): stri
       continue;
     }
     const file = depth < 3 ? scriptOf(w) : undefined;
-    const path = file === undefined ? undefined : wordPath(file, here);
-    const text = path === undefined ? undefined : scriptText(path);
-    const found = text === undefined ? undefined : ladderWrite(text, here, depth + 1);
-    if (found) return `${found} (in ${file})`;
+    for (const h of here) {
+      const path = file === undefined ? undefined : wordPath(file, h);
+      const text = path === undefined ? undefined : scriptText(path);
+      const found = text === undefined ? undefined : ladderWrite(text, h, depth + 1);
+      if (found) return `${found} (in ${file})`;
+    }
   }
   return undefined;
 }
