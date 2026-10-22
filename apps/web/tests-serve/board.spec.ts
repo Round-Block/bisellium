@@ -35,6 +35,17 @@ const REPO_ROOT = resolve(HERE, "..", "..", "..");
 const MAIN_TS = join(REPO_ROOT, "packages", "cli", "src", "main.ts");
 const SAMPLE_STUDIO = join(REPO_ROOT, "examples", "sample-studio");
 
+function rgbContrast(foreground: string, background: string): number {
+  const luminance = (rgb: string): number => {
+    const channels = [...rgb.matchAll(/\d+(?:\.\d+)?/g)].slice(0, 3).map((match) => Number(match[0]) / 255);
+    expect(channels).toHaveLength(3);
+    const linear = channels.map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+  };
+  const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  return (values[0]! + 0.05) / (values[1]! + 0.05);
+}
+
 async function forcePoll(served: { baseURL: string }): Promise<void> {
   const res = await fetch(`${served.baseURL}/api/_poll`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
   if (res.status !== 200) throw new Error(`/api/_poll answered ${res.status} — is NODE_ENV=test reaching the spawned server?`);
@@ -571,6 +582,11 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const strip = page.locator(".board__strip");
     await expect(strip).toBeVisible();
     const lastItem = strip.locator(".board__strip-item").last();
+    const stripColours = await lastItem.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { foreground: style.color, background: style.backgroundColor };
+    });
+    expect(rgbContrast(stripColours.foreground, stripColours.background)).toBeGreaterThanOrEqual(4.5);
     const lastName = await lastItem.textContent();
     await lastItem.click();
     await expect(page.locator(".board__column").last()).toBeInViewport();

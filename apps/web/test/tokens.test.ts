@@ -12,6 +12,8 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(resolve(HERE, "..", "src", "tokens.css"), "utf8");
 const direction = readFileSync(resolve(HERE, "..", "..", "..", "docs", "design", "DIRECTION.md"), "utf8");
+const componentCss = readFileSync(resolve(HERE, "..", "src", "components", "w025.css"), "utf8");
+const officinaSource = readFileSync(resolve(HERE, "..", "src", "screens", "Officina.tsx"), "utf8");
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -111,6 +113,84 @@ test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and c
   assert.match(direction, /Amber `#E0A24A`/, "DIRECTION section 3 names dark amber");
   assert.match(direction, /ok `#5BD192` \/ bad `#E8766A`/, "DIRECTION section 3 names the dark gate colours");
   assert.match(direction, /0 16px 48px rgba\(0,0,0,\.45\)/, "DIRECTION section 3 names the dark drawer shadow");
+});
+
+function cssRule(selector: string): string {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const declarations = new RegExp(`${escaped}\\s*{([^}]*)}`).exec(componentCss)?.[1];
+  assert.ok(declarations, `${selector} exists in w025.css`);
+  return declarations;
+}
+
+function badTokenConsumers(): { source: string; selector: string; declarations: string }[] {
+  const src = resolve(HERE, "..", "src");
+  const out: { source: string; selector: string; declarations: string }[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const file = resolve(dir, entry.name);
+      if (entry.isDirectory()) walk(file);
+      else if (entry.name.endsWith(".css") && entry.name !== "tokens.css") {
+        const text = readFileSync(file, "utf8");
+        for (const match of text.matchAll(/([^{}]+){([^{}]*var\(--bad\)[^{}]*)}/g)) {
+          out.push({ source: file.slice(src.length + 1), selector: match[1]!.trim(), declarations: match[2]!.trim() });
+        }
+      } else if (entry.name.endsWith(".tsx")) {
+        const text = readFileSync(file, "utf8");
+        if (text.includes("var(--bad)")) out.push({ source: file.slice(src.length + 1), selector: "<inline TSX>", declarations: text });
+      }
+    }
+  };
+  walk(src);
+  return out;
+}
+
+test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and budget states keep readable cues", () => {
+  const badConsumers = badTokenConsumers();
+  assert.deepEqual(
+    badConsumers.map(({ source, selector }) => `${source}: ${selector}`),
+    ["components/w025.css: .gate-ladder__mark--bad-diagonal"],
+    "only the diagonal failed-gate selector consumes --bad",
+  );
+  for (const { source, selector, declarations } of badConsumers) {
+    assert.doesNotMatch(declarations, /(?:^|;)\s*color\s*:/i, `${source}: ${selector} never sets text colour from --bad`);
+  }
+  assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /background\s*:\s*var\(--bad\)/, "the failed gate keeps its bad fill");
+  assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /clip-path\s*:/, "the failed gate keeps its diagonal shape cue");
+  assert.match(cssRule(".seats__confirm-error"), /color\s*:\s*var\(--ink\)/, "confirmation error copy uses the highest-contrast text token");
+  assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--ink\)/, "a blocked card keeps its non-colour left-rule cue without consuming bad");
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--verdigris\)/, "drawer evidence links and their visited state use verdigris");
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*text-decoration\s*:\s*underline/, "drawer evidence links retain their underline");
+
+  const interactiveTextTokens = [
+    [".sidebar__link", "ink"],
+    [".sidebar__link--disabled", "ink-3"],
+    [".token-prompt__input", "ink"],
+    [".token-prompt__submit", "ink"],
+    [".officina__row--link", "ink"],
+    [".inbox__input-ratio", "ink"],
+    [".inbox__input-ratio::placeholder", "ink-3"],
+    [".inbox__btn-action", "ink"],
+    [".seats__row select", "ink"],
+    [".seats__row select option", "ink"],
+    [".seats__confirm-btn,\n.seats__cancel-btn", "ink"],
+    [".board__project-select", "ink-2"],
+    [".board__project-select option", "ink-2"],
+    [".board__strip-item", "ink"],
+    [".board-drawer__close", "ink-2"],
+    [".board-drawer__banner-link", "verdigris"],
+    [".board-drawer__gate-evidence,\n.board-drawer__gate-evidence:visited", "verdigris"],
+  ] as const;
+  for (const [selector, textToken] of interactiveTextTokens) {
+    assert.match(cssRule(selector), new RegExp(`color\\s*:\\s*var\\(--${textToken}\\)`), `${selector.replaceAll("\n", " ")} declares its dark-surface text token`);
+  }
+  assert.match(cssRule(".inbox__input-ratio::placeholder"), /opacity\s*:\s*1/, "the tokenized placeholder is not dimmed by a browser default");
+  assert.match(cssRule(".seats__row select option"), /background\s*:\s*var\(--surface\)/, "seat options declare the dark surface");
+  assert.match(cssRule(".board__project-select option"), /background\s*:\s*var\(--surface\)/, "Board project options declare the dark surface");
+
+  assert.doesNotMatch(officinaSource, /var\(--bad\)/, "the Officina budget graphic never consumes bad");
+  assert.match(officinaSource, /function pieColor\(spent: number, allowance: number\)[\s\S]*?return spent >= allowance \? "var\(--amber\)" : "var\(--ink\)";/, "budget burn is ink under allowance and amber at or over allowance");
+  assert.match(officinaSource, /const color = pieColor\(spent, allowance\);/, "the budget graphic takes its colour from the allowance boundary");
+  assert.match(officinaSource, /const \{ word, reason \} = formatPosture\(entry\);[\s\S]*?officina__posture-word">\{word}[\s\S]*?officina__posture-reason">\{reason}/, "the adjacent posture word and numeric burn/allowance reason are the non-colour budget cue");
 });
 
 const NAMED = new Set(
