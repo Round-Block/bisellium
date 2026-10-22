@@ -137,5 +137,18 @@ export function checkLadderTicket(root: string, opts: RuleOpts): Finding[] {
     }
     if (l.at !== undefined) previous.set(l.opus, l);
   }
+  // ladder.order (W-358): within an opus and phase, the judged verdict logs' rounds follow their # at: (W-183's late verdict)
+  const rounds = new Map<string, Covered[]>();
+  for (const l of covered) if (l.action !== "red" && l.round !== undefined && l.at !== undefined) rounds.set(`${l.opus} ${l.action}`, [...(rounds.get(`${l.opus} ${l.action}`) ?? []), l]);
+  for (const seq of rounds.values()) {
+    seq.sort((a, b) => a.round! - b.round! || (a.where < b.where ? -1 : 1));
+    seq.forEach((l, i) => {
+      const p = seq[i - 1];
+      if (p === undefined) return;
+      const phase = l.action === "verdict-spec" ? "spec" : "build";
+      if (l.round === p.round) findings.push({ rule: "ladder.order", level: "block", where: l.where, message: `${l.opus}'s ${phase} round ${l.round} is recorded again after ${p.where}: one log per round` });
+      else if (l.at! <= p.at!) findings.push({ rule: "ladder.order", level: "block", where: l.where, message: `${l.opus}'s ${phase} round ${l.round} (${l.atText}) is not after round ${p.round}'s log ${p.where} (${p.atText}): rounds are recorded in order` });
+    });
+  }
   return findings;
 }
