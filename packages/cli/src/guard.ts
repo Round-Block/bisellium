@@ -251,10 +251,9 @@ function ladderStep(argv: string[]): string | undefined {
   return PERFORM_LADDER.has(step) ? `next --perform --expect ${step}` : undefined;
 }
 
-/** The most literal `cd` targets other than the moving form one command may add to the roots judged;
- *  one more is refused as `TOO_MANY_CD`, never judged on a subset. */
-const EXTRA_ROOTS = 16;
-const TOO_MANY_CD = "too many cd targets to judge";
+/** The prefix of a refusal `ladderWrite` returns whole (the unknown directory), as opposed to a ladder step. */
+const REFUSED = "refused: ";
+const HERE_ABSOLUTE = /^(?:\/|~\/|\$HOME\/|\$\{HOME\}\/)/;
 
 /** True when the guard can enter the directory: it exists and its execute bit is open to this process. */
 function enterable(path: string): boolean {
@@ -268,42 +267,54 @@ function enterable(path: string): boolean {
 }
 
 /** The hand ladder record write a command runs, or undefined: in each simple command, through
- *  `-c` scripts and the script files it runs (read by `scriptText`, resolved against the root as
- *  `cd` moves it), three deep. Exactly one `cd` form moves the root: a top-level `cd <one operand>`
- *  with no option, written by itself, joined to what follows only by `;` or `&&` (a pipeline, a
- *  subshell, a substitution, a background job, a branch after `&&`/`||` or a keyword may leave the
- *  shell where it was), to a directory the guard can enter. Every other `cd` leaves the root, and
- *  its literal targets (its operands that are not options) are roots as well, for every command in
- *  the line: the script is judged against each, so a `cd` the shell never ran hides nothing. */
-export function ladderWrite(command: string, ctx: ShellContext, depth = 0): string | undefined {
-  const seq = commandSeq(command);
+ *  `-c` scripts and the script files it runs (read by `scriptText`), three deep. A line (the
+ *  command, a `-c` script, a script file) starts in one directory, `ctx.cwd`. A `cd <one operand>`
+ *  (no option, no prefix word) after nothing, `;` or a newline and before `;`, `&&` or a newline
+ *  is certain while every simple command before it on the line is one: it moves the one directory
+ *  when the guard can enter the target. Every other `cd` or `pushd` (a pipeline, a subshell, a
+ *  substitution, a branch, `||`, a `cd` after another command) is uncertain and only adds: every
+ *  directory held so far stays a candidate, and each literal operand that is not an option (home
+ *  for a `cd` with none), resolved against each candidate, joins when the guard can enter it. A
+ *  command is judged in the one directory while the line is certain, in every candidate once it
+ *  is not (no cap). `popd`, `pushd` with no directory and a `cd -` no certain `cd` precedes read
+ *  a directory the line did not set: `unknown` holds from there on, in the `-c` scripts and script
+ *  files it runs too, and a script file named without `/`, `~/` or `$HOME/` at its start is
+ *  refused whatever it holds (the whole refusal line is returned). Limits: a `cd` target built
+ *  from a variable is not followed; nor are `CDPATH`, `env -C`, `autocd` and a `cd` in a sourced script. */
+export function ladderWrite(command: string, ctx: ShellContext, depth = 0, unknown = false): string | undefined {
   let cwd = ctx.cwd;
-  const roots: string[] = [];
-  const extra = new Set<string>();
-  for (const c of seq) {
-    roots.push(cwd);
+  const held = new Set([cwd]);
+  let certain = true;
+  let uncertain = false;
+  let moved = false;
+  for (const c of commandSeq(command)) {
     const { words: w } = strip(c.words);
-    if (w[0] !== "cd") continue;
-    const here = { ...ctx, cwd };
-    const operands = w.slice(1).filter((x) => !x.startsWith("-"));
-    const moving = c.words[0] === "cd" && w.length === 2 && operands.length === 1 && /^[;\n]*$/.test(c.before) && /^(?:[;\n]*|&&\n*)$/.test(c.after);
-    const target = wordPath(operands[0] ?? "~", here);
-    if (moving && target !== undefined && enterable(target)) cwd = target;
-    else
-      for (const x of operands.length ? operands : ["~"]) {
-        const root = wordPath(x, here);
-        if (root !== undefined) extra.add(root);
-        if (extra.size > EXTRA_ROOTS) return TOO_MANY_CD;
+    if (certain && c.words[0] === "cd" && w.length === 2 && !/^[-+]/.test(w[1]!) && /^[;\n]*$/.test(c.before) && /^(?:[;\n]*|&&\n*)$/.test(c.after)) {
+      const target = wordPath(w[1]!, { ...ctx, cwd });
+      if (target !== undefined && enterable(target) && target !== cwd) {
+        held.add((cwd = target));
+        moved = true;
       }
-  }
-  for (const [k, { words }] of seq.entries()) {
-    const { words: w } = strip(words);
-    if (w[0] === "cd") continue;
-    const here = [...new Set([roots[k]!, ...extra])].map((cwd) => ({ ...ctx, cwd }));
+      continue;
+    }
+    certain = false;
+    if (w[0] === "cd" || w[0] === "pushd" || w[0] === "popd") {
+      uncertain = true;
+      const operands = w.slice(1).filter((x) => !/^[-+]/.test(x));
+      if (w[0] === "popd" || (w[0] === "pushd" && operands.length === 0) || (w[0] === "cd" && w.includes("-") && !moved)) unknown = true;
+      const targets = w[0] === "cd" && w.length === 1 ? ["~"] : operands;
+      for (const d of [...held])
+        for (const x of targets) {
+          const t = wordPath(x, { ...ctx, cwd: d });
+          if (t !== undefined && enterable(t)) held.add(t);
+        }
+      continue;
+    }
+    const here = (uncertain ? [...held] : [cwd]).map((d) => ({ ...ctx, cwd: d }));
     const inner = shellScript(w);
     if (inner !== undefined) {
       for (const h of here) {
-        const found = depth < 3 ? ladderWrite(inner, h, depth + 1) : undefined;
+        const found = depth < 3 ? ladderWrite(inner, h, depth + 1, unknown) : undefined;
         if (found) return found;
       }
       continue;
@@ -315,11 +326,13 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0): stri
       continue;
     }
     const file = depth < 3 ? scriptOf(w) : undefined;
+    if (file !== undefined && unknown && !HERE_ABSOLUTE.test(file))
+      return `${REFUSED}\`${file}\` runs in a directory the guard cannot know (after \`cd -\`, \`popd\` or \`pushd\` with no directory) (W-310): run it by absolute path, or dispatch a ladder-runner`;
     for (const h of here) {
       const path = file === undefined ? undefined : wordPath(file, h);
       const text = path === undefined ? undefined : scriptText(path);
-      const found = text === undefined ? undefined : ladderWrite(text, h, depth + 1);
-      if (found) return `${found} (in ${file})`;
+      const found = text === undefined ? undefined : ladderWrite(text, h, depth + 1, unknown);
+      if (found) return found.startsWith(REFUSED) ? found : `${found} (in ${file})`;
     }
   }
   return undefined;
@@ -414,7 +427,7 @@ export function guardRefusal(input: Dict): string | undefined {
     const command = str(args["command"]);
     if (!command) return undefined;
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
-    if (write?.startsWith(TOO_MANY_CD)) return `refused: ${TOO_MANY_CD} (more than ${EXTRA_ROOTS} in one command line): split the command, or dispatch a ladder-runner (W-310)`;
+    if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
     if (args["run_in_background"] === true && unboundedLoop(command))
       return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
