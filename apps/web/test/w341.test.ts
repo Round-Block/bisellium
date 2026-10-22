@@ -154,3 +154,24 @@ test("W-341-b4 behaviour 4: the Board shows and reports loading, empty, error, s
   assert.match(source, /screenStatus\("board", \{ loaded: everLoaded, empty: opera\.length === 0, failed: readFailed \|\| undefined, live: everLoaded \? connected : undefined \}\)/, "the Board derives stale and live from its feed");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Board reports each status change");
 });
+
+test("W-341-b5 behaviour 5: the Officina reports loading, empty and error from its panels' reads", async () => {
+  await matrix();
+  wired("Officina");
+  const source = read("src/screens/Officina.tsx");
+  assert.match(source, /screenStatus\("officina", \{/, "the Officina derives its one status from the matrix");
+  assert.match(source, /loaded: actaSettled && parts\.every\(\(p\) => p !== undefined\)/, "loading lasts until every read settles");
+  assert.match(source, /failed: parts\.includes\("failed"\) \|\| undefined/, "any failed panel read is the error state");
+  assert.match(source, /\.finally\(\(\) => setActaSettled\(true\)\)/, "the strip's read settles on success or failure");
+  assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Officina reports each status change");
+});
+
+/** WCAG 2.2 relative luminance and contrast of two `#rrggbb` values. */
+function contrast(a: string, b: string): number {
+  const lum = (hex: string): number => {
+    const [r, g, bl] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * bl!;
+  };
+  const [x, y] = [lum(a), lum(b)];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
