@@ -214,7 +214,10 @@ function guardProbe(repo: string, studio: string): boolean {
   if (!bin || !real) console.log("guard: not installed: no bisellium on PATH");
   else if (inside) console.log(`guard: installed inside ${repo} (${real}): hooks run unsandboxed, so the guard must live outside the agent clone`);
   else console.log(`guard: installed at ${real}`);
-  if (!bin || inside) return false;
+  if (!bin || inside) {
+    console.log(`guard: dead (not run: ${bin ? "the bisellium on PATH is inside the repo" : "no bisellium on PATH"}): a main-thread bisellium merge was not tried`);
+    return false;
+  }
   const r = spawnSync(bin, ["hook-event", "guard", "--studio", studio], { input: JSON.stringify(PROBE), encoding: "utf8", timeout: 10_000 });
   const live = r.status === 2 && r.stderr.includes("ladder-runner");
   console.log(live ? "guard: live (a main-thread bisellium merge is refused)" : `guard: dead (exit ${r.status ?? r.signal ?? r.error?.message}): a main-thread bisellium merge was not refused`);
