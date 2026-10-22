@@ -1,0 +1,20 @@
+# opus: W-341
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-22T08:27:54.069Z
+# tree: tree:4d8e350595eba2b58d3ab0afc4dda080b5eadf1e
+# brief: briefs/W-341.md blob:27013122a0fbb5a2a5e1cc0b66a4457cc5537d7a
+# ticket: {"opus":"W-341","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-341/studio","head":"3b153e1becee20503d6db1c6769ce97c2e5ffd7c","brief":"27013122a0fbb5a2a5e1cc0b66a4457cc5537d7a","at":"2026-10-22T08:27:53.560Z"}
+
+## Findings
+1. blocking — package.json:17 brief:208 claims the opus-branch `tests` gate runs b1–b6 and cites `r3/reds.out`, but the current `test:suite` omits `w341.test.ts`; `studio/ci/W-341-tests-4d8e3505.log:17` therefore records a passing `npm test` without those rows, while `r3/reds.out` contains only direct row replays. Replace the added sentence in brief:208 with `The fix round adds the test:suite entry named in Files owned; after it lands, a fresh tests-gate log at that tree must show b1 through b6 ran, while r3/reds.out proves only the direct row replays.` [severity: S1] [design: keeps] [class: review×evidence-backfilled-or-absent] — check: none: require current-tree tests-gate evidence showing W-341-b1 through W-341-b6
+2. advisory — brief:55 The new reused `npm test -s` boundary, and brief:56’s existing `web-e2e` job relied upon at `merge_group`, are absent from the Input domain; their internal reads are enumerated instead of naming each call, its zero-exit domain and its fail-closed caller. Add after brief:138 `| 11. The tests-gate call | npm test -s exits 0 | runCi refuses a non-zero exit and records no passing tests gate |` and `| 12. The existing web-e2e job on a source-changing merge_group | every unskipped step exits 0 | the GitHub Actions runner fails the required job when any step exits non-zero; no step has continue-on-error |`. [severity: S4] [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+
+## Earlier findings
+
+## Verdict
+The execution plan is feasible, but its claimed current-tree gate evidence is false.
+VERDICT: FAIL
