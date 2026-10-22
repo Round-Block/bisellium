@@ -40,13 +40,13 @@
 :root {
   --ink: #16211e;
   --ink-2: #4a5654;
-  --ink-3: #788582;
+  --ink-3: #677270;
   --rule: #dde3e1;
   --wash: #f4f7f6;
   --verdigris: #0b6e5f;
-  --amber: #b7791f;
-  --ok: #2e9e64;
-  --bad: #c64a3a;
+  --amber: #99651a;
+  --ok: #257f51;
+  --bad: #c14738;
   --surface: #ffffff;
   --transparent: transparent;
   --shadow-drawer: rgba(22, 33, 30, 0.18);

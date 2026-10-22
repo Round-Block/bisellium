@@ -9,13 +9,14 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:serve": "playwright test --config=playwright.serve.config.ts",
-    "test:policy": "node --test-reporter=tap --import tsx test/w350.test.ts"
+    "test:policy": "node --test-reporter=tap --import tsx test/w350.test.ts && node --test-reporter=tap --import tsx test/w341.test.ts"
   },
   "dependencies": {
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@bisellium/commands": "*",
     "@playwright/test": "^1.63.0",
     "@types/react": "^19.3.0",
