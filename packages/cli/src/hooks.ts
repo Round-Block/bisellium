@@ -5,7 +5,7 @@
  *
  *   bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
  *   bisellium hooks check --harness claude-code [--studio <dir>]
- *   bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+ *   bisellium hook-event <start|stop|tool|compact|context|guard> --sella <id> [--studio <dir>]
  *
  * `hooks print`/`hooks check` are ordinary administrative commands (usage
  * errors exit 2, like every other command in this CLI). `hook-event` is
@@ -14,7 +14,8 @@
  * (JSON, bounded by @bisellium/shim's 2s self-timeout) and always exits 0,
  * printing at most one line to stderr on any failure (malformed payload,
  * missing session_id, an unreadable studio, …). All writes go through the
- * existing shim helpers: receipts.ts (writeReceiptStart/writeReceiptEnd),
+ * existing shim helpers (W-310: `guard` is the one exception to "always exits 0": it exits 2 on a
+ * refusal, see handleGuard): receipts.ts (writeReceiptStart/writeReceiptEnd),
  * redact.ts (redact), @bisellium/core's appendEvents into EVENTS_LOG_REL
  * (`<studio>/.bisellium/events.jsonl` — the same file a running Store
  * reads/appends to, so a hook-emitted event and a CLI/Store one never fork
@@ -37,6 +38,7 @@ import {
   writeReceiptStart,
 } from "@bisellium/shim";
 import { buildContext } from "./context.js";
+import { guardRefusal } from "./guard.js";
 import { diagnosticLabel } from "./reporting.js";
 
 export interface HooksResult {
@@ -185,7 +187,7 @@ export interface HookEventOptions {
   stdinTimeoutMs?: number;
 }
 
-const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]";
+const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context|guard> --sella <id> [--studio <dir>]";
 
 /** `receipts/<sella>/<sessionId>.json` and `timeline/<sella>.jsonl` both
  *  join these two values straight into a filesystem path — `sella` is
@@ -206,7 +208,7 @@ function isSafePathSegment(s: string): boolean {
 
 export async function runHookEvent(args: string[], opts: HookEventOptions = {}): Promise<HooksResult> {
   const [sub, ...rest] = args;
-  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context") {
+  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context" && sub !== "guard") {
     console.error(`hook-event: unknown subcommand ${JSON.stringify(sub ?? "")}\n${HOOK_EVENT_USAGE}`);
     return { exitCode: 0 }; // a hook target never blocks the harness, even on a usage error
   }
@@ -264,6 +266,7 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
   }
 
   try {
+    if (sub === "guard") return handleGuard(payload.data);
     if (sub === "start") return handleStart(studio, sella, payload.data, now);
     if (sub === "stop") return handleStop(studio, sella, payload.data, now);
     if (sub === "tool") return handleTool(studio, sella, payload.data, now);
@@ -273,6 +276,16 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
     console.error(`hook-event ${sub}: ${(e as Error).message}`);
     return { exitCode: 0 };
   }
+}
+
+/** `hook-event guard` (W-310): the refusal on stderr and exit 2, which Claude Code shows the model and
+ *  turns into a refused tool call (PreToolUse) or a subagent kept running (SubagentStop); exit 0 otherwise.
+ *  Deny-only and fail-open: a throw lands in runHookEvent's catch, which exits 0. */
+function handleGuard(payload: Record<string, unknown>): HooksResult {
+  const why = guardRefusal(payload);
+  if (!why) return { exitCode: 0 };
+  console.error(why);
+  return { exitCode: 2 };
 }
 
 function stringField(payload: Record<string, unknown>, key: string): string | undefined {
