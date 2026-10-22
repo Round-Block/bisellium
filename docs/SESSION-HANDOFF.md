@@ -55,15 +55,16 @@ Then the console MVP's server side (after the block):
 17. W-261 — woken orchestration: the cascade loop waits on a GitHub event and runs one fresh session per wake, no model polling (D-087 F; it changes `scripts/cascade-loop.sh` in the Patron's folder)
 18. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 UI queue, two lanes (D-093: lane 1 W-338 then W-348, lane 2 W-339 then down the list; order D-090 B; models D-091 and D-099: Sol drafts and signs with Astra's input, Opus reviews the spec, Codex Terra builds, Astra reviews the screenshots (advisory), a fresh Sol session the build; every opus here `kind: ui` when it starts, D-088 E, except W-338):
-1. W-360 — W-350 part 3, redo first (Patron 2026-10-22, D-099 E): the screenshot baselines with a frozen clock and captured after each screen's data has loaded, then the Patron approves the four screens and W-350 completes (greenlit, high)
-2. W-355 — W-348 part 2 (cut at spec, D-061 §4): `next` reads the spec pairing and kind from the record that owns the spec evidence, failing closed on a bad owner record (backlog: awaits the Patron's greenlight; filed 2026-10-21)
-2. W-350 — screenshot baselines with production fonts, two stages (D-097): in flight; then its follow-up commits the runner's baselines
-3. W-340 — UI check 2: the screenshots or their pixel diff in the build review packet, with a UI slot in `studio/prompts/build-review.md`, after a probe of whether the Codex seat reads images (D-088 F)
-4. W-341 — UI check 3: one states matrix on all four screens (loading, empty, error, refused, stale, live, pending) as brief acceptance rows, each a served test with an `aria-live` row, and an axe scan (`@axe-core/playwright`) on the named states that fails the task (D-088 F, D-090 B, C)
-5. W-342 — UI check 4: `apps/web/README.md` names the live screens and the two suites and points to `docs/design/DIRECTION.md` (D-088 F)
-6. W-345 — Inbox truth and safety: shortcuts ignore keys typed in a field, one submission at a time, the reason bound to its petition, no invented petitions on a failed read, the answer pane reachable at phone width, defer and delegate made distinct or removed (D-090 A, B; from W-344)
-7. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route (the Board may write these, D-080 E)
-8. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+1. W-361 — dark palette first (Patron 2026-10-22): the console's colour tokens move to a dark set, Dracula's neutrals with the semantic colours lifted to pass contrast, still at most three on screen with a shape cue per state; the ui-lead (Astra) drafts the values from a Haiku web research note (`~/.bisellium-evidence/W-361-spec/palette-research.md`), the Patron approves them (greenlit)
+2. W-360 — W-350 part 3, redo first (Patron 2026-10-22, D-099 E), after W-361 so the baselines are captured once: the screenshot baselines with a frozen clock and captured after each screen's data has loaded, then the Patron approves the four screens and W-350 completes (greenlit, high)
+3. W-355 — W-348 part 2 (cut at spec, D-061 §4): `next` reads the spec pairing and kind from the record that owns the spec evidence, failing closed on a bad owner record (backlog: awaits the Patron's greenlight; filed 2026-10-21)
+3. W-350 — screenshot baselines with production fonts, two stages (D-097): in flight; then its follow-up commits the runner's baselines
+4. W-340 — UI check 2: the screenshots or their pixel diff in the build review packet, with a UI slot in `studio/prompts/build-review.md`, after a probe of whether the Codex seat reads images (D-088 F)
+5. W-341 — UI check 3: one states matrix on all four screens (loading, empty, error, refused, stale, live, pending) as brief acceptance rows, each a served test with an `aria-live` row, and an axe scan (`@axe-core/playwright`) on the named states that fails the task (D-088 F, D-090 B, C) — engineering work in a UI lane slot (Patron 2026-10-22): the Opus architect drafts, Codex Sol reviews spec and build
+6. W-342 — UI check 4: `apps/web/README.md` names the live screens and the two suites and points to `docs/design/DIRECTION.md` (D-088 F)
+7. W-345 — Inbox truth and safety: shortcuts ignore keys typed in a field, one submission at a time, the reason bound to its petition, no invented petitions on a failed read, the answer pane reachable at phone width, defer and delegate made distinct or removed (D-090 A, B; from W-344)
+8. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route (the Board may write these, D-080 E)
+9. W-300 — the drawer shows `next`'s read-only step, actor, round and health
 W-281 — milestone exits that can be met — rides any records PR.
 
 Later (unscheduled, D-083 A: an item starts only when a re-rank moves it into Now, run at an early stop, the block's exit or when Now holds under 5, or when it turns high under D-039; each re-rank reviews Later for stale premises; group descriptions stand for the ids in them):
