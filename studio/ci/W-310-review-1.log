@@ -1,0 +1,20 @@
+# opus: W-310
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a163a1-319d-7962-8c60-b3e46ba91774
+# outcome: failed
+# at: 2026-10-22T12:45:26.924Z
+# tree: tree:bace0eb3440a2f72dce8672f966333fac6b8b36d
+# brief: briefs/W-310.md blob:68b249f1bf4827b9ab16cb52ed1feac568881c5a
+# ticket: {"opus":"W-310","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-310/studio","head":"c789d078b97ded7eb7a583f7bf2c5905cd2eace9","brief":"68b249f1bf4827b9ab16cb52ed1feac568881c5a","at":"2026-10-22T12:41:09.186Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:145 `shellScript` treats any later `-c` argument as a shell option, so `bash scripts/record-review.sh W-310 1 passed session-1 -c harmless` runs the recorder but receives no refusal; this is an admitted script-file form and violates brief:103. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-310-b1
+2. blocking — packages/cli/src/guard.ts:231 `ladderWrite` unconditionally adopts a literal `cd` target without checking whether the shell can enter it, so `cd /missing; bash scripts/record-review.sh …` runs from the original checkout while the guard searches `/missing` and permits the record writes, violating brief:103. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-310-b1
+3. blocking — packages/cli/src/hooks.ts:217 `guardProbe` returns immediately when `bisellium` is missing or installed inside the repo, omitting the promised third `guard: live`/`guard: dead` status line required by brief:24. [severity: S1] [class: tests×one-sided-bound-assertion] — check: packages/cli/src/guard.test.ts W-310-b6
+
+## Verdict
+The command classifier permits in-domain ladder record writes, and the probe does not fulfill its three-line reporting contract.
+VERDICT: FAIL
