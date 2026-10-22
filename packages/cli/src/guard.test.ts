@@ -262,6 +262,14 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   const fits = await guard(bash(`${decoys(15)}false || cd ${REPO}; ${REC}`, { cwd: "/tmp" }));
   assert.equal(fits.code, 2, "sixteen cd targets in all are still judged");
   assert.match(fits.err, /\(in scripts\/record-review\.sh\)/, "... and the recorder is found");
+  // the shell's valued long options are consumed with their value before the leading-option scan looks for -c (review round 1, census pass 3)
+  for (const opt of ["--init-file", "--rcfile"]) {
+    const r = await guard(bash(`bash ${opt} /tmp/no-rc -c "bisellium merge W-310"`));
+    assert.equal(r.code, 2, `bash ${opt} <file> -c is still the inline script`);
+    assert.match(r.err, /`merge`/, opt);
+    assert.equal((await guard(bash(`bash ${opt} /tmp/no-rc -c "while true; do sleep 1; done"`, {}, true))).code, 2, `a background loop behind ${opt} <file> -c`);
+    assert.equal((await guard(bash(`bash ${opt} /tmp/no-rc ${REC.slice(5)}`, { cwd: REPO }))).code, 2, `bash ${opt} <file> <script> reads the script`);
+  }
   assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
