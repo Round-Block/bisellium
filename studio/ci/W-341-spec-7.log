@@ -1,0 +1,22 @@
+# opus: W-341
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T08:36:38.588Z
+# tree: tree:3aa490ebe07b3fd03b14cb1e9bdda0335ae76f0c
+# brief: briefs/W-341.md blob:ccf27932244f7501562b7d6f28a1177d11b8410d
+# ticket: {"opus":"W-341","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-341/studio","head":"0f60b98cd44abe17d1908994a6ac2e01aa97deb4","brief":"ccf27932244f7501562b7d6f28a1177d11b8410d","at":"2026-10-22T08:36:34.861Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-341-spec/r7/promise-ledger.md
+
+## Findings
+
+1. advisory — the fix check's open pixel items are answered in the brief text: brief:29 no longer promises unchanged rest pixels. It keeps the layout claim, states the darker tokens' pixel change as the Patron's palette ruling, and points to W-360 for the baselines, matching rest-view-layout-unchanged — check: brief:29, brief:110, apps/web/src/tokens.css:43
+2. advisory — brief:28 now says the live region itself adds no pixel, which stays true under the palette change; the design is unchanged — check: brief:28, apps/web/src/components/w025.css:35
+3. advisory — the gate certificate at the fix head and the builder's head-commit `test:serve` output are build-round evidence that brief:56 already requires; this round leaves them to the builder and producer — check: brief:56, studio/ci/W-341-tests-4d8e3505.log
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for round 7 of `studio/briefs/W-341.md` on opus/W-341; brief text only, no design change, no code-owned path touched.

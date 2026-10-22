@@ -1,0 +1,19 @@
+# opus: W-341
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-22T07:51:52.046Z
+# tree: tree:c30f4d1a3fc79d3c9ebbdd5a3a28f6826143a320
+# brief: briefs/W-341.md blob:faf2ed4797673d6c9817c8cecd2667bb3733f89d
+# ticket: {"opus":"W-341","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"dda0f02039f5b14a03b5ba4dac32075f42a31f06","brief":"faf2ed4797673d6c9817c8cecd2667bb3733f89d","at":"2026-10-22T07:51:51.538Z"}
+
+## Findings
+1. advisory — brief:116 The rejection summary still refers to violations “outside the disabled list,” contradicting the revision’s removal of that list; this sibling instance was reached through spec-2 #3’s class. Replace brief:116 with `A rejection fails closed: a state a screen cannot reach throws instead of rendering, a served cell without a driver stops the suite file from loading, and any axe violation fails its test.` [severity: S4] [class: spec×prose-contradiction-under-revision] — check: apps/web/test/w341.test.ts
+
+## Earlier findings
+
+## Verdict
+The revision closes the prior findings in substance; only the advisory wording contradiction remains.
+VERDICT: PASS

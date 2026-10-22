@@ -29,13 +29,13 @@ function hasVar(name: string, value: string): boolean {
 const colors: [string, string][] = [
   ["ink", "#16211E"],
   ["ink-2", "#4A5654"],
-  ["ink-3", "#788582"],
+  ["ink-3", "#677270"],
   ["rule", "#DDE3E1"],
   ["wash", "#F4F7F6"],
   ["verdigris", "#0B6E5F"],
-  ["amber", "#B7791F"],
-  ["ok", "#2E9E64"],
-  ["bad", "#C64A3A"],
+  ["amber", "#99651A"],
+  ["ok", "#257F51"],
+  ["bad", "#C14738"],
 ];
 
 for (const [name, value] of colors) {

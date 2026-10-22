@@ -11,6 +11,8 @@ export interface InboxViewProps {
    *  there's nothing to say — never rendered any other way (no title/style/
    *  href built from it: it's server `output`, i.e. officina content). */
   error?: string | null;
+  /** W-341: the screen's visible status line in a loading, read-error or pending state; absent at rest. */
+  notice?: string;
   onReasonChange: (value: string) => void;
   onFocusChange: (index: number) => void;
   onSubmit: (petitioId: string, verb: Verb) => void;
@@ -24,13 +26,13 @@ const VERBS: { verb: Verb; key: string }[] = [
 ];
 
 export function InboxView(props: InboxViewProps): JSX.Element {
-  const { petitiones, opera, focusIndex, reason, error, onReasonChange, onFocusChange, onSubmit } = props;
+  const { petitiones, opera, focusIndex, reason, error, notice, onReasonChange, onFocusChange, onSubmit } = props;
 
   if (petitiones.length === 0 && opera.length === 0) {
     return (
       <div className="inbox">
         <h1 className="inbox__title">Inbox</h1>
-        <p className="inbox__empty">Nothing waiting on you</p>
+        <p className="inbox__empty">{notice ?? "Nothing waiting on you"}</p>
       </div>
     );
   }
@@ -73,6 +75,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
             )}
           </div>
           <div className="inbox__decision-panel">
+            {notice !== undefined && <p className="screen-notice">{notice}</p>}
             {error && <p className="inbox__error">{error}</p>}
             <input
               className="inbox__input-ratio"

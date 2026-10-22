@@ -1,0 +1,36 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=^W-341-b6\s --import tsx apps/web/test/w341.test.ts
+# exit: 1
+# at: 2026-10-22T07:52:24.263Z
+# sella: architect
+# tree: tree:1a55ece21977640c27519c2a43ff39008815b102
+# ticket: {"opus":"W-341","step":"reds","action":"red","round":6,"actor":"producer","studio":".worktrees/W-341/studio","head":"a80c3d59cbf368d2037054f6782b4989779d7e61","brief":"faf2ed4797673d6c9817c8cecd2667bb3733f89d","at":"2026-10-22T07:52:24.214Z"}
+
+TAP version 13
+# Subtest: W-341-b6 behaviour 6: the served states suite drives every served cell at both widths with an axe scan, every rule on, over a palette whose contrast is computed from tokens.css
+not ok 1 - W-341-b6 behaviour 6: the served states suite drives every served cell at both widths with an axe scan, every rule on, over a palette whose contrast is computed from tokens.css
+  ---
+  duration_ms: 8.722541
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-341/apps/web/test/w341.test.ts:1:9951'
+  failureType: 'testCodeFailure'
+  error: 'the suite scans with @axe-core/playwright'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-341/apps/web/test/w341.test.ts:183:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22.141697

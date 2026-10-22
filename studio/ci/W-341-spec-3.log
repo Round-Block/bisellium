@@ -1,0 +1,25 @@
+# opus: W-341
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T07:47:26.966Z
+# tree: tree:c30f4d1a3fc79d3c9ebbdd5a3a28f6826143a320
+# brief: briefs/W-341.md blob:faf2ed4797673d6c9817c8cecd2667bb3733f89d
+# ticket: {"opus":"W-341","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"dda0f02039f5b14a03b5ba4dac32075f42a31f06","brief":"faf2ed4797673d6c9817c8cecd2667bb3733f89d","at":"2026-10-22T07:47:22.858Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-341-spec/r3/promise-ledger.md
+
+## Findings
+
+1. advisory — the Patron's ruling of 2026-10-22 ("darken, do finetuning as well") is carried: `--ink-3`, `--amber`, `--ok` and `--bad` are darkened with hue and saturation kept, every text token reaches 4.5:1 and every component colour 3:1 on both surfaces, and DIRECTION.md §3 records the values and the floor with the Patron's word as authority — check: brief:32, brief:99, apps/web/src/tokens.css:43, docs/design/DIRECTION.md:111, r3/darken.out
+2. advisory — the axe scan disables no rule; with master's faint grey restored it fails `color-contrast`, and with the new values all 35 served cells pass (2 phone cells skip, W-345) — check: brief:43, brief:126, brief:200, apps/web/tests-serve/states.spec.ts:205, r3/states-mutant-ink3.out, r3/states-proto-r3.out
+3. advisory — W-361 lands first and owns the same palette files; W-341 edits values only, so the rebase is a value conflict in which W-361's dark values replace the four light ones and row b6's computed floors judge them — check: brief:107, brief:99
+4. advisory — the six spec-review advisories of `ci/W-341-spec-2.log` are folded in: Input domain rows 9 and 10 added, row 4 rewritten with every error-bearing reader and the acta degrade, and the one-matrix, no-invented-petitions and served-cells promises restated; b1 now pins loading over stale — check: brief:91, brief:95, brief:97, brief:123, brief:128, brief:129, apps/web/test/w341.test.ts
+5. advisory — the reds hold on the round 3 prototype: six rows fail by assertion on master and on their red commits, and pass cumulatively on their feature commits. The one existing flip, W-024's token row, is named, red on the b6 red commit and green after. Typecheck passes at every stage, mutants fail their rows, and gates, the whole served suite (79 passed, 3 skipped) and the mbox check pass — check: brief:199, brief:201, brief:203, r3/reds.out, r3/mutants.out, r3/gates-proto.out, r3/served-all-proto.out, r3/mbox-check.out
+6. advisory — the round 3 Codex fixture census lists four flips, `tokens.test.ts:32`, `:36`, `:37` and `:38` (W-024's token row), all named in the brief; Unnamed is None — check: brief:204, r3/fixture-census.md, apps/web/test/tokens.test.ts:32
+
+## Verdict
+
+passed — signature prepared by the architect (Claude Opus 5.5, D-072) for round 3 of `studio/briefs/W-341.md`; prototype twelve commits after master fa53e279; six behaviours, 5 points, no code-owned path touched.

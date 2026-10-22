@@ -1,0 +1,20 @@
+# opus: W-341
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a162ae-0d36-78c3-8f94-b04def7421b2
+# outcome: failed
+# at: 2026-10-22T08:20:56.471Z
+# tree: tree:4d8e350595eba2b58d3ab0afc4dda080b5eadf1e
+# brief: briefs/W-341.md blob:faf2ed4797673d6c9817c8cecd2667bb3733f89d
+# ticket: {"opus":"W-341","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-341/studio","head":"9d4a8b0f286cc02347d658194f82cea61ad74273","brief":"faf2ed4797673d6c9817c8cecd2667bb3733f89d","at":"2026-10-22T08:15:33.394Z"}
+
+## Findings
+1. blocking — studio/opera/W-341.md:7 The recorded tests gate does not execute `w341.test.ts`, the flipped token row, or the served browser suite, and the feature-kind record has no `served-e2e` result; therefore no gate at the reviewed tree certifies the acceptance evidence required by brief:30 and brief:199. Spec-prototype output is not a current-tree gate certificate. — check: none: require current-tree execution of owned acceptance rows and a promised reserved gate [severity: S1] [class: review×evidence-backfilled-or-absent]
+2. blocking — apps/web/src/tokens.css:43 The global palette changes alter loaded rest-screen pixels, including the always-present sidebar metadata using `--ink-3`, contradicting brief:101’s promise that W-350’s fixed initial views remain unchanged; absence of committed baselines does not make the visual change disappear. — check: none: the accepted palette and rest-view promises are mutually incompatible [severity: S1] [class: spec×promise-unattainable-under-accepted-domain]
+3. advisory — apps/web/test/w341.test.ts:122 The Inbox and Seats rows do not exercise their containers’ `result.kind === "error"` wiring, so those write-failure announcements can regress while the generic `screenStatus` assertion and all served read-error cells remain green. — check: apps/web/test/w341.test.ts [severity: S4] [class: tests×ruled-case-uncovered]
+
+## Verdict
+The genuine reds and passing policy rows do not overcome the missing current-tree acceptance evidence or the violated rest-view promise.
+VERDICT: FAIL

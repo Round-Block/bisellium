@@ -26,6 +26,8 @@ export interface BoardViewProps {
   /** W-129: one plain sentence when serve could not read every branch record (`branchNote`). */
   branchNote?: string;
   generatedAt?: string;
+  /** W-341: the screen's visible status line in a loading, empty or error state; absent at rest. */
+  notice?: string;
 }
 
 const UNAVAILABLE_REASON = "one officina per serve process; no project registry exists to detect or add one";
@@ -117,7 +119,7 @@ function scrollColumnIntoView(columnId: string): void {
   el?.scrollIntoView({ inline: "start", block: "nearest" });
 }
 
-export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, branchNote, generatedAt }: BoardViewProps): JSX.Element {
+export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, branchNote, generatedAt, notice }: BoardViewProps): JSX.Element {
   return (
     <div className="board" inert={inert || undefined}>
       <div className="board__header">
@@ -129,6 +131,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
           <span className="board__project-select-reason">{UNAVAILABLE_REASON}</span>
         </div>
       </div>
+      {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
       <div className="board__strip">
         {model.columns.map((column) => (

@@ -17,6 +17,7 @@ import { fetchEvents, fetchInbox, fetchOfficina, fetchOpera, subscribeLive } fro
 import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
 import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
+import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 import { boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
@@ -38,7 +39,7 @@ interface PendingCloseRestoration {
   scrollLeft: number | undefined;
 }
 
-export function Board(): JSX.Element {
+export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
   const [officina, setOfficina] = useState<OfficinaResponse | typeof EMPTY_OFFICINA>(EMPTY_OFFICINA);
   const [opera, setOpera] = useState<OpusEntry[]>([]);
   const [inbox, setInbox] = useState<Pick<InboxResponse, "petitiones">>({ petitiones: [] });
@@ -58,6 +59,8 @@ export function Board(): JSX.Element {
   // where opera is still []. This flips only after `await Promise.all`
   // below has genuinely completed.
   const [everLoaded, setEverLoaded] = useState(false);
+  // W-341: the last reconciliation's outcome; a later successful one clears it.
+  const [readFailed, setReadFailed] = useState(false);
 
   const model = boardModel(officina, opera);
 
@@ -121,7 +124,15 @@ export function Board(): JSX.Element {
   }
 
   async function fetchBoardOnly(): Promise<void> {
-    const [o, ops, ib] = await Promise.all([fetchOfficina(), fetchOpera(), fetchInbox()]);
+    let fetched: [OfficinaResponse, OpusEntry[], InboxResponse];
+    try {
+      fetched = await Promise.all([fetchOfficina(), fetchOpera(), fetchInbox()]);
+    } catch {
+      setReadFailed(true);
+      return;
+    }
+    const [o, ops, ib] = fetched;
+    setReadFailed(false);
     setOfficina(o);
     setOpera(ops);
     setInbox(ib);
@@ -140,7 +151,13 @@ export function Board(): JSX.Element {
       if (target === "/api/inbox") return fetchInbox().then(setInbox);
       return fetchDrawerEvents(selectedId!);
     });
-    await Promise.all(tasks);
+    try {
+      await Promise.all(tasks);
+    } catch {
+      setReadFailed(true);
+      return;
+    }
+    setReadFailed(false);
     setEverLoaded(true);
     markRefreshed();
   }
@@ -306,6 +323,8 @@ export function Board(): JSX.Element {
 
   const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? []) : undefined;
   const generatedAt = formatBoardTimestamp(new Date().toISOString());
+  const status = screenStatus("board", { loaded: everLoaded, empty: opera.length === 0, failed: readFailed || undefined, live: everLoaded ? connected : undefined });
+  useEffect(() => onStatus?.(status), [status.state, status.text]);
 
   return (
     <div className="board-workspace">
@@ -319,6 +338,7 @@ export function Board(): JSX.Element {
         liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
         branchNote={branchNote("branchRecords" in officina ? officina.branchRecords : undefined)}
         generatedAt={generatedAt}
+        notice={status.state === "loading" || status.state === "empty" || status.state === "error" ? status.text : undefined}
       />
       <BoardDrawer detail={detail} onClose={closeDrawer} />
     </div>

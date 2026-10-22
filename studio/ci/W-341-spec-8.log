@@ -1,0 +1,21 @@
+# opus: W-341
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# submitted_outcome: failed
+# at: 2026-10-22T08:38:35.350Z
+# tree: tree:3aa490ebe07b3fd03b14cb1e9bdda0335ae76f0c
+# brief: briefs/W-341.md blob:ccf27932244f7501562b7d6f28a1177d11b8410d
+# ticket: {"opus":"W-341","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-341/studio","head":"0f60b98cd44abe17d1908994a6ac2e01aa97deb4","brief":"ccf27932244f7501562b7d6f28a1177d11b8410d","at":"2026-10-22T08:38:34.683Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-341-spec-6.log #1: open — brief:208 remains unchanged, package.json:17 still omits `w341.test.ts`, and `r3/reds.out` still proves only direct row replays rather than current-tree tests-gate execution.
+
+## Verdict
+The round-8 text is feasible, but the earlier false-evidence blocker remains open.
+VERDICT: FAIL

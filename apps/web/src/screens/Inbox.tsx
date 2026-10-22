@@ -2,6 +2,7 @@ import { useEffect, useState, type JSX } from "react";
 import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
 import { InboxView } from "./InboxView.js";
 import { buildReply, moveFocus, resolveVerbAction, type Verb } from "./inboxLogic.js";
+import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
 
@@ -26,22 +27,33 @@ const DEV_DATA: InboxResponse = {
   ],
 };
 
-export function Inbox(): JSX.Element {
+const WRITE_FAILED = "Could not send the answer.";
+
+export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [focusIndex, setFocusIndex] = useState(0);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // W-341: the read and write outcomes the states matrix names. A failed read never invents petitions.
+  const [loaded, setLoaded] = useState(false);
+  const [readFailed, setReadFailed] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [outcome, setOutcome] = useState<"refused" | "error" | undefined>(undefined);
 
   const demo = location.search.includes("demo");
 
   function reload(): void {
     fetchInbox()
-      .then(setData)
-      .catch(() => setData(DEV_DATA));
+      .then((d) => {
+        setData(d);
+        setLoaded(true);
+        setReadFailed(false);
+      })
+      .catch(() => setReadFailed(true));
   }
 
   useEffect(() => {
-    if (demo) { setData(DEV_DATA); return; }
+    if (demo) { setData(DEV_DATA); setLoaded(true); return; }
     reload();
   }, []);
 
@@ -63,7 +75,10 @@ export function Inbox(): JSX.Element {
 
   function submit(petitioId: string, verb: Verb): void {
     setError(null);
+    setOutcome(undefined);
+    setSending(true);
     void submitAnswer(petitioId, buildReply(verb, reason)).then((result) => {
+      setSending(false);
       // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
       // no local handling here. "ok"/"refused"/"error" are this screen's.
       if (result.kind === "ok") {
@@ -71,11 +86,22 @@ export function Inbox(): JSX.Element {
         if (!demo) reload();
       } else if (result.kind === "refused") {
         setError(result.output || "refused");
+        setOutcome("refused");
       } else if (result.kind === "error") {
         setError("error submitting the answer");
+        setOutcome("error");
       }
     });
   }
+
+  const status = screenStatus("inbox", {
+    loaded,
+    empty: data.petitiones.length === 0 && data.opera.length === 0,
+    failed: outcome === "error" ? WRITE_FAILED : readFailed ? true : undefined,
+    refused: outcome === "refused" ? (error ?? "") : undefined,
+    pending: sending,
+  });
+  useEffect(() => onStatus?.(status), [status.state, status.text]);
 
   return (
     <InboxView
@@ -84,6 +110,7 @@ export function Inbox(): JSX.Element {
       focusIndex={focusIndex}
       reason={reason}
       error={error}
+      notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
       onReasonChange={setReason}
       onFocusChange={setFocusIndex}
       onSubmit={submit}

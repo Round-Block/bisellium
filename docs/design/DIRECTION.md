@@ -93,7 +93,7 @@ in one place: the fasti strip's weekday initials.
 
 Neutrals do the work. Five of them, replacing the fourteen greys in the mocks:
 
-`ink #16211E` · `ink-2 #4A5654` · `ink-3 #788582` · `rule #DDE3E1` ·
+`ink #16211E` · `ink-2 #4A5654` · `ink-3 #677270` · `rule #DDE3E1` ·
 `wash #F4F7F6`. Surfaces are white; panels are separated by rules, not by a
 lighter-on-darker sandwich.
 
@@ -101,13 +101,16 @@ lighter-on-darker sandwich.
   focus ring, the current selection. At most **one verdigris fill per screen**
   (the primary action, where one exists). Never a decorative fill, never a tint
   wash.
-- **Amber `#B7791F`** — waiting on a human, and nothing else, ever. Budget: one
+- **Amber `#99651A`** — waiting on a human, and nothing else, ever. Budget: one
   amber region per screen plus the nav count. Rendered as a **2px left rule** on
   the row plus the age numeral in amber. Never a pill, never a background, never
   on a duration that is not yours.
-- **ok `#2E9E64` / bad `#C64A3A`** — inside a gate mark only, at 6px, and always
+- **ok `#257F51` / bad `#C14738`** — inside a gate mark only, at 6px, and always
   paired with a **shape** difference so the state survives colour blindness
   ([don't rely on colour alone](https://carbondesignsystem.com/patterns/status-indicator-pattern/)).
+- **Contrast floor** (the Patron, 2026-10-22, W-341): every text colour reaches 4.5:1 and every UI-component
+  colour 3:1 on both surfaces (white and `wash`); `ink-3`, amber, ok and bad were darkened for it, hue and saturation kept. The
+  ratios are computed from `tokens.css` by a test, and the console's axe scan runs with colour contrast on.
 - Ceiling: **≤3 semantic colours visible at once**. Projects are named, never
   colour-coded — the per-project dot is deleted.
 

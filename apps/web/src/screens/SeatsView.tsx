@@ -25,6 +25,8 @@ export interface SeatsViewProps {
   onConfirm: () => void;
   onCancel: () => void;
   busy?: boolean;
+  /** W-341: the screen's visible status line in a loading, empty or read-error state; absent at rest. */
+  notice?: string;
 }
 
 const HONESTY_LINE = "Changes are recorded only. They do not yet affect model dispatch or task routing.";
@@ -41,12 +43,13 @@ function tierHolderLabel(tierId: string, tiers: TierRow[]): string {
 }
 
 export function SeatsView(props: SeatsViewProps): JSX.Element {
-  const { seats, tiers, munera, availableModels, pending, error, onDraft, onConfirm, onCancel, busy } = props;
+  const { seats, tiers, munera, availableModels, pending, error, onDraft, onConfirm, onCancel, busy, notice } = props;
 
   return (
     <div className="seats">
       <h1 className="seats__heading">Seats</h1>
       <p className="seats__honesty">{HONESTY_LINE}</p>
+      {notice !== undefined && <p className="screen-notice">{notice}</p>}
 
       <section className="seats__card seats__card--delegation" aria-labelledby="seats-delegation-heading">
         <h2 id="seats-delegation-heading" className="seats__card-heading">
