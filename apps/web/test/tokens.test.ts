@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(resolve(HERE, "..", "src", "tokens.css"), "utf8");
+const direction = readFileSync(resolve(HERE, "..", "..", "..", "docs", "design", "DIRECTION.md"), "utf8");
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -25,6 +26,18 @@ function hasVar(name: string, value: string): boolean {
   const re = new RegExp(`--${name}\\s*:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`, "i");
   return re.test(root);
 }
+
+const d100Colors: [string, string][] = [
+  ["ink", "#F8F8F2"],
+  ["ink-2", "#C6C9D8"],
+  ["ink-3", "#9EA4C4"],
+  ["rule", "#44475A"],
+  ["wash", "#343746"],
+  ["verdigris", "#3FB9A3"],
+  ["amber", "#E0A24A"],
+  ["ok", "#5BD192"],
+  ["bad", "#E8766A"],
+];
 
 const colors: [string, string][] = [
   ["ink", "#16211E"],
@@ -55,6 +68,50 @@ const spaces: [string, string][] = [
 for (const [name, value] of spaces) {
   check(`tokens.css --${name} is ${value}`, hasVar(name, value));
 }
+
+function token(name: string): string {
+  const value = new RegExp(`--${name}\\s*:\\s*(#[0-9a-f]{6})\\s*;`, "i").exec(root)?.[1];
+  assert.ok(value, `tokens.css declares a six-digit --${name}`);
+  return value;
+}
+
+function luminance(hex: string): number {
+  const channels = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255);
+  const linear = channels.map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+}
+
+function contrast(foreground: string, background: string): number {
+  const [lighter, darker] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  return (lighter! + 0.05) / (darker! + 0.05);
+}
+
+test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and component contrast floors", () => {
+  const actual = Object.fromEntries(d100Colors.map(([name]) => [name, token(name).toUpperCase()]));
+  assert.deepEqual(actual, Object.fromEntries(d100Colors), "tokens.css carries D-100 candidate A exactly");
+  assert.match(root, /--surface\s*:\s*#282a36\s*;/i, "surface is Dracula background");
+  assert.match(root, /--shadow-drawer\s*:\s*rgba\(0,\s*0,\s*0,\s*0\.45\)\s*;/i, "the drawer uses the darker alpha shadow");
+
+  const backgrounds = ["surface", "wash"];
+  const textTokens = ["ink", "ink-2", "ink-3", "verdigris", "amber", "ok"];
+  const componentTokens = ["verdigris", "amber", "ok", "bad"];
+  for (const background of backgrounds) {
+    for (const foreground of textTokens) {
+      const ratio = contrast(token(foreground), token(background));
+      assert.ok(ratio >= 4.5, `computed ${foreground} on ${background} text contrast ${ratio.toFixed(4)} is at least 4.5:1`);
+    }
+    for (const foreground of componentTokens) {
+      const ratio = contrast(token(foreground), token(background));
+      assert.ok(ratio >= 3, `computed ${foreground} on ${background} component contrast ${ratio.toFixed(4)} is at least 3:1`);
+    }
+  }
+
+  assert.match(direction, /`ink #F8F8F2` · `ink-2 #C6C9D8` · `ink-3 #9EA4C4` · `rule #44475A` ·\n`wash #343746`\. Surfaces are `#282A36`;/, "DIRECTION section 3 names the dark neutral and surface values");
+  assert.match(direction, /Verdigris `#3FB9A3`/, "DIRECTION section 3 names dark verdigris");
+  assert.match(direction, /Amber `#E0A24A`/, "DIRECTION section 3 names dark amber");
+  assert.match(direction, /ok `#5BD192` \/ bad `#E8766A`/, "DIRECTION section 3 names the dark gate colours");
+  assert.match(direction, /0 16px 48px rgba\(0,0,0,\.45\)/, "DIRECTION section 3 names the dark drawer shadow");
+});
 
 const NAMED = new Set(
   (`aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato transparent turquoise violet wheat white whitesmoke yellow yellowgreen`).split(" "),
