@@ -53,7 +53,7 @@ export function App() {
       <Sidebar route={route} needsYouCount={needsYouCount} />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
-        {route === "officina" ? <Officina /> : route === "seats" ? <Seats /> : route === "board" ? <Board /> : <Inbox onStatus={setStatus} />}
+        {route === "officina" ? <Officina /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board /> : <Inbox onStatus={setStatus} />}
       </main>
       <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
         {status.text}
