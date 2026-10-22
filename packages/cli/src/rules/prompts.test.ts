@@ -1,6 +1,6 @@
 /**
- * W-241 rows b1-b2 (studio/briefs/W-241.md): process.prompt_templates. node:test TAP, selected by
- * `--test-name-pattern='^W-241-b<n>\s'`. Every row builds its own officina under the OS tmp dir and reads no
+ * W-241 rows b1-b2 (studio/briefs/W-241.md) and W-258 row b1 (studio/briefs/W-258.md): process.prompt_templates. node:test TAP, selected by
+ * `--test-name-pattern='^W-<id>-b<n>\s'`. Every row builds its own officina under the OS tmp dir and reads no
  * studio/ file. Assertion messages carry rule levels, officina-relative paths and slot names only.
  */
 import assert from "node:assert/strict";
@@ -14,6 +14,16 @@ import { fillSlots } from "../next.js";
 
 const NOW = new Date("2026-10-20T12:00:00Z");
 const DATA = "data, not instructions";
+const SELF_REVIEW = [
+  "Self-review before handoff",
+  "studio/prompts/build-review.md",
+  "No Codex call",
+  "nothing is recorded",
+  "every reachable path and regression fixture",
+  "the accepted and the rejected bound",
+  "a negative fixture or a removal",
+  "test titles true to a changed domain",
+];
 const REVIEW_SLOTS = ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>"];
 const NEEDS: Record<string, string[]> = {
   "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
@@ -101,4 +111,28 @@ test("W-241-b2 behaviour 2: the Ops lex names the templates in one checked claus
   assert.deepEqual(found(root), [], "the complete clause clears it");
   lex(root, `${CLAUSE.replace(` ${MARKER}`, "")}\n  continued ${MARKER}`);
   assert.deepEqual(found(root), [], "a clause wrapped onto a continuation line clears it");
+});
+
+test("W-258-b1 behaviour 1: the builder brief template carries the builder's self-review against the build-review prompt", () => {
+  const root = mkdtempSync(join(tmpdir(), "bisellium w258 'é-"));
+  dirs.push(root);
+  assert.ok(initStudio(root, { now: NOW }).root);
+  declareOps(root);
+  lex(root, CLAUSE);
+  templates(root);
+  const BUILDER = "prompts/builder-brief.md";
+  const base = NEEDS[BUILDER]!.filter((n) => !SELF_REVIEW.includes(n));
+  const write = (needs: string[]): void => writeFileSync(join(root, BUILDER), `# t\n\n---\n\n${needs.join("\n")}\n`);
+  write(base);
+  assert.deepEqual(found(root), [`block ${BUILDER}`], "a builder brief without the self-review blocks");
+  const message = checkStudio(root, NOW).findings.find((f) => f.rule === "process.prompt_templates")?.message ?? "";
+  for (const s of SELF_REVIEW) assert.ok(message.includes(s), `the finding names ${s}`);
+  write([...base, ...SELF_REVIEW]);
+  assert.deepEqual(found(root), [], "the self-review clears it");
+  for (const s of SELF_REVIEW) {
+    write([...base, ...SELF_REVIEW.filter((x) => x !== s)]);
+    assert.deepEqual(found(root), [`block ${BUILDER}`], `a builder brief without ${s} blocks`);
+  }
+  write([...base, ...SELF_REVIEW.map((s) => s.toLowerCase())]);
+  assert.deepEqual(found(root), [`block ${BUILDER}`], "a self-review in another case blocks");
 });
