@@ -19,11 +19,11 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as nav from "../src/lib/nav.js";
-import { CAPTURE_NOW, CAPTURE_VIEWPORTS, freezeCaptureClock } from "./capture-state.js";
+import { CAPTURE_NOW, CAPTURE_VIEWPORTS, expectCapturedScreenSettled, freezeCaptureClock, type CaptureRoute } from "./capture-state.js";
 import { REPO_ROOT, startServed, type ServedInstance } from "./harness.js";
 
 interface NavEntry {
-  route: string;
+  route: CaptureRoute;
   href: string;
   label: string;
 }
@@ -206,7 +206,7 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
     for (const entry of entries!) {
       await page.goto(`${s.baseURL}/${entry.href}`);
       await expect(page.locator(".token-prompt"), `${entry.route}-${width}: the prompt stays closed`).toBeHidden();
-      await expect(page.locator(SCREEN_ROOT[entry.route]!), `${entry.route}-${width}: screen mounted before capture`).toHaveCount(1);
+      await expectCapturedScreenSettled(page, entry.route);
       await page.screenshot({ path: join(dir, `${entry.route}-${width}.png`), fullPage: false });
     }
   }

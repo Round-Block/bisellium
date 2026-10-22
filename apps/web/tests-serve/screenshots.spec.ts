@@ -10,6 +10,7 @@ import { expectRenderingEnvironment } from "./rendering-environment.js";
 const FIXED_NOW = "2026-09-25T09:35:43.947Z";
 const VIEWPORTS = [1280, 390] as const;
 const STABLE_STUDIO_PATH = "/fixtures/w350";
+const LOADING_COPY = /Loading[^\r\n]*(?:\u2026|\.{3})/u;
 
 let served: ServedInstance | undefined;
 test.afterEach(async () => {
@@ -83,9 +84,23 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
     await expect.poll(() => page.locator(".gate-ladder").count()).toBeGreaterThan(0);
     await expect(page.locator('.board__column[data-column-id="needs_you"]')).toBeInViewport();
     await expect(page.locator(".board__liveness")).toContainText(/connected|live/);
+    await expect(page.locator('.shell__status[data-state="live"]'), "board: its complete reconciliation is live").toHaveCount(1);
   } else if (route === "seats") {
-    await expect.poll(() => page.locator('select[aria-label^="model for seat "]').count()).toBeGreaterThan(0);
+    await expect(page.locator('.shell__status[data-state="ready"]'), "seats: its roster and model reads have settled").toHaveCount(1);
+    const selects = page.locator('select[aria-label^="model for seat "]');
+    await expect.poll(() => selects.count()).toBeGreaterThan(0);
     await expect(page.locator('select[aria-label="model for seat builder"]')).toHaveValue("claude-sonnet-5");
+    await expect
+      .poll(() =>
+        selects.evaluateAll((nodes) =>
+          nodes.every((node) => {
+            const select = node as HTMLSelectElement;
+            const option = select.selectedOptions[0];
+            return select.value !== "" && option?.value === select.value && (option.textContent ?? "").includes(select.value);
+          }),
+        ),
+      )
+      .toBe(true);
     await expect(page.locator(".seats__confirm-bar")).toHaveCount(0);
   } else {
     await expect(page.locator(".panel--completion")).toContainText("No milestone records");
@@ -94,6 +109,7 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
     await expect(page.locator(".fasti-strip__tick--filled")).toHaveCount(1);
     await expect(page.locator(".panel--engine")).toContainText("W-002");
   }
+  await expect(page.locator("body"), `${route}-${width}: no loading copy remains before capture`).not.toContainText(LOADING_COPY);
 }
 
 async function settleInitialView(page: Page, width: number): Promise<void> {
