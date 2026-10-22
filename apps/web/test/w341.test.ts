@@ -126,3 +126,18 @@ test("W-341-b2 behaviour 2: the Inbox shows and reports loading, empty, error, r
   assert.match(source, /pending: sending/, "an answer in flight is the pending state");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Inbox reports each status change");
 });
+
+test("W-341-b3 behaviour 3: Seats shows and reports loading, empty, error, refused and pending", async () => {
+  await matrix();
+  const view = (await load("src/screens/SeatsView.tsx"))["SeatsView"];
+  const base = { seats: [], tiers: [], munera: [], availableModels: [], onDraft: () => undefined, onConfirm: () => undefined, onCancel: () => undefined };
+  assert.match(render(view, { ...base, notice: "Loading the seats…" }), /<p class="seats__honesty">[^<]*<\/p><p class="screen-notice">Loading the seats…<\/p>/, "the notice follows the honesty line");
+  assert.equal(count(render(view, base), "screen-notice"), 0, "no notice at rest");
+  wired("Seats");
+  const source = read("src/screens/Seats.tsx");
+  assert.match(source, /\.catch\(\(\) => setReadFailed\(true\)\)/, "a failed officina read is the error state, not an empty screen");
+  assert.match(source, /screenStatus\("seats", \{/, "Seats derives its one status from the matrix");
+  assert.match(source, /pending: busy/, "a change in flight is the pending state");
+  assert.match(source, /refused: outcome === "refused"/, "a refused change is the refused state");
+  assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "Seats reports each status change");
+});
