@@ -69,10 +69,11 @@ substitutes `__SELLA__` into every command — exactly what this file must
 *not* do (a sella baked into a committed hook command can never be someone
 else's). W-016 is what makes an optional `sella` legal.
 
-So `.claude/settings.json` is hand-authored for this cascade: four hook keys
-(`SessionStart`, `PreCompact`, `Stop`, `PostToolUse`), every `timeout: 2`,
-`--studio studio` on every command, no `--sella` anywhere, `PostToolUse`
-matching `Write|Edit`, and `permissions.allow` including `Workflow`.
+So `.claude/settings.json` is hand-authored: three hook keys
+(`SessionStart`, `PreToolUse`, `SubagentStop`; W-242's cuts and W-310's guard),
+every `timeout: 2`, `--studio studio` on every command, no `--sella` anywhere,
+the guard on `Bash|Write|Edit|NotebookEdit` and at `SubagentStop`, and
+`permissions.allow` including `Workflow`.
 Structurally tested in `instructions.test.ts` (behaviour 9), not compared
 byte-for-byte against the real renderer.
 

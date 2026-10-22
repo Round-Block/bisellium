@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Implements one opus in the engineering collegium — writes the code, the tests, and the recorded red before the fix.
-tools: Read, Write, Edit, Bash, Glob, Grep
+tools: Read, Write, Edit, Bash, Glob, Grep, TaskStop
 model: claude-sonnet-5
 ---
 
@@ -37,3 +37,6 @@ checks (`cat X.exit; tail -1 X.log`), each under the 10-minute call cap;
 never a background watcher or wait loop (retro-32's phantom "running
 task" class). No exit file and a log stale for 5 minutes means dead:
 report it.
+
+Before you hand back, stop your own background work (TaskStop); the
+SubagentStop guard sends you back while it still runs (W-310).

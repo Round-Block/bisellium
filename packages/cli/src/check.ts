@@ -36,6 +36,7 @@ import { checkTests } from "./rules/tests.js";
 import { checkPromptTemplates } from "./rules/prompts.js";
 import { checkBriefStale } from "./rules/brief-stale.js";
 import { checkLadderTicket } from "./rules/ladder-ticket.js";
+import { checkHookGuard } from "./rules/hook-guard.js";
 import { diagnosticLabel } from "./reporting.js";
 import { effectiveProbationes, readContainedRegularFile, readRecordedFile, reviewFailedAtCertifiedTree, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
 import type { OpusModelProblem } from "@bisellium/commands/opus-model.js";
@@ -938,6 +939,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkPromptTemplates(root, ruleOpts));
   findings.push(...checkBriefStale(root, ruleOpts));
   findings.push(...checkLadderTicket(root, ruleOpts));
+  findings.push(...checkHookGuard(root, ruleOpts));
 
   return done();
 }

@@ -211,15 +211,14 @@ withTempCopy(join(repo, "studio"), (dir) => {
       const obj = parsed as Record<string, unknown>;
       const hooks = obj["hooks"] as Record<string, unknown> | undefined;
       const keys = hooks ? Object.keys(hooks).sort() : [];
-      const wantKeys = ["PostToolUse", "PreCompact", "PreToolUse", "SessionStart", "Stop"].sort();
+      // W-310: W-242's settings side (no PreCompact, Stop or PostToolUse) and the guard at SubagentStop.
+      const wantKeys = ["PreToolUse", "SessionStart", "SubagentStop"].sort();
       report("settings.hook-keys", JSON.stringify(keys) === JSON.stringify(wantKeys), JSON.stringify(keys));
 
       const allCommands: string[] = [];
       const allTimeouts: number[] = [];
-      let postToolUseMatcher: string | undefined;
-      for (const [name, groups] of Object.entries(hooks ?? {})) {
+      for (const groups of Object.values(hooks ?? {})) {
         for (const g of groups as { matcher?: string; hooks: { command: string; timeout: number }[] }[]) {
-          if (name === "PostToolUse") postToolUseMatcher = g.matcher;
           for (const h of g.hooks) {
             allCommands.push(h.command);
             allTimeouts.push(h.timeout);
@@ -239,10 +238,15 @@ withTempCopy(join(repo, "studio"), (dir) => {
       const preHook = pre?.[0]?.hooks[0];
       report(
         "settings.pretooluse-bg-guard",
-        pre?.length === 1 && pre[0]?.matcher === "Bash" && pre[0].hooks.length === 1 && preHook?.type === "command" && preHook.timeout === 2 && preHook.command === bgGuardCommand,
+        pre?.length === 2 && pre[0]?.matcher === "Bash" && pre[0].hooks.length === 1 && preHook?.type === "command" && preHook.timeout === 2 && preHook.command === bgGuardCommand,
         JSON.stringify(pre),
       );
-      report("settings.posttooluse-matcher", postToolUseMatcher === "Write|Edit", String(postToolUseMatcher));
+      const guardGroup = pre?.[1];
+      report(
+        "settings.pretooluse-guard",
+        guardGroup?.matcher === "Bash|Write|Edit|NotebookEdit" && guardGroup.hooks.length === 1 && guardGroup.hooks[0]?.command === "bisellium hook-event guard --studio studio",
+        JSON.stringify(guardGroup),
+      );
       const perms = obj["permissions"] as { allow?: string[] } | undefined;
       report("settings.permissions-allow-workflow", !!perms?.allow?.includes("Workflow"), JSON.stringify(perms));
     }
