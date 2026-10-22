@@ -16,5 +16,5 @@ const LOADING_COPY = /Loading[^\r\n]*(?:\u2026|\.{3})/u;
 
 /** Keep browser-owned dates fixed while requests, fonts and rendering continue normally. */
 export async function freezeCaptureClock(page: Page): Promise<void> {
-  void page;
+  await page.clock.setFixedTime(new Date(CAPTURE_NOW));
 }

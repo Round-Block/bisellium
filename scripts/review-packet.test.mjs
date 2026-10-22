@@ -500,8 +500,18 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
   );
   malformedKind("malformed kind", (text) => text.replace("kind: opus", "kind: [ui"), /opera\/W-1\.md:/);
 
+  const captureState = readFileSync(join(HERE, "../apps/web/tests-serve/capture-state.ts"), "utf8");
   const walk = readFileSync(join(HERE, "../apps/web/tests-serve/walk.spec.ts"), "utf8");
-  assert.match(walk, /for \(const width of \[1280, 390\] as const\)/, "the served walk captures desktop then phone");
+  assert.match(
+    captureState,
+    /export const CAPTURE_VIEWPORTS = \[1280, 390\] as const;/,
+    "the shared capture viewport list remains desktop then phone",
+  );
+  assert.match(
+    walk,
+    /for \(const width of CAPTURE_VIEWPORTS\)/,
+    "the served walk captures desktop then phone through the shared list",
+  );
   for (const [name] of matrix) assert.ok(walk.includes(name), `${name}: the served walk pins the review filename`);
   // The real prompt is guarded by `bisellium check` (process.prompt_templates, packages/cli/src/rules/prompts.ts):
   // it refuses a build-review.md lacking the sentence or any of the eight slots. This test reads nothing under studio/
