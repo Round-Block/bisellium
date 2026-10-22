@@ -102,7 +102,12 @@ command or script path built from a variable) is not judged. `check --repo` bloc
 <dir>` prints a `guard:` line each for wired, installed outside `<dir>`
 (hooks run unsandboxed) and live (it refuses a main-thread `bisellium merge`),
 and exits 1 when any fails. The Patron's install outside the agent clone,
-`~/projects/bisellium-guard`, carries it (W-362 adds the install step).
+`~/projects/bisellium-guard`, carries it: `scripts/agent-workspace.sh guard`,
+run by the Patron after each merge that changes the guard, judges its inputs
+before any change, moves that worktree to origin/master, links
+`~/.local/bin/bisellium` to it, merges the user settings (the sandbox on, and
+denying writes to the agent clone's `packages/`, `apps/`, `adapters/` and
+`scripts/`) and probes it (W-362).
 
 **Close step CS-2** (integrator, after W-016 lands): re-render this file
 from `claudeCodeHooksBlock({ studio: "studio" })` and append a deep-equal
