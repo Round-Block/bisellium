@@ -1,0 +1,26 @@
+# opus: W-341
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T07:26:36.725Z
+# tree: tree:792e99bded871b01d53fd73fd2a99f18e80425b8
+# brief: briefs/W-341.md blob:65dcfbea237f78d3ea4df0f32d9e5bc3c6893cd1
+# ticket: {"opus":"W-341","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"15e5c7591cde6aaf8676dfd240541e46acd13356","brief":"65dcfbea237f78d3ea4df0f32d9e5bc3c6893cd1","at":"2026-10-22T07:26:33.238Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-341-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — master announces nothing (no `aria-live` or `role="status"` in `apps/web/src`), the Inbox shows demo petitions on a failed read, and Seats and the Board show a failed read as an empty screen; the brief names each and the screen it changes — check: brief:19, brief:20, brief:21, apps/web/src/screens/Inbox.tsx:52
+2. advisory — one 4 × 7 matrix in `lib/screenState.ts` is the single source of copy and reach (18 served, 10 not, each with its reason), and one shell-owned visually hidden live region receives each screen's status, so a screen's own layout change never remounts it and no loaded rest view gains a layout box — check: brief:27, brief:28, brief:29, apps/web/src/lib/screenState.ts:19, apps/web/src/App.tsx:58
+3. advisory — the served states suite extends W-067's harness and W-350's served config (no new job, config or harness): every served cell at 1280 and 390 asserts the visible copy, the live region and an axe scan requiring no violations; 35 pass and 2 skip on the prototype, and the whole served suite passes 79 with 3 skips — check: brief:30, brief:181, states-proto-try2.out, served-all-proto.out
+4. advisory — the scan has teeth: before the fixes it failed the Officina at 390 on `scrollable-region-focusable`, fixed here by a focusable `main`; `color-contrast` is disabled with its measured reason (3.83:1 and 3.56:1) and handed to the palette opus W-361, and two phone Inbox cells skip until W-345 — check: brief:23, brief:34, brief:35, states-proto-try1.out, probe-axe-master.out
+5. advisory — `@axe-core/playwright` is pinned exactly at 4.14.0 as a web devDependency under D-090 C, resolving `axe-core` 4.14.0 (MPL-2.0); row b6 pins the exact version, the lockfile entries and the policy step — check: brief:39, apps/web/package.json:19, package-lock.json:79
+6. advisory — six rows each fail by ERR_ASSERTION on master with all rows and on their own red commit, accepted by the host classifier; each passes on its feature commit with every earlier row still passing, and apps/web typechecks at every feature commit — check: brief:180, brief:182, reds.out, typecheck-stages.out
+7. advisory — lint, the web unit tests, test:policy and both officina checks pass on the prototype; the twelve-commit mbox applies to fa53e279 and reproduces the prototype tree; the brief admission and promise ledger pass; no code-owned path is touched — check: brief:182, brief:183, brief:184, gates-proto.out, mbox-check.out, admission.out, ledger-check.out
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-341.md`; prototype twelve commits after master fa53e279; six behaviours, 5 points, no code-owned path touched.
