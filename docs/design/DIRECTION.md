@@ -93,23 +93,23 @@ in one place: the fasti strip's weekday initials.
 
 Neutrals do the work. Five of them, replacing the fourteen greys in the mocks:
 
-`ink #16211E` · `ink-2 #4A5654` · `ink-3 #677270` · `rule #DDE3E1` ·
-`wash #F4F7F6`. Surfaces are white; panels are separated by rules, not by a
-lighter-on-darker sandwich.
+`ink #F8F8F2` · `ink-2 #C6C9D8` · `ink-3 #9EA4C4` · `rule #44475A` ·
+`wash #343746`. Surfaces are `#282A36`; panels are separated by rules and the
+lighter wash, never by a lighter-on-darker card sandwich.
 
-- **Verdigris `#0B6E5F`** — identity and interaction: the wordmark, links, the
+- **Verdigris `#3FB9A3`** — identity and interaction: the wordmark, links, the
   focus ring, the current selection. At most **one verdigris fill per screen**
   (the primary action, where one exists). Never a decorative fill, never a tint
   wash.
-- **Amber `#99651A`** — waiting on a human, and nothing else, ever. Budget: one
+- **Amber `#E0A24A`** — waiting on a human, and nothing else, ever. Budget: one
   amber region per screen plus the nav count. Rendered as a **2px left rule** on
   the row plus the age numeral in amber. Never a pill, never a background, never
   on a duration that is not yours.
-- **ok `#257F51` / bad `#C14738`** — inside a gate mark only, at 6px, and always
+- **ok `#5BD192` / bad `#E8766A`** — inside a gate mark only, at 6px, and always
   paired with a **shape** difference so the state survives colour blindness
   ([don't rely on colour alone](https://carbondesignsystem.com/patterns/status-indicator-pattern/)).
 - **Contrast floor** (the Patron, 2026-10-22, W-341): every text colour reaches 4.5:1 and every UI-component
-  colour 3:1 on both surfaces (white and `wash`); `ink-3`, amber, ok and bad were darkened for it, hue and saturation kept. The
+  colour 3:1 on both surfaces (`#282A36` and `wash`); `ink-3`, amber, ok and bad were darkened for it, hue and saturation kept. The
   ratios are computed from `tokens.css` by a test, and the console's axe scan runs with colour contrast on.
 - Ceiling: **≤3 semantic colours visible at once**. Projects are named, never
   colour-coded — the per-project dot is deleted.
@@ -121,7 +121,7 @@ lighter-on-darker sandwich.
 - **Two radii: 2px on marks, inputs and controls; 0 on panels and rows.** No
   999px pills anywhere. Circles exist only on avatars.
 - **Zero box-shadows in the flat layer.** Shadow exists once, on the drawer:
-  `0 0 0 1px var(--rule), 0 16px 48px rgba(22,33,30,.18)`.
+  `0 0 0 1px var(--rule), 0 16px 48px rgba(0,0,0,.45)`.
 - **Hairlines, not boxes.** A panel is a 1px `--rule` top border plus a heading.
   Nesting depth cap is 2 (screen → panel). Anything that wants to be a card
   inside a card becomes a row inside a table.

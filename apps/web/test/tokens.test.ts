@@ -40,15 +40,15 @@ const d100Colors: [string, string][] = [
 ];
 
 const colors: [string, string][] = [
-  ["ink", "#16211E"],
-  ["ink-2", "#4A5654"],
-  ["ink-3", "#677270"],
-  ["rule", "#DDE3E1"],
-  ["wash", "#F4F7F6"],
-  ["verdigris", "#0B6E5F"],
-  ["amber", "#99651A"],
-  ["ok", "#257F51"],
-  ["bad", "#C14738"],
+  ["ink", "#F8F8F2"],
+  ["ink-2", "#C6C9D8"],
+  ["ink-3", "#9EA4C4"],
+  ["rule", "#44475A"],
+  ["wash", "#343746"],
+  ["verdigris", "#3FB9A3"],
+  ["amber", "#E0A24A"],
+  ["ok", "#5BD192"],
+  ["bad", "#E8766A"],
 ];
 
 for (const [name, value] of colors) {

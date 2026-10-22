@@ -38,18 +38,18 @@
  * and seven space values are mandatory and exact. Type scale is declared
  * directly on elements (DIRECTION.md leaves that choice to the builder). */
 :root {
-  --ink: #16211e;
-  --ink-2: #4a5654;
-  --ink-3: #677270;
-  --rule: #dde3e1;
-  --wash: #f4f7f6;
-  --verdigris: #0b6e5f;
-  --amber: #99651a;
-  --ok: #257f51;
-  --bad: #c14738;
-  --surface: #ffffff;
+  --ink: #f8f8f2;
+  --ink-2: #c6c9d8;
+  --ink-3: #9ea4c4;
+  --rule: #44475a;
+  --wash: #343746;
+  --verdigris: #3fb9a3;
+  --amber: #e0a24a;
+  --ok: #5bd192;
+  --bad: #e8766a;
+  --surface: #282a36;
   --transparent: transparent;
-  --shadow-drawer: rgba(22, 33, 30, 0.18);
+  --shadow-drawer: rgba(0, 0, 0, 0.45);
 
   --font-display: "Bricolage Grotesque", sans-serif;
   --font-body: "Instrument Sans", sans-serif;

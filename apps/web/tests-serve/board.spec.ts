@@ -926,8 +926,8 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     });
     expect(focusRing.outlineStyle).not.toBe("none");
     expect(focusRing.outlineWidth).toBe("2px");
-    expect(focusRing.verdigris).toBe("#0b6e5f");
-    expect(focusRing.outlineColor).toBe("rgb(11, 110, 95)");
+    expect(focusRing.verdigris).toBe("#3fb9a3");
+    expect(focusRing.outlineColor).toBe("rgb(63, 185, 163)");
 
     const board = page.locator(".board");
     const drawer = page.locator(".board-drawer");
