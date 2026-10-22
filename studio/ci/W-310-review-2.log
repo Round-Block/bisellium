@@ -1,0 +1,25 @@
+# opus: W-310
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a163a1-319d-7962-8c60-b3e46ba91774
+# outcome: failed
+# at: 2026-10-22T14:19:40.010Z
+# tree: tree:0038e60e6caec44830861e678b9bd1f8a4829e7d
+# brief: briefs/W-310.md blob:68b249f1bf4827b9ab16cb52ed1feac568881c5a
+# ticket: {"opus":"W-310","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-310/studio","head":"87871ffad332f5b649bf09b9cbd0aec5a02c06d3","brief":"68b249f1bf4827b9ab16cb52ed1feac568881c5a","at":"2026-10-22T14:16:44.533Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:294 Reached through ci/W-310-review-1.log #2’s class: uncertain `cd` targets are resolved only against the single simulated `cwd`, so `false || cd /tmp; cd w310-sub || true; bash scripts/custom-review.sh` can execute `/tmp/w310-sub/scripts/custom-review.sh` while the guard checks only the original root, `/tmp`, and `<original>/w310-sub`, permitting its ladder writes contrary to brief:103. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-310-b1
+2. blocking — packages/cli/src/guard.ts:302 Reached through ci/W-310-review-1.log #2’s class: every uncertain `cd` target is applied to every later command, so from the checkout `cd /tmp || true; bash scripts/record-review.sh …` is refused using the original-root script even though the successful `cd` means that script is never run, contrary to brief:103. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-310-b1
+3. blocking — packages/cli/src/guard.ts:417 The fix adds an undeclared refusal for any main-thread command containing more than sixteen distinct uncertain `cd` targets, even when it contains no ladder write, although brief:90 admits any Bash text and says non-recognised forms run. [severity: S1] [class: spec×fix-opens-new-surface] — check: packages/cli/src/guard.test.ts W-310-b1
+
+## Earlier findings
+- ci/W-310-review-1.log #1: closed — packages/cli/src/guard.ts:145 restricts inline-command options to the launcher’s leading options, and guard.test.ts:184 pins the original late-`-c` recorder command.
+- ci/W-310-review-1.log #2: closed — packages/cli/src/guard.ts:260 verifies an eligible target is an enterable directory before moving the simulated root, and guard.test.ts:190 pins the original missing-target command.
+- ci/W-310-review-1.log #3: closed — packages/cli/src/hooks.ts:217 now prints a `guard: dead` line before returning for both missing and inside-repo installations, with three-line assertions in W-310-b6.
+
+## Verdict
+The original examples are fixed, but the replacement `cd` analysis still permits a chained-root record-write bypass and introduces two in-domain false refusals.
+VERDICT: FAIL
