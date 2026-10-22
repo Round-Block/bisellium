@@ -305,10 +305,35 @@ export function writeRefusal(filePath: string, cwd: string | undefined, main: bo
   return undefined;
 }
 
+/** SubagentStop: the in-flight shell and monitor tasks (`background_tasks`) whose id the stopping
+ *  agent's own transcript names, so the agent started them. */
+export function ownLiveWork(input: Dict): string[] {
+  const path = str(input["agent_transcript_path"]);
+  const tasks = Array.isArray(input["background_tasks"]) ? input["background_tasks"] : [];
+  if (!path || tasks.length === 0) return [];
+  let transcript: string;
+  try {
+    transcript = readFileSync(path, "utf8");
+  } catch {
+    return [];
+  }
+  return tasks.flatMap((t) => {
+    const id = isDict(t) ? str(t["id"]) : undefined;
+    return id && isDict(t) && (t["type"] === "shell" || t["type"] === "monitor") && transcript.includes(id) ? [id] : [];
+  });
+}
+
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */
 export function guardRefusal(input: Dict): string | undefined {
   const event = input["hook_event_name"];
   const main = str(input["agent_id"]) === undefined;
+  if (event === "SubagentStop") {
+    if (input["stop_hook_active"] === true) return undefined;
+    const ids = ownLiveWork(input);
+    return ids.length
+      ? `refused: your report is in but your own background work still runs (${ids.join(", ")}): stop each with TaskStop, then finish (W-310)`
+      : undefined;
+  }
   if (event !== "PreToolUse") return undefined;
   const tool = input["tool_name"];
   const args = isDict(input["tool_input"]) ? input["tool_input"] : {};

@@ -786,6 +786,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/docs.ts:runDocs:mkdirSync#1", disposition: "outside", why: "writes docs/registry.json in the repo (--repo), not an officina" },
   { key: "packages/cli/src/docs.ts:runDocs:writeFileSync#1", disposition: "outside", why: "writes docs/registry.json in the repo (--repo), not an officina" },
   { key: "packages/cli/src/guard.ts:scriptText:readFileSync#1", disposition: "outside", why: "reads a shell script a Bash command runs (any path the session names), a regular file of at most 256 KiB, to judge its text; read only, never written" },
+  { key: "packages/cli/src/guard.ts:ownLiveWork:readFileSync#1", disposition: "outside", why: "reads the stopping subagent's transcript at the hook input's agent_transcript_path, a Claude Code file outside every officina; read only, never written" },
   { key: "packages/cli/src/hooks.ts:countLogLines:readFileSync#1", disposition: "outside", why: "reads .bisellium/events.jsonl, the runtime event log beside the officina" },
   { key: "packages/cli/src/hooks.ts:handleCompact:appendFileSync#1", disposition: "contained", why: "timeline/<sella>.jsonl in a real timeline/ checked by ensureRealDirectory before the append" },
   { key: "packages/cli/src/init.ts:initStudio:mkdirSync#1", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
