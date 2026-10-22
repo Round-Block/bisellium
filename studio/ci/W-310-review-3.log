@@ -1,0 +1,23 @@
+# opus: W-310
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a163a1-319d-7962-8c60-b3e46ba91774
+# outcome: failed
+# at: 2026-10-22T15:05:39.981Z
+# tree: tree:43b4cf6c22d9551740ef61cbeaa1a2103e454ac6
+# brief: briefs/W-310.md blob:e88ee6d19fc6a3a7b8149b31bb72953e7436a8f8
+# ticket: {"opus":"W-310","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-310/studio","head":"9dfc7cdfe9e37684a805e82260db0c279f49ba38","brief":"e88ee6d19fc6a3a7b8149b31bb72953e7436a8f8","at":"2026-10-22T15:03:13.235Z"}
+
+## Findings
+1. blocking — studio/ci/W-310-spec-10.log:14 The latest spec review remains failed: although the delta adds recursive assertions, brief:109 still does not pin unknown-directory propagation through a nested `-c` body or an absolute wrapper, and no later architect verdict closes that evidence gap. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: none: amend brief:109 and record architect closure after spec round 10
+
+## Earlier findings
+- ci/W-310-review-2.log #1: closed — packages/cli/src/guard.ts:306 expands each uncertain relative `cd` from every held candidate, and packages/cli/src/guard.test.ts:273 covers the reported chained form.
+- ci/W-310-review-2.log #2: closed — studio/briefs/W-310.md:103 now explicitly authorizes the conservative refusal, with coverage at packages/cli/src/guard.test.ts:284.
+- ci/W-310-review-2.log #3: closed — packages/cli/src/guard.ts:306 removes the candidate cap, while packages/cli/src/guard.test.ts:309 and packages/cli/src/guard.test.ts:331 exercise forty candidates for both refusal and allowance.
+
+## Verdict
+The round-two implementation defects are closed, but the latest failed spec-evidence verdict remains unclosed.
+VERDICT: FAIL
