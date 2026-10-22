@@ -175,3 +175,42 @@ function contrast(a: string, b: string): number {
   const [x, y] = [lum(a), lum(b)];
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
+
+test("W-341-b6 behaviour 6: the served states suite drives every served cell at both widths with an axe scan, every rule on, over a palette whose contrast is computed from tokens.css", async () => {
+  const m = await matrix();
+  const spec = read("tests-serve/states.spec.ts");
+  const policy = await load("tests-serve/states-policy.ts");
+  assert.match(spec, /^import AxeBuilder from "@axe-core\/playwright";$/m, "the suite scans with @axe-core/playwright");
+  assert.match(spec, /const VIEWPORTS = \[1280, 390\] as const;/, "desktop and phone widths");
+  assert.match(spec, /for \(const \{ screen, state, copy \} of cells\)/, "the suite iterates the matrix's served cells");
+  assert.match(spec, /new AxeBuilder\(\{ page \}\)\.analyze\(\)/, "each row scans with axe's default rules");
+  assert.doesNotMatch(spec, /disableRules|withRules|withTags|exclude\(/, "no rule, tag or region is left out of the scan");
+  assert.match(spec, /\.toEqual\(\[\]\);/, "any violation fails the row");
+  assert.match(spec, /await expectRegion\(page, state, copy\);/, "each row asserts the live region");
+  assert.match(spec, /toHaveAttribute\("aria-live", "polite"\)/, "the live region row checks aria-live");
+  const drivers = [...spec.matchAll(/^ {2}"([a-z]+:[a-z]+)": async \(page\) => \{$/gm)].map((d) => d[1]).sort();
+  assert.deepEqual(drivers, m.servedCells().map((c) => `${c.screen}:${c.state}`).sort(), "exactly one driver per served cell");
+  assert.equal(policy["AXE_DISABLED_RULES"], undefined, "no axe rule is disabled, colour contrast included");
+  assert.deepEqual(Object.keys((policy["PHONE_UNREACHABLE"] ?? {}) as object), ["inbox:refused", "inbox:pending"], "only the hidden answer pane's cells skip at phone width");
+  const root = /:root\s*\{([^}]*)\}/.exec(read("src/tokens.css"))?.[1] ?? "";
+  const token = (name: string): string => {
+    const value = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6});`).exec(root)?.[1];
+    assert.ok(value, `tokens.css declares --${name} as a six-digit hex`);
+    return value!;
+  };
+  for (const bg of ["surface", "wash"]) {
+    for (const fg of ["ink", "ink-2", "ink-3", "verdigris", "amber", "ok", "bad"])
+      assert.ok(contrast(token(fg), token(bg)) >= 4.5, `text --${fg} reaches 4.5:1 on --${bg} (${contrast(token(fg), token(bg)).toFixed(2)})`);
+    for (const fg of ["verdigris", "amber", "ok", "bad"])
+      assert.ok(contrast(token(fg), token(bg)) >= 3, `component --${fg} reaches 3:1 on --${bg}`);
+  }
+  const direction = read("../../docs/design/DIRECTION.md");
+  for (const name of ["ink-3", "amber", "ok", "bad"]) assert.ok(direction.toLowerCase().includes(token(name).toLowerCase()), `DIRECTION.md section 3 names --${name} ${token(name)}`);
+  assert.match(direction, /Contrast floor\*\* \(the Patron, 2026-10-22, W-341\)/, "DIRECTION.md section 3 records the contrast floor and its authority");
+  const pkg = JSON.parse(read("package.json") || "{}") as { devDependencies?: Record<string, string>; scripts?: Record<string, string> };
+  assert.equal(pkg.devDependencies?.["@axe-core/playwright"], "4.14.0", "the axe package is pinned exactly");
+  assert.match(pkg.scripts?.["test:policy"] ?? "", /test\/w341\.test\.ts/, "the policy step runs these rows");
+  const lock = JSON.parse(read("../../package-lock.json") || "{}") as { packages?: Record<string, { version?: string }> };
+  assert.equal(lock.packages?.["node_modules/@axe-core/playwright"]?.version, "4.14.0", "the lockfile resolves the pinned axe package");
+  assert.equal(lock.packages?.["node_modules/axe-core"]?.version, "4.14.0", "the lockfile resolves axe-core 4.14.0");
+});
