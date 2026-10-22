@@ -1,0 +1,25 @@
+# opus: W-361
+# phase: spec
+# round: 9
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a162e8-2ef3-7430-b0a6-8ccdff4953f3
+# outcome: passed
+# at: 2026-10-22T09:37:03.039Z
+# tree: tree:4a77965f538f8d7d52bb929996bb467ea24b947a
+# dispatch_prompt: ci/W-361-ui-prompt-9.md
+# design_digest: sha256:23751679683d64aa2e3eed277227a7ca5fa8cdc6349d9945ad2d51e4524b6919
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":9,"actor":"ui-lead","studio":"studio","head":"e6a2a82bfcf435cc32591966853a89828dbbfa43","brief":"4579729d793fb1423a9fec63d68872131a75a09f","at":"2026-10-22T09:37:01.694Z"}
+
+## Findings
+
+1. advisory — brief:60 — The Inbox nav count uses amber on `--rule` when active or hovered: 4.11:1, below the brief’s 4.5:1 text target. This existing pairing improves with candidate A but remains outside the checked surface/wash pairs — replace with: “Use `--surface` for sidebar links’ active and hover backgrounds, preserving active weight and the amber count; verify the count’s rendered contrast.” — check: `apps/web/src/components/w025.css`, `apps/web/src/components/Sidebar.tsx`, `apps/web/tests-serve/layout.spec.ts`.
+
+## Recommendation
+
+Round-6 finding 1 is closed in the spec by brief:25 and brief:64: phone Board buttons explicitly use ink, with source and 390px contrast assertions; the rendered assertion is yet to run on the host.
+The earlier drawer-link finding remains closed, while the four-colour Board combination and absent Inbox waiting ages remain explicitly documented follow-ups at brief:88 and brief:89.
+Candidate A preserves stepped surfaces, text hierarchy and existing gate-mark shapes; the specified shadow, verdigris focus rings, neutral hover treatments, ink confirmation errors and ink/amber budget defaults fit the Patron’s ruling.
+I found no further light-palette omission or newly imposed layout choice beyond D-100 and the stated defaults.
+The passed round-2, round-5 and now-present round-8 reviews’ advisories remain build guidance without re-judgment.
+Verdict: passed

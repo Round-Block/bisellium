@@ -1,0 +1,25 @@
+# opus: W-361
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: revise
+# at: 2026-10-22T08:37:07.084Z
+# tree: tree:52ac36e6a3e5e97c80d75f42805fe4d39a365622
+# dispatch_prompt: ci/W-361-ui-prompt-6.md
+# design_digest: sha256:406fe884a14f7cf60cd4afbb718543d6025b1b3d799b1da1857213918804a44c
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"b80af879730f01d42f17ff234bf17efbc2f1277e","brief":"6ea66069bd7078d682b904a6326eda668ad3abd2","at":"2026-10-22T08:37:06.533Z"}
+
+## Findings
+
+1. blocking — brief:33 — Phone Board navigation buttons (`.board__strip-item`) set the dark `--surface` background but omit text colour, retaining light-scheme browser button text instead of inheriting body ink; column names and counts become poorly legible — replace with: “Also set `.board__strip-item` to `color: var(--ink)` so phone column names and counts use candidate A on their dark surface.” — check: `apps/web/src/components/w025.css:1313`, `apps/web/src/screens/BoardView.tsx:135`; pin the declaration in `apps/web/test/tokens.test.ts` and verify computed text/background contrast at 390px in `apps/web/tests-serve/board.spec.ts`.
+
+## Recommendation
+
+Candidate A preserves stepped surfaces, text hierarchy and gate-mark shapes; the drawer shadow, verdigris focus ring, neutral hover backgrounds, ink confirmation errors and ink/amber budget defaults fit the ruling without imposing a new layout.
+Earlier finding 1 is closed by brief:21 and brief:60, which specify underlined verdigris evidence links including visited links.
+Earlier finding 2 is closed as a spec advisory by brief:84; the existing four-colour Board combination remains unresolved.
+Earlier finding 3 is closed as a spec advisory by brief:85; Inbox waiting ages remain absent and require their separate follow-up.
+The passed spec reviews’ advisories remain build guidance without re-judgment.
+The architect can close the remaining phone-button colour omission using the existing ink token, without a new design.
+Verdict: revise

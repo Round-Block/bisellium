@@ -1,0 +1,27 @@
+# opus: W-361
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-22T08:19:25.733Z
+# tree: tree:52ac36e6a3e5e97c80d75f42805fe4d39a365622
+# brief: briefs/W-361.md blob:a764e6cf29b6499cb3e29109dfc1239033063d08
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b80af879730f01d42f17ff234bf17efbc2f1277e","brief":"a764e6cf29b6499cb3e29109dfc1239033063d08","at":"2026-10-22T08:19:25.194Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-361-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — D-100 candidate A is exact in the token root and DIRECTION.md section 3; the focused row parses the CSS and computes all 12 text and eight component contrast pairings rather than trusting copied ratios — check: brief:15, brief:17, brief:42, brief:93, brief:94, apps/web/test/tokens.test.ts:74, apps/web/test/tokens.test.ts:91, gates-proto.out
+2. advisory — the CSS/TSX source walk admits `--bad` only in `.gate-ladder__mark--bad-diagonal`, as a background with a diagonal shape; confirmation errors use high-contrast ink and blocked cards retain their 2px left-rule cue in ink, so no selector colours text with bad — check: brief:21, brief:60, brief:70, brief:96, apps/web/test/tokens.test.ts:125, apps/web/src/components/w025.css:258, apps/web/src/components/w025.css:905, apps/web/src/components/w025.css:1094
+3. advisory — Officina's graphic uses ink under allowance and amber at or over it; its adjacent posture word and numeric burn/allowance sentence are the named non-colour cue, while `bad` is absent — check: brief:23, brief:60, brief:72, brief:97, apps/web/src/screens/Officina.tsx:13, apps/web/src/screens/Officina.tsx:171
+4. advisory — Acceptance names every census flip: W-361 b1/b2, W-024 behaviour 1's nine exact-colour checks, and W-087 behaviour 4's exact verdigris/computed-RGB results; the W-024 and W-087 migrations occur together in behaviour 1's feature commit, while their unchanged checks remain intact — check: brief:19, brief:30, brief:62, brief:64, brief:104, brief:114, apps/web/test/tokens.test.ts:32, apps/web/test/tokens.test.ts:44, apps/web/tests-serve/board.spec.ts:929, prototype.mbox
+5. advisory — W-361-b1 and W-361-b2 each fail by ERR_ASSERTION on their ordered red stage, the replay classifier accepts both, W-024 remains green at the b1 red, b1 stays green at the b2 red, and both W-361 rows pass on the prototype — check: brief:64, brief:104, brief:106, brief:108, brief:110, host-b1-red-b1.out, host-b2-red-b1.out, host-b2-red-b2.out, host-proto-b1.out, host-proto-b2.out
+6. advisory — the owned token test passes W-361 b1/b2, migrated W-024 and unchanged W-339; focused web typecheck, lint and formatting pass; W-077 behaviours 1/2/4/5 and W-350 b1 pass; Acceptance names every remaining census browser row, which is host-pending after Chromium sandbox EPERM — check: brief:115, brief:118, brief:119, brief:121, gates-proto.out, w077-b1-b2-b4-b5-proto.out, w350-b1-proto.out, w087-focus-proto.out, browser-focused-host.sh
+7. advisory — the four-commit non-numbered prototype mbox at sha256 `0cbcc8a70e164d94e7d44c48fa68e6db6d1b98153205237f53d24bb6e481a813` applies after base 15e5c759 with an identical tree, and the scratch source matches it; no Patron-merged code-owned path or screenshot baseline is touched — check: brief:3, brief:11, brief:36, brief:80, brief:120, brief:122, mbox-check.out, prototype.mbox
+8. advisory — the exact red wrappers were not recorded because `bisellium red` refused the absent producer-created next ticket and the drafter was forbidden to run `next`; their node payloads and assertion classification are complete for the producer to record — check: brief:84, brief:106, brief:110, row-b1-red.out, reds-host.sh
+
+## Verdict
+
+passed — signature prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-361.md`, prototype four commits after master 15e5c759; W-024 and W-087 fixture migrations plus every census must-stay-green row are named, two behaviours remain 2 points, and no Patron-merged code-owned path is touched.

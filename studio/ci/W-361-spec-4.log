@@ -1,0 +1,24 @@
+# opus: W-361
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-22T08:33:31.123Z
+# tree: tree:52ac36e6a3e5e97c80d75f42805fe4d39a365622
+# brief: briefs/W-361.md blob:6ea66069bd7078d682b904a6326eda668ad3abd2
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"b80af879730f01d42f17ff234bf17efbc2f1277e","brief":"6ea66069bd7078d682b904a6326eda668ad3abd2","at":"2026-10-22T08:33:30.576Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-361-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Astra blocking 1 is closed: Board drawer evidence links and their visited state use `--verdigris`, retain their underline, and are pinned in W-361-b2 — check: brief:21, brief:33, brief:60, brief:98, brief:110, brief:119, apps/web/test/tokens.test.ts:161, apps/web/test/tokens.test.ts:162, apps/web/src/components/w025.css:1220, gates-proto.out
+2. advisory — Astra advisory 2 is closed as the requested scope boundary: the existing simultaneous passed/failed/waiting Board state remains a separate follow-up against D-100's three-colour ceiling — check: brief:84, apps/web/src/lib/gateLadder.ts:22, apps/web/src/screens/BoardView.tsx:33
+3. advisory — Astra advisory 3 is closed as the requested scope boundary: Inbox rows currently render no waiting age, so restoration and weight escalation are a separate follow-up rather than a dark-palette guarantee — check: brief:85, apps/web/src/screens/InboxView.tsx:53, apps/web/src/components/w025.css:674
+4. advisory — Opus advisory 1 is closed with the requested computed-contrast limit: decorative rule, alpha compositing, arbitrary nesting and user-agent placeholder, scrollbar and native-option colours remain unclassified because no `color-scheme` is declared — check: brief:68, apps/web/src/tokens.css:40, apps/web/src/components/w025.css:702, apps/web/src/components/w025.css:748
+5. advisory — Opus advisory 2 is closed with the requested cue wording: the ink left rule distinguishes blocked from unflagged cards, while the diagonal failed-gate mark, not rule colour, distinguishes blocked from amber — check: brief:72, apps/web/test/tokens.test.ts:158, apps/web/test/tokens.test.ts:160, apps/web/src/components/w025.css:258, apps/web/src/components/w025.css:1094
+
+## Verdict
+
+passed — signature prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-361.md`, prototype four commits after master 15e5c759; Astra's blocking link treatment and four advisory inputs are closed without widening scope, and browser rows remain host-pending under the stated sandbox limit.

@@ -1,0 +1,22 @@
+# opus: W-361
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-22T09:18:09.816Z
+# tree: tree:4a77965f538f8d7d52bb929996bb467ea24b947a
+# brief: briefs/W-361.md blob:4579729d793fb1423a9fec63d68872131a75a09f
+# ticket: {"opus":"W-361","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"e6a2a82bfcf435cc32591966853a89828dbbfa43","brief":"4579729d793fb1423a9fec63d68872131a75a09f","at":"2026-10-22T09:18:05.262Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-361-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Astra's round-6 phone-control finding is closed: `.board__strip-item` now uses `--ink`, its rendered foreground/background contrast is computed in the 390px row, and the preventive sweep pins every current button, select, input, option, placeholder and link selector; the five additions/changes are named and no textarea selector exists — check: brief:25, brief:64, brief:102, brief:114, brief:124, apps/web/src/components/w025.css:1339, apps/web/test/tokens.test.ts:164, apps/web/test/tokens.test.ts:178, apps/web/tests-serve/board.spec.ts:589, interactive-colour-sweep-r7.out
+2. advisory — Opus round-5 advisory 1 is closed with the supplied scope wording: W-361 pins the failed-gate selector's diagonal, while whether each blocked card renders that mark remains reused `boardModel`/`GateLadder` behaviour under D-076 E — check: brief:76, brief:114, brief:123, apps/web/test/tokens.test.ts:158, apps/web/test/tokens.test.ts:160
+3. advisory — Opus round-5 advisory 2 is closed: the brief now records the host census as six passing browser rows plus the screenshot bootstrap skip, while the newly added phone contrast assertion is separately and accurately host-pending after sandbox Chromium EPERM — check: brief:91, brief:125, brief:128, browser-focused-worktree-r4.out, board-phone-contrast-proto.out, browser-focused-host.sh
+
+## Verdict
+
+passed — signature prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-361.md` and prototype `a064aa1d9a29ea37318da3bc7f1648701605207e2a4d86f03d4ec6f701e86f44`; Astra's phone-control finding and both round-5 Opus advisories are closed without widening scope, focused tests pass, and the one newly extended browser assertion remains explicitly host-pending.
