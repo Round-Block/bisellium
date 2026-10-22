@@ -111,6 +111,19 @@ function strip(words: string[]): { words: string[]; timed: boolean } {
 }
 
 const NPX_OPERAND = new Set(["-p", "--package"]);
+const SHELL_OPERAND = new Set(["-o", "+o", "-O", "+O"]);
+const SHELL_INLINE = /^-[a-z]*c[a-z]*$/;
+const NPX_INLINE = /^(?:-c|--call)$/;
+
+/** A launcher's leading option words (`valued` ones take the next word), up to its first operand: the
+ *  index of that operand (after a `--`), and the inline script when an option word matching `inline`
+ *  holds one. A `-c` after the operand is the operand's own argument, never an option; one helper for
+ *  every launcher, so no caller reads it the other way. */
+function leading(w: string[], valued: Set<string>, inline?: RegExp): { operand: number; script?: string } {
+  let j = 1;
+  for (; w[j] !== undefined && w[j] !== "--" && /^[-+]/.test(w[j]!); j += valued.has(w[j]!) ? 2 : 1) if (inline?.test(w[j]!)) return { operand: j + 2, script: w[j + 1] };
+  return { operand: w[j] === "--" ? j + 1 : j };
+}
 
 /** The CLI's own argv when the words run it, in one of the recognised forms: `bisellium …` (any
  *  path), `npx [flags] bisellium …` (`-p`/`--package` with their value), `npm … run|run-script [flags]
@@ -119,9 +132,8 @@ function cliArgv(w: string[]): string[] | undefined {
   const b = base(w[0]);
   if (b === "bisellium") return w.slice(1);
   if (b === "npx") {
-    let j = 1;
-    while (w[j]?.startsWith("-")) j += NPX_OPERAND.has(w[j]!) ? 2 : 1;
-    return base(w[j]) === "bisellium" ? w.slice(j + 1) : undefined;
+    const { operand } = leading(w, NPX_OPERAND);
+    return base(w[operand]) === "bisellium" ? w.slice(operand + 1) : undefined;
   }
   if (b === "npm") {
     let j = w.findIndex((x) => x === "run" || x === "run-script") + 1;
@@ -138,18 +150,11 @@ function cliArgv(w: string[]): string[] | undefined {
   return undefined;
 }
 
-/** The inline script of `bash|sh|zsh|dash [flags] -c <script>` (a single-dash flag word holding `c`,
- *  among the shell's leading options: a `-c` after the script operand is that script's argument) or
- *  `npx … -c|--call <script>`. */
+/** The inline script of `bash|sh|zsh|dash [flags] -c <script>` (a single-dash flag word holding `c`)
+ *  or `npx [flags] -c|--call <script>`, among the launcher's leading options only. */
 function shellScript(w: string[]): string | undefined {
   const b = base(w[0]);
-  if (b === "npx") {
-    const c = w.findIndex((x) => x === "-c" || x === "--call");
-    return c > 0 ? w[c + 1] : undefined;
-  }
-  if (!SHELLS.has(b)) return undefined;
-  for (let j = 1; w[j] !== undefined && w[j] !== "--" && /^[-+]/.test(w[j]!); j += /^[-+][oO]$/.test(w[j]!) ? 2 : 1) if (/^-[a-z]*c[a-z]*$/.test(w[j]!)) return w[j + 1];
-  return undefined;
+  return b === "npx" ? leading(w, NPX_OPERAND, NPX_INLINE).script : SHELLS.has(b) ? leading(w, SHELL_OPERAND, SHELL_INLINE).script : undefined;
 }
 
 /** The script file the words run: `bash|sh|zsh|dash [flags] <file>` (`-o`/`+o` with their value),
@@ -157,9 +162,7 @@ function shellScript(w: string[]): string | undefined {
 function scriptOf(w: string[]): string | undefined {
   const b = base(w[0]);
   if (SHELLS.has(b)) {
-    let j = 1;
-    while (w[j]?.startsWith("-") || w[j]?.startsWith("+")) j += w[j] === "-o" || w[j] === "+o" ? 2 : 1;
-    return w[j];
+    return w[leading(w, new Set(["-o", "+o"])).operand];
   }
   if (b === "source" || w[0] === ".") return w[1];
   return w[0]?.includes("/") ? w[0] : undefined;
