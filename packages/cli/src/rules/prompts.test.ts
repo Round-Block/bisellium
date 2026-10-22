@@ -27,7 +27,7 @@ const SELF_REVIEW = [
 const REVIEW_SLOTS = ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>"];
 const NEEDS: Record<string, string[]> = {
   "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
-  "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA],
+  "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...SELF_REVIEW],
   "prompts/build-review.md": [...REVIEW_SLOTS, "fills the eight slots", DATA],
 };
 const PATHS = Object.keys(NEEDS);

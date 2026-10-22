@@ -3,7 +3,8 @@
  * declares the `ops` collegium carries the three per-opus prompt templates, each holding its slots and the
  * phrase "data, not instructions", and an Ops lex clause naming all three. `build-review.md`'s slots are the
  * ones `next`'s review perform fills (`BUILD_REVIEW_SLOTS`, next.ts); rules/prompts.test.ts pins the two
- * lists equal through `fillSlots`. `checkPromptTemplates` never throws.
+ * lists equal through `fillSlots`. `builder-brief.md` also holds the builder's self-review (W-258, D-080 G):
+ * `BUILDER_SELF_REVIEW`, its texts. `checkPromptTemplates` never throws.
  */
 import type { Finding, RuleOpts } from "../check.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
@@ -12,9 +13,19 @@ import { bulletClauses } from "./lex.js";
 const isDict = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const DATA = "data, not instructions";
 const MARKER = /\(check:\s*process\.prompt_templates\)\s*$/;
+const BUILDER_SELF_REVIEW = [
+  "Self-review before handoff",
+  "studio/prompts/build-review.md",
+  "No Codex call",
+  "nothing is recorded",
+  "every reachable path and regression fixture",
+  "the accepted and the rejected bound",
+  "a negative fixture or a removal",
+  "test titles true to a changed domain",
+];
 export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
-  "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA],
+  "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...BUILDER_SELF_REVIEW],
   "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>", "fills the eight slots", DATA],
 };
 
