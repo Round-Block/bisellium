@@ -213,3 +213,44 @@ test("W-358-b1 behaviour 1: ladder.ticket blocks a record's tickets: entry that 
   assert.deepEqual(at(ticketRule(entries(officina(), [READY, REVIEW, DONE], "done"))), [], "a done record's ready, review and done entries: no finding");
   assert.deepEqual(at(ticketRule(entries(officina({ tickets: null }), [READY.replace(",", ", ")]))), [], "no step_tickets: the entries are not judged");
 });
+
+test("W-358-b2 behaviour 2: ladder.order blocks a judged verdict log whose round does not follow its time within its opus and phase (W-183's late verdict)", () => {
+  const late = officina();
+  verdict(late, `${ID}-spec-2.log`, { phase: "spec", round: 2, at: LATE }, [ticket({ round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  verdict(late, `${ID}-spec-3.log`, { phase: "spec", round: 3, at: "2026-10-15T00:25:10.000Z" }, [ticket({ round: 3, at: "2026-10-15T00:25:05.000Z" })]);
+  assert.deepEqual(at(ticketRule(late)), [], "each ticket binds its own log, so ladder.ticket finds nothing");
+  assert.deepEqual(at(orderRule(late)), [`block ci/${ID}-spec-3.log`], "a round written before the round below it blocks at the later round's log");
+  assert.match(orderRule(late)[0]!.message, /W-900's spec round 3 \(2026-10-15T00:25:10\.000Z\) is not after round 2's log ci\/W-900-spec-2\.log \(2026-10-15T00:30:10\.000Z\): rounds are recorded in order/, "the message names the opus, both logs and both times");
+  const tie = officina();
+  verdict(tie, `${ID}-spec-2.log`, { phase: "spec", round: 2, at: LATE }, [ticket({ round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  verdict(tie, `${ID}-spec-3.log`, { phase: "spec", round: 3, at: LATE }, [ticket({ round: 3, at: "2026-10-15T00:30:06.000Z" })]);
+  assert.deepEqual(at(orderRule(tie)), [`block ci/${ID}-spec-3.log`], "a round at the same instant as the round below it blocks");
+  const build = officina();
+  verdict(build, `${ID}-review-2.log`, { phase: "build", round: 2, at: "2026-10-15T00:15:10.000Z" }, [ticket({ action: "verdict-build", round: 2, at: "2026-10-15T00:15:05.000Z" })]);
+  assert.deepEqual(at(orderRule(build)), [`block ci/${ID}-review-2.log`], "build rounds are a sequence of their own");
+  const again = officina();
+  verdict(again, `${ID}-spec-2.log`, { phase: "spec", round: 2, at: LATE }, [ticket({ round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  verdict(again, `${ID}-spec-2b.log`, { phase: "spec", round: 2, at: "2026-10-15T00:40:10.000Z" }, [ticket({ round: 2, at: "2026-10-15T00:40:05.000Z" })]);
+  assert.deepEqual(at(orderRule(again)), [`block ci/${ID}-spec-2b.log`], "a round recorded twice blocks at the second log");
+  assert.match(orderRule(again)[0]!.message, /W-900's spec round 2 is recorded again after ci\/W-900-spec-2\.log: one log per round/, "the message names the first log");
+  const inOrder = officina();
+  verdict(inOrder, `${ID}-spec-2.log`, { phase: "spec", round: 2, at: LATE }, [ticket({ round: 2, at: "2026-10-15T00:30:05.000Z" })]);
+  assert.deepEqual(at(orderRule(inOrder)), [], "spec rounds 1 and 2 in time order, build round 1 between them: no finding");
+  const lanes = officina();
+  record(lanes, "W-901", "building");
+  verdict(lanes, "W-901-spec-1.log", { opus: "W-901", phase: "spec", round: 1, at: "2026-10-15T00:01:10.000Z" }, [ticket({ opus: "W-901", round: 1, at: "2026-10-15T00:01:05.000Z" })]);
+  assert.deepEqual(at(orderRule(lanes)), [], "another opus's rounds are their own sequence");
+  const history = officina();
+  record(history, "W-902", "greenlit");
+  verdict(history, "W-902-spec-1.log", { opus: "W-902", phase: "spec", round: 1, at: "2026-10-14T00:10:00.000Z" }, []);
+  verdict(history, "W-902-spec-2.log", { opus: "W-902", phase: "spec", round: 2, at: "2026-10-14T00:05:00.000Z" }, []);
+  assert.deepEqual(at(orderRule(history)), [], "a late verdict before the officina's first ticket is history: no finding");
+  for (const state of ["done", "halted", "backlog"]) {
+    const closed = officina({ state });
+    verdict(closed, `${ID}-spec-2.log`, { phase: "spec", round: 2, at: "2026-10-14T23:00:00.000Z" }, [ticket({ round: 2, at: "2026-10-14T22:59:00.000Z" })]);
+    assert.deepEqual(at(orderRule(closed)), [], `${state}: not judged`);
+  }
+  const off = officina({ tickets: null });
+  verdict(off, `${ID}-spec-2.log`, { phase: "spec", round: 2, at: "2026-10-14T23:00:00.000Z" }, []);
+  assert.deepEqual(at(orderRule(off)), [], "no step_tickets: the rule is off");
+});
