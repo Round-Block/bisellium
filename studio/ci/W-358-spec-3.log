@@ -1,0 +1,20 @@
+# opus: W-358
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T07:34:50.794Z
+# tree: tree:792e99bded871b01d53fd73fd2a99f18e80425b8
+# brief: briefs/W-358.md blob:9eea24831372f7751f98ebd05a86505e49d1f9b4
+# ticket: {"opus":"W-358","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"15e5c7591cde6aaf8676dfd240541e46acd13356","brief":"9eea24831372f7751f98ebd05a86505e49d1f9b4","at":"2026-10-22T07:34:43.695Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-358-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — spec round 2's S1 is closed: a review entry for round n now passes only when `ci/<opus>-review-<n>.log` has unique `# opus:`, `# phase:` and `# round:` headers equal to the record id, build and n, judged in every record state (done included) at the one rejecting reader `entryFindings`; the copied log keeping `# round: 1` blocks, as do the siblings of the same input (another `# opus:`, `# phase: spec`, a repeated `# round:`), each pinned in `W-358-b1` and each guard's mutant killed (18 of 18); reds, probes, gates and the Codex test check rerun with no flip — check: brief:3, brief:25, brief:67, packages/cli/src/rules/ladder-ticket.ts:70, mutants-r3.out:6, reds-r3.out:19, fixture-census-r3.md:1
+
+## Verdict
+
+passed — W-358 revision 3 signed by the architect (`claude-opus-5-5`, D-072): three behaviours on master fa53e279 (15e5c759 adds only records and docs), six prototype commits in prototype-r3.mbox, 2 points, no code-owned path touched.

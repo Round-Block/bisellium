@@ -1,0 +1,18 @@
+# opus: W-358
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16298-188f-7361-b500-07b24d66ad08
+# outcome: passed
+# at: 2026-10-22T07:55:59.815Z
+# tree: tree:6a73823ed8ab2b5e38c9d572efb862fe22b40193
+# brief: briefs/W-358.md blob:9eea24831372f7751f98ebd05a86505e49d1f9b4
+# ticket: {"opus":"W-358","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-358/studio","head":"5953b29b60f8feaebb7eb99b11a84c843bfea242","brief":"9eea24831372f7751f98ebd05a86505e49d1f9b4","at":"2026-10-22T07:55:57.458Z"}
+
+## Findings
+1. advisory — packages/cli/src/rules/ladder-ticket.ts:70 A canonical review ticket for round `1000000000` with a matching build-verdict log is rejected: `parseTicketLine` accepts the round, but `count` accepts only nine digits, leaving `l.round` undefined. This violates brief:67’s valid review-round domain. [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/rules/ladder-ticket.test.ts (`W-358-b1`: matching ten-digit review entry and header round produces no finding)
+
+## Verdict
+The S3 finding is advisory under D-086 C, so it does not fail the round.
+VERDICT: PASS
