@@ -125,6 +125,9 @@ test("W-341-b2 behaviour 2: the Inbox shows and reports loading, empty, error, r
   assert.match(source, /screenStatus\("inbox", \{/, "the Inbox derives its one status from the matrix");
   assert.match(source, /pending: sending/, "an answer in flight is the pending state");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Inbox reports each status change");
+  assert.ok(source.includes('setOutcome("error")'), "a failed write sets the error outcome");
+  assert.ok(source.includes('failed: outcome === "error" ? WRITE_FAILED'), "a failed write is the error state with its own copy");
+  assert.ok(source.includes("Could not send the answer."), "the Inbox write-failure copy");
 });
 
 test("W-341-b3 behaviour 3: Seats shows and reports loading, empty, error, refused and pending", async () => {
@@ -140,6 +143,9 @@ test("W-341-b3 behaviour 3: Seats shows and reports loading, empty, error, refus
   assert.match(source, /pending: busy/, "a change in flight is the pending state");
   assert.match(source, /refused: outcome === "refused"/, "a refused change is the refused state");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "Seats reports each status change");
+  assert.ok(source.includes('setOutcome("error")'), "a failed write sets the error outcome");
+  assert.ok(source.includes('failed: outcome === "error" ? WRITE_FAILED'), "a failed write is the error state with its own copy");
+  assert.ok(source.includes("Could not record the change."), "the Seats write-failure copy");
 });
 
 test("W-341-b4 behaviour 4: the Board shows and reports loading, empty, error, stale and live", async () => {
