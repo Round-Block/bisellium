@@ -1,0 +1,96 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-361-b1\s --import tsx apps/web/test/tokens.test.ts
+# exit: 1
+# at: 2026-10-22T09:38:26.047Z
+# sella: ui-architect
+# tree: tree:c6932586a231334cbf442c082131a926f6c751cd
+# ticket: {"opus":"W-361","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-361/studio","head":"a25720751a9660f69bbaed4c3c6e9b24b56591fc","brief":"4579729d793fb1423a9fec63d68872131a75a09f","at":"2026-10-22T09:38:25.941Z"}
+
+PASS  tokens.css --ink is #16211E                                  
+PASS  tokens.css --ink-2 is #4A5654                                
+PASS  tokens.css --ink-3 is #788582                                
+PASS  tokens.css --rule is #DDE3E1                                 
+PASS  tokens.css --wash is #F4F7F6                                 
+PASS  tokens.css --verdigris is #0B6E5F                            
+PASS  tokens.css --amber is #B7791F                                
+PASS  tokens.css --ok is #2E9E64                                   
+PASS  tokens.css --bad is #C64A3A                                  
+PASS  tokens.css --sp-1 is 4px                                     
+PASS  tokens.css --sp-2 is 8px                                     
+PASS  tokens.css --sp-3 is 12px                                    
+PASS  tokens.css --sp-4 is 16px                                    
+PASS  tokens.css --sp-6 is 24px                                    
+PASS  tokens.css --sp-8 is 32px                                    
+PASS  tokens.css --sp-12 is 48px                                   
+TAP version 13
+# Subtest: W-361-b1 behaviour 1: the fixed dark palette meets its computed text and component contrast floors
+not ok 1 - W-361-b1 behaviour 1: the fixed dark palette meets its computed text and component contrast floors
+  ---
+  duration_ms: 13.472656
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-361/apps/web/test/tokens.test.ts:1:2282'
+  failureType: 'testCodeFailure'
+  error: |-
+    tokens.css carries D-100 candidate A exactly
+    + actual - expected
+    
+      {
+    +   'ink-2': '#4A5654',
+    +   'ink-3': '#788582',
+    +   amber: '#B7791F',
+    +   bad: '#C64A3A',
+    +   ink: '#16211E',
+    +   ok: '#2E9E64',
+    +   rule: '#DDE3E1',
+    +   verdigris: '#0B6E5F',
+    +   wash: '#F4F7F6'
+    -   'ink-2': '#C6C9D8',
+    -   'ink-3': '#9EA4C4',
+    -   amber: '#E0A24A',
+    -   bad: '#E8766A',
+    -   ink: '#F8F8F2',
+    -   ok: '#5BD192',
+    -   rule: '#44475A',
+    -   verdigris: '#3FB9A3',
+    -   wash: '#343746'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    ink: '#F8F8F2'
+    ink-2: '#C6C9D8'
+    ink-3: '#9EA4C4'
+    rule: '#44475A'
+    wash: '#343746'
+    verdigris: '#3FB9A3'
+    amber: '#E0A24A'
+    ok: '#5BD192'
+    bad: '#E8766A'
+  actual:
+    ink: '#16211E'
+    ink-2: '#4A5654'
+    ink-3: '#788582'
+    rule: '#DDE3E1'
+    wash: '#F4F7F6'
+    verdigris: '#0B6E5F'
+    amber: '#B7791F'
+    ok: '#2E9E64'
+    bad: '#C64A3A'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-361/apps/web/test/tokens.test.ts:91:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 639.054525
