@@ -46,6 +46,13 @@ function rgbContrast(foreground: string, background: string): number {
   return (values[0]! + 0.05) / (values[1]! + 0.05);
 }
 
+function rgbAlpha(color: string): number {
+  const channels = [...color.matchAll(/\d+(?:\.\d+)?/g)].map((match) => Number(match[0]));
+  expect(channels.length).toBeGreaterThanOrEqual(3);
+  expect(channels.length).toBeLessThanOrEqual(4);
+  return channels[3] ?? 1;
+}
+
 async function forcePoll(served: { baseURL: string }): Promise<void> {
   const res = await fetch(`${served.baseURL}/api/_poll`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
   if (res.status !== 200) throw new Error(`/api/_poll answered ${res.status} — is NODE_ENV=test reaching the spawned server?`);
@@ -533,6 +540,37 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const outline = await card.evaluate((el) => getComputedStyle(el).outlineStyle);
     expect(outline).not.toBe("none");
 
+    const boardLink = page.locator('a.sidebar__link[href="#/board"]');
+    const activeDecoration = await boardLink.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor };
+    });
+    expect(activeDecoration.line).toContain("underline");
+    expect(rgbContrast(activeDecoration.color, activeDecoration.background)).toBeGreaterThanOrEqual(3);
+
+    const inboxLink = page.locator('a.sidebar__link[href="#/inbox"]');
+    const inboxBadge = inboxLink.locator(".sidebar__badge");
+    await inboxLink.hover();
+    const hoveredInbox = await inboxBadge.evaluate((badge) => {
+      const link = badge.closest(".sidebar__link");
+      if (link === null) throw new Error("Inbox badge has no enclosing sidebar link");
+      return { color: getComputedStyle(badge).color, background: getComputedStyle(link).backgroundColor };
+    });
+    expect(rgbAlpha(hoveredInbox.background)).toBe(1);
+    expect(rgbContrast(hoveredInbox.color, hoveredInbox.background)).toBeGreaterThanOrEqual(4.5);
+    const hoveredDecoration = await inboxLink.evaluate((el) => getComputedStyle(el).textDecorationLine);
+    expect(hoveredDecoration).not.toContain("underline");
+
+    await inboxLink.click();
+    await expect(inboxLink).toHaveAttribute("aria-current", "page");
+    const selectedInbox = await inboxBadge.evaluate((badge) => {
+      const link = badge.closest(".sidebar__link");
+      if (link === null) throw new Error("Inbox badge has no enclosing sidebar link");
+      return { color: getComputedStyle(badge).color, background: getComputedStyle(link).backgroundColor };
+    });
+    expect(rgbAlpha(selectedInbox.background)).toBe(1);
+    expect(rgbContrast(selectedInbox.color, selectedInbox.background)).toBeGreaterThanOrEqual(4.5);
+
     // "Shadow exists once, on the drawer" (DIRECTION §3) — actually open it
     // and check, rather than only asserting the CARD's absence of one.
     await card.click();
@@ -587,6 +625,14 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
       return { foreground: style.color, background: style.backgroundColor };
     });
     expect(rgbContrast(stripColours.foreground, stripColours.background)).toBeGreaterThanOrEqual(4.5);
+
+    const boardLink = page.locator('a.sidebar__link[href="#/board"]');
+    const activeDecoration = await boardLink.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { line: style.textDecorationLine, color: style.textDecorationColor, background: style.backgroundColor };
+    });
+    expect(activeDecoration.line).toContain("underline");
+    expect(rgbContrast(activeDecoration.color, activeDecoration.background)).toBeGreaterThanOrEqual(3);
     const lastName = await lastItem.textContent();
     await lastItem.click();
     await expect(page.locator(".board__column").last()).toBeInViewport();

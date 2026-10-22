@@ -29,16 +29,16 @@ function hasVar(name: string, value: string): boolean {
   return re.test(root);
 }
 
-const d100Colors: [string, string][] = [
+const d101Colors: [string, string][] = [
   ["ink", "#F8F8F2"],
   ["ink-2", "#C6C9D8"],
   ["ink-3", "#9EA4C4"],
   ["rule", "#44475A"],
   ["wash", "#343746"],
   ["verdigris", "#3FB9A3"],
-  ["amber", "#E0A24A"],
-  ["ok", "#5BD192"],
-  ["bad", "#E8766A"],
+  ["amber", "#FFB86C"],
+  ["ok", "#50FA7B"],
+  ["bad", "#FF5555"],
 ];
 
 const colors: [string, string][] = [
@@ -48,9 +48,9 @@ const colors: [string, string][] = [
   ["rule", "#44475A"],
   ["wash", "#343746"],
   ["verdigris", "#3FB9A3"],
-  ["amber", "#E0A24A"],
-  ["ok", "#5BD192"],
-  ["bad", "#E8766A"],
+  ["amber", "#FFB86C"],
+  ["ok", "#50FA7B"],
+  ["bad", "#FF5555"],
 ];
 
 for (const [name, value] of colors) {
@@ -89,8 +89,8 @@ function contrast(foreground: string, background: string): number {
 }
 
 test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and component contrast floors", () => {
-  const actual = Object.fromEntries(d100Colors.map(([name]) => [name, token(name).toUpperCase()]));
-  assert.deepEqual(actual, Object.fromEntries(d100Colors), "tokens.css carries D-100 candidate A exactly");
+  const actual = Object.fromEntries(d101Colors.map(([name]) => [name, token(name).toUpperCase()]));
+  assert.deepEqual(actual, Object.fromEntries(d101Colors), "tokens.css carries D-100 A as amended by D-101 A exactly");
   assert.match(root, /--surface\s*:\s*#282a36\s*;/i, "surface is Dracula background");
   assert.match(root, /--shadow-drawer\s*:\s*rgba\(0,\s*0,\s*0,\s*0\.45\)\s*;/i, "the drawer uses the darker alpha shadow");
 
@@ -107,11 +107,16 @@ test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and c
       assert.ok(ratio >= 3, `computed ${foreground} on ${background} component contrast ${ratio.toFixed(4)} is at least 3:1`);
     }
   }
+  const amberOnRule = contrast(token("amber"), token("rule"));
+  assert.ok(amberOnRule >= 4.5, `computed amber on rule text contrast ${amberOnRule.toFixed(4)} is at least 4.5:1 for selected and hovered Inbox counts`);
+  const inkUnderlineOnRule = contrast(token("ink"), token("rule"));
+  assert.ok(inkUnderlineOnRule >= 3, `computed ink on rule current-page underline contrast ${inkUnderlineOnRule.toFixed(4)} is at least 3:1`);
 
   assert.match(direction, /`ink #F8F8F2` · `ink-2 #C6C9D8` · `ink-3 #9EA4C4` · `rule #44475A` ·\n`wash #343746`\. Surfaces are `#282A36`;/, "DIRECTION section 3 names the dark neutral and surface values");
   assert.match(direction, /Verdigris `#3FB9A3`/, "DIRECTION section 3 names dark verdigris");
-  assert.match(direction, /Amber `#E0A24A`/, "DIRECTION section 3 names dark amber");
-  assert.match(direction, /ok `#5BD192` \/ bad `#E8766A`/, "DIRECTION section 3 names the dark gate colours");
+  assert.match(direction, /Amber `#FFB86C` \(Dracula Orange\)/, "DIRECTION section 3 names official Dracula orange");
+  assert.match(direction, /ok `#50FA7B` \(Dracula Green\) \/ bad `#FF5555` \(Dracula Red\)/, "DIRECTION section 3 names the official Dracula gate colours");
+  assert.match(direction, /Inbox count in amber on both the\s+selected and hovered `rule` navigation fills/, "DIRECTION section 3 excludes bad from text and includes the navigation count");
   assert.match(direction, /0 16px 48px rgba\(0,0,0,\.45\)/, "DIRECTION section 3 names the dark drawer shadow");
 });
 
@@ -160,6 +165,13 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--ink\)/, "a blocked card keeps its non-colour left-rule cue without consuming bad");
   assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--verdigris\)/, "drawer evidence links and their visited state use verdigris");
   assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*text-decoration\s*:\s*underline/, "drawer evidence links retain their underline");
+  assert.match(cssRule(".sidebar__badge"), /color\s*:\s*var\(--amber\)/, "the Inbox badge uses amber");
+  assert.match(cssRule(".sidebar__link:hover"), /background\s*:\s*var\(--rule\)/, "hovered navigation uses the rule fill");
+  const activeLink = cssRule(".sidebar__link--active");
+  assert.match(activeLink, /background\s*:\s*var\(--rule\)/, "active navigation uses the rule fill");
+  assert.match(activeLink, /text-decoration-line\s*:\s*underline/, "the active page alone has the persistent ink underline");
+  assert.match(activeLink, /text-decoration-color\s*:\s*var\(--ink\)/, "the active page underline uses ink");
+  assert.doesNotMatch(cssRule(".sidebar__link:hover"), /text-decoration(?:-line|-color)?\s*:/, "hovering a non-current page does not add the active underline");
 
   const interactiveTextTokens = [
     [".sidebar__link", "ink"],
