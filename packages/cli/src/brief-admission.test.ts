@@ -17,7 +17,7 @@ import { after, describe, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
-import { readBriefAdmission } from "@bisellium/commands/brief-admission.js";
+import { readBriefAdmission, readBriefForm } from "@bisellium/commands/brief-admission.js";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { checkStudio } from "./check.js";
 import { runReady } from "./lifecycle.js";
@@ -935,4 +935,41 @@ test("W-264-b1 behaviour 1: with no limit declared, ready and check admit a ligh
   assert.ok(unreadable[0]!.message.startsWith("briefs/W-901.md unreadable: "), unreadable[0]!.message);
   for (const spec of ["", "spec: 7\n"])
     assert.equal(checked("building", light(), ABSENT, front("building", spec)).admission.length, 0, `check, no limit: no spec ${JSON.stringify(spec)}`);
+});
+
+// ---------------------------------------------------------------------------
+// W-305 (D-075 D): a light brief has one behaviour and owns one to three files, one bullet each; a brief that claims
+// light and is not is refused by the one form reader every path reads. Rows are selectable with --test-name-pattern=W-305-b<n>.
+// ---------------------------------------------------------------------------
+const ONE = (n: number): string => `a light brief has one behaviour, but it numbers ${n}; use the full template (D-075 D)`;
+const OWNS = (k: number): string =>
+  `a light brief owns one to three files, one "- " bullet each under "## Files owned", but it lists ${k}; use the full template (D-075 D)`;
+
+test("W-305-b1 behaviour 1: a light brief has one behaviour and one to three Files owned bullets, or it is refused", () => {
+  const problems = (text: string): string[] => readBriefAdmission(text, 6).problems;
+  const one = (s: BriefSpec = {}): string => light({ reds: [1], ...s });
+  assert.deepEqual(problems(one()), [], "one behaviour, one bullet");
+  assert.deepEqual(readBriefForm(one()), { light: true }, "the form reader: light");
+  assert.deepEqual(problems(one({ owned: ["- `a.ts`", "* `b.ts`", "+ `c.ts`"] })), [], "three bullets, each list marker");
+  assert.deepEqual(problems(one({ owned: ["   - `a.ts`", "", "The source diff touches only these.", "```", "- `b.ts`", "- `c.ts`", "- `d.ts`", "```", "<!-- - `e.ts` -->"] })), [], "prose, fenced and commented bullets are not counted");
+  assert.deepEqual(problems(one({ reds: [1, 1] })), [ONE(2)], "two behaviours");
+  assert.deepEqual(readBriefForm(one({ reds: [1, 1] })), { error: ONE(2) }, "the form reader: two behaviours");
+  assert.deepEqual(problems(one({ reds: [1, 1, 1] })), [ONE(3)], "three behaviours");
+  assert.deepEqual(problems(one({ reds: [] })), ['numbers no behaviours under "## Behaviours to test"'], "zero behaviours: admission's own problem only");
+  assert.deepEqual(problems(one({ owned: ["- `a.ts`", "- `b.ts`", "- `c.ts`", "- `d.ts`"] })), [OWNS(4)], "four bullets");
+  assert.deepEqual(problems(one({ owned: [] })), [OWNS(0)], "no bullet");
+  assert.deepEqual(problems(one({ owned: ["The file `a.ts`."] })), [OWNS(0)], "a prose path is no bullet");
+  assert.deepEqual(problems(one({ owned: ["- `a.ts`", "- `b.ts`"], tail: ["## Files owned", "- `c.ts`", "- `d.ts`"] })), [OWNS(4)], "every Files owned section is counted");
+  assert.deepEqual(problems(one({ reds: [1, 1], owned: OWNED("package.json") })), [EXCLUDED("Files owned names `package.json`")], "a refused path is the one problem");
+  assert.deepEqual(problems(brief({ owned: ["- a", "- b", "- c", "- d"], reds: [1, 1, 1] })), [], "an unmarked brief is full: neither is read");
+
+  accepted(ready(one()), "ready: a one-behaviour light brief");
+  refused(ready(one({ reds: [1, 1] })), [ONE(2)], "ready: two behaviours");
+  refused(ready(one({ owned: ["- a", "- b", "- c", "- d"] })), [OWNS(4)], "ready: four bullets");
+  refused(ready(light({ reds: SEVEN }), ABSENT), [ONE(7)], "ready, no limit: seven behaviours");
+  const found = checked("building", one({ reds: [1, 1] })).admission;
+  assert.equal(found.length, 1, JSON.stringify(found));
+  assert.equal(found[0]!.level, "block");
+  assert.equal(found[0]!.message, `${BRIEF_REL} ${ONE(2)}`);
+  assert.equal(checked("building", one()).admission.length, 0, "check: a one-behaviour light brief");
 });
