@@ -571,6 +571,9 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     expect(rgbAlpha(selectedInbox.background)).toBe(1);
     expect(rgbContrast(selectedInbox.color, selectedInbox.background)).toBeGreaterThanOrEqual(4.5);
 
+    await boardLink.click();
+    await expect(card).toBeVisible();
+
     // "Shadow exists once, on the drawer" (DIRECTION §3) — actually open it
     // and check, rather than only asserting the CARD's absence of one.
     await card.click();
