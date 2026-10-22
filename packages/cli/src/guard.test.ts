@@ -202,6 +202,46 @@ test("W-310-b1 behaviour 1: the guard refuses the hand ladder record writes, the
   assert.equal((await guard(bash("bash late.sh", { cwd: lateDir }))).code, 2, "... inside a script file");
   assert.equal((await guard(bash("npx -c 'bisellium merge W-900'"))).code, 2, "a leading npx -c is still the inline script");
   assert.equal((await guard(bash("npx --call 'bisellium merge W-900'"))).code, 2, "a leading npx --call is still the inline script");
+  // one form of `cd` moves the search root (a top-level `cd <dir>` joined by `;` or `&&`, to a directory the guard can enter);
+  // every other form judges the script against the original root and the literal target (review round 1, fix census class A)
+  const REC = "bash scripts/record-review.sh W-310 1 passed";
+  const locked = join(tmp(), "locked");
+  mkdirSync(locked);
+  chmodSync(locked, 0o000);
+  const nocd = [
+    `cd ${locked}; ${REC}`,
+    `cd /tmp extra; ${REC}`,
+    `cd /tmp -P; ${REC}`,
+    `cd /tmp | ${REC}`,
+    `cd /tmp & ${REC}`,
+    `(cd /tmp); ${REC}`,
+    `x=$(cd /tmp); ${REC}`,
+    `\`cd /tmp\`; ${REC}`,
+    `false && cd /tmp; ${REC}`,
+    `true || cd /tmp; ${REC}`,
+    `cd /tmp || true; ${REC}`,
+    `if true; then cd /tmp; fi; ${REC}`,
+  ];
+  for (const c of nocd) {
+    if (c.includes(locked) && process.getuid?.() === 0) continue; // root enters a mode-000 directory
+    const r = await guard(bash(c, { cwd: REPO }));
+    assert.equal(r.code, 2, `a cd that is not the one moving form does not hide the script: ${c}`);
+    assert.match(r.err, /\(in scripts\/record-review\.sh\)/, c);
+  }
+  assert.equal((await guard(bash(`cd -P ${REPO}; ${REC}`, { cwd: "/tmp" }))).code, 2, "cd -P <checkout>: the literal target is judged too");
+  assert.equal((await guard(bash(`cd ${REPO} | ${REC}`, { cwd: "/tmp" }))).code, 2, "a pipeline cd: the literal target is judged too");
+  assert.equal((await guard(bash(`false && cd ${REPO}; ${REC}`, { cwd: "/tmp" }))).code, 2, "a skipped cd: the literal target is judged too");
+  assert.equal((await guard(bash(`cd ${REPO}; ${REC}`, { cwd: "/tmp" }))).code, 2, "the moving form: a script under the new root");
+  assert.equal((await guard(bash(`cd /tmp; ${REC}`, { cwd: "/tmp" }))).code, 0, "the moving form: nothing to find under the new root");
+  const cdDir = tmp();
+  mkdirSync(join(cdDir, "scripts"));
+  writeFileSync(join(cdDir, "scripts", "record-review.sh"), readFileSync(join(REPO, "scripts", "record-review.sh")));
+  chmodSync(join(cdDir, "scripts", "record-review.sh"), 0o755);
+  for (const c of ["cd /tmp | ", "(cd /tmp); ", "false && cd /tmp; ", `cd ${locked}; `].filter((x) => process.getuid?.() !== 0 || !x.includes(locked))) {
+    writeFileSync(join(cdDir, "wrap.sh"), `${c}${REC}\n`);
+    assert.equal((await guard(bash(`bash -c '${c}${REC}'`, { cwd: cdDir }))).code, 2, `through a -c script: ${c}`);
+    assert.equal((await guard(bash("bash wrap.sh", { cwd: cdDir }))).code, 2, `through a script file: ${c}`);
+  }
   assert.equal((await guard("not json")).code, 0, "fail-open: an unreadable input");
   assert.equal((await guard({ hook_event_name: "PreToolUse", tool_name: "Bash" })).code, 0, "fail-open: no tool_input");
   assert.equal((await guard({ hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: { command: "bisellium merge W-900" } })).code, 0, "another event");
