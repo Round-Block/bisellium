@@ -6,7 +6,7 @@
  * Source text is located with import.meta.url, never a cwd-relative path.
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import * as nav from "./nav.js";
 import { parseRoute } from "./route.js";
@@ -73,5 +73,28 @@ if (only === undefined || only === 1) {
     assert.match(sidebar, /\baria-current\b/, "(e) Sidebar sets aria-current");
     assert.doesNotMatch(sidebar, /"#\//, "(e) Sidebar repeats no hash literal");
     assert.doesNotMatch(sidebar, /\blabel:\s*"/, "(e) Sidebar repeats no label literal");
+  });
+}
+
+// W-342 (D-088 F 4): the README is the console's front door; the screen list comes from NAV_ENTRIES, so a new screen
+// on the rail fails this row until the README names it. Skipped under `--behaviour 1` (W-110's one row).
+if (only === undefined) {
+  test("W-342-b1 behaviour 1: apps/web/README.md names the live screens, the two suites and points to docs/design/DIRECTION.md", () => {
+    const readme = source("../../README.md");
+    for (const e of nav.NAV_ENTRIES) {
+      assert.match(readme, new RegExp(`\\b${e.label}\\b`), `the README names the ${e.label} screen`);
+      assert.ok(readme.includes(`\`${e.href}\``), `the README names the ${e.label} route \`${e.href}\``);
+    }
+    const web = JSON.parse(source("../../package.json")) as { scripts?: Record<string, string> };
+    assert.match(web.scripts?.["test:serve"] ?? "", /playwright\.serve\.config\.ts/, "apps/web's test:serve runs the served config");
+    assert.ok(readme.includes("`npm run test:serve --workspace @bisellium/web`"), "the README names the served suite's command");
+    const root = JSON.parse(source("../../../../package.json")) as { scripts?: Record<string, string> };
+    assert.match(root.scripts?.["test:suite"] ?? "", /\(cd apps\/web && node /, "the root suite runs apps/web's unit tests");
+    assert.ok(readme.includes("`npm test`"), "the README names the unit suite's command");
+    const links = [...readme.matchAll(/\]\(([^)\s]+)\)/g)].map((m) => m[1]!).filter((t) => t.endsWith("DIRECTION.md"));
+    assert.deepEqual(links, ["../../docs/design/DIRECTION.md"], "the README links docs/design/DIRECTION.md once, relative to itself");
+    assert.ok(existsSync(new URL("../../../../docs/design/DIRECTION.md", import.meta.url)), "the linked DIRECTION.md exists");
+    assert.doesNotMatch(readme, /not yet implemented/i, "the README does not call the console unbuilt");
+    assert.doesNotMatch(readme, /#[0-9A-Fa-f]{6}\b/, "the README copies no colour; tokens.css and DIRECTION.md hold them");
   });
 }
