@@ -1,0 +1,73 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-366-b2\s --import tsx apps/web/test/tokens.test.ts
+# exit: 1
+# at: 2026-10-23T04:49:47.899Z
+# sella: ui-architect
+# tree: tree:68cac2a4978087702f9232a06d3c19ead359e72f
+# ticket: {"opus":"W-366","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-366/studio","head":"466f5015577d5c87cbf5e9d0003245884ee3f188","brief":"35e832a62387c4b96edd00cb9e4bfb8fc8480015","at":"2026-10-23T04:49:47.863Z"}
+
+PASS  tokens.css --ink is #F8F8F2                                  
+PASS  tokens.css --ink-2 is #C6C9D8                                
+PASS  tokens.css --ink-3 is #9EA4C4                                
+PASS  tokens.css --rule is #44475A                                 
+PASS  tokens.css --wash is #343746                                 
+PASS  tokens.css --verdigris is #3FB9A3                            
+PASS  tokens.css --amber is #FFB86C                                
+PASS  tokens.css --ok is #50FA7B                                   
+PASS  tokens.css --bad is #FF5555                                  
+PASS  tokens.css --accent-cyan is #8BE9FD                          
+PASS  tokens.css --accent-pink is #FF79C6                          
+PASS  tokens.css --accent-purple is #BD93F9                        
+PASS  tokens.css --accent-yellow is #F1FA8C                        
+PASS  tokens.css --sp-1 is 4px                                     
+PASS  tokens.css --sp-2 is 8px                                     
+PASS  tokens.css --sp-3 is 12px                                    
+PASS  tokens.css --sp-4 is 16px                                    
+PASS  tokens.css --sp-6 is 24px                                    
+PASS  tokens.css --sp-8 is 32px                                    
+PASS  tokens.css --sp-12 is 48px                                   
+TAP version 13
+# Subtest: W-366-b2 behaviour 2: each accent has one non-status selector role
+not ok 1 - W-366-b2 behaviour 2: each accent has one non-status selector role
+  ---
+  duration_ms: 5.417085
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-366/apps/web/test/tokens.test.ts:1:7469'
+  failureType: 'testCodeFailure'
+  error: |-
+    the four accents have only their proposed heading, link, text-selection and project-name consumers
+    + actual - expected
+    
+    + []
+    - [
+    -   '.board__project-select, .board__project-select option => accent-yellow',
+    -   '.officina__row--link, .board-drawer__banner-link, .board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan',
+    -   '.officina__title, .officina__panel-heading, .inbox__title, .inbox__detail-subject, .seats__heading, .seats__card-heading, .board__title, .board-drawer__title, .board-drawer__section-head => accent-purple',
+    -   '::selection => accent-pink'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '.board__project-select, .board__project-select option => accent-yellow'
+    1: '.officina__row--link, .board-drawer__banner-link, .board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan'
+    2: '.officina__title, .officina__panel-heading, .inbox__title, .inbox__detail-subject, .seats__heading, .seats__card-heading, .board__title, .board-drawer__title, .board-drawer__section-head => accent-purple'
+    3: '::selection => accent-pink'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-366/apps/web/test/tokens.test.ts:157:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12.789354

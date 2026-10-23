@@ -1,0 +1,25 @@
+# opus: W-366
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a16702-0381-7122-a039-142e5733aa3c
+# outcome: passed
+# at: 2026-10-23T04:27:18.845Z
+# tree: tree:d9795106363c93435c6a1b23b2ad9a59e6719ccf
+# dispatch_prompt: ci/W-366-ui-prompt-3.md
+# design_digest: sha256:b0c5d5a9ab68140235b79859bdd03c04de50482b7c36e2273d04ee215a449ce5
+# ticket: {"opus":"W-366","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"0553f97ca0065f4d9ffe91a39515cd9c843b37a9","brief":"35e832a62387c4b96edd00cb9e4bfb8fc8480015","at":"2026-10-23T04:27:15.423Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+The signed brief retains all four approved placements and adopts all four earlier UI advisories verbatim.
+Yellow’s constant project-name role, Cyan’s underlined drawer links and Pink’s transient text selection remain distinguishable from amber waiting cues, ok gate marks and bad diagonal marks.
+Across the four screens’ markup and styles, Purple preserves heading hierarchy, gate marks retain their cues, and focus styling remains unchanged; all nine computed contrast pairings exceed 4.5:1.
+The brief introduces no additional layout or default beyond D-103’s proposed roles and preserves the Patron’s screen approval, including focus, selection and native project-control appearance.
+The passed spec review’s four advisories remain build guidance; this source inspection does not replace the required screen demonstration.
+Verdict: passed

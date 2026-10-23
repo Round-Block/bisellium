@@ -1,0 +1,60 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-366-b1\s --import tsx apps/web/test/tokens.test.ts
+# exit: 1
+# at: 2026-10-23T04:49:47.307Z
+# sella: ui-architect
+# tree: tree:c2a50d26858e0907ff6b6b3c4578af9eca74387a
+# ticket: {"opus":"W-366","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-366/studio","head":"8853800effc8abd4493edae29db44e2085395a63","brief":"35e832a62387c4b96edd00cb9e4bfb8fc8480015","at":"2026-10-23T04:49:47.275Z"}
+
+PASS  tokens.css --ink is #F8F8F2                                  
+PASS  tokens.css --ink-2 is #C6C9D8                                
+PASS  tokens.css --ink-3 is #9EA4C4                                
+PASS  tokens.css --rule is #44475A                                 
+PASS  tokens.css --wash is #343746                                 
+PASS  tokens.css --verdigris is #3FB9A3                            
+PASS  tokens.css --amber is #FFB86C                                
+PASS  tokens.css --ok is #50FA7B                                   
+PASS  tokens.css --bad is #FF5555                                  
+FAIL  tokens.css --accent-cyan is #8BE9FD                          
+FAIL  tokens.css --accent-pink is #FF79C6                          
+FAIL  tokens.css --accent-purple is #BD93F9                        
+FAIL  tokens.css --accent-yellow is #F1FA8C                        
+PASS  tokens.css --sp-1 is 4px                                     
+PASS  tokens.css --sp-2 is 8px                                     
+PASS  tokens.css --sp-3 is 12px                                    
+PASS  tokens.css --sp-4 is 16px                                    
+PASS  tokens.css --sp-6 is 24px                                    
+PASS  tokens.css --sp-8 is 32px                                    
+PASS  tokens.css --sp-12 is 48px                                   
+TAP version 13
+# Subtest: W-366-b1 behaviour 1: Dracula accents are exact and meet computed contrast floors
+not ok 1 - W-366-b1 behaviour 1: Dracula accents are exact and meet computed contrast floors
+  ---
+  duration_ms: 2.509868
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-366/apps/web/test/tokens.test.ts:1:4851'
+  failureType: 'testCodeFailure'
+  error: 'tokens.css declares a six-digit --accent-cyan'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    token (/home/edckt/agents/bisellium/.worktrees/W-366/apps/web/test/tokens.test.ts:73:10)
+    <anonymous> (/home/edckt/agents/bisellium/.worktrees/W-366/apps/web/test/tokens.test.ts:121:77)
+    Array.map (<anonymous>)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-366/apps/web/test/tokens.test.ts:121:54)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 267.165659

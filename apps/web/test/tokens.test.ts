@@ -1,6 +1,6 @@
 /**
  * apps/web/test/tokens.test.ts — W-024 behaviour 1: tokens.css declares
- * all nine colour custom properties and all seven space properties on
+ * all thirteen colour custom properties and all seven space properties on
  * `:root`, with exact values (DIRECTION.md §3).
  */
 import assert from "node:assert/strict";
@@ -41,17 +41,14 @@ const d101Colors: [string, string][] = [
   ["bad", "#FF5555"],
 ];
 
-const colors: [string, string][] = [
-  ["ink", "#F8F8F2"],
-  ["ink-2", "#C6C9D8"],
-  ["ink-3", "#9EA4C4"],
-  ["rule", "#44475A"],
-  ["wash", "#343746"],
-  ["verdigris", "#3FB9A3"],
-  ["amber", "#FFB86C"],
-  ["ok", "#50FA7B"],
-  ["bad", "#FF5555"],
+const d103AccentColors: [string, string][] = [
+  ["accent-cyan", "#8BE9FD"],
+  ["accent-pink", "#FF79C6"],
+  ["accent-purple", "#BD93F9"],
+  ["accent-yellow", "#F1FA8C"],
 ];
+
+const colors: [string, string][] = [...d101Colors, ...d103AccentColors];
 
 for (const [name, value] of colors) {
   check(`tokens.css --${name} is ${value}`, hasVar(name, value));
@@ -120,6 +117,92 @@ test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and c
   assert.match(direction, /0 16px 48px rgba\(0,0,0,\.45\)/, "DIRECTION section 3 names the dark drawer shadow");
 });
 
+test("W-366-b1 behaviour 1: Dracula accents are exact and meet computed contrast floors", () => {
+  const actual = Object.fromEntries(d103AccentColors.map(([name]) => [name, token(name).toUpperCase()]));
+  assert.deepEqual(actual, Object.fromEntries(d103AccentColors), "tokens.css carries D-103 A's four accent colours exactly");
+
+  for (const background of ["surface", "wash"]) {
+    for (const [foreground] of d103AccentColors) {
+      const ratio = contrast(token(foreground), token(background));
+      assert.ok(ratio >= 4.5, `computed ${foreground} on ${background} text contrast ${ratio.toFixed(4)} is at least 4.5:1`);
+    }
+  }
+  const selectedText = contrast(token("surface"), token("accent-pink"));
+  assert.ok(selectedText >= 4.5, `computed surface on accent-pink selected text contrast ${selectedText.toFixed(4)} is at least 4.5:1`);
+
+  assert.match(direction, /Cyan `#8BE9FD` \(`--accent-cyan`\)/, "DIRECTION section 3 names Dracula Cyan and its link token");
+  assert.match(direction, /Pink `#FF79C6` \(`--accent-pink`\)/, "DIRECTION section 3 names Dracula Pink and its text-selection token");
+  assert.match(direction, /Purple `#BD93F9` \(`--accent-purple`\)/, "DIRECTION section 3 names Dracula Purple and its heading token");
+  assert.match(direction, /Yellow `#F1FA8C` \(`--accent-yellow`\)/, "DIRECTION section 3 names Dracula Yellow and its project-name token");
+  assert.match(direction, /only status colours[^.]*ok[^.]*amber[^.]*bad[^.]*shape cues/i, "DIRECTION section 3 reserves status meaning and shape cues to ok, amber and bad");
+  assert.match(direction, /accent never marks a state/i, "DIRECTION section 3 forbids accents from conveying state");
+  assert.match(direction, /at\s+most\s+three\s+status\s+colours\s+visible\s+at\s+once/i, "DIRECTION section 3's three-colour ceiling names status colours only");
+  assert.match(direction, /Verdigris remains the sole product identity colour\.\s+Yellow is a constant project-name text accent, identical for every project\s+and condition\. Projects remain named, never colour-coded; project dots and\s+colour hashing remain excluded\./, "DIRECTION section 3 keeps project identity with verdigris and makes yellow constant");
+});
+
+function accentTokenConsumers(): { selector: string; tokens: string[] }[] {
+  const withoutComments = componentCss.replace(/\/\*[\s\S]*?\*\//g, "");
+  const consumers: { selector: string; tokens: string[] }[] = [];
+  for (const match of withoutComments.matchAll(/([^{}]+){([^{}]*)}/g)) {
+    const declarations = match[2] ?? "";
+    const tokens = [...declarations.matchAll(/var\(--(accent-(?:cyan|pink|purple|yellow))\)/g)].map((token) => token[1]!);
+    if (tokens.length === 0) continue;
+    consumers.push({ selector: (match[1] ?? "").trim().replace(/\s+/g, " "), tokens: [...new Set(tokens)].sort() });
+  }
+  return consumers;
+}
+
+test("W-366-b2 behaviour 2: each accent has one non-status selector role", () => {
+  const consumers = accentTokenConsumers();
+  assert.deepEqual(
+    consumers.map(({ selector, tokens }) => `${selector} => ${tokens.join(",")}`).sort(),
+    [
+      "::selection => accent-pink",
+      ".board__project-select => accent-yellow",
+      ".board__project-select option => accent-yellow",
+      ".board-drawer__banner-link => accent-cyan",
+      ".board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
+      ".officina__title, .officina__panel-heading, .inbox__title, .inbox__detail-subject, .seats__heading, .seats__card-heading, .board__title, .board-drawer__title, .board-drawer__section-head => accent-purple",
+      ".officina__row--link => accent-cyan",
+    ].sort(),
+    "the four accents have only their proposed heading, link, text-selection and project-name consumers",
+  );
+
+  const statusClasses = new Set([
+    "shell__status",
+    "screen-notice",
+    "token-prompt",
+    "gate-ladder__mark--ok-filled",
+    "gate-ladder__mark--bad-diagonal",
+    "burn-bar__fill--amber",
+    "officina__panel--attention",
+    "officina__count--amber",
+    "officina__posture-word",
+    "officina__posture-reason",
+    "officina__empty",
+    "officina__loading",
+    "inbox__row--attention",
+    "inbox__age--stale",
+    "seats__confirm-error",
+    "board__notice",
+    "board__wip-fill--amber",
+    "board__card--amber",
+    "board__card--bad",
+    "board__liveness",
+    "board-drawer__banner",
+    "board-drawer__gate-status",
+    "officina__bar-fill",
+  ]);
+  const stateForms = /:(?:hover|active|focus|focus-visible|disabled|checked)|\[aria-selected|\[open\]|--(?:active|attention|amber|bad|ok|focused|loading|error|pending|stale|open|closed|selected)(?:\b|_)/i;
+  for (const { selector } of consumers) {
+    const classes = [...selector.matchAll(/\.([a-z0-9_-]+)/gi)].map((match) => match[1]!);
+    assert.deepEqual(classes.filter((name) => statusClasses.has(name)), [], `${selector} is not a recognised status selector`);
+    assert.doesNotMatch(selector, stateForms, `${selector} does not use an accent to distinguish an application state`);
+  }
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--accent-cyan\)/, "visited and unvisited evidence links keep the same cyan role");
+  assert.match(componentCss, /::selection\s*{[^}]*color\s*:\s*var\(--surface\)[^}]*background\s*:\s*var\(--accent-pink\)/, "text selection pairs pink with surface text");
+});
+
 function cssRule(selector: string): string {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const declarations = new RegExp(`${escaped}\\s*{([^}]*)}`).exec(componentCss)?.[1];
@@ -163,7 +246,7 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /clip-path\s*:/, "the failed gate keeps its diagonal shape cue");
   assert.match(cssRule(".seats__confirm-error"), /color\s*:\s*var\(--ink\)/, "confirmation error copy uses the highest-contrast text token");
   assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--ink\)/, "a blocked card keeps its non-colour left-rule cue without consuming bad");
-  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--verdigris\)/, "drawer evidence links and their visited state use verdigris");
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--accent-cyan\)/, "drawer evidence links and their visited state use the cyan link accent");
   assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*text-decoration\s*:\s*underline/, "drawer evidence links retain their underline");
   assert.match(cssRule(".sidebar__badge"), /color\s*:\s*var\(--amber\)/, "the Inbox badge uses amber");
   assert.match(cssRule(".sidebar__link:hover"), /background\s*:\s*var\(--rule\)/, "hovered navigation uses the rule fill");
@@ -178,19 +261,19 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
     [".sidebar__link--disabled", "ink-3"],
     [".token-prompt__input", "ink"],
     [".token-prompt__submit", "ink"],
-    [".officina__row--link", "ink"],
+    [".officina__row--link", "accent-cyan"],
     [".inbox__input-ratio", "ink"],
     [".inbox__input-ratio::placeholder", "ink-3"],
     [".inbox__btn-action", "ink"],
     [".seats__row select", "ink"],
     [".seats__row select option", "ink"],
     [".seats__confirm-btn,\n.seats__cancel-btn", "ink"],
-    [".board__project-select", "ink-2"],
-    [".board__project-select option", "ink-2"],
+    [".board__project-select", "accent-yellow"],
+    [".board__project-select option", "accent-yellow"],
     [".board__strip-item", "ink"],
     [".board-drawer__close", "ink-2"],
-    [".board-drawer__banner-link", "verdigris"],
-    [".board-drawer__gate-evidence,\n.board-drawer__gate-evidence:visited", "verdigris"],
+    [".board-drawer__banner-link", "accent-cyan"],
+    [".board-drawer__gate-evidence,\n.board-drawer__gate-evidence:visited", "accent-cyan"],
   ] as const;
   for (const [selector, textToken] of interactiveTextTokens) {
     assert.match(cssRule(selector), new RegExp(`color\\s*:\\s*var\\(--${textToken}\\)`), `${selector.replaceAll("\n", " ")} declares its dark-surface text token`);

@@ -1,0 +1,27 @@
+# opus: W-366
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a166e3-15dd-7da1-af38-769aa4d1694f
+# outcome: passed
+# at: 2026-10-23T04:21:26.914Z
+# tree: tree:d9795106363c93435c6a1b23b2ad9a59e6719ccf
+# brief: briefs/W-366.md blob:35e832a62387c4b96edd00cb9e4bfb8fc8480015
+# ticket: {"opus":"W-366","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"0553f97ca0065f4d9ffe91a39515cd9c843b37a9","brief":"35e832a62387c4b96edd00cb9e4bfb8fc8480015","at":"2026-10-23T04:21:23.028Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-366-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the ui-lead passed all four placements; Cyan's rendered role is the Board drawer's content/evidence links, while `.officina__row--link` receives the same token but has no rendered Officina consumer — check: brief:3, brief:17, apps/web/src/screens/Officina.tsx:158, apps/web/src/components/w025.css:505, apps/web/src/components/w025.css:1260
+2. advisory — the existing amber waiting rule remains intact, while Inbox rows render subject and sella without an age numeral; the unchanged waiting-age styles are expressly outside W-366 — check: brief:57, apps/web/src/screens/InboxView.tsx:46, apps/web/src/components/w025.css:700
+3. advisory — Patron approval requires all four accented screens, the drawer with evidence and waiting content, keyboard focus and browser text selection; that demonstration is distinct from W-360's baseline recapture, and the earlier browser exercise is not claimed as visual proof — check: brief:90, brief:99, browser-focused.out
+4. advisory — DIRECTION section 3 now keeps Verdigris as the sole product identity colour and defines Yellow as constant project-name text across every project and condition, retaining the ban on project colour coding, dots and hashing — check: brief:30, brief:43, docs/design/DIRECTION.md:127, apps/web/test/tokens.test.ts:140
+5. advisory — the exact D-103 tokens and nine contrast pairings remain computed from tokens.css, while W-366-b2 enumerates every consumer and excludes the declared status/state forms; W-361's bad-only/no-text assertions and W-339 remain green — check: brief:21, brief:45, brief:47, apps/web/test/tokens.test.ts:120, apps/web/test/tokens.test.ts:155, apps/web/test/tokens.test.ts:235, gates-proto.out
+6. advisory — both ordered reds remain accepted assertion failures, b1 stays green at the b2 red, both W-366 rows pass at prototype head, and focused web typecheck, formatting and admission pass — check: brief:79, brief:83, host-b1-red-b1.out, host-b2-red-b1.out, host-b2-red-b2.out, host-proto-b1.out, host-proto-b2.out, admission.out, gates-proto.out
+7. advisory — the revised four-commit non-numbered prototype mbox at sha256 `cd2df590007f079094dd4539f7073ae6a508544c62fcb2d4c5962b90cf533c30` applies after cb7aa2c6 with an identical tree; only the four owned source files change, with no Patron-merged code-owned path or screenshot baseline — check: brief:11, brief:32, brief:98, brief:100, mbox-check.out, prototype.mbox
+
+## Verdict
+
+passed — signature revised by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for the ui-lead-passed `studio/briefs/W-366.md`; all four advisories are adopted, the placements are unchanged, Claude Opus spec review and Patron screen approval follow, two behaviours remain 2 points, and no code-owned Patron path is touched.

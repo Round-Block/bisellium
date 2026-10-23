@@ -1,0 +1,6 @@
+board-drawer-1280.png: link color=rgb(139, 233, 253); --accent-cyan=#8be9fd (rgb(139, 233, 253)); match
+focus-1280.png: outline rgb(63, 185, 163) solid 2px=rgb(63, 185, 163); --verdigris=#3fb9a3 (rgb(63, 185, 163)); match
+selection-1280.png: ::selection background=rgb(255, 121, 198); --accent-pink=#ff79c6 (rgb(255, 121, 198)); match
+board-drawer-390.png: link color=rgb(139, 233, 253); --accent-cyan=#8be9fd (rgb(139, 233, 253)); match
+focus-390.png: outline rgb(63, 185, 163) solid 2px=rgb(63, 185, 163); --verdigris=#3fb9a3 (rgb(63, 185, 163)); match
+selection-390.png: ::selection background=rgb(255, 121, 198); --accent-pink=#ff79c6 (rgb(255, 121, 198)); match

@@ -1,0 +1,6 @@
+board-drawer-1280.png 1280x900 109987 sha256:c13482c941efb5835f72782d4584539638b190c76dd8b07ed4b5d4f703fc99f7 W-004 drawer: Waiting on you content, cyan Inbox link, and cyan gate-evidence links.
+focus-1280.png 1280x900 107002 sha256:72e3e5cdb294935d3501429732b4b02976595af52c8b940284a450d44d3acb4a Board drawer close control reached by Tab with a visible verdigris keyboard-focus outline.
+selection-1280.png 1280x900 107007 sha256:43c2870979f181b9148988de7781a9cc73d3938e7a241c607d6a173243c263dc Board drawer title selected with the browser's pink text-selection fill.
+board-drawer-390.png 390x900 71361 sha256:6235bd01f7338541e5c5f468c34bd58364cda663649341fdb681168fc9b7cbcd W-004 drawer: Waiting on you content, cyan Inbox link, and cyan gate-evidence links.
+focus-390.png 390x900 71402 sha256:ef85945e0be44467a8cae6b2373b2b6fbed3f48fd051bee8562cb5a7cd30b195 Board drawer close control reached by Tab with a visible verdigris keyboard-focus outline.
+selection-390.png 390x900 71391 sha256:170abf64973a863de7a392e60baaed2f75bf253a7b3af941c4f90b5acbd0f406 Board drawer title selected with the browser's pink text-selection fill.

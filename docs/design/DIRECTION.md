@@ -97,10 +97,16 @@ Neutrals do the work. Five of them, replacing the fourteen greys in the mocks:
 `wash #343746`. Surfaces are `#282A36`; panels are separated by rules and the
 lighter wash, never by a lighter-on-darker card sandwich.
 
-- **Verdigris `#3FB9A3`** — identity and interaction: the wordmark, links, the
-  focus ring, the current selection. At most **one verdigris fill per screen**
-  (the primary action, where one exists). Never a decorative fill, never a tint
-  wash.
+- **Verdigris `#3FB9A3`** — product identity and primary interaction: the
+  wordmark, focus ring, landed fasti tick and primary action. At most **one
+  verdigris fill per screen** (the primary action, where one exists). Never a
+  decorative fill, never a tint wash.
+- **Dracula accents** — Cyan `#8BE9FD` (`--accent-cyan`) colours content and
+  evidence links; Pink `#FF79C6` (`--accent-pink`) colours browser text
+  selection; Purple `#BD93F9` (`--accent-purple`) colours display and section
+  headings; Yellow `#F1FA8C` (`--accent-yellow`) is a constant Board project-name
+  text accent. Text selection is an editing affordance, not an application
+  state. Every accent has one role: an accent never marks a state.
 - **Amber `#FFB86C` (Dracula Orange)** — waiting on a human, and nothing else,
   ever. Budget: one amber region per screen plus the nav count. Rendered as a
   **2px left rule** on the row plus the age numeral in amber. Never a pill,
@@ -115,8 +121,13 @@ lighter wash, never by a lighter-on-darker card sandwich.
   `tokens.css` by a test, including the Inbox count in amber on both the
   selected and hovered `rule` navigation fills, and the console's axe scan runs
   with colour contrast on.
-- Ceiling: **≤3 semantic colours visible at once**. Projects are named, never
-  colour-coded — the per-project dot is deleted.
+- The only status colours are `ok`, `amber` and `bad`, with their existing
+  meanings and shape cues. Ceiling: **at most three status colours visible at
+  once**. Accents do not count toward that status ceiling.
+- **Identity boundary.** Verdigris remains the sole product identity colour.
+  Yellow is a constant project-name text accent, identical for every project
+  and condition. Projects remain named, never colour-coded; project dots and
+  colour hashing remain excluded.
 
 ### Space
 

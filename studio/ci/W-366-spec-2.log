@@ -1,0 +1,21 @@
+# opus: W-366
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a7c5d3bec0b29f155
+# outcome: passed
+# at: 2026-10-23T04:25:21.316Z
+# tree: tree:d9795106363c93435c6a1b23b2ad9a59e6719ccf
+# brief: briefs/W-366.md blob:35e832a62387c4b96edd00cb9e4bfb8fc8480015
+# ticket: {"opus":"W-366","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"0553f97ca0065f4d9ffe91a39515cd9c843b37a9","brief":"35e832a62387c4b96edd00cb9e4bfb8fc8480015","at":"2026-10-23T04:25:20.503Z"}
+
+## Findings
+1. advisory — brief:83 [severity: S2] The prototype's b2 feature commit (81b3e1dd) also rewrites W-366-b2's own expected consumer list (its red pins four grouped entries, its green seven split entries), so "migrates only the affected W-361-b2 token expectations" is false of the prototype, and the recorded red is not the assertion that later goes green. Replacement: "The b2 red commit carries the final seven-entry consumer list exactly as the feature commit's `w025.css` rules spell it; the ordered b2 red fails by `ERR_ASSERTION` because its actual consumer list is empty while b1 passes; the feature commit applies the selectors and migrates only the affected W-361-b2 token expectations, leaving W-366-b2 byte-identical to its red." [class: mechanism×red-certifies-wrong-tree] — check: none: a replay check that the selected red row's test body is unchanged between its red commit and the opus head
+2. advisory — brief:53 [severity: S2] `accentTokenConsumers()` reads only `w025.css`, but `tokens.css` also carries a `body` rule and TSX already uses inline `var(--token)` styles (`Colophon.tsx:28`), so an accent consumed in either place is outside "every current `--accent-*` stylesheet consumer" without a stated limit; brief:55 inherits the same gap. Replacement: "Promise role-placement: every current `--accent-*` consumer in `apps/web/src/components/w025.css` is one of the heading, link, text-selection or project-name selectors in the table — limit: the lexical flat-rule reader reads only `w025.css`; rules in `tokens.css`, TSX inline `style` values, nested/generated CSS and runtime custom-property injection are not interpreted." (append the same limit clause to brief:55) [class: spec×promise-unattainable-under-accepted-domain] — check: none: W-366-b2 also scans `tokens.css` outside `:root` and `apps/web/src/**/*.tsx` for `var(--accent-`
+3. advisory — brief:90 [severity: S4] The screenshot row is not a flip today: `apps/web/tests-serve/screenshots.spec.ts-snapshots` is absent, so `baselineSetState` is not complete and the row skips (`browser-focused.out`: 1 skipped). Replacement: "The screenshot row `the live screens match their fixed desktop and phone initial-view baselines` currently skips with no committed baseline set; its desktop/phone captures will contain the accented headings, links and Board project name when W-360 recaptures them after this opus lands. W-366 neither edits nor recaptures `studio/ci/shots/`." [class: spec×stale-citation-residue] — check: apps/web/tests-serve/screenshots.spec.ts
+4. advisory — brief:75 [severity: S4] Row 7 says each named focused command rejects on non-zero exit, yet brief:97 accepts the studio check's existing non-zero exit (`opus.records_unchanged` at `opera/W-096.md`, `gates-proto.out`). Replacement: "exit: `node --test-reporter=tap --import tsx apps/web/test/tokens.test.ts`, focused web typecheck, owned ESLint/Prettier and the sample check reject non-zero; the studio check rejects any blocking finding other than the pre-existing `opus.records_unchanged` at `opera/W-096.md`; all other test files and callers remain outside this row" [class: spec×prose-contradiction-under-revision] — check: none: the studio-check gate compares blocking findings against the base commit's set
+
+## Verdict
+The input domain names every reader the opus adds (three fixed files, the token/contrast parser, the flat-rule consumer reader and the status/state classifier) with fail-closed node:test rejectors, the reused focused callers are one exit-bounded row, and every promise holds as limited, with four advisory wording fixes and no blocking finding.
+VERDICT: PASS

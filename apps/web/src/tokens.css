@@ -34,7 +34,7 @@
   font-display: block;
 }
 
-/* apps/web/src/tokens.css — W-024. DIRECTION.md §3: the nine colour values
+/* apps/web/src/tokens.css — W-024. DIRECTION.md §3: the thirteen colour values
  * and seven space values are mandatory and exact. Type scale is declared
  * directly on elements (DIRECTION.md leaves that choice to the builder). */
 :root {
@@ -47,6 +47,10 @@
   --amber: #ffb86c;
   --ok: #50fa7b;
   --bad: #ff5555;
+  --accent-cyan: #8be9fd;
+  --accent-pink: #ff79c6;
+  --accent-purple: #bd93f9;
+  --accent-yellow: #f1fa8c;
   --surface: #282a36;
   --transparent: transparent;
   --shadow-drawer: rgba(0, 0, 0, 0.45);
