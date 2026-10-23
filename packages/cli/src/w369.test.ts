@@ -97,7 +97,7 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
   assert.equal(existsSync(join(w.agent, ".git", "bisellium", "sync")), false, "the request is answered");
   const again = sync(w);
   assert.equal(again.code, 0, `a second sync: ${again.out}`);
-  assert.match(again.out, /^sync: master is current \(/m, "a current master is said so");
+  assert.match(again.out, /^sync: master is current \([0-9a-f]{12}\)$/m, "a current master is said so");
   // a tracked edit after the sync made master current is refused, not reported current (spec-2 finding 1)
   writeFileSync(join(w.agent, "root"), "mine\n");
   const edited = sync(w);
@@ -139,7 +139,7 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
     const out = sync(v, env, script);
     assert.equal(out.code, 1, `${what}: ${out.out}`);
     assert.match(out.out, why, `${what}: the reason`);
-    assert.match(out.out, /master was not moved$/m, `${what}: says master was not moved`);
+    assert.match(out.out, /^sync: refused: .*; master was not moved$/m, `${what}: says master was not moved`);
     assert.equal(head(v.agent), was, `${what}: master did not move`);
     assert.equal(readFileSync(join(v.agent, "packages", "a"), "utf8"), "a0\n", `${what}: no incoming file was written`);
     if (!/agent clone's copy|absolute/.test(what)) assert.equal(existsSync(join(v.agent, ".git", "bisellium", "sync")), /config|hook|attributes|alternates|grafts|PATRON_DIR/.test(what), `${what}: the request is answered only past the input checks`);
@@ -217,11 +217,11 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
   writeFileSync(config, "[core\n\tbare = \n");
   const unparsed = sync(broken);
   assert.equal(unparsed.code, 1, `an unparseable config: ${unparsed.out}`);
-  assert.match(unparsed.out, /^sync: refused: .*config does not parse;/m, "an unparseable config is refused");
+  assert.match(unparsed.out, /^sync: refused: .*config does not parse; master was not moved$/m, "an unparseable config is refused");
   renameSync(config, `${config}.away`);
   const absent = sync(broken);
   assert.equal(absent.code, 1, `an absent config: ${absent.out}`);
-  assert.match(absent.out, /^sync: refused: .* is not a git directory with its own config;/m, "an absent config is refused");
+  assert.match(absent.out, /^sync: refused: .* is not a git directory with its own config; master was not moved$/m, "an absent config is refused");
   writeFileSync(config, kept);
   assert.equal(readFileSync(join(broken.agent, "packages", "a"), "utf8"), "a0\n", "neither moved master");
   const hooked = world();
@@ -295,12 +295,12 @@ test("W-369-b2 behaviour 2: hook-event sync runs the sync beside the installed C
   assert.equal(head(w.agent), target, "the agent clone is synced");
   const start = hookSync(w, { hook_event_name: "SessionStart" });
   assert.equal(start.code, 0);
-  assert.match(contextOf(start.stdout, "SessionStart"), /^sync: master is current/m, "at SessionStart too");
+  assert.match(contextOf(start.stdout, "SessionStart"), /^sync: master is current \([0-9a-f]{12}\)$/m, "at SessionStart too");
   writeFileSync(join(w.agent, "root"), "mine\n");
   w.advance({ root: "r3\n" });
   const dirty = hookSync(w, { hook_event_name: "PostToolUse" });
   assert.equal(dirty.code, 0, "a refusal never blocks the harness");
-  assert.match(contextOf(dirty.stdout, "PostToolUse"), /^sync: refused: AGENT_DIR has uncommitted tracked changes/m, "the refusal reaches the model");
+  assert.match(contextOf(dirty.stdout, "PostToolUse"), /^sync: refused: AGENT_DIR has uncommitted tracked changes \( M root\); master was not moved$/m, "the refusal reaches the model");
   for (const [payload, what] of [
     [{ hook_event_name: "Stop" }, "another event"],
     [{}, "an absent event name"],
@@ -308,7 +308,7 @@ test("W-369-b2 behaviour 2: hook-event sync runs the sync beside the installed C
   ] as const) {
     const other = hookSync(w, payload);
     assert.equal(other.code, 0, what);
-    assert.match(other.stdout, /^sync: refused:/m, `plain lines for ${what}`);
+    assert.match(other.stdout, /^sync: refused: .*; master was not moved$/m, `plain lines for ${what}`);
   }
   const unreadable = spawnSync(process.execPath, ["--import", "tsx", join(REPO, "packages", "cli", "src", "main.ts"), "hook-event", "sync", "--studio", "studio"], {
     cwd: REPO,
@@ -396,7 +396,7 @@ test("W-369-b3 behaviour 3: the merge rung's hold on a path the session may not 
     mkdirSync(request);
     const unwritten = fetchTrunk(main, target);
     assert.ok(!unwritten.ok);
-    assert.match(unwritten.after?.[1] ?? "", /^sync: not requested \(/, "a request that cannot be written is said so");
+    assert.match(unwritten.after?.[1] ?? "", /^sync: not requested \(.*\)$/, "a request that cannot be written is said so");
   } finally {
     chmodSync(join(main, "packages"), 0o755);
   }
