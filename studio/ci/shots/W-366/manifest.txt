@@ -1,9 +1,9 @@
 shots: 8 ci/shots/W-366
-shot: board-1280.png 1280x900 43798
-shot: board-390.png 390x900 26411
+shot: board-1280.png 1280x900 43681
+shot: board-390.png 390x900 26312
 shot: inbox-1280.png 1280x900 38922
 shot: inbox-390.png 390x900 11070
-shot: officina-1280.png 1280x900 39842
-shot: officina-390.png 390x900 24187
-shot: seats-1280.png 1280x900 70442
+shot: officina-1280.png 1280x900 39798
+shot: officina-390.png 390x900 38060
+shot: seats-1280.png 1280x900 70457
 shot: seats-390.png 390x900 52364
