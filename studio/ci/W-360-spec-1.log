@@ -1,0 +1,22 @@
+# opus: W-360
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a16410-6d04-7662-8e68-f5177c0d2208
+# outcome: passed
+# at: 2026-10-22T15:32:10.014Z
+# tree: tree:27f17d33fa9442840c1539ba1be0a30b57eb22ef
+# brief: briefs/W-360.md blob:ea2f1435eaa9920f31b432e3580f4b5822889c90
+# ticket: {"opus":"W-360","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"d85b652f279768291dd57af508f3213b518fc5b8","brief":"ea2f1435eaa9920f31b432e3580f4b5822889c90","at":"2026-10-22T15:32:09.318Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-360-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the sandbox cannot launch Chromium or permit W-340-b1's child `git rev-parse`, so the kept host script must pass W-340-b1 before and after its atomic pin migration, record all three browser assertion reds and cumulative greens, and pass W-110 behaviour 3 plus the W-350 baseline bootstrap path before build handoff — check: /home/edckt/.bisellium-evidence/W-360-spec/browser-focused-worktree.sh
+2. advisory — the prototype intentionally contains no baseline bytes: after the source lands, the producer must trigger the authorised master refresh, the Patron must approve all four desktop/phone screen pairs, and the builder must commit the unchanged nine-file runner artifact before W-350 completes — check: studio/briefs/W-360.md:23
+
+## Verdict
+
+passed — signature prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-360.md` and prototype `e3320f6589ab7ffd9fba5f9709cd9d801132995b6ab879004d37b8e3efc93463`; every promise and ruled Input domain case has exact ledger coverage, each case names an existing assertion pin or an explicitly scoped unpinned limit, all three policy reds remain assertion-level and ordered, and the host/browser/artifact steps remain assigned to the producer, runner, Patron and builder.

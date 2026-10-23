@@ -1,0 +1,27 @@
+# opus: W-360
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: passed
+# at: 2026-10-22T23:42:15.807Z
+# tree: tree:e63a1eb29767a24d03f13d7cff25c31bd3e7e38b
+# dispatch_prompt: ci/W-360-ui-prompt-6.md
+# design_digest: sha256:fbf82697d075c14fd27ba89633df244935883b83639becdb0482d4ab74e71a8e
+# ticket: {"opus":"W-360","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"472fb6151bef83f3bd1a593d919bb9f40c03de65","brief":"f1465546bc3f9485da8157aa156a486dec7e4c28","at":"2026-10-22T23:42:12.221Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Round-3 Board revise: closed; both capture paths require `live` after officina, opera and inbox finish, with held-inbox checks at both widths.
+Round-3 Seats revise: closed; readiness includes both officina and models, and both capture paths require rendered selected-model identities.
+Round-3 phone roster advisory: closed in the design and prototype; the model control occupies a full-width second line, with value-width, native-arrow and viewport-containment assertions.
+At 1280 and 390 px, the screen-owned evidence matches settled initial views: Board cards and ladders after reconciliation, Inbox’s focused served row, Officina’s loaded panels and day strip, and Seats’ roster with resolved model labels; both paths reject loading copy across the body.
+The frozen September 25 instant keeps fixture dates, health ages, the Friday strip and Board timestamps coherent.
+The phone CSS preserves desktop layout and provides room for the selected model and arrow; actual browser confirmation remains the host-run build guidance recorded in the passed Opus review.
+The brief proposes the phone arrangement and capture defaults explicitly for the Patron; it does not claim approval, change W-361’s approved colours, or settle W-366’s accent placements.
+Carry the passed review’s advisories into the build, retain D-103’s recapture order after W-366, and obtain the Patron’s approval of all four screen pairs before W-350 completes.
+Verdict: passed

@@ -1,0 +1,18 @@
+# opus: W-360
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T15:34:28.665Z
+# tree: tree:27f17d33fa9442840c1539ba1be0a30b57eb22ef
+# brief: briefs/W-360.md blob:ea2f1435eaa9920f31b432e3580f4b5822889c90
+# ticket: {"opus":"W-360","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"d85b652f279768291dd57af508f3213b518fc5b8","brief":"ea2f1435eaa9920f31b432e3580f4b5822889c90","at":"2026-10-22T15:34:27.949Z"}
+
+## Findings
+1. advisory — brief:88 [severity: S4] The ordering pin `w360.test.ts:56` compares `indexOf("await expectLoadedState(page, entry.route, width)")` with `indexOf("toHaveScreenshot")`, and the row only proves the helper is defined (line 54), so a renamed or removed call yields -1 and the "gate precedes comparison or refresh" assertion passes vacuously. Replacement for brief:88's "Rejected by" cell: "`expectLoadedState` rejects before refresh/comparison; as pinned by `W-360-b2` "the baseline route gate explicitly rejects placeholders", and `W-360-b2` first asserts the call `await expectLoadedState(page, entry.route, width)` is present (index >= 0) before ordering it ahead of `toHaveScreenshot`; `apps/web/tests-serve/screenshots.spec.ts:62` — holds" [class: test×vacuous-order-pin] — check: apps/web/test/w360.test.ts
+2. advisory — brief:60 [severity: S2] Promise loaded-before-capture says "no loading placeholder remains", but both gates (`capture-state.ts` final assertion, `screenshots.spec.ts` added lines) reject `Loading…`/`Loading...` only inside the route root (`.inbox`, `.board`, `.seats`, `.officina`); shell chrome outside that root is held only by the shell status check. Replacement for brief:60: "Promise loaded-before-capture: every verify and baseline image is taken only after its route's named evidence has settled and no `Loading…` or `Loading...` copy remains inside the route's root element — limit: copy outside the route root is covered only by the shell status check; the fixed sample fixture, existing screen status reporting, API readers, Playwright locator waiting and font machinery are reused unchanged, not guaranteed (D-076 E); internal states outside the initial view remain W-341's scope." [class: promise×scope-wider-than-check] — check: none: a W-360-b2 browser assertion that the whole `page.locator("body")` has no loading copy before each capture
+
+## Verdict
+Round 2: no earlier spec-review verdict exists under W-360-specreview/r*/, so there are no prior blockers to answer; every reader the opus adds or changes (the capture constants, the `Object.hasOwn` route guard, the route-aware gate, the baseline placeholder rejection, the phone Seats CSS and the 390px measurement row, the fixed-path policy reads) names its domain and a fail-closed rejecter, the prototype hash matches (e3320f65…, six ordered commits), and the host run browser-focused-worktree-5.out shows real assertion-level browser reds for b1, b2 and b3 (fixed-time mismatch, mount releasing the gate, select 10 ending at 465 > 390) with cumulative greens, W-110 behaviour 3 passing and the baseline loop running its gate before the bootstrap skip, so only two advisory findings remain.
+VERDICT: PASS

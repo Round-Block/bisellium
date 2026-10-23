@@ -10,6 +10,7 @@ import { expectRenderingEnvironment } from "./rendering-environment.js";
 const FIXED_NOW = "2026-09-25T09:35:43.947Z";
 const VIEWPORTS = [1280, 390] as const;
 const STABLE_STUDIO_PATH = "/fixtures/w350";
+const LOADING_COPY = /Loading[^\r\n]*(?:\u2026|\.{3})/u;
 
 let served: ServedInstance | undefined;
 test.afterEach(async () => {
@@ -83,9 +84,23 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
     await expect.poll(() => page.locator(".gate-ladder").count()).toBeGreaterThan(0);
     await expect(page.locator('.board__column[data-column-id="needs_you"]')).toBeInViewport();
     await expect(page.locator(".board__liveness")).toContainText(/connected|live/);
+    await expect(page.locator('.shell__status[data-state="live"]'), "board: its complete reconciliation is live").toHaveCount(1);
   } else if (route === "seats") {
-    await expect.poll(() => page.locator('select[aria-label^="model for seat "]').count()).toBeGreaterThan(0);
+    await expect(page.locator('.shell__status[data-state="ready"]'), "seats: its roster and model reads have settled").toHaveCount(1);
+    const selects = page.locator('select[aria-label^="model for seat "]');
+    await expect.poll(() => selects.count()).toBeGreaterThan(0);
     await expect(page.locator('select[aria-label="model for seat builder"]')).toHaveValue("claude-sonnet-5");
+    await expect
+      .poll(() =>
+        selects.evaluateAll((nodes) =>
+          nodes.every((node) => {
+            const select = node as HTMLSelectElement;
+            const option = select.selectedOptions[0];
+            return select.value !== "" && option?.value === select.value && (option.textContent ?? "").includes(select.value);
+          }),
+        ),
+      )
+      .toBe(true);
     await expect(page.locator(".seats__confirm-bar")).toHaveCount(0);
   } else {
     await expect(page.locator(".panel--completion")).toContainText("No milestone records");
@@ -94,6 +109,7 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
     await expect(page.locator(".fasti-strip__tick--filled")).toHaveCount(1);
     await expect(page.locator(".panel--engine")).toContainText("W-002");
   }
+  await expect(page.locator("body"), `${route}-${width}: no loading copy remains before capture`).not.toContainText(LOADING_COPY);
 }
 
 async function settleInitialView(page: Page, width: number): Promise<void> {
@@ -141,4 +157,79 @@ test("the live screens match their fixed desktop and phone initial-view baseline
     }
   }
   if (baselineState === "absent" && !refreshing) test.skip(true, BASELINE_BOOTSTRAP_REASON);
+});
+
+// W-360-b2 focused baseline readiness rows.
+test("W-360-b2 baseline Board waits for inbox at both capture widths", async ({ page }) => {
+  for (const width of VIEWPORTS) {
+    let sawRead!: () => void;
+    const readRequested = new Promise<void>((resolve) => {
+      sawRead = resolve;
+    });
+    let releaseRead!: () => void;
+    const holdRead = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+    await page.route("**/api/inbox", async (route) => {
+      sawRead();
+      await holdRead;
+      await route.continue();
+    });
+    served = await startServed(`w360-baseline-board-${width}`, { now: FIXED_NOW, prepareStudio });
+    await page.clock.setFixedTime(new Date(FIXED_NOW));
+    await page.setViewportSize({ width, height: 900 });
+    await signIn(page, "board");
+    let settled = false;
+    const wait = expectLoadedState(page, "board", width).then(() => {
+      settled = true;
+    });
+    await readRequested;
+    try {
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      expect(settled, `baseline Board ${width}: inbox must settle before capture`).toBe(false);
+    } finally {
+      releaseRead();
+      await wait;
+      await page.unroute("**/api/inbox");
+      await served.close();
+      served = undefined;
+    }
+  }
+});
+
+test("W-360-b2 baseline Seats waits for models at both capture widths", async ({ page }) => {
+  for (const width of VIEWPORTS) {
+    let sawRead!: () => void;
+    const readRequested = new Promise<void>((resolve) => {
+      sawRead = resolve;
+    });
+    let releaseRead!: () => void;
+    const holdRead = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+    await page.route("**/api/models", async (route) => {
+      sawRead();
+      await holdRead;
+      await route.continue();
+    });
+    served = await startServed(`w360-baseline-seats-${width}`, { now: FIXED_NOW, prepareStudio });
+    await page.clock.setFixedTime(new Date(FIXED_NOW));
+    await page.setViewportSize({ width, height: 900 });
+    await signIn(page, "seats");
+    let settled = false;
+    const wait = expectLoadedState(page, "seats", width).then(() => {
+      settled = true;
+    });
+    await readRequested;
+    try {
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      expect(settled, `baseline Seats ${width}: models must settle before capture`).toBe(false);
+    } finally {
+      releaseRead();
+      await wait;
+      await page.unroute("**/api/models");
+      await served.close();
+      served = undefined;
+    }
+  }
 });

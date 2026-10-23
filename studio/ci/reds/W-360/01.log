@@ -1,0 +1,59 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-360-b1\s --import tsx apps/web/test/w360.test.ts
+# exit: 1
+# at: 2026-10-22T23:44:03.732Z
+# sella: ui-architect
+# tree: tree:f73e60d7e7f8848d1817fede4afca0ba0eb1f328
+# ticket: {"opus":"W-360","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-360/studio","head":"32853adeba72d0e75cdaa9f94ef8313cb5919d86","brief":"f1465546bc3f9485da8157aa156a486dec7e4c28","at":"2026-10-22T23:44:03.700Z"}
+
+TAP version 13
+# Subtest: W-360-b1 behaviour 1: every served-browser capture uses one frozen server and browser clock
+not ok 1 - W-360-b1 behaviour 1: every served-browser capture uses one frozen server and browser clock
+  ---
+  duration_ms: 2.021496
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-360/apps/web/test/w360.test.ts:1:434'
+  failureType: 'testCodeFailure'
+  error: 'the verify browser clock is fixed without stopping timers'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { expect, type Page } from "@playwright/test";
+    
+    export const CAPTURE_NOW = "2026-09-25T09:35:43.947Z";
+    export const CAPTURE_VIEWPORTS = [1280, 390] as const;
+    
+    export type CaptureRoute = "inbox" | "board" | "seats" | "officina";
+    
+    const SCREEN_ROOT: Readonly<Record<CaptureRoute, string>> = {
+      inbox: ".inbox",
+      board: ".board",
+      seats: ".seats",
+      officina: ".officina",
+    };
+    
+    const LOADING_COPY = /Loading[^\r\n]*(?:\u2026|\.{3})/u;
+    
+    /** Keep browser-owned dates fixed while requests, fonts and rendering continue normally. */
+    export async function freezeCaptureClock(page: Page): Promise<void> {
+      void page;
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-360/apps/web/test/w360.test.ts:19:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 210.946952

@@ -19,10 +19,11 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as nav from "../src/lib/nav.js";
+import { CAPTURE_NOW, CAPTURE_VIEWPORTS, expectCapturedScreenSettled, freezeCaptureClock, type CaptureRoute } from "./capture-state.js";
 import { REPO_ROOT, startServed, type ServedInstance } from "./harness.js";
 
 interface NavEntry {
-  route: string;
+  route: CaptureRoute;
   href: string;
   label: string;
 }
@@ -124,8 +125,9 @@ test("W-110 behaviour 2: the rail reaches every screen it lists, says which one 
 });
 
 test("W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen", async ({ page }) => {
-  served = await startServed("walk-3");
+  served = await startServed("walk-3", { now: CAPTURE_NOW });
   const s = served;
+  await freezeCaptureClock(page);
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // Seed the throwaway studio: the allowance for the period the server itself reports missing,
@@ -137,7 +139,7 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
     const source = readFileSync(join(s.studioDir, "aerarium", "2026-W38.yml"), "utf8");
     writeFileSync(join(s.studioDir, "aerarium", `${missing.id}.yml`), source.replace(/^period:.*$/m, `period: ${missing.id}`));
   }
-  const now = new Date();
+  const now = new Date(CAPTURE_NOW);
   mkdirSync(join(s.studioDir, "acta"), { recursive: true });
   writeFileSync(
     join(s.studioDir, "acta", `${now.toISOString().slice(0, 10)}-walk.md`),
@@ -199,12 +201,12 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
   expect(entries, "nav.NAV_ENTRIES is exported").toBeTruthy();
   const dir = process.env["BISELLIUM_SHOTS_DIR"] ?? join(REPO_ROOT, "apps", "web", "test-results", "shots");
   mkdirSync(dir, { recursive: true });
-  for (const width of [1280, 390] as const) {
+  for (const width of CAPTURE_VIEWPORTS) {
     await page.setViewportSize({ width, height: 900 });
     for (const entry of entries!) {
       await page.goto(`${s.baseURL}/${entry.href}`);
       await expect(page.locator(".token-prompt"), `${entry.route}-${width}: the prompt stays closed`).toBeHidden();
-      await expect(page.locator(SCREEN_ROOT[entry.route]!), `${entry.route}-${width}: screen mounted before capture`).toHaveCount(1);
+      await expectCapturedScreenSettled(page, entry.route);
       await page.screenshot({ path: join(dir, `${entry.route}-${width}.png`), fullPage: false });
     }
   }

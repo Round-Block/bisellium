@@ -22,6 +22,7 @@ const WRITE_FAILED = "Could not record the change.";
 export function Seats({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
   const [officina, setOfficina] = useState<OfficinaResponse>(EMPTY);
   const [models, setModels] = useState<ModelRecordEntry[] | undefined>(undefined);
+  const [modelsSettled, setModelsSettled] = useState(false);
   const [pending, setPending] = useState<Pending | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -38,6 +39,7 @@ export function Seats({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   const inFlight = useRef(false);
 
   function reload(): void {
+    setModelsSettled(false);
     fetchOfficina()
       .then((o) => {
         setOfficina(o);
@@ -51,7 +53,8 @@ export function Seats({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     // the server route itself follows.
     fetchModels()
       .then(setModels)
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setModelsSettled(true));
   }
 
   useEffect(() => {
@@ -108,7 +111,7 @@ export function Seats({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   }
 
   const status = screenStatus("seats", {
-    loaded,
+    loaded: loaded && modelsSettled,
     empty: seats.length === 0 && munera.length === 0,
     failed: outcome === "error" ? WRITE_FAILED : readFailed ? true : undefined,
     refused: outcome === "refused" ? (error ?? "") : undefined,

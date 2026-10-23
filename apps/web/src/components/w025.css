@@ -923,6 +923,57 @@
 }
 
 @media (max-width: 599px) {
+  .seats__table {
+    table-layout: fixed;
+  }
+
+  .seats__row td {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .seats__row select {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .seats__card--roster .seats__table,
+  .seats__card--roster .seats__table tbody {
+    display: block;
+  }
+
+  .seats__card--roster .seats__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr);
+    height: auto;
+    min-height: 64px;
+  }
+
+  .seats__card--roster .seats__row td:last-child {
+    grid-column: 1 / -1;
+    padding-right: 0;
+  }
+
+  .seats__card--delegation .seats__table,
+  .seats__card--delegation .seats__table tbody {
+    display: block;
+  }
+
+  .seats__card--delegation .seats__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 64px;
+  }
+
+  .seats__card--delegation .seats__row td:last-child {
+    grid-column: 1 / -1;
+    padding-right: 0;
+  }
+
   .seats__confirm-bar { left: 0; flex-wrap: wrap; }
 }
 

@@ -1,0 +1,23 @@
+# opus: W-360
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a16410-6d04-7662-8e68-f5177c0d2208
+# outcome: passed
+# at: 2026-10-22T22:40:02.450Z
+# tree: tree:e63a1eb29767a24d03f13d7cff25c31bd3e7e38b
+# brief: briefs/W-360.md blob:f1465546bc3f9485da8157aa156a486dec7e4c28
+# ticket: {"opus":"W-360","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"fe33b4cee9671f19f2ab8e2c3ecc292f643e71f8","brief":"f1465546bc3f9485da8157aa156a486dec7e4c28","at":"2026-10-22T22:39:56.778Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-360-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Astra finding 1 is closed in the draft and prototype: both capture paths now require Board's completed live shell after inbox, reject both ruled loading terminators across the page body, and carry held-inbox browser rows at 1280px and 390px — check: apps/web/tests-serve/capture-state.spec.ts:54
+2. advisory — Astra finding 2 is closed in the draft and prototype: Seats reports ready only after officina and models settle, both capture paths require selected option identities, and held-model browser rows exercise both widths — check: apps/web/src/screens/Seats.tsx:113
+3. advisory — Astra finding 3 is closed in the draft and prototype: the phone roster gives the model control a full-width second line while the browser row retains containment and measures room for the complete selected identity and native arrow — check: apps/web/tests-serve/layout.spec.ts:69
+
+## Verdict
+
+passed — signature prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-360.md` and prototype `22c5a9493fb9945d53325d03457632fdca8aaa95dd39dd706116bbba5a03f182`; Astra's two blocking findings and one advisory have assertion-level rows, the two Opus advisories are adopted through body-wide placeholder checking and non-vacuous capture ordering, every promise and ruled Input domain case has ledger coverage, and capable-host browser execution plus runner-owned baseline creation remain assigned to the producer.

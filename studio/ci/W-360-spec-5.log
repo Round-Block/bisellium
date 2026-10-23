@@ -1,0 +1,28 @@
+# opus: W-360
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T23:40:32.173Z
+# tree: tree:e63a1eb29767a24d03f13d7cff25c31bd3e7e38b
+# brief: briefs/W-360.md blob:f1465546bc3f9485da8157aa156a486dec7e4c28
+# ticket: {"opus":"W-360","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"472fb6151bef83f3bd1a593d919bb9f40c03de65","brief":"f1465546bc3f9485da8157aa156a486dec7e4c28","at":"2026-10-22T23:40:29.085Z"}
+
+## Earlier findings
+- R2-1 (vacuous baseline order pin): closed — brief:89; `w360.test.ts` now asserts both indices are not -1 before ordering them.
+- R2-2 (loading copy checked only inside the route root): closed — brief:61; both gates now assert on `page.locator("body")`.
+- R3-1 (Board baseline gate passes while `/api/inbox` loads; regex misses "Loading the board…"): closed — brief:19, brief:51, brief:53; both paths require `.shell__status[data-state="live"]` (Board's `everLoaded` covers officina, opera and inbox), the regex is `Loading[^\r\n]*(?:…|\.{3})`, and held-inbox rows run at both widths.
+- R3-2 (Seats `ready` ignores `/api/models`): closed — brief:35; `loaded: loaded && modelsSettled`, plus held-models rows in both helpers.
+- R3-3 (advisory: phone roster cuts model to "claude-"): closed — brief:21, brief:55; full-width model line plus a measured value-width + 36px row.
+- R3 recommendation (instant, palette, D-103 refresh order): no change asked; consistent with brief:17, brief:73, brief:23.
+
+## Findings
+1. advisory — brief:35 [severity: S2] `reload()` now calls `setModelsSettled(false)`, and `onConfirm` calls `reload()` after every successful write. So each Confirm sends Seats back to `loading`, shows the "Loading the seats…" notice above the populated roster and announces it in the live region until `/api/models` returns. That contradicts brief:72 ("Seats only reports its existing independent model read as part of capture readiness") and `StatusInput.loaded`'s "the first read has landed", and no seats/states row covers status after a successful Confirm. Replace brief:35 with: "`apps/web/src/screens/Seats.tsx`: expose ready only after the first officina and first models reads settle; `modelsSettled` latches like `loaded`, so a post-write reload never returns the screen to loading; retain the existing model-result fallback." [class: spec×fix-opens-new-surface] — check: none: a `seats.spec.ts` row that holds `/api/models` after a successful Confirm and asserts no `.seats .screen-notice` and no `.shell__status[data-state="loading"]`
+2. advisory — brief:61 [severity: S3] The sidebar's Needs-you badge is a second reader of the inbox truth (`App.tsx`'s own `fetchInbox`, D-070 C), and neither gate names it. On Inbox the screen's effect fires its read before App's, so a capture can precede the badge. Replace brief:61's limit with: "limit: the shell sidebar's Needs-you count (App.tsx's separate `/api/inbox` read) is not gated and is reused unchanged; the fixed sample fixture, API readers, Playwright locator waiting and font machinery are reused unchanged, not guaranteed (D-076 E); internal states outside the initial view remain W-341's scope." [class: spec×promise-contract-not-declared] — check: none: a W-360-b2 row that holds App's `/api/inbox` read and asserts the gate stays unresolved until `.sidebar__badge` renders
+3. advisory — brief:55 [severity: S4] "Three equal metadata columns" is false: the CSS is `minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr)`. Replace "roster rows use three equal metadata columns" with "roster rows use three metadata columns (`minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr)`)". [class: spec×prose-contradiction-under-revision] — check: apps/web/test/w360.test.ts
+4. advisory — brief:116 [severity: S4] No real browser has yet run the round-4 browser rows: the held inbox/models rows, both baseline held rows, the readability measurement, and W-110 behaviour 3 waiting for Board `live`. The `browser-*.out` files written after the prototype are `stub-run.sh` outputs, and the last real host run (`browser-focused-worktree-5.out`, 15:27Z) predates the round-3 revise. The brief does assign this to the host, so it is not false evidence. Replace brief:116 by appending: "The round-4 browser rows have so far run only under `stub-run.sh`; this host run precedes branch." [class: spec×genuine-red-replayability-deferred-to-mint] — check: /home/edckt/.bisellium-evidence/W-360-spec/browser-focused-worktree.sh
+
+## Verdict
+Every reader the opus adds or changes names its domain and a fail-closed rejecter, and the round-2 and round-3 points are closed in the signed brief and in prototype 22c5a949…. Four advisories remain: Seats re-entering loading after a write, the ungated sidebar badge read, a column-ratio wording slip, and the host browser run still outstanding. None is S1 or a security gap.
+VERDICT: PASS

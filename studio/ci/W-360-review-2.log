@@ -1,0 +1,27 @@
+# opus: W-360
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16622-a5dc-7973-b413-76e944aad66a
+# outcome: passed
+# at: 2026-10-23T12:51:16.395Z
+# tree: tree:fc5565121bb77087085b8aa06885ebd6a73b96d3
+# ui_input: ci/W-360-spec-6.log
+# design_digest: sha256:fbf82697d075c14fd27ba89633df244935883b83639becdb0482d4ab74e71a8e
+# ticket: {"opus":"W-360","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-360/studio","head":"79c688810a2acaf854c49c8c96a6d2142db96feb","brief":"f1465546bc3f9485da8157aa156a486dec7e4c28","at":"2026-10-23T12:49:44.582Z"}
+
+## Findings
+1. advisory — apps/web/tests-serve/layout.spec.ts:82 [severity: S3] The revised row covers every selected label and the screenshots show the correct layout, but the delta contains no assertion-failure log proving this new tier-control case bites against the round-one source. Reached through round 1’s `tests×one-sided-bound-assertion` class. [class: tests×one-sided-bound-assertion] — check: none: record the revised label-width assertion failing against the round-one source before the CSS fix
+
+## UI input disposition
+The authoritative ui-lead input remains satisfied. All eight images were inspected: Inbox, Board, and Officina retain their desktop/phone hierarchy, desktop Seats is unchanged, and the refreshed 390px Seats view gives every Delegation choice a full-width control with complete labels, visible arrows, and no horizontal clipping.
+
+## Earlier findings
+- ci/W-360-review-1.log #1: closed — apps/web/src/components/w025.css:960 makes each phone Delegation control full-width, apps/web/tests-serve/layout.spec.ts:82 measures every complete selected label, and the refreshed phone image confirms readability.
+- ci/W-360-review-1.log #2: closed — facts.txt:2 shows `next` running from the main checkout, facts.txt:7 records exit 0, and the round-two packet contains `W-360.diff`.
+- ci/W-360-review-1.log #3: closed — facts.txt:2-7 records the main-checkout review dispatch completing successfully, with new gates certifying one source tree and the round-two packet produced.
+
+## Verdict
+The substantive phone defect and both procedural blockers are closed; only advisory red completeness remains.
+VERDICT: PASS
