@@ -234,9 +234,15 @@ test("W-362-b2 behaviour 2: a malformed sandbox shape is refused and nothing is 
     const file = join(dir, `settings-${i}.json`);
     const text = JSON.stringify(shape);
     writeFileSync(file, text);
-    const r = spawnSync("node", [SCRIPT, file, OPTS.patronDir, OPTS.agentGh, "/home/u/agents/bisellium"], { encoding: "utf8" });
+    const r = spawnSync("node", [SCRIPT, file, OPTS.patronDir, OPTS.agentGh, "/home/u/agents/bisellium"], {
+      encoding: "utf8",
+    });
     assert.equal(r.status, 1, `${text} exits 1: ${r.stdout}${r.stderr}`);
     assert.equal(readFileSync(file, "utf8"), text, `${text} is left unchanged`);
   }
-  assert.deepEqual(readdirSync(dir).filter((n) => n.includes(".bak-")), [], "no backup was made");
+  assert.deepEqual(
+    readdirSync(dir).filter((n) => n.includes(".bak-")),
+    [],
+    "no backup was made",
+  );
 });
