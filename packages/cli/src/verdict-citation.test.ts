@@ -1253,6 +1253,8 @@ test("W-381-b2 behaviour 2: on a brief that names a prototype, each pinned line'
     ["a hunk shorter than its header's counts", MUTATION.replace("@@ -5 +5 @@", "@@ -5,2 +5,2 @@")],
     ["a hunk line that is no diff line", MUTATION.replace("+  return 0;", "*  return 0;")],
     ["a line after the hunk", `${MUTATION}trailing text\n`],
+    ["a backslash line that is not the no-newline note", `${MUTATION}\\ typo\n`],
+    ["a no-newline note not after a body line", MUTATION.replace("-  return 2;\n", "\\ No newline at end of file\n-  return 2;\n")],
   ] as const) {
     const k = killFiles(patch, tapFailing("W-300-b1", "'row: exit 2'"));
     refused(`a mutation with ${name}`, row(k), notMutation(k.patch));
