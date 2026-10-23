@@ -29,7 +29,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -1197,6 +1197,9 @@ export function deriveNext(f: Facts): Derived {
     if (p.kind === "open") return { ...named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind !== "settled") {
+      // W-377: a kind: ui opus's pr waits for the Patron's ruling on the branch's screens
+      const waits = uiRulingWait(f, b, cur);
+      if (waits !== undefined) return hold("pr", waits);
       // W-275: the PR carries the record, so a handover older than the newest red or review log, or malformed, is refreshed first
       const t = b["traditio"];
       const at = t === undefined ? undefined : handoverAt(t);
@@ -1224,6 +1227,24 @@ export function deriveNext(f: Facts): Derived {
     return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded: the perform records the merge queue's certify certificate`, `bisellium next ${id} --perform --expect done`, PERFORM_1), act: "certify", ticket: { action: "done", round: 0 } };
   }
   return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`, PERFORM_1), ticket: { action: "done", round: 0 } };
+}
+
+/**
+ * W-377: why a kind: ui opus's pr waits, or undefined: a Patron ruling current at the branch's source tree `tree`, its design
+ * digest and served-e2e run is in the worktree's `ui_rulings`. The wait names what binds one and how it is recorded.
+ */
+function uiRulingWait(f: Facts, b: Dict, tree: string): string | undefined {
+  if (b["kind"] !== "ui") return undefined;
+  const studio = join(".worktrees", f.id, f.studioRel);
+  let read: { ruling: string } | { why: string };
+  try {
+    read = branchUiRuling(f.wt.studio, b as NativeRecord, f.id, tree);
+  } catch (e) {
+    read = { why: `the UI ruling cannot be read (${(e as Error).message})` };
+  }
+  if ("why" in read)
+    return `${read.why}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${f.id}) in ${studio} from the Patron's word on its ci/shots/${f.id}/, then bisellium amend ${f.id} --ui-ruling D-<n> --reason "<the Patron's word>" --studio ${studio}, commit both on opus/${f.id}, then rerun`;
+  return undefined;
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
