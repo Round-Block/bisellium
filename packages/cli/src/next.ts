@@ -1385,7 +1385,7 @@ function fixedOutside(f: Facts, round: BuildReviewRound | undefined): number | {
   const at = git(f.repo, ["log", "-1", "--format=%H", ref, "--", join(f.studioRel, round.log)]);
   if (at.status !== 0 || at.error !== undefined) return { why: `git cannot read which commit on opus/${f.id} last changed ${round.log}, ${uncounted}` };
   const since = at.stdout.trim();
-  if (since === "") return { why: `${round.log} is not committed on opus/${f.id}, ${uncounted}; commit it, then rerun` };
+  if (since === "") return { why: `${round.log} is not committed on opus/${f.id} (commit it), ${uncounted}` };
   const log = git(f.repo, ["log", "--first-parent", "--no-merges", "--name-only", "-z", "--format=%x01%H", `${since}..${ref}`]);
   if (log.status !== 0 || log.error !== undefined) return { why: `git cannot list the commits on opus/${f.id} after ${round.log}, ${uncounted}` };
   return log.stdout
