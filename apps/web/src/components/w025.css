@@ -504,7 +504,7 @@
 
 .officina__row--link {
   text-decoration: none;
-  color: var(--ink);
+  color: var(--accent-cyan);
   cursor: pointer;
 }
 
@@ -1024,12 +1024,12 @@
   padding: 4px 8px;
   font-family: var(--font-body);
   font-size: 13px;
-  color: var(--ink-2);
+  color: var(--accent-yellow);
   background: var(--surface);
 }
 
 .board__project-select option {
-  color: var(--ink-2);
+  color: var(--accent-yellow);
   background: var(--surface);
 }
 
@@ -1256,15 +1256,15 @@
 }
 
 /* The banner's petitio text IS the link to its Inbox thread (DIRECTION §3:
- * verdigris carries identity and interaction). */
+ * cyan carries content/evidence links). */
 .board-drawer__banner-link {
-  color: var(--verdigris);
+  color: var(--accent-cyan);
   text-decoration: underline;
 }
 
 .board-drawer__gate-evidence,
 .board-drawer__gate-evidence:visited {
-  color: var(--verdigris);
+  color: var(--accent-cyan);
   text-decoration: underline;
 }
 
@@ -1515,4 +1515,23 @@ details.officina__row > summary {
 
 .officina__completion-pct {
   text-align: right;
+}
+
+/* W-366: accents identify content roles; status and interaction states keep
+ * their existing neutral, verdigris, amber, ok and bad cues. */
+::selection {
+  color: var(--surface);
+  background: var(--accent-pink);
+}
+
+.officina__title,
+.officina__panel-heading,
+.inbox__title,
+.inbox__detail-subject,
+.seats__heading,
+.seats__card-heading,
+.board__title,
+.board-drawer__title,
+.board-drawer__section-head {
+  color: var(--accent-purple);
 }

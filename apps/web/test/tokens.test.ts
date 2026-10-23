@@ -158,9 +158,12 @@ test("W-366-b2 behaviour 2: each accent has one non-status selector role", () =>
     consumers.map(({ selector, tokens }) => `${selector} => ${tokens.join(",")}`).sort(),
     [
       "::selection => accent-pink",
-      ".board__project-select, .board__project-select option => accent-yellow",
-      ".officina__row--link, .board-drawer__banner-link, .board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
+      ".board__project-select => accent-yellow",
+      ".board__project-select option => accent-yellow",
+      ".board-drawer__banner-link => accent-cyan",
+      ".board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
       ".officina__title, .officina__panel-heading, .inbox__title, .inbox__detail-subject, .seats__heading, .seats__card-heading, .board__title, .board-drawer__title, .board-drawer__section-head => accent-purple",
+      ".officina__row--link => accent-cyan",
     ].sort(),
     "the four accents have only their proposed heading, link, text-selection and project-name consumers",
   );
@@ -243,7 +246,7 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /clip-path\s*:/, "the failed gate keeps its diagonal shape cue");
   assert.match(cssRule(".seats__confirm-error"), /color\s*:\s*var\(--ink\)/, "confirmation error copy uses the highest-contrast text token");
   assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--ink\)/, "a blocked card keeps its non-colour left-rule cue without consuming bad");
-  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--verdigris\)/, "drawer evidence links and their visited state use verdigris");
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--accent-cyan\)/, "drawer evidence links and their visited state use the cyan link accent");
   assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*text-decoration\s*:\s*underline/, "drawer evidence links retain their underline");
   assert.match(cssRule(".sidebar__badge"), /color\s*:\s*var\(--amber\)/, "the Inbox badge uses amber");
   assert.match(cssRule(".sidebar__link:hover"), /background\s*:\s*var\(--rule\)/, "hovered navigation uses the rule fill");
@@ -258,19 +261,19 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
     [".sidebar__link--disabled", "ink-3"],
     [".token-prompt__input", "ink"],
     [".token-prompt__submit", "ink"],
-    [".officina__row--link", "ink"],
+    [".officina__row--link", "accent-cyan"],
     [".inbox__input-ratio", "ink"],
     [".inbox__input-ratio::placeholder", "ink-3"],
     [".inbox__btn-action", "ink"],
     [".seats__row select", "ink"],
     [".seats__row select option", "ink"],
     [".seats__confirm-btn,\n.seats__cancel-btn", "ink"],
-    [".board__project-select", "ink-2"],
-    [".board__project-select option", "ink-2"],
+    [".board__project-select", "accent-yellow"],
+    [".board__project-select option", "accent-yellow"],
     [".board__strip-item", "ink"],
     [".board-drawer__close", "ink-2"],
-    [".board-drawer__banner-link", "verdigris"],
-    [".board-drawer__gate-evidence,\n.board-drawer__gate-evidence:visited", "verdigris"],
+    [".board-drawer__banner-link", "accent-cyan"],
+    [".board-drawer__gate-evidence,\n.board-drawer__gate-evidence:visited", "accent-cyan"],
   ] as const;
   for (const [selector, textToken] of interactiveTextTokens) {
     assert.match(cssRule(selector), new RegExp(`color\\s*:\\s*var\\(--${textToken}\\)`), `${selector.replaceAll("\n", " ")} declares its dark-surface text token`);
