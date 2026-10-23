@@ -1829,3 +1829,70 @@ test("W-377-b2 fix round 2: a Git-quoted non-ASCII path over 300 characters is l
   expectStep(held, "pr", "held", "a long quoted path: the pr is held");
   w377Dirty(held, "D-960", [`"studio/decisions/D-990-${"\\303\\251".repeat(100)}.md"`], "a long quoted path: the dirty: line is whole");
 });
+
+// fix round 2b: a line past the 1000-character cap that bounds every other printed line is still printed whole
+test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole on its ruling: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
+  const id = `D-${"7".repeat(1000)}`;
+  const refusal = (w: World): string => `${id} is unsafe or unreadable: ENAMETOOLONG: name too long, lstat '${join(w.wtStudio, "decisions", `${id}.md`)}'`;
+  const attach = (w: World): void => {
+    editRecord(w, "wt", (doc) => doc.setIn(["ui_rulings"], [id]));
+    commit(w.wt, `studio(${OPUS}): a ui ruling that names no file, with a long id`);
+  };
+  const w = uiReviewWorld("w377-b1-huge");
+  codexSays(w, { session: "s-377-10", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  attach(w);
+  const direct = next(w, [OPUS, ...BUDGET]);
+  expectStep(direct, "pr", "held", "a huge id: the pr is held");
+  w377Holds(direct, w, [refusal(w)], "a huge id: the refusal is whole on the pr hold");
+  git(w.wt, ["push", "-q", "-u", "origin", `opus/${OPUS}`]);
+  scenario(w, { list: openList(w) });
+  const merge = next(w, [OPUS, ...BUDGET]);
+  expectStep(merge, "merge", "held", "a huge id: the merge is held");
+  w377Holds(merge, w, [refusal(w)], "a huge id: the refusal is whole on the merge hold");
+
+  const c = uiReviewWorld("w377-b1-huge-chain");
+  attach(c);
+  codexSays(c, { session: "s-377-11", reply: UI_PASS_REPLY });
+  const chained = next(c, [OPUS, "--perform", "--chain", ...BUDGET], { env: { ...CODEX_PATH } });
+  assert.equal(chained.status, 1, ran("chain: exit 1", chained));
+  assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
+  w377Holds(chained, c, [refusal(c)], "chain: a huge id: the refusal is whole");
+});
+
+test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole on its dirty: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
+  // the longest legal name: 255 bytes, 123 two-byte letters, which git prints as 984 characters of octal escapes
+  const stray = `studio/decisions/D-990-${"é".repeat(123)}.md`;
+  const quoted = `"studio/decisions/D-990-${"\\303\\251".repeat(123)}.md"`;
+  assert.ok(quoted.length > 1000, "fixture: the quoted path is over the cap");
+  const w = uiReviewWorld("w377-b2-huge");
+  codexSays(w, { session: "s-377-12", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  w377Ruling(w, "D-960");
+  w377Amend(w, "D-960");
+  commit(w.wt, `studio(${OPUS}): the ui ruling`);
+  put(w.wt, stray, "stray\n");
+  const direct = next(w, [OPUS, ...BUDGET]);
+  expectStep(direct, "pr", "held", "a huge path: the pr is held");
+  w377Dirty(direct, "D-960", [quoted], "a huge path: the dirty: line is whole on the pr hold");
+  rmSync(join(w.wt, stray));
+  git(w.wt, ["push", "-q", "-u", "origin", `opus/${OPUS}`]);
+  scenario(w, { list: openList(w) });
+  put(w.wt, stray, "stray\n");
+  const merge = next(w, [OPUS, ...BUDGET]);
+  expectStep(merge, "merge", "held", "a huge path: the merge is held");
+  w377Dirty(merge, "D-960", [quoted], "a huge path: the dirty: line is whole on the merge hold");
+
+  const c = uiReviewWorld("w377-b2-huge-chain");
+  w377Ruling(c, "D-960");
+  w377Amend(c, "D-960");
+  commit(c.wt, `studio(${OPUS}): the ui ruling`);
+  put(c.wt, stray, "stray\n");
+  codexSays(c, { session: "s-377-13", reply: UI_PASS_REPLY });
+  const chained = next(c, [OPUS, "--perform", "--chain", ...BUDGET], { env: { ...CODEX_PATH } });
+  assert.equal(chained.status, 1, ran("chain: exit 1", chained));
+  assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
+  w377Dirty(chained, "D-960", [quoted], "chain: a huge path: the dirty: line is whole");
+});
