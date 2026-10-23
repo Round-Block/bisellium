@@ -24,8 +24,8 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 - A build verdict's `## Earlier findings` may name only the previous round's own findings; spec review is capped at two rounds (D-061 §4). A subagent running a kept record script is refused by the auto-mode classifier: stop and report, no retry via another agent.
 - `--expect pr --body-file` takes a file under the repo or `$TMPDIR` only. `--expect spec` is two performs; the landing leaves earlier round logs untracked: add them to the next records commit. Evidence copies of the kept scripts carry the `next` calls; the `scripts/` copy still lacks them. Uncommitted tracked edits in the main checkout block the spec and merge performs' fast-forward: `git stash push -m <tag> -- <paths>`, rerun, `git stash apply <sha>`, drop by tag.
 - A merge perform printing `QUEUE_TIMEOUT` with the PR still queued reruns with `--poll-ms 20000 --max-polls 150`. A queued PR shows no auto-merge request: check `isInMergeQueue` (gh api graphql) before touching it. An approved PR sitting CLEAN with `isInMergeQueue` false: `gh pr merge <n> --disable-auto` then `--auto`; records PRs use `--auto` without `--squash`.
-- An Artifact publish refused for a newer live version is a version conflict, not a permission refusal: read the live page, merge, publish. The Status page's live version carries edits the build lacks: its republish needs the Patron until W-283. A build round failed on an evidence-only fix is re-ordered only by a brief correction and re-signature until W-328. A done perform refused on GitHub's artifact host reruns once with exactly the host named, never a wildcard or a settings edit, until W-370 lands (D-106 C).
-- A ladder-runner runs a land or merge perform in the foreground until W-372 lands (D-106 D). A review packet is built from the main checkout, never a worktree, until W-353 lands (D-106 A). Codex UI builders get `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 lands (D-106 D).
+- An Artifact publish refused for a newer live version is a version conflict, not a permission refusal: read the live page, merge, publish. The Status page's live version carries edits the build lacks: its republish needs the Patron until W-283. An evidence-only fix under `studio/ci/` needs one empty marker commit naming it before next orders the re-review, until W-378. A done perform refused on GitHub's artifact host reruns once with exactly the host named, never a wildcard or a settings edit, until W-370 lands (D-106 C).
+- A ladder-runner runs a land or merge perform in the foreground until W-372 lands (D-106 D). Codex UI builders get `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 lands (D-106 D). Since W-362 a source merge needs the Patron's printed `merge --ff-only` until W-369; a ui opus's pr waits for the Patron's yes until W-377.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and the daily retro; D-076 E's architect line ("unchanged code gets a stated limit, not a guarantee") stays in every architect dispatch.
 - Until `next`'s stall line is in the installed `bisellium`, watch each dispatch with `~/.bisellium-evidence/watch-silence.sh <min> <dirs>` under Monitor.
@@ -49,29 +49,27 @@ Order by cycle minutes saved, D-039 highs first; a high opus filed since starts 
 Lanes per D-106 E. Halted: W-239 (D-106 D).
 
 Lane A (guard, scripts, hooks, run; no next.ts):
-A1. W-362 — the guard installer and its input checks, W-310's remainder (greenlit)
-A2. W-373 — the repeat review-defect class "a fix opens a new input surface": its cause fix chosen at spec (D-076 D; high, greenlit)
-A3. W-376 — the repeat test-defect class "a test checks only part of a spelled-out string": its cause fix chosen at spec (D-076 D; high, greenlit)
+A1. W-369 — the Patron's installed guard syncs the agent clone to the fetched master (high; D-106 D, F; design to the Patron before branch)
+A2. W-376 — a check rule blocks one-sided assertions on spelled-out strings (D-076 D; high)
+A3. W-349 — the flaky row W-279-b3 failed in the merge queue twice: print what it captured, then fix the cause (D-039 high)
 A4. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
-A5. W-369 — the Patron's installed guard syncs the agent clone to the fetched master (high; D-106 D, F)
-A6. W-372 — a dispatched agent waits for its own long background perform (D-106 D; follows W-369)
-A7. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
-A8. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
-A9. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
-A10. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
+A5. W-372 — a dispatched agent waits for its own long background perform (D-106 D; follows W-369)
+A6. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
+A7. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
+A8. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
+A9. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
 Lane B (next.ts, one at a time; D-039 highs first):
-B1. W-328 — an open path outside a brief's Files owned goes to the producer, not a builder (high; unblocks W-360)
-B2. W-353 — a ui opus's build review run by next, and review refuses stray gate logs (high)
-B3. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high)
-B4. W-370 — certify's certificate read through the GitHub API, not an artifact (high)
-B5. W-333 — the queue as a record, `studio/queue.yml` (greenlit; promoted 2026-10-23 (boot trim))
-B6. W-374 — next --all prints only opera in flight; --everything keeps the full list (boot trim)
-B7. W-363 — W-309's remainder: the spec-review perform through next, and the chain refreshes the handoff after its review
-B8. W-331 — `next.ts` split by region, no behaviour change
-B9. W-183 — heavy-job slots
-B10. W-169 — lane claims, the second lane (D-075 F; design approved by D-087 C)
-B11. W-332 — step tickets close the retired dispatch guard's gap (greenlit)
-B12. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline`
+B1. W-377 — a ui opus's pr waits for the Patron's ruling on the branch's screenshots (high; Patron 2026-10-23)
+B2. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high)
+B3. W-370 — certify's certificate read through the GitHub API, not an artifact (high)
+B4. W-333 — the queue as a record, `studio/queue.yml` (greenlit; promoted 2026-10-23 (boot trim))
+B5. W-374 — next --all prints only opera in flight; --everything keeps the full list (boot trim)
+B6. W-363 — W-309's remainder: the spec-review perform through next, and the chain refreshes the handoff after its review
+B7. W-331 — `next.ts` split by region, no behaviour change
+B8. W-183 — heavy-job slots
+B9. W-169 — lane claims, the second lane (D-075 F; design approved by D-087 C)
+B10. W-332 — step tickets close the retired dispatch guard's gap (greenlit)
+B11. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline`
 Then the console MVP's server side (after the block):
 10. W-304 — seats read live from one settings store, no PR to take effect (D-074)
 11. W-298 — the `petitio` verb to the Patron; `next` holds on an open one
@@ -79,8 +77,8 @@ Then the console MVP's server side (after the block):
 13. W-261 — woken orchestration: the cascade loop waits on a GitHub event, one fresh session per wake (D-087 F; changes `scripts/cascade-loop.sh`, the Patron's folder)
 14. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 UI queue, two lanes (order D-090 B; models D-091, D-099; every opus `kind: ui` at start, D-088 E, except W-338):
-1. W-366 — Dracula's cyan, pink, purple and yellow as accent colours (Patron 2026-10-22, D-103); before W-360's recapture (greenlit)
-2. W-360 — W-350 part 3, redo first (Patron 2026-10-22, D-099 E), after W-361: screenshot baselines with a frozen clock, captured after each screen's data loads; the Patron approves the four screens (greenlit, high; waits for W-328, D-106 A)
+1. W-366 — Dracula's cyan, pink, purple and yellow as accent colours (greenlit, D-103): the Patron approved the colours 2026-10-23; then verify on master and done
+2. W-360 — W-350 part 3, redo first (Patron 2026-10-22, D-099 E), after W-361: screenshot baselines with a frozen clock, captured after each screen's data loads; the Patron approves the four screens (greenlit, high; waits for W-366's done)
 3. W-355 — W-348 part 2: `next` reads the spec pairing and kind from the record that owns the spec evidence, failing closed on a bad owner record (backlog: awaits greenlight)
 4. W-350 — screenshot baselines with production fonts, two stages (D-097): waits for W-360 and then the Patron's approval of the recaptured shots (D-099 E)
 5. W-345 — Inbox truth and safety: shortcuts ignore keys typed in a field, one submission at a time, the reason bound to its petition, no invented petitions on a failed read, answer pane reachable at phone width, defer and delegate made distinct or removed
