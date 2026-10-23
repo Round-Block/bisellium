@@ -1374,13 +1374,14 @@ test("W-328-b1 behaviour 1: a failed round's fix committed outside the source tr
   git(m.wt, ["merge", "-q", "--no-ff", "--no-edit", "master"]);
   buildFix(n167(m), "a merge of master's commits: build, phase fix");
   // every read fails closed: a failed git read of the log's commit or of the commits after it holds, never counts
-  for (const [label, needle] of [
-    ["a failed read of the log's commit", "--format=%H refs/heads/opus/"],
-    ["a failed read of the commits after it", "--no-merges --name-only"],
+  const UNCOUNTED = "so the commits after it cannot be counted (D-086 B)";
+  for (const [label, needle, why] of [
+    ["a failed read of the log's commit", "--format=%H refs/heads/opus/", `git cannot read which commit on opus/${OPUS} last changed ci/${OPUS}-review-1.log, ${UNCOUNTED}`],
+    ["a failed read of the commits after it", "--no-merges --name-only", `git cannot list the commits on opus/${OPUS} after ci/${OPUS}-review-1.log, ${UNCOUNTED}`],
   ] as const) {
     const o = n167(w, { GIT_STUB_REAL: failingGit("w328-b1-git", [needle]) });
     expectStep(o, "build", "held", `${label}: held`);
-    assert.match(o.kv.get("why") ?? "", /, so the commits after it cannot be counted \(D-086 B\)$/, ran(`${label}: why`, o));
+    assert.equal(o.kv.get("why"), why, ran(`${label}: why`, o));
   }
   // a log not committed on the branch holds: the record is committed without it
   const u = world("w328-b1-uncommitted", "build");
@@ -1390,7 +1391,7 @@ test("W-328-b1 behaviour 1: a failed round's fix committed outside the source tr
   git(u.wt, ["commit", "-q", "-m", `studio(${OPUS}): the record without its log`, "--", recordPath(u)]);
   const uo = n167(u);
   expectStep(uo, "build", "held", "a log not committed: held");
-  assert.match(uo.kv.get("why") ?? "", new RegExp(`^ci/${OPUS}-review-1\\.log is not committed on opus/${OPUS}, so the commits after it cannot be counted`), ran("a log not committed: why", uo));
+  assert.equal(uo.kv.get("why"), `ci/${OPUS}-review-1.log is not committed on opus/${OPUS} (commit it), so the commits after it cannot be counted (D-086 B)`, ran("a log not committed: why", uo));
 });
 
 /** W-360's fix check, round 1 (`.bisellium/reviews/W-360/fix-1/check.json`): three open paths, none in W-360's Files owned. */
