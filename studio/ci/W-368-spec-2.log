@@ -1,0 +1,20 @@
+# opus: W-368
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a165e2-72cd-7c30-9bb9-000c7ad39cb4
+# outcome: passed
+# at: 2026-10-22T23:16:16.144Z
+# tree: tree:e63a1eb29767a24d03f13d7cff25c31bd3e7e38b
+# brief: briefs/W-368.md blob:ef79138606d3bb1c4be09b3a99902f7717ff3f1f
+# ticket: {"opus":"W-368","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"472fb6151bef83f3bd1a593d919bb9f40c03de65","brief":"ef79138606d3bb1c4be09b3a99902f7717ff3f1f","at":"2026-10-22T23:16:12.242Z"}
+
+## Findings
+1. advisory — brief:65 [severity: S4] The input table treats `uses:` as test data but omits the two changed `actions/upload-artifact@v6` calls, their valid call domains, and the runner function that turns a non-zero action exit into refusal. Replace brief:65 with these rows: `| 3. A step's uses: value | actions/checkout@v<5 or more>, actions/setup-node@v<5 or more> or actions/upload-artifact@v<6 or more>, in owner/repo@v<major> form; a new action or form requires a judged table entry | assert.ok in W-368-b1 rejects an unknown action, unsupported form or lower major |` and `| 4. The two actions/upload-artifact@v6 calls | the exact web-e2e and certify conditions and with maps specified by Interfaces 1 and Promise uploads-unchanged, with an action exit of 0 | GitHub's runner: neither step has continue-on-error, so a non-zero action exit fails web-e2e or certify |`. [class: spec×input-without-named-rejector] — check: none: brief admission should require every changed GitHub Action call and its runner rejector in Input domain
+2. advisory — brief:22 [severity: S2] The row accepts every higher major of a known action, so a future action-major move need not flip it and can be silent to this check. Replace brief:22 with: `2. One new row, W-368-b1, in scripts/ci-scope.test.mjs fails if any job's runs-on is not ubuntu-24.04 or any step's uses: is not a known action at or above its configured floor. A future runner-image change, lower action major, unknown action or unsupported uses: form flips this row; a higher major of a known action does not.` [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/ci-scope.test.mjs
+3. advisory — brief:69 [severity: S2] Comparing an action major with `>= NODE24_MAJOR` does not establish that every accepted future major itself runs on Node 24, so the numbered behaviour promises more than its test guarantees. Replace brief:69 with: `1. **Every ci.yml job names ubuntu-24.04 and every action it uses is known at or above its configured Node-24-introducing major.** In W-368-b1 (scripts/ci-scope.test.mjs), each of the four jobs names runs-on: ubuntu-24.04 and each uses: step satisfies NODE24_MAJOR; the row does not inspect action metadata, so it guarantees the configured floor, not the runtime of an accepted future major. The three stated mutations fail the row.` [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/ci-scope.test.mjs
+
+## Verdict
+The brief is feasible and fail-closed for plausible studio mistakes, with three advisory boundary and promise corrections for the builder.
+VERDICT: PASS

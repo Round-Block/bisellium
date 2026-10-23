@@ -6,6 +6,7 @@
  *
  * W-139 adds the `test:record` rows (`--test-name-pattern=W-139.behaviour.N:`).
  * W-335 adds scripts/test-reads.mjs's row (`--test-name-pattern='^W-335-b1\s'`).
+ * W-368 adds the runner-image and action-runtime row (`--test-name-pattern='^W-368-b1\s'`).
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -664,7 +665,7 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
         "node --import tsx apps/web/tests-serve/rendering-environment.ts apps/web/tests-serve/screenshots.spec.ts-snapshots/rendering-environment.json",
         DEFERRED,
       ],
-      ["actions/upload-artifact@v4", REFRESH_SCREENSHOTS],
+      ["actions/upload-artifact@v6", REFRESH_SCREENSHOTS],
     ],
     "web-e2e: every step skips on a pull request",
   );
@@ -783,5 +784,32 @@ test("W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test s
     );
   } finally {
     for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+/** W-368: the lowest Node 24 major of each action ci.yml may use. An action outside this table, or a `uses:` that is not
+ *  `owner/repo@v<major>`, fails the row: a new action is judged and added here, never let through. */
+const NODE24_MAJOR = { "actions/checkout": 5, "actions/setup-node": 5, "actions/upload-artifact": 6 };
+
+test("W-368-b1 behaviour 1: every ci.yml job runs on ubuntu-24.04 and every action it uses runs on Node 24", () => {
+  const doc = workflow();
+  const jobs = Object.entries(doc.jobs);
+  assert.ok(jobs.length > 0, "ci.yml has jobs");
+  for (const [name, job] of jobs)
+    assert.equal(job["runs-on"], "ubuntu-24.04", `${name} pins ubuntu-24.04, never the moving ubuntu-latest label`);
+  const uses = jobs.flatMap(([name, job]) =>
+    (job.steps ?? []).filter((step) => step.uses !== undefined).map((step) => [name, step.uses]),
+  );
+  assert.ok(uses.length > 0, "ci.yml uses actions");
+  for (const [name, use] of uses) {
+    const m = /^([\w.-]+\/[\w.-]+)@v(\d+)$/.exec(String(use));
+    assert.ok(
+      m !== null && Object.hasOwn(NODE24_MAJOR, m[1]),
+      `${name}: "${use}" is an owner/repo@v<major> action this row knows`,
+    );
+    assert.ok(
+      Number(m[2]) >= NODE24_MAJOR[m[1]],
+      `${name}: "${use}" is at least ${m[1]}@v${NODE24_MAJOR[m[1]]}, a Node 24 major (Node 20 actions are deprecated)`,
+    );
   }
 });
