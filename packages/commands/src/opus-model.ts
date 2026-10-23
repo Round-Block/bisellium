@@ -939,27 +939,27 @@ export const shortened = (text: string, max: number): string => (text.length > m
  * `ruling` finds current at `tree` (the branch's current source tree), the current design digest and the served-e2e run;
  * else why none is, naming what binds one. `verify` on master and done's own ruling rule are unchanged.
  */
-export function branchUiRuling(root: string, record: NativeRecord, id: string, tree: string): { ruling: string } | { why: string } {
+export function branchUiRuling(root: string, record: NativeRecord, id: string, tree: string): { ruling: string } | { why: string; refusals: string[] } {
   const design = currentDesign(root, record, id);
-  if (!design.digest) return { why: shortened(design.error ?? "current design could not be read", 240) };
+  if (!design.digest) return { why: shortened(design.error ?? "current design could not be read", 240), refusals: [] };
   const input = authoritativeUiInput(root, record, design.digest);
-  if (!input.input) return { why: shortened(input.problems.join("; "), 240) };
+  if (!input.input) return { why: shortened(input.problems.join("; "), 240), refusals: [] };
   const served = validateServed(root, record);
-  if (served.problems.length > 0 || served.at === undefined) return { why: shortened(served.problems.join("; "), 240) };
+  if (served.problems.length > 0 || served.at === undefined) return { why: shortened(served.problems.join("; "), 240), refusals: [] };
   // round 3: ui_rulings is absent or a non-empty sequence of distinct strings; any other shape refuses the whole field
   const refs = record.ui_rulings;
   const malformed = refs !== undefined && (!Array.isArray(refs) || refs.length === 0 || refs.some((ref) => typeof ref !== "string") || new Set(refs).size !== refs.length);
   const refused: string[] = malformed ? ["ui_rulings must be a non-empty sequence of distinct decision-id strings"] : [];
-  // fix round 1: the why is one printed line, capped at 1000 characters: every problem is bounded, and only the newest few rulings'
-  // reasons are listed, so the tree, digest and time that bind a ruling are never cut off however long ui_rulings grows
+  // fix round 1: the why is one printed line, capped at 1000 characters, so it carries the refusals' count and the caller prints
+  // each refusal whole on a line of its own: the tree, digest and time that bind a ruling are never cut off however long ui_rulings grows
   for (const ref of malformed || refs === undefined ? [] : (refs as string[])) {
     const result = ruling(root, record, ref, design.digest, input.input.at, served.at, tree);
     if (result.current) return { ruling: ref };
     refused.push(result.problem ?? `${ref} rules another served tree or design digest, or an earlier time`);
   }
   const after = new Date(Math.max(instant(input.input.at), instant(served.at))).toISOString();
-  const shown = [...refused.slice(-3).map((r) => shortened(r, 100)), ...(refused.length > 3 ? [`and ${refused.length - 3} more`] : [])];
-  return { why: `${shown.length === 0 ? "no Patron ruling on these screens is recorded" : shown.join("; ")}; it waits for one that binds certifies: ${tree}, design_digest: ${design.digest}, at or after ${after}` };
+  const head = refused.length === 0 ? "no Patron ruling on these screens is recorded" : `${refused.length} ${refused.length === 1 ? "ruling is" : "rulings are"} refused or not current (each on a ruling: line)`;
+  return { why: `${head}; it waits for one that binds certifies: ${tree}, design_digest: ${design.digest}, at or after ${after}`, refusals: refused };
 }
 
 export function validateStudioNativeModel(

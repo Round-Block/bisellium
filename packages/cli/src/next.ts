@@ -1196,7 +1196,7 @@ export function deriveNext(f: Facts): Derived {
     if (p.kind === "held") return hold("pr", p.reason);
     // W-377: a kind: ui opus's pr, and the merge of a PR open on its tip, wait for the Patron's ruling on the branch's screens
     const waits = p.kind === "settled" || p.kind === "behind" ? undefined : uiRulingWait(f, b, cur);
-    if (waits !== undefined) return hold(p.kind === "open" ? "merge" : "pr", waits);
+    if (waits !== undefined) return { ...hold(p.kind === "open" ? "merge" : "pr", waits.why), extra: waits.extra };
     if (p.kind === "open") return { ...named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind !== "settled") {
@@ -1234,17 +1234,22 @@ export function deriveNext(f: Facts): Derived {
  * digest and served-e2e run is in the worktree's `ui_rulings` (W-377 behaviour 2: committed on opus/<id> with that record).
  * The wait names what binds one and how it is recorded.
  */
-function uiRulingWait(f: Facts, b: Dict, tree: string): string | undefined {
+function uiRulingWait(f: Facts, b: Dict, tree: string): { why: string; extra: [string, string][] } | undefined {
   if (b["kind"] !== "ui") return undefined;
   const studio = join(".worktrees", f.id, f.studioRel);
-  let read: { ruling: string } | { why: string };
+  let read: { ruling: string } | { why: string; refusals: string[] };
   try {
     read = branchUiRuling(f.wt.studio, b as NativeRecord, f.id, tree);
   } catch (e) {
-    read = { why: `the UI ruling cannot be read (${shortened((e as Error).message, 240)})` };
+    read = { why: `the UI ruling cannot be read (${shortened((e as Error).message, 240)})`, refusals: [] };
   }
+  // fix round 1: the why is one printed line capped at 1000 characters, so it keeps the required parts and each refusal and each
+  // uncommitted path is its own line (a ruling: or dirty: line), cut at 300 characters, never dropped
   if ("why" in read)
-    return `${read.why}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${f.id}) in ${studio} from the Patron's word on its ci/shots/${f.id}/, then bisellium amend ${f.id} --ui-ruling D-<n> --reason "<the Patron's word>" --studio ${studio}, commit both on opus/${f.id}, then rerun`;
+    return {
+      why: `${read.why}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${f.id}) in ${studio} from the Patron's word on its ci/shots/${f.id}/, then bisellium amend ${f.id} --ui-ruling D-<n> --reason "<the Patron's word>" --studio ${studio}, commit both on opus/${f.id}, then rerun`,
+      extra: read.refusals.map((r) => ["ruling", shortened(r, 300)] as [string, string]),
+    };
   // the PR carries what is committed: the record and the decisions folder are clean against HEAD
   // ponytail: the whole folder, not the ruling's own file, so no id is joined onto a path; a stray decision holds too
   const paths = [join(f.studioRel, recordRel(f.id)), join(f.studioRel, "decisions")];
@@ -1252,13 +1257,13 @@ function uiRulingWait(f: Facts, b: Dict, tree: string): string | undefined {
   // unmerged or any other) hides its working bytes from status, so it holds too
   const st = git(f.wt.dir, ["status", "--porcelain", "--untracked-files=all", "--ignored", "--", ...paths]);
   const ix = git(f.wt.dir, ["ls-files", "-v", "--", ...paths]);
-  if (st.status !== 0 || st.error !== undefined || ix.status !== 0 || ix.error !== undefined) return `git status of ${paths.join(", ")} failed in ${join(".worktrees", f.id)}`;
+  if (st.status !== 0 || st.error !== undefined || ix.status !== 0 || ix.error !== undefined) return { why: `git status of ${paths.join(", ")} failed in ${join(".worktrees", f.id)}`, extra: [] };
   const lines = (text: string): string[] => text.split("\n").filter((l) => l !== "");
   const flagged = lines(ix.stdout).filter((l) => !l.startsWith("H ")).map((l) => `${l.slice(2)} (index flag ${l.charAt(0)})`);
   const open = [...lines(st.stdout).map((l) => l.slice(3)), ...flagged].sort();
-  // fix round 1: the line is capped at 1000 characters, so only the first few paths are listed
-  const listed = [...open.slice(0, 4).map((x) => shortened(x, 120)), ...(open.length > 4 ? [`and ${open.length - 4} more`] : [])];
-  return open.length === 0 ? undefined : `the Patron's ruling ${shortened(read.ruling, 60)} is not committed on opus/${f.id} (${listed.join(", ")}); commit it, then rerun`;
+  return open.length === 0
+    ? undefined
+    : { why: `the Patron's ruling ${shortened(read.ruling, 60)} is not committed on opus/${f.id}; commit it, then rerun`, extra: open.map((x) => ["dirty", shortened(x, 300)] as [string, string]) };
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
@@ -2965,7 +2970,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       d = r.next;
       if (STEPS.indexOf(d.step) <= was) return say(0, [...lines, ...r.after]);
       // a later rung of the chain that derives held (gh failing at pr discovery, say) is the chain's hold, never a success
-      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, `why: ${one(d.why)}`, ...r.after]);
+      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, `why: ${one(d.why)}`, ...d.extra.map(([k, v]) => `${k}: ${one(v)}`), ...r.after]);
       if (!performable(d)) return say(0, [...lines, ...r.after]);
     }
   } catch (e) {
