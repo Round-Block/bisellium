@@ -277,6 +277,53 @@ export function ruledCases(briefText: string): {
   return { cases, formless, pathGaps, surfaceGaps, promises, prototype };
 }
 
+/** W-381: the first pin a kill's output proves, in pin order, or undefined. The output is Node's TAP reporter's (its first
+ *  line is exactly `TAP version 13`); a pin is proved when its row's subtest, from a `# Subtest: <row>` line to its own
+ *  status line at the same indent and that line's diagnostic block, has that status line read `not ok <k> - <row>` (each
+ *  the row's name, then a space or the line's end) and holds a diagnostic block whose `error:` message (trimmed: a quoted
+ *  `'<text>'`, a doubled `''` read as one quote, or the first line of an `error: |-` block) is the pin's assertion text, or
+ *  opens with it and `: ` (a row's `<case>: <detail>` message), and whose `code:` is `'ERR_ASSERTION'`. ponytail: every other TAP or YAML form, and a Playwright report, proves nothing. */
+export function killedPin(output: string, pins: readonly Pin[]): Pin | undefined {
+  const lines = output.split(/\r?\n/);
+  if (lines[0] !== "TAP version 13") return undefined;
+  return pins.find((pin) => provesPin(lines, pin));
+}
+
+function provesPin(lines: string[], pin: Pin): boolean {
+  // the indent before `head` and the pinned row's name when `line` opens with them, else undefined
+  const named = (line: string, head: RegExp): string | undefined => {
+    const m = head.exec(line);
+    if (m === null) return undefined;
+    const rest = line.slice(m[0].length);
+    return rest.startsWith(pin.row) && /^(?:\s|$)/.test(rest.slice(pin.row.length)) ? m[1]! : undefined;
+  };
+  for (let s = 0; s < lines.length; s++) {
+    const indent = named(lines[s]!, /^( *)# Subtest: /);
+    if (indent === undefined) continue;
+    const e = lines.findIndex((l, i) => i > s && l.startsWith(indent) && /^(?:not )?ok \d+ - /.test(l.slice(indent.length)));
+    if (e === -1 || named(lines[e]!, /^( *)not ok \d+ - /) !== indent) continue;
+    const close = lines.findIndex((l, i) => i > e && l === `${indent}  ...`);
+    if (diagnosticProves(lines.slice(s, close === -1 ? e + 1 : close + 1), pin.assertion.trim())) return true;
+  }
+  return false;
+}
+
+/** Whether some YAML diagnostic block among `lines` (a `---` line to the next `...` line at its indent) carries an `error:`
+ *  message that is `assertion` or opens with it and `: `, and `code: 'ERR_ASSERTION'`. */
+function diagnosticProves(lines: string[], assertion: string): boolean {
+  for (let i = 0; i < lines.length; i++) {
+    const open = /^( *)---$/.exec(lines[i]!);
+    if (open === null) continue;
+    const end = lines.findIndex((l, j) => j > i && l === `${open[1]}...`);
+    const block = lines.slice(i + 1, end === -1 ? undefined : end);
+    const at = block.findIndex((l) => l.startsWith(`${open[1]}error: `));
+    const value = at === -1 ? undefined : block[at]!.slice(`${open[1]}error: `.length);
+    const message = value === "|-" ? block[at + 1]?.trim() : value !== undefined && /^'.*'$/.test(value) ? value.slice(1, -1).replaceAll("''", "'").trim() : undefined;
+    if ((message === assertion || message?.startsWith(`${assertion}: `) === true) && block.includes(`${open[1]}code: 'ERR_ASSERTION'`)) return true;
+  }
+  return false;
+}
+
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
  *  domain and one rejecting function, and which says that a rejection fails closed; or one `None: <reason>` line.
  *  Shape only: the named function is not looked up. */

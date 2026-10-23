@@ -908,6 +908,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/ticket.ts:claimTicket:renameSync#1", disposition: "outside", why: "the step-ticket store under the git common directory, never an officina file" },
   { key: "packages/commands/src/ticket.ts:dropClaim:unlinkSync#1", disposition: "outside", why: "the step-ticket store under the git common directory, never an officina file" },
   { key: "packages/commands/src/verdict.ts:promiseLedgerProblems:readFileSync#1", disposition: "outside", why: "reads the promise ledger an architect spec signature names (an absolute or ~/ path), never an officina file" },
+  { key: "packages/commands/src/verdict.ts:evidenceText:readFileSync#1", disposition: "outside", why: "reads a kill's patch or output that a spec signature's ledger names (an absolute or ~/ path), never an officina file" },
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#1", disposition: "outside", why: "reads the user-named --from findings file" },
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#2", disposition: "outside", why: "reads the findings from stdin (fd 0)" },
   { key: "packages/commands/src/verdict.ts:runVerdict:writeFileSync#1", disposition: "contained", why: "ci/<opus>-<phase>-<round>.log in a real ci/ checked by ensureRealDirectory, exclusive create" },

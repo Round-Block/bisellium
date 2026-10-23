@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { inputDomainRows, ruledCases } from "./brief-admission.js";
+import { inputDomainRows, killedPin, ruledCases, type RuledCase } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
@@ -483,7 +483,8 @@ export function readUiSpecPairing(manifest: unknown): { pairing: UiSpecPairing |
  * or any string lists the forms it recognises, and each grammar line it cites holds a pin. W-336: so does a row whose
  * Valid domain names a path, a command line or an environment value, and its line or a cited line names each hostile form.
  * W-373: so does a row whose Record or Valid domain cell names shell text or a structured record, for that surface's forms.
- * W-381: in a brief that names a prototype, each Promise line holds a pin too, or says unpinned with a scoped ledger line.
+ * W-381: in a brief that names a prototype, each Promise line holds a pin too, or says unpinned with a scoped ledger line; and
+ * each pinned line (a row, a grammar line, a Promise line) has a ledger line citing it that names a kill (`killProblem`).
  * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
  */
 function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
@@ -565,6 +566,15 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
     else if (!entries.some((e) => e.briefs.has(c.line) && SCOPED.test(e.text)))
       problems.push(`brief:${c.line} says unpinned, and no ledger line cites brief:${c.line} as scoped`);
   }
+  if (prototype) {
+    const killed = new Set<number>();
+    for (const c of [...cases, ...owed].sort((a, b) => a.line - b.line)) {
+      if (c.pins.length === 0 || killed.has(c.line)) continue;
+      killed.add(c.line);
+      const problem = killProblem(c, entries);
+      if (problem !== undefined) problems.push(problem);
+    }
+  }
   for (const n of formless)
     problems.push(`brief:${n} rules any text or any string and lists no forms: say "recognises", then the forms (code spans, or brief:<line> citations of the lines that list them), then "every other form" and "limit"`);
   const PATH = "rules a path, a command line or an environment value";
@@ -577,6 +587,89 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const g of surfaceGaps)
     problems.push(`brief:${g.row} rules ${g.surface} and does not name ${g.missing.join(", ")}: name each by the word ${g.words}, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit`);
   return problems;
+}
+
+/** W-381: a kill on a ledger line: killed by `<patch>` -> `<output>`, each an absolute or ~/ path. */
+const KILL = /(?<![\w-])killed by `([^`\r\n]+)` -> `([^`\r\n]+)`/g;
+/** W-381: the folders and names W-121's `isTestPath` reads as a test's (any extension): a kill mutates the source, never a test. */
+const KILL_TEST_DIRS = new Set(["test", "tests", "tests-serve", "__tests__", "e2e"]);
+const KILL_TEST_NAME = /\.(?:test|spec)\.[cm]?[tj]sx?$/;
+
+/** W-381: an evidence file a ledger line names, read whole: an absolute or ~/ path to a regular file of at most `cap` bytes. */
+function evidenceText(named: string, cap: number): { text: string } | { error: string } {
+  let path: string;
+  try {
+    path = named.startsWith("~/") ? join(homedir(), named.slice(2)) : named;
+  } catch {
+    path = ""; // ponytail: os.homedir() throws only with no HOME and no passwd entry; the path is then not absolute
+  }
+  if (!isAbsolute(path)) return { error: "is not an absolute or ~/ path" };
+  try {
+    const stat = statSync(path);
+    if (!stat.isFile() || stat.size > cap) throw new Error("not a regular file under the cap");
+    return { text: readFileSync(path, "utf8") };
+  } catch {
+    return { error: "is not a readable regular file" };
+  }
+}
+
+/** W-381: whether a patch is one mutation, a one-file unified diff as `git diff` writes it: any `diff --git`, `index`,
+ *  `old mode` or `new mode` lines; a `--- <path>` line and, next, a `+++ <path>` line naming the same path (an `a/` and a
+ *  `b/` prefix dropped), not `/dev/null` and not a test file; next one hunk header `@@ -<start>[,<count>] +<start>[,<count>]
+ *  @@` (a count at most 15 digits; then a space and any text, or the end); then exactly the body lines its counts call for (` ` context, `-` removed,
+ *  `+` added, `\` a no-newline note), one of them added or removed; then nothing but no-newline notes. A CRLF patch reads as
+ *  LF. ponytail: whether it applies to the prototype is the reviewer's. */
+function isMutation(diff: string): boolean {
+  const lines = diff.split(/\r?\n/);
+  if (lines[lines.length - 1] === "") lines.pop();
+  let i = 0;
+  while (i < lines.length && /^(?:diff --git|index|old mode|new mode) /.test(lines[i]!)) i++;
+  const from = /^--- (?:a\/)?([^\t]+)(?:\t.*)?$/.exec(lines[i] ?? "");
+  const to = /^\+\+\+ (?:b\/)?([^\t]+)(?:\t.*)?$/.exec(lines[i + 1] ?? "");
+  const hunk = /^@@ -\d+(?:,(\d{1,15}))? \+\d+(?:,(\d{1,15}))? @@(?: .*)?$/.exec(lines[i + 2] ?? "");
+  if (from === null || to === null || hunk === null || from[1] !== to[1]) return false;
+  const path = to[1]!;
+  const segs = path.split("/");
+  if (path === "/dev/null" || KILL_TEST_NAME.test(segs[segs.length - 1]!) || segs.slice(0, -1).some((s) => KILL_TEST_DIRS.has(s))) return false;
+  let oldLeft = Number(hunk[1] ?? 1);
+  let newLeft = Number(hunk[2] ?? 1);
+  let changed = false;
+  for (i += 3; i < lines.length && (oldLeft > 0 || newLeft > 0); i++) {
+    const c = lines[i]![0];
+    if (c === " " || c === "-") oldLeft--;
+    if (c === " " || c === "+") newLeft--;
+    if (c === "-" || c === "+") changed = true;
+    else if (c !== " " && c !== "\\") return false;
+  }
+  while (i < lines.length && lines[i]!.startsWith("\\")) i++;
+  return changed && oldLeft === 0 && newLeft === 0 && i === lines.length;
+}
+
+/** W-381: why a pinned line's kill is missing or proves nothing, or undefined. Its kills are those on the ledger lines citing
+ *  it (`brief:<n>`, any status); one whose patch is a mutation and whose output proves a pin of the line (`killedPin`)
+ *  suffices, else the first kill's first problem is reported. */
+function killProblem(c: RuledCase, entries: readonly { text: string; briefs: Set<number> }[]): string | undefined {
+  const kills = entries.filter((e) => e.briefs.has(c.line)).flatMap((e) => [...e.text.matchAll(KILL)].map((m) => [m[1]!, m[2]!] as const));
+  if (kills.length === 0)
+    return `brief:${c.line} is pinned and the brief names a prototype, and no ledger line citing brief:${c.line} names a kill: add killed by \`<patch>\` -> \`<output>\`, a one-hunk mutation of one source file and the pinned row's Node TAP output failing at one of its pinned assertions`;
+  let first: string | undefined;
+  for (const [patch, output] of kills) {
+    const p = evidenceText(patch, LEDGER_MAX_BYTES);
+    const o = "error" in p || !isMutation(p.text) ? undefined : evidenceText(output, LOG_MAX_BYTES);
+    const why =
+      "error" in p
+        ? `brief:${c.line}'s kill \`${patch}\` ${p.error}`
+        : o === undefined
+          ? `brief:${c.line}'s kill \`${patch}\` is not a mutation: one file's unified diff, its --- and +++ headers naming one source file that is not a test file, and one well-formed hunk changing a line`
+          : "error" in o
+            ? `brief:${c.line}'s kill \`${output}\` ${o.error}`
+            : killedPin(o.text, c.pins) === undefined
+              ? `brief:${c.line}'s kill \`${output}\` does not show a pinned row failing at its pinned assertion (${c.pins.map((pin) => `\`${pin.row}\` "${pin.assertion}"`).join(", ")})`
+              : undefined;
+    if (why === undefined) return undefined;
+    first ??= why;
+  }
+  return first;
 }
 
 /** W-215: why a sessioned verdict cannot be recorded, or undefined. `text` is the whole log to be written. */
