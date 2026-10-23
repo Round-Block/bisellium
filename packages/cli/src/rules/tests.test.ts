@@ -1173,3 +1173,32 @@ test("W-376-b1 behaviour 1: an added assert.match whose pattern is anchored at o
   assert.equal(typeof mod.oneSidedFindings, "function", "rules/tests.ts exports oneSidedFindings");
   assert.deepEqual(mod.oneSidedFindings!(REPO_ROOT), [], "the real repository adds no one-sided assertion");
 });
+
+// one line each: a startsWith or endsWith call in the first argument of assert.ok( or assert(
+const ENDS_GRAMMAR: [string, string, string | undefined][] = [
+  ["startsWith in assert.ok", 'assert.ok(why.startsWith("held: the log"));', "startsWith in an assertion"],
+  ["endsWith in assert.ok, with a message", 'assert.ok(text.endsWith("}"), "ends with a brace");', "endsWith in an assertion"],
+  ["startsWith in a bare assert, optional chaining", 'assert(why?.startsWith("why: "));', "startsWith in an assertion"],
+  ["a line's prefix through some", 'assert.ok(lines.some((l) => l.startsWith("evidence: ")), "an evidence line");', "startsWith in an assertion"],
+  ["a negated prefix", 'assert.ok(!why.startsWith("held"));', "startsWith in an assertion"],
+  ["a prefix beside another test", 'assert.ok(ok && why.endsWith(" (D-086 B)"));', "endsWith in an assertion"],
+  ["includes: the includes form, a limit", 'assert.ok(why.includes("held"));', undefined],
+  ["startsWith in the message argument", 'assert.ok(ok, why.startsWith("x") ? "a" : "b");', undefined],
+  ["compared with true, a limit", 'assert.equal(why.startsWith("held"), true);', undefined],
+  ["a whole-value assertion over filtered lines", 'assert.deepEqual(lines.filter((l) => l.startsWith("e")), ["e1"]);', undefined],
+  ["outside an assertion", 'const held = why.startsWith("held");', undefined],
+  ["a member assert is not read, a limit", 't.assert.ok(why.startsWith("held"));', undefined],
+  ["inside a string", "const s = 'assert.ok(why.startsWith(x))';", undefined],
+];
+
+test("W-376-b2 behaviour 2: an added assert.ok or assert whose first argument calls startsWith or endsWith is a test.one_sided block, unless annotated", { timeout: 600_000 }, async () => {
+  const base = { "a.test.ts": code(SIDED_BASE) };
+  const added = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, 'assert.ok(why.startsWith("ready"), "a new prefix assertion");']));
+  assert.deepEqual(sidedOf(branched("w376-b2-added", base, added)), [sidedBlock("a.test.ts:3", "startsWith in an assertion")], "an added startsWith assertion: one block at its line");
+
+  for (const [label, line, form] of ENDS_GRAMMAR) assert.deepEqual(await formsOn([line]), form === undefined ? [] : [{ line: 1, form }], label);
+  assert.deepEqual(await formsOn([SIDED_REASON, 'assert.ok(why.endsWith("done"));'], [2]), [], "annotated on the line above");
+  assert.deepEqual(await formsOn([`assert.ok(why.endsWith("done")); ${SIDED_REASON}`]), [], "annotated on the line");
+  // a line holding both forms is one site, its pattern form named
+  assert.deepEqual(await formsOn(['assert.match(why, /^a/); assert.ok(why.endsWith("b"));']), [{ line: 1, form: START_ONLY }], "one site per line");
+});
