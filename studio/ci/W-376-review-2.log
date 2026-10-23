@@ -1,0 +1,21 @@
+# opus: W-376
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a167dd-bd58-79b2-acc4-33ae02034694
+# outcome: passed
+# at: 2026-10-23T09:20:21.664Z
+# tree: tree:8445b700cb1e028f9f166a7d0ba9676ace2185dc
+# brief: briefs/W-376.md blob:08c3bed42548fcaf50b36e3a6813408257dbb721
+# ticket: {"opus":"W-376","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-376/studio","head":"636058b67d7b0909fa6a7c75c26a6d95087af452","brief":"08c3bed42548fcaf50b36e3a6813408257dbb721","at":"2026-10-23T09:19:27.504Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-376-review-1.log #1: closed — packages/cli/src/rules/tests.ts:561 and :564 now reject receiver dots across whitespace for both assertion forms; packages/cli/src/rules/tests.test.ts:1091 and :1204 pin spaced, tabbed, optional, and bare member cases while preserving direct calls.
+
+## Verdict
+The round-1 blocker is closed, and the delta introduces no new findings.
+VERDICT: PASS
