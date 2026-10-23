@@ -1,6 +1,6 @@
 /**
  * apps/web/test/tokens.test.ts — W-024 behaviour 1: tokens.css declares
- * all nine colour custom properties and all seven space properties on
+ * all thirteen colour custom properties and all seven space properties on
  * `:root`, with exact values (DIRECTION.md §3).
  */
 import assert from "node:assert/strict";
@@ -41,17 +41,14 @@ const d101Colors: [string, string][] = [
   ["bad", "#FF5555"],
 ];
 
-const colors: [string, string][] = [
-  ["ink", "#F8F8F2"],
-  ["ink-2", "#C6C9D8"],
-  ["ink-3", "#9EA4C4"],
-  ["rule", "#44475A"],
-  ["wash", "#343746"],
-  ["verdigris", "#3FB9A3"],
-  ["amber", "#FFB86C"],
-  ["ok", "#50FA7B"],
-  ["bad", "#FF5555"],
+const d103AccentColors: [string, string][] = [
+  ["accent-cyan", "#8BE9FD"],
+  ["accent-pink", "#FF79C6"],
+  ["accent-purple", "#BD93F9"],
+  ["accent-yellow", "#F1FA8C"],
 ];
+
+const colors: [string, string][] = [...d101Colors, ...d103AccentColors];
 
 for (const [name, value] of colors) {
   check(`tokens.css --${name} is ${value}`, hasVar(name, value));
@@ -118,6 +115,29 @@ test("W-361-b1 behaviour 1: the fixed dark palette meets its computed text and c
   assert.match(direction, /ok `#50FA7B` \(Dracula Green\) \/ bad `#FF5555` \(Dracula Red\)/, "DIRECTION section 3 names the official Dracula gate colours");
   assert.match(direction, /Inbox count in amber on both the\s+selected and hovered `rule` navigation fills/, "DIRECTION section 3 excludes bad from text and includes the navigation count");
   assert.match(direction, /0 16px 48px rgba\(0,0,0,\.45\)/, "DIRECTION section 3 names the dark drawer shadow");
+});
+
+test("W-366-b1 behaviour 1: Dracula accents are exact and meet computed contrast floors", () => {
+  const actual = Object.fromEntries(d103AccentColors.map(([name]) => [name, token(name).toUpperCase()]));
+  assert.deepEqual(actual, Object.fromEntries(d103AccentColors), "tokens.css carries D-103 A's four accent colours exactly");
+
+  for (const background of ["surface", "wash"]) {
+    for (const [foreground] of d103AccentColors) {
+      const ratio = contrast(token(foreground), token(background));
+      assert.ok(ratio >= 4.5, `computed ${foreground} on ${background} text contrast ${ratio.toFixed(4)} is at least 4.5:1`);
+    }
+  }
+  const selectedText = contrast(token("surface"), token("accent-pink"));
+  assert.ok(selectedText >= 4.5, `computed surface on accent-pink selected text contrast ${selectedText.toFixed(4)} is at least 4.5:1`);
+
+  assert.match(direction, /Cyan `#8BE9FD` \(`--accent-cyan`\)/, "DIRECTION section 3 names Dracula Cyan and its link token");
+  assert.match(direction, /Pink `#FF79C6` \(`--accent-pink`\)/, "DIRECTION section 3 names Dracula Pink and its text-selection token");
+  assert.match(direction, /Purple `#BD93F9` \(`--accent-purple`\)/, "DIRECTION section 3 names Dracula Purple and its heading token");
+  assert.match(direction, /Yellow `#F1FA8C` \(`--accent-yellow`\)/, "DIRECTION section 3 names Dracula Yellow and its project-name token");
+  assert.match(direction, /only status colours[^.]*ok[^.]*amber[^.]*bad[^.]*shape cues/i, "DIRECTION section 3 reserves status meaning and shape cues to ok, amber and bad");
+  assert.match(direction, /accent never marks a state/i, "DIRECTION section 3 forbids accents from conveying state");
+  assert.match(direction, /at most three status colours visible at once/i, "DIRECTION section 3's three-colour ceiling names status colours only");
+  assert.match(direction, /Verdigris remains the sole product identity colour\.\s+Yellow is a constant project-name text accent, identical for every project\s+and condition\. Projects remain named, never colour-coded; project dots and\s+colour hashing remain excluded\./, "DIRECTION section 3 keeps project identity with verdigris and makes yellow constant");
 });
 
 function cssRule(selector: string): string {
