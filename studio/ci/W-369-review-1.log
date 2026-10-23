@@ -1,0 +1,18 @@
+# opus: W-369
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16858-f9b8-7792-be05-0172dd7323e2
+# outcome: failed
+# at: 2026-10-23T10:44:33.369Z
+# tree: tree:94efd677f7f03f95c645514b1aef96fc1aca49ed
+# brief: briefs/W-369.md blob:ec760c8acc8253dcfa74f192e1ae021f1030610a
+# ticket: {"opus":"W-369","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-369/studio","head":"4013ebd2396a5761e92f6b0eda40f3afd51e3426","brief":"ec760c8acc8253dcfa74f192e1ae021f1030610a","at":"2026-10-23T10:40:22.870Z"}
+
+## Findings
+1. blocking — scripts/agent-workspace.sh:270 [severity: S1] `agit` does not disable Git replacement objects. Because `.git` is session-writable, a planted `refs/replace/<target>` makes the unsandboxed ancestry and merge commands interpret the Patron-fetched commit as a session-selected replacement, violating brief:19 and brief:31. — check: packages/cli/src/w369.test.ts (pin a replacement ref for the fetched target and prove it cannot affect the checkout) [class: tests×security-boundary-cases-uncovered]
+
+## Verdict
+The sync does not yet preserve its trust boundary against session-controlled Git replacement refs.
+VERDICT: FAIL
