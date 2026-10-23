@@ -1,0 +1,19 @@
+# opus: W-328
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16717-f163-76b1-ad75-890e6ab1b657
+# outcome: failed
+# at: 2026-10-23T04:53:13.287Z
+# tree: tree:116483eadeb7689131692bc8fe4f8365d9e8f29a
+# brief: briefs/W-328.md blob:cff221d74243a1c6311623f8425e7e2f88a861ba
+# ticket: {"opus":"W-328","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-328/studio","head":"f72d678ae1e1a007979a9088d81f9fc8ff491551","brief":"cff221d74243a1c6311623f8425e7e2f88a861ba","at":"2026-10-23T04:49:42.701Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:1388 [severity: S1] The valid uncommitted-log case appends `; commit it, then rerun`, so its hold reason does not end with the mandatory suffix required by brief:27 and brief:47; the test checks only the prefix and misses the mismatch. — check: packages/cli/src/next-review.test.ts W-328-b1 “a log not committed: why” [class: tests×one-sided-bound-assertion]
+
+## Verdict
+The uncommitted-log hold has the wrong promised reason on a stated-domain input.
+
+VERDICT: FAIL
