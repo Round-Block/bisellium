@@ -99,6 +99,14 @@ each as a recognised form with its pin or as a stated limit. The check reads
 words: a row ruling a path in other words needs no clause, and whether a named
 form is recognised or a limit stays the spec review's.
 
+A row whose Record or Valid domain cell names an input surface (W-373) names
+that surface's own hostile forms the same way, on its line or a line its forms
+clause cites: shell text (the words command line, command-line or shell) names
+an operator, a control character and a reserved word; a structured record (JSON,
+YAML, front matter or settings) names an absent value (absent or missing), a
+wrong type and an unreadable file. The lines a clause cites are then pinned as
+for an any-text row. The check reads words, as W-336's does.
+
 For a build-phase, non-`ui` verdict (W-126) the writer reconciles each
 `blocking` finding with the opus's declared brief. A blocking finding stays
 blocking only when it cites a non-blank line of that brief, as `brief:<n>`,

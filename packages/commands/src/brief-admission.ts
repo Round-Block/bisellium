@@ -171,6 +171,16 @@ const SURFACES: readonly { surface: string; words: string; typed: RegExp; forms:
       ["a reserved word", /(?<![\w-])reserved words?(?![\w-])/i],
     ],
   },
+  {
+    surface: "a structured record",
+    words: "absent, wrong type or unreadable",
+    typed: /(?<![\w-])(?:JSON|YAML|front[ -]matter|settings)(?![\w-])/i,
+    forms: [
+      ["an absent value", /(?<![\w-])(?:absent|missing)(?![\w-])/i],
+      ["a wrong type", /(?<![\w-])wrong(?: types?|-typed)(?![\w-])/i],
+      ["an unreadable file", /(?<![\w-])unreadable(?![\w-])/i],
+    ],
+  },
 ];
 
 /** W-322: one pin: the test row's name and a text of the assertion that exercises the case. */
