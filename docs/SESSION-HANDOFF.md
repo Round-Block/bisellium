@@ -24,8 +24,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 - A build verdict's `## Earlier findings` may name only the previous round's own findings; spec review is capped at two rounds (D-061 §4). A subagent running a kept record script is refused by the auto-mode classifier: stop and report, no retry via another agent.
 - `--expect pr --body-file` takes a file under the repo or `$TMPDIR` only. `--expect spec` is two performs; the landing leaves earlier round logs untracked: add them to the next records commit. Evidence copies of the kept scripts carry the `next` calls; the `scripts/` copy still lacks them. Uncommitted tracked edits in the main checkout block the spec and merge performs' fast-forward: `git stash push -m <tag> -- <paths>`, rerun, `git stash apply <sha>`, drop by tag.
 - A merge perform printing `QUEUE_TIMEOUT` with the PR still queued reruns with `--poll-ms 20000 --max-polls 150`. A queued PR shows no auto-merge request: check `isInMergeQueue` (gh api graphql) before touching it. An approved PR sitting CLEAN with `isInMergeQueue` false: `gh pr merge <n> --disable-auto` then `--auto`; records PRs use `--auto` without `--squash`.
-- An Artifact publish refused for a newer live version is a version conflict, not a permission refusal: read the live page, merge, publish. The Status page's live version carries edits the build lacks: its republish needs the Patron until W-283.
-- A build round failed on an evidence-only fix is re-ordered only by a brief correction and re-signature until W-328. A done perform refused on GitHub's artifact host reruns once with exactly the host named, never a wildcard or a settings edit, until W-370 lands (D-106 C).
+- An Artifact publish refused for a newer live version is a version conflict, not a permission refusal: read the live page, merge, publish. The Status page's live version carries edits the build lacks: its republish needs the Patron until W-283. A build round failed on an evidence-only fix is re-ordered only by a brief correction and re-signature until W-328. A done perform refused on GitHub's artifact host reruns once with exactly the host named, never a wildcard or a settings edit, until W-370 lands (D-106 C).
 - A ladder-runner runs a land or merge perform in the foreground until W-372 lands (D-106 D). A review packet is built from the main checkout, never a worktree, until W-353 lands (D-106 A). Codex UI builders get `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 lands (D-106 D).
 5. Standing until their opus lands:
 - D-085 F rides the fix census and the daily retro; D-076 E's architect line ("unchanged code gets a stated limit, not a guarantee") stays in every architect dispatch.
@@ -47,25 +46,26 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Two engineering lanes and two UI lanes (Patron 2026-10-22), each taking from the top of its list.
 Order by cycle minutes saved, D-039 highs first; a high opus filed since starts right after the one in flight.
-Lanes per D-106 E. Shipped and removed: W-309, W-368. Halted: W-239 (D-106 D).
+Lanes per D-106 E. Halted: W-239 (D-106 D).
 
 Lane A (guard, scripts, hooks, run; no next.ts):
 A1. W-362 — the guard installer and its input checks, W-310's remainder (greenlit)
-A2. W-373 — the repeat review-defect class "a fix opens a new input surface": its cause fix chosen at spec (D-076 D; high, greenlit 2026-10-23)
-A3. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
-A4. W-369 — the Patron's installed guard syncs the agent clone to the fetched master (high; D-106 D, F)
-A5. W-372 — a dispatched agent waits for its own long background perform (D-106 D; follows W-369)
-A6. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
-A7. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
-A8. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
-A9. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim; greenlit 2026-10-23)
+A2. W-373 — the repeat review-defect class "a fix opens a new input surface": its cause fix chosen at spec (D-076 D; high, greenlit)
+A3. W-376 — the repeat test-defect class "a test checks only part of a spelled-out string": its cause fix chosen at spec (D-076 D; high, greenlit)
+A4. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
+A5. W-369 — the Patron's installed guard syncs the agent clone to the fetched master (high; D-106 D, F)
+A6. W-372 — a dispatched agent waits for its own long background perform (D-106 D; follows W-369)
+A7. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
+A8. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
+A9. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
+A10. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
 Lane B (next.ts, one at a time; D-039 highs first):
 B1. W-328 — an open path outside a brief's Files owned goes to the producer, not a builder (high; unblocks W-360)
 B2. W-353 — a ui opus's build review run by next, and review refuses stray gate logs (high)
 B3. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high)
 B4. W-370 — certify's certificate read through the GitHub API, not an artifact (high)
 B5. W-333 — the queue as a record, `studio/queue.yml` (greenlit; promoted 2026-10-23 (boot trim))
-B6. W-374 — next --all prints only opera in flight; --everything keeps the full list (boot trim; greenlit 2026-10-23)
+B6. W-374 — next --all prints only opera in flight; --everything keeps the full list (boot trim)
 B7. W-363 — W-309's remainder: the spec-review perform through next, and the chain refreshes the handoff after its review
 B8. W-331 — `next.ts` split by region, no behaviour change
 B9. W-183 — heavy-job slots
