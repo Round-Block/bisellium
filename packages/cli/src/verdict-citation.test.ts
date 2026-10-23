@@ -946,3 +946,101 @@ test("W-336-b2 behaviour 2: a path-typed row's line, or a line its forms clause 
   setBrief(ON_LINE_5.replace("every other form is a limit", "every other form is a limit (brief:5)"));
   refused("a form named on a line cited after every other form", ledger, pathUnnamed(10, "a symlinked parent"));
 });
+
+// W-373: a row whose Record or Valid domain cell names shell text names an operator, a control character and a reserved
+// word, on its line or a line its forms clause cites, each pinned or a stated limit
+const SHELL_NAMED = "a shell operator, a control character and a reserved word are literal words";
+const SHELL_BRIEF = [
+  "# W-300 fixture brief",
+  "## Interfaces",
+  '- a `;`, `|` or `&` operator inside the string is a literal word, pinned by `W-300-b1` "operator"',
+  '- a control character (a tab, `\\r`, `\\v`, `\\f`) splits words, pinned by `W-300-b1` "control"',
+  '- a reserved word such as `while` inside the string is a literal word, pinned by `W-300-b1` "reserved"',
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  `| the Bash command line's words | a string; ${SHELL_NAMED} | \`classify\`: exit 2, pinned by \`W-300-b1\` "words" |`,
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b1` "flag" |',
+  "## Behaviours to test",
+  "",
+].join("\n");
+const SHELL_COVERING = [10, 11].map((n) => `brief:${n}, a reader: packages/x.ts:${n} exits 2 — holds`).join("\n");
+const shellUnnamed = (row: number, missing: string): string =>
+  `W-300: promise ledger: brief:${row} rules shell text and does not name ${missing}: name each by the word operator, control character or reserved word, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit\n`;
+const SHELL_ALL = "a shell operator, a control character, a reserved word";
+
+test("W-373-b1 behaviour 1: a row naming shell text in its Record or Valid domain cell names a shell operator, a control character and a reserved word, or the signature is refused", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(SHELL_BRIEF);
+  const ledger = cite(SHELL_COVERING);
+
+  // each form not named on the row's line: one problem naming it
+  for (const [form, from] of [
+    ["a shell operator", "a shell operator, "],
+    ["a control character", "a control character and "],
+    ["a reserved word", " and a reserved word"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace(SHELL_NAMED, SHELL_NAMED.replace(from, "")));
+    refused(`${form} not named`, ledger, shellUnnamed(10, form));
+  }
+  setBrief(SHELL_BRIEF.replace(SHELL_NAMED, "every word is read"));
+  refused("none named, in order", ledger, shellUnnamed(10, SHELL_ALL));
+
+  // the vocabulary, whole words in the Record or the Valid domain cell
+  for (const [name, record, domain] of [
+    ["shell in the Record cell", "a shell's option words", "a string"],
+    ["command lines in the Record cell", "two Command Lines", "a string"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace("the Bash command line's words", record).replace(`a string; ${SHELL_NAMED}`, domain));
+    refused(`${name}: refused`, ledger, shellUnnamed(10, SHELL_ALL));
+  }
+  // a row path-typed by command line and ruling shell text, with no clause: W-336's problems, then this one
+  setBrief(SHELL_BRIEF.replace(`a string; ${SHELL_NAMED}`, "a command-line string"));
+  refused(
+    "a command-line Valid domain: the path problems, then the shell problem",
+    ledger,
+    pathFormless(10) + pathUnnamed(10, "a space, a quote, a non-ASCII name, a symlinked parent") + shellUnnamed(10, SHELL_ALL),
+  );
+  for (const [name, record] of [
+    ["shells", "the shells' words"],
+    ["shell-quoted", "the shell-quoted words"],
+    ["command-lines", "two command-lines"],
+    ["bash alone", "the bash words"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace("the Bash command line's words", record).replace(SHELL_NAMED, "every word is read"));
+    admitted(`${name}: not shell text, no forms needed`, ledger);
+  }
+  setBrief(SHELL_BRIEF.replace("the Bash command line's words", "the words").replace(SHELL_NAMED, "every word is read").replace("`classify`: exit 2", "`classify`: exit 2 on a bad command line"));
+  admitted("command line in a Rejected by cell only: no forms needed", ledger);
+
+  // whole words only: a word run into another, or in an HTML comment, names nothing
+  for (const [name, from, to, form] of [
+    ["co-operator", "a shell operator", "a co-operator", "a shell operator"],
+    ["self-control characters", "a control character", "self-control characters", "a control character"],
+    ["unreserved words", "a reserved word", "unreserved words", "a reserved word"],
+    ["a comment", "a reserved word", "<!-- a reserved word -->", "a reserved word"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace(SHELL_NAMED, SHELL_NAMED.replace(from, to)));
+    refused(`${name} names nothing`, ledger, shellUnnamed(10, form));
+  }
+  setBrief(SHELL_BRIEF.replace(SHELL_NAMED, "Operators, CONTROL CHARACTERS and Reserved Words are literal"));
+  admitted("plurals and capitals name the forms", ledger);
+
+  // the forms named on cited grammar lines, each holding its own pin; the cited lines are cases of the row
+  const CITED = SHELL_BRIEF.replace(`a string; ${SHELL_NAMED}`, "a string; recognises brief:3-5; every other form is a limit");
+  setBrief(CITED);
+  admitted("the forms named on cited grammar lines", ledger);
+  setBrief(CITED.replace(', pinned by `W-300-b1` "control"', ""));
+  refused(
+    "a cited line of a shell row with no pin",
+    ledger,
+    `W-300: promise ledger: brief:4 is a grammar line brief:10 recognises, with no pin: name its test row and assertion as pinned by \`<row>\` "<assertion>"\n`,
+  );
+  setBrief(SHELL_BRIEF.replace(`a string; ${SHELL_NAMED}`, "a string"));
+  refused("the forms on lines the row does not cite", ledger, shellUnnamed(10, SHELL_ALL));
+
+  setBrief(SHELL_BRIEF.replace(SHELL_NAMED, "every word is read"));
+  admitted("another seat's spec verdict needs no forms", NO, "qa-lead");
+  setBrief(SHELL_BRIEF);
+  admitted("a shell row naming its three forms", ledger);
+});
