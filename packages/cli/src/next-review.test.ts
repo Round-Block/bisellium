@@ -1653,6 +1653,19 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   const pushed = next(w, [OPUS, ...BUDGET]);
   expectStep(pushed, "pr", "held", "a later push: the pr is held");
   assert.equal(pushed.kv.get("why"), w377Waits(w, `${W377_EARLY}; D-951 rules another served tree or design digest, or an earlier time`), ran("a later push: the why names the stale ruling", pushed));
+
+  // fix round 1: a long ruling history keeps every required part of the why within the 1000-character line cap
+  for (let i = 0; i < 12; i++) {
+    w377Ruling(w, `D-${970 + i}`, { at: T.handoffStale });
+    w377Amend(w, `D-${970 + i}`);
+  }
+  commit(w.wt, `studio(${OPUS}): twelve more stale ui rulings`);
+  const many = next(w, [OPUS, ...BUDGET]);
+  expectStep(many, "pr", "held", "accumulated stale rulings: the pr is held");
+  const manyWhy = many.kv.get("why") ?? "";
+  assert.ok(manyWhy.length <= 1000, ran(`accumulated stale rulings: the why fits the output cap (${manyWhy.length})`, many));
+  const required = [`certifies: ${sourceTree(w.wt)}`, `design_digest: ${w377Digest(w)}`, `at or after ${T.reds}`, `bisellium amend ${OPUS} --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/${OPUS}/studio`, `commit both on opus/${OPUS}, then rerun`, "and 11 more"];
+  for (const part of required) assert.ok(manyWhy.includes(part), ran(`accumulated stale rulings: the why carries ${part}`, many));
 });
 
 test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on the branch, and the merge of a PR open on the tip waits too", { timeout: 1_800_000 }, () => {
@@ -1698,6 +1711,10 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
   const stray = next(w, [OPUS, ...BUDGET]);
   assert.equal(stray.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-962.md); commit it, then rerun`, ran("a stray decision: the why names it", stray));
   rmSync(join(w.wtStudio, "decisions", "D-962.md"));
+  // fix round 1: many stray decisions are listed in part, so the line stays within the 1000-character cap
+  for (let i = 0; i < 30; i++) put(w.wtStudio, `decisions/D-${980 + i}-a-stray-decision-with-a-long-name-${"x".repeat(60)}.md`, "stray\n");
+  const strays = next(w, [OPUS, ...BUDGET]).kv.get("why") ?? "";
+  assert.ok(strays.length <= 1000 && strays.endsWith("and 26 more); commit it, then rerun"), `many stray decisions: the why is bounded (${strays.length}): ${strays}`);
 
   // a PR open on the tip with no ruling: the merge waits for one
   const m = uiReviewWorld("w377-b2-merge");
