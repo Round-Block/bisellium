@@ -8,6 +8,11 @@
             "type": "command",
             "command": "bisellium context --studio studio",
             "timeout": 2
+          },
+          {
+            "type": "command",
+            "command": "bisellium hook-event sync --studio studio",
+            "timeout": 60
           }
         ]
       }
@@ -30,6 +35,18 @@
             "type": "command",
             "command": "bisellium hook-event guard --studio studio",
             "timeout": 2
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test ! -e \"$CLAUDE_PROJECT_DIR/.git/bisellium/sync\" || bisellium hook-event sync --studio studio",
+            "timeout": 60
           }
         ]
       }

@@ -69,10 +69,12 @@ substitutes `__SELLA__` into every command — exactly what this file must
 *not* do (a sella baked into a committed hook command can never be someone
 else's). W-016 is what makes an optional `sella` legal.
 
-So `.claude/settings.json` is hand-authored: three hook keys
-(`SessionStart`, `PreToolUse`, `SubagentStop`; W-242's cuts and W-310's guard),
-every `timeout: 2`, `--studio studio` on every command, no `--sella` anywhere,
-the guard on `Bash|Write|Edit|NotebookEdit` and at `SubagentStop`, and
+So `.claude/settings.json` is hand-authored: four hook keys
+(`SessionStart`, `PreToolUse`, `PostToolUse`, `SubagentStop`; W-242's cuts,
+W-310's guard and W-369's sync), every `timeout: 2` but the sync's 60,
+`--studio studio` on every command, no `--sella` anywhere, the guard on
+`Bash|Write|Edit|NotebookEdit` and at `SubagentStop`, the sync at
+`SessionStart` and, on `Bash`, at `PostToolUse` when a sync is requested, and
 `permissions.allow` including `Workflow`.
 Structurally tested in `instructions.test.ts` (behaviour 9), not compared
 byte-for-byte against the real renderer.
@@ -108,6 +110,26 @@ before any change, moves that worktree to origin/master, links
 `~/.local/bin/bisellium` to it, merges the user settings (the sandbox on, and
 denying writes to the agent clone's `packages/`, `apps/`, `adapters/` and
 `scripts/`) and probes it (W-362).
+
+**The sync (W-369).** `hook-event sync` runs `scripts/agent-workspace.sh sync`
+beside the installed CLI's own file (never the agent clone's copy) and hands
+its `sync:` lines to the model; it always exits 0. It runs at `SessionStart`
+and after a Bash call when `<git dir>/bisellium/sync` exists, which the merge
+rung writes when it holds on a path the session may not write (`next`'s merge
+and done performs; the hold still prints the Patron's command). The sync
+refuses, changing nothing, when the Patron's clone is off master or has an
+uncommitted tracked change, when the agent clone's `.git/config` holds a key
+other than git's clone keys, setup's remote and credential helper and a
+branch's `remote`, `merge` or `vscode-merge-base`, or a value of
+`core.repositoryformatversion`, `core.filemode`, `core.bare` or
+`core.logallrefupdates` other than git's clone writes (0, true, false, true),
+or when a git hook or `info/attributes` exists. It then prunes dead worktree
+entries and fetches origin's master into the Patron's clone; it leaves master
+unmoved when HEAD is not master, a tracked file is changed (also when master
+is already current), master is not behind, or an untracked or ignored file
+sits in an incoming path, and otherwise fast-forwards the agent clone's
+master. Git in the agent clone runs with no global or system config, no
+hooks and no fsmonitor.
 
 **Close step CS-2** (integrator, after W-016 lands): re-render this file
 from `claudeCodeHooksBlock({ studio: "studio" })` and append a deep-equal

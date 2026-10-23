@@ -534,8 +534,8 @@ test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard wh
   assert.deepEqual(hookGuard(undefined), [], "no settings file: not judged");
   assert.deepEqual(hookGuard(readFileSync(SETTINGS_PATH, "utf8")), [], "the repo's own settings wire the guard");
   const real = realSettings()["hooks"] as Record<string, { matcher: string; hooks: { command: string }[] }[]>;
-  assert.deepEqual(Object.keys(real).sort(), ["PreToolUse", "SessionStart", "SubagentStop"], "W-242's settings side: no PreCompact, Stop or PostToolUse");
-  assert.deepEqual(real["SessionStart"]?.flatMap((g) => g.hooks.map((h) => h.command)), ["bisellium context --studio studio"]);
+  assert.deepEqual(Object.keys(real).sort(), ["PostToolUse", "PreToolUse", "SessionStart", "SubagentStop"], "W-242's settings side: no PreCompact or Stop; PostToolUse runs only W-369's sync");
+  assert.deepEqual(real["SessionStart"]?.flatMap((g) => g.hooks.map((h) => h.command)), ["bisellium context --studio studio", "bisellium hook-event sync --studio studio"]);
   const agent = (name: string): string => readFileSync(join(REPO, ".claude", "agents", `${name}.md`), "utf8");
   assert.match(agent("architect"), /Unchanged code gets a stated limit, not a guarantee/);
   for (const name of ["builder", "architect", "ladder-runner"]) assert.match(agent(name), /^tools: .*\bTaskStop\b/m, `${name} can stop its own background work`);
