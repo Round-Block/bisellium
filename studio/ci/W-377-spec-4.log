@@ -1,0 +1,23 @@
+# opus: W-377
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16874-e1b7-7dc0-ba66-7cd94875b730
+# outcome: passed
+# at: 2026-10-23T11:59:56.128Z
+# tree: tree:6dd6343535b99281aae9e82338925824b3d9ad50
+# brief: briefs/W-377.md blob:0cf0419f0a7a892a3bb7b5da952644cce69f2fa3
+# ticket: {"opus":"W-377","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"81c6b96c7315022447d596bf04c7e68bfede58ff","brief":"0cf0419f0a7a892a3bb7b5da952644cce69f2fa3","at":"2026-10-23T11:59:52.207Z"}
+
+## Findings
+1. advisory — brief:72 The invalid-`kind` path is attributed only to “W-312's gate configuration reader,” not the required real rejecting function; replace that phrase with “`admitCurrentGates` (existing, reused), called through `Facts.gates`.” [severity: S4] [class: spec×input-without-named-rejector] — check: packages/commands/src/builder-run.ts:311
+2. advisory — brief:86 “a skip-worktree decision with working bytes HEAD does not hold” contradicts the same sentence and test; replace it with “a skip-worktree decision whose working bytes differ from HEAD and an assume-unchanged record each hold.” [severity: S4] [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/next-review.test.ts (W-377-b2)
+
+## Earlier findings
+- ci/W-377-spec-2.log #1: closed — `branchUiRuling` now refuses every malformed `ui_rulings` shape before reading an entry, `admitCurrentGates` holds invalid kinds earlier, W-377-b1 covers both paths, and the scalar-accepted mutant fails.
+- ci/W-377-spec-2.log #2: closed — `uiRulingWait` now includes ignored status entries and non-`H` index tags; W-377-b2 covers ignored, skip-worktree, and assume-unchanged cases, and both focused mutants fail.
+
+## Verdict
+Both earlier blockers are closed; the remaining S4 corrections are advisory and do not block the build.
+VERDICT: PASS
