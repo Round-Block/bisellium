@@ -1,0 +1,24 @@
+# opus: W-366
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16727-1b6b-7172-88a2-8f2325ff91e6
+# outcome: failed
+# at: 2026-10-23T05:20:13.463Z
+# tree: tree:93120afa04971993263dbe3974c1b42b042a03b9
+# ui_input: ci/W-366-spec-3.log
+# design_digest: sha256:b0c5d5a9ab68140235b79859bdd03c04de50482b7c36e2273d04ee215a449ce5
+# ticket: {"opus":"W-366","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-366/studio","head":"71d440803eb712e544f2bf4114186c4d2c5a7b2d","brief":"35e832a62387c4b96edd00cb9e4bfb8fc8480015","at":"2026-10-23T05:20:12.288Z"}
+
+## Findings
+1. blocking — studio/ci/shots/W-366/manifest.txt:1 The eight captures contain only initial screen pairs; none demonstrates the Board drawer’s cyan links and waiting content, keyboard focus, or pink browser selection. The required UI demonstration is therefore missing (brief:99). — check: none: require UI evidence validation to include drawer-link, focused-control, and selected-text captures [severity: S2] [class: review×evidence-backfilled-or-absent]
+2. advisory — apps/web/src/components/w025.css:871 At 390px, Roster model selects extend beyond the viewport, visibly clipping values and the native control edge in `seats-390.png`; responsive layout is excluded by brief:107, so this is advisory for the listed phone form. — check: apps/web/tests-serve/layout.spec.ts [severity: S3] [class: ui×mobile-control-overflow]
+
+## UI input disposition
+The ui-lead verdict approves the accent roles but explicitly reserves judgment for the screen demonstration. All eight images were inspected as desktop/phone pairs: Inbox preserves queue hierarchy, Board shows Purple and Yellow without recolouring status, Seats preserves grouping but exposes phone overflow, and Officina keeps section order. The captures confirm the visible Purple/Yellow roles, but their omission of Cyan links, Pink selection, and focus materially causes the blocking evidence finding.
+
+## Verdict
+The source behaviors, reds, ownership boundary, and automated gates are otherwise consistent, but required UI proof is absent.
+
+VERDICT: FAIL
