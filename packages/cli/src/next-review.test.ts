@@ -1555,3 +1555,102 @@ test("W-353-b2 behaviour 2: the review packet built from the opus worktree deriv
   assert.equal(readFileSync(join(packetDir(w, 1), "ui.txt"), "utf8"), NON_UI, "ui.txt is the branch record's");
   assert.match(readFileSync(join(packetDir(w, 1), `${OPUS}.diff`), "utf8"), /^diff --git /m, "the packet carries the source diff");
 });
+
+// W-377: a kind: ui opus's pr waits for the Patron's ruling on the branch's screens (studio/briefs/W-377.md)
+const W377_AT = "2026-10-02T08:00:00.000Z";
+/** The design digest the ui-lead's input bound, read from its verdict log in the worktree. */
+const w377Digest = (w: World): string => logKey(readFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-2.log`), "utf8"), "design_digest") ?? "";
+/** A structured Patron UI ruling for the opus in the worktree's decisions/, uncommitted. */
+function w377Ruling(w: World, id: string, o: { tree?: string; at?: string; by?: string } = {}): void {
+  put(
+    w.wtStudio,
+    `decisions/${id}.md`,
+    `---\nid: "${id}"\ntitle: "${OPUS}'s screens are approved as served from its branch"\nat: ${o.at ?? W377_AT}\nprovenance: stated\nby: ${o.by ?? "patron"}\nkill_when: "when ${OPUS}'s served tree or design digest changes"\nopus: "${OPUS}"\ncertifies: "${o.tree ?? sourceTree(w.wt)}"\ndesign_digest: "${w377Digest(w)}"\n---\n\nThe Patron approves ${OPUS}'s screens as served.\n`,
+  );
+}
+/** The existing verb attaches the ruling in the worktree; the caller commits. */
+function w377Amend(w: World, id: string): void {
+  const o = cli(w, ["amend", OPUS, "--ui-ruling", id, "--reason", "Patron approves the screens", "--sella", "producer", "--studio", w.wtStudio, "--now", "2026-10-02T08:30:00.000Z"], w.wt);
+  if (o.status !== 0) throw new Error(ran(`fixture: amend --ui-ruling ${id}`, o));
+}
+/** The whole why of a ui pr that waits, after `head`, at the worktree's tree and the fixture's served-e2e run. */
+const w377Waits = (w: World, head: string, tree = sourceTree(w.wt)): string =>
+  `${head}; it waits for one that binds certifies: ${tree}, design_digest: ${w377Digest(w)}, at or after ${T.reds}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${OPUS}) in .worktrees/${OPUS}/studio from the Patron's word on its ci/shots/${OPUS}/, then bisellium amend ${OPUS} --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/${OPUS}/studio, commit both on opus/${OPUS}, then rerun`;
+const W377_EARLY = "D-950 rules another served tree or design digest, or an earlier time";
+
+test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling current at the branch's screens, naming what binds one", { timeout: 1_800_000 }, () => {
+  const w = uiReviewWorld("w377-b1");
+  codexSays(w, { session: "s-377-1", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  const none = next(w, [OPUS, ...BUDGET]);
+  expectStep(none, "pr", "held", "no ruling: the pr is held");
+  assert.equal(none.kv.get("why"), w377Waits(w, "no Patron ruling on these screens is recorded"), ran("no ruling: the why names what binds one", none));
+
+  // a valid ruling made before the served-e2e run is not current
+  w377Ruling(w, "D-950", { at: T.handoffStale });
+  w377Amend(w, "D-950");
+  commit(w.wt, `studio(${OPUS}): an early ui ruling`);
+  const early = next(w, [OPUS, ...BUDGET]);
+  expectStep(early, "pr", "held", "an early ruling: the pr is held");
+  assert.equal(early.kv.get("why"), w377Waits(w, W377_EARLY), ran("an early ruling: the why names it", early));
+
+  // a current ruling, committed on the branch, releases the pr
+  w377Ruling(w, "D-951");
+  w377Amend(w, "D-951");
+  commit(w.wt, `studio(${OPUS}): the ui ruling`);
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a current ruling: the pr is named");
+
+  // round 3: a malformed ui_rulings or kind, committed after the review, holds (the reader fails closed)
+  const shapes: [string, unknown, string][] = [
+    ["a scalar ui_rulings", "D-951", "a scalar ui_rulings: the why refuses it"],
+    ["an empty ui_rulings", [], "an empty ui_rulings: the why refuses it"],
+    ["a null ui_rulings", null, "a null ui_rulings: the why refuses it"],
+    ["a duplicate entry", ["D-951", "D-951"], "a duplicate entry: the why refuses it"],
+    ["a non-string entry", ["D-951", 7], "a non-string entry: the why refuses it"],
+  ];
+  for (const [name, value, label] of shapes) {
+    editRecord(w, "wt", (doc) => doc.setIn(["ui_rulings"], value));
+    commit(w.wt, `studio(${OPUS}): ${name}`);
+    const o = next(w, [OPUS, ...BUDGET]);
+    expectStep(o, "pr", "held", `${name}: the pr is held`);
+    assert.equal(o.kv.get("why"), w377Waits(w, "ui_rulings must be a non-empty sequence of distinct decision-id strings"), ran(label, o));
+  }
+  // a kind that is not a registered native kind (mis-cased, unregistered, not a string, absent) holds before the pr rung, at the
+  // build rung's gate configuration (W-312's reader, unchanged): it never reaches a pr or merge named without the wait
+  editRecord(w, "wt", (doc) => doc.setIn(["ui_rulings"], ["D-950", "D-951"]));
+  for (const [kind, shown] of [["UI", '"UI"'], ["widget", '"widget"'], [7, "7"], [undefined, "undefined"]] as const) {
+    if (kind === undefined) put(w.wtStudio, `opera/${OPUS}.md`, readFileSync(recordPath(w), "utf8").replace(/^kind: .*\n/m, ""));
+    else editRecord(w, "wt", (doc) => doc.setIn(["kind"], kind));
+    commit(w.wt, `studio(${OPUS}): kind ${shown}`);
+    const o = next(w, [OPUS, ...BUDGET]);
+    expectStep(o, "build", "held", `kind ${shown}: the ladder holds before pr`);
+    assert.equal(o.kv.get("underlying"), `${OPUS}: the gate configuration is malformed: kind ${shown} is not a native opus kind`, ran(`kind ${shown}: the hold names the kind`, o));
+  }
+  editRecord(w, "wt", (doc) => doc.setIn(["kind"], "ui"));
+  commit(w.wt, `studio(${OPUS}): kind ui restored`);
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "the restored record: the pr is named");
+
+  // a ruling the reader refuses holds and names its reason
+  const ruling = readFileSync(join(w.wtStudio, "decisions", "D-951.md"), "utf8");
+  put(w.wtStudio, "decisions/D-951.md", ruling.replace("by: patron", "by: someone-else"));
+  commit(w.wt, `studio(${OPUS}): a ruling by another author`);
+  const refused = next(w, [OPUS, ...BUDGET]);
+  expectStep(refused, "pr", "held", "a refused ruling: the pr is held");
+  assert.equal(refused.kv.get("why"), w377Waits(w, `${W377_EARLY}; D-951 is not a structured Patron UI ruling for this opus`), ran("a refused ruling: the why names its reason", refused));
+  put(w.wtStudio, "decisions/D-951.md", ruling);
+  commit(w.wt, `studio(${OPUS}): the ruling restored`);
+  const ruled = sourceTree(w.wt);
+
+  // a later push of source, gated and reviewed again, needs a fresh ruling
+  advanceSource(w);
+  writeUiGate(w);
+  handoffAt(w, "wt", new Date(Date.now() + 60_000).toISOString());
+  codexSays(w, { session: "s-377-1", reply: UI_PASS_REPLY });
+  const again = performReview(w);
+  assert.equal(again.kv.get("review"), "round 2 passed", ran("fixture: the second UI review passes", again));
+  assert.notEqual(sourceTree(w.wt), ruled, "fixture: the source tree moved");
+  const pushed = next(w, [OPUS, ...BUDGET]);
+  expectStep(pushed, "pr", "held", "a later push: the pr is held");
+  assert.equal(pushed.kv.get("why"), w377Waits(w, `${W377_EARLY}; D-951 rules another served tree or design digest, or an earlier time`), ran("a later push: the why names the stale ruling", pushed));
+});
