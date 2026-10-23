@@ -1831,7 +1831,7 @@ test("W-377-b2 fix round 2: a Git-quoted non-ASCII path over 300 characters is l
 });
 
 // fix round 2b: a line past the 1000-character cap that bounds every other printed line is still printed whole
-test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole on its ruling: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
+test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole on its ruling: line, direct and on the merge", { timeout: 1_800_000 }, () => {
   const id = `D-${"7".repeat(1000)}`;
   const refusal = (w: World): string => `${id} is unsafe or unreadable: ENOENT: no such file or directory, lstat '${join(w.wtStudio, "decisions")}'`;
   const attach = (w: World): void => {
@@ -1852,13 +1852,8 @@ test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole on its ruli
   expectStep(merge, "merge", "held", "a huge id: the merge is held");
   w377Holds(merge, w, [refusal(w)], "a huge id: the refusal is whole on the merge hold");
 
-  const c = uiReviewWorld("w377-b1-huge-chain");
-  attach(c);
-  codexSays(c, { session: "s-377-11", reply: UI_PASS_REPLY });
-  const chained = next(c, [OPUS, "--perform", "--chain", ...BUDGET], { env: { ...CODEX_PATH } });
-  assert.equal(chained.status, 1, ran("chain: exit 1", chained));
-  assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
-  w377Holds(chained, c, [refusal(c)], "chain: a huge id: the refusal is whole");
+  // no chained form: the review a chain performs first refuses a record whose ui_rulings names an unreadable decision (opus.reference),
+  // and a readable one has a name of at most 255 bytes, so a chained ruling: line never reaches the cap
 });
 
 test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole on its dirty: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
