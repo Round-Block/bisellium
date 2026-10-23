@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, plain, prArgs, put, ran, record167, reviewHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
 const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1 [severity: S1]. check: none: fixture`;
 const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1 [severity: S1]. check: none: fixture`;
@@ -1653,4 +1653,66 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   const pushed = next(w, [OPUS, ...BUDGET]);
   expectStep(pushed, "pr", "held", "a later push: the pr is held");
   assert.equal(pushed.kv.get("why"), w377Waits(w, `${W377_EARLY}; D-951 rules another served tree or design digest, or an earlier time`), ran("a later push: the why names the stale ruling", pushed));
+});
+
+test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on the branch, and the merge of a PR open on the tip waits too", { timeout: 1_800_000 }, () => {
+  const w = uiReviewWorld("w377-b2");
+  codexSays(w, { session: "s-377-2", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  w377Ruling(w, "D-960");
+  w377Amend(w, "D-960");
+  const both = next(w, [OPUS, ...BUDGET]);
+  expectStep(both, "pr", "held", "an uncommitted ruling: the pr is held");
+  assert.equal(both.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md, studio/opera/${OPUS}.md); commit it, then rerun`, ran("an uncommitted ruling: the why names both paths", both));
+  git(w.wt, ["add", `studio/opera/${OPUS}.md`]);
+  git(w.wt, ["commit", "-q", "-m", `studio(${OPUS}): the record alone`]);
+  const decision = next(w, [OPUS, ...BUDGET]);
+  expectStep(decision, "pr", "held", "an untracked decision: the pr is held");
+  assert.equal(decision.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md); commit it, then rerun`, ran("an untracked decision: the why names it", decision));
+  // round 3: an ignored decision is present but never committed, so it holds as untracked does
+  const exclude = join(git(w.wt, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "info", "exclude");
+  const excluded = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
+  put(dirname(exclude), "exclude", `${excluded}D-960.md\n`);
+  const ignored = next(w, [OPUS, ...BUDGET]);
+  expectStep(ignored, "pr", "held", "an ignored decision: the pr is held");
+  assert.equal(ignored.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md); commit it, then rerun`, ran("an ignored decision: the why names it", ignored));
+  writeFileSync(exclude, excluded);
+  commit(w.wt, `studio(${OPUS}): the ui ruling`);
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a committed ruling: the pr is named");
+  // round 3: a skip-worktree or assume-unchanged entry hides its working bytes from status, so it holds
+  const ruled = join(w.wtStudio, "decisions", "D-960.md");
+  const ruledText = readFileSync(ruled, "utf8");
+  git(w.wt, ["update-index", "--skip-worktree", "studio/decisions/D-960.md"]);
+  writeFileSync(ruled, `${ruledText}A working-tree line HEAD does not hold.\n`);
+  const hidden = next(w, [OPUS, ...BUDGET]);
+  assert.equal(hidden.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md (index flag S)); commit it, then rerun`, ran("a skip-worktree decision: the why names it", hidden));
+  git(w.wt, ["update-index", "--no-skip-worktree", "studio/decisions/D-960.md"]);
+  writeFileSync(ruled, ruledText);
+  git(w.wt, ["update-index", "--assume-unchanged", `studio/opera/${OPUS}.md`]);
+  const assumed = next(w, [OPUS, ...BUDGET]);
+  assert.equal(assumed.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/opera/${OPUS}.md (index flag h)); commit it, then rerun`, ran("an assume-unchanged record: the why names it", assumed));
+  git(w.wt, ["update-index", "--no-assume-unchanged", `studio/opera/${OPUS}.md`]);
+  // the whole decisions folder is read, so a stray uncommitted decision holds too
+  put(w.wtStudio, "decisions/D-962.md", "stray\n");
+  const stray = next(w, [OPUS, ...BUDGET]);
+  assert.equal(stray.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-962.md); commit it, then rerun`, ran("a stray decision: the why names it", stray));
+  rmSync(join(w.wtStudio, "decisions", "D-962.md"));
+
+  // a PR open on the tip with no ruling: the merge waits for one
+  const m = uiReviewWorld("w377-b2-merge");
+  codexSays(m, { session: "s-377-3", reply: UI_PASS_REPLY });
+  const mr = performReview(m);
+  assert.equal(mr.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", mr));
+  git(m.wt, ["push", "-q", "-u", "origin", `opus/${OPUS}`]);
+  scenario(m, { list: openList(m) });
+  const open = next(m, [OPUS, ...BUDGET]);
+  expectStep(open, "merge", "held", "an open PR with no ruling: the merge is held");
+  assert.equal(open.kv.get("why"), w377Waits(m, "no Patron ruling on these screens is recorded"), ran("an open PR with no ruling: the why names what binds one", open));
+  w377Ruling(m, "D-961");
+  w377Amend(m, "D-961");
+  commit(m.wt, `studio(${OPUS}): the ui ruling`);
+  git(m.wt, ["push", "-q", "origin", `opus/${OPUS}`]);
+  scenario(m, { list: openList(m) });
+  expectStep(next(m, [OPUS, ...BUDGET]), "merge", "named", "an open PR with a committed ruling: the merge is named");
 });
