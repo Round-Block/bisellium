@@ -1,0 +1,22 @@
+# opus: W-362
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1669a-00eb-7422-9a6a-ed53695ac2a4
+# outcome: failed
+# at: 2026-10-23T04:29:52.552Z
+# tree: tree:2790259df5f3c43d56a945c0620c11804ee15a81
+# brief: briefs/W-362.md blob:b36bde706feb43674c0994d10d909c580f0d30b0
+# ticket: {"opus":"W-362","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-362/studio","head":"4aca54b8a6dad6dd9a6afc1a5c48abc07645feba","brief":"b36bde706feb43674c0994d10d909c580f0d30b0","at":"2026-10-23T04:28:18.234Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:149 Reached through ci/W-362-review-1.log #1’s class: after an `env -S` string is marked literal, `strip` still treats the shell builtins `exec` and `command` as wrappers. Thus `env -S 'exec bisellium merge W-900'` asks `env` to launch a program named `exec` and performs no shell `exec` or ladder write, but the classifier drops `exec` and wrongly refuses `bisellium merge`, contrary to brief:81. [severity: S1] [class: spec×fix-opens-new-surface] — check: packages/cli/src/guard.test.ts W-362-b1 (`exec` and `command` inside a split string remain literal argv)
+2. advisory — packages/cli/src/guard.test.ts:661 Reached through ci/W-362-review-1.log #2’s class: the round-2 regression tests arrive with their implementation and refreshed green gates, but the delta contains no assertion-failure log showing them fail against the round-1 head. [severity: S4] [class: review×evidence-backfilled-or-absent] — check: none: record the round-2 W-362-b1 fix cases failing against 9e56f940703adefa8b4b55e88d052ccbcb3d29de
+
+## Earlier findings
+- ci/W-362-review-1.log #1: closed — packages/cli/src/guard.ts:130 now parses split strings in literal mode, preserving the reported punctuation as argv, and packages/cli/src/guard.test.ts:661 pins the original semicolon case.
+
+## Verdict
+The reported punctuation defect is closed, but the same shell-syntax leakage still mishandles `exec` and `command` inside `env`’s literal argv.
+VERDICT: FAIL
