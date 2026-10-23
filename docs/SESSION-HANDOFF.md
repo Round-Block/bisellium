@@ -58,18 +58,20 @@ A5. W-372 — a dispatched agent waits for its own long background perform (D-10
 A6. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
 A7. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
 A8. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
+A9. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim; greenlit 2026-10-23)
 Lane B (next.ts, one at a time; D-039 highs first):
 B1. W-328 — an open path outside a brief's Files owned goes to the producer, not a builder (high; unblocks W-360)
 B2. W-353 — a ui opus's build review run by next, and review refuses stray gate logs (high)
 B3. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high)
 B4. W-370 — certify's certificate read through the GitHub API, not an artifact (high)
 B5. W-333 — the queue as a record, `studio/queue.yml` (greenlit; promoted 2026-10-23 (boot trim))
-B6. W-363 — W-309's remainder: the spec-review perform through next, and the chain refreshes the handoff after its review
-B7. W-331 — `next.ts` split by region, no behaviour change
-B8. W-183 — heavy-job slots
-B9. W-169 — lane claims, the second lane (D-075 F; design approved by D-087 C)
-B10. W-332 — step tickets close the retired dispatch guard's gap (greenlit)
-B11. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline`
+B6. W-374 — next --all prints only opera in flight; --everything keeps the full list (boot trim; greenlit 2026-10-23)
+B7. W-363 — W-309's remainder: the spec-review perform through next, and the chain refreshes the handoff after its review
+B8. W-331 — `next.ts` split by region, no behaviour change
+B9. W-183 — heavy-job slots
+B10. W-169 — lane claims, the second lane (D-075 F; design approved by D-087 C)
+B11. W-332 — step tickets close the retired dispatch guard's gap (greenlit)
+B12. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline`
 Then the console MVP's server side (after the block):
 10. W-304 — seats read live from one settings store, no PR to take effect (D-074)
 11. W-298 — the `petitio` verb to the Patron; `next` holds on an open one
@@ -86,7 +88,7 @@ UI queue, two lanes (order D-090 B; models D-091, D-099; every opus `kind: ui` a
 7. W-300 — the drawer shows `next`'s read-only step, actor, round and health
 W-281 — milestone exits that can be met — rides any records PR.
 
-Later: every opus record not named above, re-ranked under D-083 A; the last ranked Later list is in this file's history at 0553f97c. Awaiting the Patron's greenlight from the boot trim: W-374 (next --all prints only opera in flight) and W-375 (context serves the lex without §9 and §12).
+Later: every opus record not named above, re-ranked under D-083 A; the last ranked Later list is in this file's history at 0553f97c.
 Later, greenlit (ranked in this file's history at 0553f97c): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-185 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-245 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
 
 ## Open Patron choices
