@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync, appendFileSync, lstatSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
@@ -1886,4 +1886,103 @@ test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole in 
   assert.equal(chained.status, 1, ran("chain: exit 1", chained));
   assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
   w377Dirty(chained, "D-960", [quoted], "chain: a huge path: the why names the path whole");
+});
+
+// ---------------------------------------------------------------------------
+// W-381 (D-070 C, D-076 D; W-297 part 2): a failed round whose S1 blocker names a class seen before in another opus holds its
+// fix until the opus's own title, or an open high opus's, names the class.
+// ---------------------------------------------------------------------------
+test("W-381-b3 behaviour 3: a failed build-review round whose S1 blocker names a class seen before in another opus holds the fix until a cause fix or an open high opus names it", { timeout: 1_800_000 }, () => {
+  const cls = (...k: string[]): string => `blocking: fixture defect at brief:1 [severity: S1] ${k.map((c) => `[class: ${c}]`).join(" ")}. check: none: fixture`;
+  const otherLog = (findings: string): string => `# opus: W-800\n# phase: build\n# round: 1\n\n## Findings\n${findings}\n\n## Verdict\nFixture.\n`;
+  const record = (id: string, state: string, title: string): string => `---\nid: "${id}"\ntitle: "${title}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n---\n`;
+  const HOW = "a class seen before is fixed at its cause (D-070 C, D-076 D): amend W-900's title to name it, for a cause fix in this opus, or file a greenlit high opus whose title names it";
+  const held = (o: ReturnType<typeof n167>, row: string, why: string): void => {
+    expectStep(o, "build", "held", row);
+    assert.equal(o.status, 1, ran(`${row}: exit`, o));
+    assert.equal(o.kv.has("role"), false, ran(`${row}: no builder is dispatched`, o));
+    assert.equal(o.kv.get("why"), why, ran(`${row}: why`, o));
+  };
+  const at = (w: World, rel: string, text: string | undefined): void => {
+    if (text === undefined) rmSync(join(w.studio, rel), { force: true });
+    else put(w.studio, rel, text);
+    commit(w.repo, `test: ${rel}`);
+  };
+
+  // round 1: the class is only on an advisory, so no S1 blocker carries it
+  const w = w167("w381-b3", [found(plain(), "advisory: a nit [severity: S4] [class: tests×a]. check: none: fixture")]);
+  at(w, "ci/W-800-review-1.log", otherLog("1. advisory: a nit [severity: S4] [class: tests×a]. check: none: fixture"));
+  buildFix(n167(w), "the class on an advisory only: the fix is ordered");
+
+  // round 2: an S1 blocker carries it, and another opus's log has seen it
+  record167(w, [found(cls("tests×a"))], 2);
+  const ONE = `ci/W-900-review-2.log blocks on a class seen before in another opus: tests×a (ci/W-800-review-1.log); ${HOW}`;
+  held(n167(w), "an S1 class seen in another opus's review log", ONE);
+  at(w, "ci/W-800-review-1.log", undefined);
+  buildFix(n167(w), "seen in no other opus: the fix is ordered");
+  at(w, "ci/W-800-spec-2.log", otherLog("1. blocking: x [class: tests×a]. check: none: fixture"));
+  held(n167(w), "seen in another opus's spec log", ONE.replace("ci/W-800-review-1.log", "ci/W-800-spec-2.log"));
+  at(w, "ci/W-800-spec-2.log", undefined);
+  for (const [name, rel, text] of [
+    ["a log named outside the grammar", "ci/W-800-tests-1.log", otherLog("1. advisory: x [class: tests×a]. check: none")],
+    ["the class outside the Findings section", "ci/W-800-review-1.log", otherLog("No findings").replace("Fixture.", "Fixture [class: tests×a].")],
+    ["a longer class only", "ci/W-800-review-1.log", otherLog("1. advisory: x [class: tests×ab]. check: none")],
+  ] as const) {
+    at(w, rel, text);
+    buildFix(n167(w), `${name}: not seen`);
+    at(w, rel, undefined);
+  }
+
+  // the history read reads no less than is there (CRLF, a second Findings section), and fails closed on what it cannot read
+  at(w, "ci/W-800-review-1.log", otherLog("1. advisory: a nit [class: tests×a]. check: none: fixture").replaceAll("\n", "\r\n"));
+  held(n167(w), "a CRLF other-opus log", ONE);
+  at(w, "ci/W-800-review-1.log", `${otherLog("No findings")}\n## Findings\n1. advisory: x [class: tests×a]. check: none\n`);
+  held(n167(w), "a second Findings section", ONE);
+  at(w, "ci/W-800-review-1.log", undefined);
+  const UNREAD = (what: string): string => `${what}, so ci/W-900-review-2.log's classes cannot be checked against other opera's (D-070 C)`;
+  mkdirSync(join(w.studio, "ci", "W-800-review-1.log"));
+  held(n167(w), "an unreadable matching log", UNREAD("ci/W-800-review-1.log cannot be read"));
+  rmSync(join(w.studio, "ci", "W-800-review-1.log"), { recursive: true });
+  renameSync(join(w.studio, "ci"), join(w.studio, "ci.kept"));
+  buildFix(n167(w), "no ci/ directory: not seen");
+  writeFileSync(join(w.studio, "ci"), "");
+  held(n167(w), "a ci/ that cannot be listed", UNREAD("ci/ cannot be listed"));
+  rmSync(join(w.studio, "ci"));
+  renameSync(join(w.studio, "ci.kept"), join(w.studio, "ci"));
+
+  // named: an open opus whose title names the class beside "high", or the opus's own title
+  at(w, "ci/W-800-review-1.log", otherLog("1. advisory: a nit [class: tests×a]. check: none: fixture"));
+  at(w, "opera/W-801.md", record("W-801", "greenlit", "tests×a stops recurring (D-039 high)"));
+  buildFix(n167(w), "a greenlit high opus names the class: the fix is ordered");
+  for (const [name, state, title] of [
+    ["a done opus", "done", "tests×a stops recurring (D-039 high)"],
+    ["a backlog opus", "backlog", "tests×a stops recurring (D-039 high)"],
+    ["a halted opus", "halted", "tests×a stops recurring (D-039 high)"],
+    ["no high", "greenlit", "tests×a stops recurring (highly wanted)"],
+    ["a longer class", "greenlit", "tests×ab stops recurring (D-039 high)"],
+  ] as const) {
+    at(w, "opera/W-801.md", record("W-801", state, title));
+    held(n167(w), `${name} names nothing`, ONE);
+  }
+  at(w, "opera/W-801.md", undefined);
+  editRecord(w, "wt", (doc) => doc.setIn(["title"], "W-900, and the cause of tests×a"));
+  commit(w.wt, "test: W-900 names its cause fix");
+  buildFix(n167(w), "the opus's own branch title names the class: a cause fix in this opus");
+  editRecord(w, "wt", (doc) => doc.setIn(["title"], "W-900"));
+  commit(w.wt, "test: W-900's title again");
+  held(n167(w), "the title restored", ONE);
+
+  // the fix committed: still held until named
+  advanceSource(w);
+  held(n167(w), "after the fix commits", ONE);
+
+  // round 4 (a passed round 3 between, so no class loop): two classes, four logs for one
+  record167(w, ["pass", found(cls("tests×b"), cls("tests×c", "tests×b"))], 3);
+  for (const [rel, k] of [["ci/W-800-review-1.log", "tests×c] [class: tests×b"], ["ci/W-801-spec-2.log", "tests×b"], ["ci/W-802-review-1.log", "tests×b"], ["ci/W-803-review-3.log", "tests×b"]] as const)
+    at(w, rel, otherLog(`1. advisory: a nit [class: ${k}]. check: none: fixture`));
+  held(
+    n167(w),
+    "two classes, one seen in four logs",
+    `ci/W-900-review-4.log blocks on classes seen before in another opus: tests×b (ci/W-800-review-1.log, ci/W-801-spec-2.log, ci/W-802-review-1.log and 1 more); tests×c (ci/W-800-review-1.log); ${HOW}`,
+  );
 });
