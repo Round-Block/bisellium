@@ -864,7 +864,11 @@ test("W-336-b1 behaviour 1: an architect spec signature is refused for a row rul
     ["the limit before the forms", "a checkout path; every other form is a limit; recognises brief:3-4"],
   ] as const) {
     setBrief(PATH_BRIEF.replace(PATH_DOMAIN, domain));
-    refused(`a ${name} row with no forms clause`, ledger, pathFormless(10));
+    // W-373: a command line is shell text too, and its row names its three forms
+    const shell = name.startsWith("command")
+      ? "W-300: promise ledger: brief:10 rules shell text and does not name a shell operator, a control character, a reserved word: name each by the word operator, control character or reserved word, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit\n"
+      : "";
+    refused(`a ${name} row with no forms clause`, ledger, pathFormless(10) + shell);
   }
   // a line a path row's clause cites holds a pin of its own, as W-322 rules for an any-text row's
   setBrief(PATH_BRIEF.replace(', pinned by `W-300-b1` "absolute"', ""));

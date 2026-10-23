@@ -158,6 +158,20 @@ const HOSTILE: readonly (readonly [form: string, word: RegExp])[] = [
   ["a non-ASCII name", /(?<![\w-])non-ASCII(?![\w-])/i],
   ["a symlinked parent", /(?<![\w-])symlink(?:s|ed)?(?![\w-])/i],
 ];
+/** W-373 (D-076 D): an input surface a row names in its Record or Valid domain cell, by a fixed vocabulary (`typed`), and
+ *  the hostile forms its line, or a line its forms clause cites, names besides W-336's, each by one of its `words`. */
+const SURFACES: readonly { surface: string; words: string; typed: RegExp; forms: readonly (readonly [form: string, word: RegExp])[] }[] = [
+  {
+    surface: "shell text",
+    words: "operator, control character or reserved word",
+    typed: /(?<![\w-])(?:command(?: lines?|-line)|shell)(?![\w-])/i,
+    forms: [
+      ["a shell operator", /(?<![\w-])operators?(?![\w-])/i],
+      ["a control character", /(?<![\w-])control characters?(?![\w-])/i],
+      ["a reserved word", /(?<![\w-])reserved words?(?![\w-])/i],
+    ],
+  },
+];
 
 /** W-322: one pin: the test row's name and a text of the assertion that exercises the case. */
 export interface Pin {
@@ -180,10 +194,20 @@ export interface PathGap {
   missing: string[];
 }
 
+/** W-373: a row naming an input surface whose line and cited lines do not name each of its forms (`missing`, in the
+ *  surface's order); `words` are the words that name them. */
+export interface SurfaceGap {
+  row: number;
+  surface: string;
+  words: string;
+  missing: string[];
+}
+
 /** W-322: the brief's ruled cases in brief order, each with the pins its real line holds; `formless`, the rows whose
  *  Valid domain says any text or any string and which hold no forms clause; W-336: `pathGaps`, the path-typed rows'.
- *  Text only, like `inputDomainRows`. */
-export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[]; pathGaps: PathGap[] } {
+ *  W-373: `surfaceGaps`, the rows naming a surface of `SURFACES`, whose cited lines are cases too. Text only, like
+ *  `inputDomainRows`. */
+export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[]; pathGaps: PathGap[]; surfaceGaps: SurfaceGap[] } {
   const real = realLines(briefText);
   // W-334: a line number past 15 digits is past any brief's last line, so it clamps without a double
   const clamp = (digits: string): number => (digits.length > 15 ? real.length : Math.min(Number(digits), real.length));
@@ -192,13 +216,16 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
   const cases: RuledCase[] = [];
   const formless: number[] = [];
   const pathGaps: PathGap[] = [];
+  const surfaceGaps: SurfaceGap[] = [];
   for (const n of inputDomainRows(briefText)) {
     const text = real[n - 1]!;
     cases.push({ line: n, row: n, pins: pinsOf(n), unpinned: UNPINNED.test(text) });
     const domain = cellsOf(text)[1] ?? "";
     const anyText = ANY_TEXT.test(domain);
     const pathTyped = PATH_TYPED.test(domain);
-    if (!anyText && !pathTyped) continue;
+    const named2 = cellsOf(text).slice(0, 2).join(" | ");
+    const surfaces = SURFACES.filter((s) => s.typed.test(named2));
+    if (!anyText && !pathTyped && surfaces.length === 0) continue;
     const clause = FORMS.exec(text)?.[1];
     // a cited range is clamped to the brief's last line: a start past it cites the last line alone
     const cited = [...(clause ?? "").matchAll(GRAMMAR_CITE)].flatMap((m) => {
@@ -208,15 +235,19 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
     });
     const noForms = clause === undefined || (cited.length === 0 && !/`[^`]+`/.test(clause));
     if (anyText && noForms) formless.push(n);
+    // the row's real line and each line its clause cites; a form named after "every other form" counts as a limit
+    const named = [text, ...cited.map((m) => real[m - 1] ?? "")].join("\n");
     if (pathTyped) {
-      // the row's real line and each line its clause cites; a form named after "every other form" counts as a limit
-      const named = [text, ...cited.map((m) => real[m - 1] ?? "")].join("\n");
       const missing = HOSTILE.filter(([, word]) => !word.test(named)).map(([form]) => form);
       if ((!anyText && noForms) || missing.length > 0) pathGaps.push({ row: n, formless: !anyText && noForms, missing });
     }
+    for (const { surface, words, forms } of surfaces) {
+      const missing = forms.filter(([, word]) => !word.test(named)).map(([form]) => form);
+      if (missing.length > 0) surfaceGaps.push({ row: n, surface, words, missing });
+    }
     for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
   }
-  return { cases, formless, pathGaps };
+  return { cases, formless, pathGaps, surfaceGaps };
 }
 
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
