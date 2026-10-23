@@ -1,0 +1,22 @@
+# opus: W-328
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16717-f163-76b1-ad75-890e6ab1b657
+# outcome: passed
+# at: 2026-10-23T05:30:15.312Z
+# tree: tree:8e1a551a648d5c48d547f8c82791c3b7f87b5192
+# brief: briefs/W-328.md blob:cff221d74243a1c6311623f8425e7e2f88a861ba
+# ticket: {"opus":"W-328","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-328/studio","head":"97551148c4c4efbaf9ca8ebe0a3d17cac7b1048e","brief":"cff221d74243a1c6311623f8425e7e2f88a861ba","at":"2026-10-23T05:29:55.928Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-328-review-1.log #1: closed — packages/cli/src/next.ts:1388 now places the commit instruction before the mandatory suffix, and packages/cli/src/next-review.test.ts:1394 asserts the complete reason exactly.
+
+## Verdict
+The blocker is fixed at its cause with strengthened sibling assertions.
+
+VERDICT: PASS
