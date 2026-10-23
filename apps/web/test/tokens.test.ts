@@ -140,6 +140,66 @@ test("W-366-b1 behaviour 1: Dracula accents are exact and meet computed contrast
   assert.match(direction, /Verdigris remains the sole product identity colour\.\s+Yellow is a constant project-name text accent, identical for every project\s+and condition\. Projects remain named, never colour-coded; project dots and\s+colour hashing remain excluded\./, "DIRECTION section 3 keeps project identity with verdigris and makes yellow constant");
 });
 
+function accentTokenConsumers(): { selector: string; tokens: string[] }[] {
+  const withoutComments = componentCss.replace(/\/\*[\s\S]*?\*\//g, "");
+  const consumers: { selector: string; tokens: string[] }[] = [];
+  for (const match of withoutComments.matchAll(/([^{}]+){([^{}]*)}/g)) {
+    const declarations = match[2] ?? "";
+    const tokens = [...declarations.matchAll(/var\(--(accent-(?:cyan|pink|purple|yellow))\)/g)].map((token) => token[1]!);
+    if (tokens.length === 0) continue;
+    consumers.push({ selector: (match[1] ?? "").trim().replace(/\s+/g, " "), tokens: [...new Set(tokens)].sort() });
+  }
+  return consumers;
+}
+
+test("W-366-b2 behaviour 2: each accent has one non-status selector role", () => {
+  const consumers = accentTokenConsumers();
+  assert.deepEqual(
+    consumers.map(({ selector, tokens }) => `${selector} => ${tokens.join(",")}`).sort(),
+    [
+      "::selection => accent-pink",
+      ".board__project-select, .board__project-select option => accent-yellow",
+      ".officina__row--link, .board-drawer__banner-link, .board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
+      ".officina__title, .officina__panel-heading, .inbox__title, .inbox__detail-subject, .seats__heading, .seats__card-heading, .board__title, .board-drawer__title, .board-drawer__section-head => accent-purple",
+    ].sort(),
+    "the four accents have only their proposed heading, link, text-selection and project-name consumers",
+  );
+
+  const statusClasses = new Set([
+    "shell__status",
+    "screen-notice",
+    "token-prompt",
+    "gate-ladder__mark--ok-filled",
+    "gate-ladder__mark--bad-diagonal",
+    "burn-bar__fill--amber",
+    "officina__panel--attention",
+    "officina__count--amber",
+    "officina__posture-word",
+    "officina__posture-reason",
+    "officina__empty",
+    "officina__loading",
+    "inbox__row--attention",
+    "inbox__age--stale",
+    "seats__confirm-error",
+    "board__notice",
+    "board__wip-fill--amber",
+    "board__card--amber",
+    "board__card--bad",
+    "board__liveness",
+    "board-drawer__banner",
+    "board-drawer__gate-status",
+    "officina__bar-fill",
+  ]);
+  const stateForms = /:(?:hover|active|focus|focus-visible|disabled|checked)|\[aria-selected|\[open\]|--(?:active|attention|amber|bad|ok|focused|loading|error|pending|stale|open|closed|selected)(?:\b|_)/i;
+  for (const { selector } of consumers) {
+    const classes = [...selector.matchAll(/\.([a-z0-9_-]+)/gi)].map((match) => match[1]!);
+    assert.deepEqual(classes.filter((name) => statusClasses.has(name)), [], `${selector} is not a recognised status selector`);
+    assert.doesNotMatch(selector, stateForms, `${selector} does not use an accent to distinguish an application state`);
+  }
+  assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--accent-cyan\)/, "visited and unvisited evidence links keep the same cyan role");
+  assert.match(componentCss, /::selection\s*{[^}]*color\s*:\s*var\(--surface\)[^}]*background\s*:\s*var\(--accent-pink\)/, "text selection pairs pink with surface text");
+});
+
 function cssRule(selector: string): string {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const declarations = new RegExp(`${escaped}\\s*{([^}]*)}`).exec(componentCss)?.[1];
