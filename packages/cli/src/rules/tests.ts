@@ -16,6 +16,11 @@
  * W-178 adds `test.rows`, block: with `opts.repo`, no test file at the
  * merge-base of HEAD and master has fewer rows in the working tree unless the
  * change adds one exact record to `test/row-drops.yml` (studio/briefs/W-178.md).
+ *
+ * W-376 adds `test.one_sided`, block: with `opts.repo`, a line of a tracked test
+ * file added or changed since that merge-base holding a one-sided assertion of a
+ * string (studio/briefs/W-376.md) needs the whole string asserted, or a
+ * `// one-sided: <reason>` annotation.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
@@ -550,7 +555,120 @@ export function testRowFindings(repo: string): Finding[] {
   return findings;
 }
 
+// ---- W-376: `test.one_sided`, block. A test of an output asserts the whole string, never one end of it.
+const sidedBlock = (where: string, message: string): Finding => ({ rule: "test.one_sided", level: "block", where, message });
+const MATCH_SITE = /(?<![\w$.])assert\s*\.\s*match\s*\(/g;
+const REGEX_LITERAL = /\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*/y;
+const REGEXP_CALL = /new\s+RegExp\s*\(\s*(["'`])((?:\\.|(?!\1)[^\\])*)\1/y;
+const SIDED = /^\/\/\s*one-sided:\s*(\S.*)$/;
+const SIDED_HOW = 'assert the whole string (assert.equal, or a pattern anchored at both ends), or annotate "// one-sided: <reason>"';
+
+/** In string-blanked code, the index of the comma or closing bracket that ends the argument starting at `from`; -1
+ *  when the line ends first. */
+function argumentEnd(code: string, from: number): number {
+  let depth = 0;
+  for (let i = from; i < code.length; i++) {
+    const c = code[i]!;
+    if (c === "(" || c === "[" || c === "{") depth++;
+    else if (c === ")" || c === "]" || c === "}") {
+      if (depth === 0) return i;
+      depth--;
+    } else if (c === "," && depth === 0) return i;
+  }
+  return -1;
+}
+
+/** A pattern source anchored at exactly one end; a `$` after a backslash is read as escaped. */
+function sidedPattern(source: string): string | undefined {
+  const start = source.startsWith("^");
+  const end = /(?<!\\)\$$/.test(source);
+  if (start === end) return undefined;
+  return start ? "a pattern anchored at its start only" : "a pattern anchored at its end only";
+}
+
+/** The one-sided form an assertion on this line makes, from its string-blanked and plain code (same columns). */
+function sidedForm(blank: string, plain: string): string | undefined {
+  for (const m of blank.matchAll(MATCH_SITE)) {
+    const comma = argumentEnd(blank, m.index + m[0].length);
+    if (comma < 0 || blank[comma] !== ",") continue;
+    let at = comma + 1;
+    while (at < plain.length && /\s/.test(plain[at]!)) at++;
+    REGEX_LITERAL.lastIndex = at;
+    REGEXP_CALL.lastIndex = at;
+    const literal = REGEX_LITERAL.exec(plain);
+    const call = literal ? null : REGEXP_CALL.exec(plain);
+    const form = literal ? sidedPattern(literal[1]!) : call ? sidedPattern(call[2]!) : undefined;
+    if (form !== undefined) return form;
+  }
+  return undefined;
+}
+
+/** A `// one-sided: <reason>` comment on the line, or alone on the line above, with a reason of at least 15
+ *  characters in 3 words. */
+function sidedWaived(lines: Line[], idx: number): boolean {
+  const prev = lines[idx - 1];
+  const comments = [lines[idx]!.comment, prev !== undefined && prev.code.trim() === "" ? prev.comment : undefined];
+  return comments.some((c) => {
+    const reason = c === undefined ? undefined : SIDED.exec(c)?.[1]?.trim();
+    return reason !== undefined && reason.replace(/\s+/g, "").length >= MIN_REASON_CHARS && reason.split(/\s+/).length >= MIN_REASON_WORDS;
+  });
+}
+
+/** W-376: the one-sided assertions on `lines` (1-based) of a test file's text, each with its form; an annotated one
+ *  is not listed. Pure. */
+export function oneSidedSites(text: string, lines: readonly number[]): { line: number; form: string }[] {
+  const plain = lex(text);
+  const blank = lex(text, { blankStrings: true });
+  const sites: { line: number; form: string }[] = [];
+  for (const n of lines) {
+    const form = n >= 1 && n <= plain.length ? sidedForm(blank[n - 1]!.code, plain[n - 1]!.code) : undefined;
+    if (form !== undefined && !sidedWaived(plain, n - 1)) sites.push({ line: n, form });
+  }
+  return sites;
+}
+
+/** The lines of `rel` added or changed in the working tree since `base`, from `git diff --unified=0`'s hunk headers. */
+function addedLines(repo: string, base: string, rel: string): number[] {
+  const diff = gitOut(repo, ["diff", "--no-color", "--no-ext-diff", "--no-renames", "--unified=0", base, "--", `:(literal)${rel}`]);
+  const lines: number[] = [];
+  // W-334: a line number past 15 digits is past any 1 MiB file, so such a header adds nothing
+  for (const m of diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d{1,15})(?:,(\d{1,15}))? @@/gm)) {
+    const start = Number(m[1]);
+    const count = m[2] === undefined ? 1 : Number(m[2]);
+    for (let k = 0; k < count; k++) lines.push(start + k);
+  }
+  return lines;
+}
+
+/** W-376: `test.one_sided`, block. Each tracked test file changed since the merge-base (W-178's `resolveTestBase`):
+ *  its added and changed lines' one-sided assertions. An unresolved base, an unparsable package.json and an unreadable
+ *  test file are `test.rows`' and `test.sleep`'s findings, so this rule adds none for them. */
+export function oneSidedFindings(repo: string): Finding[] {
+  const resolved = resolveTestBase(repo);
+  if ("error" in resolved) return [];
+  const findings: Finding[] = [];
+  try {
+    let registered = new Set<string>();
+    const pkg = readCandidate(repo, PACKAGE_JSON);
+    if ("text" in pkg)
+      try {
+        registered = registeredPaths(pkg.text);
+      } catch {
+        // test.rows reports it
+      }
+    const changed = gitOut(repo, ["diff", "--name-only", "-z", "--no-renames", resolved.base]).split("\0");
+    for (const rel of changed.filter((p) => p.length > 0 && isTestPath(p, registered))) {
+      const read = readCandidate(repo, rel);
+      if (!("text" in read)) continue;
+      for (const s of oneSidedSites(read.text, addedLines(repo, resolved.base, rel))) findings.push(sidedBlock(`${rel}:${s.line}`, `${s.form}: ${SIDED_HOW}`));
+    }
+  } catch (e) {
+    findings.push(sidedBlock(GIT_WHERE, `the one-sided scan failed (${reasonOf(e)})`));
+  }
+  return findings;
+}
+
 export function checkTests(root: string, opts: RuleOpts): Finding[] {
   const findings = scanTests(root, opts).findings;
-  return opts.repo ? [...findings, ...testRowFindings(opts.repo)] : findings;
+  return opts.repo ? [...findings, ...testRowFindings(opts.repo), ...oneSidedFindings(opts.repo)] : findings;
 }
