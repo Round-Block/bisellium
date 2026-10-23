@@ -1617,7 +1617,7 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
     assert.equal(o.kv.get("why"), w377Waits(w, "ui_rulings must be a non-empty sequence of distinct decision-id strings"), ran(label, o));
   }
   // a kind that is not a registered native kind (mis-cased, unregistered, not a string, absent) holds before the pr rung, at the
-  // build rung's gate configuration (W-312's reader, unchanged): it never reaches a pr or merge named without the wait
+  // build rung's `admitCurrentGates` (existing, reused), called through `Facts.gates`: it never reaches a pr or merge named without the wait
   editRecord(w, "wt", (doc) => doc.setIn(["ui_rulings"], ["D-950", "D-951"]));
   for (const [kind, shown] of [["UI", '"UI"'], ["widget", '"widget"'], [7, "7"], [undefined, "undefined"]] as const) {
     if (kind === undefined) put(w.wtStudio, `opera/${OPUS}.md`, readFileSync(recordPath(w), "utf8").replace(/^kind: .*\n/m, ""));
@@ -1680,7 +1680,7 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
   writeFileSync(exclude, excluded);
   commit(w.wt, `studio(${OPUS}): the ui ruling`);
   expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a committed ruling: the pr is named");
-  // round 3: a skip-worktree or assume-unchanged entry hides its working bytes from status, so it holds
+  // round 3: a skip-worktree decision whose working bytes differ from HEAD and an assume-unchanged record each hold: the entry hides them from status
   const ruled = join(w.wtStudio, "decisions", "D-960.md");
   const ruledText = readFileSync(ruled, "utf8");
   git(w.wt, ["update-index", "--skip-worktree", "studio/decisions/D-960.md"]);
