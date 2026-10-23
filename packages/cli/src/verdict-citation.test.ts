@@ -1216,3 +1216,100 @@ test("W-381-b1 behaviour 1: on a brief that names a prototype, each Promise line
   admitted("Promise lines after Out of scope are no case", cite(KILL_COVERING));
   admitted("another seat's spec verdict needs no pin", NO, "qa-lead");
 });
+
+test("W-381-b2 behaviour 2: on a brief that names a prototype, each pinned line's ledger line names a kill whose mutation is one hunk of one source file and whose output shows a pinned row failing at its pinned assertion, or the architect's spec signature is refused", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(KILL_BRIEF);
+  const P = 'W-300: promise ledger: brief:10';
+  const noKill = (line: number): string =>
+    `W-300: promise ledger: brief:${line} is pinned and the brief names a prototype, and no ledger line citing brief:${line} names a kill: add killed by \`<patch>\` -> \`<output>\`, a one-hunk mutation of one source file and the pinned row's Node TAP output failing at one of its pinned assertions\n`;
+  const notMutation = (patch: string): string => `${P}'s kill \`${patch}\` is not a mutation: one file's unified diff, its --- and +++ headers naming one source file that is not a test file, and one well-formed hunk changing a line\n`;
+  const notShown = (output: string, pins = '`W-300-b1` "row: exit 2"'): string => `${P}'s kill \`${output}\` does not show a pinned row failing at its pinned assertion (${pins})\n`;
+  const ROW_10 = `brief:10, the flag: packages/x.ts:5 parseFlag exits 2 — holds; ${KILL_10.token}`;
+  const withRow = (line: string): string => cite(KILL_COVERING.replace(ROW_10, line));
+  const row = (k: { token: string }): string => withRow(ROW_10.replace(KILL_10.token, k.token));
+
+  admitted("every pinned line killed", cite(KILL_COVERING));
+  // the kill is named on a ledger line citing the pinned line
+  refused("a pinned row with no kill", withRow(ROW_10.replace(`; ${KILL_10.token}`, "")), noKill(10));
+  refused("a pinned Promise line with no kill", cite(KILL_COVERING.replace(`; ${KILL_4.token}`, "")), noKill(4));
+  refused("the kill on a ledger line citing another line", cite(KILL_COVERING.replace(`; ${KILL_10.token}`, "").replace(PROMISE_5, `${PROMISE_5}; ${KILL_10.token}`)), noKill(10));
+  refused("two pinned lines with no kill, in brief order", cite(KILL_COVERING.replace(`; ${KILL_4.token}`, "").replace(`; ${KILL_10.token}`, "")), noKill(4) + noKill(10));
+  refused("a kill with no arrow", withRow(ROW_10.replace(" -> ", " ")), noKill(10));
+
+  // the mutation: one file's unified diff (--- and +++ naming one source file, not a test file) and one well-formed hunk changing a line
+  for (const [name, patch] of [
+    ["a truncated diff beginning at +++", "+++ b/packages/x.ts\n@@ bogus\n+x\n"],
+    ["two hunks", `${MUTATION}@@ -9 +9 @@\n-  x;\n+  y;\n`],
+    ["two files", `${MUTATION}diff --git a/packages/y.ts b/packages/y.ts\n--- a/packages/y.ts\n+++ b/packages/y.ts\n@@ -1 +1 @@\n-a\n+b\n`],
+    ["a test file", MUTATION.replaceAll("packages/x.ts", "packages/x.test.ts")],
+    ["a file under a test folder", MUTATION.replaceAll("packages/x.ts", "apps/web/tests-serve/x.ts")],
+    ["a deleted file", MUTATION.replace("+++ b/packages/x.ts", "+++ /dev/null")],
+    ["no changed line", MUTATION.replace("-  return 2;\n+  return 0;\n", "   return 2;\n")],
+    ["no diff at all", "return 0;\n"],
+    ["no --- header", MUTATION.replace("--- a/packages/x.ts\n", "")],
+    ["headers naming two paths", MUTATION.replace("+++ b/packages/x.ts", "+++ b/packages/y.ts")],
+    ["a new file", MUTATION.replace("--- a/packages/x.ts", "--- /dev/null")],
+    ["a hunk header that is not valid", MUTATION.replace("@@ -5 +5 @@", "@@ bogus @@")],
+    ["a hunk shorter than its header's counts", MUTATION.replace("@@ -5 +5 @@", "@@ -5,2 +5,2 @@")],
+    ["a hunk line that is no diff line", MUTATION.replace("+  return 0;", "*  return 0;")],
+    ["a line after the hunk", `${MUTATION}trailing text\n`],
+  ] as const) {
+    const k = killFiles(patch, tapFailing("W-300-b1", "'row: exit 2'"));
+    refused(`a mutation with ${name}`, row(k), notMutation(k.patch));
+  }
+  const spec = killFiles(MUTATION.replaceAll("packages/x.ts", "packages/inspect.ts"), tapFailing("W-300-b1", "'row: exit 2'"));
+  admitted("a source file whose name holds test or spec elsewhere", row(spec));
+  for (const [name, patch] of [
+    ["CRLF line ends", MUTATION.replaceAll("\n", "\r\n")],
+    ["context lines its header counts", "diff --git a/packages/x.ts b/packages/x.ts\nindex 1111111..2222222 100644\n--- a/packages/x.ts\n+++ b/packages/x.ts\n@@ -4,3 +4,3 @@ function f() {\n a;\n-  return 2;\n+  return 0;\n b;\n"],
+    ["a no-newline note", `${MUTATION}\\ No newline at end of file\n`],
+  ] as const)
+    admitted(`a mutation with ${name}`, row(killFiles(patch, tapFailing("W-300-b1", "'row: exit 2'"))));
+
+  // the output: Node's TAP, the pinned row's own subtest failing at a pinned assertion by ERR_ASSERTION
+  for (const [name, output] of [
+    ["another assertion's message", tapFailing("W-300-b1", "'flag: exit 2'")],
+    ["a message that only starts with the assertion", tapFailing("W-300-b1", "'row: exit 2 and more'")],
+    ["a message that only starts with the assertion and a colon", tapFailing("W-300-b1", "'row: exit 2:more'")],
+    ["another row", tapFailing("W-300-b2", "'row: exit 2'")],
+    ["a row whose name only starts with the pinned row's", tapFailing("W-300-b10", "'row: exit 2'")],
+    ["a passing row", tapFailing("W-300-b1", "'row: exit 2'").replace("not ok 1 - ", "ok 1 - ")],
+    ["a failure that is not an assertion", tapFailing("W-300-b1", "'row: exit 2'").replace("'ERR_ASSERTION'", "'ERR_TEST_FAILURE'")],
+    ["no TAP version line", tapFailing("W-300-b1", "'row: exit 2'").replace("TAP version 13\n", "")],
+    ["the message in another row's block", `${tapFailing("W-300-b2", "'row: exit 2'")}${tapFailing("W-300-b1", "'other'").replace("TAP version 13\n", "")}`],
+  ] as const) {
+    const k = killFiles(MUTATION, output);
+    refused(`an output with ${name}`, row(k), notShown(k.output));
+  }
+  const block = killFiles(MUTATION, tapFailing("W-300-b1", "|-\n    row: exit 2\n    + actual - expected\n"));
+  admitted("the message as the first line of an error block", row(block));
+  const detail = killFiles(MUTATION, tapFailing("W-300-b1", "'row: exit 2: exit (stderr \"\")'"));
+  admitted("a message opening with the assertion and a colon", row(detail));
+  const nested = killFiles(
+    MUTATION,
+    ["TAP version 13", "# Subtest: W-300-b1 behaviour 1: a fixture row", "    # Subtest: inner", "    not ok 1 - inner", "      ---", "      error: 'row: exit 2'", "      code: 'ERR_ASSERTION'", "      ...", "    1..1", "not ok 1 - W-300-b1 behaviour 1: a fixture row", "  ---", "  error: '1 subtest failed'", "  code: 'ERR_TEST_FAILURE'", "  ...", "1..1", ""].join("\n"),
+  );
+  admitted("the assertion failing in a subtest of the pinned row", row(nested));
+  setBrief(KILL_BRIEF.replace('"row: exit 2"', `"row: it's 2"`));
+  const quoted = killFiles(MUTATION, tapFailing("W-300-b1", "'row: it''s 2'"));
+  admitted("a quote doubled inside the quoted message", row(quoted));
+  setBrief(KILL_BRIEF.replace('"row: exit 2" |', '"row: exit 2" and pinned by `W-300-b3` "other: exit 3" |'));
+  const second = killFiles(MUTATION, tapFailing("W-300-b3", "'other: exit 3'"));
+  admitted("a kill of the line's second pin", row(second));
+  const bad = killFiles(MUTATION, tapFailing("W-300-b1", "'nothing'"));
+  admitted("a failing kill beside a proving one on the line", withRow(`${ROW_10.replace(KILL_10.token, bad.token)} and ${KILL_10.token}`));
+  refused("two pins, no kill proving either", row(bad), notShown(bad.output, '`W-300-b1` "row: exit 2", `W-300-b3` "other: exit 3"'));
+  setBrief(KILL_BRIEF);
+
+  // the files: an absolute or ~/ path to a readable regular file
+  refused("a relative patch path", withRow(ROW_10.replace(KILL_10.patch, "kill.patch")), `${P}'s kill \`kill.patch\` is not an absolute or ~/ path\n`);
+  refused("a missing patch", withRow(ROW_10.replace(KILL_10.patch, `${KILL_DIR}/none.patch`)), `${P}'s kill \`${KILL_DIR}/none.patch\` is not a readable regular file\n`);
+  refused("a directory for the output", withRow(ROW_10.replace(KILL_10.output, KILL_DIR)), `${P}'s kill \`${KILL_DIR}\` is not a readable regular file\n`);
+
+  // no prototype, an unpinned line, or another seat: no kill owed
+  setBrief(KILL_BRIEF.replace(KILL_PROTOTYPE, ""));
+  admitted("no Prototype line: no kill", cite(KILL_COVERING.replace(`; ${KILL_4.token}`, "").replace(`; ${KILL_10.token}`, "")));
+  setBrief(KILL_BRIEF.replace('pinned by `W-300-b1` "row: exit 2"', "unpinned"));
+  admitted("an unpinned row owes no kill", cite(KILL_COVERING.replace(ROW_10, "brief:10, the flag: packages/x.ts:5 — scoped")));
+  admitted("another seat's spec verdict needs no kill", NO, "qa-lead");
+});
