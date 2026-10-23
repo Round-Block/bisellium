@@ -1,0 +1,41 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-362-b1\s --import tsx packages/cli/src/guard.test.ts
+# exit: 1
+# at: 2026-10-23T02:14:30.622Z
+# sella: architect
+# tree: tree:1d18cfc7c9adc1505416ae26cd6339d6214b072f
+# ticket: {"opus":"W-362","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-362/studio","head":"1428889c63ac8b928ffc54eec6479a1dc2db5eeb","brief":"b36bde706feb43674c0994d10d909c580f0d30b0","at":"2026-10-23T02:14:30.581Z"}
+
+TAP version 13
+# Subtest: W-362-b1 behaviour 1: the guard reads env -S's split string and the operand of a shell option before a script file
+not ok 1 - W-362-b1 behaviour 1: the guard reads env -S's split string and the operand of a shell option before a script file
+  ---
+  duration_ms: 7.54592
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-362/packages/cli/src/guard.test.ts:6:11353'
+  failureType: 'testCodeFailure'
+  error: |-
+    env's split string is read: env -S 'bisellium merge W-900 --studio studio --repo .'
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-362/packages/cli/src/guard.test.ts:627:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 299.739768

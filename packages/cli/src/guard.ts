@@ -34,7 +34,13 @@ interface Command {
   after: string;
 }
 
-function commandSeq(line: string): Command[] {
+/** The characters GNU env 9.4 splits a `-S` string at (info env, "Splitting arguments by whitespace"): space, tab, newline,
+ *  carriage return, vertical tab and form feed. */
+const ENV_BLANK = " \t\n\r\v\f";
+
+/* `literal` (env -S's string, the one split for every classifier): only `ENV_BLANK` breaks words and a `#` opening a word
+   ends the whole string, as env reads it; `;` `&` `|` `(` `)` backtick and `$(` stay argument text. */
+function commandSeq(line: string, literal = false): Command[] {
   const out: Command[] = [];
   let run = "";
   let words: string[] = [];
@@ -56,7 +62,7 @@ function commandSeq(line: string): Command[] {
   for (let i = 0; i < line.length; i++) {
     const c = line[i]!;
     if (c === "#" && !inWord) {
-      const j = line.indexOf("\n", i);
+      const j = literal ? -1 : line.indexOf("\n", i);
       i = (j < 0 ? line.length : j) - 1;
     } else if (c === "'") {
       const j = line.indexOf("'", i + 1);
@@ -73,14 +79,14 @@ function commandSeq(line: string): Command[] {
     } else if (c === "\\" && i + 1 < line.length) {
       word += line[++i];
       inWord = true;
-    } else if (c === "$" && line[i + 1] === "(") {
+    } else if (!literal && c === "$" && line[i + 1] === "(") {
       endCommand();
       run += "$(";
       i++;
-    } else if (";&|\n()`".includes(c)) {
+    } else if (!literal && ";&|\n()`".includes(c)) {
       endCommand();
       run += c;
-    } else if (c === " " || c === "\t") endWord();
+    } else if (literal ? ENV_BLANK.includes(c) : c === " " || c === "\t") endWord();
     else {
       word += c;
       inWord = true;
@@ -97,44 +103,71 @@ const SHELLS = new Set(["bash", "sh", "zsh", "dash"]);
 const DURATION = /^(?:\d+(?:\.\d*)?|\.\d+)[smhd]?$/;
 const base = (w: string | undefined): string => (w ?? "").slice((w ?? "").lastIndexOf("/") + 1);
 
-/** Wrappers whose flags `strip` skips; `OPERAND` names the flags that take a separate operand. */
+/** Wrappers whose flags `strip` skips; `OPERAND` names the flags that take a separate operand (`env`'s are `envOption`'s). */
 const WRAPPERS = new Set(["env", "command", "exec", "nice", "xargs", "timeout"]);
 const OPERAND: Record<string, Set<string>> = {
-  env: new Set(["-u", "-C", "-S", "--unset", "--chdir", "--split-string"]),
   exec: new Set(["-a"]),
   nice: new Set(["-n", "--adjustment"]),
   xargs: new Set(["-I", "-n", "-L", "-P", "-d", "-E", "-s", "-a"]),
   timeout: new Set(["-k", "-s", "--kill-after", "--signal"]),
 };
 
+/** W-362: the `env` option word at `words[i]`: how many words it uses, and for `-S`/`--split-string` its string split
+ *  into words by `commandSeq`'s quoting (they take its place and are read as env's arguments, as env does). Recognised: a
+ *  short cluster (`-i`, `-0`, `-v`) whose first `u`, `C` or `S` takes the rest of the word or the next word
+ *  (`-S'…'`, `-iS '…'`, `-uNAME`), and `--split-string`, `--unset` and `--chdir`, or any prefix of one (`--split`, as
+ *  getopt_long reads it), with `=` or the next word; any other word stands alone. Env's own escapes in the string (`\_`, `\c`) and its `${VAR}` are read as plain text (a limit). */
+function envOption(words: string[], i: number): { used: number; split?: string[] } {
+  const w = words[i]!;
+  const long = /^--([a-z-]+)(?:=([\s\S]*))?$/.exec(w);
+  const name = long ? ["split-string", "unset", "chdir"].find((n) => n.startsWith(long[1]!)) : undefined;
+  const short = w.startsWith("--") ? null : /^-[^SuC]*([SuC])([\s\S]*)$/.exec(w);
+  const flag = long ? (name === undefined ? undefined : name === "split-string" ? "S" : "u") : short?.[1];
+  if (flag === undefined) return { used: 1 };
+  const rest = long ? long[2] : short![2] || undefined;
+  const value = rest ?? words[i + 1];
+  const used = rest === undefined ? 2 : 1;
+  return flag === "S" ? { used, split: commandSeq(value ?? "", true).flatMap((c) => c.words) } : { used };
+}
+
 /** Drops the prefix words before a command: assignments, the keywords in `KEYWORDS`, and the
- *  `WRAPPERS` with their flags (an `OPERAND` flag with its value; `env` also its assignments),
- *  `timeout` then its duration. `timed` is true when a `timeout` with a duration above zero was
- *  dropped. */
-function strip(words: string[]): { words: string[]; timed: boolean } {
+ *  `WRAPPERS` with their flags (an `OPERAND` flag with its value; `env` its options as `envOption`
+ *  reads them, a split string's words taking their place, and its assignments), `timeout` then its
+ *  duration. `timed` is true when a `timeout` with a duration above zero was dropped. `literal` is true once an `env`
+ *  split string was spliced in: env runs its words as a program's argv, so shell syntax in them (`KEYWORDS` bar `time`, a
+ *  loop, `cd`, `source`) is plain text, not shell syntax (W-362). */
+function strip(line: string[]): { words: string[]; timed: boolean; literal: boolean } {
+  let words = line;
   let i = 0;
   let timed = false;
+  let literal = false;
   for (;;) {
     const w = words[i];
     if (w === undefined) break;
     const b = base(w);
-    if (ASSIGNMENT.test(w) || KEYWORDS.has(w)) i++;
+    if (ASSIGNMENT.test(w) || (KEYWORDS.has(w) && (!literal || w === "time"))) i++;
     else if (WRAPPERS.has(b)) {
-      for (i++; words[i]?.startsWith("-") || (b === "env" && ASSIGNMENT.test(words[i] ?? "")); ) i += OPERAND[b]?.has(words[i]!) ? 2 : 1;
+      for (i++; words[i]?.startsWith("-") || (b === "env" && ASSIGNMENT.test(words[i] ?? "")); ) {
+        const o = b === "env" && words[i]!.startsWith("-") ? envOption(words, i) : { used: OPERAND[b]?.has(words[i]!) ? 2 : 1 };
+        if (o.split) {
+          words = [...words.slice(0, i), ...o.split, ...words.slice(i + o.used)];
+          literal = true;
+        } else i += o.used;
+      }
       if (b !== "timeout") continue;
       const d = words[i] ?? "";
       if (DURATION.test(d) && Number.parseFloat(d) > 0) timed = true;
       i++;
     } else break;
   }
-  return { words: words.slice(i), timed };
+  return { words: words.slice(i), timed, literal };
 }
 
-const NPX_OPERAND = new Set(["-p", "--package"]);
-/** The bash options that take a value: `-o`/`+o` and the long `--init-file`/`--rcfile`; any other long
- *  option is read as taking none (a limit). `-O`/`+O` are skipped before `-c` only (W-362 closes them before a file). */
-const SHELL_VALUED = ["-o", "+o", "--init-file", "--rcfile"];
-const SHELL_OPERAND = new Set([...SHELL_VALUED, "-O", "+O"]);
+const NPX_OPERAND = (w: string): boolean => w === "-p" || w === "--package";
+/** The shell options that take the next word (W-362): a `-`/`+` letter cluster holding `o` or `O` (`-o pipefail`,
+ *  `-eo pipefail`, `-O extglob`, `+O extglob`) and the long `--init-file`/`--rcfile`; any other long option is read
+ *  as taking none, and a cluster holding both `c` and `o` reads `c` first (limits). */
+const SHELL_OPERAND = (w: string): boolean => /^[-+][A-Za-z]*[oO][A-Za-z]*$/.test(w) || w === "--init-file" || w === "--rcfile";
 const SHELL_INLINE = /^-[a-z]*c[a-z]*$/;
 const NPX_INLINE = /^(?:-c|--call)$/;
 
@@ -142,9 +175,9 @@ const NPX_INLINE = /^(?:-c|--call)$/;
  *  index of that operand (after a `--`), and the inline script when an option word matching `inline`
  *  holds one. A `-c` after the operand is the operand's own argument, never an option; one helper for
  *  every launcher, so no caller reads it the other way. */
-function leading(w: string[], valued: Set<string>, inline?: RegExp): { operand: number; script?: string } {
+function leading(w: string[], valued: (word: string) => boolean, inline?: RegExp): { operand: number; script?: string } {
   let j = 1;
-  for (; w[j] !== undefined && w[j] !== "--" && /^[-+]/.test(w[j]!); j += valued.has(w[j]!) ? 2 : 1) if (inline?.test(w[j]!)) return { operand: j + 2, script: w[j + 1] };
+  for (; w[j] !== undefined && w[j] !== "--" && /^[-+]/.test(w[j]!); j += valued(w[j]!) ? 2 : 1) if (inline?.test(w[j]!)) return { operand: j + 2, script: w[j + 1] };
   return { operand: w[j] === "--" ? j + 1 : j };
 }
 
@@ -180,14 +213,14 @@ function shellScript(w: string[]): string | undefined {
   return b === "npx" ? leading(w, NPX_OPERAND, NPX_INLINE).script : SHELLS.has(b) ? leading(w, SHELL_OPERAND, SHELL_INLINE).script : undefined;
 }
 
-/** The script file the words run: `bash|sh|zsh|dash [flags] <file>` (`-o`/`+o` with their value),
+/** The script file the words run: `bash|sh|zsh|dash [flags] <file>` (`SHELL_OPERAND`'s options with their value),
  *  `source <file>`, `. <file>`, or a command word holding `/` (`./x.sh`, `scripts/x.sh`). */
-function scriptOf(w: string[]): string | undefined {
+function scriptOf(w: string[], literal = false): string | undefined {
   const b = base(w[0]);
   if (SHELLS.has(b)) {
-    return w[leading(w, new Set(SHELL_VALUED)).operand];
+    return w[leading(w, SHELL_OPERAND).operand];
   }
-  if (b === "source" || w[0] === ".") return w[1];
+  if (!literal && (b === "source" || w[0] === ".")) return w[1];
   return w[0]?.includes("/") ? w[0] : undefined;
 }
 
@@ -288,7 +321,7 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0, unkno
   let uncertain = false;
   let moved = false;
   for (const c of commandSeq(command)) {
-    const { words: w } = strip(c.words);
+    const { words: w, literal } = strip(c.words);
     if (certain && c.words[0] === "cd" && w.length === 2 && !/^[-+]/.test(w[1]!) && /^[;\n]*$/.test(c.before) && /^(?:[;\n]*|&&\n*)$/.test(c.after)) {
       const target = wordPath(w[1]!, { ...ctx, cwd });
       if (target !== undefined && enterable(target) && target !== cwd) {
@@ -298,7 +331,7 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0, unkno
       continue;
     }
     certain = false;
-    if (w[0] === "cd" || w[0] === "pushd" || w[0] === "popd") {
+    if (!literal && (w[0] === "cd" || w[0] === "pushd" || w[0] === "popd")) {
       uncertain = true;
       const operands = w.slice(1).filter((x) => !/^[-+]/.test(x));
       if (w[0] === "popd" || (w[0] === "pushd" && operands.length === 0) || (w[0] === "cd" && w.includes("-") && !moved)) unknown = true;
@@ -325,7 +358,7 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0, unkno
       if (step) return step;
       continue;
     }
-    const file = depth < 3 ? scriptOf(w) : undefined;
+    const file = depth < 3 ? scriptOf(w, literal) : undefined;
     if (file !== undefined && unknown && !HERE_ABSOLUTE.test(file))
       return `${REFUSED}\`${file}\` runs in a directory the guard cannot know (after \`cd -\`, \`popd\` or \`pushd\` with no directory) (W-310): run it by absolute path, or dispatch a ladder-runner`;
     for (const h of here) {
@@ -344,9 +377,9 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0, unkno
  *  command line holds no loop. */
 export function unboundedLoop(command: string, bounded = false, depth = 0): boolean {
   for (const words of simpleCommands(command)) {
-    const { words: w, timed } = strip(words);
+    const { words: w, timed, literal } = strip(words);
     const inBound = bounded || timed;
-    if ((w[0] === "while" || w[0] === "until") && !inBound) return true;
+    if (!literal && (w[0] === "while" || w[0] === "until") && !inBound) return true;
     const inner = shellScript(w);
     if (inner !== undefined && depth < 3 && unboundedLoop(inner, inBound, depth + 1)) return true;
   }

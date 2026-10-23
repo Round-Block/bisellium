@@ -12,7 +12,7 @@
  * `--match-head-commit`. `BLOCKED` is never merged directly.
  */
 import { spawnSync } from "node:child_process";
-import { lstatSync, mkdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, constants, lstatSync, mkdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
@@ -287,8 +287,23 @@ function overwritten(repo: string, from: string, to: string): string | undefined
   return undefined;
 }
 
+/** W-362: true when this process may write the nearest existing directory of a checkout path (git replaces a file by
+ *  unlinking and creating it there). The sandbox's deny on the agent clone's source folders makes it false, as any
+ *  other unwritable directory does; a directory that cannot be read as either is unwritable. */
+function writableAt(repo: string, path: string): boolean {
+  for (let d = dirname(join(repo, path)); ; d = dirname(d)) {
+    try {
+      accessSync(d, constants.W_OK);
+      return true;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT" || d === repo || dirname(d) === d) return false;
+    }
+  }
+}
+
 /**
- * A Patron path never moves in the main checkout. This runs before any fetch or ref move: the reviewed commit is
+ * A Patron path never moves in the main checkout, nor does a path in a folder this session may not write (W-362:
+ * the sandbox's deny), so git never leaves the checkout partly updated. This runs before any fetch or ref move: the reviewed commit is
  * fetched by id (`git fetch origin <oid>` writes no ref), and the paths it brings are read with `diff`. A stop
  * names the Patron's one command; `undefined` means nothing incoming is the Patron's, or this cannot be judged
  * here and the checks below hold on it. The oid is the merge commit of a MERGED PR already identified.
@@ -311,8 +326,8 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
   if (!ahead) return hold(`local master has diverged from the reviewed merge commit ${target.slice(0, 12)}`);
   const incoming = git(repo, ["diff", "--no-renames", "--name-only", "-z", local, target]);
   if (incoming.status !== 0 || incoming.error !== undefined) return hold(`git diff failed: ${why(incoming)}`);
-  const patron = incoming.stdout.split("\0").filter((p) => p !== "" && isPatronPath(p));
-  if (patron.length === 0) return undefined;
+  const paths = incoming.stdout.split("\0").filter((p) => p !== "");
+  const patron = paths.filter(isPatronPath);
   const holder = listWorktrees(repo)?.find((e) => e.branch === TRUNK_REF);
   const here = (path: string): boolean => {
     try {
@@ -321,12 +336,15 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
       return false;
     }
   };
+  // only this checkout, when it holds master, is written by the fast-forward
+  const denied = patron.length === 0 && holder !== undefined && here(holder.path) ? paths.filter((p) => !writableAt(repo, p)) : [];
+  if (patron.length === 0 && denied.length === 0) return undefined;
   const command = holder === undefined ? `git -C ${quoted(repo)} fetch origin master:master` : `git -C ${quoted(here(holder.path) ? repo : holder.path)} merge --ff-only ${target}`;
-  return {
-    ok: false,
-    reason: clean(`refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`, 600),
-    after: [`patron: ${command}`],
-  };
+  const reason =
+    patron.length > 0
+      ? `refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`
+      : `refusing: this session may not write incoming paths (${denied.slice(0, 10).map(quoted).join(", ")}) in the main checkout (the sandbox's deny, W-362); the main checkout is untouched`;
+  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`] };
 }
 
 /**

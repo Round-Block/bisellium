@@ -1,0 +1,43 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-362-b3\s --import tsx packages/cli/src/w362.test.ts
+# exit: 1
+# at: 2026-10-23T02:14:32.553Z
+# sella: architect
+# tree: tree:23732b1a9944d70942e4a3369db2b9a10c7e0932
+# ticket: {"opus":"W-362","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-362/studio","head":"53cabc8c76eb9481da866d0addff2d315e080832","brief":"b36bde706feb43674c0994d10d909c580f0d30b0","at":"2026-10-23T02:14:32.510Z"}
+
+TAP version 13
+# Subtest: W-362-b3 behaviour 3: the guard installer judges its inputs before any change, then installs the guard outside the agent clone
+not ok 1 - W-362-b3 behaviour 3: the guard installer judges its inputs before any change, then installs the guard outside the agent clone
+  ---
+  duration_ms: 106.73842
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-362/packages/cli/src/w362.test.ts:1:3514'
+  failureType: 'testCodeFailure'
+  error: |-
+    valid installer inputs: usage: agent-workspace.sh setup | verify [--inside]
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-362/packages/cli/src/w362.test.ts:107:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 393.50784

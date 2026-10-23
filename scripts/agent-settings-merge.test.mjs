@@ -65,7 +65,7 @@ test("merge into {} adds every entry", async () => {
   });
 });
 
-test("merge keeps unrelated keys and an explicit sandbox.enabled", async () => {
+test("merge keeps unrelated keys and turns an explicit sandbox.enabled false on (W-362)", async () => {
   const { merge } = await load();
   const input = {
     model: "opus",
@@ -78,7 +78,7 @@ test("merge keeps unrelated keys and an explicit sandbox.enabled", async () => {
   assert.deepEqual(out.env, { ...input.env, GH_CONFIG_DIR: OPTS.agentGh });
   assert.deepEqual(out.permissions.allow, ["Bash(ls)"]);
   assert.deepEqual(out.permissions.deny, ["Bash(rm -rf /)", ...PERM_DENY]);
-  assert.equal(out.sandbox.enabled, false);
+  assert.equal(out.sandbox.enabled, true);
   assert.deepEqual(out.sandbox.network, { allowedDomains: ["a.example"] });
 });
 
@@ -160,4 +160,89 @@ test("CLI on an already-merged file prints unchanged and writes nothing", async 
   assert.match(r.stdout, /unchanged/);
   assert.equal(readFileSync(file, "utf8"), text);
   assert.deepEqual(readdirSync(dir), ["settings.json"]);
+});
+
+// W-362 (studio/briefs/W-362.md): the sandbox is on, and it denies writing the agent clone's source folders
+test("W-362-b2 behaviour 2: merge turns the sandbox on and denies writing the agent clone's source folders", async () => {
+  const { merge } = await load();
+  for (const enabled of [false, "false", 0, null, undefined])
+    assert.equal(
+      merge({ sandbox: { enabled, network: { allowedDomains: ["a.example"] }, allowUnsandboxedCommands: false } }, OPTS)
+        .sandbox.enabled,
+      true,
+      `sandbox.enabled ${JSON.stringify(enabled)} becomes true`,
+    );
+  const kept = merge(
+    { sandbox: { enabled: false, network: { allowedDomains: ["a.example"] }, allowUnsandboxedCommands: false } },
+    OPTS,
+  ).sandbox;
+  assert.deepEqual(kept.network, { allowedDomains: ["a.example"] }, "other sandbox keys are kept");
+  assert.equal(kept.allowUnsandboxedCommands, false);
+  const agentDir = "/home/u/agents/bisellium";
+  const SOURCE = ["packages", "apps", "adapters", "scripts"].map((d) => `${agentDir}/${d}`);
+  const out = merge({ sandbox: { filesystem: { denyWrite: ["/elsewhere"] } } }, { ...OPTS, agentDir });
+  assert.deepEqual(
+    out.sandbox.filesystem.denyWrite,
+    ["/elsewhere", "/home/u/proj", ...SOURCE],
+    "the agent clone's source folders are denied",
+  );
+  assert.deepEqual(merge(out, { ...OPTS, agentDir }), out, "idempotent with agentDir");
+  assert.deepEqual(
+    merge({}, { ...OPTS, agentDir: `${agentDir}/` }).sandbox.filesystem.denyWrite,
+    ["/home/u/proj", ...SOURCE],
+    "a trailing slash is not doubled",
+  );
+  const odd = "/home/u/my agents/it's ü";
+  assert.deepEqual(
+    merge({}, { ...OPTS, agentDir: odd }).sandbox.filesystem.denyWrite.slice(1),
+    ["packages", "apps", "adapters", "scripts"].map((d) => `${odd}/${d}`),
+    "a space, a quote and a non-ASCII name are kept as written",
+  );
+  assert.deepEqual(merge({}, OPTS).sandbox.filesystem.denyWrite, ["/home/u/proj"], "without agentDir: today's deny");
+  // the CLI takes the agent clone as a fourth, absolute argument
+  const dir = tmp();
+  const file = join(dir, "settings.json");
+  writeFileSync(file, JSON.stringify({ sandbox: { enabled: false } }));
+  const r = spawnSync("node", [SCRIPT, file, OPTS.patronDir, OPTS.agentGh, agentDir], { encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^added sandbox\.enabled: true$/m, "the CLI says it turned the sandbox on");
+  assert.match(r.stdout, /^added sandbox\.filesystem\.denyWrite: "\/home\/u\/agents\/bisellium\/scripts"$/m);
+  assert.deepEqual(
+    JSON.parse(readFileSync(file, "utf8")),
+    merge({ sandbox: { enabled: false } }, { ...OPTS, agentDir }),
+  );
+  const before = readFileSync(file, "utf8");
+  const rel = spawnSync("node", [SCRIPT, file, OPTS.patronDir, OPTS.agentGh, "agents/bisellium"], { encoding: "utf8" });
+  assert.equal(rel.status, 2, "a relative agent clone is refused");
+  assert.match(rel.stderr, /must be an absolute path/);
+  assert.equal(readFileSync(file, "utf8"), before, "and nothing is written");
+});
+
+// W-362 spec-2 finding 2: a malformed settings shape is rejected, never reshaped
+test("W-362-b2 behaviour 2: a malformed sandbox shape is refused and nothing is written", async () => {
+  const dir = tmp();
+  const shapes = [
+    { sandbox: { filesystem: { denyWrite: "/keep" } } },
+    { sandbox: { filesystem: { denyWrite: ["/keep", 1] } } },
+    { sandbox: { filesystem: { denyWrite: { a: "/keep" } } } },
+    { sandbox: { filesystem: ["/keep"] } },
+    { sandbox: { filesystem: "/keep" } },
+    { sandbox: ["/keep"] },
+    { sandbox: "/keep" },
+  ];
+  for (const [i, shape] of shapes.entries()) {
+    const file = join(dir, `settings-${i}.json`);
+    const text = JSON.stringify(shape);
+    writeFileSync(file, text);
+    const r = spawnSync("node", [SCRIPT, file, OPTS.patronDir, OPTS.agentGh, "/home/u/agents/bisellium"], {
+      encoding: "utf8",
+    });
+    assert.equal(r.status, 1, `${text} exits 1: ${r.stdout}${r.stderr}`);
+    assert.equal(readFileSync(file, "utf8"), text, `${text} is left unchanged`);
+  }
+  assert.deepEqual(
+    readdirSync(dir).filter((n) => n.includes(".bak-")),
+    [],
+    "no backup was made",
+  );
 });

@@ -1,0 +1,23 @@
+# opus: W-362
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T04:37:32.281Z
+# tree: tree:2790259df5f3c43d56a945c0620c11804ee15a81
+# brief: briefs/W-362.md blob:90435bd8673867e3ec7dd47d733571a7a5206941
+# ticket: {"opus":"W-362","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-362/studio","head":"1f04992504cec84ba7fc5fbd715e1e3ced2fdc83","brief":"90435bd8673867e3ec7dd47d733571a7a5206941","at":"2026-10-23T04:37:28.717Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-362-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the class-loop hold (D-085 A) is answered by enumeration: Input domain row 1 now lists every form the guard recognises after `env`'s split, (a) the option forms, (b) the split (the six GNU env 9.4 blanks, a `#` opening a word ending the string, single quotes, a backslash, punctuation as argv), (c) env's own arguments read again, (d) the program word (`env`, `timeout`, the CLI's `cliArgv` forms, a shell's `-c` script or script file, `while`/`until` as plain argv), and states every other form a limit by name, so a further form is an advisory under D-085 E, not a blocker — check: brief:81, brief:26, packages/cli/src/guard.ts:43, packages/cli/src/guard.ts:139, classloop-forms.out
+2. advisory — build review 2's finding 1 (`exec` and `command` inside a split string, `ci/W-362-review-2.log`) is outside the restated domain and answered by the limit, no code change: env 9.4 runs no `exec` or `command` program here (exit 127), the guard reads both as wrappers as it does outside a split and refuses a ladder write after them; that errs toward refusal of a command that fails anyway, so it blocks no work, and it does not miss a record write on a host that ships a `command` program (Fedora's bash package, macOS), which the literal reading would (a record-write gap, D-085 E's blocking kind) — check: brief:81, packages/cli/src/guard.ts:149, host-wrappers.out, classloop-forms.out
+3. advisory — the brief now says what the fix rounds changed: `commandSeq` gained its literal mode and `ladderWrite`, `unboundedLoop` and `scriptOf` read shell words as argv under it, so they are owned code, no longer listed as reused unchanged; only their other branches stay a stated limit (D-076 E) — check: brief:26, brief:46, brief:61, brief:71
+4. advisory — the build's two fix tests are now the row's pins for (b) and the loop words, each assertion named; no new behaviour, test or red is required of the builder — check: brief:81, brief:96, packages/cli/src/guard.test.ts:662, packages/cli/src/guard.test.ts:676
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for the amended `studio/briefs/W-362.md` on `opus/W-362` (head 5f7d5a3c) at the class-loop hold: Input domain row 1 enumerated with every other form a limit; build review 2's `exec`/`command` case is a stated limit (the guard errs toward refusal), so review resumes against the amended brief with no builder round.

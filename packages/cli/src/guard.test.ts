@@ -3,6 +3,7 @@
  * its probe. node:test TAP, selected by `--test-name-pattern='^W-310-b<n>\s'`. Rows b1-b4 feed hook
  * inputs to `runHookEvent`; b5 checks a fixture repo and reads the real `.claude/`; b6 runs
  * `hooks check --repo` with PATH pointing at a `bisellium` it chose. Fixtures live under the OS tmp dir.
+ * W-362 row b1 (studio/briefs/W-362.md): env's split string and a shell option's operand.
  */
 import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -598,4 +599,102 @@ test("W-310-b6 behaviour 6: hooks check --repo reports the guard wired, installe
   const plain = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", join(REPO, "examples", "sample-studio")]));
   assert.equal(plain.value.exitCode, 0, "without --repo: today's report only");
   assert.doesNotMatch(plain.out, /^guard:/m);
+});
+
+// W-362 (studio/briefs/W-362.md): the forms W-310 left as limits, env's split string and a shell option's operand
+test("W-362-b1 behaviour 1: the guard reads env -S's split string and the operand of a shell option before a script file", async () => {
+  const split = [
+    "env -S 'bisellium merge W-900 --studio studio --repo .'",
+    'env -S"bisellium merge W-900"',
+    "env --split-string='npm run -s bisellium -- done W-900 --studio studio'",
+    "env --split-string 'bisellium branch W-900'",
+    "env --split 'bisellium merge W-900'",
+    "env --spl='bisellium done W-900'",
+    "env --un NAME -S 'bisellium merge W-900'",
+    "env -iS 'bisellium merge W-900'",
+    "env -S 'FOO=1 bisellium ready W-900'",
+    "env -S '-i -u HOME bisellium merge W-900'",
+    "env -u X -S 'bash -c \"bisellium merge W-900\"'",
+    "/usr/bin/env -S 'timeout 600 bisellium merge W-900'",
+    "bash -c \"env -S 'bisellium merge W-900'\"",
+    "env -S 'env -S \"bisellium merge W-900\"'",
+    "env -S 'npm run -s bisellium -- next W-900 --perform --expect review --studio studio --repo .'",
+    "env -S '\"/home/ü/my bin/bisellium\" merge W-900'",
+    String.raw`env -S "\"/home/u/it's/bisellium\" merge W-900"`,
+  ];
+  for (const c of split) {
+    const r = await guard(bash(c));
+    assert.equal(r.code, 2, `env's split string is read: ${c}`);
+    assert.match(r.err, /ladder record write, run only by a dispatched ladder-runner/, c);
+  }
+  for (const c of ["env -S 'echo bisellium merge W-900'", "env -S 'bisellium next W-900 --budget 400000'", "env -S", "env -S ''", "env -S 'grep -rn \"bisellium merge\" docs'"])
+    assert.equal((await guard(bash(c))).code, 0, `a split string holding no ladder write runs: ${c}`);
+  for (const c of split) assert.equal((await guard(bash(c, RUNNER))).code, 0, `a subagent runs it: ${c}`);
+  assert.equal((await guard(bash("env -S 'bash -c \"while true; do sleep 1; done\"'", {}, true))).code, 2, "a background loop inside a split string");
+  assert.equal((await guard(bash("env -S 'timeout 60 bash -c \"while true; do sleep 1; done\"'", {}, true))).code, 0, "a bounded loop inside a split string");
+  // a shell option's operand before the script file: -O/+O, and a letter cluster holding o or O
+  const opts = ["-O extglob", "+O extglob", "-eO extglob", "-eo pipefail", "-O extglob -O globstar", "-o pipefail -O extglob"];
+  for (const o of opts)
+    for (const sh of ["bash", "sh"]) {
+      const r = await guard(bash(`${sh} ${o} scripts/record-review.sh W-310 1 passed`, { cwd: REPO }));
+      assert.equal(r.code, 2, `the script after ${sh} ${o} is read`);
+      assert.match(r.err, /\(in scripts\/record-review\.sh\)/, `${sh} ${o}`);
+    }
+  assert.equal((await guard(bash("bash -eo pipefail -c 'bisellium merge W-900'"))).code, 2, "a -c after a cluster's operand is the shell's script");
+  assert.equal((await guard(bash("bash -eo pipefail -c 'while true; do sleep 1; done'", {}, true))).code, 2, "a background loop after a cluster's operand");
+  const t = tmp();
+  mkdirSync(join(t, "scripts"));
+  writeFileSync(join(t, "scripts", "holds-nothing.sh"), "echo bisellium merge W-900\n");
+  for (const o of opts) assert.equal((await guard(bash(`bash ${o} scripts/holds-nothing.sh`, { cwd: t }))).code, 0, `a script holding no ladder write runs: bash ${o}`);
+  // a script path with a space, a quote and a non-ASCII name, and one reached through a symlinked parent
+  const odd = join(tmp(), "rec dir ü it's");
+  mkdirSync(odd);
+  writeFileSync(join(odd, "rec.sh"), readFileSync(join(REPO, "scripts", "record-review.sh")));
+  const linked = join(tmp(), "linked");
+  symlinkSync(odd, linked);
+  for (const path of [join(odd, "rec.sh"), join(linked, "rec.sh")]) {
+    const r = await guard(bash(`bash -O extglob "${path}" W-310 1 passed`));
+    assert.equal(r.code, 2, `the script after -O is read at an odd or symlinked path: ${path}`);
+  }
+  assert.equal((await guard(bash("bash -O extglob scripts/record-review.sh W-310 1 passed", { cwd: REPO, ...RUNNER }))).code, 0, "a ladder-runner runs it");
+});
+
+test("W-362-b1 fix 1: env -S keeps shell punctuation as literal words", async () => {
+  // env splits the string into its own argv: `;` `&&` `|` are arguments, never command separators
+  for (const c of [
+    "env -S 'bisellium ; merge W-900'",
+    "env -S 'bisellium && merge W-900'",
+    "env -S 'bisellium | merge W-900'",
+    "env --split-string='bisellium ; done W-900'",
+    "env -S 'echo ok; bisellium merge W-900'",
+  ])
+    assert.equal((await guard(bash(c))).code, 0, `punctuation is a literal argument, not a separator: ${c}`);
+  assert.equal((await guard(bash("env -S 'bisellium merge W-900'"))).code, 2, "the plain split string still refuses");
+  assert.equal((await guard(bash("env -S 'FOO=a;b bisellium merge W-900'"))).code, 2, "punctuation inside an assignment word is part of it");
+});
+
+test("W-362-b1 fix 2: env -S splits on every GNU whitespace and keeps loop words literal", async () => {
+  // GNU env 9.4 (info env, 'Splitting arguments by whitespace'): space, tab, newline, carriage return, vertical tab and form feed
+  const dir = tmp();
+  for (const sep of ["\r", "\v", "\f"]) {
+    const name = JSON.stringify(sep);
+    const inner = `env -S 'bisellium${sep}merge W-900'`;
+    const direct = await guard(bash(inner));
+    assert.equal(direct.code, 2, `env splits on ${name}: ${inner}`);
+    assert.match(direct.err, /ladder record write, run only by a dispatched ladder-runner/, name);
+    assert.equal((await guard(bash(`bash -c "${inner}"`))).code, 2, `in a -c body, ${name}`);
+    writeFileSync(join(dir, "sep.sh"), `${inner}\n`);
+    assert.equal((await guard(bash("bash sep.sh", { cwd: dir }))).code, 2, `in a script file, ${name}`);
+    assert.equal((await guard(bash(inner, RUNNER))).code, 0, `a ladder-runner runs it, ${name}`);
+    assert.equal((await guard(bash(`env -S 'echo${sep}bisellium merge W-900'`))).code, 0, `the separator ends the word: ${name}`);
+  }
+  // a `#` opening a word ends env's whole string, newlines included
+  assert.equal((await guard(bash("env -S 'bisellium #x\nmerge W-900'"))).code, 0, "a comment in env's string runs to its end");
+  // inside env -S the shell words are literal argv, so no shell loop starts
+  for (const inner of ["env -S 'while ; true'", "env -S 'until | true'", "env --split-string='while true'", "env -S 'FOO=1 until true'"]) {
+    assert.equal((await guard(bash(inner, {}, true))).code, 0, `no loop in a split string: ${inner}`);
+    assert.equal((await guard(bash(`bash -c "${inner}"`, {}, true))).code, 0, `no loop in a -c body: ${inner}`);
+  }
+  assert.equal((await guard(bash("env -S 'bash -c \"until | true\"'", {}, true))).code, 2, "a real loop in a shell inside the string is still judged");
+  assert.equal((await guard(bash("while true; do sleep 1; done", {}, true))).code, 2, "a plain background loop is still refused");
 });

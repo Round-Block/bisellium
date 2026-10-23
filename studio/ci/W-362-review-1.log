@@ -1,0 +1,19 @@
+# opus: W-362
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1669a-00eb-7422-9a6a-ed53695ac2a4
+# outcome: failed
+# at: 2026-10-23T02:38:07.379Z
+# tree: tree:ba1b04a9afed36cf2a2263a3535f249dbc9c061e
+# brief: briefs/W-362.md blob:b36bde706feb43674c0994d10d909c580f0d30b0
+# ticket: {"opus":"W-362","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-362/studio","head":"9e56f940703adefa8b4b55e88d052ccbcb3d29de","brief":"b36bde706feb43674c0994d10d909c580f0d30b0","at":"2026-10-23T02:32:08.891Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:124 [severity: S1] `envOption` flattens `commandSeq` segments and discards separators that GNU `env -S` passes as literal arguments. For example, `env -S 'bisellium ; merge W-900'` invokes `bisellium` with `;` as its verb and performs no ladder write, but the guard reconstructs `bisellium merge W-900` and exits 2, contrary to brief:81’s any-text, “as env does” domain. — check: packages/cli/src/guard.test.ts W-362-b1 (`env -S` preserves literal shell punctuation in argv) [class: spec×fix-opens-new-surface]
+2. advisory — packages/cli/src/w362.test.ts:196 [severity: S4] The shortcut-symlink regression and the malformed-settings regression at scripts/agent-settings-merge.test.mjs:221 were committed before their fixes, but no committed assertion-failure log demonstrates either case at its test commit; reds 02 and 03 predate both assertions. — check: none: record both fix regressions failing on their respective test commits [class: review×evidence-backfilled-or-absent]
+
+## Verdict
+The failed-spec security cases are implemented fail-closed, but the `env -S` classifier wrongly refuses an input inside the declared domain.
+VERDICT: FAIL

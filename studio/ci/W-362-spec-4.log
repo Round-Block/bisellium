@@ -1,0 +1,23 @@
+# opus: W-362
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a165f2-3aaf-7721-bb5d-4c9d67a865bf
+# outcome: passed
+# at: 2026-10-23T04:41:58.475Z
+# tree: tree:2790259df5f3c43d56a945c0620c11804ee15a81
+# brief: briefs/W-362.md blob:90435bd8673867e3ec7dd47d733571a7a5206941
+# ticket: {"opus":"W-362","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-362/studio","head":"4001218fcd7e58db117efdc1f0a5f15e374fcc90","brief":"90435bd8673867e3ec7dd47d733571a7a5206941","at":"2026-10-23T04:41:55.210Z"}
+
+## Findings
+1. advisory — brief:19 Reached through `ci/W-362-review-2.log #1`’s class: the numbered behaviour still promises that split words are read “as env does,” although the amendment expressly classifies `exec`, `command`, and other listed forms differently. Replace brief:19 with: `1. **The guard reads both forms.** An \`env\` split string in Input domain row 1's option forms is split and read only in row 1's forms (a) to (d); a shell option that takes a value takes its operand, so the script file after it is read.` [severity: S2] [class: spec×fix-opens-new-surface] — check: none: brief.promise-domain should reject a numbered promise broader than its Input domain
+2. advisory — brief:81 The amended row still names only parsing functions, not the existing function that turns a detected ladder write or loop into a refusal. Replace brief:81’s final cell so it begins: ``guardRefusal` through `ladderWrite` and `unboundedLoop`, after `envOption`, `commandSeq`'s literal mode and `strip``. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief.input.rejector should require a named refusing endpoint
+
+## Earlier findings
+- ci/W-362-spec-2.log #1: closed — `scripts/agent-workspace.sh:50` resolves the script file itself with `readlink -f` before `guard`, and `packages/cli/src/w362.test.ts:197` pins refusal through both a symlinked file and parent before any change.
+- ci/W-362-spec-2.log #2: closed — `scripts/agent-settings-merge.mjs:27` validates the nested settings shape before mutation, its CLI exits 1 without writing, and `scripts/agent-settings-merge.test.mjs:222` pins malformed sandbox, filesystem, and denyWrite values.
+
+## Verdict
+The two earlier blockers are closed; the remaining promise and rejector-name mismatches are advisory.
+VERDICT: PASS
