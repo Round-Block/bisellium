@@ -79,25 +79,24 @@ test.describe("computed layout (W-065 behaviour 15)", () => {
       expect(box, `select ${index + 1} has a rendered box`).toBeTruthy();
       expect(box!.x, `select ${index + 1} starts inside the viewport`).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width, `select ${index + 1} ends inside the viewport`).toBeLessThanOrEqual(viewport!.width);
-      if ((await select.getAttribute("aria-label"))?.startsWith("model for seat ")) {
-        const identity = await select.evaluate((node) => {
-          const element = node as HTMLSelectElement;
-          const style = getComputedStyle(element);
-          const context = document.createElement("canvas").getContext("2d");
-          if (context === null) throw new Error("canvas text measurement is unavailable");
-          context.font = style.font;
-          return {
-            appearance: style.appearance,
-            label: element.selectedOptions[0]?.textContent ?? "",
-            neededWidth: context.measureText(element.value).width + 36,
-            value: element.value,
-            width: element.getBoundingClientRect().width,
-          };
-        });
-        expect(identity.label, `select ${index + 1} names its full selected model`).toContain(identity.value);
-        expect(identity.width, `select ${index + 1} leaves room for its full model identity and arrow`).toBeGreaterThanOrEqual(identity.neededWidth);
-        expect(identity.appearance, `select ${index + 1} keeps its native arrow`).not.toBe("none");
-      }
+      const identity = await select.evaluate((node) => {
+        const element = node as HTMLSelectElement;
+        const style = getComputedStyle(element);
+        const context = document.createElement("canvas").getContext("2d");
+        if (context === null) throw new Error("canvas text measurement is unavailable");
+        context.font = style.font;
+        const label = element.selectedOptions[0]?.textContent ?? "";
+        return {
+          appearance: style.appearance,
+          label,
+          neededWidth: context.measureText(label).width + 36,
+          value: element.value,
+          width: element.getBoundingClientRect().width,
+        };
+      });
+      expect(identity.label, `select ${index + 1} names its full selected model`).toContain(identity.value);
+      expect(identity.width, `select ${index + 1} leaves room for its full model identity and arrow`).toBeGreaterThanOrEqual(identity.neededWidth);
+      expect(identity.appearance, `select ${index + 1} keeps its native arrow`).not.toBe("none");
     }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, "the Seats document has no horizontal overflow").toBeLessThanOrEqual(0);
