@@ -141,7 +141,7 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
     assert.match(out.out, /master was not moved$/m, `${what}: says master was not moved`);
     assert.equal(head(v.agent), was, `${what}: master did not move`);
     assert.equal(readFileSync(join(v.agent, "packages", "a"), "utf8"), "a0\n", `${what}: no incoming file was written`);
-    if (!/agent clone's copy|absolute/.test(what)) assert.equal(existsSync(join(v.agent, ".git", "bisellium", "sync")), /config|hook|attributes|PATRON_DIR/.test(what), `${what}: the request is answered only past the input checks`);
+    if (!/agent clone's copy|absolute/.test(what)) assert.equal(existsSync(join(v.agent, ".git", "bisellium", "sync")), /config|hook|attributes|alternates|grafts|PATRON_DIR/.test(what), `${what}: the request is answered only past the input checks`);
   };
   for (const [key, value] of [
     ["core.hooksPath", "/tmp"],
@@ -172,6 +172,9 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
   refused("PATRON_DIR off master", (v) => git(v.patron, "checkout", "-q", "-b", "side"), /^sync: refused: PATRON_DIR .* is on refs\/heads\/side, not master; the sync runs only while it is on master;/m);
   refused("PATRON_DIR with a tracked change", (v) => writeFileSync(join(v.patron, "root"), "patron's\n"), /^sync: refused: PATRON_DIR .* has uncommitted tracked changes \( M root\); the sync runs only while it is on a clean master;/m);
   refused("an info/attributes file", (v) => put(join(v.agent, ".git", "info", "attributes"), "* filter=x\n"), /^sync: refused: .*info\/attributes exists;/m);
+  // object substitution inputs a session can plant in .git are refused (review 1)
+  refused("an objects/info/alternates file", (v) => put(join(v.agent, ".git", "objects", "info", "alternates"), `${join(v.patron, ".git", "objects")}\n`), /^sync: refused: .*objects\/info\/alternates exists;/m);
+  refused("an info/grafts file", (v) => put(join(v.agent, ".git", "info", "grafts"), `${head(v.agent)}\n`), /^sync: refused: .*info\/grafts exists;/m);
   refused(
     "a git hook",
     (v) => {
@@ -225,6 +228,43 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
   chmodSync(join(hooked.agent, ".git", "hooks", "post-merge"), 0o755);
   assert.equal(sync(hooked).code, 1);
   assert.equal(existsSync(join(hooked.f, "hooked")), false, "no hook ran");
+
+  // a planted replacement ref for the fetched target never reaches the checkout (review 1): the replaced commit would
+  // check out another tree, so the sync reads objects as they are, whether the target was already in the agent clone or not
+  for (const present of [false, true]) {
+    const r = world();
+    const target = git(r.seed, "rev-parse", "HEAD");
+    const old = head(r.agent);
+    git(r.agent, "update-ref", `refs/replace/${target}`, git(r.agent, "commit-tree", "-p", old, "-m", "evil", `${old}^{tree}`));
+    if (present) {
+      git(r.patron, "fetch", "-q", "origin");
+      git(r.agent, "fetch", "-q", "--no-write-fetch-head", r.patron, "refs/remotes/origin/master");
+    }
+    const replaced = sync(r);
+    const what = `a replacement ref for the target${present ? " already in the agent clone" : ""}`;
+    assert.equal(replaced.code, 0, `${what}: ${replaced.out}`);
+    assert.equal(head(r.agent), target, `${what}: master is at origin's master`);
+    assert.equal(readFileSync(join(r.agent, "packages", "a"), "utf8"), "a1\n", `${what}: the checkout is the fetched commit's tree`);
+    assert.equal(readFileSync(join(r.agent, "packages", "new"), "utf8"), "n1\n", `${what}: the fetched commit's new file is written`);
+    assert.equal(git(r.agent, "--no-replace-objects", "status", "--porcelain"), "", `${what}: the checkout is clean`);
+  }
+
+  // every git the sync runs, in either clone, reads objects as they are: replacement refs off, no alternates or graft
+  // file from the environment (a shim on PATH records each call's GIT_ variables)
+  const shim = tmp();
+  const calls = join(shim, "calls");
+  const realGit = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
+  put(join(shim, "git"), `#!/bin/sh\n{ echo "CALL $*"; env | grep '^GIT_' | sort; } >> "${calls}"\nexec "${realGit}" "$@"\n`);
+  chmodSync(join(shim, "git"), 0o755);
+  const env = world();
+  const seen = sync(env, { PATH: `${shim}:${process.env["PATH"] ?? "/usr/bin:/bin"}`, GIT_ALTERNATE_OBJECT_DIRECTORIES: join(env.f, "alt"), GIT_GRAFT_FILE: join(env.f, "grafts") });
+  assert.equal(seen.code, 0, `a sync with substitution variables in its environment: ${seen.out}`);
+  const logged = readFileSync(calls, "utf8").split(/^CALL /m).filter(Boolean);
+  assert.ok(logged.length >= 8, `the shim saw the sync's git calls (${logged.length})`);
+  for (const call of logged) {
+    assert.match(call, /^GIT_NO_REPLACE_OBJECTS=1$/m, `replacement objects are off: ${call.split("\n")[0]}`);
+    assert.doesNotMatch(call, /^GIT_(ALTERNATE_OBJECT_DIRECTORIES|GRAFT_FILE)=/m, `no alternates or graft file from the environment: ${call.split("\n")[0]}`);
+  }
 });
 
 /** `bisellium hook-event sync` on the fixture with `payload` on stdin: exit code, stdout and stderr. */
