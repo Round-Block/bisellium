@@ -1,0 +1,26 @@
+# opus: W-373
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T04:28:49.746Z
+# tree: tree:fee19e1336a6ef8637e57a6f24bc0eba53a253a7
+# brief: briefs/W-373.md blob:a048fd3788cc79c79a135df715ac2e9b446544a5
+# ticket: {"opus":"W-373","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"cb7aa2c66105a3b42777f5e81df3515eeac7ad16","brief":"a048fd3788cc79c79a135df715ac2e9b446544a5","at":"2026-10-23T04:28:47.200Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-373-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the cause fix extends W-336's signature rule (D-042): a row naming shell text (command line, command-line, shell) or a structured record (JSON, YAML, front matter, settings) in its Record or Valid domain cell names that surface's three hostile forms, pinned or a stated limit; the prototype's reader flags W-362's rows 1 and 2 (review 1's S1 and the fix check's four forms) and row 3 (spec round 2's S1), and W-186's front-matter row (L-117 #6); L-100, L-107, L-111, L-121, L-137 and a build fix that strays from its brief are stated as not caught — check: brief:17, brief:26, brief:66, would-catch.out, census.out
+2. advisory — a full brief, not a light one: two behaviours and four owned files, past W-305's fast lane; no code-owned, security, sandbox or pipeline path; W-328's brief also owns `brief-admission.ts` in a distant hunk, stated — check: brief:3, brief:37
+3. advisory — behaviour 1: `W-373-b1` fails by assertion on master and its red commit, passes from behaviour 1's commit and on the tip, and the Valid-domain-only mutant fails it again — check: brief:85, brief:87, reds.out, row-b1-redcommit.out, row-b1-mutant-domain-only.out
+4. advisory — behaviour 2: `W-373-b2` fails by assertion on master and on behaviour 1's commit, passes on behaviour 2's commit, row b1 passes on b2's red commit, and the no-missing mutant fails b2 again — check: brief:89, brief:91, reds.out, row-b2-redcommit.out, row-b1-on-red2.out, row-b2-mutant-no-missing.out
+5. advisory — one existing row flips and is edited with behaviour 1, `W-336-b1`'s `command line` and `command-line` entries; Codex's fixture census lists exactly this flip, named, none unnamed; its must-stay-green rows pass on the tip, and no other fixture row holds a vocabulary word — check: brief:96, flip-check.out, fixture-census.md, neighbours-census.out, gates-proto.out
+6. advisory — lint, Prettier, typecheck and the neighbouring row files pass on the tip and master (`verdict-citation.test.ts` 38 against 36); both officina checks have master's blocking set, the stage clone's own; the mbox applies to cb7aa2c6 to the prototype tree exactly; admission and this ledger through the prototype's writer pass — check: brief:97, gates-proto.out, gates-master.out, check-blocking.out, mbox-check.out, admission.out, ledger-check.out
+7. advisory — stated limits: the rule reads words, so a surface or form named otherwise is not judged; only new signatures are judged (63 record and 14 shell-text rows with a gap on master stay as signed); unchanged code the promises lean on is named as a limit, never promised (D-076 E) — check: brief:55, brief:59, brief:65, brief:68
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-373.md`, prototype four commits after master cb7aa2c6; two behaviours, 2 points, a full brief.
