@@ -616,8 +616,10 @@ function evidenceText(named: string, cap: number): { text: string } | { error: s
 /** W-381: whether a patch is one mutation, a one-file unified diff as `git diff` writes it: any `diff --git`, `index`,
  *  `old mode` or `new mode` lines; a `--- <path>` line and, next, a `+++ <path>` line naming the same path (an `a/` and a
  *  `b/` prefix dropped), not `/dev/null` and not a test file; next one hunk header `@@ -<start>[,<count>] +<start>[,<count>]
- *  @@` (a count at most 15 digits; then a space and any text, or the end); then exactly the body lines its counts call for (` ` context, `-` removed,
- *  `+` added, `\` a no-newline note), one of them added or removed; then nothing but no-newline notes. A CRLF patch reads as
+ *  @@` (a count at most 15 digits; then a space and any text, or the end); then exactly the body lines its counts call for, each
+ *  opening space, - or +, one of them added or removed; only the exact uncounted line `\ No newline at end of file` is allowed
+ *  immediately after the counted body line it annotates; after the counts reach zero, only that exact annotation for the
+ *  immediately preceding body line may remain. A CRLF patch reads as
  *  LF. ponytail: whether it applies to the prototype is the reviewer's. */
 function isMutation(diff: string): boolean {
   const lines = diff.split(/\r?\n/);
@@ -634,15 +636,22 @@ function isMutation(diff: string): boolean {
   let oldLeft = Number(hunk[1] ?? 1);
   let newLeft = Number(hunk[2] ?? 1);
   let changed = false;
-  for (i += 3; i < lines.length && (oldLeft > 0 || newLeft > 0); i++) {
-    const c = lines[i]![0];
-    if (c === " " || c === "-") oldLeft--;
-    if (c === " " || c === "+") newLeft--;
-    if (c === "-" || c === "+") changed = true;
-    else if (c !== " " && c !== "\\") return false;
+  let afterBody = false;
+  for (i += 3; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line === "\\ No newline at end of file") {
+      if (!afterBody) return false;
+      afterBody = false;
+      continue;
+    }
+    const c = line[0];
+    if ((oldLeft <= 0 && newLeft <= 0) || (c !== " " && c !== "-" && c !== "+")) return false;
+    if (c !== "+") oldLeft--;
+    if (c !== "-") newLeft--;
+    if (c !== " ") changed = true;
+    afterBody = true;
   }
-  while (i < lines.length && lines[i]!.startsWith("\\")) i++;
-  return changed && oldLeft === 0 && newLeft === 0 && i === lines.length;
+  return changed && oldLeft === 0 && newLeft === 0;
 }
 
 /** W-381: why a pinned line's kill is missing or proves nothing, or undefined. Its kills are those on the ledger lines citing
