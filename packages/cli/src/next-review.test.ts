@@ -1833,7 +1833,7 @@ test("W-377-b2 fix round 2: a Git-quoted non-ASCII path over 300 characters is l
 // fix round 2b: a line past the 1000-character cap that bounds every other printed line is still printed whole
 test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole on its ruling: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
   const id = `D-${"7".repeat(1000)}`;
-  const refusal = (w: World): string => `${id} is unsafe or unreadable: ENAMETOOLONG: name too long, lstat '${join(w.wtStudio, "decisions", `${id}.md`)}'`;
+  const refusal = (w: World): string => `${id} is unsafe or unreadable: ENOENT: no such file or directory, lstat '${join(w.wtStudio, "decisions")}'`;
   const attach = (w: World): void => {
     editRecord(w, "wt", (doc) => doc.setIn(["ui_rulings"], [id]));
     commit(w.wt, `studio(${OPUS}): a ui ruling that names no file, with a long id`);
