@@ -1088,6 +1088,10 @@ const PATTERN_GRAMMAR: [string, string, string | undefined][] = [
   ["a call spanning lines is not read, a limit", "assert.match(", undefined],
   ["doesNotMatch is no bound", "assert.doesNotMatch(why, /^held/);", undefined],
   ["a member assert is not read, a limit", "t.assert.match(why, /^held/);", undefined],
+  ["a member assert, a space after the dot", "t. assert.match(why, /^held/);", undefined],
+  ["a member assert, a tab after the dot", "t.\tassert.match(why, /^held/);", undefined],
+  ["an optional member assert, a space after the dot", "t?. assert.match(why, /^held/);", undefined],
+  ["a keyword before assert is no member", "return assert.match(why, /^held/);", START_ONLY],
   ["a whole-string assertion", 'assert.equal(why, "held: the log");', undefined],
   ["inside a string", "const s = 'assert.match(why, /^held/)';", undefined],
   ["inside a comment", "// assert.match(why, /^held/);", undefined],
@@ -1197,6 +1201,11 @@ const ENDS_GRAMMAR: [string, string, string | undefined][] = [
   ["a whole-value assertion over filtered lines", 'assert.deepEqual(lines.filter((l) => l.startsWith("e")), ["e1"]);', undefined],
   ["outside an assertion", 'const held = why.startsWith("held");', undefined],
   ["a member assert is not read, a limit", 't.assert.ok(why.startsWith("held"));', undefined],
+  ["a member assert.ok, a space after the dot", 't. assert.ok(why.startsWith("held"));', undefined],
+  ["a member assert.ok, a tab after the dot", 't.\tassert.ok(why.startsWith("held"));', undefined],
+  ["a member bare assert, a space after the dot", 't. assert(why.startsWith("held"));', undefined],
+  ["a member bare assert, a tab after the dot", 't.\tassert(why.startsWith("held"));', undefined],
+  ["a keyword before a bare assert is no member", 'return assert(why.startsWith("held"));', "startsWith in an assertion"],
   ["inside a string", "const s = 'assert.ok(why.startsWith(x))';", undefined],
 ];
 
