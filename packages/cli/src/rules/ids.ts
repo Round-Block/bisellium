@@ -160,6 +160,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "state.review.failed",
   "state.verifying.none",
   "stray.file",
+  "test.one_sided",
   "test.rows",
   "test.sleep",
   "traditio.at",

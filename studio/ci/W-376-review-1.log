@@ -1,0 +1,18 @@
+# opus: W-376
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a167dd-bd58-79b2-acc4-33ae02034694
+# outcome: failed
+# at: 2026-10-23T08:30:28.990Z
+# tree: tree:7a4a98a4f2cc1b13724f23305c35e16fea1a253c
+# brief: briefs/W-376.md blob:08c3bed42548fcaf50b36e3a6813408257dbb721
+# ticket: {"opus":"W-376","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-376/studio","head":"4f126431a0878802ce2bb920b93575362654092f","brief":"08c3bed42548fcaf50b36e3a6813408257dbb721","at":"2026-10-23T08:25:45.839Z"}
+
+## Findings
+1. blocking — packages/cli/src/rules/tests.ts:560 [severity: S1] The boundary checks only the character immediately before `assert`, so valid member calls such as `t. assert.match(why, /^held/)` and `t. assert.ok(why.startsWith("held"))` incorrectly emit blocks despite the member-assert exclusions at brief:50 and brief:53. [class: tests×ruled-case-uncovered] — check: packages/cli/src/rules/tests.test.ts (`W-376-b1` and `W-376-b2`: member assertions with whitespace after the receiver dot)
+
+## Verdict
+The rule behaves incorrectly on an expressly excluded, valid member-assert spelling, so round 1 fails.
+VERDICT: FAIL

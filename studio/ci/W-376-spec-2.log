@@ -1,0 +1,19 @@
+# opus: W-376
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1677d-c420-7c80-ae39-f09d8cea23de
+# outcome: failed
+# at: 2026-10-23T06:55:44.061Z
+# tree: tree:23aaee867551d956f701e20aa223e4082b73297d
+# brief: briefs/W-376.md blob:08c3bed42548fcaf50b36e3a6813408257dbb721
+# ticket: {"opus":"W-376","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"f74520cf761e5e04111c71b585b044d04bb8d244","brief":"08c3bed42548fcaf50b36e3a6813408257dbb721","at":"2026-10-23T06:55:38.039Z"}
+
+## Findings
+1. blocking — brief:46 [severity: S1] [design: keeps] A repository `.gitattributes` mistake such as `*.ts -diff`, or a `textconv` driver, can make Git list a changed test while suppressing its raw hunks or transforming their line numbers; `bisellium check --repo` then emits no `test.one_sided` finding, and no existing row catches this. Replace brief:46 with: “`oneSidedFindings(repo: string): Finding[]` uses the base, name, file and site handling specified by Input-domain rows 1–6; for every changed candidate it calls `git diff --text --no-textconv --no-color --no-ext-diff --no-renames --unified=0 <base> -- :(literal)<name>`, `addedLines` reads its post-image hunk ranges, each site emits the specified block, and any Git failure emits one `test.one_sided` block; `checkTests` returns `test.sleep`, then `test.rows`, then these findings.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/rules/tests.test.ts (`W-376-b1`: diff attributes cannot suppress or transform an added assertion)
+
+## Verdict
+The brief has one design-keeping S1 input-boundary defect that must be fixed and pinned during the build.
+
+VERDICT: FAIL
