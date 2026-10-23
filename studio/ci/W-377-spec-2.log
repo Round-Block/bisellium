@@ -1,0 +1,19 @@
+# opus: W-377
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16874-e1b7-7dc0-ba66-7cd94875b730
+# outcome: failed
+# at: 2026-10-23T11:15:27.492Z
+# tree: tree:6dd6343535b99281aae9e82338925824b3d9ad50
+# brief: briefs/W-377.md blob:50c446ea260e9014e80e31e3017f5bf6a52cbe80
+# ticket: {"opus":"W-377","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"81c6b96c7315022447d596bf04c7e68bfede58ff","brief":"50c446ea260e9014e80e31e3017f5bf6a52cbe80","at":"2026-10-23T11:15:23.302Z"}
+
+## Findings
+1. blocking — brief:72 A plausible post-review edit to a mis-cased `kind`, scalar `ui_rulings: D-951`, or duplicate ruling entries is accepted by the new reader, allowing `bisellium next` to name `pr` or `merge`; no existing test exercises these fail-open shapes. Replace brief:72 with: `| 1. The worktree opus record's front matter: kind and ui_rulings | kind must be a registered native opus kind: ui selects the wait and a registered non-ui kind selects none; ui_rulings is absent or a non-empty sequence of distinct decision-id strings; every other shape refuses | uiRulingWait (specified), through branchUiRuling for ui_rulings: an invalid kind, scalar, empty sequence, duplicate or non-string entry holds the step |` [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-review.test.ts (W-377-b1 malformed kind and ui_rulings cases)
+2. blocking — brief:51 A plausible repository or global ignore rule lets `branchUiRuling` read an ignored untracked decision while `git status` reports both paths clean, so `bisellium next` releases `pr` or `merge` and the push omits the ruling; W-377-b2 covers only ordinary untracked files. Replace brief:51 with: `Promise committed-ruling: the wait releases only once the record and the worktree's decisions folder, including the ruling's decision, are clean against HEAD and contain no ignored untracked entry — limit: it combines git status --porcelain --untracked-files=all with git ls-files --others --ignored --exclude-standard for those paths; a listed, ignored, unreadable or unclassifiable entry holds, and what reaches the remote is the pr perform's push, unchanged.` [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-review.test.ts (W-377-b2 ignored ruling case)
+
+## Verdict
+The signed brief has two design-changing S1 blockers in the new refusal boundary and committed-ruling guarantee.
+VERDICT: FAIL

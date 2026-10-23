@@ -1,0 +1,26 @@
+# opus: W-377
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T11:10:13.097Z
+# tree: tree:6dd6343535b99281aae9e82338925824b3d9ad50
+# brief: briefs/W-377.md blob:50c446ea260e9014e80e31e3017f5bf6a52cbe80
+# ticket: {"opus":"W-377","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"81c6b96c7315022447d596bf04c7e68bfede58ff","brief":"50c446ea260e9014e80e31e3017f5bf6a52cbe80","at":"2026-10-23T11:10:07.030Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-377-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the design extends the existing ruling record (D-042): no new field, decision shape or flag; a ruling binds the branch by its `certifies` equal to the branch's current source tree, plus today's design digest and at-time terms, so a later source push needs a fresh ruling; the Patron's word is recorded by the clerk's decision and `bisellium amend <id> --ui-ruling` on the branch, committed — check: brief:17, brief:19, brief:21, brief:41
+2. advisory — a full brief: two behaviours and three owned files (`opus-model.ts`, `next.ts`, `next-review.test.ts`); no code-owned path, and no overlap with W-369's files (`containment.test.ts` stays unedited because the commit check reads the whole decisions folder and joins no id) or W-360's — check: brief:3, brief:29, brief:33, brief:43
+3. advisory — behaviour 1: `W-377-b1` fails by assertion on master and its red commit ("no ruling: the pr is held"), passes from behaviour 1's commit and on the tip, and the valid-is-current mutant fails it again — check: brief:82, brief:84, reds.out, row-b1-redcommit.out, row-b1-mutant-valid-is-current.out
+4. advisory — behaviour 2: `W-377-b2` fails by assertion on master and on behaviour 1's commit ("an uncommitted ruling: the pr is held"), passes on behaviour 2's commit, row b1 passes on b2's red commit, and the untracked-unseen mutant fails b2 again — check: brief:86, brief:88, reds.out, row-b2-redcommit.out, row-b1-on-red2.out, row-b2-mutant-untracked-unseen.out
+5. advisory — no existing row flips: Codex's census on the first prototype named three `containment.test.ts` inventory B flips from a `${ruling}.md` join; revision 1 joins no id, its census lists no flip and no unnamed one, and the three rows pass unedited — check: brief:93, fixture-census-proto0.md, fixture-census.md, gates-proto.out
+6. advisory — lint, typecheck, `next-review.test.ts`, `opus-model.test.ts`, `next-ladder.test.ts`, `next-done.test.ts` and `containment.test.ts` pass whole on the tip; both officina checks have master's blocking set in the stage clone; the mbox applies to 81c6b96c to the prototype tree exactly; admission and this ledger through the verdict writer pass — check: brief:94, gates-proto.out, check-blocking.out, mbox-check.out, admission.out, ledger-check.out
+7. advisory — stated limits: a Patron's refusal is not recorded, done's ruling rule and verify are unchanged (a merge whose tree differs from the ruled branch tree asks again at done), a merged PR is not held, a stray uncommitted decision holds the wait, and unchanged code the promises lean on is named as a limit, never promised (D-076 E) — check: brief:51, brief:53, brief:61, brief:64
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-377.md`, prototype four commits after master 81c6b96c; two behaviours, 2 points, a full brief.

@@ -1,0 +1,26 @@
+# opus: W-377
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T11:56:40.629Z
+# tree: tree:6dd6343535b99281aae9e82338925824b3d9ad50
+# brief: briefs/W-377.md blob:0cf0419f0a7a892a3bb7b5da952644cce69f2fa3
+# ticket: {"opus":"W-377","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"81c6b96c7315022447d596bf04c7e68bfede58ff","brief":"0cf0419f0a7a892a3bb7b5da952644cce69f2fa3","at":"2026-10-23T11:56:35.856Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-377-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review round 2 blocker 1 closed: `ui_rulings` is absent or a non-empty sequence of distinct strings, and a scalar, `null`, an empty sequence, a duplicate or a non-string entry refuses the whole field and holds; a mis-cased, unregistered, wrong-type or absent kind already holds the build rung through W-312's gate configuration reader, now pinned; brief:72 takes the review's replacement, adjusted to where the kind hold really happens — check: brief:41, brief:60, brief:72, row-b1-s2.out, row-b1-mutant-scalar-accepted.out
+2. advisory — round 2 blocker 2 closed with its siblings: the committed check adds `--ignored` to git status and reads `git ls-files -v`, so an ignored decision, a skip-worktree decision with working bytes HEAD lacks and an assume-unchanged record hold, as do untracked, staged and modified entries; brief:51 takes the review's replacement with the reads that are used; an fsmonitor or untracked-cache misreport is a stated limit — check: brief:43, brief:51, brief:75, row-b2-s2.out, row-b2-mutant-ignored-unseen.out, row-b2-mutant-flags-unseen.out
+3. advisory — behaviour 1: `W-377-b1` fails by assertion on master and its red commit ("no ruling: the pr is held"), passes from behaviour 1's commit and on the tip; the valid-is-current and scalar-accepted mutants fail it again — check: brief:82, brief:84, reds.out, row-b1-redcommit.out
+4. advisory — behaviour 2: `W-377-b2` fails by assertion on master and behaviour 1's commit ("an uncommitted ruling: the pr is held"), passes on behaviour 2's commit, row b1 passes on b2's red commit; three mutants fail b2 again — check: brief:86, brief:88, reds.out, row-b2-redcommit.out, row-b1-on-red2.out
+5. advisory — no existing row flips: Codex's census on revision 3 lists no flip and no unnamed one; `containment.test.ts` (W-369's) stays unedited — check: brief:93, fixture-census.md, gates-proto.out
+6. advisory — lint, typecheck and the five neighbouring row files pass whole on the tip; both officina checks keep master's blocking set; the mbox applies to 81c6b96c to the prototype tree exactly; admission and this ledger pass — check: brief:94, gates-proto.out, check-blocking.out, mbox-check.out, admission.out, ledger-check.out
+7. advisory — stated limits unchanged otherwise: a Patron's refusal is not recorded, done and verify are unchanged, a merged PR is not held, a registered non-ui kind skips the wait, and reused code is named as a limit, never promised (D-076 E) — check: brief:53, brief:60, brief:61, brief:64
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-377.md` revision 3, prototype four commits after master 81c6b96c; two behaviours, 2 points, a full brief.
