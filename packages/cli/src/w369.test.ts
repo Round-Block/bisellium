@@ -18,6 +18,7 @@ const SCRIPT = join(REPO, "scripts", "agent-workspace.sh");
 const URL = "https://github.com/Round-Block/bisellium.git";
 const HELPER = "!GH_CONFIG_DIR=/x gh auth git-credential";
 const dirs: string[] = [];
+const reEsc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const tmp = (): string => {
   const d = mkdtempSync(join(tmpdir(), "w369-"));
   dirs.push(d);
@@ -151,7 +152,7 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
     ["extensions.worktreeConfig", "true"],
     ["user.name", "x"],
   ] as const)
-    refused(`a config key ${key}`, (v) => git(v.agent, "config", key, value), new RegExp(`^sync: refused: unexpected \\.git/config key: ${key.toLowerCase().replace(/\./g, "\\.")};`, "m"));
+    refused(`a config key ${key}`, (v) => git(v.agent, "config", key, value), new RegExp(`^sync: refused: unexpected \\.git/config key: ${reEsc(key.toLowerCase())};`, "m"));
   // a core value git consults other than its clone's is refused (spec-2 finding 2): a mistaken core.filemode false would
   // hide a mode-only tracked change from the cleanliness check and let the merge overwrite it
   for (const [key, value, setup] of [
@@ -166,7 +167,7 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
         setup(v);
         git(v.agent, "config", key, value);
       },
-      new RegExp(`^sync: refused: the \\.git/config value ${key.replace(/\./g, "\\.")} = ${value} is not (true|false|0);`, "m"),
+      new RegExp(`^sync: refused: the \\.git/config value ${reEsc(key)} = ${value} is not (true|false|0);`, "m"),
     );
   refused("a config value core.logallrefupdates that git cannot read as a bool", (v) => git(v.agent, "config", "core.logallrefupdates", "always"), /^sync: refused: the \.git\/config value of core\.logallrefupdates is not a bool/m);
   refused("PATRON_DIR off master", (v) => git(v.patron, "checkout", "-q", "-b", "side"), /^sync: refused: PATRON_DIR .* is on refs\/heads\/side, not master; the sync runs only while it is on master;/m);
