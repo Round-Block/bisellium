@@ -1470,3 +1470,88 @@ test("W-328-b2 behaviour 2: a fix check's open path outside the brief's Files ow
     assert.deepEqual(evidenceLines(o), asEvidence([line]), ran(`${label}: an evidence line`, o));
   }
 });
+
+// ---------------------------------------------------------------------------
+// W-353 (D-106): an untracked file under the worktree's studio/ci/ (a failed run's gate logs) holds the review and the fix
+// check; the review packet's next fact is derived in the main checkout.
+// ---------------------------------------------------------------------------
+const STRAY = `studio/ci/${OPUS}-tests-0badc0de.log`;
+const strayWhy = (paths: string[]): string => `refusing: ${paths.join(", ")} untracked under studio/ci; commit or remove ${paths.length === 1 ? "it" : "them"} first`;
+
+test("W-353-b1 behaviour 1: an untracked file under the worktree's studio/ci/ holds the review and the fix check before any codex call", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w353-b1");
+  codexSays(w, { session: "s-353-1", reply: PASS_REPLY });
+  const tip = tipOf(w);
+  const held = (label: string, why: string, o: Out): void => {
+    assert.equal(o.first, `next: ${OPUS} review held`, ran(`${label}: the review holds`, o));
+    assert.equal(o.kv.get("why"), why, ran(`${label}: why`, o));
+    assert.equal(codexCalls(w).length, 0, `${label}: no codex call`);
+    assert.equal(existsSync(reviewLog(w, 1)), false, `${label}: no verdict log`);
+    assert.equal(tipOf(w), tip, `${label}: no commit`);
+  };
+  // a failed run's gate log, left untracked in the worktree
+  put(w.wt, STRAY, "certifies: tree:0badc0de\ncommand: npm test\nexit code: 1\n");
+  held("a failed run's gate log", strayWhy([STRAY]), performReview(w));
+  // an untracked shot in a new folder, beside the log: both named
+  const shot = `studio/ci/shots/${OPUS}/inbox-1280.png`;
+  put(w.wt, shot, "png\n");
+  held("a log and a shot", strayWhy([STRAY, shot]), performReview(w));
+  rmSync(join(w.wt, STRAY));
+  rmSync(join(w.wt, "studio", "ci", "shots"), { recursive: true });
+  // a listing git cannot give holds, never reads as clean
+  const unlisted = performReview(w, { GIT_STUB_REAL: failingGit("w353-b1-git", ["ls-files -z --others"]) });
+  assert.equal(unlisted.first, `next: ${OPUS} review held`, ran("a failed listing: held", unlisted));
+  assert.match(unlisted.kv.get("why") ?? "", /^refusing: git cannot list the untracked files under studio\/ci \(/, ran("a failed listing: why", unlisted));
+  assert.equal(codexCalls(w).length, 0, "a failed listing: no codex call");
+  // a file the repository ignores is not read: the round is performed beside it
+  const exclude = git(w.wt, ["rev-parse", "--path-format=absolute", "--git-path", "info/exclude"]);
+  mkdirSync(dirname(exclude), { recursive: true });
+  appendFileSync(exclude, "*.scratch\n");
+  put(w.wt, "studio/ci/notes.scratch", "ignored\n");
+  const o = performReview(w);
+  assert.equal(o.first, `next: ${OPUS} review performed`, ran("an ignored file: performed", o));
+  assert.equal(o.kv.get("review"), "round 1 passed", ran("an ignored file: round 1 passed", o));
+
+  // an interrupted round's own verdict log is finished; any other untracked file beside it holds
+  const i = reviewWorld("w353-b1-interrupted");
+  next(i, [OPUS, "--budget", "400000"]);
+  verb(i.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--model", "gpt-5.6-sol", "--session", "s-353-i", "--from", writeTranscript(i, "interrupted.md"), "--studio", i.wtStudio]);
+  put(i.wt, STRAY, "exit code: 1\n");
+  const ih = performReview(i);
+  assert.equal(ih.first, `next: ${OPUS} review held`, ran("an interrupted round beside a stray log: held", ih));
+  assert.equal(ih.kv.get("why"), strayWhy([STRAY]), ran("an interrupted round beside a stray log: only the stray is named", ih));
+  rmSync(join(i.wt, STRAY));
+  const io = performReview(i);
+  assert.equal(io.kv.get("review"), "round 1 passed", ran("an interrupted round alone: finished", io));
+  assert.equal(codexCalls(i).length, 0, "an interrupted round: codex is not called");
+
+  // the fix check holds the same way, before its codex call, writing no check
+  const fw = fixWorld("w353-b1-fix");
+  codexSays(fw, { session: "s-353-f", reply: CENSUS("None") });
+  put(fw.wt, STRAY, "exit code: 1\n");
+  const fo = performFixCheck(fw);
+  assert.equal(fo.first, `next: ${OPUS} review held`, ran("the fix check beside a stray log: held", fo));
+  assert.equal(fo.kv.get("why"), strayWhy([STRAY]), ran("the fix check beside a stray log: why", fo));
+  assert.equal(codexCalls(fw).length, 1, "the fix check beside a stray log: no codex call after the review round's");
+  assert.equal(existsSync(join(fixPacket(fw, 1), "check.json")), false, "the fix check beside a stray log: no check.json");
+  rmSync(join(fw.wt, STRAY));
+  const fc = performFixCheck(fw);
+  assert.equal(fc.kv.get("fix-check"), "round 1, no open path", ran("the fix check alone: performed", fc));
+});
+
+test("W-353-b2 behaviour 2: the review packet built from the opus worktree derives its next fact in the main checkout", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w353-b2");
+  codexSays(w, { session: "s-353-2", reply: PASS_REPLY });
+  const o = performReview(w);
+  assert.equal(o.kv.get("review"), "round 1 passed", ran("the round is performed", o));
+  const facts = readFileSync(join(packetDir(w, 1), "facts.txt"), "utf8");
+  const block = facts.split("\n\n")[0]!.split("\n");
+  assert.equal(block[0], `== next ${OPUS}`, "the first fact is next's");
+  assert.doesNotMatch(facts, /is a linked worktree/, "next is not refused for a linked worktree");
+  assert.ok(block[1]!.endsWith(` next ${OPUS} --budget 400000 --studio ${realpathSync(w.studio)} --repo ${realpathSync(w.repo)}`), `next runs on the main checkout's studio and repo: ${block[1]}`);
+  assert.match(block[2] ?? "", new RegExp(`^next: ${OPUS} review `), "next derives the review rung");
+  assert.equal(block.at(-1), "exit 0", "next exits 0");
+  // the packet still reads the opus branch: its ui.txt is the branch record's, the diff the branch's
+  assert.equal(readFileSync(join(packetDir(w, 1), "ui.txt"), "utf8"), NON_UI, "ui.txt is the branch record's");
+  assert.match(readFileSync(join(packetDir(w, 1), `${OPUS}.diff`), "utf8"), /^diff --git /m, "the packet carries the source diff");
+});

@@ -600,4 +600,21 @@ test("W-221-b3 behaviour 26: the moved helpers stop on a failed recording comman
   for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
+test("W-353-b3 behaviour 3: record-review.sh passes a fifth argument to verdict as --ui-input, and to nothing else", () => {
+  let r = runHelper(helperScratch(), "record-review.sh", ["W-9", "1", "failed", "s-1", "ci/W-9-spec-2.log"]);
+  assert.equal(r.status, 0, `a session and a UI input: exit 0\n${r.log}`);
+  const verdict = r.log.split("\n").filter((l) => / verdict W-9 /.test(l));
+  assert.equal(verdict.length, 1, `one verdict call\n${r.log}`);
+  assert.match(verdict[0]!, / --session s-1 --ui-input ci\/W-9-spec-2\.log --from /, "the verdict takes --session then --ui-input");
+  assert.doesNotMatch(r.log.split("\n").filter((l) => / review W-9 /.test(l)).join("\n"), /--ui-input/, "the review takes no --ui-input");
+  r = runHelper(helperScratch(), "record-review.sh", ["W-9", "1", "failed", "", "ci/W-9-spec-2.log"]);
+  assert.equal(r.status, 0, `an empty session and a UI input: exit 0\n${r.log}`);
+  assert.match(r.log, / verdict W-9 .* --outcome failed --model gpt-5\.6-sol --ui-input ci\/W-9-spec-2\.log --from /, "an empty fourth argument: --ui-input without --session");
+  assert.doesNotMatch(r.log, /--session/, "an empty fourth argument: no --session");
+  r = runHelper(helperScratch(), "record-review.sh", ["W-9", "1", "passed", "s-1"]);
+  assert.equal(r.status, 0, `no fifth argument: exit 0\n${r.log}`);
+  assert.doesNotMatch(r.log, /--ui-input/, "no fifth argument: no --ui-input");
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
 process.exitCode = failed ? 1 : 0;

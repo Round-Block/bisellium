@@ -1,0 +1,60 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-353-b3\s --import tsx packages/cli/src/rules/process.test.ts
+# exit: 1
+# at: 2026-10-23T06:56:55.224Z
+# sella: architect
+# tree: tree:0d2ee46d40913e6fcb7c50801dd682ecd9ea1a0e
+# ticket: {"opus":"W-353","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-353/studio","head":"5c2100f0297f5870e80dbfe245268e1a91f187d2","brief":"41c6b4cdaddb1aea607935211f36f4bf4d6f404a","at":"2026-10-23T06:56:55.179Z"}
+
+PASS  source-only commit is a violation                            true
+PASS  source + test commit is not a violation                      false
+PASS  test-only commit is not a violation                          false
+PASS  docs/config-only commit is not a violation                   false
+PASS  inline .test.ts counts as test coverage                      false
+PASS  empty commit is not a violation                              false
+PASS  css-only commit is not a violation                           false
+PASS  opera changed without handoff is stale                       true
+PASS  opera + handoff is not stale                                 false
+PASS  handoff-only is not stale                                    false
+PASS  docs-only is not stale                                       false
+PASS  empty is not stale                                           false
+PASS  opera + progress page is not stale                           false
+PASS  same sella on spec and review fires                          true
+PASS  different sellae does not fire                               false
+PASS  only one gate recorded does not fire                         false
+PASS  no probationes does not fire                                 false
+PASS  opus-tier recorded model is silent                           undefined
+PASS  sonnet-tier recorded model advises                           review sella "qa-lead" ran on claude-sonnet-5, not an opus-tier model
+PASS  no review gate is silent                                     undefined
+PASS  review gate with no recorded model advises                   review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+PASS  git history unavailable emits process.history advisory       {"rule":"process.history","level":"advise","where":"HEAD","message":"git history unavailable (shallow clone or no git) — process.tdd and process.checkpoint not evaluated"}
+TAP version 13
+# Subtest: W-353-b3 behaviour 3: record-review.sh passes a fifth argument to verdict as --ui-input, and to nothing else
+not ok 1 - W-353-b3 behaviour 3: record-review.sh passes a fifth argument to verdict as --ui-input, and to nothing else
+  ---
+  duration_ms: 15.629533
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-353/packages/cli/src/rules/process.test.ts:19:3450'
+  failureType: 'testCodeFailure'
+  error: 'the verdict takes --session then --ui-input'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'npm run -s bisellium -- verdict W-9 --round 1 --sella qa-lead --outcome failed --model gpt-5.6-sol --session s-1 --from /tmp/claude-1000/bisellium-w221-h-Kpiw24/tmp/W-9-r1.md --studio .worktrees/W-9/studio'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-353/packages/cli/src/rules/process.test.ts:608:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 339.259657
