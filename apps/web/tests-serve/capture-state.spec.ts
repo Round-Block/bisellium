@@ -85,11 +85,11 @@ test("W-360-b2 Board waits for its inbox read at both capture widths", async ({ 
     } finally {
       releaseInbox();
       await wait;
+      await expect(page.locator('.shell__status[data-state="live"]'), `Board ${width}: the completed shell is live`).toHaveCount(1);
       await page.unroute("**/api/inbox");
       await served.close();
       served = undefined;
     }
-    await expect(page.locator('.shell__status[data-state="live"]'), `Board ${width}: the completed shell is live`).toHaveCount(1);
   }
 });
 
