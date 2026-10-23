@@ -21,7 +21,20 @@ const union = (existing, add) => [...new Set([...(existing ?? []), ...add])];
 /** The agent clone's folders the sandbox keeps a session from writing (W-362, the Patron's ruling of 2026-10-22). */
 export const SOURCE_DIRS = ["packages", "apps", "adapters", "scripts"];
 
+const plain = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+
+/** Throws on a sandbox shape the merge would reshape (a denyWrite string spread into characters) instead of keeping. */
+function checkShape({ sandbox }) {
+  const fs = sandbox?.filesystem;
+  if (sandbox !== undefined && !plain(sandbox)) throw new Error("sandbox is not an object");
+  if (fs !== undefined && !plain(fs)) throw new Error("sandbox.filesystem is not an object");
+  const dw = fs?.denyWrite;
+  if (dw !== undefined && !(Array.isArray(dw) && dw.every((d) => typeof d === "string")))
+    throw new Error("sandbox.filesystem.denyWrite is not an array of strings");
+}
+
 export function merge(settings, { patronDir, agentGh, agentDir }) {
+  checkShape(settings);
   const out = structuredClone(settings);
   const sandbox = (out.sandbox ??= {});
   sandbox.enabled = true;
@@ -71,7 +84,13 @@ if (import.meta.filename === process.argv[1]) {
       process.exit(1);
     }
   }
-  const after = merge(before, { patronDir, agentGh, agentDir });
+  let after;
+  try {
+    after = merge(before, { patronDir, agentGh, agentDir });
+  } catch (e) {
+    console.error(`${file}: ${e.message}; left untouched`);
+    process.exit(1);
+  }
   if (exists && isDeepStrictEqual(before, after)) {
     console.log("unchanged");
   } else {
