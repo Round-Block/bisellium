@@ -1244,11 +1244,11 @@ function uiRulingWait(f: Facts, b: Dict, tree: string): { why: string; extra: [s
     read = { why: `the UI ruling cannot be read (${shortened((e as Error).message, 240)})`, refusals: [] };
   }
   // fix round 1: the why is one printed line capped at 1000 characters, so it keeps the required parts and each refusal and each
-  // uncommitted path is its own line (a ruling: or dirty: line), cut at 300 characters, never dropped
+  // uncommitted path is its own line (a ruling: or dirty: line), whole, never cut or dropped
   if ("why" in read)
     return {
       why: `${read.why}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${f.id}) in ${studio} from the Patron's word on its ci/shots/${f.id}/, then bisellium amend ${f.id} --ui-ruling D-<n> --reason "<the Patron's word>" --studio ${studio}, commit both on opus/${f.id}, then rerun`,
-      extra: read.refusals.map((r) => ["ruling", shortened(r, 300)] as [string, string]),
+      extra: read.refusals.map((r) => ["ruling", r] as [string, string]),
     };
   // the PR carries what is committed: the record and the decisions folder are clean against HEAD
   // ponytail: the whole folder, not the ruling's own file, so no id is joined onto a path; a stray decision holds too
@@ -1263,7 +1263,7 @@ function uiRulingWait(f: Facts, b: Dict, tree: string): { why: string; extra: [s
   const open = [...lines(st.stdout).map((l) => l.slice(3)), ...flagged].sort();
   return open.length === 0
     ? undefined
-    : { why: `the Patron's ruling ${shortened(read.ruling, 60)} is not committed on opus/${f.id}; commit it, then rerun`, extra: open.map((x) => ["dirty", shortened(x, 300)] as [string, string]) };
+    : { why: `the Patron's ruling ${read.ruling} is not committed on opus/${f.id}; commit it, then rerun`, extra: open.map((x) => ["dirty", x] as [string, string]) };
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
