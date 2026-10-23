@@ -1009,6 +1009,12 @@ export function deriveNext(f: Facts): Derived {
   // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
   if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
   const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, pre);
+  // W-381 (D-070 C, D-076 D): the newest failed spec review (a revision's, a keeps-only branch's, or the two-review split's)
+  // whose S1 blocker names a class seen before in another opus holds the spec until a title names the class
+  const g = spec.gate;
+  const failedReview = g?.kind === "failed" || g?.kind === "keeps" ? g.review : g?.kind === "split" ? g.failed[g.failed.length - 1] : undefined;
+  const repeat = failedReview === undefined ? undefined : repeatHold(f, failedReview, committed === undefined ? pending : gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel));
+  if (repeat !== undefined) return hold("spec", repeat);
   const ui = spec.ok ? f.uiSpecProblems() : [];
   // W-297 (D-086 A): the branch, reds, build and review orders name the required fixes a keeps-only failed spec review left
   const fixes: [string, string][] = spec.gate?.kind === "keeps" ? [["required-fixes", spec.gate.fixes.join(", ")]] : [];
