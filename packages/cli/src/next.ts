@@ -2120,11 +2120,27 @@ async function performReview(f: Facts, d: Readonly<Derived>, nowMs: number, test
   }
 }
 
+/**
+ * W-353 (D-106): the files under the worktree's `<studio>/ci/` that git does not track and does not ignore (a failed run's
+ * gate logs, an uncommitted shot), but `own`, hold the review and the fix check: neither runs on a checkout holding them.
+ * A listing git cannot give holds too.
+ */
+function strayCiHold(dir: string, studioRel: string, own?: string): StepResult | undefined {
+  const r = git(dir, ["ls-files", "-z", "--others", "--exclude-standard", "--", `${studioRel}/ci/`]);
+  if (r.error !== undefined || r.status !== 0) return heldResult(`refusing: git cannot list the untracked files under ${studioRel}/ci (${one(r.error?.message ?? r.stderr)})`);
+  const stray = r.stdout.split("\0").filter((p) => p !== "" && p !== own);
+  if (stray.length === 0) return undefined;
+  return heldResult(`refusing: ${stray.slice(0, 5).map((p) => clean(p)).join(", ")} untracked under ${studioRel}/ci; commit or remove ${stray.length === 1 ? "it" : "them"} first`);
+}
+
 async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testClock: boolean, log: (line: string) => void): Promise<StepResult> {
   const { id, wt, studioRel } = f;
   if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
   const dirty = dirtyHold(wt.dir);
   if (dirty !== undefined) return dirty;
+  // an interrupted round's own verdict log is the one untracked file it finishes
+  const stray = strayCiHold(wt.dir, studioRel, d.order === undefined && d.ticket?.action === "review" ? `${studioRel}/ci/${id}-review-${d.ticket.round}.log` : undefined);
+  if (stray !== undefined) return stray;
   const censor = censorSella(f.manifest) ?? "qa-lead";
   let round: number;
   if (d.order !== undefined) {
@@ -2282,6 +2298,8 @@ async function fixCheckSteps(f: Facts, testClock: boolean, log: (line: string) =
   if (!wt.usable) return heldResult(`refusing: ${wt.dir} is not a usable worktree on opus/${id}`);
   const dirty = dirtyHold(wt.dir);
   if (dirty !== undefined) return dirty;
+  const stray = strayCiHold(wt.dir, studioRel);
+  if (stray !== undefined) return stray;
   const read = f.buildRounds();
   if ("error" in read) return heldResult(`refusing: the build-review logs cannot be read (${read.error})`);
   const failed = read.rounds[read.rounds.length - 1];
