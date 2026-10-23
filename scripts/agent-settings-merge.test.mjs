@@ -217,3 +217,26 @@ test("W-362-b2 behaviour 2: merge turns the sandbox on and denies writing the ag
   assert.match(rel.stderr, /must be an absolute path/);
   assert.equal(readFileSync(file, "utf8"), before, "and nothing is written");
 });
+
+// W-362 spec-2 finding 2: a malformed settings shape is rejected, never reshaped
+test("W-362-b2 behaviour 2: a malformed sandbox shape is refused and nothing is written", async () => {
+  const dir = tmp();
+  const shapes = [
+    { sandbox: { filesystem: { denyWrite: "/keep" } } },
+    { sandbox: { filesystem: { denyWrite: ["/keep", 1] } } },
+    { sandbox: { filesystem: { denyWrite: { a: "/keep" } } } },
+    { sandbox: { filesystem: ["/keep"] } },
+    { sandbox: { filesystem: "/keep" } },
+    { sandbox: ["/keep"] },
+    { sandbox: "/keep" },
+  ];
+  for (const [i, shape] of shapes.entries()) {
+    const file = join(dir, `settings-${i}.json`);
+    const text = JSON.stringify(shape);
+    writeFileSync(file, text);
+    const r = spawnSync("node", [SCRIPT, file, OPTS.patronDir, OPTS.agentGh, "/home/u/agents/bisellium"], { encoding: "utf8" });
+    assert.equal(r.status, 1, `${text} exits 1: ${r.stdout}${r.stderr}`);
+    assert.equal(readFileSync(file, "utf8"), text, `${text} is left unchanged`);
+  }
+  assert.deepEqual(readdirSync(dir).filter((n) => n.includes(".bak-")), [], "no backup was made");
+});
