@@ -2809,7 +2809,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
-    console.log(lines.map((l) => clean(l, 1000)).join("\n"));
+    // fix round 2b: except the hold's ruling: and dirty: lines, which name each refusal and path whole, however long
+    console.log(lines.map((l) => clean(l, /^(ruling|dirty): /.test(l) ? Infinity : 1000)).join("\n"));
     return { exitCode: code };
   };
   const refusalLines = (d: Derived): string[] => [`next: ${id} ${d.step} held`, `why: refusing: next step for ${id} is ${d.step}, not ${a.expect}`, ...(d.status === "held" ? [`detail: ${one(d.why)}`] : [])];
