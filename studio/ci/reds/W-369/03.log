@@ -1,0 +1,49 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-369-b3\s --import tsx packages/cli/src/w369.test.ts
+# exit: 1
+# at: 2026-10-23T10:15:09.777Z
+# sella: architect
+# tree: tree:3dc4ae6bd199fde9a2f060ca4e3ca83220679b6d
+# ticket: {"opus":"W-369","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-369/studio","head":"97ae69c0062e1820c3e9056a2a6560ff86c71c2a","brief":"ec760c8acc8253dcfa74f192e1ae021f1030610a","at":"2026-10-23T10:15:09.745Z"}
+
+TAP version 13
+# Subtest: W-369-b3 behaviour 3: the merge rung's hold on a path the session may not write requests the sync and says so
+not ok 1 - W-369-b3 behaviour 3: the merge rung's hold on a path the session may not write requests the sync and says so
+  ---
+  duration_ms: 166.079888
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-369/packages/cli/src/w369.test.ts:10:224'
+  failureType: 'testCodeFailure'
+  error: |-
+    the hold requests the sync and keeps the Patron's command
+    + actual - expected
+    
+      [
+        "patron: git -C '/tmp/claude-1000/w369-APKnUy/main it'\\''s ü/main' merge --ff-only 3a32aed48b41ed58745f084e7569d10fe82d0463",
+    -   'sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: "patron: git -C '/tmp/claude-1000/w369-APKnUy/main it'\\''s ü/main' merge --ff-only 3a32aed48b41ed58745f084e7569d10fe82d0463"
+    1: 'sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)'
+  actual:
+    0: "patron: git -C '/tmp/claude-1000/w369-APKnUy/main it'\\''s ü/main' merge --ff-only 3a32aed48b41ed58745f084e7569d10fe82d0463"
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-369/packages/cli/src/w369.test.ts:346:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 176.615431
