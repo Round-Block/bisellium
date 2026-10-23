@@ -658,3 +658,17 @@ test("W-362-b1 behaviour 1: the guard reads env -S's split string and the operan
   }
   assert.equal((await guard(bash("bash -O extglob scripts/record-review.sh W-310 1 passed", { cwd: REPO, ...RUNNER }))).code, 0, "a ladder-runner runs it");
 });
+
+test("W-362-b1 fix 1: env -S keeps shell punctuation as literal words", async () => {
+  // env splits the string into its own argv: `;` `&&` `|` are arguments, never command separators
+  for (const c of [
+    "env -S 'bisellium ; merge W-900'",
+    "env -S 'bisellium && merge W-900'",
+    "env -S 'bisellium | merge W-900'",
+    "env --split-string='bisellium ; done W-900'",
+    "env -S 'echo ok; bisellium merge W-900'",
+  ])
+    assert.equal((await guard(bash(c))).code, 0, `punctuation is a literal argument, not a separator: ${c}`);
+  assert.equal((await guard(bash("env -S 'bisellium merge W-900'"))).code, 2, "the plain split string still refuses");
+  assert.equal((await guard(bash("env -S 'FOO=a;b bisellium merge W-900'"))).code, 2, "punctuation inside an assignment word is part of it");
+});
