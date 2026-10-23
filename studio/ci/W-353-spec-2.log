@@ -1,0 +1,18 @@
+# opus: W-353
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16786-8823-7ee2-8f6e-4fa859e0c987
+# outcome: passed
+# at: 2026-10-23T06:55:54.942Z
+# tree: tree:23aaee867551d956f701e20aa223e4082b73297d
+# brief: briefs/W-353.md blob:41c6b4cdaddb1aea607935211f36f4bf4d6f404a
+# ticket: {"opus":"W-353","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"f74520cf761e5e04111c71b585b044d04bb8d244","brief":"41c6b4cdaddb1aea607935211f36f4bf4d6f404a","at":"2026-10-23T06:55:48.541Z"}
+
+## Findings
+1. advisory — brief:70 `nextFact` changes the invocation of the reused `next` subprocess, but row 2 declares only the main-work-tree lookup, not that subprocess’s valid result or `factOf`’s rejection boundary. Replace brief:70 with: `| 2. The repository's main-work-tree lookup and the reused \`next <id> --budget 400000\` subprocess | \`git worktree list --porcelain\` exits 0 with a first entry naming the main checkout; \`next\` runs to a normal exit, whose output and exit are recorded as the fact | \`runGit\` refuses a failed listing, \`mainTree\` refuses no entry, and \`factOf\` refuses a spawn error, signal or oversized output |` [severity: S4] [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief admission does not check subprocess-boundary completeness
+
+## Verdict
+The three behaviours and promises are feasible; the sole input-boundary omission is advisory.
+VERDICT: PASS

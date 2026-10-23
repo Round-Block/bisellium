@@ -1,0 +1,25 @@
+# opus: W-353
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T06:50:10.110Z
+# tree: tree:23aaee867551d956f701e20aa223e4082b73297d
+# brief: briefs/W-353.md blob:41c6b4cdaddb1aea607935211f36f4bf4d6f404a
+# ticket: {"opus":"W-353","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"f74520cf761e5e04111c71b585b044d04bb8d244","brief":"41c6b4cdaddb1aea607935211f36f4bf4d6f404a","at":"2026-10-23T06:50:06.062Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-353-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the record's first two gaps were closed by W-340 (merged 2026-10-22): next's review perform runs a kind: ui round with the eight shots attached in the fixed desktop-then-phone order (the order of `W-366-review/r1/prompt.md`, the packet's own ui.txt), passes --ui-input, and both prompts ask for `## UI input disposition`; the brief states this and touches no code-owned path, so `studio/prompts/build-review.md` is unchanged and nothing waits on the Patron's merge — check: brief:15, brief:101, W-340-b2 in packages/cli/src/next-review.test.ts
+2. advisory — D-106's widening is behaviour 1: an untracked, unignored file under the worktree's `<studio>/ci/` holds both the review and the fix-check performs before any Codex call, an interrupted round's own verdict log excepted; a failed listing holds; `W-353-b1` pins each case and fails by ERR_ASSERTION on master at "a failed run's gate log: the review holds", and the ignored-file mutant fails it again — check: brief:17, brief:23, brief:25, brief:27, brief:69, reds.out, row-b1-redcommit.out, row-b1-mutant-no-exclude-standard.out
+3. advisory — where the packet is built: it stays built from the opus worktree (record, brief, reds and shots live there; the perform adds the source diff), and behaviour 2 moves its one wrong fact, the nested next that a linked worktree refuses (exit 2 in `W-366-review/packets/r1/facts.txt`), to the main work tree; `W-353-b2` fails by ERR_ASSERTION on master at "next is not refused for a linked worktree" — check: brief:19, brief:29, brief:70, row-b2-redcommit.out, row-b2-mutant-worktree-studio.out
+4. advisory — behaviour 3 lets `scripts/record-review.sh` record a hand UI round: a fifth argument goes to verdict alone as --ui-input; verdict's own UI checks are reused unchanged and named as a limit; `W-353-b3` fails by ERR_ASSERTION on master at "the verdict takes --session then --ui-input" — check: brief:21, brief:31, brief:71, row-b3-redcommit.out, row-b3-mutant-always-ui-input.out
+5. advisory — the prototype is six commits on master f74520cf and its mbox applies there to the prototype tree exactly; lint, Prettier, typecheck, the next row files, `review-packet.test.mjs`, `process.test.ts`, `guard.test.ts`, `ladder-followon`, `stage-states` and `containment` pass on the prototype; Codex's fixture census lists no flip and none unnamed; both officina checks keep master's blocking set; admission and the ledger pass — check: brief:93, brief:94, brief:95, mbox-check.out, gates-proto.out, gates-master.out, check-blocking.out, guard-check.out, fixture-census.md, admission.out, ledger-check.out
+6. advisory — stated limits: the hold is the performs', not the named order; an untracked file outside `<studio>/ci/` and an ignored file are not read; the hand packet's missing diff and the hand scripts are W-363 part 6's; unchanged code the promises lean on is named as a limit, never promised (D-076 E) — check: brief:57, brief:58, brief:59, brief:60
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-353.md` revision 1, prototype six commits after master f74520cf; three behaviours, 2 points, a full brief; no code-owned path touched.
