@@ -304,3 +304,59 @@ test("W-369-b2 behaviour 2: hook-event sync runs the sync beside the installed C
   run();
   assert.equal(readFileSync(join(w.f, "ran"), "utf8"), "hook-event sync --studio studio\n", "a request: the installed bisellium runs the sync");
 });
+
+/** A main checkout on master with `packages/a`, `studio/s` and `root`, and a bare origin; `advance` pushes a commit
+ *  changing the named files from a second clone, fetched into the main checkout as the reviewed merge commit. */
+function mainCheckout(): { main: string; advance: (...files: string[]) => string } {
+  const t = join(tmp(), "main it's ü");
+  mkdirSync(t);
+  git(t, "init", "-q", "--bare", "origin.git");
+  git(t, "clone", "-q", join(t, "origin.git"), "main");
+  const main = join(t, "main");
+  for (const [file, text] of [["packages/a", "a\n"], ["studio/s", "s\n"], ["root", "r\n"]] as const) put(join(main, file), text);
+  git(main, "add", ".");
+  git(main, "commit", "-qm", "one");
+  git(main, "push", "-q", "origin", "master");
+  git(t, "clone", "-q", join(t, "origin.git"), "other");
+  const other = join(t, "other");
+  let n = 0;
+  const advance = (...files: string[]): string => {
+    n++;
+    for (const file of files) writeFileSync(join(other, file), `${n}\n`);
+    git(other, "commit", "-qam", `change ${n}`);
+    git(other, "push", "-q", "origin", "master");
+    git(main, "fetch", "-q", "origin");
+    return git(other, "rev-parse", "HEAD");
+  };
+  return { main, advance };
+}
+
+test("W-369-b3 behaviour 3: the merge rung's hold on a path the session may not write requests the sync and says so", (t) => {
+  if (process.getuid?.() === 0) return t.skip("root writes a read-only directory");
+  const { main, advance } = mainCheckout();
+  const request = join(main, ".git", "bisellium", "sync");
+  const writable = advance("studio/s", "root");
+  assert.deepEqual(fetchTrunk(main, writable), { ok: true }, "a fast-forward into writable folders runs");
+  assert.equal(existsSync(request), false, "and requests no sync");
+  chmodSync(join(main, "packages"), 0o555);
+  try {
+    const target = advance("packages/a", "root");
+    const held = fetchTrunk(main, target);
+    assert.ok(!held.ok, "a fast-forward into a folder the session may not write is held");
+    assert.deepEqual(
+      held.after,
+      [`patron: git -C ${quoted(main)} merge --ff-only ${target}`, "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)"],
+      "the hold requests the sync and keeps the Patron's command",
+    );
+    assert.equal(readFileSync(request, "utf8"), `${target}\n`, "the request names the reviewed commit");
+    assert.equal(git(main, "rev-parse", "HEAD"), writable, "master did not move");
+    assert.equal(git(main, "status", "--porcelain"), "", "the main checkout is untouched");
+    rmSync(request);
+    mkdirSync(request);
+    const unwritten = fetchTrunk(main, target);
+    assert.ok(!unwritten.ok);
+    assert.match(unwritten.after?.[1] ?? "", /^sync: not requested \(/, "a request that cannot be written is said so");
+  } finally {
+    chmodSync(join(main, "packages"), 0o755);
+  }
+});
