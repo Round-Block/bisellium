@@ -672,3 +672,29 @@ test("W-362-b1 fix 1: env -S keeps shell punctuation as literal words", async ()
   assert.equal((await guard(bash("env -S 'bisellium merge W-900'"))).code, 2, "the plain split string still refuses");
   assert.equal((await guard(bash("env -S 'FOO=a;b bisellium merge W-900'"))).code, 2, "punctuation inside an assignment word is part of it");
 });
+
+test("W-362-b1 fix 2: env -S splits on every GNU whitespace and keeps loop words literal", async () => {
+  // GNU env 9.4 (info env, 'Splitting arguments by whitespace'): space, tab, newline, carriage return, vertical tab and form feed
+  const dir = tmp();
+  for (const sep of ["\r", "\v", "\f"]) {
+    const name = JSON.stringify(sep);
+    const inner = `env -S 'bisellium${sep}merge W-900'`;
+    const direct = await guard(bash(inner));
+    assert.equal(direct.code, 2, `env splits on ${name}: ${inner}`);
+    assert.match(direct.err, /ladder record write, run only by a dispatched ladder-runner/, name);
+    assert.equal((await guard(bash(`bash -c "${inner}"`))).code, 2, `in a -c body, ${name}`);
+    writeFileSync(join(dir, "sep.sh"), `${inner}\n`);
+    assert.equal((await guard(bash("bash sep.sh", { cwd: dir }))).code, 2, `in a script file, ${name}`);
+    assert.equal((await guard(bash(inner, RUNNER))).code, 0, `a ladder-runner runs it, ${name}`);
+    assert.equal((await guard(bash(`env -S 'echo${sep}bisellium merge W-900'`))).code, 0, `the separator ends the word: ${name}`);
+  }
+  // a `#` opening a word ends env's whole string, newlines included
+  assert.equal((await guard(bash("env -S 'bisellium #x\nmerge W-900'"))).code, 0, "a comment in env's string runs to its end");
+  // inside env -S the shell words are literal argv, so no shell loop starts
+  for (const inner of ["env -S 'while ; true'", "env -S 'until | true'", "env --split-string='while true'", "env -S 'FOO=1 until true'"]) {
+    assert.equal((await guard(bash(inner, {}, true))).code, 0, `no loop in a split string: ${inner}`);
+    assert.equal((await guard(bash(`bash -c "${inner}"`, {}, true))).code, 0, `no loop in a -c body: ${inner}`);
+  }
+  assert.equal((await guard(bash("env -S 'bash -c \"until | true\"'", {}, true))).code, 2, "a real loop in a shell inside the string is still judged");
+  assert.equal((await guard(bash("while true; do sleep 1; done", {}, true))).code, 2, "a plain background loop is still refused");
+});
