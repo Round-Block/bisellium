@@ -635,9 +635,9 @@ export function oneSidedSites(text: string, lines: readonly number[]): { line: n
   return sites;
 }
 
-/** The lines of `rel` added or changed in the working tree since `base`, from `git diff --unified=0`'s hunk headers. */
+/** The lines of `rel` added or changed in the working tree since `base`, from `git diff --unified=0`'s hunk headers (raw text: --text and --no-textconv keep .gitattributes from hiding or rewriting them). */
 function addedLines(repo: string, base: string, rel: string): number[] {
-  const diff = gitOut(repo, ["diff", "--no-color", "--no-ext-diff", "--no-renames", "--unified=0", base, "--", `:(literal)${rel}`]);
+  const diff = gitOut(repo, ["diff", "--text", "--no-textconv", "--no-color", "--no-ext-diff", "--no-renames", "--unified=0", base, "--", `:(literal)${rel}`]);
   const lines: number[] = [];
   // W-334: a line number past 15 digits is past any 1 MiB file, so such a header adds nothing
   for (const m of diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d{1,15})(?:,(\d{1,15}))? @@/gm)) {
