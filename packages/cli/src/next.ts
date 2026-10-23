@@ -1109,6 +1109,9 @@ export function deriveNext(f: Facts): Derived {
     // W-297 (D-085 C): a class loop goes to the architect to state the limit, not back to a builder
     const loop = failedNow ? classLoop(f, read.rounds) : undefined;
     if (loop !== undefined) return hold("build", loop);
+    // W-381 (D-070 C, D-076 D): a failed round whose S1 blocker names a class seen before in another opus holds its fix
+    const repeat = gate !== undefined && gate.status === "failed" && gate.evidence !== undefined ? repeatHold(f, gate.evidence, bs) : undefined;
+    if (repeat !== undefined) return hold("build", repeat);
     // W-328 (D-086 B): a failed round's fix committed outside the source tree (its tree and brief unchanged) is re-reviewed,
     // never sent back to the builder; `redo` is a round failed at this tree and brief with no such fix. A read that fails holds
     const outside = failedNow ? fixedOutside(f, read.rounds.find((r) => r.n === gate?.round)) : 0;
@@ -1351,6 +1354,72 @@ function classLoop(f: Facts, rounds: BuildReviewRound[]): string | undefined {
   if (signedAfter(f, a.at)) return undefined;
   const loop = shared !== undefined ? `${b.log} and ${a.log} failed on class ${shared} against one brief` : `${c!.log}, ${b.log} and ${a.log} failed in a row`;
   return `${loop}: a class loop goes to the architect, not a builder (D-085): state the limit in ${briefRel(f.id)} (the forms the rule recognises, every other form a limit) and sign it again in ${join(".worktrees", f.id, f.studioRel)}, or sign it unchanged when the form is inside the stated domain; a security or evidence blocker opens blocking (security) or blocking (evidence)`;
+}
+
+/** W-381: another opus's review or spec log, by name: `<opus>-review-<n>.log` or `<opus>-spec-<n>.log`. */
+const OTHER_LOG = /^(.+)-(?:review|spec)-[1-9][0-9]{0,14}\.log$/;
+/** W-381: the numbered lines of every `## Findings` section of a log (each to the next `## ` line), read loosely so it reads
+ *  no less than is there: CRLF and CR line ends and trailing blanks are dropped first, and a log `parseVerdictLog` refuses
+ *  (one written before a grammar it now holds, or with a second Findings section) still names its classes. */
+function findingLines(text: string): string[] {
+  const out: string[] = [];
+  let inside = false;
+  for (const l of text.split(/\r\n|\r|\n/).map((x) => x.trimEnd())) {
+    if (l.startsWith("## ")) inside = l === "## Findings";
+    else if (inside && /^[1-9]\d*\. \S/.test(l)) out.push(l);
+  }
+  return out;
+}
+const classesIn = (text: string): string[] => [...text.matchAll(CLASS_TAG)].map((m) => m[1]!);
+
+/**
+ * W-381 (D-070 C, D-076 D; W-297 part 2): why the fix of a failed review or spec-review round is held, or undefined. Each class
+ * a standing `[severity: S1]` blocker of `rel` carries (read strictly, `parseVerdictLog`) is seen before when a numbered
+ * Findings line (`findingLines`) of another opus's review or spec log in the main checkout's ci/ carries it; it is named when
+ * some readable title of the opus names it (the union of its committed master record, its branch record from a usable
+ * worktree's files else the branch ref, and its main-checkout record's file), or so does the title of an opus in the main
+ * checkout's opera/ files whose state is open (greenlit to review) beside the whole word "high". A class is named in a title as a whole token. `rel`
+ * unreadable or refused by `parseVerdictLog` holds, and so does a main-checkout ci/ that exists and cannot be listed, or a
+ * name-matching other opus's log that `fsSrc` cannot read (not a contained regular file, or unreadable): the history read
+ * fails closed. ponytail: no ci/ at all (ENOENT) is no history.
+ */
+function repeatHold(f: Facts, rel: string, src: Src | undefined): string | undefined {
+  const text = src?.read(rel);
+  if (text === undefined) return `${rel} cannot be read, so its classes cannot be checked against other opera's (D-070 C)`;
+  const p = parseVerdictLog(text, f.id, rel);
+  if ("error" in p) return p.error;
+  const classes = [...new Set(p.findings.filter((x) => x.blocking && /\[severity: S1\]/.test(x.text)).flatMap((x) => classesIn(x.text)))];
+  if (classes.length === 0) return undefined;
+  const seen = new Map<string, string[]>(classes.map((c) => [c, []]));
+  const unread = (what: string): string => `${what} cannot be ${what === "ci/" ? "listed" : "read"}, so ${rel}'s classes cannot be checked against other opera's (D-070 C)`;
+  let entries: string[];
+  try {
+    entries = readdirSync(join(f.studioAbs, "ci"));
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") return unread("ci/");
+    entries = [];
+  }
+  for (const name of entries.sort()) {
+    const m = OTHER_LOG.exec(name);
+    if (m === null || m[1] === f.id) continue;
+    const log = f.work.read(`ci/${name}`);
+    if (log === undefined) return unread(`ci/${name}`);
+    const named = new Set(findingLines(log).flatMap(classesIn));
+    for (const [c, logs] of seen) if (named.has(c)) logs.push(`ci/${name}`);
+  }
+  const repeated = [...seen].filter(([, logs]) => logs.length > 0);
+  if (repeated.length === 0) return undefined;
+  const own = [f.trunkRecord, f.branchRecord, recordOf(f.work, f.id)].map((r) => str(r?.["title"]) ?? "");
+  const high = f.work.list("opera").flatMap((name) => {
+    const r = name.endsWith(".md") ? recordOf(f.work, name.slice(0, -3)) : undefined;
+    const title = str(r?.["title"]);
+    return title !== undefined && OPEN_STATES.has(str(r?.["state"]) ?? "") && /(?<![\w-])high(?![\w-])/i.test(title) ? [title] : [];
+  });
+  const names = (title: string, c: string): boolean => new RegExp(`(?<![a-z0-9-])${esc(c)}(?![a-z0-9-])`).test(title);
+  const held = repeated.filter(([c]) => ![...own, ...high].some((t) => names(t, c)));
+  if (held.length === 0) return undefined;
+  const list = held.map(([c, logs]) => `${c} (${logs.slice(0, 3).join(", ")}${logs.length > 3 ? ` and ${logs.length - 3} more` : ""})`).join("; ");
+  return `${rel} blocks on ${held.length === 1 ? "a class" : "classes"} seen before in another opus: ${list}; a class seen before is fixed at its cause (D-070 C, D-076 D): amend ${f.id}'s title to name it, for a cause fix in this opus, or file a greenlit high opus whose title names it`;
 }
 
 /** W-297: some valid architect signature in opus/<id>'s ci/ (the worktree's when usable) records an `# at:` after `at` (ms). */
