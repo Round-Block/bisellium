@@ -1392,3 +1392,80 @@ test("W-328-b1 behaviour 1: a failed round's fix committed outside the source tr
   expectStep(uo, "build", "held", "a log not committed: held");
   assert.match(uo.kv.get("why") ?? "", new RegExp(`^ci/${OPUS}-review-1\\.log is not committed on opus/${OPUS}, so the commits after it cannot be counted`), ran("a log not committed: why", uo));
 });
+
+/** W-360's fix check, round 1 (`.bisellium/reviews/W-360/fix-1/check.json`): three open paths, none in W-360's Files owned. */
+const W360_OPEN = [
+  "`scripts/review-packet.mjs:391,420 @ 05c4ceeb` — standalone/manual build packet with `--repo` naming the linked W-360 worktree still writes no `W-360.diff`; this breaks brief:118’s required final-source-diff evidence and yields a review packet without the source diff.",
+  "`packages/cli/src/next.ts:2046 → packages/cli/src/integrate.ts:72 @ 05c4ceeb` — an untracked pre-fix gate log still passes `next --perform review`; this breaks brief:114’s pristine gate handoff and dispatches review from a dirty checkout.",
+  "`packages/cli/src/next.ts:1421 → scripts/review-packet.mjs:420 → packages/cli/src/main.ts:113-114 @ 05c4ceeb` — the manual packet, dispatch, verdict and review path still accepts the same untracked gate logs; this breaks brief:114 and records a review of a dirty checkout.",
+];
+const evidenceLines = (o: Out): string[] => o.out.split("\n").filter((l) => l.startsWith("evidence: "));
+const asEvidence = (lines: string[]): string[] => lines.map((l) => `evidence: ${l.replace(/\s+/g, " ").trim()}`);
+
+test("W-328-b2 behaviour 2: a fix check's open path outside the brief's Files owned is the producer's evidence line, never the builder's; with none owned the suite and the re-review are ordered", { timeout: 1_800_000 }, () => {
+  // the fixture brief owns `source.txt`; round 1 failed, one fix commit, automated gates not yet run at the fix's tree
+  const g = world("w328-b2", "reds", { automated: true });
+  handoffAt(g, "wt", T.handoffFresh);
+  writeGates(g);
+  addReview(g, "failed", 1, T.review1);
+  advanceSource(g, true, false);
+  const census = `.bisellium/reviews/${OPUS}/fix-1/census.md`;
+  // W-360's three open paths, none owned: the producer's suite order, each path an evidence line
+  fixChecked(g, W360_OPEN);
+  const suite = next(g, [OPUS, ...BUDGET]);
+  expectStep(suite, "build", "named", "none owned: the suite");
+  assert.equal(suite.kv.has("role"), false, ran("none owned: no builder is dispatched", suite));
+  assert.equal(suite.kv.get("actor"), "producer", ran("none owned: the producer's order", suite));
+  assert.match(suite.kv.get("command") ?? "", new RegExp(`then bisellium ci --opus ${OPUS} --studio studio --repo \\. \\(the one full suite, in the background\\)`), ran("none owned: ci --opus", suite));
+  assert.equal(suite.kv.get("fix-check"), `no open path in Files owned at this tree (${census})`, ran("none owned: the check is named", suite));
+  assert.deepEqual(evidenceLines(suite), asEvidence(W360_OPEN), ran("none owned: one evidence line per open path, in order", suite));
+  // the suite passed: the re-review, still carrying the evidence lines
+  writeGates(g);
+  const review = next(g, [OPUS, ...BUDGET]);
+  reviewNamed(review, 2, "none owned, gates passed: review round 2");
+  assert.equal(review.kv.get("role"), "censor", ran("none owned, gates passed: the censor's order", review));
+  assert.deepEqual(evidenceLines(review), asEvidence(W360_OPEN), ran("none owned, gates passed: the evidence lines", review));
+  // an owned path beside an unowned one: the builder gets the owned one only, and no evidence line
+  const mine = "`source.txt:1 @ fixture` — the input still reaches the defect";
+  fixChecked(g, [mine, W360_OPEN[0]!]);
+  const mixed = next(g, [OPUS, ...BUDGET]);
+  buildFix(mixed, "one owned, one not: build, phase fix");
+  assert.equal(mixed.kv.get("why"), "the fix check of review round 1 lists 1 open path(s) at this tree", ran("one owned, one not: why", mixed));
+  assert.equal(mixed.kv.get("open"), mine, ran("one owned, one not: the owned path only", mixed));
+  assert.deepEqual(evidenceLines(mixed), [], ran("one owned, one not: no evidence line for the builder", mixed));
+  // Files owned is the committed branch brief's: the worktree's brief edited to own another file does not change ownership
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `elsewhere.txt`"));
+  const edited = next(g, [OPUS, ...BUDGET]);
+  buildFix(edited, "an edited worktree brief: build, phase fix");
+  assert.equal(edited.kv.get("open"), mine, ran("an edited worktree brief does not change ownership", edited));
+  writeFileSync(briefFile, signed);
+  // a committed brief that is not a readable blob holds before any open line is split
+  const unread = next(g, [OPUS, ...BUDGET], { env: { GIT_STUB_REAL: failingGit("w328-b2-blob", ["cat-file blob"]) } });
+  expectStep(unread, "build", "held", "an unreadable committed brief: held");
+  assert.equal(unread.kv.get("why"), `briefs/${OPUS}.md is not a readable blob on refs/heads/opus/${OPUS}, so the fix check's open paths cannot be split by Files owned (D-106 A)`, ran("an unreadable committed brief: why", unread));
+  // the builder's forms: a chain through an owned file, a `./` path, a plain lead, a line naming no path:line
+  for (const [label, line] of [
+    ["a chain through an owned file", "`scripts/review-packet.mjs:1 → source.txt:2 @ fixture` — a chain"],
+    ["a ./ path", "./source.txt:3 — open — a dot-slash path"],
+    ["a plain lead", "source.txt:4 — open — a plain lead"],
+    ["no path:line", "the input still reaches the defect, at no named line"],
+  ] as const) {
+    fixChecked(g, [line]);
+    const o = next(g, [OPUS, ...BUDGET]);
+    buildFix(o, `${label}: build, phase fix`);
+    assert.equal(o.kv.get("open"), line, ran(`${label}: the open line`, o));
+  }
+  // the producer's forms: a path that only ends like an owned one, an owned name cited after the lead, the brief's own line
+  for (const [label, line] of [
+    ["a longer path", "src/source.txt:1 — open — ends like an owned path"],
+    ["an owned name after the lead", "`scripts/review-packet.mjs:9 @ fixture` — reached from source.txt:1"],
+    ["the brief's line", "brief:118 — open — the brief's own evidence line"],
+  ] as const) {
+    fixChecked(g, [line]);
+    const o = next(g, [OPUS, ...BUDGET]);
+    reviewNamed(o, 2, `${label}: review round 2`);
+    assert.deepEqual(evidenceLines(o), asEvidence([line]), ran(`${label}: an evidence line`, o));
+  }
+});
