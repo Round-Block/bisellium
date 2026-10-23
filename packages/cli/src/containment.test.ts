@@ -812,6 +812,8 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/instructions.ts:runInstructions:writeFileSync#1", disposition: "outside", why: "writes CLAUDE.md, AGENTS.md and GLOSSARY.md at the repo root (--repo), not an officina" },
   { key: "packages/cli/src/instructions.ts:runInstructions:writeFileSync#2", disposition: "outside", why: "writes CLAUDE.md, AGENTS.md and GLOSSARY.md at the repo root (--repo), not an officina" },
   { key: "packages/cli/src/instructions.ts:runInstructions:writeFileSync#3", disposition: "outside", why: "writes CLAUDE.md, AGENTS.md and GLOSSARY.md at the repo root (--repo), not an officina" },
+  { key: "packages/cli/src/integrate.ts:requestSync:mkdirSync#1", disposition: "outside", why: "W-369: creates the sync request's directory under the Git common directory (<common>/bisellium), a git dir, never an officina" },
+  { key: "packages/cli/src/integrate.ts:requestSync:writeFileSync#1", disposition: "outside", why: "W-369: writes the sync request file under the Git common directory (<common>/bisellium/sync), a git dir, never an officina" },
   { key: "packages/cli/src/integrate.ts:result:mkdirSync#1", disposition: "outside", why: "creates the merge-queue binding's directory under the Git common directory (<common>/bisellium/queue), a git dir, never an officina" },
   { key: "packages/cli/src/integrate.ts:result:writeFileSync#1", disposition: "outside", why: "writes the merge-queue binding file under the Git common directory (<common>/bisellium/queue/<branch>), a git dir, never an officina" },
   { key: "packages/cli/src/integrate.ts:result:unlinkSync#1", disposition: "outside", why: "removes the merge-queue binding file under the Git common directory after a direct-mode push, a git dir, never an officina" },
