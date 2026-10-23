@@ -1769,3 +1769,63 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
   assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
   w377Dirty(chained, "D-960", [...stray30].sort(), "chain: many stray decisions: every path is listed");
 });
+
+// fix round 2: a refusal, the ruling's id and a dirty path are printed whole however long they are
+const W377_LONG = `D-${"9".repeat(250)}`;
+
+test("W-377-b1 fix round 2: a stale ruling with a long id is named whole on its ruling: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
+  const refusal = `${W377_LONG} rules another served tree or design digest, or an earlier time`;
+  const w = uiReviewWorld("w377-b1-long");
+  codexSays(w, { session: "s-377-6", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  w377Ruling(w, W377_LONG, { at: T.handoffStale });
+  w377Amend(w, W377_LONG);
+  commit(w.wt, `studio(${OPUS}): a stale ui ruling with a long id`);
+  const direct = next(w, [OPUS, ...BUDGET]);
+  expectStep(direct, "pr", "held", "a long stale id: the pr is held");
+  w377Holds(direct, w, [refusal], "a long stale id: the refusal is whole");
+  git(w.wt, ["push", "-q", "-u", "origin", `opus/${OPUS}`]);
+  scenario(w, { list: openList(w) });
+  const merge = next(w, [OPUS, ...BUDGET]);
+  expectStep(merge, "merge", "held", "a long stale id: the merge is held");
+  w377Holds(merge, w, [refusal], "a long stale id: the merge names the refusal whole");
+
+  const c = uiReviewWorld("w377-b1-long-chain");
+  w377Ruling(c, W377_LONG, { at: T.handoffStale });
+  w377Amend(c, W377_LONG);
+  commit(c.wt, `studio(${OPUS}): a stale ui ruling with a long id`);
+  codexSays(c, { session: "s-377-7", reply: UI_PASS_REPLY });
+  const chained = next(c, [OPUS, "--perform", "--chain", ...BUDGET], { env: { ...CODEX_PATH } });
+  assert.equal(chained.status, 1, ran("chain: exit 1", chained));
+  assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
+  w377Holds(chained, c, [refusal], "chain: a long stale id: the refusal is whole");
+});
+
+test("W-377-b2 fix round 2: a current ruling with a long id is named whole in the not-committed hold", { timeout: 1_800_000 }, () => {
+  const id = `D-${"8".repeat(70)}`;
+  const w = uiReviewWorld("w377-b2-long");
+  codexSays(w, { session: "s-377-8", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  w377Ruling(w, id);
+  w377Amend(w, id);
+  const held = next(w, [OPUS, ...BUDGET]);
+  expectStep(held, "pr", "held", "an uncommitted long-id ruling: the pr is held");
+  w377Dirty(held, id, [`studio/decisions/${id}.md`, `studio/opera/${OPUS}.md`], "an uncommitted long-id ruling: the why names it whole");
+});
+
+test("W-377-b2 fix round 2: a Git-quoted non-ASCII path over 300 characters is listed whole on its dirty: line", { timeout: 1_800_000 }, () => {
+  const w = uiReviewWorld("w377-b2-quoted");
+  codexSays(w, { session: "s-377-9", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  w377Ruling(w, "D-960");
+  w377Amend(w, "D-960");
+  commit(w.wt, `studio(${OPUS}): the ui ruling`);
+  // git prints a non-ASCII name quoted, each byte as an octal escape: 100 letters of two bytes are 800 characters
+  put(w.wtStudio, `decisions/D-990-${"é".repeat(100)}.md`, "stray\n");
+  const held = next(w, [OPUS, ...BUDGET]);
+  expectStep(held, "pr", "held", "a long quoted path: the pr is held");
+  w377Dirty(held, "D-960", [`"studio/decisions/D-990-${"\\303\\251".repeat(100)}.md"`], "a long quoted path: the dirty: line is whole");
+});
