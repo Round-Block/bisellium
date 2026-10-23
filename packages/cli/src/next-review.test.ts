@@ -1573,22 +1573,16 @@ function w377Amend(w: World, id: string): void {
   const o = cli(w, ["amend", OPUS, "--ui-ruling", id, "--reason", "Patron approves the screens", "--sella", "producer", "--studio", w.wtStudio, "--now", "2026-10-02T08:30:00.000Z"], w.wt);
   if (o.status !== 0) throw new Error(ran(`fixture: amend --ui-ruling ${id}`, o));
 }
-/** Every `key: value` extra line of the printed stdout, in order: each refusal is a `ruling:` line and each uncommitted path a `dirty:` line. */
-const w377Lines = (o: Out, key: string): string[] => o.out.split("\n").filter((l) => l.startsWith(`${key}: `)).map((l) => l.slice(key.length + 2));
-/** The whole why of a ui pr that waits, after the count of its refused rulings, at the worktree's tree and the fixture's served-e2e run. */
+/** The whole why of a ui pr that waits, after its refusals joined by "; ", at the worktree's tree and the fixture's served-e2e run. */
 const w377Waits = (w: World, refused: string[] = [], tree = sourceTree(w.wt)): string =>
-  `${refused.length === 0 ? "no Patron ruling on these screens is recorded" : `${refused.length} ${refused.length === 1 ? "ruling is" : "rulings are"} refused or not current (each on a ruling: line)`}; it waits for one that binds certifies: ${tree}, design_digest: ${w377Digest(w)}, at or after ${T.reds}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${OPUS}) in .worktrees/${OPUS}/studio from the Patron's word on its ci/shots/${OPUS}/, then bisellium amend ${OPUS} --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/${OPUS}/studio, commit both on opus/${OPUS}, then rerun`;
-/** The why within the line cap, and every refusal whole on its own `ruling:` line, none dropped. */
+  `${refused.length === 0 ? "no Patron ruling on these screens is recorded" : refused.join("; ")}; it waits for one that binds certifies: ${tree}, design_digest: ${w377Digest(w)}, at or after ${T.reds}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${OPUS}) in .worktrees/${OPUS}/studio from the Patron's word on its ci/shots/${OPUS}/, then bisellium amend ${OPUS} --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/${OPUS}/studio, commit both on opus/${OPUS}, then rerun`;
+/** The whole why, every refusal named in full in it, however long it grows. */
 function w377Holds(o: Out, w: World, refused: string[], label: string): void {
-  const why = o.kv.get("why") ?? "";
-  assert.equal(why, w377Waits(w, refused), ran(label, o));
-  assert.ok(why.length <= 1000, ran(`${label}: the why fits the output cap (${why.length})`, o));
-  assert.deepEqual(w377Lines(o, "ruling"), refused, ran(`${label}: every refusal is on a ruling: line`, o));
+  assert.equal(o.kv.get("why"), w377Waits(w, refused), ran(label, o));
 }
-/** The not-committed why, and every uncommitted path whole on its own `dirty:` line, none dropped. */
+/** The whole not-committed why, every uncommitted path named in full and sorted in it, however long it grows. */
 function w377Dirty(o: Out, ruling: string, paths: string[], label: string): void {
-  assert.equal(o.kv.get("why"), `the Patron's ruling ${ruling} is not committed on opus/${OPUS}; commit it, then rerun`, ran(label, o));
-  assert.deepEqual(w377Lines(o, "dirty"), paths, ran(`${label}: every path is on a dirty: line`, o));
+  assert.equal(o.kv.get("why"), `the Patron's ruling ${ruling} is not committed on opus/${OPUS} (${paths.join(", ")}); commit it, then rerun`, ran(label, o));
 }
 const W377_EARLY = "D-950 rules another served tree or design digest, or an earlier time";
 
@@ -1668,7 +1662,7 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   expectStep(pushed, "pr", "held", "a later push: the pr is held");
   w377Holds(pushed, w, [W377_EARLY, "D-951 rules another served tree or design digest, or an earlier time"], "a later push: the why names the stale ruling");
 
-  // fix round 1: a long ruling history keeps every required part of the why within the 1000-character line cap
+  // fix round 1: a long ruling history is named whole in the why, past the 1000-character cap
   for (let i = 0; i < 12; i++) {
     w377Ruling(w, `D-${970 + i}`, { at: T.handoffStale });
     w377Amend(w, `D-${970 + i}`);
@@ -1735,7 +1729,7 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
   const stray = next(w, [OPUS, ...BUDGET]);
   w377Dirty(stray, "D-960", ["studio/decisions/D-962.md"], "a stray decision: the why names it");
   rmSync(join(w.wtStudio, "decisions", "D-962.md"));
-  // fix round 1: many stray decisions are all listed, each on its own dirty: line, and the why stays within the line cap
+  // fix round 1: many stray decisions are all listed, sorted, in the why
   const stray30 = Array.from({ length: 30 }, (_, i) => `studio/decisions/D-${980 + i}-a-stray-decision-with-a-long-name-${"x".repeat(60)}.md`);
   for (const rel of stray30) put(w.wt, rel, "stray\n");
   w377Dirty(next(w, [OPUS, ...BUDGET]), "D-960", [...stray30].sort(), "many stray decisions: every path is listed");
@@ -1773,7 +1767,7 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
 // fix round 2: a refusal, the ruling's id and a dirty path are printed whole however long they are
 const W377_LONG = `D-${"9".repeat(250)}`;
 
-test("W-377-b1 fix round 2: a stale ruling with a long id is named whole on its ruling: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
+test("W-377-b1 fix round 2: a stale ruling with a long id is named whole in the why, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
   const refusal = `${W377_LONG} rules another served tree or design digest, or an earlier time`;
   const w = uiReviewWorld("w377-b1-long");
   codexSays(w, { session: "s-377-6", reply: UI_PASS_REPLY });
@@ -1815,7 +1809,7 @@ test("W-377-b2 fix round 2: a current ruling with a long id is named whole in th
   w377Dirty(held, id, [`studio/decisions/${id}.md`, `studio/opera/${OPUS}.md`], "an uncommitted long-id ruling: the why names it whole");
 });
 
-test("W-377-b2 fix round 2: a Git-quoted non-ASCII path over 300 characters is listed whole on its dirty: line", { timeout: 1_800_000 }, () => {
+test("W-377-b2 fix round 2: a Git-quoted non-ASCII path over 300 characters is listed whole in the why", { timeout: 1_800_000 }, () => {
   const w = uiReviewWorld("w377-b2-quoted");
   codexSays(w, { session: "s-377-9", reply: UI_PASS_REPLY });
   const reviewed = performReview(w);
@@ -1827,11 +1821,11 @@ test("W-377-b2 fix round 2: a Git-quoted non-ASCII path over 300 characters is l
   put(w.wtStudio, `decisions/D-990-${"é".repeat(100)}.md`, "stray\n");
   const held = next(w, [OPUS, ...BUDGET]);
   expectStep(held, "pr", "held", "a long quoted path: the pr is held");
-  w377Dirty(held, "D-960", [`"studio/decisions/D-990-${"\\303\\251".repeat(100)}.md"`], "a long quoted path: the dirty: line is whole");
+  w377Dirty(held, "D-960", [`"studio/decisions/D-990-${"\\303\\251".repeat(100)}.md"`], "a long quoted path: the why names the path whole");
 });
 
-// fix round 2b: a line past the 1000-character cap that bounds every other printed line is still printed whole
-test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole on its ruling: line, direct and on the merge", { timeout: 1_800_000 }, () => {
+// fix round 2b: the why of this hold is printed whole past the 1000-character cap that bounds every other printed line
+test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole in the why, direct and on the merge", { timeout: 1_800_000 }, () => {
   const id = `D-${"7".repeat(1000)}`;
   const refusal = (w: World): string => `${id} is unsafe or unreadable: ENOENT: no such file or directory, lstat '${join(w.wtStudio, "decisions")}'`;
   const attach = (w: World): void => {
@@ -1853,10 +1847,10 @@ test("W-377-b1 fix round 2b: a refusal over 1000 characters is whole on its ruli
   w377Holds(merge, w, [refusal(w)], "a huge id: the refusal is whole on the merge hold");
 
   // no chained form: the review a chain performs first refuses a record whose ui_rulings names an unreadable decision (opus.reference),
-  // and a readable one has a name of at most 255 bytes, so a chained ruling: line never reaches the cap
+  // and a readable one has a name of at most 255 bytes, so a chained refusal never reaches the cap
 });
 
-test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole on its dirty: line, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
+test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole in the why, direct, on the merge and chained", { timeout: 1_800_000 }, () => {
   // the longest legal name: 255 bytes, 123 two-byte letters, which git prints as 984 characters of octal escapes
   const stray = `studio/decisions/D-990-${"é".repeat(123)}.md`;
   const quoted = `"studio/decisions/D-990-${"\\303\\251".repeat(123)}.md"`;
@@ -1871,14 +1865,14 @@ test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole on 
   put(w.wt, stray, "stray\n");
   const direct = next(w, [OPUS, ...BUDGET]);
   expectStep(direct, "pr", "held", "a huge path: the pr is held");
-  w377Dirty(direct, "D-960", [quoted], "a huge path: the dirty: line is whole on the pr hold");
+  w377Dirty(direct, "D-960", [quoted], "a huge path: the why names the path whole on the pr hold");
   rmSync(join(w.wt, stray));
   git(w.wt, ["push", "-q", "-u", "origin", `opus/${OPUS}`]);
   scenario(w, { list: openList(w) });
   put(w.wt, stray, "stray\n");
   const merge = next(w, [OPUS, ...BUDGET]);
   expectStep(merge, "merge", "held", "a huge path: the merge is held");
-  w377Dirty(merge, "D-960", [quoted], "a huge path: the dirty: line is whole on the merge hold");
+  w377Dirty(merge, "D-960", [quoted], "a huge path: the why names the path whole on the merge hold");
 
   const c = uiReviewWorld("w377-b2-huge-chain");
   w377Ruling(c, "D-960");
@@ -1889,5 +1883,5 @@ test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole on 
   const chained = next(c, [OPUS, "--perform", "--chain", ...BUDGET], { env: { ...CODEX_PATH } });
   assert.equal(chained.status, 1, ran("chain: exit 1", chained));
   assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
-  w377Dirty(chained, "D-960", [quoted], "chain: a huge path: the dirty: line is whole");
+  w377Dirty(chained, "D-960", [quoted], "chain: a huge path: the why names the path whole");
 });
