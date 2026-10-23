@@ -1,0 +1,25 @@
+# opus: W-362
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-22T23:28:41.660Z
+# tree: tree:e63a1eb29767a24d03f13d7cff25c31bd3e7e38b
+# brief: briefs/W-362.md blob:b36bde706feb43674c0994d10d909c580f0d30b0
+# ticket: {"opus":"W-362","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"472fb6151bef83f3bd1a593d919bb9f40c03de65","brief":"b36bde706feb43674c0994d10d909c580f0d30b0","at":"2026-10-22T23:28:38.637Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-362-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — W-310 spec round 5's findings 1 and 2 and round 2's open finding 2 are closed in the installer's inputs: a `bisellium` later on PATH is accepted, GUARD_DIR the Patron's clone (directly or through a symlink) and GUARD_BIN inside the agent clone (even as a link to an outside target) are refused, each before any change — check: brief:85, brief:86, scripts/agent-workspace.sh:186, scripts/agent-workspace.sh:201, scripts/agent-workspace.sh:215, row-b3-s3.out
+2. advisory — round 5's finding 3 is closed: the merge writes `sandbox.enabled: true` whatever the file held, so an explicit false no longer keeps the deny off; the one existing row pinning the old behaviour flips with behaviour 2 and is named, the census's only flip — check: brief:30, brief:115, scripts/agent-settings-merge.mjs:27, fixture-census.md, row-b2-redcommit.out
+3. advisory — round 5's findings 4 and 5 are closed in the classifier: `env -S` in its short, attached, clustered and long (prefix) forms is split and read as env's arguments, and a shell option cluster holding o or O takes its operand before a script file; the remaining forms (env's escapes and `${VAR}`, a c-and-o cluster) are stated limits — check: brief:81, brief:82, packages/cli/src/guard.ts:114, packages/cli/src/guard.ts:159, row-b1-s1.out
+4. advisory — one change outside W-362's title is asked of the Patron, not assumed: with the deny on, a fast-forward of the main checkout fails part-way (row-b4-redcommit.out shows it), so the merge rung's existing Patron stop also stops on a path this session cannot write and prints the Patron's one command — check: brief:22, brief:40, brief:138, packages/cli/src/integrate.ts:293, row-b4-s4.out
+5. advisory — the deny's operating cost is stated for the Patron in plain words: after each code merge the Patron fast-forwards the main checkout, and a session's own pull there fails part-way (the pr rung's pull advice is left unchanged, a stated limit) — check: brief:32, brief:40, brief:135
+6. advisory — four reds, each accepted as assertion-level on master with its test file and on its red commit, each passing on its stage, earlier rows passing on every later red commit; the mbox applies to fe33b4ce and yields the prototype tree exactly; the gates and the census's must-stay-green rows pass, and the officina checks' blocking set matches master — check: reds.out, mbox-check.out, gates-proto.out, gates-master.out, census-green-proto.out, tests-rule.out, check-blocking.out
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-362.md`, prototype eight commits on master fe33b4ce; four behaviours, a full brief (sandbox work), its design and seven Defaults for the Patron before branch.

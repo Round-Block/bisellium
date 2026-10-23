@@ -1,0 +1,21 @@
+# opus: W-362
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a165f2-3aaf-7721-bb5d-4c9d67a865bf
+# outcome: failed
+# at: 2026-10-22T23:35:17.240Z
+# tree: tree:e63a1eb29767a24d03f13d7cff25c31bd3e7e38b
+# brief: briefs/W-362.md blob:b36bde706feb43674c0994d10d909c580f0d30b0
+# ticket: {"opus":"W-362","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"472fb6151bef83f3bd1a593d919bb9f40c03de65","brief":"b36bde706feb43674c0994d10d909c580f0d30b0","at":"2026-10-22T23:35:12.023Z"}
+
+## Findings
+1. blocking — brief:87 [severity: S1] [design: keeps] A plausible shortcut symlink outside `AGENT_DIR` pointing to the agent clone’s script passes because `SELF_DIR` resolves only the symlink’s parent; the Patron’s `guard` call then executes agent-writable code unsandboxed, and no test covers this. Replace brief:87 with: `| 7. The install step’s own script target/location and its later steps | BASH_SOURCE[0], including a symlinked file or parent, resolves to a target outside AGENT_DIR; otherwise guard stops before change; fetch, checkout/worktree add, npm ci, link, link check, settings merge and probe must each exit 0 | guard (new) resolves the script target before guard_inputs and refuses an in-AGENT_DIR target; set -euo pipefail refuses any failed step |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w362.test.ts W-362-b3
+2. blocking — brief:83 [severity: S1] [design: keeps] A plausible settings mistake such as `sandbox.filesystem.denyWrite` being a string is outside the stated domain but `merge()` spreads it into characters, exits 0 and silently removes the existing deny when invoked by the Patron’s `guard`; no test catches this fail-open configuration rewrite. Replace brief:83 with: `| 3. The user settings the merge reads | an absent file treated as {}, or a JSON object whose sandbox and sandbox.filesystem are absent or plain objects and whose sandbox.filesystem.denyWrite is absent or an array of strings; sandbox.enabled may hold any value and is written true; other sandbox keys are kept; every other nested shape is refused before backup or write | merge() validates this shape and throws on mismatch, making the CLI exit non-zero without writing; W-362-b2 pins malformed sandbox, filesystem and denyWrite forms |` [class: spec×input-domain-missing-or-unenforceable] — check: scripts/agent-settings-merge.test.mjs W-362-b2
+3. advisory — brief:81 [severity: S4] The row names `envOption` through `strip`, but neither function rejects the Bash call; the real fail-closed endpoint is `guardRefusal`. Replace brief:81 with the same row whose final cell begins: ``guardRefusal` through `ladderWrite` and `unboundedLoop`, after `envOption` through `strip``. [class: spec×input-without-named-rejector] — check: none: brief.input.rejector should require a named refusing endpoint
+4. advisory — brief:82 [severity: S4] The row likewise ends at option parsing and script discovery rather than naming the function that refuses the call. Replace brief:82 with the same row whose final cell begins: ``guardRefusal` through `ladderWrite` and `unboundedLoop`, after `SHELL_OPERAND`, `leading`, `scriptOf` and `shellScript``. [class: spec×input-without-named-rejector] — check: none: brief.input.rejector should require a named refusing endpoint
+
+## Verdict
+The two blocking gaps keep the signed design and should be required fixes in the build; the rejector-name corrections are advisory.
+VERDICT: FAIL
