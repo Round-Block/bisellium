@@ -560,6 +560,8 @@ const sidedBlock = (where: string, message: string): Finding => ({ rule: "test.o
 const MATCH_SITE = /(?<![\w$.])assert\s*\.\s*match\s*\(/g;
 const REGEX_LITERAL = /\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*/y;
 const REGEXP_CALL = /new\s+RegExp\s*\(\s*(["'`])((?:\\.|(?!\1)[^\\])*)\1/y;
+const OK_SITE = /(?<![\w$.])assert(?:\s*\.\s*ok)?\s*\(/g;
+const ENDS_CALL = /\.\s*(startsWith|endsWith)\s*\(/;
 const SIDED = /^\/\/\s*one-sided:\s*(\S.*)$/;
 const SIDED_HOW = 'assert the whole string (assert.equal, or a pattern anchored at both ends), or annotate "// one-sided: <reason>"';
 
@@ -599,6 +601,12 @@ function sidedForm(blank: string, plain: string): string | undefined {
     const call = literal ? null : REGEXP_CALL.exec(plain);
     const form = literal ? sidedPattern(literal[1]!) : call ? sidedPattern(call[2]!) : undefined;
     if (form !== undefined) return form;
+  }
+  for (const m of blank.matchAll(OK_SITE)) {
+    const from = m.index + m[0].length;
+    const end = argumentEnd(blank, from);
+    const call = ENDS_CALL.exec(blank.slice(from, end < 0 ? undefined : end));
+    if (call) return `${call[1]} in an assertion`;
   }
   return undefined;
 }
