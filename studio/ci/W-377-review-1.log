@@ -1,0 +1,18 @@
+# opus: W-377
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a168bb-da03-7312-a3c9-3b4977182aef
+# outcome: failed
+# at: 2026-10-23T12:31:28.510Z
+# tree: tree:a69f95991370363a3423a2b0673fd21f69ff1464
+# brief: briefs/W-377.md blob:0cf0419f0a7a892a3bb7b5da952644cce69f2fa3
+# ticket: {"opus":"W-377","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-377/studio","head":"de929bf93e4dd6dc7df9ab7dcb0384017ba33b23","brief":"0cf0419f0a7a892a3bb7b5da952644cce69f2fa3","at":"2026-10-23T12:28:22.163Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:2805 [severity: S1] `ui_rulings` admits an unbounded sequence, but `say` truncates the required `why` at 1000 characters; with 12 ordinary stale rulings, the earliest-time and recording instructions required by brief:72 and brief:82 are omitted. — check: packages/cli/src/next-review.test.ts (`W-377-b1`: accumulated stale rulings exceeding the output cap) [class: tests×one-sided-bound-assertion]
+
+## Verdict
+The recorded reds and gates are valid, but an admitted ruling history produces an incomplete required hold explanation.
+VERDICT: FAIL
