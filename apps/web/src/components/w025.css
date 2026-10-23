@@ -957,6 +957,23 @@
     padding-right: 0;
   }
 
+  .seats__card--delegation .seats__table,
+  .seats__card--delegation .seats__table tbody {
+    display: block;
+  }
+
+  .seats__card--delegation .seats__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 64px;
+  }
+
+  .seats__card--delegation .seats__row td:last-child {
+    grid-column: 1 / -1;
+    padding-right: 0;
+  }
+
   .seats__confirm-bar { left: 0; flex-wrap: wrap; }
 }
 
