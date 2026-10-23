@@ -10,10 +10,10 @@
 #
 # What `sync` does (the installed guard's `hook-event sync`, outside the sandbox, at SessionStart and after a merge
 # perform asks for it): it refuses, changing nothing, unless $PATRON_DIR is on master with no uncommitted tracked change
-# and the agent clone's .git holds only setup's config keys (git's own core values among them), no hook and no
-# info/attributes; then prunes dead worktree entries, fetches origin's master into $PATRON_DIR and fast-forwards the
+# and the agent clone's .git holds only setup's config keys (git's own core values among them), no hook, no
+# info/attributes, info/grafts or alternates; then prunes dead worktree entries, fetches origin's master into $PATRON_DIR and fast-forwards the
 # agent clone's master to that commit when HEAD is master and clean and master is behind it. Git in the agent clone
-# runs with no global or system config, no hooks and no fsmonitor; the commit comes from the Patron's clone only.
+# runs with no global or system config, no hooks, no fsmonitor and no replacement refs; the commit comes from the Patron's clone only.
 #
 # What `setup` does:
 #   1. stores a fine-grained, non-admin GitHub token in a gh config of its own
@@ -266,9 +266,10 @@ SYNC_VALUES='core.repositoryformatversion:int:0 core.filemode:bool:true core.bar
 SYNC_KEYS='^(core\.(repositoryformatversion|filemode|bare|logallrefupdates)|remote\.origin\.(url|fetch)|credential\.helper|branch\..+\.(remote|merge|vscode-merge-base))$'
 
 # git in the agent clone, outside the sandbox, on a .git a session can write: a clean environment, no global or system
-# config, no hooks, no fsmonitor, no submodule recursion, no prompt (W-369). sync_inputs judges its config first.
+# config, no hooks, no fsmonitor, no submodule recursion, no prompt, no replacement refs (W-369). sync_inputs judges its
+# config and the object-substitution files first.
 agit() {
-  env -i HOME="$HOME" PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat \
+  env -i HOME="$HOME" PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat GIT_NO_REPLACE_OBJECTS=1 \
     git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -C "$AGENT_DIR" "$@"
 }
 
@@ -283,7 +284,7 @@ patron_on_master() {
 }
 
 # git config on the agent clone's config file alone: from /, no global or system config, a clean environment.
-cfg() { (cd / && env -i PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git config --file "$1" "${@:2}"); }
+cfg() { (cd / && env -i PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_NO_REPLACE_OBJECTS=1 git config --file "$1" "${@:2}"); }
 
 # The sync's inputs (W-369): prints the first fault and returns 1, or returns 0. Nothing here runs git in the agent clone.
 sync_inputs() {
@@ -299,7 +300,9 @@ sync_inputs() {
   why=$(patron_on_master) || { echo "$why"; return 1; }
   gd=$agent/.git
   [[ -d $gd && ! -L $gd && -f $gd/config && ! -L $gd/config ]] || { echo "$gd is not a git directory with its own config"; return 1; }
-  if [[ -e $gd/info/attributes || -L $gd/info/attributes ]]; then echo "$gd/info/attributes exists"; return 1; fi
+  for h in info/attributes info/grafts objects/info/alternates objects/info/http-alternates; do
+    if [[ -e $gd/$h || -L $gd/$h ]]; then echo "$gd/$h exists"; return 1; fi
+  done
   for h in "$gd"/hooks/*; do
     if [[ (-e $h || -L $h) && $h != *.sample ]]; then echo "a git hook is installed: $h"; return 1; fi
   done
@@ -326,6 +329,11 @@ sync_inputs() {
 # entries (W-369). Run unsandboxed by the installed guard's `hook-event sync`; prints sync: lines, exits 1 on a refusal.
 sync() {
   local why out n target head old st
+  # every git below, in either clone, reads objects as they are: no replacement refs, no alternates or graft file from
+  # the environment (agit's env -i drops them; the Patron's calls inherit this one). A planted info/grafts or
+  # objects/info/alternates in the agent clone is refused by sync_inputs, which runs no git there.
+  export GIT_NO_REPLACE_OBJECTS=1
+  unset GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_GRAFT_FILE GIT_OBJECT_DIRECTORY
   stop() {
     echo "sync: refused: $1; master was not moved"
     exit 1
