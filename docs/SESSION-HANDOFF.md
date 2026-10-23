@@ -50,14 +50,15 @@ Lanes per D-106 E. Halted: W-239 (D-106 D).
 
 Lane A (guard, scripts, hooks, run; no next.ts):
 A1. W-369 — the Patron's installed guard syncs the agent clone to the fetched master (high; D-106 D, F; design to the Patron before branch)
-A2. W-376 — a check rule blocks one-sided assertions on spelled-out strings (D-076 D; high)
-A3. W-349 — the flaky row W-279-b3 failed in the merge queue twice: print what it captured, then fix the cause (D-039 high)
-A4. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
-A5. W-372 — a dispatched agent waits for its own long background perform (D-106 D; follows W-369)
-A6. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
-A7. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
-A8. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
-A9. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
+A2. W-379 — W-369's split-off half: the guard runs from the Patron's clone at master (high; design to the Patron before branch)
+A3. W-376 — a check rule blocks one-sided assertions on spelled-out strings (D-076 D; high)
+A4. W-349 — the flaky row W-279-b3 failed in the merge queue twice: print what it captured, then fix the cause (D-039 high)
+A5. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
+A6. W-372 — a dispatched agent waits for its own long background perform (D-106 D; follows W-369)
+A7. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
+A8. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
+A9. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
+A10. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
 Lane B (next.ts, one at a time; D-039 highs first):
 B1. W-377 — a ui opus's pr waits for the Patron's ruling on the branch's screenshots (high; Patron 2026-10-23)
 B2. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high)
