@@ -1,0 +1,26 @@
+# opus: W-381
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T13:03:26.506Z
+# tree: tree:6dd6343535b99281aae9e82338925824b3d9ad50
+# brief: briefs/W-381.md blob:e9f4827061b7495d5dd329c3dac730f95ee14537
+# ticket: {"opus":"W-381","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"29511aed2589614a67e9722871f10a4cdd8da418","brief":"e9f4827061b7495d5dd329c3dac730f95ee14537","at":"2026-10-23T13:03:20.870Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-381-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review 2's finding 1 (a truncated patch read as a kill) is closed at the reader: isMutation now requires one file's unified diff as git diff writes it, a --- line and a +++ line naming the same non-test path, one valid @@ header whose counts the body matches exactly, a changed line, and nothing after the hunk but no-newline notes; the review's replacement row text is adopted at brief:103 and the grammar at brief:72, pinned in W-381-b2 by the truncated diff and its siblings (no --- header, two paths, a new file, a bad hunk header, a short hunk, a non-diff hunk line, a line after the hunk), with CRLF, counted context and a no-newline note admitted — check: brief:72, brief:103, patches/row2.ts, kill-K20.out, kill-K5.out
+2. advisory — spec review 2's finding 2 (the history read failing open) is closed: findingLines splits at CRLF, CR or LF, drops trailing blanks and reads every Findings section, and repeatHold lists ci/ itself and fails closed, holding and naming ci/ when it exists and cannot be listed, or the first name-matching other-opus log fsSrc cannot read; no ci/ at all is no history; the review's replacement row text is adopted at brief:106 and its brief:77 limit replaced, pinned in W-381-b3 by a CRLF log, a second Findings section, an unreadable matching log, an unlistable ci/ and no ci/ — check: brief:74, brief:106, brief:77, patches/row3.ts, kill-K17.out, kill-K18.out, kill-K19.out
+3. advisory — spec review 2's finding 3 is taken: brief:75 states the union of title sources (committed master record, branch record from a usable worktree else the branch ref, the main-checkout record file, and the main checkout's open-high records), that filesystem readers see uncommitted bytes the ref readers do not, and that any one readable naming title clears the hold — check: brief:75, packages/cli/src/next.ts:1380
+4. advisory — everything else round 1 decided stands, its six Defaults included (only the kill count is refreshed); W-381 still branches only after W-369 lands, for its one PINNED_ESCAPES line in containment.test.ts — check: brief:37, brief:39, brief:150
+5. advisory — behaviours 1 to 4 on the rebuilt prototype: each row fails by assertion on master and on its red commit, passes from its behaviour's commit and on the tip, every earlier row passes on each later commit, and one mutation per behaviour fails its row again — check: reds.out, brief:131
+6. advisory — this brief's own kills: 20 kills for 19 pinned lines, each output proving its pin on the rebuilt tip, and the prototype's verdict admits the ledger and refuses it without the kill of brief:68 — check: kills.out, ledger-check.out, ledger-check-negative.out, brief:132
+7. advisory — gates on the tip as on master (lint, formatting, typecheck, the neighbouring verdict, next and containment row files, the officina checks), the mbox applies to master 81c6b96c to the prototype tree exactly, and admission passes; flipped rows are as Codex's test check lists them — check: gates-proto.out, gates-master.out, mbox-check.out, admission.out, fixture-census.md, brief:133
+
+## Verdict
+
+passed — re-signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-381.md` revision 3, closing spec review 2's two blockers and its advisory; prototype eight commits after master 81c6b96c; four behaviours, 6 points, a full brief whose design goes to the Patron before branch.

@@ -1,0 +1,27 @@
+# opus: W-381
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T12:01:18.827Z
+# tree: tree:6dd6343535b99281aae9e82338925824b3d9ad50
+# brief: briefs/W-381.md blob:9d566d80d0dcd8365afdb3cb95bda04ded113d88
+# ticket: {"opus":"W-381","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"2ba98666d05a79c358a60b7a10b45b83061a5856","brief":"9d566d80d0dcd8365afdb3cb95bda04ded113d88","at":"2026-10-23T12:01:13.715Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-381-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — part 1's cause fix extends W-322's reader and the signature's ledger check (D-042): in a brief that names a prototype, each Promise line is a ruled case, and each pinned line names a kill (a one-hunk mutation of one source file and the pinned row's Node TAP output failing at one of its pinned assertions), read by verdict at the signature; no new verb, record or ci step; one kill per line, not per pin (444 pins, about 12 lines a brief) — check: brief:19, brief:21, case-census.out
+2. advisory — what it closes is an upper bound: 10 of the 11 weaker-pin findings (3 of them S1), and not the 7 unlisted-variant or 4 no-row findings nor W-350 spec 5 #2; the report's stale claim (spec-review.md's completeness clause, removed by D-076 C) is corrected — check: brief:17, brief:23
+3. advisory — part 2: next holds a failed build-review or spec-review round whose standing S1 blocker carries a class seen in another opus's review or spec log until the opus's own title, or an open high opus's title, names it; verdict holds through its step ticket; 49 of 248 historical failed logs would have held, and opus/W-369's fix round would hold now — check: brief:25, enumerate.out, hold-census.py
+4. advisory — behaviours 1 to 4: each row fails by assertion on master and on its red commit, passes from its behaviour's commit and on the tip, every earlier row passes on each later commit, and one mutation per behaviour fails its row again — check: brief:113, brief:117, brief:121, brief:125, brief:131, reds.out
+5. advisory — this brief carries its own kills under the prototype's rule: 16 kills for 19 pinned lines, each output proving its pin, and the prototype's verdict admits the ledger and refuses it without one kill — check: brief:132, kills.out, ledger-check.out, ledger-check-negative.out
+6. advisory — one existing row flips and is named: W-163-b6, the raw-access census, pinned by behaviour 2's PINNED_ESCAPES line in containment.test.ts, a file W-369 owns while in flight; W-381 branches only after W-369 lands — check: brief:39, brief:133, fixture-census.md
+7. advisory — 6 points and pipeline work, so the design and the Defaults go to the Patron before branch (production lex §7); unchanged code the promises lean on is a stated limit (D-076 E) — check: brief:93, brief:146, brief:150
+8. advisory — gates: lint, formatting, typecheck and the neighbouring verdict, next and containment row files pass on the tip as on master; the mbox applies to master 81c6b96c to the prototype tree exactly; admission passes — check: gates-proto.out, gates-master.out, mbox-check.out, admission.out
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-381.md`, prototype eight commits after master 81c6b96c; four behaviours, 6 points, a full brief whose design goes to the Patron before branch.
