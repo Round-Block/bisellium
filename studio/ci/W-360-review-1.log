@@ -1,0 +1,26 @@
+# opus: W-360
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16622-a5dc-7973-b413-76e944aad66a
+# outcome: failed
+# at: 2026-10-23T00:26:32.673Z
+# tree: tree:fe2712201576ecb182596b998e5fa3c77586e94a
+# ui_input: ci/W-360-spec-6.log
+# design_digest: sha256:fbf82697d075c14fd27ba89633df244935883b83639becdb0482d4ab74e71a8e
+# ticket: {"opus":"W-360","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-360/studio","head":"54c0d6bb680f819bdda83dd6ad759870a9438720","brief":"f1465546bc3f9485da8157aa156a486dec7e4c28","at":"2026-10-23T00:26:24.923Z"}
+
+## Findings
+1. blocking — apps/web/tests-serve/layout.spec.ts:82 [severity: S2] At 390px the Delegation selects for escalation, build, spec, and review visibly truncate their selected `tier · model` labels; brief:105 promises readable room for the complete selected model identity in every Seats select. Readability is measured only for `model for seat` controls, so `tier for munus` controls pass despite the clipping. [class: tests×one-sided-bound-assertion] — check: apps/web/tests-serve/layout.spec.ts
+2. blocking — facts.txt:3 [severity: S2] Packet construction invoked `next` from the linked worktree and exited 2, leaving the declared round-one packet without `W-360.diff`; the required source-diff evidence for brief:118 is absent. [class: review×evidence-backfilled-or-absent] — check: packages/cli/src/next-review.test.ts
+3. blocking — studio/ci/W-360-served-e2e-7e3f741a.log:3 [severity: S2] The reviewed checkout is dirty with four untracked pre-fix gate logs, including this failed browser run, so the gate handoff asserted by brief:114 is not pristine. [class: mechanism×replay-environment-not-pristine] — check: none: reject a dirty checkout before review dispatch
+4. advisory — apps/web/src/screens/Seats.tsx:42 [severity: S3] After a successful Confirm, `reload()` resets `modelsSettled` and sends an already-populated screen back to loading while `/api/models` is delayed. This post-write form lies outside brief:74’s initial-view matrix; pin it by holding the model response after Confirm and asserting the screen stays ready. [class: spec×fix-opens-new-surface] — check: apps/web/tests-serve/seats.spec.ts
+5. advisory — apps/web/src/App.tsx:43 [severity: S3] The sidebar badge uses an independent inbox read that no route gate awaits, so delaying that second read can capture an incomplete badge after the route itself settles. This reader is not among brief:86’s named evidence; pin it by distinguishing and holding the App-owned request. [class: spec×promise-contract-not-declared] — check: apps/web/tests-serve/capture-state.spec.ts
+
+## UI input disposition
+The authoritative ui-lead verdict established the intended readiness and phone roster arrangement. All eight images were inspected: the Inbox, Board, and Officina pairs are settled and retain their hierarchy at both widths, and desktop Seats is legible; however, `seats-390.png` visibly confirms Astra’s note that four Delegation choices are clipped, supplying the behavioral evidence for finding 1.
+
+## Verdict
+The fixed clock, route gates, reds, owned-source-path census, and the relocated Board assertion are otherwise sound; that assertion now runs before SSE shutdown and the later browser gate passes. The phone control failure and review-evidence defects block the round.
+VERDICT: FAIL
