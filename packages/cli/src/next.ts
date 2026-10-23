@@ -29,7 +29,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, shortened, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -1241,7 +1241,7 @@ function uiRulingWait(f: Facts, b: Dict, tree: string): string | undefined {
   try {
     read = branchUiRuling(f.wt.studio, b as NativeRecord, f.id, tree);
   } catch (e) {
-    read = { why: `the UI ruling cannot be read (${(e as Error).message})` };
+    read = { why: `the UI ruling cannot be read (${shortened((e as Error).message, 240)})` };
   }
   if ("why" in read)
     return `${read.why}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${f.id}) in ${studio} from the Patron's word on its ci/shots/${f.id}/, then bisellium amend ${f.id} --ui-ruling D-<n> --reason "<the Patron's word>" --studio ${studio}, commit both on opus/${f.id}, then rerun`;
@@ -1256,7 +1256,9 @@ function uiRulingWait(f: Facts, b: Dict, tree: string): string | undefined {
   const lines = (text: string): string[] => text.split("\n").filter((l) => l !== "");
   const flagged = lines(ix.stdout).filter((l) => !l.startsWith("H ")).map((l) => `${l.slice(2)} (index flag ${l.charAt(0)})`);
   const open = [...lines(st.stdout).map((l) => l.slice(3)), ...flagged].sort();
-  return open.length === 0 ? undefined : `the Patron's ruling ${read.ruling} is not committed on opus/${f.id} (${open.join(", ")}); commit it, then rerun`;
+  // fix round 1: the line is capped at 1000 characters, so only the first few paths are listed
+  const listed = [...open.slice(0, 4).map((x) => shortened(x, 120)), ...(open.length > 4 ? [`and ${open.length - 4} more`] : [])];
+  return open.length === 0 ? undefined : `the Patron's ruling ${shortened(read.ruling, 60)} is not committed on opus/${f.id} (${listed.join(", ")}); commit it, then rerun`;
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
