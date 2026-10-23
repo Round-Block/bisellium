@@ -1,0 +1,18 @@
+# opus: W-373
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16787-727d-7313-85e0-135c435efbc8
+# outcome: passed
+# at: 2026-10-23T06:54:42.443Z
+# tree: tree:80fcfa5d9c579c7a79df27b85d6a72c767ba6d2a
+# brief: briefs/W-373.md blob:a048fd3788cc79c79a135df715ac2e9b446544a5
+# ticket: {"opus":"W-373","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-373/studio","head":"abcbd08670e802f4e9f35ca03d53b5f2212811d2","brief":"a048fd3788cc79c79a135df715ac2e9b446544a5","at":"2026-10-23T06:51:30.656Z"}
+
+## Findings
+No findings
+
+## Verdict
+The two behaviours, W-336 fixture flip, declared path boundary, assertion reds, and source-tree gate certificates agree with the brief.
+VERDICT: PASS

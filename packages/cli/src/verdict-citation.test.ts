@@ -864,7 +864,11 @@ test("W-336-b1 behaviour 1: an architect spec signature is refused for a row rul
     ["the limit before the forms", "a checkout path; every other form is a limit; recognises brief:3-4"],
   ] as const) {
     setBrief(PATH_BRIEF.replace(PATH_DOMAIN, domain));
-    refused(`a ${name} row with no forms clause`, ledger, pathFormless(10));
+    // W-373: a command line is shell text too, and its row names its three forms
+    const shell = name.startsWith("command")
+      ? "W-300: promise ledger: brief:10 rules shell text and does not name a shell operator, a control character, a reserved word: name each by the word operator, control character or reserved word, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit\n"
+      : "";
+    refused(`a ${name} row with no forms clause`, ledger, pathFormless(10) + shell);
   }
   // a line a path row's clause cites holds a pin of its own, as W-322 rules for an any-text row's
   setBrief(PATH_BRIEF.replace(', pinned by `W-300-b1` "absolute"', ""));
@@ -945,4 +949,187 @@ test("W-336-b2 behaviour 2: a path-typed row's line, or a line its forms clause 
   refused("a form named on a line the clause does not cite", ledger, pathUnnamed(10, "a symlinked parent"));
   setBrief(ON_LINE_5.replace("every other form is a limit", "every other form is a limit (brief:5)"));
   refused("a form named on a line cited after every other form", ledger, pathUnnamed(10, "a symlinked parent"));
+});
+
+// W-373: a row whose Record or Valid domain cell names shell text names an operator, a control character and a reserved
+// word, on its line or a line its forms clause cites, each pinned or a stated limit
+const SHELL_NAMED = "a shell operator, a control character and a reserved word are literal words";
+const SHELL_BRIEF = [
+  "# W-300 fixture brief",
+  "## Interfaces",
+  '- a `;`, `|` or `&` operator inside the string is a literal word, pinned by `W-300-b1` "operator"',
+  '- a control character (a tab, `\\r`, `\\v`, `\\f`) splits words, pinned by `W-300-b1` "control"',
+  '- a reserved word such as `while` inside the string is a literal word, pinned by `W-300-b1` "reserved"',
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  `| the Bash command line's words | a string; ${SHELL_NAMED} | \`classify\`: exit 2, pinned by \`W-300-b1\` "words" |`,
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b1` "flag" |',
+  "## Behaviours to test",
+  "",
+].join("\n");
+const SHELL_COVERING = [10, 11].map((n) => `brief:${n}, a reader: packages/x.ts:${n} exits 2 — holds`).join("\n");
+const shellUnnamed = (row: number, missing: string): string =>
+  `W-300: promise ledger: brief:${row} rules shell text and does not name ${missing}: name each by the word operator, control character or reserved word, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit\n`;
+const SHELL_ALL = "a shell operator, a control character, a reserved word";
+
+test("W-373-b1 behaviour 1: a row naming shell text in its Record or Valid domain cell names a shell operator, a control character and a reserved word, or the signature is refused", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(SHELL_BRIEF);
+  const ledger = cite(SHELL_COVERING);
+
+  // each form not named on the row's line: one problem naming it
+  for (const [form, from] of [
+    ["a shell operator", "a shell operator, "],
+    ["a control character", "a control character and "],
+    ["a reserved word", " and a reserved word"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace(SHELL_NAMED, SHELL_NAMED.replace(from, "")));
+    refused(`${form} not named`, ledger, shellUnnamed(10, form));
+  }
+  setBrief(SHELL_BRIEF.replace(SHELL_NAMED, "every word is read"));
+  refused("none named, in order", ledger, shellUnnamed(10, SHELL_ALL));
+
+  // the vocabulary, whole words in the Record or the Valid domain cell
+  for (const [name, record, domain] of [
+    ["shell in the Record cell", "a shell's option words", "a string"],
+    ["command lines in the Record cell", "two Command Lines", "a string"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace("the Bash command line's words", record).replace(`a string; ${SHELL_NAMED}`, domain));
+    refused(`${name}: refused`, ledger, shellUnnamed(10, SHELL_ALL));
+  }
+  // a row path-typed by command line and ruling shell text, with no clause: W-336's problems, then this one
+  setBrief(SHELL_BRIEF.replace(`a string; ${SHELL_NAMED}`, "a command-line string"));
+  refused(
+    "a command-line Valid domain: the path problems, then the shell problem",
+    ledger,
+    pathFormless(10) + pathUnnamed(10, "a space, a quote, a non-ASCII name, a symlinked parent") + shellUnnamed(10, SHELL_ALL),
+  );
+  for (const [name, record] of [
+    ["shells", "the shells' words"],
+    ["shell-quoted", "the shell-quoted words"],
+    ["command-lines", "two command-lines"],
+    ["bash alone", "the bash words"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace("the Bash command line's words", record).replace(SHELL_NAMED, "every word is read"));
+    admitted(`${name}: not shell text, no forms needed`, ledger);
+  }
+  setBrief(SHELL_BRIEF.replace("the Bash command line's words", "the words").replace(SHELL_NAMED, "every word is read").replace("`classify`: exit 2", "`classify`: exit 2 on a bad command line"));
+  admitted("command line in a Rejected by cell only: no forms needed", ledger);
+
+  // whole words only: a word run into another, or in an HTML comment, names nothing
+  for (const [name, from, to, form] of [
+    ["co-operator", "a shell operator", "a co-operator", "a shell operator"],
+    ["self-control characters", "a control character", "self-control characters", "a control character"],
+    ["unreserved words", "a reserved word", "unreserved words", "a reserved word"],
+    ["a comment", "a reserved word", "<!-- a reserved word -->", "a reserved word"],
+  ] as const) {
+    setBrief(SHELL_BRIEF.replace(SHELL_NAMED, SHELL_NAMED.replace(from, to)));
+    refused(`${name} names nothing`, ledger, shellUnnamed(10, form));
+  }
+  setBrief(SHELL_BRIEF.replace(SHELL_NAMED, "Operators, CONTROL CHARACTERS and Reserved Words are literal"));
+  admitted("plurals and capitals name the forms", ledger);
+
+  // the forms named on cited grammar lines, each holding its own pin; the cited lines are cases of the row
+  const CITED = SHELL_BRIEF.replace(`a string; ${SHELL_NAMED}`, "a string; recognises brief:3-5; every other form is a limit");
+  setBrief(CITED);
+  admitted("the forms named on cited grammar lines", ledger);
+  setBrief(CITED.replace(', pinned by `W-300-b1` "control"', ""));
+  refused(
+    "a cited line of a shell row with no pin",
+    ledger,
+    `W-300: promise ledger: brief:4 is a grammar line brief:10 recognises, with no pin: name its test row and assertion as pinned by \`<row>\` "<assertion>"\n`,
+  );
+  setBrief(SHELL_BRIEF.replace(`a string; ${SHELL_NAMED}`, "a string"));
+  refused("the forms on lines the row does not cite", ledger, shellUnnamed(10, SHELL_ALL));
+
+  setBrief(SHELL_BRIEF.replace(SHELL_NAMED, "every word is read"));
+  admitted("another seat's spec verdict needs no forms", NO, "qa-lead");
+  setBrief(SHELL_BRIEF);
+  admitted("a shell row naming its three forms", ledger);
+});
+
+// W-373: a row whose Record or Valid domain cell names a structured record names an absent value, a wrong type and an
+// unreadable file, on its line or a line its forms clause cites, each pinned or a stated limit
+const RECORD_NAMED = "an absent key, a wrong type and an unreadable file exit 1";
+const RECORD_BRIEF = [
+  "# W-300 fixture brief",
+  "## Interfaces",
+  '- a missing key reads as its default, pinned by `W-300-b2` "absent"',
+  '- a key of the wrong type exits 1, pinned by `W-300-b2` "type"',
+  '- an unreadable file exits 1, pinned by `W-300-b2` "unreadable"',
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  `| the user settings | an object; ${RECORD_NAMED} | \`mergeSettings\`: exit 1, pinned by \`W-300-b2\` "settings" |`,
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b2` "flag" |',
+  "## Behaviours to test",
+  "",
+].join("\n");
+const RECORD_COVERING = [10, 11].map((n) => `brief:${n}, a reader: packages/x.ts:${n} exits 2 — holds`).join("\n");
+const recordUnnamed = (row: number, missing: string): string =>
+  `W-300: promise ledger: brief:${row} rules a structured record and does not name ${missing}: name each by the word absent, wrong type or unreadable, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit\n`;
+const RECORD_ALL = "an absent value, a wrong type, an unreadable file";
+
+test("W-373-b2 behaviour 2: a row naming a structured record in its Record or Valid domain cell names an absent value, a wrong type and an unreadable file, or the signature is refused", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(RECORD_BRIEF);
+  const ledger = cite(RECORD_COVERING);
+
+  // each form not named on the row's line: one problem naming it
+  for (const [form, from] of [
+    ["an absent value", "an absent key, "],
+    ["a wrong type", "a wrong type and "],
+    ["an unreadable file", " and an unreadable file"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace(RECORD_NAMED, RECORD_NAMED.replace(from, "")));
+    refused(`${form} not named`, ledger, recordUnnamed(10, form));
+  }
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "every key is read"));
+  refused("none named, in order", ledger, recordUnnamed(10, RECORD_ALL));
+
+  // the vocabulary, whole words in the Record or the Valid domain cell
+  for (const [name, record, domain] of [
+    ["JSON in the Valid domain cell", "the input", "a JSON object"],
+    ["YAML in the Record cell", "the YAML manifest", "an object"],
+    ["front matter", "the input", "a record's front matter"],
+    ["front-matter", "the front-matter", "an object"],
+    ["Settings, capitalised", "the Settings", "an object"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace("the user settings", record).replace(`an object; ${RECORD_NAMED}`, domain));
+    refused(`${name}: refused`, ledger, recordUnnamed(10, RECORD_ALL));
+  }
+  for (const [name, record] of [
+    ["JSONL", "the JSONL lines"],
+    ["a manifest", "the manifest"],
+    ["a record", "the opus record"],
+    ["a regular file", "a regular file"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace("the user settings", record).replace(RECORD_NAMED, "every key is read"));
+    admitted(`${name}: not a structured record by the vocabulary, no forms needed`, ledger);
+  }
+
+  // the words and their whole-word boundaries
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "a missing key, wrong types and an unreadable file exit 1"));
+  admitted("missing and wrong types name the forms", ledger);
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "an absent key, a wrong-typed key and an unreadable file exit 1"));
+  admitted("wrong-typed names the form", ledger);
+  for (const [name, from, to, form] of [
+    ["a wrongly typed key", "a wrong type", "a wrongly typed key", "a wrong type"],
+    ["non-absent", "an absent key", "a non-absent key", "an absent value"],
+    ["unreadables", "an unreadable file", "unreadables", "an unreadable file"],
+    ["a comment", "an unreadable file", "<!-- an unreadable file -->", "an unreadable file"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace(RECORD_NAMED, RECORD_NAMED.replace(from, to)));
+    refused(`${name} names nothing`, ledger, recordUnnamed(10, form));
+  }
+
+  // the forms named on cited grammar lines
+  setBrief(RECORD_BRIEF.replace(`an object; ${RECORD_NAMED}`, "an object; recognises brief:3-5; every other form is a limit"));
+  admitted("the forms named on cited grammar lines", ledger);
+
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "every key is read"));
+  admitted("another seat's spec verdict needs no forms", NO, "qa-lead");
+  setBrief(RECORD_BRIEF);
+  admitted("a record row naming its three forms", ledger);
 });

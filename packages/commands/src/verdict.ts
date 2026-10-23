@@ -482,6 +482,7 @@ export function readUiSpecPairing(manifest: unknown): { pairing: UiSpecPairing |
  * W-322: each row also holds a pin (`ruledCases`), or says unpinned and its ledger line is scoped; a row ruling any text
  * or any string lists the forms it recognises, and each grammar line it cites holds a pin. W-336: so does a row whose
  * Valid domain names a path, a command line or an environment value, and its line or a cited line names each hostile form.
+ * W-373: so does a row whose Record or Valid domain cell names shell text or a structured record, for that surface's forms.
  * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
  */
 function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
@@ -537,7 +538,7 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const n of rows)
     if (!entries.some((e) => e.counts && e.briefs.has(n)))
       problems.push(`brief:${n} is an Input domain row, and no ledger line cites brief:${n} with a <file>:<line> and holds or scoped`);
-  const { cases, formless, pathGaps } = ruledCases(brief);
+  const { cases, formless, pathGaps, surfaceGaps } = ruledCases(brief);
   const PIN_FORM = 'as pinned by `<row>` "<assertion>"';
   const rowsSeen = new Set<number>();
   for (const c of cases) {
@@ -562,6 +563,8 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
     if (g.missing.length > 0)
       problems.push(`brief:${g.row} ${PATH} and does not name ${g.missing.join(", ")}: name each by the word space, quote, non-ASCII or symlink, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit`);
   }
+  for (const g of surfaceGaps)
+    problems.push(`brief:${g.row} rules ${g.surface} and does not name ${g.missing.join(", ")}: name each by the word ${g.words}, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit`);
   return problems;
 }
 
