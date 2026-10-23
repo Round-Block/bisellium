@@ -136,7 +136,7 @@ test("W-366-b1 behaviour 1: Dracula accents are exact and meet computed contrast
   assert.match(direction, /Yellow `#F1FA8C` \(`--accent-yellow`\)/, "DIRECTION section 3 names Dracula Yellow and its project-name token");
   assert.match(direction, /only status colours[^.]*ok[^.]*amber[^.]*bad[^.]*shape cues/i, "DIRECTION section 3 reserves status meaning and shape cues to ok, amber and bad");
   assert.match(direction, /accent never marks a state/i, "DIRECTION section 3 forbids accents from conveying state");
-  assert.match(direction, /at most three status colours visible at once/i, "DIRECTION section 3's three-colour ceiling names status colours only");
+  assert.match(direction, /at\s+most\s+three\s+status\s+colours\s+visible\s+at\s+once/i, "DIRECTION section 3's three-colour ceiling names status colours only");
   assert.match(direction, /Verdigris remains the sole product identity colour\.\s+Yellow is a constant project-name text accent, identical for every project\s+and condition\. Projects remain named, never colour-coded; project dots and\s+colour hashing remain excluded\./, "DIRECTION section 3 keeps project identity with verdigris and makes yellow constant");
 });
 
