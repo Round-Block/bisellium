@@ -1779,6 +1779,7 @@ test("W-377-b1 fix round 2: a stale ruling with a long id is named whole in the 
   const direct = next(w, [OPUS, ...BUDGET]);
   expectStep(direct, "pr", "held", "a long stale id: the pr is held");
   w377Holds(direct, w, [refusal], "a long stale id: the refusal is whole");
+  w377Holds(next(w, [OPUS, "--perform", ...BUDGET]), w, [refusal], "a long stale id: the held --perform names the refusal whole");
   git(w.wt, ["push", "-q", "-u", "origin", `opus/${OPUS}`]);
   scenario(w, { list: openList(w) });
   const merge = next(w, [OPUS, ...BUDGET]);
@@ -1866,6 +1867,7 @@ test("W-377-b2 fix round 2b: a Git-quoted path over 1000 characters is whole in 
   const direct = next(w, [OPUS, ...BUDGET]);
   expectStep(direct, "pr", "held", "a huge path: the pr is held");
   w377Dirty(direct, "D-960", [quoted], "a huge path: the why names the path whole on the pr hold");
+  w377Dirty(next(w, [OPUS, "--perform", ...BUDGET]), "D-960", [quoted], "a huge path: the held --perform names the path whole");
   rmSync(join(w.wt, stray));
   git(w.wt, ["push", "-q", "-u", "origin", `opus/${OPUS}`]);
   scenario(w, { list: openList(w) });
