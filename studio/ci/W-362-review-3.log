@@ -1,0 +1,21 @@
+# opus: W-362
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1669a-00eb-7422-9a6a-ed53695ac2a4
+# outcome: passed
+# at: 2026-10-23T04:44:07.452Z
+# tree: tree:2790259df5f3c43d56a945c0620c11804ee15a81
+# brief: briefs/W-362.md blob:90435bd8673867e3ec7dd47d733571a7a5206941
+# ticket: {"opus":"W-362","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-362/studio","head":"1d40b0bb29de476269fb67b518f5fa1ff81a54c0","brief":"90435bd8673867e3ec7dd47d733571a7a5206941","at":"2026-10-23T04:43:29.765Z"}
+
+## Findings
+1. advisory — studio/briefs/W-362.md:19 Reached through ci/W-362-review-2.log #1’s class: the numbered behaviour still promises that split words are read “as env does,” while amended row 81 expressly excludes `exec`, `command`, and other forms from that promise, leaving the top-level behaviour broader than the signed Input domain. [severity: S2] [class: spec×fix-opens-new-surface] — check: none: brief.promise-domain should reject a numbered promise broader than its Input domain
+
+## Earlier findings
+- ci/W-362-review-2.log #1: closed — studio/briefs/W-362.md:81 now explicitly names `exec` and `command` after a split as limits, and the amended domain was accepted by both spec verdicts 3 and 4.
+
+## Verdict
+The amended and re-signed domain closes the blocker; the remaining promise mismatch is advisory.
+VERDICT: PASS
