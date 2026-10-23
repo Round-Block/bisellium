@@ -226,3 +226,81 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
   assert.equal(sync(hooked).code, 1);
   assert.equal(existsSync(join(hooked.f, "hooked")), false, "no hook ran");
 });
+
+/** `bisellium hook-event sync` on the fixture with `payload` on stdin: exit code, stdout and stderr. */
+function hookSync(w: { f: string; agent: string; patron: string }, payload: Record<string, unknown>): { code: number | null; stdout: string; stderr: string } {
+  const r = spawnSync(process.execPath, ["--import", "tsx", join(REPO, "packages", "cli", "src", "main.ts"), "hook-event", "sync", "--studio", "studio"], {
+    cwd: REPO,
+    input: JSON.stringify(payload),
+    encoding: "utf8",
+    timeout: 60_000,
+    env: { PATH: process.env["PATH"] ?? "/usr/bin:/bin", HOME: w.f, AGENT_DIR: w.agent, PATRON_DIR: w.patron },
+  });
+  return { code: r.status, stdout: r.stdout, stderr: r.stderr };
+}
+const contextOf = (stdout: string, event: string): string => {
+  assert.match(stdout, /"additionalContext"/, `the sync's lines reach the model as additionalContext: ${stdout}`);
+  const v = JSON.parse(stdout) as { hookSpecificOutput: { hookEventName: string; additionalContext: string } };
+  assert.equal(v.hookSpecificOutput.hookEventName, event);
+  return v.hookSpecificOutput.additionalContext;
+};
+
+test("W-369-b2 behaviour 2: hook-event sync runs the sync beside the installed CLI and hands its lines to the model; the repo wires it at SessionStart and after a requested Bash call", () => {
+  const w = world();
+  const target = git(w.seed, "rev-parse", "HEAD");
+  const post = hookSync(w, { hook_event_name: "PostToolUse", tool_name: "Bash" });
+  assert.equal(post.code, 0, post.stderr);
+  assert.match(contextOf(post.stdout, "PostToolUse"), /^sync: master [0-9a-f]{12} -> [0-9a-f]{12}$/m, "the move reaches the model");
+  assert.equal(head(w.agent), target, "the agent clone is synced");
+  const start = hookSync(w, { hook_event_name: "SessionStart" });
+  assert.equal(start.code, 0);
+  assert.match(contextOf(start.stdout, "SessionStart"), /^sync: master is current/m, "at SessionStart too");
+  writeFileSync(join(w.agent, "root"), "mine\n");
+  w.advance({ root: "r3\n" });
+  const dirty = hookSync(w, { hook_event_name: "PostToolUse" });
+  assert.equal(dirty.code, 0, "a refusal never blocks the harness");
+  assert.match(contextOf(dirty.stdout, "PostToolUse"), /^sync: refused: AGENT_DIR has uncommitted tracked changes/m, "the refusal reaches the model");
+  for (const [payload, what] of [
+    [{ hook_event_name: "Stop" }, "another event"],
+    [{}, "an absent event name"],
+    [{ hook_event_name: 5 }, "an event name of the wrong type"],
+  ] as const) {
+    const other = hookSync(w, payload);
+    assert.equal(other.code, 0, what);
+    assert.match(other.stdout, /^sync: refused:/m, `plain lines for ${what}`);
+  }
+  const unreadable = spawnSync(process.execPath, ["--import", "tsx", join(REPO, "packages", "cli", "src", "main.ts"), "hook-event", "sync", "--studio", "studio"], {
+    cwd: REPO,
+    input: "not json",
+    encoding: "utf8",
+    timeout: 60_000,
+    env: { PATH: process.env["PATH"] ?? "/usr/bin:/bin", HOME: w.f, AGENT_DIR: w.agent, PATRON_DIR: w.patron },
+  });
+  assert.equal(unreadable.status, 0, "an unreadable payload never blocks the harness");
+  assert.doesNotMatch(unreadable.stdout, /sync:/, "and runs no sync");
+
+  // the wiring: the installed bisellium, at SessionStart and on Bash after a request, 60 s each
+  const settings = JSON.parse(readFileSync(join(REPO, ".claude", "settings.json"), "utf8")) as { hooks: Record<string, { matcher: string; hooks: { type: string; command: string; timeout: number }[] }[]> };
+  const startHooks = settings.hooks["SessionStart"]?.[0]?.hooks ?? [];
+  assert.ok(
+    startHooks.some((h) => h.type === "command" && h.command === "bisellium hook-event sync --studio studio" && h.timeout === 60),
+    "SessionStart runs the sync",
+  );
+  const postGroup = settings.hooks["PostToolUse"]?.find((g) => g.matcher === "Bash");
+  const requested = postGroup?.hooks.find((h) => h.command.includes("hook-event sync"));
+  assert.equal(requested?.command, 'test ! -e "$CLAUDE_PROJECT_DIR/.git/bisellium/sync" || bisellium hook-event sync --studio studio', "PostToolUse on Bash runs it when requested");
+  assert.equal(requested?.timeout, 60);
+  // the command runs the bisellium on PATH only when the request exists
+  const bin = join(w.f, "bin");
+  put(join(bin, "bisellium"), `#!/bin/sh\necho "$*" >> "${join(w.f, "ran")}"\n`);
+  chmodSync(join(bin, "bisellium"), 0o755);
+  const run = (): void => {
+    const r = spawnSync("sh", ["-c", requested?.command ?? "false"], { encoding: "utf8", env: { PATH: `${bin}:/usr/bin:/bin`, CLAUDE_PROJECT_DIR: join(w.f, "agent link") } });
+    assert.equal(r.status, 0, r.stderr);
+  };
+  run();
+  assert.equal(existsSync(join(w.f, "ran")), false, "no request: the sync does not run");
+  put(join(w.agent, ".git", "bisellium", "sync"), "x\n");
+  run();
+  assert.equal(readFileSync(join(w.f, "ran"), "utf8"), "hook-event sync --studio studio\n", "a request: the installed bisellium runs the sync");
+});
