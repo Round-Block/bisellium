@@ -1,0 +1,22 @@
+# opus: W-328
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a166cf-4b72-7043-bed1-0bb959001815
+# outcome: passed
+# at: 2026-10-23T04:13:59.935Z
+# tree: tree:d9795106363c93435c6a1b23b2ad9a59e6719ccf
+# brief: briefs/W-328.md blob:cff221d74243a1c6311623f8425e7e2f88a861ba
+# ticket: {"opus":"W-328","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"0553f97ca0065f4d9ffe91a39515cd9c843b37a9","brief":"cff221d74243a1c6311623f8425e7e2f88a861ba","at":"2026-10-23T04:13:55.757Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-328-spec-2.log #1: closed — brief:71 and apply-src-r3.py:114-119 read Files owned from the committed branch blob, hold on read failure, and W-328-b2 pins both worktree divergence and unreadability.
+
+## Verdict
+The revision closes the prior blocker at its input boundary with matching red evidence.
+
+VERDICT: PASS

@@ -1,0 +1,26 @@
+# opus: W-328
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T04:12:06.952Z
+# tree: tree:d9795106363c93435c6a1b23b2ad9a59e6719ccf
+# brief: briefs/W-328.md blob:cff221d74243a1c6311623f8425e7e2f88a861ba
+# ticket: {"opus":"W-328","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"0553f97ca0065f4d9ffe91a39515cd9c843b37a9","brief":"cff221d74243a1c6311623f8425e7e2f88a861ba","at":"2026-10-23T04:12:03.828Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-328-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2's S1 (brief:68, ownership read from the worktree brief, a missing one owning nothing) is closed at its cause: Files owned is read from the committed branch blob with `git cat-file blob refs/heads/opus/<id>:<studio>/briefs/<id>.md`, the brief the past-ready spec gate judges, and a blob that cannot be read holds the build rung before any open line is split; `W-328-b2` pins it ("an edited worktree brief does not change ownership", "an unreadable committed brief: held") and fails by ERR_ASSERTION on the round-1 prototype at "an edited worktree brief: build, phase fix" — check: brief:19, brief:31, brief:51, brief:71, reds-r3.out, row-b2-round1-r3.out, row-b2-s2-r3.out
+2. advisory — every other read W-328 makes fails closed the same way: `fixedOutside` returns a why instead of a count for an unread round, a log not committed on `opus/<id>` and a failed git read of the log's commit or of the commits after it, and `deriveNext` holds the build rung on it (Promise reads-hold); `W-328-b1` pins the three reachable ones and, with round 1's why restored, fails on the round-1 prototype at "a failed read of the log's commit: held"; the fix-check perform already refuses an uncommitted log the same way — check: brief:27, brief:47, brief:48, brief:69, brief:70, reds-r3.out, row-b1-round1-why-r3.out, row-b1-s2-r3.out
+3. advisory — round 2's advisory 2 adopted: the Intent states the count as qualifying commits (non-merge, first-parent, after the log's commit, empty or naming a non-record path), with the reviewer's revert sentence; records are now `recordOnly`'s one list (the studio, the session handoff, a dossier page) instead of a parallel `studio/` prefix, and the why says "after its log are empty or change a path that is not an officina record" — check: brief:17, brief:25, brief:47, brief:48
+4. advisory — round 2's advisory 3 adopted: the unchanged-code limit adds `f.uiReviewProblems()`, `mergeTreeConflict`, `furtherAlongBranches` and `recordOnly`, and a new limit states that the brief pin stays the worktree's while ownership is the committed blob's — check: brief:55, brief:59
+5. advisory — two existing rows flip and are updated in behaviour 2's commit, `W-309-b1` and `W-309-b2`; on behaviour 2's commit with master's test file both fail by ERR_ASSERTION and with the commit's both pass; Codex's fixture census of this revision lists exactly these six assertions, all named, none unnamed, and its must-stay-green rows pass in the next row files on the prototype (150 of 150; master 148 of 148) — check: brief:91, flip-check-r3.out, fixture-census.md
+6. advisory — the prototype is four commits on master 0553f97c and its mbox applies there to the prototype tree exactly; lint, Prettier, typecheck, `ladder-followon`, `brief-admission`, `stage-states` and `containment` tests pass on the prototype; both officina checks have master's blocking set, the staging clone's own; admission and the ledger pass — check: brief:92, brief:93, mbox-check-r3.out, gates-proto-r3.out, gates-master-r3.out, check-blocking-r3.out, admission-r3.out, ledger-check-r3.out
+7. advisory — stated limits: next judges commits, never the evidence (D-066 C); the split reads only the open line's lead and matches Files owned by exact path; the evidence lines do not reach the review packet (D-084); a deleted worktree brief holds earlier at the reds rung's `opus.red_evidence` read; unchanged code the promises lean on is named as a limit, never promised (D-076 E) — check: brief:55, brief:56, brief:57, brief:58, brief:59, brief:71
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-328.md` revision 2, prototype four commits after master 0553f97c; two behaviours, 2 points, a full brief; round 2's blocker closed at its cause and both advisories adopted.

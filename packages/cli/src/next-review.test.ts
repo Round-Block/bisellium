@@ -1167,11 +1167,11 @@ test("W-309-b1 behaviour 1: after a failed round's fix commits next orders the f
   fixCheckNamed(n167(w), 1, "a symlinked reviews/: none recorded");
   rmSync(join(w.repo, ".bisellium", "reviews"));
   // an open path: back to the builder, phase fix, with the census as an input
-  fixChecked(w, ["src/a.ts:1 — open — the input still reaches the defect", "src/b.ts:2 — open — a sibling"]);
+  fixChecked(w, ["source.txt:1 — open — the input still reaches the defect", "source.txt:2 — open — a sibling"]);
   const open = n167(w);
   buildFix(open, "an open path: build, phase fix");
   assert.equal(open.kv.get("why"), "the fix check of review round 1 lists 2 open path(s) at this tree", ran("open: why", open));
-  assert.equal(open.kv.get("open"), "src/a.ts:1 — open — the input still reaches the defect | src/b.ts:2 — open — a sibling", ran("open: the paths", open));
+  assert.equal(open.kv.get("open"), "source.txt:1 — open — the input still reaches the defect | source.txt:2 — open — a sibling", ran("open: the paths", open));
   assert.match(open.kv.get("inputs") ?? "", new RegExp(`ci/${OPUS}-review-1\\.log, \\.bisellium/reviews/${OPUS}/fix-1/census\\.md`), ran("open: the verdict and the census are inputs", open));
   // a clean check at this tree: the re-review (no automated gates in this world)
   fixChecked(w);
@@ -1189,7 +1189,7 @@ test("W-309-b1 behaviour 1: after a failed round's fix commits next orders the f
   addReview(g, "failed", 1, T.review1);
   advanceSource(g, true, false);
   fixCheckNamed(next(g, [OPUS, ...BUDGET]), 1, "gates: no check, no suite");
-  fixChecked(g, ["src/a.ts:1 — open — x"]);
+  fixChecked(g, ["source.txt:1 — open — x"]);
   buildFix(next(g, [OPUS, ...BUDGET]), "gates: an open path is the builder's");
   fixChecked(g);
   const suite = next(g, [OPUS, ...BUDGET]);
@@ -1257,12 +1257,12 @@ test("W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a 
 
   // an open census: performed, and the builder is next
   const op = fixWorld("w309-b2-open");
-  codexSays(op, { session: "s-309-o", reply: CENSUS("src/a.ts:1 — open — still reached\r\nsrc/b.ts:2 — open — a sibling") });
+  codexSays(op, { session: "s-309-o", reply: CENSUS("source.txt:1 — open — still reached\r\nsource.txt:2 — open — a sibling") });
   const oo = performFixCheck(op);
   assert.equal(oo.first, `next: ${OPUS} review performed`, ran("open: performed", oo));
   assert.equal(oo.kv.get("fix-check"), "round 1, 2 open path(s)", ran("open: the count", oo));
   assert.equal(oo.kv.get("next-step"), "build", ran("open: the builder is next", oo));
-  assert.deepEqual(JSON.parse(readFileSync(join(fixPacket(op, 1), "check.json"), "utf8")).open, ["src/a.ts:1 — open — still reached", "src/b.ts:2 — open — a sibling"], "open: the paths, CR removed");
+  assert.deepEqual(JSON.parse(readFileSync(join(fixPacket(op, 1), "check.json"), "utf8")).open, ["source.txt:1 — open — still reached", "source.txt:2 — open — a sibling"], "open: the paths, CR removed");
   buildFix(next(op, [OPUS, "--budget", "400000"]), "open: build, phase fix");
 
   // every failed step holds, exit 1, with no check.json and the marker released
@@ -1321,4 +1321,152 @@ test("W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a 
   assert.equal(ch.kv.get("fix-check"), "round 1, no open path", ran("chain: the check", ch));
   assert.equal(ch.kv.get("next-step"), "review", ran("chain: stops before the re-review", ch));
   assert.equal(codexCalls(c).length, 2, "chain: no review call in the same run");
+});
+
+// ---------------------------------------------------------------------------
+// W-328 (D-086 B, D-106 A): a failed round's fix committed outside the source tree is re-reviewed, never sent back to the
+// builder; a fix check's open path outside the brief's Files owned is the producer's evidence line, never the builder's.
+// ---------------------------------------------------------------------------
+const OUTSIDE = (n: number): string => `review round 1 failed at this tree and brief; ${n} commit(s) after its log are empty or change a path that is not an officina record (D-086 B)`;
+/** `evidence/` joins the source excludes in both manifests (they must agree), committed alone on each side. */
+function excludeEvidence(w: World): void {
+  for (const dir of [w.repo, w.wt]) {
+    const path = join(dir, MANIFEST_REL);
+    writeFileSync(path, readFileSync(path, "utf8").replace("source_excludes: []", 'source_excludes: ["evidence/"]'));
+    git(dir, ["add", MANIFEST_REL]);
+    git(dir, ["commit", "-q", "-m", "test: evidence/ is outside the source tree"]);
+  }
+}
+
+test("W-328-b1 behaviour 1: a failed round's fix committed outside the source tree, at the same tree and brief, orders the re-review, never the builder", { timeout: 1_800_000 }, () => {
+  const w = world("w328-b1", "build");
+  excludeEvidence(w);
+  record167(w, [F]);
+  handoffAt(w, "wt", T.handoffFresh);
+  buildFix(n167(w), "no fix yet: build, phase fix");
+  // records and settings under the studio are not a fix: the opus record, then a studio file
+  handoffAt(w, "wt", "2026-10-02T09:30:00.000Z");
+  buildFix(n167(w), "a records-only commit: build, phase fix");
+  put(w.wtStudio, "notes.md", "bookkeeping\n");
+  commit(w.wt, `studio(${OPUS}): notes`);
+  buildFix(n167(w), "a studio-only commit: build, phase fix");
+  // a fix outside the studio and the source tree: the re-review, the censor's order
+  put(w.wt, "evidence/timing.txt", "the evidence, re-run and kept\n");
+  commit(w.wt, `fix(${OPUS}): the evidence re-run`);
+  const o = n167(w);
+  reviewNamed(o, 2, "a fix outside the source tree: review round 2");
+  assert.equal(o.kv.get("role"), "censor", ran("a fix outside the source tree: the censor's order", o));
+  assert.equal(o.kv.get("why"), OUTSIDE(1), ran("a fix outside the source tree: why", o));
+  // an empty commit: a fix whose kept outputs live outside the repository
+  const e = w167("w328-b1-empty", [F]);
+  git(e.wt, ["commit", "-q", "--allow-empty", "-m", `fix(${OPUS}): the evidence re-run, kept outside the repository`]);
+  const eo = n167(e);
+  reviewNamed(eo, 2, "an empty commit: review round 2");
+  assert.equal(eo.kv.get("why"), OUTSIDE(1), ran("an empty commit: why", eo));
+  // master's own commits merged in are not the opus's fix
+  const m = world("w328-b1-merge", "build");
+  excludeEvidence(m);
+  record167(m, [F]);
+  handoffAt(m, "wt", T.handoffFresh);
+  put(m.repo, "evidence/master.txt", "master's evidence\n");
+  git(m.repo, ["add", "evidence/master.txt"]);
+  git(m.repo, ["commit", "-q", "-m", "chore: master's evidence"]);
+  git(m.wt, ["merge", "-q", "--no-ff", "--no-edit", "master"]);
+  buildFix(n167(m), "a merge of master's commits: build, phase fix");
+  // every read fails closed: a failed git read of the log's commit or of the commits after it holds, never counts
+  const UNCOUNTED = "so the commits after it cannot be counted (D-086 B)";
+  for (const [label, needle, why] of [
+    ["a failed read of the log's commit", "--format=%H refs/heads/opus/", `git cannot read which commit on opus/${OPUS} last changed ci/${OPUS}-review-1.log, ${UNCOUNTED}`],
+    ["a failed read of the commits after it", "--no-merges --name-only", `git cannot list the commits on opus/${OPUS} after ci/${OPUS}-review-1.log, ${UNCOUNTED}`],
+  ] as const) {
+    const o = n167(w, { GIT_STUB_REAL: failingGit("w328-b1-git", [needle]) });
+    expectStep(o, "build", "held", `${label}: held`);
+    assert.equal(o.kv.get("why"), why, ran(`${label}: why`, o));
+  }
+  // a log not committed on the branch holds: the record is committed without it
+  const u = world("w328-b1-uncommitted", "build");
+  record167(u, [F]);
+  handoffAt(u, "wt", T.handoffFresh);
+  git(u.wt, ["reset", "-q", "--soft", "HEAD~2"]);
+  git(u.wt, ["commit", "-q", "-m", `studio(${OPUS}): the record without its log`, "--", recordPath(u)]);
+  const uo = n167(u);
+  expectStep(uo, "build", "held", "a log not committed: held");
+  assert.equal(uo.kv.get("why"), `ci/${OPUS}-review-1.log is not committed on opus/${OPUS} (commit it), so the commits after it cannot be counted (D-086 B)`, ran("a log not committed: why", uo));
+});
+
+/** W-360's fix check, round 1 (`.bisellium/reviews/W-360/fix-1/check.json`): three open paths, none in W-360's Files owned. */
+const W360_OPEN = [
+  "`scripts/review-packet.mjs:391,420 @ 05c4ceeb` — standalone/manual build packet with `--repo` naming the linked W-360 worktree still writes no `W-360.diff`; this breaks brief:118’s required final-source-diff evidence and yields a review packet without the source diff.",
+  "`packages/cli/src/next.ts:2046 → packages/cli/src/integrate.ts:72 @ 05c4ceeb` — an untracked pre-fix gate log still passes `next --perform review`; this breaks brief:114’s pristine gate handoff and dispatches review from a dirty checkout.",
+  "`packages/cli/src/next.ts:1421 → scripts/review-packet.mjs:420 → packages/cli/src/main.ts:113-114 @ 05c4ceeb` — the manual packet, dispatch, verdict and review path still accepts the same untracked gate logs; this breaks brief:114 and records a review of a dirty checkout.",
+];
+const evidenceLines = (o: Out): string[] => o.out.split("\n").filter((l) => l.startsWith("evidence: "));
+const asEvidence = (lines: string[]): string[] => lines.map((l) => `evidence: ${l.replace(/\s+/g, " ").trim()}`);
+
+test("W-328-b2 behaviour 2: a fix check's open path outside the brief's Files owned is the producer's evidence line, never the builder's; with none owned the suite and the re-review are ordered", { timeout: 1_800_000 }, () => {
+  // the fixture brief owns `source.txt`; round 1 failed, one fix commit, automated gates not yet run at the fix's tree
+  const g = world("w328-b2", "reds", { automated: true });
+  handoffAt(g, "wt", T.handoffFresh);
+  writeGates(g);
+  addReview(g, "failed", 1, T.review1);
+  advanceSource(g, true, false);
+  const census = `.bisellium/reviews/${OPUS}/fix-1/census.md`;
+  // W-360's three open paths, none owned: the producer's suite order, each path an evidence line
+  fixChecked(g, W360_OPEN);
+  const suite = next(g, [OPUS, ...BUDGET]);
+  expectStep(suite, "build", "named", "none owned: the suite");
+  assert.equal(suite.kv.has("role"), false, ran("none owned: no builder is dispatched", suite));
+  assert.equal(suite.kv.get("actor"), "producer", ran("none owned: the producer's order", suite));
+  assert.match(suite.kv.get("command") ?? "", new RegExp(`then bisellium ci --opus ${OPUS} --studio studio --repo \\. \\(the one full suite, in the background\\)`), ran("none owned: ci --opus", suite));
+  assert.equal(suite.kv.get("fix-check"), `no open path in Files owned at this tree (${census})`, ran("none owned: the check is named", suite));
+  assert.deepEqual(evidenceLines(suite), asEvidence(W360_OPEN), ran("none owned: one evidence line per open path, in order", suite));
+  // the suite passed: the re-review, still carrying the evidence lines
+  writeGates(g);
+  const review = next(g, [OPUS, ...BUDGET]);
+  reviewNamed(review, 2, "none owned, gates passed: review round 2");
+  assert.equal(review.kv.get("role"), "censor", ran("none owned, gates passed: the censor's order", review));
+  assert.deepEqual(evidenceLines(review), asEvidence(W360_OPEN), ran("none owned, gates passed: the evidence lines", review));
+  // an owned path beside an unowned one: the builder gets the owned one only, and no evidence line
+  const mine = "`source.txt:1 @ fixture` — the input still reaches the defect";
+  fixChecked(g, [mine, W360_OPEN[0]!]);
+  const mixed = next(g, [OPUS, ...BUDGET]);
+  buildFix(mixed, "one owned, one not: build, phase fix");
+  assert.equal(mixed.kv.get("why"), "the fix check of review round 1 lists 1 open path(s) at this tree", ran("one owned, one not: why", mixed));
+  assert.equal(mixed.kv.get("open"), mine, ran("one owned, one not: the owned path only", mixed));
+  assert.deepEqual(evidenceLines(mixed), [], ran("one owned, one not: no evidence line for the builder", mixed));
+  // Files owned is the committed branch brief's: the worktree's brief edited to own another file does not change ownership
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `elsewhere.txt`"));
+  const edited = next(g, [OPUS, ...BUDGET]);
+  buildFix(edited, "an edited worktree brief: build, phase fix");
+  assert.equal(edited.kv.get("open"), mine, ran("an edited worktree brief does not change ownership", edited));
+  writeFileSync(briefFile, signed);
+  // a committed brief that is not a readable blob holds before any open line is split
+  const unread = next(g, [OPUS, ...BUDGET], { env: { GIT_STUB_REAL: failingGit("w328-b2-blob", ["cat-file blob"]) } });
+  expectStep(unread, "build", "held", "an unreadable committed brief: held");
+  assert.equal(unread.kv.get("why"), `briefs/${OPUS}.md is not a readable blob on refs/heads/opus/${OPUS}, so the fix check's open paths cannot be split by Files owned (D-106 A)`, ran("an unreadable committed brief: why", unread));
+  // the builder's forms: a chain through an owned file, a `./` path, a plain lead, a line naming no path:line
+  for (const [label, line] of [
+    ["a chain through an owned file", "`scripts/review-packet.mjs:1 → source.txt:2 @ fixture` — a chain"],
+    ["a ./ path", "./source.txt:3 — open — a dot-slash path"],
+    ["a plain lead", "source.txt:4 — open — a plain lead"],
+    ["no path:line", "the input still reaches the defect, at no named line"],
+  ] as const) {
+    fixChecked(g, [line]);
+    const o = next(g, [OPUS, ...BUDGET]);
+    buildFix(o, `${label}: build, phase fix`);
+    assert.equal(o.kv.get("open"), line, ran(`${label}: the open line`, o));
+  }
+  // the producer's forms: a path that only ends like an owned one, an owned name cited after the lead, the brief's own line
+  for (const [label, line] of [
+    ["a longer path", "src/source.txt:1 — open — ends like an owned path"],
+    ["an owned name after the lead", "`scripts/review-packet.mjs:9 @ fixture` — reached from source.txt:1"],
+    ["the brief's line", "brief:118 — open — the brief's own evidence line"],
+  ] as const) {
+    fixChecked(g, [line]);
+    const o = next(g, [OPUS, ...BUDGET]);
+    reviewNamed(o, 2, `${label}: review round 2`);
+    assert.deepEqual(evidenceLines(o), asEvidence([line]), ran(`${label}: an evidence line`, o));
+  }
 });

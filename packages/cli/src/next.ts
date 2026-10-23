@@ -30,7 +30,7 @@ import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
-import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
+import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
@@ -1104,35 +1104,53 @@ export function deriveNext(f: Facts): Derived {
     // W-297 (D-085 C): a class loop goes to the architect to state the limit, not back to a builder
     const loop = failedNow ? classLoop(f, read.rounds) : undefined;
     if (loop !== undefined) return hold("build", loop);
+    // W-328 (D-086 B): a failed round's fix committed outside the source tree (its tree and brief unchanged) is re-reviewed,
+    // never sent back to the builder; `redo` is a round failed at this tree and brief with no such fix. A read that fails holds
+    const outside = failedNow ? fixedOutside(f, read.rounds.find((r) => r.n === gate?.round)) : 0;
+    if (typeof outside !== "number") return hold("build", outside.why);
+    const redo = failedNow && outside === 0;
     // W-309 (D-072 C, D-086 D): after a failed round's fix commits, its fix check at this tree comes before the suite and the
     // re-review: none recorded at this tree is the review rung's fix-check perform; an open path goes back to the builder
     const fixRound = gate !== undefined && gate.status === "failed" && gate.tree !== cur ? gate.round : undefined;
     const fixCheck = fixRound === undefined ? undefined : readFixCheck(f, fixRound, cur);
+    // W-328 (D-106 A): an open path outside the brief's Files owned is the producer's, an `evidence:` line on the suite and
+    // review orders, never the builder's; it never holds the suite. Files owned is the committed branch brief's (the blob the
+    // spec gate judged), never the worktree's; one that is not a readable blob there holds before any open line is split
+    const committed = fixCheck === undefined || fixCheck.open.length === 0 ? undefined : git(f.repo, ["cat-file", "blob", `refs/heads/opus/${id}:${join(f.studioRel, briefRel(id))}`]);
+    if (committed !== undefined && (committed.status !== 0 || committed.error !== undefined))
+      return hold("build", `${briefRel(id)} is not a readable blob on refs/heads/opus/${id}, so the fix check's open paths cannot be split by Files owned (D-106 A)`);
+    const files = committed === undefined ? [] : ownedFiles(committed.stdout);
+    const owned = fixCheck?.open.filter((l) => ownedOpen(l, files)) ?? [];
+    const evidence = (fixCheck?.open.filter((l) => !ownedOpen(l, files)) ?? []).map((l): [string, string] => ["evidence", l]);
     if (fixRound !== undefined && fixCheck === undefined)
       return { ...named("review", "producer", `review round ${fixRound} failed at an older tree and no fix check of its findings is recorded at this tree (D-086 D)`, `bisellium next ${id} --perform --expect review`, [["fix-check", `round ${fixRound} at ${cur}`]]), act: "fix-check" };
-    if (fixRound !== undefined && fixCheck !== undefined && fixCheck.open.length > 0)
-      return dispatch(f, "build", `the fix check of review round ${fixRound} lists ${fixCheck.open.length} open path(s) at this tree`, {
+    if (fixRound !== undefined && fixCheck !== undefined && owned.length > 0)
+      return dispatch(f, "build", `the fix check of review round ${fixRound} lists ${owned.length} open path(s) at this tree`, {
         phase: "fix",
         resume: true,
         inputs: [briefRel(id), ...(gate?.evidence === undefined ? [] : [gate.evidence]), fixCheck.census],
-        extra: [["open", fixCheck.open.join(" | ")], ...fixes],
+        extra: [["open", owned.join(" | ")], ...fixes],
       });
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
     // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
-    if (gates !== undefined && !gates.ok && !failedNow && (fixCheck !== undefined || (fixes.length === 0 && replayed(f, bs, n))))
+    if (gates !== undefined && !gates.ok && !redo && (fixCheck !== undefined || (fixes.length === 0 && replayed(f, bs, n))))
       return named(
         "build",
         "producer",
         gates.error,
         `from .worktrees/${id}: bisellium handoff --opus ${id} --sella producer --next "ready for review" --studio ${f.studioRel}, committed (studio only); then bisellium ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, in the background); then commit the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
-        fixCheck !== undefined ? [["fix-check", `no open path at this tree (${fixCheck.census})`]] : [["replayed", `every red of ${id} was recorded by the prototype replay`]],
+        fixCheck === undefined
+          ? [["replayed", `every red of ${id} was recorded by the prototype replay`]]
+          : evidence.length === 0
+            ? [["fix-check", `no open path at this tree (${fixCheck.census})`]]
+            : [["fix-check", `no open path in Files owned at this tree (${fixCheck.census})`], ...evidence],
       );
-    if ((gates !== undefined && !gates.ok) || failedNow)
-      return dispatch(f, "build", failedNow ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
-        phase: failedNow ? "fix" : "2",
+    if ((gates !== undefined && !gates.ok) || redo)
+      return dispatch(f, "build", redo ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
+        phase: redo ? "fix" : "2",
         resume: automatedGates(f.manifest, b).some((g) => isDict(b["probationes"]) && isDict(b["probationes"][g]) && b["probationes"][g]["certifies"] !== undefined) || reviewRounds(f).length > 0,
-        inputs: [briefRel(id), ...(failedNow && gate?.evidence !== undefined ? [gate.evidence] : [])],
+        inputs: [briefRel(id), ...(redo && gate?.evidence !== undefined ? [gate.evidence] : [])],
         extra: [...boundary, ...fixes],
       });
 
@@ -1162,14 +1180,14 @@ export function deriveNext(f: Facts): Derived {
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");
-      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
+      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : failedNow ? `review round ${gate.round} failed at this tree and brief; ${outside} commit(s) after its log are empty or change a path that is not an officina record (D-086 B)` : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
         phase: "review",
         round: Math.max(0, ...rounds.map((r) => r.n)) + 1,
         resume: rounds.length > 0,
         inputs: [briefRel(id), ...(uiIn === undefined ? [] : [uiIn]), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
         ...(uiIn === undefined ? {} : { uiInput: uiIn }),
         ...(session === undefined ? {} : { session }),
-        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...fixes],
+        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...fixes, ...evidence],
       });
     }
 
@@ -1344,6 +1362,37 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
   return { status: g["status"], evidence, tree: round.tree, round: round.n, brief: round.brief };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
+/**
+ * W-328 (D-106 A): an open line is the builder's when a `path:line` its lead names (its first backticked span when it opens
+ * with one, else its text before the first ` — `), a leading `./` dropped, is exactly a Files owned path, or when its lead
+ * names none; otherwise it is the producer's.
+ */
+function ownedOpen(line: string, files: string[]): boolean {
+  const lead = line.startsWith("`") ? (line.slice(1).split("`")[0] ?? "") : (line.split(" — ")[0] ?? "");
+  const paths = [...lead.matchAll(/([^\s`→,:@]+):\d/g)].map((m) => m[1]!.replace(/^\.\//, ""));
+  return paths.length === 0 || paths.some((p) => files.includes(p));
+}
+/**
+ * W-328 (D-086 B): how many commits on opus/<id>'s first-parent line after the one that last changed `round`'s log, merges
+ * aside, are empty (a fix whose kept outputs live outside the repository) or change a path that is not an officina record
+ * (`recordOnly`, the one list certify reads: the studio, the session handoff, a dossier page). Every read fails closed: an
+ * unread round, a log not committed on the branch, or a git read that fails is a hold's why, never a count.
+ */
+function fixedOutside(f: Facts, round: BuildReviewRound | undefined): number | { why: string } {
+  const uncounted = "so the commits after it cannot be counted (D-086 B)";
+  if (round === undefined) return { why: `the failed review round's log cannot be read, ${uncounted}` };
+  const ref = `refs/heads/opus/${f.id}`;
+  const at = git(f.repo, ["log", "-1", "--format=%H", ref, "--", join(f.studioRel, round.log)]);
+  if (at.status !== 0 || at.error !== undefined) return { why: `git cannot read which commit on opus/${f.id} last changed ${round.log}, ${uncounted}` };
+  const since = at.stdout.trim();
+  if (since === "") return { why: `${round.log} is not committed on opus/${f.id} (commit it), ${uncounted}` };
+  const log = git(f.repo, ["log", "--first-parent", "--no-merges", "--name-only", "-z", "--format=%x01%H", `${since}..${ref}`]);
+  if (log.status !== 0 || log.error !== undefined) return { why: `git cannot list the commits on opus/${f.id} after ${round.log}, ${uncounted}` };
+  return log.stdout
+    .split("\x01")
+    .slice(1)
+    .filter((c) => !recordOnly(c.split("\0").slice(1).map((p) => p.replace(/^\n/, "")).filter((p) => p !== ""), f.studioRel)).length;
+}
 /**
  * W-309: the fix check of round `n` at tree `cur`, `<repo>/.bisellium/reviews/<id>/fix-<n>/check.json` as the perform writes it.
  * A file that cannot be read through the containment reader or parsed, or that names another round or tree, or whose `open`

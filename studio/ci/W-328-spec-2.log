@@ -1,0 +1,21 @@
+# opus: W-328
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a166cf-4b72-7043-bed1-0bb959001815
+# outcome: failed
+# at: 2026-10-23T03:37:37.040Z
+# tree: tree:d9795106363c93435c6a1b23b2ad9a59e6719ccf
+# brief: briefs/W-328.md blob:a32098e8bb9773eebd4cb7c4b2d412ab1a8852c7
+# ticket: {"opus":"W-328","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"0553f97ca0065f4d9ffe91a39515cd9c843b37a9","brief":"a32098e8bb9773eebd4cb7c4b2d412ab1a8852c7","at":"2026-10-23T03:37:33.573Z"}
+
+## Findings
+1. blocking — brief:68 [severity: S1] [design: changes] The ownership reader uses the worktree brief while the past-ready spec gate trusts the branch ref, and `bs.read(briefRel(id)) ?? ""` silently converts an accidentally deleted, unreadable, or divergent worktree brief into no owned files; for a real `next` caller with an older-tree failed review and an open fix check, this misroutes owned findings to the producer and advances toward the suite/re-review, with no test covering the mistake. Replace brief:68 with: `| 4. The committed branch brief's Files owned section | refs/heads/opus/<id>:<studio>/briefs/<id>.md is a readable blob; its contents may be any text, and ownedFiles recognises a backticked span on a bullet line of a real ## Files owned section, dropping one leading ./; every other textual form is a stated limit and owns nothing | deriveNext (extended) reads that committed branch blob and holds before classification when it is absent or unreadable; ownedFiles (new) is pinned by W-328-b2 "one owned, one not: the owned path only" and "a longer path: an evidence line", and the ref/worktree disagreement is pinned by W-328-b2 "an edited or unreadable worktree brief does not change ownership"` [class: spec×input-without-named-rejector] — check: packages/cli/src/next-review.test.ts
+2. advisory — brief:17 [severity: S2] The stated count says qualifying commits “change only paths outside the source tree,” but `fixedOutside` excludes studio-only commits and counts any non-merge commit having at least one path outside `studio/`; even the specified fixture has additional studio commits outside the source tree that are not counted. Replace brief:17 with: `**An evidence-only fix is never re-reviewed (D-086 B).** Today a failed round at the current source tree and brief pin keeps returning to the builder. After this opus, a non-merge first-parent commit after the commit that last changed the failed round's log is a fix signal when it is empty or names at least one path outside studio/; next then names the next review round with the why "review round <n> failed at this tree and brief; <k> qualifying commit(s) after its log are empty or change a path outside studio/ (D-086 B)". Commits naming only studio/ paths and merges do not count; if intervening source edits are later reverted to the reviewed tree, qualifying commits in that history still count.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-review.test.ts
+3. advisory — brief:53 [severity: S2] The review promises also depend on unchanged `uiReviewProblems`, `mergeTreeConflict`, and `furtherAlongBranches`, which can replace the promised reason, order a rebase, or hold review, but the purportedly complete limit omits them. Replace brief:53 with: `- Unchanged code the promises lean on is a stated limit, not a guarantee (D-076 E): reviewGate, f.buildRounds() (readBuildRounds), f.curTree() (sourceTreeHash), the brief pin read, classLoop, readFixCheck, f.gates() (admitCurrentGates), f.uiReviewProblems(), mergeTreeConflict, furtherAlongBranches, dispatch, render and its one() whitespace collapse, realLines, the git helper, the review and fix-check performs, and the review packet.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-review.test.ts
+
+## Verdict
+The signed brief has one design-changing fail-open input boundary and therefore is not ready to build.
+
+VERDICT: FAIL
