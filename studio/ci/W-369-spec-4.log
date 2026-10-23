@@ -1,0 +1,24 @@
+# opus: W-369
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a167d7-703a-73f0-8c9b-aa891c0a138f
+# outcome: failed
+# at: 2026-10-23T08:59:47.364Z
+# tree: tree:95e021a34bab0573ef50cc064148549031eea581
+# brief: briefs/W-369.md blob:6a57539f2e48ce141e23a87e5d21cbededad7ea4
+# ticket: {"opus":"W-369","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"0c90a6e509cdad2c63044359666d3e87568a4873","brief":"6a57539f2e48ce141e23a87e5d21cbededad7ea4","at":"2026-10-23T08:59:44.255Z"}
+
+## Findings
+1. blocking — brief:98 [severity: S1] [design: keeps] A plausible `PATRON_DIR` mistake lets the Patron run the current guard script from clone A while targeting clean clone B; `guard` excludes only `AGENT_DIR`, then moves and installs from B, and W-369-b4 always runs its script outside the fixture `PATRON_DIR` instead of catching this mismatch. Replace brief:98 with: `| 11. The guard command's own script path and its steps on PATRON_DIR (row 10) | before any change, guard recognises its real SELF_DIR as exactly <PATRON_DIR's real path>/scripts; it then recognises the stated fetch, fast-forward, npm ci, link, link check, settings merge and probe succeeding; every other script location or non-zero step refuses or stops | guard's own-path check, then guard: pinned by W-369-b4 "the Patron clone's script installs" and "a script outside PATRON_DIR changes nothing", plus the existing valid-install and failing-probe cases |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w369.test.ts
+2. blocking — brief:99 [severity: S1] [design: changes] A plausible `OLD_GUARD_DIR` typo naming another clean linked worktree is accepted by the real Patron `guard` caller and `git worktree remove` deletes that wrong worktree; the existing row tests only the intended old guard. Replace brief:99 with: `| 12. OLD_GUARD_DIR, W-362's former installed guard worktree | an absent path is skipped; an existing candidate is removable only when, at guard entry before GUARD_BIN is relinked, GUARD_BIN resolves inside that candidate and git identifies it as a linked worktree of PATRON_DIR; a dirty candidate or any candidate whose old-guard identity is not proved is left in place with git's reason or an identity refusal and the Patron's removal command | guard's removal: pinned by W-369-b4 for the proved clean old guard, the dirty old guard, and a different clean linked worktree that must remain |` [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w369.test.ts
+3. advisory — brief:149 [severity: S2] Reached through ci/W-369-spec-2.log #3’s prose-contradiction class: “git settings, hooks or checkout are not as setup left them” still promises refusal for arbitrary allowed-key values and untracked checkout entries that rows 2 and 10 explicitly accept. Replace brief:149 with: `4. It leaves the agent folder's master unmoved and tells the session why when your clone is off master or its Patron-configured status reports a tracked change, or the agent folder has an unexpected config key or core value, hook, or tracked checkout condition; before a branch, history, tracked-change or file-collision refusal it may already have removed the request, pruned dead worktree entries and fetched GitHub's master into your clone. Agree?` [class: spec×prose-contradiction-under-revision] — check: none: cross-promise effect wording is not mechanically checked
+
+## Earlier findings
+- ci/W-369-spec-2.log #1: closed — brief:34 and scripts/agent-workspace.sh:341 place the tracked-status refusal before the current-master return; packages/cli/src/w369.test.ts:100 pins the current dirty case, and findings-check.out shows undoing the reorder fails it.
+- ci/W-369-spec-2.log #2: closed — brief:89 and scripts/agent-workspace.sh:305 validate every command-relevant core value before `agit`; packages/cli/src/w369.test.ts:155 pins `core.filemode=false`, and controls.out plus findings-check.out establish the formerly hidden mode change and mutation failure.
+
+## Verdict
+Both earlier blockers are closed, but the new guard migration has two untested input-boundary failures.
+VERDICT: FAIL

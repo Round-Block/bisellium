@@ -1,0 +1,24 @@
+# opus: W-369
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T08:54:22.270Z
+# tree: tree:95e021a34bab0573ef50cc064148549031eea581
+# brief: briefs/W-369.md blob:6a57539f2e48ce141e23a87e5d21cbededad7ea4
+# ticket: {"opus":"W-369","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"0c90a6e509cdad2c63044359666d3e87568a4873","brief":"6a57539f2e48ce141e23a87e5d21cbededad7ea4","at":"2026-10-23T08:54:18.401Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-369-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec round 2 finding 1 (S1, keeps design) closed: the sync judges the tracked tree before it reports master current, so a tracked edit made after a sync is refused with master unmoved and the edit kept; behaviour 1's text adopts the reviewer's replacement, and `W-369-b1` pins the case ("a dirty tracked tree at a current master: the reason", "… is not reported current", "the edit is kept"); undoing the reorder on the tip fails the row there (`findings-check.out` check 1) — check: brief:34, brief:91, brief:106, scripts/agent-workspace.sh:342, packages/cli/src/w369.test.ts, findings-check.out
+2. advisory — spec round 2 finding 2 (S1, changes design) closed: `sync_inputs` reads every value of `core.repositoryformatversion`, `core.filemode`, `core.bare` and `core.logallrefupdates` with git's own typing and refuses any other than 0, true, false, true (and a value git cannot type), before any git runs in the agent clone; the "values are not judged" limit is gone for those keys and stays only for keys no sync command consults; `controls.out` shows `core.filemode false` hiding a mode-only change from plain git, and with the value check undone row b1 syncs over that change (`findings-check.out` check 2) — check: brief:89, scripts/agent-workspace.sh:258, scripts/agent-workspace.sh:305, controls.out, findings-check.out
+3. advisory — spec round 2 finding 3 (S2) closed: Default 4 says what a later refusal may already have done (the request removed, dead entries pruned, origin's master fetched into the Patron's clone), in the reviewer's terms and the Patron's words — check: brief:149
+4. advisory — the Patron's ruling of 2026-10-23 is behaviour 4: `GUARD_DIR` is gone; `guard` refuses, changing nothing, unless `~/projects/bisellium` is on master with no uncommitted tracked change (`patron_on_master`, also run by the sync), fast-forwards that clone's master, links `GUARD_BIN` into it, and removes W-362's `~/projects/bisellium-guard` only through `git worktree remove` without force (a dirty one is left with git's reason and the Patron's command, after the relink, so the hooks never point at a removed folder); W-362-b3's guard-worktree rows flip and each is named in Acceptance; Default 2 flags the guard step moving the Patron's master as beyond the approval — check: brief:22, brief:44, brief:46, brief:97, brief:98, brief:99, brief:147, scripts/agent-workspace.sh:229, packages/cli/src/w362.test.ts, row-b4-s4.out
+5. advisory — the sync does not compare its own path with `PATRON_DIR` (row b2 runs the CLI from the repository under test, which no fixture clone can hold); it judges the clone the guard step links `GUARD_BIN` into, and that gap, with the other hooks running whatever the clone holds between guard runs, is stated as Promise patron-master's limit — check: brief:44, scripts/agent-workspace.sh:291
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for the round-3 revision of `studio/briefs/W-369.md` at master 0c90a6e5: four behaviours, each red accepted by the replay classifier on its red commit and green on its stage (`reds.out`), the prototype mbox applying to the same tree (`mbox-check.out`), each round-2 finding caught by row b1 once its fix is undone (`findings-check.out`); it touches the sandbox, the guard and `.claude/`, so its design and the four Defaults go to the Patron before branch, and the Patron merges it.
