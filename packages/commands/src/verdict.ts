@@ -483,6 +483,7 @@ export function readUiSpecPairing(manifest: unknown): { pairing: UiSpecPairing |
  * or any string lists the forms it recognises, and each grammar line it cites holds a pin. W-336: so does a row whose
  * Valid domain names a path, a command line or an environment value, and its line or a cited line names each hostile form.
  * W-373: so does a row whose Record or Valid domain cell names shell text or a structured record, for that surface's forms.
+ * W-381: in a brief that names a prototype, each Promise line holds a pin too, or says unpinned with a scoped ledger line.
  * ponytail: a textual coverage check; whether the cited line really guarantees the promise stays the spec review's.
  */
 function promiseLedgerProblems(brief: string, transcript: string, briefRel: string): string[] {
@@ -493,7 +494,10 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
     if (named.length > 0) callers.set(i + 1, named);
   });
   const rows = inputDomainRows(brief);
-  if (callers.size === 0 && rows.length === 0) return [];
+  const { cases, formless, pathGaps, surfaceGaps, promises, prototype } = ruledCases(brief);
+  // W-381: a brief that names a prototype owes each Promise line a pin, or unpinned and scoped
+  const owed = prototype ? promises : [];
+  if (callers.size === 0 && rows.length === 0 && owed.length === 0) return [];
   const heading = contentLines(transcript).headings.find((h) => h.level === 2 && h.name === "Findings");
   if (heading === undefined) return ['the signature has no level-2 "Findings" heading'];
   const cites = transcript.split(/\r?\n/).slice(0, heading.line).map((l) => l.trim()).filter((l) => l.startsWith("Promise ledger:"));
@@ -501,6 +505,7 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
     const why = [
       ...(callers.size > 0 ? [`names a CLI verb in code on lines ${[...callers.keys()].join(", ")}`] : []),
       ...(rows.length > 0 ? [`has Input domain rows on lines ${rows.join(", ")}`] : []),
+      ...(owed.length > 0 ? [`names a prototype and has Promise lines on lines ${owed.map((c) => c.line).join(", ")}`] : []),
     ].join(" and ");
     return [`${briefRel} ${why}; cite the promise ledger on one line above "## Findings": "Promise ledger: <absolute path>"`];
   }
@@ -538,7 +543,6 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
   for (const n of rows)
     if (!entries.some((e) => e.counts && e.briefs.has(n)))
       problems.push(`brief:${n} is an Input domain row, and no ledger line cites brief:${n} with a <file>:<line> and holds or scoped`);
-  const { cases, formless, pathGaps, surfaceGaps } = ruledCases(brief);
   const PIN_FORM = 'as pinned by `<row>` "<assertion>"';
   const rowsSeen = new Set<number>();
   for (const c of cases) {
@@ -552,6 +556,13 @@ function promiseLedgerProblems(brief: string, transcript: string, briefRel: stri
     else if (!c.unpinned)
       problems.push(`brief:${c.line} is an Input domain row with no pin: name the test row and assertion that exercise it ${PIN_FORM}, or say unpinned (a stated limit, scoped in the ledger)`);
     else if (covering.length > 0 && !covering.some((e) => SCOPED.test(e.text)))
+      problems.push(`brief:${c.line} says unpinned, and no ledger line cites brief:${c.line} as scoped`);
+  }
+  for (const c of owed) {
+    if (c.pins.length > 0) continue;
+    if (!c.unpinned)
+      problems.push(`brief:${c.line} is a Promise line with no pin, in a brief that names a prototype: name the test row and assertion that exercise it ${PIN_FORM}, or say unpinned (a stated limit, scoped in the ledger)`);
+    else if (!entries.some((e) => e.briefs.has(c.line) && SCOPED.test(e.text)))
       problems.push(`brief:${c.line} says unpinned, and no ledger line cites brief:${c.line} as scoped`);
   }
   for (const n of formless)

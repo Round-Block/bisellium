@@ -213,11 +213,23 @@ export interface SurfaceGap {
   missing: string[];
 }
 
+/** W-381: a brief names a prototype when a real line, trimmed, opens `Prototype:` in any case (as W-326's `readPrototype`
+ *  attempts it; a Prototype line inside an HTML comment is read there and not here). */
+const PROTOTYPE_ATTEMPT = /^prototype\s*:/i;
+
 /** W-322: the brief's ruled cases in brief order, each with the pins its real line holds; `formless`, the rows whose
  *  Valid domain says any text or any string and which hold no forms clause; W-336: `pathGaps`, the path-typed rows'.
- *  W-373: `surfaceGaps`, the rows naming a surface of `SURFACES`, whose cited lines are cases too. Text only, like
- *  `inputDomainRows`. */
-export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[]; pathGaps: PathGap[]; surfaceGaps: SurfaceGap[] } {
+ *  W-373: `surfaceGaps`, the rows naming a surface of `SURFACES`, whose cited lines are cases too. W-381: `promises`, each
+ *  promise line `absolutePromiseProblems` reads (a `PROMISE_ATTEMPT` inside its span) as a case of its own, `row` its own
+ *  line; `prototype`, whether the brief names a prototype. Text only, like `inputDomainRows`. */
+export function ruledCases(briefText: string): {
+  cases: RuledCase[];
+  formless: number[];
+  pathGaps: PathGap[];
+  surfaceGaps: SurfaceGap[];
+  promises: RuledCase[];
+  prototype: boolean;
+} {
   const real = realLines(briefText);
   // W-334: a line number past 15 digits is past any brief's last line, so it clamps without a double
   const clamp = (digits: string): number => (digits.length > 15 ? real.length : Math.min(Number(digits), real.length));
@@ -257,7 +269,12 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
     }
     for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
   }
-  return { cases, formless, pathGaps, surfaceGaps };
+  const { start, stop } = promiseSpan(real);
+  const promises: RuledCase[] = [];
+  for (let i = start; i < stop; i++)
+    if (PROMISE_ATTEMPT.test(real[i]!.trim())) promises.push({ line: i + 1, row: i + 1, pins: pinsOf(i + 1), unpinned: UNPINNED.test(real[i]!) });
+  const prototype = real.some((l) => PROTOTYPE_ATTEMPT.test(l.trim()));
+  return { cases, formless, pathGaps, surfaceGaps, promises, prototype };
 }
 
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
@@ -376,17 +393,23 @@ function withoutInlineCode(text: string): string {
   });
 }
 
-/** W-196: from the first real "## Intent" line (else the top) up to the first real "## Out of scope" after it (else the
- *  end), with inline code spans removed, an ABSOLUTE phrase appears only on a promise line, and each promise's slug and
- *  claim (lower-cased, spaces collapsed, trailing .,; dropped) appear once. */
-function absolutePromiseProblems(real: string[]): string[] {
+/** W-196: the span promise lines are read in, as indexes of `real`: from the first real "## Intent" line (else the top) up
+ *  to the first real "## Out of scope" after it (else the end), that line excluded. */
+function promiseSpan(real: string[]): { start: number; stop: number } {
   const intent = real.findIndex((l) => l.trim() === "## Intent");
   const start = intent === -1 ? 0 : intent;
   const stop = real.findIndex((l, i) => i > start && l.trim() === "## Out of scope");
+  return { start, stop: stop === -1 ? real.length : stop };
+}
+
+/** W-196: inside `promiseSpan`, with inline code spans removed, an ABSOLUTE phrase appears only on a promise line, and each
+ *  promise's slug and claim (lower-cased, spaces collapsed, trailing .,; dropped) appear once. */
+function absolutePromiseProblems(real: string[]): string[] {
+  const { start, stop } = promiseSpan(real);
   const slugs = new Set<string>();
   const claims = new Set<string>();
   const problems: string[] = [];
-  for (let i = start; i < (stop === -1 ? real.length : stop); i++) {
+  for (let i = start; i < stop; i++) {
     const t = real[i]!.trim();
     if (PROMISE_ATTEMPT.test(t)) {
       const m = parsePromise(t);
