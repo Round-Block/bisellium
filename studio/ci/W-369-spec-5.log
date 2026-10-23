@@ -1,0 +1,22 @@
+# opus: W-369
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T10:05:08.276Z
+# tree: tree:95e021a34bab0573ef50cc064148549031eea581
+# brief: briefs/W-369.md blob:ec760c8acc8253dcfa74f192e1ae021f1030610a
+# ticket: {"opus":"W-369","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"0c90a6e509cdad2c63044359666d3e87568a4873","brief":"ec760c8acc8253dcfa74f192e1ae021f1030610a","at":"2026-10-23T10:05:03.813Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-369-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec round 4 findings 1 and 2 (S1, both on round 3's behaviour 4, the guard from the Patron's clone) are not answered here: D-061 §4 allows no third review, so behaviour 4, its Promise patron-guard, Input domain rows 11 and 12, row W-369-b4, its Files owned entries, Interfaces item 4 and every W-362-b3 flip are cut, and the collapse with both findings is W-379; W-362's `GUARD_DIR` worktree and installer are unchanged on the tip — check: brief:3, brief:15, brief:123, brief:69, prototype.mbox, mbox-check.out
+2. advisory — spec round 4 finding 3 (S2) closed: Default 3 names what is refused in the terms rows 2, 4 and 10 accept (the Patron's status read with their own settings; an unexpected key or core value, a hook, a tracked change, a branch, local commits or a file in an incoming file's way in the agent folder), trimmed to the sync — check: brief:138
+3. advisory — behaviours 1 to 3 are round 3's, which round 4 closed; the one change is `patron_on_master`'s two refusal lines and comment, which no longer say the guard runs from the Patron's clone (it does not until W-379), with row b1's two regexes; the sync still refuses on that clone off a clean master (row 10), kept because row b1 pins it and W-379's guard step reuses it — check: brief:27, brief:43, brief:92, scripts/agent-workspace.sh:277, apply-cut.py, findings-check.out
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for the round-5 cut of `studio/briefs/W-369.md` at master 0c90a6e5 under D-061 §4: three behaviours, each red accepted by the replay classifier on its red commit and green on its stage (`reds.out`), the six-commit prototype mbox applying to the same tree (`mbox-check.out`), each round-2 finding caught by row b1 once its fix is undone (`findings-check.out`); it touches the sandbox and `.claude/`, so its design and the three Defaults go to the Patron before branch, and the Patron merges it.

@@ -257,7 +257,7 @@ test("W-362-b4 behaviour 4: the merge rung hands the Patron a fast-forward that 
     assert.ok(!held.ok);
     assert.match(held.reason, /^refusing: this session may not write incoming paths \(packages\/a\) in the main checkout/, "the reason names the denied path");
     assert.match(held.reason, /the main checkout is untouched$/);
-    assert.deepEqual(held.after, [`patron: git -C ${quoted(main)} merge --ff-only ${target}`], "the Patron's one command");
+    assert.deepEqual(held.after?.[0], `patron: git -C ${quoted(main)} merge --ff-only ${target}`, "the Patron's one command");
     assert.equal(git(main, "rev-parse", "HEAD"), writable, "master did not move");
     assert.equal(git(main, "status", "--porcelain"), "", "nothing in the main checkout changed");
     assert.equal(readFileSync(join(main, "root"), "utf8"), "1\n", "not even a file the session may write");

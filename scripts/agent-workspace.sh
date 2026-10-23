@@ -6,6 +6,14 @@
 #   scripts/agent-workspace.sh verify [--inside]  read-only checks
 #   scripts/agent-workspace.sh guard            install the hook guard (W-362)
 #   scripts/agent-workspace.sh guard-check      judge the guard installer's inputs only
+#   scripts/agent-workspace.sh sync             fast-forward the agent clone (W-369), run by the installed guard
+#
+# What `sync` does (the installed guard's `hook-event sync`, outside the sandbox, at SessionStart and after a merge
+# perform asks for it): it refuses, changing nothing, unless $PATRON_DIR is on master with no uncommitted tracked change
+# and the agent clone's .git holds only setup's config keys (git's own core values among them), no hook, no
+# info/attributes, info/grafts or alternates; then prunes dead worktree entries, fetches origin's master into $PATRON_DIR and fast-forwards the
+# agent clone's master to that commit when HEAD is master and clean and master is behind it. Git in the agent clone
+# runs with no global or system config, no hooks, no fsmonitor and no replacement refs; the commit comes from the Patron's clone only.
 #
 # What `setup` does:
 #   1. stores a fine-grained, non-admin GitHub token in a gh config of its own
@@ -251,6 +259,113 @@ guard() {
   echo "guard: installed from $GUARD_DIR at $(git -C "$GUARD_DIR" rev-parse --short HEAD)"
 }
 
+# The agent clone's .git/config keys the sync accepts (W-369): git's clone keys, setup's remote and credential helper,
+# a branch's upstream and VS Code's merge-base note. Any other key (an include, a filter, a hook path) refuses the sync,
+# and so does a value of a core key git consults other than its clone's (SYNC_VALUES: key, git type, the one value).
+SYNC_VALUES='core.repositoryformatversion:int:0 core.filemode:bool:true core.bare:bool:false core.logallrefupdates:bool:true'
+SYNC_KEYS='^(core\.(repositoryformatversion|filemode|bare|logallrefupdates)|remote\.origin\.(url|fetch)|credential\.helper|branch\..+\.(remote|merge|vscode-merge-base))$'
+
+# git in the agent clone, outside the sandbox, on a .git a session can write: a clean environment, no global or system
+# config, no hooks, no fsmonitor, no submodule recursion, no prompt, no replacement refs (W-369). sync_inputs judges its
+# config and the object-substitution files first.
+agit() {
+  env -i HOME="$HOME" PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat GIT_NO_REPLACE_OBJECTS=1 \
+    git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -C "$AGENT_DIR" "$@"
+}
+
+# The Patron's clone, the sync's fetch source (W-369): on master with no uncommitted tracked change, or the reason
+# and status 1. Its git runs with the Patron's own config: no session can write that clone.
+patron_on_master() {
+  local h st
+  h=$(git -C "$PATRON_DIR" symbolic-ref -q HEAD) || h=detached
+  [[ $h == refs/heads/master ]] || { echo "PATRON_DIR $PATRON_DIR is on $h, not master; the sync runs only while it is on master"; return 1; }
+  st=$(git --no-optional-locks -C "$PATRON_DIR" status --porcelain --untracked-files=no) || { echo "git status failed in PATRON_DIR $PATRON_DIR"; return 1; }
+  [[ -z $st ]] || { echo "PATRON_DIR $PATRON_DIR has uncommitted tracked changes (${st%%$'\n'*}); the sync runs only while it is on a clean master"; return 1; }
+}
+
+# git config on the agent clone's config file alone: from /, no global or system config, a clean environment.
+cfg() { (cd / && env -i PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_NO_REPLACE_OBJECTS=1 git config --file "$1" "${@:2}"); }
+
+# The sync's inputs (W-369): prints the first fault and returns 1, or returns 0. Nothing here runs git in the agent clone.
+sync_inputs() {
+  local agent patron gd h k kv t want v why
+  [[ $AGENT_DIR == /* && $PATRON_DIR == /* ]] || { echo "AGENT_DIR and PATRON_DIR must be absolute paths"; return 1; }
+  agent=$(real "$AGENT_DIR") || { echo "AGENT_DIR $AGENT_DIR is not a directory"; return 1; }
+  if patron=$(real "$PATRON_DIR") && top_is "$PATRON_DIR" "$patron"; then :; else
+    echo "PATRON_DIR $PATRON_DIR is not the top of a git checkout"
+    return 1
+  fi
+  if within "$agent" "$patron" || within "$patron" "$agent"; then echo "PATRON_DIR and AGENT_DIR are one inside the other"; return 1; fi
+  if within "$(real "$SELF_DIR")" "$agent"; then echo "this is the agent clone's copy of the script; the sync runs only from the installed guard"; return 1; fi
+  why=$(patron_on_master) || { echo "$why"; return 1; }
+  gd=$agent/.git
+  [[ -d $gd && ! -L $gd && -f $gd/config && ! -L $gd/config ]] || { echo "$gd is not a git directory with its own config"; return 1; }
+  for h in info/attributes info/grafts objects/info/alternates objects/info/http-alternates; do
+    if [[ -e $gd/$h || -L $gd/$h ]]; then echo "$gd/$h exists"; return 1; fi
+  done
+  for h in "$gd"/hooks/*; do
+    if [[ (-e $h || -L $h) && $h != *.sample ]]; then echo "a git hook is installed: $h"; return 1; fi
+  done
+  cfg "$gd/config" --list >/dev/null 2>&1 || { echo "$gd/config does not parse"; return 1; }
+  while IFS= read -r -d '' kv; do
+    k=${kv%%$'\n'*}
+    [[ $k =~ $SYNC_KEYS ]] || { echo "unexpected .git/config key: $k"; return 1; }
+  done < <(cfg "$gd/config" --list -z)
+  # every value of each core key git consults, read as git types it; an absent key is git's default, the same value
+  for kv in $SYNC_VALUES; do
+    IFS=: read -r k t want <<<"$kv"
+    if v=$(cfg "$gd/config" --type="$t" --get-all "$k" 2>&1); then
+      while IFS= read -r h; do
+        [[ $h == "$want" ]] || { echo "the .git/config value $k = $h is not $want"; return 1; }
+      done <<<"$v"
+    elif [[ -n $v ]]; then
+      echo "the .git/config value of $k is not a $t (${v//$'\n'/ })"
+      return 1
+    fi
+  done
+}
+
+# Fast-forward the agent clone's master to the Patron clone's freshly fetched origin/master and prune dead worktree
+# entries (W-369). Run unsandboxed by the installed guard's `hook-event sync`; prints sync: lines, exits 1 on a refusal.
+sync() {
+  local why out n target head old st
+  # every git below, in either clone, reads objects as they are: no replacement refs, no alternates or graft file from
+  # the environment (agit's env -i drops them; the Patron's calls inherit this one). A planted info/grafts or
+  # objects/info/alternates in the agent clone is refused by sync_inputs, which runs no git there.
+  export GIT_NO_REPLACE_OBJECTS=1
+  unset GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_GRAFT_FILE GIT_OBJECT_DIRECTORY
+  stop() {
+    echo "sync: refused: $1; master was not moved"
+    exit 1
+  }
+  why=$(sync_inputs) || stop "$why"
+  # the request (a merge perform's hold) is answered by this run, whatever it finds
+  [[ -L $AGENT_DIR/.git/bisellium ]] || rm -f -- "$AGENT_DIR/.git/bisellium/sync"
+  if out=$(agit worktree prune -v 2>&1); then
+    n=$(grep -c '^Removing ' <<<"$out" || true)
+    ((n == 0)) || echo "sync: pruned $n dead worktree entries"
+  else
+    echo "sync: git worktree prune failed: ${out//$'\n'/ }"
+  fi
+  out=$(GIT_TERMINAL_PROMPT=0 git -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master" 2>&1) || stop "could not fetch origin's master into PATRON_DIR (${out//$'\n'/ })"
+  target=$(git -C "$PATRON_DIR" rev-parse -q --verify 'refs/remotes/origin/master^{commit}') || stop "PATRON_DIR has no origin/master"
+  head=$(agit symbolic-ref -q HEAD) || head=detached
+  [[ $head == refs/heads/master ]] || stop "HEAD of AGENT_DIR is $head, not master"
+  old=$(agit rev-parse -q --verify 'refs/heads/master^{commit}') || stop "cannot read AGENT_DIR's master"
+  # a tracked change is refused whether master is behind or already current
+  st=$(agit status --porcelain --untracked-files=no) || stop "git status failed in AGENT_DIR"
+  [[ -z $st ]] || stop "AGENT_DIR has uncommitted tracked changes (${st%%$'\n'*})"
+  if [[ $old == "$target" ]]; then
+    echo "sync: master is current (${target:0:12})"
+    return 0
+  fi
+  agit cat-file -e "$target^{commit}" 2>/dev/null || agit fetch -q --no-tags --no-write-fetch-head "$(real "$PATRON_DIR")" refs/remotes/origin/master 2>/dev/null || stop "could not fetch ${target:0:12} from PATRON_DIR"
+  agit merge-base --is-ancestor "$old" "$target" || stop "AGENT_DIR's master ${old:0:12} is not behind origin/master ${target:0:12} (ahead or diverged)"
+  out=$(agit merge -q --ff-only --no-overwrite-ignore "$target" 2>&1) || stop "git merge --ff-only ${target:0:12} refused (${out//$'\n'/ })"
+  [[ $(agit rev-parse -q --verify refs/heads/master) == "$target" ]] || stop "master did not reach ${target:0:12}"
+  echo "sync: master ${old:0:12} -> ${target:0:12}"
+}
+
 FAILS=0
 check() {
   local what=$1
@@ -318,6 +433,7 @@ verify() {
 case ${1:-} in
 setup) setup ;;
 guard) guard ;;
+sync) sync ;;
 guard-check)
   guard_inputs
   echo "guard inputs: ok"
@@ -327,7 +443,7 @@ verify)
   verify "$@"
   ;;
 *)
-  echo "usage: ${0##*/} setup | guard | guard-check | verify [--inside]" >&2
+  echo "usage: ${0##*/} setup | guard | guard-check | sync | verify [--inside]" >&2
   exit 2
   ;;
 esac

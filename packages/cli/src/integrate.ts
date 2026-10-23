@@ -344,7 +344,22 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
     patron.length > 0
       ? `refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`
       : `refusing: this session may not write incoming paths (${denied.slice(0, 10).map(quoted).join(", ")}) in the main checkout (the sandbox's deny, W-362); the main checkout is untouched`;
-  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`] };
+  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`, ...(denied.length > 0 ? [requestSync(repo, target)] : [])] };
+}
+
+/** W-369: asks the installed guard's sync (its PostToolUse hook) to fast-forward this checkout when the call returns. The
+ *  file is only a trigger: the sync's commit is the one it fetches into the Patron's clone; the reviewed commit written
+ *  here is for a reader. The line says whether it was asked. */
+function requestSync(repo: string, target: string): string {
+  const file = bisFile(repo, "sync");
+  try {
+    if ("error" in file) throw new Error(file.error);
+    mkdirSync(dirname(file.path), { recursive: true });
+    writeFileSync(file.path, `${target}\n`);
+    return "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)";
+  } catch (e) {
+    return `sync: not requested (${thrown(e)})`;
+  }
 }
 
 /**
@@ -614,13 +629,15 @@ export function dirtyHold(cwd: string, allow?: (path: string) => boolean): StepR
 // ---------------------------------------------------------------------------
 
 const thrown = (e: unknown): string => clean(e instanceof Error ? e.message : String(e));
-/** W-199: the file whose presence binds a queue-mode PR head: `<git common dir>/bisellium/queue/<encodeURIComponent(branch)>`. */
-function queueFile(repo: string, branch: string): { path: string } | { error: string } {
+/** `<git common dir>/bisellium/<parts…>` (W-199, W-369). */
+function bisFile(repo: string, ...parts: string[]): { path: string } | { error: string } {
   const r = git(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
   const dir = r.stdout.trim();
   if (r.error !== undefined || r.status !== 0 || dir === "" || !isAbsolute(dir)) return { error: why(r) };
-  return { path: join(dir, "bisellium", "queue", encodeURIComponent(branch)) };
+  return { path: join(dir, "bisellium", ...parts) };
 }
+/** W-199: the file whose presence binds a queue-mode PR head: `<git common dir>/bisellium/queue/<encodeURIComponent(branch)>`. */
+const queueFile = (repo: string, branch: string): { path: string } | { error: string } => bisFile(repo, "queue", encodeURIComponent(branch));
 /** W-199: `absent` only when `lstat` finds no entry; any entry is `bound`; any other failure is `error`. */
 function readBinding(repo: string, branch: string): { kind: "absent" | "bound"; path: string } | { kind: "error"; reason: string } {
   const file = queueFile(repo, branch);

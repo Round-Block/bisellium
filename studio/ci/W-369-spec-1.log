@@ -1,0 +1,24 @@
+# opus: W-369
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-23T08:18:09.951Z
+# tree: tree:9e90fe058a76c285800a1dfe37edc18fae84429a
+# brief: briefs/W-369.md blob:7f9c76c89e40945c1ba6639083288df7f942d3e3
+# ticket: {"opus":"W-369","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"518927958cf029fb04e010f353dd242eb56a6767","brief":"7f9c76c89e40945c1ba6639083288df7f942d3e3","at":"2026-10-23T08:18:05.997Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-369-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the trigger runs no agent-clone code: the hooks run the `bisellium` on PATH (W-362's install), whose `hook-event sync` finds `scripts/agent-workspace.sh` by its own real path; the session's only input is the request file's existence, and the target is the commit the sync itself fetches into the Patron's clone, so a forged or stale request at worst triggers a correct sync — check: brief:20, brief:23, brief:35, packages/cli/src/hooks.ts:350, scripts/agent-workspace.sh:313
+2. advisory — Decree F's risk row is judged before git runs in the agent clone: `sync_inputs` reads `.git/config` with `git config --file` from `/` under a clean environment and refuses any key outside `SYNC_KEYS`, any hook and `info/attributes`; every later git call is `agit` (no global or system config, `core.hooksPath=/dev/null`, `core.fsmonitor=false`); `controls.out` shows the fixture's global filter and post-merge hook do run under plain git, so row b1's "no filter ran" and "no hook ran" are not vacuous; VS Code's `branch.*.vscode-merge-base` is allowed because the live agent clone holds two and git never reads it (Default 3 asks) — check: brief:80, brief:81, scripts/agent-workspace.sh:263, scripts/agent-workspace.sh:267, controls.out
+3. advisory — `next` needs no change: it derives the merge rung from local master (`settleMerged`), and the merge perform is idempotent on a MERGED PR, so once the sync moves master `next` names cleanup; the merge and done performs reach the request through the same `landed` → `fetchTrunk` → `patronStop` path; no `next.ts` line is touched, so W-353's lane is untouched (it has landed, master 1525f270) — check: brief:25, packages/cli/src/next.ts:1198, packages/cli/src/integrate.ts:742, packages/cli/src/integrate.ts:347
+4. advisory — four existing rows flip and are named in Acceptance: `instructions.test.ts` row 9's three settings reports and `guard.test.ts` W-310-b5 (the hook set gains the sync), W-362-b4 "the Patron's one command" (it now reads the first `after` line while W-369-b3 pins the whole list) and `containment.test.ts` W-163-b6 (inventory D gains `requestSync`'s two writes, outside: a git dir); Codex's test check (`fixture-census.md`) found the last two unnamed in the draft it read, and they are named now; its must-stay-green rows pass on the tip (`census-green-proto.out`, `tests-rule.out`) — check: brief:109, packages/cli/src/instructions.test.ts:257, packages/cli/src/w362.test.ts:260, packages/cli/src/guard.test.ts:537, packages/cli/src/containment.test.ts:815, fixture-census.md
+5. advisory — the sweep is git's own `worktree prune`, run outside the sandbox where the per-command mounts that make it EBUSY inside a session (W-227) do not exist; an entry whose folder still exists is never removed, and W-227's cleanup and residue changes stay on lane B — check: brief:33, brief:84, brief:117, scripts/agent-workspace.sh:307
+
+## Verdict
+
+passed — signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-369.md` at master 1525f270: three behaviours, each red accepted by the replay classifier on its red commit and green on its stage (`reds.out`), the prototype mbox applying to the same tree (`mbox-check.out`); it touches the sandbox, the guard and `.claude/`, so its design and Defaults go to the Patron before branch, and the Patron merges it.

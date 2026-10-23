@@ -1,0 +1,20 @@
+# opus: W-369
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a167d7-703a-73f0-8c9b-aa891c0a138f
+# outcome: failed
+# at: 2026-10-23T08:25:27.341Z
+# tree: tree:f6fa6b2c60ac43b05e5783214e29d8a2f6634390
+# brief: briefs/W-369.md blob:7f9c76c89e40945c1ba6639083288df7f942d3e3
+# ticket: {"opus":"W-369","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"55cef91a31876572c0d00a4f3b138e49d43bd1d5","brief":"7f9c76c89e40945c1ba6639083288df7f942d3e3","at":"2026-10-23T08:25:24.066Z"}
+
+## Findings
+1. blocking — brief:94 [severity: S1] [design: keeps] After a successful sync makes master current, an ordinary tracked edit causes the real SessionStart caller to return `sync: master is current` before checking status; the edit is not refused, and the existing dirty test covers only a behind master. Replace brief:94 with: `1. **agent-workspace.sh sync fast-forwards the agent clone to the Patron clone's fetched origin/master, prunes dead worktree entries and refuses an unexpected .git.** In W-369-b1, on the stated fixture, sync exits 0 naming the move, leaves master at origin's master through the Patron clone, writes the new source file, leaves the checkout clean and removes the request; a second run says master is current; the stated dead entries are pruned while a live worktree stays; and the stated global filter does not run. Each refusal exits 1 with its reason and master unmoved: the six unexpected config keys, info/attributes, a post-merge hook, a dirty tracked file both while master is behind and after a successful sync has made master current, HEAD off master, a local commit, an untracked or ignored incoming path, a Patron clone that cannot fetch, a relative AGENT_DIR, the agent clone's script, and an unparseable or absent config. controls.out shows the fixture's filter and hook run under plain git.` [class: tests×one-sided-bound-assertion] — check: packages/cli/src/w369.test.ts
+2. blocking — brief:80 [severity: S1] [design: changes] The accepted domain leaves every config value unchecked even though Git consults `core.filemode`: a plausible mistaken `git config core.filemode false` lets SessionStart miss a mode-only tracked change and fast-forward, concealing or overwriting it when the incoming commit touches that path; no existing test covers this. Replace brief:80 with: `| 2. The agent clone's .git/config as the sync reads it (Decree F) | git config --file parses the regular file from row 1; every key matches SYNC_KEYS; core.repositoryformatversion is 0, core.filemode is true, core.bare is false and core.logallrefupdates is true; values of the other allowed keys may be any parseable strings because no sync command consults them; any parse failure, other key or other command-relevant core value is refused before agit runs | sync_inputs' config read: pinned by the existing unexpected-key and unparseable-config cases and by W-369-b1 refusing core.filemode=false with a mode-only tracked change |` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w369.test.ts
+3. advisory — brief:131 [severity: S2] The sentence promises “changes nothing,” but later refusals occur after the request may be removed, dead worktrees pruned, the Patron clone fetched and an object fetched into the agent repository. Replace brief:131 with: `3. It leaves the agent folder's master unmoved and tells the session why when its accepted settings or checkout conditions do not hold; before a HEAD, ancestry, cleanliness or collision refusal, it may remove the request, prune dead worktree entries and fetch refs or objects as described above. Agree?` [class: spec×prose-contradiction-under-revision] — check: none: cross-promise effect wording is not mechanically checked
+
+## Verdict
+The two untested S1 cases prevent the signed brief from guaranteeing its sync boundary as written.
+VERDICT: FAIL

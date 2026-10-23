@@ -211,8 +211,8 @@ withTempCopy(join(repo, "studio"), (dir) => {
       const obj = parsed as Record<string, unknown>;
       const hooks = obj["hooks"] as Record<string, unknown> | undefined;
       const keys = hooks ? Object.keys(hooks).sort() : [];
-      // W-310: W-242's settings side (no PreCompact, Stop or PostToolUse) and the guard at SubagentStop.
-      const wantKeys = ["PreToolUse", "SessionStart", "SubagentStop"].sort();
+      // W-310: W-242's settings side (no PreCompact or Stop) and the guard at SubagentStop; W-369: PostToolUse runs the sync.
+      const wantKeys = ["PostToolUse", "PreToolUse", "SessionStart", "SubagentStop"].sort();
       report("settings.hook-keys", JSON.stringify(keys) === JSON.stringify(wantKeys), JSON.stringify(keys));
 
       const allCommands: string[] = [];
@@ -225,10 +225,14 @@ withTempCopy(join(repo, "studio"), (dir) => {
           }
         }
       }
-      report("settings.timeouts-all-2", allTimeouts.length > 0 && allTimeouts.every((t) => t === 2), JSON.stringify(allTimeouts));
+      // W-369: the sync's two hooks run git and a fetch, so they have 60 s; every other hook 2 s.
+      const syncCommand = "bisellium hook-event sync --studio studio";
+      const syncRequested = 'test ! -e "$CLAUDE_PROJECT_DIR/.git/bisellium/sync" || bisellium hook-event sync --studio studio';
+      const isSync = (c: string): boolean => c === syncCommand || c === syncRequested;
+      report("settings.timeouts-all-2", allTimeouts.length > 0 && allTimeouts.every((t, i) => t === (isSync(allCommands[i] ?? "") ? 60 : 2)), JSON.stringify(allTimeouts));
       // The one non-bisellium hook: the PreToolUse background guard, pinned exactly.
       const bgGuardCommand = "jq -e '.tool_input.run_in_background != true and (.tool_input.command // \"\" | gsub(\"\\\"(\\\\\\\\.|[^\\\"\\\\\\\\])*\\\"|\\\\x27[^\\\\x27]*\\\\x27\"; \"Q\") | test(\"(^|\\\\s)&(?![&>])|(?<![&>|<\\\\\\\\])&(?=\\\\s|$|[;)}])|(^|[^-\\\\w./])(nohup|setsid|disown)(?![-\\\\w.])\"))' >/dev/null 2>&1 && { echo 'Blocked: &, nohup, setsid and disown die when this Bash call returns. Run the long command as its own Bash call with the run_in_background parameter set to true instead.' >&2; exit 2; }; exit 0";
-      const bisellium = allCommands.filter((c) => c !== bgGuardCommand);
+      const bisellium = allCommands.filter((c) => c !== bgGuardCommand && c !== syncRequested);
       report(
         "settings.commands-carry-studio-no-sella",
         bisellium.length > 0 && bisellium.every((c) => /^bisellium /.test(c) && c.includes("--studio studio") && !c.includes("--sella")),
@@ -246,6 +250,13 @@ withTempCopy(join(repo, "studio"), (dir) => {
         "settings.pretooluse-guard",
         guardGroup?.matcher === "Bash|Write|Edit|NotebookEdit" && guardGroup.hooks.length === 1 && guardGroup.hooks[0]?.command === "bisellium hook-event guard --studio studio",
         JSON.stringify(guardGroup),
+      );
+      const start = hooks?.["SessionStart"] as { matcher?: string; hooks: { command: string; timeout: number }[] }[] | undefined;
+      const post = hooks?.["PostToolUse"] as { matcher?: string; hooks: { type?: string; command: string; timeout: number }[] }[] | undefined;
+      report(
+        "settings.sync",
+        !!start?.[0]?.hooks.some((h) => h.command === syncCommand && h.timeout === 60) && post?.length === 1 && post[0]?.matcher === "Bash" && post[0].hooks.length === 1 && post[0].hooks[0]?.type === "command" && post[0].hooks[0].command === syncRequested && post[0].hooks[0].timeout === 60,
+        JSON.stringify({ start, post }),
       );
       const perms = obj["permissions"] as { allow?: string[] } | undefined;
       report("settings.permissions-allow-workflow", !!perms?.allow?.includes("Workflow"), JSON.stringify(perms));

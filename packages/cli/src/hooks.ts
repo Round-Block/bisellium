@@ -5,7 +5,7 @@
  *
  *   bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
  *   bisellium hooks check --harness claude-code [--studio <dir>] [--repo <dir>]
- *   bisellium hook-event <start|stop|tool|compact|context|guard> --sella <id> [--studio <dir>]
+ *   bisellium hook-event <start|stop|tool|compact|context|guard|sync> --sella <id> [--studio <dir>]
  *
  * `hooks print`/`hooks check` are ordinary administrative commands (usage
  * errors exit 2, like every other command in this CLI). `hook-event` is
@@ -23,7 +23,8 @@
  */
 import { spawnSync } from "node:child_process";
 import { accessSync, appendFileSync, constants, readFileSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, instant, type GantryEvent } from "@bisellium/schema";
@@ -237,7 +238,7 @@ export interface HookEventOptions {
   stdinTimeoutMs?: number;
 }
 
-const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context|guard> --sella <id> [--studio <dir>]";
+const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context|guard|sync> --sella <id> [--studio <dir>]";
 
 /** `receipts/<sella>/<sessionId>.json` and `timeline/<sella>.jsonl` both
  *  join these two values straight into a filesystem path — `sella` is
@@ -258,7 +259,7 @@ function isSafePathSegment(s: string): boolean {
 
 export async function runHookEvent(args: string[], opts: HookEventOptions = {}): Promise<HooksResult> {
   const [sub, ...rest] = args;
-  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context" && sub !== "guard") {
+  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context" && sub !== "guard" && sub !== "sync") {
     console.error(`hook-event: unknown subcommand ${JSON.stringify(sub ?? "")}\n${HOOK_EVENT_USAGE}`);
     return { exitCode: 0 }; // a hook target never blocks the harness, even on a usage error
   }
@@ -317,6 +318,7 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
 
   try {
     if (sub === "guard") return handleGuard(payload.data);
+    if (sub === "sync") return handleSync(payload.data);
     if (sub === "start") return handleStart(studio, sella, payload.data, now);
     if (sub === "stop") return handleStop(studio, sella, payload.data, now);
     if (sub === "tool") return handleTool(studio, sella, payload.data, now);
@@ -336,6 +338,22 @@ function handleGuard(payload: Record<string, unknown>): HooksResult {
   if (!why) return { exitCode: 0 };
   console.error(why);
   return { exitCode: 2 };
+}
+
+/** The sync's own bound, under the hook's 60 s timeout (W-369). */
+const SYNC_TIMEOUT_MS = 55_000;
+
+/** `hook-event sync` (W-369): runs `scripts/agent-workspace.sh sync` beside this CLI's own real file, the installed
+ *  guard's copy (hooks run unsandboxed, so never the agent clone's), and hands its `sync:` lines to the model as the
+ *  SessionStart or PostToolUse event's additionalContext (plain lines for any other event). Always exits 0. */
+function handleSync(payload: Record<string, unknown>): HooksResult {
+  const script = join(dirname(realpathSync(fileURLToPath(import.meta.url))), "..", "..", "..", "scripts", "agent-workspace.sh");
+  const r = spawnSync("bash", [script, "sync"], { encoding: "utf8", timeout: SYNC_TIMEOUT_MS });
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim();
+  const text = r.status === null ? `${out}\nsync: stopped (${r.error?.message ?? r.signal ?? "no exit"})`.trim() : out || `sync: no output (exit ${r.status})`;
+  const event = stringField(payload, "hook_event_name");
+  console.log(event === "SessionStart" || event === "PostToolUse" ? JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: text } }) : text);
+  return { exitCode: 0 };
 }
 
 function stringField(payload: Record<string, unknown>, key: string): string | undefined {

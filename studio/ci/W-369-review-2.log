@@ -1,0 +1,21 @@
+# opus: W-369
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16858-f9b8-7792-be05-0172dd7323e2
+# outcome: passed
+# at: 2026-10-23T11:15:46.742Z
+# tree: tree:80f8cb8a33442057ac24d92a144b359b6bdf4f86
+# brief: briefs/W-369.md blob:ec760c8acc8253dcfa74f192e1ae021f1030610a
+# ticket: {"opus":"W-369","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-369/studio","head":"502e96d1bcd512f39cfbe60252c4ba79e0905738","brief":"ec760c8acc8253dcfa74f192e1ae021f1030610a","at":"2026-10-23T11:14:53.226Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-369-review-1.log #1: closed — scripts/agent-workspace.sh:272 disables replacement objects for every agent-clone Git call, scripts/agent-workspace.sh:335 exports the same protection before all other sync Git calls, and packages/cli/src/w369.test.ts:232 pins replacement refs with the target both absent and present locally while asserting the genuine fetched tree is checked out.
+
+## Verdict
+The round-1 security boundary is closed with implementation and regression evidence.
+VERDICT: PASS
