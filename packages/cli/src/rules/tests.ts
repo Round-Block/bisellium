@@ -557,10 +557,11 @@ export function testRowFindings(repo: string): Finding[] {
 
 // ---- W-376: `test.one_sided`, block. A test of an output asserts the whole string, never one end of it.
 const sidedBlock = (where: string, message: string): Finding => ({ rule: "test.one_sided", level: "block", where, message });
-const MATCH_SITE = /(?<![\w$.])assert\s*\.\s*match\s*\(/g;
+// the boundary before `assert`: no word character or `$` right before it, and no `.` before it past any spaces (a member call)
+const MATCH_SITE = /(?<![\w$])(?<!\.\s*)assert\s*\.\s*match\s*\(/g;
 const REGEX_LITERAL = /\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*/y;
 const REGEXP_CALL = /new\s+RegExp\s*\(\s*(["'`])((?:\\.|(?!\1)[^\\])*)\1/y;
-const OK_SITE = /(?<![\w$.])assert(?:\s*\.\s*ok)?\s*\(/g;
+const OK_SITE = /(?<![\w$])(?<!\.\s*)assert(?:\s*\.\s*ok)?\s*\(/g;
 const ENDS_CALL = /\.\s*(startsWith|endsWith)\s*\(/;
 const SIDED = /^\/\/\s*one-sided:\s*(\S.*)$/;
 const SIDED_HOW = 'assert the whole string (assert.equal, or a pattern anchored at both ends), or annotate "// one-sided: <reason>"';
