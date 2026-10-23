@@ -1040,3 +1040,136 @@ test("W-178-b4 the rule runs from check --repo beside test.sleep", { timeout: 60
   assert.equal(typeof mod.testRowFindings, "function", "rules/tests.ts exports testRowFindings");
   assert.deepEqual(mod.testRowFindings!(REPO_ROOT), [], "the real repository has no test.rows finding");
 });
+
+// ---------------------------------------------------------------------------
+// W-376: `test.one_sided` -- a line added to a test file since the merge-base asserts a whole string, never one end of
+// it. Rows W-376-b1 and W-376-b2 are selected by name; the rule module is loaded dynamically, and each row's first
+// assertion goes through `checkStudio`, which exists on master, so a missing rule is an assertion and not a load error.
+// Every fixture assertion below is a string: the rule reads string-blanked code, so this file's own lines hold no site.
+// ---------------------------------------------------------------------------
+interface SidedModule {
+  oneSidedSites?: (text: string, lines: readonly number[]) => { line: number; form: string }[];
+  oneSidedFindings?: (repo: string) => Finding[];
+}
+const sidedModule = (): Promise<SidedModule> => import(TESTS_MODULE) as Promise<SidedModule>;
+const START_ONLY = "a pattern anchored at its start only";
+const END_ONLY = "a pattern anchored at its end only";
+const SIDED_HOW = 'assert the whole string (assert.equal, or a pattern anchored at both ends), or annotate "// one-sided: <reason>"';
+const SIDED_REASON = "// one-sided: the tail names a temporary directory";
+const sidedBlock = (where: string, form: string): Finding => ({ rule: "test.one_sided", level: "block", where, message: `${form}: ${SIDED_HOW}` });
+const sidedOf = (repo: string): Finding[] => checkStudio(officina(), NOW, { repo }).findings.filter((f) => f.rule === "test.one_sided");
+/** The forms the pure core finds on every line of `lines`. */
+async function formsOn(lines: string[], judged?: number[]): Promise<{ line: number; form: string }[]> {
+  const mod = await sidedModule();
+  assert.equal(typeof mod.oneSidedSites, "function", "rules/tests.ts exports oneSidedSites");
+  return mod.oneSidedSites!(code(lines), judged ?? lines.map((_, i) => i + 1));
+}
+const SIDED_BASE = [RUNNER_IMPORT, 'assert.match(why, /^held/, "an old prefix assertion");'];
+
+// one line each: the form the rule names on it, or undefined
+const PATTERN_GRAMMAR: [string, string, string | undefined][] = [
+  ["a regex literal anchored at its start", 'assert.match(why, /^held: the log/, "why");', START_ONLY],
+  ["a regex literal anchored at its end", "assert.match(why, /cannot be counted \\(D-086 B\\)$/);", END_ONLY],
+  ["a line prefix under the m flag", "assert.match(out, /^guard: live/m);", START_ONLY],
+  ["a new RegExp template anchored at its start", 'assert.match(why, new RegExp(`^ci/${id}-review-1\\\\.log is not committed`), ran("why", o));', START_ONLY],
+  ["a new RegExp string anchored at its end", 'assert.match(why, new RegExp("so it is counted$"));', END_ONLY],
+  ["a new RegExp single-quoted string anchored at its start", "assert.match(why, new RegExp('^held'));", START_ONLY],
+  ["a template ending in a substitution has no end anchor", "assert.match(why, new RegExp(`^why: ${reason}`));", START_ONLY],
+  ["a first argument holding a comma and a call", "assert.match(readLog(cited, 2), /^# outcome/);", START_ONLY],
+  ["an escaped dollar is no end anchor", "assert.match(cost, /^costs \\$/);", START_ONLY],
+  ["a dollar in a character class is no end anchor", "assert.match(cost, /^costs [$]/);", START_ONLY],
+  ["spaces around the call", "assert . match ( why ,  /^held/ );", START_ONLY],
+  ["a second assertion on the line", 'assert.equal(a, "b"); assert.match(why, /^held/);', START_ONLY],
+  ["anchored at both ends", "assert.match(why, /^held: the log$/);", undefined],
+  ["both ends under the m flag", "assert.match(log, /^# outcome: failed$/m);", undefined],
+  ["a new RegExp anchored at both ends", "assert.match(why, new RegExp(`^ci/${id} is held$`));", undefined],
+  ["unanchored: the includes form, a limit", "assert.match(err, /names the brief/);", undefined],
+  ["a pattern held in a name is not read, a limit", "assert.match(why, WHY);", undefined],
+  ["a call spanning lines is not read, a limit", "assert.match(", undefined],
+  ["doesNotMatch is no bound", "assert.doesNotMatch(why, /^held/);", undefined],
+  ["a member assert is not read, a limit", "t.assert.match(why, /^held/);", undefined],
+  ["a whole-string assertion", 'assert.equal(why, "held: the log");', undefined],
+  ["inside a string", "const s = 'assert.match(why, /^held/)';", undefined],
+  ["inside a comment", "// assert.match(why, /^held/);", undefined],
+  ["a pattern outside an assertion", "const lines = out.split(sep).filter((l) => /^why: /.test(l));", undefined],
+];
+
+test("W-376-b1 behaviour 1: an added assert.match whose pattern is anchored at one end only is a test.one_sided block, unless annotated", { timeout: 600_000 }, async () => {
+  // the branch adds one prefix assertion at line 3 of a test file whose line 2 already held one
+  const added = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, 'assert.match(why, /^ready/, "a new prefix assertion");']));
+  assert.deepEqual(sidedOf(branched("w376-b1-added", { "a.test.ts": code(SIDED_BASE) }, added)), [sidedBlock("a.test.ts:3", START_ONLY)], "an added prefix assertion: one block at its line");
+
+  // the grammar, one line at a time
+  for (const [label, line, form] of PATTERN_GRAMMAR) assert.deepEqual(await formsOn([line]), form === undefined ? [] : [{ line: 1, form }], label);
+  // only the listed lines are judged
+  assert.deepEqual(await formsOn(["assert.match(why, /^a/);", "assert.match(why, /b$/);"], [2]), [{ line: 2, form: END_ONLY }], "an unlisted line is not judged");
+  assert.deepEqual(await formsOn(["const a = 1;"], [0, 2, 9]), [], "a line number outside the file is no site");
+
+  // the annotation: on the line, or alone on the line above, with a reason of 15 characters in 3 words
+  assert.deepEqual(await formsOn([`assert.match(why, /^held/); ${SIDED_REASON}`]), [], "annotated on the line");
+  assert.deepEqual(await formsOn([SIDED_REASON, "assert.match(why, /^held/);"], [2]), [], "annotated on the line above");
+  const unwaived: [string, string[]][] = [
+    ["a short reason", ["assert.match(why, /^held/); // one-sided: a tail"]],
+    ["two words", ["assert.match(why, /^held/); // one-sided: temporary-directory tail-names"]],
+    ["another prefix", ["assert.match(why, /^held/); // sided: the tail names a temporary directory"]],
+    ["no colon", ["assert.match(why, /^held/); // one-sided the tail names a temporary directory"]],
+    ["two lines above", [SIDED_REASON, "", "assert.match(why, /^held/);"]],
+    ["after code on the line above", [`const a = 1; ${SIDED_REASON}`, "assert.match(why, /^held/);"]],
+    ["inside a string", ["assert.match(why, /^held/, '// one-sided: the tail names a temporary directory');"]],
+  ];
+  for (const [label, lines] of unwaived) assert.deepEqual(await formsOn(lines, [lines.length]), [{ line: lines.length, form: START_ONLY }], `not annotated: ${label}`);
+
+  // what the repository rule judges: the lines of tracked test files added or changed since the merge-base
+  const base = { "a.test.ts": code(SIDED_BASE), "util.ts": code(["export const a = 1;"]) };
+  assert.deepEqual(sidedOf(branched("w376-b1-same", base)), [], "an unchanged branch: the old line is not judged");
+  assert.deepEqual(sidedOf(branched("w376-b1-other", base, (r) => put(r, "a.test.ts", code([...SIDED_BASE, 'assert.equal(why, "ready");'])))), [], "an added whole-string assertion");
+  const changed = (r: string): void => put(r, "a.test.ts", code([RUNNER_IMPORT, 'assert.match(why, /^held: the log/, "an old prefix assertion");']));
+  assert.deepEqual(sidedOf(branched("w376-b1-changed", base, changed)), [sidedBlock("a.test.ts:2", START_ONLY)], "a changed line is judged");
+  const fresh = (r: string): void => put(r, "b.test.ts", code([RUNNER_IMPORT, "assert.match(out, /done$/);"]));
+  assert.deepEqual(sidedOf(branched("w376-b1-new", base, fresh)), [sidedBlock("b.test.ts:2", END_ONLY)], "a new test file: every line is added");
+  // a name with a space, a quote or a non-ASCII letter is read whole (git prints names raw under -z)
+  const odd = (r: string): void => {
+    for (const name of ["a b.test.ts", 'q"uote.test.ts', "ñame.test.ts"]) put(r, name, code([RUNNER_IMPORT, "assert.match(out, /^done/);"]));
+  };
+  assert.deepEqual(wheres(sidedOf(branched("w376-b1-names", base, odd))), ["a b.test.ts:2", 'q"uote.test.ts:2', "ñame.test.ts:2"].sort(), "a space, a quote and a non-ASCII name");
+  // a test file replaced by a symlink is test.sleep's block, never read here
+  const linked = branched("w376-b1-symlink", base, (r) => {
+    rmSync(join(r, "a.test.ts"));
+    symlinkSync("util.ts", join(r, "a.test.ts"));
+  });
+  const linkFindings = checkStudio(officina(), NOW, { repo: linked }).findings.filter((f) => f.rule === "test.one_sided" || f.rule === "test.sleep");
+  assert.deepEqual(linkFindings.map((f) => [f.rule, f.where]), [["test.sleep", "a.test.ts"]], "a symlinked test file: test.sleep's block, none of this rule's");
+  assert.deepEqual(sidedOf(branched("w376-b1-nontest", base, (r) => put(r, "util.ts", code(["assert.match(why, /^held/);"])))), [], "a file that is not a test path");
+  const registered = { "package.json": '{"scripts":{"test":"node scripts/gate.mjs"}}\n', "scripts/gate.mjs": code(["const a = 1;"]) };
+  assert.deepEqual(sidedOf(branched("w376-b1-registered", registered, (r) => put(r, "scripts/gate.mjs", code(["const a = 1;", "assert.match(why, /^held/);"])))), [sidedBlock("scripts/gate.mjs:2", START_ONLY)], "a path a test script registers");
+  const untracked = branched("w376-b1-untracked", base);
+  put(untracked, "c.test.ts", code(["assert.match(why, /^held/);"]));
+  assert.deepEqual(sidedOf(untracked), [], "an untracked test file is unseen, a limit");
+  const uncommitted = branched("w376-b1-uncommitted", base);
+  put(uncommitted, "a.test.ts", code([...SIDED_BASE, "assert.match(why, /^ready/);"]));
+  assert.deepEqual(sidedOf(uncommitted), [sidedBlock("a.test.ts:3", START_ONLY)], "a working-tree edit of a tracked file is judged");
+  const annotated = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, SIDED_REASON, "assert.match(why, /^ready/);"]));
+  assert.deepEqual(sidedOf(branched("w376-b1-annotated", base, annotated)), [], "an annotated added line");
+
+  // the base: origin-only master is read; with none, test.rows blocks once and this rule adds nothing
+  const originOnly = branched("w376-b1-origin", base, added);
+  git(originOnly, ["update-ref", "refs/remotes/origin/master", "master"]);
+  git(originOnly, ["branch", "-q", "-D", "master"]);
+  assert.deepEqual(sidedOf(originOnly), [sidedBlock("a.test.ts:3", START_ONLY)], "origin-only master");
+  const trunk = branched("w376-b1-no-master", base, added);
+  git(trunk, ["branch", "-q", "-m", "master", "trunk"]);
+  const noBase = checkStudio(officina(), NOW, { repo: trunk }).findings.filter((f) => f.rule === "test.one_sided" || f.rule === "test.rows");
+  assert.deepEqual(noBase.map((f) => [f.rule, f.where]), [["test.rows", "git merge-base"]], "no master: test.rows' one block, none of this rule's");
+
+  // the CLI, the registry and the real repository
+  const off = officina();
+  const blocked = cli(["check", off, "--repo", branched("w376-b1-cli", base, added)]);
+  assert.equal(blocked.status, 1, `an added prefix assertion exits 1\n${blocked.out}`);
+  const ruleLines = blocked.out.split("\n").filter((l) => l.trimStart().startsWith("test.one_sided"));
+  assert.deepEqual(ruleLines.map((l) => l.trim().split(/\s{2,}/)), [["test.one_sided", "a.test.ts:3", `${START_ONLY}: ${SIDED_HOW}`]], `one block line\n${blocked.out}`);
+  assert.equal(cli(["check", off, "--repo", branched("w376-b1-cli-ok", base, annotated)]).status, 0, "annotated: exit 0");
+  assert.ok(RULE_IDS.has("test.one_sided"), "RULE_IDS registers test.one_sided");
+  const mod = await sidedModule();
+  assert.equal(typeof mod.oneSidedFindings, "function", "rules/tests.ts exports oneSidedFindings");
+  assert.deepEqual(mod.oneSidedFindings!(REPO_ROOT), [], "the real repository adds no one-sided assertion");
+});
