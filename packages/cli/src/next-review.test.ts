@@ -1573,9 +1573,23 @@ function w377Amend(w: World, id: string): void {
   const o = cli(w, ["amend", OPUS, "--ui-ruling", id, "--reason", "Patron approves the screens", "--sella", "producer", "--studio", w.wtStudio, "--now", "2026-10-02T08:30:00.000Z"], w.wt);
   if (o.status !== 0) throw new Error(ran(`fixture: amend --ui-ruling ${id}`, o));
 }
-/** The whole why of a ui pr that waits, after `head`, at the worktree's tree and the fixture's served-e2e run. */
-const w377Waits = (w: World, head: string, tree = sourceTree(w.wt)): string =>
-  `${head}; it waits for one that binds certifies: ${tree}, design_digest: ${w377Digest(w)}, at or after ${T.reds}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${OPUS}) in .worktrees/${OPUS}/studio from the Patron's word on its ci/shots/${OPUS}/, then bisellium amend ${OPUS} --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/${OPUS}/studio, commit both on opus/${OPUS}, then rerun`;
+/** Every `key: value` extra line of the printed stdout, in order: each refusal is a `ruling:` line and each uncommitted path a `dirty:` line. */
+const w377Lines = (o: Out, key: string): string[] => o.out.split("\n").filter((l) => l.startsWith(`${key}: `)).map((l) => l.slice(key.length + 2));
+/** The whole why of a ui pr that waits, after the count of its refused rulings, at the worktree's tree and the fixture's served-e2e run. */
+const w377Waits = (w: World, refused: string[] = [], tree = sourceTree(w.wt)): string =>
+  `${refused.length === 0 ? "no Patron ruling on these screens is recorded" : `${refused.length} ${refused.length === 1 ? "ruling is" : "rulings are"} refused or not current (each on a ruling: line)`}; it waits for one that binds certifies: ${tree}, design_digest: ${w377Digest(w)}, at or after ${T.reds}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${OPUS}) in .worktrees/${OPUS}/studio from the Patron's word on its ci/shots/${OPUS}/, then bisellium amend ${OPUS} --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/${OPUS}/studio, commit both on opus/${OPUS}, then rerun`;
+/** The why within the line cap, and every refusal whole on its own `ruling:` line, none dropped. */
+function w377Holds(o: Out, w: World, refused: string[], label: string): void {
+  const why = o.kv.get("why") ?? "";
+  assert.equal(why, w377Waits(w, refused), ran(label, o));
+  assert.ok(why.length <= 1000, ran(`${label}: the why fits the output cap (${why.length})`, o));
+  assert.deepEqual(w377Lines(o, "ruling"), refused, ran(`${label}: every refusal is on a ruling: line`, o));
+}
+/** The not-committed why, and every uncommitted path whole on its own `dirty:` line, none dropped. */
+function w377Dirty(o: Out, ruling: string, paths: string[], label: string): void {
+  assert.equal(o.kv.get("why"), `the Patron's ruling ${ruling} is not committed on opus/${OPUS}; commit it, then rerun`, ran(label, o));
+  assert.deepEqual(w377Lines(o, "dirty"), paths, ran(`${label}: every path is on a dirty: line`, o));
+}
 const W377_EARLY = "D-950 rules another served tree or design digest, or an earlier time";
 
 test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling current at the branch's screens, naming what binds one", { timeout: 1_800_000 }, () => {
@@ -1585,7 +1599,7 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
   const none = next(w, [OPUS, ...BUDGET]);
   expectStep(none, "pr", "held", "no ruling: the pr is held");
-  assert.equal(none.kv.get("why"), w377Waits(w, "no Patron ruling on these screens is recorded"), ran("no ruling: the why names what binds one", none));
+  w377Holds(none, w, [], "no ruling: the why names what binds one");
 
   // a valid ruling made before the served-e2e run is not current
   w377Ruling(w, "D-950", { at: T.handoffStale });
@@ -1593,7 +1607,7 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   commit(w.wt, `studio(${OPUS}): an early ui ruling`);
   const early = next(w, [OPUS, ...BUDGET]);
   expectStep(early, "pr", "held", "an early ruling: the pr is held");
-  assert.equal(early.kv.get("why"), w377Waits(w, W377_EARLY), ran("an early ruling: the why names it", early));
+  w377Holds(early, w, [W377_EARLY], "an early ruling: the why names it");
 
   // a current ruling, committed on the branch, releases the pr
   w377Ruling(w, "D-951");
@@ -1614,7 +1628,7 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
     commit(w.wt, `studio(${OPUS}): ${name}`);
     const o = next(w, [OPUS, ...BUDGET]);
     expectStep(o, "pr", "held", `${name}: the pr is held`);
-    assert.equal(o.kv.get("why"), w377Waits(w, "ui_rulings must be a non-empty sequence of distinct decision-id strings"), ran(label, o));
+    w377Holds(o, w, ["ui_rulings must be a non-empty sequence of distinct decision-id strings"], label);
   }
   // a kind that is not a registered native kind (mis-cased, unregistered, not a string, absent) holds before the pr rung, at the
   // build rung's `admitCurrentGates` (existing, reused), called through `Facts.gates`: it never reaches a pr or merge named without the wait
@@ -1637,7 +1651,7 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   commit(w.wt, `studio(${OPUS}): a ruling by another author`);
   const refused = next(w, [OPUS, ...BUDGET]);
   expectStep(refused, "pr", "held", "a refused ruling: the pr is held");
-  assert.equal(refused.kv.get("why"), w377Waits(w, `${W377_EARLY}; D-951 is not a structured Patron UI ruling for this opus`), ran("a refused ruling: the why names its reason", refused));
+  w377Holds(refused, w, [W377_EARLY, "D-951 is not a structured Patron UI ruling for this opus"], "a refused ruling: the why names its reason");
   put(w.wtStudio, "decisions/D-951.md", ruling);
   commit(w.wt, `studio(${OPUS}): the ruling restored`);
   const ruled = sourceTree(w.wt);
@@ -1652,7 +1666,7 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   assert.notEqual(sourceTree(w.wt), ruled, "fixture: the source tree moved");
   const pushed = next(w, [OPUS, ...BUDGET]);
   expectStep(pushed, "pr", "held", "a later push: the pr is held");
-  assert.equal(pushed.kv.get("why"), w377Waits(w, `${W377_EARLY}; D-951 rules another served tree or design digest, or an earlier time`), ran("a later push: the why names the stale ruling", pushed));
+  w377Holds(pushed, w, [W377_EARLY, "D-951 rules another served tree or design digest, or an earlier time"], "a later push: the why names the stale ruling");
 
   // fix round 1: a long ruling history keeps every required part of the why within the 1000-character line cap
   for (let i = 0; i < 12; i++) {
@@ -1662,10 +1676,20 @@ test("W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling curre
   commit(w.wt, `studio(${OPUS}): twelve more stale ui rulings`);
   const many = next(w, [OPUS, ...BUDGET]);
   expectStep(many, "pr", "held", "accumulated stale rulings: the pr is held");
-  const manyWhy = many.kv.get("why") ?? "";
-  assert.ok(manyWhy.length <= 1000, ran(`accumulated stale rulings: the why fits the output cap (${manyWhy.length})`, many));
-  const required = [`certifies: ${sourceTree(w.wt)}`, `design_digest: ${w377Digest(w)}`, `at or after ${T.reds}`, `bisellium amend ${OPUS} --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/${OPUS}/studio`, `commit both on opus/${OPUS}, then rerun`, "and 11 more"];
-  for (const part of required) assert.ok(manyWhy.includes(part), ran(`accumulated stale rulings: the why carries ${part}`, many));
+  w377Holds(many, w, [W377_EARLY, "D-951 rules another served tree or design digest, or an earlier time", ...Array.from({ length: 12 }, (_, i) => `D-${970 + i} rules another served tree or design digest, or an earlier time`)], "accumulated stale rulings: the why keeps its required parts");
+  // fix round 1: the same hold through next --perform --chain, after the review it performs
+  const c = uiReviewWorld("w377-b1-chain");
+  for (const id of ["D-950", ...Array.from({ length: 13 }, (_, i) => `D-${970 + i}`)]) {
+    w377Ruling(c, id, { at: T.handoffStale });
+    w377Amend(c, id);
+  }
+  commit(c.wt, `studio(${OPUS}): fourteen stale ui rulings`);
+  codexSays(c, { session: "s-377-4", reply: UI_PASS_REPLY });
+  const chained = next(c, [OPUS, "--perform", "--chain", ...BUDGET], { env: { ...CODEX_PATH } });
+  assert.equal(chained.status, 1, ran("chain: exit 1", chained));
+  assert.match(chained.out, new RegExp(`^next: ${OPUS} review performed$`, "m"), ran("chain: the review is performed", chained));
+  assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
+  w377Holds(chained, c, Array.from({ length: 14 }, (_, i) => `${i === 0 ? "D-950" : `D-${970 + i - 1}`} rules another served tree or design digest, or an earlier time`), "chain: accumulated stale rulings keep their required parts");
 });
 
 test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on the branch, and the merge of a PR open on the tip waits too", { timeout: 1_800_000 }, () => {
@@ -1677,19 +1701,19 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
   w377Amend(w, "D-960");
   const both = next(w, [OPUS, ...BUDGET]);
   expectStep(both, "pr", "held", "an uncommitted ruling: the pr is held");
-  assert.equal(both.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md, studio/opera/${OPUS}.md); commit it, then rerun`, ran("an uncommitted ruling: the why names both paths", both));
+  w377Dirty(both, "D-960", ["studio/decisions/D-960.md", `studio/opera/${OPUS}.md`], "an uncommitted ruling: the why names both paths");
   git(w.wt, ["add", `studio/opera/${OPUS}.md`]);
   git(w.wt, ["commit", "-q", "-m", `studio(${OPUS}): the record alone`]);
   const decision = next(w, [OPUS, ...BUDGET]);
   expectStep(decision, "pr", "held", "an untracked decision: the pr is held");
-  assert.equal(decision.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md); commit it, then rerun`, ran("an untracked decision: the why names it", decision));
+  w377Dirty(decision, "D-960", ["studio/decisions/D-960.md"], "an untracked decision: the why names it");
   // round 3: an ignored decision is present but never committed, so it holds as untracked does
   const exclude = join(git(w.wt, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "info", "exclude");
   const excluded = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
   put(dirname(exclude), "exclude", `${excluded}D-960.md\n`);
   const ignored = next(w, [OPUS, ...BUDGET]);
   expectStep(ignored, "pr", "held", "an ignored decision: the pr is held");
-  assert.equal(ignored.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md); commit it, then rerun`, ran("an ignored decision: the why names it", ignored));
+  w377Dirty(ignored, "D-960", ["studio/decisions/D-960.md"], "an ignored decision: the why names it");
   writeFileSync(exclude, excluded);
   commit(w.wt, `studio(${OPUS}): the ui ruling`);
   expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a committed ruling: the pr is named");
@@ -1699,22 +1723,22 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
   git(w.wt, ["update-index", "--skip-worktree", "studio/decisions/D-960.md"]);
   writeFileSync(ruled, `${ruledText}A working-tree line HEAD does not hold.\n`);
   const hidden = next(w, [OPUS, ...BUDGET]);
-  assert.equal(hidden.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-960.md (index flag S)); commit it, then rerun`, ran("a skip-worktree decision: the why names it", hidden));
+  w377Dirty(hidden, "D-960", ["studio/decisions/D-960.md (index flag S)"], "a skip-worktree decision: the why names it");
   git(w.wt, ["update-index", "--no-skip-worktree", "studio/decisions/D-960.md"]);
   writeFileSync(ruled, ruledText);
   git(w.wt, ["update-index", "--assume-unchanged", `studio/opera/${OPUS}.md`]);
   const assumed = next(w, [OPUS, ...BUDGET]);
-  assert.equal(assumed.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/opera/${OPUS}.md (index flag h)); commit it, then rerun`, ran("an assume-unchanged record: the why names it", assumed));
+  w377Dirty(assumed, "D-960", [`studio/opera/${OPUS}.md (index flag h)`], "an assume-unchanged record: the why names it");
   git(w.wt, ["update-index", "--no-assume-unchanged", `studio/opera/${OPUS}.md`]);
   // the whole decisions folder is read, so a stray uncommitted decision holds too
   put(w.wtStudio, "decisions/D-962.md", "stray\n");
   const stray = next(w, [OPUS, ...BUDGET]);
-  assert.equal(stray.kv.get("why"), `the Patron's ruling D-960 is not committed on opus/${OPUS} (studio/decisions/D-962.md); commit it, then rerun`, ran("a stray decision: the why names it", stray));
+  w377Dirty(stray, "D-960", ["studio/decisions/D-962.md"], "a stray decision: the why names it");
   rmSync(join(w.wtStudio, "decisions", "D-962.md"));
-  // fix round 1: many stray decisions are listed in part, so the line stays within the 1000-character cap
-  for (let i = 0; i < 30; i++) put(w.wtStudio, `decisions/D-${980 + i}-a-stray-decision-with-a-long-name-${"x".repeat(60)}.md`, "stray\n");
-  const strays = next(w, [OPUS, ...BUDGET]).kv.get("why") ?? "";
-  assert.ok(strays.length <= 1000 && strays.endsWith("and 26 more); commit it, then rerun"), `many stray decisions: the why is bounded (${strays.length}): ${strays}`);
+  // fix round 1: many stray decisions are all listed, each on its own dirty: line, and the why stays within the line cap
+  const stray30 = Array.from({ length: 30 }, (_, i) => `studio/decisions/D-${980 + i}-a-stray-decision-with-a-long-name-${"x".repeat(60)}.md`);
+  for (const rel of stray30) put(w.wt, rel, "stray\n");
+  w377Dirty(next(w, [OPUS, ...BUDGET]), "D-960", [...stray30].sort(), "many stray decisions: every path is listed");
 
   // a PR open on the tip with no ruling: the merge waits for one
   const m = uiReviewWorld("w377-b2-merge");
@@ -1725,11 +1749,23 @@ test("W-377-b2 behaviour 2: the ruling releases the pr only once committed on th
   scenario(m, { list: openList(m) });
   const open = next(m, [OPUS, ...BUDGET]);
   expectStep(open, "merge", "held", "an open PR with no ruling: the merge is held");
-  assert.equal(open.kv.get("why"), w377Waits(m, "no Patron ruling on these screens is recorded"), ran("an open PR with no ruling: the why names what binds one", open));
+  w377Holds(open, m, [], "an open PR with no ruling: the why names what binds one");
   w377Ruling(m, "D-961");
   w377Amend(m, "D-961");
   commit(m.wt, `studio(${OPUS}): the ui ruling`);
   git(m.wt, ["push", "-q", "origin", `opus/${OPUS}`]);
   scenario(m, { list: openList(m) });
   expectStep(next(m, [OPUS, ...BUDGET]), "merge", "named", "an open PR with a committed ruling: the merge is named");
+
+  // fix round 1: many stray decisions through next --perform --chain, after the review it performs
+  const c = uiReviewWorld("w377-b2-chain");
+  w377Ruling(c, "D-960");
+  w377Amend(c, "D-960");
+  commit(c.wt, `studio(${OPUS}): the ui ruling`);
+  for (const rel of stray30) put(c.wt, rel, "stray\n");
+  codexSays(c, { session: "s-377-5", reply: UI_PASS_REPLY });
+  const chained = next(c, [OPUS, "--perform", "--chain", ...BUDGET], { env: { ...CODEX_PATH } });
+  assert.equal(chained.status, 1, ran("chain: exit 1", chained));
+  assert.match(chained.out, new RegExp(`^next: ${OPUS} pr held$`, "m"), ran("chain: the pr is held", chained));
+  w377Dirty(chained, "D-960", [...stray30].sort(), "chain: many stray decisions: every path is listed");
 });
