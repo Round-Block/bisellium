@@ -1,0 +1,21 @@
+# opus: W-377
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a168bb-da03-7312-a3c9-3b4977182aef
+# outcome: passed
+# at: 2026-10-23T15:03:23.211Z
+# tree: tree:b044331d32903c9ac1b65b2f365ac70838427392
+# brief: briefs/W-377.md blob:0cf0419f0a7a892a3bb7b5da952644cce69f2fa3
+# ticket: {"opus":"W-377","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-377/studio","head":"915699bd05aba7ea16826266f71002a3585a1de2","brief":"0cf0419f0a7a892a3bb7b5da952644cce69f2fa3","at":"2026-10-23T15:01:37.564Z"}
+
+## Findings
+1. advisory — packages/cli/src/next-review.test.ts:1665 [severity: S3] The new accumulated-ruling and sibling long-output regressions have refreshed green gates, but no assertion-failure log shows them failing against the round-1 head. [class: review×evidence-backfilled-or-absent] — check: none: record the new W-377 fix cases failing against de929bf93e4dd6dc7df9ab7dcb0384017ba33b23
+
+## Earlier findings
+- ci/W-377-review-1.log #1: closed — packages/cli/src/next.ts:1204 marks UI ruling waits uncut, and lines 2683, 2811, and 2972 preserve the complete reason through direct, held-perform, merge, and chained output; the new assertions cover accumulated rulings and long dirty paths.
+
+## Verdict
+The truncation defect is fixed; only the nonblocking fix-regression evidence remains incomplete.
+VERDICT: PASS
