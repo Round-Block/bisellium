@@ -193,6 +193,26 @@ test("W-362-b3 behaviour 3: the guard installer judges its inputs before any cha
   assert.match(dead.out, /is not wired, not outside .* or not live/, "a failing probe names the guard: lines");
 });
 
+// W-362 spec-2 finding 1: the script's own target is resolved before the inputs are judged
+test("W-362-b3 behaviour 3: a shortcut symlink to the agent clone's script refuses the install", () => {
+  const f = installFixture();
+  const copy = join(f, "agent", "scripts", "agent-workspace.sh");
+  mkdirSync(dirname(copy), { recursive: true });
+  copyFileSync(join(REPO, "scripts", "agent-workspace.sh"), copy);
+  mkdirSync(join(f, "short"));
+  symlinkSync(copy, join(f, "short", "agent-workspace.sh"));
+  symlinkSync(dirname(copy), join(f, "short dir"));
+  for (const [what, script] of [["a symlinked file", join(f, "short", "agent-workspace.sh")], ["a symlinked parent", join(f, "short dir", "agent-workspace.sh")]] as const) {
+    const r = installWith(script, f, {}, "guard");
+    assert.equal(r.code, 1, `${what} into the agent clone refuses the install: ${r.out}`);
+    assert.match(r.out, /never the agent clone's \(nothing was changed\)/, `${what} names the route`);
+    assert.equal(existsSync(join(f, "bin", "bisellium")), false, `${what}: no link was made`);
+    assert.equal(existsSync(join(f, ".claude", "settings.json")), false, `${what}: the user settings were not written`);
+    assert.equal(existsSync(join(f, "npm.log")), false, `${what}: npm did not run`);
+    assert.equal(git(join(f, "guard"), "rev-parse", "HEAD"), git(join(f, "origin.git"), "rev-parse", "master~1"), `${what}: the guard worktree did not move`);
+  }
+});
+
 /** A main checkout on master with `packages/a`, `studio/s` and `root`, and a bare origin; `advance` pushes a commit
  *  changing the named files from a second clone, fetched into the main checkout as the reviewed merge commit. */
 function mainCheckout(): { main: string; advance: (...files: string[]) => string } {
