@@ -34,7 +34,8 @@ interface Command {
   after: string;
 }
 
-function commandSeq(line: string): Command[] {
+/* `literal` (env -S's string): only whitespace breaks words; `;` `&` `|` `(` `)` backtick and `$(` stay argument text. */
+function commandSeq(line: string, literal = false): Command[] {
   const out: Command[] = [];
   let run = "";
   let words: string[] = [];
@@ -73,14 +74,14 @@ function commandSeq(line: string): Command[] {
     } else if (c === "\\" && i + 1 < line.length) {
       word += line[++i];
       inWord = true;
-    } else if (c === "$" && line[i + 1] === "(") {
+    } else if (!literal && c === "$" && line[i + 1] === "(") {
       endCommand();
       run += "$(";
       i++;
-    } else if (";&|\n()`".includes(c)) {
+    } else if (!literal && ";&|\n()`".includes(c)) {
       endCommand();
       run += c;
-    } else if (c === " " || c === "\t") endWord();
+    } else if (c === " " || c === "\t" || (literal && c === "\n")) endWord();
     else {
       word += c;
       inWord = true;
@@ -121,7 +122,7 @@ function envOption(words: string[], i: number): { used: number; split?: string[]
   const rest = long ? long[2] : short![2] || undefined;
   const value = rest ?? words[i + 1];
   const used = rest === undefined ? 2 : 1;
-  return flag === "S" ? { used, split: commandSeq(value ?? "").flatMap((c) => c.words) } : { used };
+  return flag === "S" ? { used, split: commandSeq(value ?? "", true).flatMap((c) => c.words) } : { used };
 }
 
 /** Drops the prefix words before a command: assignments, the keywords in `KEYWORDS`, and the
