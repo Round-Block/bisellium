@@ -30,7 +30,7 @@ import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
-import { readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
+import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
@@ -1113,14 +1113,23 @@ export function deriveNext(f: Facts): Derived {
     // re-review: none recorded at this tree is the review rung's fix-check perform; an open path goes back to the builder
     const fixRound = gate !== undefined && gate.status === "failed" && gate.tree !== cur ? gate.round : undefined;
     const fixCheck = fixRound === undefined ? undefined : readFixCheck(f, fixRound, cur);
+    // W-328 (D-106 A): an open path outside the brief's Files owned is the producer's, an `evidence:` line on the suite and
+    // review orders, never the builder's; it never holds the suite. Files owned is the committed branch brief's (the blob the
+    // spec gate judged), never the worktree's; one that is not a readable blob there holds before any open line is split
+    const committed = fixCheck === undefined || fixCheck.open.length === 0 ? undefined : git(f.repo, ["cat-file", "blob", `refs/heads/opus/${id}:${join(f.studioRel, briefRel(id))}`]);
+    if (committed !== undefined && (committed.status !== 0 || committed.error !== undefined))
+      return hold("build", `${briefRel(id)} is not a readable blob on refs/heads/opus/${id}, so the fix check's open paths cannot be split by Files owned (D-106 A)`);
+    const files = committed === undefined ? [] : ownedFiles(committed.stdout);
+    const owned = fixCheck?.open.filter((l) => ownedOpen(l, files)) ?? [];
+    const evidence = (fixCheck?.open.filter((l) => !ownedOpen(l, files)) ?? []).map((l): [string, string] => ["evidence", l]);
     if (fixRound !== undefined && fixCheck === undefined)
       return { ...named("review", "producer", `review round ${fixRound} failed at an older tree and no fix check of its findings is recorded at this tree (D-086 D)`, `bisellium next ${id} --perform --expect review`, [["fix-check", `round ${fixRound} at ${cur}`]]), act: "fix-check" };
-    if (fixRound !== undefined && fixCheck !== undefined && fixCheck.open.length > 0)
-      return dispatch(f, "build", `the fix check of review round ${fixRound} lists ${fixCheck.open.length} open path(s) at this tree`, {
+    if (fixRound !== undefined && fixCheck !== undefined && owned.length > 0)
+      return dispatch(f, "build", `the fix check of review round ${fixRound} lists ${owned.length} open path(s) at this tree`, {
         phase: "fix",
         resume: true,
         inputs: [briefRel(id), ...(gate?.evidence === undefined ? [] : [gate.evidence]), fixCheck.census],
-        extra: [["open", fixCheck.open.join(" | ")], ...fixes],
+        extra: [["open", owned.join(" | ")], ...fixes],
       });
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
@@ -1131,7 +1140,11 @@ export function deriveNext(f: Facts): Derived {
         "producer",
         gates.error,
         `from .worktrees/${id}: bisellium handoff --opus ${id} --sella producer --next "ready for review" --studio ${f.studioRel}, committed (studio only); then bisellium ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, in the background); then commit the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
-        fixCheck !== undefined ? [["fix-check", `no open path at this tree (${fixCheck.census})`]] : [["replayed", `every red of ${id} was recorded by the prototype replay`]],
+        fixCheck === undefined
+          ? [["replayed", `every red of ${id} was recorded by the prototype replay`]]
+          : evidence.length === 0
+            ? [["fix-check", `no open path at this tree (${fixCheck.census})`]]
+            : [["fix-check", `no open path in Files owned at this tree (${fixCheck.census})`], ...evidence],
       );
     if ((gates !== undefined && !gates.ok) || redo)
       return dispatch(f, "build", redo ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
@@ -1174,7 +1187,7 @@ export function deriveNext(f: Facts): Derived {
         inputs: [briefRel(id), ...(uiIn === undefined ? [] : [uiIn]), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
         ...(uiIn === undefined ? {} : { uiInput: uiIn }),
         ...(session === undefined ? {} : { session }),
-        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...fixes],
+        extra: [...(session === undefined ? [] : [["session", session] as [string, string]]), ...fixes, ...evidence],
       });
     }
 
@@ -1349,6 +1362,16 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
   return { status: g["status"], evidence, tree: round.tree, round: round.n, brief: round.brief };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
+/**
+ * W-328 (D-106 A): an open line is the builder's when a `path:line` its lead names (its first backticked span when it opens
+ * with one, else its text before the first ` — `), a leading `./` dropped, is exactly a Files owned path, or when its lead
+ * names none; otherwise it is the producer's.
+ */
+function ownedOpen(line: string, files: string[]): boolean {
+  const lead = line.startsWith("`") ? (line.slice(1).split("`")[0] ?? "") : (line.split(" — ")[0] ?? "");
+  const paths = [...lead.matchAll(/([^\s`→,:@]+):\d/g)].map((m) => m[1]!.replace(/^\.\//, ""));
+  return paths.length === 0 || paths.some((p) => files.includes(p));
+}
 /**
  * W-328 (D-086 B): how many commits on opus/<id>'s first-parent line after the one that last changed `round`'s log, merges
  * aside, are empty (a fix whose kept outputs live outside the repository) or change a path that is not an officina record

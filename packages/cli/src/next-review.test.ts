@@ -1167,11 +1167,11 @@ test("W-309-b1 behaviour 1: after a failed round's fix commits next orders the f
   fixCheckNamed(n167(w), 1, "a symlinked reviews/: none recorded");
   rmSync(join(w.repo, ".bisellium", "reviews"));
   // an open path: back to the builder, phase fix, with the census as an input
-  fixChecked(w, ["src/a.ts:1 — open — the input still reaches the defect", "src/b.ts:2 — open — a sibling"]);
+  fixChecked(w, ["source.txt:1 — open — the input still reaches the defect", "source.txt:2 — open — a sibling"]);
   const open = n167(w);
   buildFix(open, "an open path: build, phase fix");
   assert.equal(open.kv.get("why"), "the fix check of review round 1 lists 2 open path(s) at this tree", ran("open: why", open));
-  assert.equal(open.kv.get("open"), "src/a.ts:1 — open — the input still reaches the defect | src/b.ts:2 — open — a sibling", ran("open: the paths", open));
+  assert.equal(open.kv.get("open"), "source.txt:1 — open — the input still reaches the defect | source.txt:2 — open — a sibling", ran("open: the paths", open));
   assert.match(open.kv.get("inputs") ?? "", new RegExp(`ci/${OPUS}-review-1\\.log, \\.bisellium/reviews/${OPUS}/fix-1/census\\.md`), ran("open: the verdict and the census are inputs", open));
   // a clean check at this tree: the re-review (no automated gates in this world)
   fixChecked(w);
@@ -1189,7 +1189,7 @@ test("W-309-b1 behaviour 1: after a failed round's fix commits next orders the f
   addReview(g, "failed", 1, T.review1);
   advanceSource(g, true, false);
   fixCheckNamed(next(g, [OPUS, ...BUDGET]), 1, "gates: no check, no suite");
-  fixChecked(g, ["src/a.ts:1 — open — x"]);
+  fixChecked(g, ["source.txt:1 — open — x"]);
   buildFix(next(g, [OPUS, ...BUDGET]), "gates: an open path is the builder's");
   fixChecked(g);
   const suite = next(g, [OPUS, ...BUDGET]);
@@ -1257,12 +1257,12 @@ test("W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a 
 
   // an open census: performed, and the builder is next
   const op = fixWorld("w309-b2-open");
-  codexSays(op, { session: "s-309-o", reply: CENSUS("src/a.ts:1 — open — still reached\r\nsrc/b.ts:2 — open — a sibling") });
+  codexSays(op, { session: "s-309-o", reply: CENSUS("source.txt:1 — open — still reached\r\nsource.txt:2 — open — a sibling") });
   const oo = performFixCheck(op);
   assert.equal(oo.first, `next: ${OPUS} review performed`, ran("open: performed", oo));
   assert.equal(oo.kv.get("fix-check"), "round 1, 2 open path(s)", ran("open: the count", oo));
   assert.equal(oo.kv.get("next-step"), "build", ran("open: the builder is next", oo));
-  assert.deepEqual(JSON.parse(readFileSync(join(fixPacket(op, 1), "check.json"), "utf8")).open, ["src/a.ts:1 — open — still reached", "src/b.ts:2 — open — a sibling"], "open: the paths, CR removed");
+  assert.deepEqual(JSON.parse(readFileSync(join(fixPacket(op, 1), "check.json"), "utf8")).open, ["source.txt:1 — open — still reached", "source.txt:2 — open — a sibling"], "open: the paths, CR removed");
   buildFix(next(op, [OPUS, "--budget", "400000"]), "open: build, phase fix");
 
   // every failed step holds, exit 1, with no check.json and the marker released

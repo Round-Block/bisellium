@@ -518,6 +518,18 @@ function ownedBullets(real: string[]): number {
   return n;
 }
 
+/** W-328 (D-106 A): every backticked span on a bullet line (as `ownedBullets` counts them) of every real `## Files owned`
+ *  section, to the next real `^## `, a leading `./` dropped. Prose, fenced and commented lines are not read. */
+export function ownedFiles(briefText: string): string[] {
+  let owned = false;
+  const out: string[] = [];
+  for (const line of realLines(briefText)) {
+    if (/^## /.test(line)) owned = line.trim() === "## Files owned";
+    else if (owned && /^ {0,3}[-*+] +\S/.test(line)) for (const [, span] of line.matchAll(/`([^`]+)`/g)) out.push(span!.replace(/^\.\//, ""));
+  }
+  return out;
+}
+
 /** The brief's form with its error, if any. An excluded light brief is `{ light: true, error }`: it is checked as light
  *  (its own sections were never asked for an Input domain), and the exclusion is the one problem it adds. W-305 (D-075 D):
  *  a light brief also has at most one numbered behaviour (none is admission's own problem) and one to three Files owned
