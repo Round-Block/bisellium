@@ -29,7 +29,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, shortened, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -94,6 +94,9 @@ type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
 const one = (text: string): string => text.replace(/\s+/g, " ").trim();
+// W-377: a line that opens with UNCUT is printed whole; every other line is cut at 1000 characters (`say`)
+const UNCUT = "\u0001";
+const whyLine = (d: Derived): string => `${d.uncut === true ? UNCUT : ""}why: ${one(d.why)}`;
 const esc = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const recordRel = (id: string): string => `opera/${id}.md`;
 const briefRel = (id: string): string => `briefs/${id}.md`;
@@ -930,6 +933,8 @@ export interface Derived {
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
+  /** W-377: the why is printed whole, however long (a ui pr or merge that waits names every ruling and path in it) */
+  uncut?: true;
 }
 
 /** The one legal next step, from facts alone (the only I/O is the lazy `pr()` read). */
@@ -1196,7 +1201,7 @@ export function deriveNext(f: Facts): Derived {
     if (p.kind === "held") return hold("pr", p.reason);
     // W-377: a kind: ui opus's pr, and the merge of a PR open on its tip, wait for the Patron's ruling on the branch's screens
     const waits = p.kind === "settled" || p.kind === "behind" ? undefined : uiRulingWait(f, b, cur);
-    if (waits !== undefined) return { ...hold(p.kind === "open" ? "merge" : "pr", waits.why), extra: waits.extra };
+    if (waits !== undefined) return { ...hold(p.kind === "open" ? "merge" : "pr", waits), uncut: true };
     if (p.kind === "open") return { ...named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind !== "settled") {
@@ -1234,22 +1239,17 @@ export function deriveNext(f: Facts): Derived {
  * digest and served-e2e run is in the worktree's `ui_rulings` (W-377 behaviour 2: committed on opus/<id> with that record).
  * The wait names what binds one and how it is recorded.
  */
-function uiRulingWait(f: Facts, b: Dict, tree: string): { why: string; extra: [string, string][] } | undefined {
+function uiRulingWait(f: Facts, b: Dict, tree: string): string | undefined {
   if (b["kind"] !== "ui") return undefined;
   const studio = join(".worktrees", f.id, f.studioRel);
-  let read: { ruling: string } | { why: string; refusals: string[] };
+  let read: { ruling: string } | { why: string };
   try {
     read = branchUiRuling(f.wt.studio, b as NativeRecord, f.id, tree);
   } catch (e) {
-    read = { why: `the UI ruling cannot be read (${shortened((e as Error).message, 240)})`, refusals: [] };
+    read = { why: `the UI ruling cannot be read (${(e as Error).message})` };
   }
-  // fix round 1: the why is one printed line capped at 1000 characters, so it keeps the required parts and each refusal and each
-  // uncommitted path is its own line (a ruling: or dirty: line), whole, never cut or dropped
   if ("why" in read)
-    return {
-      why: `${read.why}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${f.id}) in ${studio} from the Patron's word on its ci/shots/${f.id}/, then bisellium amend ${f.id} --ui-ruling D-<n> --reason "<the Patron's word>" --studio ${studio}, commit both on opus/${f.id}, then rerun`,
-      extra: read.refusals.map((r) => ["ruling", r] as [string, string]),
-    };
+    return `${read.why}: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: ${f.id}) in ${studio} from the Patron's word on its ci/shots/${f.id}/, then bisellium amend ${f.id} --ui-ruling D-<n> --reason "<the Patron's word>" --studio ${studio}, commit both on opus/${f.id}, then rerun`;
   // the PR carries what is committed: the record and the decisions folder are clean against HEAD
   // ponytail: the whole folder, not the ruling's own file, so no id is joined onto a path; a stray decision holds too
   const paths = [join(f.studioRel, recordRel(f.id)), join(f.studioRel, "decisions")];
@@ -1257,13 +1257,11 @@ function uiRulingWait(f: Facts, b: Dict, tree: string): { why: string; extra: [s
   // unmerged or any other) hides its working bytes from status, so it holds too
   const st = git(f.wt.dir, ["status", "--porcelain", "--untracked-files=all", "--ignored", "--", ...paths]);
   const ix = git(f.wt.dir, ["ls-files", "-v", "--", ...paths]);
-  if (st.status !== 0 || st.error !== undefined || ix.status !== 0 || ix.error !== undefined) return { why: `git status of ${paths.join(", ")} failed in ${join(".worktrees", f.id)}`, extra: [] };
+  if (st.status !== 0 || st.error !== undefined || ix.status !== 0 || ix.error !== undefined) return `git status of ${paths.join(", ")} failed in ${join(".worktrees", f.id)}`;
   const lines = (text: string): string[] => text.split("\n").filter((l) => l !== "");
   const flagged = lines(ix.stdout).filter((l) => !l.startsWith("H ")).map((l) => `${l.slice(2)} (index flag ${l.charAt(0)})`);
   const open = [...lines(st.stdout).map((l) => l.slice(3)), ...flagged].sort();
-  return open.length === 0
-    ? undefined
-    : { why: `the Patron's ruling ${read.ruling} is not committed on opus/${f.id}; commit it, then rerun`, extra: open.map((x) => ["dirty", x] as [string, string]) };
+  return open.length === 0 ? undefined : `the Patron's ruling ${read.ruling} is not committed on opus/${f.id} (${open.join(", ")}); commit it, then rerun`;
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
@@ -2682,7 +2680,7 @@ function refreshTicket(f: Facts, d: Derived, nowMs: number): string[] {
 }
 
 function render(id: string, d: Derived, f: Facts, status: string): string[] {
-  const out = [`next: ${id} ${d.step} ${status}`, `actor: ${d.actor}`, `why: ${one(d.why)}`];
+  const out = [`next: ${id} ${d.step} ${status}`, `actor: ${d.actor}`, whyLine(d)];
   if (f.tip !== undefined) out.push(`head: opus/${id} ${f.tip.slice(0, 12)}`);
   for (const [k, v] of d.extra) out.push(`${k}: ${one(v)}`);
   if (d.order !== undefined && d.status === "named") {
@@ -2809,8 +2807,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
-    // fix round 2b: except the hold's ruling: and dirty: lines, which name each refusal and path whole, however long
-    console.log(lines.map((l) => clean(l, /^(ruling|dirty): /.test(l) ? Infinity : 1000)).join("\n"));
+    // W-377: except a why marked UNCUT (the ui pr and merge wait), which names every ruling and path whole, however long
+    console.log(lines.map((l) => (l.startsWith(UNCUT) ? clean(l.slice(UNCUT.length), Infinity) : clean(l, 1000))).join("\n"));
     return { exitCode: code };
   };
   const refusalLines = (d: Derived): string[] => [`next: ${id} ${d.step} held`, `why: refusing: next step for ${id} is ${d.step}, not ${a.expect}`, ...(d.status === "held" ? [`detail: ${one(d.why)}`] : [])];
@@ -2971,7 +2969,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       d = r.next;
       if (STEPS.indexOf(d.step) <= was) return say(0, [...lines, ...r.after]);
       // a later rung of the chain that derives held (gh failing at pr discovery, say) is the chain's hold, never a success
-      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, `why: ${one(d.why)}`, ...d.extra.map(([k, v]) => `${k}: ${one(v)}`), ...r.after]);
+      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, whyLine(d), ...d.extra.map(([k, v]) => `${k}: ${one(v)}`), ...r.after]);
       if (!performable(d)) return say(0, [...lines, ...r.after]);
     }
   } catch (e) {
