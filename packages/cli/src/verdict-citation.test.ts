@@ -1133,3 +1133,86 @@ test("W-373-b2 behaviour 2: a row naming a structured record in its Record or Va
   setBrief(RECORD_BRIEF);
   admitted("a record row naming its three forms", ledger);
 });
+
+// ---------------------------------------------------------------------------
+// W-381: a brief that names a prototype owes, for each Promise line, a pin or "unpinned" (b1), and for each pinned line a
+// kill: a one-hunk mutation of one source file and the pinned row's TAP output failing at one of its pinned assertions (b2).
+// ---------------------------------------------------------------------------
+const KILL_DIR = mkdtempSync(join(tmpdir(), "bisellium-w381-"));
+roots.push(KILL_DIR);
+let kills = 0;
+/** The fixture kill's files: the mutation and the row's TAP output, written under KILL_DIR. */
+function killFiles(patch: string, output: string): { patch: string; output: string; token: string } {
+  const n = ++kills;
+  const p = join(KILL_DIR, `kill-${n}.patch`);
+  const o = join(KILL_DIR, `kill-${n}.out`);
+  writeFileSync(p, patch);
+  writeFileSync(o, output);
+  return { patch: p, output: o, token: `killed by \`${p}\` -> \`${o}\`` };
+}
+const MUTATION = "diff --git a/packages/x.ts b/packages/x.ts\n--- a/packages/x.ts\n+++ b/packages/x.ts\n@@ -5 +5 @@\n-  return 2;\n+  return 0;\n";
+/** Node's TAP reporter output for one failed row whose own block carries `error`. */
+const tapFailing = (row: string, error: string): string =>
+  ["TAP version 13", `# Subtest: ${row} behaviour 1: a fixture row`, `not ok 1 - ${row} behaviour 1: a fixture row`, "  ---", "  duration_ms: 1.5", "  type: 'test'", "  failureType: 'testCodeFailure'", `  error: ${error}`, "  code: 'ERR_ASSERTION'", "  name: 'AssertionError'", "  ...", "1..1", "# tests 1", "# pass 0", "# fail 1", ""].join("\n");
+const KILL_PROTOTYPE = `Prototype: /home/fixture/proto.mbox sha256:${"0".repeat(64)}`;
+const PROMISE_PIN = 'pinned by `W-300-b1` "flag: exit 2"';
+const KILL_BRIEF = [
+  "# W-300 fixture brief", // 1
+  KILL_PROTOTYPE, // 2
+  "## Intent", // 3
+  `Promise flag: the flag exits 2, ${PROMISE_PIN} — limit: none`, // 4
+  "Promise file: the file exits 2 — limit: unpinned, a stated one", // 5
+  "## Input domain", // 6
+  "A rejection fails closed.", // 7
+  "| Record | Valid domain | Rejected by |", // 8
+  "|---|---|---|", // 9
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b1` "row: exit 2" |', // 10
+  "## Behaviours to test", // 11
+  "## Out of scope", // 12
+  "Promise later: after the span — limit: none", // 13
+  "",
+].join("\n");
+const KILL_4 = killFiles(MUTATION, tapFailing("W-300-b1", "'flag: exit 2'"));
+const KILL_10 = killFiles(MUTATION, tapFailing("W-300-b1", "'row: exit 2'"));
+const PROMISE_5 = "brief:5, the file: a stated limit — scoped";
+const KILL_COVERING = [`brief:4, the flag promise: packages/x.ts:5 — holds; ${KILL_4.token}`, PROMISE_5, `brief:10, the flag: packages/x.ts:5 parseFlag exits 2 — holds; ${KILL_10.token}`].join("\n");
+
+test("W-381-b1 behaviour 1: on a brief that names a prototype, each Promise line holds a pin or says unpinned, scoped in the ledger, or the architect's spec signature is refused", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(KILL_BRIEF);
+  const noPin = (line: number): string =>
+    `W-300: promise ledger: brief:${line} is a Promise line with no pin, in a brief that names a prototype: name the test row and assertion that exercise it as pinned by \`<row>\` "<assertion>", or say unpinned (a stated limit, scoped in the ledger)\n`;
+  const notScoped = (line: number): string => `W-300: promise ledger: brief:${line} says unpinned, and no ledger line cites brief:${line} as scoped\n`;
+
+  // the reader: the Promise lines from Intent up to Out of scope, each a case with its pins
+  const { promises, prototype } = ruledCases(KILL_BRIEF) as unknown as { promises?: { line: number; row: number; pins: unknown[]; unpinned: boolean }[]; prototype?: boolean };
+  assert.deepEqual(
+    promises,
+    [
+      { line: 4, row: 4, pins: [{ row: "W-300-b1", assertion: "flag: exit 2" }], unpinned: false },
+      { line: 5, row: 5, pins: [], unpinned: true },
+    ],
+    "the Promise lines inside the span, each a ruled case",
+  );
+  assert.equal(prototype, true, "the brief names a prototype");
+  assert.equal((ruledCases(KILL_BRIEF.replace(KILL_PROTOTYPE, "")) as unknown as { prototype?: boolean }).prototype, false, "no Prototype line: none named");
+
+  admitted("each Promise line pinned, or unpinned and scoped", cite(KILL_COVERING));
+  setBrief(KILL_BRIEF.replace(`, ${PROMISE_PIN}`, ""));
+  refused("a Promise line with no pin", cite(KILL_COVERING), noPin(4));
+  setBrief(KILL_BRIEF.replace(`, ${PROMISE_PIN}`, "").replace("unpinned, a stated one", "a stated one"));
+  refused("two Promise lines with no pin, in brief order", cite(KILL_COVERING), noPin(4) + noPin(5));
+  setBrief(KILL_BRIEF);
+  refused("an unpinned Promise line whose ledger line holds", cite(KILL_COVERING.replace(PROMISE_5, PROMISE_5.replace("scoped", "holds"))), notScoped(5));
+  refused("an unpinned Promise line with no ledger line", cite(KILL_COVERING.replace(PROMISE_5, "")), notScoped(5));
+
+  // only a brief that names a prototype; a Promise line in a fence or after Out of scope is no case
+  setBrief(KILL_BRIEF.replace(KILL_PROTOTYPE, "").replace(`, ${PROMISE_PIN}`, ""));
+  admitted("no Prototype line: a Promise line needs no pin", cite(KILL_COVERING));
+  setBrief(KILL_BRIEF.replace(KILL_PROTOTYPE, "<!-- a commented prototype line -->").replace(`, ${PROMISE_PIN}`, ""));
+  admitted("a Prototype line in an HTML comment names none", cite(KILL_COVERING));
+  setBrief(KILL_BRIEF.replace("Promise flag:", "```\nPromise flag:").replace("Promise file:", "```\nPromise file:").replace(`, ${PROMISE_PIN}`, ""));
+  admitted("a Promise line in a fence is no case", cite(KILL_COVERING.replace("brief:5,", "brief:7,").replace("brief:10,", "brief:12,")));
+  setBrief(KILL_BRIEF.replace(`, ${PROMISE_PIN}`, "").replace("## Intent", "## Out of scope"));
+  admitted("Promise lines after Out of scope are no case", cite(KILL_COVERING));
+  admitted("another seat's spec verdict needs no pin", NO, "qa-lead");
+});
