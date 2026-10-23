@@ -1322,3 +1322,73 @@ test("W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a 
   assert.equal(ch.kv.get("next-step"), "review", ran("chain: stops before the re-review", ch));
   assert.equal(codexCalls(c).length, 2, "chain: no review call in the same run");
 });
+
+// ---------------------------------------------------------------------------
+// W-328 (D-086 B, D-106 A): a failed round's fix committed outside the source tree is re-reviewed, never sent back to the
+// builder; a fix check's open path outside the brief's Files owned is the producer's evidence line, never the builder's.
+// ---------------------------------------------------------------------------
+const OUTSIDE = (n: number): string => `review round 1 failed at this tree and brief; ${n} commit(s) after its log are empty or change a path that is not an officina record (D-086 B)`;
+/** `evidence/` joins the source excludes in both manifests (they must agree), committed alone on each side. */
+function excludeEvidence(w: World): void {
+  for (const dir of [w.repo, w.wt]) {
+    const path = join(dir, MANIFEST_REL);
+    writeFileSync(path, readFileSync(path, "utf8").replace("source_excludes: []", 'source_excludes: ["evidence/"]'));
+    git(dir, ["add", MANIFEST_REL]);
+    git(dir, ["commit", "-q", "-m", "test: evidence/ is outside the source tree"]);
+  }
+}
+
+test("W-328-b1 behaviour 1: a failed round's fix committed outside the source tree, at the same tree and brief, orders the re-review, never the builder", { timeout: 1_800_000 }, () => {
+  const w = world("w328-b1", "build");
+  excludeEvidence(w);
+  record167(w, [F]);
+  handoffAt(w, "wt", T.handoffFresh);
+  buildFix(n167(w), "no fix yet: build, phase fix");
+  // records and settings under the studio are not a fix: the opus record, then a studio file
+  handoffAt(w, "wt", "2026-10-02T09:30:00.000Z");
+  buildFix(n167(w), "a records-only commit: build, phase fix");
+  put(w.wtStudio, "notes.md", "bookkeeping\n");
+  commit(w.wt, `studio(${OPUS}): notes`);
+  buildFix(n167(w), "a studio-only commit: build, phase fix");
+  // a fix outside the studio and the source tree: the re-review, the censor's order
+  put(w.wt, "evidence/timing.txt", "the evidence, re-run and kept\n");
+  commit(w.wt, `fix(${OPUS}): the evidence re-run`);
+  const o = n167(w);
+  reviewNamed(o, 2, "a fix outside the source tree: review round 2");
+  assert.equal(o.kv.get("role"), "censor", ran("a fix outside the source tree: the censor's order", o));
+  assert.equal(o.kv.get("why"), OUTSIDE(1), ran("a fix outside the source tree: why", o));
+  // an empty commit: a fix whose kept outputs live outside the repository
+  const e = w167("w328-b1-empty", [F]);
+  git(e.wt, ["commit", "-q", "--allow-empty", "-m", `fix(${OPUS}): the evidence re-run, kept outside the repository`]);
+  const eo = n167(e);
+  reviewNamed(eo, 2, "an empty commit: review round 2");
+  assert.equal(eo.kv.get("why"), OUTSIDE(1), ran("an empty commit: why", eo));
+  // master's own commits merged in are not the opus's fix
+  const m = world("w328-b1-merge", "build");
+  excludeEvidence(m);
+  record167(m, [F]);
+  handoffAt(m, "wt", T.handoffFresh);
+  put(m.repo, "evidence/master.txt", "master's evidence\n");
+  git(m.repo, ["add", "evidence/master.txt"]);
+  git(m.repo, ["commit", "-q", "-m", "chore: master's evidence"]);
+  git(m.wt, ["merge", "-q", "--no-ff", "--no-edit", "master"]);
+  buildFix(n167(m), "a merge of master's commits: build, phase fix");
+  // every read fails closed: a failed git read of the log's commit or of the commits after it holds, never counts
+  for (const [label, needle] of [
+    ["a failed read of the log's commit", "--format=%H refs/heads/opus/"],
+    ["a failed read of the commits after it", "--no-merges --name-only"],
+  ] as const) {
+    const o = n167(w, { GIT_STUB_REAL: failingGit("w328-b1-git", [needle]) });
+    expectStep(o, "build", "held", `${label}: held`);
+    assert.match(o.kv.get("why") ?? "", /, so the commits after it cannot be counted \(D-086 B\)$/, ran(`${label}: why`, o));
+  }
+  // a log not committed on the branch holds: the record is committed without it
+  const u = world("w328-b1-uncommitted", "build");
+  record167(u, [F]);
+  handoffAt(u, "wt", T.handoffFresh);
+  git(u.wt, ["reset", "-q", "--soft", "HEAD~2"]);
+  git(u.wt, ["commit", "-q", "-m", `studio(${OPUS}): the record without its log`, "--", recordPath(u)]);
+  const uo = n167(u);
+  expectStep(uo, "build", "held", "a log not committed: held");
+  assert.match(uo.kv.get("why") ?? "", new RegExp(`^ci/${OPUS}-review-1\\.log is not committed on opus/${OPUS}, so the commits after it cannot be counted`), ran("a log not committed: why", uo));
+});
