@@ -1538,3 +1538,20 @@ test("W-353-b1 behaviour 1: an untracked file under the worktree's studio/ci/ ho
   const fc = performFixCheck(fw);
   assert.equal(fc.kv.get("fix-check"), "round 1, no open path", ran("the fix check alone: performed", fc));
 });
+
+test("W-353-b2 behaviour 2: the review packet built from the opus worktree derives its next fact in the main checkout", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w353-b2");
+  codexSays(w, { session: "s-353-2", reply: PASS_REPLY });
+  const o = performReview(w);
+  assert.equal(o.kv.get("review"), "round 1 passed", ran("the round is performed", o));
+  const facts = readFileSync(join(packetDir(w, 1), "facts.txt"), "utf8");
+  const block = facts.split("\n\n")[0]!.split("\n");
+  assert.equal(block[0], `== next ${OPUS}`, "the first fact is next's");
+  assert.doesNotMatch(facts, /is a linked worktree/, "next is not refused for a linked worktree");
+  assert.ok(block[1]!.endsWith(` next ${OPUS} --budget 400000 --studio ${realpathSync(w.studio)} --repo ${realpathSync(w.repo)}`), `next runs on the main checkout's studio and repo: ${block[1]}`);
+  assert.match(block[2] ?? "", new RegExp(`^next: ${OPUS} review `), "next derives the review rung");
+  assert.equal(block.at(-1), "exit 0", "next exits 0");
+  // the packet still reads the opus branch: its ui.txt is the branch record's, the diff the branch's
+  assert.equal(readFileSync(join(packetDir(w, 1), "ui.txt"), "utf8"), NON_UI, "ui.txt is the branch record's");
+  assert.match(readFileSync(join(packetDir(w, 1), `${OPUS}.diff`), "utf8"), /^diff --git /m, "the packet carries the source diff");
+});
