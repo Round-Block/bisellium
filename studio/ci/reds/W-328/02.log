@@ -1,0 +1,60 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-328-b2\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-10-23T04:28:26.010Z
+# sella: architect
+# tree: tree:500eedd46ba04c8ba6737036698ad00651026cfb
+# ticket: {"opus":"W-328","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-328/studio","head":"c6064de7e91845d244767b98a737514a6843a700","brief":"cff221d74243a1c6311623f8425e7e2f88a861ba","at":"2026-10-23T04:28:25.969Z"}
+
+TAP version 13
+# Subtest: W-328-b2 behaviour 2: a fix check's open path outside the brief's Files owned is the producer's evidence line, never the builder's; with none owned the suite and the re-review are ordered
+not ok 1 - W-328-b2 behaviour 2: a fix check's open path outside the brief's Files owned is the producer's evidence line, never the builder's; with none owned the suite and the re-review are ordered
+  ---
+  duration_ms: 2154.114175
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-328/packages/cli/src/next-review.test.ts:93:5700'
+  failureType: 'testCodeFailure'
+  error: |-
+    none owned: no builder is dispatched
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: the fix check of review round 1 lists 3 open path(s) at this tree
+    head: opus/W-900 f4536dee2103
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: fix
+    open: `scripts/review-packet.mjs:391,420 @ 05c4ceeb` — standalone/manual build packet with `--repo` naming the linked W-360 worktree still writes no `W-360.diff`; this breaks brief:118’s required final-source-diff evidence and yields a review packet without the source diff. | `packages/cli/src/next.ts:2046 → packages/cli/src/integrate.ts:72 @ 05c4ceeb` — an untracked pre-fix gate log still passes `next --perform review`; this breaks brief:114’s pristine gate handoff and dispatches review from a dirty checkout. | `packages/cli/src/next.ts:1421 → scripts/review-packet.mjs:420 → packages/cli/src/main.ts:113-114 @ 05c4ceeb` — the manual packet, dispatch, verdict and review path still accepts the same untracked gate logs; this breaks brief:114 and records a review of a dirty checkout.
+    inputs: briefs/W-900.md, ci/W-900-review-1.log, .bisellium/reviews/W-900/fix-1/census.md, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase fix) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>; the fix round stops after its fix commits, with no handoff and no ci --opus: next orders the fix check first (D-086 D)
+    health: no step recorded
+    
+    --- stderr
+    
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-328/packages/cli/src/next-review.test.ts:1417:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2169.589464
