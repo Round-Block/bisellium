@@ -272,7 +272,8 @@ function pinFact(studio, repo, studioRel, id) {
   return [...lines, open.length === 0 ? "(none)" : open.join("\n"), ""].join("\n");
 }
 
-const nextFact = (id, studio, repo) =>
+// W-353: `next` runs only in the repository's main checkout, so its fact is derived there, whichever checkout the packet reads
+const nextFact = (id, studio) =>
   factOf(`next ${id}`, [
     process.execPath,
     "--import",
@@ -283,9 +284,9 @@ const nextFact = (id, studio, repo) =>
     "--budget",
     "400000",
     "--studio",
-    studio,
+    mainStudio(studio),
     "--repo",
-    repo,
+    mainTree(studio),
   ]);
 
 /**
@@ -294,9 +295,14 @@ const nextFact = (id, studio, repo) =>
  */
 function mainStudio(studio) {
   const top = runGit(studio, ["rev-parse", "--show-toplevel"]).trim();
-  const main = /^worktree (.+)$/m.exec(runGit(studio, ["worktree", "list", "--porcelain"]))?.[1];
+  return join(mainTree(studio), relative(realpathSync(top), realpathSync(studio)));
+}
+
+/** The repository's main work tree: the first entry `git worktree list` gives, from `dir`. */
+function mainTree(dir) {
+  const main = /^worktree (.+)$/m.exec(runGit(dir, ["worktree", "list", "--porcelain"]))?.[1];
   if (main === undefined) refuse("git worktree list names no main work tree");
-  return join(main, relative(realpathSync(top), realpathSync(studio)));
+  return main;
 }
 
 /**
@@ -386,9 +392,9 @@ export function buildPacket(args) {
     );
     const added = (delta ?? "").split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
     const ids = [...new Set(added.flatMap((l) => l.match(/\bW-\d+\b/g) ?? []))];
-    for (const id of ids) facts.push(nextFact(id, studio, repo), admissionFact(studio, manifest, id, false));
+    for (const id of ids) facts.push(nextFact(id, studio), admissionFact(studio, manifest, id, false));
   } else {
-    facts.push(nextFact(opus, studio, repo), admissionFact(studio, manifest, opus, true));
+    facts.push(nextFact(opus, studio), admissionFact(studio, manifest, opus, true));
     if (phase === "build") facts.push(pinFact(studio, repo, studioRel, opus));
   }
   files.set("facts.txt", facts.join("\n"));
