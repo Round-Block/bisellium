@@ -1,0 +1,58 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-377-b1\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-10-23T12:02:25.899Z
+# sella: builder.W-377
+# tree: tree:6f2110cfc34da6074b6365318a15df40c0096c2d
+# ticket: {"opus":"W-377","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-377/studio","head":"f5766022bb3756328bee8c507653ead7be678ba7","brief":"0cf0419f0a7a892a3bb7b5da952644cce69f2fa3","at":"2026-10-23T12:02:22.980Z"}
+
+TAP version 13
+# Subtest: W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling current at the branch's screens, naming what binds one
+not ok 1 - W-377-b1 behaviour 1: a kind: ui opus's pr waits for a Patron ruling current at the branch's screens, naming what binds one
+  ---
+  duration_ms: 2745.603669
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-377/packages/cli/src/next-review.test.ts:106:924'
+  failureType: 'testCodeFailure'
+  error: |-
+    no ruling: the pr is held
+    --- exit 0
+    --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: review is met and no PR exists for the head
+    head: opus/W-900 3a34611d0b12
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <a file under the repository or $TMPDIR>
+    health: no step recorded
+    ticket: none
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 pr named'
+    - 'next: W-900 pr held'
+                      ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 pr held'
+  actual: 'next: W-900 pr named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-377/packages/cli/src/next-world.test.ts:788:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-377/packages/cli/src/next-review.test.ts:1587:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3065.608962
