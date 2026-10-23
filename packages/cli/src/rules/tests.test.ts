@@ -1151,6 +1151,15 @@ test("W-376-b1 behaviour 1: an added assert.match whose pattern is anchored at o
   const annotated = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, SIDED_REASON, "assert.match(why, /^ready/);"]));
   assert.deepEqual(sidedOf(branched("w376-b1-annotated", base, annotated)), [], "an annotated added line");
 
+  // diff attributes cannot suppress or transform an added assertion: -diff would print "Binary files differ", a textconv driver would rewrite the hunks
+  const attributed = (attrs: string, driver?: string) => (r: string): void => {
+    put(r, ".gitattributes", attrs);
+    if (driver) git(r, ["config", "diff.w376.textconv", driver]);
+    added(r);
+  };
+  assert.deepEqual(sidedOf(branched("w376-b1-nodiff", base, attributed("*.ts -diff\n"))), [sidedBlock("a.test.ts:3", START_ONLY)], "a -diff attribute: the added line is still judged");
+  assert.deepEqual(sidedOf(branched("w376-b1-textconv", base, attributed("*.ts diff=w376\n", "echo converted"))), [sidedBlock("a.test.ts:3", START_ONLY)], "a textconv driver: the raw hunks are read");
+
   // the base: origin-only master is read; with none, test.rows blocks once and this rule adds nothing
   const originOnly = branched("w376-b1-origin", base, added);
   git(originOnly, ["update-ref", "refs/remotes/origin/master", "master"]);
