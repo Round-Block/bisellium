@@ -46,7 +46,8 @@ REPO=${REPO:-Round-Block/bisellium}
 URL=https://github.com/$REPO.git
 HELPER="!GH_CONFIG_DIR=$AGENT_GH gh auth git-credential"
 USER_SETTINGS=$HOME/.claude/settings.json
-SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# the script's real directory: a symlinked file or parent is followed to its target (GNU readlink -f)
+SELF_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 die() {
   echo "$*" >&2
@@ -233,9 +234,9 @@ source_unwritable() {
 
 # Every step stops it on a failure (set -euo pipefail); the inputs are judged first.
 guard() {
-  guard_inputs || die "the guard's inputs are not valid; see the lines above (nothing was changed)."
-  # this script runs unsandboxed: never the agent clone's copy, which a session can change
+  # this script runs unsandboxed: never the agent clone's copy (SELF_DIR is its real target), which a session can change
   if within "$(real "$SELF_DIR")" "$(real "$AGENT_DIR")"; then die "run the guard step from your own clone's copy of this script, never the agent clone's (nothing was changed)."; fi
+  guard_inputs || die "the guard's inputs are not valid; see the lines above (nothing was changed)."
   git -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
   if [[ -e $GUARD_DIR ]]; then
     git -C "$GUARD_DIR" checkout -q --detach origin/master
