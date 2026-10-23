@@ -1048,3 +1048,88 @@ test("W-373-b1 behaviour 1: a row naming shell text in its Record or Valid domai
   setBrief(SHELL_BRIEF);
   admitted("a shell row naming its three forms", ledger);
 });
+
+// W-373: a row whose Record or Valid domain cell names a structured record names an absent value, a wrong type and an
+// unreadable file, on its line or a line its forms clause cites, each pinned or a stated limit
+const RECORD_NAMED = "an absent key, a wrong type and an unreadable file exit 1";
+const RECORD_BRIEF = [
+  "# W-300 fixture brief",
+  "## Interfaces",
+  '- a missing key reads as its default, pinned by `W-300-b2` "absent"',
+  '- a key of the wrong type exits 1, pinned by `W-300-b2` "type"',
+  '- an unreadable file exits 1, pinned by `W-300-b2` "unreadable"',
+  "## Input domain",
+  "A rejection fails closed.",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  `| the user settings | an object; ${RECORD_NAMED} | \`mergeSettings\`: exit 1, pinned by \`W-300-b2\` "settings" |`,
+  '| the flag | a string | `parseFlag`: exit 2, pinned by `W-300-b2` "flag" |',
+  "## Behaviours to test",
+  "",
+].join("\n");
+const RECORD_COVERING = [10, 11].map((n) => `brief:${n}, a reader: packages/x.ts:${n} exits 2 — holds`).join("\n");
+const recordUnnamed = (row: number, missing: string): string =>
+  `W-300: promise ledger: brief:${row} rules a structured record and does not name ${missing}: name each by the word absent, wrong type or unreadable, on the row or on a line its forms clause cites, as a recognised form with its pin or as a stated limit\n`;
+const RECORD_ALL = "an absent value, a wrong type, an unreadable file";
+
+test("W-373-b2 behaviour 2: a row naming a structured record in its Record or Valid domain cell names an absent value, a wrong type and an unreadable file, or the signature is refused", () => {
+  const { refused, admitted, cite, setBrief, NO } = specSigner(RECORD_BRIEF);
+  const ledger = cite(RECORD_COVERING);
+
+  // each form not named on the row's line: one problem naming it
+  for (const [form, from] of [
+    ["an absent value", "an absent key, "],
+    ["a wrong type", "a wrong type and "],
+    ["an unreadable file", " and an unreadable file"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace(RECORD_NAMED, RECORD_NAMED.replace(from, "")));
+    refused(`${form} not named`, ledger, recordUnnamed(10, form));
+  }
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "every key is read"));
+  refused("none named, in order", ledger, recordUnnamed(10, RECORD_ALL));
+
+  // the vocabulary, whole words in the Record or the Valid domain cell
+  for (const [name, record, domain] of [
+    ["JSON in the Valid domain cell", "the input", "a JSON object"],
+    ["YAML in the Record cell", "the YAML manifest", "an object"],
+    ["front matter", "the input", "a record's front matter"],
+    ["front-matter", "the front-matter", "an object"],
+    ["Settings, capitalised", "the Settings", "an object"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace("the user settings", record).replace(`an object; ${RECORD_NAMED}`, domain));
+    refused(`${name}: refused`, ledger, recordUnnamed(10, RECORD_ALL));
+  }
+  for (const [name, record] of [
+    ["JSONL", "the JSONL lines"],
+    ["a manifest", "the manifest"],
+    ["a record", "the opus record"],
+    ["a regular file", "a regular file"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace("the user settings", record).replace(RECORD_NAMED, "every key is read"));
+    admitted(`${name}: not a structured record by the vocabulary, no forms needed`, ledger);
+  }
+
+  // the words and their whole-word boundaries
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "a missing key, wrong types and an unreadable file exit 1"));
+  admitted("missing and wrong types name the forms", ledger);
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "an absent key, a wrong-typed key and an unreadable file exit 1"));
+  admitted("wrong-typed names the form", ledger);
+  for (const [name, from, to, form] of [
+    ["a wrongly typed key", "a wrong type", "a wrongly typed key", "a wrong type"],
+    ["non-absent", "an absent key", "a non-absent key", "an absent value"],
+    ["unreadables", "an unreadable file", "unreadables", "an unreadable file"],
+    ["a comment", "an unreadable file", "<!-- an unreadable file -->", "an unreadable file"],
+  ] as const) {
+    setBrief(RECORD_BRIEF.replace(RECORD_NAMED, RECORD_NAMED.replace(from, to)));
+    refused(`${name} names nothing`, ledger, recordUnnamed(10, form));
+  }
+
+  // the forms named on cited grammar lines
+  setBrief(RECORD_BRIEF.replace(`an object; ${RECORD_NAMED}`, "an object; recognises brief:3-5; every other form is a limit"));
+  admitted("the forms named on cited grammar lines", ledger);
+
+  setBrief(RECORD_BRIEF.replace(RECORD_NAMED, "every key is read"));
+  admitted("another seat's spec verdict needs no forms", NO, "qa-lead");
+  setBrief(RECORD_BRIEF);
+  admitted("a record row naming its three forms", ledger);
+});
