@@ -1,0 +1,52 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-402-b2\s --import tsx packages/cli/src/w398.test.ts
+# exit: 1
+# at: 2026-10-24T16:08:10.765Z
+# sella: builder.W-402
+# tree: tree:3bbfc0b0ba236272d8e09b0b614b4e7014c8f00e
+# ticket: {"opus":"W-402","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-402/studio","head":"ddc85af7599736b4b32ae2e0ae302ae305a1a9d6","brief":"cc75487cd73c421959f95ff02cb41daec50490ee","at":"2026-10-24T16:08:09.921Z"}
+
+TAP version 13
+# Subtest: W-402-b2 behaviour 2: several wrong types at once are each named, one line per field, in the order merge() reads them
+not ok 1 - W-402-b2 behaviour 2: several wrong types at once are each named, one line per field, in the order merge() reads them
+  ---
+  duration_ms: 215.781231
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-402/packages/cli/src/w398.test.ts:7:381'
+  failureType: 'testCodeFailure'
+  error: |-
+    permissions [] and env a string: the FAIL line names every wrong field in merge()'s order
+    + actual - expected
+    
+      [
+        'FAIL user settings hold every isolation entry',
+        "  /tmp/claude-1000/w398-WrxR0i/home ü it's/.claude/settings.json: permissions is not an object; left untouched",
+    -   "  /tmp/claude-1000/w398-WrxR0i/home ü it's/.claude/settings.json: env is not an object; left untouched"
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'FAIL user settings hold every isolation entry'
+    1: "  /tmp/claude-1000/w398-WrxR0i/home ü it's/.claude/settings.json: permissions is not an object; left untouched"
+    2: "  /tmp/claude-1000/w398-WrxR0i/home ü it's/.claude/settings.json: env is not an object; left untouched"
+  actual:
+    0: 'FAIL user settings hold every isolation entry'
+    1: "  /tmp/claude-1000/w398-WrxR0i/home ü it's/.claude/settings.json: permissions is not an object; left untouched"
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-402/packages/cli/src/w398.test.ts:329:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 224.173629
