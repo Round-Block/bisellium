@@ -266,7 +266,7 @@ test("W-379-b3 behaviour 3: guard removes W-362's old guard worktree only when G
   const absentEnv = { GUARD_BIN: hiddenBin, OLD_GUARD_DIR: z.other, PATH: [join(z.f, "stub"), hidden, dirname(process.execPath), "/usr/bin", "/bin"].join(":") };
   const absent = z.guard("guard", absentEnv);
   assert.equal(absent.code, 0, absent.out);
-  assert.match(absent.out, /^guard: left .*other wt in place \(GUARD_BIN did not lead into it when this run began, so it is not proved the old guard\);/m, "an absent GUARD_BIN proves no worktree the old guard");
+  assert.match(absent.out, /^guard: left .*other wt in place \(GUARD_BIN did not lead into it when this run began, so it is not proved the old guard\); once it holds nothing you need: git -C .* worktree remove .*other wt'$/m, "an absent GUARD_BIN proves no worktree the old guard");
   assert.ok(existsSync(join(z.other, "x")), "the worktree holding the absent GUARD_BIN's directory stays");
   // a file ignored only by the Patron's global excludes makes the old guard dirty: git refuses, the folder stays
   const y = world();
@@ -274,7 +274,7 @@ test("W-379-b3 behaviour 3: guard removes W-362's old guard worktree only when G
   put(join(y.old, "keep.secret"), "mine\n");
   const ignored = y.guard("guard");
   assert.equal(ignored.code, 0, ignored.out);
-  assert.match(ignored.out, new RegExp(`^guard: left ${reEsc(y.old)} in place \\(.*contains modified or untracked files.*\\); `, "m"), "a file ignored only by the global excludes is untracked: the old guard is left");
+  assert.match(ignored.out, new RegExp(`^guard: left ${reEsc(y.old)} in place \\(.*contains modified or untracked files.*\\); once it holds nothing you need: git -C .* worktree remove .*$`, "m"), "a file ignored only by the global excludes is untracked: the old guard is left");
   assert.ok(existsSync(join(y.old, "keep.secret")), "and the file stays");
   // absent: nothing to remove, nothing said
   const again = w.guard("guard");
