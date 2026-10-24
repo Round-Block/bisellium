@@ -1419,9 +1419,9 @@ function repeatHold(f: Facts, rel: string, src: Src | undefined): string | undef
   const high = f.work.list("opera").flatMap((name) => {
     const r = name.endsWith(".md") ? recordOf(f.work, name.slice(0, -3)) : undefined;
     const title = str(r?.["title"]);
-    return title !== undefined && OPEN_STATES.has(str(r?.["state"]) ?? "") && titleToken(title, "high", "\\p{L}\\p{N}_-", true) ? [title] : [];
+    return title !== undefined && OPEN_STATES.has(str(r?.["state"]) ?? "") && titleToken(title, "high", "\\p{L}\\p{M}\\p{N}_-", true) ? [title] : [];
   });
-  const names = (title: string, c: string): boolean => titleToken(title, c, "\\p{L}\\p{N}-", false);
+  const names = (title: string, c: string): boolean => titleToken(title, c, "\\p{L}\\p{M}\\p{N}-", false);
   const held = repeated.filter(([c]) => ![...own, ...high].some((t) => names(t, c)));
   if (held.length === 0) return undefined;
   const list = held.map(([c, logs]) => `${c} (${logs.slice(0, 3).join(", ")}${logs.length > 3 ? ` and ${logs.length - 3} more` : ""})`).join("; ");
