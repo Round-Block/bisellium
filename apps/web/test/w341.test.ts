@@ -197,7 +197,7 @@ test("W-341-b6 behaviour 6: the served states suite drives every served cell at 
   const drivers = [...spec.matchAll(/^ {2}"([a-z]+:[a-z]+)": async \(page\) => \{$/gm)].map((d) => d[1]).sort();
   assert.deepEqual(drivers, m.servedCells().map((c) => `${c.screen}:${c.state}`).sort(), "exactly one driver per served cell");
   assert.equal(policy["AXE_DISABLED_RULES"], undefined, "no axe rule is disabled, colour contrast included");
-  assert.deepEqual(Object.keys((policy["PHONE_UNREACHABLE"] ?? {}) as object), ["inbox:refused", "inbox:pending"], "only the hidden answer pane's cells skip at phone width");
+  assert.deepEqual(Object.keys((policy["PHONE_UNREACHABLE"] ?? {}) as object), [], "every served state is reachable at phone width");
   const root = /:root\s*\{([^}]*)\}/.exec(read("src/tokens.css"))?.[1] ?? "";
   const token = (name: string): string => {
     const value = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6});`).exec(root)?.[1];

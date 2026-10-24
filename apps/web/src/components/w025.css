@@ -644,12 +644,27 @@
 @media (max-width: 899px) {
   .inbox--split {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100%;
   }
   .inbox__detail {
-    display: none;
+    display: flex;
   }
   .inbox__list {
     border-right: none;
+    border-bottom: 1px solid var(--rule);
+    max-height: 40vh;
+  }
+  .inbox__row {
+    min-height: 44px;
+  }
+  .inbox__input-ratio {
+    min-height: 44px;
+  }
+  .inbox__btn-action {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
   }
 }
 
@@ -669,6 +684,14 @@
   padding: 0 16px;
   border-bottom: 1px solid var(--rule);
   cursor: pointer;
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
 }
 
 .inbox__row--attention {
@@ -744,6 +767,8 @@
   opacity: 1;
 }
 
+.inbox__row:focus,
+.inbox__row:focus-visible,
 .inbox__input-ratio:focus,
 .inbox__btn-action:focus {
   outline: 2px solid var(--verdigris);

@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useEffect, useRef, type JSX } from "react";
 import type { InboxResponse } from "../api.js";
 import { canSubmit, type Verb } from "./inboxLogic.js";
 
@@ -6,6 +6,8 @@ export interface InboxViewProps {
   petitiones: InboxResponse["petitiones"];
   opera: InboxResponse["opera"];
   focusIndex: number;
+  /** Incremented only by j/k movement, so the selected row receives DOM focus and is revealed without stealing focus on load. */
+  focusRequest?: number;
   reason: string;
   /** W-067: one line for a "refused" or "error" WriteResult. `null` when
    *  there's nothing to say — never rendered any other way (no title/style/
@@ -28,7 +30,15 @@ const VERBS: { verb: Verb; key: string }[] = [
 ];
 
 export function InboxView(props: InboxViewProps): JSX.Element {
-  const { petitiones, opera, focusIndex, reason, error, notice, busy = false, onReasonChange, onFocusChange, onSubmit } = props;
+  const { petitiones, opera, focusIndex, focusRequest = 0, reason, error, notice, busy = false, onReasonChange, onFocusChange, onSubmit } = props;
+  const selected = petitiones[focusIndex];
+  const selectedRowRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (focusRequest === 0) return;
+    selectedRowRef.current?.focus({ preventScroll: true });
+    selectedRowRef.current?.scrollIntoView({ block: "nearest" });
+  }, [focusRequest, selected?.id]);
 
   if (petitiones.length === 0 && opera.length === 0) {
     return (
@@ -38,8 +48,6 @@ export function InboxView(props: InboxViewProps): JSX.Element {
       </div>
     );
   }
-
-  const selected = petitiones[focusIndex];
 
   return (
     <div className="inbox inbox--split">
@@ -54,10 +62,20 @@ export function InboxView(props: InboxViewProps): JSX.Element {
           ].filter(Boolean).join(" ");
 
           return (
-            <div key={p.id} className={rowClasses} data-focused={focused} onClick={() => onFocusChange(i)}>
+            <button
+              key={p.id}
+              ref={focused ? selectedRowRef : undefined}
+              type="button"
+              className={rowClasses}
+              data-focused={focused}
+              aria-pressed={focused}
+              tabIndex={focused ? 0 : -1}
+              onClick={() => onFocusChange(i)}
+              onFocus={() => onFocusChange(i)}
+            >
               <span className="inbox__subject">{p.subject}</span>
               <span className="inbox__sella">{p.from}</span>
-            </div>
+            </button>
           );
         })}
       </div>

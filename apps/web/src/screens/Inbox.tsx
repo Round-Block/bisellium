@@ -40,6 +40,7 @@ const WRITE_FAILED = "Could not send the answer.";
 export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [focusIndex, setFocusIndex] = useState(0);
+  const [focusRequest, setFocusRequest] = useState(0);
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   // W-341: the read and write outcomes the states matrix names. A failed read never invents petitions.
@@ -79,6 +80,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
       if (isTextEntryTarget(e.target)) return;
       if (e.key === "j" || e.key === "k") {
         setFocusIndex((i) => moveFocus(i, petitiones.length, e.key as "j" | "k"));
+        setFocusRequest((request) => request + 1);
         return;
       }
       const action = resolveVerbAction(e.key, focusedId ?? null, focusedId, reason);
@@ -126,6 +128,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
       petitiones={data.petitiones}
       opera={data.opera}
       focusIndex={focusIndex}
+      focusRequest={focusRequest}
       reason={reason}
       error={error}
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}

@@ -73,7 +73,7 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
       await expect(page.locator(".inbox__btn-action")).toHaveText([/approve/, /defer/, /decline/, /delegate/]);
     } else {
       await expect(page.locator(".inbox__list")).toBeVisible();
-      await expect(page.locator(".inbox__detail")).toBeHidden();
+      await expect(page.locator(".inbox__detail")).toBeVisible();
     }
   } else if (route === "board") {
     const officina = await page.request.get(`${served!.baseURL}/api/officina`);
