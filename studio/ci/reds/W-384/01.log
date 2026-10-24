@@ -1,0 +1,56 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-384-b1\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-10-24T09:22:09.936Z
+# sella: builder.W-384
+# tree: tree:aaa5829ccfa9a33606061ce7c90a6d7d5480fb5c
+# ticket: {"opus":"W-384","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-384/studio","head":"cab60241b5032048c01972acc631fbdfa0a23a2d","brief":"4ecce201963ffd72b532e03d432731068f54a53e","at":"2026-10-24T09:22:05.391Z"}
+
+TAP version 13
+# Subtest: W-384-b1 behaviour 1: the done land counts a records PR as landed when the auto-merge re-arm fails because the PR is already merged on its pinned head, and keeps any other failure
+not ok 1 - W-384-b1 behaviour 1: the done land counts a records PR as landed when the auto-merge re-arm fails because the PR is already merged on its pinned head, and keeps any other failure
+  ---
+  duration_ms: 2960.691845
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-384/packages/cli/src/next-done.test.ts:38:891'
+  failureType: 'testCodeFailure'
+  error: |-
+    disable: an already-merged records PR is landed, not held
+    --- exit 1
+    --- stdout
+    next: W-900 done held
+    mode: merge-queue
+    state=MERGE_FAILED
+    why: disabling auto-merge before re-arming it failed: GraphQL: Pull request is already merged (disablePullRequestAutoMerge)
+    next-step: done
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 done held'
+    - 'next: W-900 done performed'
+                        ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 done performed'
+  actual: 'next: W-900 done held'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-384/packages/cli/src/next-world.test.ts:804:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-384/packages/cli/src/next-done.test.ts:1405:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3314.578697
