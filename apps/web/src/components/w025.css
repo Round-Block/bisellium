@@ -653,6 +653,7 @@
   .inbox__list {
     border-right: none;
     border-bottom: 1px solid var(--rule);
+    box-sizing: border-box;
     max-height: 40vh;
   }
   .inbox__row {
