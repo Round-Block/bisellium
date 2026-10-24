@@ -67,7 +67,10 @@ line. A MERGED PR whose head this clone cannot resolve stays at `merge`; its
 perform fetches `refs/remotes/origin/opus/<id>` and holds, naming the oid, if
 the head is still unknown. A BEHIND PR is updated only while its head is the
 reviewed one, and a head that appears afterwards is adopted only if it descends
-from it (else `HEAD_MOVED`). Exit 0: a step named or performed, a
+from it (else `HEAD_MOVED`). A `gh pr merge` call that fails (arming auto-merge,
+or disabling or re-enabling it) is followed by one fresh `pr view` a poll
+interval later: only a PR that then reads MERGED, under the same identity and on
+its pinned head, is landed (W-384); any other read keeps `MERGE_FAILED`. Exit 0: a step named or performed, a
 live step reported running, or the ladder complete. Exit 1: refused, held, dead,
 or a performed step failed. Exit 2: usage, unknown opus, not a studio, not the
 main checkout. **`running` is a header word at exit 0, not an exit code: an

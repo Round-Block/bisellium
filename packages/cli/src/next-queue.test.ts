@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, lst
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
-import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, SLUG, SlotValue, World, advanceOrigin, cand, commit, expectHeld, expectStep, ghCalls, ghMerges, git, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
+import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SLUG, SlotValue, World, advanceOrigin, cand, commit, expectHeld, expectStep, ghCalls, ghMerges, git, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
 
 /** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
 const bindingPath = (w: World): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "queue", encodeURIComponent(BRANCH));
@@ -514,4 +514,70 @@ test("W-197 pin: the pull_request rule's code-owner and stale-review booleans le
   const w = queueWorld("w197-pin", { stdout: LIVE_RULES_WITH_OWNER_REVIEW });
   const o = performPr(w);
   assert.equal(modeLine(o), "mode: merge-queue", ran("the mode line", o));
+});
+
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// ---------------------------------------------------------------------------
+// W-384: the opus merge step's first auto-merge call on a PR that is already merged
+// ---------------------------------------------------------------------------
+test("W-384-b2 behaviour 2: the merge step counts a PR as landed when arming auto-merge fails and one fresh read shows it MERGED on its pinned head, and keeps the failure for any other read", { timeout: 3_600_000 }, () => {
+  const ALREADY = "GraphQL: Pull request is already merged (enablePullRequestAutoMerge)";
+  /** A queue-mode PR whose first `pr merge` exits 1 and raises the flag; every `pr view` after the flag answers `after`. */
+  const armFails = (tag: string, after: (w: World, m: string) => Reply): { w: World; m: string } => {
+    const w = pushed(tag);
+    const flag = join(w.root, "armed.flag");
+    const m = landMerge(w, false);
+    scenario(w, {
+      rules: { stdout: QUEUE_RULES },
+      list: openList(w),
+      view: { replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN" })) }], alts: [{ ifExists: flag, replies: [after(w, m)] }] },
+      merge: { replies: [{ exit: 1, stderr: `${ALREADY}\n`, touch: flag }] },
+    });
+    return { w, m };
+  };
+  const viewsAfterMerge = (w: World): number => {
+    const gh = ghCalls(w);
+    const at = gh.findIndex((a) => a[0] === "pr" && a[1] === "merge");
+    return gh.slice(at + 1).filter((a) => a[0] === "pr" && a[1] === "view").length;
+  };
+
+  // MERGED on the pinned head: landed, its merge commit fetched into master
+  const { w, m } = armFails("w384-b2-merged", (x, mm) => ({ stdout: viewOf(cand(x, { state: "MERGED", merge: mm })) }));
+  const o = performMerge(w);
+  assert.equal(o.status, 0, ran("an already-merged PR is landed: exit 0", o));
+  assert.match(o.out, new RegExp(`^merge: gh pr merge --squash --auto failed \\(${escapeRegExp(ALREADY)}\\); PR #${PR_NUMBER} reads MERGED at its pinned head ${tipOf(w).slice(0, 12)}$`, "m"), ran("the failed call and the merged read are both named", o));
+  assert.match(o.out, /^state=MERGED$/m, ran("state=MERGED", o));
+  assert.deepEqual(mutating(w), ["gh pr merge --squash --auto", "git fetch master:master"], ran("one merge call, then the trunk fetch", o));
+  assert.equal(viewsAfterMerge(w), 1, ran("exactly one fresh pr view after the failed call", o));
+  assert.equal(git(w.repo, ["rev-parse", "master"]), m, ran("master holds the merge commit", o));
+  assert.deepEqual(unmatched(w), [], "the fixture saw every gh call");
+
+  // every other read keeps the call's own failure, unchanged, and fetches nothing
+  const other = "0123456789abcdef0123456789abcdef01234567";
+  const variants: [string, (x: World, mm: string) => Reply][] = [
+    ["a PR that still reads OPEN", (x) => ({ stdout: viewOf(cand(x, { state: "OPEN", mss: "CLEAN" })) })],
+    ["a PR MERGED on another head", (x, mm) => ({ stdout: viewOf(cand(x, { state: "MERGED", merge: mm, oid: other })) })],
+    ["a MERGED PR of another head branch", (x, mm) => ({ stdout: viewOf(cand(x, { state: "MERGED", merge: mm, head: "opus/W-901" })) })],
+    ["a CLOSED PR", (x) => ({ stdout: viewOf(cand(x, { state: "CLOSED" })) })],
+    ["a MERGED PR with no merge commit", (x) => ({ stdout: viewOf(cand(x, { state: "MERGED", merge: null })) })],
+    ["a MERGED PR with an all-zero merge commit", (x) => ({ stdout: viewOf(cand(x, { state: "MERGED", merge: "0".repeat(40) })) })],
+    ["a failed read", () => ({ exit: 1, stderr: "HTTP 502: Bad Gateway\n" })],
+  ];
+  for (const [label, after] of variants) {
+    const { w: x } = armFails(`w384-b2-${label.replaceAll(" ", "-")}`, after);
+    const before = git(x.repo, ["rev-parse", "master"]);
+    const kept = performMerge(x);
+    assert.equal(kept.status, 1, ran(`${label}: the merge holds`, kept));
+    assert.deepEqual(outLines(kept).filter((l) => l.startsWith("state=") || l.startsWith("why:")), ["state=MERGE_FAILED", `why: ${ALREADY}`], ran(`${label}: the failure is the call's own, unchanged`, kept));
+    assert.deepEqual(mutating(x), ["gh pr merge --squash --auto"], ran(`${label}: nothing is fetched`, kept));
+    assert.equal(viewsAfterMerge(x), 1, ran(`${label}: exactly one fresh pr view`, kept));
+    assert.equal(git(x.repo, ["rev-parse", "master"]), before, `${label}: master did not move`);
+  }
+
+  // MERGED on the pinned head, but its merge commit is not on origin: landed's own checks hold, nothing reads MERGED
+  const { w: gone } = armFails("w384-b2-not-on-origin", (x) => ({ stdout: viewOf(cand(x, { state: "MERGED", merge: other })) }));
+  const unfetched = performMerge(gone);
+  assert.equal(unfetched.status, 1, ran("a merge commit that cannot be fetched holds", unfetched));
+  assert.doesNotMatch(unfetched.out, /^state=MERGED$/m, ran("and never reads state=MERGED", unfetched));
 });

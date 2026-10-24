@@ -780,6 +780,18 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
     return git(repo, ["merge-base", "--is-ancestor", pinned, head]).status === 0;
   };
   const sameIdentity = (v: Pr): boolean => v.number === pr.number && v.headRefName === pr.headRefName && v.baseRefName === pr.baseRefName;
+  /**
+   * W-384: a merge call that failed (arming auto-merge, or disabling or re-enabling it in the W-347 re-arm) is followed, one poll
+   * interval later, by one fresh `pr view`. Only a PR that now reads MERGED, under the same identity and on its pinned head, is
+   * landed, and `landed` then fetches its merge commit and checks it is in master. Any other read, or a read that fails, keeps the
+   * call's own failure. The call's error text is never parsed.
+   */
+  const mergedAfter = async (call: string, r: Run, failed: StepResult): Promise<StepResult> => {
+    await ctx.sleep(ctx.pollMs);
+    const again = readView(repo, pr);
+    if (!again.ok || !sameIdentity(again.view) || again.view.state !== "MERGED" || again.view.headRefOid !== pinned) return failed;
+    return landed(ctx, again.view, [`merge: ${call} failed (${why(r)}); PR #${pr.number} reads MERGED at its pinned head ${pinned.slice(0, 12)}`]);
+  };
 
   // A PR that falls behind while its checks run stalls forever (PRs 139, 147): update it first.
   const first = readView(repo, pr);
@@ -824,7 +836,7 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
   // --auto lets the merge queue serialise PRs that leapfrog each other's update-branch.
   ctx.log("gh pr merge --squash --auto");
   const merge = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pinned], repo);
-  if (merge.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: ${why(merge)}`] };
+  if (merge.status !== 0) return mergedAfter("gh pr merge --squash --auto", merge, { ok: false, lines: ["state=MERGE_FAILED", `why: ${why(merge)}`] });
 
   let moved = false;
   for (let poll = 1; poll <= ctx.maxPolls; poll++) {
@@ -849,9 +861,9 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
           // Disable then enable once, the same recovery as the operator runbook; the enabling call keeps the head pin.
           ctx.log("re-arm auto-merge (CLEAN, not in merge queue)");
           const disabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--disable-auto"], repo);
-          if (disabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: disabling auto-merge before re-arming it failed: ${why(disabled)}`] };
+          if (disabled.status !== 0) return mergedAfter("gh pr merge --disable-auto", disabled, { ok: false, lines: ["state=MERGE_FAILED", `why: disabling auto-merge before re-arming it failed: ${why(disabled)}`] });
           const enabled = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pinned], repo);
-          if (enabled.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: re-enabling auto-merge failed: ${why(enabled)}`] };
+          if (enabled.status !== 0) return mergedAfter("gh pr merge --squash --auto (re-enabling)", enabled, { ok: false, lines: ["state=MERGE_FAILED", `why: re-enabling auto-merge failed: ${why(enabled)}`] });
           rearmed = true;
         }
       }
