@@ -318,8 +318,12 @@ old_guard() {
 guard() {
   # this script runs unsandboxed: never the agent clone's copy (SELF_DIR is its real target), which a session can change
   # (SELF_DIR is resolved only by $RL: without it this check is skipped and guard_inputs refuses on $RL's line)
-  if have "$RL" && within "$(real "$SELF_DIR")" "$(real "$AGENT_DIR")"; then die "run the guard step from your own clone's copy of this script, never the agent clone's (nothing was changed)."; fi
-  guard_inputs || die "the guard's inputs are not valid; see the lines above (nothing was changed)."
+  # (the refusal comes after guard_inputs has printed every fault it can judge, a missing program's line among them)
+  local agentcopy='' judged=''
+  if have "$RL" && within "$(real "$SELF_DIR")" "$(real "$AGENT_DIR")"; then agentcopy=1; fi
+  if guard_inputs; then judged=1; fi
+  [[ -z $agentcopy ]] || die "run the guard step from your own clone's copy of this script, never the agent clone's (nothing was changed)."
+  [[ -n $judged ]] || die "the guard's inputs are not valid; see the lines above (nothing was changed)."
   # the guard installs the clone it runs from, so it runs only as that clone's own copy (W-379)
   local patron entry
   patron=$(real "$PATRON_DIR")
