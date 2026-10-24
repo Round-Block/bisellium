@@ -602,12 +602,20 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
   );
   assert.deepEqual(doc.on.push?.branches, ["master"], "push names only master");
   assert.deepEqual(doc.on.merge_group?.types, ["checks_requested"], "merge_group on checks_requested");
-  assert.deepEqual(Object.keys(doc.jobs), ["gates", "officina", "web-e2e", "certify"], "the four required jobs");
+  assert.deepEqual(
+    Object.keys(doc.jobs),
+    ["gates", "officina", "web-e2e", "certify", "certificate"],
+    "the four required jobs and W-396's certificate job",
+  );
   for (const [name, job] of Object.entries(doc.jobs)) {
     const expectedIf =
-      name === "certify" ? MERGE_GROUP : ["gates", "officina", "web-e2e"].includes(name) ? DISPATCH_MASTER : undefined;
+      name === "certify" || name === "certificate"
+        ? MERGE_GROUP
+        : ["gates", "officina", "web-e2e"].includes(name)
+          ? DISPATCH_MASTER
+          : undefined;
     assert.equal(job.if, expectedIf, `${name}'s job-level if`);
-    assert.equal(job.needs, undefined, `${name} has no prerequisite job`);
+    assert.equal(job.needs, name === "certificate" ? "certify" : undefined, `${name}'s prerequisite job`);
     assert.equal(job["continue-on-error"], undefined, `${name} has no job-level continue-on-error`);
     for (const step of job.steps)
       assert.equal(step["continue-on-error"], undefined, `${name}: no step continue-on-error`);
@@ -789,7 +797,12 @@ test("W-335-b1 behaviour 1: node scripts/test-reads.mjs runs ci.yml's npm test s
 
 /** W-368: the lowest Node 24 major of each action ci.yml may use. An action outside this table, or a `uses:` that is not
  *  `owner/repo@v<major>`, fails the row: a new action is judged and added here, never let through. */
-const NODE24_MAJOR = { "actions/checkout": 5, "actions/setup-node": 5, "actions/upload-artifact": 6 };
+const NODE24_MAJOR = {
+  "actions/checkout": 5,
+  "actions/setup-node": 5,
+  "actions/upload-artifact": 6,
+  "actions/download-artifact": 7,
+};
 
 test("W-368-b1 behaviour 1: every ci.yml job runs on ubuntu-24.04 and every action it uses runs on Node 24", () => {
   const doc = workflow();

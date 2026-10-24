@@ -240,3 +240,40 @@ jobs:
           path: |
             candidate/studio/receipts/
             ${{ runner.temp }}/certify.log
+
+  # W-396: certify's certificate (W-370), posted as the one `certify-certificate`
+  # check run on the merge-group commit, which the queue makes the merge commit,
+  # so the done perform reads it through api.github.com. Runs only after certify
+  # succeeded on a merge group. Its token reads contents (the checkout needs it)
+  # and writes check runs, nothing more; no other job may write a check run. The
+  # publisher is master's (`tooling`, the merge group's base commit), never the
+  # candidate's: the first step refuses a base_sha that is not a 40-hex commit id
+  # before any checkout (an empty ref would check out the candidate), and the step
+  # after the checkout refuses a tooling HEAD that is not base_sha. An artifact
+  # with no receipt (a records-only head mints none) publishes nothing. Not a
+  # required check: a failure leaves the merge alone and fails the run.
+  certificate:
+    needs: certify
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: tooling
+          ref: ${{ github.event.merge_group.base_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v7
+        with:
+          name: certify-${{ github.run_id }}
+          path: certify
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 25
+      - if: hashFiles('certify/**/receipts/**/*.json') != ''
+        run: node tooling/scripts/ci-certificate.mjs --dir certify
+        env:
+          GH_TOKEN: ${{ github.token }}

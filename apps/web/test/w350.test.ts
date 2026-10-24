@@ -170,8 +170,8 @@ test("W-350-b1 behaviour 1: the four live screens have deterministic runner-owne
   const attachEventCommit = 'git switch --force-create ci-event "$GITHUB_SHA"';
   assert.deepEqual(
     Object.keys(ci.jobs),
-    ["gates", "officina", "web-e2e", "certify"],
-    "the workflow retains exactly its four established jobs",
+    ["gates", "officina", "web-e2e", "certify", "certificate"],
+    "the workflow retains exactly its four established jobs and W-396's certificate job",
   );
   for (const jobName of ["gates", "officina", "web-e2e"]) {
     const job = ci.jobs[jobName];
