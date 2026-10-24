@@ -423,7 +423,8 @@ const STATUS = wholeWord("(?:holds|scoped)");
 const SCOPED = wholeWord("scoped");
 
 /** W-306: the design collegium's magister: no design row is `architect`; exactly one row needs a nonblank string magister. */
-function readDesignMagister(manifest: unknown): { magister: string } | { error: string } {
+/** W-306's design-collegium domain; W-355: next's `readSpecReviewer` applies it too, so next and verdict agree on the signer. */
+export function readDesignMagister(manifest: unknown): { magister: string } | { error: string } {
   const collegia = typeof manifest === "object" && manifest !== null ? (manifest as Record<string, unknown>)["collegia"] : undefined;
   if (!Array.isArray(collegia)) return { error: "bisellium.yml#collegia must be a list" };
   const rows = collegia.filter((r): r is Record<string, unknown> => typeof r === "object" && r !== null && (r as Record<string, unknown>)["id"] === "design");

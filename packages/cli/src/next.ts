@@ -33,7 +33,7 @@ import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/buil
 import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
-import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
@@ -221,10 +221,14 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: strin
   const m: unknown = manifest;
   // a studio with no readable manifest object declares no setting: today's ladder
   if (!isDict(m)) return { signer: "architect", reviewer: undefined };
+  // W-355: the design collegium the spec verdict reads (readDesignMagister): no row (the architect) or exactly one with a nonblank
+  // magister; every other form refuses before either pair is returned, as the ordered verdict would refuse the signature
+  const designDomain = readDesignMagister(m);
   if (rec["kind"] === "ui") {
     const ui = readUiSpecPairing(m);
     if ("error" in ui) return ui;
     if (ui.pairing !== undefined) {
+      if ("error" in designDomain) return { error: designDomain.error };
       const state = str(rec["state"]);
       if (state !== undefined && PAST_READY.has(state)) return { signer: ui.pairing.signer, reviewer: undefined };
       if (state !== "greenlit") return { error: `bisellium.yml#ui_spec_signer/ui_spec_reviewer: the trunk record's state ${state ?? "(absent)"} is outside the gate's domain` };
@@ -234,7 +238,7 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: strin
   const designs = declared(m["collegia"], "design");
   const magister = str(designs[0]?.["magister"]);
   const signer = magister ?? "architect";
-  if (!("spec_reviewer" in m)) return { signer, reviewer: undefined };
+  if (!("spec_reviewer" in m)) return "error" in designDomain ? { error: designDomain.error } : { signer, reviewer: undefined };
   const bad = (why: string): { error: string } => ({ error: `bisellium.yml#spec_reviewer: ${why}` });
   const sella = str(m["spec_reviewer"]);
   if (sella === undefined) return bad("must be the id of one declared seat (a non-empty string)");
@@ -249,6 +253,7 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: strin
   if (designs.length > 1) return bad(`the design collegium is declared ${designs.length} times; exactly one row names the magister`);
   if (magister === undefined) return bad("the design collegium declares no magister to sign the spec");
   if (magister === sella) return bad(`${sella} is the design magister; the reviewer must be another seat`);
+  if ("error" in designDomain) return bad(designDomain.error);
   const state = str(rec["state"]);
   if (state !== undefined && PAST_READY.has(state)) return { signer: magister, reviewer: undefined };
   if (state !== "greenlit") return bad(`the trunk record's state ${state ?? "(absent)"} is outside the gate's domain`);
