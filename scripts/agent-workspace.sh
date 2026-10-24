@@ -163,7 +163,7 @@ gitpath() { real "$(git -C "$1" rev-parse --path-format=absolute "$2" 2>/dev/nul
 
 # The guard installer's inputs (W-362), judged before anything changes: one line per fault, status 1 when any.
 #   All four are absolute. AGENT_DIR: the top of a git checkout. PATRON_DIR: the top of a git checkout holding
-#   origin/master; neither inside the other. GUARD_DIR: absent under an existing directory, or the top of a linked
+#   origin/master, on master with no uncommitted tracked change (W-379); neither inside the other. GUARD_DIR: absent under an existing directory, or the top of a linked
 #   worktree sharing PATRON_DIR's git directory with no uncommitted tracked change, never PATRON_DIR itself; never
 #   inside AGENT_DIR. GUARD_BIN: named bisellium, absent or a link, its directory existing, outside AGENT_DIR and on
 #   PATH, with no relative entry, no entry inside AGENT_DIR and no other executable bisellium before that entry (a
@@ -184,6 +184,8 @@ guard_inputs() {
     patron=''
     say "PATRON_DIR $PATRON_DIR is not the top of a git checkout holding origin/master"
   fi
+  # the guard installs this clone, so it judges it as the sync does (W-379)
+  if [[ -n $patron ]] && ! p=$(patron_on_master "the guard"); then say "$p"; fi
   if [[ -n $agent && -n $patron ]] && { within "$agent" "$patron" || within "$patron" "$agent"; }; then
     say "PATRON_DIR and AGENT_DIR are one inside the other"
   fi
@@ -273,14 +275,14 @@ agit() {
     git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -C "$AGENT_DIR" "$@"
 }
 
-# The Patron's clone, the sync's fetch source (W-369): on master with no uncommitted tracked change, or the reason
-# and status 1. Its git runs with the Patron's own config: no session can write that clone.
+# The Patron's clone, the sync's fetch source (W-369) and the guard's install (W-379): on master with no uncommitted
+# tracked change, or the reason and status 1; $1 names who runs only from it (default: the sync).
 patron_on_master() {
-  local h st
+  local h st who=${1:-the sync}
   h=$(git -C "$PATRON_DIR" symbolic-ref -q HEAD) || h=detached
-  [[ $h == refs/heads/master ]] || { echo "PATRON_DIR $PATRON_DIR is on $h, not master; the sync runs only while it is on master"; return 1; }
+  [[ $h == refs/heads/master ]] || { echo "PATRON_DIR $PATRON_DIR is on $h, not master; $who runs only while it is on master"; return 1; }
   st=$(git --no-optional-locks -C "$PATRON_DIR" status --porcelain --untracked-files=no) || { echo "git status failed in PATRON_DIR $PATRON_DIR"; return 1; }
-  [[ -z $st ]] || { echo "PATRON_DIR $PATRON_DIR has uncommitted tracked changes (${st%%$'\n'*}); the sync runs only while it is on a clean master"; return 1; }
+  [[ -z $st ]] || { echo "PATRON_DIR $PATRON_DIR has uncommitted tracked changes (${st%%$'\n'*}); $who runs only while it is on a clean master"; return 1; }
 }
 
 # git config on the agent clone's config file alone: from /, no global or system config, a clean environment.
