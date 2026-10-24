@@ -62,7 +62,8 @@ const SERVED: Record<string, string[]> = {
 
 const render = (component: unknown, props: Record<string, unknown>): string => renderToStaticMarkup(createElement(component as ComponentType<Record<string, unknown>>, props));
 const count = (html: string, needle: string): number => html.split(needle).length - 1;
-const wired = (screen: string): void => assert.match(read("src/App.tsx"), new RegExp(`<${screen} onStatus=\\{setStatus\\} />`), `the shell hands ${screen} its status setter`);
+const wired = (screen: string): void =>
+  assert.match(read("src/App.tsx"), new RegExp(`<${screen} onStatus=\\{setStatus\\}(?: onNeedsYouCount=\\{setNeedsYouCount\\})? />`), `the shell hands ${screen} its status setter`);
 
 test("W-341-b1 behaviour 1: one states matrix, one status by fixed precedence, one polite live region in the shell", async () => {
   const m = await matrix();
@@ -121,10 +122,10 @@ test("W-341-b2 behaviour 2: the Inbox shows and reports loading, empty, error, r
   wired("Inbox");
   const source = read("src/screens/Inbox.tsx");
   assert.doesNotMatch(source, /catch\(\(\) => setData\(DEV_DATA\)\)/, "a failed read never substitutes the demo petitions");
-  assert.match(source, /\.catch\(\(\) => setReadFailed\(true\)\)/, "a failed read is the error state");
+  assert.match(source, /\.catch\(\(\) => \{\s*setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);\s*\}\)/, "a failed read clears stale records and is the settled error state");
   assert.match(source, /screenStatus\("inbox", \{/, "the Inbox derives its one status from the matrix");
   assert.match(source, /pending: sending/, "an answer in flight is the pending state");
-  assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Inbox reports each status change");
+  assert.match(source, /useEffect\(\(\) => onStatus\?\.\(reportedStatus\), \[reportedStatus\.state, reportedStatus\.text\]\)/, "the Inbox reports each state or recorded-answer change");
   assert.ok(source.includes('setOutcome("error")'), "a failed write sets the error outcome");
   assert.ok(source.includes('failed: outcome === "error" ? WRITE_FAILED'), "a failed write is the error state with its own copy");
   assert.ok(source.includes("Could not send the answer."), "the Inbox write-failure copy");
@@ -197,7 +198,7 @@ test("W-341-b6 behaviour 6: the served states suite drives every served cell at 
   const drivers = [...spec.matchAll(/^ {2}"([a-z]+:[a-z]+)": async \(page\) => \{$/gm)].map((d) => d[1]).sort();
   assert.deepEqual(drivers, m.servedCells().map((c) => `${c.screen}:${c.state}`).sort(), "exactly one driver per served cell");
   assert.equal(policy["AXE_DISABLED_RULES"], undefined, "no axe rule is disabled, colour contrast included");
-  assert.deepEqual(Object.keys((policy["PHONE_UNREACHABLE"] ?? {}) as object), ["inbox:refused", "inbox:pending"], "only the hidden answer pane's cells skip at phone width");
+  assert.deepEqual(Object.keys((policy["PHONE_UNREACHABLE"] ?? {}) as object), [], "every served state is reachable at phone width");
   const root = /:root\s*\{([^}]*)\}/.exec(read("src/tokens.css"))?.[1] ?? "";
   const token = (name: string): string => {
     const value = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6});`).exec(root)?.[1];

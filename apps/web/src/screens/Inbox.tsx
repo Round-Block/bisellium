@@ -1,7 +1,18 @@
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
 import { InboxView } from "./InboxView.js";
-import { buildReply, moveFocus, resolveVerbAction, type Verb } from "./inboxLogic.js";
+import {
+  answerOptions,
+  buildReply,
+  isTextEntryTarget,
+  moveFocus,
+  recordedEffect,
+  reconcileFocusIndex,
+  reasonForPetition,
+  resolveVerbAction,
+  withReasonForPetition,
+  type Verb,
+} from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
@@ -29,15 +40,18 @@ const DEV_DATA: InboxResponse = {
 
 const WRITE_FAILED = "Could not send the answer.";
 
-export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
+export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: ScreenStatus) => void; onNeedsYouCount?: (count: number) => void } = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [focusIndex, setFocusIndex] = useState(0);
-  const [reason, setReason] = useState("");
+  const [focusRequest, setFocusRequest] = useState(0);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<string | undefined>(undefined);
   // W-341: the read and write outcomes the states matrix names. A failed read never invents petitions.
   const [loaded, setLoaded] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [outcome, setOutcome] = useState<"refused" | "error" | undefined>(undefined);
 
   const demo = location.search.includes("demo");
@@ -46,24 +60,36 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     fetchInbox()
       .then((d) => {
         setData(d);
+        onNeedsYouCount?.(d.petitiones.length);
         setLoaded(true);
         setReadFailed(false);
       })
-      .catch(() => setReadFailed(true));
+      .catch(() => {
+        setData(EMPTY);
+        setLoaded(true);
+        setReadFailed(true);
+      });
   }
 
   useEffect(() => {
-    if (demo) { setData(DEV_DATA); setLoaded(true); return; }
+    if (demo) { setData(DEV_DATA); onNeedsYouCount?.(DEV_DATA.petitiones.length); setLoaded(true); return; }
     reload();
   }, []);
 
   const petitiones = data.petitiones;
   const focusedId = petitiones[focusIndex]?.id;
+  const reason = reasonForPetition(reasons, focusedId);
+
+  useEffect(() => {
+    setFocusIndex((index) => reconcileFocusIndex(index, petitiones.length));
+  }, [petitiones.length]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
+      if (isTextEntryTarget(e.target)) return;
       if (e.key === "j" || e.key === "k") {
         setFocusIndex((i) => moveFocus(i, petitiones.length, e.key as "j" | "k"));
+        setFocusRequest((request) => request + 1);
         return;
       }
       const action = resolveVerbAction(e.key, focusedId ?? null, focusedId, reason);
@@ -74,15 +100,20 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   }, [petitiones.length, focusedId, reason]);
 
   function submit(petitioId: string, verb: Verb): void {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     setError(null);
+    setConfirmation(undefined);
     setOutcome(undefined);
     setSending(true);
-    void submitAnswer(petitioId, buildReply(verb, reason)).then((result) => {
+    void submitAnswer(petitioId, buildReply(verb, reason), answerOptions(verb)).then((result) => {
+      sendingRef.current = false;
       setSending(false);
       // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
       // no local handling here. "ok"/"refused"/"error" are this screen's.
       if (result.kind === "ok") {
-        setReason("");
+        setReasons((current) => withReasonForPetition(current, petitioId, ""));
+        setConfirmation(recordedEffect(verb, petitioId));
         if (!demo) reload();
       } else if (result.kind === "refused") {
         setError(result.output || "refused");
@@ -101,17 +132,23 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     refused: outcome === "refused" ? (error ?? "") : undefined,
     pending: sending,
   });
-  useEffect(() => onStatus?.(status), [status.state, status.text]);
+  const reportedStatus = confirmation !== undefined && (status.state === "ready" || status.state === "empty") ? { state: "ready" as const, text: confirmation } : status;
+  useEffect(() => onStatus?.(reportedStatus), [reportedStatus.state, reportedStatus.text]);
 
   return (
     <InboxView
       petitiones={data.petitiones}
       opera={data.opera}
       focusIndex={focusIndex}
+      focusRequest={focusRequest}
       reason={reason}
       error={error}
+      confirmation={confirmation}
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
-      onReasonChange={setReason}
+      busy={sending}
+      onReasonChange={(value) => {
+        if (focusedId !== undefined) setReasons((current) => withReasonForPetition(current, focusedId, value));
+      }}
       onFocusChange={setFocusIndex}
       onSubmit={submit}
     />

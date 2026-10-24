@@ -4,6 +4,7 @@
  * `react-dom/server` (no fetch, no DOM, no keyboard simulation needed —
  * the keyboard/submit model itself is covered by inboxLogic.test.ts).
  */
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { InboxView, type InboxViewProps } from "../src/screens/InboxView.js";
 
@@ -29,9 +30,11 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
   };
 }
 
+const render = (props: InboxViewProps): string => renderToStaticMarkup(createElement(InboxView, props));
+
 // behaviour 9: empty state is one line, no other content.
 {
-  const html = renderToStaticMarkup(InboxView(baseProps()));
+  const html = render(baseProps());
   check(9, "empty state shows 'Nothing waiting on you'", html.includes("Nothing waiting on you"), html);
   check(9, "empty state renders nothing else", !html.includes("<button"), html);
 }
@@ -40,7 +43,7 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
 // with a 2px amber left rule.
 {
   const petitiones = [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask for a decision", body: "Full proposal content here." }];
-  const html = renderToStaticMarkup(InboxView(baseProps({ petitiones })));
+  const html = render(baseProps({ petitiones }));
   check(4, "petitio row renders", html.includes('class="inbox__row'), html);
   check(4, "petitio row has a 2px amber left rule", html.includes("inbox__row--attention"), html);
   check(4, "subject renders at 13/18", html.includes('class="inbox__subject"'), html);
@@ -55,7 +58,7 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
   // placeholder). Already correct — InboxView.tsx is not owned by W-076 —
   // so this is a regression-safety assertion, not a red: it holds today.
   const emptyBodyPetitiones = [{ id: "P-2", opus: "W-024", from: "builder-a", subject: "ask", body: "" }];
-  const emptyBodyHtml = renderToStaticMarkup(InboxView(baseProps({ petitiones: emptyBodyPetitiones, focusIndex: 0 })));
+  const emptyBodyHtml = render(baseProps({ petitiones: emptyBodyPetitiones, focusIndex: 0 }));
   check(4, "the placeholder still renders for body: \"\" (W-076)", emptyBodyHtml.includes("No content provided."), emptyBodyHtml);
 }
 
@@ -65,20 +68,20 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
     { id: "P-1", opus: "W-024", from: "builder-a", subject: "first", body: "" },
     { id: "P-2", opus: "W-025", from: "censor", subject: "second", body: "" },
   ];
-  const html = renderToStaticMarkup(InboxView(baseProps({ petitiones, onFocusChange: () => undefined })));
+  const html = render(baseProps({ petitiones, onFocusChange: () => undefined }));
   check(10, "rows are clickable (have onClick via role=button or cursor style)", html.includes('class="inbox__row') && html.split('inbox__row').length > 2, html);
 }
 
 // behaviour 8: detail pane shows verb buttons; disabled until a non-empty reason.
 {
   const petitiones = [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask", body: "" }];
-  const noReason = renderToStaticMarkup(InboxView(baseProps({ petitiones, reason: "" })));
-  check(8, "detail pane shows all four verb buttons", (noReason.match(/<button/g) ?? []).length === 4, noReason);
-  check(8, "with no reason: all four verb buttons disabled", (noReason.match(/<button[^>]*disabled/g) ?? []).length === 4, noReason);
+  const noReason = render(baseProps({ petitiones, reason: "" }));
+  check(8, "detail pane shows the three truthful verb buttons", (noReason.match(/class="inbox__btn-action"/g) ?? []).length === 3, noReason);
+  check(8, "with no reason: all verb buttons disabled", (noReason.match(/class="inbox__btn-action" disabled/g) ?? []).length === 3, noReason);
 
-  const withReason = renderToStaticMarkup(InboxView(baseProps({ petitiones, reason: "looks good" })));
+  const withReason = render(baseProps({ petitiones, reason: "looks good" }));
   check(8, "with a reason: no verb button is disabled", !withReason.includes("disabled"), withReason);
-  check(8, "all four verbs are offered", ["approve", "defer", "decline", "delegate"].every((v) => withReason.includes(`>${v}<`)), withReason);
+  check(8, "approve, decline and follow up are offered", ["approve", "decline", "follow up"].every((v) => withReason.includes(`>${v}<`)) && !withReason.includes(">defer<") && !withReason.includes(">delegate<"), withReason);
 }
 
 process.exit(failed ? 1 : 0);

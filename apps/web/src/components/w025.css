@@ -644,12 +644,30 @@
 @media (max-width: 899px) {
   .inbox--split {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100%;
   }
   .inbox__detail {
-    display: none;
+    display: flex;
   }
   .inbox__list {
     border-right: none;
+    border-bottom: 1px solid var(--rule);
+    box-sizing: border-box;
+    max-height: 40vh;
+  }
+  .inbox__row {
+    min-height: 44px;
+  }
+  .inbox__input-ratio {
+    min-height: 44px;
+    color: var(--ink);
+  }
+  .inbox__btn-action {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+    color: var(--ink);
   }
 }
 
@@ -669,6 +687,14 @@
   padding: 0 16px;
   border-bottom: 1px solid var(--rule);
   cursor: pointer;
+  width: 100%;
+  background: var(--transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
 }
 
 .inbox__row--attention {
@@ -744,6 +770,8 @@
   opacity: 1;
 }
 
+.inbox__row:focus,
+.inbox__row:focus-visible,
 .inbox__input-ratio:focus,
 .inbox__btn-action:focus {
   outline: 2px solid var(--verdigris);
@@ -752,7 +780,22 @@
 
 .inbox__action-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.inbox__confirmation {
+  padding: 0 var(--sp-4);
+  color: var(--ink-2);
+}
+
+.inbox__action-effect,
+.inbox__confirmation {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .inbox__btn-action {

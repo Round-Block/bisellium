@@ -6,7 +6,7 @@
  * one-behaviour-per-log contract) restricts which behaviour's checks run;
  * omitted, all of this file's behaviours run.
  */
-import { buildReply, canSubmit, moveFocus, nextExpanded, resolveVerbAction } from "../src/screens/inboxLogic.js";
+import { answerOptions, buildReply, canSubmit, moveFocus, nextExpanded, resolveVerbAction } from "../src/screens/inboxLogic.js";
 
 const only = process.argv[2] ? Number(process.argv[2]) : undefined;
 
@@ -34,15 +34,17 @@ check(8, "canSubmit: empty reason cannot submit", canSubmit("") === false);
 check(8, "canSubmit: whitespace-only reason cannot submit", canSubmit("   ") === false);
 check(8, "canSubmit: a real reason can submit", canSubmit("looks fine") === true);
 
-// behaviour 7: 1/2/3 on the expanded petitio resolve to approve/defer/decline.
+// behaviour 7, migrated by W-345: 1/2/3 resolve to approve/decline/followup.
 check(7, "resolveVerbAction: '1' on the expanded item resolves to approve", JSON.stringify(resolveVerbAction("1", "P-1", "P-1", "ok")) === JSON.stringify({ petitioId: "P-1", verb: "approve" }));
-check(7, "resolveVerbAction: '2' resolves to defer", resolveVerbAction("2", "P-1", "P-1", "ok")?.verb === "defer");
-check(7, "resolveVerbAction: '3' resolves to decline", resolveVerbAction("3", "P-1", "P-1", "ok")?.verb === "decline");
+check(7, "resolveVerbAction: '2' resolves to decline", resolveVerbAction("2", "P-1", "P-1", "ok")?.verb === "decline");
+check(7, "resolveVerbAction: '3' resolves to followup", resolveVerbAction("3", "P-1", "P-1", "more detail")?.verb === "followup");
 check(7, "resolveVerbAction: ignored when the item isn't expanded", resolveVerbAction("1", null, "P-1", "ok") === null);
 check(7, "resolveVerbAction: ignored without a reason (behaviour 8)", resolveVerbAction("1", "P-1", "P-1", "") === null);
 check(7, "resolveVerbAction: ignored for a key with no verb", resolveVerbAction("4", "P-1", "P-1", "ok") === null);
 
 // the constructed reply text a verb submission sends.
 check(7, "buildReply: verb prefix plus trimmed reason", buildReply("approve", "  looks good  ") === "approve: looks good");
+check(7, "buildReply: followup is trimmed open text without a verdict prefix", buildReply("followup", "  What about QA?  ") === "What about QA?");
+check(7, "answerOptions: followup selects the existing ask-back record form", answerOptions("followup")?.askBack === true);
 
 process.exit(failed ? 1 : 0);

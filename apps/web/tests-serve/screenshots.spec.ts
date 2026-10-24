@@ -70,11 +70,11 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
       await expect(page.locator(".inbox__detail-opus")).toHaveText("W-004");
       await expect(page.locator(".inbox__detail-content")).toContainText("Drag-and-drop grew a second screen");
       await expect(page.locator(".inbox__input-ratio")).toBeVisible();
-      await expect(page.locator(".inbox__btn-action")).toHaveText([/approve/, /defer/, /decline/, /delegate/]);
     } else {
       await expect(page.locator(".inbox__list")).toBeVisible();
-      await expect(page.locator(".inbox__detail")).toBeHidden();
+      await expect(page.locator(".inbox__detail")).toBeVisible();
     }
+    await expect(page.locator(".inbox__btn-action")).toHaveText([/approve/, /decline/, /follow up/]);
   } else if (route === "board") {
     const officina = await page.request.get(`${served!.baseURL}/api/officina`);
     const fixture = (await officina.json()) as { lifecycle: { states: { phase: string }[] } };
