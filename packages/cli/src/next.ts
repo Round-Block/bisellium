@@ -159,6 +159,17 @@ function recordOf(src: Src | undefined, id: string): Dict | undefined {
 
 /** W-355 (prototype stage): the checkout that owns a spec's evidence, its opus record and its manifest. */
 export type SpecOwner = { where: string; record: Dict; manifest: Manifest } | { error: string };
+/** W-355: the committed opus branch's manifest, read strictly (the branch has no usable worktree). */
+function branchManifest(src: Src | undefined, id: string): { manifest: Manifest } | { error: string } {
+  const text = src?.read("bisellium.yml");
+  if (text === undefined) return { error: `bisellium.yml on opus/${id} is absent or unreadable` };
+  try {
+    const m: unknown = parseYaml(text);
+    return isDict(m) ? { manifest: m as unknown as Manifest } : { error: `bisellium.yml on opus/${id} is not a mapping` };
+  } catch (e) {
+    return { error: `bisellium.yml on opus/${id} does not parse (${one((e as Error).message.split("\n")[0] ?? "")})` };
+  }
+}
 
 interface SpecReviewer {
   sella: string;
@@ -744,9 +755,10 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const trunkRecord = recordOf(trunk, id);
   const branchRecord = recordOf(branch, id);
   const defaultDesign = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
-  // W-355 (prototype stage 1): the main checkout's record before the branch, still falling back to the trunk's
+  // W-355 (prototype stage 2): the owner's manifest after the branch, still falling back to the main checkout's
   const ownerWhere = tip === undefined ? `the main checkout (${studioRel})` : usable ? join(".worktrees", id, studioRel) : `opus/${id}`;
-  const specOwner: SpecOwner = { where: ownerWhere, record: (tip === undefined ? recordOf(fsSrc(studioAbs), id) : branchRecord) ?? trunkRecord ?? {}, manifest };
+  const ownerManifest = tip === undefined ? { manifest } : usable ? readWorktreeManifest(wt.studio) : branchManifest(branch, id);
+  const specOwner: SpecOwner = { where: ownerWhere, record: (tip === undefined ? recordOf(fsSrc(studioAbs), id) : branchRecord) ?? trunkRecord ?? {}, manifest: "error" in ownerManifest ? manifest : ownerManifest.manifest };
   // the one signer every later reader (red attribution, signedAfter, commits) uses is the spec rung's own selection
   const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"] });
   const design = pairing !== undefined && !("error" in pairing) ? pairing.signer : defaultDesign;
