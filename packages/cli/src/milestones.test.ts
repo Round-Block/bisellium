@@ -339,3 +339,45 @@ test("W-404-b1 behaviour 1: bisellium milestones prints each milestone's exit, w
   assert.equal(notStudio.status, 2, "not a studio: exit 2");
   assert.equal(notStudio.err.split("\n")[0], `milestones: ${join(w.repo, "bisellium.yml")} not found — not a studio`, "not a studio: named");
 });
+
+test("W-404-b2 behaviour 2: next --all prints the milestones report as one line before the open count", { timeout: 600_000 }, () => {
+  const w = exitWorld("b2");
+  milestones(w.studio, FOUR);
+  fourOpera(w.studio, "backlog");
+  const all = (): { status: number | null; out: string; err: string } => bisellium(w.repo, ["next", "--all", "--studio", w.studio, "--repo", w.repo]);
+  const LINE = "milestones: 1 of 4 exits met, 30% by weight · M1 open: opus W-1; path W-1, W-2, W-3 · M2 met: rule acta.kind; path none · M3 open: needs; path none · M4 open: no exit; path none";
+
+  const before = snapshot(w.repo);
+  const r = all();
+  assert.equal(r.out, `${LINE}\nopen: 0\n`, "the milestones line, then the open count");
+  assert.equal(r.status, 0, "exit 0");
+  assert.equal(snapshot(w.repo), before, "next --all writes nothing: every file under the repository, .git included, is byte-identical");
+
+  // the line is the report: the verb's summary and each milestone's met or open
+  const v = bisellium(w.repo, ["milestones", "--studio", w.studio, "--repo", w.repo]);
+  const verb = v.out.trimEnd().split("\n");
+  const parts = LINE.split(" · ");
+  assert.equal(parts[0], verb[0], "the same summary as the verb");
+  assert.deepEqual(
+    parts.slice(1).map((p) => p.split(":")[0]),
+    verb.slice(1).map((l) => l.split(" · ")[0]),
+    "the same milestones, met or open, in the same order",
+  );
+
+  // filings do not move it
+  opus(w.studio, "W-6", "backlog", "milestone: M1\nvalue: 8\n");
+  opus(w.studio, "W-8", "done", "milestone: M99\nvalue: 3\n");
+  assert.equal(all().out, `${LINE}\nopen: 0\n`, "filing more opera, and an opus naming an undeclared milestone, change nothing");
+
+  // malformed: a held line, and the run exits 1 after every line
+  milestones(w.studio, "milestones: []\n");
+  const held = all();
+  assert.equal(held.out, "milestones: held · why: milestones.yml is malformed: it lists no milestone\nopen: 0\n", "a malformed milestones.yml: the held line");
+  assert.equal(held.status, 1, "a malformed milestones.yml: exit 1");
+
+  // absent: no line, as before W-404
+  rmSync(join(w.studio, "milestones.yml"));
+  const absent = all();
+  assert.equal(absent.out, "open: 0\n", "no milestones.yml: no milestones line");
+  assert.equal(absent.status, 0, "no milestones.yml: exit 0");
+});
