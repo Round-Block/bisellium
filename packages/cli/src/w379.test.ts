@@ -238,3 +238,32 @@ test("W-379-b3 behaviour 3: guard removes W-362's old guard worktree only when G
   assert.doesNotMatch(again.out, /^guard: (left|removed)/m, "an absent old guard is skipped");
 });
 
+test("W-379-b4 behaviour 4: every git the guard runs has no hooks, no fsmonitor and no global config; the fetch keeps the Patron's config", () => {
+  const w = world();
+  // origin's next commit names a filter that only the Patron's global config defines; the Patron's remote is a name that
+  // only a url rule in that global config resolves; the Patron's clone carries hooks that log when they run
+  const seed = join(w.f, "seed");
+  put(join(seed, ".gitattributes"), "x filter=mark\n");
+  writeFileSync(join(seed, "x"), "z\n");
+  git(seed, "add", ".");
+  git(seed, "commit", "-qm", "three");
+  git(seed, "push", "-q", join(w.f, "origin.git"), "master");
+  const gc = join(w.f, ".gitconfig");
+  writeFileSync(gc, "");
+  git(w.f, "config", "--file", gc, "filter.mark.smudge", `sh -c 'echo smudge >> "$HOME/filter.log"; cat'`);
+  git(w.f, "config", "--file", gc, "filter.mark.clean", `sh -c 'echo clean >> "$HOME/filter.log"; cat'`);
+  git(w.f, "config", "--file", gc, "core.fsmonitor", `sh -c 'echo fsmonitor >> "$HOME/fsmonitor.log"'`);
+  git(w.f, "config", "--file", gc, `url.${join(w.f, "origin.git")}.insteadOf`, "w379-origin:");
+  git(w.patron, "remote", "set-url", "origin", "w379-origin:");
+  for (const h of ["post-merge", "post-checkout", "reference-transaction", "post-rewrite"]) put(join(w.patron, ".git", "hooks", h), `#!/bin/sh\necho ${h} >> "$HOME/hooks.log"\n`, 0o755);
+  const r = w.guard("guard");
+  assert.equal(r.code, 0, `the fetch keeps the Patron's own config (its url rule resolves origin): ${r.out}`);
+  assert.equal(head(w.patron), w.origin(), "the Patron's clone is at origin/master");
+  assert.equal(existsSync(join(w.f, "hooks.log")), false, `no hook ran in the Patron's clone: ${existsSync(join(w.f, "hooks.log")) ? readFileSync(join(w.f, "hooks.log"), "utf8") : ""}`);
+  assert.equal(existsSync(join(w.f, "filter.log")), false, "the global config was ignored: no filter ran");
+  assert.equal(existsSync(join(w.f, "fsmonitor.log")), false, "no fsmonitor ran");
+  assert.equal(readFileSync(join(w.patron, "x"), "utf8"), "z\n", "the file is as committed");
+  // the removal's git is clean too: the old guard (proved, clean) goes with no hook run
+  assert.equal(existsSync(w.old), false, "the old guard worktree was removed");
+  unlinkSync(gc);
+});
