@@ -110,7 +110,10 @@ inputs before any change (the clone on master with no uncommitted tracked
 change among them), fast-forwards the clone's master to origin/master, links
 `~/.local/bin/bisellium` into it, merges the user settings (the sandbox on, and
 denying writes to the agent clone's `packages/`, `apps/`, `adapters/` and
-`scripts/`) and probes it (W-362, W-379).
+`scripts/`) and probes it (W-362, W-379). Last it removes W-362's old guard
+worktree, `~/projects/bisellium-guard`, but only when `~/.local/bin/bisellium`
+led into it as the run began, git lists it as a linked worktree of the clone
+and git finds it clean; else it leaves it and prints why and the command.
 
 **The sync (W-369).** `hook-event sync` runs `scripts/agent-workspace.sh sync`
 beside the installed CLI's own file (never the agent clone's copy) and hands

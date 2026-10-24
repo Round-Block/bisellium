@@ -33,7 +33,8 @@
 # master with no uncommitted tracked change among them (`guard-check` prints the
 # same judgement alone); then it fast-forwards $PATRON_DIR's master to
 # origin/master, runs npm ci there, links $GUARD_BIN to it, merges the user
-# settings from it and probes the guard.
+# settings from it, probes the guard, and removes W-362's old guard worktree
+# $OLD_GUARD_DIR when $GUARD_BIN led into it as the run began and git finds it clean.
 #
 # `setup` is run ONCE, by the Patron, in their own terminal — never by an agent
 # (it prompts for a token and edits the user-level Claude settings). Why: agents
@@ -226,15 +227,53 @@ source_unwritable() {
   for d in packages apps adapters scripts; do ! test -w "$AGENT_DIR/$d" || return 1; done
 }
 
+# W-362's old guard worktree (W-379), after the new install: removed only when it is proved the old guard, GUARD_BIN
+# leading into it as this run began ($1) and git listing it as a linked worktree of PATRON_DIR, and git's
+# `worktree remove` (never forced) finds it clean; else it is left, with the reason and the Patron's command.
+old_guard() {
+  local o p q line n=0 found='' why='' out
+  [[ -e $OLD_GUARD_DIR || -L $OLD_GUARD_DIR ]] || return 0
+  # each path single-quoted for the shell (a quote in it as '\''), so the command pastes as it reads
+  p="'${PATRON_DIR//\'/\'\\\'\'}'"
+  q="'${OLD_GUARD_DIR//\'/\'\\\'\'}'"
+  o=$(real "$OLD_GUARD_DIR") || o=''
+  if [[ -z $o ]]; then
+    why="it is not a directory"
+  elif [[ $o == "$(real "$PATRON_DIR")" ]]; then
+    # PATRON_DIR itself, a main or a linked worktree, is never removed whatever GUARD_BIN led into (W-379 spec review 2)
+    why="it is not a linked worktree of PATRON_DIR"
+  elif [[ -z $1 ]] || ! within "$1" "$o"; then
+    why="GUARD_BIN did not lead into it when this run began, so it is not proved the old guard"
+  else
+    # git's worktrees of PATRON_DIR: the first record is the main one, every later one a linked worktree
+    while IFS= read -r -d '' line; do
+      [[ $line == "worktree "* ]] || continue
+      n=$((n + 1))
+      if ((n > 1)) && [[ $(real "${line#worktree }") == "$o" ]]; then found=1; fi
+    done < <(git -C "$PATRON_DIR" worktree list --porcelain -z)
+    [[ -n $found ]] || why="it is not a linked worktree of PATRON_DIR"
+  fi
+  if [[ -z $why ]]; then
+    if out=$(git -C "$PATRON_DIR" worktree remove -- "$OLD_GUARD_DIR" 2>&1); then
+      echo "guard: removed the old guard worktree $OLD_GUARD_DIR"
+      return 0
+    fi
+    why=${out//$'\n'/ }
+  fi
+  echo "guard: left $OLD_GUARD_DIR in place ($why); once it holds nothing you need: git -C $p worktree remove $q"
+}
+
 # Every step stops it on a failure (set -euo pipefail); the inputs are judged first.
 guard() {
   # this script runs unsandboxed: never the agent clone's copy (SELF_DIR is its real target), which a session can change
   if within "$(real "$SELF_DIR")" "$(real "$AGENT_DIR")"; then die "run the guard step from your own clone's copy of this script, never the agent clone's (nothing was changed)."; fi
   guard_inputs || die "the guard's inputs are not valid; see the lines above (nothing was changed)."
   # the guard installs the clone it runs from, so it runs only as that clone's own copy (W-379)
-  local patron
+  local patron entry
   patron=$(real "$PATRON_DIR")
   [[ $(real "$SELF_DIR") == "$patron/scripts" ]] || die "run the guard step as $patron/scripts/agent-workspace.sh, the copy in the clone it installs, not the copy in $SELF_DIR (nothing was changed)."
+  # where GUARD_BIN leads before this run relinks it: the proof that OLD_GUARD_DIR is W-362's old guard
+  entry=$(readlink -f -- "$GUARD_BIN") || entry=''
   git -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
   git -C "$PATRON_DIR" merge -q --ff-only refs/remotes/origin/master || die "PATRON_DIR's master does not fast-forward to origin/master; see git's line above (only origin/master was fetched)."
   (cd "$PATRON_DIR" && npm ci --silent)
@@ -242,6 +281,7 @@ guard() {
   guard_linked || die "$GUARD_BIN does not lead into $PATRON_DIR."
   node "$patron/scripts/agent-settings-merge.mjs" "$USER_SETTINGS" "$patron" "$AGENT_GH" "$(real "$AGENT_DIR")"
   guard_live || die "the guard at $PATRON_DIR is not wired, not outside $AGENT_DIR, or not live; see the guard: lines above."
+  old_guard "$entry"
   echo "guard: installed from $PATRON_DIR at $(git -C "$PATRON_DIR" rev-parse --short HEAD)"
 }
 
