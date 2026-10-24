@@ -39,6 +39,7 @@ import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/i
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
+import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
 import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs";
 import { clean, cleanup, dirtyHold, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
@@ -2573,9 +2574,11 @@ function certifyRun(repo: string, slug: string, sha: string, what: string): { ru
 /**
  * W-259: the merge queue's certify certificate for the opus's merge commit, recorded as `verify` records its own: one
  * log per automated gate under ci/ and each gate's status, evidence and certifies on the record, uncommitted. Read from
- * the one merge_group CI run whose head is the merge commit: its `certify` job succeeded, and its `certify-<run>`
- * artifact holds one receipt that certifies the merge commit's source tree and a certify.log naming the PR. Any
- * failure writes nothing, and the caller names the full `verify` instead.
+ * the one merge_group CI run whose head is the merge commit: its `certify` job succeeded, and its certificate holds one
+ * receipt that certifies the merge commit's source tree and certify's lines naming the PR. W-370: the certificate is the
+ * one `certify-certificate` check run on that commit, read through api.github.com (`readCertificate`); only when the
+ * commit carries no such check run is it the `certify-<run>` artifact (W-259, `artifactCertificate`). Any failure
+ * writes nothing, and the caller names the full `verify` instead.
  * W-330 (D-087 B): when master's source changed since (`mergedTree`'s chain), every source commit of the chain needs its
  * own such run, and the newest one's run, PR (its squash subject's `(#<n>)`) and receipt (the opus its log rebased) are
  * read instead: the certificate names that commit's source tree.
@@ -2606,10 +2609,75 @@ function recordCertify(f: Facts): { lines: string[] } | { why: string } {
     if (n === null) return { why: `the commit ${head.slice(0, 12)}'s subject names no PR as (#<n>)` };
     pr = n[1]!;
   }
-  // the artifact lands under <repo>/.bisellium/certify/ (ignored, never an officina), removed afterwards
+  // W-370: the one certify-certificate check run on that commit, read through api.github.com; with none, the artifact
+  const reply = ghRead(repo, ["api", "--method", "GET", `repos/${p.pr.repo}/commits/${head}/check-runs`, "-f", `check_name=${CERTIFICATE_CHECK}`, "-f", "filter=all", "-f", "per_page=100"]);
+  if ("why" in reply) return reply;
+  const page: Dict = isDict(reply.value) ? reply.value : {};
+  const none = page["total_count"] === 0 && Array.isArray(page["check_runs"]) && page["check_runs"].length === 0;
+  const cert = none ? undefined : readCertificate(reply.value, { sha: head, runId });
+  if (cert !== undefined && "why" in cert) return cert;
+  const read = cert === undefined ? artifactCertificate(repo, id, p.pr.repo, runId) : { receipt: cert.receipt, lines: cert.certify, tail: cert.tail, checkRun: cert.id };
+  if ("why" in read) return read;
+  let receipt: unknown;
+  try {
+    receipt = JSON.parse(read.receipt.toString("utf8"));
+  } catch {
+    return { why: `certify-${runId}'s receipt is not JSON` };
+  }
+  const lines = read.lines;
+  // a chain's receipt is the opus whose head the newest run's certify rebased; without a chain, this opus's
+  const owners = chain.length === 0 ? [id] : lines.flatMap((l) => /^certify: rebasing opus\/(\S+) onto [0-9a-f]+$/.exec(l)?.[1] ?? []);
+  if (owners.length !== 1) return { why: `certify-${runId}'s certify.log does not name the one opus head it rebased` };
+  const bad = receiptProblem(receipt, owners[0]!, m.tree);
+  if (bad !== undefined) return { why: bad };
+  if (!lines.includes(`certify: merge group for PR #${pr}`) || !lines.includes("certify: the mint exited 0")) return { why: `certify-${runId}'s certify.log does not show PR #${pr}'s mint exiting 0` };
+  const rec = recordOf(fsSrc(f.studioAbs), id);
+  const gates = [...new Set([...automatedGates(f.manifest, rec), ...automatedGates(f.manifest, f.trunkRecord)])];
+  const ci = ensureRealDirectory(f.studioAbs, "ci");
+  const digest = createHash("sha256").update(read.receipt).digest("hex");
+  const via = chain.length === 0 ? "" : ` (the newest of ${chain.length} certified source commit(s) on master since ${id}'s merge commit ${oid})`;
+  const body = [`certifies: ${m.tree}`, `command: certify, the merge queue's mint: CI run ${runId}, PR #${pr}, merge commit ${head}${via}, receipt sha256:${digest}${read.checkRun === undefined ? "" : `, check run ${read.checkRun}`}`, "exit code: 0", "", redact(read.receipt.toString("utf8").trimEnd()), "", redact(read.tail.join("\n")), ""].join("\n");
+  const out: string[] = [`certificate: certify run ${runId}, PR #${pr}, merge commit ${head.slice(0, 12)}, ${m.tree}`];
+  if (chain.length > 0) out.push(`certificate: the certified chain since ${id}'s merge commit ${oid.slice(0, 12)}: ${chain.map((c) => c.sha.slice(0, 12)).join(", ")}`);
+  const evidence = new Map<string, string>();
+  for (const gate of gates) {
+    const name = `${id}-${gate}-${m.tree.slice(5)}.log`;
+    // O_NOFOLLOW: a symlink planted at the predictable name is refused (ELOOP, which holds), never written through
+    const fd = openSync(join(ci, name), constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o666);
+    try {
+      writeFileSync(fd, body);
+    } finally {
+      closeSync(fd);
+    }
+    evidence.set(gate, `ci/${name}`);
+    out.push(`certificate: ${gate} ci/${name}`);
+  }
+  editOpusFrontMatter(join(f.studioAbs, recordRel(id)), (doc) => {
+    for (const [gate, ev] of evidence) {
+      doc.setIn(["probationes", gate, "status"], "passed");
+      doc.setIn(["probationes", gate, "evidence"], ev);
+      doc.setIn(["probationes", gate, "certifies"], m.tree);
+    }
+    return undefined;
+  });
+  return { lines: out };
+}
+
+/** W-370: certify's certificate as its source gives it: the receipt's bytes, certify.log's lines that are checked, the
+ * tail the gate log records, and the check run's id when it came from one. */
+interface CertifyRead {
+  receipt: Buffer;
+  lines: string[];
+  tail: string[];
+  checkRun?: number;
+}
+
+/** W-259: the certificate in the `certify-<run>` artifact, downloaded under <repo>/.bisellium/certify/ (ignored, never an
+ * officina) and removed afterwards. W-370 reads it only when the commit carries no certify-certificate check run. */
+function artifactCertificate(repo: string, id: string, slug: string, runId: number): CertifyRead | { why: string } {
   const dir = mkdtempSync(join(ensureRealDirectory(repo, ".bisellium", "certify"), `${id}-`));
   try {
-    const dl = sh("gh", ["run", "download", String(runId), "-R", p.pr.repo, "-n", `certify-${runId}`, "-D", dir], repo);
+    const dl = sh("gh", ["run", "download", String(runId), "-R", slug, "-n", `certify-${runId}`, "-D", dir], repo);
     if (dl.status !== 0 || dl.error !== undefined) return { why: `gh run download of certify-${runId} failed: ${clean(dl.error?.message ?? (dl.stderr.trim() || `exit ${dl.status}`))}` };
     const files = artifactFiles(dir);
     if (typeof files === "string") return { why: files };
@@ -2621,50 +2689,8 @@ function recordCertify(f: Facts): { lines: string[] } | { why: string } {
     const receiptFile = readContainedRegularFile(dir, receipts[0]!, top(receipts[0]!), RECEIPT_MAX);
     const logFile = readContainedRegularFile(dir, logs[0]!, top(logs[0]!), CERTIFY_LOG_MAX);
     if ("error" in receiptFile || "error" in logFile) return { why: `certify-${runId}'s receipt or log cannot be read` };
-    let receipt: unknown;
-    try {
-      receipt = JSON.parse(receiptFile.bytes.toString("utf8"));
-    } catch {
-      return { why: `certify-${runId}'s receipt is not JSON` };
-    }
-    const text = logFile.bytes.toString("utf8");
-    const lines = text.split("\n");
-    // a chain's receipt is the opus whose head the newest run's certify rebased; without a chain, this opus's
-    const owners = chain.length === 0 ? [id] : lines.flatMap((l) => /^certify: rebasing opus\/(\S+) onto [0-9a-f]+$/.exec(l)?.[1] ?? []);
-    if (owners.length !== 1) return { why: `certify-${runId}'s certify.log does not name the one opus head it rebased` };
-    const bad = receiptProblem(receipt, owners[0]!, m.tree);
-    if (bad !== undefined) return { why: bad };
-    if (!lines.includes(`certify: merge group for PR #${pr}`) || !lines.includes("certify: the mint exited 0")) return { why: `certify-${runId}'s certify.log does not show PR #${pr}'s mint exiting 0` };
-    const rec = recordOf(fsSrc(f.studioAbs), id);
-    const gates = [...new Set([...automatedGates(f.manifest, rec), ...automatedGates(f.manifest, f.trunkRecord)])];
-    const ci = ensureRealDirectory(f.studioAbs, "ci");
-    const digest = createHash("sha256").update(receiptFile.bytes).digest("hex");
-    const via = chain.length === 0 ? "" : ` (the newest of ${chain.length} certified source commit(s) on master since ${id}'s merge commit ${oid})`;
-    const body = [`certifies: ${m.tree}`, `command: certify, the merge queue's mint: CI run ${runId}, PR #${pr}, merge commit ${head}${via}, receipt sha256:${digest}`, "exit code: 0", "", redact(receiptFile.bytes.toString("utf8").trimEnd()), "", redact(lines.slice(-200).join("\n")), ""].join("\n");
-    const out: string[] = [`certificate: certify run ${runId}, PR #${pr}, merge commit ${head.slice(0, 12)}, ${m.tree}`];
-    if (chain.length > 0) out.push(`certificate: the certified chain since ${id}'s merge commit ${oid.slice(0, 12)}: ${chain.map((c) => c.sha.slice(0, 12)).join(", ")}`);
-    const evidence = new Map<string, string>();
-    for (const gate of gates) {
-      const name = `${id}-${gate}-${m.tree.slice(5)}.log`;
-      // O_NOFOLLOW: a symlink planted at the predictable name is refused (ELOOP, which holds), never written through
-      const fd = openSync(join(ci, name), constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o666);
-      try {
-        writeFileSync(fd, body);
-      } finally {
-        closeSync(fd);
-      }
-      evidence.set(gate, `ci/${name}`);
-      out.push(`certificate: ${gate} ci/${name}`);
-    }
-    editOpusFrontMatter(join(f.studioAbs, recordRel(id)), (doc) => {
-      for (const [gate, ev] of evidence) {
-        doc.setIn(["probationes", gate, "status"], "passed");
-        doc.setIn(["probationes", gate, "evidence"], ev);
-        doc.setIn(["probationes", gate, "certifies"], m.tree);
-      }
-      return undefined;
-    });
-    return { lines: out };
+    const lines = logFile.bytes.toString("utf8").split("\n");
+    return { receipt: receiptFile.bytes, lines, tail: lines.slice(-200) };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
