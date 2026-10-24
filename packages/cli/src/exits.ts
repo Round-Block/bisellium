@@ -180,3 +180,20 @@ export function runMilestones(argv: string[]): { exitCode: number } {
   console.log([summary(r), ...lines].map(one).join("\n"));
   return { exitCode: 0 };
 }
+
+/** W-404 behaviour 2: the report as one `next --all` line, undefined when the officina has no milestones.yml. A held
+ *  report, or a throw, is a held line. Each milestone is `<id> met|open: <exit>; path <ids>`, the needs text left to the
+ *  verb. The caller bounds the line, as every `next --all` line. */
+export function milestonesLine(studio: string, repo: string, now: Date): { line: string; held: boolean } | undefined {
+  let r: ExitReport;
+  try {
+    r = exitReport(studio, repo, now);
+  } catch (e) {
+    return { line: `milestones: held · why: ${(e as Error).message.split("\n")[0]}`, held: true };
+  }
+  if (r.kind === "absent") return undefined;
+  if (r.kind === "held") return { line: `milestones: held · why: ${r.why}`, held: true };
+  const exit = (e: Exit): string => (e.kind === "none" ? "no exit" : e.kind === "needs" ? "needs" : `${e.kind} ${e.ref}`);
+  const each = r.rows.map((m) => `${m.id} ${m.met ? "met" : "open"}: ${exit(m.exit)}; path ${m.path.length === 0 ? "none" : m.path.map((p) => p.id).join(", ")}`);
+  return { line: [summary(r), ...each].join(" · "), held: false };
+}
