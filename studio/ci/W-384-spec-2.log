@@ -1,0 +1,20 @@
+# opus: W-384
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16d32-268b-7e81-9433-b7d78c6097c4
+# outcome: passed
+# at: 2026-10-24T09:20:33.602Z
+# tree: tree:9efacd91f56f56a26649a4825c690d2ada4a9f82
+# brief: briefs/W-384.md blob:4ecce201963ffd72b532e03d432731068f54a53e
+# ticket: {"opus":"W-384","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"e19e0c63337b7b5461ac2070f92ae21bd3521afb","brief":"4ecce201963ffd72b532e03d432731068f54a53e","at":"2026-10-24T09:20:29.389Z"}
+
+## Findings
+1. advisory — brief:61 The blanket rejection description conflicts with row 72: a qualifying MERGED read reaches `landed`, which may fetch before returning its own hold rather than the original `MERGE_FAILED`. Replace with: “A re-read rejected by rows 67–71 returns the failed call’s `MERGE_FAILED` lines unchanged; after the failed merge call, that rejection path only waits and reads, so it fetches nothing and initiates no ref or branch change. A qualifying MERGED read reaches row 72, where `landed` may fetch and may return its own existing hold; a test-row read/write failure throws and fails the row.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: no automated prose check distinguishes `mergedAfter` rejection from `landed` rejection
+2. advisory — brief:67 The re-read row omits the valid domain of `mergeStateStatus`, although `readView` reads it and `checkShape` rejects values outside its enum. Replace the Valid domain cell with: “exit 0, JSON, a PR object with every `PR_VIEW_FIELDS` key; `mergeStateStatus` is `BEHIND`, `BLOCKED`, `CLEAN`, `DIRTY`, `DRAFT`, `HAS_HOOKS`, `UNKNOWN` or `UNSTABLE`, and rows 68–71 constrain the decision fields.” [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: no automated brief check expands a referenced validator’s enum domain
+3. advisory — brief:71 The stated merge-commit domain includes the all-zero 40-hex value, but `wellFormedOid` rejects it. Replace “40 lowercase hex, for a MERGED PR” with “40 lowercase hex and not all zero, for a MERGED PR.” [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-ladder.test.ts
+
+## Verdict
+The implementation design is feasible and fail-closed; the three advisory wording corrections do not block the build.
+VERDICT: PASS
