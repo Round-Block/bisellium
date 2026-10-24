@@ -1,0 +1,22 @@
+# opus: W-396
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16c8e-43af-7121-95bb-b2f203ab7d8b
+# outcome: passed
+# at: 2026-10-24T06:23:30.741Z
+# tree: tree:00a032588424035793a61ff41d58939c9eaa9d7f
+# brief: briefs/W-396.md blob:58933dd161f6495fb520e25261cd44d525692c02
+# ticket: {"opus":"W-396","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"ed964712ad71a156384209f3315cd374dd24cf26","brief":"58933dd161f6495fb520e25261cd44d525692c02","at":"2026-10-24T06:23:26.784Z"}
+
+## Findings
+1. advisory — brief:138 [severity: S4] The table names the publisher’s `GITHUB_EVENT_NAME` but omits the separate `github.event_name` reader added by the job condition and the D-070 disagreement case. Replace brief:138 with: `| \`github.event_name\` in \`certificate\`’s job-level \`if\`, and \`GITHUB_EVENT_NAME\` seen by the reused publisher | both are \`merge_group\` when publishing | runner: the job condition skips every other event; if the publisher’s alias disagrees, the reused command exits non-zero and publish-step failure fails \`certificate\` |` followed by `| \`hashFiles('certify/**/receipts/**/*.json')\` | empty for no matching receipt, otherwise non-empty | runner: empty skips publishing; non-empty invokes the reused command, whose non-zero exit fails \`certificate\`; the two disagreement directions remain Promise receipt-only’s stated limit |`. [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.changed-reader-coverage
+2. advisory — brief:139 [severity: S4] The row decomposes the unchanged publisher into its internal artifact reads instead of naming the reused command’s result and runner refusal boundary required by D-050. Replace brief:139 with: `| \`node tooling/scripts/ci-certificate.mjs --dir certify\` (reused, unchanged), including the artifact, \`GH_TOKEN\` and \`GITHUB_*\` values it reads | exit 0 | runner: publish-step failure turns any non-zero exit into a failed \`certificate\` job, which \`certifyRun\` refuses; \`W-396-b1\` pins the step without \`continue-on-error\` |`. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+3. advisory — brief:140 [severity: S4] `readFileSync` and `parseYaml` reject read/parse failures but not the many well-formed wrong workflow and CODEOWNERS values consumed by the rows; the actual semantic rejectors are unnamed. Replace brief:140 with: `| \`W-396-b1\`/\`W-396-b2\` reads of \`.github/workflows/ci.yml\` and \`.github/CODEOWNERS\` through \`readFileSync\` and \`parseYaml\` | readable text; ci.yml parses to a mapping with a jobs mapping, and both files satisfy every asserted job, step, permission and owner value | \`readFileSync\` and \`parseYaml\` throw on read/parse failure; \`assert.deepEqual\`, \`assert.equal\` and \`assert.ok\` reject every structural or value mismatch, failing the row |`. [class: spec×input-without-named-rejector] — check: scripts/ci-certificate.test.mjs
+4. advisory — brief:141 [severity: S4] `spawnSync` is not a rejecting function, and the row gives no valid domain or named assertions for the guard subprocess statuses and stdout that `W-396-b2` reads. Replace brief:141 with: `| \`W-396-b2\`’s scratch writes, \`process.env.PATH\`, reused \`git\` calls through \`execFileSync\`, and guard-script \`bash\` calls through \`spawnSync\` | writes succeed; git exits 0 and rev-parse returns commit ids; each guard returns the expected zero/non-zero status and exact diagnostic | \`writeFileSync\`, \`mkdirSync\` and \`execFileSync\` throw on failure; \`assert.equal\`, \`assert.notEqual\` and \`assert.match\` reject a spawn error, signal, wrong status or wrong/missing diagnostic, failing the row |`. [class: spec×input-without-named-rejector] — check: scripts/ci-certificate.test.mjs
+5. advisory — brief:152 [severity: S4] `W-396-b1` filters every guard-named step out and `W-396-b2` checks only the first matching indices, so an extra guard-named step passes despite the promise of exactly two guards. Replace brief:152 with: `- Exactly two steps have either guard name; the first is the base guard, and exactly one checkout is followed immediately by the HEAD guard.` [class: tests×one-sided-bound-assertion] — check: scripts/ci-certificate.test.mjs W-396-b1/W-396-b2
+
+## Verdict
+The brief is feasible; all findings are advisory input-boundary or test-boundary corrections for the builder.
+VERDICT: PASS

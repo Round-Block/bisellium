@@ -1,0 +1,28 @@
+# opus: W-396
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T06:16:39.773Z
+# tree: tree:00a032588424035793a61ff41d58939c9eaa9d7f
+# brief: briefs/W-396.md blob:58933dd161f6495fb520e25261cd44d525692c02
+# ticket: {"opus":"W-396","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"ed964712ad71a156384209f3315cd374dd24cf26","brief":"58933dd161f6495fb520e25261cd44d525692c02","at":"2026-10-24T06:16:39.290Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-396-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — W-370 spec round 2 finding 1 (the job's permission map without contents: read) is closed: the job holds exactly contents: read and checks: write, W-396-b1 pins the map, and kill K5 (contents: read dropped) fails the row; round 2 finding 2 (readArtifact's escaping exception) is W-370's, signed in its revision 3 and unchanged here — check: brief:17, kill-K5.out
+2. advisory — W-370 spec round 4 finding 1 (an empty base_sha makes actions/checkout check out the candidate) is closed: the job's first step refuses a base_sha that is not 40 lowercase hex before any checkout, the step right after the checkout refuses a tooling HEAD that is not base_sha, neither carries an if or continue-on-error, and W-396-b2 runs both scripts under GitHub's bash flags over ten refused base_sha forms, a candidate HEAD and a missing checkout; kills K1 to K4 each fail the row — check: brief:19, brief:133, brief:134, kills.out
+3. advisory — a records-only merge group's artifact holds no receipt, so an unconditional publisher would fail every chore merge's run; the publish step runs only when hashFiles finds a receipt under the downloaded artifact, and both miss directions fail safe (stated in Promise receipt-only's limit) — check: brief:25, brief:117
+4. advisory — what W-396's own merge group proves is stated: GitHub runs this PR's ci.yml on its merge group with master's publisher (on master since a553db3b), so its own merge commit carries the first live check run and its own done reads it back; if GitHub did not, the done takes W-370's artifact fallback; a failed certificate job holds the done and names verify (Defaults 2) — check: brief:29, brief:122, brief:123
+5. advisory — each red fails by assertion on master 893adbd7 with the final rows (b1 at "five jobs, certificate last", b2 at "ci.yml has a certificate job") and b2 on stage 1 at "the first step refuses a base_sha that is not a commit id, before any checkout"; the host replay classifier accepts all three; each row passes at its own stage and on the whole prototype — check: red-b1-master.out, red-b2-master.out, red-b2-stage1.out, red-accept.out, proto-b1-stage1.out, proto-b2-stage2.out, proto-b1-stage2.out
+6. advisory — must-stay-green on the prototype: ci-certificate.test.mjs 4 of 4, ci-certify.test.mjs 11 of 11, ci-workflow.test.mjs, ci-scope.test.mjs 20 of 20, w350.test.ts 3 of 3 and next-queue's W-197-b2; the six named flips fail unedited; the studio check passes with 0 blocking — check: green-summary.out, check-studio-proto.out
+7. advisory — the Codex test check lists six flips (W-168-b1, the ci-workflow job check, W-205-b1, W-368-b1, W-350-b1, W-197-b2), every one named under Acceptance; Unnamed: None; its must-stay-green rows outside the files run here read no changed code (no source file changes) — check: fixture-census.md
+8. advisory — the change touches .github/workflows/ci.yml and .github/CODEOWNERS, both code-owned: the Patron reviews and merges (Defaults 4); the certify job's own unguarded tooling checkout is named out of scope — check: brief:125, brief:189
+9. advisory — the brief passes admission and the ledger covers the three promise lines, the Interfaces claims and every Input domain row; lint, format (ci.yml included) and typecheck pass on the prototype — check: admission.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-396.md` (spec round 1), master 893adbd7.
