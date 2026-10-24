@@ -178,3 +178,63 @@ test("W-379-b2 behaviour 2: guard installs only as PATRON_DIR's own copy: it fas
   assert.match(diverged.out, /^PATRON_DIR's master does not fast-forward to origin\/master; see git's line above \(only origin\/master was fetched\)\.$/m, "a diverged master: the reason");
 });
 
+test("W-379-b3 behaviour 3: guard removes W-362's old guard worktree only when GUARD_BIN led into it and git finds it clean", () => {
+  const w = world();
+  const removeCmd = (dir: string): string => `once it holds nothing you need: git -C ${sq(w.patron)} worktree remove ${sq(dir)}`;
+  // OLD_GUARD_DIR naming another clean linked worktree of the clone (a typo): GUARD_BIN does not lead into it, so it stays
+  const typo = w.guard("guard", { OLD_GUARD_DIR: w.other });
+  assert.equal(typo.code, 0, `a typo in OLD_GUARD_DIR still installs: ${typo.out}`);
+  assert.ok(typo.out.split("\n").includes(`guard: left ${w.other} in place (GUARD_BIN did not lead into it when this run began, so it is not proved the old guard); ${removeCmd(w.other)}`), `another clean linked worktree is left, with the Patron's command: ${typo.out}`);
+  assert.ok(existsSync(join(w.other, "x")), "the other worktree stays");
+  assert.match(git(w.patron, "worktree", "list"), /other wt/, "and its entry");
+  // OLD_GUARD_DIR the Patron's clone itself, GUARD_BIN now leading into it: not a linked worktree, so it stays
+  const self = w.guard("guard", { OLD_GUARD_DIR: w.patron });
+  assert.equal(self.code, 0, self.out);
+  assert.ok(self.out.split("\n").includes(`guard: left ${w.patron} in place (it is not a linked worktree of PATRON_DIR); ${removeCmd(w.patron)}`), `the Patron's clone is never removed: ${self.out}`);
+  assert.ok(existsSync(join(w.patron, "x")), "the Patron's clone stays");
+  // OLD_GUARD_DIR the Patron's clone itself with GUARD_BIN led into it as the run began (proved by the pre-run link): the
+  // explicit rejection holds before any worktree record is scanned, so a typo naming PATRON_DIR never removes it
+  assert.equal(readlinkSync(w.bin), join(realpathSync(w.patron), "packages", "cli", "bin", "bisellium.mjs"), "GUARD_BIN led into PATRON_DIR as the run began");
+  const proved = w.guard("guard", { OLD_GUARD_DIR: w.patron });
+  assert.equal(proved.code, 0, proved.out);
+  assert.ok(proved.out.split("\n").includes(`guard: left ${w.patron} in place (it is not a linked worktree of PATRON_DIR); ${removeCmd(w.patron)}`), `PATRON_DIR as OLD_GUARD_DIR (the main worktree) is left even when GUARD_BIN led into it: ${proved.out}`);
+  assert.ok(existsSync(join(w.patron, "x")), "the main worktree PATRON_DIR stays");
+  // PATRON_DIR a linked worktree (the main clone detached, master checked out in `linked wt`), GUARD_BIN led into it,
+  // OLD_GUARD_DIR the same linked worktree: a worktree record after the first, yet never removed
+  const v = world();
+  const linked = join(v.f, "linked wt");
+  git(v.patron, "checkout", "-q", "--detach");
+  git(v.patron, "worktree", "add", "-q", linked, "master");
+  rmSync(v.bin, { force: true });
+  symlinkSync(join(linked, "packages", "cli", "bin", "bisellium.mjs"), v.bin);
+  const asLinked = v.guard("guard", { PATRON_DIR: linked, OLD_GUARD_DIR: linked }, join(linked, "scripts", "agent-workspace.sh"));
+  assert.equal(asLinked.code, 0, asLinked.out);
+  assert.ok(asLinked.out.split("\n").includes(`guard: left ${linked} in place (it is not a linked worktree of PATRON_DIR); once it holds nothing you need: git -C ${sq(linked)} worktree remove ${sq(linked)}`), `PATRON_DIR as OLD_GUARD_DIR (a linked worktree) is left even when GUARD_BIN led into it: ${asLinked.out}`);
+  assert.ok(existsSync(join(linked, "x")), "the linked worktree PATRON_DIR stays");
+  assert.match(git(v.patron, "worktree", "list"), /linked wt/, "and its entry");
+  // OLD_GUARD_DIR a file: not a directory
+  const file = join(w.f, "a file");
+  writeFileSync(file, "f\n");
+  assert.match(w.guard("guard", { OLD_GUARD_DIR: file }).out, /^guard: left .*a file in place \(it is not a directory\);/m, "a file as OLD_GUARD_DIR is left");
+  // the old guard, proved (GUARD_BIN led into it as the run began), with a tracked edit: git refuses, it stays
+  w.linkOld();
+  writeFileSync(join(w.old, "x"), "edit\n");
+  const dirty = w.guard("guard");
+  assert.equal(dirty.code, 0, `a dirty old guard still installs: ${dirty.out}`);
+  assert.match(dirty.out, new RegExp(`^guard: left ${reEsc(w.old)} in place \\(.*contains modified or untracked files.*\\); ${reEsc(removeCmd(w.old))}$`, "m"), "a dirty old guard worktree is left with git's reason and the Patron's command");
+  assert.ok(existsSync(join(w.old, "x")), "and stays");
+  // the old guard proved and clean (its ignored node_modules aside): git removes it, folder and entry
+  git(w.old, "checkout", "-q", "--", "x");
+  w.linkOld();
+  const swept = w.guard("guard");
+  assert.equal(swept.code, 0, swept.out);
+  assert.ok(swept.out.split("\n").includes(`guard: removed the old guard worktree ${w.old}`), `a proved clean old guard worktree is removed: ${swept.out}`);
+  assert.equal(existsSync(w.old), false, "its folder is gone");
+  assert.doesNotMatch(git(w.patron, "worktree", "list"), /old guard/, "and its entry");
+  assert.ok(existsSync(join(w.other, "x")), "the other worktree still stays");
+  // absent: nothing to remove, nothing said
+  const again = w.guard("guard");
+  assert.equal(again.code, 0, again.out);
+  assert.doesNotMatch(again.out, /^guard: (left|removed)/m, "an absent old guard is skipped");
+});
+
