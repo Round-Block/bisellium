@@ -1486,4 +1486,36 @@ test("W-355-b3 behaviour 3: an absent, unreadable, malformed or non-mapping owne
   git(d.repo, ["worktree", "remove", "--force", d.wt]);
   specHeld(specNext(d), "the committed branch's malformed manifest holds", /^bisellium\.yml on opus\/W-900 does not parse/);
 });
+const W355_DESIGN = "  - { id: design, name: Design, magister: architect }";
+test("W-355-b4 behaviour 4: a duplicate or blank design-collegium row in the owner's manifest holds next at spec on either pair, never ordering a signer the ordered verdict refuses", { timeout: 1_800_000 }, () => {
+  // [the form, its edit, the why, the UI pair's row label, the default pair's row label]
+  const forms: [string, (t: string) => string, RegExp, string, string][] = [
+    ["a duplicate design row", (t) => t.replace(W355_DESIGN, `${W355_DESIGN}\n${W355_DESIGN}`), /^bisellium\.yml#collegia declares the design collegium 2 times; exactly one row names the magister$/, "the UI pair: a duplicate design row holds", "the default pair: a duplicate design row holds"],
+    ["a blank design magister", (t) => t.replace(W355_DESIGN, '  - { id: design, name: Design, magister: " " }'), /^bisellium\.yml#collegia: the design row's magister must be a nonblank string$/, "the UI pair: a blank design magister holds", "the default pair: a blank design magister holds"],
+  ];
+  for (const [name, edit, why, uiRow, defaultRow] of forms) {
+    // after the branch, the worktree's UI pair: next holds, and the worktree verdict it would have ordered refuses the UI signer
+    const w = w355Branch(`w355-b4-ui-${name.replace(/\W+/g, "-")}`, false);
+    w355Pair(w.wtStudio, true);
+    const manifest = join(w.wtStudio, "bisellium.yml");
+    writeFileSync(manifest, edit(readFileSync(manifest, "utf8")));
+    commit(w.wt, `studio: ${name} on opus/W-900`);
+    amend(w);
+    commit(w.wt, `studio(${OPUS}): brief amended`);
+    specHeld(specNext(w), uiRow, why);
+    assert.equal(wtSpec(w, 3, UI_ARCHITECT, "passed").status, 2, `the UI pair: ${name}: the worktree verdict refuses the UI signer too`);
 
+    // before the branch, the default pair with no spec reviewer: next holds instead of ordering the first or blank magister
+    const d = world(`w355-b4-default-${name.replace(/\W+/g, "-")}`, "greenlight");
+    const main = join(d.studio, "bisellium.yml");
+    writeFileSync(main, edit(readFileSync(main, "utf8")));
+    commit(d.repo, `studio: ${name}`);
+    putBrief(d);
+    specHeld(specNext(d), defaultRow, why);
+  }
+
+  // a blank magister beside a configured spec reviewer is refused as that reviewer's setting
+  const r = srWorld("w355-b4-reviewer-blank", { edit: (t) => t.replace(W355_DESIGN, '  - { id: design, name: Design, magister: " " }') });
+  putBrief(r);
+  specHeld(specNext(r), "the engineering pair: a blank design magister holds", /^bisellium\.yml#spec_reviewer: bisellium\.yml#collegia: the design row's magister must be a nonblank string$/);
+});
