@@ -2018,6 +2018,6 @@ test("W-381-f1 fix 1: one title-token matcher reads `high` and the class, each w
   // high: the whole word, so a letter (any script, any case), digit, `_` or hyphen on either side keeps the hold
   for (const side of ["Xhigh", "éhigh", "Ωhigh", "9high", "_high", "-high", "highX", "highé", "highΩ", "high9", "high_", "high-"])
     title(`high beside a letter, digit, underscore or hyphen: ${side}`, `tests×a stops recurring (${side})`, false);
-  for (const ok of ["high tests×a", "tests×a high", "tests×a (high)", "tests×a [high]", "tests×a: HIGH", "tests×a, High.", "tests×a high-priority"].slice(0, 6)) title(`high as a whole word: ${ok}`, ok, true);
+  for (const ok of ["high tests×a", "tests×a high", "tests×a (high)", "tests×a [high]", "tests×a: HIGH", "tests×a, High."]) title(`high as a whole word: ${ok}`, ok, true);
   title("high ending a title", "tests×a stops recurring, high", true);
 });

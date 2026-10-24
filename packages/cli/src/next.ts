@@ -1419,13 +1419,18 @@ function repeatHold(f: Facts, rel: string, src: Src | undefined): string | undef
   const high = f.work.list("opera").flatMap((name) => {
     const r = name.endsWith(".md") ? recordOf(f.work, name.slice(0, -3)) : undefined;
     const title = str(r?.["title"]);
-    return title !== undefined && OPEN_STATES.has(str(r?.["state"]) ?? "") && /(?<![\w-])high(?![\w-])/i.test(title) ? [title] : [];
+    return title !== undefined && OPEN_STATES.has(str(r?.["state"]) ?? "") && titleToken(title, "high", "\\p{L}\\p{N}_-", true) ? [title] : [];
   });
-  const names = (title: string, c: string): boolean => new RegExp(`(?<![a-z0-9-])${esc(c)}(?![a-z0-9-])`).test(title);
+  const names = (title: string, c: string): boolean => titleToken(title, c, "\\p{L}\\p{N}-", false);
   const held = repeated.filter(([c]) => ![...own, ...high].some((t) => names(t, c)));
   if (held.length === 0) return undefined;
   const list = held.map(([c, logs]) => `${c} (${logs.slice(0, 3).join(", ")}${logs.length > 3 ? ` and ${logs.length - 3} more` : ""})`).join("; ");
   return `${rel} blocks on ${held.length === 1 ? "a class" : "classes"} seen before in another opus: ${list}; a class seen before is fixed at its cause (D-070 C, D-076 D): amend ${f.id}'s title to name it, for a cause fix in this opus, or file a greenlit high opus whose title names it`;
+}
+
+/** W-381 (brief:75): `token` stands in `title` as a whole token, with no character of `boundary` (a regex class body, Unicode) on either side. */
+function titleToken(title: string, token: string, boundary: string, caseless: boolean): boolean {
+  return new RegExp(`(?<![${boundary}])${esc(token)}(?![${boundary}])`, caseless ? "iu" : "u").test(title);
 }
 
 /** W-297: some valid architect signature in opus/<id>'s ci/ (the worktree's when usable) records an `# at:` after `at` (ms). */
