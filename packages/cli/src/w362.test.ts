@@ -132,6 +132,22 @@ test("W-362-b3 behaviour 3: the guard installer judges its inputs before any cha
   }
   // an invalid input changes nothing: the Patron's clone stays on master, no link, no settings, no npm
   const head = git(join(f, "patron"), "rev-parse", "HEAD");
+  // a rejected PATH entry runs nothing before the judgement: a logging readlink, dirname and git in it never run
+  const log = join(f, "tool.log");
+  for (const dir of [join(f, "early"), join(f, "agent", "bin")]) {
+    for (const tool of ["readlink", "dirname", "git"]) {
+      const real = spawnSync("bash", ["-c", `command -v ${tool}`], { encoding: "utf8" }).stdout.trim();
+      exe(join(dir, tool), `#!/bin/sh\necho ${tool} >> ${JSON.stringify(log)}\nexec ${JSON.stringify(real)} "$@"\n`);
+    }
+  }
+  for (const entry of [join(f, "early"), join(f, "agent", "bin")]) {
+    for (const sub of ["guard-check", "guard"]) {
+      const r = install(f, { PATH: pathOf(f, entry, join(f, "bin")) }, sub);
+      assert.equal(r.code, 1, `a rejected PATH entry: ${sub} exits 1: ${r.out}`);
+      assert.equal(existsSync(log), false, `a rejected PATH entry: ${sub} ran no program found in it`);
+    }
+  }
+  for (const tool of ["readlink", "dirname", "git"]) for (const dir of [join(f, "early"), join(f, "agent", "bin")]) rmSync(join(dir, tool));
   const refused = install(f, { PATH: pathOf(f, join(f, "early"), join(f, "bin")) }, "guard");
   assert.equal(refused.code, 1, "the install stops on invalid inputs");
   assert.match(refused.out, /nothing was changed/);

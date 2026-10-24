@@ -61,8 +61,16 @@ REPO=${REPO:-Round-Block/bisellium}
 URL=https://github.com/$REPO.git
 HELPER="!GH_CONFIG_DIR=$AGENT_GH gh auth git-credential"
 USER_SETTINGS=$HOME/.claude/settings.json
+# Nothing before the guard's PATH judgement may run a program found through PATH (a rejected entry must never execute):
+# RL is GNU readlink by its absolute path and dname is a bash builtin's dirname (W-379).
+RL=/usr/bin/readlink
+dname() {
+  local d=${1%/*}
+  [[ $1 == */* ]] || d=.
+  echo "${d:-/}"
+}
 # the script's real directory: a symlinked file or parent is followed to its target (GNU readlink -f)
-SELF_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+SELF_DIR=$(dname "$("$RL" -f "${BASH_SOURCE[0]}")")
 
 die() {
   echo "$*" >&2
@@ -191,7 +199,7 @@ guard_inputs() {
   for v in AGENT_DIR PATRON_DIR GUARD_BIN; do [[ ${!v} == /* ]] || say "$v ${!v} is not an absolute path"; done
   agent=$(real "$AGENT_DIR") || agent=''
   # PATH is judged before any git runs: cgit finds git through it, so a rejected entry must never be searched (W-379)
-  if bdir=$(real "$(dirname -- "$GUARD_BIN")"); then
+  if bdir=$(real "$(dname "$GUARD_BIN")"); then
     if [[ -n $agent ]] && within "$bdir" "$agent"; then say "GUARD_BIN $GUARD_BIN is inside AGENT_DIR (hooks run unsandboxed; a session could replace it)"; fi
     IFS=: read -ra entries <<<"$PATH"
     [[ $PATH == *: ]] && entries+=("")
@@ -215,9 +223,9 @@ guard_inputs() {
         pathbad=1
       fi
     done
-    [[ -n $found ]] || { say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") is not on PATH"; pathbad=1; }
+    [[ -n $found ]] || { say "GUARD_BIN's directory $(dname "$GUARD_BIN") is not on PATH"; pathbad=1; }
   else
-    say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") does not exist"
+    say "GUARD_BIN's directory $(dname "$GUARD_BIN") does not exist"
     pathbad=1
   fi
   [[ ${GUARD_BIN##*/} == bisellium ]] || say "GUARD_BIN $GUARD_BIN is not named bisellium (the hooks run bisellium)"
@@ -240,10 +248,10 @@ guard_inputs() {
   return $bad
 }
 
-guard_linked() { within "$(readlink -f -- "$GUARD_BIN")" "$(real "$PATRON_DIR")"; }
+guard_linked() { within "$("$RL" -f -- "$GUARD_BIN")" "$(real "$PATRON_DIR")"; }
 # The probe prints a guard: line per fact; status 0 when wired, installed outside the agent clone and live.
 guard_live() { "$GUARD_BIN" hooks check --harness claude-code --studio "$AGENT_DIR/studio" --repo "$AGENT_DIR"; }
-guard_unwritable() { ! test -w "$(dirname -- "$GUARD_BIN")" && ! test -w "$PATRON_DIR"; }
+guard_unwritable() { ! test -w "$(dname "$GUARD_BIN")" && ! test -w "$PATRON_DIR"; }
 # The sandbox's deny on the agent clone's source folders is in force (W-362).
 source_unwritable() {
   local d
@@ -296,8 +304,8 @@ guard() {
   patron=$(real "$PATRON_DIR")
   [[ $(real "$SELF_DIR") == "$patron/scripts" ]] || die "run the guard step as $patron/scripts/agent-workspace.sh, the copy in the clone it installs, not the copy in $SELF_DIR (nothing was changed)."
   # where GUARD_BIN leads before this run relinks it: the proof that OLD_GUARD_DIR is W-362's old guard
-  # (an absent GUARD_BIN proves nothing: readlink -f would invent a path for its missing last component)
-  if [[ -L $GUARD_BIN ]]; then entry=$(readlink -f -- "$GUARD_BIN") || entry=''; else entry=''; fi
+  # (an absent or dangling GUARD_BIN proves nothing: readlink -f would invent a path for its missing last component)
+  if [[ -L $GUARD_BIN && -e $GUARD_BIN ]]; then entry=$("$RL" -f -- "$GUARD_BIN") || entry=''; else entry=''; fi
   # the fetch keeps the Patron's environment and config (ssh agent, url rules, credentials); hooks and fsmonitor off
   git -c core.hooksPath=/dev/null -c core.fsmonitor=false -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
   cgit "$PATRON_DIR" merge -q --ff-only refs/remotes/origin/master || die "PATRON_DIR's master does not fast-forward to origin/master; see git's line above (only origin/master was fetched)."

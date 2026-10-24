@@ -130,13 +130,19 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
     undo();
   }
   assert.equal(head(w.patron), was, "the refusals moved nothing");
-  // a rejected PATH entry is never searched: a logging git in each of them never runs, whatever the guard judges
-  const real = spawnSync("bash", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
-  const logging = (dir: string, name: string): void => put(join(dir, "git"), `#!/bin/sh\necho ${name} >> "$HOME/path-git.log"\nexec ${sq(real)} "$@"\n`, 0o755);
+  // a rejected PATH entry is never searched: a logging git, readlink and dirname in each of them never run, whatever the guard judges
+  const tools = ["git", "readlink", "dirname"] as const;
+  const logging = (dir: string, name: string): void => {
+    for (const tool of tools) {
+      const real = spawnSync("bash", ["-c", `command -v ${tool}`], { encoding: "utf8" }).stdout.trim();
+      put(join(dir, tool), `#!/bin/sh\necho ${name}:${tool} >> "$HOME/path-tool.log"\nexec ${sq(real)} "$@"\n`, 0o755);
+    }
+  };
   logging(join(w.f, "rel"), "relative");
   logging(join(w.f, "agent", "tools"), "inside-agent");
   logging(join(w.f, "early"), "earlier-bisellium");
   put(join(w.f, "early", "bisellium"), "#!/bin/sh\n", 0o755);
+  const toolLog = join(w.f, "path-tool.log");
   for (const [what, entry] of [
     ["a relative PATH entry", "rel"],
     ["a PATH entry inside AGENT_DIR", join(w.f, "agent", "tools")],
@@ -147,11 +153,13 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
     for (const sub of ["guard-check", "guard"]) {
       const r = w.guard(sub, env, undefined, w.f);
       assert.equal(r.code, 1, `${what}: ${sub} exits 1: ${r.out}`);
-      assert.equal(existsSync(join(w.f, "path-git.log")), false, `${what}: ${sub} never ran the git in it`);
+      assert.equal(existsSync(toolLog), false, `${what}: ${sub} ran no program found in it: ${existsSync(toolLog) ? readFileSync(toolLog, "utf8") : ""}`);
     }
     assert.equal(w.guard("verify", env, undefined, w.f).code, 1, `${what}: verify fails`);
-    // verify's other git calls (W-362's, unchanged) may run it: a stated limit
-    rmSync(join(w.f, "path-git.log"), { force: true });
+    // verify's other git calls (W-362's, unchanged) may run its git: a stated limit; its readlink and dirname never do
+    const ran = existsSync(toolLog) ? readFileSync(toolLog, "utf8") : "";
+    assert.doesNotMatch(ran, /:(readlink|dirname)$/m, `${what}: verify ran no readlink or dirname found in it`);
+    rmSync(toolLog, { force: true });
     rmSync(join(w.f, ".claude"), { recursive: true, force: true });
   }
   // an untracked file is not a tracked change (a stated limit, not a refusal)
@@ -268,6 +276,18 @@ test("W-379-b3 behaviour 3: guard removes W-362's old guard worktree only when G
   assert.equal(absent.code, 0, absent.out);
   assert.match(absent.out, /^guard: left .*other wt in place \(GUARD_BIN did not lead into it when this run began, so it is not proved the old guard\); once it holds nothing you need: git -C .* worktree remove .*other wt'$/m, "an absent GUARD_BIN proves no worktree the old guard");
   assert.ok(existsSync(join(z.other, "x")), "the worktree holding the absent GUARD_BIN's directory stays");
+  // a dangling GUARD_BIN (a link whose target is missing) proves nothing either: its missing target lies under another
+  // worktree's ignored directory, and that worktree is left
+  const d = world();
+  const dangleDir = join(d.other, "node_modules", "bin");
+  mkdirSync(dangleDir, { recursive: true });
+  rmSync(d.bin, { force: true });
+  const dangleBin = join(dangleDir, "bisellium");
+  symlinkSync(join(dangleDir, "missing.mjs"), dangleBin);
+  const dangling = d.guard("guard", { GUARD_BIN: dangleBin, OLD_GUARD_DIR: d.other, PATH: [join(d.f, "stub"), dangleDir, dirname(process.execPath), "/usr/bin", "/bin"].join(":") });
+  assert.equal(dangling.code, 0, dangling.out);
+  assert.match(dangling.out, /^guard: left .*other wt in place \(GUARD_BIN did not lead into it when this run began, so it is not proved the old guard\); once it holds nothing you need: git -C .* worktree remove .*other wt'$/m, "a dangling GUARD_BIN proves no worktree the old guard");
+  assert.ok(existsSync(join(d.other, "x")), "the worktree holding the dangling GUARD_BIN's missing target stays");
   // a file ignored only by the Patron's global excludes makes the old guard dirty: git refuses, the folder stays
   const y = world();
   put(join(y.f, ".config", "git", "ignore"), "*.secret\n");
