@@ -304,3 +304,31 @@ test("W-402-b1 behaviour 1: a single wrong type at any field the merge reads is 
     assert.deepEqual([c.code, c.stdout, c.stderr], [1, missing(added, at.join(".")).join(""), ""], `${at.join(".")} as null: --check prints only missing lines`);
   }
 });
+
+test("W-402-b2 behaviour 2: several wrong types at once are each named, one line per field, in the order merge() reads them", () => {
+  const { w, merged } = mergedWorld();
+  const old = new Date("2001-02-03T04:05:06Z");
+  const not = (key: string, type: string): string => `  ${w.settings}: ${key} is not ${type}; left untouched`;
+  for (const [what, change, lines] of [
+    // the review's case (ci/W-398-spec-4.log #1): merge() throws on env before permissions is named
+    ["permissions [] and env a string", (s: Json) => setAt(setAt(s, ["permissions"], []), ["env"], "bad"), [not("permissions", "an object"), not("env", "an object")]],
+    ["permissions [] and env []", (s: Json) => setAt(setAt(s, ["permissions"], []), ["env"], []), [not("permissions", "an object"), not("env", "an object")]],
+    // the order is merge()'s, not the file's
+    ["env a string, written before permissions []", (s: Json) => { const { env: _env, permissions: _permissions, ...rest } = s; return { env: "bad", ...rest, permissions: [] }; }, [not("permissions", "an object"), not("env", "an object")]],
+    ["sandbox a string, permissions.deny a string and env a number", (s: Json) => setAt(setAt(setAt(s, ["sandbox"], "x"), ["permissions", "deny"], "Read(~/.ssh/**)"), ["env"], 5), [not("sandbox", "an object"), not("permissions.deny", "an array"), not("env", "an object")]],
+    ["sandbox.filesystem an array, permissions a boolean and env an array", (s: Json) => setAt(setAt(setAt(s, ["sandbox", "filesystem"], []), ["permissions"], true), ["env"], []), [not("sandbox.filesystem", "an object"), not("permissions", "an object"), not("env", "an object")]],
+    ["denyWrite a string, denyRead a number, permissions.deny an object and env a string", (s: Json) => setAt(setAt(setAt(setAt(s, ["sandbox", "filesystem", "denyWrite"], "/keep"), ["sandbox", "filesystem", "denyRead"], 7), ["permissions", "deny"], {}), ["env"], "bad"), [not("sandbox.filesystem.denyWrite", "an array of strings"), not("sandbox.filesystem.denyRead", "an array"), not("permissions.deny", "an array"), not("env", "an object")]],
+    // the wrong types alone are named: a missing entry beside them prints no missing line
+    ["permissions [] and env a string, with sandbox.enabled missing", (s: Json) => { delete (s["sandbox"] as Json)["enabled"]; return setAt(setAt(s, ["permissions"], []), ["env"], "bad"); }, [not("permissions", "an object"), not("env", "an object")]],
+  ] as const) {
+    const body = `${JSON.stringify(change(structuredClone(merged)), null, 2)}\n`;
+    put(w.settings, body);
+    utimesSync(w.settings, old, old);
+    const before = snapshot(w.f);
+    const r = w.verify();
+    assert.deepEqual(settingsBlock(r.out), [`FAIL ${LINE}`, ...lines], `${what}: the FAIL line names every wrong field in merge()'s order`);
+    assert.equal(readFileSync(w.settings, "utf8"), body, `${what}: the settings file is byte-identical`);
+    assert.equal(lstatSync(w.settings).mtimeMs, old.getTime(), `${what}: its mtime is unchanged`);
+    assert.deepEqual(snapshot(w.f), before, `${what}: no file under the home changed`);
+  }
+});
