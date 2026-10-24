@@ -25,6 +25,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync, type Dirent } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { parse as parseYaml } from "yaml";
 import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
@@ -156,6 +157,9 @@ function recordOf(src: Src | undefined, id: string): Dict | undefined {
   }
 }
 
+/** W-355 (prototype stage): the checkout that owns a spec's evidence, its opus record and its manifest. */
+export type SpecOwner = { where: string; record: Dict; manifest: Manifest } | { error: string };
+
 interface SpecReviewer {
   sella: string;
   model: string;
@@ -220,8 +224,8 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: strin
 }
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
-function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[], bind = false): SpecEvidence {
-  return reviewer === undefined ? signedSpec(src, id, design, admit, bind) : reviewedSpec(src, id, reviewer, admit);
+function specEvidence(src: Src | undefined, id: string, design: string, reviewer: SpecReviewer | undefined, admit: (brief: string) => string[], ui: boolean, bind = false): SpecEvidence {
+  return reviewer === undefined ? signedSpec(src, id, design, admit, bind) : reviewedSpec(src, id, reviewer, admit, ui);
 }
 
 const hasSections = (brief: string, names: string[]): boolean => names.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief));
@@ -349,7 +353,7 @@ function failedSpecReviews(read: { n: number; rel: string; text: string | undefi
   return failed;
 }
 
-function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, admit: (brief: string) => string[]): SpecEvidence {
+function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, admit: (brief: string) => string[], ui: boolean): SpecEvidence {
   if (src === undefined) return { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false, gate: { kind: "signature" } };
   const names = src.list("ci").filter((name) => name.startsWith(`${id}-spec-`));
   const logs: { n: number; rel: string }[] = [];
@@ -369,9 +373,8 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer, 
   const read = logs.map((l) => ({ ...l, text: src.read(l.rel) }));
   const anchor = [...read].reverse().find((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, expected, l.rel)));
   if (anchor === undefined) return result(`no ${reviewer.design} signature names the current ${briefRel(id)} (ci/${id}-spec-<n>.log, phase spec, passed)`, { kind: "signature" });
-  // W-338: on a kind: ui opus (its record in this source) the ui-lead's UI input is read by inspectUiDesignInput alone, never
-  // as this sequence's review; on any other kind a ui-lead log stays in the strict sequence
-  const ui = recordOf(src, id)?.["kind"] === "ui";
+  // W-338: on a kind: ui opus (W-355: the kind of the spec owner's record) the ui-lead's UI input is read by inspectUiDesignInput
+  // alone, never as this sequence's review; on any other kind a ui-lead log stays in the strict sequence
   const above = read.filter((l) => l.n > anchor.n && !(ui && l.text !== undefined && isUiLeadLog(l.text)));
   const reviews: { round: number; log: string; outcome: "passed" | "failed"; keeps: string[] }[] = [];
   for (const l of above) {
@@ -452,6 +455,8 @@ export interface Facts {
   /** the branch has been pushed (a remote-tracking ref exists), so a PR may exist */
   pushed: boolean;
   manifest: Manifest;
+  /** W-355: the record and manifest of the checkout that owns the spec evidence, or why they cannot be read (next holds at spec) */
+  specOwner: SpecOwner;
   curTree(): string | undefined;
   /** W-167: the review configuration and every strictly read build-review round, or why they cannot be read (held, never zero rounds) */
   buildRounds(): { config: BuildReviewConfig; rounds: BuildReviewRound[] } | { error: string };
@@ -739,8 +744,12 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const trunkRecord = recordOf(trunk, id);
   const branchRecord = recordOf(branch, id);
   const defaultDesign = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
-  const uiPair = readUiSpecPairing(manifest);
-  const design = (branchRecord ?? trunkRecord)?.["kind"] === "ui" && !("error" in uiPair) && uiPair.pairing !== undefined ? uiPair.pairing.signer : defaultDesign;
+  // W-355 (prototype stage 1): the main checkout's record before the branch, still falling back to the trunk's
+  const ownerWhere = tip === undefined ? `the main checkout (${studioRel})` : usable ? join(".worktrees", id, studioRel) : `opus/${id}`;
+  const specOwner: SpecOwner = { where: ownerWhere, record: (tip === undefined ? recordOf(fsSrc(studioAbs), id) : branchRecord) ?? trunkRecord ?? {}, manifest };
+  // the one signer every later reader (red attribution, signedAfter, commits) uses is the spec rung's own selection
+  const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"] });
+  const design = pairing !== undefined && !("error" in pairing) ? pairing.signer : defaultDesign;
   const remoteTracking = refExists(repo, `refs/remotes/origin/opus/${id}`);
   const choreRef = `refs/heads/chore/done-${id}`;
   const choreDone = trunkRecord?.["state"] !== "done" && refExists(repo, choreRef) && recordOf(gitSrc(repo, choreRef, studioRel), id)?.["state"] === "done";
@@ -764,6 +773,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     residue: tip !== undefined || entry !== undefined || remoteTracking,
     pushed: remoteTracking,
     manifest,
+    specOwner,
     curTree: memo(() => {
       if (tip === undefined) return undefined;
       try {
@@ -956,7 +966,11 @@ export function deriveNext(f: Facts): Derived {
   if (state === "backlog") return named("greenlight", "patron", `${id} is in the backlog; only the Patron greenlights`, `bisellium greenlight ${id} --studio ${f.studioRel}`);
 
   // 2 spec (the committed trunk)
-  const gate = readSpecReviewer(f.manifest, { ...rec, state: f.trunkRecord?.["state"] });
+  // W-355: the kind and seat pairing come from the checkout that owns the spec evidence; an unreadable owner holds here
+  const owner = f.specOwner;
+  if ("error" in owner) return hold("spec", owner.error);
+  const ownerUi = owner.record["kind"] === "ui";
+  const gate = readSpecReviewer(owner.manifest, { ...owner.record, state: f.trunkRecord?.["state"] });
   if ("error" in gate) return hold("spec", gate.error);
   const signer = gate.signer;
   // W-305 (D-075 D): the fast lane. A brief that `readBriefForm` reads as light (one behaviour, one to three Files owned, no
@@ -965,7 +979,7 @@ export function deriveNext(f: Facts): Derived {
   // light and is not keeps the reviewer, and the sequence's own section check then names its reason to the architect.
   // The kind fails closed: every record read (trunk, and the branch once it exists) must carry a registered kind other than
   // `ui`; an absent, non-string, unregistered or mis-cased one keeps the reviewer.
-  const records = [f.trunkRecord, ...(f.tip === undefined ? [] : [f.branchRecord])];
+  const records = [f.trunkRecord, owner.record];
   const lane = records.every((r) => r !== undefined && isNativeOpusKind(r["kind"]) && r["kind"] !== "ui");
   const fast = gate.reviewer !== undefined && lane && (f.tip === undefined ? lightIn(f.work, id) : lightIn(f.branch, id) && lightIn(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id));
   const reviewer = fast ? undefined : gate.reviewer;
@@ -994,7 +1008,7 @@ export function deriveNext(f: Facts): Derived {
       const text = f.branch?.read(rel);
       if (text === undefined) return true;
       // W-338: on a kind: ui opus the ui-lead's input is judged by uiSpecProblems, after the spec, never as a signature or a review
-      if (f.branchRecord?.["kind"] === "ui" && isUiLeadLog(text)) return false;
+      if (ownerUi && isUiLeadLog(text)) return false;
       const brief = ownBrief(text, id, rel);
       // ponytail: the pin's shape only; an intermediate brief is never in Git, so which blob it names is not checked
       if (!new RegExp(`^${esc(briefRel(id))} blob:[0-9a-f]{40}$`).test(brief)) return true;
@@ -1005,11 +1019,11 @@ export function deriveNext(f: Facts): Derived {
   // an unlistable worktree ci/ cannot carry the spec, so the committed branch is judged instead: once it has passed, the later rungs'
   // worktree handling is unchanged (the review rung holds on the same ci/); until then nothing can be ordered
   const ciProblem = onOpus && f.wt.usable ? f.wtCiProblem() : undefined;
-  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, signer, reviewer, admit);
+  const committed = ciProblem === undefined ? undefined : specEvidence(gitSrc(f.repo, `refs/heads/opus/${id}`, f.studioRel), id, signer, reviewer, admit, ownerUi);
   if (ciProblem !== undefined && !committed!.ok) return hold("spec", ciProblem);
   // pending spec work (an edited brief or a new log) cannot be judged beside an unlistable ci/: only an unchanged worktree goes on
   if (ciProblem !== undefined && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return hold("spec", `${ciProblem}; the spec work pending in the worktree is not committed`);
-  const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, pre);
+  const spec = committed ?? specEvidence(pending, id, signer, reviewer, admit, ownerUi, pre);
   // W-381 (D-070 C, D-076 D): the newest failed spec review (a revision's, a keeps-only branch's, or the two-review split's)
   // whose S1 blocker names a class seen before in another opus holds the spec until a title names the class
   const g = spec.gate;
@@ -1025,7 +1039,7 @@ export function deriveNext(f: Facts): Derived {
     return hold("spec", spec.why);
   }
   // W-338: a pending ui-lead log (or prompt) that uiSpecProblems refuses is never carried as spec evidence: the ui-lead is ordered below
-  const uiPending = ui.length > 0 && f.branchRecord?.["kind"] === "ui" && changed !== undefined && !("error" in changed) && changed.spec.some((p) => {
+  const uiPending = ui.length > 0 && ownerUi && changed !== undefined && !("error" in changed) && changed.spec.some((p) => {
     const m = /(?:^|\/)(ci\/[^/]+-(?:ui-prompt-[1-9][0-9]*\.md|spec-[1-9][0-9]*\.log))$/.exec(p);
     return m !== null && (m[1]!.endsWith(".md") || isUiLeadLog(f.branch?.read(m[1]!) ?? ""));
   });

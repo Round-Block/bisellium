@@ -1230,6 +1230,7 @@ test("W-348-b2 behaviour 2: next reads every UI signature as ui-architect and ev
     residue: false,
     pushed: false,
     manifest,
+    specOwner: { where: "the main checkout (studio)", record: rec, manifest },
     curTree: () => undefined,
     buildRounds: () => ({ error: "unused" }),
     gates: () => undefined,
