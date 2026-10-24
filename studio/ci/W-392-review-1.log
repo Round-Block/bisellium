@@ -1,0 +1,19 @@
+# opus: W-392
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16e29-9b8f-7f13-af48-5384ff77ec6b
+# outcome: failed
+# at: 2026-10-24T13:53:32.613Z
+# tree: tree:5192ba34d7dc536a084b215ddd14b63fe77bd820
+# brief: briefs/W-392.md blob:6058916214afb00f49bc784aeade2e4df3439b88
+# ticket: {"opus":"W-392","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-392/studio","head":"f2bcc37f4800db476af78aaa7bf158d6a93aaf89","brief":"6058916214afb00f49bc784aeade2e4df3439b88","at":"2026-10-24T13:53:31.247Z"}
+
+## Findings
+1. blocking — packages/cli/src/rules/tests.ts:615 `argumentEnd` treats a comma inside a regex literal as the assertion-argument separator, so valid `assert.ok(/^key,value/.test(s))` produces no finding despite brief:54 and brief:116. [severity: S1] [class: tests×one-sided-bound-assertion] — check: packages/cli/src/rules/tests.test.ts W-392-b2
+2. blocking — packages/cli/src/rules/tests.ts:642 `ASCII_LETTERS` searches raw body text without honoring escapes: `/(?=[\]a-z])x/` contains an ASCII range but produces no finding, while `/(?=\\w)x/` names only a literal `\w` yet is blocked, contrary to brief:57. [severity: S1] [class: tests×one-sided-bound-assertion] — check: packages/cli/src/rules/tests.test.ts W-392-b1
+
+## Verdict
+Both numbered behaviours remain incorrect for forms inside the declared pattern grammar.
+VERDICT: FAIL

@@ -21,6 +21,13 @@
  * file added or changed since that merge-base holding a one-sided assertion of a
  * string (studio/briefs/W-376.md) needs the whole string asserted, or a
  * `// one-sided: <reason>` annotation.
+ *
+ * W-392 adds the boundary form to `test.one_sided`: a line of any tracked code
+ * file added or changed since that merge-base whose pattern (a regex literal, or
+ * a literal first argument of `RegExp(`) bounds a token by a set over part of
+ * the alphabet (`\b`, `\w`, an ASCII letter range, a letter property without
+ * marks or numbers, or a set built from a substitution) needs a whole set, or
+ * the same annotation (studio/briefs/W-392.md).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
@@ -560,7 +567,7 @@ const sidedBlock = (where: string, message: string): Finding => ({ rule: "test.o
 // the boundary before `assert`: no word character or `$` right before it, and no `.` before it past any spaces (a member call)
 const MATCH_SITE = /(?<![\w$])(?<!\.\s*)assert\s*\.\s*match\s*\(/g;
 const REGEX_LITERAL = /\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*/y;
-const REGEXP_CALL = /new\s+RegExp\s*\(\s*(["'`])((?:\\.|(?!\1)[^\\])*)\1/y;
+const REGEXP_CALL = /(?:new\s+)?RegExp\s*\(\s*(?:String\s*\.\s*raw\s*)?(["'`])((?:\\.|(?!\1)[^\\])*)\1/y;
 const OK_SITE = /(?<![\w$])(?<!\.\s*)assert(?:\s*\.\s*ok)?\s*\(/g;
 const ENDS_CALL = /\.\s*(startsWith|endsWith)\s*\(/;
 const SIDED = /^\/\/\s*one-sided:\s*(\S.*)$/;
@@ -572,6 +579,15 @@ function argumentEnd(code: string, from: number): number {
   let depth = 0;
   for (let i = from; i < code.length; i++) {
     const c = code[i]!;
+    if (c === "/" && REGEX_AFTER.test(code.slice(from, i))) {
+      // W-392: a regex literal's commas and brackets are its own (`assert.ok(/^a,b/.test(s))`)
+      REGEX_LITERAL.lastIndex = i;
+      const m = REGEX_LITERAL.exec(code);
+      if (m !== null) {
+        i += m[0].length - 1;
+        continue;
+      }
+    }
     if (c === "(" || c === "[" || c === "{") depth++;
     else if (c === ")" || c === "]" || c === "}") {
       if (depth === 0) return i;
@@ -608,9 +624,136 @@ function sidedForm(blank: string, plain: string): string | undefined {
     const end = argumentEnd(blank, from);
     const call = ENDS_CALL.exec(blank.slice(from, end < 0 ? undefined : end));
     if (call) return `${call[1]} in an assertion`;
+    // W-392: a pattern anchored at one end in the first argument (`/^x/.test(s)`, `new RegExp("^x").test(s)`)
+    for (const source of patternsOn(blank.slice(from, end < 0 ? undefined : end), plain.slice(from, end < 0 ? undefined : end))) {
+      const form = sidedPattern(source);
+      if (form !== undefined) return form;
+    }
   }
   return undefined;
 }
+
+// ---- W-392: the boundary form. W-381's title regexes bounded a token by an ASCII set, in a source file and outside any
+// assertion, so W-376's forms never read them (studio/briefs/W-392.md). Every pattern on the line is read.
+const BOUND_HOW = 'bound the token by a set holding \\p{L}, \\p{M} and \\p{N} (or \\p{ID_Continue}) under the u flag, or annotate "// one-sided: <reason>"';
+const ASCII_B = "an ASCII word boundary (\\b)";
+const ASCII_SET = "a word boundary over ASCII letters only";
+const BUILT_SET = "a word boundary built from a substitution";
+// a regex literal may open after one of these, or after a keyword; after a name, a `)` or a `]` a slash divides
+const REGEX_AFTER = new RegExp(String.raw`(?:^|[(,=:[!&|?{};+\-*%<>~^]|(?<![\p{ID_Continue}$.])(?:return|typeof|case|of|in|void|yield|await|delete|throw|new|else|do))\s*$`, "u");
+const REGEXP_SITE = new RegExp(String.raw`(?<![\p{ID_Continue}$.])(?:new\s+)?RegExp\s*\(`, "gu");
+const PATTERN_ARG = /\s*(String\s*\.\s*raw\s*)?(["'`])((?:\\.|(?!\2)[^\\])*)\2/y;
+const LOOKAROUND = /^\(\?(?:<[!=]|[!=])/;
+const LETTER_PROP = /\\p\{(?:L|Letter)\}/;
+const MARK_PROP = /\\p\{(?:M|Mark)\}/;
+const NUMBER_PROP = /\\p\{(?:N|Number)\}/;
+const IDENT_PROP = /\\p\{ID_Continue\}/;
+const ASCII_LETTERS = /\\[wW]|\[[^\]]*[A-Za-z]-[A-Za-z]/;
+
+/** The pattern sources on a line, from its string-blanked and plain code (same columns): each regex literal where an
+ *  expression may open, and each literal first argument of `RegExp(` or `new RegExp(` (a string's `\\` read as `\`; a
+ *  `String.raw` template as written). */
+function patternsOn(blank: string, plain: string): string[] {
+  const found: string[] = [];
+  for (let i = 0; i < blank.length; i++) {
+    if (blank[i] !== "/" || !REGEX_AFTER.test(blank.slice(0, i))) continue;
+    REGEX_LITERAL.lastIndex = i;
+    const m = REGEX_LITERAL.exec(plain);
+    if (m === null) continue;
+    found.push(m[1]!);
+    i += m[0].length - 1;
+  }
+  for (const m of blank.matchAll(REGEXP_SITE)) {
+    PATTERN_ARG.lastIndex = m.index + m[0].length;
+    const a = PATTERN_ARG.exec(plain);
+    if (a !== null) found.push(a[1] === undefined ? a[3]!.replace(/\\\\/g, "\\") : a[3]!);
+  }
+  return found;
+}
+
+/** In a pattern source, the index of the `)` closing the group whose body opens at `from` (the source's length when
+ *  none); escapes, classes and `${…}` substitutions are skipped. */
+function groupEnd(source: string, from: number): number {
+  let depth = 0;
+  let cls = false;
+  for (let i = from; i < source.length; i++) {
+    const c = source[i]!;
+    if (c === "\\") i++;
+    else if (c === "$" && source[i + 1] === "{") {
+      const close = source.indexOf("}", i);
+      if (close < 0) return source.length;
+      i = close;
+    } else if (cls) {
+      if (c === "]") cls = false;
+    } else if (c === "[") cls = true;
+    else if (c === "(") depth++;
+    else if (c === ")") {
+      if (depth === 0) return i;
+      depth--;
+    }
+  }
+  return source.length;
+}
+
+/** A pattern body with each escaped pair blanked, except the ones the boundary form reads (`\w`, `\W`, `\p`, `\P`): an
+ *  escaped `]`, `\`, `-` or `$` is a literal, so it opens no range, class end or substitution, and `\\w` names no `\w`. */
+function unescaped(body: string): string {
+  let out = "";
+  for (let i = 0; i < body.length; i++) {
+    const c = body[i]!;
+    if (c !== "\\" || i + 1 >= body.length) out += c;
+    else if ("wWpP".includes(body[i + 1]!)) out += c + body[++i]!;
+    else {
+      out += "  ";
+      i++;
+    }
+  }
+  return out;
+}
+
+/** A lookaround body's boundary form: undefined when it names no letter, or names the whole set (W-381 brief:75). */
+function boundarySet(raw: string): string | undefined {
+  const body = unescaped(raw);
+  if (body.includes("${")) return BUILT_SET;
+  const letters = LETTER_PROP.test(body);
+  const ident = IDENT_PROP.test(body);
+  if (!letters && !ident && !ASCII_LETTERS.test(body)) return undefined;
+  if (ident || (letters && MARK_PROP.test(body) && NUMBER_PROP.test(body))) return undefined;
+  if (!letters) return ASCII_SET;
+  const missing = [MARK_PROP.test(body) ? "" : "\\p{M}", NUMBER_PROP.test(body) ? "" : "\\p{N}"].filter((s) => s !== "");
+  return `a word boundary without ${missing.join(" and ")}`;
+}
+
+/** The first token boundary over part of the alphabet in a pattern source: `\b` or `\B` outside a class, or a
+ *  lookaround whose body `boundarySet` judges. */
+function boundaryForm(source: string): string | undefined {
+  let cls = false;
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i]!;
+    if (c === "\\") {
+      if (!cls && (source[i + 1] === "b" || source[i + 1] === "B")) return ASCII_B;
+      i++;
+    } else if (cls) {
+      if (c === "]") cls = false;
+    } else if (c === "[") cls = true;
+    else if (c === "(" && LOOKAROUND.test(source.slice(i, i + 4))) {
+      const open = i + (source[i + 2] === "<" ? 4 : 3);
+      const form = boundarySet(source.slice(open, groupEnd(source, open)));
+      if (form !== undefined) return form;
+    }
+  }
+  return undefined;
+}
+
+/** W-392: the boundary form of a line's code (string-blanked and plain), or undefined. */
+function boundaryOn(blank: string, plain: string): string | undefined {
+  for (const source of patternsOn(blank, plain)) {
+    const form = boundaryForm(source);
+    if (form !== undefined) return form;
+  }
+  return undefined;
+}
+const isBoundaryForm = (form: string): boolean => form.includes("word boundary");
 
 /** A `// one-sided: <reason>` comment on the line, or alone on the line above, with a reason of at least 15
  *  characters in 3 words. */
@@ -624,13 +767,15 @@ function sidedWaived(lines: Line[], idx: number): boolean {
 }
 
 /** W-376: the one-sided assertions on `lines` (1-based) of a test file's text, each with its form; an annotated one
- *  is not listed. Pure. */
-export function oneSidedSites(text: string, lines: readonly number[]): { line: number; form: string }[] {
+ *  is not listed. Pure. W-392: the boundary form is read on every line; with `test` false (a code file that is not a
+ *  test path), only it. */
+export function oneSidedSites(text: string, lines: readonly number[], test = true): { line: number; form: string }[] {
   const plain = lex(text);
   const blank = lex(text, { blankStrings: true });
   const sites: { line: number; form: string }[] = [];
   for (const n of lines) {
-    const form = n >= 1 && n <= plain.length ? sidedForm(blank[n - 1]!.code, plain[n - 1]!.code) : undefined;
+    const at = n >= 1 && n <= plain.length ? { blank: blank[n - 1]!.code, plain: plain[n - 1]!.code } : undefined;
+    const form = at === undefined ? undefined : ((test ? sidedForm(at.blank, at.plain) : undefined) ?? boundaryOn(at.blank, at.plain));
     if (form !== undefined && !sidedWaived(plain, n - 1)) sites.push({ line: n, form });
   }
   return sites;
@@ -649,8 +794,15 @@ function addedLines(repo: string, base: string, rel: string): number[] {
   return lines;
 }
 
+/** A tracked code file by W-121's extensions, outside node_modules (W-392: read for the boundary form). */
+function isCodePath(path: string): boolean {
+  const segs = path.split("/");
+  const name = segs[segs.length - 1]!;
+  return name.includes(".") && EXTENSIONS.has(name.slice(name.lastIndexOf("."))) && !segs.includes("node_modules");
+}
+
 /** W-376: `test.one_sided`, block. Each tracked test file changed since the merge-base (W-178's `resolveTestBase`):
- *  its added and changed lines' one-sided assertions. An unresolved base, an unparsable package.json and an unreadable
+ *  its added and changed lines' one-sided assertions; W-392: each other tracked code file's, the boundary form only. An unresolved base, an unparsable package.json and an unreadable
  *  test file are `test.rows`' and `test.sleep`'s findings, so this rule adds none for them. */
 export function oneSidedFindings(repo: string): Finding[] {
   const resolved = resolveTestBase(repo);
@@ -666,10 +818,11 @@ export function oneSidedFindings(repo: string): Finding[] {
         // test.rows reports it
       }
     const changed = gitOut(repo, ["diff", "--name-only", "-z", "--no-renames", resolved.base]).split("\0");
-    for (const rel of changed.filter((p) => p.length > 0 && isTestPath(p, registered))) {
+    for (const rel of changed.filter((p) => p.length > 0 && isCodePath(p))) {
       const read = readCandidate(repo, rel);
       if (!("text" in read)) continue;
-      for (const s of oneSidedSites(read.text, addedLines(repo, resolved.base, rel))) findings.push(sidedBlock(`${rel}:${s.line}`, `${s.form}: ${SIDED_HOW}`));
+      const sites = oneSidedSites(read.text, addedLines(repo, resolved.base, rel), isTestPath(rel, registered));
+      for (const s of sites) findings.push(sidedBlock(`${rel}:${s.line}`, `${s.form}: ${isBoundaryForm(s.form) ? BOUND_HOW : SIDED_HOW}`));
     }
   } catch (e) {
     findings.push(sidedBlock(GIT_WHERE, `the one-sided scan failed (${reasonOf(e)})`));

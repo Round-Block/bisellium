@@ -1,0 +1,28 @@
+# opus: W-392
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T13:19:28.388Z
+# tree: tree:11d635a201d13da2a27bddcbb840deef7b07eb0b
+# brief: briefs/W-392.md blob:6058916214afb00f49bc784aeade2e4df3439b88
+# ticket: {"opus":"W-392","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"891be551e47b5be65706386b405a6db96cac559c","brief":"6058916214afb00f49bc784aeade2e4df3439b88","at":"2026-10-24T13:19:27.910Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-392-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — why W-376's rule missed W-381: it is in W-381's tree (ff89317f is an ancestor of a1fa6f4e) and finds 0 sites on rounds 1 and 2, because the defect lines are in a source file (next.ts, not an isTestPath file), the patterns run through .test() outside any assertion (W-376 reads a pattern only as assert.match's second argument), and the bound is a lookaround over an ASCII set or a set built from a substitution, not a ^ or $ anchor (sidedPattern reads only those); W-381's rows asserted whole strings, so the one-sided bound was the pattern itself — check: brief:15, brief:22, would-catch-master.out
+2. advisory — the closed rule reads every pattern (regex literal anywhere an expression opens, RegExp( or new RegExp( with a string, template or String.raw) on an added line of any tracked code file, and blocks a \b, a letter set short of \p{L}\p{M}\p{N} or \p{ID_Continue}, or a set built from a substitution; it catches W-381 r1 next.ts:1422 and :1424 and r2/r3 next.ts:1433, and keeps W-328's 2 and W-310's 6 — check: brief:26, brief:29, would-catch.out
+3. advisory — behaviour 2 closes the remaining assertion spellings: a one-ended pattern tested in assert.ok/assert's first argument, and assert.match with RegExp( and no new or String.raw — check: brief:27, brief:59, red-b2-stage1.out
+4. advisory — every promise was checked against every Input domain row: the boundary promise reads one line, so a set passed in by a caller's string (W-381 r2's missing \p{M}) cannot be judged and is caught at the helper's substitution instead, stated as a limit with the other unreadable forms; the two-sided promise names its one false positive (an ASCII grammar by definition, about one line in four opera over 40 merges) — check: brief:62, brief:75, brief:79, feats-census-new.out
+5. advisory — the closed rule finds 114 master sites W-376's does not (77 \b, 25 ASCII sets, 8 substitution sets, 4 assert.ok patterns; tree-census-new.out); being diff-scoped it flips no row, and their named exemption is Promise old-lines — check: brief:81, brief:86, dogfood.out
+6. advisory — each red fails by assertion and is accepted by the host replay classifier (b1 on master with the rows, b2 on master and on stage 1); each row passes at its stages; six kills (K1 to K6) each fail their row at the check they guard — check: red-accept.out, kills.out
+7. advisory — must-stay-green on the whole prototype, unedited: rules/tests.test.ts 13 of 13 (W-376 rows included), lex.test.ts, check.test.ts (161 PASS), rules.test.ts (67 PASS), retro.test.ts, rules/process.test.ts; both officina checks pass with 0 blocking; lint (one pre-existing warning at tests.test.ts:141), format and typecheck pass; the brief passes admission — check: green-summary.out, check-studio-proto.out, check-sample-proto.out, lint-proto.out, admission.out
+8. advisory — the Codex test check lists no flips and Unnamed: None; its must-stay-green rows sit in rules/tests.test.ts (W-121, W-178-b4, W-376-b1 with its util.ts control, W-376-b2), rules/lex.test.ts, check.test.ts (W-089 b1, b7), containment.test.ts (W-163-b6, 65 of 65) and answer-carry.test.ts (W-114 b2, 6 of 6), all run green on the prototype and named in Acceptance — check: fixture-census.md, green-summary.out, brief:126
+9. advisory — no code-owned path: rules/tests.ts and rules/tests.test.ts are outside CODEOWNERS; the master moved 75f826fe..891be551 touches neither Files owned nor the rule, and the prototype was re-staged on 891be551 — check: brief:145, prototype.diff
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-392.md` (spec round 1), master 891be551.

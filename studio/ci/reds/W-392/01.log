@@ -1,0 +1,56 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-392-b1\s --import tsx packages/cli/src/rules/tests.test.ts
+# exit: 1
+# at: 2026-10-24T13:26:20.852Z
+# sella: builder.W-392
+# tree: tree:6635fc824fd7a60377ec0d0d1ef44c19054d66ad
+# ticket: {"opus":"W-392","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-392/studio","head":"51a67522183bb62cead6ce1657010296b17042b3","brief":"6058916214afb00f49bc784aeade2e4df3439b88","at":"2026-10-24T13:26:16.970Z"}
+
+TAP version 13
+# Subtest: W-392-b1 behaviour 1: an added line of any tracked code file whose pattern bounds a token by a partial set is a test.one_sided block, unless annotated
+not ok 1 - W-392-b1 behaviour 1: an added line of any tracked code file whose pattern bounds a token by a partial set is a test.one_sided block, unless annotated
+  ---
+  duration_ms: 81.660668
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-392/packages/cli/src/rules/tests.test.ts:29:7230'
+  failureType: 'testCodeFailure'
+  error: |-
+    an added ASCII boundary in a source file: one block at its line
+    + actual - expected
+    
+    + []
+    - [
+    -   {
+    -     level: 'block',
+    -     message: 'a word boundary over ASCII letters only: bound the token by a set holding \\p{L}, \\p{M} and \\p{N} (or \\p{ID_Continue}) under the u flag, or annotate "// one-sided: <reason>"',
+    -     rule: 'test.one_sided',
+    -     where: 'src/title.ts:2'
+    -   }
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      rule: 'test.one_sided'
+      level: 'block'
+      where: 'src/title.ts:2'
+      message: 'a word boundary over ASCII letters only: bound the token by a set holding \\p{L}, \\p{M} and \\p{N} (or \\p{ID_Continue}) under the u flag, or annotate "// one-sided: <reason>"'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-392/packages/cli/src/rules/tests.test.ts:1291:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 472.543203
