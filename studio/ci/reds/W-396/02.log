@@ -1,0 +1,42 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-396-b2\s scripts/ci-certificate.test.mjs
+# exit: 1
+# at: 2026-10-24T06:25:37.773Z
+# sella: builder.W-396
+# tree: tree:9e6a9aad9364d0dc05294e3e73c92d0658b8af46
+# ticket: {"opus":"W-396","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-396/studio","head":"e66ea30283289ef85232c2c3c5ea0bcf0e1f68af","brief":"58933dd161f6495fb520e25261cd44d525692c02","at":"2026-10-24T06:25:36.608Z"}
+
+TAP version 13
+# Subtest: W-396-b2 behaviour 2: the certificate job refuses a base_sha that is not a 40-hex commit id before any checkout, and a tooling HEAD that is not base_sha before publishing, and neither refusal can be skipped
+not ok 1 - W-396-b2 behaviour 2: the certificate job refuses a base_sha that is not a 40-hex commit id before any checkout, and a tooling HEAD that is not base_sha before publishing, and neither refusal can be skipped
+  ---
+  duration_ms: 17.36839
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-396/scripts/ci-certificate.test.mjs:370:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the first step refuses a base_sha that is not a commit id, before any checkout
+    
+    -1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: -1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-396/scripts/ci-certificate.test.mjs:379:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 25.452697
