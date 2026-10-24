@@ -1,0 +1,18 @@
+# opus: W-398
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16db4-4662-7422-8f2e-50d2933b6f06
+# outcome: failed
+# at: 2026-10-24T11:42:55.029Z
+# tree: tree:9760655b9eb45055c6637650173e1a16070466ed
+# brief: briefs/W-398.md blob:b03011adb930754fd8caa76994f050798e2b11a2
+# ticket: {"opus":"W-398","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a5282b29f661a1bb74f751fa3819911f3a76a0b0","brief":"b03011adb930754fd8caa76994f050798e2b11a2","at":"2026-10-24T11:42:52.138Z"}
+
+## Findings
+1. blocking — brief:46 [severity: S1] The specified `Set(lines(before))` comparison conflates literal dotted keys with nested paths: an otherwise merged settings object with top-level `"sandbox.enabled": true` but no nested `sandbox.enabled` is a plausible settings mistake, and `verify` prints the repeated-entry reason instead of the promised `missing sandbox.enabled: true`; no existing row covers it. Replace brief:46 with: “4. Otherwise it exits 1 after printing, in order: `<file> does not exist` when absent; `missing <line>` for each structurally distinct leaf or array entry that `merge()` adds, comparing unambiguous key-segment paths so literal dots in keys cannot collide with nesting; and, when the file exists and the merge changes only by removing a repeated array entry, `<file> holds every entry, but the merge would rewrite it (a repeated entry)`.” [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w398.test.ts
+
+## Verdict
+The signed brief needs a design-changing correction to make its promised difference reporting attainable across its accepted settings domain.
+VERDICT: FAIL

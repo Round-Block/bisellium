@@ -246,3 +246,21 @@ test("W-362-b2 behaviour 2: a malformed sandbox shape is refused and nothing is 
     "no backup was made",
   );
 });
+
+// W-398 behaviour 2: the module's CLI runs only as the program node was started with, never on an import
+test("W-398-b2 behaviour 2: importing the merge module runs no CLI, even when the importer's first argument is the module's own path", () => {
+  const dir = tmp();
+  const file = join(dir, "settings.json");
+  const text = '{ "model": "opus" }\n';
+  writeFileSync(file, text);
+  // `node -e` puts its first argument at process.argv[1], where a program's own path would be
+  const importer =
+    'const { pathToFileURL } = await import("node:url"); await import(pathToFileURL(process.argv[1]).href); console.log("imported");';
+  const r = spawnSync("node", ["--input-type=module", "-e", importer, SCRIPT, file, OPTS.patronDir, OPTS.agentGh], {
+    encoding: "utf8",
+  });
+  assert.equal(readFileSync(file, "utf8"), text, "the settings file is unchanged");
+  assert.deepEqual(readdirSync(dir), ["settings.json"], "no backup was made");
+  assert.equal(r.status, 0, `the import exits 0: ${r.stderr}`);
+  assert.equal(r.stdout, "imported\n", "the module printed nothing on its import");
+});

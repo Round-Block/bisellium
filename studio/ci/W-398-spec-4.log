@@ -1,0 +1,21 @@
+# opus: W-398
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16db4-4662-7422-8f2e-50d2933b6f06
+# outcome: failed
+# at: 2026-10-24T12:01:45.559Z
+# tree: tree:9760655b9eb45055c6637650173e1a16070466ed
+# brief: briefs/W-398.md blob:c212fcb3ed5ce070867ba429e3ad6576279f2319
+# ticket: {"opus":"W-398","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"c4a0dbac339b85fe7744d03bfe8cc63a9ae759be","brief":"c212fcb3ed5ce070867ba429e3ad6576279f2319","at":"2026-10-24T12:01:42.628Z"}
+
+## Findings
+1. blocking — studio/briefs/W-398.md:46 brief:46 [severity: S1] Reached by `ci/W-398-spec-2.log` #1’s class: with ordinary combined mistakes `permissions: []` and `env: "bad"`, `merge()` throws on `env` before the new classifier runs, so `verify` prints Node’s error instead of item 4’s promised first reason, `permissions is not an object`; `W-398-b3` tests only one malformed field at a time. This also conflicts with brief:56’s Node-message clause and requires a declared precedence plus a combined-form test. [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w398.test.ts
+
+## Earlier findings
+- ci/W-398-spec-2.log #1: closed — prototype.diff:281-290 compares JSON-encoded key-segment paths, kinds and values; the dotted-key case passes in proto-b3-stage3.out, and K5 fails when that comparison is reverted.
+
+## Verdict
+The original collision is closed, but the revised wrong-type contract remains contradictory for combined listed mistakes.
+VERDICT: FAIL

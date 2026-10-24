@@ -2,7 +2,11 @@
  * scripts/agent-settings-merge.mjs — merge the agent-isolation entries into a
  * Claude Code user settings file, keeping everything already there.
  *
- *   node scripts/agent-settings-merge.mjs <settings.json> <patronDir> <agentGh> [<agentDir>]
+ *   node scripts/agent-settings-merge.mjs [--check] <settings.json> <patronDir> <agentGh> [<agentDir>]
+ *
+ * W-398: with --check it only reads: exit 0 when the merge would change nothing, else exit 1 with one line per entry
+ * the merge would add (or why the file cannot be merged); it never backs up, makes a folder or writes. Run by
+ * scripts/agent-workspace.sh verify; setup and guard run it without --check, the only runs that write.
  *
  * W-362: the sandbox is always turned on (an existing `sandbox.enabled: false` would switch every deny
  * off), and with <agentDir> (absolute) it also denies writing the agent clone's source folders
@@ -10,7 +14,7 @@
  * clone's root files stay writable. The sandbox is the whole session's: a subagent is denied there too.
  *
  * `merge()` is pure (a new object, input untouched, idempotent); the CLI is the
- * only part that touches the filesystem. Used by scripts/agent-workspace.sh.
+ * only part that touches the filesystem, and only without --check. Used by scripts/agent-workspace.sh.
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
@@ -53,6 +57,17 @@ export function merge(settings, { patronDir, agentGh, agentDir }) {
   return out;
 }
 
+/** W-398: one entry per leaf or array element: `key`, its key-segment path, its kind (a leaf or an array element) and its
+ *  value as JSON, unambiguous whatever a key holds (a literal dot in a key never collides with nesting); `text`, the
+ *  dotted `path: value` line --check prints. */
+const entries = (o, path = []) =>
+  Object.entries(o).flatMap(([k, v]) => {
+    const at = [...path, k];
+    const one = (kind, x) => ({ key: JSON.stringify([at, kind, x]), text: `${at.join(".")}: ${JSON.stringify(x)}` });
+    if (Array.isArray(v)) return v.map((x) => one("element", x));
+    return v && typeof v === "object" ? entries(v, at) : [one("leaf", v)];
+  });
+
 /** One `path: value` line per leaf or array element, so the CLI can print what merge() added. */
 const lines = (o, prefix = "") =>
   Object.entries(o).flatMap(([k, v]) =>
@@ -63,10 +78,13 @@ const lines = (o, prefix = "") =>
         : [`${prefix}${k}: ${JSON.stringify(v)}`],
   );
 
-if (import.meta.filename === process.argv[1]) {
-  const [file, patronDir, agentGh, agentDir] = process.argv.slice(2);
+// W-398: only as the program node was started with; an import (a `node -e` whose first argument is this path included)
+// never runs it
+if (import.meta.main) {
+  const check = process.argv[2] === "--check";
+  const [file, patronDir, agentGh, agentDir] = process.argv.slice(check ? 3 : 2);
   if (!file || !patronDir || !agentGh) {
-    console.error("usage: agent-settings-merge.mjs <settings.json> <patronDir> <agentGh> [<agentDir>]");
+    console.error("usage: agent-settings-merge.mjs [--check] <settings.json> <patronDir> <agentGh> [<agentDir>]");
     process.exit(2);
   }
   if (agentDir !== undefined && !isAbsolute(agentDir)) {
@@ -91,7 +109,31 @@ if (import.meta.filename === process.argv[1]) {
     console.error(`${file}: ${e.message}; left untouched`);
     process.exit(1);
   }
-  if (exists && isDeepStrictEqual(before, after)) {
+  const same = exists && isDeepStrictEqual(before, after);
+  if (check) {
+    // W-398: read and report only; nothing below this line writes
+    if (same) process.exit(0);
+    // a wrong type merge() would not refuse: it would set a property on an array (no entry shows it, and JSON drops it)
+    // or spread a string into its characters; named as one, before any entry is compared
+    const wrong = [
+      ["permissions", before.permissions, "an object"],
+      ["env", before.env, "an object"],
+      ["sandbox.filesystem.denyRead", before.sandbox?.filesystem?.denyRead, "an array"],
+      ["permissions.deny", plain(before.permissions) ? before.permissions.deny : undefined, "an array"],
+    ].find(([, v, want]) => v !== undefined && v !== null && (want === "an array" ? !Array.isArray(v) : !plain(v)));
+    if (wrong) {
+      console.log(`${file}: ${wrong[0]} is not ${wrong[2]}; left untouched`);
+      process.exit(1);
+    }
+    if (!exists) console.log(`${file} does not exist`);
+    const had = new Set(entries(before).map((e) => e.key));
+    const add = entries(after).filter((e) => !had.has(e.key));
+    for (const e of add) console.log(`missing ${e.text}`);
+    if (exists && add.length === 0)
+      console.log(`${file} holds every entry, but the merge would rewrite it (a repeated entry)`);
+    process.exit(1);
+  }
+  if (same) {
     console.log("unchanged");
   } else {
     if (exists) copyFileSync(file, `${file}.bak-${new Date().toISOString()}`);

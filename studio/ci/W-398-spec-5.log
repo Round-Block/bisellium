@@ -1,0 +1,27 @@
+# opus: W-398
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T12:09:16.990Z
+# tree: tree:a3e2ce11c84bca1625d5e278ef4af8c07d9c2ca6
+# brief: briefs/W-398.md blob:18e58f52c2266bb5a206b2c2d973f3e834f13b53
+# ticket: {"opus":"W-398","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"8c93dd3b93d1f3062637be594a953627065a8dcc","brief":"18e58f52c2266bb5a206b2c2d973f3e834f13b53","at":"2026-10-24T12:09:11.233Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-398-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review 4's blocker (ci/W-398-spec-4.log #1) is resolved by the cut D-061 §4 calls for: several wrong types at once (permissions: [] with env: "bad", where merge() throws before --check names a type) leave the accepted domain and go to W-402; the brief promises one named wrong type, states that every other wrong type at the four keys makes merge() throw first with Node's message, and states the combined forms as a limit (a FAIL, nothing written, the line not promised), which resolves the conflict the review named between Interfaces item 4 and the names-differs promise — check: brief:3, brief:46, brief:56, brief:73, brief:119
+2. advisory — the never-writes promise holds for the combined forms too: row b1 now runs two of them ({"permissions": [], "env": "bad"} and {"permissions": [], "env": []}) and pins bytes, mtime, the home snapshot and the FAIL line — check: brief:54, brief:88, proto-b1-stage3.out
+3. advisory — spec review 2's blocker stays closed (ci/W-398-spec-4.log Earlier findings): entries compare by key-segment path, kind and JSON value; row b3 and kill K5 pin it — check: brief:47, red-b3-stage2.out, kill-K5.out
+4. advisory — every promise was checked again against every Input domain row after the cut: read-only over every form including the combined ones; names-differs over the accepted forms, with the dotted print, the throw's message, the unreadable and missing-folder lines and the combined forms stated; import-safe and siblings unchanged — check: brief:54, brief:56, brief:58, brief:60, brief:73
+5. advisory — each red fails by assertion and is accepted by the host replay classifier, at the same first assertions as round 3 (b1 and b2 on master, b2 on stage 1, b3 on master and on stage 2); every row passes on stage 3 — check: red-accept.out, proto-b1-stage3.out, proto-b2-stage3.out, proto-b3-stage3.out
+6. advisory — kills K1 to K6 each fail their row at the promised assertion — check: kills.out
+7. advisory — the flipped row is unchanged (W-379-b1, edited, 4 of 4); the must-stay-green files pass; the source is unchanged since round 3, only row b1 gained the combined forms, so Codex's census was not rerun — check: brief:110, brief:111, green-summary.out
+8. advisory — the brief passes admission; lint, Prettier, bash -n and the typecheck pass on the prototype — check: admission.out, lint-proto.out, format-proto.out, bash-n-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-398.md` (spec round 5), master 75f826fe (source unchanged on c4a0dbac); three behaviours; the combined wrong-type remainder is cut to W-402 and no third review is requested.

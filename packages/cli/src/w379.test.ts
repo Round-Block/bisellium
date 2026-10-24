@@ -125,8 +125,8 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
     assert.ok(existsSync(join(w.old, "x")), `${what}: the old guard worktree stays`);
     const verify = w.guard("verify");
     assert.match(verify.out, /^FAIL the hook guard's installer inputs hold \(PATH, PATRON_DIR on master, GUARD_BIN\)$/m, `${what}: verify fails the inputs`);
-    // verify's settings check runs the merge script's main and writes the user settings (W-362's, unchanged: a limit)
-    rmSync(join(w.f, ".claude"), { recursive: true, force: true });
+    // verify only reads (W-398): its settings line fails on the absent file and writes none
+    assert.equal(existsSync(join(w.f, ".claude")), false, `${what}: verify wrote no user settings`);
     undo();
   }
   assert.equal(head(w.patron), was, "the refusals moved nothing");
@@ -245,7 +245,6 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
     };
     // an otherwise valid setup (valid clones, valid PATH, GUARD_BIN installed): that program's line and nothing it would judge
     const valid = { guardCheck: run("guard-check"), guard: run("guard"), verify: run("verify"), sync: run("sync") };
-    rmSync(join(w.f, ".claude", "settings.json"), { force: true });
     assert.deepEqual(
       valid,
       {

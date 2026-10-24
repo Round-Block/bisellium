@@ -3,7 +3,7 @@
 # Patron's folder away from agents.
 #
 #   scripts/agent-workspace.sh setup            one-time, see below
-#   scripts/agent-workspace.sh verify [--inside]  read-only checks
+#   scripts/agent-workspace.sh verify [--inside]  read-only checks (W-398: they write no file)
 #   scripts/agent-workspace.sh guard            install the hook guard (W-362)
 #   scripts/agent-workspace.sh guard-check      judge the guard installer's inputs only
 #   scripts/agent-workspace.sh sync             fast-forward the agent clone (W-369), run by the installed guard
@@ -47,7 +47,8 @@
 # work in $AGENT_DIR with a token that can read and push but not administer.
 # From then on open Claude Code sessions in $AGENT_DIR.
 #
-# `verify` only reads. `--inside` adds the checks that only mean something from
+# `verify` only reads: it writes no file (W-398). A user settings file that differs from the merge is a FAIL line with
+# one indented line per entry the merge would add; `setup` and `guard` are what write it. `--inside` adds the checks that only mean something from
 # a sandboxed Claude session (the Patron's folder is read-only, credentials are
 # unreadable, the agent clone can reach the remote).
 set -euo pipefail
@@ -463,24 +464,22 @@ check() {
   fi
 }
 
-# JS run by the settings check: exit 0 when merge() would change nothing.
-NOOP_JS='
-import { readFileSync } from "node:fs";
-import { pathToFileURL } from "node:url";
-import { isDeepStrictEqual } from "node:util";
-const [mod, file, patronDir, agentGh, agentDir] = process.argv.slice(1);
-const { merge } = await import(pathToFileURL(mod).href);
-let s = {};
-try {
-  s = JSON.parse(readFileSync(file, "utf8"));
-} catch (e) {
-  if (e.code !== "ENOENT") throw e;
+# A check whose FAIL line is followed by what it found, each line indented (W-398); its ok line is alone.
+check_shown() {
+  local what=$1 out l
+  shift
+  if out=$("$@" 2>&1); then
+    echo "ok $what"
+  else
+    echo "FAIL $what"
+    while IFS= read -r l; do [[ -z $l ]] || echo "  $l"; done <<<"$out"
+    FAILS=$((FAILS + 1))
+  fi
 }
-process.exit(isDeepStrictEqual(s, merge(s, { patronDir, agentGh, agentDir })) ? 0 : 1);
-'
 
+# The merge script's read-only mode (W-398): exit 0 when merge() would change nothing, else its lines name what differs.
 settings_merged() {
-  node --input-type=module -e "$NOOP_JS" "$SELF_DIR/agent-settings-merge.mjs" "$USER_SETTINGS" "$(real "$PATRON_DIR")" "$AGENT_GH" "$(real "$AGENT_DIR")"
+  node "$SELF_DIR/agent-settings-merge.mjs" --check "$USER_SETTINGS" "$(real "$PATRON_DIR")" "$AGENT_GH" "$(real "$AGENT_DIR")"
 }
 origin_is_https() { [[ $(git -C "$AGENT_DIR" remote get-url origin) == "$URL" ]]; }
 helper_is_set() { git -C "$AGENT_DIR" config --local --get-all credential.helper | grep -Fxq -- "$HELPER"; }
@@ -502,7 +501,7 @@ verify() {
   [[ ${1:-} == --inside ]] && inside=1
   FAILS=0
   # the settings check reads SELF_DIR, resolved only by $RL (W-379)
-  if have "$RL"; then check "user settings hold every isolation entry" settings_merged; else skipped "user settings hold every isolation entry" "$RL is not an executable file"; fi
+  if have "$RL"; then check_shown "user settings hold every isolation entry" settings_merged; else skipped "user settings hold every isolation entry" "$RL is not an executable file"; fi
   check "agent clone origin is $URL" origin_is_https
   check "agent clone uses the agent credential helper" helper_is_set
   check "agent token reads $REPO" token_reads_repo

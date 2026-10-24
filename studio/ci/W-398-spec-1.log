@@ -1,0 +1,29 @@
+# opus: W-398
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T11:37:26.935Z
+# tree: tree:9760655b9eb45055c6637650173e1a16070466ed
+# brief: briefs/W-398.md blob:b03011adb930754fd8caa76994f050798e2b11a2
+# ticket: {"opus":"W-398","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"75f826feeb12849725d80b630fcefa6ed2c75c8c","brief":"b03011adb930754fd8caa76994f050798e2b11a2","at":"2026-10-24T11:37:21.320Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-398-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the write path on master 75f826fe: verify's settings line (agent-workspace.sh:505) runs settings_merged (:482), which imports the merge module from a node -e script (NOOP_JS, :467) with the module's own real path as the first argument; under -e that is process.argv[1], so the module's CLI guard (agent-settings-merge.mjs:66) holds on the import and the CLI backs the file up and writes the merge (:97-:99), then NOOP_JS reads the merged file and exits 0, so verify writes and reports ok — check: brief:13, repro-master.out, red-b1-master.out
+2. advisory — the fix closes both halves: verify's settings line runs the merge script's new read-only --check mode, whose FAIL is followed by one indented missing line per entry the merge would add or the one reason it cannot merge, and the CLI runs only as node's main module (import.meta.main), so no importer can trigger a write; setup and guard keep the write CLI — check: brief:15, brief:41, brief:49, brief:51, prototype.diff
+3. advisory — sibling checks: every other verify line, the --inside lines and guard-check were read on master and read only (git config reads, gh GETs, cgit rev-parse, status with --no-optional-locks, readlink, test -w/-r/-s, ls-remote, hooks check's read and guard probe); gh's own state, ls-remote's transport and credential helper and the probe's tsx cache are named as limits, and the home-snapshot assertions pin no write for the checks the rows run — check: brief:17, brief:27, brief:59
+4. advisory — every promise was checked against every Input domain row: the read-only promise holds for each settings form the domain accepts or rejects (the --check branch exits before any write call, kill K1); names-differs leans on the unchanged merge() and lines(), so which entries count as missing is stated as the merge's rule, and the unreadable and missing-folder messages are stated limits rather than promised lines — check: brief:53, brief:55, brief:72, brief:74
+5. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master at "a differing file, verify: the settings file is byte-identical", b2 on master and on stage 1 at "the settings file is unchanged"; each row passes at its own stage and b1 passes on stage 2 — check: red-b1-master.out, red-b2-master.out, red-b2-stage1.out, red-accept.out, proto-b1-stage1.out, proto-b1-stage2.out, proto-b2-stage2.out
+6. advisory — kills: dropping the --check exit, check_shown, the --check flag or import.meta.main each fails its row at the promised assertion — check: kills.out, kill-K1.out, kill-K2.out, kill-K3.out, kill-K4.out
+7. advisory — one existing row flips and is named with its edit: W-379-b1 fails unedited on the whole source at "a missing env with a valid setup" because its fixture deleted the settings that master's verify then rewrote; edited (the deletion dropped, the verify cleanup turned into a no-write assertion) it passes 4 of 4; agent-settings-merge's 11 existing rows, w362 3 of 3, w369 3 of 3, containment 65 of 65 and brief-admission 61 of 61 pass unedited — check: brief:99, brief:100, green-summary.out, green-u2-w379.test.ts.out
+8. advisory — the Codex test check lists one flip, W-379-b1, named with its edit (Unnamed: None); every must-stay-green row it lists sits in a file run whole on the prototype (agent-settings-merge.test.mjs, w362, w369, w379 b2 to b4, containment's W-163-b6) and passes; it ran on the brief before the pin lists were split one assertion per pin, with no change of content — check: fixture-census.md, green-summary.out, brief:99, brief:100
+9. advisory — no code-owned path (CODEOWNERS lists none of the owned files); scripts/agent-workspace.sh runs unsandboxed for guard and sync, so Defaults 3 asks whether the Patron merges it — check: brief:120
+10. advisory — the brief passes admission; lint, Prettier (the brief included), bash -n and the typecheck pass on the prototype; the officina check passes with 0 blocking — check: admission.out, lint-proto.out, format-proto.out, bash-n-proto.out, typecheck-proto.out, check-studio-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-398.md` (spec round 1), master 75f826fe.

@@ -1,0 +1,51 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-398-b3\s --import tsx packages/cli/src/w398.test.ts
+# exit: 1
+# at: 2026-10-24T12:15:43.842Z
+# sella: builder.W-398
+# tree: tree:036aa0a7d4d837aa7a0a7c4831846238a408cf3a
+# ticket: {"opus":"W-398","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-398/studio","head":"4212c7acdf61243ddbc8e083ab1a3f8a43e2a393","brief":"18e58f52c2266bb5a206b2c2d973f3e834f13b53","at":"2026-10-24T12:15:42.425Z"}
+
+TAP version 13
+# Subtest: W-398-b3 behaviour 3: verify compares settings entries by their key paths: a literal dot in a key is never read as nesting, and a wrong type the merge would not refuse is named as one
+not ok 1 - W-398-b3 behaviour 3: verify compares settings entries by their key paths: a literal dot in a key is never read as nesting, and a wrong type the merge would not refuse is named as one
+  ---
+  duration_ms: 183.972574
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-398/packages/cli/src/w398.test.ts:2:2215'
+  failureType: 'testCodeFailure'
+  error: |-
+    a dotted top-level key in place of sandbox.enabled: the FAIL line names what the merge would change
+    + actual - expected
+    
+      [
+        'FAIL user settings hold every isolation entry',
+    +   "  /tmp/claude-1000/w398-2MIFjj/home ü it's/.claude/settings.json holds every entry, but the merge would rewrite it (a repeated entry)"
+    -   '  missing sandbox.enabled: true'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'FAIL user settings hold every isolation entry'
+    1: '  missing sandbox.enabled: true'
+  actual:
+    0: 'FAIL user settings hold every isolation entry'
+    1: "  /tmp/claude-1000/w398-2MIFjj/home ü it's/.claude/settings.json holds every entry, but the merge would rewrite it (a repeated entry)"
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-398/packages/cli/src/w398.test.ts:222:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 193.353931
