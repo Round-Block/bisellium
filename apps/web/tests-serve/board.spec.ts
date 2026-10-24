@@ -67,8 +67,8 @@ async function forcePoll(served: { baseURL: string }): Promise<void> {
  * effect on an established loopback SSE stream — no `onError`/reconnect ever
  * fires, even held offline for 16s (spanning a heartbeat). Killing the
  * process is a real TCP reset the browser's `EventSource` genuinely notices
- * (confirmed: the liveness label flips to "disconnected" within one poll of
- * the kill, and to "live" again within ~1s of the restart) — this is what
+ * (confirmed: the visible liveness label and shell status move to stale
+ * within one poll of the kill, and to live again within ~1s of the restart) — this is what
  * actually exercises the reconnect path recorded in the brief's *Liveness*
  * section, rather than a no-op that happened to pass anyway.
  */
@@ -913,7 +913,7 @@ test.describe("W-087 behaviour 3: every generated Board time has the viewer-loca
 
     await page.setViewportSize({ width: 390, height: 844 });
     await openBoard(page, served);
-    await expect(page.locator(".board__liveness")).toContainText("updated");
+    await expect(page.locator(".board__header .board__liveness")).toContainText("updated");
     await page.locator('.board__card[data-card-id="W-002"]').click();
 
     const fixedEvent = page.locator(".board-drawer__event").filter({ has: page.locator(".board-drawer__event-summary", { hasText: /^attention fixed$/ }) });

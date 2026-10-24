@@ -294,6 +294,7 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
   const disconnected = liveLabel({ connected: false, lastRefreshAt: "2026-09-25T11:58:00.000Z", now });
   check(3, "liveLabel: disconnected — says so", disconnected.length > 0, disconnected);
   check(3, "liveLabel: disconnected — never contains 'live'", !disconnected.toLowerCase().includes("live"), disconnected);
+  check(3, "liveLabel: disconnected — preserves the last successful refresh", /stale · last updated \d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/.test(disconnected), disconnected);
 
   const bad = liveLabel({ connected: true, lastRefreshAt: "not-a-date", now });
   check(3, "liveLabel: an unparseable lastRefreshAt degrades, never 'Invalid Date'", !bad.includes("Invalid Date"), bad);

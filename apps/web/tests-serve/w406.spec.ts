@@ -59,3 +59,36 @@ test("W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390", as
     served = undefined;
   }
 });
+
+test("W-406-b2 Board header preserves live and stale refresh time above one footer at 1280 and 390", async ({ page }) => {
+  for (const width of [1280, 390] as const) {
+    await open(page, "board", width);
+    await expect(page.locator('.shell__status[data-state="live"]'), `${width}: live remains in the shell announcement`).toHaveText("Connected: the board updates live.");
+    const liveness = page.locator(".board__header .board__liveness");
+    await expect(liveness, `${width}: live state and refresh time are visible in the header`).toHaveText(/^live · updated \d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
+    const liveText = await liveness.textContent();
+    const refreshTime = liveText!.replace(/^live · updated /, "");
+    const headerGeometry = await page.locator(".board__header").evaluate((node) => {
+      const element = node as HTMLElement;
+      return { clientWidth: element.clientWidth, scrollWidth: element.scrollWidth };
+    });
+    expect(headerGeometry.scrollWidth, `${width}: the header has no horizontal overflow`).toBeLessThanOrEqual(headerGeometry.clientWidth);
+    await expect(page.locator(".board > footer"), `${width}: the ruled colophon remains`).toHaveCount(1);
+    const textLines = page.locator(".board > footer > div").filter({ hasText: /\S/ });
+    await expect(textLines, `${width}: the colophon has one visible text line`).toHaveCount(1);
+    const [titleBox, lineBox] = await Promise.all([page.locator(".board__title").boundingBox(), textLines.boundingBox()]);
+    expect(titleBox, `${width}: the Board title has a box`).toBeTruthy();
+    expect(lineBox, `${width}: the colophon line has a box`).toBeTruthy();
+    expect(lineBox!.x, `${width}: footer left inset equals the content gutter`).toBeCloseTo(titleBox!.x, 0);
+    expect(lineBox!.height, `${width}: the colophon remains one 14px line`).toBeCloseTo(14, 0);
+
+    await page.locator(".board__card").first().click();
+    await page.locator(".board-drawer__close").click();
+    await expect(liveness, `${width}: an unrelated drawer render preserves the refresh time`).toHaveText(liveText!);
+
+    await served.close();
+    served = undefined;
+    await expect(page.locator('.shell__status[data-state="stale"]'), `${width}: stale remains in the shell announcement`).toHaveText("Disconnected: the board may be out of date.");
+    await expect(liveness, `${width}: stale state retains the last successful refresh`).toHaveText(`stale · last updated ${refreshTime}`);
+  }
+});
