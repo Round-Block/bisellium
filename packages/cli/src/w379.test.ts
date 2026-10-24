@@ -272,6 +272,19 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
     ] as const) {
       assert.deepEqual(run("sync", env), { code: 1, lines: ["sync: refused: AGENT_DIR and PATRON_DIR must be absolute paths; master was not moved"] }, `a missing ${tool} with ${what}: sync prints the absolute-path fault first`);
     }
+    // the guard's own script inside AGENT_DIR (the agent clone's copy): a missing env or git is still its one line, printed
+    // with the agent-copy refusal, which changes nothing either (readlink's line is the refusal's own gate)
+    if (tool !== "readlink") {
+      const inside = join(w.f, "agent", `no-${tool}-inside.sh`);
+      writeFileSync(inside, readFileSync(copy, "utf8"));
+      const refused = w.guard("guard", {}, inside, w.f);
+      assert.deepEqual(
+        { code: refused.code, lines: shown(refused.out) },
+        { code: 1, lines: [fault, "run the guard step from your own clone's copy of this script, never the agent clone's (nothing was changed)."] },
+        `a missing ${tool} with the script inside AGENT_DIR: its line and the agent-copy refusal`,
+      );
+      rmSync(inside);
+    }
     git(w.patron, "checkout", "-q", "master");
     git(w.patron, "branch", "-q", "-D", "side3");
     unlinkSync(link);
