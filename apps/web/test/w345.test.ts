@@ -7,9 +7,13 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import * as React from "react";
+import { type ComponentType } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const WEB = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel: string): string => readFileSync(resolve(WEB, rel), "utf8");
+(globalThis as { React?: unknown }).React = React;
 
 async function logic(): Promise<Record<string, unknown>> {
   return (await import("../src/screens/inboxLogic.js")) as Record<string, unknown>;
@@ -88,4 +92,66 @@ test("W-345-b5 behaviour 5: the answer pane remains reachable at phone width", (
   const screenshots = read("tests-serve/screenshots.spec.ts");
   assert.match(screenshots, /await expect\(page\.locator\("\.inbox__detail"\)\)\.toBeVisible\(\);/, "screenshot readiness requires the phone answer pane");
   assert.doesNotMatch(screenshots, /page\.locator\("\.inbox__detail"\)\)\.toBeHidden\(\)/, "screenshot readiness never expects a hidden phone answer pane");
+});
+
+test("W-345-b6 behaviour 6: Inbox offers the ruled verbs and records Follow up as ask-back", async () => {
+  const m = await logic();
+  assert.deepEqual(m["VERB_KEYS"], { "1": "approve", "2": "decline", "3": "followup" }, "approve, decline and follow up have drawn, working shortcuts");
+  const buildReply = m["buildReply"] as (verb: string, text: string) => string;
+  const answerOptions = m["answerOptions"] as (verb: string) => { askBack?: boolean } | undefined;
+  const resolveAction = m["resolveVerbAction"] as (key: string, expanded: string | null, focused: string | undefined, text: string) => unknown;
+  assert.equal(buildReply("followup", "  Could you test ‘理由’?  "), "Could you test ‘理由’?", "Follow up records trimmed open text without a verdict prefix");
+  assert.deepEqual(answerOptions("followup"), { askBack: true }, "Follow up selects the endpoint's ask-back record form");
+  assert.equal(resolveAction("3", "P-1", "P-1", "   "), null, "Follow up refuses whitespace-only text");
+  assert.deepEqual(resolveAction("3", "P-1", "P-1", "Could you test ‘理由’?"), { petitioId: "P-1", verb: "followup" }, "Follow up accepts non-empty Unicode and quoted text");
+  assert.equal(typeof m["reconcileFocusIndex"], "function", "inboxLogic exports selection reconciliation");
+  const reconcile = m["reconcileFocusIndex"] as (index: number, count: number) => number;
+  assert.equal(reconcile(2, 2), 1, "selection reconciles to a remaining petition after removal");
+  assert.equal(reconcile(0, 0), 0, "an empty list retains the inert zero index");
+  const view = (await import("../src/screens/InboxView.js")) as Record<string, unknown>;
+  const html = renderToStaticMarkup(
+    React.createElement(view["InboxView"] as ComponentType<Record<string, unknown>>, {
+      petitiones: [{ id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }],
+      opera: [],
+      focusIndex: 0,
+      reason: "because",
+      confirmation: "Recorded follow-up reply for P-1; the petition remains open awaiting the asker's reply.",
+      onReasonChange: () => undefined,
+      onFocusChange: () => undefined,
+      onSubmit: () => undefined,
+    }),
+  );
+  assert.equal((html.match(/class="inbox__btn-action"/g) ?? []).length, 3, "the answer pane offers exactly three truthful verbs");
+  assert.match(html, />approve</, "approve is offered");
+  assert.match(html, />decline</, "decline is offered");
+  assert.match(html, />follow up</, "follow up is offered");
+  assert.doesNotMatch(html, />defer<|>delegate</, "defer and delegate are absent");
+  assert.match(html, /Approve and Decline record this text as a verdict and resolve the petition\. Follow up records the text without a verdict, returns it to the asker and keeps it open\./, "all three consequences are visible before submission");
+  assert.match(html, /Recorded follow-up reply for P-1; the petition remains open awaiting the asker&#x27;s reply\./, "the exact Follow up record effect is visible after success");
+  const withoutSelection = renderToStaticMarkup(
+    React.createElement(view["InboxView"] as ComponentType<Record<string, unknown>>, {
+      petitiones: [{ id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }],
+      opera: [],
+      focusIndex: 9,
+      reason: "",
+      confirmation: "Recorded decline answer for P-2; the petition is resolved.",
+      onReasonChange: () => undefined,
+      onFocusChange: () => undefined,
+      onSubmit: () => undefined,
+    }),
+  );
+  assert.match(withoutSelection, /Recorded decline answer for P-2; the petition is resolved\./, "confirmation renders without a selected petition");
+  const inbox = read("src/screens/Inbox.tsx");
+  assert.match(inbox, /setFocusIndex\(\(index\) => reconcileFocusIndex\(index, petitiones\.length\)\);/, "a refreshed list reconciles selection after removal");
+  assert.match(inbox, /onNeedsYouCount\?\.\(d\.petitiones\.length\);/, "a successful refresh reports the remaining needs-you count to the shell");
+  const app = read("src/App.tsx");
+  assert.match(app, /<Inbox onStatus=\{setStatus\} onNeedsYouCount=\{setNeedsYouCount\} \/>/, "the shell badge follows the Inbox's refreshed needs-you count");
+  assert.match(inbox, /const reportedStatus = confirmation !== undefined[\s\S]*?status\.state === "ready"[\s\S]*?text: confirmation/, "the existing shell live region receives the recorded effect");
+  const css = read("src/components/w025.css");
+  const confirmationRule = /\.inbox__confirmation\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+  assert.match(confirmationRule, /padding:\s*0 var\(--sp-4\);/, "confirmation prose uses the list's existing horizontal inset token");
+  assert.match(confirmationRule, /color:\s*var\(--ink-2\);/, "confirmation prose uses ink-2 rather than a gate colour");
+  assert.doesNotMatch(confirmationRule, /var\(--ok\)/, "confirmation prose never uses the ok gate colour");
+  const screenshots = read("tests-serve/screenshots.spec.ts");
+  assert.match(screenshots, /toHaveText\(\[\/approve\/, \/decline\/, \/follow up\/\]\)/, "screenshot readiness requires the three ruled actions");
 });

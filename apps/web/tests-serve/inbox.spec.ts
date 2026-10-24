@@ -93,6 +93,7 @@ test("W-345-b4 a failed refresh shows failure and no stale petition", async ({ p
     await expect(page.locator('.shell__status[data-state="error"]')).toHaveText("Could not load the inbox.");
     await expect(page.locator(".inbox__row")).toHaveCount(0);
     await expect(page.locator(".inbox__empty")).toHaveText("Could not load the inbox.");
+    await expect(page.locator(".inbox__confirmation")).toHaveText("Recorded approve answer for A-1.");
   } finally {
     await served.close();
   }
@@ -147,12 +148,64 @@ test("W-345-b5 the reason and answer controls are reachable at 390px", async ({ 
     await expect(approve).toBeEnabled();
     await page.keyboard.press("Tab");
     await expect(approve).toBeFocused();
-    for (const target of [last, reason, approve, page.getByRole("button", { name: /decline/i })]) {
+    const decline = page.getByRole("button", { name: /decline/i });
+    const followup = page.getByRole("button", { name: /follow up/i });
+    await page.keyboard.press("Tab");
+    await expect(decline).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(followup).toBeFocused();
+    for (const target of [last, reason, approve, decline, followup]) {
       const box = await target.boundingBox();
       expect(box).not.toBeNull();
       expect(box!.width).toBeGreaterThanOrEqual(44);
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
+  } finally {
+    await served.close();
+  }
+});
+
+test("W-345-b6 Follow up sends ask-back open text and success names the open record", async ({ page }) => {
+  const served = await startServed("w345-b6");
+  let answered = false;
+  const all = [
+    { id: "P-1", opus: "W-345", from: "architect", subject: "First", body: "First evidence" },
+    { id: "P-2", opus: "W-345", from: "ui-lead", subject: "Second", body: "Second evidence" },
+  ];
+  await page.route("**/api/inbox", (route) => {
+    const petitiones = answered ? all.slice(0, 1) : all;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) });
+  });
+  let answerBody: unknown;
+  await page.route("**/api/answer", (route) => {
+    answerBody = route.request().postDataJSON();
+    answered = true;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, output: "recorded" }) });
+  });
+  try {
+    await signIn(page, served.baseURL, served.token);
+    const badge = page.locator(".sidebar__badge");
+    await expect(badge).toHaveText("2");
+    const buttons = page.locator(".inbox__btn-action");
+    await expect(buttons).toHaveCount(3);
+    await expect(page.getByRole("button", { name: /defer|delegate/i })).toHaveCount(0);
+    await expect(page.locator(".inbox__action-effect")).toContainText("Follow up records the text without a verdict");
+    await page.locator(".inbox__row").nth(1).click();
+    await page.locator(".inbox__input-ratio").fill("Could you test ‘理由’?");
+    await page.getByRole("button", { name: /follow up/i }).click();
+    expect(answerBody).toEqual({ petitio: "P-2", reply: "Could you test ‘理由’?", askBack: true });
+    await expect(page.locator(".inbox__row")).toHaveCount(1);
+    await expect(badge).toHaveText("1");
+    await expect(page.locator(".inbox__detail-subject")).toHaveText("First");
+    await expect(page.locator(".inbox__input-ratio")).toBeVisible();
+    const confirmation = page.locator(".inbox__confirmation");
+    await expect(confirmation).toHaveText("Recorded follow-up reply for P-2; the petition remains open awaiting the asker's reply.");
+    const [confirmationInset, titleInset] = await Promise.all([
+      confirmation.evaluate((node) => getComputedStyle(node).paddingLeft),
+      page.locator(".inbox__list .inbox__title").evaluate((node) => getComputedStyle(node).paddingLeft),
+    ]);
+    expect(confirmationInset).toBe(titleInset);
+    await expect(page.locator('.shell__status[data-state="ready"]')).toHaveText("Recorded follow-up reply for P-2; the petition remains open awaiting the asker's reply.");
   } finally {
     await served.close();
   }
