@@ -1,16 +1,19 @@
 /**
- * W-370 behaviours 2-3: certify's certificate as a check run (the ci.yml job that posts it is W-396's). Rows are selected by name
+ * W-370 behaviours 2-3: certify's certificate as a check run; W-396 behaviours 1-2: the ci.yml job that posts it. Rows are selected by name
  * (`--test-name-pattern='^W-370-b2\s'`), one row per recorded red. The script is loaded inside each row, never at
  * module top, so a missing file or export is an assertion failure and not a module-load failure. Every fixture is a
- * scratch directory; nothing here reads the real studio/, calls gh or touches the network.
+ * scratch directory; nothing here reads the real studio/, calls gh or touches the network. W-396's rows read the real
+ * .github/workflows/ci.yml and .github/CODEOWNERS, and run the job's guard scripts with bash in a scratch directory.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(HERE, "ci-certificate.mjs");
@@ -271,3 +274,96 @@ test("W-370-b3 behaviour 3: the publisher posts the certificate the reader accep
   assert.equal(publish(ENV, artifact(ARTIFACT), 1), 1, "a failed post: exit 1");
   assert.match(lines.join("\n"), /certificate: gh api exited 1: HTTP 403/, "a failed post: the reason");
 });
+
+// ---------------------------------------------------------------------------
+// W-396: the ci.yml `certificate` job that runs the publisher above, and its base guards
+// ---------------------------------------------------------------------------
+const CI_YML = join(dirname(HERE), ".github", "workflows", "ci.yml");
+const CODEOWNERS = join(dirname(HERE), ".github", "CODEOWNERS");
+const BASE_SHA_EXPR = "${{ github.event.merge_group.base_sha }}";
+const GUARD_BASE = "Refuse a merge-group base that is not a commit id";
+const GUARD_HEAD = "Refuse a tooling checkout that is not the merge-group base";
+const isGuard = (step) => step.name === GUARD_BASE || step.name === GUARD_HEAD;
+/** A `shell: bash` step's script, run as GitHub runs it (`bash --noprofile --norc -eo pipefail {0}`) in `cwd`. */
+const runStep = (step, cwd, env) => {
+  const file = join(cwd, ".step.sh");
+  writeFileSync(file, step.run);
+  return spawnSync("bash", ["--noprofile", "--norc", "-eo", "pipefail", file], {
+    cwd,
+    env: { PATH: process.env.PATH, ...env },
+    encoding: "utf8",
+  });
+};
+
+test("W-396-b1 behaviour 1: ci.yml carries the certificate job after certify, with a token that reads contents and writes check runs and nothing more, publishing master's script; no other job can write a check run, and CODEOWNERS names the publisher", () => {
+  const raw = readFileSync(CI_YML, "utf8");
+  const doc = parseYaml(raw);
+  assert.deepEqual(
+    Object.keys(doc.jobs),
+    ["gates", "officina", "web-e2e", "certify", "certificate"],
+    "five jobs, certificate last",
+  );
+  const job = doc.jobs.certificate;
+  assert.deepEqual(
+    {
+      needs: job.needs,
+      if: job.if,
+      runsOn: job["runs-on"],
+      timeout: job["timeout-minutes"],
+      permissions: job.permissions,
+      continueOnError: job["continue-on-error"],
+    },
+    {
+      needs: "certify",
+      if: "github.event_name == 'merge_group'",
+      runsOn: "ubuntu-24.04",
+      timeout: 10,
+      permissions: { contents: "read", checks: "write" },
+      continueOnError: undefined,
+    },
+    "the certificate job runs after certify on a merge group, with a token that reads contents (its checkout needs it) and writes check runs, nothing more",
+  );
+  assert.deepEqual(
+    job.steps.filter((step) => !isGuard(step)),
+    [
+      {
+        uses: "actions/checkout@v5",
+        with: { path: "tooling", ref: BASE_SHA_EXPR, "persist-credentials": false },
+      },
+      { uses: "actions/download-artifact@v7", with: { name: "certify-${{ github.run_id }}", path: "certify" } },
+      { uses: "actions/setup-node@v5", with: { "node-version": 25 } },
+      {
+        if: "hashFiles('certify/**/receipts/**/*.json') != ''",
+        run: "node tooling/scripts/ci-certificate.mjs --dir certify",
+        env: { GH_TOKEN: "${{ github.token }}" },
+      },
+    ],
+    "beside its guards, four steps: master's tooling without a stored credential, certify's artifact, node, and master's publisher when the artifact holds a receipt",
+  );
+  assert.deepEqual(doc.permissions, { contents: "read" }, "the workflow's default token stays read-only");
+  assert.deepEqual(
+    doc.jobs.certify.permissions,
+    { contents: "read", "pull-requests": "read" },
+    "certify's token gains nothing",
+  );
+  const writers = Object.entries(doc.jobs).filter(
+    ([, j]) => typeof j.permissions === "string" || Object.values(j.permissions ?? {}).includes("write"),
+  );
+  assert.deepEqual(
+    writers.map(([id]) => id),
+    ["certificate"],
+    "no other job's token can write anything, a check run included",
+  );
+  assert.equal(
+    doc.jobs.certify.steps.at(-1).with.name,
+    "certify-${{ github.run_id }}",
+    "certify still uploads the artifact the certificate job reads",
+  );
+  assert.ok(!raw.includes("verify"), "the string verify stays out of ci.yml");
+  const owners = readFileSync(CODEOWNERS, "utf8").split("\n");
+  assert.ok(
+    owners.some((l) => /^\/scripts\/ci-certificate\.mjs\s+@edckt$/.test(l)),
+    "CODEOWNERS names the publisher",
+  );
+});
+
