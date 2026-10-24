@@ -1327,6 +1327,7 @@ test("W-370-b1 behaviour 1: the done perform records certify's certificate from 
   assert.ok(outLines(done).includes(`certificate: certify run ${RUN}, PR #${PR_NUMBER}, merge commit ${a.merge.slice(0, 12)}, ${a.tree}`), ran("the certificate line", done));
   const committed = git(a.w.repo, ["show", `refs/heads/${chore}:${a.logName}`]);
   assert.equal(committed.split("\n")[0], `certifies: ${a.tree}`, "the log's first line is its certificate");
+  // one-sided: the line's start is the command text certify's gate log prints before the run, which the row does not pin
   assert.match(committed, new RegExp(`CI run ${RUN}, PR #${PR_NUMBER}, merge commit ${a.merge}, receipt sha256:[0-9a-f]{64}, check run 9001$`, "m"), "the log names the run, the PR, the merge commit and the check run");
   assert.ok(committed.includes("certify: the mint exited 0"), "the log carries certify.log's tail");
   const rec = parseFrontMatter(git(a.w.repo, ["show", `refs/heads/${chore}:studio/opera/${OPUS}.md`])).data as Json;
@@ -1343,5 +1344,6 @@ test("W-370-b1 behaviour 1: the done perform records certify's certificate from 
   assert.deepEqual(apiCalls(b.w), [READ(b.merge)], "no check run: the check runs are read first");
   assert.deepEqual(ghCalls(b.w).filter((c) => c[0] === "run").map((c) => c[1]), ["list", "view", "download"], "no check run: then the artifact is downloaded");
   const kept = git(b.w.repo, ["show", `refs/heads/${chore}:${b.logName}`]);
+  // one-sided: the line's start is the command text certify's gate log prints before the run, which the row does not pin
   assert.match(kept, new RegExp(`merge commit ${b.merge}, receipt sha256:[0-9a-f]{64}$`, "m"), "no check run: the log names no check run");
 });
