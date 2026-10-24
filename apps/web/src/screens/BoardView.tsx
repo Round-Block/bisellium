@@ -21,7 +21,7 @@ export interface BoardViewProps {
   focusedByColumn: Record<string, string | undefined>;
   onSelectCard: (id: string, columnId: string) => void;
   /** Connection state and last successful refresh, already formatted by
-   *  `lib/board.ts`'s `liveLabel` — separate from the colophon (ruling 10). */
+   *  `lib/board.ts`'s `liveLabel`; this belongs to the header, not a footer. */
   liveness?: string;
   /** W-129: one plain sentence when serve could not read every branch record (`branchNote`). */
   branchNote?: string;
@@ -130,6 +130,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
           </select>
           <span className="board__project-select-reason">{UNAVAILABLE_REASON}</span>
         </div>
+        {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
       </div>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
@@ -145,7 +146,6 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
           <Column key={column.id} column={column} selectedId={selectedId} focusedByColumn={focusedByColumn} onSelectCard={onSelectCard} />
         ))}
       </div>
-      {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
       <Colophon studioPath={studio} generatedAt={generatedAt} />
     </div>
   );

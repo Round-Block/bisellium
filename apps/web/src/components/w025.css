@@ -1132,6 +1132,15 @@
   color: var(--ink-3);
 }
 
+.board__liveness {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
 .board__strip {
   display: none;
 }
@@ -1283,10 +1292,7 @@
   padding: 2px 4px;
 }
 
-.board__liveness {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-3);
+.board > footer {
   padding: 0 var(--sp-6);
 }
 
@@ -1461,6 +1467,26 @@
 /* Phone: <=599px — one full-width column at a time (scroll-snap), the
    column-name strip, no pinning, a full-width drawer. */
 @media (max-width: 599px) {
+  .board__header {
+    flex-wrap: wrap;
+    row-gap: var(--sp-2);
+  }
+
+  .board__project-select-wrap {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+
+  .board__project-select-reason {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .board__liveness {
+    flex: 1 0 100%;
+    margin-left: 0;
+  }
+
   .board__strip {
     display: flex;
     gap: var(--sp-2);
