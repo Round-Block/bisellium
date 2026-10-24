@@ -836,7 +836,7 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
   // --auto lets the merge queue serialise PRs that leapfrog each other's update-branch.
   ctx.log("gh pr merge --squash --auto");
   const merge = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pinned], repo);
-  if (merge.status !== 0) return { ok: false, lines: ["state=MERGE_FAILED", `why: ${why(merge)}`] };
+  if (merge.status !== 0) return mergedAfter("gh pr merge --squash --auto", merge, { ok: false, lines: ["state=MERGE_FAILED", `why: ${why(merge)}`] });
 
   let moved = false;
   for (let poll = 1; poll <= ctx.maxPolls; poll++) {
