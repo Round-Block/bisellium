@@ -1,0 +1,20 @@
+# opus: W-379
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16c44-8499-71d2-8ce0-ffd39a7020ee
+# outcome: passed
+# at: 2026-10-24T08:28:19.394Z
+# tree: tree:8b8e0e9218eed972fa1f2d8cc4710f3d40f53043
+# brief: briefs/W-379.md blob:27eaf63d854c0b7f87656ecee7d94a40e0decd3b
+# ticket: {"opus":"W-379","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-379/studio","head":"58d90dc833114649b6e5c3706e3b615fe616bfb7","brief":"27eaf63d854c0b7f87656ecee7d94a40e0decd3b","at":"2026-10-24T08:28:15.754Z"}
+
+## Findings
+1. advisory — .worktrees/W-379/studio/briefs/W-379.md:54 Contrary to “`sync_inputs` prints it as its first fault,” the prototype checks absolute `AGENT_DIR` and `PATRON_DIR` first at `r3/agent-workspace.proto.sh:371-373`; with a relative path and missing program, the path fault wins. Replace that phrase with “after its unchanged absolute-path check, `sync_inputs` prints the first missing program and stops,” and make the same qualification to “`sync` refuses first” at brief:28. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w379.test.ts (`W-379-b1` should combine a missing pinned program with relative `AGENT_DIR` or `PATRON_DIR`)
+
+## Earlier findings
+
+## Verdict
+The round-3 ordering fix is feasible; the remaining overstatement is advisory.
+VERDICT: PASS
