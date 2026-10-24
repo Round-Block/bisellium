@@ -7,6 +7,8 @@
  * W-398: with --check it only reads: exit 0 when the merge would change nothing, else exit 1 with one line per entry
  * the merge would add (or why the file cannot be merged); it never backs up, makes a folder or writes. Run by
  * scripts/agent-workspace.sh verify; setup and guard run it without --check, the only runs that write.
+ * W-402: --check names every field of a wrong type (`wrongTypes`), one line each in the order merge() reads them, before
+ * merge() runs, so Node's own error never stands for one; the write mode is unchanged.
  *
  * W-362: the sandbox is always turned on (an existing `sandbox.enabled: false` would switch every deny
  * off), and with <agentDir> (absolute) it also denies writing the agent clone's source folders
@@ -57,6 +59,32 @@ export function merge(settings, { patronDir, agentGh, agentDir }) {
   return out;
 }
 
+/** W-402: each field merge() reads by name whose type it would throw on or reshape (set a property on an array, spread a
+ *  string into its characters), as `<key> is not <type>`, in the order merge() reads them: checkShape's three, then
+ *  denyRead, permissions, permissions.deny and env. A field is read only under a parent that is an object (JSON gives any
+ *  other parent no fields). `null` is a wrong type where merge() refuses it (the sandbox shape) and absent where it reads
+ *  `??` (the other four). Empty for any JSON object merge() neither throws on nor reshapes. */
+const wrongTypes = (s) => {
+  const fs = plain(s.sandbox) ? s.sandbox.filesystem : undefined;
+  const { denyWrite, denyRead } = plain(fs) ? fs : {};
+  const absent = (v) => v === undefined || v === null;
+  const shape = (v) => v === undefined || plain(v);
+  const object = (v) => absent(v) || plain(v);
+  const array = (v) => absent(v) || Array.isArray(v);
+  const strings = (v) => v === undefined || (Array.isArray(v) && v.every((d) => typeof d === "string"));
+  return [
+    ["sandbox", s.sandbox, "an object", shape],
+    ["sandbox.filesystem", fs, "an object", shape],
+    ["sandbox.filesystem.denyWrite", denyWrite, "an array of strings", strings],
+    ["sandbox.filesystem.denyRead", denyRead, "an array", array],
+    ["permissions", s.permissions, "an object", object],
+    ["permissions.deny", plain(s.permissions) ? s.permissions.deny : undefined, "an array", array],
+    ["env", s.env, "an object", object],
+  ]
+    .filter(([, v, , ok]) => !ok(v))
+    .map(([key, , type]) => `${key} is not ${type}`);
+};
+
 /** W-398: one entry per leaf or array element: `key`, its key-segment path, its kind (a leaf or an array element) and its
  *  value as JSON, unambiguous whatever a key holds (a literal dot in a key never collides with nesting); `text`, the
  *  dotted `path: value` line --check prints. */
@@ -102,6 +130,12 @@ if (import.meta.main) {
       process.exit(1);
     }
   }
+  if (check) {
+    // W-402: every wrong type is named before merge() runs, one line each (see wrongTypes); nothing here writes
+    const wrong = wrongTypes(before).slice(0, 1);
+    for (const w of wrong) console.log(`${file}: ${w}; left untouched`);
+    if (wrong.length > 0) process.exit(1);
+  }
   let after;
   try {
     after = merge(before, { patronDir, agentGh, agentDir });
@@ -113,18 +147,6 @@ if (import.meta.main) {
   if (check) {
     // W-398: read and report only; nothing below this line writes
     if (same) process.exit(0);
-    // a wrong type merge() would not refuse: it would set a property on an array (no entry shows it, and JSON drops it)
-    // or spread a string into its characters; named as one, before any entry is compared
-    const wrong = [
-      ["permissions", before.permissions, "an object"],
-      ["env", before.env, "an object"],
-      ["sandbox.filesystem.denyRead", before.sandbox?.filesystem?.denyRead, "an array"],
-      ["permissions.deny", plain(before.permissions) ? before.permissions.deny : undefined, "an array"],
-    ].find(([, v, want]) => v !== undefined && v !== null && (want === "an array" ? !Array.isArray(v) : !plain(v)));
-    if (wrong) {
-      console.log(`${file}: ${wrong[0]} is not ${wrong[2]}; left untouched`);
-      process.exit(1);
-    }
     if (!exists) console.log(`${file} does not exist`);
     const had = new Set(entries(before).map((e) => e.key));
     const add = entries(after).filter((e) => !had.has(e.key));
