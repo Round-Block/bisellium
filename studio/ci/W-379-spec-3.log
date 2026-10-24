@@ -1,0 +1,23 @@
+# opus: W-379
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T07:23:21.690Z
+# tree: tree:852e1a3614d38d6a28cf561e9972801e96ec592a
+# brief: briefs/W-379.md blob:4b073da3812de6399ef6cc6fee37ceb599fd558e
+# ticket: {"opus":"W-379","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-379/studio","head":"c07e887d2c59e080137ca7f8d461cbf6b23d04eb","brief":"4b073da3812de6399ef6cc6fee37ceb599fd558e","at":"2026-10-24T07:23:17.191Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-379-spec/r2/promise-ledger.md
+
+## Findings
+
+1. advisory — the class interface×validation-order-masks-errors (build reviews 1 and 2) is closed at its root: the guard's judgement runs no program through PATH (readlink, env and git by /usr/bin paths, git's children on /usr/bin:/bin), so it judges every PATH entry, before and after GUARD_BIN's directory, and reports every fault on its own line with no early return (brief:28, brief:36, row 6 at brief:76); the steps after an accepted judgement search only a PATH judged whole, and verify's probe runs only when the inputs hold — check: /home/edckt/.bisellium-evidence/W-379-spec/r2/kills.out
+2. advisory — each new W-379-b1 assertion fails on head 3a498141 (head-full.out at the both-reasons assertion; head-late-only, head-accepted-late-only and head-verify-only at their own), passes on the prototype with w379, w362 and w369 whole, and fails again when its core line reverts (the early return, the whole-PATH loop, cgit's git and search path, the fetch's git, verify's probe gate) — check: /home/edckt/.bisellium-evidence/W-379-spec/r2/kills.sh
+3. advisory — new limits, stated: a host whose git, env or readlink live elsewhere is refused, never searched (fail-closed, the missing-program line untested by fixture); a session-writable PATH entry outside the agent clone stays W-362's limit, now for every entry; agit keeps the hook's PATH (W-369's domain); Defaults 1 to 5 and Default 6's limit (W-398) unchanged — check: none: stated limits in brief:28 and brief:61, not behaviour
+4. advisory — the builder applies the prototype diff (scripts/agent-workspace.sh, docs/INSTRUCTIONS.md, W-379-b1's added assertions) on opus/W-379; lint, Prettier, bash -n, guard, brief-admission, docs, instructions and settings-merge tests pass on it — check: /home/edckt/.bisellium-evidence/W-379-spec/r2/gates-proto.out
+
+## Verdict
+
+passed — re-signed by the architect (`claude-opus-5-5`, D-072) after the class loop (D-085), brief round 2 at `studio/briefs/W-379.md` on opus/W-379 3a498141; the builder applies `/home/edckt/.bisellium-evidence/W-379-spec/r2/prototype.diff`.

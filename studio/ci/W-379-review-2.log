@@ -1,0 +1,24 @@
+# opus: W-379
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16c8e-ace3-7253-a0c4-318924314e8c
+# outcome: failed
+# at: 2026-10-24T07:10:54.629Z
+# tree: tree:852e1a3614d38d6a28cf561e9972801e96ec592a
+# brief: briefs/W-379.md blob:4cda97e76d99fcbc9c2a73dd82ed356afab91f5a
+# ticket: {"opus":"W-379","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-379/studio","head":"5d565a5f9ac133e7b836c293fa7e17952ef71e53","brief":"4cda97e76d99fcbc9c2a73dd82ed356afab91f5a","at":"2026-10-24T07:08:57.950Z"}
+
+## Findings
+1. blocking — scripts/agent-workspace.sh:215 Reached from ci/W-379-review-1.log #1’s class: the scan stops at `GUARD_BIN`’s directory, but `cgit` continues searching later `PATH` entries for `git`; thus an otherwise valid `$GUARD_BIN_DIR:$AGENT_DIR/tools:/usr/bin` can still execute an agent-controlled `git`, violating brief:34. [severity: S1] [class: interface×validation-order-masks-errors] — check: packages/cli/src/w379.test.ts (`W-379-b1` should put a logging `git` in an agent-clone PATH entry after `GUARD_BIN` and before `/usr/bin`)
+2. blocking — scripts/agent-workspace.sh:234 Reached from ci/W-379-review-1.log #1’s class: returning immediately on any PATH fault prevents the later clone, branch, dirty-tree, and overlap checks from reporting their faults, so combined invalid inputs no longer produce the one line per fault required by brief:64. [severity: S1] [class: interface×validation-order-masks-errors] — check: packages/cli/src/w379.test.ts (`W-379-b1` should combine a rejected PATH with an off-master or dirty `PATRON_DIR` and assert both reasons)
+
+## Earlier findings
+- ci/W-379-review-1.log #1: closed — `guard_inputs` now judges rejected pre-`GUARD_BIN` PATH entries before invoking `cgit`, and the added W-362/W-379 assertions prove their logging tools do not run.
+- ci/W-379-review-1.log #2: closed — the pre-relink proof is now populated only for a live symlink, with absent and dangling `GUARD_BIN` cases pinned as leaving the candidate worktree.
+- ci/W-379-review-1.log #3: closed — `cgit` now forces `core.excludesFile=/dev/null`, and W-379-b3 pins that a globally ignored untracked file prevents removal.
+
+## Verdict
+The three prior instances are fixed, but the same PATH-validation class still permits agent-controlled Git execution and now masks required fault lines.
+VERDICT: FAIL

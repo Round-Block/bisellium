@@ -1,0 +1,22 @@
+# opus: W-379
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16c8e-ace3-7253-a0c4-318924314e8c
+# outcome: failed
+# at: 2026-10-24T08:02:40.242Z
+# tree: tree:8b8e0e9218eed972fa1f2d8cc4710f3d40f53043
+# brief: briefs/W-379.md blob:4b073da3812de6399ef6cc6fee37ceb599fd558e
+# ticket: {"opus":"W-379","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-379/studio","head":"6cb94e86ebd3b55582044ce68967b797a20d08a6","brief":"4b073da3812de6399ef6cc6fee37ceb599fd558e","at":"2026-10-24T08:01:15.169Z"}
+
+## Findings
+1. blocking — scripts/agent-workspace.sh:242 Reached from ci/W-379-review-2.log #2’s class: after `/usr/bin/env` or `/usr/bin/git` fails the executable check, `guard_inputs` still invokes `top_is` through those unavailable programs, so otherwise valid clones are falsely reported invalid and their real faults cannot be judged. This contradicts the missing-program refusal and one-line-per-fault contract at brief:28 and brief:76; the added seam covers only missing `readlink`. [severity: S1] [class: interface×validation-order-masks-errors] — check: packages/cli/src/w379.test.ts (`W-379-b1` should substitute missing `ENV` and `GIT` separately and prove valid clones do not acquire false fault lines)
+
+## Earlier findings
+- ci/W-379-review-2.log #1: closed — the scan now judges every PATH entry, including entries after `GUARD_BIN`, while `cgit` and the fetch invoke `/usr/bin/git`; the new assertions pin both rejected agent entries and accepted later entries.
+- ci/W-379-review-2.log #2: closed — the early return is gone, and the new combined cases prove a rejected PATH still reports the off-master or dirty-clone reason without executing PATH tools.
+
+## Verdict
+The two prior defects are closed, but unavailable pinned Git tools still mask the clone’s true validation result.
+VERDICT: FAIL

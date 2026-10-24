@@ -1,0 +1,23 @@
+# opus: W-379
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T08:25:13.369Z
+# tree: tree:8b8e0e9218eed972fa1f2d8cc4710f3d40f53043
+# brief: briefs/W-379.md blob:27eaf63d854c0b7f87656ecee7d94a40e0decd3b
+# ticket: {"opus":"W-379","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-379/studio","head":"58d90dc833114649b6e5c3706e3b615fe616bfb7","brief":"27eaf63d854c0b7f87656ecee7d94a40e0decd3b","at":"2026-10-24T08:15:44.729Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-379-spec/r3/promise-ledger.md
+
+## Findings
+
+1. advisory — build review 3's blocker (ci/W-379-review-3.log #1, interface×validation-order-masks-errors) is fixed at the class's root by one ordering rule, enumerated at brief:54-61 and in the script's comment over `have`: each check declares the pinned programs it needs (none; /usr/bin/env and /usr/bin/git through cgit; /usr/bin/readlink for SELF_DIR and GUARD_BIN's target; all three for guard's steps after the inputs and verify's probe) and runs only when each is an executable file; a missing one prints its own line once, every check needing it is skipped, never run, and prints nothing, and every other check, the overlap check now judged by real path, still runs; the status stays 1 and nothing changes (Patron ruling 2026-10-24: handled, not a limit) — check: /home/edckt/.bisellium-evidence/W-379-spec/r3/kills.out
+2. advisory — the rule reaches every check reading a pinned program, not only guard_inputs: guard's agent-clone refusal (readlink gate), sync_inputs (a program line as its first fault, since this opus routes its top_is and patron_on_master through cgit), and verify, which prints `skip <check> (<why>, so it was not judged)` and fails instead of FAIL for its settings and link lines without readlink and its probe line while the inputs do not hold — check: /home/edckt/.bisellium-evidence/W-379-spec/r3/prototype.diff
+3. advisory — six new W-379-b1 assertions, one per program (readlink, env, git) per setup (otherwise valid: guard-check, guard, verify's guard lines and sync print that program's line alone; otherwise invalid: guard-check and guard print exactly the faults judgeable without it); each fails alone on head 58d90dc8, passes on the prototype with w379, w362 and w369 whole, and fails again on each of its core lines' reverts (clone gate, overlap, refusal gate, sync program line, settings and link gates, probe skip); round 2's five kills still fail; no existing assertion is removed or loosened — check: /home/edckt/.bisellium-evidence/W-379-spec/r3/kills.sh
+4. advisory — the builder applies the prototype diff (scripts/agent-workspace.sh and W-379-b1's added block) on opus/W-379; bash -n, Prettier, eslint, repository typecheck, guard, instructions, docs, containment and settings-merge tests pass on it, and the brief passes admission — check: /home/edckt/.bisellium-evidence/W-379-spec/r3/gates-proto.out
+
+## Verdict
+
+passed — re-signed by the architect (`claude-opus-5-5`, D-072) after the third class-loop failure (D-085), brief round 3 at `studio/briefs/W-379.md` on opus/W-379 58d90dc8; the builder applies `/home/edckt/.bisellium-evidence/W-379-spec/r3/prototype.diff`.

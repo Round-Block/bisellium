@@ -1,0 +1,21 @@
+# opus: W-379
+# phase: build
+# round: 4
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16c8e-ace3-7253-a0c4-318924314e8c
+# outcome: passed
+# at: 2026-10-24T09:09:56.132Z
+# tree: tree:44efc439631e2685c6fe12b84c445bc6d0265f1a
+# brief: briefs/W-379.md blob:27eaf63d854c0b7f87656ecee7d94a40e0decd3b
+# ticket: {"opus":"W-379","step":"review","action":"verdict-build","round":4,"actor":"censor","studio":".worktrees/W-379/studio","head":"e3a382cc0781924c3888073feb51fd7279932621","brief":"27eaf63d854c0b7f87656ecee7d94a40e0decd3b","at":"2026-10-24T09:08:58.053Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-379-review-3.log #1: closed — `guard_inputs` now gates Git-dependent clone validation on both pinned executables, while the added RL/ENV/GIT matrix confirms unavailable-dependent checks are skipped without false clone faults.
+
+## Verdict
+The round-3 blocker is closed, and this delta introduces no blocking findings.
+VERDICT: PASS

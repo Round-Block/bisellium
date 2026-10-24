@@ -1,0 +1,40 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-379-b1\s --import tsx packages/cli/src/w379.test.ts
+# exit: 1
+# at: 2026-10-24T05:04:08.457Z
+# sella: builder.W-379
+# tree: tree:45301d278989a5ae828790a9a33664bcb7f2811e
+# ticket: {"opus":"W-379","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-379/studio","head":"5f7954bc9db6bf3dad21af6cf700cdc469eda4c7","brief":"4cda97e76d99fcbc9c2a73dd82ed356afab91f5a","at":"2026-10-24T05:04:03.831Z"}
+
+TAP version 13
+# Subtest: W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master or with a tracked change, changing nothing
+not ok 1 - W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master or with a tracked change, changing nothing
+  ---
+  duration_ms: 88.881044
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-379/packages/cli/src/w379.test.ts:1:3468'
+  failureType: 'testCodeFailure'
+  error: 'PATRON_DIR off master: guard-check names the reason'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    GUARD_DIR /tmp/claude-1000/w379-EtEd74/guard ü it's/projects/bisellium-guard has no parent directory
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-379/packages/cli/src/w379.test.ts:116:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 100.374307

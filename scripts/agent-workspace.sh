@@ -27,11 +27,19 @@
 #
 # What `guard` does (the Patron, in their own terminal, after each merge that
 # changes the guard): the hooks in .claude/settings.json run the `bisellium` on
-# PATH unsandboxed, so it must be code no session can change. It judges its
-# inputs first and changes nothing unless all hold (`guard-check` prints the
-# same judgement alone); then it moves $GUARD_DIR, a linked worktree of
-# $PATRON_DIR, to origin/master, runs npm ci there, links $GUARD_BIN to it,
-# merges the user settings from that worktree and probes the guard.
+# PATH unsandboxed, so it must be code no session can change: the Patron's own
+# clone at master (W-379). It runs only as $PATRON_DIR/scripts/agent-workspace.sh
+# and judges its inputs first, changing nothing unless all hold, $PATRON_DIR on
+# master with no uncommitted tracked change among them (`guard-check` prints the
+# same judgement alone); then it fast-forwards $PATRON_DIR's master to
+# origin/master, runs npm ci there, links $GUARD_BIN to it, merges the user
+# settings from it, probes the guard, and removes W-362's old guard worktree
+# $OLD_GUARD_DIR when $GUARD_BIN led into it as the run began and git finds it clean.
+# Every git it runs is /usr/bin/git, with a clean environment, no global or system
+# config, no hooks and no fsmonitor (cgit); the fetch alone keeps the Patron's
+# environment and config (its ssh agent, url rules and credentials), with hooks and
+# fsmonitor off. Its judgement searches no PATH and rejects a relative or agent-clone
+# PATH entry anywhere, so later steps (npm, node, ssh) search only judged entries.
 #
 # `setup` is run ONCE, by the Patron, in their own terminal — never by an agent
 # (it prompts for a token and edits the user-level Claude settings). Why: agents
@@ -47,15 +55,40 @@ set -euo pipefail
 PATRON_DIR=${PATRON_DIR:-$HOME/projects/bisellium}
 AGENT_DIR=${AGENT_DIR:-$HOME/agents/bisellium}
 AGENT_GH=${AGENT_GH:-$HOME/.config/agent-gh}
-GUARD_DIR=${GUARD_DIR:-$HOME/projects/bisellium-guard}
+# W-362's guard worktree, replaced by the Patron's clone (W-379): `guard` removes it once GUARD_BIN proves it the old guard
+OLD_GUARD_DIR=${OLD_GUARD_DIR:-$HOME/projects/bisellium-guard}
 GUARD_BIN=${GUARD_BIN:-$HOME/.local/bin/bisellium}
 REPO=${REPO:-Round-Block/bisellium}
 
 URL=https://github.com/$REPO.git
 HELPER="!GH_CONFIG_DIR=$AGENT_GH gh auth git-credential"
 USER_SETTINGS=$HOME/.claude/settings.json
+# The guard's judgement searches no PATH, so a rejected entry never executes and every fault is reported (W-379): it runs
+# readlink, env and git only by these absolute paths, dname is a bash builtin's dirname, and git's own children search
+# GIT_PATH alone. The steps after an accepted judgement search only a PATH whose every entry it judged.
+RL=/usr/bin/readlink
+ENV=/usr/bin/env
+GIT=/usr/bin/git
+GIT_PATH=/usr/bin:/bin
+# A pinned program is there only as an executable file at its path (W-379). Each check declares the pinned programs it
+# needs and runs only when have() holds for every one; otherwise it is skipped, never run, and prints no fault it could
+# not judge, while the missing program prints its own line once and the checks that need none of them still run:
+#   readlink: SELF_DIR, so guard's agent-clone refusal and own-copy check, sync_inputs' agent-copy check, verify's
+#             settings check; GUARD_BIN's target (guard_linked, guard's proof for old_guard)
+#   env, git: cgit, so top_is, the origin/master read and patron_on_master (guard_inputs, sync_inputs) and every
+#             guard git after the inputs
+#   none:     the absolute paths, the programs' own lines, the whole-PATH judgement, GUARD_BIN's name and link, and
+#             AGENT_DIR and PATRON_DIR one inside the other (real paths, pwd -P)
+# guard runs nothing past guard_inputs unless all hold, so its steps after it have all three.
+have() { [[ -f $1 && -x $1 ]]; }
+dname() {
+  local d=${1%/*}
+  [[ $1 == */* ]] || d=.
+  echo "${d:-/}"
+}
 # the script's real directory: a symlinked file or parent is followed to its target (GNU readlink -f)
-SELF_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+# (a missing or unexecutable $RL runs nothing here: guard_inputs prints its fault, and nothing uses SELF_DIR before it)
+if have "$RL"; then SELF_DIR=$(dname "$("$RL" -f "${BASH_SOURCE[0]}")"); else SELF_DIR=$(dname "${BASH_SOURCE[0]}"); fi
 
 die() {
   echo "$*" >&2
@@ -154,109 +187,161 @@ setup() {
   echo "Done. Open Claude Code sessions in $AGENT_DIR from now on."
 }
 
+# git ($1) in the checkout at $2 with its children searching $3, run outside the sandbox: a clean environment, no global
+# or system config, no hooks, no fsmonitor, no submodule recursion, no global excludes, no prompt, no replacement refs.
+cleangit() {
+  "$ENV" -i HOME="$HOME" PATH="$3" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat GIT_NO_REPLACE_OBJECTS=1 \
+    "$1" -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -c core.excludesFile=/dev/null -C "$2" "${@:4}"
+}
+# The guard's git (W-379): $GIT by its absolute path, its children searching GIT_PATH, never the caller's PATH. Every git
+# guard, guard-check and verify's guard lines run goes through it; the fetch alone keeps the Patron's config.
+cgit() { cleangit "$GIT" "$1" "$GIT_PATH" "${@:2}"; }
+
 # A directory's real path (symlinks resolved), or nothing when it is not an enterable directory.
 real() { [[ -n $1 ]] && (CDPATH='' cd -- "$1" 2>/dev/null && pwd -P); }
 within() { [[ -n $2 && ($1 == "$2" || $1 == "$2"/*) ]]; }
 # True when git's top of the checkout at $1 is the real path $2.
-top_is() { [[ -n $2 && $(git -C "$1" rev-parse --show-toplevel 2>/dev/null) == "$2" ]]; }
-gitpath() { real "$(git -C "$1" rev-parse --path-format=absolute "$2" 2>/dev/null)"; }
+top_is() { [[ -n $2 && $(cgit "$1" rev-parse --show-toplevel 2>/dev/null) == "$2" ]]; }
 
-# The guard installer's inputs (W-362), judged before anything changes: one line per fault, status 1 when any.
-#   All four are absolute. AGENT_DIR: the top of a git checkout. PATRON_DIR: the top of a git checkout holding
-#   origin/master; neither inside the other. GUARD_DIR: absent under an existing directory, or the top of a linked
-#   worktree sharing PATRON_DIR's git directory with no uncommitted tracked change, never PATRON_DIR itself; never
-#   inside AGENT_DIR. GUARD_BIN: named bisellium, absent or a link, its directory existing, outside AGENT_DIR and on
+# The guard installer's inputs (W-362, W-379), judged before anything changes: one line per fault, status 1 when any.
+#   All three are absolute. AGENT_DIR: the top of a git checkout. PATRON_DIR: the top of a git checkout holding
+#   origin/master, on master with no uncommitted tracked change (the guard installs it); neither inside the other.
+#   GUARD_BIN: named bisellium, absent or a link, its directory existing, outside AGENT_DIR and on
 #   PATH, with no relative entry, no entry inside AGENT_DIR and no other executable bisellium before that entry (a
 #   bisellium later on PATH is never run). Paths compare by their real paths (pwd -P), so a symlinked parent, a space,
 #   a quote and a non-ASCII name are the paths they name.
 guard_inputs() {
-  local bad=0 v agent='' patron='' gdir='' bdir='' p e found='' entries=()
+  local bad=0 v t agent='' patron='' bdir='' p e found='' where=before entries=()
   say() {
     echo "$*"
     bad=1
   }
-  for v in AGENT_DIR PATRON_DIR GUARD_DIR GUARD_BIN; do [[ ${!v} == /* ]] || say "$v ${!v} is not an absolute path"; done
-  if agent=$(real "$AGENT_DIR") && top_is "$AGENT_DIR" "$agent"; then :; else
-    agent=''
-    say "AGENT_DIR $AGENT_DIR is not the top of a git checkout"
-  fi
-  if patron=$(real "$PATRON_DIR") && top_is "$PATRON_DIR" "$patron" && git -C "$PATRON_DIR" rev-parse -q --verify refs/remotes/origin/master >/dev/null; then :; else
-    patron=''
-    say "PATRON_DIR $PATRON_DIR is not the top of a git checkout holding origin/master"
-  fi
-  if [[ -n $agent && -n $patron ]] && { within "$agent" "$patron" || within "$patron" "$agent"; }; then
-    say "PATRON_DIR and AGENT_DIR are one inside the other"
-  fi
-  if [[ -L $GUARD_DIR || -e $GUARD_DIR ]]; then
-    gdir=$(real "$GUARD_DIR") || true
-    if [[ -z $gdir ]]; then
-      say "GUARD_DIR $GUARD_DIR is not a directory"
-    elif [[ $gdir == "$patron" ]]; then
-      say "GUARD_DIR $GUARD_DIR is PATRON_DIR itself; it must be a separate worktree"
-    elif [[ -z $patron ]] || ! top_is "$GUARD_DIR" "$gdir" || [[ $(gitpath "$GUARD_DIR" --git-dir) == "$(gitpath "$GUARD_DIR" --git-common-dir)" || $(gitpath "$GUARD_DIR" --git-common-dir) != "$(gitpath "$PATRON_DIR" --git-common-dir)" ]]; then
-      say "GUARD_DIR $GUARD_DIR is not a linked worktree of PATRON_DIR"
-    elif [[ -n $(git --no-optional-locks -C "$GUARD_DIR" status --porcelain --untracked-files=no) ]]; then
-      say "GUARD_DIR $GUARD_DIR has uncommitted changes"
-    fi
-  elif p=$(real "$(dirname -- "$GUARD_DIR")"); then
-    gdir=$p/$(basename -- "$GUARD_DIR")
-  else
-    say "GUARD_DIR $GUARD_DIR has no parent directory"
-  fi
-  if [[ -n $agent && -n $gdir ]] && within "$gdir" "$agent"; then say "GUARD_DIR $GUARD_DIR is inside AGENT_DIR"; fi
-  [[ ${GUARD_BIN##*/} == bisellium ]] || say "GUARD_BIN $GUARD_BIN is not named bisellium (the hooks run bisellium)"
-  if [[ -e $GUARD_BIN && ! -L $GUARD_BIN ]]; then say "GUARD_BIN $GUARD_BIN exists and is not a link"; fi
-  if bdir=$(real "$(dirname -- "$GUARD_BIN")"); then
+  for v in AGENT_DIR PATRON_DIR GUARD_BIN; do [[ ${!v} == /* ]] || say "$v ${!v} is not an absolute path"; done
+  for t in "$RL" "$ENV" "$GIT"; do have "$t" || say "$t is not an executable file; the guard runs ${t##*/} only by that path"; done
+  agent=$(real "$AGENT_DIR") || agent=''
+  # PATH is judged whole and never searched here (W-379): no entry may be relative or inside AGENT_DIR, before or after
+  # GUARD_BIN's directory, and no executable bisellium may come before it
+  if bdir=$(real "$(dname "$GUARD_BIN")"); then
     if [[ -n $agent ]] && within "$bdir" "$agent"; then say "GUARD_BIN $GUARD_BIN is inside AGENT_DIR (hooks run unsandboxed; a session could replace it)"; fi
     IFS=: read -ra entries <<<"$PATH"
     [[ $PATH == *: ]] && entries+=("")
     for e in "${entries[@]}"; do
       if [[ $e != /* ]]; then
-        say "a relative PATH entry ('$e') comes before GUARD_BIN's directory"
+        say "a relative PATH entry ('$e') comes $where GUARD_BIN's directory"
         continue
       fi
       p=$(real "$e") || true
-      if [[ -n $p && $p == "$bdir" ]]; then
+      if [[ -z $found && -n $p && $p == "$bdir" ]]; then
         found=1
-        break
+        where=after
+        continue
       fi
-      if [[ -n $agent && -n $p ]] && within "$p" "$agent"; then say "a PATH entry inside AGENT_DIR ($e) comes before GUARD_BIN's directory"; fi
-      if [[ -f $e/bisellium && -x $e/bisellium ]]; then say "an earlier bisellium on PATH ($e/bisellium) is not GUARD_BIN"; fi
+      if [[ -n $agent && -n $p ]] && within "$p" "$agent"; then
+        say "a PATH entry inside AGENT_DIR ($e) comes $where GUARD_BIN's directory"
+      fi
+      if [[ -z $found && -f $e/bisellium && -x $e/bisellium ]]; then
+        say "an earlier bisellium on PATH ($e/bisellium) is not GUARD_BIN"
+      fi
     done
-    [[ -n $found ]] || say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") is not on PATH"
+    [[ -n $found ]] || say "GUARD_BIN's directory $(dname "$GUARD_BIN") is not on PATH"
   else
-    say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") does not exist"
+    say "GUARD_BIN's directory $(dname "$GUARD_BIN") does not exist"
+  fi
+  [[ ${GUARD_BIN##*/} == bisellium ]] || say "GUARD_BIN $GUARD_BIN is not named bisellium (the hooks run bisellium)"
+  if [[ -e $GUARD_BIN && ! -L $GUARD_BIN ]]; then say "GUARD_BIN $GUARD_BIN exists and is not a link"; fi
+  patron=$(real "$PATRON_DIR") || patron=''
+  # the clones are read whatever PATH holds (cgit searches none), and only through cgit's /usr/bin/env and /usr/bin/git:
+  # with either missing these checks are skipped, never run, and that program's line above is the one fault (W-379)
+  if have "$ENV" && have "$GIT"; then
+    if [[ -z $agent ]] || ! top_is "$AGENT_DIR" "$agent"; then say "AGENT_DIR $AGENT_DIR is not the top of a git checkout"; fi
+    if [[ -n $patron ]] && top_is "$PATRON_DIR" "$patron" && cgit "$PATRON_DIR" rev-parse -q --verify refs/remotes/origin/master >/dev/null; then
+      # the guard installs this clone, so it judges it as the sync does (W-379)
+      p=$(patron_on_master "the guard") || say "$p"
+    else
+      say "PATRON_DIR $PATRON_DIR is not the top of a git checkout holding origin/master"
+    fi
+  fi
+  # needs no program: the two real paths, judged whether or not git ran
+  if [[ -n $agent && -n $patron ]] && { within "$agent" "$patron" || within "$patron" "$agent"; }; then
+    say "PATRON_DIR and AGENT_DIR are one inside the other"
   fi
   return $bad
 }
 
-guard_linked() { within "$(readlink -f -- "$GUARD_BIN")" "$(real "$GUARD_DIR")"; }
+guard_linked() { within "$("$RL" -f -- "$GUARD_BIN")" "$(real "$PATRON_DIR")"; }
 # The probe prints a guard: line per fact; status 0 when wired, installed outside the agent clone and live.
 guard_live() { "$GUARD_BIN" hooks check --harness claude-code --studio "$AGENT_DIR/studio" --repo "$AGENT_DIR"; }
-guard_unwritable() { ! test -w "$(dirname -- "$GUARD_BIN")" && ! test -w "$GUARD_DIR"; }
+guard_unwritable() { ! test -w "$(dname "$GUARD_BIN")" && ! test -w "$PATRON_DIR"; }
 # The sandbox's deny on the agent clone's source folders is in force (W-362).
 source_unwritable() {
   local d
   for d in packages apps adapters scripts; do ! test -w "$AGENT_DIR/$d" || return 1; done
 }
 
+# W-362's old guard worktree (W-379), after the new install: removed only when it is proved the old guard, GUARD_BIN
+# leading into it as this run began ($1) and git listing it as a linked worktree of PATRON_DIR, and git's
+# `worktree remove` (never forced) finds it clean; else it is left, with the reason and the Patron's command.
+old_guard() {
+  local o p q line n=0 found='' why='' out
+  [[ -e $OLD_GUARD_DIR || -L $OLD_GUARD_DIR ]] || return 0
+  # each path single-quoted for the shell (a quote in it as '\''), so the command pastes as it reads
+  p="'${PATRON_DIR//\'/\'\\\'\'}'"
+  q="'${OLD_GUARD_DIR//\'/\'\\\'\'}'"
+  o=$(real "$OLD_GUARD_DIR") || o=''
+  if [[ -z $o ]]; then
+    why="it is not a directory"
+  elif [[ $o == "$(real "$PATRON_DIR")" ]]; then
+    # PATRON_DIR itself, a main or a linked worktree, is never removed whatever GUARD_BIN led into (W-379 spec review 2)
+    why="it is not a linked worktree of PATRON_DIR"
+  elif [[ -z $1 ]] || ! within "$1" "$o"; then
+    why="GUARD_BIN did not lead into it when this run began, so it is not proved the old guard"
+  else
+    # git's worktrees of PATRON_DIR: the first record is the main one, every later one a linked worktree
+    while IFS= read -r -d '' line; do
+      [[ $line == "worktree "* ]] || continue
+      n=$((n + 1))
+      if ((n > 1)) && [[ $(real "${line#worktree }") == "$o" ]]; then found=1; fi
+    done < <(cgit "$PATRON_DIR" worktree list --porcelain -z)
+    [[ -n $found ]] || why="it is not a linked worktree of PATRON_DIR"
+  fi
+  if [[ -z $why ]]; then
+    if out=$(cgit "$PATRON_DIR" worktree remove -- "$OLD_GUARD_DIR" 2>&1); then
+      echo "guard: removed the old guard worktree $OLD_GUARD_DIR"
+      return 0
+    fi
+    why=${out//$'\n'/ }
+  fi
+  echo "guard: left $OLD_GUARD_DIR in place ($why); once it holds nothing you need: git -C $p worktree remove $q"
+}
+
 # Every step stops it on a failure (set -euo pipefail); the inputs are judged first.
 guard() {
   # this script runs unsandboxed: never the agent clone's copy (SELF_DIR is its real target), which a session can change
-  if within "$(real "$SELF_DIR")" "$(real "$AGENT_DIR")"; then die "run the guard step from your own clone's copy of this script, never the agent clone's (nothing was changed)."; fi
-  guard_inputs || die "the guard's inputs are not valid; see the lines above (nothing was changed)."
-  git -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
-  if [[ -e $GUARD_DIR ]]; then
-    git -C "$GUARD_DIR" checkout -q --detach origin/master
-  else
-    git -C "$PATRON_DIR" worktree add -q --detach "$GUARD_DIR" origin/master
-  fi
-  (cd "$GUARD_DIR" && npm ci --silent)
-  ln -sfn "$GUARD_DIR/packages/cli/bin/bisellium.mjs" "$GUARD_BIN"
-  guard_linked || die "$GUARD_BIN does not lead into $GUARD_DIR."
-  node "$GUARD_DIR/scripts/agent-settings-merge.mjs" "$USER_SETTINGS" "$(real "$PATRON_DIR")" "$AGENT_GH" "$(real "$AGENT_DIR")"
-  guard_live || die "the guard at $GUARD_DIR is not wired, not outside $AGENT_DIR, or not live; see the guard: lines above."
-  echo "guard: installed from $GUARD_DIR at $(git -C "$GUARD_DIR" rev-parse --short HEAD)"
+  # (SELF_DIR is resolved only by $RL: without it this check is skipped and guard_inputs refuses on $RL's line)
+  # (the refusal comes after guard_inputs has printed every fault it can judge, a missing program's line among them)
+  local agentcopy='' judged=''
+  if have "$RL" && within "$(real "$SELF_DIR")" "$(real "$AGENT_DIR")"; then agentcopy=1; fi
+  if guard_inputs; then judged=1; fi
+  [[ -z $agentcopy ]] || die "run the guard step from your own clone's copy of this script, never the agent clone's (nothing was changed)."
+  [[ -n $judged ]] || die "the guard's inputs are not valid; see the lines above (nothing was changed)."
+  # the guard installs the clone it runs from, so it runs only as that clone's own copy (W-379)
+  local patron entry
+  patron=$(real "$PATRON_DIR")
+  [[ $(real "$SELF_DIR") == "$patron/scripts" ]] || die "run the guard step as $patron/scripts/agent-workspace.sh, the copy in the clone it installs, not the copy in $SELF_DIR (nothing was changed)."
+  # where GUARD_BIN leads before this run relinks it: the proof that OLD_GUARD_DIR is W-362's old guard
+  # (an absent or dangling GUARD_BIN proves nothing: readlink -f would invent a path for its missing last component)
+  if [[ -L $GUARD_BIN && -e $GUARD_BIN ]]; then entry=$("$RL" -f -- "$GUARD_BIN") || entry=''; else entry=''; fi
+  # the fetch keeps the Patron's environment and config (ssh agent, url rules, credentials); hooks and fsmonitor off
+  # git by its absolute path; ssh and its helpers search the Patron's PATH, which guard_inputs judged whole
+  "$GIT" -c core.hooksPath=/dev/null -c core.fsmonitor=false -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
+  cgit "$PATRON_DIR" merge -q --ff-only refs/remotes/origin/master || die "PATRON_DIR's master does not fast-forward to origin/master; see git's line above (only origin/master was fetched)."
+  (cd "$PATRON_DIR" && npm ci --silent)
+  ln -sfn "$patron/packages/cli/bin/bisellium.mjs" "$GUARD_BIN"
+  guard_linked || die "$GUARD_BIN does not lead into $PATRON_DIR."
+  node "$patron/scripts/agent-settings-merge.mjs" "$USER_SETTINGS" "$patron" "$AGENT_GH" "$(real "$AGENT_DIR")"
+  guard_live || die "the guard at $PATRON_DIR is not wired, not outside $AGENT_DIR, or not live; see the guard: lines above."
+  old_guard "$entry"
+  echo "guard: installed from $PATRON_DIR at $(cgit "$PATRON_DIR" rev-parse --short HEAD)"
 }
 
 # The agent clone's .git/config keys the sync accepts (W-369): git's clone keys, setup's remote and credential helper,
@@ -268,19 +353,17 @@ SYNC_KEYS='^(core\.(repositoryformatversion|filemode|bare|logallrefupdates)|remo
 # git in the agent clone, outside the sandbox, on a .git a session can write: a clean environment, no global or system
 # config, no hooks, no fsmonitor, no submodule recursion, no prompt, no replacement refs (W-369). sync_inputs judges its
 # config and the object-substitution files first.
-agit() {
-  env -i HOME="$HOME" PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat GIT_NO_REPLACE_OBJECTS=1 \
-    git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -C "$AGENT_DIR" "$@"
-}
+# W-369's git found through the hook's PATH (the sync's domain, unchanged), with cgit's clean environment and flags.
+agit() { cleangit git "$AGENT_DIR" "$PATH" "$@"; }
 
-# The Patron's clone, the sync's fetch source (W-369): on master with no uncommitted tracked change, or the reason
-# and status 1. Its git runs with the Patron's own config: no session can write that clone.
+# The Patron's clone, the sync's fetch source (W-369) and the guard's install (W-379): on master with no uncommitted
+# tracked change, or the reason and status 1; $1 names who runs only from it (default: the sync). Read with cgit.
 patron_on_master() {
-  local h st
-  h=$(git -C "$PATRON_DIR" symbolic-ref -q HEAD) || h=detached
-  [[ $h == refs/heads/master ]] || { echo "PATRON_DIR $PATRON_DIR is on $h, not master; the sync runs only while it is on master"; return 1; }
-  st=$(git --no-optional-locks -C "$PATRON_DIR" status --porcelain --untracked-files=no) || { echo "git status failed in PATRON_DIR $PATRON_DIR"; return 1; }
-  [[ -z $st ]] || { echo "PATRON_DIR $PATRON_DIR has uncommitted tracked changes (${st%%$'\n'*}); the sync runs only while it is on a clean master"; return 1; }
+  local h st who=${1:-the sync}
+  h=$(cgit "$PATRON_DIR" symbolic-ref -q HEAD) || h=detached
+  [[ $h == refs/heads/master ]] || { echo "PATRON_DIR $PATRON_DIR is on $h, not master; $who runs only while it is on master"; return 1; }
+  st=$(cgit "$PATRON_DIR" --no-optional-locks status --porcelain --untracked-files=no) || { echo "git status failed in PATRON_DIR $PATRON_DIR"; return 1; }
+  [[ -z $st ]] || { echo "PATRON_DIR $PATRON_DIR has uncommitted tracked changes (${st%%$'\n'*}); $who runs only while it is on a clean master"; return 1; }
 }
 
 # git config on the agent clone's config file alone: from /, no global or system config, a clean environment.
@@ -290,6 +373,8 @@ cfg() { (cd / && env -i PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSY
 sync_inputs() {
   local agent patron gd h k kv t want v why
   [[ $AGENT_DIR == /* && $PATRON_DIR == /* ]] || { echo "AGENT_DIR and PATRON_DIR must be absolute paths"; return 1; }
+  # the checks below read SELF_DIR ($RL) and the Patron's clone through cgit ($ENV, $GIT): a missing one is the first fault
+  for t in "$RL" "$ENV" "$GIT"; do have "$t" || { echo "$t is not an executable file; the sync runs ${t##*/} only by that path"; return 1; }; done
   agent=$(real "$AGENT_DIR") || { echo "AGENT_DIR $AGENT_DIR is not a directory"; return 1; }
   if patron=$(real "$PATRON_DIR") && top_is "$PATRON_DIR" "$patron"; then :; else
     echo "PATRON_DIR $PATRON_DIR is not the top of a git checkout"
@@ -400,6 +485,11 @@ settings_merged() {
 origin_is_https() { [[ $(git -C "$AGENT_DIR" remote get-url origin) == "$URL" ]]; }
 helper_is_set() { git -C "$AGENT_DIR" config --local --get-all credential.helper | grep -Fxq -- "$HELPER"; }
 patron_unwritable() { ! test -w "$PATRON_DIR"; }
+# A verify check that was not run (W-379): its line names why, and verify fails; it never prints FAIL for what it did not judge.
+skipped() {
+  echo "skip $1 ($2, so it was not judged)"
+  FAILS=$((FAILS + 1))
+}
 # Unreadable = absent, denied, or masked as an empty file (as the sandbox does); stat only, never reads content.
 unreadable() {
   local f
@@ -411,20 +501,26 @@ verify() {
   local inside=0
   [[ ${1:-} == --inside ]] && inside=1
   FAILS=0
-  check "user settings hold every isolation entry" settings_merged
+  # the settings check reads SELF_DIR, resolved only by $RL (W-379)
+  if have "$RL"; then check "user settings hold every isolation entry" settings_merged; else skipped "user settings hold every isolation entry" "$RL is not an executable file"; fi
   check "agent clone origin is $URL" origin_is_https
   check "agent clone uses the agent credential helper" helper_is_set
   check "agent token reads $REPO" token_reads_repo
   check "agent token has no admin or webhook rights on $REPO" token_refused_admin
-  check "the hook guard's installer inputs hold (PATH, GUARD_DIR, GUARD_BIN)" guard_inputs
-  check "GUARD_BIN leads into GUARD_DIR" guard_linked
-  check "the hook guard is wired, installed outside $AGENT_DIR and live" guard_live
+  check "the hook guard's installer inputs hold (PATH, PATRON_DIR on master, GUARD_BIN)" guard_inputs
+  if have "$RL"; then check "GUARD_BIN leads into PATRON_DIR" guard_linked; else skipped "GUARD_BIN leads into PATRON_DIR" "$RL is not an executable file"; fi
+  # the probe runs GUARD_BIN, whose env finds node through PATH: only once the inputs, PATH and the programs among them, hold
+  if guard_inputs >/dev/null 2>&1; then
+    check "the hook guard is wired, installed outside $AGENT_DIR and live" guard_live
+  else
+    skipped "the hook guard is wired, installed outside $AGENT_DIR and live" "the installer inputs do not hold"
+  fi
   if ((inside)); then
     check "Patron folder $PATRON_DIR is not writable" patron_unwritable
     check "~/.git-credentials is not readable" unreadable "$HOME/.git-credentials"
     check "~/.ssh/id_* are not readable" unreadable "$HOME"/.ssh/id_*
     check "agent clone reaches origin" remote_reachable
-    check "the installed hook guard ($GUARD_BIN, $GUARD_DIR) is not writable" guard_unwritable
+    check "the installed hook guard ($GUARD_BIN, $PATRON_DIR) is not writable" guard_unwritable
     check "the agent clone's packages/, apps/, adapters/ and scripts/ are not writable" source_unwritable
   fi
   [[ $FAILS -eq 0 ]]
