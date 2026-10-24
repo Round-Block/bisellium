@@ -162,11 +162,11 @@ setup() {
 }
 
 # git in the checkout at $1, run outside the sandbox: a clean environment, no global or system config, no hooks, no
-# fsmonitor, no submodule recursion, no prompt, no replacement refs (W-369, W-379). The guard's git calls and the
+# fsmonitor, no submodule recursion, no global excludes, no prompt, no replacement refs (W-369, W-379). The guard's git calls and the
 # sync's in the agent clone go through it; the Patron clone's fetches do not (they need the Patron's own config).
 cgit() {
   env -i HOME="$HOME" PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat GIT_NO_REPLACE_OBJECTS=1 \
-    git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -C "$1" "${@:2}"
+    git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -c core.excludesFile=/dev/null -C "$1" "${@:2}"
 }
 
 # A directory's real path (symlinks resolved), or nothing when it is not an enterable directory.
@@ -183,13 +183,48 @@ top_is() { [[ -n $2 && $(cgit "$1" rev-parse --show-toplevel 2>/dev/null) == "$2
 #   bisellium later on PATH is never run). Paths compare by their real paths (pwd -P), so a symlinked parent, a space,
 #   a quote and a non-ASCII name are the paths they name.
 guard_inputs() {
-  local bad=0 v agent='' patron='' bdir='' p e found='' entries=()
+  local bad=0 pathbad=0 v agent='' patron='' bdir='' p e found='' entries=()
   say() {
     echo "$*"
     bad=1
   }
   for v in AGENT_DIR PATRON_DIR GUARD_BIN; do [[ ${!v} == /* ]] || say "$v ${!v} is not an absolute path"; done
-  if agent=$(real "$AGENT_DIR") && top_is "$AGENT_DIR" "$agent"; then :; else
+  agent=$(real "$AGENT_DIR") || agent=''
+  # PATH is judged before any git runs: cgit finds git through it, so a rejected entry must never be searched (W-379)
+  if bdir=$(real "$(dirname -- "$GUARD_BIN")"); then
+    if [[ -n $agent ]] && within "$bdir" "$agent"; then say "GUARD_BIN $GUARD_BIN is inside AGENT_DIR (hooks run unsandboxed; a session could replace it)"; fi
+    IFS=: read -ra entries <<<"$PATH"
+    [[ $PATH == *: ]] && entries+=("")
+    for e in "${entries[@]}"; do
+      if [[ $e != /* ]]; then
+        say "a relative PATH entry ('$e') comes before GUARD_BIN's directory"
+        pathbad=1
+        continue
+      fi
+      p=$(real "$e") || true
+      if [[ -n $p && $p == "$bdir" ]]; then
+        found=1
+        break
+      fi
+      if [[ -n $agent && -n $p ]] && within "$p" "$agent"; then
+        say "a PATH entry inside AGENT_DIR ($e) comes before GUARD_BIN's directory"
+        pathbad=1
+      fi
+      if [[ -f $e/bisellium && -x $e/bisellium ]]; then
+        say "an earlier bisellium on PATH ($e/bisellium) is not GUARD_BIN"
+        pathbad=1
+      fi
+    done
+    [[ -n $found ]] || { say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") is not on PATH"; pathbad=1; }
+  else
+    say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") does not exist"
+    pathbad=1
+  fi
+  [[ ${GUARD_BIN##*/} == bisellium ]] || say "GUARD_BIN $GUARD_BIN is not named bisellium (the hooks run bisellium)"
+  if [[ -e $GUARD_BIN && ! -L $GUARD_BIN ]]; then say "GUARD_BIN $GUARD_BIN exists and is not a link"; fi
+  # no git runs while PATH holds a rejected entry: the faults above stand, the clones are not read
+  if ((pathbad)); then return 1; fi
+  if [[ -n $agent ]] && top_is "$AGENT_DIR" "$agent"; then :; else
     agent=''
     say "AGENT_DIR $AGENT_DIR is not the top of a git checkout"
   fi
@@ -201,29 +236,6 @@ guard_inputs() {
   if [[ -n $patron ]] && ! p=$(patron_on_master "the guard"); then say "$p"; fi
   if [[ -n $agent && -n $patron ]] && { within "$agent" "$patron" || within "$patron" "$agent"; }; then
     say "PATRON_DIR and AGENT_DIR are one inside the other"
-  fi
-  [[ ${GUARD_BIN##*/} == bisellium ]] || say "GUARD_BIN $GUARD_BIN is not named bisellium (the hooks run bisellium)"
-  if [[ -e $GUARD_BIN && ! -L $GUARD_BIN ]]; then say "GUARD_BIN $GUARD_BIN exists and is not a link"; fi
-  if bdir=$(real "$(dirname -- "$GUARD_BIN")"); then
-    if [[ -n $agent ]] && within "$bdir" "$agent"; then say "GUARD_BIN $GUARD_BIN is inside AGENT_DIR (hooks run unsandboxed; a session could replace it)"; fi
-    IFS=: read -ra entries <<<"$PATH"
-    [[ $PATH == *: ]] && entries+=("")
-    for e in "${entries[@]}"; do
-      if [[ $e != /* ]]; then
-        say "a relative PATH entry ('$e') comes before GUARD_BIN's directory"
-        continue
-      fi
-      p=$(real "$e") || true
-      if [[ -n $p && $p == "$bdir" ]]; then
-        found=1
-        break
-      fi
-      if [[ -n $agent && -n $p ]] && within "$p" "$agent"; then say "a PATH entry inside AGENT_DIR ($e) comes before GUARD_BIN's directory"; fi
-      if [[ -f $e/bisellium && -x $e/bisellium ]]; then say "an earlier bisellium on PATH ($e/bisellium) is not GUARD_BIN"; fi
-    done
-    [[ -n $found ]] || say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") is not on PATH"
-  else
-    say "GUARD_BIN's directory $(dirname -- "$GUARD_BIN") does not exist"
   fi
   return $bad
 }
@@ -284,7 +296,8 @@ guard() {
   patron=$(real "$PATRON_DIR")
   [[ $(real "$SELF_DIR") == "$patron/scripts" ]] || die "run the guard step as $patron/scripts/agent-workspace.sh, the copy in the clone it installs, not the copy in $SELF_DIR (nothing was changed)."
   # where GUARD_BIN leads before this run relinks it: the proof that OLD_GUARD_DIR is W-362's old guard
-  entry=$(readlink -f -- "$GUARD_BIN") || entry=''
+  # (an absent GUARD_BIN proves nothing: readlink -f would invent a path for its missing last component)
+  if [[ -L $GUARD_BIN ]]; then entry=$(readlink -f -- "$GUARD_BIN") || entry=''; else entry=''; fi
   # the fetch keeps the Patron's environment and config (ssh agent, url rules, credentials); hooks and fsmonitor off
   git -c core.hooksPath=/dev/null -c core.fsmonitor=false -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
   cgit "$PATRON_DIR" merge -q --ff-only refs/remotes/origin/master || die "PATRON_DIR's master does not fast-forward to origin/master; see git's line above (only origin/master was fetched)."
