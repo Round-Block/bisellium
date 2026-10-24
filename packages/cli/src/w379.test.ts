@@ -117,13 +117,13 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
     const r = w.guard("guard");
     assert.equal(r.code, 1, `${what}: guard exits 1: ${r.out}`);
     assert.match(r.out, why, `${what}: guard names the reason`);
-    assert.match(r.out, /\(nothing was changed\)\.$/m, `${what}: nothing was changed`);
+    assert.match(r.out, /^the guard's inputs are not valid; see the lines above \(nothing was changed\)\.$/m, `${what}: nothing was changed`);
     assert.equal(readlinkSync(w.bin), target, `${what}: GUARD_BIN still leads into the old guard`);
     assert.equal(existsSync(join(w.f, "npm.log")), false, `${what}: npm did not run`);
     assert.equal(existsSync(join(w.f, ".claude", "settings.json")), false, `${what}: the user settings were not written`);
     assert.ok(existsSync(join(w.old, "x")), `${what}: the old guard worktree stays`);
     const verify = w.guard("verify");
-    assert.match(verify.out, /^FAIL the hook guard's installer inputs hold/m, `${what}: verify fails the inputs`);
+    assert.match(verify.out, /^FAIL the hook guard's installer inputs hold \(PATH, PATRON_DIR on master, GUARD_BIN\)$/m, `${what}: verify fails the inputs`);
     // verify's settings check runs the merge script's main and writes the user settings (W-362's, unchanged: a limit)
     rmSync(join(w.f, ".claude"), { recursive: true, force: true });
     undo();
@@ -215,7 +215,7 @@ test("W-379-b3 behaviour 3: guard removes W-362's old guard worktree only when G
   // OLD_GUARD_DIR a file: not a directory
   const file = join(w.f, "a file");
   writeFileSync(file, "f\n");
-  assert.match(w.guard("guard", { OLD_GUARD_DIR: file }).out, /^guard: left .*a file in place \(it is not a directory\);/m, "a file as OLD_GUARD_DIR is left");
+  assert.match(w.guard("guard", { OLD_GUARD_DIR: file }).out, /^guard: left .*a file in place \(it is not a directory\); once it holds nothing you need: git -C .* worktree remove .*a file'$/m, "a file as OLD_GUARD_DIR is left");
   // the old guard, proved (GUARD_BIN led into it as the run began), with a tracked edit: git refuses, it stays
   w.linkOld();
   writeFileSync(join(w.old, "x"), "edit\n");
