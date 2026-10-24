@@ -43,9 +43,8 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-Two engineering lanes and two UI lanes (Patron 2026-10-22), each taking from the top of its list.
 Order by cycle minutes saved, D-039 highs first; a high opus filed since starts right after the one in flight.
-Lanes per D-106 E: Engineering 1 and 2, UI 1 and 2. Halted: W-239 (D-106 D).
+Lanes per D-106 E (Patron 2026-10-22): Engineering 1 and 2, UI 1 and 2, each taking from the top. Halted: W-239 (D-106 D).
 
 Engineering 1 (guard, scripts, hooks, run; no next.ts):
 E1.1. W-379 — W-369's split-off half: the guard runs from the Patron's clone at master (high; design to the Patron before branch)
