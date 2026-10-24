@@ -951,6 +951,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "scripts/capture-gh-fixtures.mjs:<module>:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/capture-gh-fixtures.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/changelog.mjs:main:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/ci-certificate.mjs:readArtifact:readFileSync#1", disposition: "outside", why: "the merge queue's certificate job reads the certify artifact it downloaded on the runner; never an officina" },
   { key: "scripts/ci-scope.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/ci-scope.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/concise-stop.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
