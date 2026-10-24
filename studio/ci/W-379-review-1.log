@@ -1,0 +1,20 @@
+# opus: W-379
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16c8e-ace3-7253-a0c4-318924314e8c
+# outcome: failed
+# at: 2026-10-24T06:22:02.049Z
+# tree: tree:c5df453c100f94650c476886a8cfabdc2e0e7745
+# brief: briefs/W-379.md blob:4cda97e76d99fcbc9c2a73dd82ed356afab91f5a
+# ticket: {"opus":"W-379","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-379/studio","head":"abf1b77320eb2096654d277cbbcacfe3b0b280e3","brief":"4cda97e76d99fcbc9c2a73dd82ed356afab91f5a","at":"2026-10-24T06:17:31.088Z"}
+
+## Findings
+1. blocking — scripts/agent-workspace.sh:192 `guard_inputs` invokes `cgit` before validating `PATH`; because `cgit` resolves `git` through that unvalidated path, a rejected relative or agent-controlled entry can execute a session-writable `git` before the guard reports the fault, violating the fail-closed boundary at brief:64. — check: packages/cli/src/w362.test.ts (`W-362-b3` should place a logging `git` in each rejected PATH entry and prove it never runs) [severity: S1] [class: interface×validation-order-masks-errors]
+2. blocking — scripts/agent-workspace.sh:287 `readlink -f` synthesizes a canonical path when the final `GUARD_BIN` component is absent. If that valid absent path is under an unrelated linked worktree’s ignored directory, relinking creates only an ignored entry and `old_guard` can delete the worktree although no pre-run link led into it, contrary to brief:71. — check: packages/cli/src/w379.test.ts (`W-379-b3` with absent `GUARD_BIN` under another worktree’s ignored directory) [severity: S1] [class: tests×security-boundary-cases-uncovered]
+3. blocking — scripts/agent-workspace.sh:168 `cgit` retains `HOME` without overriding `core.excludesFile`, so Git still reads the default `$HOME/.config/git/ignore`; `worktree remove` can therefore treat a globally ignored untracked file as clean and delete it, despite brief:32 explicitly requiring a file ignored only by the Patron’s global excludes to refuse removal. — check: packages/cli/src/w379.test.ts (`W-379-b3` with an untracked file matched only by `$HOME/.config/git/ignore`) [severity: S1] [class: tests×security-boundary-cases-uncovered]
+
+## Verdict
+The guard can execute agent-controlled code before rejecting its inputs and can remove linked worktrees without the required identity or cleanliness proof. These security-sensitive behaviors require another round.
+VERDICT: FAIL
