@@ -2020,4 +2020,10 @@ test("W-381-f1 fix 1: one title-token matcher reads `high` and the class, each w
     title(`high beside a letter, digit, underscore or hyphen: ${side}`, `tests×a stops recurring (${side})`, false);
   for (const ok of ["high tests×a", "tests×a high", "tests×a (high)", "tests×a [high]", "tests×a: HIGH", "tests×a, High."]) title(`high as a whole word: ${ok}`, ok, true);
   title("high ending a title", "tests×a stops recurring, high", true);
+
+  // a combining mark (\p{M}) is part of a Unicode word: beside either token it keeps the hold (brief:75)
+  title("a combining mark after the class", "tests×a\u0301 stops recurring (high)", false);
+  title("a combining mark before the class", "fix \u0301tests×a (high)", false);
+  title("a combining mark after high", "tests×a stops recurring (high\u0301)", false);
+  title("a combining mark before high", "tests×a stops recurring (\u0301high)", false);
 });
