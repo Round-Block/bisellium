@@ -1,7 +1,7 @@
 import { useEffect, useState, type JSX } from "react";
 import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
 import { InboxView } from "./InboxView.js";
-import { buildReply, moveFocus, resolveVerbAction, type Verb } from "./inboxLogic.js";
+import { buildReply, isTextEntryTarget, moveFocus, resolveVerbAction, type Verb } from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
@@ -62,6 +62,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
 
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
+      if (isTextEntryTarget(e.target)) return;
       if (e.key === "j" || e.key === "k") {
         setFocusIndex((i) => moveFocus(i, petitiones.length, e.key as "j" | "k"));
         return;

@@ -12,6 +12,16 @@ export const VERB_KEYS: Readonly<Record<string, Verb>> = {
   "3": "decline",
 };
 
+/** Window shortcuts never consume keystrokes intended for a form control or
+ * an editable region. Kept structural so the classifier is testable in node
+ * without constructing browser DOM globals. */
+export function isTextEntryTarget(target: EventTarget | null): boolean {
+  if (target === null || typeof target !== "object") return false;
+  const node = target as { tagName?: unknown; isContentEditable?: unknown };
+  const tagName = typeof node.tagName === "string" ? node.tagName.toUpperCase() : "";
+  return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || node.isContentEditable === true;
+}
+
 /** j/k move focus one item at a time, clamped so the first item stays put
  * on `k` and the last stays put on `j` (behaviour 5). */
 export function moveFocus(index: number, count: number, key: "j" | "k"): number {
