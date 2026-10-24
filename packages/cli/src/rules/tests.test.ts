@@ -1220,3 +1220,113 @@ test("W-376-b2 behaviour 2: an added assert.ok or assert whose first argument ca
   // a line holding both forms is one site, its pattern form named
   assert.deepEqual(await formsOn(['assert.match(why, /^a/); assert.ok(why.endsWith("b"));']), [{ line: 1, form: START_ONLY }], "one site per line");
 });
+
+// ---------------------------------------------------------------------------
+// W-392: `test.one_sided` reads every pattern on an added line. W-381's title regexes bounded a token by an ASCII set,
+// in a source file and outside any assertion, so W-376's forms never read them. Row W-392-b1 pins the boundary form on
+// any tracked code file; row W-392-b2 pins a one-ended pattern in assert.ok/assert's first argument and the RegExp(
+// spellings assert.match reads. Every fixture pattern below is a string, so this file's own lines hold no site.
+// ---------------------------------------------------------------------------
+const ASCII_B = "an ASCII word boundary (\\b)";
+const ASCII_SET = "a word boundary over ASCII letters only";
+const BUILT_SET = "a word boundary built from a substitution";
+const NO_MARKS = "a word boundary without \\p{M}";
+const NO_MARKS_NUMBERS = "a word boundary without \\p{M} and \\p{N}";
+const BOUND_HOW = 'bound the token by a set holding \\p{L}, \\p{M} and \\p{N} (or \\p{ID_Continue}) under the u flag, or annotate "// one-sided: <reason>"';
+const boundBlock = (where: string, form: string): Finding => ({ rule: "test.one_sided", level: "block", where, message: `${form}: ${BOUND_HOW}` });
+/** The forms the pure core finds on every line of a code file that is not a test path. */
+async function sourceFormsOn(lines: string[], judged?: number[]): Promise<{ line: number; form: string }[]> {
+  const mod = await sidedModule();
+  assert.equal(typeof mod.oneSidedSites, "function", "rules/tests.ts exports oneSidedSites");
+  const sites = mod.oneSidedSites as (text: string, lines: readonly number[], test?: boolean) => { line: number; form: string }[];
+  return sites(code(lines), judged ?? lines.map((_, i) => i + 1), false);
+}
+// W-381's three title-boundary lines, as its review rounds 1 and 2 read them (next.ts:1422, :1424 and :1433)
+const W381_HIGH = 'return title !== undefined && OPEN_STATES.has(str(r?.["state"]) ?? "") && /(?<![\\w-])high(?![\\w-])/i.test(title) ? [title] : [];';
+const W381_NAMES = "const names = (title: string, c: string): boolean => new RegExp(`(?<![a-z0-9-])${esc(c)}(?![a-z0-9-])`).test(title);";
+const W381_TOKEN = 'return new RegExp(`(?<![${boundary}])${esc(token)}(?![${boundary}])`, caseless ? "iu" : "u").test(title);';
+const BOUND_BASE = ["export const old = /\\bold\\b/;"];
+const BOUND_ADDED = "export const high = (t: string): boolean => /(?<![\\w-])high(?![\\w-])/i.test(t);";
+const BOUND_REASON = "// one-sided: an id grammar, ASCII by its own definition";
+
+// one line each, in a code file that is not a test path: the form the rule names on it, or undefined
+const BOUNDARY_GRAMMAR: [string, string, string | undefined][] = [
+  ["W-381 round 1: a lookbehind and a lookahead over \\w and a hyphen", W381_HIGH, ASCII_SET],
+  ["W-381 round 1: a new RegExp template over an ASCII range", W381_NAMES, ASCII_SET],
+  ["W-381 round 2: a set built from a substitution", W381_TOKEN, BUILT_SET],
+  ["\\b in a regex literal", "const re = /\\bhigh\\b/i;", ASCII_B],
+  ["\\B in a regex literal", "const re = /\\Bhigh/;", ASCII_B],
+  ["\\b in a new RegExp string, its backslash doubled", 'const re = new RegExp("\\\\bhigh\\\\b");', ASCII_B],
+  ["\\b in RegExp( with no new", "const re = RegExp('\\\\bhigh');", ASCII_B],
+  ["\\b in a String.raw template", "const re = new RegExp(String.raw`\\bhigh`);", ASCII_B],
+  ["a lookahead over \\W", "const re = /high(?=\\W|$)/;", ASCII_SET],
+  ["a negated class over an ASCII range", "const re = /(?<=[^a-zA-Z])high/;", ASCII_SET],
+  ["a letter property without marks", "const re = /(?<![\\p{L}\\p{N}-])high/u;", NO_MARKS],
+  ["a letter property alone", "const re = /(?<!\\p{L})high/u;", NO_MARKS_NUMBERS],
+  ["a lookbehind over an ASCII range before a substitution", "const re = new RegExp(`(?<![a-z])${word}`);", ASCII_SET],
+  ["a regex after return", "return /\\bhigh/.test(s);", ASCII_B],
+  ["a regex after an arrow", "const f = (s: string) => /\\bhigh/.test(s);", ASCII_B],
+  ["a second pattern on the line", "const a = /high/, b = /\\bhigh/;", ASCII_B],
+  ["the whole set at both ends", "const re = /(?<![\\p{L}\\p{M}\\p{N}-])high(?![\\p{L}\\p{M}\\p{N}-])/iu;", undefined],
+  ["the long property names", "const re = /(?<![\\p{Letter}\\p{Mark}\\p{Number}])high/u;", undefined],
+  ["ID_Continue", "const re = /(?<![\\p{ID_Continue}$])assert/u;", undefined],
+  ["a digit bound is no word boundary", "const re = /[0-9]{1,15}(?![0-9])/;", undefined],
+  ["a lookaround over a hyphen or a backslash", "const re = /(?<!\\\\)x(?!-)/;", undefined],
+  ["\\b in a class is a backspace", "const re = /[\\b]/;", undefined],
+  ["an escaped backslash before b", "const re = /\\\\b/;", undefined],
+  ["a named group is no lookaround", "const re = /(?<name>[a-z]+)/;", undefined],
+  ["a division is no pattern", "const r = a / b / c;", undefined],
+  ["a division after a call is no pattern", "const r = f(a) / g(b) / 2;", undefined],
+  ["inside a string", "const s = '/\\\\bhigh/';", undefined],
+  ["inside a comment", "// const re = /\\bhigh/;", undefined],
+  ["a pattern held in a name is not read, a limit", "const re = new RegExp(SOURCE);", undefined],
+  ["a member RegExp is not read, a limit", "const re = globalThis.RegExp('\\\\bhigh');", undefined],
+  ["an assertion form is not read outside a test path", "assert.match(why, /^held/);", undefined],
+];
+
+test("W-392-b1 behaviour 1: an added line of any tracked code file whose pattern bounds a token by a partial set is a test.one_sided block, unless annotated", { timeout: 600_000 }, async () => {
+  // the branch adds W-381's round-1 boundary at line 2 of a source file whose line 1 already held \b
+  const base = { "src/title.ts": code(BOUND_BASE), "a.test.ts": code(SIDED_BASE) };
+  const added = (r: string): void => put(r, "src/title.ts", code([...BOUND_BASE, BOUND_ADDED]));
+  assert.deepEqual(sidedOf(branched("w392-b1-added", base, added)), [boundBlock("src/title.ts:2", ASCII_SET)], "an added ASCII boundary in a source file: one block at its line");
+
+  // the grammar, one line at a time
+  for (const [label, line, form] of BOUNDARY_GRAMMAR) assert.deepEqual(await sourceFormsOn([line]), form === undefined ? [] : [{ line: 1, form }], label);
+  // a test path reads the boundary form too, after the assertion forms: one site per line
+  assert.deepEqual(await formsOn(["const re = /\\bhigh/;"]), [{ line: 1, form: ASCII_B }], "a test path reads the boundary form");
+  assert.deepEqual(await formsOn(["assert.match(why, /^\\bheld/);"]), [{ line: 1, form: START_ONLY }], "one site per line, the assertion form first");
+
+  // the annotation: on the line, or alone on the line above, with a reason of 15 characters in 3 words
+  assert.deepEqual(await sourceFormsOn([`const re = /\\bW-\\d+/; ${BOUND_REASON}`]), [], "annotated on the line");
+  assert.deepEqual(await sourceFormsOn([BOUND_REASON, "const re = /\\bW-\\d+/;"], [2]), [], "annotated on the line above");
+  assert.deepEqual(await sourceFormsOn(["const re = /\\bW-\\d+/; // one-sided: an id"]), [{ line: 1, form: ASCII_B }], "not annotated: a short reason");
+
+  // what the repository rule judges: the added and changed lines of every tracked code file
+  assert.deepEqual(sidedOf(branched("w392-b1-same", base)), [], "an unchanged branch: the old line is not judged");
+  const fresh = (r: string): void => put(r, "lib/tokens.mjs", code(["export const x = 1;", W381_NAMES]));
+  assert.deepEqual(sidedOf(branched("w392-b1-new", base, fresh)), [boundBlock("lib/tokens.mjs:2", ASCII_SET)], "a new code file: every line is added");
+  const inTest = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, "const re = /\\bready/;"]));
+  assert.deepEqual(sidedOf(branched("w392-b1-test", base, inTest)), [boundBlock("a.test.ts:3", ASCII_B)], "an added boundary in a test file");
+  const prose = (r: string): void => put(r, "notes.md", code(["/(?<![\\w-])high/"]));
+  assert.deepEqual(sidedOf(branched("w392-b1-prose", base, prose)), [], "a file that is not code");
+  const whole = (r: string): void => put(r, "src/title.ts", code([...BOUND_BASE, "export const high = /(?<![\\p{L}\\p{M}\\p{N}-])high(?![\\p{L}\\p{M}\\p{N}-])/iu;"]));
+  assert.deepEqual(sidedOf(branched("w392-b1-whole", base, whole)), [], "an added whole boundary");
+  const annotated = (r: string): void => put(r, "src/title.ts", code([...BOUND_BASE, BOUND_REASON, BOUND_ADDED]));
+  assert.deepEqual(sidedOf(branched("w392-b1-annotated", base, annotated)), [], "an annotated added line");
+  const untracked = branched("w392-b1-untracked", base);
+  put(untracked, "src/new.ts", code([BOUND_ADDED]));
+  assert.deepEqual(sidedOf(untracked), [], "an untracked code file is unseen, a limit");
+  const uncommitted = branched("w392-b1-uncommitted", base);
+  put(uncommitted, "src/title.ts", code([...BOUND_BASE, BOUND_ADDED]));
+  assert.deepEqual(sidedOf(uncommitted), [boundBlock("src/title.ts:2", ASCII_SET)], "a working-tree edit of a tracked code file is judged");
+
+  // the CLI and the real repository
+  const off = officina();
+  const blocked = cli(["check", off, "--repo", branched("w392-b1-cli", base, added)]);
+  assert.equal(blocked.status, 1, `an added ASCII boundary exits 1\n${blocked.out}`);
+  const ruleLines = blocked.out.split("\n").filter((l) => l.trimStart().startsWith("test.one_sided"));
+  assert.deepEqual(ruleLines.map((l) => l.trim().split(/\s{2,}/)), [["test.one_sided", "src/title.ts:2", `${ASCII_SET}: ${BOUND_HOW}`]], `one block line\n${blocked.out}`);
+  assert.equal(cli(["check", off, "--repo", branched("w392-b1-cli-ok", base, annotated)]).status, 0, "annotated: exit 0");
+  const mod = await sidedModule();
+  assert.deepEqual(mod.oneSidedFindings!(REPO_ROOT), [], "the real repository adds no one-sided assertion or partial boundary");
+});
