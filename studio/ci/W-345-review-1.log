@@ -1,0 +1,23 @@
+# opus: W-345
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16cbb-2cfa-7982-8551-e2c8066d6148
+# outcome: failed
+# at: 2026-10-24T07:08:42.076Z
+# tree: tree:4ec624c9bcdb9f16638bb10037f2931c25bc90a8
+# ui_input: ci/W-345-spec-3.log
+# design_digest: sha256:a9ae9b58803b4eb659e3625e1276a2b06e047c96527086b2eb0903ab47af2318
+# ticket: {"opus":"W-345","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-345/studio","head":"8950c66c200b98a9fa8a49cb2c381d6b0a2af602","brief":"3ae3485a24a63ed07b5f91524e2c05e85dfe159d","at":"2026-10-24T07:06:07.676Z"}
+
+## Findings
+1. blocking — apps/web/src/components/w025.css:656 [severity: S2] The `40vh` cap applies to the content box while `.inbox__list` also has 48px vertical padding and a border, so the fourteen-item 390×844 case renders about 387px tall (~46vh), exceeding the 40-percent cap required by brief:19; the browser row checks scrolling but never bounds the list itself. — check: apps/web/tests-serve/inbox.spec.ts W-345-b5 (assert the list border-box height is no more than 40% of the viewport) [class: tests×one-sided-bound-assertion]
+
+## UI input disposition
+The authoritative ui-lead input and all eight screenshots support the three ruled actions, initial-view hierarchy, phone reachability, and the unchanged Board, Seats and Officina compositions. The one-petition screenshots do not expose the fourteen-item list cap; inspecting the responsive CSS and b5 fixture revealed the blocking geometry defect.
+
+## Verdict
+The implementation otherwise matches the reviewed behavior and evidence, but the phone list exceeds its required viewport cap on a named input.
+
+VERDICT: FAIL
