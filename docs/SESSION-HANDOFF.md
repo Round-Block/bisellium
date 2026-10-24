@@ -82,7 +82,7 @@ Then the console MVP (after the block):
 33. W-261 — woken orchestration: the cascade loop waits on a GitHub event, one session per wake (D-087 F; touches the Patron's `scripts/cascade-loop.sh`)
 34. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 UI, one ranked list for UI 1 and 2 (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-355 — W-348 part 2: `next` reads spec pairing and kind from the record owning the spec evidence, failing closed (awaits greenlight)
+1. W-355 — W-348 part 2: `next` reads spec pairing and kind from the record owning the spec evidence, failing closed (greenlit 2026-10-24)
 2. W-350 — screenshot baselines with production fonts, two stages (D-097): waits for the Patron's approval of the recaptured shots (D-099 E)
 3. W-345 — Inbox truth and safety: typed-field keys ignored, one submission at a time, reason bound to its petition, no invented petitions on a failed read, answer pane at phone width, defer and delegate distinct or removed
 4. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route (D-080 E)
