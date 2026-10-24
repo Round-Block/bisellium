@@ -54,3 +54,12 @@ test("W-345-b3 behaviour 3: each reason belongs to one petition", async () => {
   assert.match(source, /const \[reasons, setReasons\] = useState<Record<string, string>>\(\{\}\);/, "Inbox stores reasons by petition id");
   assert.match(source, /const reason = reasonForPetition\(reasons, focusedId\);/, "the visible reason follows the selected petition id");
 });
+
+test("W-345-b4 behaviour 4: a failed Inbox read clears records before showing the failure", () => {
+  const source = read("src/screens/Inbox.tsx");
+  assert.match(
+    source,
+    /\.catch\(\(\) => \{\s*setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);\s*\}\);/,
+    "every failed read replaces prior data with EMPTY, settles loading and enters the failure state",
+  );
+});

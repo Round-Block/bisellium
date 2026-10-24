@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { startServed } from "./harness.js";
 
+async function signIn(page: import("@playwright/test").Page, baseURL: string, token: string): Promise<void> {
+  await page.goto(`${baseURL}/#/inbox`);
+  await page.locator("#token-prompt-input").fill(token);
+  await page.locator(".token-prompt__submit").click();
+  await expect(page.locator(".token-prompt")).toBeHidden();
+}
+
 test("W-345-b1 typing shortcut characters in the reason keeps the petition and sends nothing", async ({ page }) => {
   const served = await startServed("w345-b1");
   let writes = 0;
@@ -65,6 +72,27 @@ test("W-345-b3 moving between petitions never carries one reason into another", 
     await reason.fill("reason for P-009 only");
     await rows.first().click();
     await expect(reason).toHaveValue("reason for P-008 only");
+  } finally {
+    await served.close();
+  }
+});
+
+test("W-345-b4 a failed refresh shows failure and no stale petition", async ({ page }) => {
+  const served = await startServed("w345-b4");
+  let reads = 0;
+  await page.route("**/api/inbox", async (route) => {
+    reads++;
+    if (reads === 1) await route.continue();
+    else await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+  });
+  try {
+    await signIn(page, served.baseURL, served.token);
+    await expect(page.locator(".inbox__row")).toHaveCount(1);
+    await page.locator(".inbox__input-ratio").fill("record this answer");
+    await page.getByRole("button", { name: /approve/i }).click();
+    await expect(page.locator('.shell__status[data-state="error"]')).toHaveText("Could not load the inbox.");
+    await expect(page.locator(".inbox__row")).toHaveCount(0);
+    await expect(page.locator(".inbox__empty")).toHaveText("Could not load the inbox.");
   } finally {
     await served.close();
   }
