@@ -107,7 +107,8 @@ and exits 1 when any fails. The Patron's own clone, `~/projects/bisellium` at
 master, carries it: `scripts/agent-workspace.sh guard`, run by the Patron from
 that clone's own copy after each merge that changes the guard, judges its
 inputs before any change (the clone on master with no uncommitted tracked
-change among them), fast-forwards the clone's master to origin/master, links
+change, and no PATH entry relative or inside the agent clone, among them; the
+judgement runs git only as `/usr/bin/git`), fast-forwards the clone's master to origin/master, links
 `~/.local/bin/bisellium` into it, merges the user settings (the sandbox on, and
 denying writes to the agent clone's `packages/`, `apps/`, `adapters/` and
 `scripts/`) and probes it (W-362, W-379). Last it removes W-362's old guard

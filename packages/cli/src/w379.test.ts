@@ -162,6 +162,13 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
     rmSync(toolLog, { force: true });
     rmSync(join(w.f, ".claude"), { recursive: true, force: true });
   }
+  // a missing /usr/bin/readlink is a fault line, not a crash: a copy of the script naming a readlink that is not there
+  const noReadlink = join(w.f, "no-readlink.sh");
+  writeFileSync(noReadlink, readFileSync(SCRIPT, "utf8").replace("RL=/usr/bin/readlink", "RL=/nonexistent/readlink"));
+  const lacking = w.guard("guard-check", {}, noReadlink, w.f);
+  assert.equal(lacking.code, 1, `a missing readlink: guard-check exits 1: ${lacking.out}`);
+  assert.match(lacking.out, /^\/nonexistent\/readlink is not an executable file; the guard runs readlink only by that path$/m, "a missing readlink: the fault line");
+  assert.doesNotMatch(lacking.out, /No such file or directory|not found/, "a missing readlink: nothing ran and failed");
   // an untracked file is not a tracked change (a stated limit, not a refusal)
   writeFileSync(join(w.patron, "scratch"), "untracked\n");
   const untracked = w.guard("guard-check");
