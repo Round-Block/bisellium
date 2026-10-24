@@ -132,7 +132,7 @@ if (import.meta.main) {
   }
   if (check) {
     // W-402: every wrong type is named before merge() runs, one line each (see wrongTypes); nothing here writes
-    const wrong = wrongTypes(before).slice(0, 1);
+    const wrong = wrongTypes(before);
     for (const w of wrong) console.log(`${file}: ${w}; left untouched`);
     if (wrong.length > 0) process.exit(1);
   }
