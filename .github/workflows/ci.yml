@@ -261,11 +261,30 @@ jobs:
       contents: read
       checks: write
     steps:
+      - name: Refuse a merge-group base that is not a commit id
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: |
+          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "certificate: refused: base_sha is not a 40-hex commit id"
+            exit 1
+          fi
       - uses: actions/checkout@v5
         with:
           path: tooling
           ref: ${{ github.event.merge_group.base_sha }}
           persist-credentials: false
+      - name: Refuse a tooling checkout that is not the merge-group base
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: |
+          head="$(git -C tooling rev-parse HEAD)" || { echo "certificate: refused: tooling has no HEAD"; exit 1; }
+          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ || "$head" != "$BASE_SHA" ]]; then
+            echo "certificate: refused: tooling HEAD $head is not base_sha"
+            exit 1
+          fi
       - uses: actions/download-artifact@v7
         with:
           name: certify-${{ github.run_id }}
