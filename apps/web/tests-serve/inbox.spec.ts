@@ -134,6 +134,8 @@ test("W-345-b5 the reason and answer controls are reachable at 390px", async ({ 
     const lastBox = await last.boundingBox();
     expect(listBox).not.toBeNull();
     expect(lastBox).not.toBeNull();
+    const listHeight = await page.locator(".inbox__list").evaluate((node) => node.getBoundingClientRect().height);
+    expect(listHeight).toBeLessThanOrEqual(844 * 0.4);
     expect(lastBox!.y).toBeGreaterThanOrEqual(listBox!.y);
     expect(lastBox!.y + lastBox!.height).toBeLessThanOrEqual(listBox!.y + listBox!.height + 1);
     expect(await page.locator(".inbox__list").evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
