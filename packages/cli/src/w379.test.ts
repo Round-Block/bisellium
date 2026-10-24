@@ -166,6 +166,49 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
   writeFileSync(join(w.patron, "scratch"), "untracked\n");
   const untracked = w.guard("guard-check");
   assert.doesNotMatch(untracked.out, /PATRON_DIR .* (is on|has uncommitted)/, "an untracked file in PATRON_DIR is not refused");
+  rmSync(join(w.patron, "scratch"));
+  const base = [join(w.f, "stub"), join(w.f, "bin"), dirname(process.execPath), "/usr/bin", "/bin"];
+  // every fault is its own line: a rejected PATH entry does not hide the clone's faults (the judgement searches no PATH)
+  for (const [what, setup, undo, why] of [
+    ["off master", () => git(w.patron, "checkout", "-q", "-b", "side2"), () => git(w.patron, "checkout", "-q", "master"), /^PATRON_DIR .* is on refs\/heads\/side2, not master; the guard runs only while it is on master$/m],
+    ["with a tracked change", () => writeFileSync(join(w.patron, "x"), "mine\n"), () => git(w.patron, "checkout", "-q", "--", "x"), /^PATRON_DIR .* has uncommitted tracked changes \( M x\); the guard runs only while it is on a clean master$/m],
+  ] as const) {
+    setup();
+    const both = w.guard("guard-check", { PATH: ["rel", ...base].join(":") }, undefined, w.f);
+    assert.equal(both.code, 1, `a rejected PATH and a PATRON_DIR ${what}: guard-check exits 1: ${both.out}`);
+    assert.match(both.out, /^a relative PATH entry \('rel'\) comes before GUARD_BIN's directory$/m, `a rejected PATH and a PATRON_DIR ${what}: the PATH reason`);
+    assert.match(both.out, why, `a rejected PATH and a PATRON_DIR ${what}: the clone's reason`);
+    assert.equal(existsSync(toolLog), false, `a rejected PATH and a PATRON_DIR ${what}: no program found in it ran`);
+    undo();
+  }
+  // verify's probe line runs GUARD_BIN (env finds node through PATH) only when the inputs hold
+  const realNode = spawnSync("bash", ["-c", "command -v node"], { encoding: "utf8" }).stdout.trim();
+  put(join(w.f, "rel", "node"), `#!/bin/sh\necho "relative:node:$1" >> "$HOME/path-tool.log"\nexec ${sq(realNode)} "$@"\n`, 0o755);
+  assert.equal(w.guard("verify", { PATH: ["rel", ...base].join(":") }, undefined, w.f).code, 1, "a rejected PATH: verify fails");
+  const probed = existsSync(toolLog) ? readFileSync(toolLog, "utf8") : "";
+  assert.doesNotMatch(probed, /:node:.*bisellium$/m, `a rejected PATH: verify's probe ran no node found in it: ${probed}`);
+  rmSync(toolLog, { force: true });
+  rmSync(join(w.f, ".claude"), { recursive: true, force: true });
+  // an agent-clone PATH entry after GUARD_BIN's directory and before /usr/bin is rejected too, and its git never runs
+  const lateAgent = join(w.f, "agent", "late");
+  logging(lateAgent, "late-agent");
+  const lateEnv = { PATH: [join(w.f, "stub"), join(w.f, "bin"), lateAgent, dirname(process.execPath), "/usr/bin", "/bin"].join(":") };
+  for (const sub of ["guard-check", "guard"]) {
+    const r = w.guard(sub, lateEnv, undefined, w.f);
+    assert.equal(r.code, 1, `an agent-clone PATH entry after GUARD_BIN's directory: ${sub} exits 1: ${r.out}`);
+    assert.match(r.out, /^a PATH entry inside AGENT_DIR \(.*agent\/late\) comes after GUARD_BIN's directory$/m, `an agent-clone PATH entry after GUARD_BIN's directory: ${sub} names it`);
+    assert.equal(existsSync(toolLog), false, `an agent-clone PATH entry after GUARD_BIN's directory: ${sub} ran no git found in it: ${existsSync(toolLog) ? readFileSync(toolLog, "utf8") : ""}`);
+  }
+  // an accepted later entry is judged, never searched for git: the judgement and the install run git by its own path
+  const late = join(w.f, "late");
+  logging(late, "late");
+  const okEnv = { PATH: [join(w.f, "stub"), join(w.f, "bin"), late, dirname(process.execPath), "/usr/bin", "/bin"].join(":") };
+  const lateCheck = w.guard("guard-check", okEnv, undefined, w.f);
+  assert.equal(lateCheck.code, 0, `an accepted later PATH entry: guard-check passes: ${lateCheck.out}`);
+  assert.equal(existsSync(toolLog), false, `an accepted later PATH entry: guard-check ran no git found in it: ${existsSync(toolLog) ? readFileSync(toolLog, "utf8") : ""}`);
+  const lateGuard = w.guard("guard", okEnv, undefined, w.f);
+  assert.equal(lateGuard.code, 0, `an accepted later PATH entry: guard installs: ${lateGuard.out}`);
+  assert.doesNotMatch(existsSync(toolLog) ? readFileSync(toolLog, "utf8") : "", /:git$/m, "an accepted later PATH entry: the guard ran no git found through PATH");
 });
 
 test("W-379-b2 behaviour 2: guard installs only as PATRON_DIR's own copy: it fast-forwards the clone's master and links GUARD_BIN into it", () => {
