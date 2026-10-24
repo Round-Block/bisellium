@@ -1,0 +1,102 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-398-b2\s scripts/agent-settings-merge.test.mjs
+# exit: 1
+# at: 2026-10-24T12:15:21.973Z
+# sella: builder.W-398
+# tree: tree:335679f03127702a2304527307f05ad47daa1f28
+# ticket: {"opus":"W-398","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-398/studio","head":"bd44284a69e97eaf1ce6b83e3dffc1077bcf5a34","brief":"18e58f52c2266bb5a206b2c2d973f3e834f13b53","at":"2026-10-24T12:15:16.947Z"}
+
+TAP version 13
+# Subtest: W-398-b2 behaviour 2: importing the merge module runs no CLI, even when the importer's first argument is the module's own path
+not ok 1 - W-398-b2 behaviour 2: importing the merge module runs no CLI, even when the importer's first argument is the module's own path
+  ---
+  duration_ms: 77.642741
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-398/scripts/agent-settings-merge.test.mjs:251:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the settings file is unchanged
+    + actual - expected
+    
+    + '{\n' +
+    +   '  "model": "opus",\n' +
+    +   '  "sandbox": {\n' +
+    +   '    "enabled": true,\n' +
+    +   '    "filesystem": {\n' +
+    +   '      "denyRead": [\n' +
+    +   '        "~/.ssh",\n' +
+    +   '        "~/.git-credentials",\n' +
+    +   '        "~/.config/gh"\n' +
+    +   '      ],\n' +
+    +   '      "denyWrite": [\n' +
+    +   '        "/home/u/proj"\n' +
+    +   '      ]\n' +
+    +   '    }\n' +
+    +   '  },\n' +
+    +   '  "permissions": {\n' +
+    +   '    "deny": [\n' +
+    +   '      "Read(~/.ssh/**)",\n' +
+    +   '      "Read(~/.git-credentials)",\n' +
+    +   '      "Read(~/.config/gh/**)",\n' +
+    +   '      "Edit(//home/u/proj/**)",\n' +
+    +   '      "Write(//home/u/proj/**)"\n' +
+    +   '    ]\n' +
+    +   '  },\n' +
+    +   '  "env": {\n' +
+    +   '    "GH_CONFIG_DIR": "/home/u/.config/agent-gh"\n' +
+    +   '  }\n' +
+    +   '}\n'
+    - '{ "model": "opus" }\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    { "model": "opus" }
+    
+  actual: |-
+    {
+      "model": "opus",
+      "sandbox": {
+        "enabled": true,
+        "filesystem": {
+          "denyRead": [
+            "~/.ssh",
+            "~/.git-credentials",
+            "~/.config/gh"
+          ],
+          "denyWrite": [
+            "/home/u/proj"
+          ]
+        }
+      },
+      "permissions": {
+        "deny": [
+          "Read(~/.ssh/**)",
+          "Read(~/.git-credentials)",
+          "Read(~/.config/gh/**)",
+          "Edit(//home/u/proj/**)",
+          "Write(//home/u/proj/**)"
+        ]
+      },
+      "env": {
+        "GH_CONFIG_DIR": "/home/u/.config/agent-gh"
+      }
+    }
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-398/scripts/agent-settings-merge.test.mjs:262:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 85.689123
