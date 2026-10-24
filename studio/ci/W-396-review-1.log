@@ -1,0 +1,19 @@
+# opus: W-396
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16ca8-feb9-7771-924c-f316b6e060f2
+# outcome: passed
+# at: 2026-10-24T06:48:32.002Z
+# tree: tree:cd0a85d162a4e8ab6137bfdd5055fcf7476e5a48
+# brief: briefs/W-396.md blob:58933dd161f6495fb520e25261cd44d525692c02
+# ticket: {"opus":"W-396","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-396/studio","head":"19738abca51924b2b65119048b13b3afe5adf203","brief":"58933dd161f6495fb520e25261cd44d525692c02","at":"2026-10-24T06:46:14.987Z"}
+
+## Findings
+No findings
+
+## Verdict
+Both behaviours, declared row flips, file ownership, reds, and certified gate evidence are consistent with the brief.
+
+VERDICT: PASS
