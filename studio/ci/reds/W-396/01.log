@@ -1,0 +1,58 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-396-b1\s scripts/ci-certificate.test.mjs
+# exit: 1
+# at: 2026-10-24T06:25:17.642Z
+# sella: builder.W-396
+# tree: tree:34482bb0d701927a191927327825ae3f115790e6
+# ticket: {"opus":"W-396","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-396/studio","head":"5f6fd9545820d35fc45eb54716bb81cd5bb0f920","brief":"58933dd161f6495fb520e25261cd44d525692c02","at":"2026-10-24T06:25:12.639Z"}
+
+TAP version 13
+# Subtest: W-396-b1 behaviour 1: ci.yml carries the certificate job after certify, with a token that reads contents and writes check runs and nothing more, publishing master's script; no other job can write a check run, and CODEOWNERS names the publisher
+not ok 1 - W-396-b1 behaviour 1: ci.yml carries the certificate job after certify, with a token that reads contents and writes check runs and nothing more, publishing master's script; no other job can write a check run, and CODEOWNERS names the publisher
+  ---
+  duration_ms: 13.868052
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-396/scripts/ci-certificate.test.mjs:298:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    five jobs, certificate last
+    + actual - expected
+    
+      [
+        'gates',
+        'officina',
+        'web-e2e',
+        'certify',
+    -   'certificate'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'gates'
+    1: 'officina'
+    2: 'web-e2e'
+    3: 'certify'
+    4: 'certificate'
+  actual:
+    0: 'gates'
+    1: 'officina'
+    2: 'web-e2e'
+    3: 'certify'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-396/scripts/ci-certificate.test.mjs:301:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21.358641

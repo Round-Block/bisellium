@@ -77,7 +77,11 @@ test("W-168-b1 behaviour 1: ci.yml triggers merge_group and carries the certify 
   );
   assert.deepEqual(doc.on.push, { branches: ["master"] }, "push stays on master");
   assert.ok("pull_request" in doc.on, "pull_request stays");
-  assert.deepEqual(Object.keys(doc.jobs), ["gates", "officina", "web-e2e", "certify"], "four jobs, certify last");
+  assert.deepEqual(
+    Object.keys(doc.jobs),
+    ["gates", "officina", "web-e2e", "certify", "certificate"],
+    "five jobs, certify then certificate (W-396)",
+  );
 
   const job = doc.jobs.certify;
   assert.equal(job.if, "github.event_name == 'merge_group'", "certify runs only on a merge group");

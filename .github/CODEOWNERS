@@ -1,6 +1,7 @@
 # Patron-only surfaces: a PR touching these needs the Patron's review.
 /.github/                 @edckt
 /scripts/ci-certify.mjs   @edckt
+/scripts/ci-certificate.mjs @edckt
 /.claude/                 @edckt
 /studio/leges/            @edckt
 /studio/decisions/        @edckt

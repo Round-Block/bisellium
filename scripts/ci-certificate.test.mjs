@@ -1,16 +1,19 @@
 /**
- * W-370 behaviours 2-3: certify's certificate as a check run (the ci.yml job that posts it is W-396's). Rows are selected by name
+ * W-370 behaviours 2-3: certify's certificate as a check run; W-396 behaviours 1-2: the ci.yml job that posts it. Rows are selected by name
  * (`--test-name-pattern='^W-370-b2\s'`), one row per recorded red. The script is loaded inside each row, never at
  * module top, so a missing file or export is an assertion failure and not a module-load failure. Every fixture is a
- * scratch directory; nothing here reads the real studio/, calls gh or touches the network.
+ * scratch directory; nothing here reads the real studio/, calls gh or touches the network. W-396's rows read the real
+ * .github/workflows/ci.yml and .github/CODEOWNERS, and run the job's guard scripts with bash in a scratch directory.
  */
 import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(HERE, "ci-certificate.mjs");
@@ -270,4 +273,204 @@ test("W-370-b3 behaviour 3: the publisher posts the certificate the reader accep
   lines.length = 0;
   assert.equal(publish(ENV, artifact(ARTIFACT), 1), 1, "a failed post: exit 1");
   assert.match(lines.join("\n"), /certificate: gh api exited 1: HTTP 403/, "a failed post: the reason");
+});
+
+// ---------------------------------------------------------------------------
+// W-396: the ci.yml `certificate` job that runs the publisher above, and its base guards
+// ---------------------------------------------------------------------------
+const CI_YML = join(dirname(HERE), ".github", "workflows", "ci.yml");
+const CODEOWNERS = join(dirname(HERE), ".github", "CODEOWNERS");
+const BASE_SHA_EXPR = "${{ github.event.merge_group.base_sha }}";
+const GUARD_BASE = "Refuse a merge-group base that is not a commit id";
+const GUARD_HEAD = "Refuse a tooling checkout that is not the merge-group base";
+const isGuard = (step) => step.name === GUARD_BASE || step.name === GUARD_HEAD;
+/** A `shell: bash` step's script, run as GitHub runs it (`bash --noprofile --norc -eo pipefail {0}`) in `cwd`. */
+const runStep = (step, cwd, env) => {
+  const file = join(cwd, ".step.sh");
+  writeFileSync(file, step.run);
+  return spawnSync("bash", ["--noprofile", "--norc", "-eo", "pipefail", file], {
+    cwd,
+    env: { PATH: process.env.PATH, ...env },
+    encoding: "utf8",
+  });
+};
+
+test("W-396-b1 behaviour 1: ci.yml carries the certificate job after certify, with a token that reads contents and writes check runs and nothing more, publishing master's script; no other job can write a check run, and CODEOWNERS names the publisher", () => {
+  const raw = readFileSync(CI_YML, "utf8");
+  const doc = parseYaml(raw);
+  assert.deepEqual(
+    Object.keys(doc.jobs),
+    ["gates", "officina", "web-e2e", "certify", "certificate"],
+    "five jobs, certificate last",
+  );
+  const job = doc.jobs.certificate;
+  assert.deepEqual(
+    {
+      needs: job.needs,
+      if: job.if,
+      runsOn: job["runs-on"],
+      timeout: job["timeout-minutes"],
+      permissions: job.permissions,
+      continueOnError: job["continue-on-error"],
+    },
+    {
+      needs: "certify",
+      if: "github.event_name == 'merge_group'",
+      runsOn: "ubuntu-24.04",
+      timeout: 10,
+      permissions: { contents: "read", checks: "write" },
+      continueOnError: undefined,
+    },
+    "the certificate job runs after certify on a merge group, with a token that reads contents (its checkout needs it) and writes check runs, nothing more",
+  );
+  assert.deepEqual(
+    job.steps.filter((step) => !isGuard(step)),
+    [
+      {
+        uses: "actions/checkout@v5",
+        with: { path: "tooling", ref: BASE_SHA_EXPR, "persist-credentials": false },
+      },
+      { uses: "actions/download-artifact@v7", with: { name: "certify-${{ github.run_id }}", path: "certify" } },
+      { uses: "actions/setup-node@v5", with: { "node-version": 25 } },
+      {
+        if: "hashFiles('certify/**/receipts/**/*.json') != ''",
+        run: "node tooling/scripts/ci-certificate.mjs --dir certify",
+        env: { GH_TOKEN: "${{ github.token }}" },
+      },
+    ],
+    "beside its guards, four steps: master's tooling without a stored credential, certify's artifact, node, and master's publisher when the artifact holds a receipt",
+  );
+  assert.deepEqual(doc.permissions, { contents: "read" }, "the workflow's default token stays read-only");
+  assert.deepEqual(
+    doc.jobs.certify.permissions,
+    { contents: "read", "pull-requests": "read" },
+    "certify's token gains nothing",
+  );
+  const writers = Object.entries(doc.jobs).filter(
+    ([, j]) => typeof j.permissions === "string" || Object.values(j.permissions ?? {}).includes("write"),
+  );
+  assert.deepEqual(
+    writers.map(([id]) => id),
+    ["certificate"],
+    "no other job's token can write anything, a check run included",
+  );
+  assert.equal(
+    doc.jobs.certify.steps.at(-1).with.name,
+    "certify-${{ github.run_id }}",
+    "certify still uploads the artifact the certificate job reads",
+  );
+  assert.ok(!raw.includes("verify"), "the string verify stays out of ci.yml");
+  const owners = readFileSync(CODEOWNERS, "utf8").split("\n");
+  assert.ok(
+    owners.some((l) => /^\/scripts\/ci-certificate\.mjs\s+@edckt$/.test(l)),
+    "CODEOWNERS names the publisher",
+  );
+});
+
+test("W-396-b2 behaviour 2: the certificate job refuses a base_sha that is not a 40-hex commit id before any checkout, and a tooling HEAD that is not base_sha before publishing, and neither refusal can be skipped", () => {
+  const job = parseYaml(readFileSync(CI_YML, "utf8")).jobs?.certificate;
+  assert.ok(job !== undefined && Array.isArray(job.steps), "ci.yml has a certificate job");
+  const steps = job.steps;
+  const at = (pred) => steps.findIndex(pred);
+  const base = at((s) => s.name === GUARD_BASE);
+  const head = at((s) => s.name === GUARD_HEAD);
+  const checkout = at((s) => String(s.uses ?? "").startsWith("actions/checkout@"));
+  const publish = at((s) => String(s.run ?? "").includes("ci-certificate.mjs"));
+  assert.equal(base, 0, "the first step refuses a base_sha that is not a commit id, before any checkout");
+  assert.equal(
+    steps.filter((s) => String(s.uses ?? "").startsWith("actions/checkout@")).length,
+    1,
+    "the job checks out once",
+  );
+  assert.equal(head, checkout + 1, "the step right after the checkout refuses a tooling HEAD that is not base_sha");
+  assert.equal(publish, steps.length - 1, "the publisher is the last step, after both refusals");
+  assert.deepEqual(
+    steps.filter(isGuard).map((s) => s.name),
+    [GUARD_BASE, GUARD_HEAD],
+    "exactly two steps carry a guard name, the base guard first and the HEAD guard second",
+  );
+  for (const i of [base, head])
+    assert.deepEqual(
+      { keys: Object.keys(steps[i]).sort(), shell: steps[i].shell, env: steps[i].env },
+      { keys: ["env", "name", "run", "shell"], shell: "bash", env: { BASE_SHA: BASE_SHA_EXPR } },
+      `${steps[i].name}: bash, base_sha through the environment, and no if or continue-on-error`,
+    );
+  assert.deepEqual(
+    steps.slice(0, publish).filter((s) => s.if !== undefined || s["continue-on-error"] !== undefined),
+    [],
+    "no step before the publisher carries an if or a continue-on-error, so a refusal stops the job before the next step",
+  );
+  assert.equal(job["continue-on-error"], undefined, "the job has no continue-on-error");
+
+  const ws = scratch("guard");
+  for (const bad of [
+    undefined,
+    "",
+    "abc",
+    "a".repeat(39),
+    "a".repeat(41),
+    "A".repeat(40),
+    "g".repeat(40),
+    `${"a".repeat(40)}\n`,
+    ` ${"a".repeat(40)}`,
+    `${"a".repeat(40)};true`,
+  ]) {
+    const r = runStep(steps[base], ws, bad === undefined ? {} : { BASE_SHA: bad });
+    assert.notEqual(r.status, 0, `base_sha ${JSON.stringify(bad)}: refused before any checkout`);
+    assert.match(
+      r.stdout,
+      /^certificate: refused: base_sha is not a 40-hex commit id$/m,
+      `base_sha ${JSON.stringify(bad)}: the reason`,
+    );
+  }
+  assert.equal(
+    runStep(steps[base], ws, { BASE_SHA: "0123456789abcdef".repeat(3).slice(0, 40) }).status,
+    0,
+    "a 40-hex base_sha passes",
+  );
+
+  const git = (cwd, ...args) =>
+    execFileSync(
+      "git",
+      [
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        ...args,
+      ],
+      { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    ).trim();
+  const tooling = join(ws, "tooling");
+  mkdirSync(tooling);
+  git(tooling, "init", "-q");
+  git(tooling, "commit", "-q", "--allow-empty", "-m", "base");
+  const baseSha = git(tooling, "rev-parse", "HEAD");
+  git(tooling, "commit", "-q", "--allow-empty", "-m", "candidate");
+  const candidate = git(tooling, "rev-parse", "HEAD");
+  git(tooling, "checkout", "-q", "--detach", baseSha);
+  assert.equal(runStep(steps[head], ws, { BASE_SHA: baseSha }).status, 0, "tooling at base_sha passes");
+  for (const [what, env] of [
+    ["another commit", { BASE_SHA: candidate }],
+    ["an empty base_sha", { BASE_SHA: "" }],
+    ["no base_sha", {}],
+  ]) {
+    const r = runStep(steps[head], ws, env);
+    assert.notEqual(r.status, 0, `${what}: refused before publishing`);
+    assert.match(r.stdout, /^certificate: refused: tooling HEAD .* is not base_sha$/m, `${what}: the reason`);
+  }
+  git(tooling, "checkout", "-q", "--detach", candidate);
+  assert.notEqual(
+    runStep(steps[head], ws, { BASE_SHA: baseSha }).status,
+    0,
+    "tooling checked out at the candidate: refused before publishing",
+  );
+  const bare = scratch("guard-none");
+  const none = runStep(steps[head], bare, { BASE_SHA: baseSha });
+  assert.notEqual(none.status, 0, "no tooling checkout: refused before publishing");
+  assert.match(none.stdout, /^certificate: refused: tooling has no HEAD$/m, "no tooling checkout: the reason");
 });
