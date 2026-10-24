@@ -1267,3 +1267,65 @@ test("W-348-b2 behaviour 2: next reads every UI signature as ui-architect and ev
   assert.match(ready.command ?? "", /--sella ui-architect\b/, "ready names the UI signer");
   assert.deepEqual(ready.extra, [["attributed", "ui-architect (signed ci/W-900-spec-1.log)"]], "ready is attributed to the UI signer");
 });
+
+// ---------------------------------------------------------------------------
+// W-381 (D-070 C, D-076 D; W-297 part 2): a failed spec review whose S1 blocker names a class seen before in another opus
+// holds the spec's fix (the architect's revision, or the branch of a keeps-only review) until a title names the class.
+// ---------------------------------------------------------------------------
+test("W-381-b4 behaviour 4: a failed spec review whose S1 blocker names a class seen before in another opus holds the spec at spec until a cause fix or an open high opus names it", { timeout: 1_800_000 }, () => {
+  const blocker = (design: "keeps" | "changes", k = "spec×a"): string => `blocking brief:7 a defect [severity: S1] [design: ${design}] [class: ${k}]. check: none: no rule`;
+  const HOW = "a class seen before is fixed at its cause (D-070 C, D-076 D): amend W-900's title to name it, for a cause fix in this opus, or file a greenlit high opus whose title names it";
+  const why = (n: number): string => `ci/W-900-spec-${n}.log blocks on a class seen before in another opus: spec×a (ci/W-800-review-1.log); ${HOW}`;
+  const OTHER = "# opus: W-800\n\n## Findings\n1. advisory: a nit [class: spec×a]. check: none: fixture\n";
+  const reviewed = (tag: string, line: string): World => {
+    const w = srWorld(tag);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "failed", { body: `## Findings\n1. ${line}\n` });
+    return w;
+  };
+  const held = (w: World, row: string, n = 2): void => {
+    const o = specNext(w);
+    specHeld(o, row);
+    assert.equal(o.kv.get("why"), why(n), ran(`${row}: why`, o));
+  };
+
+  // a design-changing blocker: the architect's revision waits
+  const changes = reviewed("w381-b4-changes", blocker("changes"));
+  architectOrder(specNext(changes), 3, "no other opus has seen the class: the architect revises");
+  put(changes.studio, "ci/W-800-review-1.log", OTHER);
+  held(changes, "seen in another opus: the revision is held");
+  put(changes.studio, "opera/W-801.md", '---\nid: "W-801"\ntitle: "spec×a stops recurring (high)"\nkind: "feature"\ncollegium: "engineering"\nstate: greenlit\nprobationes: {}\n---\n');
+  architectOrder(specNext(changes), 3, "an open high opus names the class: the architect revises");
+  rmSync(join(changes.studio, "opera", "W-801.md"));
+  editRecord(changes, "repo", (doc) => doc.setIn(["title"], "W-900, fixing the cause of spec×a"));
+  architectOrder(specNext(changes), 3, "the opus's own title names the class: the architect revises");
+  editRecord(changes, "repo", (doc) => doc.setIn(["title"], "W-900"));
+  held(changes, "the title restored: held again");
+  const advisory = reviewed("w381-b4-advisory", "blocking brief:7 a defect [severity: S1] [design: changes]. check: none: no rule");
+  put(advisory.studio, "ci/W-800-review-1.log", OTHER);
+  architectOrder(specNext(advisory), 3, "a blocker with no class: the architect revises");
+
+  // two failed reviews stand without a third (D-061 §4): the newest is held
+  sign(changes, 3);
+  review(changes, 4, "failed", { body: `## Findings\n1. ${blocker("changes")}\n` });
+  held(changes, "a second failed review", 4);
+  sign(changes, 5);
+  held(changes, "two failed reviews stand without a third: the newest is held", 4);
+
+  // a keeps-only review: its branch waits, and after the branch so do the reds
+  const keeps = reviewed("w381-b4-keeps", blocker("keeps"));
+  expectStep(specNext(keeps), "branch", "named", "no other opus has seen the class: branch with the required fix");
+  put(keeps.studio, "ci/W-800-review-1.log", OTHER);
+  held(keeps, "seen in another opus: the branch is held");
+  landed(keeps);
+  git(keeps.repo, ["branch", BRANCH]);
+  git(keeps.repo, ["worktree", "add", "-q", keeps.wt, BRANCH]);
+  verb(keeps.wt, ["ready", OPUS, "--sella", "architect", "--studio", keeps.wtStudio, "--now", T.ready]);
+  commit(keeps.wt, `studio(${OPUS}): ready`);
+  handoffAt(keeps, "wt", T.handoffFresh);
+  held(keeps, "after the branch: the reds are held");
+  editRecord(keeps, "wt", (doc) => doc.setIn(["title"], "W-900, fixing the cause of spec×a"));
+  commit(keeps.wt, "test: W-900 names its cause fix");
+  expectStep(specNext(keeps), "reds", "named", "the branch title names the class: the reds are ordered");
+});

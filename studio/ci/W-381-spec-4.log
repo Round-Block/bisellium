@@ -1,0 +1,22 @@
+# opus: W-381
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a168a3-ab24-7be2-8ee0-0839ef5ab2ab
+# outcome: failed
+# at: 2026-10-23T13:48:01.098Z
+# tree: tree:b82b23394fa89a7dd50ef0cce2b790ebf0204980
+# brief: briefs/W-381.md blob:e9f4827061b7495d5dd329c3dac730f95ee14537
+# ticket: {"opus":"W-381","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"78a8fbcf1b38331e294d79bb494800c66ab2b496","brief":"e9f4827061b7495d5dd329c3dac730f95ee14537","at":"2026-10-23T13:47:54.414Z"}
+
+## Findings
+1. blocking — brief:72 Reached by ci/W-381-spec-2.log #1’s class: `/home/edckt/.bisellium-evidence/W-381-spec/prototype-repo/packages/commands/src/verdict.ts:642` and `:644` accept any backslash-prefixed line, such as an accidental `\ typo`, as a no-newline note, so `verdict --phase spec` can still admit a malformed patch outside the promised well-formed unified-diff domain; W-381-b2 tests only the valid exact note. Replace brief:72’s body/trailer clause with: `then exactly the body lines its counts call for, each opening space, - or +; only the exact uncounted line \ No newline at end of file is allowed immediately after the counted body line it annotates; after the counts reach zero, only that exact annotation for the immediately preceding body line may remain` [severity: S1] [design: keeps] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts W-381-b2
+
+## Earlier findings
+- ci/W-381-spec-2.log #1: closed — brief:72 and brief:103 now require matching `---`/`+++` headers and one count-checked hunk; `/home/edckt/.bisellium-evidence/W-381-spec/prototype-repo/packages/commands/src/verdict.ts:627` rejects the original truncated `+++` case, pinned by `/home/edckt/.bisellium-evidence/W-381-spec/prototype-repo/packages/cli/src/verdict-citation.test.ts:1240`.
+- ci/W-381-spec-2.log #2: closed — brief:74 and brief:106 now cover CRLF/CR/LF history and fail closed on listing or matching-log read failure; `/home/edckt/.bisellium-evidence/W-381-spec/prototype-repo/packages/cli/src/next.ts:1332` and `/home/edckt/.bisellium-evidence/W-381-spec/prototype-repo/packages/cli/src/next.ts:1363` implement those cases, pinned at `/home/edckt/.bisellium-evidence/W-381-spec/prototype-repo/packages/cli/src/next-review.test.ts:1604`.
+
+## Verdict
+The prior blockers’ exact cases are closed, but the stricter mutation reader retains one blocking malformed-diff acceptance in the same class.
+VERDICT: FAIL

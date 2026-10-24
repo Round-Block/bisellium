@@ -1,0 +1,21 @@
+# opus: W-381
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16b78-5281-7281-a231-0b520ac06ad8
+# outcome: failed
+# at: 2026-10-24T01:58:47.300Z
+# tree: tree:538c2a431b1e76fbac4df50797cdaf8eae1275fc
+# brief: briefs/W-381.md blob:e9f4827061b7495d5dd329c3dac730f95ee14537
+# ticket: {"opus":"W-381","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-381/studio","head":"1a4068227ce103f7524b8782bae56f3ca343fd42","brief":"e9f4827061b7495d5dd329c3dac730f95ee14537","at":"2026-10-24T01:58:05.986Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:1422 [severity: S1] Reached by ci/W-381-review-1.log #1’s class: the `high` boundary omits Unicode combining marks (`\p{M}`), so a title such as `tests×a high́` clears the hold even though `high` is part of a larger Unicode word, contrary to brief:75. [class: tests×one-sided-bound-assertion] — check: packages/cli/src/next-review.test.ts W-381-f1
+
+## Earlier findings
+- ci/W-381-review-1.log #1: closed — packages/cli/src/next.ts:1422 and packages/cli/src/next.ts:1424 now reject uppercase and non-ASCII letters adjacent to `high` or the class, pinned by packages/cli/src/next-review.test.ts:2013 and packages/cli/src/next-review.test.ts:2019.
+
+## Verdict
+The original cases are fixed, but the same boundary defect remains for combining-mark titles.
+VERDICT: FAIL

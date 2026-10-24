@@ -1,0 +1,21 @@
+# opus: W-381
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16b78-5281-7281-a231-0b520ac06ad8
+# outcome: passed
+# at: 2026-10-24T02:35:40.018Z
+# tree: tree:ea7ba75bde259384f2879eae8a7fb3a8aac2fce7
+# brief: briefs/W-381.md blob:17fde55adb7794f80a02aee82be6504b8141845a
+# ticket: {"opus":"W-381","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-381/studio","head":"acdf0cfd7e768358d6ef9448fb6338bb3b114a90","brief":"17fde55adb7794f80a02aee82be6504b8141845a","at":"2026-10-24T02:35:16.210Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-381-review-2.log #1: closed — packages/cli/src/next.ts:1422 and packages/cli/src/next.ts:1424 now include `\p{M}` in both token boundary sets, pinned on both sides by packages/cli/src/next-review.test.ts:2025.
+
+## Verdict
+The combining-mark boundary is closed across both title-token matchers with matching specification and regression evidence.
+VERDICT: PASS

@@ -213,11 +213,23 @@ export interface SurfaceGap {
   missing: string[];
 }
 
+/** W-381: a brief names a prototype when a real line, trimmed, opens `Prototype:` in any case (as W-326's `readPrototype`
+ *  attempts it; a Prototype line inside an HTML comment is read there and not here). */
+const PROTOTYPE_ATTEMPT = /^prototype\s*:/i;
+
 /** W-322: the brief's ruled cases in brief order, each with the pins its real line holds; `formless`, the rows whose
  *  Valid domain says any text or any string and which hold no forms clause; W-336: `pathGaps`, the path-typed rows'.
- *  W-373: `surfaceGaps`, the rows naming a surface of `SURFACES`, whose cited lines are cases too. Text only, like
- *  `inputDomainRows`. */
-export function ruledCases(briefText: string): { cases: RuledCase[]; formless: number[]; pathGaps: PathGap[]; surfaceGaps: SurfaceGap[] } {
+ *  W-373: `surfaceGaps`, the rows naming a surface of `SURFACES`, whose cited lines are cases too. W-381: `promises`, each
+ *  promise line `absolutePromiseProblems` reads (a `PROMISE_ATTEMPT` inside its span) as a case of its own, `row` its own
+ *  line; `prototype`, whether the brief names a prototype. Text only, like `inputDomainRows`. */
+export function ruledCases(briefText: string): {
+  cases: RuledCase[];
+  formless: number[];
+  pathGaps: PathGap[];
+  surfaceGaps: SurfaceGap[];
+  promises: RuledCase[];
+  prototype: boolean;
+} {
   const real = realLines(briefText);
   // W-334: a line number past 15 digits is past any brief's last line, so it clamps without a double
   const clamp = (digits: string): number => (digits.length > 15 ? real.length : Math.min(Number(digits), real.length));
@@ -257,7 +269,59 @@ export function ruledCases(briefText: string): { cases: RuledCase[]; formless: n
     }
     for (const m of new Set(cited)) cases.push({ line: m, row: n, pins: pinsOf(m), unpinned: false });
   }
-  return { cases, formless, pathGaps, surfaceGaps };
+  const { start, stop } = promiseSpan(real);
+  const promises: RuledCase[] = [];
+  for (let i = start; i < stop; i++)
+    if (PROMISE_ATTEMPT.test(real[i]!.trim())) promises.push({ line: i + 1, row: i + 1, pins: pinsOf(i + 1), unpinned: UNPINNED.test(real[i]!) });
+  const prototype = real.some((l) => PROTOTYPE_ATTEMPT.test(l.trim()));
+  return { cases, formless, pathGaps, surfaceGaps, promises, prototype };
+}
+
+/** W-381: the first pin a kill's output proves, in pin order, or undefined. The output is Node's TAP reporter's (its first
+ *  line is exactly `TAP version 13`); a pin is proved when its row's subtest, from a `# Subtest: <row>` line to its own
+ *  status line at the same indent and that line's diagnostic block, has that status line read `not ok <k> - <row>` (each
+ *  the row's name, then a space or the line's end) and holds a diagnostic block whose `error:` message (trimmed: a quoted
+ *  `'<text>'`, a doubled `''` read as one quote, or the first line of an `error: |-` block) is the pin's assertion text, or
+ *  opens with it and `: ` (a row's `<case>: <detail>` message), and whose `code:` is `'ERR_ASSERTION'`. ponytail: every other TAP or YAML form, and a Playwright report, proves nothing. */
+export function killedPin(output: string, pins: readonly Pin[]): Pin | undefined {
+  const lines = output.split(/\r?\n/);
+  if (lines[0] !== "TAP version 13") return undefined;
+  return pins.find((pin) => provesPin(lines, pin));
+}
+
+function provesPin(lines: string[], pin: Pin): boolean {
+  // the indent before `head` and the pinned row's name when `line` opens with them, else undefined
+  const named = (line: string, head: RegExp): string | undefined => {
+    const m = head.exec(line);
+    if (m === null) return undefined;
+    const rest = line.slice(m[0].length);
+    return rest.startsWith(pin.row) && /^(?:\s|$)/.test(rest.slice(pin.row.length)) ? m[1]! : undefined;
+  };
+  for (let s = 0; s < lines.length; s++) {
+    const indent = named(lines[s]!, /^( *)# Subtest: /);
+    if (indent === undefined) continue;
+    const e = lines.findIndex((l, i) => i > s && l.startsWith(indent) && /^(?:not )?ok \d+ - /.test(l.slice(indent.length)));
+    if (e === -1 || named(lines[e]!, /^( *)not ok \d+ - /) !== indent) continue;
+    const close = lines.findIndex((l, i) => i > e && l === `${indent}  ...`);
+    if (diagnosticProves(lines.slice(s, close === -1 ? e + 1 : close + 1), pin.assertion.trim())) return true;
+  }
+  return false;
+}
+
+/** Whether some YAML diagnostic block among `lines` (a `---` line to the next `...` line at its indent) carries an `error:`
+ *  message that is `assertion` or opens with it and `: `, and `code: 'ERR_ASSERTION'`. */
+function diagnosticProves(lines: string[], assertion: string): boolean {
+  for (let i = 0; i < lines.length; i++) {
+    const open = /^( *)---$/.exec(lines[i]!);
+    if (open === null) continue;
+    const end = lines.findIndex((l, j) => j > i && l === `${open[1]}...`);
+    const block = lines.slice(i + 1, end === -1 ? undefined : end);
+    const at = block.findIndex((l) => l.startsWith(`${open[1]}error: `));
+    const value = at === -1 ? undefined : block[at]!.slice(`${open[1]}error: `.length);
+    const message = value === "|-" ? block[at + 1]?.trim() : value !== undefined && /^'.*'$/.test(value) ? value.slice(1, -1).replaceAll("''", "'").trim() : undefined;
+    if ((message === assertion || message?.startsWith(`${assertion}: `) === true) && block.includes(`${open[1]}code: 'ERR_ASSERTION'`)) return true;
+  }
+  return false;
 }
 
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
@@ -376,17 +440,23 @@ function withoutInlineCode(text: string): string {
   });
 }
 
-/** W-196: from the first real "## Intent" line (else the top) up to the first real "## Out of scope" after it (else the
- *  end), with inline code spans removed, an ABSOLUTE phrase appears only on a promise line, and each promise's slug and
- *  claim (lower-cased, spaces collapsed, trailing .,; dropped) appear once. */
-function absolutePromiseProblems(real: string[]): string[] {
+/** W-196: the span promise lines are read in, as indexes of `real`: from the first real "## Intent" line (else the top) up
+ *  to the first real "## Out of scope" after it (else the end), that line excluded. */
+function promiseSpan(real: string[]): { start: number; stop: number } {
   const intent = real.findIndex((l) => l.trim() === "## Intent");
   const start = intent === -1 ? 0 : intent;
   const stop = real.findIndex((l, i) => i > start && l.trim() === "## Out of scope");
+  return { start, stop: stop === -1 ? real.length : stop };
+}
+
+/** W-196: inside `promiseSpan`, with inline code spans removed, an ABSOLUTE phrase appears only on a promise line, and each
+ *  promise's slug and claim (lower-cased, spaces collapsed, trailing .,; dropped) appear once. */
+function absolutePromiseProblems(real: string[]): string[] {
+  const { start, stop } = promiseSpan(real);
   const slugs = new Set<string>();
   const claims = new Set<string>();
   const problems: string[] = [];
-  for (let i = start; i < (stop === -1 ? real.length : stop); i++) {
+  for (let i = start; i < stop; i++) {
     const t = real[i]!.trim();
     if (PROMISE_ATTEMPT.test(t)) {
       const m = parsePromise(t);
