@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { readFront, type Manifest } from "@bisellium/adapter-native";
@@ -1424,5 +1424,66 @@ test("W-355-b2 behaviour 2: after opus/<id>, next reads the spec's seat pairing 
   git(c.repo, ["worktree", "remove", "--force", c.wt]);
   const held = specNext(c);
   specHeld(held, "the committed branch's pair wants a UI signature", new RegExp(`no ${UI_ARCHITECT} signature names the current briefs/W-900\\.md.*not a usable worktree`));
+});
+const W355_OWNER = "the spec's kind and seat pairing are read only from the checkout that owns its evidence (W-355)";
+
+test("W-355-b3 behaviour 3: an absent, unreadable, malformed or non-mapping owner record, or an unreadable owner manifest, holds next at spec instead of falling back to the trunk", { timeout: 1_800_000 }, () => {
+  // [the row's label, the record's bytes (null: deleted), the why's verb]
+  const bad: [string, string | null, string][] = [
+    ["a record absent holds", null, "is absent or unreadable"],
+    ["a record malformed holds", "---\nstate: [unclosed\n---\n", "is malformed"],
+    ["a record without front matter holds", "kind: ui\nstate: greenlit\n", "is malformed"],
+    ["a record not a mapping holds", "---\n- greenlit\n---\n", "is not a mapping"],
+  ];
+  const each = (studio: string, where: string, w: World, intact: () => void): void => {
+    const rec = join(studio, "opera", `${OPUS}.md`);
+    const text = readFileSync(rec, "utf8");
+    for (const [label, body, why] of bad) {
+      if (body === null) rmSync(rec);
+      else writeFileSync(rec, body);
+      specHeld(specNext(w), `${where}: ${label}`, new RegExp(`^opera/W-900\\.md in ${esc(where)} ${why}.*${esc(W355_OWNER)}$`));
+      writeFileSync(rec, text);
+    }
+    chmodSync(rec, 0o000);
+    try {
+      specHeld(specNext(w), `${where}: an unreadable record holds`, new RegExp(`^opera/W-900\\.md in ${esc(where)} is absent or unreadable`));
+    } finally {
+      chmodSync(rec, 0o644);
+    }
+    intact();
+  };
+
+  // before the branch: the main checkout's record, beside an unsigned brief the trunk's record would have the architect sign
+  const w = srWorld("w355-b3");
+  putBrief(w);
+  architectOrder(specNext(w), 1, "intact: the architect signs");
+  each(w.studio, "the main checkout (studio)", w, () => architectOrder(specNext(w), 1, "restored: the architect signs again"));
+
+  // after the branch: the worktree's record and manifest
+  const b = w355Branch("w355-b3-branch", false);
+  amend(b);
+  commit(b.wt, `studio(${OPUS}): brief amended`);
+  architectOrder(specNext(b), 3, "intact: the architect signs on the branch");
+  each(b.wtStudio, ".worktrees/W-900/studio", b, () => architectOrder(specNext(b), 3, "restored: the architect signs on the branch again"));
+  const manifest = join(b.wtStudio, "bisellium.yml");
+  const kept = readFileSync(manifest, "utf8");
+  writeFileSync(manifest, "bisellium: [unclosed\n");
+  specHeld(specNext(b), "a malformed worktree manifest holds", new RegExp(`bisellium\\.yml.*the spec's seat pairing is read only from the checkout that owns its evidence, \\.worktrees/W-900/studio \\(W-355\\)$`));
+  writeFileSync(manifest, "- a list\n");
+  specHeld(specNext(b), "a non-mapping worktree manifest holds", /bisellium\.yml: not a mapping/);
+  writeFileSync(manifest, kept);
+  architectOrder(specNext(b), 3, "restored: the architect signs on the branch again");
+
+  // no usable worktree: the committed branch's record and manifest
+  const c = w355Branch("w355-b3-committed", false);
+  git(c.wt, ["rm", "-q", `studio/opera/${OPUS}.md`]);
+  commit(c.wt, "studio: the record leaves opus/W-900");
+  git(c.repo, ["worktree", "remove", "--force", c.wt]);
+  specHeld(specNext(c), "the committed branch's absent record holds", new RegExp(`^opera/W-900\\.md in opus/W-900 is absent or unreadable.*${esc(W355_OWNER)}$`));
+  const d = w355Branch("w355-b3-committed-manifest", false);
+  writeFileSync(join(d.wtStudio, "bisellium.yml"), "bisellium: [unclosed\n");
+  commit(d.wt, "studio: a malformed manifest on opus/W-900");
+  git(d.repo, ["worktree", "remove", "--force", d.wt]);
+  specHeld(specNext(d), "the committed branch's malformed manifest holds", /^bisellium\.yml on opus\/W-900 does not parse/);
 });
 
