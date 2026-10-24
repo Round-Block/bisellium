@@ -92,3 +92,22 @@ test("W-406-b2 Board header preserves live and stale refresh time above one foot
     await expect(liveness, `${width}: stale state retains the last successful refresh`).toHaveText(`stale · last updated ${refreshTime}`);
   }
 });
+
+test("W-406-b3 Officina today rule clears the last day letter at 1280 and 390", async ({ page }) => {
+  for (const width of [1280, 390] as const) {
+    await open(page, "officina", width);
+    const rule = page.locator(".fasti-strip__today-rule");
+    await expect(rule, `${width}: exactly one day is today`).toHaveCount(1);
+    const column = rule.locator("xpath=..");
+    const letter = column.locator(".fasti-strip__weekday");
+    const [columnBox, ruleBox, letterBox] = await Promise.all([column.boundingBox(), rule.boundingBox(), letter.boundingBox()]);
+    expect(columnBox, `${width}: the today column has a box`).toBeTruthy();
+    expect(ruleBox, `${width}: the today rule has a box`).toBeTruthy();
+    expect(letterBox, `${width}: the last weekday letter has a box`).toBeTruthy();
+    expect(ruleBox!.height, `${width}: the today rule remains full-height`).toBeCloseTo(columnBox!.height, 0);
+    const separated = ruleBox!.x >= letterBox!.x + letterBox!.width - 0.5 || ruleBox!.x + ruleBox!.width <= letterBox!.x + 0.5;
+    expect(separated, `${width}: today rule and weekday letter do not overlap`).toBe(true);
+    await served.close();
+    served = undefined;
+  }
+});
