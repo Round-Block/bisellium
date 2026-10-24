@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, specHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
 const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1 [severity: S1]. check: none: fixture`;
 const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1 [severity: S1]. check: none: fixture`;
@@ -103,7 +103,7 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
       for (const part of parts) assert.match(o.kv.get("why") ?? "", part, ran(`${name}: why names ${part}`, o));
     });
   trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => t.replace("studio: W-124 fixture", "studio: renamed") }], () => buildFix(n167(w), "an unrelated key differing does not hold"));
-  trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => `${t}: [unparseable\n` }], () => reviewHeld(n167(w), "an unparseable worktree manifest holds"));
+  trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => `${t}: [unparseable\n` }], () => specHeld(n167(w), "an unparseable worktree manifest holds", /bisellium\.yml: .*the spec's seat pairing is read only from the checkout that owns its evidence, \.worktrees\/W-900\/studio \(W-355\)$/));
 
   // the cited gate
   const gates: [string, (t: string) => string][] = [

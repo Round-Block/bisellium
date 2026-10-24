@@ -157,8 +157,29 @@ function recordOf(src: Src | undefined, id: string): Dict | undefined {
   }
 }
 
-/** W-355 (prototype stage): the checkout that owns a spec's evidence, its opus record and its manifest. */
+/**
+ * W-355: the checkout that owns a spec's evidence (the main checkout before opus/<id>, its usable worktree after, else the committed
+ * branch) and the opus record and manifest read there: the spec's kind and seat pairing come from this owner alone. An absent,
+ * unreadable, malformed or non-mapping record, or an unreadable owner manifest, is an error, and next holds at spec; it never
+ * falls back to the trunk's record or the main checkout's manifest.
+ */
 export type SpecOwner = { where: string; record: Dict; manifest: Manifest } | { error: string };
+function readSpecOwner(src: Src | undefined, id: string, where: string, manifest: () => { manifest: Manifest } | { error: string }): SpecOwner {
+  const rel = recordRel(id);
+  const held = (why: string): { error: string } => ({ error: `${rel} in ${where} ${why}; the spec's kind and seat pairing are read only from the checkout that owns its evidence (W-355)` });
+  const text = src?.read(rel);
+  if (text === undefined) return held("is absent or unreadable");
+  let data: unknown;
+  try {
+    data = parseFrontMatter<unknown>(text, rel).data;
+  } catch (e) {
+    return held(`is malformed (${one((e as Error).message.split("\n")[0] ?? "")})`);
+  }
+  if (!isDict(data)) return held("is not a mapping");
+  const m = manifest();
+  if ("error" in m) return { error: `${m.error}; the spec's seat pairing is read only from the checkout that owns its evidence, ${where} (W-355)` };
+  return { where, record: data, manifest: m.manifest };
+}
 /** W-355: the committed opus branch's manifest, read strictly (the branch has no usable worktree). */
 function branchManifest(src: Src | undefined, id: string): { manifest: Manifest } | { error: string } {
   const text = src?.read("bisellium.yml");
@@ -755,10 +776,9 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const trunkRecord = recordOf(trunk, id);
   const branchRecord = recordOf(branch, id);
   const defaultDesign = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
-  // W-355 (prototype stage 2): the owner's manifest after the branch, still falling back to the main checkout's
+  // W-355: the spec's kind and seat pairing come from the checkout that owns its evidence, read strictly
   const ownerWhere = tip === undefined ? `the main checkout (${studioRel})` : usable ? join(".worktrees", id, studioRel) : `opus/${id}`;
-  const ownerManifest = tip === undefined ? { manifest } : usable ? readWorktreeManifest(wt.studio) : branchManifest(branch, id);
-  const specOwner: SpecOwner = { where: ownerWhere, record: (tip === undefined ? recordOf(fsSrc(studioAbs), id) : branchRecord) ?? trunkRecord ?? {}, manifest: "error" in ownerManifest ? manifest : ownerManifest.manifest };
+  const specOwner = readSpecOwner(tip === undefined ? fsSrc(studioAbs) : branch, id, ownerWhere, () => (tip === undefined ? { manifest } : usable ? readWorktreeManifest(wt.studio) : branchManifest(branch, id)));
   // the one signer every later reader (red attribution, signedAfter, commits) uses is the spec rung's own selection
   const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"] });
   const design = pairing !== undefined && !("error" in pairing) ? pairing.signer : defaultDesign;
