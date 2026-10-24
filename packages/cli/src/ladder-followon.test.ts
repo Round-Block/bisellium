@@ -454,7 +454,7 @@ const evidence = (): Record<string, string> => ({ "briefs/W-900.md": BRIEF, "ci/
 
 if (runs(7)) {
   test("W-128 behaviour 7: a spec or done that must still land is landed by next, never by the scripts", () => {
-    const base = { id: "W-900", design: "architect", trunkRecord: { state: "greenlit" }, uiSpecProblems: () => [] as string[] };
+    const base = { id: "W-900", design: "architect", trunkRecord: { state: "greenlit" }, specOwner: { where: "fixture", record: { state: "greenlit" } }, uiSpecProblems: () => [] as string[] };
     const done = deriveNext({
       ...base,
       trunk: mem(evidence()),

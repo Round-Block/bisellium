@@ -1,0 +1,76 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-355-b2\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-24T14:11:47.695Z
+# sella: builder.W-355
+# tree: tree:bfd7cafc3d2ae78e25e0cbcdec4d77274e33485a
+# ticket: {"opus":"W-355","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-355/studio","head":"bb5143052903f7845a12156fd26b04647b475929","brief":"c0af4acc1af2f5040b867881d3270e59f84554d9","at":"2026-10-24T14:11:46.524Z"}
+
+TAP version 13
+# Subtest: W-355-b2 behaviour 2: after opus/<id>, next reads the spec's seat pairing from the opus worktree's manifest, the one its verdict trusts, never the main checkout's
+not ok 1 - W-355-b2 behaviour 2: after opus/<id>, next reads the spec's seat pairing from the opus worktree's manifest, the one its verdict trusts, never the main checkout's
+  ---
+  duration_ms: 1866.657042
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-355/packages/cli/src/next-spec.test.ts:42:2604'
+  failureType: 'testCodeFailure'
+  error: |-
+    the worktree's pair orders its UI signer
+    --- exit 0
+    --- stdout
+    next: W-900 spec named
+    actor: architect
+    why: no architect signature names the current briefs/W-900.md (ci/W-900-spec-<n>.log, phase spec, passed)
+    head: opus/W-900 929c11e551e9
+    role: architect
+    sella: architect
+    boot: bisellium context --sella architect --studio .worktrees/W-900/studio
+    budget_tokens: 100000
+    phase: spec
+    round: 3
+    inputs: briefs/W-900.md, opera/W-900.md#traditio
+    command: dispatch architect to sign the spec for W-900; close out with: bisellium verdict W-900 --round 3 --sella architect --outcome passed --phase spec --studio .worktrees/W-900/studio
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+      {
+        model: undefined,
+        role: 'architect',
+        round: '3',
+    +   sella: 'architect',
+    -   sella: 'ui-architect',
+        step: 'next: W-900 spec named'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    step: 'next: W-900 spec named'
+    role: 'architect'
+    sella: 'ui-architect'
+    round: '3'
+  actual:
+    step: 'next: W-900 spec named'
+    role: 'architect'
+    sella: 'architect'
+    round: '3'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-355/packages/cli/src/next-spec.test.ts:1402:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1882.298629

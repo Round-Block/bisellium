@@ -1025,9 +1025,9 @@ test("W-293-b3 behaviour 3: before the branch, the dispatch gate reads the hando
   const rec = join(t.repo, "studio/opera", `${OPUS}.md`);
   const text = readFileSync(rec, "utf8");
   rmSync(rec);
-  specHeld(specNext(t), "a deleted record holds", /stale handover/);
+  specHeld(specNext(t), "a deleted record holds", /^opera\/W-900\.md in the main checkout \(studio\) is absent or unreadable/);
   writeFileSync(rec, "---\nstate: [unclosed\n---\n");
-  specHeld(specNext(t), "an unparsable record holds", /stale handover/);
+  specHeld(specNext(t), "an unparsable record holds", /^opera\/W-900\.md in the main checkout \(studio\) is malformed/);
   writeFileSync(rec, text);
   architectOrder(specNext(t), 3, "the restored record admits the order again");
 });
