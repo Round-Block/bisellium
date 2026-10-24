@@ -178,3 +178,31 @@ Classes in more than one opus, 2026-10-06..2026-10-20:
 - class spec×prose-contradiction-under-revision seen in 2 opera: W-241, W-274
 - class tests×one-sided-bound-assertion seen in 2 opera: W-317, W-330
 - class tests×ruled-case-uncovered seen in 4 opera: W-178, W-292, W-322, W-335
+
+### 2026-10-24
+
+| Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
+|---|---|---|---|---|
+| none done | | | | |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| none | | | | | |
+
+- no loop
+
+Classes in more than one opus, 2026-10-10..2026-10-24:
+- class review×evidence-backfilled-or-absent seen in 8 opera: W-178, W-179, W-312, W-340, W-341, W-360, W-361, W-366
+- class review×fail-open-on-malformed-records-patched-per-site seen in 5 opera: W-275, W-326, W-337, W-338, W-348
+- class security×symlink-parent-write-escape seen in 2 opera: W-259, W-274
+- class spec×fix-opens-new-surface seen in 3 opera: W-310, W-322, W-362
+- class spec×input-domain-missing-or-unenforceable seen in 20 opera: W-179, W-274, W-292, W-299, W-305, W-306, W-310, W-312, W-316, W-334, W-337, W-338, W-339, W-340, W-348, W-358, W-362, W-369, W-376, W-377
+- class spec×input-without-named-rejector seen in 3 opera: W-288, W-310, W-328
+- class spec×promise-unattainable-under-accepted-domain seen in 15 opera: W-241, W-264, W-268, W-274, W-293, W-299, W-302, W-310, W-312, W-326, W-339, W-341, W-348, W-369, W-377
+- class spec×prose-contradiction-under-revision seen in 2 opera: W-241, W-274
+- class tests×one-sided-bound-assertion seen in 7 opera: W-310, W-317, W-328, W-330, W-360, W-369, W-377
+- class tests×ruled-case-uncovered seen in 8 opera: W-178, W-292, W-322, W-335, W-336, W-337, W-350, W-376
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-310, W-369
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-339, W-340
