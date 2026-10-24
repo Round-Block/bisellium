@@ -1,0 +1,20 @@
+# opus: W-402
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16ea4-b537-7f03-a0f1-3fe6b2369bd1
+# outcome: passed
+# at: 2026-10-24T16:05:48.849Z
+# tree: tree:6f46adcd263c7c3427f6203437049606eed7dc86
+# brief: briefs/W-402.md blob:cc75487cd73c421959f95ff02cb41daec50490ee
+# ticket: {"opus":"W-402","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"10f9a4f089d52990bf9f7575d1d949170e252643","brief":"cc75487cd73c421959f95ff02cb41daec50490ee","at":"2026-10-24T16:05:43.845Z"}
+
+## Findings
+1. advisory — brief:63 [severity: S4] The Input domain omits the readers and reused calls added by `mergedWorld`, `setAt`, `W-402-b1` and `W-402-b2`. Replace brief:63 with its current row followed by: `| 9. Test fixture setup: world(), the patron/agent realpathSync calls and the write-mode node agent-settings-merge.mjs call | world completes, both directories resolve and the merge exits 0 | world’s filesystem/git operations and realpathSync throw; assert.equal(made.status, 0) rejects a failed merge |`, `| 10. The merged settings fixture read by readFileSync, JSON.parse, setAt and missing | readable JSON produced by the successful merge, with object parents at every fixed mutation path | readFileSync and JSON.parse throw; property-access failure or the row’s exact-output assertions reject a malformed shape |`, and `| 11. Reused --check and verify calls in the new rows | --check returns the asserted status/stdout/stderr triple and verify returns the asserted settings block | assert.deepEqual rejects every differing result and fails the row |`. [class: spec×input-without-named-rejector] — check: packages/cli/src/w398.test.ts W-402-b1/W-402-b2
+2. advisory — brief:61 [severity: S4] `wrongTypes` does not read post-run state or reject a mutation, so it is not the rejecting function for the bytes, mtime and home record. Replace brief:61 with: `| 6. The file's bytes, mtime and the home across a verify run | the settings bytes and mtime equal their pre-run values and the home snapshot is unchanged | readFileSync, lstatSync and snapshot throw on an unreadable observation; assert.equal and assert.deepEqual reject any observed change, failing W-402-b1 or W-402-b2 |`. [class: spec×input-without-named-rejector] — check: packages/cli/src/w398.test.ts W-402-b1/W-402-b2
+3. advisory — brief:43 [severity: S4] The read-only promise observes the settings through both direct reads and `snapshot` without naming the trusted reader as D-070 requires. Replace brief:43 with: `Promise read-only: verify on every form of this brief's Input domain leaves the settings file byte-identical with its mtime unchanged and changes no file under the home. For evidence, the direct readFileSync comparison is authoritative for settings bytes, direct lstatSync is authoritative for its mtime, and snapshot is authoritative for every other home entry; snapshot's redundant settings observations are not a second authority, and any reader failure throws and fails the row. Pinned by W-402-b2 "permissions [] and env a string: the settings file is byte-identical", W-402-b2 "permissions [] and env a string: its mtime is unchanged", W-402-b2 "denyWrite a string, denyRead a number, permissions.deny an object and env a string: no file under the home changed", W-402-b1 "a string where env belongs, verify: no file under the home changed" and W-402-b1 "env as a string: the settings file is byte-identical" — limit: W-398's Promise read-only and its limits (a stand-in gh, no installed guard, the filesystem's mtime) are kept unchanged; this opus adds no write call.` [class: spec×reader-disagreement-undeclared] — check: none: require multi-reader promises to name the trusted reader or disagreement boundary
+
+## Verdict
+The production classifier and both numbered behaviours are feasible; the remaining findings are advisory test-boundary declarations.
+VERDICT: PASS

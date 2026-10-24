@@ -1,0 +1,30 @@
+# opus: W-402
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T16:00:19.286Z
+# tree: tree:6f46adcd263c7c3427f6203437049606eed7dc86
+# brief: briefs/W-402.md blob:cc75487cd73c421959f95ff02cb41daec50490ee
+# ticket: {"opus":"W-402","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"10f9a4f089d52990bf9f7575d1d949170e252643","brief":"cc75487cd73c421959f95ff02cb41daec50490ee","at":"2026-10-24T16:00:18.713Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-402-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the defect on master 10f9a4f0: W-398's wrong-type block in --check runs after merge() (agent-settings-merge.mjs:116-127), so a wrong type merge() throws on (env "bad", permissions 5, denyRead 7, deny {}) prints Node's message, and with several at once one throw or one find hides the rest; the review's case, permissions [] with env "bad", prints only Node's message for env — check: brief:13, repro-master.out, red-b1-master.out, red-b2-master.out
+2. advisory — the fix is one classifier, wrongTypes, run in --check before merge(): the seven fields merge() reads by name (checkShape's three, denyRead, permissions, permissions.deny, env), each with the type it needs, one line per wrong field in merge()'s own read order (the declared precedence), and nothing else printed; null follows merge() (refused at the sandbox shape, absent where merge() reads ??); the write mode is unchanged — check: brief:15, brief:31, brief:35, prototype.diff, repro-proto.out
+3. advisory — every promise was checked against every Input domain row, including every combination: a child field exists only under an object parent, so "every wrong field" is exact for any subset; key order cannot move the lines (row 2, kill K4); wrong types beside missing, repeated or dotted entries print the wrong lines alone (row 3); fields merge() writes over or keeps are W-398's missing lines (row 4); W-398's own file forms come first (row 5); nothing is written on any form (row 6) — check: brief:39, brief:41, brief:43, brief:56, brief:57, brief:58, brief:59, brief:60, brief:61
+4. advisory — that merge() cannot throw once wrongTypes passes is read from its code (its throws are checkShape's, the spread of a non-iterable and a property set on a primitive) and pinned for every wrong JSON type at every field by row b1's 32 forms and kill K2; unchanged code (merge(), checkShape, union, entries, JSON.parse, structuredClone, check_shown) is stated as a limit, with stack-depth files and a field merge() reads later — check: brief:32, brief:41, brief:47, brief:48
+5. advisory — a single wrong type keeps W-398's text (checkShape's three, W-398's four), and W-398-b1 and W-398-b3 pass unedited; two of W-398's stated limits (Node's message for one thrown type, one unpromised line for several) are superseded and named in Acceptance — check: brief:17, brief:90, green-summary.out
+6. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master at "a string where env belongs, verify: the FAIL line names env, not Node's message"; b2 on master and on stage 1 at "permissions [] and env a string: the FAIL line names every wrong field in merge()'s order"; each row passes at its stage and b1 passes on stage 2 — check: red-accept.out, red-b1-master.out, red-b2-master.out, red-b2-stage1.out, proto-b1-stage1.out, proto-b1-stage2.out, proto-b2-stage2.out
+7. advisory — kills K1 to K5 each fail their row at the promised assertion — check: kills.out
+8. advisory — no existing row flips: on the whole source with every test file unedited, agent-settings-merge.test.mjs 12 of 12, w398 2 of 2, w379 4 of 4, w362 3 of 3, w369 3 of 3, containment 65 of 65 and brief-admission 61 of 61 pass — check: green-summary.out, brief:90
+9. advisory — the Codex test check lists no flip (Unnamed: None) and twenty must-stay-green rows, each in a file run whole on the prototype and passing: agent-settings-merge.test.mjs (eleven rows and W-398-b2), w398's W-398-b1 and W-398-b3, w362's W-362-b3, w379's W-379-b1 to b4 and containment's W-163-b6 — check: fixture-census.md, green-summary.out
+10. advisory — every pin names an assertion its row makes, and the officina check's one-sided-assertion rule passes on the new rows; the brief passes admission; lint, Prettier and the typecheck pass on the prototype — check: pins.out, admission.out, check-studio-proto.out, lint-proto.out, format-proto.out, typecheck-proto.out
+11. advisory — no owned path is code-owned or on admission's risky list; scripts/agent-workspace.sh and package.json are unchanged; Defaults 3 asks whether the pull request merges through the queue — check: brief:24, brief:109
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-402.md` (spec round 1), master 10f9a4f0; two behaviours; no row flipped.
