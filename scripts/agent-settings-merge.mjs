@@ -57,6 +57,17 @@ export function merge(settings, { patronDir, agentGh, agentDir }) {
   return out;
 }
 
+/** W-398: one entry per leaf or array element: `key`, its key-segment path, its kind (a leaf or an array element) and its
+ *  value as JSON, unambiguous whatever a key holds (a literal dot in a key never collides with nesting); `text`, the
+ *  dotted `path: value` line --check prints. */
+const entries = (o, path = []) =>
+  Object.entries(o).flatMap(([k, v]) => {
+    const at = [...path, k];
+    const one = (kind, x) => ({ key: JSON.stringify([at, kind, x]), text: `${at.join(".")}: ${JSON.stringify(x)}` });
+    if (Array.isArray(v)) return v.map((x) => one("element", x));
+    return v && typeof v === "object" ? entries(v, at) : [one("leaf", v)];
+  });
+
 /** One `path: value` line per leaf or array element, so the CLI can print what merge() added. */
 const lines = (o, prefix = "") =>
   Object.entries(o).flatMap(([k, v]) =>
@@ -102,10 +113,22 @@ if (import.meta.main) {
   if (check) {
     // W-398: read and report only; nothing below this line writes
     if (same) process.exit(0);
+    // a wrong type merge() would not refuse: it would set a property on an array (no entry shows it, and JSON drops it)
+    // or spread a string into its characters; named as one, before any entry is compared
+    const wrong = [
+      ["permissions", before.permissions, "an object"],
+      ["env", before.env, "an object"],
+      ["sandbox.filesystem.denyRead", before.sandbox?.filesystem?.denyRead, "an array"],
+      ["permissions.deny", plain(before.permissions) ? before.permissions.deny : undefined, "an array"],
+    ].find(([, v, want]) => v !== undefined && v !== null && (want === "an array" ? !Array.isArray(v) : !plain(v)));
+    if (wrong) {
+      console.log(`${file}: ${wrong[0]} is not ${wrong[2]}; left untouched`);
+      process.exit(1);
+    }
     if (!exists) console.log(`${file} does not exist`);
-    const had = new Set(lines(before));
-    const add = lines(after).filter((l) => !had.has(l));
-    for (const l of add) console.log(`missing ${l}`);
+    const had = new Set(entries(before).map((e) => e.key));
+    const add = entries(after).filter((e) => !had.has(e.key));
+    for (const e of add) console.log(`missing ${e.text}`);
     if (exists && add.length === 0)
       console.log(`${file} holds every entry, but the merge would rewrite it (a repeated entry)`);
     process.exit(1);
