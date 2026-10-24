@@ -112,12 +112,14 @@ lighter wash, never by a lighter-on-darker card sandwich.
   **2px left rule** on the row plus the age numeral in amber. Never a pill,
   never a background, never on a duration that is not yours.
 - **ok `#50FA7B` (Dracula Green) / bad `#FF5555` (Dracula Red)** — inside a
-  gate mark only, at 6px, and always paired with a **shape** difference so the
-  state survives colour blindness
+  gate mark at 6px, and `bad` also as a blocked card's 2px left rule (the
+  Patron, 2026-10-25); a gate mark is always paired with a **shape** difference
+  so the state survives colour blindness
   ([don't rely on colour alone](https://carbondesignsystem.com/patterns/status-indicator-pattern/)).
 - **Contrast floor** (the Patron, 2026-10-22, W-341): ruled text roles reach
   4.5:1 and UI-component colours 3:1 on both surfaces (`#282A36` and `wash`);
-  `bad` remains gate-only, never text. The ratios are computed from
+  `bad` is never text: it is a gate mark or a blocked card's left rule only. The
+  ratios are computed from
   `tokens.css` by a test, including the Inbox count in amber on both the
   selected and hovered `rule` navigation fills, and the console's axe scan runs
   with colour contrast on.
@@ -225,9 +227,11 @@ collapsed, and never carry amber. The empty state is the resting state: one line
 
 **Officina** — the fasti strip, then four panels stacked between hairlines, no
 boxes: decreta pending, posture and burn, lex status, process health. Burn is two
-mono numerals and a 4px rule filled to the spent fraction — ink under allowance,
-amber past it. No donut, no gauge, no sparkline. Posture is the word itself at
-17px Bricolage 600 (`closeout`) with its reason beneath at 13px: a posture is a
+mono numerals and a 4px rule filled to the spent fraction — ink under allowance;
+past it the rule runs full width and the spent numeral goes to weight 700 (amber
+stays for what waits on a human, the Patron, 2026-10-25). No donut, no gauge, no
+sparkline. Posture is the word itself at 17px Bricolage 600 (`closeout`) with
+its reason beneath at 13px: a posture is a
 sentence someone can argue with, not a coloured chip. The pause brake is the one
 place a verdigris fill button is allowed.
 
@@ -236,8 +240,10 @@ title clamped at four lines (13/18) with its complete source in a native title
 affordance, owner sella id in mono 12. Cards have no border and no shadow — they
 are separated by 8px of page and carry a 2px left rule only when blocked (`bad`)
 or waiting on you (amber). The column head is two
-lines: name + count at 13/500, then a 3px WIP rule filled to count/cap (ink under
-cap, amber at cap — a WIP breach is a human's problem) with median dwell time as
+lines: name + count at 13/500, then a 3px WIP rule filled to count/cap (ink
+under cap; at cap the rule runs full and the count numeral goes to weight 700 —
+never amber, which stays for what waits on you, the Patron, 2026-10-25) with
+median dwell time as
 a right-aligned mono numeral, so the header names the bottleneck instead of just
 labelling the column
 ([column limit indicators](https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-board-layout)).
@@ -254,7 +260,7 @@ between screens is a lex change (check: design.screen-map).
 |---|---|---|---|
 | **Decretum** | backlog → greenlit / declined | **Board** | fasti strip + decretum queue; greenlight is the Board's verb |
 | **Budget allocation** | per-collegium stipendium | **Officina** | posture and burn panel; the Patron sees the allocation and its effect |
-| **Arbitrium** | human probatio verdict | **Inbox** | petitio detail pane; approve / defer / decline / delegate with ratio decidendi |
+| **Arbitrium** | human probatio verdict | **Inbox** | the focused petitio expanded in place (no pane, §6); approve / defer / decline / delegate with ratio decidendi |
 | **Lex change** | amend a collegium's lex | **Officina** | lex status panel; pending amendments surface here |
 
 Screens not owned by a touchpoint:
