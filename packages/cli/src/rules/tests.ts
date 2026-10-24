@@ -579,6 +579,15 @@ function argumentEnd(code: string, from: number): number {
   let depth = 0;
   for (let i = from; i < code.length; i++) {
     const c = code[i]!;
+    if (c === "/" && REGEX_AFTER.test(code.slice(from, i))) {
+      // W-392: a regex literal's commas and brackets are its own (`assert.ok(/^a,b/.test(s))`)
+      REGEX_LITERAL.lastIndex = i;
+      const m = REGEX_LITERAL.exec(code);
+      if (m !== null) {
+        i += m[0].length - 1;
+        continue;
+      }
+    }
     if (c === "(" || c === "[" || c === "{") depth++;
     else if (c === ")" || c === "]" || c === "}") {
       if (depth === 0) return i;
@@ -686,8 +695,25 @@ function groupEnd(source: string, from: number): number {
   return source.length;
 }
 
+/** A pattern body with each escaped pair blanked, except the ones the boundary form reads (`\w`, `\W`, `\p`, `\P`): an
+ *  escaped `]`, `\`, `-` or `$` is a literal, so it opens no range, class end or substitution, and `\\w` names no `\w`. */
+function unescaped(body: string): string {
+  let out = "";
+  for (let i = 0; i < body.length; i++) {
+    const c = body[i]!;
+    if (c !== "\\" || i + 1 >= body.length) out += c;
+    else if ("wWpP".includes(body[i + 1]!)) out += c + body[++i]!;
+    else {
+      out += "  ";
+      i++;
+    }
+  }
+  return out;
+}
+
 /** A lookaround body's boundary form: undefined when it names no letter, or names the whole set (W-381 brief:75). */
-function boundarySet(body: string): string | undefined {
+function boundarySet(raw: string): string | undefined {
+  const body = unescaped(raw);
   if (body.includes("${")) return BUILT_SET;
   const letters = LETTER_PROP.test(body);
   const ident = IDENT_PROP.test(body);
