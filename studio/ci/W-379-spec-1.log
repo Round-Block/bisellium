@@ -1,0 +1,25 @@
+# opus: W-379
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T04:42:05.882Z
+# tree: tree:25dfac50fbc69f49cc30f44f73a3bddd086519ba
+# brief: briefs/W-379.md blob:4cda97e76d99fcbc9c2a73dd82ed356afab91f5a
+# ticket: {"opus":"W-379","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"808a43add231f628720d8ab0489caa7adda7522c","brief":"4cda97e76d99fcbc9c2a73dd82ed356afab91f5a","at":"2026-10-24T04:41:58.229Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-379-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec-4 findings 1 and 2 (W-369) are closed by construction: the guard installs only as <PATRON_DIR real>/scripts (brief:28, row 2), and OLD_GUARD_DIR is removed only when GUARD_BIN led into it before the relink and git lists it as a linked worktree of the clone (brief:32, row 4); a typo naming another clean linked worktree, the clone itself and a file are each left with the command — check: packages/cli/src/w379.test.ts (W-379-b2, W-379-b3)
+2. advisory — each red fails by assertion on master with the new test file and on the stage before its own (b1 at "PATRON_DIR off master: guard-check names the reason", b2 at "a script outside PATRON_DIR: the reason", b3 at "another clean linked worktree is left, with the Patron's command", b4 at "no hook ran in the Patron's clone"), passes on its own stage, and every earlier row passes on each later stage; the host replay classifier accepts all eight red outputs, matrix exit 0 — check: /home/edckt/.bisellium-evidence/W-379-spec/reds.out
+3. advisory — W-362-b3 flips with behaviour 2 exactly as Acceptance names it (unedited it fails at "GUARD_DIR the Patron's clone itself (spec-5 finding 2)") and passes edited on stages 2 to 4; W-369-b1 to W-369-b3 pass unchanged; lint, Prettier, bash -n, typecheck and the neighbouring test files pass on the prototype — check: /home/edckt/.bisellium-evidence/W-379-spec/gates-proto.out
+4. advisory — a pre-existing W-362 defect found while prototyping: verify's settings check runs agent-settings-merge.mjs as its main program under node -e and writes ~/.claude/settings.json; stated as a limit (brief:59), the Patron ruled it its own high opus (Defaults 6) — check: none: verify's settings check writing the user settings is the separate opus the orchestrator files
+5. advisory — the Codex test check lists one flip, W-362-b3, named in Acceptance (Unnamed: None); its must-stay-green rows pass on the prototype (W-369-b1, W-369-b2, instructions, containment and docs rows in gates-proto.out; w267, ci-workflow, next.test W-179-b1, ci-scope and nav-source in census-green-proto.out) — check: /home/edckt/.bisellium-evidence/W-379-spec/fixture-census.md
+6. advisory — the Patron ruled all six Defaults on 2026-10-24 and they are written into the brief as ruled; the Patron merges this PR (Defaults 5); the brief passes admission and the ledger covers every promise line, verify line and Input domain row — check: /home/edckt/.bisellium-evidence/W-379-spec/admission.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief round 1 at `studio/briefs/W-379.md`, master a7ea8e35, Defaults ruled by the Patron 2026-10-24.

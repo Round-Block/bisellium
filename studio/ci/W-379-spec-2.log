@@ -1,0 +1,20 @@
+# opus: W-379
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16c44-8499-71d2-8ce0-ffd39a7020ee
+# outcome: failed
+# at: 2026-10-24T05:00:45.059Z
+# tree: tree:25dfac50fbc69f49cc30f44f73a3bddd086519ba
+# brief: briefs/W-379.md blob:4cda97e76d99fcbc9c2a73dd82ed356afab91f5a
+# ticket: {"opus":"W-379","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"808a43add231f628720d8ab0489caa7adda7522c","brief":"4cda97e76d99fcbc9c2a73dd82ed356afab91f5a","at":"2026-10-24T05:00:41.714Z"}
+
+## Findings
+1. blocking — brief:71 The accepted domain allows `PATRON_DIR` itself to be a linked worktree, but `old_guard` treats every worktree-list record after the first as removable; after a normal prior install, one Patron typo setting `OLD_GUARD_DIR=PATRON_DIR` can make `guard` remove its own clean Patron checkout, and b3 tests only a main-worktree `PATRON_DIR`. Replace brief:71 with: `| 4. OLD_GUARD_DIR and GUARD_BIN's target read before relinking | OLD_GUARD_DIR is absent, or its real path differs from real(PATRON_DIR), contains the pre-run GUARD_BIN target, equals a worktree record of PATRON_DIR, and git worktree remove succeeds without force; every other form—including PATRON_DIR itself whether it is the main or a linked worktree—is left with its reason and command | old_guard explicitly rejects real(OLD_GUARD_DIR) == real(PATRON_DIR) before scanning records; pinned by W-379-b3 for PATRON_DIR as both main and linked worktree, another worktree, dirty and clean old guards, a file, and absence |`. [severity: S1] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w379.test.ts
+2. advisory — brief:64 The blanket “nothing was changed” refusal contradicts row 3 and Promise guard-install, where fetch, npm, linking, or settings changes may precede failure. Replace brief:64 with: `Input refusals through guard_inputs and the own-copy check fail closed: guard-check exits 1 for guard_inputs faults; guard prints its reason and “nothing was changed” and exits before mutation; verify prints FAIL for a failed check. A row 3 failure stops under set -euo pipefail with earlier steps retained; a row 4 refusal leaves the folder and entry and the install succeeds; row 5 failures follow their enclosing guard or old_guard boundary; a row 6 failure fails acceptance.` [severity: S2] [class: spec×prose-contradiction-under-revision] — check: none: brief admission should distinguish pre-mutation refusals from post-input step failures
+3. advisory — brief:73 The changed `guard_linked` and `guard_unwritable` readers used by `verify` have no Input-domain row naming their valid filesystem domain and fail-closed endpoint. Replace brief:73 with its current row followed by: `| 7. The installed guard as verify reads it | GUARD_BIN's real target is inside real(PATRON_DIR); with --inside, GUARD_BIN's directory and PATRON_DIR are unwritable; every other form prints FAIL | guard_linked and guard_unwritable, through check; pinned by W-362-b3 “verify: GUARD_BIN leads into PATRON_DIR” and “verify --inside: a writable install fails” |`. [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/w362.test.ts
+
+## Verdict
+The brief has one design-preserving S1 blocker in old-worktree identity and cannot enter build unchanged.
+VERDICT: FAIL
