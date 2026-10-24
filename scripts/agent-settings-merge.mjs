@@ -2,7 +2,11 @@
  * scripts/agent-settings-merge.mjs — merge the agent-isolation entries into a
  * Claude Code user settings file, keeping everything already there.
  *
- *   node scripts/agent-settings-merge.mjs <settings.json> <patronDir> <agentGh> [<agentDir>]
+ *   node scripts/agent-settings-merge.mjs [--check] <settings.json> <patronDir> <agentGh> [<agentDir>]
+ *
+ * W-398: with --check it only reads: exit 0 when the merge would change nothing, else exit 1 with one line per entry
+ * the merge would add (or why the file cannot be merged); it never backs up, makes a folder or writes. Run by
+ * scripts/agent-workspace.sh verify; setup and guard run it without --check, the only runs that write.
  *
  * W-362: the sandbox is always turned on (an existing `sandbox.enabled: false` would switch every deny
  * off), and with <agentDir> (absolute) it also denies writing the agent clone's source folders
@@ -10,7 +14,7 @@
  * clone's root files stay writable. The sandbox is the whole session's: a subagent is denied there too.
  *
  * `merge()` is pure (a new object, input untouched, idempotent); the CLI is the
- * only part that touches the filesystem. Used by scripts/agent-workspace.sh.
+ * only part that touches the filesystem, and only without --check. Used by scripts/agent-workspace.sh.
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
@@ -64,9 +68,10 @@ const lines = (o, prefix = "") =>
   );
 
 if (import.meta.filename === process.argv[1]) {
-  const [file, patronDir, agentGh, agentDir] = process.argv.slice(2);
+  const check = process.argv[2] === "--check";
+  const [file, patronDir, agentGh, agentDir] = process.argv.slice(check ? 3 : 2);
   if (!file || !patronDir || !agentGh) {
-    console.error("usage: agent-settings-merge.mjs <settings.json> <patronDir> <agentGh> [<agentDir>]");
+    console.error("usage: agent-settings-merge.mjs [--check] <settings.json> <patronDir> <agentGh> [<agentDir>]");
     process.exit(2);
   }
   if (agentDir !== undefined && !isAbsolute(agentDir)) {
@@ -91,7 +96,19 @@ if (import.meta.filename === process.argv[1]) {
     console.error(`${file}: ${e.message}; left untouched`);
     process.exit(1);
   }
-  if (exists && isDeepStrictEqual(before, after)) {
+  const same = exists && isDeepStrictEqual(before, after);
+  if (check) {
+    // W-398: read and report only; nothing below this line writes
+    if (same) process.exit(0);
+    if (!exists) console.log(`${file} does not exist`);
+    const had = new Set(lines(before));
+    const add = lines(after).filter((l) => !had.has(l));
+    for (const l of add) console.log(`missing ${l}`);
+    if (exists && add.length === 0)
+      console.log(`${file} holds every entry, but the merge would rewrite it (a repeated entry)`);
+    process.exit(1);
+  }
+  if (same) {
     console.log("unchanged");
   } else {
     if (exists) copyFileSync(file, `${file}.bak-${new Date().toISOString()}`);
