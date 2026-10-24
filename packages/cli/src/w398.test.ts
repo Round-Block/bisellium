@@ -185,3 +185,40 @@ test("W-398-b1 behaviour 1: verify and verify --inside only read: a user setting
   assert.equal(readFileSync(w.settings, "utf8"), done, "a merged file: byte-identical");
   assert.deepEqual(snapshot(w.f), before, "a merged file: no file under the home changed");
 });
+
+test("W-398-b3 behaviour 3: verify compares settings entries by their key paths: a literal dot in a key is never read as nesting, and a wrong type the merge would not refuse is named as one", () => {
+  const w = world();
+  const patron = realpathSync(join(w.f, "patron"));
+  const agent = realpathSync(join(w.f, "agent"));
+  const gh = join(w.f, "gh");
+  const old = new Date("2001-02-03T04:05:06Z");
+  rmSync(join(w.f, ".claude"), { recursive: true, force: true });
+  const made = spawnSync(process.execPath, [MERGE, w.settings, patron, gh, agent], { encoding: "utf8" });
+  assert.equal(made.status, 0, `the merge CLI writes the fixture's merged file: ${made.stderr}`);
+  type Settings = { [k: string]: unknown; sandbox: { [k: string]: unknown }; env: { [k: string]: unknown } };
+  const merged = JSON.parse(readFileSync(w.settings, "utf8")) as Settings;
+  for (const [what, change, missing] of [
+    // the reviewer's case (spec review 2): the entry moved to a top-level key that holds a dot
+    ["a dotted top-level key in place of sandbox.enabled", (s: Settings) => { delete s.sandbox["enabled"]; s["sandbox.enabled"] = true; }, "  missing sandbox.enabled: true"],
+    ["a dotted top-level key in place of env.GH_CONFIG_DIR", (s: Settings) => { delete s.env["GH_CONFIG_DIR"]; s["env.GH_CONFIG_DIR"] = gh; }, `  missing env.GH_CONFIG_DIR: ${JSON.stringify(gh)}`],
+    // the same text from an array element where the merge sets a leaf
+    ["an array where sandbox.enabled belongs", (s: Settings) => { s.sandbox["enabled"] = [true]; }, "  missing sandbox.enabled: true"],
+    // an array where the merge sets properties: merge() writes them on the array, where no entry shows them
+    ["an array where env belongs", (s: Settings) => { (s as Record<string, unknown>)["env"] = []; }, `  ${w.settings}: env is not an object; left untouched`],
+    ["an array where permissions belongs", (s: Settings) => { (s as Record<string, unknown>)["permissions"] = []; }, `  ${w.settings}: permissions is not an object; left untouched`],
+    // a string where the merge unions an array: merge() would spread it into its characters
+    ["a string where sandbox.filesystem.denyRead belongs", (s: Settings) => { (s.sandbox["filesystem"] as Record<string, unknown>)["denyRead"] = "~/.ssh"; }, `  ${w.settings}: sandbox.filesystem.denyRead is not an array; left untouched`],
+    ["a string where permissions.deny belongs", (s: Settings) => { ((s as Record<string, unknown>)["permissions"] as Record<string, unknown>)["deny"] = "Read(~/.ssh/**)"; }, `  ${w.settings}: permissions.deny is not an array; left untouched`],
+  ] as const) {
+    const s = structuredClone(merged);
+    change(s);
+    const body = `${JSON.stringify(s, null, 2)}\n`;
+    put(w.settings, body);
+    utimesSync(w.settings, old, old);
+    const before = snapshot(w.f);
+    const r = w.verify();
+    assert.equal(readFileSync(w.settings, "utf8"), body, `${what}: the settings file is byte-identical`);
+    assert.deepEqual(snapshot(w.f), before, `${what}: no file under the home changed`);
+    assert.deepEqual(settingsBlock(r.out), [`FAIL ${LINE}`, missing], `${what}: the FAIL line names what the merge would change`);
+  }
+});
