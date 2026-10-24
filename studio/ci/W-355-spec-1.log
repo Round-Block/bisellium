@@ -1,0 +1,26 @@
+# opus: W-355
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T13:15:49.957Z
+# tree: tree:11d635a201d13da2a27bddcbb840deef7b07eb0b
+# brief: briefs/W-355.md blob:256d6b9bf3c91e658be41e808417e62ee1fb6861
+# ticket: {"opus":"W-355","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"891be551e47b5be65706386b405a6db96cac559c","brief":"256d6b9bf3c91e658be41e808417e62ee1fb6861","at":"2026-10-24T13:15:49.463Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-355-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — every spec-rung read of kind or pairing on master c4a0dbac was found and named with its record: gather's design (next.ts:743, branch-or-trunk record, main manifest), deriveNext's readSpecReviewer input (:944, :959), the fast lane (:968), the worktree ui-lead tests (:997, :1028), reviewedSpec's source record (:374), uiSpecProblems (:797) and the seven f.design consumers; the prototype routes all but uiSpecProblems through one owner (main checkout before the branch, worktree after, committed branch without a worktree) read strictly by readSpecOwner — check: brief:20, brief:30, prototype.diff
+2. advisory — W-348-spec-2 blocker 1 is closed by reading the pair from the owner's manifest, the one verdict --studio <owner> trusts, and W-348-spec-4 blocker 1 by holding at spec on an absent, unreadable, malformed, front-matter-less or non-mapping owner record or an unreadable owner manifest; every row runs the real next through gather, never an injected Facts — check: brief:63, brief:67, W-355-b2, W-355-b3
+3. advisory — every promise was checked against every Input domain row: the gate state stays the trunk's, the main manifest before the branch keeps readManifest's domain, absent and unreadable share one message, and uiSpecProblems keeps its record (reading the owner there flips W-275-b3); each is stated as a limit, not promised — check: brief:63, brief:67, brief:73, brief:85
+4. advisory — each red fails by assertion on master with the final rows (b1 at "the main checkout's kind: ui orders the UI signer", b2 at "the worktree's pair orders its UI signer", b3 at "the main checkout (studio): a record absent holds"), b2 also on stage 1 and b3 on stage 2; the host replay classifier accepts all five; each row passes at its own stage and after — check: red-accept.out, red-b1-master.out, red-b2-stage1.out, red-b3-stage2.out
+5. advisory — kills K1 (trunk as the owner before the branch), K2 (main manifest with a usable worktree) and K3 (non-mapping record accepted) each fail their row — check: kills.out
+6. advisory — the Codex test check lists four flips, all named (W-348-b2, W-128 behaviour 7, W-293-b3, W-167-b1), Unnamed: None; its must-stay-green files all pass on the prototype: next-spec 28, next-branch 27, ladder-followon 8, next 10, next-ladder 17, next-review 32, next-done 33, next-queue 21, w362 3, w369 3, open-lessons 9, containment — check: fixture-census.md, green-summary.out
+7. advisory — lint, format (the brief included), typecheck and both officina checks pass on the prototype with 0 blocking; the brief passes admission; no path is code-owned and verdict.ts is unchanged — check: lint-proto.out, format-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out, admission.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-355.md` (spec round 1), master c4a0dbac.

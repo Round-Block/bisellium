@@ -1,0 +1,20 @@
+# opus: W-355
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16e0e-3777-7431-be46-4257a7e7c2ba
+# outcome: failed
+# at: 2026-10-24T13:22:04.296Z
+# tree: tree:11d635a201d13da2a27bddcbb840deef7b07eb0b
+# brief: briefs/W-355.md blob:256d6b9bf3c91e658be41e808417e62ee1fb6861
+# ticket: {"opus":"W-355","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"891be551e47b5be65706386b405a6db96cac559c","brief":"256d6b9bf3c91e658be41e808417e62ee1fb6861","at":"2026-10-24T13:22:00.956Z"}
+
+## Findings
+1. blocking — brief:86 A duplicate or blank design-collegium row in an opus worktree is a plausible configuration mistake: `readSpecReviewer` returns the valid UI pair before validating that row, so `next` orders the UI signer, while the ordered worktree `verdict` refuses through `readDesignMagister`; no existing test covers this disagreement. Replace brief:86 with: `| 5. The owner manifest's pair settings, design collegium and named seats | The UI keys are both absent or form W-348's valid pair; the default pair satisfies W-162; the design collegium has no row (the architect default) or exactly one row with a nonblank magister | readSpecReviewer (extended) applies readDesignMagister's design-collegium domain before returning either pair, then readUiSpecPairing and the existing default-pair checks reject every unsuitable pair at spec |` [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-spec.test.ts
+2. advisory — brief:67 A parseable non-mapping main manifest does not reach `readSpecReviewer`'s no-setting ladder: `gather` dereferences `manifest.collegia` and `runNext` fails before the spec rung. Replace brief:67 with: `Promise fail-closed: an invalid owner record or post-branch owner manifest holds at spec with no order or command, as pinned by W-355-b3; before the branch, the unchanged main-manifest reader remains a stated limit—read or parse failure, and a parseable non-mapping value, can stop next before the spec rung, so no no-setting-ladder behavior is promised.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-spec.test.ts
+3. advisory — brief:87 The changed fast-lane calculation also reads the trunk record’s `kind`, but this input-domain row names only its `state`. Replace brief:87 with: `| 6. The trunk record's state, and its kind for fast-lane eligibility | The gate state is greenlit or past ready; the fast lane additionally requires native non-UI kinds in both the trunk and owner records | readSpecReviewer rejects an out-of-domain gate state at the spec rung; deriveNext fails the fast lane closed by retaining the reviewer for an absent, non-string, unregistered, mis-cased or UI kind |` [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/next-spec.test.ts
+
+## Verdict
+The design-pair mismatch is a design-changing S1, so the signed brief is not ready to build.
+VERDICT: FAIL

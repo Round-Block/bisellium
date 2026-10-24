@@ -1,0 +1,26 @@
+# opus: W-355
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T14:05:21.400Z
+# tree: tree:59cc2f71d759a1d60c846d912f8f317bee4e2df7
+# brief: briefs/W-355.md blob:c0af4acc1af2f5040b867881d3270e59f84554d9
+# ticket: {"opus":"W-355","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"72929a45671f3b3079f283287658ac850ac78dd8","brief":"c0af4acc1af2f5040b867881d3270e59f84554d9","at":"2026-10-24T14:05:20.885Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-355-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ci/W-355-spec-2.log #1 (S1, design changes) is closed: readSpecReviewer now applies verdict's own design-collegium domain (readDesignMagister, exported from verdict.ts, body unchanged) before it returns either pair, so a duplicate or blank design row in the owner's manifest holds next at spec on the UI, default and engineering pairs instead of ordering a signer the worktree verdict refuses; Input domain row 5 adopts the reviewer's replacement — check: brief:34, brief:64, brief:91, W-355-b4
+2. advisory — the new red W-355-b4 fails by assertion on revision 1's prototype (stage 3) and on master at "the UI pair: a duplicate design row holds", where both order sella ui-architect, and passes on stage 4; kill K4 (the UI pair returned before the design domain) fails it — check: red-b4-stage3.out, red-b4-master.out, proto-b4-stage4.out, kills.out
+3. advisory — ci/W-355-spec-2.log #2 and #3 are adopted as written: the fail-closed promise now states the unchanged main-manifest reader (read or parse failure, a parseable non-mapping value) as a limit with no no-setting-ladder promise, and row 6 names the trunk record's kind for fast-lane eligibility with deriveNext as its rejector — check: brief:72, brief:90, brief:92
+4. advisory — every promise was re-run against every Input domain row: Promise agree now holds on row 5's whole domain because next and verdict share readUiSpecPairing and readDesignMagister over the same studio's record and manifest, and next's stricter spec_reviewer check is stated as holding where a verdict would pass, never the reverse; Promise owner and fail-closed need only rows 1 to 4, whose unreadable forms hold or are stated limits — check: brief:68, brief:70, brief:72, promise-ledger.md
+5. advisory — all seven reds are accepted by the host replay classifier and every row passes at its own stage and after; kills K1 to K4 each fail their row — check: red-accept.out, kills.out
+6. advisory — the Codex test check on revision 2 lists the same four flips, all named (W-348-b2, W-128 behaviour 7, W-293-b3, W-167-b1), Unnamed: None; on the stage-4 prototype next-spec 29, next-branch 27, ladder-followon 8, next 10, next-ladder 17, next-review 32, next-done 33, next-queue 21, w362 3, w369 3, open-lessons 9, verdict-citation 40 and containment pass — check: fixture-census.md, green-summary.out
+7. advisory — lint (verdict.ts included), format (the brief included), typecheck and the studio check pass with 0 blocking; the brief passes admission; master moved to 891be551, which touches no file owned here; no path is code-owned — check: lint-proto.out, format-proto.out, typecheck-proto.out, check-studio-proto.out, admission.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-355.md` (spec round 3), master 891be551 (prototype on c4a0dbac).
