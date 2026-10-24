@@ -97,3 +97,63 @@ test("W-345-b4 a failed refresh shows failure and no stale petition", async ({ p
     await served.close();
   }
 });
+
+test("W-345-b5 the reason and answer controls are reachable at 390px", async ({ page }) => {
+  const served = await startServed("w345-b5");
+  const petitiones = Array.from({ length: 14 }, (_, index) => ({
+    id: `P-${String(index + 1).padStart(2, "0")}`,
+    opus: "W-345",
+    from: "ui-lead",
+    subject: `Phone decision ${index + 1}`,
+    body: `Evidence for decision ${index + 1}`,
+  }));
+  await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) }));
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signIn(page, served.baseURL, served.token);
+    const detail = page.locator(".inbox__detail");
+    const rows = page.locator(".inbox__row");
+    const reason = page.locator(".inbox__input-ratio");
+    await expect(detail).toBeVisible();
+    await expect(reason).toBeVisible();
+    const first = rows.first();
+    await first.focus();
+    await expect(first).toBeFocused();
+    await expect(first).toHaveAttribute("aria-pressed", "true");
+    const focusStyle = await first.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { width: style.outlineWidth, style: style.outlineStyle, offset: style.outlineOffset };
+    });
+    expect(focusStyle).toEqual({ width: "2px", style: "solid", offset: "2px" });
+    for (let index = 1; index < petitiones.length; index++) await page.keyboard.press("j");
+    const last = rows.last();
+    await expect(last).toBeFocused();
+    await expect(last).toHaveAttribute("aria-pressed", "true");
+    const listBox = await page.locator(".inbox__list").boundingBox();
+    const lastBox = await last.boundingBox();
+    expect(listBox).not.toBeNull();
+    expect(lastBox).not.toBeNull();
+    expect(lastBox!.y).toBeGreaterThanOrEqual(listBox!.y);
+    expect(lastBox!.y + lastBox!.height).toBeLessThanOrEqual(listBox!.y + listBox!.height + 1);
+    expect(await page.locator(".inbox__list").evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+    await page.keyboard.press("Tab");
+    await expect(reason).toBeFocused();
+    await reason.scrollIntoViewIfNeeded();
+    await expect(reason).toBeInViewport();
+    await reason.fill("phone answer reason");
+    const approve = page.getByRole("button", { name: /approve/i });
+    await approve.scrollIntoViewIfNeeded();
+    await expect(approve).toBeInViewport();
+    await expect(approve).toBeEnabled();
+    await page.keyboard.press("Tab");
+    await expect(approve).toBeFocused();
+    for (const target of [last, reason, approve, page.getByRole("button", { name: /decline/i })]) {
+      const box = await target.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+  } finally {
+    await served.close();
+  }
+});

@@ -63,3 +63,29 @@ test("W-345-b4 behaviour 4: a failed Inbox read clears records before showing th
     "every failed read replaces prior data with EMPTY, settles loading and enters the failure state",
   );
 });
+
+test("W-345-b5 behaviour 5: the answer pane remains reachable at phone width", () => {
+  const css = read("src/components/w025.css");
+  const inboxAt = css.indexOf("/* ── Inbox");
+  const phoneAt = css.indexOf("@media (max-width: 899px)", inboxAt);
+  const phone = css.slice(phoneAt, css.indexOf(".inbox__title", phoneAt));
+  assert.doesNotMatch(phone, /\.inbox__detail\s*\{[^}]*display:\s*none;/, "the phone rule never hides the answer pane");
+  assert.match(phone, /\.inbox--split\s*\{[^}]*height:\s*auto;/, "the stacked phone Inbox grows to fit its answer pane");
+  assert.match(phone, /\.inbox__list\s*\{[^}]*max-height:\s*40vh;/, "the petition list leaves room for the phone answer pane");
+  for (const [selector, property] of [
+    ["inbox__row", "min-height"],
+    ["inbox__input-ratio", "min-height"],
+    ["inbox__btn-action", "min-height"],
+  ]) {
+    assert.match(phone, new RegExp(`\\.${selector}\\s*\\{[^}]*${property}:\\s*44px;`), `${selector} has a 44px phone touch target`);
+  }
+  const view = read("src/screens/InboxView.tsx");
+  assert.match(view, /<button[\s\S]*?className=\{rowClasses\}[\s\S]*?aria-pressed=\{focused\}[\s\S]*?tabIndex=\{focused \? 0 : -1\}/, "petition selectors expose button and roving-tab semantics");
+  assert.match(view, /selectedRowRef\.current\?\.focus\(\{ preventScroll: true \}\);[\s\S]*?selectedRowRef\.current\?\.scrollIntoView\(\{ block: "nearest" \}\);/, "selection movement focuses and reveals the selected petition");
+  assert.match(css, /\.inbox__row:focus-visible[\s\S]*?outline:\s*2px solid var\(--verdigris\);[\s\S]*?outline-offset:\s*2px;/, "petition selectors have the visible two-pixel focus ring");
+  const policy = read("tests-serve/states-policy.ts");
+  assert.doesNotMatch(policy, /inbox:(?:refused|pending)/, "W-341 has no phone exception for answer states");
+  const screenshots = read("tests-serve/screenshots.spec.ts");
+  assert.match(screenshots, /await expect\(page\.locator\("\.inbox__detail"\)\)\.toBeVisible\(\);/, "screenshot readiness requires the phone answer pane");
+  assert.doesNotMatch(screenshots, /page\.locator\("\.inbox__detail"\)\)\.toBeHidden\(\)/, "screenshot readiness never expects a hidden phone answer pane");
+});
