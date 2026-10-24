@@ -1,0 +1,51 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-402-b1\s --import tsx packages/cli/src/w398.test.ts
+# exit: 1
+# at: 2026-10-24T16:07:52.592Z
+# sella: builder.W-402
+# tree: tree:e74d7727676c9e27294ee36225866b5aa576dc6b
+# ticket: {"opus":"W-402","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-402/studio","head":"fe4e873d87f8b90052f8c6afaae87a234e82c10b","brief":"cc75487cd73c421959f95ff02cb41daec50490ee","at":"2026-10-24T16:07:46.379Z"}
+
+TAP version 13
+# Subtest: W-402-b1 behaviour 1: a single wrong type at any field the merge reads is named by its key and the type it needs, never by Node's message
+not ok 1 - W-402-b1 behaviour 1: a single wrong type at any field the merge reads is named by its key and the type it needs, never by Node's message
+  ---
+  duration_ms: 246.183837
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-402/packages/cli/src/w398.test.ts:3:1417'
+  failureType: 'testCodeFailure'
+  error: |-
+    a string where env belongs, verify: the FAIL line names env, not Node's message
+    + actual - expected
+    
+      [
+        'FAIL user settings hold every isolation entry',
+    +   "  /tmp/claude-1000/w398-cy5AAS/home ü it's/.claude/settings.json: Cannot create property 'GH_CONFIG_DIR' on string 'bad'; left untouched"
+    -   "  /tmp/claude-1000/w398-cy5AAS/home ü it's/.claude/settings.json: env is not an object; left untouched"
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'FAIL user settings hold every isolation entry'
+    1: "  /tmp/claude-1000/w398-cy5AAS/home ü it's/.claude/settings.json: env is not an object; left untouched"
+  actual:
+    0: 'FAIL user settings hold every isolation entry'
+    1: "  /tmp/claude-1000/w398-cy5AAS/home ü it's/.claude/settings.json: Cannot create property 'GH_CONFIG_DIR' on string 'bad'; left untouched"
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-402/packages/cli/src/w398.test.ts:268:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 255.008401
