@@ -1,0 +1,21 @@
+# opus: W-379
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16c44-8499-71d2-8ce0-ffd39a7020ee
+# outcome: passed
+# at: 2026-10-24T07:28:20.240Z
+# tree: tree:852e1a3614d38d6a28cf561e9972801e96ec592a
+# brief: briefs/W-379.md blob:4b073da3812de6399ef6cc6fee37ceb599fd558e
+# ticket: {"opus":"W-379","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-379/studio","head":"c07e887d2c59e080137ca7f8d461cbf6b23d04eb","brief":"4b073da3812de6399ef6cc6fee37ceb599fd558e","at":"2026-10-24T07:28:16.450Z"}
+
+## Findings
+1. advisory — .worktrees/W-379/studio/briefs/W-379.md:28 The new contract says a missing `/usr/bin/readlink` produces the specified `guard_inputs` fault, but the script invokes `$RL` to initialize `SELF_DIR` before `guard_inputs`; absent or non-executable readlink exits under `set -e` without that line. Lines 61 and 76 repeat the same unattainable promise. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: either declare `/usr/bin/readlink` a startup prerequisite or make its absence reach `guard_inputs` and add a test seam
+
+## Earlier findings
+- ci/W-379-spec-2.log #1: closed — `.worktrees/W-379/scripts/agent-workspace.sh:273-275` rejects `OLD_GUARD_DIR == PATRON_DIR` before scanning worktree records, and `.worktrees/W-379/packages/cli/src/w379.test.ts:228-247` pins both proved main-worktree and proved linked-worktree `PATRON_DIR` cases as retained.
+
+## Verdict
+The required build fix is closed; the remaining S2 finding is advisory.
+VERDICT: PASS
