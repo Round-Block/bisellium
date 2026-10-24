@@ -47,8 +47,8 @@ Order by cycle minutes saved, D-039 highs first; a high filed since starts after
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
 1. W-402 — W-398's spec remainder (D-061 §4): agent-settings-merge --check reports several wrong-type fields at once, with a declared precedence (high; greenlit by the Patron 2026-10-24)
-2. W-403 — auto greenlight where scope is already decided: a D-061 §4 remainder of a greenlit opus and a D-076 D cause fix greenlight without the Patron, capped; ui, architecture, new features, security, sandbox, code-owned paths and over 3 points stay the Patron's (high; Patron 2026-10-24; Defaults to the Patron before branch)
-3. W-404 — milestone progress by exits, not filings: a read-only report and a next --all line giving each milestone's exit, whether it is met, the opera on its path and the weighted share met (greenlit by the Patron 2026-10-24)
+2. W-404 — milestone progress by exits, not filings: a read-only report and a next --all line giving each milestone's exit, whether it is met, the opera on its path and the weighted share met (greenlit by the Patron 2026-10-24)
+3. W-403 — auto greenlight where scope is already decided: a D-061 §4 remainder of a greenlit opus and a D-076 D cause fix greenlight without the Patron, no cap; ui, architecture, new features, security, sandbox, code-owned paths and over 3 points stay the Patron's (high; greenlit 10-25; Defaults to the Patron before branch)
 4. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (W-350 merged unseen; Patron 2026-10-24) (high; greenlit 10-25) `next.ts`
 5. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
 6. W-393 — cause fix for repeat class spec×input-domain-missing-or-unenforceable (D-076 D high)
