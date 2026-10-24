@@ -13,6 +13,8 @@ export interface InboxViewProps {
   error?: string | null;
   /** W-341: the screen's visible status line in a loading, read-error or pending state; absent at rest. */
   notice?: string;
+  /** True while the selected answer is being recorded. */
+  busy?: boolean;
   onReasonChange: (value: string) => void;
   onFocusChange: (index: number) => void;
   onSubmit: (petitioId: string, verb: Verb) => void;
@@ -26,7 +28,7 @@ const VERBS: { verb: Verb; key: string }[] = [
 ];
 
 export function InboxView(props: InboxViewProps): JSX.Element {
-  const { petitiones, opera, focusIndex, reason, error, notice, onReasonChange, onFocusChange, onSubmit } = props;
+  const { petitiones, opera, focusIndex, reason, error, notice, busy = false, onReasonChange, onFocusChange, onSubmit } = props;
 
   if (petitiones.length === 0 && opera.length === 0) {
     return (
@@ -89,7 +91,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   key={verb}
                   type="button"
                   className="inbox__btn-action"
-                  disabled={!canSubmit(reason)}
+                  disabled={!canSubmit(reason, busy)}
                   onClick={() => onSubmit(selected.id, verb)}
                 >
                   <span className="inbox__hotkey">{key}</span>

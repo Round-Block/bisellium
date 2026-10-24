@@ -41,8 +41,8 @@ export function nextExpanded(current: string | null, focusedId: string | undefin
 /** A reason is required before a decision can be submitted (DIRECTION.md
  * §4.4: "A decision without a reason cannot be submitted"). Whitespace
  * alone does not count. */
-export function canSubmit(reason: string): boolean {
-  return reason.trim().length > 0;
+export function canSubmit(reason: string, sending = false): boolean {
+  return !sending && reason.trim().length > 0;
 }
 
 /** `submitAnswer` has no verb field (`{ petitio, reply }` only) — the verb

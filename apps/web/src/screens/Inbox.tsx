@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
 import { InboxView } from "./InboxView.js";
 import { buildReply, isTextEntryTarget, moveFocus, resolveVerbAction, type Verb } from "./inboxLogic.js";
@@ -38,6 +38,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   const [loaded, setLoaded] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [outcome, setOutcome] = useState<"refused" | "error" | undefined>(undefined);
 
   const demo = location.search.includes("demo");
@@ -75,10 +76,13 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   }, [petitiones.length, focusedId, reason]);
 
   function submit(petitioId: string, verb: Verb): void {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     setError(null);
     setOutcome(undefined);
     setSending(true);
     void submitAnswer(petitioId, buildReply(verb, reason)).then((result) => {
+      sendingRef.current = false;
       setSending(false);
       // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
       // no local handling here. "ok"/"refused"/"error" are this screen's.
@@ -112,6 +116,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
       reason={reason}
       error={error}
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
+      busy={sending}
       onReasonChange={setReason}
       onFocusChange={setFocusIndex}
       onSubmit={submit}
