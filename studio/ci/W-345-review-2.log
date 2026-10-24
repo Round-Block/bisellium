@@ -1,0 +1,26 @@
+# opus: W-345
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16cbb-2cfa-7982-8551-e2c8066d6148
+# outcome: passed
+# at: 2026-10-24T07:38:16.982Z
+# tree: tree:5e60e8c26411c9bd3c57598f13e39938c7c3033f
+# ui_input: ci/W-345-spec-3.log
+# design_digest: sha256:a9ae9b58803b4eb659e3625e1276a2b06e047c96527086b2eb0903ab47af2318
+# ticket: {"opus":"W-345","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-345/studio","head":"b57456f573ecc24a80e412e479f71ea00f2cc1da","brief":"3ae3485a24a63ed07b5f91524e2c05e85dfe159d","at":"2026-10-24T07:37:29.821Z"}
+
+## Findings
+No findings
+
+## UI input disposition
+The ui-lead input remains satisfied. All eight screenshots preserve the approved desktop and phone hierarchy without new clipping or unreachable controls; the fourteen-item cap is additionally covered by the corrected rendered-geometry assertion.
+
+## Earlier findings
+- ci/W-345-review-1.log #1: closed — apps/web/src/components/w025.css:656 now applies `border-box`, and apps/web/tests-serve/inbox.spec.ts:137 bounds the rendered outer height to 40% of the 844px viewport.
+
+## Verdict
+The round-two delta closes the sole blocker without introducing a regression.
+
+VERDICT: PASS
