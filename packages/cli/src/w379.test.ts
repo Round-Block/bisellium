@@ -135,3 +135,46 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
   assert.doesNotMatch(untracked.out, /PATRON_DIR .* (is on|has uncommitted)/, "an untracked file in PATRON_DIR is not refused");
 });
 
+test("W-379-b2 behaviour 2: guard installs only as PATRON_DIR's own copy: it fast-forwards the clone's master and links GUARD_BIN into it", () => {
+  const w = world();
+  const was = head(w.patron);
+  const target = readlinkSync(w.bin);
+  const patronReal = realpathSync(w.patron);
+  // a copy of the script outside PATRON_DIR/scripts changes nothing: this checkout's, and the old guard worktree's
+  for (const [what, script] of [
+    ["a script outside PATRON_DIR", SCRIPT],
+    ["the old guard worktree's copy", join(w.old, "scripts", "agent-workspace.sh")],
+  ] as const) {
+    const r = w.guard("guard", {}, script);
+    assert.equal(r.code, 1, `${what}: exits 1: ${r.out}`);
+    assert.match(r.out, new RegExp(`^run the guard step as ${reEsc(patronReal)}/scripts/agent-workspace\\.sh, the copy in the clone it installs, not the copy in .* \\(nothing was changed\\)\\.$`, "m"), `${what}: the reason`);
+    assert.equal(readlinkSync(w.bin), target, `${what}: GUARD_BIN did not move`);
+    assert.equal(head(w.patron), was, `${what}: the Patron's clone did not move`);
+    assert.equal(existsSync(join(w.f, "npm.log")), false, `${what}: npm did not run`);
+    assert.equal(existsSync(join(w.f, ".claude", "settings.json")), false, `${what}: the user settings were not written`);
+  }
+  // the clone's own copy, PATRON_DIR given through a symlink: the clone fast-forwards and GUARD_BIN leads into it
+  const r = w.guard("guard", { PATRON_DIR: join(w.f, "patron link") }, join(w.f, "patron link", "scripts", "agent-workspace.sh"));
+  assert.equal(r.code, 0, `the Patron clone's script installs: ${r.out}`);
+  assert.equal(head(w.patron), w.origin(), "the Patron's clone is at origin/master");
+  assert.equal(git(w.patron, "symbolic-ref", "HEAD"), "refs/heads/master", "on master");
+  assert.equal(readlinkSync(w.bin), join(patronReal, "packages", "cli", "bin", "bisellium.mjs"), "GUARD_BIN links into PATRON_DIR's real path");
+  assert.match(readFileSync(join(w.f, "npm.log"), "utf8"), new RegExp(`^npm ci --silent in ${reEsc(patronReal)}$`, "m"), "npm ci ran in PATRON_DIR");
+  const settings = JSON.parse(readFileSync(join(w.f, ".claude", "settings.json"), "utf8")) as { sandbox: { filesystem: { denyWrite: string[] } } };
+  assert.equal(settings.sandbox.filesystem.denyWrite[0], patronReal, "the settings deny writes to the Patron's clone");
+  assert.match(r.out, /^guard: installed from .*patron link at [0-9a-f]{7,}$/m, "the install names the Patron's clone");
+  const verify = w.guard("verify");
+  assert.match(verify.out, /^ok the hook guard's installer inputs hold \(PATH, PATRON_DIR on master, GUARD_BIN\)$/m, "verify: the inputs hold");
+  assert.match(verify.out, /^ok GUARD_BIN leads into PATRON_DIR$/m, "verify: GUARD_BIN leads into PATRON_DIR");
+  // a master that does not fast-forward (a local commit, origin moved on) stops it after the fetch
+  writeFileSync(join(w.patron, "x"), "local\n");
+  git(w.patron, "commit", "-qam", "local");
+  const seed = join(w.f, "seed");
+  writeFileSync(join(seed, "x"), "origin's\n");
+  git(seed, "commit", "-qam", "three");
+  git(seed, "push", "-q", join(w.f, "origin.git"), "master");
+  const diverged = w.guard("guard");
+  assert.equal(diverged.code, 1, `a diverged master stops it: ${diverged.out}`);
+  assert.match(diverged.out, /^PATRON_DIR's master does not fast-forward to origin\/master; see git's line above \(only origin\/master was fetched\)\.$/m, "a diverged master: the reason");
+});
+
