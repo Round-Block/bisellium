@@ -6,7 +6,7 @@
  * .github/workflows/ci.yml and .github/CODEOWNERS, and run the job's guard scripts with bash in a scratch directory.
  */
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -367,3 +367,110 @@ test("W-396-b1 behaviour 1: ci.yml carries the certificate job after certify, wi
   );
 });
 
+test("W-396-b2 behaviour 2: the certificate job refuses a base_sha that is not a 40-hex commit id before any checkout, and a tooling HEAD that is not base_sha before publishing, and neither refusal can be skipped", () => {
+  const job = parseYaml(readFileSync(CI_YML, "utf8")).jobs?.certificate;
+  assert.ok(job !== undefined && Array.isArray(job.steps), "ci.yml has a certificate job");
+  const steps = job.steps;
+  const at = (pred) => steps.findIndex(pred);
+  const base = at((s) => s.name === GUARD_BASE);
+  const head = at((s) => s.name === GUARD_HEAD);
+  const checkout = at((s) => String(s.uses ?? "").startsWith("actions/checkout@"));
+  const publish = at((s) => String(s.run ?? "").includes("ci-certificate.mjs"));
+  assert.equal(base, 0, "the first step refuses a base_sha that is not a commit id, before any checkout");
+  assert.equal(
+    steps.filter((s) => String(s.uses ?? "").startsWith("actions/checkout@")).length,
+    1,
+    "the job checks out once",
+  );
+  assert.equal(head, checkout + 1, "the step right after the checkout refuses a tooling HEAD that is not base_sha");
+  assert.equal(publish, steps.length - 1, "the publisher is the last step, after both refusals");
+  assert.deepEqual(
+    steps.filter(isGuard).map((s) => s.name),
+    [GUARD_BASE, GUARD_HEAD],
+    "exactly two steps carry a guard name, the base guard first and the HEAD guard second",
+  );
+  for (const i of [base, head])
+    assert.deepEqual(
+      { keys: Object.keys(steps[i]).sort(), shell: steps[i].shell, env: steps[i].env },
+      { keys: ["env", "name", "run", "shell"], shell: "bash", env: { BASE_SHA: BASE_SHA_EXPR } },
+      `${steps[i].name}: bash, base_sha through the environment, and no if or continue-on-error`,
+    );
+  assert.deepEqual(
+    steps.slice(0, publish).filter((s) => s.if !== undefined || s["continue-on-error"] !== undefined),
+    [],
+    "no step before the publisher carries an if or a continue-on-error, so a refusal stops the job before the next step",
+  );
+  assert.equal(job["continue-on-error"], undefined, "the job has no continue-on-error");
+
+  const ws = scratch("guard");
+  for (const bad of [
+    undefined,
+    "",
+    "abc",
+    "a".repeat(39),
+    "a".repeat(41),
+    "A".repeat(40),
+    "g".repeat(40),
+    `${"a".repeat(40)}\n`,
+    ` ${"a".repeat(40)}`,
+    `${"a".repeat(40)};true`,
+  ]) {
+    const r = runStep(steps[base], ws, bad === undefined ? {} : { BASE_SHA: bad });
+    assert.notEqual(r.status, 0, `base_sha ${JSON.stringify(bad)}: refused before any checkout`);
+    assert.match(
+      r.stdout,
+      /^certificate: refused: base_sha is not a 40-hex commit id$/m,
+      `base_sha ${JSON.stringify(bad)}: the reason`,
+    );
+  }
+  assert.equal(
+    runStep(steps[base], ws, { BASE_SHA: "0123456789abcdef".repeat(3).slice(0, 40) }).status,
+    0,
+    "a 40-hex base_sha passes",
+  );
+
+  const git = (cwd, ...args) =>
+    execFileSync(
+      "git",
+      [
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "init.defaultBranch=main",
+        ...args,
+      ],
+      { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    ).trim();
+  const tooling = join(ws, "tooling");
+  mkdirSync(tooling);
+  git(tooling, "init", "-q");
+  git(tooling, "commit", "-q", "--allow-empty", "-m", "base");
+  const baseSha = git(tooling, "rev-parse", "HEAD");
+  git(tooling, "commit", "-q", "--allow-empty", "-m", "candidate");
+  const candidate = git(tooling, "rev-parse", "HEAD");
+  git(tooling, "checkout", "-q", "--detach", baseSha);
+  assert.equal(runStep(steps[head], ws, { BASE_SHA: baseSha }).status, 0, "tooling at base_sha passes");
+  for (const [what, env] of [
+    ["another commit", { BASE_SHA: candidate }],
+    ["an empty base_sha", { BASE_SHA: "" }],
+    ["no base_sha", {}],
+  ]) {
+    const r = runStep(steps[head], ws, env);
+    assert.notEqual(r.status, 0, `${what}: refused before publishing`);
+    assert.match(r.stdout, /^certificate: refused: tooling HEAD .* is not base_sha$/m, `${what}: the reason`);
+  }
+  git(tooling, "checkout", "-q", "--detach", candidate);
+  assert.notEqual(
+    runStep(steps[head], ws, { BASE_SHA: baseSha }).status,
+    0,
+    "tooling checked out at the candidate: refused before publishing",
+  );
+  const bare = scratch("guard-none");
+  const none = runStep(steps[head], bare, { BASE_SHA: baseSha });
+  assert.notEqual(none.status, 0, "no tooling checkout: refused before publishing");
+  assert.match(none.stdout, /^certificate: refused: tooling has no HEAD$/m, "no tooling checkout: the reason");
+});
