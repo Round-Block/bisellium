@@ -67,7 +67,9 @@ const lines = (o, prefix = "") =>
         : [`${prefix}${k}: ${JSON.stringify(v)}`],
   );
 
-if (import.meta.filename === process.argv[1]) {
+// W-398: only as the program node was started with; an import (a `node -e` whose first argument is this path included)
+// never runs it
+if (import.meta.main) {
   const check = process.argv[2] === "--check";
   const [file, patronDir, agentGh, agentDir] = process.argv.slice(check ? 3 : 2);
   if (!file || !patronDir || !agentGh) {
