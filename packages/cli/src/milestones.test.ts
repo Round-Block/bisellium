@@ -4,12 +4,17 @@
  * per behaviour, selected by `--test-name-pattern=W-152-b<n>`. Every row builds
  * its own fixture under the OS tmp dir and writes nothing in studio/ or
  * examples/.
+ * W-404 rows b1 and b2 (studio/briefs/W-404.md): `bisellium milestones` and its `next --all` line report progress by
+ * exits, not filings; selected by `--test-name-pattern='^W-404-b<k>\s'`.
  */
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
 import { checkStudio, type Finding } from "./check.js";
 import { initStudio } from "./init.js";
@@ -156,4 +161,181 @@ test("W-152-b3 behaviour 3: amend --milestone --value is the one way a mapping i
     assert.equal(amend(f.dir, ...flags).exitCode, 2, `${what} exits 2`);
     assert.equal(readFileSync(f.path, "utf8"), before, `${what} leaves the record byte-identical`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// W-404 (studio/briefs/W-404.md): milestone progress by exits, not filings. Each row spawns the CLI (main.ts) on a
+// fixture repository with an init officina inside it, so a red is the row's own failed assertion, never a load error.
+// ---------------------------------------------------------------------------
+const MAIN = join(dirname(fileURLToPath(import.meta.url)), "main.ts");
+const TSX = import.meta.resolve("tsx");
+
+/** A git repository holding an init officina at `studio/`: the shape `next --all` and `milestones --repo` read. */
+function exitWorld(tag: string): { repo: string; studio: string } {
+  const root = mkdtempSync(join(tmpdir(), `bisellium-w404-${tag}-`));
+  dirs.push(root);
+  const repo = join(root, "repo");
+  mkdirSync(repo);
+  spawnSync("git", ["init", "-q", "-b", "master"], { cwd: repo });
+  spawnSync("git", ["-c", "user.name=w404", "-c", "user.email=w404@example.invalid", "commit", "-q", "--allow-empty", "-m", "fixture"], { cwd: repo });
+  const init = initStudio(join(repo, "studio"), { now: NOW });
+  assert.ok(init.root, init.message);
+  return { repo, studio: join(repo, "studio") };
+}
+
+function bisellium(cwd: string, args: string[]): { status: number | null; out: string; err: string } {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, encoding: "utf8", timeout: 120_000, env: { ...process.env, BISELLIUM_SELLA: "" } });
+  return { status: r.status, out: r.stdout ?? "", err: r.stderr ?? "" };
+}
+
+/** Every file under `dir` (its .git included), path and bytes: two equal snapshots mean nothing was written. */
+function snapshot(dir: string): string {
+  const out: string[] = [];
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else out.push(`${p}\n${readFileSync(p, "base64")}`);
+    }
+  };
+  walk(dir);
+  return out.join("\n");
+}
+
+/** Four milestones, one of each exit form and one with none; weights 40 + 30 + 20 + 10. */
+const FOUR = `milestones:
+  - { id: M1, title: "Opus exit", weight: 40, exit: { opus: W-1 } }
+  - { id: M2, title: "Rule exit", weight: 30, exit: { rule: acta.kind } }
+  - { id: M3, title: "Needs exit", weight: 20, exit: { needs: "a browser test" } }
+  - { id: M4, title: "No exit", weight: 10 }
+`;
+
+/** W-1 is M1's exit opus; W-2 was split from it and W-3 from W-2 (its path); W-4 is filed under M1 with no parent. */
+function fourOpera(studio: string, exitState: string): void {
+  opus(studio, "W-1", exitState, "milestone: M1\nvalue: 3\n");
+  opus(studio, "W-2", "done", "milestone: M1\nvalue: 2\nparent: W-1\n");
+  opus(studio, "W-3", "halted", "parent: W-2\n");
+  opus(studio, "W-4", "done", "milestone: M1\nvalue: 5\n");
+  opus(studio, "W-5", "done", "milestone: M2\nvalue: 1\nparent: W-9\n");
+}
+
+const NOW_ARG = ["--now", NOW.toISOString()];
+
+/** The YAML reader's own first message line for `text` (the held line quotes it). */
+function yamlError(text: string): string {
+  try {
+    parseYaml(text);
+  } catch (e) {
+    return (e as Error).message.split("\n")[0] ?? "";
+  }
+  throw new Error("the fixture parses");
+}
+
+test("W-404-b1 behaviour 1: bisellium milestones prints each milestone's exit, whether it is met, its exit path and the weighted share of exits met, and writes nothing", { timeout: 600_000 }, () => {
+  const w = exitWorld("b1");
+  milestones(w.studio, FOUR);
+  fourOpera(w.studio, "greenlit");
+  const run = (): { status: number | null; out: string; err: string } => bisellium(w.repo, ["milestones", "--studio", w.studio, "--repo", w.repo, ...NOW_ARG]);
+  const report = (head: string, m1: string, m2: string): string =>
+    [
+      head,
+      m1,
+      m2,
+      "M3 open · weight 20 · Needs exit · exit: needs: a browser test (no record can meet it) · path: none",
+      "M4 open · weight 10 · No exit · exit: none stated · path: none",
+      "",
+    ].join("\n");
+  const M1_OPEN = "M1 open · weight 40 · Opus exit · exit: opus W-1 (greenlit) · path: W-1 greenlit, W-2 done, W-3 halted";
+  const M2_MET = "M2 met · weight 30 · Rule exit · exit: rule acta.kind (no finding) · path: none";
+  const first = report("milestones: 1 of 4 exits met, 30% by weight", M1_OPEN, M2_MET);
+
+  const before = snapshot(w.repo);
+  const r = run();
+  assert.equal(r.out, first, "the report: a summary, then one line per milestone in file order");
+  assert.equal(r.status, 0, "exit 0");
+  assert.equal(r.err, "", "nothing on stderr");
+  assert.equal(snapshot(w.repo), before, "the run writes nothing: every file under the repository, .git included, is byte-identical");
+
+  // filings do not move it: more opera filed under M1 and M2, and an opus naming an undeclared milestone
+  opus(w.studio, "W-6", "backlog", "milestone: M1\nvalue: 8\n");
+  opus(w.studio, "W-7", "done", "milestone: M2\nvalue: 8\n");
+  opus(w.studio, "W-8", "done", "milestone: M99\nvalue: 3\n");
+  assert.equal(run().out, first, "filing more opera, done or not, and an opus naming an undeclared milestone change no line");
+
+  // the exit opus done meets M1: the share is the met weights over every weight
+  opus(w.studio, "W-1", "done", "milestone: M1\nvalue: 3\n");
+  assert.equal(run().out, report("milestones: 2 of 4 exits met, 70% by weight", "M1 met · weight 40 · Opus exit · exit: opus W-1 (done) · path: W-1 done, W-2 done, W-3 halted", M2_MET), "the exit opus done: M1 met, 70%");
+
+  // a finding of the exit rule opens M2, at any level
+  writeFileSync(join(w.studio, "acta", "bad.md"), "---\nauthor: producer\nkind: zz\ntitle: bad\nat: 2026-10-06T00:00:00Z\n---\nbody\n");
+  const M1_MET = "M1 met · weight 40 · Opus exit · exit: opus W-1 (done) · path: W-1 done, W-2 done, W-3 halted";
+  assert.equal(run().out, report("milestones: 1 of 4 exits met, 40% by weight", M1_MET, "M2 open · weight 30 · Rule exit · exit: rule acta.kind (1 finding) · path: none"), "one acta.kind finding: M2 open");
+  rmSync(join(w.studio, "acta", "bad.md"));
+
+  // a parent cycle ends: each opus once
+  opus(w.studio, "W-1", "done", "milestone: M1\nvalue: 3\nparent: W-3\n");
+  assert.equal(run().out, report("milestones: 2 of 4 exits met, 70% by weight", M1_MET, M2_MET), "a parent cycle W-1 > W-3 > W-2 > W-1: the path lists each once");
+
+  // an exit naming no record, and a rule that is not a check rule, are never met
+  milestones(
+    w.studio,
+    `milestones:
+  - { id: M1, title: "Opus exit", weight: 1, exit: { opus: W-77 } }
+  - { id: M2, title: "Rule exit", weight: 1, exit: { rule: no.such.rule } }
+  - { id: M5, title: "Met", weight: 1, exit: { opus: W-2 } }
+`,
+  );
+  assert.equal(
+    run().out,
+    [
+      "milestones: 1 of 3 exits met, 33% by weight",
+      "M1 open · weight 1 · Opus exit · exit: opus W-77 (no record) · path: none",
+      "M2 open · weight 1 · Rule exit · exit: rule no.such.rule (not a check rule) · path: none",
+      "M5 met · weight 1 · Met · exit: opus W-2 (done) · path: W-2 done, W-1 done, W-3 halted",
+      "",
+    ].join("\n"),
+    "no record and no such rule: open; the share is floored (1 of 3 weights: 33%); W-2's path runs through the cycle, the exit opus first",
+  );
+
+  // absent: inert
+  rmSync(join(w.studio, "milestones.yml"));
+  const absent = run();
+  assert.equal(absent.out, "milestones: none: the officina has no milestones.yml\n", "no milestones.yml: one line");
+  assert.equal(absent.status, 0, "no milestones.yml: exit 0");
+
+  // malformed: held, exit 1, every problem named, no row printed
+  const held: [string, string, string][] = [
+    ["a list that does not parse", "milestones: [unclosed\n", `milestones.yml is malformed: it does not parse: ${yamlError("milestones: [unclosed\n")}`],
+    ["no milestones list", "milestones: 3\n", 'milestones.yml is malformed: it needs a "milestones" list'],
+    ["an empty list", "milestones: []\n", "milestones.yml is malformed: it lists no milestone"],
+    [
+      "four bad entries",
+      `milestones:\n  - 7\n  - { id: M1, title: "A", weight: 0, exit: { opus: W-1, rule: acta.kind } }\n  - { id: M1, title: "", weight: 2.5, exit: null }\n  - { id: "bad id", title: "B", weight: 1, exit: { check: W-1 } }\n`,
+      'milestones.yml is malformed: milestone #1 is not a mapping; milestone M1 weight must be a positive integer; milestone M1 exit must be absent or have exactly one of opus | rule | needs, a non-empty string; duplicate milestone id "M1"; milestone M1 title must be a non-empty string; milestone M1 weight must be a positive integer; milestone M1 exit must be absent or have exactly one of opus | rule | needs, a non-empty string; milestone #4 id "bad id" is not a valid id; milestone bad id exit must be absent or have exactly one of opus | rule | needs, a non-empty string',
+    ],
+  ];
+  for (const [what, yaml, why] of held) {
+    milestones(w.studio, yaml);
+    const h = run();
+    assert.equal(h.out, `milestones: held · why: ${why}\n`, `${what}: one held line naming why, no row`);
+    assert.equal(h.status, 1, `${what}: exit 1`);
+  }
+
+  // an unreadable opus record holds the report: it may be on a path
+  milestones(w.studio, FOUR);
+  writeFileSync(join(w.studio, "opera", "W-11.md"), "no front matter\n");
+  const unreadable = run();
+  assert.equal(unreadable.out, `milestones: held · why: opera/W-11.md cannot be read (${join(w.studio, "opera", "W-11.md")}: missing front matter)\n`, "an unreadable record: held");
+  assert.equal(unreadable.status, 1, "an unreadable record: exit 1");
+  rmSync(join(w.studio, "opera", "W-11.md"));
+
+  // usage: exit 2
+  for (const [args, why] of [[["W-1"], "takes no positional argument"], [["--json"], 'unknown flag "--json"'], [["--now", "yesterday"], "--now must be an ISO date"]] as const) {
+    const u = bisellium(w.repo, ["milestones", "--studio", w.studio, ...args]);
+    assert.equal(u.status, 2, `${args.join(" ")}: exit 2`);
+    assert.equal(u.err.split("\n")[0], `milestones: ${why}`, `${args.join(" ")}: ${why}`);
+  }
+  const notStudio = bisellium(w.repo, ["milestones", "--studio", w.repo]);
+  assert.equal(notStudio.status, 2, "not a studio: exit 2");
+  assert.equal(notStudio.err.split("\n")[0], `milestones: ${join(w.repo, "bisellium.yml")} not found — not a studio`, "not a studio: named");
 });
