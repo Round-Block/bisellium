@@ -11,7 +11,7 @@ import { test } from "node:test";
 import { readFront, type Manifest } from "@bisellium/adapter-native";
 import { inspectUiDesignInput, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { deriveNext, readSpecReviewer, type Facts } from "./next.js";
-import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, briefText, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
+import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, briefText, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, specVerdict, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
 const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
@@ -1329,3 +1329,42 @@ test("W-381-b4 behaviour 4: a failed spec review whose S1 blocker names a class 
   commit(keeps.wt, "test: W-900 names its cause fix");
   expectStep(specNext(keeps), "reds", "named", "the branch title names the class: the reds are ordered");
 });
+
+// ---------------------------------------------------------------------------
+// W-355 (W-348 part 2, D-061 §4 cut): next reads the spec's kind and seat pairing from the checkout that owns the spec evidence
+// (the main checkout before opus/<id>, the opus worktree after, the committed branch without a usable worktree) and holds at
+// spec on an unreadable owner instead of falling back to the trunk. Every row runs the real `next` (its `gather`), never an
+// injected Facts. Rows are selectable with --test-name-pattern='^W-355-b<n>\s'.
+// ---------------------------------------------------------------------------
+const W355_QA = "  - { id: qa-lead, collegium: qa, kind: agent }";
+const W355_KEYS = `ui_spec_signer: ${UI_ARCHITECT}\nui_spec_reviewer: ${UI_REVIEWER}\n`;
+/** The UI seats are declared in every W-355 manifest; `paired` adds the two keys that select them for a kind: ui opus. */
+const w355Manifest = (text: string, paired: boolean): string =>
+  text.replace(W355_QA, `${W355_QA}\n  - { id: ${UI_ARCHITECT}, collegium: design, kind: agent, model: ${UI_ARCHITECT_MODEL}, harness: codex }\n  - { id: ${UI_REVIEWER}, collegium: qa, kind: agent, model: ${UI_REVIEWER_MODEL}, harness: claude-code }`) + (paired ? W355_KEYS : "");
+/** The order a spec step names: its role, sella, model and round, for one comparison. */
+const w355Order = (o: ReturnType<typeof specNext>): Record<string, string | undefined> => ({ step: o.first, role: o.kv.get("role"), sella: o.kv.get("sella"), model: o.kv.get("model"), round: o.kv.get("round") });
+
+test("W-355-b1 behaviour 1: before opus/<id>, next reads the spec's kind from the main checkout's record, where the spec evidence is, never the trunk's", { timeout: 1_800_000 }, () => {
+  // the trunk's record is kind: opus; the main checkout's carries kind: ui, so the UI pair signs and reviews
+  const w = srWorld("w355-b1", { edit: (t) => w355Manifest(t, true) });
+  putBrief(w);
+  editRecord(w, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  const signer = specNext(w);
+  assert.deepEqual(w355Order(signer), { step: `next: ${OPUS} spec named`, role: "architect", sella: UI_ARCHITECT, model: undefined, round: "1" }, ran("the main checkout's kind: ui orders the UI signer", signer));
+  assert.equal(signer.kv.get("command"), `dispatch ${UI_ARCHITECT} to sign the spec for ${OPUS}; close out with: bisellium verdict ${OPUS} --round 1 --sella ${UI_ARCHITECT} --outcome passed --phase spec --studio studio`, ran("its verdict command names the UI signer", signer));
+  specVerdict(w, 1, UI_ARCHITECT, "passed", NO_FINDINGS);
+  const reviewer = specNext(w);
+  assert.deepEqual(w355Order(reviewer), { step: `next: ${OPUS} spec named`, role: "spec-reviewer", sella: UI_REVIEWER, model: UI_REVIEWER_MODEL, round: "2" }, ran("the UI signature then orders the UI reviewer", reviewer));
+
+  // the trunk's record is kind: ui; the main checkout's is a readable mapping with no kind, so the engineering pair applies
+  const t = srWorld("w355-b1-trunk-ui", { edit: (x) => w355Manifest(x, true) });
+  editRecord(t, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  commit(t.repo, "studio: W-900 is a ui opus on the trunk");
+  putBrief(t);
+  const rec = join(t.studio, "opera", `${OPUS}.md`);
+  writeFileSync(rec, readFileSync(rec, "utf8").replace(/^kind: .*\n/m, ""));
+  architectOrder(specNext(t), 1, "a main-checkout record with no kind keeps the design magister");
+  sign(t, 1);
+  reviewerOrder(specNext(t), 2, "and the engineering reviewer");
+});
+
