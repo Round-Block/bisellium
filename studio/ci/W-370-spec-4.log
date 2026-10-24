@@ -1,0 +1,21 @@
+# opus: W-370
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16c0e-01b8-74b2-9821-79d03f856511
+# outcome: failed
+# at: 2026-10-24T04:11:29.082Z
+# tree: tree:bb664b3032f5fef0406c4cfb7156a22ccee49a65
+# brief: briefs/W-370.md blob:798d46f68e8328ed1ca45ef6be55b04d2f9a3bf7
+# ticket: {"opus":"W-370","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"a7ea8e35d1516617fdcfec9ee67898bd33dbc7db","brief":"798d46f68e8328ed1ca45ef6be55b04d2f9a3bf7","at":"2026-10-24T04:11:26.030Z"}
+
+## Findings
+1. blocking — brief:144 [severity: S1] [design: changes] The named rejector is false: `actions/checkout` defaults an empty `ref` to the event commit, so an empty `base_sha` can check out the merge-group candidate and run its publisher with `checks: write`, violating the no-candidate-code promise; W-370-b4 and K1 only pin the expression and permissions. Add a non-skippable step that rejects unless `base_sha` is 40-hex and equals `tooling`’s checked-out `HEAD` before publishing. [class: spec×input-domain-missing-or-unenforceable] — check: scripts/ci-certificate.test.mjs (W-370-b4: empty or malformed base_sha fails before publish)
+
+## Earlier findings
+- ci/W-370-spec-2.log #1: open — `contents: read` is present and K1 proves its test, but the newly added checkout input row names a false rejection for empty `base_sha`, leaving the required action boundary fail-open.
+
+## Verdict
+The permission defect is repaired, but the checkout still lacks a real fail-closed binding to the trusted base commit.
+VERDICT: FAIL

@@ -1,0 +1,26 @@
+# opus: W-370
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T04:32:50.457Z
+# tree: tree:25dfac50fbc69f49cc30f44f73a3bddd086519ba
+# brief: briefs/W-370.md blob:0ccd65a8daf319975c181f7a180e735c5af27fb8
+# ticket: {"opus":"W-370","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"808a43add231f628720d8ab0489caa7adda7522c","brief":"0ccd65a8daf319975c181f7a180e735c5af27fb8","at":"2026-10-24T04:32:37.183Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-370-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the brief is cut to what spec review passed (D-061 §4; round 4's empty-base_sha finding, ci/W-370-spec-4.log): the .github/ job, its CODEOWNERS line, behaviour 4, the reused action calls' rows and the five-job flips move to W-396 (filed, #727, parent W-370), named under Out of scope — check: brief:133
+2. advisory — what a done does with no check run is stated and pinned: the reader reads the merge commit's check runs first, and with none reads the certify artifact unchanged (moved into artifactCertificate), so until W-396 lands every done takes today's artifact path and the D-106 C stopgap; a doubled or forged check run never falls back; the one new failure mode (a gh api failure on the added read now holds) is a stated limit, not a guarantee (D-076 E) — check: brief:19, brief:77, packages/cli/src/next-done.test.ts (W-370-b1)
+3. advisory — each red fails by assertion on master a7ea8e35 with the final rows (b1 at "two check runs, an artifact present"; b2, b3 at "scripts/ci-certificate.mjs exists") and on its stage (b2 at "another app's check run: refused" on stage 1, b3 at "certificatePayload is exported" on stage 2); the host replay classifier accepts all five; each row passes at its own stage — check: red-b1-master.out, red-b2-master.out, red-b2-stage1.out, red-b3-master.out, red-b3-stage2.out, red-accept.out, proto-b1-stage1.out, proto-b2-stage2.out, proto-b3-stage3.out
+4. advisory — must-stay-green on the whole prototype: next-done.test.ts 32 of 32 with every W-259 and W-330 row unedited (the stub's default is no check run), containment.test.ts, ci-certificate.test.mjs 2 of 2, ci-certify.test.mjs 11 of 11 and ci-workflow.test.mjs; the one flip (W-163-b6's inventory D: the rmSync pin renamed to artifactCertificate, the publisher's read added) fails unedited on its three checks — check: green-summary.out, containment-unedited-proto.out
+5. advisory — the Codex test check on revision 3 lists one flip, W-163-b6 behaviour 6, named; Unnamed: None — check: fixture-census.md
+6. advisory — no path is code-owned: .github/ is unchanged and scripts/ci-certificate.mjs is not named in CODEOWNERS (W-396 adds the line) — check: none: a CODEOWNERS line for scripts/ci-certificate.mjs, which W-396 owns
+7. advisory — the brief passes admission and the ledger covers the three promise lines, the CLI-verb lines and every Input domain row; lint (one existing-pattern warning: a .d.mts has no eslint config), format and typecheck pass on the touched files — check: admission.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-370.md` (spec round 5), master a7ea8e35.

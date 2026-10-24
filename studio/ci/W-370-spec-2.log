@@ -1,0 +1,19 @@
+# opus: W-370
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16c0e-01b8-74b2-9821-79d03f856511
+# outcome: failed
+# at: 2026-10-24T04:01:53.920Z
+# tree: tree:bb664b3032f5fef0406c4cfb7156a22ccee49a65
+# brief: briefs/W-370.md blob:df94cc59d4feaad9413fa78441ab28108c58249e
+# ticket: {"opus":"W-370","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a7ea8e35d1516617fdcfec9ee67898bd33dbc7db","brief":"df94cc59d4feaad9413fa78441ab28108c58249e","at":"2026-10-24T04:01:50.194Z"}
+
+## Findings
+1. blocking — brief:61 [severity: S1] [design: changes] The job overrides workflow permissions with only `checks: write`; under a plausible private-repository configuration this sets `contents` to `none`, so the real merge-group `actions/checkout@v5` caller cannot fetch `base_sha`, no certificate is published, and W-370-b4 asserts rather than catches the bad map. Replace brief:61 with the two YAML lines `contents: read` and `checks: write`, change brief:161’s exact map accordingly, and add Input-domain rows for the three reused action calls and their GitHub contexts, naming runner step failure as rejector. [class: spec×input-domain-missing-or-unenforceable] — check: scripts/ci-certificate.test.mjs (W-370-b4)
+2. advisory — brief:88 [severity: S2] `readArtifact` promises `{ files }` or `{ error }`, but only `readdirSync` is caught; an `lstatSync` or `readFileSync` failure escapes through `publish`. Replace brief:88 with: “`readArtifact(dir)` recursively returns every regular file under `dir`; symlinks, other entry types and oversize files return `{ error }`, otherwise it returns `{ files }`. Limit: an `lstatSync` or `readFileSync` exception after enumeration escapes; the entry point exits non-zero before posting, the job fails, and done holds.” [class: spec×input-domain-missing-or-unenforceable] — check: scripts/ci-certificate.test.mjs (W-370-b3)
+
+## Verdict
+The brief is not build-ready because the certificate job lacks permission required to fetch its trusted publisher.
+VERDICT: FAIL
