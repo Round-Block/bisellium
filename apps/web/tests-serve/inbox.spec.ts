@@ -51,3 +51,21 @@ test("W-345-b2 two same-turn answers issue one request", async ({ page }) => {
     await served.close();
   }
 });
+
+test("W-345-b3 moving between petitions never carries one reason into another", async ({ page }) => {
+  const served = await startServed("w345-b3");
+  try {
+    await page.goto(`${served.baseURL}/?demo=1#/inbox`);
+    const rows = page.locator(".inbox__row");
+    const reason = page.locator(".inbox__input-ratio");
+    await reason.fill("reason for P-008 only");
+    await rows.nth(1).click();
+    await expect(reason).toHaveValue("");
+    await expect(page.locator(".inbox__btn-action").first()).toBeDisabled();
+    await reason.fill("reason for P-009 only");
+    await rows.first().click();
+    await expect(reason).toHaveValue("reason for P-008 only");
+  } finally {
+    await served.close();
+  }
+});
