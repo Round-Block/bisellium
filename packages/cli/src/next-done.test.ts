@@ -10,7 +10,7 @@ import { test } from "node:test";
 import { sourceTreeHash } from "@bisellium/shim";
 import { runDone } from "@bisellium/commands/lifecycle.js";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitYesNo, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, recordText, remoteBranchExists, reviewed, scenario, scratch, sourceTree, stagedPaths, touchHandoff, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
+import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitYesNo, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, recordText, remoteBranchExists, reviewed, scenario, certificateRun, checkRunsOf, scratch, sourceTree, stagedPaths, touchHandoff, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
 
 
 // ---------------------------------------------------------------------------
@@ -1282,4 +1282,66 @@ test("W-330-b2 behaviour 2 review round 2: an exactly matching PR number past th
   assert.equal(done.status, 0, ran("an exactly matching unbounded PR number performs: exit 0", done));
   expectStep(done, "done", "performed", "an exactly matching unbounded PR number performs");
   assert.ok(outLines(done).includes(`certificate: certify run ${CHAIN_RUN}, PR #9007199254740993, merge commit ${later.slice(0, 12)}, ${tree}`), ran("the certificate names the PR as the subject wrote it", done));
+});
+
+// ---------------------------------------------------------------------------
+// W-370 behaviour 1: the done perform reads certify's certificate from its check run, through api.github.com
+// ---------------------------------------------------------------------------
+test("W-370-b1 behaviour 1: the done perform records certify's certificate from the one certify-certificate check run on the merge commit through gh api, downloads the artifact only when there is no check run, and holds on a doubled one", { timeout: 1_800_000 }, () => {
+  const RUN = 4545;
+  const setup = (tag: string) => {
+    const w = world(tag, "cleanup", { automated: true });
+    const merge = w.mergeOid!;
+    const tree = `tree:${sourceTreeHash(w.repo, ["studio", ".bisellium"], merge)}`;
+    const receipt = JSON.stringify({ sella: `builder.${OPUS}`, harness: "run", exitCode: 0, completion: { schema: 1, origin: "host-producer", opus: OPUS, branch: BRANCH, builder: `builder.${OPUS}`, producer: "producer", finalSourceTree: tree, redReplays: [], gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true } });
+    const log = `certify: merge group for PR #${PR_NUMBER}\ncertify: running the mint\ntests: passed  ci/${OPUS}-tests-${tree.slice(5, 13)}.log\ncertify: the mint exited 0\n`;
+    const ci = { list: mergedList(w), runList: { stdout: [{ databaseId: RUN, headSha: merge, event: "merge_group", status: "completed", conclusion: "success" }] }, runView: { stdout: { jobs: [{ name: "gates", conclusion: "success" }, { name: "certify", conclusion: "success" }] } } };
+    touchHandoff(w);
+    return { w, merge, tree, receipt, log, ci, files: { "receipts/r.json": receipt, "certify.log": log }, logName: `studio/ci/${OPUS}-tests-${tree.slice(5)}.log` };
+  };
+  const perform = (w: World): Out => next(w, [OPUS, "--perform", "--expect", "done"]);
+  const apiCalls = (w: World): string[][] => ghCalls(w).filter((c) => c[0] === "api");
+  const READ = (merge: string): string[] => ["api", "--method", "GET", `repos/${SLUG}/commits/${merge}/check-runs`, "-f", "check_name=certify-certificate", "-f", "filter=all", "-f", "per_page=100"];
+  const chore = `chore/done-${OPUS}`;
+
+  const a = setup("w370-b1");
+  const record = readFileSync(join(a.w.studio, "opera", `${OPUS}.md`), "utf8");
+  const run = certificateRun({ sha: a.merge, runId: RUN, receipt: a.receipt, log: a.log, id: 9001 });
+
+  // two check runs (a re-run, or another writer) and an artifact the stub would serve: the perform holds, names verify and downloads nothing
+  scenario(a.w, { ...a.ci, runDownload: { stdout: "", files: a.files }, checkRuns: checkRunsOf(run, { ...run, id: 9002 }) });
+  const held = perform(a.w);
+  expectHeld(held, "two check runs, an artifact present");
+  const why = outLines(held).find((l) => l.startsWith("why: ")) ?? "";
+  assert.match(why, /2 certify-certificate check runs name the commit [0-9a-f]{12}/, ran("two check runs: the reason", held));
+  assert.ok(why.includes(`bisellium verify ${OPUS} --studio studio --repo .`), ran("two check runs: the why line names verify", held));
+  assert.equal(ghCalls(a.w).some((c) => c[0] === "run" && c[1] === "download"), false, "two check runs: no artifact is downloaded");
+  assert.equal(readFileSync(join(a.w.studio, "opera", `${OPUS}.md`), "utf8"), record, "two check runs: the record is unchanged");
+  assert.equal(existsSync(join(a.w.repo, a.logName)), false, "two check runs: no certificate log");
+
+  // one check run and every download refused: the certificate is recorded and done committed
+  scenario(a.w, { ...a.ci, checkRuns: checkRunsOf(run) });
+  const done = perform(a.w);
+  assert.equal(done.status, 0, ran("the check run's certificate: exit 0", done));
+  expectStep(done, "done", "performed", "done is performed over the check run's certificate");
+  assert.ok(outLines(done).includes(`certificate: certify run ${RUN}, PR #${PR_NUMBER}, merge commit ${a.merge.slice(0, 12)}, ${a.tree}`), ran("the certificate line", done));
+  const committed = git(a.w.repo, ["show", `refs/heads/${chore}:${a.logName}`]);
+  assert.equal(committed.split("\n")[0], `certifies: ${a.tree}`, "the log's first line is its certificate");
+  assert.match(committed, new RegExp(`CI run ${RUN}, PR #${PR_NUMBER}, merge commit ${a.merge}, receipt sha256:[0-9a-f]{64}, check run 9001$`, "m"), "the log names the run, the PR, the merge commit and the check run");
+  assert.ok(committed.includes("certify: the mint exited 0"), "the log carries certify.log's tail");
+  const rec = parseFrontMatter(git(a.w.repo, ["show", `refs/heads/${chore}:studio/opera/${OPUS}.md`])).data as Json;
+  assert.deepEqual((rec["probationes"] as Json)["tests"], { status: "passed", evidence: `ci/${OPUS}-tests-${a.tree.slice(5)}.log`, certifies: a.tree }, "the record's tests gate certifies the merge commit's tree");
+  assert.deepEqual(ghCalls(a.w).filter((c) => c[0] === "run").map((c) => c[1]), ["list", "view"], "one run list and view, no download");
+  assert.deepEqual(apiCalls(a.w), [READ(a.merge)], "one read of the merge commit's certify-certificate check runs, through api.github.com");
+
+  // no check run (every merge until W-396's job posts one): the check runs are read, then the artifact, as today
+  const b = setup("w370-b1-none");
+  scenario(b.w, { ...b.ci, runDownload: { stdout: "", files: b.files }, checkRuns: checkRunsOf() });
+  const fallback = perform(b.w);
+  assert.equal(fallback.status, 0, ran("no check run: the artifact's certificate, exit 0", fallback));
+  expectStep(fallback, "done", "performed", "no check run: done is performed over the artifact's certificate");
+  assert.deepEqual(apiCalls(b.w), [READ(b.merge)], "no check run: the check runs are read first");
+  assert.deepEqual(ghCalls(b.w).filter((c) => c[0] === "run").map((c) => c[1]), ["list", "view", "download"], "no check run: then the artifact is downloaded");
+  const kept = git(b.w.repo, ["show", `refs/heads/${chore}:${b.logName}`]);
+  assert.match(kept, new RegExp(`merge commit ${b.merge}, receipt sha256:[0-9a-f]{64}$`, "m"), "no check run: the log names no check run");
 });
