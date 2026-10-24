@@ -45,42 +45,42 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Two engineering lanes and two UI lanes (Patron 2026-10-22), each taking from the top of its list.
 Order by cycle minutes saved, D-039 highs first; a high opus filed since starts right after the one in flight.
-Lanes per D-106 E. Halted: W-239 (D-106 D).
+Lanes per D-106 E: Engineering 1 and 2, UI 1 and 2. Halted: W-239 (D-106 D).
 
-Lane A (guard, scripts, hooks, run; no next.ts):
-A1. W-379 — W-369's split-off half: the guard runs from the Patron's clone at master (high; design to the Patron before branch)
-A2. W-381 — root-cause fix for the repeat finding "a ruled case no test pins" (D-039 high; review round 1 failed on one S1; fix round)
-A3. W-392 — W-381's review found tests×one-sided-bound-assertion again after its cause fix W-376: close the path W-376 missed (D-076 D high; greenlit)
-A4. W-383 — cause fix for the repeat class tests×security-boundary-cases-uncovered (D-076 D high; greenlit)
-A5. W-393 — cause fix for the repeat spec class spec×input-domain-missing-or-unenforceable, seen in 41 logs after W-319 and W-307 (D-076 D high; greenlit)
-A6. W-349 — the flaky row W-279-b3 failed in the merge queue twice: print what it captured, then fix the cause (D-039 high)
-A7. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
-A8. W-372 — a dispatched agent waits for its own long background perform (D-106 D)
-A9. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
-A10. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
-A11. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
-A12. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
-A13. W-380 — prune old evidence to small text (Patron yes)
-Lane B (next.ts, one at a time; D-039 highs first):
-B1. W-370 — certify's certificate read through the GitHub API, not an artifact (high; promoted by the Patron 2026-10-24)
-B2. W-384 — the done land's auto-merge re-arm errors on an already merged PR (D-039 high, seen twice; greenlit)
-B3. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high)
-B4. W-382 — done accepts the branch's UI ruling when master moved under the queue (greenlit)
-B5. W-333 — the queue as a record, `studio/queue.yml` (greenlit; promoted 2026-10-23 (boot trim))
-B6. W-374 — next --all prints only opera in flight; --everything keeps the full list (boot trim)
-B7. W-363 — W-309's remainder: the spec-review perform through next, and the chain refreshes the handoff after its review
-B8. W-331 — `next.ts` split by region, no behaviour change
-B9. W-183 — heavy-job slots
-B10. W-169 — lane claims, the second lane (D-075 F; design approved by D-087 C)
-B11. W-332 — step tickets close the retired dispatch guard's gap (greenlit)
-B12. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline`
+Engineering 1 (guard, scripts, hooks, run; no next.ts):
+E1.1. W-379 — W-369's split-off half: the guard runs from the Patron's clone at master (high; design to the Patron before branch)
+E1.2. W-381 — root-cause fix for the repeat finding "a ruled case no test pins" (D-039 high; review round 1 failed on one S1; fix round)
+E1.3. W-392 — W-381's review found tests×one-sided-bound-assertion again after its cause fix W-376: close the path W-376 missed (D-076 D high; greenlit)
+E1.4. W-383 — cause fix for the repeat class tests×security-boundary-cases-uncovered (D-076 D high; greenlit)
+E1.5. W-393 — cause fix for the repeat spec class spec×input-domain-missing-or-unenforceable, seen in 41 logs after W-319 and W-307 (D-076 D high; greenlit)
+E1.6. W-349 — the flaky row W-279-b3 failed in the merge queue twice: print what it captured, then fix the cause (D-039 high)
+E1.7. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
+E1.8. W-372 — a dispatched agent waits for its own long background perform (D-106 D)
+E1.9. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
+E1.10. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
+E1.11. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
+E1.12. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
+E1.13. W-380 — prune old evidence to small text (Patron yes)
+Engineering 2 (next.ts, one at a time; D-039 highs first):
+E2.1. W-370 — certify's certificate read through the GitHub API, not an artifact (high; promoted by the Patron 2026-10-24)
+E2.2. W-384 — the done land's auto-merge re-arm errors on an already merged PR (D-039 high, seen twice; greenlit)
+E2.3. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high)
+E2.4. W-382 — done accepts the branch's UI ruling when master moved under the queue (greenlit)
+E2.5. W-333 — the queue as a record, `studio/queue.yml` (greenlit; promoted 2026-10-23 (boot trim))
+E2.6. W-374 — next --all prints only opera in flight; --everything keeps the full list (boot trim)
+E2.7. W-363 — W-309's remainder: the spec-review perform through next, and the chain refreshes the handoff after its review
+E2.8. W-331 — `next.ts` split by region, no behaviour change
+E2.9. W-183 — heavy-job slots
+E2.10. W-169 — lane claims, the second lane (D-075 F; design approved by D-087 C)
+E2.11. W-332 — step tickets close the retired dispatch guard's gap (greenlit)
+E2.12. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline`
 Then the console MVP's server side (after the block):
 10. W-304 — seats read live from one settings store, no PR to take effect (D-074)
 11. W-298 — the `petitio` verb to the Patron; `next` holds on an open one
 12. W-280 — Inbox and `newItem` fail-open fixes (its `newItem` half; the Inbox half is W-345's: narrow at spec)
 13. W-261 — woken orchestration: the cascade loop waits on a GitHub event, one fresh session per wake (D-087 F; changes `scripts/cascade-loop.sh`, the Patron's folder)
 14. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
-UI queue, two lanes (order D-090 B; models D-091, D-099; every opus `kind: ui` at start, D-088 E, except W-338):
+UI 1 and UI 2, one queue, each takes from the top (order D-090 B; models D-091, D-099; every opus `kind: ui` at start, D-088 E, except W-338):
 1. W-355 — W-348 part 2: `next` reads the spec pairing and kind from the record that owns the spec evidence, failing closed on a bad owner record (backlog: awaits greenlight)
 2. W-350 — screenshot baselines with production fonts, two stages (D-097): waits for the Patron's approval of the recaptured shots (D-099 E)
 3. W-345 — Inbox truth and safety: shortcuts ignore keys typed in a field, one submission at a time, the reason bound to its petition, no invented petitions on a failed read, answer pane reachable at phone width, defer and delegate made distinct or removed
