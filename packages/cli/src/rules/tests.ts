@@ -567,7 +567,7 @@ const sidedBlock = (where: string, message: string): Finding => ({ rule: "test.o
 // the boundary before `assert`: no word character or `$` right before it, and no `.` before it past any spaces (a member call)
 const MATCH_SITE = /(?<![\w$])(?<!\.\s*)assert\s*\.\s*match\s*\(/g;
 const REGEX_LITERAL = /\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*/y;
-const REGEXP_CALL = /new\s+RegExp\s*\(\s*(["'`])((?:\\.|(?!\1)[^\\])*)\1/y;
+const REGEXP_CALL = /(?:new\s+)?RegExp\s*\(\s*(?:String\s*\.\s*raw\s*)?(["'`])((?:\\.|(?!\1)[^\\])*)\1/y;
 const OK_SITE = /(?<![\w$])(?<!\.\s*)assert(?:\s*\.\s*ok)?\s*\(/g;
 const ENDS_CALL = /\.\s*(startsWith|endsWith)\s*\(/;
 const SIDED = /^\/\/\s*one-sided:\s*(\S.*)$/;
@@ -615,6 +615,11 @@ function sidedForm(blank: string, plain: string): string | undefined {
     const end = argumentEnd(blank, from);
     const call = ENDS_CALL.exec(blank.slice(from, end < 0 ? undefined : end));
     if (call) return `${call[1]} in an assertion`;
+    // W-392: a pattern anchored at one end in the first argument (`/^x/.test(s)`, `new RegExp("^x").test(s)`)
+    for (const source of patternsOn(blank.slice(from, end < 0 ? undefined : end), plain.slice(from, end < 0 ? undefined : end))) {
+      const form = sidedPattern(source);
+      if (form !== undefined) return form;
+    }
   }
   return undefined;
 }
