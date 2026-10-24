@@ -1,0 +1,49 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-379-b4\s --import tsx packages/cli/src/w379.test.ts
+# exit: 1
+# at: 2026-10-24T05:05:33.406Z
+# sella: builder.W-379
+# tree: tree:8c25123589554ac914fa97597f6c11f80c6d28c5
+# ticket: {"opus":"W-379","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-379/studio","head":"574c41cd8a723ce81b667cd7c8d72a3d06692f99","brief":"4cda97e76d99fcbc9c2a73dd82ed356afab91f5a","at":"2026-10-24T05:05:31.737Z"}
+
+TAP version 13
+# Subtest: W-379-b4 behaviour 4: every git the guard runs has no hooks, no fsmonitor and no global config; the fetch keeps the Patron's config
+not ok 1 - W-379-b4 behaviour 4: every git the guard runs has no hooks, no fsmonitor and no global config; the fetch keeps the Patron's config
+  ---
+  duration_ms: 306.70344
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-379/packages/cli/src/w379.test.ts:1:12353'
+  failureType: 'testCodeFailure'
+  error: |-
+    no hook ran in the Patron's clone: reference-transaction
+    reference-transaction
+    reference-transaction
+    reference-transaction
+    reference-transaction
+    reference-transaction
+    post-merge
+    
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-379/packages/cli/src/w379.test.ts:262:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 319.209847
