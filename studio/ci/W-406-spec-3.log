@@ -1,0 +1,22 @@
+# opus: W-406
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: revise
+# at: 2026-10-24T17:31:06.810Z
+# tree: tree:7f189a652480b89f31950808c5f91cf44415c3de
+# dispatch_prompt: ci/W-406-ui-prompt-3.md
+# design_digest: sha256:8b7c8153e9cbc3cb5f8d3b09ef445324e6826822f339926e70dde3dd8c7c7b0a
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"33dbdc03c54069edd381c54d0b135d608a9d87b0","brief":"bd61d4ac7ee9a1a71af889bb8e8dd0972d7330be","at":"2026-10-24T17:31:00.971Z"}
+
+## Findings
+
+1. blocking — brief:45 — Header wrapping is restricted to phone viewports. At 1280px, opening the 540px drawer beside the 220px sidebar leaves a 520px Board pane, with 472px inside its gutters. The prototype’s unwrapped title, project control, explanation and non-shrinking refresh label exceed that space; the drawer covers the overflowing refresh information. The served row checks header geometry before opening the drawer and checks the timestamp after closing it, missing this regression. — replace with: Allow the existing header to wrap whenever its available pane width requires it, including beside the open drawer at 1280px. Keep connection status and the complete last-successful-refresh time readable in live and stale states, without overlap or horizontal overflow; retain the 390px wrapping and single inset colophon. — check: `apps/web/src/components/w025.css:1076`, `apps/web/src/components/w025.css:1089`, `apps/web/src/components/w025.css:1136`, `apps/web/tests-serve/w406.spec.ts:63`
+
+## Recommendation
+
+The signed brief adopts the earlier information-preservation requirement, keeps 288px desktop columns with an explicit scrollbar-paint limit, and places the full-height today rule at the trailing edge.
+The header needs one further adjustment to preserve that operating information while the desktop drawer is open.
+The repairs otherwise remain within DIRECTION’s established layout and colour choices and require no new Patron design ruling; the spec reviewer’s two advisories remain build guidance.
+Verdict: revise

@@ -1,0 +1,19 @@
+# opus: W-406
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a77bb51939516a3c1
+# outcome: passed
+# at: 2026-10-24T17:28:50.210Z
+# tree: tree:7f189a652480b89f31950808c5f91cf44415c3de
+# brief: briefs/W-406.md blob:bd61d4ac7ee9a1a71af889bb8e8dd0972d7330be
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"33dbdc03c54069edd381c54d0b135d608a9d87b0","brief":"bd61d4ac7ee9a1a71af889bb8e8dd0972d7330be","at":"2026-10-24T17:28:48.680Z"}
+
+## Findings
+1. advisory — brief:84 [severity: S2] `scrollbar-gutter` reserves only the inline-edge (vertical-scrollbar) gutter, and `.board__columns` has `overflow-y: hidden`, so `scrollbar-gutter: stable` reserves nothing for the horizontal scrollbar; the b1 red message "the Board reserves a visible horizontal-scroll affordance" (and row 1/2's "stable gutter") claims more than the declaration does. The real affordance is the 8px WebKit family. Replacement for brief:84: "`W-406-b1` pins the absence of the conflicting standardized colour property, the 8px surface/ink square WebKit family, policy wiring and served evidence; `scrollbar-gutter: stable` is kept only as an inline-edge reservation and is not claimed as the horizontal cue. ... The policy red fails by `ERR_ASSERTION` at `Chromium receives an 8px horizontal scrollbar`; the served red fails by expectation on the base stylesheet's absent accepted styling." (rename the gutter assertion's message to "the Board columns keep a stable inline scrollbar gutter", or drop the declaration and its assertion). [class: tests×assertion-satisfied-by-the-wrong-cause] — check: apps/web/test/w406.test.ts
+2. advisory — brief:43 [severity: S4] The changed reader `liveLabel` now has a third disconnected output: the prototype returns `stale · not yet refreshed` when `lastRefreshAt` is absent or unparseable (reachable at mount, before the first fetch), but the brief names only `stale · last updated …`, and no row pins the no-refresh string or that it never reads "Invalid Date". Replacement for brief:43's sentence: "after disconnect it now returns `stale · last updated` with the same timestamp, or `stale · not yet refreshed` when no parseable successful refresh exists; neither form contains `live` or `Invalid Date`." [class: mechanism×unpinned-by-test] — check: none: a `board.test.ts` row `liveLabel: disconnected with no or unparseable refresh — stale · not yet refreshed`
+
+## Verdict
+Both inputs and promises are bounded with named rejectors and stated limits, and the prototype's reds and greens match the brief; the two advisories are wording/pinning fixes the builder adopts in the build.
+VERDICT: PASS
