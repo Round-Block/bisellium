@@ -1,0 +1,37 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-370-b2\s scripts/ci-certificate.test.mjs
+# exit: 1
+# at: 2026-10-24T05:02:36.136Z
+# sella: builder.W-370
+# tree: tree:f3e5bdb38b425b2ac0fd5257872ee88b777b9dcd
+# ticket: {"opus":"W-370","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-370/studio","head":"65b5f47296c5d47c50d135748dca099eb3d9983b","brief":"0ccd65a8daf319975c181f7a180e735c5af27fb8","at":"2026-10-24T05:02:34.874Z"}
+
+TAP version 13
+# Subtest: W-370-b2 behaviour 2: readCertificate fails closed on a missing, doubled, foreign, mismatched or altered check run, and accepts certify's own
+not ok 1 - W-370-b2 behaviour 2: readCertificate fails closed on a missing, doubled, foreign, mismatched or altered check run, and accepts certify's own
+  ---
+  duration_ms: 2.745828
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-370/scripts/ci-certificate.test.mjs:93:1'
+  failureType: 'testCodeFailure'
+  error: "another app's check run: refused"
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    refused (file:///home/edckt/agents/bisellium/.worktrees/W-370/scripts/ci-certificate.test.mjs:99:12)
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-370/scripts/ci-certificate.test.mjs:103:3)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.457373

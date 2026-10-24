@@ -271,7 +271,7 @@ export interface Rule {
   replies: Reply[];
   alts?: Alt[];
 }
-export type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "queue" | "alerts" | "update" | "merge" | "create" | "runList" | "runView" | "runDownload";
+export type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "queue" | "alerts" | "update" | "merge" | "create" | "runList" | "runView" | "runDownload" | "checkRuns";
 export const SLOT_MATCH: Record<SlotName, string[]> = {
   repoView: ["repo", "view"],
   list: ["pr", "list"],
@@ -280,6 +280,8 @@ export const SLOT_MATCH: Record<SlotName, string[]> = {
   // W-168: master's active rules. Ahead of `alerts`, whose ["api"] matches every `gh api` call.
   rules: ["api", `repos/${SLUG}/rules/branches/master?per_page=100`],
   queue: ["api", "graphql"],
+  // W-370: the certificate's check runs, read with an explicit GET. Ahead of `alerts`, too.
+  checkRuns: ["api", "--method", "GET"],
   alerts: ["api"],
   update: ["pr", "update-branch"],
   merge: ["pr", "merge"],
@@ -290,6 +292,19 @@ export const SLOT_MATCH: Record<SlotName, string[]> = {
   runDownload: ["run", "download"],
 };
 export type SlotValue = Reply | Reply[] | Rule;
+/**
+ * W-370: a `certify-certificate` check run as GitHub returns it, written here from the wire shape and never through
+ * scripts/ci-certificate.mjs, so a row pins the shape itself. `log` is certify.log: its `certify: ` lines and its tail.
+ */
+export function certificateRun(o: { sha: string; runId: number; receipt: string; log: string; id?: number }): Json {
+  const lines = o.log.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  const text = JSON.stringify({ schema: 1, run: o.runId, receipt: o.receipt, certify: lines.filter((l) => l.startsWith("certify: ")), tail: lines.slice(-200) });
+  const summary = `receipt sha256:${createHash("sha256").update(o.receipt).digest("hex")}`;
+  return { id: o.id ?? 777, name: "certify-certificate", head_sha: o.sha, external_id: String(o.runId), status: "completed", conclusion: "success", app: { slug: "github-actions" }, output: { title: `certify run ${o.runId}`, summary, text } };
+}
+/** W-370: a check-runs reply holding exactly `runs`, one complete page. */
+export const checkRunsOf = (...runs: Json[]): Reply => ({ stdout: { total_count: runs.length, check_runs: runs } });
 export const asRule = (v: SlotValue): Rule => (Array.isArray(v) ? { replies: v } : "replies" in v ? v : { replies: [v] });
 
 // ---------------------------------------------------------------------------
@@ -636,6 +651,7 @@ export function scenario(w: World, over: Partial<Record<SlotName, SlotValue>>): 
     runList: { stdout: [] },
     runView: { stdout: { jobs: [] } },
     runDownload: { exit: 1, stderr: "no artifact" },
+    checkRuns: { stdout: { total_count: 0, check_runs: [] } },
   };
   const rules = (Object.keys(SLOT_MATCH) as SlotName[]).map((slot) => ({ match: SLOT_MATCH[slot], ...asRule(over[slot] ?? defaults[slot]) }));
   writeFileSync(w.scn, JSON.stringify({ rules }));

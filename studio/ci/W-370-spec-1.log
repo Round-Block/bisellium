@@ -1,0 +1,26 @@
+# opus: W-370
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T03:56:19.106Z
+# tree: tree:bb664b3032f5fef0406c4cfb7156a22ccee49a65
+# brief: briefs/W-370.md blob:df94cc59d4feaad9413fa78441ab28108c58249e
+# ticket: {"opus":"W-370","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"a7ea8e35d1516617fdcfec9ee67898bd33dbc7db","brief":"df94cc59d4feaad9413fa78441ab28108c58249e","at":"2026-10-24T03:56:18.590Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-370-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — self-merge trap (the W-323 pattern): certify and the new certificate job run master's tooling at the merge group's base, so W-370's own merge posts no check run (the publish step's hashFiles guard is false there) and its done holds and names verify, the producer's expected path; one opus suffices, since a split leaves the publisher unable to publish at its own merge and a reader with nothing to read; earlier merges fall back to verify too, a stated limit (brief:23-29, brief:117) — check: brief:23-29, scripts/ci-certificate.test.mjs (W-370-b4)
+2. advisory — the certificate's authenticity rests on GitHub's rule that only an App token can create a check run and on only the certificate job holding checks: write on master (pinned by W-370-b4); an in-place update of certify's own check run by another github-actions token with checks: write is not detected and is stated as a limit with a Patron Default on workflow-file pushes, not a guarantee (D-076 E) — check: none: a binding from check run to workflow run that GitHub's API offers without a non-api.github.com host
+3. advisory — each red fails by assertion on master a7ea8e35 with the final rows (b1 at "no check run, an artifact present"; b2, b3 at "scripts/ci-certificate.mjs exists"; b4 at "five jobs, certificate last") and on its stage (b2 at "another app's check run: refused" on stage 1, b3 at "certificatePayload is exported" on stage 2, b4 at "five jobs, certificate last" on stage 3); the host replay classifier accepts all seven; each row passes at its own stage — check: red-b1-master.out, red-b2-master.out, red-b2-stage1.out, red-b3-master.out, red-b3-stage2.out, red-b4-master.out, red-b4-stage3.out, red-accept.out, proto-b1-stage1.out, proto-b2-stage2.out, proto-b3-stage3.out, proto-b4-stage4.out
+4. advisory — must-stay-green on the whole prototype: next-done.test.ts 32 of 32, containment.test.ts, ci-certify.test.mjs 11 of 11, ci-workflow.test.mjs, ci-scope.test.mjs 20 of 20, w350.test.ts 3 of 3, next-queue W-197-b2 and ci-certificate.test.mjs 3 of 3; unedited, the eleven named flips fail as Acceptance says (four next-done rows, W-163-b6's two inventory D checks, W-168-b1, the ci-workflow job check, W-205-b1, W-368-b1, W-350-b1, W-197-b2) — check: green-summary.out, next-done-unedited-proto.out, containment-unedited-proto.out, ci-certify-unedited-proto.out, ci-workflow-unedited-proto.out, ci-scope-unedited-proto.out, w350-unedited-proto.out, next-queue-unedited-proto.out
+5. advisory — the Codex test check's first pass listed four flips the draft had not named (W-197-b2's CODEOWNERS golden, W-350-b1, W-205-b1, W-368-b1's action table); each was named with its edit, added to Files owned and run unedited and edited, and the second pass lists eleven flips, all named, Unnamed: None — check: fixture-census-1.md, fixture-census.md
+6. advisory — the change touches .github/workflows/ci.yml (one job appended after line 242, no existing line changed) and .github/CODEOWNERS (one line), both code-owned, so the Patron reviews and merges; the actions/download-artifact@v7 pin is taken as its first Node 24 major and is a Patron Default to confirm — check: brief:52-81, prototype.diff
+7. advisory — the brief passes admission and the ledger covers the four promise lines and every Input domain row; lint (one existing-pattern warning: a .d.mts has no eslint config), format and typecheck pass on the touched files — check: admission.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-370.md`, master a7ea8e35.

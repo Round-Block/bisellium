@@ -1,0 +1,52 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-370-b1\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-10-24T04:57:49.625Z
+# sella: builder.W-370
+# tree: tree:957f82f1bb56cb92111c544aff43007b87b7a84e
+# ticket: {"opus":"W-370","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-370/studio","head":"93d0add50ed99fcccec605d52c9850b4de571445","brief":"0ccd65a8daf319975c181f7a180e735c5af27fb8","at":"2026-10-24T04:57:44.322Z"}
+
+TAP version 13
+# Subtest: W-370-b1 behaviour 1: the done perform records certify's certificate from the one certify-certificate check run on the merge commit through gh api, downloads the artifact only when there is no check run, and holds on a doubled one
+not ok 1 - W-370-b1 behaviour 1: the done perform records certify's certificate from the one certify-certificate check run on the merge commit through gh api, downloads the artifact only when there is no check run, and holds on a doubled one
+  ---
+  duration_ms: 2115.53778
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-370/packages/cli/src/next-done.test.ts:33:10758'
+  failureType: 'testCodeFailure'
+  error: |-
+    two check runs, an artifact present
+    --- exit 0
+    --- stdout
+    next: W-900 done performed
+    certificate: certify run 4545, PR #901, merge commit cdd835599b5a, tree:fbfa950b953419bb2373c93301f06b1b466be65d
+    certificate: tests ci/W-900-tests-fbfa950b953419bb2373c93301f06b1b466be65d.log
+    branch: chore/done-W-900
+    commit: 15dabe2
+    done: W-900: done
+    next-step: done
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 done performed'
+  operator: 'match'
+  stack: |-
+    expectHeld (/home/edckt/agents/bisellium/.worktrees/W-370/packages/cli/src/next-world.test.ts:906:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-370/packages/cli/src/next-done.test.ts:1314:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2515.487637
