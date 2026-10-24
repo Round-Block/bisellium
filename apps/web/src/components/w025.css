@@ -1144,6 +1144,7 @@
   padding: var(--sp-4) var(--sp-6);
   overflow-x: auto;
   overflow-y: hidden;
+  scrollbar-gutter: stable;
   min-height: 0;
   min-width: 0;
   /* The column count/width changes as real data replaces the pre-data
@@ -1152,6 +1153,19 @@
    * racing Board.tsx's own programmatic scrollIntoView and landing
    * somewhere neither specified nor deterministic (measured). */
   overflow-anchor: none;
+}
+
+.board__columns::-webkit-scrollbar {
+  height: 8px;
+}
+
+.board__columns::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.board__columns::-webkit-scrollbar-thumb {
+  background: var(--ink-3);
+  border-radius: 0;
 }
 
 .board__column {
