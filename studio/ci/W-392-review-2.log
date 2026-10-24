@@ -1,0 +1,22 @@
+# opus: W-392
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a16e29-9b8f-7f13-af48-5384ff77ec6b
+# outcome: passed
+# at: 2026-10-24T14:20:49.188Z
+# tree: tree:b3784c8dec18be0f6537ee9bad8d23a92b0fcca9
+# brief: briefs/W-392.md blob:6058916214afb00f49bc784aeade2e4df3439b88
+# ticket: {"opus":"W-392","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-392/studio","head":"6d1c8fc33bd3470823f22ab77368618e3784e635","brief":"6058916214afb00f49bc784aeade2e4df3439b88","at":"2026-10-24T14:19:08.434Z"}
+
+## Findings
+1. advisory — packages/cli/src/rules/tests.test.ts:1278 The new b1 and b2 fix regressions have refreshed passing gates, but the delta contains no assertion-failure log showing either set failing against the round-one head. [severity: S3] [class: review×evidence-backfilled-or-absent] — check: none: record the new W-392 b1 and b2 cases failing against f2bcc37f4800db476af78aaa7bf158d6a93aaf89
+
+## Earlier findings
+- ci/W-392-review-1.log #1: closed — packages/cli/src/rules/tests.ts:582 now recognizes and skips a regex literal while locating an assertion argument’s end, and packages/cli/src/rules/tests.test.ts:1349 pins commas, class punctuation, a following message, and the division control.
+- ci/W-392-review-1.log #2: closed — packages/cli/src/rules/tests.ts:700 now blanks escaped literal pairs before boundary classification, and packages/cli/src/rules/tests.test.ts:1278 pins escaped class ends, backslashes, hyphens, and properties.
+
+## Verdict
+Both blockers are closed; only the advisory fix-regression evidence gap remains.
+VERDICT: PASS
