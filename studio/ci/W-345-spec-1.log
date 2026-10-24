@@ -1,0 +1,31 @@
+# opus: W-345
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a16c54-8f60-7223-83ab-0a0bfe147485
+# outcome: passed
+# at: 2026-10-24T06:42:40.005Z
+# tree: tree:00a032588424035793a61ff41d58939c9eaa9d7f
+# brief: briefs/W-345.md blob:3ae3485a24a63ed07b5f91524e2c05e85dfe159d
+# ticket: {"opus":"W-345","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"ed964712ad71a156384209f3315cd374dd24cf26","brief":"3ae3485a24a63ed07b5f91524e2c05e85dfe159d","at":"2026-10-24T06:42:35.893Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-345-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Default 1 is ruled as Approve, Decline and Follow up (open text); Follow up sends trimmed unprefixed text with `askBack: true`, reusing the handler's `--ask-back` form that records `awaiting_reply`, reverses direction to the original asker and leaves the petition open — check: brief:21, brief:57, brief:71, brief:113, brief:150, packages/commands/src/writes.ts:683, apps/server/src/http.ts:759, apps/web/src/screens/inboxLogic.ts:69, apps/web/src/screens/Inbox.tsx:109
+2. advisory — every census flip is named row by row: W-024 b7 changes the key map in behaviour 6; W-024 b9, b4 and b10 move to hook-safe rendering in behaviour 5; W-024 b8 is scoped to action buttons in behaviour 5 and changes to three actions in behaviour 6; W-341 b2 changes its failed-read/live-region matcher in behaviour 4; W-341 b6 and the refused/in-flight phone-policy rows change in behaviour 5; screenshot readiness changes in behaviours 5 and 6 — check: fixture-census.md Flips, brief:109, brief:113, brief:119-125, inboxview-b5-r5.out, inboxview-b6-red-r5.out, inboxview-proto-r5.out
+3. advisory — the census unit must-stay-green rows were checked individually: W-024 inboxLogic b5 and b8, W-024 API b2 and b3, and W-341 b1 all pass on prototype head; W-341 b1 admits only the Inbox count callback while continuing to require status wiring, and W-025's unchanged badge visibility rule also passes — check: fixture-census.md Must stay green, brief:121, census-check-r6.out, sidebar-r6.out
+4. advisory — the census state rows were checked individually at both widths: loading, empty, read-error, refused and in-flight each pass at 1280px and 390px; the one-node live-region transition and 1280px write-error row also pass — check: fixture-census.md Must stay green, census-check-r6.out
+5. advisory — the census browser journeys were checked individually: W-024 served answer; authorization with a retained entered token and authorization recovery from a wrong stored token; smoke heading, navigation, `j`/`k` focus and route-hash rows; W-110 b2 rail traversal plus b3 served-content capture; and W-064 b9's existing desktop Inbox badge/navigation assertions all pass on prototype head — check: fixture-census.md Must stay green, census-check-r6.out, board-badge-r6.out
+6. advisory — the census policy rows were checked individually: W-361 b1/b2, W-366 b2, W-339 b1, W-350 b1/b2, W-360 b1/b2, W-110 b8 served configuration, W-110 b5 served runner, W-067 b4 workflow contract, and W-131 b6, W-203 b1 and W-205 b1 CI scope all pass — check: fixture-census.md Must stay green, census-check-r6.out
+7. advisory — the census record rows were checked individually: normal answer, `--ask-back`, W-114 ask-back round trip, core `needsYou`, server answer validation, and sample petition fixtures A-1/A-2 all pass without changing the reused record form — check: fixture-census.md Must stay green, census-check-r6.out
+8. advisory — W-024 b9 is a genuine behaviour-5 migration because top-level focus hooks make direct invocation invalid; its whole file passes at behaviour 5, behaviour 6 red and prototype head, and the behaviour-5 feature commit owns the migration — check: brief:38, brief:109, brief:119, proto-repo-r7 commit 18a92a26, inboxview-b5-r5.out, inboxview-b6-red-r5.out, inboxview-proto-r5.out
+9. advisory — behaviour 6 gives confirmation the list's existing `--sp-4` inset and its served row proves equal computed confirmation/title padding; the same successful one-petition refresh reports `petitiones.length` to the shell and changes the needs-you badge from two to one while preserving selection, confirmation and the live announcement, as shown in both recaptured Patron images — check: brief:23, brief:58, brief:71, brief:113, brief:127, apps/web/src/components/w025.css:786, apps/web/src/screens/Inbox.tsx:63, apps/web/src/App.tsx:56, apps/web/tests-serve/inbox.spec.ts:168, browser-b6-r6.out, capture-shots-r6.out, shots/inbox-follow-up-desktop-1280.png, shots/inbox-follow-up-phone-390.png
+10. advisory — Default 2 is ruled yes for the stacked phone layout and retained desktop split; screenshot readiness remains in the required served job, while the absent complete baseline set invokes W-350's declared bootstrap skip so a reviewed recapture may follow — check: brief:55, brief:125, brief:152-154, .github/workflows/ci.yml:176, apps/web/tests-serve/screenshots.spec.ts:63, census-check-r6.out
+11. advisory — all six ordered reds are accepted assertion failures, every earlier row stays green at each later red, the twelve-commit mailbox applies with an identical tree, and focused served, typecheck, lint, formatting and officina checks ran — check: red-accept-r6.out, reds-perform-r6.out, browser-focused-r6.out, mbox-check-r6.out, gates-proto.out
+
+## Verdict
+
+passed — round-1 signature revised by the UI architect, Codex `gpt-5.6-sol` under D-091 A, after Defaults 1 and 2 were ruled and every fixture-census row was reconciled; behaviour 6 now pins the confirmation inset and refreshed needs-you badge, Follow up truthfully uses the existing ask-back record form, and the brief remains within six behaviours without touching a Patron-merged code-owned path or screenshot baseline.

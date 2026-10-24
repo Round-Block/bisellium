@@ -1,0 +1,25 @@
+# opus: W-345
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a16ca9-d0b5-77e2-a817-6ce41213baf6
+# outcome: passed
+# at: 2026-10-24T06:48:01.466Z
+# tree: tree:00a032588424035793a61ff41d58939c9eaa9d7f
+# dispatch_prompt: ci/W-345-ui-prompt-3.md
+# design_digest: sha256:a9ae9b58803b4eb659e3625e1276a2b06e047c96527086b2eb0903ab47af2318
+# ticket: {"opus":"W-345","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"ed964712ad71a156384209f3315cd374dd24cf26","brief":"3ae3485a24a63ed07b5f91524e2c05e85dfe159d","at":"2026-10-24T06:48:00.122Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+The signed brief adopts all three blockers: 44×44px phone targets, keyboard selection with visible focus and scrolling, and confirmation independent of selection with refresh retention and live-region wiring.
+The earlier advisories are addressed through `--ink-2` confirmation text, the Patron’s explicit layout ruling, and updated screenshot readiness under the documented W-350 bootstrap rule.
+Approve and Decline truthfully describe resolving the petition; Follow up explicitly records a reply without a verdict and keeps it open, while confirmation names the action and petition.
+The supplied screens and inspected source/tests show no new regression in legibility, hierarchy, phone reachability, selection visibility, failed-read presentation or the demonstrated badge transition.
+The passed spec review’s three advisories remain build guidance; no additional layout, copy or default exceeds D-090 and the Patron’s two rulings.
+Verdict: passed

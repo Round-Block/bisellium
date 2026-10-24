@@ -1,0 +1,20 @@
+# opus: W-345
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a9391c0331f2ebb8f
+# outcome: passed
+# at: 2026-10-24T06:46:43.754Z
+# tree: tree:00a032588424035793a61ff41d58939c9eaa9d7f
+# brief: briefs/W-345.md blob:3ae3485a24a63ed07b5f91524e2c05e85dfe159d
+# ticket: {"opus":"W-345","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"ed964712ad71a156384209f3315cd374dd24cf26","brief":"3ae3485a24a63ed07b5f91524e2c05e85dfe159d","at":"2026-10-24T06:46:39.087Z"}
+
+## Findings
+1. advisory — brief:71 The confirmation "survives either refresh result and reaches the shell live region", but on a failed post-answer refresh the prototype's `reportedStatus` (Inbox.tsx) switches the polite region from the confirmation to the read-error text within one fetch latency. The confirmation stays visible, but its announcement can be superseded before a screen reader speaks it. Only the successful-refresh path is asserted in the live region (inbox.spec.ts b6); b4 asserts visibility only. Replacement: append to the limit clause "; after a failed refresh the confirmation stays visible but the live region carries the read-error text, so its announcement is guaranteed only when the refresh succeeds". [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: a served b4 assertion on `.shell__status` text after a failed refresh
+2. advisory — brief:58 The badge has two readers of the same `/api/inbox` truth (D-070 C): App's shell fetch, now re-run on every non-Inbox route change (`[route]` dependency), and Inbox's `onNeedsYouCount` reads. The brief says neither which one it trusts nor where they disagree. If a shell fetch is still in flight when the user navigates into Inbox, it can resolve after Inbox's read and overwrite the count. In the other direction, an Inbox reload still pending when the user leaves can overwrite the shell's count. Replacement: "Each successful read reports `petitiones.length` to the shell; whichever successful read, shell or Inbox, resolves last sets the badge, and a read still in flight across a route change may briefly overwrite a fresher count (a stated limit). A failed read retains the last confirmed badge count." [severity: S3] [class: design×indirection-duplicates-source-of-truth] — check: none: a served row that holds the shell fetch, enters Inbox, and asserts the Inbox count wins
+3. advisory — brief:56 "Tab then reaches the text field, Approve, Decline and Follow up" holds only once the field has non-blank text. With empty text the three actions are `disabled` (`canSubmit(reason, busy)`) and Tab skips them. The served b5 row fills the field before tabbing. Replacement: "Tab then reaches the text field and, once it holds non-blank text, Approve, Decline and Follow up." The same wording applies at brief:19 and brief:69. [severity: S4] [class: spec×review-fix-reopens-on-wording] — check: apps/web/tests-serve/inbox.spec.ts W-345-b5
+
+## Verdict
+Every input row names a domain and a fail-closed rejecter, and every promise is feasible against the code (`/api/answer` already maps `askBack` to `--ask-back`; store `needsYou` filters `needs_you` on a fresh snapshot per request; `postWrite` never rejects, so the ref lock always releases), so the only findings are three advisory wording and limit fixes for the builder to adopt.
+VERDICT: PASS
