@@ -9,7 +9,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
@@ -318,7 +318,7 @@ test("W-404-b1 behaviour 1: bisellium milestones prints each milestone's exit, w
     milestones(w.studio, yaml);
     const h = run();
     assert.equal(h.out, `milestones: held · why: ${why}\n`, `${what}: one held line naming why, no row`);
-    assert.equal(h.status, 1, `${what}: exit 1`);
+    assert.equal(h.status, 1, "a missing or symlinked opera directory: held, exit 1");
   }
 
   // an unreadable opus record holds the report: it may be on a path
@@ -328,6 +328,28 @@ test("W-404-b1 behaviour 1: bisellium milestones prints each milestone's exit, w
   assert.equal(unreadable.out, `milestones: held · why: opera/W-11.md cannot be read (${join(w.studio, "opera", "W-11.md")}: missing front matter)\n`, "an unreadable record: held");
   assert.equal(unreadable.status, 1, "an unreadable record: exit 1");
   rmSync(join(w.studio, "opera", "W-11.md"));
+
+  // a missing, symlinked or non-directory opera/ holds the report: it is never an all-open report, and a link is never followed
+  const operaDir = join(w.studio, "opera");
+  const outside = join(dirname(w.repo), "outside-opera");
+  mkdirSync(outside);
+  writeFileSync(join(outside, "W-1.md"), "---\nstate: done\n---\nbody\n");
+  const kept = join(dirname(w.repo), "kept-opera");
+  renameSync(operaDir, kept);
+  const operaHeld = (why: string): void => {
+    const o = run();
+    assert.equal(o.out, `milestones: held · why: ${why}\n`, "a missing or symlinked opera directory: held");
+    assert.equal(o.status, 1, "a missing or symlinked opera directory: held, exit 1");
+  };
+  operaHeld("opera/ is missing");
+  symlinkSync(outside, operaDir);
+  operaHeld("opera/ is a symlink");
+  rmSync(operaDir);
+  writeFileSync(operaDir, "not a directory\n");
+  operaHeld("opera/ is not a directory");
+  rmSync(operaDir);
+  renameSync(kept, operaDir);
+  assert.equal(run().status, 0, "the real opera directory restored: the report reads again");
 
   // usage: exit 2
   for (const [args, why] of [[["W-1"], "takes no positional argument"], [["--json"], 'unknown flag "--json"'], [["--now", "yesterday"], "--now must be an ISO date"]] as const) {

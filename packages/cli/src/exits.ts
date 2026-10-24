@@ -10,9 +10,9 @@
  * `parent:` (the opus it was split from). The path is the exit opus and every opus whose parent chain reaches it. An
  * opus's `milestone:` names the milestone it serves, not an exit that waits on it, so it is not read here.
  */
-import { lstatSync } from "node:fs";
+import { lstatSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { listMd, readFront } from "@bisellium/adapter-native";
+import { readFront } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { openStudio, parseFlags, resolveNow } from "@bisellium/commands/writes.js";
 import { parse as parseYaml } from "yaml";
@@ -91,7 +91,18 @@ export function readExits(studio: string): { kind: "absent" } | { kind: "held"; 
 function readOpera(studio: string): { kind: "held"; why: string } | { kind: "ok"; opera: Map<string, Record_> } {
   const opera = new Map<string, Record_>();
   const bad: string[] = [];
-  for (const file of listMd(join(studio, "opera"))) {
+  const dir = join(studio, "opera");
+  let names: string[];
+  try {
+    const st = lstatSync(dir); // never followed: a symlinked opera/ could bring in a record from outside the officina
+    if (st.isSymbolicLink()) return { kind: "held", why: "opera/ is a symlink" };
+    if (!st.isDirectory()) return { kind: "held", why: "opera/ is not a directory" };
+    names = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException;
+    return { kind: "held", why: err.code === "ENOENT" ? "opera/ is missing" : `opera/ cannot be read (${err.message.split("\n")[0]})` };
+  }
+  for (const file of names.map((f) => join(dir, f))) {
     const id = basename(file).slice(0, -3);
     if (!ID_RE.test(id)) continue;
     try {
