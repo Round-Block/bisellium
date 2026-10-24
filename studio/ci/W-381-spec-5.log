@@ -1,0 +1,24 @@
+# opus: W-381
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T02:04:55.070Z
+# tree: tree:538c2a431b1e76fbac4df50797cdaf8eae1275fc
+# brief: briefs/W-381.md blob:17fde55adb7794f80a02aee82be6504b8141845a
+# ticket: {"opus":"W-381","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-381/studio","head":"e7e9aa2c88256088e40906df5eb2aed0bf969a89","brief":"17fde55adb7794f80a02aee82be6504b8141845a","at":"2026-10-24T02:04:50.409Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-381-amend/promise-ledger.md
+
+## Findings
+
+1. advisory — build review 2's finding 1 (class tests×one-sided-bound-assertion: a combining mark beside `high` cleared the hold) is closed at the brief: brief:75 now names each token's boundary as a closed set, `\p{L}`, `\p{M}`, `\p{N}` and `-` for the class and the same with `_` for `high`, compared on the title as stored with no Unicode normalization, every other code point a boundary — check: brief:75, /home/edckt/.bisellium-evidence/W-381-amend/amend-proposal.patch
+2. advisory — every form outside the sets is a stated limit at brief:77: another normalization form or a compatibility form, a format or zero-width character (`\p{Cf}`, U+200D), a variation selector's pairing (the selector itself is `\p{M}` and holds), confusables and other scripts' look-alikes, emoji and emoji sequences, and connector punctuation other than `_`; brief:93 names the engine's Unicode property tables and `iu` folding as reused code, a limit (D-076 E) — check: brief:77, brief:93
+3. advisory — four cases are pinned on row W-381-f1 at brief:75, a combining mark after and before each token; each fails alone by assertion on c4991e25 and all pass with `\p{M}` added to both sets — check: /home/edckt/.bisellium-evidence/W-381-amend/f1-red-case0.out, /home/edckt/.bisellium-evidence/W-381-amend/f1-red-case3.out, /home/edckt/.bisellium-evidence/W-381-amend/f1-pass.out
+4. advisory — kill K21 drops `\p{M}` from `high`'s set in one hunk of packages/cli/src/next.ts and fails W-381-f1 at "a combining mark after high"; the opus branch's verdict admits the ledger, admits it with K8 left out, and refuses it with K8 left out and K21's output swapped for a passing run, so K21 proves its pin — check: /home/edckt/.bisellium-evidence/W-381-amend/kill-K21.out, /home/edckt/.bisellium-evidence/W-381-amend/ledger-check.out, /home/edckt/.bisellium-evidence/W-381-amend/ledger-check-k21-only.out, /home/edckt/.bisellium-evidence/W-381-amend/ledger-check-k21-negative.out
+5. advisory — the Status line (brief:3) names revision 4 and why; every other line of the brief is unchanged, its line numbers included; K1 to K20 stay proved on the prototype — check: brief:3, /home/edckt/.bisellium-evidence/W-381-spec/kills.out
+
+## Verdict
+
+passed — re-signed by the architect (Claude Opus 5.5, D-072) for `studio/briefs/W-381.md` revision 4, a class-loop revision (D-085) after build review 2: brief:75's title boundary is a closed, enumerated set per token, and every other form a stated limit.
