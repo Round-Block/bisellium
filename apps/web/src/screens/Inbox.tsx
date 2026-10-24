@@ -58,7 +58,11 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
         setLoaded(true);
         setReadFailed(false);
       })
-      .catch(() => setReadFailed(true));
+      .catch(() => {
+        setData(EMPTY);
+        setLoaded(true);
+        setReadFailed(true);
+      });
   }
 
   useEffect(() => {
