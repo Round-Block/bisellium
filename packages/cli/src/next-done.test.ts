@@ -10,7 +10,7 @@ import { test } from "node:test";
 import { sourceTreeHash } from "@bisellium/shim";
 import { runDone } from "@bisellium/commands/lifecycle.js";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitYesNo, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, recordText, remoteBranchExists, reviewed, scenario, certificateRun, checkRunsOf, scratch, sourceTree, stagedPaths, touchHandoff, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
+import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitYesNo, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, recordText, remoteBranchExists, reviewed, scenario, certificateRun, checkRunsOf, scratch, sourceTree, stagedPaths, touchHandoff, unmatched, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
 
 
 // ---------------------------------------------------------------------------
@@ -1346,4 +1346,86 @@ test("W-370-b1 behaviour 1: the done perform records certify's certificate from 
   const kept = git(b.w.repo, ["show", `refs/heads/${chore}:${b.logName}`]);
   // one-sided: the line's start is the command text certify's gate log prints before the run, which the row does not pin
   assert.match(kept, new RegExp(`merge commit ${b.merge}, receipt sha256:[0-9a-f]{64}$`, "m"), "no check run: the log names no check run");
+});
+
+// ---------------------------------------------------------------------------
+// W-384: the done land's W-347 re-arm on a records PR that is already merged
+// ---------------------------------------------------------------------------
+/**
+ * The gh world of landing `head` in queue mode: an OPEN, CLEAN records PR outside the merge queue, so the merge step re-arms
+ * auto-merge. The call `failing` ("disable" or "enable") exits 1 with GitHub's already-merged text; with `merges`, that call
+ * also merges the PR (the flag), so every later read says MERGED on the pinned head.
+ */
+function rearmScenario(w: World, head: string, failing: "disable" | "enable", merges: boolean): { merge: string } {
+  const merged = join(w.root, "merged.flag");
+  const oid = git(w.repo, ["rev-parse", `refs/heads/${head}`]);
+  const m = git(w.repo, ["commit-tree", `${head}^{tree}`, "-p", "master", "-m", `squash ${head} (#${PR_NUMBER})`]);
+  git(w.repo, ["push", "-q", "origin", `${m}:refs/heads/master`]);
+  const open = cand(w, { state: "OPEN", head, oid, mss: "CLEAN" });
+  const done = cand(w, { state: "MERGED", head, oid, merge: m });
+  const refused: Reply = { exit: 1, stderr: `GraphQL: Pull request is already merged (${failing === "disable" ? "disablePullRequestAutoMerge" : "enablePullRequestAutoMerge"})\n`, ...(merges ? { touch: merged } : {}) };
+  rawScenario(w, [
+    { match: ["pr", "list", "--head", BRANCH], replies: [{ stdout: [cand(w, { state: "MERGED" })] }] },
+    { match: ["pr", "list", "--head", head], replies: [{ stdout: [open] }], alts: [{ ifExists: merged, replies: [{ stdout: [done] }] }] },
+    { match: ["pr", "list"], replies: [{ stdout: [] }] },
+    { match: ["pr", "view"], replies: [{ stdout: viewOf(open) }], alts: [{ ifExists: merged, replies: [{ stdout: viewOf(done) }] }] },
+    { match: SLOT_MATCH.repoView, replies: [{ stdout: { nameWithOwner: SLUG } }] },
+    { match: SLOT_MATCH.checks, replies: [{ stdout: greens() }] },
+    { match: SLOT_MATCH.rules, replies: [{ stdout: QUEUE_RULES }] },
+    { match: SLOT_MATCH.queue, replies: [{ stdout: { data: { repository: { pullRequest: { isInMergeQueue: false } } } } }] },
+    { match: SLOT_MATCH.alerts, replies: [{ stdout: [] }] },
+    { match: SLOT_MATCH.merge, replies: failing === "disable" ? [{ stdout: "" }, refused] : [{ stdout: "" }, { stdout: "" }, refused] },
+  ]);
+  return { merge: m };
+}
+
+test("W-384-b1 behaviour 1: the done land counts a records PR as landed when the auto-merge re-arm fails because the PR is already merged on its pinned head, and keeps any other failure", { timeout: 1_800_000 }, () => {
+  const chore = `chore/done-${OPUS}`;
+  const doneCommitted = (tag: string): World => {
+    const w = world(tag, "cleanup");
+    scenario(w, { list: mergedList(w) });
+    touchHandoff(w);
+    expectStep(next(w, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the done commit is made first");
+    return w;
+  };
+  /** The gh calls after the first failing `pr merge`, labelled. */
+  const afterFailure = (w: World, nth: number): string[] => {
+    const gh = ghCalls(w);
+    let seen = 0;
+    const at = gh.findIndex((a) => a[0] === "pr" && a[1] === "merge" && ++seen === nth);
+    return gh.slice(at + 1).map((a) => `${a[0]} ${a[1]}`);
+  };
+
+  for (const failing of ["disable", "enable"] as const) {
+    const w = doneCommitted(`w384-b1-${failing}-merged`);
+    const head = git(w.repo, ["rev-parse", `refs/heads/${chore}`]);
+    const { merge } = rearmScenario(w, chore, failing, true);
+    const o = next(w, [OPUS, "--perform", "--expect", "done", ...FAST]);
+    const call = failing === "disable" ? "gh pr merge --disable-auto" : "gh pr merge --squash --auto \\(re-enabling\\)";
+    expectStep(o, "done", "performed", `${failing}: an already-merged records PR is landed, not held`);
+    assert.equal(o.status, 0, ran(`${failing}: the land exits 0`, o));
+    assert.match(o.out, new RegExp(`^merge: ${call} failed \\(GraphQL: Pull request is already merged \\([a-zA-Z]+\\)\\); PR #${PR_NUMBER} reads MERGED at its pinned head ${head.slice(0, 12)}$`, "m"), ran(`${failing}: the failed call and the merged read are both named`, o));
+    assert.match(o.out, /^state=MERGED$/m, ran(`${failing}: state=MERGED`, o));
+    assert.doesNotMatch(o.out, /MERGE_FAILED/, ran(`${failing}: no MERGE_FAILED`, o));
+    const merges = failing === "disable" ? ["gh pr merge --squash --auto", "gh pr merge --disable-auto"] : ["gh pr merge --squash --auto", "gh pr merge --disable-auto", "gh pr merge --squash --auto"];
+    assert.deepEqual(mutating(w).filter((c) => c.startsWith("gh pr merge")), merges, ran(`${failing}: no merge call follows the failed one`, o));
+    assert.deepEqual(afterFailure(w, merges.length).slice(0, 1), ["pr view"], ran(`${failing}: the failed call is followed by one fresh pr view`, o));
+    assert.equal(git(w.repo, ["rev-parse", "master"]), merge, ran(`${failing}: master is fast-forwarded to the merge commit`, o));
+    assert.equal(branchExists(w, chore), false, ran(`${failing}: the local records head is deleted`, o));
+    assert.equal(originHas(w, chore), false, ran(`${failing}: the remote records head is deleted`, o));
+    assert.deepEqual(unmatched(w), [], `${failing}: the fixture saw every gh call`);
+  }
+
+  // the same failure on a PR that still reads OPEN keeps the failure: nothing is fetched or deleted
+  const kept = doneCommitted("w384-b1-disable-open");
+  rearmScenario(kept, chore, "disable", false);
+  const before = git(kept.repo, ["rev-parse", "master"]);
+  const held = next(kept, [OPUS, "--perform", "--expect", "done", ...FAST]);
+  expectHeld(held, "a failed disable on an OPEN PR holds");
+  assert.deepEqual(outLines(held).filter((l) => l.startsWith("state=") || l.startsWith("why:")), ["state=MERGE_FAILED", "why: disabling auto-merge before re-arming it failed: GraphQL: Pull request is already merged (disablePullRequestAutoMerge)"], ran("the failure is the call's own, unchanged", held));
+  // after the perform, the ladder's own derivation reads the PR list again; the perform itself makes one read and no call
+  assert.deepEqual(afterFailure(kept, 2).filter((c) => c !== "pr list" && c !== "repo view"), ["pr view"], ran("one fresh pr view and no other call", held));
+  assert.equal(git(kept.repo, ["rev-parse", "master"]), before, "master did not move");
+  assert.equal(branchExists(kept, chore), true, "the records head stays");
+  assert.equal(originHas(kept, chore), true, "the remote records head stays");
 });
