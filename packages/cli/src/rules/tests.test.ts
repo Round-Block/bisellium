@@ -1330,3 +1330,33 @@ test("W-392-b1 behaviour 1: an added line of any tracked code file whose pattern
   const mod = await sidedModule();
   assert.deepEqual(mod.oneSidedFindings!(REPO_ROOT), [], "the real repository adds no one-sided assertion or partial boundary");
 });
+
+// one line each, in a test file: a one-ended pattern in assert.ok/assert's first argument, and assert.match's RegExp( spellings
+const ASSERT_PATTERN_GRAMMAR: [string, string, string | undefined][] = [
+  ["a regex literal's test in assert.ok", "assert.ok(/^held/.test(why));", START_ONLY],
+  ["a regex literal's test in a bare assert", "assert(/done$/.test(out));", END_ONLY],
+  ["a negated test", "assert.ok(!/^held/.test(why));", START_ONLY],
+  ["a new RegExp's test", 'assert.ok(new RegExp("^held").test(why));', START_ONLY],
+  ["RegExp( with no new", "assert.ok(RegExp('done$').test(out));", END_ONLY],
+  ["a line's prefix through some", 'assert.ok(lines.some((l) => /^why: /.test(l)), "a why line");', START_ONLY],
+  ["assert.match with RegExp( and no new", 'assert.match(why, RegExp("^held"));', START_ONLY],
+  ["assert.match with a String.raw template", "assert.match(why, new RegExp(String.raw`^held`));", START_ONLY],
+  ["anchored at both ends", "assert.ok(/^held$/.test(why));", undefined],
+  ["unanchored: the includes form, a limit", "assert.ok(/held/.test(why));", undefined],
+  ["a pattern in the message argument", 'assert.ok(ok, /^x/.test(m) ? "a" : "b");', undefined],
+  ["a member assert is not read, a limit", "t.assert.ok(/^held/.test(why));", undefined],
+  ["outside an assertion", "const held = /^held/.test(why);", undefined],
+  ["a pattern held in a name is not read, a limit", "assert.ok(new RegExp(SOURCE).test(why));", undefined],
+  ["inside a string", "const s = 'assert.ok(/^held/.test(why))';", undefined],
+];
+
+test("W-392-b2 behaviour 2: an added assert.ok or assert whose first argument tests a pattern anchored at one end is a test.one_sided block, and assert.match reads RegExp( with no new or a String.raw template", { timeout: 600_000 }, async () => {
+  const base = { "a.test.ts": code(SIDED_BASE) };
+  const added = (r: string): void => put(r, "a.test.ts", code([...SIDED_BASE, 'assert.ok(/^ready/.test(why), "a new prefix assertion");']));
+  assert.deepEqual(sidedOf(branched("w392-b2-added", base, added)), [sidedBlock("a.test.ts:3", START_ONLY)], "an added prefix test in assert.ok: one block at its line");
+
+  for (const [label, line, form] of ASSERT_PATTERN_GRAMMAR) assert.deepEqual(await formsOn([line]), form === undefined ? [] : [{ line: 1, form }], label);
+  assert.deepEqual(await formsOn([`assert.ok(/^held/.test(why)); ${SIDED_REASON}`]), [], "annotated on the line");
+  // the assertion forms stay a test path's: a source file's assertion line is not judged
+  assert.deepEqual(await sourceFormsOn(["assert.ok(/^held/.test(why));"]), [], "outside a test path");
+});
