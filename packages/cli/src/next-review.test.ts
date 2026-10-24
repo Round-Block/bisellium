@@ -1986,3 +1986,38 @@ test("W-381-b3 behaviour 3: a failed build-review round whose S1 blocker names a
     `ci/W-900-review-4.log blocks on classes seen before in another opus: tests×b (ci/W-800-review-1.log, ci/W-801-spec-2.log, ci/W-802-review-1.log and 1 more); tests×c (ci/W-800-review-1.log); ${HOW}`,
   );
 });
+
+test("W-381-f1 fix 1: one title-token matcher reads `high` and the class, each with its own boundary set (brief:75)", { timeout: 1_800_000 }, () => {
+  const cls = (c: string): string => `blocking: fixture defect at brief:1 [severity: S1] [class: ${c}]. check: none: fixture`;
+  const record = (id: string, state: string, title: string): string => `---\nid: "${id}"\ntitle: "${title}"\nkind: "feature"\ncollegium: "engineering"\nstate: ${state}\nprobationes: {}\n---\n`;
+  const HOW = "a class seen before is fixed at its cause (D-070 C, D-076 D): amend W-900's title to name it, for a cause fix in this opus, or file a greenlit high opus whose title names it";
+  const ONE = `ci/W-900-review-1.log blocks on a class seen before in another opus: tests×a (ci/W-800-review-1.log); ${HOW}`;
+  const w = w167("w381-f1", [found(cls("tests×a"))]);
+  const at = (rel: string, text: string): void => {
+    put(w.studio, rel, text);
+    commit(w.repo, `test: ${rel}`);
+  };
+  at("ci/W-800-review-1.log", `# opus: W-800\n# phase: build\n# round: 1\n\n## Findings\n1. advisory: a nit [class: tests×a]. check: none: fixture\n\n## Verdict\nFixture.\n`);
+  const title = (row: string, t: string, named: boolean): void => {
+    at("opera/W-801.md", record("W-801", "greenlit", t));
+    const o = n167(w);
+    if (named) buildFix(o, row);
+    else {
+      expectStep(o, "build", "held", row);
+      assert.equal(o.status, 1, ran(`${row}: exit`, o));
+      assert.equal(o.kv.get("why"), ONE, ran(`${row}: why`, o));
+    }
+  };
+
+  // the class: no letter (any script, any case), digit or hyphen on either side keeps the hold; `_` is none of them (brief:75), so it releases
+  for (const side of ["Xtests×a", "étests×a", "Ωtests×a", "9tests×a", "-tests×a", "tests×aX", "tests×aé", "tests×aΩ", "tests×a9", "tests×a-"])
+    title(`the class beside a letter, digit or hyphen: ${side}`, `${side} stops recurring (high)`, false);
+  for (const ok of ["_tests×a", "tests×a_"]) title(`the class beside an underscore: ${ok}`, `${ok} stops recurring (high)`, true);
+  for (const ok of ["tests×a stops recurring (high)", "fix tests×a (high)", "(tests×a) high", "fix: tests×a, high", "fix tests×a. high", "fix \"tests×a\" high"]) title(`the class as a token: ${ok}`, ok.replaceAll('"', "'"), true);
+
+  // high: the whole word, so a letter (any script, any case), digit, `_` or hyphen on either side keeps the hold
+  for (const side of ["Xhigh", "éhigh", "Ωhigh", "9high", "_high", "-high", "highX", "highé", "highΩ", "high9", "high_", "high-"])
+    title(`high beside a letter, digit, underscore or hyphen: ${side}`, `tests×a stops recurring (${side})`, false);
+  for (const ok of ["high tests×a", "tests×a high", "tests×a (high)", "tests×a [high]", "tests×a: HIGH", "tests×a, High.", "tests×a high-priority"].slice(0, 6)) title(`high as a whole word: ${ok}`, ok, true);
+  title("high ending a title", "tests×a stops recurring, high", true);
+});
