@@ -1,0 +1,28 @@
+# opus: W-398
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T11:52:32.042Z
+# tree: tree:9760655b9eb45055c6637650173e1a16070466ed
+# brief: briefs/W-398.md blob:c212fcb3ed5ce070867ba429e3ad6576279f2319
+# ticket: {"opus":"W-398","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"a5282b29f661a1bb74f751fa3819911f3a76a0b0","brief":"c212fcb3ed5ce070867ba429e3ad6576279f2319","at":"2026-10-24T11:52:27.307Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-398-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review 2's blocker (ci/W-398-spec-2.log #1) is addressed: --check compares each entry by its key-segment path, kind and JSON value (entries, new), so a top-level "sandbox.enabled" key no longer reads as the nested entry; Interfaces item 5 adopts the review's replacement text, and behaviour 3 pins it — check: brief:3, brief:47, brief:97, red-b3-stage2.out, proto-b3-stage3.out
+2. advisory — re-running every promise against every Input domain row found the same class in one more form: merge() does not refuse an array at env or permissions (it sets a property no entry shows) or a string at denyRead or deny (it spreads the characters); --check now names each as a wrong type before comparing, so a file with no missing entry differs by a repeated entry alone; the write mode is unchanged and named out of scope — check: brief:46, brief:47, brief:120, b3-variants.out
+3. advisory — the write path on master 75f826fe (source unchanged on a5282b29): verify's settings line imports the merge module from node -e with the module's own path as argv[1], so the CLI guard holds on the import and the CLI backs up and writes, then reports ok; the fix keeps --check read-only and the CLI guard import.meta.main — check: brief:13, brief:15, repro-master.out
+4. advisory — sibling checks: every other verify line, the --inside lines and guard-check read only; gh's state, ls-remote's transport and helper and the probe's tsx cache are stated limits, and the home snapshots pin no write for the checks the rows run — check: brief:17, brief:27, brief:60
+5. advisory — each red fails by assertion and is accepted by the host replay classifier: b1 and b2 as in round 1, b3 on stage 2 (revision 1's whole prototype) at "a dotted top-level key in place of sandbox.enabled: the FAIL line names what the merge would change" and on master at its byte-identical check; stage 2 misreports all seven b3 variants through the CLI alone; every row passes on stage 3 — check: red-accept.out, red-b3-stage2.out, red-b3-master.out, b3-variants.out, proto-b1-stage3.out, proto-b2-stage3.out, proto-b3-stage3.out
+6. advisory — kills: the --check exit, check_shown, the --check flag, import.meta.main, the key-path comparison (back to dotted text) and the wrong-type line each fail their row at the promised assertion — check: kills.out, kill-K5.out, kill-K6.out
+7. advisory — the flipped rows are unchanged by round 3: W-379-b1 still fails unedited at "a missing env with a valid setup" and passes edited 4 of 4; agent-settings-merge's 11 existing rows, w362 3 of 3, w369 3 of 3, containment 65 of 65 (no new fs call in the merge script) and brief-admission 61 of 61 pass unedited; Codex's census was not rerun, since round 3 changes only --check's printed lines, which no existing row reads — check: brief:109, brief:110, green-summary.out, fixture-census.md
+8. advisory — no code-owned path; Defaults 3 asks whether the Patron merges it — check: brief:130
+9. advisory — the brief passes admission; lint, Prettier, bash -n and the typecheck pass on the prototype — check: admission.out, lint-proto.out, format-proto.out, bash-n-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-398.md` (spec round 3), master 75f826fe.
