@@ -52,14 +52,15 @@ A1. W-379 — W-369's split-off half: the guard runs from the Patron's clone at 
 A2. W-381 — root-cause fix for the repeat finding "a ruled case no test pins" (D-039 high; review round 1 failed on one S1; fix round)
 A3. W-392 — W-381's review found tests×one-sided-bound-assertion again after its cause fix W-376: close the path W-376 missed (D-076 D high; greenlit)
 A4. W-383 — cause fix for the repeat class tests×security-boundary-cases-uncovered (D-076 D high; greenlit)
-A5. W-349 — the flaky row W-279-b3 failed in the merge queue twice: print what it captured, then fix the cause (D-039 high)
-A6. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
-A7. W-372 — a dispatched agent waits for its own long background perform (D-106 D)
-A8. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
-A9. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
-A10. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
-A11. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
-A12. W-380 — prune old evidence to small text (Patron yes)
+A5. W-393 — cause fix for the repeat spec class spec×input-domain-missing-or-unenforceable, seen in 41 logs after W-319 and W-307 (D-076 D high; greenlit)
+A6. W-349 — the flaky row W-279-b3 failed in the merge queue twice: print what it captured, then fix the cause (D-039 high)
+A7. W-364 — the main thread runs only what next names: the guard refuses heavy runs and shell writes into the records (D-039 high; greenlit; carries W-290's remainder; Defaults to the Patron before branch)
+A8. W-372 — a dispatched agent waits for its own long background perform (D-106 D)
+A9. W-242 — the hook-set code cuts W-310 left at spec (greenlit; no .claude/ change)
+A10. W-371 — `bisellium run` composes a Codex seat's sandbox from the manifest (D-106 D)
+A11. W-283 — the Status page served, not republished (Patron yes; its `.github` change is the Patron's)
+A12. W-375 — context serves the lex without §9 and §12, so boot needs no whole-lex read (boot trim)
+A13. W-380 — prune old evidence to small text (Patron yes)
 Lane B (next.ts, one at a time; D-039 highs first):
 B1. W-370 — certify's certificate read through the GitHub API, not an artifact (high; promoted by the Patron 2026-10-24)
 B2. W-384 — the done land's auto-merge re-arm errors on an already merged PR (D-039 high, seen twice; greenlit)
@@ -85,8 +86,7 @@ UI queue, two lanes (order D-090 B; models D-091, D-099; every opus `kind: ui` a
 3. W-345 — Inbox truth and safety: shortcuts ignore keys typed in a field, one submission at a time, the reason bound to its petition, no invented petitions on a failed read, answer pane reachable at phone width, defer and delegate made distinct or removed
 4. W-074 — greenlight and decline from the Board drawer, carrying W-289's refusal (greenlight is the Patron's alone, high) and a `halt` route (D-080 E)
 5. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-W-281 — milestone exits that can be met — rides any records PR.
-Backlog, filed 2026-10-24: W-385 to W-391 (titles in their records).
+W-281 — milestone exits that can be met — rides any records PR. Backlog, filed 2026-10-24: W-385 to W-391 (titles in their records).
 
 Later: every opus record not named above, re-ranked under D-083 A; the last ranked Later list is in this file's history at 0553f97c.
 Later, greenlit (ranked in this file's history at 0553f97c): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-185 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-245 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
