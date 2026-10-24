@@ -35,6 +35,9 @@
 # origin/master, runs npm ci there, links $GUARD_BIN to it, merges the user
 # settings from it, probes the guard, and removes W-362's old guard worktree
 # $OLD_GUARD_DIR when $GUARD_BIN led into it as the run began and git finds it clean.
+# Every git it runs has a clean environment, no global or system config, no hooks
+# and no fsmonitor (cgit); the fetch alone keeps the Patron's environment and
+# config (its ssh agent, url rules and credentials), with hooks and fsmonitor off.
 #
 # `setup` is run ONCE, by the Patron, in their own terminal — never by an agent
 # (it prompts for a token and edits the user-level Claude settings). Why: agents
@@ -158,11 +161,19 @@ setup() {
   echo "Done. Open Claude Code sessions in $AGENT_DIR from now on."
 }
 
+# git in the checkout at $1, run outside the sandbox: a clean environment, no global or system config, no hooks, no
+# fsmonitor, no submodule recursion, no prompt, no replacement refs (W-369, W-379). The guard's git calls and the
+# sync's in the agent clone go through it; the Patron clone's fetches do not (they need the Patron's own config).
+cgit() {
+  env -i HOME="$HOME" PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat GIT_NO_REPLACE_OBJECTS=1 \
+    git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -C "$1" "${@:2}"
+}
+
 # A directory's real path (symlinks resolved), or nothing when it is not an enterable directory.
 real() { [[ -n $1 ]] && (CDPATH='' cd -- "$1" 2>/dev/null && pwd -P); }
 within() { [[ -n $2 && ($1 == "$2" || $1 == "$2"/*) ]]; }
 # True when git's top of the checkout at $1 is the real path $2.
-top_is() { [[ -n $2 && $(git -C "$1" rev-parse --show-toplevel 2>/dev/null) == "$2" ]]; }
+top_is() { [[ -n $2 && $(cgit "$1" rev-parse --show-toplevel 2>/dev/null) == "$2" ]]; }
 
 # The guard installer's inputs (W-362, W-379), judged before anything changes: one line per fault, status 1 when any.
 #   All three are absolute. AGENT_DIR: the top of a git checkout. PATRON_DIR: the top of a git checkout holding
@@ -182,7 +193,7 @@ guard_inputs() {
     agent=''
     say "AGENT_DIR $AGENT_DIR is not the top of a git checkout"
   fi
-  if patron=$(real "$PATRON_DIR") && top_is "$PATRON_DIR" "$patron" && git -C "$PATRON_DIR" rev-parse -q --verify refs/remotes/origin/master >/dev/null; then :; else
+  if patron=$(real "$PATRON_DIR") && top_is "$PATRON_DIR" "$patron" && cgit "$PATRON_DIR" rev-parse -q --verify refs/remotes/origin/master >/dev/null; then :; else
     patron=''
     say "PATRON_DIR $PATRON_DIR is not the top of a git checkout holding origin/master"
   fi
@@ -250,11 +261,11 @@ old_guard() {
       [[ $line == "worktree "* ]] || continue
       n=$((n + 1))
       if ((n > 1)) && [[ $(real "${line#worktree }") == "$o" ]]; then found=1; fi
-    done < <(git -C "$PATRON_DIR" worktree list --porcelain -z)
+    done < <(cgit "$PATRON_DIR" worktree list --porcelain -z)
     [[ -n $found ]] || why="it is not a linked worktree of PATRON_DIR"
   fi
   if [[ -z $why ]]; then
-    if out=$(git -C "$PATRON_DIR" worktree remove -- "$OLD_GUARD_DIR" 2>&1); then
+    if out=$(cgit "$PATRON_DIR" worktree remove -- "$OLD_GUARD_DIR" 2>&1); then
       echo "guard: removed the old guard worktree $OLD_GUARD_DIR"
       return 0
     fi
@@ -274,15 +285,16 @@ guard() {
   [[ $(real "$SELF_DIR") == "$patron/scripts" ]] || die "run the guard step as $patron/scripts/agent-workspace.sh, the copy in the clone it installs, not the copy in $SELF_DIR (nothing was changed)."
   # where GUARD_BIN leads before this run relinks it: the proof that OLD_GUARD_DIR is W-362's old guard
   entry=$(readlink -f -- "$GUARD_BIN") || entry=''
-  git -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
-  git -C "$PATRON_DIR" merge -q --ff-only refs/remotes/origin/master || die "PATRON_DIR's master does not fast-forward to origin/master; see git's line above (only origin/master was fetched)."
+  # the fetch keeps the Patron's environment and config (ssh agent, url rules, credentials); hooks and fsmonitor off
+  git -c core.hooksPath=/dev/null -c core.fsmonitor=false -C "$PATRON_DIR" fetch -q origin "+refs/heads/master:refs/remotes/origin/master"
+  cgit "$PATRON_DIR" merge -q --ff-only refs/remotes/origin/master || die "PATRON_DIR's master does not fast-forward to origin/master; see git's line above (only origin/master was fetched)."
   (cd "$PATRON_DIR" && npm ci --silent)
   ln -sfn "$patron/packages/cli/bin/bisellium.mjs" "$GUARD_BIN"
   guard_linked || die "$GUARD_BIN does not lead into $PATRON_DIR."
   node "$patron/scripts/agent-settings-merge.mjs" "$USER_SETTINGS" "$patron" "$AGENT_GH" "$(real "$AGENT_DIR")"
   guard_live || die "the guard at $PATRON_DIR is not wired, not outside $AGENT_DIR, or not live; see the guard: lines above."
   old_guard "$entry"
-  echo "guard: installed from $PATRON_DIR at $(git -C "$PATRON_DIR" rev-parse --short HEAD)"
+  echo "guard: installed from $PATRON_DIR at $(cgit "$PATRON_DIR" rev-parse --short HEAD)"
 }
 
 # The agent clone's .git/config keys the sync accepts (W-369): git's clone keys, setup's remote and credential helper,
@@ -294,18 +306,15 @@ SYNC_KEYS='^(core\.(repositoryformatversion|filemode|bare|logallrefupdates)|remo
 # git in the agent clone, outside the sandbox, on a .git a session can write: a clean environment, no global or system
 # config, no hooks, no fsmonitor, no submodule recursion, no prompt, no replacement refs (W-369). sync_inputs judges its
 # config and the object-substitution files first.
-agit() {
-  env -i HOME="$HOME" PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat GIT_NO_REPLACE_OBJECTS=1 \
-    git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c submodule.recurse=false -C "$AGENT_DIR" "$@"
-}
+agit() { cgit "$AGENT_DIR" "$@"; }
 
 # The Patron's clone, the sync's fetch source (W-369) and the guard's install (W-379): on master with no uncommitted
-# tracked change, or the reason and status 1; $1 names who runs only from it (default: the sync).
+# tracked change, or the reason and status 1; $1 names who runs only from it (default: the sync). Read with cgit.
 patron_on_master() {
   local h st who=${1:-the sync}
-  h=$(git -C "$PATRON_DIR" symbolic-ref -q HEAD) || h=detached
+  h=$(cgit "$PATRON_DIR" symbolic-ref -q HEAD) || h=detached
   [[ $h == refs/heads/master ]] || { echo "PATRON_DIR $PATRON_DIR is on $h, not master; $who runs only while it is on master"; return 1; }
-  st=$(git --no-optional-locks -C "$PATRON_DIR" status --porcelain --untracked-files=no) || { echo "git status failed in PATRON_DIR $PATRON_DIR"; return 1; }
+  st=$(cgit "$PATRON_DIR" --no-optional-locks status --porcelain --untracked-files=no) || { echo "git status failed in PATRON_DIR $PATRON_DIR"; return 1; }
   [[ -z $st ]] || { echo "PATRON_DIR $PATRON_DIR has uncommitted tracked changes (${st%%$'\n'*}); $who runs only while it is on a clean master"; return 1; }
 }
 
