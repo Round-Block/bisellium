@@ -3,6 +3,8 @@
  * settings file that differs from the merge is a FAIL line naming what differs, never a write. node:test TAP, selected
  * by `--test-name-pattern='^W-398-b1\s'`. Every fixture (a home, the Patron's clone, an agent clone, a stand-in gh) lives
  * under the OS tmp dir; nothing here reads or writes the real ~/.claude, ~/projects, ~/.local/bin or the agent clone.
+ * W-402 rows b1 and b2 (studio/briefs/W-402.md): --check names every wrong-type field, one line each in merge()'s order,
+ * never Node's message; selected by `--test-name-pattern='^W-402-b<k>\s'`.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -220,5 +222,85 @@ test("W-398-b3 behaviour 3: verify compares settings entries by their key paths:
     assert.equal(readFileSync(w.settings, "utf8"), body, `${what}: the settings file is byte-identical`);
     assert.deepEqual(snapshot(w.f), before, `${what}: no file under the home changed`);
     assert.deepEqual(settingsBlock(r.out), [`FAIL ${LINE}`, missing], `${what}: the FAIL line names what the merge would change`);
+  }
+});
+
+/** W-402: the fixture's merged file (written by the merge CLI) as an object, and a run of `--check` alone on a file. */
+function mergedWorld(): { w: ReturnType<typeof world>; merged: Json; check: () => { code: number | null; stdout: string; stderr: string } } {
+  const w = world();
+  const patron = realpathSync(join(w.f, "patron"));
+  const agent = realpathSync(join(w.f, "agent"));
+  rmSync(join(w.f, ".claude"), { recursive: true, force: true });
+  const made = spawnSync(process.execPath, [MERGE, w.settings, patron, join(w.f, "gh"), agent], { encoding: "utf8" });
+  assert.equal(made.status, 0, `the merge CLI writes the fixture's merged file: ${made.stderr}`);
+  const check = (): { code: number | null; stdout: string; stderr: string } => {
+    const r = spawnSync(process.execPath, [MERGE, "--check", w.settings, patron, join(w.f, "gh"), agent], { encoding: "utf8" });
+    return { code: r.status, stdout: r.stdout, stderr: r.stderr };
+  };
+  const merged = JSON.parse(readFileSync(w.settings, "utf8")) as Json;
+  assert.ok(merged !== null && typeof merged === "object" && !Array.isArray(merged), "the merged file is a JSON object");
+  assert.equal(check().code, 0, "the merged file passes --check before any change");
+  return { w, merged, check };
+}
+type Json = { [k: string]: unknown };
+/** `s` with `value` at the key-segment path `at` (every parent an object in `s`). */
+function setAt(s: Json, at: readonly string[], value: unknown): Json {
+  let o = s;
+  for (const k of at.slice(0, -1)) o = o[k] as Json;
+  o[at.at(-1) ?? ""] = value;
+  return s;
+}
+
+test("W-402-b1 behaviour 1: a single wrong type at any field the merge reads is named by its key and the type it needs, never by Node's message", () => {
+  const { w, merged, check } = mergedWorld();
+  const old = new Date("2001-02-03T04:05:06Z");
+  const write = (s: Json): string => {
+    const body = `${JSON.stringify(s, null, 2)}\n`;
+    put(w.settings, body);
+    utimesSync(w.settings, old, old);
+    return body;
+  };
+
+  // the review's field, through verify: merge() throws on a string at env; the FAIL line names env, not Node's message
+  const body = write(setAt(structuredClone(merged), ["env"], "bad"));
+  const before = snapshot(w.f);
+  const r = w.verify();
+  assert.deepEqual(settingsBlock(r.out), [`FAIL ${LINE}`, `  ${w.settings}: env is not an object; left untouched`], "a string where env belongs, verify: the FAIL line names env, not Node's message");
+  assert.equal(readFileSync(w.settings, "utf8"), body, "a string where env belongs, verify: the settings file is byte-identical");
+  assert.deepEqual(snapshot(w.f), before, "a string where env belongs, verify: no file under the home changed");
+
+  // every JSON type that is wrong at each of the seven fields merge() reads, through --check alone: one line, on stdout
+  // each wrong value with its name in the assertion text
+  type Named = readonly [string, unknown];
+  const v = { string: ["a string", "x"], number: ["a number", 1], boolean: ["a boolean", true], null: ["null", null], array: ["an array", []], object: ["an object", {}], mixed: ["an array holding a number", ["/keep", 1]] } satisfies Record<string, Named>;
+  const object = [v.string, v.number, v.boolean, v.null, v.array];
+  const array = [v.string, v.number, v.boolean, v.object];
+  const fields: [string[], string, Named[]][] = [
+    [["sandbox"], "an object", object],
+    [["sandbox", "filesystem"], "an object", object],
+    [["sandbox", "filesystem", "denyWrite"], "an array of strings", [v.string, v.number, v.boolean, v.null, v.object, v.mixed]],
+    [["sandbox", "filesystem", "denyRead"], "an array", array],
+    [["permissions"], "an object", [v.string, v.number, v.boolean, v.array]],
+    [["permissions", "deny"], "an array", array],
+    [["env"], "an object", [v.string, v.number, v.boolean, v.array]],
+  ];
+  for (const [at, type, values] of fields)
+    for (const [name, value] of values) {
+      const what = `${at.join(".")} as ${name}`;
+      const text = write(setAt(structuredClone(merged), at, value));
+      const c = check();
+      assert.deepEqual([c.code, c.stdout, c.stderr], [1, `${w.settings}: ${at.join(".")} is not ${type}; left untouched\n`, ""], `${what}: --check prints its one line`);
+      assert.equal(readFileSync(w.settings, "utf8"), text, `${what}: the settings file is byte-identical`);
+    }
+
+  // null where merge() reads `??` is absent, not a wrong type: --check names what the merge would add there, and only that
+  const missing = (v: unknown, at: string): string[] =>
+    Array.isArray(v) ? v.map((x) => `missing ${at}: ${JSON.stringify(x)}\n`) : v !== null && typeof v === "object" ? Object.entries(v).flatMap(([k, x]) => missing(x, `${at}.${k}`)) : [`missing ${at}: ${JSON.stringify(v)}\n`];
+  for (const at of [["sandbox", "filesystem", "denyRead"], ["permissions"], ["permissions", "deny"], ["env"]]) {
+    let added: unknown = merged;
+    for (const k of at) added = (added as Json)[k];
+    write(setAt(structuredClone(merged), at, null));
+    const c = check();
+    assert.deepEqual([c.code, c.stdout, c.stderr], [1, missing(added, at.join(".")).join(""), ""], `${at.join(".")} as null: --check prints only missing lines`);
   }
 });
