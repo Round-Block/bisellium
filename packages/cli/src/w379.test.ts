@@ -216,6 +216,67 @@ test("W-379-b1 behaviour 1: guard and guard-check refuse a PATRON_DIR off master
   const lateGuard = w.guard("guard", okEnv, undefined, w.f);
   assert.equal(lateGuard.code, 0, `an accepted later PATH entry: guard installs: ${lateGuard.out}`);
   assert.doesNotMatch(existsSync(toolLog) ? readFileSync(toolLog, "utf8") : "", /:git$/m, "an accepted later PATH entry: the guard ran no git found through PATH");
+  // a missing pinned program prints its one line, and every check that needs it is skipped, never run, so it adds no fault
+  // it could not judge, while every check that needs none of it still runs (the ordering rule, brief Interfaces): a copy
+  // of the script per program naming a path that is not there, run through a link inside AGENT_DIR (the script's own
+  // directory is resolved only by readlink)
+  const shown = (out: string, re: RegExp = /./): string[] => out.split("\n").filter((l) => l !== "" && re.test(l));
+  const verifyLine = /^(ok|FAIL|skip) (user settings|the hook guard|GUARD_BIN)/;
+  const offMaster = `PATRON_DIR ${w.patron} is on refs/heads/side3, not master; the guard runs only while it is on master`;
+  const relLine = "a relative PATH entry ('rel') comes before GUARD_BIN's directory";
+  const notValid = "the guard's inputs are not valid; see the lines above (nothing was changed).";
+  const inputsLine = "the hook guard's installer inputs hold (PATH, PATRON_DIR on master, GUARD_BIN)";
+  const probeLine = `the hook guard is wired, installed outside ${join(w.f, "agent")} and live`;
+  for (const [tool, pin] of [
+    ["readlink", "RL"],
+    ["env", "ENV"],
+    ["git", "GIT"],
+  ] as const) {
+    const missing = `/nonexistent/${tool}`;
+    const copy = join(w.patron, "scripts", `no-${tool}.sh`);
+    writeFileSync(copy, readFileSync(SCRIPT, "utf8").replace(`${pin}=/usr/bin/${tool}`, `${pin}=${missing}`));
+    const link = join(w.f, "agent", `no-${tool}.sh`);
+    symlinkSync(copy, link);
+    const fault = `${missing} is not an executable file; the guard runs ${tool} only by that path`;
+    const skip = (what: string): string => `skip ${what} (${missing} is not an executable file, so it was not judged)`;
+    const run = (sub: string, env: Record<string, string> = {}): { code: number | null; lines: string[] } => {
+      const r = w.guard(sub, env, link, w.f);
+      return { code: r.code, lines: shown(r.out, sub === "verify" ? verifyLine : undefined) };
+    };
+    // an otherwise valid setup (valid clones, valid PATH, GUARD_BIN installed): that program's line and nothing it would judge
+    const valid = { guardCheck: run("guard-check"), guard: run("guard"), verify: run("verify"), sync: run("sync") };
+    rmSync(join(w.f, ".claude", "settings.json"), { force: true });
+    assert.deepEqual(
+      valid,
+      {
+        guardCheck: { code: 1, lines: [fault] },
+        guard: { code: 1, lines: [fault, notValid] },
+        verify: {
+          code: 1,
+          lines: tool === "readlink" ? [skip("user settings hold every isolation entry"), `FAIL ${inputsLine}`, skip("GUARD_BIN leads into PATRON_DIR"), `skip ${probeLine} (the installer inputs do not hold, so it was not judged)`] : ["ok user settings hold every isolation entry", `FAIL ${inputsLine}`, "ok GUARD_BIN leads into PATRON_DIR", `skip ${probeLine} (the installer inputs do not hold, so it was not judged)`],
+        },
+        sync: { code: 1, lines: [`sync: refused: ${missing} is not an executable file; the sync runs ${tool} only by that path; master was not moved`] },
+      },
+      `a missing ${tool} with a valid setup: exactly its line; no clone, branch, dirty or overlap fault and no FAIL for a check it needs`,
+    );
+    // an otherwise invalid setup: every fault the guard can judge without that program is printed, and only those
+    git(w.patron, "checkout", "-q", "-b", "side3");
+    const bad: Record<string, string> = tool === "readlink" ? { PATH: ["rel", ...base].join(":") } : { PATH: ["rel", ...base].join(":"), AGENT_DIR: join(w.patron, "packages") };
+    const judged = tool === "readlink" ? [fault, relLine, offMaster] : [fault, relLine, "PATRON_DIR and AGENT_DIR are one inside the other"];
+    assert.deepEqual({ guardCheck: run("guard-check", bad), guard: run("guard", bad) }, { guardCheck: { code: 1, lines: judged }, guard: { code: 1, lines: [...judged, notValid] } }, `a missing ${tool} with an invalid setup: the faults it can judge`);
+    // sync_inputs keeps its unchanged absolute-path check first: with a relative AGENT_DIR or PATRON_DIR the path fault is
+    // the one line, the missing program is not reached
+    for (const [what, env] of [
+      ["a relative AGENT_DIR", { AGENT_DIR: "agent" }],
+      ["a relative PATRON_DIR", { PATRON_DIR: "patron" }],
+    ] as const) {
+      assert.deepEqual(run("sync", env), { code: 1, lines: ["sync: refused: AGENT_DIR and PATRON_DIR must be absolute paths; master was not moved"] }, `a missing ${tool} with ${what}: sync prints the absolute-path fault first`);
+    }
+    git(w.patron, "checkout", "-q", "master");
+    git(w.patron, "branch", "-q", "-D", "side3");
+    unlinkSync(link);
+    rmSync(copy);
+  }
 });
 
 test("W-379-b2 behaviour 2: guard installs only as PATRON_DIR's own copy: it fast-forwards the clone's master and links GUARD_BIN into it", () => {
