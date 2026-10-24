@@ -1348,6 +1348,8 @@ test("W-370-b1 behaviour 1: the done perform records certify's certificate from 
   assert.match(kept, new RegExp(`merge commit ${b.merge}, receipt sha256:[0-9a-f]{64}$`, "m"), "no check run: the log names no check run");
 });
 
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // ---------------------------------------------------------------------------
 // W-384: the done land's W-347 re-arm on a records PR that is already merged
 // ---------------------------------------------------------------------------
@@ -1401,7 +1403,7 @@ test("W-384-b1 behaviour 1: the done land counts a records PR as landed when the
     const head = git(w.repo, ["rev-parse", `refs/heads/${chore}`]);
     const { merge } = rearmScenario(w, chore, failing, true);
     const o = next(w, [OPUS, "--perform", "--expect", "done", ...FAST]);
-    const call = failing === "disable" ? "gh pr merge --disable-auto" : "gh pr merge --squash --auto \\(re-enabling\\)";
+    const call = escapeRegExp(failing === "disable" ? "gh pr merge --disable-auto" : "gh pr merge --squash --auto (re-enabling)");
     expectStep(o, "done", "performed", `${failing}: an already-merged records PR is landed, not held`);
     assert.equal(o.status, 0, ran(`${failing}: the land exits 0`, o));
     assert.match(o.out, new RegExp(`^merge: ${call} failed \\(GraphQL: Pull request is already merged \\([a-zA-Z]+\\)\\); PR #${PR_NUMBER} reads MERGED at its pinned head ${head.slice(0, 12)}$`, "m"), ran(`${failing}: the failed call and the merged read are both named`, o));

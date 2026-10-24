@@ -516,6 +516,8 @@ test("W-197 pin: the pull_request rule's code-owner and stale-review booleans le
   assert.equal(modeLine(o), "mode: merge-queue", ran("the mode line", o));
 });
 
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // ---------------------------------------------------------------------------
 // W-384: the opus merge step's first auto-merge call on a PR that is already merged
 // ---------------------------------------------------------------------------
@@ -544,7 +546,7 @@ test("W-384-b2 behaviour 2: the merge step counts a PR as landed when arming aut
   const { w, m } = armFails("w384-b2-merged", (x, mm) => ({ stdout: viewOf(cand(x, { state: "MERGED", merge: mm })) }));
   const o = performMerge(w);
   assert.equal(o.status, 0, ran("an already-merged PR is landed: exit 0", o));
-  assert.match(o.out, new RegExp(`^merge: gh pr merge --squash --auto failed \\(${ALREADY.replace(/[()]/g, "\\$&")}\\); PR #${PR_NUMBER} reads MERGED at its pinned head ${tipOf(w).slice(0, 12)}$`, "m"), ran("the failed call and the merged read are both named", o));
+  assert.match(o.out, new RegExp(`^merge: gh pr merge --squash --auto failed \\(${escapeRegExp(ALREADY)}\\); PR #${PR_NUMBER} reads MERGED at its pinned head ${tipOf(w).slice(0, 12)}$`, "m"), ran("the failed call and the merged read are both named", o));
   assert.match(o.out, /^state=MERGED$/m, ran("state=MERGED", o));
   assert.deepEqual(mutating(w), ["gh pr merge --squash --auto", "git fetch master:master"], ran("one merge call, then the trunk fetch", o));
   assert.equal(viewsAfterMerge(w), 1, ran("exactly one fresh pr view after the failed call", o));
