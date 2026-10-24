@@ -2,9 +2,12 @@ import { useEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
 import { InboxView } from "./InboxView.js";
 import {
+  answerOptions,
   buildReply,
   isTextEntryTarget,
   moveFocus,
+  recordedEffect,
+  reconcileFocusIndex,
   reasonForPetition,
   resolveVerbAction,
   withReasonForPetition,
@@ -37,12 +40,13 @@ const DEV_DATA: InboxResponse = {
 
 const WRITE_FAILED = "Could not send the answer.";
 
-export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
+export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: ScreenStatus) => void; onNeedsYouCount?: (count: number) => void } = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [focusIndex, setFocusIndex] = useState(0);
   const [focusRequest, setFocusRequest] = useState(0);
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<string | undefined>(undefined);
   // W-341: the read and write outcomes the states matrix names. A failed read never invents petitions.
   const [loaded, setLoaded] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
@@ -56,6 +60,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     fetchInbox()
       .then((d) => {
         setData(d);
+        onNeedsYouCount?.(d.petitiones.length);
         setLoaded(true);
         setReadFailed(false);
       })
@@ -67,13 +72,17 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   }
 
   useEffect(() => {
-    if (demo) { setData(DEV_DATA); setLoaded(true); return; }
+    if (demo) { setData(DEV_DATA); onNeedsYouCount?.(DEV_DATA.petitiones.length); setLoaded(true); return; }
     reload();
   }, []);
 
   const petitiones = data.petitiones;
   const focusedId = petitiones[focusIndex]?.id;
   const reason = reasonForPetition(reasons, focusedId);
+
+  useEffect(() => {
+    setFocusIndex((index) => reconcileFocusIndex(index, petitiones.length));
+  }, [petitiones.length]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
@@ -94,15 +103,17 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     if (sendingRef.current) return;
     sendingRef.current = true;
     setError(null);
+    setConfirmation(undefined);
     setOutcome(undefined);
     setSending(true);
-    void submitAnswer(petitioId, buildReply(verb, reason)).then((result) => {
+    void submitAnswer(petitioId, buildReply(verb, reason), answerOptions(verb)).then((result) => {
       sendingRef.current = false;
       setSending(false);
       // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
       // no local handling here. "ok"/"refused"/"error" are this screen's.
       if (result.kind === "ok") {
         setReasons((current) => withReasonForPetition(current, petitioId, ""));
+        setConfirmation(recordedEffect(verb, petitioId));
         if (!demo) reload();
       } else if (result.kind === "refused") {
         setError(result.output || "refused");
@@ -121,7 +132,8 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     refused: outcome === "refused" ? (error ?? "") : undefined,
     pending: sending,
   });
-  useEffect(() => onStatus?.(status), [status.state, status.text]);
+  const reportedStatus = confirmation !== undefined && (status.state === "ready" || status.state === "empty") ? { state: "ready" as const, text: confirmation } : status;
+  useEffect(() => onStatus?.(reportedStatus), [reportedStatus.state, reportedStatus.text]);
 
   return (
     <InboxView
@@ -131,6 +143,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
       focusRequest={focusRequest}
       reason={reason}
       error={error}
+      confirmation={confirmation}
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
       busy={sending}
       onReasonChange={(value) => {

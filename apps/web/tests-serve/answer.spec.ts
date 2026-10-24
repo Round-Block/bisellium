@@ -55,8 +55,9 @@ test.describe("the answer button, end to end (W-067 acceptance)", () => {
 
     // 2. open a pending petitio, type a reply, submit.
     await page.locator(".inbox__row").first().click();
-    const reply = "approve: W-067 acceptance smoke";
-    await page.locator(".inbox__input-ratio").fill(reply);
+    const reason = "W-067 acceptance smoke";
+    const reply = `approve: ${reason}`;
+    await page.locator(".inbox__input-ratio").fill(reason);
     const [response] = await Promise.all([
       page.waitForResponse((r) => r.url().endsWith("/api/answer") && r.request().method() === "POST"),
       // The button's accessible name carries its hotkey digit too ("1 approve").

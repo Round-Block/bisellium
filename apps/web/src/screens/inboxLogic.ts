@@ -2,14 +2,15 @@
  * model (DIRECTION.md §5, brief behaviours 5-8), kept free of React so it
  * is unit-testable without a DOM. `Inbox.tsx` is the only caller. */
 
-export type Verb = "approve" | "defer" | "decline" | "delegate";
+export type Verb = "approve" | "decline" | "followup";
 
-/** `1`/`2`/`3` map to approve/defer/decline; delegate has no shortcut
- * (studio/briefs/W-024.md, behaviour 7). */
+/** Approve and decline resolve an answer. Follow up uses the endpoint's
+ * ask-back form: it records the Patron's unprefixed text, changes the petition
+ * to awaiting_reply and returns direction to the original asker. */
 export const VERB_KEYS: Readonly<Record<string, Verb>> = {
   "1": "approve",
-  "2": "defer",
-  "3": "decline",
+  "2": "decline",
+  "3": "followup",
 };
 
 /** Window shortcuts never consume keystrokes intended for a form control or
@@ -40,6 +41,13 @@ export function moveFocus(index: number, count: number, key: "j" | "k"): number 
   return Math.max(0, Math.min(count - 1, next));
 }
 
+/** A refreshed list may remove the selected petition. Keep the nearest
+ * remaining petition selected so its answer controls stay reachable. */
+export function reconcileFocusIndex(index: number, count: number): number {
+  if (count <= 0) return 0;
+  return Math.max(0, Math.min(index, count - 1));
+}
+
 /** `Enter` expands the focused item, `Esc` collapses whatever is expanded
  * (behaviour 6); any other key leaves the expanded id unchanged. */
 export function nextExpanded(current: string | null, focusedId: string | undefined, key: string): string | null {
@@ -55,11 +63,21 @@ export function canSubmit(reason: string, sending = false): boolean {
   return !sending && reason.trim().length > 0;
 }
 
-/** `submitAnswer` has no verb field (`{ petitio, reply }` only) — the verb
- * rides as a fixed prefix on `reply` so the Patron's answer log still
- * reads as approve/defer/decline/delegate plus the reason. */
+/** Resolve actions carry their verdict as a fixed reply prefix. Follow up is
+ * open text with no verdict; its distinct record effect is carried by
+ * `askBack: true` in `answerOptions`. */
 export function buildReply(verb: Verb, reason: string): string {
+  if (verb === "followup") return reason.trim();
   return `${verb}: ${reason.trim()}`;
+}
+
+export function answerOptions(verb: Verb): { askBack: true } | undefined {
+  return verb === "followup" ? { askBack: true } : undefined;
+}
+
+export function recordedEffect(verb: Verb, petitioId: string): string {
+  if (verb === "followup") return `Recorded follow-up reply for ${petitioId}; the petition remains open awaiting the asker's reply.`;
+  return `Recorded ${verb} answer for ${petitioId}; the petition is resolved.`;
 }
 
 export interface VerbAction {

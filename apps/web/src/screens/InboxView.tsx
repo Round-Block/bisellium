@@ -13,6 +13,8 @@ export interface InboxViewProps {
    *  there's nothing to say — never rendered any other way (no title/style/
    *  href built from it: it's server `output`, i.e. officina content). */
   error?: string | null;
+  /** The exact successful record effect, retained across the settling reload. */
+  confirmation?: string;
   /** W-341: the screen's visible status line in a loading, read-error or pending state; absent at rest. */
   notice?: string;
   /** True while the selected answer is being recorded. */
@@ -24,13 +26,16 @@ export interface InboxViewProps {
 
 const VERBS: { verb: Verb; key: string }[] = [
   { verb: "approve", key: "1" },
-  { verb: "defer", key: "2" },
-  { verb: "decline", key: "3" },
-  { verb: "delegate", key: "4" },
+  { verb: "decline", key: "2" },
+  { verb: "followup", key: "3" },
 ];
 
+function verbLabel(verb: Verb): string {
+  return verb === "followup" ? "follow up" : verb;
+}
+
 export function InboxView(props: InboxViewProps): JSX.Element {
-  const { petitiones, opera, focusIndex, focusRequest = 0, reason, error, notice, busy = false, onReasonChange, onFocusChange, onSubmit } = props;
+  const { petitiones, opera, focusIndex, focusRequest = 0, reason, error, confirmation, notice, busy = false, onReasonChange, onFocusChange, onSubmit } = props;
   const selected = petitiones[focusIndex];
   const selectedRowRef = useRef<HTMLButtonElement>(null);
 
@@ -44,6 +49,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
     return (
       <div className="inbox">
         <h1 className="inbox__title">Inbox</h1>
+        {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
         <p className="inbox__empty">{notice ?? "Nothing waiting on you"}</p>
       </div>
     );
@@ -53,6 +59,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
     <div className="inbox inbox--split">
       <div className="inbox__list">
         <h1 className="inbox__title">Inbox</h1>
+        {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
         {petitiones.map((p, i) => {
           const focused = i === focusIndex;
           const rowClasses = [
@@ -97,11 +104,12 @@ export function InboxView(props: InboxViewProps): JSX.Element {
           <div className="inbox__decision-panel">
             {notice !== undefined && <p className="screen-notice">{notice}</p>}
             {error && <p className="inbox__error">{error}</p>}
+            <p className="inbox__action-effect">Approve and Decline record this text as a verdict and resolve the petition. Follow up records the text without a verdict, returns it to the asker and keeps it open.</p>
             <input
               className="inbox__input-ratio"
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
-              placeholder="Ratio decidendi"
+              placeholder="Answer or follow-up text"
             />
             <div className="inbox__action-group">
               {VERBS.map(({ verb, key }) => (
@@ -113,7 +121,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   onClick={() => onSubmit(selected.id, verb)}
                 >
                   <span className="inbox__hotkey">{key}</span>
-                  {verb}
+                  {verbLabel(verb)}
                 </button>
               ))}
             </div>

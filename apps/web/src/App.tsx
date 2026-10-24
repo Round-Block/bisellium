@@ -20,6 +20,7 @@ export function App() {
   // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
   // remounted by a screen's own layout changes and announces every state change.
   const [status, setStatus] = useState<ScreenStatus>(READY);
+  const route = parseRoute(hash);
 
   useEffect(() => {
     // The one 401 path every write shares: raised from wherever the write
@@ -36,6 +37,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (route === "inbox") return;
     if (location.search.includes("demo")) {
       setNeedsYouCount(3);
       return;
@@ -43,9 +45,7 @@ export function App() {
     fetchInbox()
       .then((r) => setNeedsYouCount(r.petitiones.length))
       .catch(() => undefined);
-  }, []);
-
-  const route = parseRoute(hash);
+  }, [route]);
 
   return (
     <div className="shell">
@@ -53,7 +53,7 @@ export function App() {
       <Sidebar route={route} needsYouCount={needsYouCount} />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
-        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} />}
+        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
       </main>
       <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
         {status.text}

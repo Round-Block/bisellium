@@ -76,12 +76,12 @@ const render = (props: InboxViewProps): string => renderToStaticMarkup(createEle
 {
   const petitiones = [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask", body: "" }];
   const noReason = render(baseProps({ petitiones, reason: "" }));
-  check(8, "detail pane shows all four verb buttons", (noReason.match(/class="inbox__btn-action"/g) ?? []).length === 4, noReason);
-  check(8, "with no reason: all four verb buttons disabled", (noReason.match(/class="inbox__btn-action" disabled/g) ?? []).length === 4, noReason);
+  check(8, "detail pane shows the three truthful verb buttons", (noReason.match(/class="inbox__btn-action"/g) ?? []).length === 3, noReason);
+  check(8, "with no reason: all verb buttons disabled", (noReason.match(/class="inbox__btn-action" disabled/g) ?? []).length === 3, noReason);
 
   const withReason = render(baseProps({ petitiones, reason: "looks good" }));
   check(8, "with a reason: no verb button is disabled", !withReason.includes("disabled"), withReason);
-  check(8, "all four verbs are offered", ["approve", "defer", "decline", "delegate"].every((v) => withReason.includes(`>${v}<`)), withReason);
+  check(8, "approve, decline and follow up are offered", ["approve", "decline", "follow up"].every((v) => withReason.includes(`>${v}<`)) && !withReason.includes(">defer<") && !withReason.includes(">delegate<"), withReason);
 }
 
 process.exit(failed ? 1 : 0);

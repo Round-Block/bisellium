@@ -93,7 +93,7 @@ test("W-345-b4 a failed refresh shows failure and no stale petition", async ({ p
     await expect(page.locator('.shell__status[data-state="error"]')).toHaveText("Could not load the inbox.");
     await expect(page.locator(".inbox__row")).toHaveCount(0);
     await expect(page.locator(".inbox__empty")).toHaveText("Could not load the inbox.");
-    await expect(page.locator(".inbox__confirmation")).toHaveText("Recorded approve answer for A-1.");
+    await expect(page.locator(".inbox__confirmation")).toHaveText("Recorded approve answer for A-1; the petition is resolved.");
   } finally {
     await served.close();
   }
