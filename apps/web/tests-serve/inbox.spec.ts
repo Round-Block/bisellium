@@ -22,3 +22,32 @@ test("W-345-b1 typing shortcut characters in the reason keeps the petition and s
     await served.close();
   }
 });
+
+test("W-345-b2 two same-turn answers issue one request", async ({ page }) => {
+  const served = await startServed("w345-b2");
+  let writes = 0;
+  let seenFirst = (): void => undefined;
+  let release = (): void => undefined;
+  const first = new Promise<void>((resolve) => (seenFirst = resolve));
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/answer", async (route) => {
+    writes++;
+    seenFirst();
+    await gate;
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, output: "recorded" }) });
+  });
+  try {
+    await page.goto(`${served.baseURL}/?demo=1#/inbox`);
+    await page.locator(".inbox__input-ratio").fill("one recorded reason");
+    await page.evaluate(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "1" }));
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "1" }));
+    });
+    await first;
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    expect(writes).toBe(1);
+  } finally {
+    release();
+    await served.close();
+  }
+});
