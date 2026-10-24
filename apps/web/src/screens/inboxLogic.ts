@@ -22,6 +22,16 @@ export function isTextEntryTarget(target: EventTarget | null): boolean {
   return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || node.isContentEditable === true;
 }
 
+/** Petition-keyed drafts prevent a selection change from reusing another
+ * petition's reason, while preserving each unfinished draft when navigating. */
+export function reasonForPetition(reasons: Readonly<Record<string, string>>, petitioId: string | undefined): string {
+  return petitioId === undefined ? "" : (reasons[petitioId] ?? "");
+}
+
+export function withReasonForPetition(reasons: Readonly<Record<string, string>>, petitioId: string, value: string): Record<string, string> {
+  return { ...reasons, [petitioId]: value };
+}
+
 /** j/k move focus one item at a time, clamped so the first item stays put
  * on `k` and the last stays put on `j` (behaviour 5). */
 export function moveFocus(index: number, count: number, key: "j" | "k"): number {

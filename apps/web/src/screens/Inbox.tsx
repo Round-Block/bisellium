@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
 import { InboxView } from "./InboxView.js";
-import { buildReply, isTextEntryTarget, moveFocus, resolveVerbAction, type Verb } from "./inboxLogic.js";
+import {
+  buildReply,
+  isTextEntryTarget,
+  moveFocus,
+  reasonForPetition,
+  resolveVerbAction,
+  withReasonForPetition,
+  type Verb,
+} from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
@@ -32,7 +40,7 @@ const WRITE_FAILED = "Could not send the answer.";
 export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [focusIndex, setFocusIndex] = useState(0);
-  const [reason, setReason] = useState("");
+  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   // W-341: the read and write outcomes the states matrix names. A failed read never invents petitions.
   const [loaded, setLoaded] = useState(false);
@@ -60,6 +68,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
 
   const petitiones = data.petitiones;
   const focusedId = petitiones[focusIndex]?.id;
+  const reason = reasonForPetition(reasons, focusedId);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
@@ -87,7 +96,7 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
       // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
       // no local handling here. "ok"/"refused"/"error" are this screen's.
       if (result.kind === "ok") {
-        setReason("");
+        setReasons((current) => withReasonForPetition(current, petitioId, ""));
         if (!demo) reload();
       } else if (result.kind === "refused") {
         setError(result.output || "refused");
@@ -117,7 +126,9 @@ export function Inbox({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
       error={error}
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
       busy={sending}
-      onReasonChange={setReason}
+      onReasonChange={(value) => {
+        if (focusedId !== undefined) setReasons((current) => withReasonForPetition(current, focusedId, value));
+      }}
       onFocusChange={setFocusIndex}
       onSubmit={submit}
     />
