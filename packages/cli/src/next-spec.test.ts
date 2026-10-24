@@ -11,7 +11,7 @@ import { test } from "node:test";
 import { readFront, type Manifest } from "@bisellium/adapter-native";
 import { inspectUiDesignInput, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { deriveNext, readSpecReviewer, type Facts } from "./next.js";
-import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, architectOrder, briefPath, briefText, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, specVerdict, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript } from "./next-world.test.js";
+import { BLOCKER, BRANCH, BRIEF_REL, BUDGET, F, MAIN, NO_FINDINGS, OPUS, SETUP_ENV, SR, SR_MODEL, SR_ROW, SrOpts, T, TSX, World, addReview, advanceSource, amend, architectOrder, briefPath, briefText, buildFix, commit, editRecord, expectStep, git, gitq, handoffAt, landed, n167, next, put, putBrief, ran, review, reviewNamed, reviewerOrder, rt, sign, specHeld, specLog, specNext, specVerdict, srWorld, trial, verb, w167, world, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const ARCHITECT_ROW = "  - { id: architect, collegium: design, kind: agent }";
@@ -1367,5 +1367,62 @@ test("W-355-b1 behaviour 1: before opus/<id>, next reads the spec's kind from th
   architectOrder(specNext(t), 1, "a main-checkout record with no kind keeps the design magister");
   sign(t, 1);
   reviewerOrder(specNext(t), 2, "and the engineering reviewer");
+});
+const w355Pair = (studio: string, paired: boolean): void => {
+  const path = join(studio, "bisellium.yml");
+  const text = readFileSync(path, "utf8").replace(W355_KEYS, "");
+  writeFileSync(path, paired ? `${text}${W355_KEYS}` : text);
+};
+/**
+ * A kind: ui opus whose spec (a signature and its passed review, by the main manifest's pair) landed on master, then opus/W-900
+ * and its worktree; the worktree brief is then amended and committed, so the spec is signed again on the branch.
+ */
+function w355Branch(tag: string, mainPaired: boolean): World {
+  const w = srWorld(tag, { edit: (t) => w355Manifest(t, mainPaired) });
+  editRecord(w, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  commit(w.repo, "studio: W-900 is a ui opus");
+  putBrief(w);
+  specVerdict(w, 1, mainPaired ? UI_ARCHITECT : "architect", "passed", NO_FINDINGS);
+  review(w, 2, "passed", mainPaired ? { sella: UI_REVIEWER, model: UI_REVIEWER_MODEL } : {});
+  landed(w);
+  git(w.repo, ["branch", BRANCH]);
+  git(w.repo, ["worktree", "add", "-q", w.wt, BRANCH]);
+  handoffAt(w, "wt", T.handoffFresh);
+  return w;
+}
+
+test("W-355-b2 behaviour 2: after opus/<id>, next reads the spec's seat pairing from the opus worktree's manifest, the one its verdict trusts, never the main checkout's", { timeout: 1_800_000 }, () => {
+  // the main manifest declares no UI pair; the branch's does
+  const w = w355Branch("w355-b2", false);
+  w355Pair(w.wtStudio, true);
+  commit(w.wt, "studio: the UI pair on opus/W-900");
+  amend(w);
+  commit(w.wt, `studio(${OPUS}): brief amended`);
+  const signer = specNext(w);
+  assert.deepEqual(w355Order(signer), { step: `next: ${OPUS} spec named`, role: "architect", sella: UI_ARCHITECT, model: undefined, round: "3" }, ran("the worktree's pair orders its UI signer", signer));
+  assert.equal(signer.kv.get("command"), `dispatch ${UI_ARCHITECT} to sign the spec for ${OPUS}; close out with: bisellium verdict ${OPUS} --round 3 --sella ${UI_ARCHITECT} --outcome passed --phase spec --studio .worktrees/${OPUS}/studio`, ran("bound to the worktree", signer));
+  const signed = wtSpec(w, 3, UI_ARCHITECT, "passed");
+  assert.equal(signed.status, 0, ran("the worktree verdict accepts the UI signer", signed));
+  const reviewer = specNext(w);
+  assert.deepEqual(w355Order(reviewer), { step: `next: ${OPUS} spec named`, role: "spec-reviewer", sella: UI_REVIEWER, model: UI_REVIEWER_MODEL, round: "4" }, ran("then the worktree's UI reviewer", reviewer));
+
+  // the main manifest declares the UI pair; the branch removed it, so the design magister signs there
+  const m = w355Branch("w355-b2-main", true);
+  w355Pair(m.wtStudio, false);
+  commit(m.wt, "studio: no UI pair on opus/W-900");
+  amend(m);
+  commit(m.wt, `studio(${OPUS}): brief amended`);
+  const kept = specNext(m);
+  assert.deepEqual(w355Order(kept), { step: `next: ${OPUS} spec named`, role: "architect", sella: "architect", model: undefined, round: "3" }, ran("the main checkout's pair does not reach the branch", kept));
+  assert.equal(wtSpec(m, 3, "architect", "passed").status, 0, "the worktree verdict accepts the design magister");
+  reviewerOrder(specNext(m), 4, "then the engineering reviewer");
+
+  // no usable worktree: the committed branch's pair is read, so its design-magister signature is no UI signature
+  const c = w355Branch("w355-b2-committed", false);
+  w355Pair(c.wtStudio, true);
+  commit(c.wt, "studio: the UI pair on opus/W-900");
+  git(c.repo, ["worktree", "remove", "--force", c.wt]);
+  const held = specNext(c);
+  specHeld(held, "the committed branch's pair wants a UI signature", new RegExp(`no ${UI_ARCHITECT} signature names the current briefs/W-900\\.md.*not a usable worktree`));
 });
 
