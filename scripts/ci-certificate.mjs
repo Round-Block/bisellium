@@ -9,6 +9,7 @@
  * `certify-certificate` on GITHUB_SHA whose external_id is the run id. Exit 0: posted. Exit 1: the post failed.
  * Exit 2: refused input. It imports node: built-ins only, so the job needs no npm ci.
  */
+import { createHash } from "node:crypto";
 
 /** The check run's name, and the one app whose check run is the certificate (a workflow's GITHUB_TOKEN). */
 export const CERTIFICATE_CHECK = "certify-certificate";
@@ -18,6 +19,7 @@ export const TEXT_MAX = 65535;
 const TAIL_LINES = 200;
 const CERTIFY_LINES_MAX = 64;
 const isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+const digestOf = (text) => createHash("sha256").update(text, "utf8").digest("hex");
 const isLines = (v, max) =>
   Array.isArray(v) && v.length <= max && v.every((l) => typeof l === "string" && !l.includes("\n"));
 
@@ -36,6 +38,14 @@ export function readCertificate(reply, { sha, runId }) {
   const c = reply.check_runs[0];
   if (!isObj(c) || c.name !== CERTIFICATE_CHECK) return { why: `the check run is not ${CERTIFICATE_CHECK}` };
   if (!Number.isSafeInteger(c.id) || c.id < 1) return { why: "the check run's id is not a positive integer" };
+  const app = isObj(c.app) && typeof c.app.slug === "string" ? c.app.slug : "no app";
+  if (app !== CERTIFICATE_APP)
+    return { why: `the ${CERTIFICATE_CHECK} check run was written by ${app.slice(0, 60)}, not ${CERTIFICATE_APP}` };
+  if (c.head_sha !== sha) return { why: `the ${CERTIFICATE_CHECK} check run is not on the commit ${sha.slice(0, 12)}` };
+  if (c.external_id !== String(runId))
+    return { why: `the ${CERTIFICATE_CHECK} check run does not name CI run ${runId}` };
+  if (c.status !== "completed" || c.conclusion !== "success")
+    return { why: `the ${CERTIFICATE_CHECK} check run is not completed with success` };
   const text = isObj(c.output) ? c.output.text : undefined;
   if (typeof text !== "string" || Buffer.byteLength(text, "utf8") > TEXT_MAX)
     return { why: `the ${CERTIFICATE_CHECK} check run carries no certificate text` };
@@ -48,10 +58,13 @@ export function readCertificate(reply, { sha, runId }) {
   if (
     !isObj(body) ||
     body.schema !== 1 ||
+    body.run !== runId ||
     typeof body.receipt !== "string" ||
     !isLines(body.certify, CERTIFY_LINES_MAX) ||
     !isLines(body.tail, TAIL_LINES)
   )
     return { why: `the ${CERTIFICATE_CHECK} check run's text is not a schema-1 certificate for CI run ${runId}` };
+  if (c.output.summary !== `receipt sha256:${digestOf(body.receipt)}`)
+    return { why: `the ${CERTIFICATE_CHECK} check run's receipt does not match its digest` };
   return { id: c.id, receipt: Buffer.from(body.receipt, "utf8"), certify: body.certify, tail: body.tail };
 }
