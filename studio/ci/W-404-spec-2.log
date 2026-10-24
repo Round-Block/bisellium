@@ -1,0 +1,18 @@
+# opus: W-404
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a16ef2-fa13-7ea3-b715-b04d45adaf7f
+# outcome: failed
+# at: 2026-10-24T17:29:31.226Z
+# tree: tree:7f189a652480b89f31950808c5f91cf44415c3de
+# brief: briefs/W-404.md blob:fe170ff83d3b270e796e6695c52c3f0cb679a8be
+# ticket: {"opus":"W-404","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"33dbdc03c54069edd381c54d0b135d608a9d87b0","brief":"fe170ff83d3b270e796e6695c52c3f0cb679a8be","at":"2026-10-24T17:29:30.724Z"}
+
+## Findings
+1. blocking — brief:92 [severity: S1] `readOpera` calls `listMd`, which returns `[]` for a missing `opera/` directory and follows a symlinked one; an accidental deletion makes `bisellium milestones` exit 0 with a fabricated all-open share, while a directory symlink can let an outside `done` record mark an exit met, and no W-404 row exercises either case. Replace brief:92 with: `| 4. The real opera/ directory and records it enumerates: missing, unreadable, non-directory or symlinked directory; each ID-named .md record's front matter, state and parent | opera/ is a readable real directory directly under the officina; an ID-named regular record has mapping front matter, with state and parent absent or strings | readOpera: a missing, unreadable, non-directory or symlinked opera/ holds the report; unreadable or non-mapping ID-named records hold it; non-string state or parent is absent, and a non-regular entry cannot meet an exit. Pinned by W-404-b1 "a missing or symlinked opera directory: held"; milestone is not read. |` [design: keeps] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/milestones.test.ts
+
+## Verdict
+The brief is not ready because the new opera-directory reader can produce a successful but false report from plausible invalid filesystem input.
+VERDICT: FAIL

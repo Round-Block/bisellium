@@ -1,0 +1,30 @@
+# opus: W-404
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-24T17:25:52.561Z
+# tree: tree:7f189a652480b89f31950808c5f91cf44415c3de
+# brief: briefs/W-404.md blob:fe170ff83d3b270e796e6695c52c3f0cb679a8be
+# ticket: {"opus":"W-404","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"33dbdc03c54069edd381c54d0b135d608a9d87b0","brief":"fe170ff83d3b270e796e6695c52c3f0cb679a8be","at":"2026-10-24T17:25:43.194Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-404-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the defect on master cf96d936: the completion meter counts points done among the opera filed under a milestone (completion.ts:69), so filing more opera lowers it and it does not say whether the exit is met; on the real officina it reads 57.0% overall with one exit of ten met — check: brief:15, meter-master.out
+2. advisory — the design is a read-only report by exits: an opus exit met by a done record, a rule exit by no finding of a check rule (check once, with --repo, any level), needs and no exit never met; the share is the floor of 100 x met weight over all weight; the real officina reads 1 of 10 exits met, 10% by weight — check: brief:19, brief:20, brief:24, report-proto.out
+3. advisory — "on its exit path" is read from the records alone: the exit's opus and the parent chains reaching it, the only opus-to-opus link the records hold; milestone is not read, since counting it is the filing count this opus replaces; on the real officina the 5 parent links reach no exit opus — check: brief:26, enumerate.out
+4. advisory — every promise was checked against every Input domain row: absent is inert (rows 1, 8), malformed entries and unreadable records hold the report (rows 1, 2, 4), every exit form has a fixed reading that fails closed (row 3), cycles end and unknown parents link nothing (row 5), flags refuse (row 6), nothing is written (row 7); non-string fields, symlinked records and huge weight totals are stated limits — check: brief:65, brief:67, brief:69, brief:71, brief:73, brief:75, brief:89, brief:92, brief:97
+5. advisory — unchanged code the promises lean on is stated as a limit (D-076 E): checkStudio and its rules, readContainedRegularFile, openStudio, parseFlags, readFront, the yaml package, RULE_IDS, runAll and clean — check: brief:79, brief:80, brief:81
+6. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master at "the report: a summary, then one line per milestone in file order"; b2 on master and on stage 1 at "the milestones line, then the open count"; each row passes at its stage and b1 on stage 2; the series of four commits equals the prototype — check: red-accept.out, red-b1-master.out, red-b2-master.out, red-b2-stage1.out, series.out
+7. advisory — twelve kills each fail their row at a pinned assertion, one per pinned promise and row — check: kills.out, promise-ledger.md
+8. advisory — one existing row flips and is named: usage.test.ts's count of usage lines moves 42 to 43 in behaviour 1's commit; no other row flips on the whole source with every other test file unedited (milestones, containment, usage, cli, talk-boundary, lex, docs, safe-helpers, W-299-b3) — check: flip-usage.out, green-summary.out, brief:137, brief:138
+9. advisory — the Codex test check lists one flip, usage.test.ts:110, named (brief:44, brief:137), Unnamed None, and twenty must-stay-green rows, each run on the prototype and passing: W-152-b1 to b3, W-163-b6, cli.test.ts's four banner rows, talk-boundary behaviour 2, lex.test.ts's two RULE_IDS rows, docs.test.ts's real-repo row, W-163-b5 round 2, W-299-b3, W-288-b3, W-306-b1, and rules/tests.test.ts's W-121 behaviour 5, W-178-b4, W-376-b1 and W-392-b1 — check: fixture-census.md, green-summary.out, green-census.out
+10. advisory — the brief passes admission; every pin names an assertion its row makes; lint and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: admission.out, pins.out, lint-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+11. advisory — no owned path is code-owned; the console panel and /api/completion are left to a follow-on ui opus (Defaults 4) — check: brief:145, brief:159
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-404.md` (spec round 1), master cf96d936; two behaviours; one row flipped and named (usage.test.ts's count).
