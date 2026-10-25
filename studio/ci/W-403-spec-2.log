@@ -1,0 +1,21 @@
+# opus: W-403
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a172d9-f58e-7402-b2ec-9ae53dc6b63c
+# outcome: failed
+# at: 2026-10-25T11:43:38.840Z
+# tree: tree:19b578e61db999d2f61c5894d590fec5bcfd02e4
+# brief: briefs/W-403.md blob:8101d338f4da10eb6bddc3df014ac9c31688426d
+# ticket: {"opus":"W-403","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"97098273f762a1a9beb3c27e59e0730dcfd79233","brief":"8101d338f4da10eb6bddc3df014ac9c31688426d","at":"2026-10-25T11:43:35.479Z"}
+
+## Findings
+1. blocking — brief:100 [severity: S1] [design: changes] `autoGrant` converts a non-string title to empty and `reserved` accepts any kind except exact `"ui"`; a plausible malformed record such as `kind: [ui]` can therefore let a qualifying remainder bypass the Patron-reserved screen, and no named test covers malformed fields. Replace brief:100 with: “The opus record is a mapping with `declined` absent, a valid non-ui native kind, value 1–3, a title accepted by `titleProblem`, and `parent` absent or a non-empty string; `autoGrant` refuses every other form before `reserved`, `remainder`, or `causeFix`, with malformed kind and title pinned by W-403-b2.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w403.test.ts
+2. blocking — brief:101 [severity: S1] [design: changes] `reserved` checks only `parent.kind === "ui"` while `remainder` checks only the parent state, so a malformed UI kind such as `[ui]` on an otherwise split parent admits its remainder; the exact-ui test does not catch this. Replace brief:101 with: “The parent is a contained record in `PARENT_STATES` whose kind is accepted by `isNativeOpusKind` and is not `ui`; `remainder` refuses an absent, unreadable, malformed-state, missing-kind, invalid-kind, or ui parent, with malformed parent kind pinned by W-403-b2.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w403.test.ts
+3. blocking — brief:102 [severity: S1] [design: changes] `remainder` skips a log that `readLog` refuses or whose required header is not singular; a plausibly malformed passed verdict between two valid failures is therefore erased and `greenlight --auto` grants a parent that is not split, while the row tests only a valid intervening pass. Replace brief:102 with: “Every matching parent spec log must parse and contain exactly one `phase`, `sella`, and `outcome`; `remainder` refuses the opus if any does not, otherwise a passed verdict by `spec_reviewer` resets the failure count, with an unreadable or malformed intervening pass pinned by W-403-b1.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w403.test.ts
+4. blocking — brief:105 [severity: S1] [design: keeps] `codeOwnedNames` treats every numeric non-zero from `git rev-parse` or `git cat-file` as “no repository/file”; a plausible Git configuration failure such as dubious ownership thus removes the CODEOWNERS screen and lets a real `greenlight --auto` caller admit `.github` scope, and the brief explicitly leaves Git failure unpinned. Replace brief:105 with: “`codeOwnedNames` returns no names only for a confirmed non-repository or confirmed absent `HEAD:.github/CODEOWNERS`; every other non-zero Git result refuses, with Git failure pinned by W-403-b2.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w403.test.ts
+
+## Verdict
+The brief has design-changing S1 input-boundary failures and requires revision and another spec review before build.
+VERDICT: FAIL

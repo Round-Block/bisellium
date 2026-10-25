@@ -1,0 +1,24 @@
+# opus: W-403
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a172d9-f58e-7402-b2ec-9ae53dc6b63c
+# outcome: failed
+# at: 2026-10-25T12:16:49.138Z
+# tree: tree:19b578e61db999d2f61c5894d590fec5bcfd02e4
+# brief: briefs/W-403.md blob:3a2a3c381932fa64c344d3562f8b65ed4573618b
+# ticket: {"opus":"W-403","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"8c3dd494a8cbf78bf8c14252ed525e233f8f55e7","brief":"3a2a3c381932fa64c344d3562f8b65ed4573618b","at":"2026-10-25T12:16:45.853Z"}
+
+## Findings
+1. blocking — brief:106 [severity: S1] [design: changes] Reached through round-2 finding 2’s class: `reserved` ignores an absent parent record and `remainder` treats a missing or unknown parent state merely as “not a remainder,” so `greenlight <cause-fix> --auto` still grants an otherwise qualifying cause fix with a plausible mistyped parent such as `W-99` or `state: don`; existing tests cover those mistakes only on non-cause-fix titles. Replace brief:106 with: “When `parent` is present, `recordForm` requires a valid opus id and `reserved` requires it to name a contained readable record with a native non-ui kind and a valid lifecycle state; either function refuses an invalid id, absent or unreadable record, missing or unknown state, missing or invalid kind, or ui before either kind is considered. Backlog and halted are valid non-remainder states; `PARENT_STATES` may qualify as a remainder. W-403-b2 pins an otherwise qualifying cause fix for each invalid-parent form.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w403.test.ts
+
+## Earlier findings
+- ci/W-403-spec-2.log #1: closed — brief:105 makes `autoGrant`, `recordForm`, and `reserved` refuse malformed current-record fields before either kind; W-403-b1/b2 and r3-kills.out K27–K30 pin the cases.
+- ci/W-403-spec-2.log #2: closed — brief:106 and W-403-b2 now refuse an unreadable parent and a missing, invalid, or ui parent kind before both kinds; r3-kills.out K31–K32 and K16 guard this original defect.
+- ci/W-403-spec-2.log #3: closed — brief:107 makes `remainder` refuse every unreadable, unparsed, header-malformed, or invalid-outcome parent spec log; W-403-b1 and r3-kills.out K24–K26 pin the paths.
+- ci/W-403-spec-2.log #4: closed — brief:110 distinguishes confirmed absence from every Git failure, and W-403-b2 plus r3-kills.out K33–K37 pin both refusal and absence branches.
+
+## Verdict
+The four earlier blockers are closed, but the same input-boundary class remains blocking for absent or malformed parent state on the cause-fix path.
+VERDICT: FAIL
