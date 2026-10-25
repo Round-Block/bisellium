@@ -321,7 +321,7 @@ survives `git clone`, is the permanent home.
 npm run bisellium -- handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- emit '{"name":"workflow.custom","attrs":{"k":"v"}}' [--studio <dir>] [--now <iso>]
 npm run bisellium -- answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
-npm run bisellium -- greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- greenlight <opus> [--auto | --decline <reason>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
 ```
 
@@ -378,7 +378,15 @@ resolving one without it prints one stderr note — `resolved without --opus —
 nothing records what work this becomes` — exit code still 0. `greenlight <opus>` requires the opus be `state: backlog`
 (exit 2 otherwise) and either sets `state: greenlit` or, with `--decline
 <reason>`, leaves it in backlog and records `declined: <reason>` — either
-way it emits a `workflow.greenlight` (`granted`/`declined`) event. `budget
+way it emits a `workflow.greenlight` (`granted`/`declined`) event. `--auto` (W-403) greenlights,
+with no Patron, an opus whose scope is already decided: a D-061 §4 remainder (its `parent:` is greenlit or
+done and two of the parent's spec reviews by `spec_reviewer` failed with no passed review between) or a
+D-076 D cause fix (a class its title names is an S1 blocker's `[class:]` tag in the failed reviews of two or
+more other opera). It writes `greenlit_by: <the decision bisellium.yml#auto_greenlit_by names>` and
+`greenlit_basis`, and no Patron timeline line; it refuses anything else, and a kind ui opus, one over 3
+points or unsized, or one whose title names security, the sandbox, branch protection, architecture or a
+code-owned path, or a cause fix that carries a `parent:` (W-417 is to check that parent), writing
+nothing. `budget
 <period> --collegium <id> --tokens <n> [--hours <n>]` creates or merges
 `aerarium/<period>.yml`, writing only `stipendium_tokens`/`stipendium_hours`
 under that collegium (`period` must match `^\d{4}-W\d{2}$`); like every

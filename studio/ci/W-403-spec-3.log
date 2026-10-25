@@ -1,0 +1,32 @@
+# opus: W-403
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-25T12:12:25.241Z
+# tree: tree:19b578e61db999d2f61c5894d590fec5bcfd02e4
+# brief: briefs/W-403.md blob:3a2a3c381932fa64c344d3562f8b65ed4573618b
+# ticket: {"opus":"W-403","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"8c3dd494a8cbf78bf8c14252ed525e233f8f55e7","brief":"3a2a3c381932fa64c344d3562f8b65ed4573618b","at":"2026-10-25T12:12:17.179Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-403-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec round 2's finding 1 (brief:100) is closed: the opus record must be a mapping with declined absent (any form refuses), a native kind (isNativeOpusKind), a title titleProblem accepts and parent absent or a non-empty string; recordForm refuses every other form before reserved, remainder and causeFix, and reserved then refuses kind ui and a value outside 1 to 3; kind [ui], no kind, a title 42, a control character and parent [W-1] are pinned by W-403-b2 and declined: null by W-403-b1, killed by K27, K28, K29, K30 — check: brief:105, r3-kills.out
+2. advisory — spec round 2's finding 2 (brief:101) is closed, stricter: reserved screens the parent before both kinds, so a parent record that exists but cannot be read, a kind missing or not native ([ui]) and kind ui refuse a cause fix as well as a remainder; remainder keeps no record and a state outside PARENT_STATES as no split; pinned by W-403-b2, killed by K31, K32, K16 — check: brief:106, r3-kills.out
+3. advisory — spec round 2's finding 3 (brief:102) is closed, stricter: every parent spec log must read and parse with exactly one # phase: spec, # sella: and # outcome:, and the reviewer's outcome must be passed or failed, or remainder refuses the opus; a directory, an unparsed pass, a pass with two # outcome: headers and an outcome pased between two failures are pinned by W-403-b1, killed by K24, K25, K26 — check: brief:107, r3-kills.out
+4. advisory — spec round 2's finding 4 (brief:105) is closed: codeOwnedNames (git under LC_ALL=C) returns no names only for a confirmed non-repository (rev-parse exit 128 with git's not-a-git-repository message) or a HEAD whose full tree has no .github/CODEOWNERS; a bad config (the dubious-ownership branch), an unborn HEAD, a non-blob entry and a cat-file failure refuse, pinned by W-403-b2, killed by K33, K34, K36, K37, and the two confirmed-empty paths by K35 and the no-repository row — check: brief:110, r3-kills.out
+5. advisory — the Patron's 2026-10-25 answers to the five Defaults are restated as settled, with no design change — check: brief:192, brief:200
+6. advisory — on the real officina at master 97098273 the prototype still admits 18 of 416 records (W-264, W-379, W-402 as remainders; 15 cause fixes) and refuses W-396 and W-383; no real record meets a revision 3 refusal (every kind native, every title a string, every parent spec log read with singular headers) — check: r3-real-probe.out, r3-enumerate.out
+7. advisory — every promise was checked against every Input domain row: rows 2, 3, 4 and 7 now name each malformed form with its rejector and pin; the wrong-type and unreadable decision, an unreadable opus record (readState), an escape or symlink (readContainedRegularFile), a missing spec_reviewer, git not running and dubious ownership itself are stated limits — check: promise-ledger.md, brief:104, brief:113
+8. advisory — unchanged code the promises lean on is stated as a limit (D-076 E), now also isNativeOpusKind, titleProblem, NATIVE_OPUS_KINDS and git's LC_ALL=C messages; D-021's owner refusal allowing on its own git failure is a stated limit — check: brief:91, brief:92
+9. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master at "a remainder of a split parent: greenlit, naming the decision and the two failed reviews" (unknown flag --auto); b2 on master and on stage 1 at "a kind ui remainder: refused"; each row passes at its stage and b1 on stage 2; the series of four commits equals the prototype, sha256 cee0741812182208c7ae7013fd593572ef89ac414a6209a93e9172f0af09655c — check: r3-red-accept.out, r3-series.out, brief:11
+10. advisory — thirty-seven kills, each a one-hunk patch of one source file, fail their row at a pinned assertion with ERR_ASSERTION, one or more per pinned promise and row — check: r3-kills.out, promise-ledger.md
+11. advisory — one existing row flips and is named: containment.test.ts inventory B (lines 724, 728, 732) with master's pins fails three lines on the new source (auto-greenlight.ts:readRecord#1), pinned in behaviour 1's commit; the Codex test check names the same three flips and no unnamed flip; every must-stay-green row it lists passes on the prototype — check: r3-flip-containment.out, r3-flip-summary.out, r3-green-summary.out, r3-green-census.out, fixture-census.md
+12. advisory — the brief passes admission; the promise ledger validator finds no problem; lint, format and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: r3-admission.out, r3-ledger-probe.out, r3-lint-proto.out, r3-format-proto.out, r3-typecheck-proto.out, r3-check-studio-proto.out, r3-check-sample-proto.out
+13. advisory — no path in the diff is code-owned; D-114 and the auto_greenlit_by line are code-owned and the Patron's to land (D-114-draft.md) — check: brief:200, D-114-draft.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-403.md` (spec round 3), master 97098273; closes spec round 2's four S1 findings; two behaviours; one row flipped and named (containment.test.ts's inventory B).

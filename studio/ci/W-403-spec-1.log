@@ -1,0 +1,30 @@
+# opus: W-403
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-25T08:10:16.979Z
+# tree: tree:47a2c68d7f721579077d346d8f4e4a8ea349f8b3
+# brief: briefs/W-403.md blob:8101d338f4da10eb6bddc3df014ac9c31688426d
+# ticket: {"opus":"W-403","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"facd3fa1bb0dff88ca65069bcf479d4fe686c9e3","brief":"8101d338f4da10eb6bddc3df014ac9c31688426d","at":"2026-10-25T08:10:12.794Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-403-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the gap on master facd3fa1: greenlight takes every caller as the Patron (main.ts:135) and W-289's refusal is not built (writes.ts:791 refuses no caller), so no record tells a remainder or a cause fix from any other opus; this opus adds the only non-Patron greenlight, behind a Patron decision — check: brief:15, brief:39
+2. advisory — the design reads each kind from records other seats' verbs wrote: a remainder's parent is greenlit or done and its spec logs hold two failed reviews by spec_reviewer with no passed review between (next's split); a cause fix's title names a class the census finds as an S1 blocker tag in two or more other opera's failed reviews; free text only refuses — check: brief:22, brief:23, brief:25, enumerate.out
+3. advisory — on the real officina the prototype admits 18 of 415 records (W-264, W-379, W-402 as remainders; 15 cause fixes) and its screen refuses W-396 (.github) and W-383 (security) — check: real-probe.out
+4. advisory — every promise was checked against every Input domain row: the grant absent or not the Patron's refuses (row 1); declined, ui, an unsized or large value refuse (row 2); a parent with no record, not yet greenlit or ui refuses (row 3); a passed review resets and another seat's reviews do not count (row 4); one opus, advisories, S2 blockers, passed, unparsed and own logs do not count (row 5); the title screen matches whole tokens only (row 6); CODEOWNERS is read at HEAD, globs skipped (row 7); the flag pair refuses (row 8); no refusal writes (row 9); wrong types, an unreadable decision, an escape, a missing spec_reviewer and git failing are stated limits — check: promise-ledger.md, brief:99, brief:108
+5. advisory — unchanged code the promises lean on is stated as a limit (D-076 E): parseVerdictLog, CLASS_TAG, patronDecisionProblem, readContainedRegularFile, splitFront, the yaml package, editOpusFrontMatter, emitEvent, appendPatronTimeline, recordOwnerRefusal, readState, openStudio, parseFlags, safeItemPath, git, node and the verb's paths without --auto — check: brief:87
+6. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master at "a remainder of a split parent: greenlit, naming the decision and the two failed reviews" (unknown flag --auto); b2 on master and on stage 1 at "a kind ui remainder: refused"; each row passes at its stage and b1 on stage 2; the series of four commits equals the prototype — check: red-accept.out, red-b1-master.out, red-b2-master.out, red-b2-stage1.out, series.out
+7. advisory — twenty-three kills each fail their row at a pinned assertion, one or more per pinned promise and row — check: kills.out, promise-ledger.md
+8. advisory — one existing row flips and is named: containment.test.ts's inventory B with master's pins fails three lines on the new source (the unpinned guarded site auto-greenlight.ts:readRecord#1), pinned in behaviour 1's commit; no other row flips on the source with every other test file unedited — check: flip-containment.out, flip-summary.out, green-summary.out
+9. advisory — the Codex test check lists three flips, all containment.test.ts inventory B lines (724, 728, 732), each named (yes), Unnamed None, and thirty-one must-stay-green rows; each was run on the prototype and passes: containment, usage, cli, talk-boundary, writes, lifecycle W-033 b3, query, server and apps/server rows, docs, rules/tests W-178-b4 and W-392-b1 (green-summary.out), and verdict-citation, doc-cap W-288-b3, next W-179-b1, ci-scope and nav-source W-342-b1 (green-census.out) — check: fixture-census.md, green-summary.out, green-census.out
+10. advisory — the brief passes admission; the promise ledger validator finds no problem; lint, format and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: admission.out, ledger-probe.out, lint-proto.out, format-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+11. advisory — no path in the diff is code-owned; the decision D-114 and the auto_greenlit_by line are code-owned and the Patron's to land (D-114-draft.md), and the Defaults go to the Patron before branch — check: brief:177, D-114-draft.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-403.md` (spec round 1), master facd3fa1; two behaviours; one row flipped and named (containment.test.ts's inventory B).

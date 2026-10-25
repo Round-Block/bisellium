@@ -1,0 +1,59 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-403-b1\s --import tsx packages/cli/src/w403.test.ts
+# exit: 1
+# at: 2026-10-25T13:55:30.370Z
+# sella: architect
+# tree: tree:f9e79752bbc1a06b1ba33852107dc4591c735955
+# ticket: {"opus":"W-403","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-403/studio","head":"fc90250dfe791b8693b2de34071045c087824f48","brief":"fb260d16f409989e50b9067bd19a0d00cad085d8","at":"2026-10-25T13:55:30.332Z"}
+
+TAP version 13
+# Subtest: W-403-b1 behaviour 1: greenlight --auto greenlights a D-061 §4 remainder and a D-076 D cause fix under the Patron's decision, and refuses anything else, writing nothing
+not ok 1 - W-403-b1 behaviour 1: greenlight --auto greenlights a D-061 §4 remainder and a D-076 D cause fix under the Patron's decision, and refuses anything else, writing nothing
+  ---
+  duration_ms: 47.113486
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-403/packages/cli/src/w403.test.ts:14:3900'
+  failureType: 'testCodeFailure'
+  error: |-
+    a remainder of a split parent: greenlit, naming the decision and the two failed reviews
+    + actual - expected
+    
+      {
+    +   code: 2,
+    +   err: 'unknown flag "--auto"\n' +
+    +     'usage: bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]',
+    +   out: ''
+    -   code: 0,
+    -   err: '',
+    -   out: 'W-2: greenlit (auto, D-1: D-061 §4: the remainder of W-1 (done), whose spec reviews ci/W-1-spec-2.log and ci/W-1-spec-4.log failed)'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 0
+    out: 'W-2: greenlit (auto, D-1: D-061 §4: the remainder of W-1 (done), whose spec reviews ci/W-1-spec-2.log and ci/W-1-spec-4.log failed)'
+    err: ''
+  actual:
+    code: 2
+    out: ''
+    err: |-
+      unknown flag "--auto"
+      usage: bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-403/packages/cli/src/w403.test.ts:188:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 430.699821
