@@ -592,6 +592,11 @@ const PINNED_B: PinnedB[] = [
     why: "sella id read from bisellium.yml, unguarded at the join, and it writes acta/<date>-<sella>-daily.md. Mitigation, not a guard: path.id.unvalidated blocks a non-id sella at check time. Newly surfaced — see Intent",
   },
   {
+    key: "packages/commands/src/auto-greenlight.ts:readRecord#1",
+    disposition: "guarded",
+    why: "W-403: the opus id (the greenlight positional, already through safeItemPath, or a record's parent: value) goes only to readContainedRegularFile, which refuses an escape, a symlink and a non-regular file; it reads only",
+  },
+  {
     key: "packages/commands/src/builder-run.ts:attachReceipt#1",
     disposition: "guarded",
     why: "runCommand passes opus through seatInstance's ID_RE-equivalent guard before runBuilderCommand can attach the receipt",

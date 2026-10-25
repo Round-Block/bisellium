@@ -27,6 +27,7 @@ import { WF, instant, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readContainedRegularFile, readRecordAt } from "./opus-model.js";
+import { autoGrant } from "./auto-greenlight.js";
 
 export interface WriteOptions {
   /** Pinned clock, for reproducible timestamps/events in tests — same
@@ -786,18 +787,25 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
 // 4. greenlight (Patron write)
 // ---------------------------------------------------------------------------
 
-const GREENLIGHT_USAGE = "usage: bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]";
+// W-403: `--auto` greenlights, with no Patron, an opus whose scope is already decided (auto-greenlight.ts): it writes
+// greenlit_by and greenlit_basis and no Patron timeline line, and refuses anything else, writing nothing.
+const GREENLIGHT_USAGE = "usage: bisellium greenlight <opus> [--auto | --decline <reason>] [--studio <dir>] [--now <iso>]";
 
 export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteResult {
-  const parsed = parseFlags(args, { valued: ["--decline", "--studio", "--now"] });
+  const parsed = parseFlags(args, { valued: ["--decline", "--studio", "--now"], boolean: ["--auto"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${GREENLIGHT_USAGE}`);
     return { exitCode: 2 };
   }
-  const { values, positionals } = parsed;
+  const { values, flags, positionals } = parsed;
   const opusId = positionals[0];
   if (!opusId) {
     console.error(GREENLIGHT_USAGE);
+    return { exitCode: 2 };
+  }
+  const auto = flags.has("--auto");
+  if (auto && values.has("--decline")) {
+    console.error(`--auto and --decline cannot be combined\n${GREENLIGHT_USAGE}`);
     return { exitCode: 2 };
   }
 
@@ -844,6 +852,11 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
   }
 
   const decline = values.get("--decline");
+  const grant = auto ? autoGrant(root, manifest, opusId) : undefined;
+  if (grant !== undefined && "refusal" in grant) {
+    console.error(grant.refusal);
+    return { exitCode: 2 };
+  }
 
   // Same discipline as answer: the opus front-matter edit, the
   // workflow.greenlight event and the Patron timeline line must land
@@ -860,6 +873,10 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
     editOpusFrontMatter(opusPath, (doc) => {
       if (decline !== undefined) doc.setIn(["declined"], decline);
       else doc.setIn(["state"], "greenlit");
+      if (grant !== undefined) {
+        doc.setIn(["greenlit_by"], grant.decision);
+        doc.setIn(["greenlit_basis"], grant.basis);
+      }
       return undefined;
     });
 
@@ -867,13 +884,15 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
     if (decline !== undefined) attrs["reason"] = decline;
     emitEvent(root, manifest, "workflow.greenlight", now, attrs);
 
-    appendPatronTimeline(root, {
-      at: now.toISOString(),
-      action: "greenlight",
-      opus: opusId,
-      result: decline !== undefined ? "declined" : "granted",
-      ...(decline !== undefined ? { reason: decline } : {}),
-    });
+    // W-403: an auto greenlight is not the Patron's write, so it leaves no Patron timeline line
+    if (grant === undefined)
+      appendPatronTimeline(root, {
+        at: now.toISOString(),
+        action: "greenlight",
+        opus: opusId,
+        result: decline !== undefined ? "declined" : "granted",
+        ...(decline !== undefined ? { reason: decline } : {}),
+      });
   } catch (e) {
     try {
       writeFileSync(opusPath, opusRawBefore);
@@ -884,7 +903,7 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
     return { exitCode: 2 };
   }
 
-  console.log(decline !== undefined ? `${opusId}: declined (${decline})` : `${opusId}: greenlit`);
+  console.log(decline !== undefined ? `${opusId}: declined (${decline})` : grant !== undefined ? `${opusId}: greenlit (auto, ${grant.decision}: ${grant.basis})` : `${opusId}: greenlit`);
   return { exitCode: 0 };
 }
 

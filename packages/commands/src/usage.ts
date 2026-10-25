@@ -28,7 +28,7 @@ export const USAGE =
   "       bisellium emit <json> [--studio <dir>] [--now <iso>]\n" +
   "       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]\n" +
   "       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]\n" +
-  "       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium greenlight <opus> [--auto | --decline <reason>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]\n" +
