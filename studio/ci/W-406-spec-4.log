@@ -1,0 +1,27 @@
+# opus: W-406
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a16ec8-ab1e-7981-a665-a40d9a3e64f7
+# outcome: passed
+# at: 2026-10-25T07:42:48.166Z
+# tree: tree:9c9871ad4faf2e91f4f908500f2a2a1a1a1a4723
+# brief: briefs/W-406.md blob:bcffabcaf1fcb4aa3c88dceb48dc9292da3f1f17
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":".worktrees/W-406/studio","head":"a6592aa76a5dd0a6ff2df7be2b353b9f94e76c92","brief":"bcffabcaf1fcb4aa3c88dceb48dc9292da3f1f17","at":"2026-10-25T07:42:43.861Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-406-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the strengthened b1 policy and served rows are genuine assertion reds on unchanged 018d39dc source: policy exits 1 under the replay classifier, served exits 1 at the absent cue node, and neither failure is a timeout, missing file or missing module — check: cue-red-summary.out, cue-red-policy-accept.out, cue-red-policy.out, cue-red-served.out, cue-reds.sh
+2. advisory — the prototype paints one non-interactive 8px rule/ink track and proportional thumb, mirrors the original container through scroll and resize observation, samples distinct track/thumb pixels before interaction at 1280 and 390, and reaches both terminal bounds — check: apps/web/src/components/w025.css:1187, apps/web/src/screens/Board.tsx:93, apps/web/src/screens/BoardView.tsx:149, apps/web/tests-serve/w406.spec.ts:21, cue-gate-served-w406.out
+3. advisory — brief:54 has a one-hunk CSS mutation whose selected b1 TAP fails at the pinned 8px-track assertion — check: cue-kill-54.patch, cue-kill-54.out, cue-kill-54-accept.out, promise-ledger.md
+4. advisory — brief:77 and brief:78 each have an independent one-hunk source mutation whose selected b1 TAP fails at its pinned source contract: hidden decorative semantics for row 77 and proportional scroll synchronization for row 78; the admission parser resolves all three kill outputs to the brief’s exact b1 pin — check: cue-kill-77.patch, cue-kill-77.out, cue-kill-77-accept.out, cue-kill-78.patch, cue-kill-78.out, cue-kill-78-accept.out, cue-kill-pin-audit.out, promise-ledger.md
+5. advisory — lint, format, web typecheck, W-406/W-360/W-350/W-341 policy files, board helper checks, all three W-406 served rows, four W-341 Board state cells, W-087’s time row, W-360 readiness and sample-studio check pass; the detached studio observation retains its two unrelated record/identity blockers without a record write — check: cue-gates-summary.out, cue-gate-served-w406.out, cue-gate-predecessor-states.out, cue-gate-predecessor-board.out, cue-gate-predecessor-readiness.out, cue-gate-studio-check.out
+6. advisory — the builder patches apply cleanly to 018d39dc and split tests from source: `cue-tests.patch` sha256 `53f4eca51df78b3afa4317e14fcf55b9d8fa8085b2123c478e823e90a87960f2`, `cue-src.patch` sha256 `49d703119ce724c01f5d320ce72c7c2fcfe3cf93a7734150db1ff391ce43ca85` — check: cue-patches.sh, cue-patches.sha256
+7. advisory — the brief now uses `offsetWidth` for the terminal range so the stable native gutter is not counted twice; its line numbering is unchanged and admission returns zero problems — check: brief:44, admission-r4.out
+
+## Verdict
+
+passed — W-406 capture revision 4 is prototyped and re-signed by the UI architect: the painted-cue promise and both affected input-domain rows now have file-and-line proof, assertion reds, independent one-hunk kills and green two-width served evidence; the builder receives clean test/source patches, and no lifecycle record, screenshot baseline or capture configuration is written.
