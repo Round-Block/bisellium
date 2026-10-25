@@ -1,0 +1,27 @@
+# opus: W-406
+# phase: spec
+# round: 9
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a172ba-a4de-79e3-823c-cc9d5dd73e3b
+# session_reason: each ui-lead input round runs in a fresh read-only Codex session (rounds 1, 3 and 6 did too); round 6's session 01a17206-8b57-7562-863d-be3a17ddcb8f judged the previous revision and is not resumed for the Patron's option-3 revision
+# outcome: passed
+# at: 2026-10-25T11:06:36.425Z
+# tree: tree:dd3650b2a3989f1925147ae550e20d302c6a2495
+# dispatch_prompt: ci/W-406-ui-prompt-9.md
+# design_digest: sha256:4448f5d917beb03f3a704cc22dc4da5de8bc0b0865ba1d33769a9e225feececd
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":9,"actor":"ui-lead","studio":".worktrees/W-406/studio","head":"cc18ca13a081e7fc8d8fdc249d4c3f91540501a5","brief":"47253a32b4eb0e89b3169bcf6b8f58f8d5daf8de","at":"2026-10-25T11:06:28.953Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+At 1280 and 390, the specified neutral track and proportional thumb below the columns read as horizontal scrolling, spatially distinct from gate marks, amber rules and the colophon.
+The prototype’s pointer cursor on the track and grab/grabbing cursors on the thumb communicate operation without introducing a status colour.
+Hiding applies only to Board columns, preserving Officina, Inbox, Seats and the phone strip; retaining card keyboard navigation and strip buttons makes the hidden, unfocusable pointer proxy acceptable for this console.
+No required information is evidently lost, although other widths and forced colours remain unverified, and the supplied screenshots predate the cue and drag.
+The brief implements the Patron’s chosen option within the existing tokens and leaves the remaining presentation defaults explicitly for the Patron; sidebar collapse and zoom reflow remain W-415.
+Round 8’s three advisories remain build guidance.
+Verdict: passed

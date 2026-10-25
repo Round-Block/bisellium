@@ -1,0 +1,22 @@
+# opus: W-406
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a171c0-26a6-7ee0-beba-2ce8e975ccfa
+# outcome: passed
+# at: 2026-10-25T11:50:24.111Z
+# tree: tree:b5cef85ef1c281a7903f8bd3d7960badcdc3cb7f
+# ui_input: ci/W-406-spec-9.log
+# design_digest: sha256:4448f5d917beb03f3a704cc22dc4da5de8bc0b0865ba1d33769a9e225feececd
+# ticket: {"opus":"W-406","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-406/studio","head":"f40af8e8f4c1a854a9ae4c06d93086edafb96d0a","brief":"47253a32b4eb0e89b3169bcf6b8f58f8d5daf8de","at":"2026-10-25T11:50:19.301Z"}
+
+## Findings
+1. advisory — studio/briefs/W-406.md:56 [severity: S2] At 390px the shipped columns retain mandatory scroll snap, while `apps/web/tests-serve/w406.spec.ts:80` disables snap before testing exact proportional drag and track-press positions; the promise therefore exceeds its evidence, although terminal reach remains correct. — check: none: add a served 390px case that keeps snap enabled and asserts snap-position settlement plus terminal reach [class: spec×promise-unattainable-under-accepted-domain]
+
+## UI input disposition
+The authoritative ui-lead input approved the neutral painted track, proportional thumb, pointer affordances, and accessibility approach while noting its earlier captures predated the revision. The eight current images now show one clear horizontal cue at both Board widths, with coherent hierarchy and no adjacent native thumb; Inbox and Seats remain stable across widths, and Officina’s marker clears the final weekday letter. Static captures cannot demonstrate dragging, track presses, synchronization, or announcements, but the certified served evidence covers those contracts.
+
+## Verdict
+The source delta is confined to the ten owned paths, the strengthened assertion red is valid, both later code/test advisories are adopted, and all current gates pass. Only the known phone-snap wording advisory remains.
+VERDICT: PASS

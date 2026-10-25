@@ -87,6 +87,103 @@ export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     return () => query.removeEventListener("change", update);
   }, []);
 
+  // The columns remain the only scroll state. The painted cue mirrors that
+  // state and proxies pointer input back into columns.scrollLeft so browsers
+  // never present adjacent native and painted thumbs.
+  useLayoutEffect(() => {
+    const columns = document.querySelector<HTMLElement>(".board__columns");
+    const cue = document.querySelector<HTMLElement>(".board__scroll-cue");
+    const thumb = cue?.querySelector<HTMLElement>(".board__scroll-cue-thumb");
+    if (!columns || !cue || !thumb) return;
+
+    let drag: { pointerId: number; startX: number; startScrollLeft: number } | undefined;
+
+    const cueRange = (): { availableTrack: number; maxScroll: number; thumbWidth: number } | undefined => {
+      const trackWidth = cue.clientWidth;
+      const maxScroll = columns.scrollWidth - columns.clientWidth;
+      const hasOverflow = Number.isFinite(trackWidth)
+        && Number.isFinite(columns.scrollWidth)
+        && Number.isFinite(columns.clientWidth)
+        && Number.isFinite(columns.scrollLeft)
+        && trackWidth > 0
+        && columns.scrollWidth > 0
+        && maxScroll > 0;
+      if (!hasOverflow) return undefined;
+
+      const thumbWidth = Math.min(trackWidth, Math.max(0, trackWidth * columns.clientWidth / columns.scrollWidth));
+      const availableTrack = Math.max(0, trackWidth - thumbWidth);
+      if (!Number.isFinite(availableTrack) || availableTrack <= 0) return undefined;
+      return { availableTrack, maxScroll, thumbWidth };
+    };
+
+    const updateScrollCue = (): void => {
+      cue.hidden = false;
+      const range = cueRange();
+      cue.hidden = range === undefined;
+      if (!range) return;
+
+      const { availableTrack, maxScroll, thumbWidth } = range;
+      const scrollLeft = Math.min(maxScroll, Math.max(0, columns.scrollLeft));
+      const thumbOffset = Math.min(availableTrack, Math.max(0, availableTrack * scrollLeft / maxScroll));
+      cue.style.setProperty("--board-scroll-thumb-width", `${thumbWidth}px`);
+      cue.style.setProperty("--board-scroll-thumb-offset", `${thumbOffset}px`);
+    };
+
+    const onThumbPointerDown = (event: PointerEvent): void => {
+      if (!event.isPrimary || event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      drag = { pointerId: event.pointerId, startX: event.clientX, startScrollLeft: columns.scrollLeft };
+      thumb.setPointerCapture(event.pointerId);
+    };
+
+    const onThumbPointerMove = (event: PointerEvent): void => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const range = cueRange();
+      if (!range) return;
+      const { availableTrack, maxScroll } = range;
+      const deltaX = event.clientX - drag.startX;
+      columns.scrollLeft = Math.min(maxScroll, Math.max(0, drag.startScrollLeft + deltaX * maxScroll / availableTrack));
+    };
+
+    const finishThumbDrag = (event: PointerEvent): void => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      if (thumb.hasPointerCapture(event.pointerId)) thumb.releasePointerCapture(event.pointerId);
+      drag = undefined;
+    };
+
+    const onTrackPointerDown = (event: PointerEvent): void => {
+      if (event.target === thumb || !event.isPrimary || event.button !== 0) return;
+      const range = cueRange();
+      if (!range) return;
+      event.preventDefault();
+      const { availableTrack, maxScroll, thumbWidth } = range;
+      const track = cue.getBoundingClientRect();
+      const thumbOffset = Math.min(availableTrack, Math.max(0, event.clientX - track.left - thumbWidth / 2));
+      columns.scrollLeft = Math.min(maxScroll, Math.max(0, thumbOffset * maxScroll / availableTrack));
+    };
+
+    updateScrollCue();
+    columns.addEventListener("scroll", updateScrollCue, { passive: true });
+    cue.addEventListener("pointerdown", onTrackPointerDown);
+    thumb.addEventListener("pointerdown", onThumbPointerDown);
+    thumb.addEventListener("pointermove", onThumbPointerMove);
+    thumb.addEventListener("pointerup", finishThumbDrag);
+    thumb.addEventListener("pointercancel", finishThumbDrag);
+    const resizeObserver = new ResizeObserver(updateScrollCue);
+    resizeObserver.observe(columns);
+    resizeObserver.observe(cue);
+    return () => {
+      columns.removeEventListener("scroll", updateScrollCue);
+      cue.removeEventListener("pointerdown", onTrackPointerDown);
+      thumb.removeEventListener("pointerdown", onThumbPointerDown);
+      thumb.removeEventListener("pointermove", onThumbPointerMove);
+      thumb.removeEventListener("pointerup", finishThumbDrag);
+      thumb.removeEventListener("pointercancel", finishThumbDrag);
+      resizeObserver.disconnect();
+    };
+  }, [model.columns.length]);
+
   // Restore only after React has committed the closed layout. Scheduling this
   // from the close event can race that commit, leaving the narrow drawer-open
   // grid to clamp or replace the saved offset. preventScroll keeps focus

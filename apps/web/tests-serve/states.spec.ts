@@ -113,14 +113,19 @@ const DRIVERS: Record<string, Driver> = {
   },
   "board:stale": async (page) => {
     await signIn(page, "board");
-    await expect(page.locator(".board__liveness")).toContainText("live");
+    await expect(page.locator('.shell__status[data-state="live"]')).toHaveText("Connected: the board updates live.");
+    const liveness = page.locator(".board__header .board__liveness");
+    await expect(liveness).toHaveText(/^live · updated \d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
+    const refreshedAt = (await liveness.textContent())!.replace(/^live · updated /, "");
     await served!.close();
     served = undefined;
-    await expect(page.locator(".board__liveness")).toHaveText("disconnected");
+    await expect(page.locator('.shell__status[data-state="stale"]')).toHaveText("Disconnected: the board may be out of date.");
+    await expect(liveness).toHaveText(`stale · last updated ${refreshedAt}`);
   },
   "board:live": async (page) => {
     await signIn(page, "board");
-    await expect(page.locator(".board__liveness")).toContainText("live · updated");
+    await expect(page.locator('.shell__status[data-state="live"]')).toHaveText("Connected: the board updates live.");
+    await expect(page.locator(".board__header .board__liveness")).toHaveText(/^live · updated \d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
     await expect(page.locator(".board__notice")).toHaveCount(0);
   },
   "seats:loading": async (page) => {

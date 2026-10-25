@@ -241,6 +241,7 @@
 .fasti-strip__today-rule {
   position: absolute;
   top: 0;
+  right: 0;
   bottom: 0;
   width: 1px;
   background: var(--ink);
@@ -1088,7 +1089,9 @@
 .board__header {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--sp-4);
+  row-gap: var(--sp-2);
   padding: var(--sp-4) var(--sp-6) 0;
   flex-shrink: 0;
 }
@@ -1109,7 +1112,9 @@
 .board__project-select-wrap {
   display: flex;
   align-items: center;
+  flex: 1 1 200px;
   gap: var(--sp-2);
+  min-width: 0;
 }
 
 .board__project-select {
@@ -1128,8 +1133,19 @@
 }
 
 .board__project-select-reason {
+  min-width: 0;
   font-size: 12px;
   color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+.board__liveness {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
 }
 
 .board__strip {
@@ -1144,6 +1160,7 @@
   padding: var(--sp-4) var(--sp-6);
   overflow-x: auto;
   overflow-y: hidden;
+  scrollbar-width: none;
   min-height: 0;
   min-width: 0;
   /* The column count/width changes as real data replaces the pre-data
@@ -1152,6 +1169,34 @@
    * racing Board.tsx's own programmatic scrollIntoView and landing
    * somewhere neither specified nor deterministic (measured). */
   overflow-anchor: none;
+}
+
+.board__columns::-webkit-scrollbar {
+  display: none;
+}
+
+.board__scroll-cue {
+  height: 8px;
+  flex-shrink: 0;
+  margin: 0 var(--sp-6);
+  overflow: hidden;
+  background: var(--rule);
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+}
+
+.board__scroll-cue-thumb {
+  width: var(--board-scroll-thumb-width);
+  height: 100%;
+  background: var(--ink-3);
+  border-radius: 0;
+  transform: translateX(var(--board-scroll-thumb-offset));
+  cursor: grab;
+}
+
+.board__scroll-cue-thumb:active {
+  cursor: grabbing;
 }
 
 .board__column {
@@ -1269,10 +1314,7 @@
   padding: 2px 4px;
 }
 
-.board__liveness {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-3);
+.board > footer {
   padding: 0 var(--sp-6);
 }
 
@@ -1447,6 +1489,16 @@
 /* Phone: <=599px — one full-width column at a time (scroll-snap), the
    column-name strip, no pinning, a full-width drawer. */
 @media (max-width: 599px) {
+  .board__header {
+    flex-wrap: wrap;
+    row-gap: var(--sp-2);
+  }
+
+  .board__liveness {
+    flex: 1 0 100%;
+    margin-left: 0;
+  }
+
   .board__strip {
     display: flex;
     gap: var(--sp-2);
@@ -1469,6 +1521,10 @@
   .board__columns {
     scroll-snap-type: x mandatory;
     padding: var(--sp-2) 0;
+  }
+
+  .board__scroll-cue {
+    margin: 0 var(--sp-4);
   }
 
   .board__column {

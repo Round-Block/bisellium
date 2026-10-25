@@ -1,0 +1,24 @@
+# opus: W-406
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a17206-8b57-7562-863d-be3a17ddcb8f
+# outcome: passed
+# at: 2026-10-25T07:47:39.180Z
+# tree: tree:9c9871ad4faf2e91f4f908500f2a2a1a1a1a4723
+# dispatch_prompt: ci/W-406-ui-prompt-6.md
+# design_digest: sha256:30c29315edecb68289ac52589475a8557f77e73726961183251277e596c2e01e
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":".worktrees/W-406/studio","head":"8433e64a3639dedbb30310f173f35291ec46595b","brief":"bcffabcaf1fcb4aa3c88dceb48dc9292da3f1f17","at":"2026-10-25T07:46:02.744Z"}
+
+## Findings
+
+1. advisory — brief:42 — Retaining the styled native scrollbar alongside the always-painted cue produces two adjacent neutral thumbs wherever native scrollbars paint; only one accepts dragging. The supplied screenshots predate the cue and cannot demonstrate this coexistence. — replace with: Keep the drawn cue and native scrolling; inspect both widths with native scrollbars visible as well as hidden, checking that the adjacent indicators remain distinguishable and the colophon stays legible. — check: apps/web/src/components/w025.css; apps/web/tests-serve/w406.spec.ts
+
+## Recommendation
+
+The specified square 8px track and proportional neutral thumb read as horizontal-scroll information at 1280 and 390: placement below the columns and above the colophon separates them from gate marks and amber rules.
+The Board-scoped patch introduces no evident regression to Officina, Inbox or Seats; native-scrollbar coexistence merits the visual check above.
+The brief implements the Patron’s chosen cue within DIRECTION’s tokens without imposing a new reserved layout, colour or default; sidebar collapse and zoom reflow remain W-415.
+Round 5’s synchronization advisory remains build guidance.
+Verdict: passed

@@ -1,0 +1,29 @@
+# opus: W-406
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a171c0-26a6-7ee0-beba-2ce8e975ccfa
+# outcome: passed
+# at: 2026-10-25T06:36:13.180Z
+# tree: tree:9c9871ad4faf2e91f4f908500f2a2a1a1a1a4723
+# ui_input: ci/W-406-spec-3.log
+# design_digest: sha256:8b7c8153e9cbc3cb5f8d3b09ef445324e6826822f339926e70dde3dd8c7c7b0a
+# ticket: {"opus":"W-406","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-406/studio","head":"f9c91093f1978d79253a6f87ecd82bf370e7e0e8","brief":"bd61d4ac7ee9a1a71af889bb8e8dd0972d7330be","at":"2026-10-25T06:36:11.016Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-406-review/packets/r1/W-406.diff:1 [severity: S2] The declared source-diff artifact is absent from the round-1 packet; only `facts.txt` and `ui.txt` exist, leaving required evidence for brief:106’s owned-path claim missing even though the delta can be recomputed. — check: none: refuse review dispatch unless every declared packet artifact exists [class: review×evidence-backfilled-or-absent]
+2. advisory — studio/ci/shots/W-406/board-1280.png:1 [severity: S4] Neither Board capture visibly paints the promised scrollbar cue, although the brief excludes overlay and operating-system scrollbar paint and the served row proves computed styling and terminal reachability. A capture after scrollbar interaction would pin this excluded rendering form. — check: apps/web/tests-serve/screenshots.spec.ts [class: mechanism×unpinned-by-test]
+
+## Rebuttal
+1. scripts/review-packet.mjs:370-378 — the packet script writes no <ID>.diff in round 1 by design (it emits delta.diff only from round 2); studio/prompts/build-review.md:12 declares one, a prompt/tool mismatch that applies to every ui round 1, not evidence this opus lost. The opus change is the branch itself, recomputable and unchanged: `git -C /home/edckt/agents/bisellium/.worktrees/W-406 diff $(git merge-base master HEAD) HEAD -- . ':(exclude)studio'`, written out now at /home/edckt/.bisellium-evidence/W-406-review/r1/W-406.source.diff for your reading (9 paths, all in brief:23-33 Files owned). Your own verdict says the delta "can be recomputed" and that source ownership aligns. A blocker must be S1, a security gap, or missing or false evidence of the opus's promises (D-084, D-076 A); this finding is tagged S2 and names a packet artifact, not a promise. Re-read the cited lines and the diff, then rule.
+
+## Ruling
+1. withdrawn — `scripts/review-packet.mjs:357-378` intentionally omits a first-round build delta and only names later deltas `delta.diff`; the absent `<ID>.diff` results from the prompt/tool mismatch at `studio/prompts/build-review.md:12`, not lost opus evidence. The recomputed branch diff contains exactly the nine paths declared by brief:23-33.
+
+## UI input disposition
+The authoritative ui-lead objection is addressed by unconditional header wrapping and a passing 1280px open-drawer nonintersection check. Across all eight images, desktop and phone navigation remain legible, Board liveness has moved into the header with one inset colophon, and the Officina rule clears the final weekday letter; Inbox and Seats retain coherent responsive hierarchy. The Board images’ invisible scrollbar supports the advisory but does not override the brief’s explicit paint limitation.
+
+## Verdict
+With the blocking finding withdrawn, the three behaviors, declared flips, source ownership, red assertions, and certified gates align with the brief; the remaining screenshot concern is advisory only.
+VERDICT: PASS

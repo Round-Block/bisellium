@@ -254,10 +254,9 @@ export function formatBoardTimestamp(value: string, timeZone?: string): string {
  *  `now` is accepted for interface symmetry with a future relative-time
  *  upgrade; `lastRefreshAt`, never `now`, supplies the localized display. */
 export function liveLabel(input: { connected: boolean; lastRefreshAt?: string; now: Date }): string {
-  if (!input.connected) return "disconnected";
-  if (input.lastRefreshAt === undefined) return "connected";
-  if (Number.isNaN(new Date(input.lastRefreshAt).getTime())) return "connected";
-  return `live · updated ${formatBoardTimestamp(input.lastRefreshAt)}`;
+  const refreshed = input.lastRefreshAt !== undefined && !Number.isNaN(new Date(input.lastRefreshAt).getTime()) ? formatBoardTimestamp(input.lastRefreshAt) : undefined;
+  if (!input.connected) return refreshed === undefined ? "stale · not yet refreshed" : `stale · last updated ${refreshed}`;
+  return refreshed === undefined ? "connected" : `live · updated ${refreshed}`;
 }
 
 export interface DrawerDetail {

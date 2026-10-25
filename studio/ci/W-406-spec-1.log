@@ -1,0 +1,27 @@
+# opus: W-406
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a16ec8-ab1e-7981-a665-a40d9a3e64f7
+# outcome: passed
+# at: 2026-10-24T17:25:46.059Z
+# tree: tree:7f189a652480b89f31950808c5f91cf44415c3de
+# brief: briefs/W-406.md blob:bd61d4ac7ee9a1a71af889bb8e8dd0972d7330be
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"33dbdc03c54069edd381c54d0b135d608a9d87b0","brief":"bd61d4ac7ee9a1a71af889bb8e8dd0972d7330be","at":"2026-10-24T17:25:40.152Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-406-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Astra’s blocking information-preservation finding is adopted: visible live/stale state and the last successful refresh now appear once in the existing Board header, survive an unrelated drawer render and disconnect, while exact shell announcements remain distinct — check: brief:17, brief:43, brief:53, apps/web/src/screens/BoardView.tsx:133, apps/web/src/lib/board.ts:258, apps/web/tests-serve/w406.spec.ts:63, predecessor-states-r2.out
+2. advisory — DIRECTION’s single-footer ruling is met without deleting operating information: Board retains one colophon, its sole 14px text line aligns to the title’s 24px gutter, and the wrapped phone header has no horizontal overflow — check: brief:45, brief:51, apps/web/src/components/w025.css:1296, apps/web/tests-serve/w406.spec.ts:63, browser-proto-W-406.out
+3. advisory — Astra’s scrollbar advisory is adopted by removing the conflicting standardized colour property while retaining 288px columns and the compatible 8px square surface/ink WebKit family; the row reads accepted pseudo-styles before scrolling and proves terminal reachability, with overlay raster paint explicitly limited — check: brief:15, brief:41, brief:49, brief:62, apps/web/src/components/w025.css:1149, apps/web/tests-serve/w406.spec.ts:21
+4. advisory — Officina’s marker repair remains a trailing-edge, full-height 1px ink rule whose rendered box clears the weekday glyph at both ruled widths — check: brief:19, brief:47, brief:55, apps/web/src/components/w025.css:241, apps/web/tests-serve/w406.spec.ts:96
+5. advisory — all three ordered Node reds are accepted assertion failures, each served red fails at its intended expectation, earlier behaviors stay green at later red stages, and all three prototype served rows pass — check: brief:39, brief:84, brief:88, brief:92, reds-host-final.out, host-b1-red-b1.out, host-b2-red-b2.out, host-b3-red-b3.out
+6. advisory — the complete flipped-row census includes three new policy rows, three new served rows, the disconnected-label check, four W-341 Board cells, W-087’s four-time row and W-350’s later baseline flip; W-360 Board readiness and focused predecessor rows remain green without a screenshot-machinery edit — check: brief:98, brief:99, brief:104, predecessor-states-r2.out, predecessor-board-r2.out, predecessor-screenshots-final.out
+7. advisory — the revised six-commit non-numbered prototype at sha256 `47107151cab791a71c4826a24e985f1bc3e9dec6daf0663d31c99a3a5ab298a6` applies after 51f97139 with an identical tree; brief admission, focused policy, typecheck, lint and format checks pass, the scratch studio has zero blockers, and no Patron-merged code-owned path is touched — check: brief:11, brief:105, brief:106, mbox-check-final.out, admission-final-2.out, gates-proto-final.out, studio-check-r2.json
+
+## Verdict
+
+passed — revised signature prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-406.md`; both ui-lead findings are adopted, the three layout repairs retain ordered assertion reds and two-width served evidence, the scrollbar raster boundary is stated, Claude Opus spec review follows, and no record or screenshot baseline is written.
