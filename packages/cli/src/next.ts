@@ -38,6 +38,7 @@ import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } fro
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
+import { milestonesLine } from "./exits.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -2868,6 +2869,7 @@ function handoverLine(t: unknown): { line: string } | { error: string } {
  * `opera/` whose state is open, each derived as `next <opus>` derives it before the dispatch gate (no budget or
  * handover hold, no step health). Reads only: no ticket, marker or step log. An unreadable record, an unknown opus, a
  * malformed traditio, a held derivation or a throw makes the run exit 1, after every line is printed.
+ * W-404: then, when the officina has a milestones.yml, the milestones line (exits.ts), before `open:`; a held one exits 1.
  */
 function runAll(repo: string, studioAbs: string): { exitCode: number } {
   let names: string[];
@@ -2913,6 +2915,11 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
       failed = true;
       lines.push(`next: ${id} failed · why: ${one((e as Error).message)}`);
     }
+  }
+  const milestones = milestonesLine(studioAbs, repo, new Date());
+  if (milestones !== undefined) {
+    lines.push(milestones.line);
+    if (milestones.held) failed = true;
   }
   lines.push(`open: ${open}`);
   console.log(lines.map((l) => clean(l, 1000)).join("\n"));

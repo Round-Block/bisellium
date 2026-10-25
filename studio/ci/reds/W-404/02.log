@@ -1,0 +1,50 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-404-b2\s --import tsx packages/cli/src/milestones.test.ts
+# exit: 1
+# at: 2026-10-24T17:31:48.630Z
+# sella: architect
+# tree: tree:2b7b7b30bf47698770a1733a7332ee291aaf2398
+# ticket: {"opus":"W-404","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-404/studio","head":"c799c08949285e86e289e47ce961c0727152e62b","brief":"fe170ff83d3b270e796e6695c52c3f0cb679a8be","at":"2026-10-24T17:31:48.596Z"}
+
+TAP version 13
+# Subtest: W-404-b2 behaviour 2: next --all prints the milestones report as one line before the open count
+not ok 1 - W-404-b2 behaviour 2: next --all prints the milestones report as one line before the open count
+  ---
+  duration_ms: 294.306615
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-404/packages/cli/src/milestones.test.ts:41:765'
+  failureType: 'testCodeFailure'
+  error: |-
+    the milestones line, then the open count
+    + actual - expected
+    
+    + 'open: 0\n'
+    - 'milestones: 1 of 4 exits met, 30% by weight · M1 open: opus W-1; path W-1, W-2, W-3 · M2 met: rule acta.kind; path none · M3 open: needs; path none · M4 open: no exit; path none\n' +
+    -   'open: 0\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    milestones: 1 of 4 exits met, 30% by weight · M1 open: opus W-1; path W-1, W-2, W-3 · M2 met: rule acta.kind; path none · M3 open: needs; path none · M4 open: no exit; path none
+    open: 0
+    
+  actual: |-
+    open: 0
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-404/packages/cli/src/milestones.test.ts:352:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 302.48487

@@ -22,7 +22,9 @@ npm run bisellium -- next --all [--studio <dir>] [--repo <dir>]
 `building`, `verifying` or `review`, in id order (numeric within the id), one line `next: <opus> <step> <status> · actor:
 <actor> · why: <why> · traditio: <sella> at <at>: <next>[; blocked on <what>]` (or `traditio: none`), the step derived
 as `next <opus>` derives it before the dispatch gate (so no budget or handover hold and no step health) and the traditio
-read from the record that gate reads, then `open: <n>`. It writes no ticket, marker or step log. A record that cannot be read or carries no
+read from the record that gate reads, then (W-404, when the officina has a `milestones.yml`) one line `milestones: <k> of
+<n> exits met, <p>% by weight · <id> met|open: <exit>; path <ids>` per milestone, as `bisellium milestones` reports it
+(a malformed `milestones.yml` or an unreadable opus record prints `milestones: held · why: …` and exits 1), then `open: <n>`. It writes no ticket, marker or step log. A record that cannot be read or carries no
 lifecycle state prints `next: <opus> unreadable`; a record in neither `master` nor `opus/<opus>` (which `next <opus>`
 refuses as unknown), a present traditio without string `sella`, `stage`, `next` and `blocked_on` and an ISO `at`, and a
 derivation that throws each print `next: <opus> failed`; a held derivation prints its line as is. Any of these exits 1
