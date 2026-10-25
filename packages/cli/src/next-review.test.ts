@@ -2027,3 +2027,27 @@ test("W-381-f1 fix 1: one title-token matcher reads `high` and the class, each w
   title("a combining mark after high", "tests×a stops recurring (high\u0301)", false);
   title("a combining mark before high", "tests×a stops recurring (\u0301high)", false);
 });
+
+test("W-416-b2 behaviour 2: a passed ui review recorded before the current ui-lead input orders a new build review, never the pr", { timeout: 1_800_000 }, () => {
+  const w = uiReviewWorld("w416-b2");
+  codexSays(w, { session: "s-416-1", reply: UI_PASS_REPLY });
+  const o = performReview(w);
+  assert.equal(o.kv.get("review"), "round 1 passed", ran("fixture: the UI round passes", o));
+  handoffAt(w, "wt", new Date(Date.now() + 60_000).toISOString());
+  const passed = next(w, [OPUS, ...BUDGET]);
+  assert.notEqual(passed.first, `next: ${OPUS} review named`, ran("fixture: the current passed review orders no review", passed));
+  // the ui-lead input re-recorded at round 3, one minute after the review, on the same brief (so the same digest)
+  const reviewAt = Date.parse(logKey(readFileSync(reviewLog(w, 1), "utf8"), "at") ?? "");
+  const input = readFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-2.log`), "utf8")
+    .replace(/^# round: 2$/m, "# round: 3")
+    .replace(/^# at: .*$/m, `# at: ${new Date(reviewAt + 60_000).toISOString()}`);
+  put(w.wtStudio, `ci/${OPUS}-spec-3.log`, input);
+  commit(w.wt, `studio(${OPUS}): ui-lead input re-recorded`);
+  const due = next(w, [OPUS, ...BUDGET]);
+  reviewNamed(due, 2, "the superseded review orders round 2");
+  assert.equal(
+    due.kv.get("why"),
+    `ci/${OPUS}-review-1.log was recorded before the current ui-lead input ci/${OPUS}-spec-3.log; it is superseded and a new build review is due`,
+    ran("the order names the superseded review and the current input", due),
+  );
+});
