@@ -1,0 +1,138 @@
+certifies: tree:9c9871ad4faf2e91f4f908500f2a2a1a1a1a4723
+command: node scripts/served-e2e.mjs
+exit code: 0
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+********.woff2       14.70 kB
+********.woff2     30.09 kB
+********.woff2   41.34 kB
+dist/assets/index-C99YqBX7.css                       23.98 kB │ gzip:  4.74 kB
+dist/assets/index-BV0aTJ3C.js                       267.41 kB │ gzip: 83.34 kB
+
+✓ built in 121ms
+
+Running 102 tests using 12 workers
+
+  ✓    2 [chromium] › tests-serve/auth.spec.ts:90:3 › token delivery, mounted (W-067 behaviour 2) › the built dist carries no copy of the live write-auth token (469ms)
+  ✓    1 [chromium] › tests-serve/auth.spec.ts:39:3 › token delivery, mounted (W-067 behaviour 2) › prompts for a token when sessionStorage is empty (1.6s)
+W-007: greenlit
+  ✓   13 [chromium] › tests-serve/board.spec.ts:455:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › ArrowRight/ArrowLeft move to the nearest card in the next/previous non-empty column (1.9s)
+  ✓    5 [chromium] › tests-serve/board.spec.ts:255:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › renders every column, each count equal to the spec's own computation from GET /api/opera (1.9s)
+  ✓    3 [chromium] › tests-serve/answer.spec.ts:36:3 › the answer button, end to end (W-067 acceptance) › W-024's Inbox answer button writes through the served console (2.0s)
+  ✓    6 [chromium] › tests-serve/auth.spec.ts:68:3 › token delivery, mounted (W-067 behaviour 2) › a wrong token in sessionStorage produces a 401 that reopens the prompt, and the replacement then succeeds (2.0s)
+  ✓    4 [chromium] › tests-serve/auth.spec.ts:45:3 › token delivery, mounted (W-067 behaviour 2) › the entered token is used on the next write and survives a reload without re-prompting (2.0s)
+  ✓   11 [chromium] › tests-serve/board.spec.ts:270:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › live case: an SSE-delivered greenlight moves the card, no reload, within two poll intervals (2.1s)
+  ✓    7 [chromium] › tests-serve/board.spec.ts:402:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays mounted beside the drawer (2.2s)
+  ✓    8 [chromium] › tests-serve/board.spec.ts:371:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › coalescing: a poll delivering several frames issues exactly one /api/opera request (2.3s)
+W-007: greenlit
+  ✓   14 [chromium] › tests-serve/board.spec.ts:477:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › removal: the drawer closes and focus lands on a remaining card in that column, or the column head — never document.body (1.7s)
+  ✓   16 [chromium] › tests-serve/board.spec.ts:596:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible (1.6s)
+  ✓   21 [chromium] › tests-serve/board.spec.ts:678:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column (1.5s)
+  ✓   20 [chromium] › tests-serve/board.spec.ts:707:3 › W-087 behaviour 1: bounded titles retain their native full-title affordance › a 300-character mixed title clamps to four lines while a short card remains 64px (1.5s)
+  ✓   19 [chromium] › tests-serve/board.spec.ts:826:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › an exact 64 KiB body is retained whole without a truncation marker (1.5s)
+  ✓   17 [chromium] › tests-serve/board.spec.ts:774:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › the collection and drawer cap a long literal body, mark truncation, refuse linked bodies and expose an honest empty state (1.7s)
+  ✓   27 [chromium] › tests-serve/capture-state.spec.ts:11:1 › W-360-b1 the capture clock fixes browser-owned dates at the ruled instant (102ms)
+  ✓   22 [chromium] › tests-serve/board.spec.ts:846:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › a UTF-8 character split by the 64 KiB cap is dropped before the exact marker (1.5s)
+  ✓   18 [chromium] › tests-serve/board.spec.ts:617:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling (1.8s)
+  ✓   15 [chromium] › tests-serve/board.spec.ts:505:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator (2.1s)
+  ✓   23 [chromium] › tests-serve/board.spec.ts:872:3 › W-087 behaviour 2: the served drawer carries a bounded opus body › authored spaces, tabs, blank lines and trailing spaces survive the response and pre-wrap drawer (1.5s)
+  ✓   24 [chromium] › tests-serve/board.spec.ts:901:3 › W-087 behaviour 3: every generated Board time has the viewer-local shape › four timestamp fields localize without touching ISO-like authored content or raw ordering (1.4s)
+  ✓   10 [chromium] › tests-serve/board.spec.ts:335:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload (5.0s)
+  ✓   12 [chromium] › tests-serve/board.spec.ts:351:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening (5.1s)
+  ✓   32 [chromium] › tests-serve/inbox.spec.ts:33:1 › W-345-b2 two same-turn answers issue one request (1.2s)
+  ✓   28 [chromium] › tests-serve/capture-state.spec.ts:16:1 › W-360-b2 a mounted Board does not settle while its served cards are still loading (1.4s)
+  ✓   31 [chromium] › tests-serve/inbox.spec.ts:11:1 › W-345-b1 typing shortcut characters in the reason keeps the petition and sends nothing (1.2s)
+  ✓   25 [chromium] › tests-serve/board.spec.ts:980:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the keyboard-focused close ring remains visible while live resize toggles Board inert at 613/612 (1.6s)
+  ✓   33 [chromium] › tests-serve/inbox.spec.ts:62:1 › W-345-b3 moving between petitions never carries one reason into another (1.3s)
+  ✓   34 [chromium] › tests-serve/inbox.spec.ts:80:1 › W-345-b4 a failed refresh shows failure and no stale petition (1.4s)
+  ✓   29 [chromium] › tests-serve/capture-state.spec.ts:54:1 › W-360-b2 Board waits for its inbox read at both capture widths (2.7s)
+  ✓   36 [chromium] › tests-serve/inbox.spec.ts:170:1 › W-345-b6 Follow up sends ask-back open text and success names the open record (1.6s)
+  ✓   35 [chromium] › tests-serve/inbox.spec.ts:102:1 › W-345-b5 the reason and answer controls are reachable at 390px (1.8s)
+  ✓   26 [chromium] › tests-serve/board.spec.ts:1034:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold (3.4s)
+  ✓   37 [chromium] › tests-serve/layout.spec.ts:23:3 › computed layout (W-065 behaviour 15) › 1280px: the rail is 220px, link text visible (2.3s)
+  ✓   39 [chromium] › tests-serve/layout.spec.ts:44:3 › computed layout (W-065 behaviour 15) › 500px: the shell is a top row, labels still readable (2.3s)
+  ✓   38 [chromium] › tests-serve/layout.spec.ts:32:3 › computed layout (W-065 behaviour 15) › 800px: the rail is 72px, labels present at 11px (not display:none) (2.4s)
+  ✓   40 [chromium] › tests-serve/layout.spec.ts:55:3 › computed layout (W-065 behaviour 15) › a focused model select has a visible focus indicator (2.4s)
+  ✓   43 [chromium] › tests-serve/layout.spec.ts:140:3 › shell geometry with the token prompt open (W-075 behaviour 1) › the prompt does not displace the sidebar or main columns (1.1s)
+  ✓   42 [chromium] › tests-serve/layout.spec.ts:105:3 › computed layout (W-065 behaviour 15) › with the confirm bar open, the last roster row does not sit under it (2.1s)
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+  ✓   41 [chromium] › tests-serve/layout.spec.ts:69:3 › computed layout (W-065 behaviour 15) › W-360-b3 390px Seats keeps every select inside the viewport (2.7s)
+  ✓   45 [chromium] › tests-serve/screenshots.spec.ts:163:1 › W-360-b2 baseline Board waits for inbox at both capture widths (2.5s)
+  ✓   48 [chromium] › tests-serve/seats.spec.ts:77:3 › the decree surface, end to end (W-065 behaviour 14) › Confirm clicked three times overlapping still issues exactly 1 request; Enter submits identically (2.3s)
+  ✓   49 [chromium] › tests-serve/seats.spec.ts:113:3 › the decree surface, end to end (W-065 behaviour 14) › Enter from the confirm bar submits identically to a click (2.4s)
+  ✓   51 [chromium] › tests-serve/seats.spec.ts:166:3 › the decree surface, end to end (W-065 behaviour 14) › a transport error re-opens the token prompt, draft retained (2.4s)
+  ✓   50 [chromium] › tests-serve/seats.spec.ts:130:3 › the decree surface, end to end (W-065 behaviour 14) › a real stale draft: the manifest changes under the console, Confirm reports the conflict and keeps the draft (2.4s)
+  ✓   47 [chromium] › tests-serve/seats.spec.ts:26:3 › the decree surface, end to end (W-065 behaviour 14) › draft-and-confirm: only Confirm ever writes, exactly once (2.6s)
+  -   44 [chromium] › tests-serve/screenshots.spec.ts:130:1 › the live screens match their fixed desktop and phone initial-view baselines
+  ✓   30 [chromium] › tests-serve/capture-state.spec.ts:96:1 › W-360-b2 Seats waits for its models read at both capture widths (6.6s)
+  ✓   53 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox loading at 1280: shown, announced and axe-clean (1.4s)
+  ✓   52 [chromium] › tests-serve/seats.spec.ts:184:3 › the decree surface, end to end (W-065 behaviour 14) › editing while a request is pending issues no second request (2.1s)
+  ✓   54 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox empty at 1280: shown, announced and axe-clean (1.5s)
+  ✓   55 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox error at 1280: shown, announced and axe-clean (2.1s)
+  ✓   57 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox pending at 1280: shown, announced and axe-clean (2.3s)
+  ✓   56 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox refused at 1280: shown, announced and axe-clean (2.3s)
+  ✓   58 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board loading at 1280: shown, announced and axe-clean (2.4s)
+  ✓   59 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board empty at 1280: shown, announced and axe-clean (2.5s)
+  ✓   60 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board error at 1280: shown, announced and axe-clean (2.5s)
+  ✓   46 [chromium] › tests-serve/screenshots.spec.ts:200:1 › W-360-b2 baseline Seats waits for models at both capture widths (5.8s)
+  ✓   62 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board live at 1280: shown, announced and axe-clean (2.7s)
+  ✓   61 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board stale at 1280: shown, announced and axe-clean (2.9s)
+  ✓   63 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats loading at 1280: shown, announced and axe-clean (3.3s)
+  ✓    9 [chromium] › tests-serve/board.spec.ts:292:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › negative: with /api/live blocked after the initial connection, the card's state never changes and no further /api/opera requests are issued (14.4s)
+  ✓   64 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats empty at 1280: shown, announced and axe-clean (3.5s)
+  ✓   68 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 officina loading at 1280: shown, announced and axe-clean (2.2s)
+  ✓   70 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 officina error at 1280: shown, announced and axe-clean (2.2s)
+  ✓   69 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 officina empty at 1280: shown, announced and axe-clean (2.3s)
+  ✓   71 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox loading at 390: shown, announced and axe-clean (2.2s)
+  ✓   65 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats error at 1280: shown, announced and axe-clean (3.2s)
+  ✓   72 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox empty at 390: shown, announced and axe-clean (2.0s)
+  ✓   73 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox error at 390: shown, announced and axe-clean (2.0s)
+  ✓   66 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats refused at 1280: shown, announced and axe-clean (3.7s)
+  ✓   67 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats pending at 1280: shown, announced and axe-clean (3.8s)
+  ✓   74 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox refused at 390: shown, announced and axe-clean (2.2s)
+  ✓   75 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 inbox pending at 390: shown, announced and axe-clean (2.4s)
+  ✓   76 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board loading at 390: shown, announced and axe-clean (2.6s)
+  ✓   77 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board empty at 390: shown, announced and axe-clean (2.5s)
+  ✓   78 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board error at 390: shown, announced and axe-clean (2.5s)
+  ✓   79 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board stale at 390: shown, announced and axe-clean (2.8s)
+  ✓   80 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 board live at 390: shown, announced and axe-clean (2.8s)
+  ✓   81 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats loading at 390: shown, announced and axe-clean (3.3s)
+  ✓   89 [chromium] › tests-serve/states.spec.ts:217:1 › W-341 the live region is one node across a state change, so the change is announced (1.4s)
+  ✓   83 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats error at 390: shown, announced and axe-clean (3.3s)
+  ✓   86 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 officina loading at 390: shown, announced and axe-clean (2.4s)
+  ✓   90 [chromium] › tests-serve/states.spec.ts:234:3 › W-341 inbox write error at 1280 (1.4s)
+  ✓   82 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats empty at 390: shown, announced and axe-clean (3.7s)
+  ✓   91 [chromium] › tests-serve/states.spec.ts:234:3 › W-341 inbox write error at 390 (1.4s)
+  ✓   87 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 officina empty at 390: shown, announced and axe-clean (2.3s)
+  ✓   88 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 officina error at 390: shown, announced and axe-clean (2.3s)
+  ✓   84 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats refused at 390: shown, announced and axe-clean (4.0s)
+  ✓   85 [chromium] › tests-serve/states.spec.ts:203:5 › W-341 seats pending at 390: shown, announced and axe-clean (4.0s)
+  ✓   92 [chromium] › tests-serve/states.spec.ts:248:3 › W-341 seats write error at 1280 (2.4s)
+  ✓  100 [chromium] › tests-serve/walk.spec.ts:296:1 › W-077 behaviour 7: a failed read never shows demo data (1.3s)
+  ✓   99 [chromium] › tests-serve/walk.spec.ts:225:1 › W-077 behaviour 6: the Officina tells the truth about a stale tick snapshot and an empty aerarium (1.6s)
+  ✓   93 [chromium] › tests-serve/states.spec.ts:248:3 › W-341 seats write error at 390 (2.4s)
+  ✓  101 [chromium] › tests-serve/walk.spec.ts:324:1 › W-077 behaviour 6 round 2: the integrity rows look openable and the panel reads as two sentences over a tight list (1.6s)
+  ✓   94 [chromium] › tests-serve/w406.spec.ts:21:1 › W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390 (2.7s)
+  ✓   96 [chromium] › tests-serve/w406.spec.ts:108:1 › W-406-b3 Officina today rule clears the last day letter at 1280 and 390 (2.6s)
+  ✓  102 [chromium] › tests-serve/walk.spec.ts:350:1 › W-077 behaviour 3 round 2: a hostile, multiline or huge due name renders as escaped text and does not break the layout (1.5s)
+  ✓   95 [chromium] › tests-serve/w406.spec.ts:63:1 › W-406-b2 Board header preserves live and stale refresh time above one footer at 1280 and 390 (2.9s)
+  ✓   97 [chromium] › tests-serve/walk.spec.ts:59:1 › W-110 behaviour 2: the rail reaches every screen it lists, says which one is current, and survives Back, Forward and a reload (3.9s)
+  ✓   98 [chromium] › tests-serve/walk.spec.ts:127:1 › W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen (3.9s)
+
+  1 skipped
+  101 passed (25.5s)
+shots: 8 ci/shots/W-406
+shot: board-1280.png 1280x900 43516
+shot: board-390.png 390x900 26539
+shot: inbox-1280.png 1280x900 44576
+shot: inbox-390.png 390x900 35609
+shot: officina-1280.png 1280x900 61726
+shot: officina-390.png 390x900 38987
+shot: seats-1280.png 1280x900 70444
+shot: seats-390.png 390x900 44635
+
