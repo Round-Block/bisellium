@@ -12,15 +12,18 @@
  * The title only looks a class up; the census decides. Free text may refuse, never admit. What the records hold but
  * this cannot read or judge (a malformed parent spec log) refuses the opus; what reads and does not qualify is not
  * that kind. The grant is the Patron's decision `bisellium.yml#auto_greenlit_by` names; with none, `--auto` refuses.
- * Reads only: the write is runGreenlight's (writes.ts).
+ * Behaviour 2: a record the screen cannot read, then the Patron's scope, refuse first, whatever the kind (`recordForm`,
+ * `reserved`). Reads only: the write is runGreenlight's (writes.ts).
  */
+import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "yaml";
 import type { Manifest } from "@bisellium/adapter-native";
+import type { NativeOpusKind } from "@bisellium/schema";
 import { splitFront } from "./frontmatter.js";
 import { patronDecisionProblem } from "./lifecycle.js";
-import { readContainedRegularFile } from "./opus-model.js";
+import { isNativeOpusKind, readContainedRegularFile, titleProblem } from "./opus-model.js";
 import { CLASS_TAG, parseVerdictLog } from "./verdict.js";
 
 /** The manifest key naming the Patron's decision that grants auto greenlights (W-403). */
@@ -127,6 +130,75 @@ function causeFix(root: string, id: string, title: unknown): Reading {
   return { basis: `D-076 D: a cause fix for ${hit}, an S1 class in the failed reviews of ${by.length} opera: ${by.slice(0, 5).join(", ")}${by.length > 5 ? ` and ${by.length - 5} more` : ""}` };
 }
 
+/** W-403 behaviour 2: the words naming what stays the Patron's, matched in a title caseless as a whole token. */
+const RESERVED = ["security", "sandbox", "architecture", "branch protection", "branch-protection", "codeowners", "code-owned"];
+/** W-403 behaviour 2: the points an auto greenlight may carry (`value:`); anything over 3, or unsized, is the Patron's. */
+const AUTO_VALUES = new Set([1, 2, 3]);
+/** The tail of a refusal for a record the screen cannot read. */
+const UNSCREENED = "only the Patron greenlights a record the screen cannot read";
+const namesWord = (title: string, word: string): boolean => new RegExp(`(?<![\\p{L}\\p{M}\\p{N}_-])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{M}\\p{N}_-])`, "iu").test(title);
+
+/** W-403 behaviour 2: the record's kind, title and parent in the one form the screen and both kinds read, or why not:
+ *  a native kind (`isNativeOpusKind`), a title `titleProblem` accepts, and a parent absent or a non-empty string. */
+function recordForm(id: string, rec: Dict): { kind: NativeOpusKind; title: string; parent: string | undefined } | { problem: string } {
+  const kind = rec["kind"];
+  if (!isNativeOpusKind(kind)) return { problem: `${id}'s kind is ${show(kind)}, not a native opus kind; ${UNSCREENED}` };
+  const title = rec["title"];
+  const bad = titleProblem(title);
+  if (bad !== undefined || typeof title !== "string") return { problem: `${id}'s ${bad ?? "title must be a nonblank string"}; ${UNSCREENED}` };
+  const parent = rec["parent"];
+  if (parent !== undefined && (typeof parent !== "string" || parent === "")) return { problem: `${id}'s parent is ${show(parent)}, not an opus id; ${UNSCREENED}` };
+  return { kind, title, parent };
+}
+
+/** The last path segment of each plain pattern in `.github/CODEOWNERS` at the officina's repository HEAD (globs are
+ *  skipped). None only for a confirmed non-repository (git's own "not a git repository") or a HEAD whose tree confirms
+ *  no such file; every other git result (no git, dubious ownership, a bad config, an unborn HEAD, a file that is not a
+ *  regular blob) is an error, and the screen refuses. */
+function codeOwnedNames(root: string): string[] | { error: string } {
+  const git = (args: string[]): { code: number; out: string; err: string } => {
+    const r = spawnSync("git", args, { cwd: root, encoding: "utf8", timeout: 30_000, env: { ...process.env, LC_ALL: "C" } });
+    return { code: r.error === undefined && typeof r.status === "number" ? r.status : -1, out: r.stdout ?? "", err: (r.stderr ?? "").split("\n")[0]?.trim() ?? "" };
+  };
+  const failed = (what: string, r: { code: number; err: string }): { error: string } => ({ error: `git ${what} failed (${r.code === -1 ? "git could not run" : r.err || `exit ${r.code}`})` });
+  const top = git(["rev-parse", "--show-toplevel"]);
+  if (top.code !== 0) return top.code === 128 && top.err.startsWith("fatal: not a git repository ") ? [] : failed("rev-parse --show-toplevel", top);
+  const tree = git(["ls-tree", "--full-tree", "-z", "HEAD", "--", ".github/CODEOWNERS"]);
+  if (tree.code !== 0) return failed("ls-tree HEAD -- .github/CODEOWNERS", tree);
+  if (tree.out === "") return [];
+  const blob = /^100(?:644|755) blob ([0-9a-f]{40}|[0-9a-f]{64})\t\.github\/CODEOWNERS\0$/.exec(tree.out);
+  if (blob === null) return { error: ".github/CODEOWNERS at HEAD is not a regular file" };
+  const shown = git(["cat-file", "blob", blob[1]!]);
+  if (shown.code !== 0) return failed("cat-file blob .github/CODEOWNERS", shown);
+  return shown.out
+    .split(/\r?\n/)
+    .map((l) => (l.split("#")[0] ?? "").trim().split(/\s+/)[0] ?? "")
+    .map((p) => p.replace(/^\/+|\/+$/g, ""))
+    .filter((p) => p !== "" && !/[*?[\]!]/.test(p))
+    .map((p) => p.slice(p.lastIndexOf("/") + 1));
+}
+
+/** W-403 behaviour 2: why the opus's scope stays the Patron's even when it is a remainder or a cause fix, or undefined. */
+function reserved(root: string, id: string, form: { kind: NativeOpusKind; title: string; parent: string | undefined }, value: unknown): string | undefined {
+  if (form.kind === "ui") return `${id} is kind ui; a ui opus is the Patron's to greenlight`;
+  if (typeof value !== "number" || !AUTO_VALUES.has(value)) return `${id}'s value is ${show(value)}, not 1, 2 or 3 points; anything larger, or unsized, is the Patron's`;
+  const security = [...form.title.matchAll(CLASS_TOKEN)].map((m) => m[1]!).find((c) => c.startsWith("security×"));
+  if (security !== undefined) return `${id}'s title names the security class ${security}; security is the Patron's`;
+  const owned = codeOwnedNames(root);
+  if (!Array.isArray(owned)) return `${owned.error}, so the code-owned paths cannot be screened`;
+  const word = [...RESERVED, ...owned].find((w) => namesWord(form.title, w));
+  if (word !== undefined) return `${id}'s title names "${word}"; security, the sandbox, branch protection, architecture and code-owned paths are the Patron's`;
+  // the parent's kind: before both kinds, so a malformed or ui parent refuses a cause fix too; an absent record is remainder's
+  if (form.parent !== undefined) {
+    const read = readRecord(root, form.parent);
+    if ("why" in read) {
+      if (!read.absent) return `${id}'s parent ${form.parent}'s record cannot be read (${read.why}); ${UNSCREENED}`;
+    } else if (!isNativeOpusKind(read.rec["kind"])) return `${id}'s parent ${form.parent}'s kind is ${show(read.rec["kind"])}, not a native opus kind; ${UNSCREENED}`;
+    else if (read.rec["kind"] === "ui") return `${id}'s parent ${form.parent} is kind ui; a ui opus's remainder is the Patron's to greenlight`;
+  }
+  return undefined;
+}
+
 /** Whether `<id>` may be greenlit without the Patron, and on what basis; the caller has checked the record is in backlog. */
 export function autoGrant(root: string, manifest: Manifest, id: string): AutoGrant {
   const refuse = (why: string): AutoGrant => ({ refusal: `${id}: greenlight --auto refused: ${why}` });
@@ -139,10 +211,16 @@ export function autoGrant(root: string, manifest: Manifest, id: string): AutoGra
   if ("why" in read) return refuse(`opera/${id}.md cannot be read (${read.why})`);
   const rec = read.rec;
   if (Object.hasOwn(rec, "declined")) return refuse(`${id} is declined (declined: ${show(rec["declined"])}); only the Patron reverses a decline`);
+  const form = recordForm(id, rec);
+  if ("problem" in form) return refuse(form.problem);
+  const scope = reserved(root, id, form, rec["value"]);
+  if (scope !== undefined) return refuse(scope);
   const a = remainder(root, manifest, rec);
   if ("refuse" in a) return refuse(`${id}'s ${a.refuse}; ${UNJUDGED}`);
   if ("basis" in a) return { decision, basis: a.basis };
   const b = causeFix(root, id, rec["title"]);
+  // the D-061 §4 cut (spec round 5): a cause fix that carries a parent is refused, whatever the parent; W-417 is to check it
+  if ("basis" in b && form.parent !== undefined) return refuse(`${id} reads as a D-076 D cause fix but carries parent ${form.parent} and is not its D-061 §4 remainder (${a.why}); a cause fix that carries a parent waits for W-417, so only the Patron greenlights it`);
   if ("basis" in b) return { decision, basis: b.basis };
   return refuse(`${id} is neither a D-061 §4 remainder (${a.why}) nor a D-076 D cause fix (${b.why}), so only the Patron greenlights it`);
 }
