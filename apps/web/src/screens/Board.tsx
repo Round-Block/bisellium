@@ -87,6 +87,47 @@ export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     return () => query.removeEventListener("change", update);
   }, []);
 
+  // The browser's native scrollbar remains the interaction surface. This
+  // in-page cue mirrors its geometry so headless captures and overlay-
+  // scrollbar platforms still expose the horizontal continuation.
+  useLayoutEffect(() => {
+    const columns = document.querySelector<HTMLElement>(".board__columns");
+    const cue = document.querySelector<HTMLElement>(".board__scroll-cue");
+    if (!columns || !cue) return;
+
+    const updateScrollCue = (): void => {
+      cue.hidden = false;
+      const trackWidth = cue.clientWidth;
+      const maxScroll = columns.scrollWidth - columns.clientWidth;
+      const hasOverflow = Number.isFinite(trackWidth)
+        && Number.isFinite(columns.scrollWidth)
+        && Number.isFinite(columns.clientWidth)
+        && Number.isFinite(columns.scrollLeft)
+        && trackWidth > 0
+        && columns.scrollWidth > 0
+        && maxScroll > 0;
+      cue.hidden = !hasOverflow;
+      if (!hasOverflow) return;
+
+      const thumbWidth = Math.min(trackWidth, Math.max(0, trackWidth * columns.clientWidth / columns.scrollWidth));
+      const availableTrack = Math.max(0, trackWidth - thumbWidth);
+      const scrollLeft = Math.min(maxScroll, Math.max(0, columns.scrollLeft));
+      const thumbOffset = Math.min(availableTrack, Math.max(0, availableTrack * scrollLeft / maxScroll));
+      cue.style.setProperty("--board-scroll-thumb-width", `${thumbWidth}px`);
+      cue.style.setProperty("--board-scroll-thumb-offset", `${thumbOffset}px`);
+    };
+
+    updateScrollCue();
+    columns.addEventListener("scroll", updateScrollCue, { passive: true });
+    const resizeObserver = new ResizeObserver(updateScrollCue);
+    resizeObserver.observe(columns);
+    resizeObserver.observe(cue);
+    return () => {
+      columns.removeEventListener("scroll", updateScrollCue);
+      resizeObserver.disconnect();
+    };
+  }, [model.columns.length]);
+
   // Restore only after React has committed the closed layout. Scheduling this
   // from the close event can race that commit, leaving the narrow drawer-open
   // grid to clamp or replace the saved offset. preventScroll keeps focus

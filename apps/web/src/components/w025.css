@@ -1184,6 +1184,23 @@
   border-radius: 0;
 }
 
+.board__scroll-cue {
+  height: 8px;
+  flex-shrink: 0;
+  margin: 0 var(--sp-6);
+  overflow: hidden;
+  background: var(--rule);
+  pointer-events: none;
+}
+
+.board__scroll-cue-thumb {
+  width: var(--board-scroll-thumb-width);
+  height: 100%;
+  background: var(--ink-3);
+  border-radius: 0;
+  transform: translateX(var(--board-scroll-thumb-offset));
+}
+
 .board__column {
   flex: 0 0 288px;
   width: 288px;
@@ -1506,6 +1523,10 @@
   .board__columns {
     scroll-snap-type: x mandatory;
     padding: var(--sp-2) 0;
+  }
+
+  .board__scroll-cue {
+    margin: 0 var(--sp-4);
   }
 
   .board__column {

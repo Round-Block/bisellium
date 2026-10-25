@@ -146,6 +146,9 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
           <Column key={column.id} column={column} selectedId={selectedId} focusedByColumn={focusedByColumn} onSelectCard={onSelectCard} />
         ))}
       </div>
+      <div className="board__scroll-cue" aria-hidden="true">
+        <div className="board__scroll-cue-thumb" />
+      </div>
       <Colophon studioPath={studio} generatedAt={generatedAt} />
     </div>
   );
