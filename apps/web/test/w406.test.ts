@@ -12,7 +12,7 @@ test("W-406-b1 behaviour 1: every Board phase is visibly reachable at desktop an
   const served = read("apps/web/tests-serve/w406.spec.ts");
   const pkg = JSON.parse(read("apps/web/package.json")) as { scripts?: Record<string, string> };
 
-  assert.match(css, /\.board__columns\s*\{[^}]*scrollbar-gutter:\s*stable;/s, "the Board reserves a visible horizontal-scroll affordance");
+  assert.match(css, /\.board__columns\s*\{[^}]*scrollbar-gutter:\s*stable;/s, "the Board columns keep a stable inline scrollbar gutter");
   assert.doesNotMatch(css, /\.board__columns\s*\{[^}]*scrollbar-color\s*:/s, "the standard colour property does not override Chromium's ruled scrollbar");
   assert.match(css, /\.board__columns::\-webkit-scrollbar\s*\{[^}]*height:\s*8px;/s, "Chromium receives an 8px horizontal scrollbar");
   assert.match(css, /\.board__columns::\-webkit-scrollbar-track\s*\{[^}]*background:\s*var\(--surface\);/s, "the scrollbar track uses the ruled surface token");

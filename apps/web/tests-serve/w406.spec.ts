@@ -40,7 +40,7 @@ test("W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390", as
       };
     });
     expect(scroll.scrollWidth, `${width}: phases overflow into a horizontal scroll range`).toBeGreaterThan(scroll.clientWidth);
-    expect(scroll.gutter, `${width}: horizontal scrolling has stable visible space`).toContain("stable");
+    expect(scroll.gutter, `${width}: the Board columns keep a stable inline scrollbar gutter`).toContain("stable");
     expect(scroll.webkitScrollbar.height, `${width}: Chromium accepts the 8px scrollbar before test interaction`).toBe("8px");
     expect(scroll.webkitScrollbar.display, `${width}: the accepted scrollbar pseudo-element is not suppressed`).not.toBe("none");
     expect(scroll.webkitTrack.backgroundColor, `${width}: the track has a visible ruled colour`).not.toBe("rgba(0, 0, 0, 0)");
@@ -83,6 +83,18 @@ test("W-406-b2 Board header preserves live and stale refresh time above one foot
     expect(lineBox!.height, `${width}: the colophon remains one 14px line`).toBeCloseTo(14, 0);
 
     await page.locator(".board__card").first().click();
+    await expect(page.locator(".board-drawer"), `${width}: the card opens the drawer`).toBeVisible();
+    await expect(liveness, `${width}: the open drawer keeps the complete live refresh time visible`).toBeVisible();
+    await expect(liveness, `${width}: the open drawer preserves the complete live refresh time`).toHaveText(liveText!);
+    if (width === 1280) {
+      const [livenessBox, drawerBox] = await Promise.all([liveness.boundingBox(), page.locator(".board-drawer").boundingBox()]);
+      expect(livenessBox, "1280: the open drawer leaves the liveness label measurable").toBeTruthy();
+      expect(drawerBox, "1280: the open drawer has a box").toBeTruthy();
+      const intersectsDrawer = livenessBox!.x < drawerBox!.x + drawerBox!.width && livenessBox!.x + livenessBox!.width > drawerBox!.x && livenessBox!.y < drawerBox!.y + drawerBox!.height && livenessBox!.y + livenessBox!.height > drawerBox!.y;
+      expect(intersectsDrawer, "1280: the open drawer does not cover the liveness label").toBe(false);
+      const insideViewport = livenessBox!.x >= 0 && livenessBox!.y >= 0 && livenessBox!.x + livenessBox!.width <= width && livenessBox!.y + livenessBox!.height <= 900;
+      expect(insideViewport, "1280: the liveness label remains fully inside the viewport").toBe(true);
+    }
     await page.locator(".board-drawer__close").click();
     await expect(liveness, `${width}: an unrelated drawer render preserves the refresh time`).toHaveText(liveText!);
 
