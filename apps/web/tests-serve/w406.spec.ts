@@ -24,6 +24,11 @@ test("W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390", as
     const columns = page.locator(".board__columns");
     const lastColumn = page.locator(".board__column").last();
     await expect.poll(() => page.locator(".board__column").count(), `${width}: the served Board has every phase`).toBeGreaterThan(1);
+    const cue = page.locator(".board__scroll-cue");
+    const thumb = cue.locator(".board__scroll-cue-thumb");
+    expect(await cue.count(), `${width}: the in-page scroll cue exists before interaction`).toBe(1);
+    await expect(cue, `${width}: the in-page scroll cue is visibly painted before interaction`).toBeVisible();
+    await expect(thumb, `${width}: the in-page scroll thumb is visibly painted before interaction`).toBeVisible();
     const scroll = await columns.evaluate((node) => {
       const element = node as HTMLElement;
       const style = getComputedStyle(element);
@@ -46,11 +51,43 @@ test("W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390", as
     expect(scroll.webkitTrack.backgroundColor, `${width}: the track has a visible ruled colour`).not.toBe("rgba(0, 0, 0, 0)");
     expect(scroll.webkitThumb.backgroundColor, `${width}: the thumb has a visible ruled colour`).not.toBe(scroll.webkitTrack.backgroundColor);
     expect(scroll.webkitThumb.borderRadius, `${width}: the thumb remains square`).toBe("0px");
+    const [trackBox, thumbBox] = await Promise.all([cue.boundingBox(), thumb.boundingBox()]);
+    expect(trackBox, `${width}: the in-page scroll track has a rendered box`).toBeTruthy();
+    expect(thumbBox, `${width}: the in-page scroll thumb has a rendered box`).toBeTruthy();
+    expect(trackBox!.height, `${width}: the rendered scroll track is 8px high`).toBeCloseTo(8, 0);
+    expect(thumbBox!.width, `${width}: the rendered thumb has positive width`).toBeGreaterThan(0);
+    expect(thumbBox!.width, `${width}: the rendered thumb exposes part of the continuation track`).toBeLessThan(trackBox!.width);
+    expect(thumbBox!.x, `${width}: the thumb starts inside the track`).toBeGreaterThanOrEqual(trackBox!.x - 1);
+    expect(thumbBox!.x + thumbBox!.width, `${width}: the thumb ends inside the track`).toBeLessThanOrEqual(trackBox!.x + trackBox!.width + 1);
+    expect(trackBox!.x, `${width}: the track starts inside the viewport`).toBeGreaterThanOrEqual(0);
+    expect(trackBox!.x + trackBox!.width, `${width}: the track ends inside the viewport`).toBeLessThanOrEqual(width);
+    expect(trackBox!.y, `${width}: the track starts inside the viewport height`).toBeGreaterThanOrEqual(0);
+    expect(trackBox!.y + trackBox!.height, `${width}: the track ends inside the viewport height`).toBeLessThanOrEqual(900);
+    const expectedThumbWidth = trackBox!.width * scroll.clientWidth / scroll.scrollWidth;
+    expect(Math.abs(thumbBox!.width - expectedThumbWidth), `${width}: initial thumb width matches the visible scroll fraction`).toBeLessThanOrEqual(1);
+    const maxScroll = scroll.scrollWidth - scroll.clientWidth;
+    const initialScrollLeft = await columns.evaluate((node) => (node as HTMLElement).scrollLeft);
+    const expectedThumbOffset = (trackBox!.width - thumbBox!.width) * initialScrollLeft / maxScroll;
+    expect(Math.abs(thumbBox!.x - trackBox!.x - expectedThumbOffset), `${width}: initial thumb offset matches the Board scroll position`).toBeLessThanOrEqual(1);
+
+    const leftGap = thumbBox!.x - trackBox!.x;
+    const rightGap = trackBox!.x + trackBox!.width - thumbBox!.x - thumbBox!.width;
+    const trackSampleX = leftGap >= rightGap ? trackBox!.x + leftGap / 2 : thumbBox!.x + thumbBox!.width + rightGap / 2;
+    const sampleY = trackBox!.y + trackBox!.height / 2;
+    const [trackPixel, thumbPixel] = await Promise.all([
+      page.screenshot({ clip: { x: Math.floor(trackSampleX), y: Math.floor(sampleY), width: 1, height: 1 } }),
+      page.screenshot({ clip: { x: Math.floor(thumbBox!.x + thumbBox!.width / 2), y: Math.floor(sampleY), width: 1, height: 1 } }),
+    ]);
+    expect(thumbPixel.equals(trackPixel), `${width}: rendered thumb and track pixels are visibly distinct`).toBe(false);
     await columns.evaluate((node) => {
       const element = node as HTMLElement;
       element.scrollLeft = element.scrollWidth - element.clientWidth;
     });
     await expect.poll(() => columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: the Board reaches its terminal horizontal offset`).toBeGreaterThan(0);
+    await expect.poll(async () => {
+      const [terminalTrack, terminalThumb] = await Promise.all([cue.boundingBox(), thumb.boundingBox()]);
+      return terminalTrack !== null && terminalThumb !== null ? Math.abs(terminalTrack.x + terminalTrack.width - terminalThumb.x - terminalThumb.width) : Number.POSITIVE_INFINITY;
+    }, `${width}: terminal thumb reaches the track right edge`).toBeLessThanOrEqual(1);
     const [containerBox, terminalBox] = await Promise.all([columns.boundingBox(), lastColumn.boundingBox()]);
     expect(containerBox, `${width}: the Board scroll container has a box`).toBeTruthy();
     expect(terminalBox, `${width}: the terminal phase has a box`).toBeTruthy();

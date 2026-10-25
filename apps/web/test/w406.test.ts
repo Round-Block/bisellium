@@ -8,6 +8,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (path: string): string => readFileSync(resolve(ROOT, path), "utf8");
 
 test("W-406-b1 behaviour 1: every Board phase is visibly reachable at desktop and phone widths", () => {
+  const board = read("apps/web/src/screens/Board.tsx");
+  const view = read("apps/web/src/screens/BoardView.tsx");
   const css = read("apps/web/src/components/w025.css");
   const served = read("apps/web/tests-serve/w406.spec.ts");
   const pkg = JSON.parse(read("apps/web/package.json")) as { scripts?: Record<string, string> };
@@ -17,9 +19,22 @@ test("W-406-b1 behaviour 1: every Board phase is visibly reachable at desktop an
   assert.match(css, /\.board__columns::\-webkit-scrollbar\s*\{[^}]*height:\s*8px;/s, "Chromium receives an 8px horizontal scrollbar");
   assert.match(css, /\.board__columns::\-webkit-scrollbar-track\s*\{[^}]*background:\s*var\(--surface\);/s, "the scrollbar track uses the ruled surface token");
   assert.match(css, /\.board__columns::\-webkit-scrollbar-thumb\s*\{[^}]*background:\s*var\(--ink-3\);[^}]*border-radius:\s*0;/s, "the square scrollbar thumb uses the ruled ink token");
+  assert.match(view, /className="board__scroll-cue"[^>]*aria-hidden="true"/, "Board paints a synchronized horizontal-scroll cue: decorative cue semantics");
+  assert.match(view, /className="board__scroll-cue-thumb"/, "BoardView renders the cue thumb");
+  assert.match(css, /\.board__scroll-cue\s*\{[^}]*height:\s*8px;[^}]*background:\s*var\(--rule\);[^}]*pointer-events:\s*none;/s, "Board paints a synchronized horizontal-scroll cue: 8px square ruled track");
+  assert.match(css, /\.board__scroll-cue-thumb\s*\{[^}]*width:\s*var\(--board-scroll-thumb-width\);[^}]*height:\s*100%;[^}]*background:\s*var\(--ink-3\);[^}]*border-radius:\s*0;[^}]*transform:\s*translateX\(var\(--board-scroll-thumb-offset\)\);/s, "the Board paints a square ink thumb at the synchronized geometry");
+  assert.match(board, /new ResizeObserver\(updateScrollCue\)/, "the cue remeasures when its rendered width changes");
+  assert.match(board, /columns\.addEventListener\("scroll", updateScrollCue,/, "the cue follows the existing scroll container");
+  assert.match(board, /trackWidth \* columns\.clientWidth \/ columns\.scrollWidth/, "thumb width is proportional to the visible Board fraction");
+  assert.match(board, /columns\.scrollWidth\s*-\s*columns\.clientWidth/, "the cue range is the container's maximum scrollLeft");
+  assert.match(board, /Number\.isFinite\(trackWidth\)[\s\S]*?maxScroll > 0/, "the cue hides for non-finite or zero scroll ranges");
+  assert.match(board, /Math\.min\(maxScroll, Math\.max\(0, columns\.scrollLeft\)\)/, "the cue clamps its source scroll position to the container range");
+  assert.match(board, /Math\.min\(availableTrack, Math\.max\(0, availableTrack \* scrollLeft \/ maxScroll\)\)/, "Board paints a synchronized horizontal-scroll cue: proportional offset follows existing scroll position");
   assert.match(served, /W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390/, "the served row names both ruled widths");
-  assert.match(served, /webkitScrollbar/, "the served row reads Chromium's accepted scrollbar pseudo-style before scrolling");
-  assert.match(served, /scrollWidth\s*-\s*element\.clientWidth/, "the served row computes the terminal horizontal offset");
+  assert.match(served, /thumbPixel\.equals\(trackPixel\)/, "the served row compares rendered track and thumb pixels before scrolling");
+  assert.match(served, /initial thumb width matches the visible scroll fraction/, "the served row pins proportional cue geometry before scrolling");
+  assert.match(served, /scrollWidth\s*-\s*element\.clientWidth/, "the served row computes the container's terminal horizontal offset");
+  assert.match(served, /terminal thumb reaches the track right edge/, "the served row pins the synchronized terminal cue position");
   assert.match(served, /terminal phase right edge/, "the served row measures the final column against its scroll container");
   assert.match(pkg.scripts?.["test:policy"] ?? "", /test\/w406\.test\.ts/, "the focused policy runner includes W-406");
 });
