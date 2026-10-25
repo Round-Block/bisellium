@@ -1,0 +1,23 @@
+# opus: W-406
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a867051653554c48c
+# session_reason: the round-5 reviewer session a81efbaba7f8c9316 belongs to an earlier orchestrator conversation and cannot be resumed; a fresh Claude Opus 5.5 subagent reviewed round 8
+# outcome: passed
+# at: 2026-10-25T11:02:31.312Z
+# tree: tree:dd3650b2a3989f1925147ae550e20d302c6a2495
+# brief: briefs/W-406.md blob:47253a32b4eb0e89b3169bcf6b8f58f8d5daf8de
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-406/studio","head":"b85bf00717e7733d5ae1a79dc00a8421607af784","brief":"47253a32b4eb0e89b3169bcf6b8f58f8d5daf8de","at":"2026-10-25T11:02:26.331Z"}
+
+## Findings
+1. advisory — brief:56 [severity: S2] At 390 the shipped `.board__columns` keeps `scroll-snap-type: x mandatory` (w025.css:1524). The served oracle turns snap off before it interacts (brief:46; drag-tests.patch sets `element.style.scrollSnapType = "none"`). With snap on, each `columns.scrollLeft` write from a thumb drag or a track press settles on the nearest phase snap position. So at 390 a real mouse drag moves in phase-sized steps, and a three-quarter track press lands on a phase start, not on the centred-thumb ratio. Terminal reach still holds, but the promise's "maps … into the sole container's clamped `scrollLeft`" at 390×900 says more than the row proves (brief:109 repeats it). Replacement for brief:56's limit: "— limit: the row proves primary mouse-pointer drag and track press in served Chromium with phone snap disabled inside the oracle; at 390 under the shipped mandatory snap, an intermediate drag or track press settles on the nearest phase snap position, and only terminal reach is unaffected; touch-pointer synthesis, forced colours, zoom, user stylesheets, other browsers and other widths are unclassified." [class: spec×promise-unattainable-under-accepted-domain] — check: none: a served 390 row that keeps snap on and asserts that drag and track press settle on a phase snap position and that terminal reach still holds
+2. advisory — brief:81 [severity: S4] The rejector cell names only `onThumbPointerDown`. A secondary or non-primary press on the uncovered track is refused by a separate handler, `onTrackPointerDown` (drag-src.patch: `event.target === thumb || !event.isPrimary || event.button !== 0`). The served row exercises only the thumb's secondary-button path. Replacement for brief:81's rejector cell: "`onThumbPointerDown` and `onTrackPointerDown` fail closed by returning before capture or scroll mutation for secondary buttons and non-primary pointers; `cueRange` fails closed on absent or non-finite ranges; `expect()` rejects a secondary-button mutation or a supported drag/press that misses its proportional or terminal bound" [class: spec×input-without-named-rejector] — check: none: a served step that right-clicks the uncovered track and asserts `scrollLeft` is unchanged
+3. advisory — brief:44 [severity: S4] Two readers produce the thumb width. The painter computes it as the fractional `trackWidth × clientWidth / scrollWidth`. The drag and track-press handlers (`cueRange`) read the integer-rounded `thumb.offsetWidth`. Their `availableTrack` values can differ by up to 0.5px, so the inverse mapping drifts slightly from the forward ratio. That stays well inside the row's 1px tolerance at 48px of drag, but the brief names neither reader. Replacement for brief:44's inverse-ratio sentence: "While captured, horizontal pointer delta maps to `scrollLeft` by the inverse ratio `delta × maxScroll / availableTrack`, where `availableTrack` is the painter's own `trackWidth − thumbWidth` (or the trusted reader is named, with sub-pixel rounding of `offsetWidth` stated as a limit), clamped to `[0, maxScroll]`." [class: design×indirection-duplicates-source-of-truth] — check: none: a policy assertion that `cueRange` derives `availableTrack` from the same width the painter writes
+
+## Earlier findings
+
+## Verdict
+The drag revision is feasible as written: it hides the native scrollbar in both Chromium forms, keeps `.board__columns` the sole scroll state, names its changed reader rows (brief:79-81) with real rejectors, and has assertion-level reds, one-hunk kills and green two-width served evidence on ab318e41. It also takes round 5's `clientWidth` advisory. Three advisories remain: the phone-snap limit, a second named rejector, and the thumb-width reader, which the builder adopts in the build.
+VERDICT: PASS
