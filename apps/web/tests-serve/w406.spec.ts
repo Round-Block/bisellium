@@ -93,6 +93,9 @@ test("W-406-b1 Board exposes one draggable horizontal-scroll cue at 1280 and 390
     await page.mouse.move(dragStartX + dragDistance, dragY);
     await page.mouse.up({ button: "right" });
     expect(await columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: secondary-button drag leaves scrollLeft unchanged`).toBe(0);
+    const trackPressX = dragTrack!.x + dragTrack!.width * 0.75;
+    await page.mouse.click(trackPressX, dragY, { button: "right" });
+    expect(await columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: secondary-button track press leaves scrollLeft unchanged`).toBe(0);
     await page.mouse.move(dragStartX, dragY);
     await page.mouse.down();
     await page.mouse.move(dragStartX + dragDistance, dragY, { steps: 2 });
@@ -116,7 +119,6 @@ test("W-406-b1 Board exposes one draggable horizontal-scroll cue at 1280 and 390
 
     await columns.evaluate((node) => { (node as HTMLElement).scrollLeft = 0; });
     await expect.poll(() => columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: track press starts at the left terminal`).toBe(0);
-    const trackPressX = dragTrack!.x + dragTrack!.width * 0.75;
     await page.mouse.click(trackPressX, dragY);
     const expectedTrackScroll = Math.min(maxScroll, Math.max(0, (trackPressX - dragTrack!.x - dragThumb!.width / 2) * maxScroll / availableTrack));
     await expect.poll(async () => Math.abs(await columns.evaluate((node) => (node as HTMLElement).scrollLeft) - expectedTrackScroll), `${width}: track press jumps to its centred proportional offset`).toBeLessThanOrEqual(1);

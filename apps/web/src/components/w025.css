@@ -1160,7 +1160,7 @@
   padding: var(--sp-4) var(--sp-6);
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-gutter: stable;
+  scrollbar-width: none;
   min-height: 0;
   min-width: 0;
   /* The column count/width changes as real data replaces the pre-data
@@ -1172,16 +1172,7 @@
 }
 
 .board__columns::-webkit-scrollbar {
-  height: 8px;
-}
-
-.board__columns::-webkit-scrollbar-track {
-  background: var(--surface);
-}
-
-.board__columns::-webkit-scrollbar-thumb {
-  background: var(--ink-3);
-  border-radius: 0;
+  display: none;
 }
 
 .board__scroll-cue {
@@ -1190,7 +1181,9 @@
   margin: 0 var(--sp-6);
   overflow: hidden;
   background: var(--rule);
-  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
 }
 
 .board__scroll-cue-thumb {
@@ -1199,6 +1192,11 @@
   background: var(--ink-3);
   border-radius: 0;
   transform: translateX(var(--board-scroll-thumb-offset));
+  cursor: grab;
+}
+
+.board__scroll-cue-thumb:active {
+  cursor: grabbing;
 }
 
 .board__column {

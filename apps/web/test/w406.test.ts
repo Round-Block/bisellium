@@ -28,6 +28,10 @@ test("W-406-b1 behaviour 1: every Board phase is visibly reachable at desktop an
   assert.match(board, /Number\.isFinite\(trackWidth\)[\s\S]*?maxScroll > 0/, "the cue hides for non-finite or zero scroll ranges");
   assert.match(board, /Math\.min\(maxScroll, Math\.max\(0, columns\.scrollLeft\)\)/, "the cue clamps its source scroll position to the container range");
   assert.match(board, /Math\.min\(availableTrack, Math\.max\(0, availableTrack \* scrollLeft \/ maxScroll\)\)/, "Board paints a synchronized horizontal-scroll cue: proportional offset follows existing scroll position");
+  const cueRange = board.slice(board.indexOf("const cueRange"), board.indexOf("const updateScrollCue"));
+  assert.match(cueRange, /const thumbWidth = Math\.min\(trackWidth, Math\.max\(0, trackWidth \* columns\.clientWidth \/ columns\.scrollWidth\)\);[\s\S]*const availableTrack = Math\.max\(0, trackWidth - thumbWidth\);/, "cueRange derives its available track from the fractional thumb width painted into the cue");
+  assert.doesNotMatch(cueRange, /thumb\.offsetWidth/, "cueRange does not derive input geometry from a rounded rendered thumb width");
+  assert.match(board, /const \{ availableTrack, maxScroll, thumbWidth \} = range;[\s\S]*--board-scroll-thumb-width", `\$\{thumbWidth\}px`/, "the painter writes the same thumb width that cueRange uses for pointer mapping");
   assert.match(board, /thumb\.setPointerCapture\(event\.pointerId\)/, "Board exposes one draggable horizontal-scroll cue: thumb drag captures its pointer");
   assert.match(board, /drag\.startScrollLeft \+ deltaX \* maxScroll \/ availableTrack/, "Board exposes one draggable horizontal-scroll cue: drag applies the inverse thumb-to-scroll ratio");
   assert.match(board, /event\.clientX - track\.left - thumbWidth \/ 2/, "Board exposes one draggable horizontal-scroll cue: track press centres the thumb on the pointer");
@@ -38,6 +42,7 @@ test("W-406-b1 behaviour 1: every Board phase is visibly reachable at desktop an
   assert.match(served, /drag reaches the terminal horizontal offset/, "the served row pins pointer-drag terminal reach");
   assert.match(served, /track press jumps to its centred proportional offset/, "the served row pins the track-press decision");
   assert.match(served, /secondary-button drag leaves scrollLeft unchanged/, "the served row pins fail-closed pointer rejection");
+  assert.match(served, /secondary-button track press leaves scrollLeft unchanged/, "the served row pins fail-closed uncovered-track rejection");
   assert.match(served, /cue stays an aria-hidden unfocusable pointer proxy/, "the served row pins the accessibility contract");
   assert.match(served, /thumbPixel\.equals\(trackPixel\)/, "the served row compares rendered track and thumb pixels before scrolling");
   assert.match(served, /initial thumb width matches the visible scroll fraction/, "the served row pins proportional cue geometry before scrolling");
