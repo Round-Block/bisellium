@@ -1,0 +1,57 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-403-b2\s --import tsx packages/cli/src/w403.test.ts
+# exit: 1
+# at: 2026-10-25T13:55:31.200Z
+# sella: architect
+# tree: tree:182a27eae4287a20d4e2ca3f9aa3965d03d9a2b9
+# ticket: {"opus":"W-403","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-403/studio","head":"73e5a4baac48d75410e3c1d9ab3f77266d8d88b3","brief":"fb260d16f409989e50b9067bd19a0d00cad085d8","at":"2026-10-25T13:55:31.162Z"}
+
+TAP version 13
+# Subtest: W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scope even for a remainder or a cause fix: kind ui, over 3 points or unsized, a title naming security, the sandbox, branch protection, architecture or a code-owned path, a security class, a ui parent, a record the screen cannot read, and a cause fix that carries a parent (W-417)
+not ok 1 - W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scope even for a remainder or a cause fix: kind ui, over 3 points or unsized, a title naming security, the sandbox, branch protection, architecture or a code-owned path, a security class, a ui parent, a record the screen cannot read, and a cause fix that carries a parent (W-417)
+  ---
+  duration_ms: 59.512091
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-403/packages/cli/src/w403.test.ts:18:2863'
+  failureType: 'testCodeFailure'
+  error: |-
+    a kind ui remainder: refused
+    + actual - expected
+    
+      {
+    +   code: 0,
+    +   err: '',
+    +   out: 'W-20: greenlit (auto, D-1: D-061 §4: the remainder of W-1 (done), whose spec reviews ci/W-1-spec-2.log and ci/W-1-spec-4.log failed)'
+    -   code: 2,
+    -   err: "W-20: greenlight --auto refused: W-20 is kind ui; a ui opus is the Patron's to greenlight",
+    -   out: ''
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 2
+    out: ''
+    err: "W-20: greenlight --auto refused: W-20 is kind ui; a ui opus is the Patron's to greenlight"
+  actual:
+    code: 0
+    out: 'W-20: greenlit (auto, D-1: D-061 §4: the remainder of W-1 (done), whose spec reviews ci/W-1-spec-2.log and ci/W-1-spec-4.log failed)'
+    err: ''
+  operator: 'deepStrictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-403/packages/cli/src/w403.test.ts:334:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-403/packages/cli/src/w403.test.ts:339:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.199739
