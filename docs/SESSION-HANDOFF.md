@@ -46,8 +46,8 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, one UI (Patron 2026-10-24, narrowing D-111's two each), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-416 — opus.ui.design counts a review older than the current ui-lead input as none, not a block; unblocks W-406 (high; Patron 10-25)
-2. W-403 — auto greenlight where scope is already decided: a D-061 §4 remainder of a greenlit opus and a D-076 D cause fix greenlight without the Patron, no cap; ui, architecture, new features, security, sandbox, code-owned paths and over 3 points stay the Patron's (high; greenlit 10-25; Defaults to the Patron before branch)
+1. W-403 — auto greenlight for a D-061 §4 remainder of a greenlit opus or a D-076 D cause fix, no cap; the Patron's reserved scope stays the Patron's (high; greenlit 10-25; Defaults agreed 10-25; split under D-061 §4: W-417)
+2. W-417 — W-403's remainder: --auto admits a cause fix with a parent only if that parent is a valid, readable, non-ui record (awaits the Patron's greenlight)
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (W-350 merged unseen; Patron 2026-10-24) (high; greenlit 10-25) `next.ts`
 4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
 5. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
@@ -84,7 +84,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 36. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-406 — W-350's layout defects plus a visible Board scrollbar (Patron 10-25: screens not approved) (high) — waits on W-416
+1. W-406 — W-350's layout defects plus a visible Board scrollbar (Patron 10-25: screens not approved) (high) — built and review round 2 passed; waits on the Patron's screen approval
 2. W-415 — the sidebar collapses on every screen, and every screen reflows on browser zoom (Patron 10-25 on W-406's screens; greenlit 10-25)
 3. W-350 — production-font baselines (D-097): the Patron approves the shots after W-406 (D-099 E)
 4. W-407, W-408 — Inbox, then Officina, to DIRECTION §6 (W-407 to W-413 greenlit 10-25)
