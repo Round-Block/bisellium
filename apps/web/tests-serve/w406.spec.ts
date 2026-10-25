@@ -18,7 +18,7 @@ async function open(page: Page, route: "board" | "officina", width: 1280 | 390):
   await expect(page.locator(`.${route}`)).toBeVisible();
 }
 
-test("W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390", async ({ page }) => {
+test("W-406-b1 Board exposes one draggable horizontal-scroll cue at 1280 and 390", async ({ page }) => {
   for (const width of [1280, 390] as const) {
     await open(page, "board", width);
     const columns = page.locator(".board__columns");
@@ -33,24 +33,19 @@ test("W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390", as
       const element = node as HTMLElement;
       const style = getComputedStyle(element);
       const webkitScrollbar = getComputedStyle(element, "::-webkit-scrollbar");
-      const webkitTrack = getComputedStyle(element, "::-webkit-scrollbar-track");
-      const webkitThumb = getComputedStyle(element, "::-webkit-scrollbar-thumb");
       return {
         clientWidth: element.clientWidth,
-        gutter: style.scrollbarGutter,
         scrollWidth: element.scrollWidth,
-        webkitScrollbar: { display: webkitScrollbar.display, height: webkitScrollbar.height },
-        webkitTrack: { backgroundColor: webkitTrack.backgroundColor },
-        webkitThumb: { backgroundColor: webkitThumb.backgroundColor, borderRadius: webkitThumb.borderRadius },
+        scrollbarWidth: style.scrollbarWidth,
+        webkitScrollbar: { display: webkitScrollbar.display },
       };
     });
     expect(scroll.scrollWidth, `${width}: phases overflow into a horizontal scroll range`).toBeGreaterThan(scroll.clientWidth);
-    expect(scroll.gutter, `${width}: the Board columns keep a stable inline scrollbar gutter`).toContain("stable");
-    expect(scroll.webkitScrollbar.height, `${width}: Chromium accepts the 8px scrollbar before test interaction`).toBe("8px");
-    expect(scroll.webkitScrollbar.display, `${width}: the accepted scrollbar pseudo-element is not suppressed`).not.toBe("none");
-    expect(scroll.webkitTrack.backgroundColor, `${width}: the track has a visible ruled colour`).not.toBe("rgba(0, 0, 0, 0)");
-    expect(scroll.webkitThumb.backgroundColor, `${width}: the thumb has a visible ruled colour`).not.toBe(scroll.webkitTrack.backgroundColor);
-    expect(scroll.webkitThumb.borderRadius, `${width}: the thumb remains square`).toBe("0px");
+    expect(scroll.scrollbarWidth, `${width}: standard native scrollbar is hidden`).toBe("none");
+    expect(scroll.webkitScrollbar.display, `${width}: WebKit native scrollbar is hidden`).toBe("none");
+    await expect(cue, `${width}: cue stays hidden from assistive technology`).toHaveAttribute("aria-hidden", "true");
+    expect(await cue.getAttribute("role"), `${width}: cue does not duplicate the container as a semantic scrollbar`).toBeNull();
+    expect(await cue.getAttribute("tabindex"), `${width}: cue stays an aria-hidden unfocusable pointer proxy`).toBeNull();
     const [trackBox, thumbBox] = await Promise.all([cue.boundingBox(), thumb.boundingBox()]);
     expect(trackBox, `${width}: the in-page scroll track has a rendered box`).toBeTruthy();
     expect(thumbBox, `${width}: the in-page scroll thumb has a rendered box`).toBeTruthy();
@@ -79,19 +74,52 @@ test("W-406-b1 Board exposes and reaches its terminal phase at 1280 and 390", as
       page.screenshot({ clip: { x: Math.floor(thumbBox!.x + thumbBox!.width / 2), y: Math.floor(sampleY), width: 1, height: 1 } }),
     ]);
     expect(thumbPixel.equals(trackPixel), `${width}: rendered thumb and track pixels are visibly distinct`).toBe(false);
+
     await columns.evaluate((node) => {
       const element = node as HTMLElement;
-      element.scrollLeft = element.scrollWidth - element.clientWidth;
+      element.style.scrollSnapType = "none";
+      element.scrollLeft = 0;
     });
-    await expect.poll(() => columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: the Board reaches its terminal horizontal offset`).toBeGreaterThan(0);
+    await expect.poll(() => columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: drag starts at the left terminal`).toBe(0);
+    const [dragTrack, dragThumb] = await Promise.all([cue.boundingBox(), thumb.boundingBox()]);
+    expect(dragTrack, `${width}: drag track has a rendered box`).toBeTruthy();
+    expect(dragThumb, `${width}: drag thumb has a rendered box`).toBeTruthy();
+    const availableTrack = dragTrack!.width - dragThumb!.width;
+    const dragDistance = Math.min(48, availableTrack / 3);
+    const dragStartX = dragThumb!.x + dragThumb!.width / 2;
+    const dragY = dragThumb!.y + dragThumb!.height / 2;
+    await page.mouse.move(dragStartX, dragY);
+    await page.mouse.down({ button: "right" });
+    await page.mouse.move(dragStartX + dragDistance, dragY);
+    await page.mouse.up({ button: "right" });
+    expect(await columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: secondary-button drag leaves scrollLeft unchanged`).toBe(0);
+    await page.mouse.move(dragStartX, dragY);
+    await page.mouse.down();
+    await page.mouse.move(dragStartX + dragDistance, dragY, { steps: 2 });
+    const expectedDraggedScroll = dragDistance * maxScroll / availableTrack;
+    await expect.poll(async () => Math.abs(await columns.evaluate((node) => (node as HTMLElement).scrollLeft) - expectedDraggedScroll), `${width}: pointer drag moves scrollLeft by the inverse cue ratio`).toBeLessThanOrEqual(1);
+    await expect.poll(async () => {
+      const box = await thumb.boundingBox();
+      return box === null ? Number.POSITIVE_INFINITY : Math.abs(box.x - dragTrack!.x - dragDistance);
+    }, `${width}: synchronized thumb follows the container during drag`).toBeLessThanOrEqual(1);
+    await page.mouse.move(dragStartX + availableTrack + 8, dragY, { steps: 2 });
+    await expect.poll(async () => Math.abs(await columns.evaluate((node) => (node as HTMLElement).scrollLeft) - maxScroll), `${width}: drag reaches the terminal horizontal offset`).toBeLessThanOrEqual(1);
+    await page.mouse.up();
     await expect.poll(async () => {
       const [terminalTrack, terminalThumb] = await Promise.all([cue.boundingBox(), thumb.boundingBox()]);
       return terminalTrack !== null && terminalThumb !== null ? Math.abs(terminalTrack.x + terminalTrack.width - terminalThumb.x - terminalThumb.width) : Number.POSITIVE_INFINITY;
-    }, `${width}: terminal thumb reaches the track right edge`).toBeLessThanOrEqual(1);
+    }, `${width}: terminal thumb reaches the track right edge after drag`).toBeLessThanOrEqual(1);
     const [containerBox, terminalBox] = await Promise.all([columns.boundingBox(), lastColumn.boundingBox()]);
     expect(containerBox, `${width}: the Board scroll container has a box`).toBeTruthy();
     expect(terminalBox, `${width}: the terminal phase has a box`).toBeTruthy();
     expect(terminalBox!.x + terminalBox!.width, `${width}: terminal phase right edge is reachable inside the scroll container`).toBeLessThanOrEqual(containerBox!.x + containerBox!.width + 1);
+
+    await columns.evaluate((node) => { (node as HTMLElement).scrollLeft = 0; });
+    await expect.poll(() => columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: track press starts at the left terminal`).toBe(0);
+    const trackPressX = dragTrack!.x + dragTrack!.width * 0.75;
+    await page.mouse.click(trackPressX, dragY);
+    const expectedTrackScroll = Math.min(maxScroll, Math.max(0, (trackPressX - dragTrack!.x - dragThumb!.width / 2) * maxScroll / availableTrack));
+    await expect.poll(async () => Math.abs(await columns.evaluate((node) => (node as HTMLElement).scrollLeft) - expectedTrackScroll), `${width}: track press jumps to its centred proportional offset`).toBeLessThanOrEqual(1);
     await served.close();
     served = undefined;
   }
