@@ -441,6 +441,29 @@ test("W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scop
   decided(plain);
   plain.opus("W-30", { title: "W-1's remainder: edit .github/workflows/ci.yml", parent: "W-1", value: 2 });
   assert.equal(plain.green("W-30", "--auto").code, 0, "a HEAD with no CODEOWNERS: .github is not reserved");
+  // a record whose YAML parses but cannot be converted or serialized (an unresolved alias, a cyclic alias) refuses at the one
+  // read every path goes through, on the opus itself and on its parent, whichever field holds it
+  const withLine = (id: string, f: Dict, line: string): void => put(join(w.studio, "opera", `${id}.md`), opusText(id, f).replace("\n---\nBody", `\n${line}\n---\nBody`));
+  const CONVERT = "its front matter cannot be converted to a record";
+  const CYCLIC = "its front matter holds a value that cannot be serialized";
+  withLine("W-51", { title: "W-1's remainder, an unresolved alias", parent: "W-1", value: 2 }, "note: *nowhere");
+  refused("an unresolved alias in the opus: refused", ["W-51", "--auto"], `W-51: greenlight --auto refused: opera/W-51.md cannot be read (${CONVERT})`);
+  withLine("W-52", { title: "W-1's remainder, a cyclic alias", parent: "W-1", value: 2 }, "note: &loop [*loop]");
+  refused("a cyclic alias in the opus: refused", ["W-52", "--auto"], `W-52: greenlight --auto refused: opera/W-52.md cannot be read (${CYCLIC})`);
+  withLine("W-53", { title: "W-1's remainder, a cyclic declined", parent: "W-1", value: 2 }, "declined: &loop [*loop]");
+  refused("a cyclic alias in declined: refused", ["W-53", "--auto"], `W-53: greenlight --auto refused: opera/W-53.md cannot be read (${CYCLIC})`);
+  withLine("W-55", { title: "a parent holding an unresolved alias", kind: "feature", state: "done", value: 2 }, "note: *nowhere");
+  w.spec("W-55", SPLIT);
+  w.opus("W-54", { title: "W-55's remainder", parent: "W-55", value: 2 });
+  refused("an unresolved alias in the parent: refused", ["W-54", "--auto"], `W-54: greenlight --auto refused: W-54's parent W-55's record cannot be read (${CONVERT}); ${UNSCREENED}`);
+  withLine("W-57", { title: "a parent holding a cyclic alias", kind: "feature", state: "done", value: 2 }, "note: &loop [*loop]");
+  w.spec("W-57", SPLIT);
+  w.opus("W-56", { title: "W-57's remainder", parent: "W-57", value: 2 });
+  refused("a cyclic alias in the parent: refused", ["W-56", "--auto"], `W-56: greenlight --auto refused: W-56's parent W-57's record cannot be read (${CYCLIC}); ${UNSCREENED}`);
+  put(join(w.studio, "opera", "W-59.md"), opusText("W-59", { title: "a parent whose kind is a cyclic alias", state: "done", value: 2 }).replace('kind: "subtask"', "kind: &loop [*loop]"));
+  w.spec("W-59", SPLIT);
+  w.opus("W-58", { title: "W-59's remainder", parent: "W-59", value: 2 });
+  refused("a parent whose kind is a cyclic alias: refused", ["W-58", "--auto"], `W-58: greenlight --auto refused: W-58's parent W-59's record cannot be read (${CYCLIC}); ${UNSCREENED}`);
   // the remainder itself still passes
   assert.equal(w.green("W-2", "--auto").code, 0, "W-2, clear of every reserved form: greenlit");
 });
