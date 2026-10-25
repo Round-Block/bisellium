@@ -324,3 +324,123 @@ test("W-403-b1 behaviour 1: greenlight --auto greenlights a D-061 §4 remainder 
   assert.deepEqual([n.front("W-9")["state"], n.front("W-9")["greenlit_by"]], ["greenlit", undefined], "the Patron's greenlight writes no greenlit_by");
   assert.equal(JSON.parse(timeline(n).trim())["action"], "greenlight", "the Patron's greenlight writes its timeline line");
 });
+
+test("W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scope even for a remainder or a cause fix: kind ui, over 3 points or unsized, a title naming security, the sandbox, branch protection, architecture or a code-owned path, a security class, a ui parent, a record the screen cannot read, and a cause fix that carries a parent (W-417)", () => {
+  const w = world();
+  decided(w);
+  for (const id of ["W-6", "W-7"]) w.review(id, 2, "failed", [S1("security×secret-leaked"), S1("tests×security-boundary-cases-uncovered")]);
+  const refused = (name: string, args: string[], err: string, at: World = w): void => {
+    const before = at.snapshot();
+    assert.deepEqual(at.green(...args), { code: 2, out: "", err }, name);
+    assert.deepEqual(at.snapshot(), before, `${name}: writes nothing`);
+  };
+  const REASON = "security, the sandbox, branch protection, architecture and code-owned paths are the Patron's";
+  w.opus("W-20", { title: "W-1's remainder, the screens", kind: "ui", parent: "W-1", value: 2 });
+  refused("a kind ui remainder: refused", ["W-20", "--auto"], "W-20: greenlight --auto refused: W-20 is kind ui; a ui opus is the Patron's to greenlight");
+  w.opus("W-22", { title: "a ui parent", kind: "ui", state: "done", value: 2 });
+  w.spec("W-22", SPLIT);
+  w.opus("W-21", { title: "W-22's remainder", parent: "W-22", value: 2 });
+  refused("a ui parent's remainder: refused", ["W-21", "--auto"], "W-21: greenlight --auto refused: W-21's parent W-22 is kind ui; a ui opus's remainder is the Patron's to greenlight");
+  w.opus("W-23", { title: "W-1's remainder, large", parent: "W-1", value: 5 });
+  refused("5 points: refused", ["W-23", "--auto"], "W-23: greenlight --auto refused: W-23's value is 5, not 1, 2 or 3 points; anything larger, or unsized, is the Patron's");
+  w.opus("W-24", { title: "W-1's remainder, unsized", parent: "W-1" });
+  refused("no value: refused", ["W-24", "--auto"], "W-24: greenlight --auto refused: W-24's value is absent, not 1, 2 or 3 points; anything larger, or unsized, is the Patron's");
+  for (const [id, title, word] of [
+    ["W-25", "W-1's remainder: the Security half", "security"],
+    ["W-26", "W-1's remainder: the sandbox rows", "sandbox"],
+    ["W-27", "W-1's remainder: an architecture change", "architecture"],
+    ["W-28", "W-1's remainder: branch protection on master", "branch protection"],
+    ["W-29", "W-1's remainder: the CODEOWNERS line", "codeowners"],
+    ["W-30", "W-1's remainder: edit .github/workflows/ci.yml", ".github"],
+    ["W-31", "W-1's remainder: amend studio/leges/production.md", "leges"],
+    ["W-32", "W-1's remainder: a paragraph in ADOPTION.md", "ADOPTION.md"],
+  ] as const) {
+    w.opus(id, { title, parent: "W-1", value: 2 });
+    refused(`a title naming ${word}: refused`, [id, "--auto"], `${id}: greenlight --auto refused: ${id}'s title names "${word}"; ${REASON}`);
+  }
+  w.opus("W-33", { title: "cause fix for security×secret-leaked", kind: "feature", value: 2 });
+  refused("a security class: refused", ["W-33", "--auto"], "W-33: greenlight --auto refused: W-33's title names the security class security×secret-leaked; security is the Patron's");
+  // a record the screen cannot read refuses before either kind: a kind outside the native kinds, a title titleProblem
+  // refuses, a parent that is not an opus id; and a parent whose record cannot be read or has no native kind
+  const UNSCREENED = "only the Patron greenlights a record the screen cannot read";
+  w.opus("W-35", { title: "W-1's remainder, the screens", kind: ["ui"], parent: "W-1", value: 2 });
+  refused("a kind that is not a native kind ([ui]): refused", ["W-35", "--auto"], `W-35: greenlight --auto refused: W-35's kind is ["ui"], not a native opus kind; ${UNSCREENED}`);
+  w.opus("W-36", { title: "W-1's remainder, no kind", kind: null, parent: "W-1", value: 2 });
+  refused("no kind: refused", ["W-36", "--auto"], `W-36: greenlight --auto refused: W-36's kind is absent, not a native opus kind; ${UNSCREENED}`);
+  w.opus("W-37", { title: 42, parent: "W-1", value: 2 });
+  refused("a title that is not a string: refused", ["W-37", "--auto"], `W-37: greenlight --auto refused: W-37's title must be a nonblank string; ${UNSCREENED}`);
+  w.opus("W-38", { title: "W-1's remainder\u0007", parent: "W-1", value: 2 });
+  refused("a title with a control character: refused", ["W-38", "--auto"], `W-38: greenlight --auto refused: W-38's title contains forbidden control U+0007; ${UNSCREENED}`);
+  w.opus("W-39", { title: "W-1's remainder, a listed parent", parent: ["W-1"], value: 2 });
+  refused("a parent that is not an opus id: refused", ["W-39", "--auto"], `W-39: greenlight --auto refused: W-39's parent is ["W-1"], not an opus id; ${UNSCREENED}`);
+  w.opus("W-41", { title: "a parent whose kind is a list", kind: ["ui"], state: "done", value: 2 });
+  w.spec("W-41", SPLIT);
+  w.opus("W-40", { title: "W-41's remainder", parent: "W-41", value: 2 });
+  refused("a parent whose kind is not a native kind ([ui]): refused", ["W-40", "--auto"], `W-40: greenlight --auto refused: W-40's parent W-41's kind is ["ui"], not a native opus kind; ${UNSCREENED}`);
+  w.opus("W-43", { title: "a parent with no kind", kind: null, state: "done", value: 2 });
+  w.spec("W-43", SPLIT);
+  w.opus("W-42", { title: "W-43's remainder", parent: "W-43", value: 2 });
+  refused("a parent with no kind: refused", ["W-42", "--auto"], `W-42: greenlight --auto refused: W-42's parent W-43's kind is absent, not a native opus kind; ${UNSCREENED}`);
+  put(join(w.studio, "opera", "W-45.md"), "a record with no front matter\n");
+  w.spec("W-45", SPLIT);
+  w.opus("W-44", { title: "W-45's remainder", parent: "W-45", value: 2 });
+  refused("a parent whose record cannot be read: refused", ["W-44", "--auto"], `W-44: greenlight --auto refused: W-44's parent W-45's record cannot be read (it has no front matter); ${UNSCREENED}`);
+  w.opus("W-46", { title: "cause fix for tests×ruled-case-uncovered, under a ui parent", kind: "feature", parent: "W-22", value: 2 });
+  refused("a cause fix whose parent is kind ui: refused", ["W-46", "--auto"], "W-46: greenlight --auto refused: W-46's parent W-22 is kind ui; a ui opus's remainder is the Patron's to greenlight");
+  // the D-061 §4 cut (spec round 5): a cause fix that carries any parent is refused, whatever the parent (W-417 is to check it)
+  const PARENTED = "a cause fix that carries a parent waits for W-417, so only the Patron greenlights it";
+  w.opus("W-47", { title: "cause fix for tests×ruled-case-uncovered, part of W-6", kind: "feature", parent: "W-6", value: 2 });
+  refused(
+    "a cause fix that carries a valid parent it is not the remainder of: refused",
+    ["W-47", "--auto"],
+    `W-47: greenlight --auto refused: W-47 reads as a D-076 D cause fix but carries parent W-6 and is not its D-061 §4 remainder (its parent W-6 has no two failed spec reviews by spec-reviewer without a passed review between); ${PARENTED}`,
+  );
+  w.opus("W-48", { title: "cause fix for tests×ruled-case-uncovered, a mistyped parent", kind: "feature", parent: "W-99", value: 2 });
+  refused(
+    "a cause fix whose parent W-99 has no record: refused",
+    ["W-48", "--auto"],
+    `W-48: greenlight --auto refused: W-48 reads as a D-076 D cause fix but carries parent W-99 and is not its D-061 §4 remainder (its parent W-99 has no record); ${PARENTED}`,
+  );
+  w.opus("W-50", { title: "a parent whose state is mistyped", kind: "feature", state: "don", value: 2 });
+  w.opus("W-49", { title: "cause fix for tests×ruled-case-uncovered, under a parent in state don", kind: "feature", parent: "W-50", value: 2 });
+  refused(
+    "a cause fix whose parent's state is mistyped (don): refused",
+    ["W-49", "--auto"],
+    `W-49: greenlight --auto refused: W-49 reads as a D-076 D cause fix but carries parent W-50 and is not its D-061 §4 remainder (its parent W-50 is don, not greenlit or done); ${PARENTED}`,
+  );
+  // not reserved: a word inside a longer token, a glob pattern, and a recurring class whose slug holds the word
+  w.opus("W-34", { title: "cause fix for tests×security-boundary-cases-uncovered, in sandboxed rows and x.secret files", kind: "feature", value: 3 });
+  assert.deepEqual(
+    w.green("W-34", "--auto"),
+    { code: 0, out: "W-34: greenlit (auto, D-1: D-076 D: a cause fix for tests×security-boundary-cases-uncovered, an S1 class in the failed reviews of 2 opera: W-6, W-7)", err: "" },
+    "security inside a class slug, sandboxed and a glob's name are not reserved: greenlit",
+  );
+  // a repository with no CODEOWNERS at HEAD: no path is code-owned
+  const bare = world({ git: false });
+  decided(bare);
+  bare.opus("W-30", { title: "W-1's remainder: edit .github/workflows/ci.yml", parent: "W-1", value: 2 });
+  assert.equal(bare.green("W-30", "--auto").code, 0, "no repository, so no CODEOWNERS: .github is not reserved");
+  // CODEOWNERS: a git failure refuses; only a confirmed non-repository or a HEAD whose tree has no such file names nothing
+  const badConfig = world();
+  decided(badConfig);
+  writeFileSync(join(badConfig.repo, ".git", "config"), "[core\n");
+  refused("git failing (a bad .git/config): refused", ["W-2", "--auto"], "W-2: greenlight --auto refused: git rev-parse --show-toplevel failed (fatal: bad config line 1 in file .git/config), so the code-owned paths cannot be screened", badConfig);
+  const unborn = world({ git: "unborn" });
+  decided(unborn);
+  refused("an unborn HEAD: refused", ["W-2", "--auto"], "W-2: greenlight --auto refused: git ls-tree HEAD -- .github/CODEOWNERS failed (fatal: Not a valid object name HEAD), so the code-owned paths cannot be screened", unborn);
+  const dir = world({ git: "codeowners-dir" });
+  decided(dir);
+  refused("a CODEOWNERS at HEAD that is not a regular file: refused", ["W-2", "--auto"], "W-2: greenlight --auto refused: .github/CODEOWNERS at HEAD is not a regular file, so the code-owned paths cannot be screened", dir);
+  const lost = world();
+  decided(lost);
+  const oid = spawnSync("git", ["rev-parse", "HEAD:.github/CODEOWNERS"], { cwd: lost.repo, encoding: "utf8" }).stdout.trim();
+  assert.match(oid, /^[0-9a-f]{40}$/, "fixture: the CODEOWNERS blob's id");
+  rmSync(join(lost.repo, ".git", "objects", oid.slice(0, 2), oid.slice(2)));
+  refused("a CODEOWNERS blob git cannot read: refused", ["W-2", "--auto"], `W-2: greenlight --auto refused: git cat-file blob .github/CODEOWNERS failed (fatal: git cat-file ${oid}: bad file), so the code-owned paths cannot be screened`, lost);
+  const plain = world({ git: "no-codeowners" });
+  decided(plain);
+  plain.opus("W-30", { title: "W-1's remainder: edit .github/workflows/ci.yml", parent: "W-1", value: 2 });
+  assert.equal(plain.green("W-30", "--auto").code, 0, "a HEAD with no CODEOWNERS: .github is not reserved");
+  // the remainder itself still passes
+  assert.equal(w.green("W-2", "--auto").code, 0, "W-2, clear of every reserved form: greenlit");
+});
