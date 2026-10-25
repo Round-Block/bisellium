@@ -1,0 +1,19 @@
+# opus: W-406
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a81efbaba7f8c9316
+# session_reason: the round-2 reviewer session a77bb51939516a3c1 belongs to an earlier orchestrator conversation and cannot be resumed; a fresh Claude Opus 5.5 subagent reviewed round 5
+# outcome: passed
+# at: 2026-10-25T07:45:56.861Z
+# tree: tree:9c9871ad4faf2e91f4f908500f2a2a1a1a1a4723
+# brief: briefs/W-406.md blob:bcffabcaf1fcb4aa3c88dceb48dc9292da3f1f17
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":".worktrees/W-406/studio","head":"9030764ed874dd06a7cd279c9feb6acc03db495f","brief":"bcffabcaf1fcb4aa3c88dceb48dc9292da3f1f17","at":"2026-10-25T07:45:55.248Z"}
+
+## Findings
+1. advisory — brief:44 [severity: S2] The terminal range `scrollWidth − offsetWidth` is not the CSSOM maximum of `scrollLeft` (`scrollWidth − clientWidth`). `.board__columns` keeps `scrollbar-gutter: stable` (w025.css:1163). Wherever that gutter is non-zero, the thumb's travel is out of step with the container by the gutter width: in ordinary Chromium (not `--hide-scrollbars`), on Windows or Linux classic scrollbars, the thumb reaches the track's right edge while gutter-width content is still unscrolled, and the cue stays hidden when the overflow is no wider than the gutter. The served row cannot see this. It runs only under `--hide-scrollbars`, where offsetWidth equals clientWidth. It also checks the offset only at the initial position and at a terminal it sets itself to `scrollWidth − offsetWidth` (cue-tests.patch, w406.spec.ts). So "proportional synchronized thumb" (brief:54) and "not counted twice" promise more than the row proves for the Patron's ordinary browser. Replacement for brief:44: "Thumb width is `trackWidth × clientWidth / scrollWidth`; thumb offset is `(trackWidth − thumbWidth) × scrollLeft / (scrollWidth − clientWidth)`, the container's own maximum `scrollLeft`, with finite zero-range guards and values clamped to the track. The served row sets its terminal offset to `scrollWidth − clientWidth`." The kill-78 regex and served row 78 change with it. An alternative fix keeps the formula and adds this limit to brief:54: "synchronization is proven only where the native gutter is zero (`--hide-scrollbars`, overlay scrollbars); with a non-zero gutter the thumb may reach its right bound up to one gutter width early." [class: spec×promise-unattainable-under-accepted-domain] — check: none: a served row that launches with scrollbars shown and asserts thumb offset against `scrollLeft / (scrollWidth − clientWidth)` at a mid-range offset and at the true terminal
+
+## Verdict
+The painted in-page cue revision names its two changed reader rows (brief:77-78) with `assert.match()`/`expect()` rejectors, carries assertion-level reds, one-hunk kills and green two-width served evidence on 018d39dc, and leaves one advisory about the gutter in the terminal-range formula that the builder adopts or states as a limit.
+VERDICT: PASS
