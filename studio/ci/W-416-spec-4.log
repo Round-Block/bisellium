@@ -1,0 +1,22 @@
+# opus: W-416
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17243-f337-7e21-ae9b-84493c1dec32
+# outcome: passed
+# at: 2026-10-25T10:41:31.923Z
+# tree: tree:ab285ac6d1f426f7a2f1697bc1fb0aaabe0c51b6
+# brief: briefs/W-416.md blob:1d310ddc33590573ea10c715f4731bda4573f3b9
+# ticket: {"opus":"W-416","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"7ab58de9d6f2ceffb70e51c2868fb8eb619c216c","brief":"1d310ddc33590573ea10c715f4731bda4573f3b9","at":"2026-10-25T10:41:28.582Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-416-spec-2.log #1: closed — brief:59, brief:71, and brief:90 now require `reviewCitation` to reject an absent or malformed `# at:` in every phase; W-416-b1 pins otherwise-current reviews in check, review, and done, and K12/K13 kill the rejection and its current-citation coverage.
+
+## Verdict
+The revision closes the timestamp fail-open blocker with an enforceable boundary and matching evidence.
+
+VERDICT: PASS

@@ -30,7 +30,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
-import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, uiReviewSuperseded, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -1222,7 +1222,9 @@ export function deriveNext(f: Facts): Derived {
       });
 
     // 7 review
-    const uiBranch = f.uiReviewProblems();
+    // W-416: a passed kind: ui review recorded before the current ui-lead input is superseded: a new review is due
+    const superseded = gate?.status === "passed" && gate.evidence !== undefined && b["kind"] === "ui" ? uiReviewSuperseded(f.wt.studio, b as NativeRecord, id, gate.evidence) : undefined;
+    const uiBranch = [...f.uiReviewProblems(), ...(superseded === undefined ? [] : [superseded])];
     if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
       const branchRef = `refs/heads/opus/${id}`;
       const trunkConflict = mergeTreeConflict(f.repo, "refs/remotes/origin/master", branchRef);

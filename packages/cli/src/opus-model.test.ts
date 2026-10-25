@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { deflateSync } from "node:zlib";
 import { after, test } from "node:test";
-import { parseFrontMatter, readFront } from "@bisellium/adapter-native";
+import { parseFrontMatter, readFront, readManifest } from "@bisellium/adapter-native";
 import { checkStudio } from "./check.js";
 import { createOpusBranch, runBranch } from "./branch.js";
 import { runReady, runDone, runAmend, runReview, runHalt } from "./lifecycle.js";
@@ -30,6 +30,7 @@ import {
   titleProblem,
   utcTimestampProblem,
   validateProtectedRecords,
+  validateUiPolicy,
   type NativeRecord,
 } from "@bisellium/commands/opus-model.js";
 
@@ -2338,3 +2339,93 @@ if (runs(7)) {
     );
   });
 }
+
+// W-416: W-406's sequence on a fixture officina. A kind: ui opus at verifying: ui-lead input round 1 at 11:00, a build review
+// passed at 11:30 citing it, then the brief revised (or not) and the input re-recorded at a later round and time.
+interface W416Case {
+  /** the brief revised before the input is re-recorded (a new design digest), as W-406's was */
+  revise?: boolean;
+  /** the re-recorded input's round and at; none keeps round 1 current */
+  input?: { round: number; at: string };
+  /** the review's header: its at (null drops the line), its cited ui_input (a path), its digest (current or the old one) */
+  review?: { at?: string | null; cites?: string; digest?: "old" | "current" };
+  state?: string;
+}
+function w416World(tag: string, c: W416Case): { root: string; record: NativeRecord } {
+  const id = "W-041";
+  const root = scratch(`w416-${tag}`);
+  writeManifest(root);
+  writeFileSync(join(root, "briefs", `${id}.md`), `# ${id}\n\nThe layout fixture brief, first signed form.\n`);
+  const tree = "tree:4164164164164164164164164164164164164164";
+  writeServedLog(root, tree, id);
+  writeOpus(root, id, [
+    'title: "a ui opus whose input is re-recorded after its build review"',
+    "kind: ui",
+    "collegium: design",
+    `state: ${c.state ?? "verifying"}`,
+    "start: 2026-10-01T10:00:00.000Z",
+    ...(c.state === "done" ? ["end: 2026-10-01T11:50:00.000Z"] : []),
+    `spec: briefs/${id}.md`,
+    "probationes:",
+    ...servedLines(tree),
+    "  review:",
+    "    sella: qa-lead",
+    "    status: passed",
+    `    evidence: ci/${id}-review-1.log`,
+    "    at: 2026-10-01T11:30:00.500Z",
+  ]);
+  const first = writeUiInput(root, id, 1);
+  if (c.revise) writeFileSync(join(root, "briefs", `${id}.md`), `# ${id}\n\nThe layout fixture brief, revised after the Patron rejected the screens.\n`);
+  let current = first;
+  if (c.input) {
+    current = writeUiInput(root, id, c.input.round);
+    const path = join(root, current);
+    writeFileSync(path, readFileSync(path, "utf8").replace("# at: 2026-10-01T11:00:00.000Z", `# at: ${c.input.at}`));
+  }
+  const evidence = writeReviewEvidence(root, id, c.review?.cites ?? first, `${id}-review-1.log`);
+  const path = join(root, evidence);
+  let text = readFileSync(path, "utf8");
+  const at = c.review?.at === undefined ? "2026-10-01T11:30:00.000Z" : c.review.at;
+  text = text.replace("# at: 2026-10-01T11:30:00.000Z\n", at === null ? "" : `# at: ${at}\n`);
+  // the review was written before the revision, so its digest is the first brief's unless the case says current
+  if (c.revise && c.review?.digest !== "current")
+    text = text.replace(/^# design_digest: .*$/m, `# design_digest: ${designDigest(String(front(root, id)["title"]), Buffer.from(`# ${id}\n\nThe layout fixture brief, first signed form.\n`))}`);
+  writeFileSync(path, text);
+  void current;
+  return { root, record: front(root, id) as NativeRecord };
+}
+const w416Design = (root: string): string[] =>
+  checkStudio(root, NOW).findings.filter((f) => f.where === "opera/W-041.md" && f.rule === "opus.ui.design").map((f) => f.message);
+const W416_CITE = "review evidence does not cite the current ui-lead input";
+const W416_DIGEST = "review evidence design_digest is missing or stale";
+const W416_FALSE = "review evidence cites the current ui-lead input but was recorded before it";
+const W416_AT = "review evidence has a missing or malformed # at: timestamp";
+
+test("W-416-b1 behaviour 1: a build review recorded before the current ui-lead input is superseded in check and blocks nothing; every other stale or false citation still blocks", () => {
+  const LATER = { round: 3, at: "2026-10-01T11:45:00.000Z" };
+  assert.deepEqual(w416Design(w416World("w406", { revise: true, input: LATER }).root), [], "W-406's sequence: the brief revised and the input re-recorded at round 3 after a review citing round 1: superseded, no opus.ui.design finding");
+  assert.deepEqual(w416Design(w416World("same-brief", { input: { round: 2, at: "2026-10-01T11:45:00.000Z" } }).root), [], "the input re-recorded at round 2 on the same brief: superseded, no finding");
+  assert.deepEqual(w416Design(w416World("one-ms", { revise: true, input: { round: 3, at: "2026-10-01T11:30:00.001Z" } }).root), [], "the input recorded 1 ms after the review: superseded, no finding");
+  assert.deepEqual(w416Design(w416World("current", {}).root), [], "no newer input: the review citing the current input at the current digest blocks nothing");
+  assert.deepEqual(w416Design(w416World("same-instant", { revise: true, input: { round: 3, at: "2026-10-01T11:30:00.000Z" } }).root), [W416_CITE, W416_DIGEST], "the input recorded at the review's own instant: not before it, so the stale citation blocks");
+  assert.deepEqual(w416Design(w416World("after", { revise: true, input: LATER, review: { at: "2026-10-01T12:00:00.000Z" } }).root), [W416_CITE, W416_DIGEST], "a review recorded after the current input that cites round 1: blocks, as today");
+  assert.deepEqual(w416Design(w416World("wrong-digest", { revise: true, input: LATER, review: { at: "2026-10-01T12:00:00.000Z", cites: "ci/W-041-spec-3.log" } }).root), [W416_DIGEST], "a review after the current input, citing it with the first brief's digest: blocks on the digest");
+  assert.deepEqual(w416Design(w416World("false-claim", { revise: true, input: LATER, review: { cites: "ci/W-041-spec-3.log", digest: "current" } }).root), [W416_FALSE], "a review recorded before the current input that cites it, at the current digest: blocks as a false claim");
+  assert.deepEqual(w416Design(w416World("later-round", { revise: true, input: LATER, review: { cites: "ci/W-041-spec-9.log" } }).root), [W416_CITE, W416_DIGEST], "a review before the input citing a later round than the current: blocks");
+  assert.deepEqual(w416Design(w416World("other-opus", { revise: true, input: LATER, review: { cites: "ci/W-040-spec-1.log" } }).root), [W416_CITE, W416_DIGEST], "a review before the input citing another opus's round 1: blocks");
+  assert.deepEqual(w416Design(w416World("no-at", { revise: true, input: LATER, review: { at: null } }).root), [W416_AT, W416_CITE, W416_DIGEST], "a review with no # at: line: never superseded, blocks");
+  assert.deepEqual(w416Design(w416World("bad-at", { revise: true, input: LATER, review: { at: "2026-10-01 11:30" } }).root), [W416_AT, W416_CITE, W416_DIGEST], "a review whose # at: is no UTC instant: never superseded, blocks");
+  assert.deepEqual(w416Design(w416World("done", { revise: true, input: LATER, state: "done" }).root), [W416_CITE, W416_DIGEST], "the superseded review on a done record: counts as no review, blocks");
+  const w = w416World("phases", { revise: true, input: LATER });
+  const manifest = readManifest(w.root);
+  const design = (phase: "check" | "ready" | "review" | "done"): string[] =>
+    validateUiPolicy({ root: w.root, record: w.record, manifest, phase, id: "W-041" }).filter((p) => p.rule === "opus.ui.design").map((p) => p.message);
+  assert.deepEqual({ check: design("check"), review: design("review"), done: design("done") }, { check: [], review: [W416_CITE, W416_DIGEST], done: [W416_CITE, W416_DIGEST] }, "the superseded review: no block in check, and the review and done phases (review --pass, done) refuse it");
+  // an otherwise-current review (the current ui_input and the current design_digest) whose # at: is absent or malformed
+  for (const [form, at] of [["absent", null], ["malformed", "2026-10-01 11:30"]] as const) {
+    const c = w416World(`current-${form}-at`, { review: { at } });
+    const phases = Object.fromEntries((["check", "review", "done"] as const).map((phase) => [phase,
+      validateUiPolicy({ root: c.root, record: c.record, manifest: readManifest(c.root), phase, id: "W-041" }).filter((p) => p.rule === "opus.ui.design").map((p) => p.message)]));
+    assert.deepEqual({ studio: w416Design(c.root), ...phases }, { studio: [W416_AT], check: [W416_AT], review: [W416_AT], done: [W416_AT] }, `an otherwise-current review with ${form === "absent" ? "an absent" : "a malformed"} # at: blocks in check, review and done`);
+  }
+});

@@ -802,19 +802,53 @@ function reviewIdentity(
   return { header, problems };
 }
 
+/**
+ * W-416: a build review recorded before the current ui-lead input, read from the two logs' headers only: the review's
+ * `# at:` is a valid UTC instant strictly before the input's, and its `# ui_input:` names an earlier round
+ * (`ci/<id>-spec-<m>.log`, m below the input's round) of this opus. It counts as no review: check does not judge its
+ * citation, and `next` orders a new one. Any other header (no or a malformed `at`, the current or a later round, another
+ * opus's log, any other path) is judged by `reviewCitation`, as before.
+ */
+function supersededBy(input: UiInput, id: string, header: ParsedHeader): boolean {
+  const at = header.values.get("at") ?? "";
+  if (utcTimestampProblem(at) || !(instant(at) < instant(input.at))) return false;
+  const cited = /^ci\/(.+)-spec-([1-9][0-9]{0,14})\.log$/.exec(header.values.get("ui_input") ?? "");
+  return cited !== null && cited[1] === id && Number(cited[2]) < input.round;
+}
+
 function reviewCitation(
   input: UiInput,
   expectedDigest: string,
   header: ReturnType<typeof parseVerdictHeader>,
 ): string[] {
   const problems: string[] = [];
+  // W-416: the review's own time is required in every phase; only a valid instant is placed before, at or after the input
+  const at = header.values.get("at");
+  const atValid = at !== undefined && utcTimestampProblem(at) === undefined;
+  if (!atValid) problems.push("review evidence has a missing or malformed # at: timestamp");
   if (header.values.get("ui_input") !== input.relative) problems.push("review evidence does not cite the current ui-lead input");
+  // W-416: a review cannot have read an input recorded after it
+  else if (atValid && instant(at) < instant(input.at)) problems.push("review evidence cites the current ui-lead input but was recorded before it");
   if (header.values.get("design_digest") !== expectedDigest) problems.push("review evidence design_digest is missing or stale");
   const sections = contentLines(header.body);
   const dispositionHeads = sections.headings.filter((heading) => heading.level === 2 && heading.name === "UI input disposition");
   const disposition = sections.lines.filter((line) => line.section === "UI input disposition");
   if (dispositionHeads.length !== 1 || disposition.length === 0) problems.push("review evidence needs one nonblank ## UI input disposition section");
   return problems;
+}
+
+/**
+ * W-416: why a kind: ui opus's build review `evidence` is superseded by the current ui-lead input (`supersededBy`, the rule
+ * check reads), or undefined: the current design, its input or the log cannot be read, or the review is not superseded.
+ * `next`'s review rung reads it, so the superseded review orders a new one instead of the pr.
+ */
+export function uiReviewSuperseded(root: string, record: NativeRecord, id: string, evidence: string): string | undefined {
+  const design = currentDesign(root, record, id);
+  if (!design.digest) return undefined;
+  const input = authoritativeUiInput(root, record, design.digest).input;
+  const file = readContainedRegularFile(root, evidence, "ci");
+  if (input === undefined || "error" in file || !supersededBy(input, id, parseVerdictHeader(file.bytes.toString("utf8")))) return undefined;
+  return `${evidence} was recorded before the current ui-lead input ${input.relative}; it is superseded and a new build review is due`;
 }
 
 interface RulingResult {
@@ -900,7 +934,8 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
     if (typeof recordedGates[reviewId] !== "object" || recordedGates[reviewId] === null || Array.isArray(recordedGates[reviewId]))
       addPolicyProblem("opus.ui.design", "passed UI review evidence is missing");
     else if (reviewStatus !== "passed") addPolicyProblem("opus.ui.design", "UI completion needs the sole review gate passed");
-    else if (input.input && design.digest && review?.header)
+    // W-416: in check, before done, a review recorded before the current ui-lead input is superseded: no review yet, no block
+    else if (input.input && design.digest && review?.header && !(phase === "check" && state !== "done" && supersededBy(input.input, id, review.header)))
       for (const message of reviewCitation(input.input, design.digest, review.header)) addPolicyProblem("opus.ui.design", message);
   }
 
