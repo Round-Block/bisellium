@@ -1,0 +1,58 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-416-b2\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-10-25T10:42:36.545Z
+# sella: architect
+# tree: tree:476b1a4e69c053ef5cf565925a7de097fa35c09a
+# ticket: {"opus":"W-416","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-416/studio","head":"27820a8ef45ac75fb16149d3d01af8817c5f0db2","brief":"1d310ddc33590573ea10c715f4731bda4573f3b9","at":"2026-10-25T10:42:36.510Z"}
+
+TAP version 13
+# Subtest: W-416-b2 behaviour 2: a passed ui review recorded before the current ui-lead input orders a new build review, never the pr
+not ok 1 - W-416-b2 behaviour 2: a passed ui review recorded before the current ui-lead input orders a new build review, never the pr
+  ---
+  duration_ms: 3503.07985
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-416/packages/cli/src/next-review.test.ts:145:1749'
+  failureType: 'testCodeFailure'
+  error: |-
+    the superseded review orders round 2
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    actor: producer
+    why: no Patron ruling on these screens is recorded; it waits for one that binds certifies: tree:ddda931526429fe15c157f57670131f5cd584a91, design_digest: sha256:27c7316f04a5d0d18e988085488757d10331e91cee5b57427a9025027044921f, at or after 2026-10-25T10:43:39.636Z: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: W-900) in .worktrees/W-900/studio from the Patron's word on its ci/shots/W-900/, then bisellium amend W-900 --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/W-900/studio, commit both on opus/W-900, then rerun
+    head: opus/W-900 e5d008a3fd9d
+    health: no step recorded
+    ticket: none
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 pr held'
+    - 'next: W-900 review named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 review named'
+  actual: 'next: W-900 pr held'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-416/packages/cli/src/next-world.test.ts:804:10)
+    reviewNamed (/home/edckt/agents/bisellium/.worktrees/W-416/packages/cli/src/next-world.test.ts:1056:3)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-416/packages/cli/src/next-review.test.ts:2047:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3911.847251
