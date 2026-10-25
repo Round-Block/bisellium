@@ -1,0 +1,19 @@
+# opus: W-416
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17243-f337-7e21-ae9b-84493c1dec32
+# outcome: failed
+# at: 2026-10-25T08:56:51.834Z
+# tree: tree:ab285ac6d1f426f7a2f1697bc1fb0aaabe0c51b6
+# brief: briefs/W-416.md blob:51c500629d57dd5ca63b5076569e3cc8d0ea4a1e
+# ticket: {"opus":"W-416","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"e33ae1ef6559449b983c1c52bac21da747f50faf","brief":"51c500629d57dd5ca63b5076569e3cc8d0ea4a1e","at":"2026-10-25T08:56:51.301Z"}
+
+## Findings
+1. blocking — brief:88 [severity: S1] [design: changes] An accidental missing or malformed `# at:` on an otherwise-current passed review is not rejected: `supersededBy` merely returns false, while `reviewCitation` reports nothing, so `check`, `review --pass`, and `done` can accept it; the existing cases block only because their citation and digest are also stale. Replace brief:88 with: “The review log’s `# at:` must be a UTC instant accepted by `utcTimestampProblem`; `reviewCitation` rejects an absent or malformed value in every phase, while `supersededBy` classifies only valid instants as before/equal/after. Pin absent and malformed timestamps with the current `ui_input` and current `design_digest` in check, review, and done.” [class: spec×input-without-named-rejector] — check: packages/cli/src/opus-model.test.ts W-416-b1
+
+## Verdict
+The changed timestamp boundary can fail open for lifecycle callers and requires a design-changing correction before build.
+
+VERDICT: FAIL

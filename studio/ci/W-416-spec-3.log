@@ -1,0 +1,32 @@
+# opus: W-416
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-25T09:16:49.898Z
+# tree: tree:ab285ac6d1f426f7a2f1697bc1fb0aaabe0c51b6
+# brief: briefs/W-416.md blob:1d310ddc33590573ea10c715f4731bda4573f3b9
+# ticket: {"opus":"W-416","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"7ab58de9d6f2ceffb70e51c2868fb8eb619c216c","brief":"1d310ddc33590573ea10c715f4731bda4573f3b9","at":"2026-10-25T09:16:49.399Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-416-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the defect on master facd3fa1: reviewCitation (opus-model.ts:805) compares a passed ui review's cited input and digest with the current ones, so W-406's round-1 review (06:36, citing spec-3) blocks check twice once its input is re-recorded as round 6 (07:47); ci --opus runs check and next orders the new review only after ci --opus passes: a deadlock — check: brief:15, brief:17, w406-probe.out
+2. advisory — the design: a review whose # at: is a valid UTC instant strictly before the current input's and whose # ui_input: names an earlier round of this opus's spec logs is superseded; in check before done it blocks nothing; the prototype's check of W-406's worktree has no opus.ui.design finding and exits 0; W-406's is the only superseded review on either officina — check: brief:19, brief:21, brief:23, brief:25, brief:26, enumerate.out, w406-probe.out
+3. advisory — everything else still blocks: a review at or after the input with a stale citation or digest, a missing or malformed at, a later round, another opus's log, every case with no newer input, a done record, and the review and done phases; a review dated before the current input that cites it now blocks as a false claim, and no real record carries one — check: brief:32, brief:33, brief:34, brief:35, brief:36, check-studio-proto.out
+4. advisory — spec review round 2's blocker is adopted in full: reviewCitation rejects an absent or malformed review # at: in every phase (check, review, done), even on a review citing the current input at the current digest, and supersededBy places only a valid instant before, at or after the input; pinned with the current ui_input and digest in check, review and done; every passed ui review on the real officina, the sample officina and W-406's worktree has a valid # at:, so none is newly blocked — check: brief:34, brief:59, brief:71, brief:90, brief:107, brief:130, enumerate.out, kill-K12.out, kill-K13.out
+5. advisory — next agrees with check through uiReviewSuperseded at rung 7, so a superseded review orders build-review round n+1 and never the pr; on stage 1 (check fixed, next not) next went to the pr on the old review, the hole this closes — check: brief:38, brief:63, red-b2-stage1.out
+6. advisory — every promise was checked against every Input domain row: at (row 1), ui_input (row 2), digest (row 3), the current input (row 4, reused), state and phase (row 5), next's gate (row 6), reused gates (row 7); absent or non-ci citations and runReview's and runDone's earlier refusals are stated limits — check: brief:65, brief:67, brief:69, brief:71, brief:73, brief:75, brief:90, brief:91, brief:92, brief:93, brief:94, brief:95, brief:96
+7. advisory — unchanged code the promises lean on is stated as a limit (D-076 E): authoritativeUiInput, currentDesign, designDigest, parseVerdictHeader, readContainedRegularFile, utcTimestampProblem, instant, reviewIdentity, validateServed, ruling, branchUiRuling, nativePreflight, runReview, runDone, and next's reviewGate, admitCurrentGates, uiProblems, uiInput, dispatch, reviewedAtTip and uiRulingWait — check: brief:79, brief:80, brief:81, brief:82
+8. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master at "W-406's sequence: …"; b2 on master and on stage 1 at "the superseded review orders round 2"; each row passes at its stage and b1 on stage 2; the series of four commits equals the prototype — check: red-accept.out, red-b1-master.out, red-b2-master.out, red-b2-stage1.out, series.out
+9. advisory — thirteen kills each fail their row at a pinned assertion, covering every pinned promise and row — check: kills.out, promise-ledger.md
+10. advisory — no existing row flips: fifteen files pass whole on the prototype, whose test edits only append the two rows and two import names — check: green-summary.out, brief:129
+11. advisory — the Codex test check lists Flips None and Unnamed None, and fifteen must-stay-green rows (W-096 behaviours 2 and 4, check.test.ts's two real-studio rows, W-340-b2, W-274-b1, W-377-b1 and b2 with their five fix-round rows, W-163-b6 and W-392-b1); each lives in a file run whole and passing — check: fixture-census.md, green-summary.out
+12. advisory — the brief passes admission; lint and the typecheck pass; both officina checks pass with 0 blocking on the prototype, and the committed series' blocking set equals master's — check: admission.out, lint-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out, check-studio-series.out, check-studio-series-base.out
+13. advisory — no owned path is code-owned; no opus in flight owns these files (W-406: apps/web; W-403: auto-greenlight, writes, usage, containment.test, w403.test, VERBS.md) — check: brief:47, brief:49, brief:149
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-416.md` (spec round 3, after spec review round 2's one blocker, adopted), master facd3fa1 (source unchanged at e33ae1ef); two behaviours; no row flipped.
