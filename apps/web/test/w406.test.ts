@@ -37,7 +37,7 @@ test("W-406-b2 behaviour 2: Board keeps liveness in its header and ends with one
   const header = view.slice(view.indexOf('<div className="board__header">'), view.indexOf("{notice !== undefined"));
   assert.match(header, /board__liveness/, "BoardView renders connection and refresh information in the existing header");
   assert.equal((view.match(/board__liveness/g) ?? []).length, 1, "BoardView renders liveness once");
-  assert.equal((view.match(/<Colophon\b/g) ?? []).length, 1, "BoardView renders the ruled colophon exactly once");
+  assert.equal((view.match(/<Colophon(?![\p{L}\p{M}\p{N}])/gu) ?? []).length, 1, "BoardView renders the ruled colophon exactly once");
   assert.match(board, /liveLabel\(\{ connected, lastRefreshAt, now: new Date\(\) \}\)/, "Board derives visible liveness from connection and last-successful-refresh state");
   assert.match(boardLib, /stale · last updated/, "a disconnect preserves the last successful refresh in visible copy");
   assert.match(css, /\.board__liveness\s*\{[^}]*white-space:\s*nowrap;/s, "header liveness remains legible on one line");
