@@ -366,6 +366,10 @@ test("W-404-b1 behaviour 1: bisellium milestones prints each milestone's exit, w
   const blank = run();
   assert.doesNotMatch(blank.out, /held/, "a whitespace-only title and exit: reported, not held");
   assert.equal(blank.status, 0, "a whitespace-only title and exit: exit 0");
+  milestones(w.studio, 'milestones:\n  - { id: M3, title: "C", weight: 1, exit: { needs: " " } }\n');
+  const blankNeeds = run();
+  assert.doesNotMatch(blankNeeds.out, /held/, "a whitespace-only needs exit: reported, not held");
+  assert.equal(blankNeeds.status, 0, "a whitespace-only needs exit: exit 0");
 });
 
 test("W-404-b2 behaviour 2: next --all prints the milestones report as one line before the open count", { timeout: 600_000 }, () => {
