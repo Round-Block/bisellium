@@ -1,0 +1,27 @@
+# opus: W-406
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a16ec8-ab1e-7981-a665-a40d9a3e64f7
+# outcome: passed
+# at: 2026-10-25T10:58:21.157Z
+# tree: tree:dd3650b2a3989f1925147ae550e20d302c6a2495
+# brief: briefs/W-406.md blob:47253a32b4eb0e89b3169bcf6b8f58f8d5daf8de
+# ticket: {"opus":"W-406","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-406/studio","head":"17ab5c5564071884732354c83a3337cc434f9aa1","brief":"47253a32b4eb0e89b3169bcf6b8f58f8d5daf8de","at":"2026-10-25T10:58:16.247Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-406-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the strengthened b1 policy and served rows are genuine assertion reds on unchanged ab318e41 source: policy exits 1 under the replay classifier at the standard native-scrollbar assertion, served exits 1 at the same 1280 condition, and neither failure is a timeout, missing file or missing module — check: drag-red-summary.out, drag-red-policy-accept.out, drag-red-policy.out, drag-red-served.out, drag-reds.sh
+2. advisory — the prototype hides the Board columns’ native scrollbar in standard and WebKit forms, keeps `.board__columns` as the sole scroll state, captures a primary thumb pointer, maps its delta by the inverse ratio with clamping, centre-jumps on uncovered track press, and leaves scroll-driven synchronization as the only path that moves the thumb — check: apps/web/src/components/w025.css:1155, apps/web/src/screens/Board.tsx:90, apps/web/tests-serve/w406.spec.ts:21, drag-gate-served-w406.out
+3. advisory — the pointer cue stays `aria-hidden`, roleless and unfocusable as an assistive-technology-redundant proxy while existing card and strip controls keep keyboard access to the same container; the two-width served row pins that contract beside paint, intermediate drag, terminal drag and track-jump geometry — check: apps/web/src/screens/BoardView.tsx:149, apps/web/tests-serve/w406.spec.ts:44, drag-gate-served-w406.out
+4. advisory — brief:56, brief:79, brief:80 and brief:81 each have an independent one-hunk source mutation whose selected b1 TAP starts with `TAP version 13`, reports `ERR_ASSERTION`, and fails at the brief’s exact `Board exposes one draggable horizontal-scroll cue` pin — check: drag-kill-56.patch, drag-kill-56.out, drag-kill-79.patch, drag-kill-79.out, drag-kill-80.patch, drag-kill-80.out, drag-kill-81.patch, drag-kill-81.out, drag-kills.sh
+5. advisory — lint, format, web typecheck, W-406/W-360/W-350/W-341 policy files, board helper checks, all three W-406 served rows, four W-341 Board state cells, W-087’s time row, W-360 readiness and sample-studio check pass; the detached studio observation retains three record/current-review blockers that this no-record revision cannot alter — check: drag-gates-summary.out, drag-gate-served-w406.out, drag-gate-predecessor-states.out, drag-gate-predecessor-board.out, drag-gate-predecessor-readiness.out, drag-gate-studio-check.out
+6. advisory — the builder patches apply cleanly in order to ab318e41 and split tests from source: `drag-tests.patch` sha256 `dc0383f0f94baf3a116b7ed9e8884c2ebaac3750687826a73ca2c3b2d1008cc4`, `drag-src.patch` sha256 `981b6f9d9cfa9601c17cd5521d7f65b0d0305448d0e9abca13429dc1026bd231` — check: drag-patches.sh, drag-patches.sha256
+7. advisory — all five Promise lines and ten Input domain rows have file-and-line dispositions, every pinned row has a matching one-hunk kill, and the revised brief admission returns zero problems — check: promise-ledger.md, drag-ledger-audit.out, drag-admission.out
+
+## Verdict
+
+passed — W-406 drag revision 7 is prototyped and re-signed by the UI architect: the Patron’s one-thumb ruling is specified and pinned at both ruled widths, changed promise and input rows carry architect-owned kills, focused greens and predecessors pass, and no lifecycle record, screenshot baseline or Playwright configuration is written.
