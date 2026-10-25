@@ -51,10 +51,23 @@ function readRecord(root: string, id: string): { rec: Dict } | { why: string; ab
   if ("error" in file) return { why: file.error, absent: file.code === "ENOENT" };
   const split = splitFront(file.bytes.toString("utf8"));
   if (split === undefined) return { why: "it has no front matter", absent: false };
-  const doc = parseDocument(split.front);
-  if (doc.errors.length > 0) return { why: doc.errors[0]!.message.split("\n")[0] ?? "", absent: false };
-  const rec: unknown = doc.toJS();
-  return typeof rec === "object" && rec !== null && !Array.isArray(rec) ? { rec: rec as Dict } : { why: "its front matter is not a mapping", absent: false };
+  // the one boundary every read of an opus record crosses: a parse or a conversion that throws (an unresolved alias, an
+  // alias bomb) and a value JSON cannot hold (a cyclic alias) refuse here, so `show` never meets a value it cannot serialize
+  let rec: unknown;
+  try {
+    const doc = parseDocument(split.front);
+    if (doc.errors.length > 0) return { why: doc.errors[0]!.message.split("\n")[0] ?? "", absent: false };
+    rec = doc.toJS();
+  } catch {
+    return { why: "its front matter cannot be converted to a record", absent: false };
+  }
+  if (typeof rec !== "object" || rec === null || Array.isArray(rec)) return { why: "its front matter is not a mapping", absent: false };
+  try {
+    JSON.stringify(rec);
+  } catch {
+    return { why: "its front matter holds a value that cannot be serialized", absent: false };
+  }
+  return { rec: rec as Dict };
 }
 
 /** The names under ci/ (none when it is absent or cannot be listed: then no log admits anything). */
