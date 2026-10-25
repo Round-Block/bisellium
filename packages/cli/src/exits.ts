@@ -24,7 +24,7 @@ const EXIT_KEYS = ["opus", "rule", "needs"] as const;
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
-const nonEmpty = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
+const nonEmpty = (v: unknown): v is string => typeof v === "string" && v.length >= 1;
 const byId = (a: string, b: string): number => a.localeCompare(b, "en", { numeric: true });
 
 export type Exit = { kind: "opus" | "rule" | "needs"; ref: string } | { kind: "none" };

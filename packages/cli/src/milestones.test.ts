@@ -318,7 +318,7 @@ test("W-404-b1 behaviour 1: bisellium milestones prints each milestone's exit, w
     milestones(w.studio, yaml);
     const h = run();
     assert.equal(h.out, `milestones: held · why: ${why}\n`, `${what}: one held line naming why, no row`);
-    assert.equal(h.status, 1, "a missing or symlinked opera directory: held, exit 1");
+    assert.equal(h.status, 1, `${what}: held, exit 1`);
   }
 
   // an unreadable opus record holds the report: it may be on a path
@@ -360,6 +360,12 @@ test("W-404-b1 behaviour 1: bisellium milestones prints each milestone's exit, w
   const notStudio = bisellium(w.repo, ["milestones", "--studio", w.repo]);
   assert.equal(notStudio.status, 2, "not a studio: exit 2");
   assert.equal(notStudio.err.split("\n")[0], `milestones: ${join(w.repo, "bisellium.yml")} not found — not a studio`, "not a studio: named");
+
+  // a whitespace-only title or exit value is a non-empty string: reported, never held
+  milestones(w.studio, 'milestones:\n  - { id: M1, title: " ", weight: 1, exit: { opus: " " } }\n  - { id: M2, title: "B", weight: 1, exit: { rule: "  " } }\n');
+  const blank = run();
+  assert.doesNotMatch(blank.out, /held/, "a whitespace-only title and exit: reported, not held");
+  assert.equal(blank.status, 0, "a whitespace-only title and exit: exit 0");
 });
 
 test("W-404-b2 behaviour 2: next --all prints the milestones report as one line before the open count", { timeout: 600_000 }, () => {
