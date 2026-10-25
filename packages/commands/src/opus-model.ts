@@ -837,6 +837,20 @@ function reviewCitation(
   return problems;
 }
 
+/**
+ * W-416: why a kind: ui opus's build review `evidence` is superseded by the current ui-lead input (`supersededBy`, the rule
+ * check reads), or undefined: the current design, its input or the log cannot be read, or the review is not superseded.
+ * `next`'s review rung reads it, so the superseded review orders a new one instead of the pr.
+ */
+export function uiReviewSuperseded(root: string, record: NativeRecord, id: string, evidence: string): string | undefined {
+  const design = currentDesign(root, record, id);
+  if (!design.digest) return undefined;
+  const input = authoritativeUiInput(root, record, design.digest).input;
+  const file = readContainedRegularFile(root, evidence, "ci");
+  if (input === undefined || "error" in file || !supersededBy(input, id, parseVerdictHeader(file.bytes.toString("utf8")))) return undefined;
+  return `${evidence} was recorded before the current ui-lead input ${input.relative}; it is superseded and a new build review is due`;
+}
+
 interface RulingResult {
   valid: boolean;
   current: boolean;
