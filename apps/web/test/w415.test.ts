@@ -43,3 +43,16 @@ test("W-415-b2 behaviour 2: screens reflow without unnamed page overflow", () =>
   assert.match(css, /\.inbox__subject\s*\{[^}]*min-width:\s*0;[^}]*white-space:\s*nowrap;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;/s, "Inbox subjects retain one-line containment");
   assert.match(css, /@media \(min-width: 613px\) and \(max-width: 640px\)\s*\{\s*\.board__liveness/, "Board liveness wraps at the 640 zoom width");
 });
+
+test("W-415-b3 behaviour 3: phone retains its 48px top row and visible focus ring", () => {
+  const css = read("apps/web/src/components/w025.css"), served = read("apps/web/tests-serve/w415.spec.ts");
+  assert.match(css, /@media \(max-width: 959px\)[\s\S]*grid-template-rows:\s*48px 1fr/, "narrow shell retains the phone row");
+  assert.match(served, /focus ring clears top[\s\S]*focus ring clears bottom/, "390 row pins the full focus ring");
+  const sidebar = read("apps/web/src/components/Sidebar.tsx");
+  assert.match(sidebar, /querySelector<HTMLAnchorElement>\("\.sidebar__link"\)\?\.focus/, "opening moves focus into drawer");
+  assert.match(sidebar, /event\.key !== "Escape"/, "Escape is the overlay's dismissal key");
+  assert.match(sidebar, /querySelector<HTMLButtonElement>\("\.sidebar__toggle"\)/, "closing returns focus to toggle");
+  assert.match(css, /shell--overlay-open \.shell__main\s*\{\s*overflow:\s*hidden/, "page behind cannot scroll");
+  assert.match(css, /@media \(max-width: 959px\)[\s\S]*\.shell__main\s*\{\s*grid-row:\s*-2 \/ -1/, "open overlay keeps the main pane in its own row");
+  assert.match(css, /shell--overlay-open \.sidebar\s*\{[^}]*padding:\s*6px 6px 16px/s, "narrow toggle keeps one horizontal coordinate");
+});

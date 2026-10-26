@@ -152,3 +152,42 @@ test("W-415-b2 narrow content remains contained and D-116 Board boundaries remai
   const [reason, liveness] = await Promise.all([page.locator(".board__project-select-reason").boundingBox(), page.locator(".board__liveness").boundingBox()]);
   expect(liveness!.y, "640 Board liveness wraps below the project explanation").toBeGreaterThan(reason!.y);
 });
+
+test("W-415-b3 the closed 390px shell retains its approved 48px top row", async ({ page }) => {
+  await signIn(page, 390, "w415-phone");
+  for (const route of ROUTES) {
+    await page.goto(`${served!.baseURL}/?demo#/${route}`);
+    const [s, m] = await Promise.all([page.locator(".sidebar").boundingBox(), page.locator(".shell__main").boundingBox()]);
+    expect(s!.width, `${route}: approved 390px navigation spans viewport`).toBeCloseTo(390, 0);
+    expect(s!.height, `${route}: approved top navigation remains 48px high`).toBeCloseTo(48, 0);
+    expect(m!.y, `${route}: content begins below top row`).toBeCloseTo(48, 0);
+    await expect(page.locator(".sidebar__links")).toBeHidden();
+    const toggle = page.locator(".sidebar__toggle"); await toggle.focus(); const t = await toggle.boundingBox();
+    expect(t!.y, `${route}: focus ring clears top`).toBeGreaterThanOrEqual(4);
+    expect(t!.y + t!.height, `${route}: focus ring clears bottom`).toBeLessThanOrEqual(44);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  }
+});
+
+test("W-415-b3 the 959px overlay is click-only, focused, dismissible and non-scrolling", async ({ page }) => {
+  await signIn(page, 959, "w415-overlay");
+  await expect(page.locator(".sidebar__links"), "959 boundary starts with overlay closed").toBeHidden(); await page.locator(".sidebar").hover();
+  await expect(page.locator(".sidebar__links"), "hover never opens the drawer").toBeHidden();
+  for (const width of [640, 390]) {
+    await page.setViewportSize({ width, height: 900 }); const toggle = page.locator(".sidebar__toggle");
+    const closedToggle = await toggle.boundingBox();
+    await toggle.click();
+    const openToggle = await toggle.boundingBox();
+    expect(openToggle, `${width}: toggle retains identical viewport coordinates`).toEqual(closedToggle);
+    await expect(page.locator(".shell")).toHaveClass(/shell--overlay-open/);
+    await expect(page.locator('.sidebar__link[href="#/inbox"]'), `${width}: focus moves into drawer`).toBeFocused();
+    await expect(page.locator(".shell__main"), `${width}: page behind does not scroll`).toHaveCSS("overflow", "hidden");
+    const main = await page.locator(".shell__main").boundingBox();
+    expect(main!.y, `${width}: open overlay leaves main in its own row`).toBeCloseTo(48, 0);
+    expect(main!.height, `${width}: open overlay keeps the main pane visible behind it`).toBeGreaterThanOrEqual(800);
+    await page.keyboard.press("Escape"); await expect(toggle, `${width}: Escape returns focus to toggle`).toBeFocused();
+    await toggle.press("Enter"); await page.getByRole("link", { name: "Board" }).click();
+    await expect(page.locator(".sidebar__links"), `${width}: choosing a screen closes drawer`).toBeHidden(); await expect(toggle, `${width}: navigation close returns focus`).toBeFocused();
+  }
+  await page.setViewportSize({ width: 960, height: 900 }); await expect(page.locator(".sidebar__links"), "960 boundary is the persistent wide sidebar").toBeVisible();
+});
