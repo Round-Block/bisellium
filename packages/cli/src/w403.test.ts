@@ -1,8 +1,9 @@
 /**
  * W-403 rows b1 and b2 (studio/briefs/W-403.md): `bisellium greenlight <opus> --auto` greenlights, with no Patron, an
  * opus whose scope is already decided, a D-061 §4 remainder or a D-076 D cause fix, under the Patron's decision
- * `bisellium.yml#auto_greenlit_by` names (b1); the Patron's reserved scope, a record the screen cannot read, and a cause
- * fix that carries a parent (W-417's, the D-061 §4 cut) are refused even for those two kinds (b2).
+ * `bisellium.yml#auto_greenlit_by` names (b1); the Patron's reserved scope and a record the screen cannot read are refused
+ * even for those two kinds (b2). W-417 (rows W-417-b1 and W-417-b2, at the end): a parent is screened before either kind,
+ * and a cause fix that carries a parent the screen passed is a cause fix (W-403-b2's row name is kept as recorded).
  * node:test TAP, selected by `--test-name-pattern='^W-403-b<k>\s'`. Each row builds its own officina in a git repository
  * under the OS tmp dir with `initStudio`, drives `runGreenlight` in process and captures its console; nothing here reads
  * or writes `studio/` or `examples/`.
@@ -388,14 +389,13 @@ test("W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scop
   refused("a parent whose record cannot be read: refused", ["W-44", "--auto"], `W-44: greenlight --auto refused: W-44's parent W-45's record cannot be read (it has no front matter); ${UNSCREENED}`);
   w.opus("W-46", { title: "cause fix for tests×ruled-case-uncovered, under a ui parent", kind: "feature", parent: "W-22", value: 2 });
   refused("a cause fix whose parent is kind ui: refused", ["W-46", "--auto"], "W-46: greenlight --auto refused: W-46's parent W-22 is kind ui; a ui opus's remainder is the Patron's to greenlight");
-  // the D-061 §4 cut (spec round 5): a cause fix that carries a valid parent is refused (W-417 behaviour 2 lifts it); W-417's
-  // screen refuses an invalid parent before either kind
-  const PARENTED = "a cause fix that carries a parent waits for W-417, so only the Patron greenlights it";
+  // W-417: a cause fix that carries a valid parent is a cause fix (the D-061 §4 cut of spec round 5 is lifted); the screen
+  // refuses an invalid parent before either kind
   w.opus("W-47", { title: "cause fix for tests×ruled-case-uncovered, part of W-6", kind: "feature", parent: "W-6", value: 2 });
-  refused(
-    "a cause fix that carries a valid parent it is not the remainder of: refused",
-    ["W-47", "--auto"],
-    `W-47: greenlight --auto refused: W-47 reads as a D-076 D cause fix but carries parent W-6 and is not its D-061 §4 remainder (its parent W-6 has no two failed spec reviews by spec-reviewer without a passed review between); ${PARENTED}`,
+  assert.deepEqual(
+    w.green("W-47", "--auto"),
+    { code: 0, out: "W-47: greenlit (auto, D-1: D-076 D: a cause fix for tests×ruled-case-uncovered, an S1 class in the failed reviews of 2 opera: W-6, W-7)", err: "" },
+    "a cause fix that carries a valid parent it is not the remainder of: greenlit (W-417)",
   );
   w.opus("W-48", { title: "cause fix for tests×ruled-case-uncovered, a mistyped parent", kind: "feature", parent: "W-99", value: 2 });
   refused(

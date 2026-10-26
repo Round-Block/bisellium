@@ -240,8 +240,7 @@ export function autoGrant(root: string, manifest: Manifest, id: string): AutoGra
   if ("refuse" in a) return refuse(`${id}'s ${a.refuse}; ${UNJUDGED}`);
   if ("basis" in a) return { decision, basis: a.basis };
   const b = causeFix(root, id, rec["title"]);
-  // the D-061 §4 cut (spec round 5): a cause fix that carries a parent is refused, whatever the parent; W-417 is to check it
-  if ("basis" in b && form.parent !== undefined) return refuse(`${id} reads as a D-076 D cause fix but carries parent ${form.parent} and is not its D-061 §4 remainder (${a.why}); a cause fix that carries a parent waits for W-417, so only the Patron greenlights it`);
+  // W-417: a cause fix may carry a parent the screen passed (reserved); the D-061 §4 cut of W-403's spec round 5 is lifted
   if ("basis" in b) return { decision, basis: b.basis };
   return refuse(`${id} is neither a D-061 §4 remainder (${a.why}) nor a D-076 D cause fix (${b.why}), so only the Patron greenlights it`);
 }
