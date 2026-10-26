@@ -13,6 +13,17 @@ function currentHash(): string {
   return typeof window === "undefined" ? "" : window.location.hash;
 }
 
+export const SIDEBAR_STORAGE_KEY = "bisellium.sidebar";
+
+function initialSidebarCollapsed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "collapsed";
+  } catch {
+    return false;
+  }
+}
+
 function initialWideSidebar(): boolean {
   return typeof window === "undefined" || window.matchMedia("(min-width: 960px)").matches;
 }
@@ -21,7 +32,7 @@ export function App() {
   const [hash, setHash] = useState(currentHash());
   const [needsYouCount, setNeedsYouCount] = useState(0);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
   const [overlayOpen, setOverlayOpen] = useState(false);
   // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
@@ -42,6 +53,14 @@ export function App() {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarCollapsed ? "collapsed" : "expanded");
+    } catch {
+      // Storage can be denied or unavailable; the in-memory expanded fallback remains usable.
+    }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const query = window.matchMedia("(min-width: 960px)");
