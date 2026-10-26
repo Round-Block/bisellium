@@ -863,6 +863,15 @@ test("W-418-b2 behaviour 2: the pr rung screens the pushed head it opens or upda
   assert.equal(w418Read(w418Notice(bw, big)), `${bigText}\n`, "the large number's notice is left");
   assert.deepEqual(takeNotices(bw.repo), [bigText], "takeNotices hands the large number's notice over");
 
+  // a held large number names a resume that works: review-request takes nine digits, so the pr rung is rerun
+  const bh = w418PrWorld("w418-b2-bigheld", { exit: 1, stderr: "could not request reviewer\n" }, big);
+  const bho = performPr(bh);
+  assert.deepEqual(
+    w418After(bho),
+    ["code-owned: docs/ADOPTION.md", `notice: ${bigText}`, `why: PR #${big} touches code-owned paths, but the review request failed (could not request reviewer)`, `run: bisellium next ${OPUS} --perform --expect pr --title "<title>" --body-file <a file> (review-request takes a PR number of at most nine digits)`],
+    ran("a held 13-digit PR names the pr rung as its resume", bho),
+  );
+
   // a failing review request: held after the push and the PR, the notice left, the resume line
   const f = w418PrWorld("w418-b2-fails", { exit: 1, stderr: "could not request reviewer\n" });
   const h = performPr(f);
