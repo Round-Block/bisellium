@@ -718,7 +718,7 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
     if (number === undefined) return held("no PR number");
     const short = (ref: string): string => git(wt, ["rev-parse", "--short", ref]).stdout.trim();
     // W-418: the pushed head's code-owned paths, the notice for the Patron and the code owners' review request
-    const notice = reviewNotice({ cwd: wt, slug: slug.slug, pr: number, base: TRUNK_REF, head: "HEAD", resume: `bisellium review-request ${number} --repo ${quoted(repo)}` });
+    const notice = reviewNotice({ cwd: wt, slug: slug.slug, pr: number, base: TRUNK_REF, head: "HEAD", resume: number > 999_999_999 ? `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <a file> (review-request takes a PR number of at most nine digits)` : `bisellium review-request ${number} --repo ${quoted(repo)}` });
     return { ok: notice.ok, lines: [`PR=${number} base=${short("master")} head=${short("HEAD")}`, ...notice.lines] };
   };
   const done = result();
