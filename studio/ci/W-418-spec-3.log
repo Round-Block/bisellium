@@ -1,0 +1,31 @@
+# opus: W-418
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-26T11:37:15.828Z
+# tree: tree:463a0999076a0b49c503eba881679f979e9ed3a5
+# brief: briefs/W-418.md blob:d459e01d8ed470bda688b6313e95807cbf7ee991
+# ticket: {"opus":"W-418","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"3acf8946c61b4dca6cd91d54942a675f20160bb0","brief":"d459e01d8ed470bda688b6313e95807cbf7ee991","at":"2026-10-26T11:37:10.321Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-418-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — probed first, read only: the agent's gh acts as bisellium-agent, not edckt, so GitHub notifies edckt of its requests; review_requested by bisellium-agent for edckt lands on #773, #778, #781, #782 and #784, and #773's, made at open, did not reach the Patron (approved 98 minutes later, after they asked) — check: probe-a-account.out, probe-a-timeline.out, probe-a-pr773.out, brief:19, brief:20, brief:21
+2. advisory — the channel chosen works with what exists: the orchestrator session's PushNotification returned "Mobile push requested" for #778, #781, #782 and #784 and the Patron approved each 16 s to 15 min later; the CLI cannot call it, so the CLI leaves a notice and the already-wired guard hands it to the main thread, stated as a limit and as Defaults 1 — check: probe-b-notify.out, brief:22, brief:24, brief:27, brief:129, brief:267
+3. advisory — the screen read on the real records: master's CODEOWNERS is nine anchored rules with no unread line; over the last 40 squash merges it names six PRs (#784, #782, #781, #778, #773, #743) and not #783 or #785, agreeing with GitHub's own requests on every probed PR; five of six were records PRs opened by hand, hence the review-request verb — check: enumerate.out, brief:31, brief:33
+4. advisory — round 2's findings adopted: (1) any owners line readOwners does not read is an error, so review-request holds and the pr rung holds before the title, notice or request, pinned by W-418-b1 "an unread owners line holds" over twelve forms and two lines at once; (2) a repeated --repo and an empty --repo are usage errors before any read, pinned by W-418-b1 "usage: duplicate --repo" and "usage: empty --repo"; (3) the notice line is cut whole to 500 characters and noticeText says so, pinned by W-418-b1 "a long notice is cut to 500 characters" — check: brief:149, brief:145, brief:94, brief:106, rows-b1.ts.txt
+5. advisory — every Promise was checked again against every Input domain row, and three more paths that failed open are closed: an owners file at the root or in docs/ with no .github/CODEOWNERS (now read in GitHub's order, pinned by "an owners file at the root is read before docs/'s" and "docs/CODEOWNERS is read when it is the only one"), a # inside a pattern read as a comment (now an unread line that holds), and a diff made relative by git config under a --repo subdirectory (now --no-relative, pinned by "a --repo inside the checkout, under diff.relative"); a notice over the guard's 4096 bytes, never handed, cannot now be written (Promise kept) — check: brief:148, brief:150, brief:151, brief:118, brief:31
+6. advisory — unchanged code the promises lean on is stated as a limit (D-076 E): repoSlug, clean, quoted, sh, git, parseFlags, fetchTrunk, openPr's push and create, TRUNK_REF, runHookEvent, handleGuard, the rest of guardRefusal, the settings' guard wiring, gh, git and node; the push being the session's call and the Patron's clone running the guard are limits too — check: brief:128, brief:129, brief:131
+7. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master (no verb, the usage banner), b2 on master and on stage 1 (nothing after PR=), b3 on master and on stage 2 (the call runs); each row passes at its stage and every later one; the six-commit series equals the prototype — check: red-accept.out, red-b1-master.out, red-b2-stage1.out, red-b3-stage2.out, series.out
+8. advisory — forty-five kills, each a one-hunk mutation of one source file, fail their row at the very assertion they guard with ERR_ASSERTION (kills.out, every line guarded), the fourteen new ones (K32 to K45) covering each unread form, the owners-file order, the two --repo checks, the notice cut and --no-relative — check: kills.out, kills.py, promise-ledger.md
+9. advisory — exactly two existing checks flip, each moved with its behaviour: W-163-b6 in containment.test.ts (five new raw file sites pinned outside) and usage.test.ts "scanned every known usage constant" (43 to 44); master's files on the whole source fail those two only, and each put back fails at itself — check: flip-summary.out, flip-u3.out, flip-u3-usage.out, flip-F1.out, flip-F2.out
+10. advisory — the Codex test check, rerun on revision 3, lists the same two flips (containment.test.ts W-163-b6, usage.test.ts "scanned every known usage constant"), both named, Unnamed None, and thirty-seven must-stay-green rows, each in a file green.sh runs whole and passing (cli.test.ts, talk-boundary.test.ts, verdict-citation.test.ts, next-world.test.ts's fixture, next.test.ts, next-queue.test.ts, next-review.test.ts, guard.test.ts, docs.test.ts, rules/doc-cap.test.ts, brief-admission.test.ts, rules/tests.test.ts, check.test.ts, w369.test.ts) — check: fixture-census.md
+11. advisory — the brief passes admission on master's code; lint of the eleven touched code files, format of docs/NEXT.md and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: admission.out, lint-proto.out, format-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+12. advisory — no owned path is code-owned and .claude/settings.json is not changed; no opus in building owns these files — check: brief:58
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-418.md` (spec round 3), master 0e65054e; three behaviours; two existing checks flipped, each named. Round 2's findings adopted: 1 (an unread owners line holds), 2 (a repeated or empty --repo is a usage error) and 3 (the notice line is cut to 500 characters, as noticeText now says).
