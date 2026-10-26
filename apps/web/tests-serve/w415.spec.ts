@@ -194,6 +194,41 @@ test("W-415-b3 the 959px overlay is click-only, focused, dismissible and non-scr
 
 test("W-415-b4 the wide preference persists while the narrow overlay never overwrites it", async ({ browser }) => {
   served = await startServed("w415-persistence");
+  const stored = (p: Page) => p.evaluate(() => localStorage.getItem("bisellium.sidebar"));
+  const writes = (p: Page) => p.evaluate(() => (window as unknown as { __sidebarWrites: string[] }).__sidebarWrites);
+  const spyOnWrites = () => {
+    const calls: string[] = []; (window as unknown as { __sidebarWrites: string[] }).__sidebarWrites = calls;
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key: string, value: string) { if (key === "bisellium.sidebar") calls.push(value); return original.call(this, key, value); };
+  };
+  const signedIn = async (p: Page) => { await p.locator("#token-prompt-input").fill(served!.token); await p.locator(".token-prompt__submit").click(); await expect(p.locator(".token-prompt")).toBeHidden(); };
+  // Only the wide toggle writes: a first narrow mount, an overlay open/close and a resize across 960 never do.
+  const narrow = await browser.newContext({ viewport: { width: 640, height: 900 } }); await narrow.addInitScript(spyOnWrites); const narrowPage = await narrow.newPage();
+  await narrowPage.goto(`${served.baseURL}/#/inbox`); await signedIn(narrowPage);
+  expect(await stored(narrowPage), "a first mount at 640 with no key leaves the preference unset").toBeNull();
+  expect(await writes(narrowPage), "a narrow mount records no preference write").toEqual([]);
+  await narrowPage.locator(".sidebar__toggle").click(); await narrowPage.locator(".sidebar__toggle").click();
+  expect(await stored(narrowPage), "narrow overlay open/close leaves the preference unset").toBeNull();
+  expect(await writes(narrowPage), "narrow overlay open/close records no preference write").toEqual([]);
+  await narrowPage.setViewportSize({ width: 1280, height: 900 }); await narrowPage.setViewportSize({ width: 959, height: 900 }); await narrowPage.setViewportSize({ width: 960, height: 900 });
+  expect(await stored(narrowPage), "a resize across 960 without a click leaves the preference unset").toBeNull();
+  expect(await writes(narrowPage), "a resize across 960 without a click records no preference write").toEqual([]);
+  await narrowPage.setViewportSize({ width: 390, height: 900 }); await narrowPage.reload();
+  expect(await stored(narrowPage), "a first mount at 390 with no key leaves the preference unset").toBeNull();
+  expect(await writes(narrowPage), "a mount at 390 records no preference write").toEqual([]); await narrow.close();
+  for (const width of [640, 390]) {
+    const seeded = await browser.newContext({ viewport: { width, height: 900 } }); const seededPage = await seeded.newPage();
+    await seededPage.goto(`${served.baseURL}/#/inbox`); await seededPage.evaluate(() => localStorage.setItem("bisellium.sidebar", "sideways")); await seededPage.reload();
+    await expect(seededPage.locator(".sidebar__toggle"), `${width}: overlay starts closed`).toHaveAccessibleName("Expand sidebar");
+    expect(await stored(seededPage), `a mount at ${width} leaves an invalid stored value as it was`).toBe("sideways"); await seeded.close();
+  }
+  const wide = await browser.newContext({ viewport: { width: 1280, height: 900 } }); await wide.addInitScript(spyOnWrites); const widePage = await wide.newPage();
+  await widePage.goto(`${served.baseURL}/#/inbox`); await signedIn(widePage);
+  expect(await stored(widePage), "a first mount at 1280 with no key leaves the preference unset until the toggle is clicked").toBeNull();
+  expect(await writes(widePage), "a wide mount records no preference write").toEqual([]);
+  await widePage.locator(".sidebar__toggle").click();
+  expect(await stored(widePage), "the wide toggle click stores collapsed").toBe("collapsed");
+  expect(await writes(widePage), "the wide toggle click is the one preference write").toEqual(["collapsed"]); await wide.close();
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } }); const page = await context.newPage();
   await page.goto(`${served.baseURL}/#/inbox`);
   await expect(page.locator(".sidebar__toggle"), "absent storage defaults to expanded").toHaveAccessibleName("Collapse sidebar");
