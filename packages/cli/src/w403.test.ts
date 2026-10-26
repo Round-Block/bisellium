@@ -577,6 +577,32 @@ test("W-417-b2 behaviour 2: greenlight --auto greenlights a D-076 D cause fix th
     ["W-97", "--auto"],
     "W-97: greenlight --auto refused: W-97's parent W-98's spec log ci/W-98-spec-3.log cannot be read (target is not a regular file); only the Patron greenlights what the records cannot judge",
   );
+  // fix round 1: the parent's spec logs are judged whatever the parent's state, so a backlog or halted parent (no
+  // remainder's parent) whose spec log cannot be judged refuses too, never reaching the cause-fix grant
+  const UNJUDGED = "only the Patron greenlights what the records cannot judge";
+  const judged = (parent: string, child: string, state: string, third: (path: string) => void): void => {
+    w.opus(parent, { title: `a parent in state ${state} with a spec log`, kind: "feature", state, value: 2 });
+    third(join(w.studio, "ci", `${parent}-spec-1.log`));
+    w.opus(child, { title: `cause fix for tests×ruled-case-uncovered, under a ${state} parent`, kind: "feature", parent, value: 2 });
+  };
+  judged("W-103", "W-102", "backlog", (path) => mkdirSync(path));
+  refused(
+    "a cause fix whose backlog parent's spec log cannot be read: refused",
+    ["W-102", "--auto"],
+    `W-102: greenlight --auto refused: W-102's parent W-103's spec log ci/W-103-spec-1.log cannot be read (target is not a regular file); ${UNJUDGED}`,
+  );
+  judged("W-105", "W-104", "halted", (path) => mkdirSync(path));
+  refused(
+    "a cause fix whose halted parent's spec log cannot be read: refused",
+    ["W-104", "--auto"],
+    `W-104: greenlight --auto refused: W-104's parent W-105's spec log ci/W-105-spec-1.log cannot be read (target is not a regular file); ${UNJUDGED}`,
+  );
+  judged("W-107", "W-106", "backlog", (path) => put(path, verdictLog("W-107", "spec", 1, "spec-reviewer", "passed", []).replace("# outcome: passed\n", "# outcome: passed\n# outcome: passed\n")));
+  refused(
+    "a cause fix whose backlog parent's spec log holds two # outcome: headers: refused",
+    ["W-106", "--auto"],
+    `W-106: greenlight --auto refused: W-106's parent W-107's spec log ci/W-107-spec-1.log does not hold exactly one # phase: spec, one # sella: and one # outcome:; ${UNJUDGED}`,
+  );
   w.opus("W-100", { title: "cause fix for tests×lonely-class, part of W-6", kind: "feature", parent: "W-6", value: 2 });
   refused(
     "a valid parent and no recurring class: neither kind, refused",
