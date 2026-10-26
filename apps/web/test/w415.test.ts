@@ -28,3 +28,18 @@ test("W-415-b1 behaviour 1: D-119's icon rail carries D-120's sole Inbox notific
   assert.match(served, /expanded Inbox keeps its full uncapped count/, "served evidence preserves D-120's expanded exception");
   assert.match(served, /zero Inbox count removes the collapsed notification dot/, "served evidence pins the zero case");
 });
+
+test("W-415-b2 behaviour 2: screens reflow without unnamed page overflow", () => {
+  const board = read("apps/web/src/screens/Board.tsx"), css = read("apps/web/src/components/w025.css"), served = read("apps/web/tests-serve/w415.spec.ts");
+  assert.doesNotMatch(css, /100vw/, "screen internals avoid viewport-unit width assumptions");
+  assert.equal((board.match(/matchMedia\?\.\("\(max-width: 612px\)"\)/g) ?? []).length, 2, "Board initial logic keeps 612");
+  assert.equal((board.match(/matchMedia\("\(max-width: 612px\)"\)/g) ?? []).length, 1, "Board resize logic keeps 612");
+  assert.match(served, /640 CSS-pixel zoom viewport/, "served row pins 200% equivalent width");
+  assert.match(served, /sole horizontal scroller/, "Board phase strip is the named exception");
+  assert.match(css, /@media \(max-width: 599px\)/, "existing shell content breakpoint remains 599");
+  assert.match(css, /@media \(max-width: 612px\)/, "existing Board boundary remains 612");
+  assert.match(served, /Officina text, counts and row labels stay in main pane/, "Officina containment is pinned");
+  assert.match(css, /@media \(max-width: 959px\)[\s\S]*--sidebar-width:\s*0px/, "narrow shell resets the fixed-bar offset");
+  assert.match(css, /\.inbox__subject\s*\{[^}]*min-width:\s*0;[^}]*white-space:\s*nowrap;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;/s, "Inbox subjects retain one-line containment");
+  assert.match(css, /@media \(min-width: 613px\) and \(max-width: 640px\)\s*\{\s*\.board__liveness/, "Board liveness wraps at the 640 zoom width");
+});

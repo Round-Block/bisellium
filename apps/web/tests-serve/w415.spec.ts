@@ -102,3 +102,53 @@ test("W-415-b1 D-120 puts the Inbox count in one collapsed-rail notification dot
   await expect(page.locator(".sidebar__badge--dot"), "capped dot retains the full count for assistive technology").toHaveAccessibleName("Inbox, 123 needs you");
   expect(await page.locator(".sidebar__badge--dot").evaluate((node) => node.scrollWidth <= node.clientWidth), "9+ fits inside the dot without clipping").toBe(true);
 });
+
+test("W-415-b2 every screen stays inside 1280 and a 640 CSS-pixel zoom viewport", async ({ page }) => {
+  await signIn(page, 1280, "w415-reflow");
+  for (const width of [1280, 640]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => innerWidth), `${width}: CSS viewport models ${width === 640 ? "200% zoom" : "100% zoom"}`).toBe(width);
+    for (const route of ROUTES) {
+      await page.goto(`${served!.baseURL}/?demo#/${route}`);
+      const screen = page.locator(`.${route}`); await expect(screen).toBeVisible();
+      if (route === "board") await expect.poll(() => page.locator(".board__column").count()).toBeGreaterThan(1);
+      const box = await screen.boundingBox();
+      expect(box!.x + box!.width, `${width} ${route}: screen right edge stays inside viewport`).toBeLessThanOrEqual(width + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width} ${route}: document has no horizontal page overflow`).toBeLessThanOrEqual(0);
+      if (route === "board") {
+        const g = await page.locator(".board__columns").evaluate((n) => ({ client: n.clientWidth, scroll: n.scrollWidth, overflow: getComputedStyle(n).overflowX }));
+        expect(g.overflow, `${width}: Board names its phase strip as the sole horizontal scroller`).toBe("auto"); expect(g.scroll).toBeGreaterThan(g.client);
+      } else expect(await screen.evaluate((n) => n.scrollWidth - n.clientWidth), `${width} ${route}: screen does not clip right-edge content`).toBeLessThanOrEqual(0);
+      if (route === "inbox") await expectInboxSubjectsContained(page, width);
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 900 }); await page.goto(`${served!.baseURL}/?demo#/inbox`);
+  await expect(page.locator(".inbox--split")).toHaveCSS("grid-template-columns", /320px/);
+  await page.setViewportSize({ width: 640, height: 900 });
+  await expect.poll(() => page.locator(".inbox--split").evaluate((n) => getComputedStyle(n).gridTemplateColumns), "layout changes on live resize").not.toContain("320px");
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expectInboxSubjectsContained(page, 390);
+});
+
+test("W-415-b2 Seats confirm bar spans the 640px zoom viewport", async ({ page }) => {
+  await signIn(page, 640, "w415-seats-confirm-640");
+  await page.goto(`${served!.baseURL}/?demo#/seats`);
+  const model = page.locator('select[aria-label="model for seat builder"]');
+  await model.selectOption("claude-opus-5");
+  const bar = page.locator(".seats__confirm-bar");
+  await expect(bar).toBeVisible();
+  const [barBox, cancelBox] = await Promise.all([bar.boundingBox(), page.locator(".seats__cancel-btn").boundingBox()]);
+  expect(barBox!.x, "640 Seats confirm bar begins at the viewport edge").toBeCloseTo(0, 0);
+  expect(cancelBox!.x + cancelBox!.width, "640 Seats Cancel remains inside the viewport").toBeLessThanOrEqual(640);
+});
+
+test("W-415-b2 narrow content remains contained and D-116 Board boundaries remain intact", async ({ page }) => {
+  await signIn(page, 390, "w415-contained"); await page.goto(`${served!.baseURL}/?demo#/officina`);
+  const main = await page.locator(".shell__main").boundingBox(); const items = page.locator(".officina__title, .officina__panel-heading, .officina__completion-row > span, .officina__row > span");
+  for (const item of await items.all()) if (await item.isVisible()) { const box = await item.boundingBox(); expect(box!.x + box!.width, "Officina text, counts and row labels stay in main pane").toBeLessThanOrEqual(main!.x + main!.width + 1); }
+  await page.setViewportSize({ width: 640, height: 900 }); await page.goto(`${served!.baseURL}/?demo#/board`); await expect.poll(() => page.locator(".board__column").count()).toBeGreaterThan(1);
+  const columns = await page.locator(".board__columns").evaluate((n) => ({ client: n.clientWidth, scroll: n.scrollWidth })); expect(columns.scroll, "Board phase strip remains its sole local scroller").toBeGreaterThan(columns.client);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), "Board has no page overflow").toBeLessThanOrEqual(0);
+  const [reason, liveness] = await Promise.all([page.locator(".board__project-select-reason").boundingBox(), page.locator(".board__liveness").boundingBox()]);
+  expect(liveness!.y, "640 Board liveness wraps below the project explanation").toBeGreaterThan(reason!.y);
+});
