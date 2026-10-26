@@ -94,7 +94,8 @@ const header = (p: Parsed, key: string): string | undefined => (p.headers.get(ke
 
 /** D-061 §4: the parent is greenlit or done and two of its spec reviews failed with no passed review between. Every
  *  spec log of the parent must read, with exactly one `# phase: spec`, `# sella:` and `# outcome:`, and the reviewer's
- *  outcome passed or failed; any other log refuses the opus, since it could hide a passed review. */
+ *  outcome passed or failed; any other log refuses the opus, since it could hide a passed review. W-417: those logs are
+ *  judged whatever the parent's state (a cause fix's parent may be in backlog or halted), before the state decides. */
 function remainder(root: string, manifest: Manifest, rec: Dict): Kind {
   const parent = rec["parent"];
   if (parent === undefined) return { why: "it names no parent" };
@@ -102,9 +103,7 @@ function remainder(root: string, manifest: Manifest, rec: Dict): Kind {
   const read = readRecord(root, parent);
   if ("why" in read) return read.absent ? { why: `its parent ${parent} has no record` } : { refuse: `parent ${parent}'s record cannot be read (${read.why})` };
   const state = read.rec["state"];
-  if (typeof state !== "string" || !PARENT_STATES.has(state)) return { why: `its parent ${parent} is ${typeof state === "string" ? state : "stateless"}, not greenlit or done` };
   const reviewer = (manifest as unknown as Dict)["spec_reviewer"];
-  if (typeof reviewer !== "string" || reviewer === "") return { why: `bisellium.yml names no spec_reviewer, so no spec review of ${parent} can split it` };
   const spec = (n: string): boolean => n.startsWith(`${parent}-spec-`) && /^[1-9][0-9]{0,14}\.log$/.test(n.slice(parent.length + 6));
   let run: string[] = [];
   let split: string[] | undefined;
@@ -119,6 +118,9 @@ function remainder(root: string, manifest: Manifest, rec: Dict): Kind {
     else run.push(`ci/${name}`);
     if (run.length === 2 && split === undefined) split = run;
   }
+  // W-417 fix round 1: the logs are judged above whatever the parent's state; only then is it a remainder's parent
+  if (typeof state !== "string" || !PARENT_STATES.has(state)) return { why: `its parent ${parent} is ${typeof state === "string" ? state : "stateless"}, not greenlit or done` };
+  if (typeof reviewer !== "string" || reviewer === "") return { why: `bisellium.yml names no spec_reviewer, so no spec review of ${parent} can split it` };
   if (split !== undefined) return { basis: `D-061 §4: the remainder of ${parent} (${state}), whose spec reviews ${split[0]} and ${split[1]} failed` };
   return { why: `its parent ${parent} has no two failed spec reviews by ${reviewer} without a passed review between` };
 }
