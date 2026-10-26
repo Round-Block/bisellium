@@ -1,0 +1,48 @@
+# opus: W-415
+# evidence: fix round 1 pre-fix run (D-117)
+# commit: 01dc57b3 (round-one code plus the new test cases)
+# command: cd apps/web && npx playwright test --config=playwright.serve.config.ts --workers=1 tests-serve/w415.spec.ts -g W-415-b4
+
+> @bisellium/web@0.0.1 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+dist/assets/index-D7wt94Ph.css                       26.52 kB │ gzip:  5.26 kB
+dist/assets/index-4OAKOoCn.js                       272.62 kB │ gzip: 84.95 kB
+
+✓ built in 167ms
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests-serve/w415.spec.ts:195:1 › W-415-b4 the wide preference persists while the narrow overlay never overwrites it (762ms)
+
+
+  1) [chromium] › tests-serve/w415.spec.ts:195:1 › W-415-b4 the wide preference persists while the narrow overlay never overwrites it 
+
+    Error: a first mount at 640 with no key leaves the preference unset
+
+    expect(received).toBeNull()
+
+    Received: "expanded"
+
+      206 |   const narrow = await browser.newContext({ viewport: { width: 640, height: 900 } }); await narrow.addInitScript(spyOnWrites); const narrowPage = await narrow.newPage();
+      207 |   await narrowPage.goto(`${served.baseURL}/#/inbox`); await signedIn(narrowPage);
+    > 208 |   expect(await stored(narrowPage), "a first mount at 640 with no key leaves the preference unset").toBeNull();
+          |                                                                                                    ^
+      209 |   expect(await writes(narrowPage), "a narrow mount records no preference write").toEqual([]);
+      210 |   await narrowPage.locator(".sidebar__toggle").click(); await narrowPage.locator(".sidebar__toggle").click();
+      211 |   expect(await stored(narrowPage), "narrow overlay open/close leaves the preference unset").toBeNull();
+        at /home/edckt/agents/bisellium/.worktrees/W-415/apps/web/tests-serve/w415.spec.ts:208:100
+
+    Error Context: test-results/w415-W-415-b4-the-wide-pre-5a622-overlay-never-overwrites-it-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests-serve/w415.spec.ts:195:1 › W-415-b4 the wide preference persists while the narrow overlay never overwrites it 
