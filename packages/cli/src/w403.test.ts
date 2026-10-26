@@ -532,3 +532,57 @@ test("W-417-b1 behaviour 1: greenlight --auto refuses, before either kind, a par
   assert.equal(w.green("W-2", "--auto").code, 0, "W-2, a remainder whose parent passes the screen: greenlit");
   assert.equal(w.green("W-5", "--auto").code, 0, "W-5, a cause fix with no parent: greenlit");
 });
+
+test("W-417-b2 behaviour 2: greenlight --auto greenlights a D-076 D cause fix that carries a parent the screen passed, in any lifecycle state, and still refuses one whose parent's spec logs cannot be judged", () => {
+  const w = world();
+  decided(w);
+  const CF = "D-076 D: a cause fix for tests×ruled-case-uncovered, an S1 class in the failed reviews of 2 opera: W-6, W-7";
+  w.opus("W-82", { title: "cause fix for tests×ruled-case-uncovered, part of W-6", kind: "feature", parent: "W-6", value: 2 });
+  assert.deepEqual(w.green("W-82", "--auto"), { code: 0, out: `W-82: greenlit (auto, D-1: ${CF})`, err: "" }, "a cause fix whose parent W-6 is done and not split: greenlit");
+  const front = w.front("W-82");
+  assert.deepEqual([front["state"], front["greenlit_by"], front["greenlit_basis"]], ["greenlit", "D-1", CF], "the record: state greenlit, greenlit_by the decision, greenlit_basis the cause fix");
+  assert.deepEqual(
+    events(w).map((e) => [e["name"], (e["attrs"] as Dict)["workflow.item.id"], (e["attrs"] as Dict)["workflow.greenlight"]]),
+    [["workflow.greenlight", "W-82", "granted"]],
+    "one workflow.greenlight granted event",
+  );
+  assert.equal(timeline(w), "", "no Patron timeline line");
+  // every lifecycle state is a valid parent's: backlog and halted are no remainder's parent, but a cause fix's
+  for (const [n, state] of [[84, "backlog"], [86, "greenlit"], [88, "building"], [90, "verifying"], [92, "review"], [94, "halted"]] as const) {
+    w.opus(`W-${n + 1}`, { title: `a parent in state ${state}`, kind: "feature", state, value: 2 });
+    w.opus(`W-${n}`, { title: `cause fix for tests×ruled-case-uncovered, under a parent in state ${state}`, kind: "feature", parent: `W-${n + 1}`, value: 2 });
+    assert.deepEqual(w.green(`W-${n}`, "--auto"), { code: 0, out: `W-${n}: greenlit (auto, D-1: ${CF})`, err: "" }, `a cause fix whose parent is ${state}: greenlit`);
+  }
+  // a cause fix that is also its parent's remainder: the remainder's basis, read first
+  w.opus("W-96", { title: "cause fix for tests×ruled-case-uncovered, W-1's part two", parent: "W-1", value: 2 });
+  assert.deepEqual(
+    w.green("W-96", "--auto"),
+    { code: 0, out: "W-96: greenlit (auto, D-1: D-061 §4: the remainder of W-1 (done), whose spec reviews ci/W-1-spec-2.log and ci/W-1-spec-4.log failed)", err: "" },
+    "a cause fix that is also its parent's remainder: greenlit as the remainder",
+  );
+  // still refused, with one line and no write: a parent whose spec logs cannot be judged, a valid parent with no recurring
+  // class, and the Patron's scope
+  const refused = (name: string, args: string[], err: string): void => {
+    const before = w.snapshot();
+    assert.deepEqual(w.green(...args), { code: 2, out: "", err }, name);
+    assert.deepEqual(w.snapshot(), before, `${name}: writes nothing`);
+  };
+  w.opus("W-98", { title: "a parent with a log between its failed reviews", kind: "feature", state: "done", value: 2 });
+  w.spec("W-98", SPLIT);
+  rmSync(join(w.studio, "ci", "W-98-spec-3.log"));
+  mkdirSync(join(w.studio, "ci", "W-98-spec-3.log"));
+  w.opus("W-97", { title: "cause fix for tests×ruled-case-uncovered, part of W-98", kind: "feature", parent: "W-98", value: 2 });
+  refused(
+    "a cause fix whose parent's spec log cannot be judged: refused",
+    ["W-97", "--auto"],
+    "W-97: greenlight --auto refused: W-97's parent W-98's spec log ci/W-98-spec-3.log cannot be read (target is not a regular file); only the Patron greenlights what the records cannot judge",
+  );
+  w.opus("W-100", { title: "cause fix for tests×lonely-class, part of W-6", kind: "feature", parent: "W-6", value: 2 });
+  refused(
+    "a valid parent and no recurring class: neither kind, refused",
+    ["W-100", "--auto"],
+    "W-100: greenlight --auto refused: W-100 is neither a D-061 §4 remainder (its parent W-6 has no two failed spec reviews by spec-reviewer without a passed review between) nor a D-076 D cause fix (no class its title names (tests×lonely-class: 0 opera) recurs as an S1 blocker in the failed reviews of 2 or more opera), so only the Patron greenlights it",
+  );
+  w.opus("W-101", { title: "cause fix for tests×ruled-case-uncovered, part of W-6, large", kind: "feature", parent: "W-6", value: 5 });
+  refused("a cause fix with a valid parent, 5 points: refused", ["W-101", "--auto"], "W-101: greenlight --auto refused: W-101's value is 5, not 1, 2 or 3 points; anything larger, or unsized, is the Patron's");
+});
