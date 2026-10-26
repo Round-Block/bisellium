@@ -779,3 +779,74 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   );
   assert.deepEqual([w418Read(notice), w418Edits(w), w418Views(w).length], [undefined, [], 1], "nothing left, requested or read after the screen");
 });
+
+/** A queue-mode, review-met world whose opus branch touches docs/ADOPTION.md and src/plain.ts, with master's owners
+ *  file naming docs/ADOPTION.md, and a PR that appears once `gh pr create` ran. */
+function w418PrWorld(tag: string, edit: Reply = { stdout: "" }): World {
+  const touch = (w: World): void => {
+    put(w.wt, "docs/ADOPTION.md", "adoption\n");
+    put(w.wt, "src/plain.ts", "plain\n");
+    commit(w.wt, "feat: touch a code-owned path");
+    writeReceipt(w, "current");
+  };
+  const w = queueWorld(tag, { stdout: QUEUE_RULES }, true, touch);
+  advanceOrigin(w, ".github/CODEOWNERS", "# fixture owners\n/docs/ADOPTION.md @patron\n");
+  const created = join(w.root, "created.flag");
+  scenario(w, {
+    rules: { stdout: QUEUE_RULES },
+    list: { replies: [{ stdout: [] }], alts: [{ ifExists: created, replies: [{ stdout: [cand(w, { state: "OPEN" })] }] }] },
+    create: { stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n`, touch: created },
+    view: { stdout: { title: W418_TITLE } },
+    edit,
+  });
+  return w;
+}
+/** The result lines after `PR=<n> base=… head=…`, up to the `next-step:` line. */
+const w418After = (o: Out): string[] => {
+  const all = o.out.split("\n");
+  const at = all.findIndex((l) => l.startsWith("PR="));
+  const end = all.findIndex((l) => l.startsWith("next-step:"));
+  return at === -1 ? [] : all.slice(at + 1, end === -1 ? undefined : end);
+};
+const W418_ONE = `PR #${PR_NUMBER} needs your review: ${W418_TITLE} (code-owned: docs/ADOPTION.md)`;
+
+test("W-418-b2 behaviour 2: the pr rung screens the pushed head it opens or updates a PR on, leaves the notice and requests review", { timeout: 3_600_000 }, () => {
+  const w = w418PrWorld("w418-b2-owned");
+  const notice = w418Notice(w, PR_NUMBER);
+  const o = performPr(w);
+  assert.deepEqual(w418After(o), ["code-owned: docs/ADOPTION.md", `notice: ${W418_ONE}`, "review-requested: patron"], ran("a created PR: the code-owned path, the notice and the request", o));
+  assert.equal(o.status, 0, ran("performed", o));
+  assert.equal(w418Read(notice), `${W418_ONE}\n`, "the notice is left under the Git common directory");
+  assert.deepEqual(w418Edits(w), [["pr", "edit", String(PR_NUMBER), "-R", SLUG, "--add-reviewer", "patron"]], "one review request");
+  assert.deepEqual(w418Views(w), [["pr", "view", String(PR_NUMBER), "-R", SLUG, "--json", "title"]], "the title is read from GitHub");
+  assert.deepEqual(unmatched(w), [], "no unexpected gh call");
+
+  // an update of the open PR: pushed again, screened again, no second PR
+  const old = tipOf(w);
+  put(w.wtStudio, "notes.md", "bookkeeping line\nmore bookkeeping\n");
+  commit(w.wt, "studio: bookkeeping after the push");
+  rmSync(notice, { force: true });
+  scenario(w, { rules: { stdout: QUEUE_RULES }, list: openList(w, { state: "OPEN", oid: old }), view: { stdout: { title: W418_TITLE } } });
+  const u = performPr(w);
+  assert.deepEqual(w418After(u), ["code-owned: docs/ADOPTION.md", `notice: ${W418_ONE}`, "review-requested: patron"], ran("an updated PR: screened again", u));
+  assert.equal(u.status, 0, ran("performed", u));
+  assert.deepEqual([mutating(w), w418Edits(w).length, w418Read(notice)], [["git fetch master:master", "git push --force-with-lease"], 1, `${W418_ONE}\n`], ran("pushed, no PR created, requested and left again", u));
+
+  // no owners file at master: none, nothing read, left or requested
+  const plain = queueWorld("w418-b2-none", { stdout: QUEUE_RULES });
+  const p = performPr(plain);
+  assert.deepEqual(w418After(p), ["code-owned: none (no .github/CODEOWNERS, CODEOWNERS or docs/CODEOWNERS at refs/heads/master)"], ran("no owners file", p));
+  assert.equal(p.status, 0, ran("performed", p));
+  assert.deepEqual([w418Read(w418Notice(plain, PR_NUMBER)), w418Edits(plain), w418Views(plain)], [undefined, [], []], "nothing left, requested or read");
+
+  // a failing review request: held after the push and the PR, the notice left, the resume line
+  const f = w418PrWorld("w418-b2-fails", { exit: 1, stderr: "could not request reviewer\n" });
+  const h = performPr(f);
+  assert.deepEqual(
+    w418After(h),
+    ["code-owned: docs/ADOPTION.md", `notice: ${W418_ONE}`, "why: PR #901 touches code-owned paths, but the review request failed (could not request reviewer)", `run: bisellium review-request ${PR_NUMBER} --repo ${f.repo}`],
+    ran("a failing request holds", h),
+  );
+  assert.deepEqual([h.status, h.first], [1, `next: ${OPUS} pr held`], ran("held, exit 1", h));
+  assert.deepEqual([mutating(f), w418Read(w418Notice(f, PR_NUMBER))], [["git fetch master:master", "git push --force-with-lease", "gh pr create"], `${W418_ONE}\n`], "the PR was opened and the notice left");
+});
