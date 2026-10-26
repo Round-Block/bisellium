@@ -271,7 +271,7 @@ export interface Rule {
   replies: Reply[];
   alts?: Alt[];
 }
-export type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "queue" | "alerts" | "update" | "merge" | "create" | "runList" | "runView" | "runDownload" | "checkRuns";
+export type SlotName = "repoView" | "list" | "view" | "checks" | "rules" | "queue" | "alerts" | "update" | "merge" | "create" | "edit" | "runList" | "runView" | "runDownload" | "checkRuns";
 export const SLOT_MATCH: Record<SlotName, string[]> = {
   repoView: ["repo", "view"],
   list: ["pr", "list"],
@@ -286,6 +286,8 @@ export const SLOT_MATCH: Record<SlotName, string[]> = {
   update: ["pr", "update-branch"],
   merge: ["pr", "merge"],
   create: ["pr", "create"],
+  // W-418: the code owners' review request
+  edit: ["pr", "edit"],
   // W-259: the merge queue's CI run for a merge commit, its jobs and its certify artifact
   runList: ["run", "list"],
   runView: ["run", "view"],
@@ -648,6 +650,7 @@ export function scenario(w: World, over: Partial<Record<SlotName, SlotValue>>): 
     update: { stdout: "" },
     merge: { stdout: "" },
     create: { stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n` },
+    edit: { stdout: "" },
     runList: { stdout: [] },
     runView: { stdout: { jobs: [] } },
     runDownload: { exit: 1, stderr: "no artifact" },

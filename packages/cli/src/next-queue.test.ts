@@ -3,11 +3,11 @@
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
-import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SLUG, SlotValue, World, advanceOrigin, cand, commit, expectHeld, expectStep, ghCalls, ghMerges, git, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
+import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SLUG, SlotValue, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
 
 /** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
 const bindingPath = (w: World): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "queue", encodeURIComponent(BRANCH));
@@ -580,4 +580,202 @@ test("W-384-b2 behaviour 2: the merge step counts a PR as landed when arming aut
   const unfetched = performMerge(gone);
   assert.equal(unfetched.status, 1, ran("a merge commit that cannot be fetched holds", unfetched));
   assert.doesNotMatch(unfetched.out, /^state=MERGED$/m, ran("and never reads state=MERGED", unfetched));
+});
+
+// ---------------------------------------------------------------------------
+// W-418 (studio/briefs/W-418.md): a PR that touches a code-owned path names the paths, leaves a notice for the Patron
+// and requests the code owners' review. Shared by rows b1 (review-request) and b2 (the pr rung).
+// ---------------------------------------------------------------------------
+const W418_TITLE = "W-900: notify the Patron";
+/** Master's owners file in the W-418 rows: anchored, directory, bare-name and owner-less lines, an email owner. */
+const W418_OWNERS = [
+  "# fixture owners",
+  "/.github/                 @patron",
+  "/docs/                    @writer",
+  "/docs/ADOPTION.md         @patron @org/leads",
+  "/docs/public/",
+  "leges/                    @patron",
+  "owners.txt                @patron  # an inline comment",
+  "/vendor/                  someone@example.com",
+  "",
+].join("\n");
+/** Each form of an owners line the screen does not read: a glob (`*`, `?`, `[`), an escape, a negation, a bare `/`, an
+ *  empty, `.` or `..` segment, a `#` inside the pattern, a control and a non-ASCII space. */
+const W418_UNREAD = ["*.secret", "doc?.md", "[ab].md", "docs\\x.md", "!keep.md", "/", "docs/./x", "docs/../x", "docs//x", "docs/a#b", "docs/\u0007x", "docs/ x"];
+const w418Notice = (w: World, pr: number): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "notice", String(pr));
+const w418Read = (path: string): string | undefined => (existsSync(path) ? readFileSync(path, "utf8") : undefined);
+const w418Edits = (w: World): string[][] => ghCalls(w).filter((a) => a[0] === "pr" && a[1] === "edit");
+const w418Views = (w: World): string[][] => ghCalls(w).filter((a) => a[0] === "pr" && a[1] === "view");
+/** The opus branch's code-owned and unowned changes (a rename out of .github/; a space, a quote, non-ASCII and a newline in
+ *  a name; a symlink), committed with a current receipt. */
+function w418Touch(w: World): void {
+  git(w.wt, ["mv", ".github/workflows/ci.yml", "ci-moved.yml"]);
+  for (const rel of [".github/workflows/new.yml", "docs/ADOPTION.md", "docs/ADOPTION.md.bak", "docs/a b'\"é.md", "docs/new\nline.md", "docs/public/index.md", "pkg/leges/x.md", "lib/leges", "pkg/owners.txt", "vendor/lib.js", "a.secret", "src/plain.ts"]) put(w.wt, rel, `${rel}\n`);
+  symlinkSync("../src/plain.ts", join(w.wt, "docs", "link"));
+  commit(w.wt, "feat: touch code-owned and unowned paths");
+  writeReceipt(w, "current");
+}
+/** A side clone of the world's origin that moves master: each file written, or removed when null, in one pushed commit. */
+function w418Master(w: World): (files: Record<string, string | null>) => void {
+  const side = join(scratch("w418-master"), "c");
+  git(dirname(side), ["clone", "-q", w.origin, side]);
+  return (files) => {
+    for (const [rel, text] of Object.entries(files)) {
+      if (text === null) git(side, ["rm", "-q", "-r", "--", rel]);
+      else {
+        rmSync(join(side, rel), { recursive: true, force: true });
+        put(side, rel, text);
+      }
+    }
+    commit(side, "chore: master's owners files");
+    git(side, ["push", "-q", "origin", "HEAD:refs/heads/master"]);
+  };
+}
+const W418_PATHS = [".github/workflows/ci.yml", ".github/workflows/new.yml", "docs/ADOPTION.md", "docs/ADOPTION.md.bak", "docs/a b'\"é.md", "docs/link", "docs/new line.md", "pkg/leges/x.md", "pkg/owners.txt", "vendor/lib.js"];
+const W418_TEXT = `PR #901 needs your review: ${W418_TITLE} (code-owned: .github/workflows/ci.yml, .github/workflows/new.yml, docs/ADOPTION.md, docs/ADOPTION.md.bak, docs/a b'"é.md and 5 more)`;
+
+test("W-418-b1 behaviour 1: review-request screens an open PR's head against master's owners file, leaves the notice and requests review", { timeout: 3_600_000 }, () => {
+  const w = reviewed("w418-b1", { mainOnMaster: false, github: true }, w418Touch, true);
+  const master = w418Master(w);
+  // .github/CODEOWNERS is the one read: CODEOWNERS and docs/CODEOWNERS, which would own src/plain.ts, are not
+  master({ ".github/CODEOWNERS": W418_OWNERS, CODEOWNERS: "/src/ @patron\n", "docs/CODEOWNERS": "/src/ @patron\n" });
+  const head = tipOf(w);
+  git(w.origin, ["update-ref", "refs/pull/901/head", head]);
+  const view = (o: Json = {}): Reply => ({ stdout: { number: 901, state: "OPEN", baseRefName: "master", headRefOid: head, ...o } });
+  const title: Reply = { stdout: { title: W418_TITLE } };
+  const notice = w418Notice(w, 901);
+  const request = (args: string[], views: Reply[], edit: Reply = { stdout: "" }, env: Record<string, string> = {}): Out => {
+    scenario(w, { view: { replies: views }, edit });
+    try {
+      rmSync(notice, { force: true });
+    } catch {
+      /* the notice directory is a file in the row that blocks it */
+    }
+    return cli(w, ["review-request", ...args], w.repo, env);
+  };
+  const lines = (o: Out): string[] => o.out.split("\n").filter((l) => l !== "");
+  const resume = `run: bisellium review-request 901 --repo ${w.repo}`;
+  const one = (p: string): string => `PR #901 needs your review: ${W418_TITLE} (code-owned: ${p})`;
+  const whole = ["review-request: PR #901", ...W418_PATHS.map((p) => `code-owned: ${p}`), `notice: ${W418_TEXT}`, "review-requested: org/leads, patron, writer", "review-request: skipped someone@example.com (not an @login or @org/team)"];
+
+  // the screen: every pattern form, a rename's old side, a newline in a name; the notice and the request
+  const o = request(["901"], [view(), title]);
+  assert.deepEqual(lines(o), whole, ran("the code-owned paths, the notice and the request", o));
+  assert.equal(o.status, 0, ran("exit 0", o));
+  assert.equal(w418Read(notice), `${W418_TEXT}\n`, "the notice is left under the Git common directory");
+  assert.deepEqual(w418Edits(w), [["pr", "edit", "901", "-R", SLUG, "--add-reviewer", "org/leads,patron,writer"]], "one review request names every @owner");
+  assert.deepEqual(w418Views(w), [["pr", "view", "901", "-R", SLUG, "--json", "number,state,baseRefName,headRefOid"], ["pr", "view", "901", "-R", SLUG, "--json", "title"]], "the PR and then its title are read");
+  for (const read of w418Views(w)) assert.deepEqual(read[read.indexOf("--json") + 1]!.split(",").filter((f) => !GH_2_101_PR_VIEW_FIELDS.has(f)), [], "every view field is gh 2.101.0's");
+  assert.deepEqual(unmatched(w), [], "no unexpected gh call");
+
+  // a --repo inside the checkout, under a git config that makes a plain diff relative to it: every path is still read
+  const sub = request(["901", "--repo", w.studio], [view(), title], { stdout: "" }, { GIT_CONFIG_COUNT: "1", GIT_CONFIG_KEY_0: "diff.relative", GIT_CONFIG_VALUE_0: "true" });
+  assert.deepEqual([sub.status, lines(sub)], [0, whole], ran("a --repo inside the checkout, under diff.relative", sub));
+
+  // a PR touching no code-owned path: none, and nothing left or requested
+  const side = join(scratch("w418-b1-side"), "c");
+  git(dirname(side), ["clone", "-q", w.origin, side]);
+  put(side, "src/only.ts", "only\n");
+  commit(side, "feat: an unowned change");
+  git(side, ["push", "-q", "origin", "HEAD:refs/pull/902/head"]);
+  const plain = git(side, ["rev-parse", "HEAD"]);
+  const none = request(["902"], [{ stdout: { number: 902, state: "OPEN", baseRefName: "master", headRefOid: plain } }]);
+  assert.deepEqual(lines(none), ["review-request: PR #902", "code-owned: none"], ran("no code-owned path", none));
+  assert.equal(none.status, 0, ran("exit 0", none));
+  assert.equal(w418Read(w418Notice(w, 902)), undefined, "no notice");
+  assert.deepEqual([w418Edits(w), w418Views(w).length], [[], 1], "no request, no title read");
+
+  // a PR touching six long code-owned paths: the notice line is cut whole to 500 characters, within the guard's 4096 bytes
+  const long = [0, 1, 2, 3, 4, 5].map((i) => `docs/${"n".repeat(200)}-${i}.md`);
+  for (const rel of long) put(side, rel, "long\n");
+  commit(side, "docs: six long names");
+  git(side, ["push", "-q", "origin", "HEAD:refs/pull/904/head"]);
+  const longText = `PR #904 needs your review: ${W418_TITLE} (code-owned: ${long.slice(0, 5).join(", ")} and 1 more)`.slice(0, 500);
+  const cut = request(["904"], [{ stdout: { number: 904, state: "OPEN", baseRefName: "master", headRefOid: git(side, ["rev-parse", "HEAD"]) } }, title]);
+  assert.deepEqual(
+    [cut.status, lines(cut), w418Read(w418Notice(w, 904)), longText.length],
+    [0, ["review-request: PR #904", ...long.map((p) => `code-owned: ${p}`), `notice: ${longText}`, "review-requested: writer"], `${longText}\n`, 500],
+    ran("a long notice is cut to 500 characters", cut),
+  );
+
+  // usage errors: exit 2, nothing read
+  const bare = scratch("w418-b1-bare");
+  for (const [label, args, why] of [
+    ["usage: no operand", [], "give one PR number"],
+    ["usage: abc", ["abc"], "give one PR number"],
+    ["usage: 0", ["0"], "give one PR number"],
+    ["usage: 901 902", ["901", "902"], "give one PR number"],
+    ["usage: --repo", ["--repo"], "--repo needs a value"],
+    ["usage: --opus 901", ["--opus", "901"], 'unknown flag "--opus"'],
+    ["usage: duplicate --repo", ["901", "--repo", w.repo, "--repo", bare], "--repo is given more than once"],
+    ["usage: empty --repo", ["901", "--repo", ""], "--repo needs a non-empty value"],
+  ] as const) {
+    const u = request([...args], [view()]);
+    assert.deepEqual([u.status, u.err.split("\n")[0], u.err.split("\n")[1]], [2, `review-request: ${why}`, "usage: bisellium review-request <pr> [--repo <dir>]"], ran(label, u));
+    assert.deepEqual(ghCalls(w), [], `${label}: no gh call`);
+  }
+
+  // refusals before the screen: exit 1, one why, nothing left or requested
+  const refused = (label: string, args: string[], views: Reply[], why: string): void => {
+    const r = request(args, views);
+    assert.deepEqual([r.status, lines(r)], [1, [`review-request: PR #${args[0]}`, `why: ${why}`]], ran(label, r));
+    assert.deepEqual([w418Read(notice), w418Edits(w)], [undefined, []], `${label}: nothing left or requested`);
+  };
+  refused("a merged PR", ["901"], [view({ state: "MERGED" })], 'PR #901 is "MERGED", not OPEN; only an open PR is screened');
+  refused("a PR with no state", ["901"], [view({ state: undefined })], "PR #901 is absent, not OPEN; only an open PR is screened");
+  refused("a base other than master", ["901"], [view({ baseRefName: "develop" })], `PR #901's base is "develop", not master; the screen reads master's owners file`);
+  refused("another PR's view", ["901"], [view({ number: 902 })], "gh pr view returned PR 902, not #901");
+  refused("a failing view", ["901"], [{ exit: 1, stderr: "HTTP 404: Not Found\n" }], "gh pr view failed (HTTP 404: Not Found)");
+  refused("a non-JSON view", ["901"], [{ stdout: "not json" }], "gh pr view returned non-JSON output");
+  refused("a view that is not an object", ["901"], [{ stdout: [1] }], "gh pr view returned no object");
+  refused("a malformed head", ["901"], [view({ headRefOid: "abc" })], "gh pr view returned no 40-hex headRefOid");
+  refused("a head GitHub moved", ["901"], [view({ headRefOid: "1".repeat(40) })], `PR #901's head on origin is ${head.slice(0, 12)}, not 111111111111 as GitHub reported; rerun`);
+  refused("no pull ref on origin", ["903"], [{ stdout: { number: 903, state: "OPEN", baseRefName: "master", headRefOid: head } }], "git fetch origin refs/pull/903/head failed (fatal: couldn't find remote ref refs/pull/903/head)");
+  const outside = request(["901", "--repo", bare], [view()]);
+  assert.deepEqual([outside.status, lines(outside)[1]], [1, "why: git fetch origin master failed (fatal: not a git repository (or any of the parent directories): .git)"], ran("a --repo outside a checkout", outside));
+
+  // holds after the screen: exit 1, the steps after the failing one not run, the resume line
+  const held = (label: string, views: Reply[], edit: Reply, tail: string[], left: string | undefined, edits: number): void => {
+    const r = request(["901"], views, edit);
+    assert.deepEqual([r.status, lines(r)], [1, ["review-request: PR #901", ...W418_PATHS.map((p) => `code-owned: ${p}`), ...tail, resume]], ran(label, r));
+    assert.deepEqual([w418Read(notice), w418Edits(w).length], [left, edits], `${label}: what is left and requested`);
+  };
+  held("a failing title read", [view(), { exit: 1, stderr: "HTTP 502\n" }], { stdout: "" }, ["why: PR #901 touches code-owned paths, but its title could not be read (gh pr view failed (HTTP 502))"], undefined, 0);
+  held("a title that is not a string", [view(), { stdout: { title: 7 } }], { stdout: "" }, ["why: PR #901 touches code-owned paths, but its title could not be read (gh pr view returned no string title)"], undefined, 0);
+  held("a failing review request", [view(), title], { exit: 1, stderr: "could not request reviewer: 'writer' not found\n" }, [`notice: ${W418_TEXT}`, "why: PR #901 touches code-owned paths, but the review request failed (could not request reviewer: 'writer' not found)"], `${W418_TEXT}\n`, 1);
+  rmSync(dirname(notice), { recursive: true, force: true });
+  mkdirSync(dirname(dirname(notice)), { recursive: true });
+  writeFileSync(dirname(notice), "a file where the notice directory belongs\n");
+  held("a notice that cannot be written", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (EEXIST: file already exists, mkdir '${dirname(notice)}')`], undefined, 0);
+  rmSync(dirname(notice), { force: true });
+
+  // the owners file GitHub reads: with no .github/CODEOWNERS, the root's before docs/'s, then docs/'s alone
+  master({ ".github/CODEOWNERS": null, CODEOWNERS: "/src/ @patron\n", "docs/CODEOWNERS": "/vendor/ @writer\n" });
+  const root = request(["901"], [view(), title]);
+  assert.deepEqual([root.status, lines(root)], [0, ["review-request: PR #901", "code-owned: src/plain.ts", `notice: ${one("src/plain.ts")}`, "review-requested: patron"]], ran("an owners file at the root is read before docs/'s", root));
+  master({ CODEOWNERS: null });
+  const docs = request(["901"], [view(), title]);
+  assert.deepEqual([docs.status, lines(docs)], [0, ["review-request: PR #901", "code-owned: vendor/lib.js", `notice: ${one("vendor/lib.js")}`, "review-requested: writer"]], ran("docs/CODEOWNERS is read when it is the only one", docs));
+
+  // an owners line the screen does not read holds before the title, the notice or the request: never a silent pass
+  const unreadHold = (o: Out, why: string): void => {
+    assert.deepEqual([o.status, lines(o)], [1, ["review-request: PR #901", `why: PR #901's code-owned paths could not be screened (.github/CODEOWNERS line 9 is not a plain pattern: ${why})`, resume]], ran("an unread owners line holds", o));
+    assert.deepEqual([w418Read(notice), w418Edits(w), w418Views(w).length], [undefined, [], 1], "an unread owners line holds: nothing left, requested or read after the screen");
+  };
+  for (const form of W418_UNREAD) {
+    master({ ".github/CODEOWNERS": `${W418_OWNERS}${form}  @patron\n` });
+    unreadHold(request(["901"], [view(), title]), form.replace(/[\u0000-\u001f\u007f-\u009f]+/g, " "));
+  }
+  master({ ".github/CODEOWNERS": `${W418_OWNERS}*.secret  @patron\n!keep.md  @patron\n` });
+  unreadHold(request(["901"], [view(), title]), "*.secret (and 1 more)");
+
+  // an owners file at master that is not a regular file: the screen holds before anything else
+  master({ ".github/CODEOWNERS": null, ".github/CODEOWNERS/inner": "/.github/ @patron\n" });
+  const dir = request(["901"], [view(), title]);
+  assert.deepEqual(
+    [dir.status, lines(dir)],
+    [1, ["review-request: PR #901", "why: PR #901's code-owned paths could not be screened (.github/CODEOWNERS at refs/remotes/origin/master is not a regular file)", resume]],
+    ran("an owners directory", dir),
+  );
+  assert.deepEqual([w418Read(notice), w418Edits(w), w418Views(w).length], [undefined, [], 1], "nothing left, requested or read after the screen");
 });
