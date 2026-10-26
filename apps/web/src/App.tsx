@@ -24,6 +24,14 @@ function initialSidebarCollapsed(): boolean {
   }
 }
 
+function persistSidebarCollapsed(collapsed: boolean): void {
+  try {
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "collapsed" : "expanded");
+  } catch {
+    // Storage can be denied or unavailable; the in-memory expanded fallback remains usable.
+  }
+}
+
 function initialWideSidebar(): boolean {
   return typeof window === "undefined" || window.matchMedia("(min-width: 960px)").matches;
 }
@@ -40,6 +48,13 @@ export function App() {
   const [status, setStatus] = useState<ScreenStatus>(READY);
   const route = parseRoute(hash);
 
+  // Only the user's toggle at >=960px writes the preference (brief:21): never a mount, a reload or the narrow overlay.
+  const toggleWideSidebar = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    persistSidebarCollapsed(next);
+  };
+
   useEffect(() => {
     // The one 401 path every write shares: raised from wherever the write
     // was issued (Inbox today, W-065's Seats and W-064's Board tomorrow),
@@ -53,14 +68,6 @@ export function App() {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarCollapsed ? "collapsed" : "expanded");
-    } catch {
-      // Storage can be denied or unavailable; the in-memory expanded fallback remains usable.
-    }
-  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const query = window.matchMedia("(min-width: 960px)");
@@ -98,7 +105,7 @@ export function App() {
         overlay={!wideSidebar}
         overlayOpen={overlayOpen}
         onToggle={() => wideSidebar
-          ? setSidebarCollapsed((value) => !value)
+          ? toggleWideSidebar()
           : setOverlayOpen((value) => !value)}
         onNavigate={() => {
           if (!wideSidebar) setOverlayOpen(false);
