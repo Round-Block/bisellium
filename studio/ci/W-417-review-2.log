@@ -1,0 +1,21 @@
+# opus: W-417
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a176e5-46fa-7a91-afcc-a771795e5a7f
+# outcome: failed
+# at: 2026-10-26T06:59:05.344Z
+# tree: tree:79b7a3e3a3a5959f9193f592cc9878dd28ea9394
+# brief: briefs/W-417.md blob:22329f593e1ce62ff58aec2b1bcd53b351a65d87
+# ticket: {"opus":"W-417","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-417/studio","head":"b3e584dfef36daf68ee47241894637a248c3d358","brief":"22329f593e1ce62ff58aec2b1bcd53b351a65d87","at":"2026-10-26T06:57:41.174Z"}
+
+## Findings
+1. blocking — packages/cli/src/w403.test.ts:588 [severity: S1] The fix adds the backlog and halted regression cases, but no recorded red shows either new case failing against the round-one code, leaving required evidence missing for brief:107. [class: review×evidence-backfilled-or-absent] — check: none: record a new W-417-b2 case failing at the round-one head
+
+## Earlier findings
+- ci/W-417-review-1.log #1: closed — packages/commands/src/auto-greenlight.ts:110 now validates parent spec logs before the parent-state return at line 122, with backlog and halted coverage at packages/cli/src/w403.test.ts:588 and packages/cli/src/w403.test.ts:594
+
+## Verdict
+The behavior is fixed, but the fix-round regression lacks its required pre-fix failure evidence.
+VERDICT: FAIL

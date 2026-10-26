@@ -13,23 +13,26 @@
  * this cannot read or judge (a malformed parent spec log) refuses the opus; what reads and does not qualify is not
  * that kind. The grant is the Patron's decision `bisellium.yml#auto_greenlit_by` names; with none, `--auto` refuses.
  * Behaviour 2: a record the screen cannot read, then the Patron's scope, refuse first, whatever the kind (`recordForm`,
- * `reserved`). Reads only: the write is runGreenlight's (writes.ts).
+ * `reserved`). W-417: so does a parent that is not another opus's id naming a readable record with a native non-ui kind
+ * and a lifecycle state. Reads only: the write is runGreenlight's (writes.ts).
  */
 import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "yaml";
-import type { Manifest } from "@bisellium/adapter-native";
+import { STATES, type Manifest } from "@bisellium/adapter-native";
 import type { NativeOpusKind } from "@bisellium/schema";
 import { splitFront } from "./frontmatter.js";
 import { patronDecisionProblem } from "./lifecycle.js";
-import { isNativeOpusKind, readContainedRegularFile, titleProblem } from "./opus-model.js";
+import { isNativeOpusKind, OPUS_ID, readContainedRegularFile, titleProblem } from "./opus-model.js";
 import { CLASS_TAG, parseVerdictLog } from "./verdict.js";
 
 /** The manifest key naming the Patron's decision that grants auto greenlights (W-403). */
 export const AUTO_SETTING = "auto_greenlit_by";
 /** A remainder's parent has passed greenlight: open or done. */
 const PARENT_STATES = new Set(["greenlit", "building", "verifying", "review", "done"]);
+/** W-417: a parent's state is one of the lifecycle's; backlog and halted are valid, though no remainder's parent. */
+const LIFECYCLE_STATES: ReadonlySet<string> = new Set(STATES.map((s) => s.id));
 /** A class token in a title: `<area>×<slug>`, each a lower-case word of letters, digits and hyphens (W-297's tag body). */
 const CLASS_TOKEN = /(?<![\p{L}\p{M}\p{N}_-])([a-z0-9][a-z0-9-]*×[a-z0-9][a-z0-9-]*)(?![\p{L}\p{M}\p{N}_-])/gu;
 /** A review or spec log of an opus, by name. */
@@ -91,7 +94,8 @@ const header = (p: Parsed, key: string): string | undefined => (p.headers.get(ke
 
 /** D-061 §4: the parent is greenlit or done and two of its spec reviews failed with no passed review between. Every
  *  spec log of the parent must read, with exactly one `# phase: spec`, `# sella:` and `# outcome:`, and the reviewer's
- *  outcome passed or failed; any other log refuses the opus, since it could hide a passed review. */
+ *  outcome passed or failed; any other log refuses the opus, since it could hide a passed review. W-417: those logs are
+ *  judged whatever the parent's state (a cause fix's parent may be in backlog or halted), before the state decides. */
 function remainder(root: string, manifest: Manifest, rec: Dict): Kind {
   const parent = rec["parent"];
   if (parent === undefined) return { why: "it names no parent" };
@@ -99,9 +103,7 @@ function remainder(root: string, manifest: Manifest, rec: Dict): Kind {
   const read = readRecord(root, parent);
   if ("why" in read) return read.absent ? { why: `its parent ${parent} has no record` } : { refuse: `parent ${parent}'s record cannot be read (${read.why})` };
   const state = read.rec["state"];
-  if (typeof state !== "string" || !PARENT_STATES.has(state)) return { why: `its parent ${parent} is ${typeof state === "string" ? state : "stateless"}, not greenlit or done` };
   const reviewer = (manifest as unknown as Dict)["spec_reviewer"];
-  if (typeof reviewer !== "string" || reviewer === "") return { why: `bisellium.yml names no spec_reviewer, so no spec review of ${parent} can split it` };
   const spec = (n: string): boolean => n.startsWith(`${parent}-spec-`) && /^[1-9][0-9]{0,14}\.log$/.test(n.slice(parent.length + 6));
   let run: string[] = [];
   let split: string[] | undefined;
@@ -116,6 +118,9 @@ function remainder(root: string, manifest: Manifest, rec: Dict): Kind {
     else run.push(`ci/${name}`);
     if (run.length === 2 && split === undefined) split = run;
   }
+  // W-417 fix round 1: the logs are judged above whatever the parent's state; only then is it a remainder's parent
+  if (typeof state !== "string" || !PARENT_STATES.has(state)) return { why: `its parent ${parent} is ${typeof state === "string" ? state : "stateless"}, not greenlit or done` };
+  if (typeof reviewer !== "string" || reviewer === "") return { why: `bisellium.yml names no spec_reviewer, so no spec review of ${parent} can split it` };
   if (split !== undefined) return { basis: `D-061 §4: the remainder of ${parent} (${state}), whose spec reviews ${split[0]} and ${split[1]} failed` };
   return { why: `its parent ${parent} has no two failed spec reviews by ${reviewer} without a passed review between` };
 }
@@ -152,7 +157,8 @@ const UNSCREENED = "only the Patron greenlights a record the screen cannot read"
 const namesWord = (title: string, word: string): boolean => new RegExp(`(?<![\\p{L}\\p{M}\\p{N}_-])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{M}\\p{N}_-])`, "iu").test(title);
 
 /** W-403 behaviour 2: the record's kind, title and parent in the one form the screen and both kinds read, or why not:
- *  a native kind (`isNativeOpusKind`), a title `titleProblem` accepts, and a parent absent or a non-empty string. */
+ *  a native kind (`isNativeOpusKind`), a title `titleProblem` accepts, and a parent absent or (W-417) an opus id
+ *  (`OPUS_ID`) that is not the opus's own. */
 function recordForm(id: string, rec: Dict): { kind: NativeOpusKind; title: string; parent: string | undefined } | { problem: string } {
   const kind = rec["kind"];
   if (!isNativeOpusKind(kind)) return { problem: `${id}'s kind is ${show(kind)}, not a native opus kind; ${UNSCREENED}` };
@@ -160,7 +166,8 @@ function recordForm(id: string, rec: Dict): { kind: NativeOpusKind; title: strin
   const bad = titleProblem(title);
   if (bad !== undefined || typeof title !== "string") return { problem: `${id}'s ${bad ?? "title must be a nonblank string"}; ${UNSCREENED}` };
   const parent = rec["parent"];
-  if (parent !== undefined && (typeof parent !== "string" || parent === "")) return { problem: `${id}'s parent is ${show(parent)}, not an opus id; ${UNSCREENED}` };
+  if (parent !== undefined && (typeof parent !== "string" || !OPUS_ID.test(parent))) return { problem: `${id}'s parent is ${show(parent)}, not an opus id; ${UNSCREENED}` };
+  if (parent === id) return { problem: `${id}'s parent is ${id} itself, not another opus; ${UNSCREENED}` };
   return { kind, title, parent };
 }
 
@@ -201,13 +208,16 @@ function reserved(root: string, id: string, form: { kind: NativeOpusKind; title:
   if (!Array.isArray(owned)) return `${owned.error}, so the code-owned paths cannot be screened`;
   const word = [...RESERVED, ...owned].find((w) => namesWord(form.title, w));
   if (word !== undefined) return `${id}'s title names "${word}"; security, the sandbox, branch protection, architecture and code-owned paths are the Patron's`;
-  // the parent's kind: before both kinds, so a malformed or ui parent refuses a cause fix too; an absent record is remainder's
+  // W-417: the parent, before both kinds, so no mistyped parent reaches either: a record that exists and reads, with a
+  // native kind that is not ui and a lifecycle state (backlog and halted are valid: no remainder's parent, but a cause fix's)
   if (form.parent !== undefined) {
     const read = readRecord(root, form.parent);
-    if ("why" in read) {
-      if (!read.absent) return `${id}'s parent ${form.parent}'s record cannot be read (${read.why}); ${UNSCREENED}`;
-    } else if (!isNativeOpusKind(read.rec["kind"])) return `${id}'s parent ${form.parent}'s kind is ${show(read.rec["kind"])}, not a native opus kind; ${UNSCREENED}`;
-    else if (read.rec["kind"] === "ui") return `${id}'s parent ${form.parent} is kind ui; a ui opus's remainder is the Patron's to greenlight`;
+    if ("why" in read) return read.absent ? `${id}'s parent ${form.parent} has no record; ${UNSCREENED}` : `${id}'s parent ${form.parent}'s record cannot be read (${read.why}); ${UNSCREENED}`;
+    const kind = read.rec["kind"];
+    if (!isNativeOpusKind(kind)) return `${id}'s parent ${form.parent}'s kind is ${show(kind)}, not a native opus kind; ${UNSCREENED}`;
+    if (kind === "ui") return `${id}'s parent ${form.parent} is kind ui; a ui opus's remainder is the Patron's to greenlight`;
+    const state = read.rec["state"];
+    if (typeof state !== "string" || !LIFECYCLE_STATES.has(state)) return `${id}'s parent ${form.parent}'s state is ${show(state)}, not a lifecycle state; ${UNSCREENED}`;
   }
   return undefined;
 }
@@ -232,8 +242,7 @@ export function autoGrant(root: string, manifest: Manifest, id: string): AutoGra
   if ("refuse" in a) return refuse(`${id}'s ${a.refuse}; ${UNJUDGED}`);
   if ("basis" in a) return { decision, basis: a.basis };
   const b = causeFix(root, id, rec["title"]);
-  // the D-061 §4 cut (spec round 5): a cause fix that carries a parent is refused, whatever the parent; W-417 is to check it
-  if ("basis" in b && form.parent !== undefined) return refuse(`${id} reads as a D-076 D cause fix but carries parent ${form.parent} and is not its D-061 §4 remainder (${a.why}); a cause fix that carries a parent waits for W-417, so only the Patron greenlights it`);
+  // W-417: a cause fix may carry a parent the screen passed (reserved); the D-061 §4 cut of W-403's spec round 5 is lifted
   if ("basis" in b) return { decision, basis: b.basis };
   return refuse(`${id} is neither a D-061 §4 remainder (${a.why}) nor a D-076 D cause fix (${b.why}), so only the Patron greenlights it`);
 }

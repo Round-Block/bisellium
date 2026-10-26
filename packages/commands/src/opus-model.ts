@@ -54,7 +54,8 @@ export interface NativeRecordEntry {
   data: NativeRecord;
 }
 
-const OPUS_ID = /^W-[0-9]+$/;
+/** An opus id: `W-` and digits (exported for W-417's parent screen in auto-greenlight.ts). */
+export const OPUS_ID = /^W-[0-9]+$/;
 const DECISION_ID = /^D-[0-9]{3,}$/;
 const TREE_CERTIFICATE = /^tree:[0-9a-f]{40}$/;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;

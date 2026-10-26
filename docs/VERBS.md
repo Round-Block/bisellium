@@ -385,8 +385,8 @@ D-076 D cause fix (a class its title names is an S1 blocker's `[class:]` tag in 
 more other opera). It writes `greenlit_by: <the decision bisellium.yml#auto_greenlit_by names>` and
 `greenlit_basis`, and no Patron timeline line; it refuses anything else, and a kind ui opus, one over 3
 points or unsized, or one whose title names security, the sandbox, branch protection, architecture or a
-code-owned path, or a cause fix that carries a `parent:` (W-417 is to check that parent), writing
-nothing. `budget
+code-owned path, or one whose `parent:` is not another opus's id naming a readable record with a native
+kind other than `ui` and a lifecycle state (W-417), writing nothing. `budget
 <period> --collegium <id> --tokens <n> [--hours <n>]` creates or merges
 `aerarium/<period>.yml`, writing only `stipendium_tokens`/`stipendium_hours`
 under that collegium (`period` must match `^\d{4}-W\d{2}$`); like every

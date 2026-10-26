@@ -1,0 +1,18 @@
+# opus: W-417
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a176d1-223b-7623-93e6-ae628ee69cb4
+# outcome: passed
+# at: 2026-10-26T06:12:07.057Z
+# tree: tree:e6090cc892dd37e456bc384c7c48bc6067f67a50
+# brief: briefs/W-417.md blob:22329f593e1ce62ff58aec2b1bcd53b351a65d87
+# ticket: {"opus":"W-417","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"dbb15b1e76e17a711c61e05111b2b9155e8ec8e8","brief":"22329f593e1ce62ff58aec2b1bcd53b351a65d87","at":"2026-10-26T06:12:03.742Z"}
+
+## Findings
+1. advisory — brief:72 A backlog or halted parent makes `remainder` return before reading its spec logs, so a qualifying cause fix can be greenlit despite an unreadable parent spec log; the existing test uses a done parent. Replace brief:72 with: `Promise judged: a cause fix that is also its parent's D-061 §4 remainder is greenlit as the remainder, and an unjudgeable parent spec log refuses when the parent's state is greenlit, building, verifying, review or done. Pinned by W-417-b2's remainder and unreadable-log assertions — limit: remainder and parseVerdictLog are reused unchanged; for backlog or halted parents, remainder returns before reading spec logs.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w403.test.ts W-417-b2
+
+## Verdict
+The spec can proceed because its sole finding is advisory and requires only a precise limit on the parent-log promise.
+VERDICT: PASS

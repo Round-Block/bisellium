@@ -1,0 +1,18 @@
+# opus: W-417
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a176e5-46fa-7a91-afcc-a771795e5a7f
+# outcome: failed
+# at: 2026-10-26T06:29:45.140Z
+# tree: tree:e784484b68548199980e8cdf68da0f1c321a7800
+# brief: briefs/W-417.md blob:22329f593e1ce62ff58aec2b1bcd53b351a65d87
+# ticket: {"opus":"W-417","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-417/studio","head":"4c69fedd73323e10dcc6067cfd5cea80129e6573","brief":"22329f593e1ce62ff58aec2b1bcd53b351a65d87","at":"2026-10-26T06:28:19.089Z"}
+
+## Findings
+1. blocking — packages/commands/src/auto-greenlight.ts:244 [severity: S1] A cause fix whose parent is `backlog` or `halted` bypasses parent-spec-log inspection at line 105 and is then granted here, so an unreadable parent spec log is not refused as required by brief:107. The existing test covers this only with a `done` parent. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w403.test.ts W-417-b2 backlog/halted parent with unreadable spec log
+
+## Verdict
+The parent screen and declared flips otherwise match the owned scope, and both reds fail by assertion on their recorded commits, but the authorization path fails closed only for some accepted parent states.
+VERDICT: FAIL
