@@ -191,3 +191,24 @@ test("W-415-b3 the 959px overlay is click-only, focused, dismissible and non-scr
   }
   await page.setViewportSize({ width: 960, height: 900 }); await expect(page.locator(".sidebar__links"), "960 boundary is the persistent wide sidebar").toBeVisible();
 });
+
+test("W-415-b4 the wide preference persists while the narrow overlay never overwrites it", async ({ browser }) => {
+  served = await startServed("w415-persistence");
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } }); const page = await context.newPage();
+  await page.goto(`${served.baseURL}/#/inbox`);
+  await expect(page.locator(".sidebar__toggle"), "absent storage defaults to expanded").toHaveAccessibleName("Collapse sidebar");
+  await page.locator("#token-prompt-input").fill(served.token); await page.locator(".token-prompt__submit").click(); await page.locator(".sidebar__toggle").click();
+  expect(await page.evaluate(() => localStorage.getItem("bisellium.sidebar")), "wide collapse stores collapsed").toBe("collapsed");
+  await page.reload(); await expect(page.locator(".sidebar__toggle"), "reload restores collapsed").toHaveAccessibleName("Expand sidebar");
+  await page.setViewportSize({ width: 640, height: 900 });
+  await expect(page.locator(".sidebar__toggle"), "narrow overlay starts closed regardless of preference").toHaveAccessibleName("Expand sidebar");
+  await page.locator(".sidebar__toggle").click(); await page.locator(".sidebar__toggle").click();
+  expect(await page.evaluate(() => localStorage.getItem("bisellium.sidebar")), "narrow overlay never overwrites wide preference").toBe("collapsed");
+  await page.evaluate(() => localStorage.setItem("bisellium.sidebar", "sideways")); await page.setViewportSize({ width: 1280, height: 900 }); await page.reload();
+  await expect(page.locator(".sidebar__toggle"), "invalid stored value falls back to expanded").toHaveAccessibleName("Collapse sidebar"); await context.close();
+  const denied = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await denied.addInitScript(() => { Storage.prototype.getItem = () => { throw new DOMException("denied"); }; Storage.prototype.setItem = () => { throw new DOMException("denied"); }; });
+  const deniedPage = await denied.newPage(); await deniedPage.goto(`${served.baseURL}/#/board`);
+  await expect(deniedPage.locator(".sidebar__toggle"), "unreadable storage falls back to expanded").toHaveAccessibleName("Collapse sidebar");
+  await expect(deniedPage.locator(".board"), "storage failure never crashes").toBeVisible(); await denied.close();
+});

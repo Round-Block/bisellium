@@ -56,3 +56,12 @@ test("W-415-b3 behaviour 3: phone retains its 48px top row and visible focus rin
   assert.match(css, /@media \(max-width: 959px\)[\s\S]*\.shell__main\s*\{\s*grid-row:\s*-2 \/ -1/, "open overlay keeps the main pane in its own row");
   assert.match(css, /shell--overlay-open \.sidebar\s*\{[^}]*padding:\s*6px 6px 16px/s, "narrow toggle keeps one horizontal coordinate");
 });
+
+test("W-415-b4 behaviour 4: wide preference is defensive and narrow overlay does not write it", () => {
+  const app = read("apps/web/src/App.tsx"), served = read("apps/web/tests-serve/w415.spec.ts");
+  assert.match(app, /SIDEBAR_STORAGE_KEY = "bisellium\.sidebar"/, "preference uses its ruled key");
+  assert.match(app, /=== "collapsed"/, "only exact collapsed restores collapse");
+  assert.match(app, /wideSidebar[\s\S]*setOverlayOpen/, "wide preference and narrow overlay are separate state");
+  assert.match(served, /narrow overlay never overwrites wide preference/, "served row pins storage isolation");
+  assert.match(served, /unreadable storage falls back to expanded/, "throwing storage is pinned");
+});
