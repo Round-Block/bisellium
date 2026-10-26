@@ -65,3 +65,11 @@ test("W-415-b4 behaviour 4: wide preference is defensive and narrow overlay does
   assert.match(served, /narrow overlay never overwrites wide preference/, "served row pins storage isolation");
   assert.match(served, /unreadable storage falls back to expanded/, "throwing storage is pinned");
 });
+
+test("W-415-b5 behaviour 5: DIRECTION carries PR 758 and D-119 only", () => {
+  const direction = read("docs/design/DIRECTION.md");
+  assert.match(direction, /blocked card's 2px left rule \(the\s+Patron, 2026-10-25\)/, "red may mark blocked cards");
+  assert.match(direction, /never amber, which stays for what waits on you/, "amber remains human waiting only");
+  assert.match(direction, /focused petitio expanded in place \(no pane, §6\)/, "Inbox has no detail pane");
+  assert.match(direction, /D-119 keeps a labelled sidebar-panel toggle at the top-left[\s\S]*960px and wider[\s\S]*click-only overlay/, "navigation states D-119");
+});
