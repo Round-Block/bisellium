@@ -532,3 +532,54 @@ test("W-420-b1 behaviour 1: verify and verify --inside fail while the agent gh c
   w.hosts({ "github.com": [account(g, "a".repeat(39), true)] });
   judge("a login of 39 characters, configured", [], [`ok ${LINE}`], { AGENT_LOGIN: "a".repeat(39) });
 });
+
+test("W-420-b2 behaviour 2: setup refuses to finish while the agent gh config holds any login but the agent's own, and wipes nothing", () => {
+  const w = ghWorld();
+  const g = w.gh;
+  const env = `GH_CONFIG_DIR=${sq(g)}`;
+  const TOKEN = "github_pat_W420SETUPCANARY0000000000";
+  const stopped = `setup stopped: ${g} must hold the agent's own login alone, active on github.com; fix each line above, then run setup again (nothing was wiped).`;
+  const next = `${join(w.f, "agent")} exists and is not empty; move it away first.`;
+  const hostsYml = readFileSync(join(g, "hosts.yml"), "utf8");
+  const setup = (what: string): string[] => {
+    const n = w.calls().length;
+    const r = w.run(["setup"], {}, `${TOKEN}\n`);
+    const lines = r.out.split("\n").filter((l) => l !== "");
+    assert.equal(r.code, 1, `${what}: setup exits 1: ${r.out}`);
+    assert.doesNotMatch(r.out, /W420CANARY|W420SETUPCANARY/, `${what}: setup prints no token`);
+    const made = w.calls().slice(n).map((c) => c.split("|")[2]);
+    assert.deepEqual(made.slice(0, 2), ["auth login --with-token --insecure-storage", "api repos/Round-Block/bisellium --jq .full_name"], `${what}: setup stored the token and read the repo first`);
+    assert.equal(made.filter((c) => /^auth (logout|switch)/.test(c ?? "")).length, 0, `${what}: setup logged nothing out and switched nothing`);
+    assert.equal(made.filter((c) => c === "auth status --json hosts").length, 1, `${what}: setup asked gh for the logins once`);
+    const kept = join(g, "hosts.yml");
+    assert.equal(existsSync(kept) ? readFileSync(kept, "utf8") : "(wiped)", hostsYml, `${what}: the agent gh config was not wiped`);
+    return lines;
+  };
+  const refused = (what: string, expected: string[]): void => {
+    const lines = setup(what);
+    assert.deepEqual(lines, [...expected, stopped], `${what}: setup prints each fault and stops`);
+    assert.equal(existsSync(join(w.logs, "git.log")), false, `${what}: setup ran no git`);
+    assert.equal(existsSync(join(w.logs, "npm.log")), false, `${what}: setup ran no npm`);
+  };
+
+  // the finding: the Patron's login stored, inactive, beside the agent's
+  w.hosts({ "github.com": [account(g, "bisellium-agent", true), account(g, "edckt", false)] });
+  refused("a second login, inactive", [`${g} holds the login edckt on github.com, not the agent's own (bisellium-agent on github.com); log it out: ${env} gh auth logout -h github.com -u edckt`]);
+  // a token of another login, alone
+  w.hosts({ "github.com": [account(g, "edckt", true)] });
+  refused("a token of another login", [
+    `${g} holds the login edckt on github.com, not the agent's own (bisellium-agent on github.com); log it out: ${env} gh auth logout -h github.com -u edckt`,
+    `${g} holds no login bisellium-agent on github.com; run setup with the agent's token`,
+  ]);
+  // gh cannot list the logins
+  w.status("", 1);
+  refused("gh exits 1", [`gh could not list the logins in ${g} (exit 1); make its hosts.yml readable YAML, or remove ${g} and run setup again`]);
+  // output not of the form
+  w.status("[]\n");
+  refused("a JSON list", [`gh auth status for ${g} is not the form verify reads (no hosts object); log out every login (${env} gh auth logout) and run setup again`]);
+
+  // the agent's own login alone: setup goes on to its next step (here the fixture's agent folder refuses it)
+  w.hosts({ "github.com": [account(g, "bisellium-agent", true)] });
+  const lines = setup("the agent's own login alone");
+  assert.deepEqual(lines, [next], "the agent's own login alone: setup passes the check and stops only at its next step");
+});
