@@ -1,0 +1,26 @@
+# opus: W-415
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: revise
+# at: 2026-10-26T09:44:21.880Z
+# tree: tree:79b7a3e3a3a5959f9193f592cc9878dd28ea9394
+# dispatch_prompt: ci/W-415-ui-prompt-6.md
+# design_digest: sha256:c00a44a4c48ab0fd57e9c5eed09bf9d9a08473650931374e60c4b0633eee4d7e
+# ticket: {"opus":"W-415","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"0e65054e0c4789303c2ee3858ce839ed27f22109","brief":"9a9945b9133799dcf30ec0bfd73be178db14fb40","at":"2026-10-26T09:44:15.273Z"}
+
+## Findings
+
+1. blocking — brief:15 — The toggle moves horizontally between states: its button starts at x=12 expanded and x=6 collapsed; opening the narrow overlay also shifts it from x=6 to x=12. D-119 explicitly requires the same position. — replace with: “The 36px sidebar-panel toggle retains identical viewport coordinates across expanded/collapsed states at each wide width and open/closed states at each narrow width, with its focus ring fully visible.” — check: `apps/web/tests-serve/w415.spec.ts`, compare toggle rectangles before and after activation at 1280, 960, 640 and 390.
+
+2. blocking — brief:17 — The dot uses an 8px numeral, visibly undersized in the collapsed captures and below DIRECTION’s 11px micro-count role. D-120 authorizes the count dot, not a smaller typography scale. Its neutral surface, amber outline and top-right placement are appropriate. — replace with: “The notification dot uses DIRECTION’s 11px/14px micro-count typography; exact counts and `9+` fit legibly inside its outline without clipping, remain within the rail, and preserve the full accessible count.” — check: `apps/web/src/components/w025.css` and `apps/web/tests-serve/w415.spec.ts`, computed typography and captures for counts 3 and 123.
+
+3. blocking — brief:23 — Inbox subject wrapping now escapes the unchanged 40px row: the 390 capture has three lines crossing its boundaries, and the 1280 captures have four. The earlier screens contain the subject within its row. This worsens legibility and would crowd adjacent decisions. — replace with: “Inbox queue subjects retain their existing single-line ellipsis within the 40px row, with `min-width: 0` for containment; the selected item retains its full text in the existing detail area until W-407.” — check: `apps/web/src/components/w025.css` and `apps/web/tests-serve/w415.spec.ts`, subject containment with adjacent populated rows at 1280, 640 and 390.
+
+## Recommendation
+
+The monochrome icons, current-screen mark and count-dot placement carry out the Patron’s chosen design; the three defects above need implementation constraints, not a new design.
+Beyond the round-5 findings already assigned to the build, I found no further demonstrated narrow-screen regression in Board, Seats or Officina; Officina’s differing budget data limits direct comparison.
+The architect can make these revisions while preserving D-116’s approved Board and the accepted `9+` cap.
+Verdict: revise

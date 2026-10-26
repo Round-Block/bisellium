@@ -1,0 +1,24 @@
+# opus: W-415
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a176b9-961c-7da3-9825-0b43c7a1e15c
+# outcome: passed
+# at: 2026-10-26T09:34:39.488Z
+# tree: tree:79b7a3e3a3a5959f9193f592cc9878dd28ea9394
+# brief: briefs/W-415.md blob:9a9945b9133799dcf30ec0bfd73be178db14fb40
+# ticket: {"opus":"W-415","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"0e65054e0c4789303c2ee3858ce839ed27f22109","brief":"9a9945b9133799dcf30ec0bfd73be178db14fb40","at":"2026-10-26T09:34:28.226Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-415-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Since r6, the brief changes admission wording only: each Promise and pinned Input-domain row names its exact existing Node row/assertion, while the two stated-limit rows use the required recognises/forms/every-other-form grammar and are explicitly unpinned — check: studio/briefs/W-415.md, promise-ledger.md
+2. advisory — The round-7 ledger cites every Promise line and Input-domain row by stable `brief:N`, a concrete `<file>:<line>`, and holds or scoped; every pin has a one-hunk mutation and assertion-level TAP kill — check: ledger-kills.out, kill-b1.out, kill-b1-dot.out, kill-b2.out, kill-b3.out, kill-b4.out, kill-b5.out
+3. advisory — A read-only checker calls the W-306/W-348 ledger validator directly against this brief and signature, without invoking the verdict writer or creating a studio record — check: ledger-check.mts, ledger-check-r7.out
+4. advisory — UI behaviour, tests, ordered prototype commits, served results and captures are unchanged from r6; the prototype remains byte-identical — check: prototype.mbox, w415-policy-r5.out, w415-served-final.out, shots/
+
+## Verdict
+
+passed — signature round 7 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-415.md`; promise-ledger admission is pinned without changing behaviour or the prototype, whose sha256 remains `904c8b8eba7b7999030cdf94954c83450d548858ee863983f1c5b2566a9c301d`, and no record write, `next` or `verdict` was performed.

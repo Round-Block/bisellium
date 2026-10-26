@@ -1,0 +1,27 @@
+# opus: W-415
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a176b9-961c-7da3-9825-0b43c7a1e15c
+# outcome: passed
+# at: 2026-10-26T06:50:43.733Z
+# tree: tree:e6090cc892dd37e456bc384c7c48bc6067f67a50
+# brief: briefs/W-415.md blob:564ea96d11dfa9a0077bd0d41e710a4b4c2252cb
+# ticket: {"opus":"W-415","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"dbb15b1e76e17a711c61e05111b2b9155e8ec8e8","brief":"564ea96d11dfa9a0077bd0d41e710a4b4c2252cb","at":"2026-10-26T06:50:38.142Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-415-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the existing responsive shell is extended rather than duplicated: one App-owned state drives the shared Sidebar on all four routes, the wordmark is the native toggle, links are absent while collapsed, and the main grid receives the released rail width — check: brief:13, brief:27, brief:35, apps/web/src/App.tsx, apps/web/src/components/Sidebar.tsx, apps/web/tests-serve/w415.spec.ts, browser-proto-W-415.out
+2. advisory — the control names are `Bisellium — Collapse sidebar` and `Bisellium — Expand sidebar`, retaining the visible wordmark in the accessible name while exposing the action and state; the complete W-341 axe matrix passes 41/41 — check: brief:15, brief:41, apps/web/src/components/Sidebar.tsx, apps/web/test/w415.test.ts, census-states-final.out
+3. advisory — the zoom blockers are removed at their causes: Board uses containing-track percentages instead of `100vw`, Seats controls shrink, and its fixed bar reads the live shell variable rather than copied offsets — check: brief:17, brief:45, brief:47, apps/web/src/components/w025.css, host-b2-red-b2.out, browser-b2-red-W-415-b2.out
+4. advisory — Board keeps the shipped 613/612 boundary: its CSS, initial state, live listener and initial-scroll classifier agree at 612; the existing 613/612 live-resize row and 612/606/600 table row remain unchanged and pass in complete 21/21 runs on master and final — check: brief:47, brief:87, brief:97, apps/web/src/screens/Board.tsx, board-master.out, board-final.out
+5. advisory — all three ordered policy reds and companion served reds fail by their intended assertions, earlier behaviours stay green at later red stages, and the final policy/served rows pass — check: brief:83, brief:87, brief:91, host-b1-red-b1.out, host-b2-red-b2.out, host-b3-red-b3.out, browser-b1-red-W-415-b1.out, browser-b2-red-W-415-b2.out, browser-b3-red-W-415-b3.out
+6. advisory — every fixture-census `Must stay green` file passes: Node fixtures, 7/7 smoke, 36 served plus one existing skip, 41/41 state/axe, 3/3 W-406, and 21/21 Board; the six-commit non-numbered prototype applies with identical tree — check: brief:57, brief:102, census-node-final.out, census-smoke-final.out, census-served-final.out, census-states-final.out, census-w406-final.out, mbox-check.out
+7. advisory — the Patron choices remain isolated, the 24 ruled-width screenshots are unchanged because 1280/640/390 stay on the same sides of 612, and no baseline, screenshot machinery or Patron-merged code-owned path is touched — check: brief:104, brief:121, brief:122, brief:123, brief:124, brief:125, git-status.out, shots
+
+## Verdict
+
+passed — signature revised by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-415.md`; prototype sha256 `dabdb142a84e8b9a77da392c02070e644130add828f2f83c0f069968b6f333cd` preserves the shipped Board 613/612 boundary, all census rows are accounted for, the limits and Patron defaults remain explicit, Claude Opus spec review follows, and no record or screenshot baseline is written.
