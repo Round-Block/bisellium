@@ -17,12 +17,14 @@
  */
 import { spawnSync } from "node:child_process";
 import { lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 
 /** The owners files GitHub reads for a PR, in the order it looks: the first the base ref holds is the one it uses. */
 export const OWNERS_FILES = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"] as const;
 /** A PR number as the verb and the notice store take it. */
 export const PR_NUMBER = /^[1-9][0-9]{0,8}$/;
+/** A PR number as the notice store takes it, written (openPr reads up to 15 digits) and read (takeNotices) alike. */
+export const NOTICE_PR = /^[1-9][0-9]{0,14}$/;
 const NOTICE_MAX = 4096;
 /** A notice line is cut whole to this many characters (at most 1500 bytes), so the guard's 4096-byte bound always admits it. */
 const NOTICE_LINE = 500;
@@ -140,15 +142,32 @@ function commonDir(cwd: string, timeout?: number): { path: string } | { error: s
 }
 const noticeDir = (common: string): string => join(common, "bisellium", "notice");
 
+/** Why `path` may not be used as a directory of the store: it is a symlink, which would send a write or a delete out of
+ *  the Git common directory. Undefined when it is absent or a real entry (a non-directory fails at its own use). */
+function linked(path: string): string | undefined {
+  try {
+    return lstatSync(path).isSymbolicLink() ? `${path} is a symlink, not a directory` : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Leaves the notice for PR `pr` at `<git common dir>/bisellium/notice/<pr>` (one line, written whole by a rename),
  *  replacing an older one for the same PR. Undefined when written, else why not. */
 export function writeNotice(cwd: string, pr: number, text: string): string | undefined {
   const common = commonDir(cwd);
   if ("error" in common) return `git rev-parse --git-common-dir failed (${common.error})`;
+  if (!NOTICE_PR.test(String(pr))) return `${pr} is not a PR number the notice store takes`;
   const dir = noticeDir(common.path);
   const temp = join(dir, `.${pr}.${process.pid}`);
   try {
-    mkdirSync(dir, { recursive: true });
+    for (const part of [dirname(dir), dir]) {
+      const before = linked(part);
+      if (before !== undefined) return before;
+      mkdirSync(part, { recursive: true });
+      const after = linked(part);
+      if (after !== undefined) return after;
+    }
     writeFileSync(temp, `${text}\n`);
     renameSync(temp, join(dir, String(pr)));
     return undefined;
@@ -159,11 +178,12 @@ export function writeNotice(cwd: string, pr: number, text: string): string | und
 
 /** The guard's read (W-418): every notice under the Git common directory of the checkout at `cwd`, in PR order, each
  *  removed as it is taken, so a notice is handed over once. Fail-open: an entry that is not a PR number, not a regular
- *  file, over 4 KiB, or cannot be read or removed is left and not handed; a `cwd` outside a checkout has none. */
+ *  file (a symlink included), over 4 KiB, or cannot be read or removed is left and not handed; a `cwd` outside a checkout has none. */
 export function takeNotices(cwd: string): string[] {
   const common = commonDir(cwd, 1000);
   if ("error" in common) return [];
   const dir = noticeDir(common.path);
+  if (linked(dirname(dir)) !== undefined || linked(dir) !== undefined) return [];
   let names: string[];
   try {
     names = readdirSync(dir);
@@ -171,7 +191,7 @@ export function takeNotices(cwd: string): string[] {
     return [];
   }
   const out: string[] = [];
-  for (const name of names.filter((n) => PR_NUMBER.test(n)).sort((a, b) => Number(a) - Number(b))) {
+  for (const name of names.filter((n) => NOTICE_PR.test(n)).sort((a, b) => Number(a) - Number(b))) {
     const path = join(dir, name);
     try {
       const st = lstatSync(path);
