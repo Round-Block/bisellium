@@ -1,0 +1,25 @@
+# opus: W-415
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a177bd-a613-7f31-8a3d-ede663a858c6
+# outcome: passed
+# at: 2026-10-26T10:56:37.906Z
+# tree: tree:db205d980cf758af215eaa6eae9307d501bccc5a
+# ui_input: ci/W-415-spec-6.log
+# design_digest: sha256:c00a44a4c48ab0fd57e9c5eed09bf9d9a08473650931374e60c4b0633eee4d7e
+# ticket: {"opus":"W-415","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-415/studio","head":"56bdc7fe27a9bee483f2ab5ffa00f176222bf854","brief":"9a9945b9133799dcf30ec0bfd73be178db14fb40","at":"2026-10-26T10:55:58.467Z"}
+
+## Findings
+No findings
+
+## UI input disposition
+The storage-only fix leaves the authoritative ui-lead design intact. All eight desktop/phone images preserve the previously accepted hierarchy, containment, navigation, controls, overflow cues, and scan order without a visible regression.
+
+## Earlier findings
+- ci/W-415-review-1.log #1: closed — apps/web/src/App.tsx:48 now persists only through the wide toggle, while apps/web/tests-serve/w415.spec.ts:195 proves zero writes on narrow mounts, overlay activity and boundary resizes, plus exactly one write on a wide toggle.
+
+## Verdict
+The delta closes the prior persistence defect with recorded pre-fix failure evidence and passing fresh gates, without changing the reviewed UI.
+VERDICT: PASS

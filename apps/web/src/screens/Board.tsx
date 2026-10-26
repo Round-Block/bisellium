@@ -329,7 +329,7 @@ export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     // level up: `everLoaded` only flips after BOTH have actually committed.
     if (!everLoaded) return;
     didInitialScroll.current = true;
-    if (typeof window === "undefined" || !window.matchMedia?.("(max-width: 599px)").matches) return;
+    if (typeof window === "undefined" || !window.matchMedia?.("(max-width: 612px)").matches) return;
     const needsYou = model.columns.find((c) => c.id === "needs_you");
     const targetId = needsYou && needsYou.cards.length > 0 ? needsYou.id : "in_progress";
     requestAnimationFrame(() => {

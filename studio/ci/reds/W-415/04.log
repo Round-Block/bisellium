@@ -1,0 +1,136 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-415-b4\s --import tsx apps/web/test/w415.test.ts
+# exit: 1
+# at: 2026-10-26T09:59:15.970Z
+# sella: builder.W-415
+# tree: tree:0c3970bb17e3419f4ddd0e4097b10edccba180f3
+# ticket: {"opus":"W-415","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-415/studio","head":"9c5417f48d2eba8cfef3042ea02a3822e58bb719","brief":"9a9945b9133799dcf30ec0bfd73be178db14fb40","at":"2026-10-26T09:59:11.748Z"}
+
+TAP version 13
+# Subtest: W-415-b4 behaviour 4: wide preference is defensive and narrow overlay does not write it
+not ok 1 - W-415-b4 behaviour 4: wide preference is defensive and narrow overlay does not write it
+  ---
+  duration_ms: 2.34756
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:1:5538'
+  failureType: 'testCodeFailure'
+  error: 'preference uses its ruled key'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { useEffect, useState } from "react";
+    import { parseRoute } from "./lib/route.js";
+    import { Sidebar } from "./components/Sidebar.js";
+    import { Officina } from "./screens/Officina.js";
+    import { Inbox } from "./screens/Inbox.js";
+    import { Seats } from "./screens/Seats.js";
+    import { Board } from "./screens/Board.js";
+    import { TokenPrompt } from "./components/TokenPrompt.js";
+    import { fetchInbox, hasToken, setUnauthorizedListener } from "./api.js";
+    import { READY, type ScreenStatus } from "./lib/screenState.js";
+    
+    function currentHash(): string {
+      return typeof window === "undefined" ? "" : window.location.hash;
+    }
+    
+    function initialWideSidebar(): boolean {
+      return typeof window === "undefined" || window.matchMedia("(min-width: 960px)").matches;
+    }
+    
+    export function App() {
+      const [hash, setHash] = useState(currentHash());
+      const [needsYouCount, setNeedsYouCount] = useState(0);
+      const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
+      const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+      const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
+      const [overlayOpen, setOverlayOpen] = useState(false);
+      // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
+      // remounted by a screen's own layout changes and announces every state change.
+      const [status, setStatus] = useState<ScreenStatus>(READY);
+      const route = parseRoute(hash);
+    
+      useEffect(() => {
+        // The one 401 path every write shares: raised from wherever the write
+        // was issued (Inbox today, W-065's Seats and W-064's Board tomorrow),
+        // with no code of their own.
+        setUnauthorizedListener(() => setTokenPromptOpen(true));
+        return () => setUnauthorizedListener(undefined);
+      }, []);
+    
+      useEffect(() => {
+        const onHashChange = () => setHash(currentHash());
+        window.addEventListener("hashchange", onHashChange);
+        return () => window.removeEventListener("hashchange", onHashChange);
+      }, []);
+    
+      useEffect(() => {
+        const query = window.matchMedia("(min-width: 960px)");
+        const onChange = (event: MediaQueryListEvent) => {
+          setWideSidebar(event.matches);
+          setOverlayOpen(false);
+        };
+        setWideSidebar(query.matches);
+        query.addEventListener("change", onChange);
+        return () => query.removeEventListener("change", onChange);
+      }, []);
+    
+      useEffect(() => {
+        if (route === "inbox") return;
+        if (location.search.includes("demo")) {
+          setNeedsYouCount(3);
+          return;
+        }
+        fetchInbox()
+          .then((r) => setNeedsYouCount(r.petitiones.length))
+          .catch(() => undefined);
+      }, [route]);
+    
+      return (
+        <div className={[
+          "shell",
+          wideSidebar && sidebarCollapsed && "shell--sidebar-collapsed",
+          !wideSidebar && overlayOpen && "shell--overlay-open",
+        ].filter(Boolean).join(" ")}>
+          {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
+          <Sidebar
+            route={route}
+            needsYouCount={needsYouCount}
+            collapsed={wideSidebar ? sidebarCollapsed : !overlayOpen}
+            overlay={!wideSidebar}
+            overlayOpen={overlayOpen}
+            onToggle={() => wideSidebar
+              ? setSidebarCollapsed((value) => !value)
+              : setOverlayOpen((value) => !value)}
+            onNavigate={() => {
+              if (!wideSidebar) setOverlayOpen(false);
+            }}
+          />
+          {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
+          <main className="shell__main" tabIndex={0}>
+            {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
+          </main>
+          <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
+            {status.text}
+          </div>
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:62:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.048218

@@ -29,19 +29,21 @@ test.describe("computed layout (W-065 behaviour 15)", () => {
     await expect(page.locator(".sidebar__link-text").first()).toBeVisible();
   });
 
-  test("800px: the rail is 72px, labels present at 11px (not display:none)", async ({ page }) => {
+  test("800px: D-119 uses a closed 48px top row and click-open overlay", async ({ page }) => {
     served = await startServed("layout-800");
     await page.setViewportSize({ width: 800, height: 900 });
     await openSeats(page);
     const box = await page.locator(".sidebar").boundingBox();
-    expect(box?.width).toBeCloseTo(72, 0);
+    expect(box?.width).toBeCloseTo(800, 0);
+    expect(box?.height).toBeCloseTo(48, 0);
     const label = page.locator(".sidebar__link-text").first();
+    await expect(label).toBeHidden();
+    await page.locator(".sidebar__toggle").click();
     await expect(label).toBeVisible();
-    const fontSize = await label.evaluate((el) => getComputedStyle(el).fontSize);
-    expect(fontSize).toBe("11px");
+    expect((await page.locator(".sidebar").boundingBox())?.width).toBeCloseTo(280, 0);
   });
 
-  test("500px: the shell is a top row, labels still readable", async ({ page }) => {
+  test("500px: the shell is a closed top row until its toggle opens the overlay", async ({ page }) => {
     served = await startServed("layout-500");
     await page.setViewportSize({ width: 500, height: 900 });
     await openSeats(page);
@@ -49,6 +51,8 @@ test.describe("computed layout (W-065 behaviour 15)", () => {
     // A top row: wide (spans ~the viewport) and short, not a tall left rail.
     expect(sidebarBox?.width).toBeGreaterThan(400);
     expect(sidebarBox?.height).toBeLessThan(100);
+    await expect(page.locator(".sidebar__link-text").first()).toBeHidden();
+    await page.locator(".sidebar__toggle").click();
     await expect(page.locator(".sidebar__link-text").first()).toBeVisible();
   });
 

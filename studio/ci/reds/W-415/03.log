@@ -1,0 +1,106 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-415-b3\s --import tsx apps/web/test/w415.test.ts
+# exit: 1
+# at: 2026-10-26T09:59:08.101Z
+# sella: builder.W-415
+# tree: tree:fc3d5175cc1c997a94a412c75f5026ffd8f00580
+# ticket: {"opus":"W-415","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-415/studio","head":"8bf9cb521ba5b0a1092dfc0de65d2ef20553f4b2","brief":"9a9945b9133799dcf30ec0bfd73be178db14fb40","at":"2026-10-26T09:59:03.859Z"}
+
+TAP version 13
+# Subtest: W-415-b3 behaviour 3: phone retains its 48px top row and visible focus ring
+not ok 1 - W-415-b3 behaviour 3: phone retains its 48px top row and visible focus ring
+  ---
+  duration_ms: 2.38221
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:1:4348'
+  failureType: 'testCodeFailure'
+  error: 'opening moves focus into drawer'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from "react";
+    import { NAV_ENTRIES, needsYouVisible } from "../lib/nav.js";
+    // ponytail: no `import "./w025.css"` here — Officina's FastiStrip already
+    // pulls it into the one bundle App.tsx statically assembles (both Officina
+    // and Inbox are always imported, whichever route is live), and dropping the
+    // redundant copy here is what lets apps/web/test/sidebar.test.ts import this
+    // component under plain node (tsx has no CSS loader; see W-065).
+    
+    export interface SidebarProps {
+      route: string;
+      needsYouCount: number;
+      collapsed?: boolean;
+      onToggle?: () => void;
+    }
+    
+    type IconName = "panel" | "inbox" | "board" | "seats" | "officina";
+    
+    function SidebarIcon({ name }: { name: IconName }) {
+      const paths: Record<IconName, ReactNode> = {
+        panel: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /></>,
+        inbox: <><path d="M4 5h16v14H4z" /><path d="M4 14h5l2 2h2l2-2h5" /></>,
+        board: <><rect x="3" y="4" width="5" height="16" rx="1" /><rect x="10" y="4" width="5" height="11" rx="1" /><rect x="17" y="4" width="4" height="14" rx="1" /></>,
+        seats: <><circle cx="8" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 20v-2a5 5 0 0 1 10 0v2M14 20v-1.5a4 4 0 0 1 7 0V20" /></>,
+        officina: <><path d="M4 20V9l5 3V8l5 3V4h6v16z" /><path d="M8 20v-3h3v3M15 8h5" /></>,
+      };
+      return <svg className="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+    }
+    
+    export function Sidebar({ route, needsYouCount, collapsed = false, onToggle = () => undefined }: SidebarProps) {
+      const visibleInboxCount = collapsed && needsYouCount > 9 ? "9+" : needsYouCount;
+    
+    
+      return (
+        <nav id="console-sidebar" className="sidebar" aria-label="Console navigation">
+          <button
+            type="button"
+            className="sidebar__toggle"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!collapsed}
+            aria-controls="sidebar-links"
+            onClick={onToggle}
+          >
+            <SidebarIcon name="panel" />
+          </button>
+          <div id="sidebar-links" className="sidebar__links">
+          {NAV_ENTRIES.map((e) => {
+            const active = route === e.route;
+            const classes = ["sidebar__link", active && "sidebar__link--active"].filter(Boolean).join(" ");
+            const inboxCountLabel = e.route === "inbox" && needsYouVisible(needsYouCount) ? `Inbox ${needsYouCount}` : undefined;
+            return (
+              <a key={e.route} className={classes} href={e.href} title={collapsed ? e.label : undefined} aria-label={inboxCountLabel ?? (collapsed ? e.label : undefined)} aria-current={active ? "page" : undefined}>
+                <SidebarIcon name={e.route as Exclude<IconName, "panel">} />
+                <span className="sidebar__link-text">{e.label}</span>
+                {e.route === "inbox" && needsYouVisible(needsYouCount) && " "}
+                {e.route === "inbox" && needsYouVisible(needsYouCount) && <span className={["sidebar__badge", collapsed && "sidebar__badge--dot"].filter(Boolean).join(" ")} role="img" aria-label={`Inbox, ${needsYouCount} needs you`}>{visibleInboxCount}</span>}
+              </a>
+            );
+          })}
+          </div>
+          {!collapsed && (
+            <div className="sidebar__bottom">
+              <span className="sidebar__meta">studio/</span>
+            </div>
+          )}
+        </nav>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:52:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.124487

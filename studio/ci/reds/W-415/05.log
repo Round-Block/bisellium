@@ -1,0 +1,421 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-415-b5\s --import tsx apps/web/test/w415.test.ts
+# exit: 1
+# at: 2026-10-26T09:59:28.169Z
+# sella: builder.W-415
+# tree: tree:9f8af0eaa3d5a594a9334235eb67fe1b53a78812
+# ticket: {"opus":"W-415","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-415/studio","head":"c673f0e32db35b6bca057fa9c60ac27a7635e217","brief":"9a9945b9133799dcf30ec0bfd73be178db14fb40","at":"2026-10-26T09:59:23.935Z"}
+
+TAP version 13
+# Subtest: W-415-b5 behaviour 5: DIRECTION carries PR 758 and D-119 only
+not ok 1 - W-415-b5 behaviour 5: DIRECTION carries PR 758 and D-119 only
+  ---
+  duration_ms: 2.235619
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:1:6210'
+  failureType: 'testCodeFailure'
+  error: 'red may mark blocked cards'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    ---
+    kind: guide
+    owner: architect
+    tier: reference
+    review: 2026-12-01
+    kill: when a `design.tokens` check rule enforces §3's ladders against the shipped
+      stylesheet — then this file becomes history and the rule is cited instead
+    ---
+    
+    # Design direction
+    
+    The web console's visual contract. Web I builds to this; a builder's work is
+    reviewed against it clause by clause. Where a lens in the research conflicts
+    with another, this file has already decided — the decision and its reason are
+    inline. The tokens (ink, verdigris, amber, ok, bad, Bricolage Grotesque /
+    Instrument Sans / IBM Plex Mono) are fixed by the Patron and are not reopened.
+    
+    ## 1. Identity thesis
+    
+    **Bisellium is an officina's ledger.** It renders who decided what, on what
+    evidence, and who owes the next move — a Roman guild's book of record, drawn
+    flat and modern, where every number on screen is an entry someone can be held
+    to.
+    
+    **It is not a SaaS dashboard.** Nothing here is a "metric", nothing is a KPI, and
+    no surface exists to reassure. If a pixel does not carry a fact from the
+    officina's files, it is deleted.
+    
+    ## 2. The generic diagnosis
+    
+    Measured in `docs/design/canvas/*.dc.html`. Each is a named pattern to kill.
+    
+    1. **No type scale.** 11 distinct sizes across six screens, four of them
+       half-pixel (10.5 / 11.5 / 12.5 / 13.5). Sizes fitted by eye read as
+       [made-up-as-I-went](https://www.orbix.studio/blogs/saas-typography-examples).
+    2. **No radius decision.** 10 radii in one surface family (3, 4, 6, 7, 8, 9, 10,
+       12, 50%, 999px). Indecision rendered.
+    3. **The shadcn tell.** 21 instances of `box-shadow: 0 1px 2px rgba(22,33,30,.04)`.
+       A shadow at 4% opacity is a border that costs a paint —
+       [drop-shadow card grids signal no thought](https://dev.to/sangrokjung/stop-your-ai-coding-tool-from-generating-generic-ui-impeccable-design-skill-4g1l).
+    4. **Card-in-card.** Page `#F6F8F7` → white panel → white card → pill: four
+       nesting levels around one line of text. This is
+       [everything-a-card](https://www.datadoghq.com/blog/datadog-dashboards/); it
+       stutters and it costs the density we need.
+    5. **Badge rainbow.** 27 pills at `border-radius: 999px`, including `p-amber` on
+       a duration ("46m"). Amber spent on a clock is amber that no longer means
+       waiting on a human.
+    6. **Template chrome.** Every card's meta line is an `A · B · C` middle-dot
+       string: three facts at identical weight, so none of them is the answer.
+    7. **Palette sprawl.** 27 hex values, including `#4A6FA5` — a blue whose only
+       meaning is "second project". Above the
+       [≤3 semantic colors on screen](https://www.setproduct.com/blog/data-table-ui-design)
+       threshold by an order of magnitude.
+    8. **Mono as decoration.** IBM Plex Mono on `~/projects` and on prose labels.
+       Mono is for things that must align in a column; using it for flavour throws
+       away the one signal it carries.
+    9. **Chrome outweighs content.** 60px top bar + 22/28 page padding + 14/16 card
+       padding: the Board fits ~5 cards per column at 900px. A board that shows five
+       items is a screenshot, not a floor.
+    10. **Anonymous wordmark.** A generic stroked house glyph that belongs to any
+        product.
+    
+    ## 3. The system
+    
+    ### Typography
+    
+    One scale, ratio 1.125 anchored at 13px, rounded to integers. **No half-pixel
+    sizes. No italics. No all-caps labels. No sixth weight.**
+    
+    | Role | Family / weight | Size / line-height | Tracking |
+    |---|---|---|---|
+    | Display (screen title, once) | Bricolage Grotesque 700 | 30 / 32 | −0.02em |
+    | Section head | Bricolage Grotesque 600 | 17 / 22 | −0.01em |
+    | Prose body | Instrument Sans 400 | 15 / 22 | 0 |
+    | UI default, table cell | Instrument Sans 400 | 13 / 18 | 0 |
+    | Secondary, dense label | Instrument Sans 400 | 12 / 16 | 0 |
+    | Micro (counts, ages) | Instrument Sans 500 | 11 / 14 | +0.01em |
+    | Data | IBM Plex Mono 400, `tabular-nums` | 12 / 18 | 0 |
+    
+    Weights available: 400, 500, 600 (heads only), 700 (display only). Hierarchy is
+    carried by weight and color before it is carried by size —
+    [Stripe's inverse hierarchy](https://www.925studios.co/blog/stripe-dashboard-design-breakdown).
+    
+    Mono is permitted on exactly four things: opus and sella ids, tree hashes,
+    numerals (tokens, cost, counts, durations), and file paths. Never on a word that
+    is not an identifier. Numeric columns are right-aligned with `tabular-nums`; text
+    is left-aligned. Prose measure ≤ 68ch. Body text is never centred.
+    
+    Small caps (`font-variant: small-caps`, never `text-transform: uppercase`) appear
+    in one place: the fasti strip's weekday initials.
+    
+    ### Color
+    
+    Neutrals do the work. Five of them, replacing the fourteen greys in the mocks:
+    
+    `ink #F8F8F2` · `ink-2 #C6C9D8` · `ink-3 #9EA4C4` · `rule #44475A` ·
+    `wash #343746`. Surfaces are `#282A36`; panels are separated by rules and the
+    lighter wash, never by a lighter-on-darker card sandwich.
+    
+    - **Verdigris `#3FB9A3`** — product identity and primary interaction: the
+      wordmark, focus ring, landed fasti tick and primary action. At most **one
+      verdigris fill per screen** (the primary action, where one exists). Never a
+      decorative fill, never a tint wash.
+    - **Dracula accents** — Cyan `#8BE9FD` (`--accent-cyan`) colours content and
+      evidence links; Pink `#FF79C6` (`--accent-pink`) colours browser text
+      selection; Purple `#BD93F9` (`--accent-purple`) colours display and section
+      headings; Yellow `#F1FA8C` (`--accent-yellow`) is a constant Board project-name
+      text accent. Text selection is an editing affordance, not an application
+      state. Every accent has one role: an accent never marks a state.
+    - **Amber `#FFB86C` (Dracula Orange)** — waiting on a human, and nothing else,
+      ever. Budget: one amber region per screen plus the nav count. Rendered as a
+      **2px left rule** on the row plus the age numeral in amber. Never a pill,
+      never a background, never on a duration that is not yours.
+    - **ok `#50FA7B` (Dracula Green) / bad `#FF5555` (Dracula Red)** — inside a
+      gate mark only, at 6px, and always paired with a **shape** difference so the
+      state survives colour blindness
+      ([don't rely on colour alone](https://carbondesignsystem.com/patterns/status-indicator-pattern/)).
+    - **Contrast floor** (the Patron, 2026-10-22, W-341): ruled text roles reach
+      4.5:1 and UI-component colours 3:1 on both surfaces (`#282A36` and `wash`);
+      `bad` remains gate-only, never text. The ratios are computed from
+      `tokens.css` by a test, including the Inbox count in amber on both the
+      selected and hovered `rule` navigation fills, and the console's axe scan runs
+      with colour contrast on.
+    - The only status colours are `ok`, `amber` and `bad`, with their existing
+      meanings and shape cues. Ceiling: **at most three status colours visible at
+      once**. Accents do not count toward that status ceiling.
+    - **Identity boundary.** Verdigris remains the sole product identity colour.
+      Yellow is a constant project-name text accent, identical for every project
+      and condition. Projects remain named, never colour-coded; project dots and
+      colour hashing remain excluded.
+    
+    ### Space
+    
+    - **4px base. Permitted gaps: 4, 8, 12, 16, 24, 32, 48.** Nothing else. The
+      9/13/14/22/28 values in the mocks are all errors.
+    - **Two radii: 2px on marks, inputs and controls; 0 on panels and rows.** No
+      999px pills anywhere. Circles exist only on avatars.
+    - **Zero box-shadows in the flat layer.** Shadow exists once, on the drawer:
+      `0 0 0 1px var(--rule), 0 16px 48px rgba(0,0,0,.45)`.
+    - **Hairlines, not boxes.** A panel is a 1px `--rule` top border plus a heading.
+      Nesting depth cap is 2 (screen → panel). Anything that wants to be a card
+      inside a card becomes a row inside a table.
+    - **Density targets.** Board: 288px columns, cards bounded from 64px to 108px,
+      8px between. Tables: 32px rows, 8px cell padding vertical, 16px horizontal,
+      ≥20 rows visible. One density, no toggle.
+    - **Chrome budget.** Nav ≤ 44px, no second toolbar, no breadcrumb bar. Content
+      begins within 56px of the viewport top. ≥88% of vertical pixels are content.
+    
+    ## 4. Signature elements
+    
+    Five ownable components. These are what the console is recognised by.
+    
+    **4.1 Gate ladder as engraved marks.** Not coloured dots. A fixed-width row of
+    6×6px marks at 3px gaps sitting on a 1px rule (the rail): filled ink = passed,
+    hollow 1px outline = pending, `bad` fill with a 1px diagonal = failed, `ok` fill
+    = a human's own call passed, half-height bar = waived. Width is a function of
+    gate count, so items sharing a probatio set align vertically down a column and
+    the column reads as a stack of identical ladders with different fill patterns —
+    which is exactly what "who is stuck where" looks like. Four gates = 33px.
+    Hover names the gate and its blocker.
+    
+    **4.2 The fasti strip.** Officina only, 28px tall, full width, directly under the
+    nav: 14 day-columns, past through today to forecast. A filled 3px verdigris tick
+    = a cascade landed; a hollow 3px tick = the officina was open and nothing landed;
+    nothing at all = a closed day (posture `closeout`, or over allowance). Weekday
+    initial in 11px small caps beneath. Today is a 1px full-height ink rule, not a
+    highlight. It is the only graphic on the screen, and it is literally a Roman
+    calendar of days on which business may be done.
+    
+    **4.3 Clause number as anchor.** Lex clauses, decisions and check-rule citations
+    render with the number in a 32px left gutter: mono 12px `ink-3`, right-aligned,
+    baseline-aligned to the clause's first line, no punctuation, no bold. Body at
+    15/22 in a 62ch measure. Licensed because the content genuinely is numbered
+    (leges run §1–§9 and rules cite them). Numbered markers appear **nowhere else**.
+    
+    **4.4 The decision line.** Every human verdict renders as one 20px line in four
+    fixed columns: verb (13px/500 ink — `approve` `decline` `defer` `delegate`, a
+    word, never an icon, never a checkmark), subject (mono 12px, 24ch truncation),
+    reason (13px `ink-2`, one line, five presets plus free text), timestamp (mono
+    11px `ink-3`, right). **A decision without a reason cannot be submitted** — the
+    reason is the product, and it is what makes retro computable
+    ([reason codes as the feedback loop](https://linear.app/now/how-we-built-triage-intelligence)).
+    A deferral's reason travels with the item, so the Board shows
+    `deferred · waiting for info`, not a yellow dot.
+    
+    **4.5 The colophon rule.** Every screen *ends* — at the bottom of its scroll, not
+    floating — with one hairline and one mono 11px `ink-3` line: source tree hash,
+    officina path, generated-at, schema version. It is the ledger's imprint. It names
+    which bytes this view renders, which is what makes `stale` legible without a
+    badge. It is the only footer in the product.
+    
+    ## 5. Motion and interaction
+    
+    - **No entrance animation, no page-load sequence.** Nothing moves that a person
+      did not move.
+    - Three transitions exist, all 120ms ease-out: drawer slide-in from the right
+      (translateX only — no fade, no scale), row-selection background, disclosure
+      height. `prefers-reduced-motion` drops all three to 0ms.
+    - **No spinner, ever.** Work in progress is a 2px verdigris bar across the top of
+      the affected row. Unknown duration means it sits at its last known fraction
+      with the elapsed mono numeral beside it; it does not pulse. A stopped clock
+      reads as stopped, and that is the honest signal.
+    - **Drawer, never modal.** Board scroll position is snapshotted on open and
+      restored on close; the board stays mounted and live beside the pushed drawer.
+    - **Keyboard first.** Item lists are roving-tabindex listboxes: `j`/`k` move,
+      `Enter` opens the drawer, `Esc` closes, `1`/`2`/`3` are approve/defer/decline
+      in the Inbox, `⌘K` is the only palette. Shortcuts are printed in the drawer
+      footer, not hidden behind a help modal.
+    - Focus ring: 2px verdigris at 2px offset, on every focusable element, never
+      suppressed on a custom control.
+    - Hover changes background colour only. No lift, no shadow, no scale, no
+      border-colour change.
+    
+    ## 6. Per-screen notes
+    
+    **Inbox** — a queue of decisions, not a mail client. One column at a 720px
+    measure, left-aligned to the screen title; **no preview pane**, because two panes
+    invite reading instead of deciding. The focused item is expanded and shows its
+    ask, its evidence links and the four verbs; every other item is a 40px row —
+    amber 2px left rule if it is yours, title at 13/18, asker's sella id in mono 12,
+    age as a right-aligned mono numeral that escalates in *weight* (500 → 700) with
+    age, never in colour. "You asked" and "For information" sit below a rule,
+    collapsed, and never carry amber. The empty state is the resting state: one line,
+    "Nothing waiting on you", then the colophon. No celebration graphic.
+    
+    **Officina** — the fasti strip, then four panels stacked between hairlines, no
+    boxes: decreta pending, posture and burn, lex status, process health. Burn is two
+    mono numerals and a 4px rule filled to the spent fraction — ink under allowance,
+    amber past it. No donut, no gauge, no sparkline. Posture is the word itself at
+    17px Bricolage 600 (`closeout`) with its reason beneath at 13px: a posture is a
+    sentence someone can argue with, not a coloured chip. The pause brake is the one
+    place a verdigris fill button is allowed.
+    
+    **Board** — phase columns at 288px; cards grow from 64px to 108px: gate ladder,
+    title clamped at four lines (13/18) with its complete source in a native title
+    affordance, owner sella id in mono 12. Cards have no border and no shadow — they
+    are separated by 8px of page and carry a 2px left rule only when blocked (`bad`)
+    or waiting on you (amber). The column head is two
+    lines: name + count at 13/500, then a 3px WIP rule filled to count/cap (ink under
+    cap, amber at cap — a WIP breach is a human's problem) with median dwell time as
+    a right-aligned mono numeral, so the header names the bottleneck instead of just
+    labelling the column
+    ([column limit indicators](https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-board-layout)).
+    Needs-you is not a floating pill: it is the first column, pinned left, empty on a
+    good day.
+    
+    ## 8. Screen map
+    
+    Four Patron touchpoints (STUDIO.md §4) mapped to screens. A structural
+    change to a screen must preserve the touchpoints it owns; moving a touchpoint
+    between screens is a lex change (check: design.screen-map).
+    
+    | Touchpoint | Write | Screen | Surface |
+    |---|---|---|---|
+    | **Decretum** | backlog → greenlit / declined | **Board** | fasti strip + decretum queue; greenlight is the Board's verb |
+    | **Budget allocation** | per-collegium stipendium | **Officina** | posture and burn panel; the Patron sees the allocation and its effect |
+    | **Arbitrium** | human probatio verdict | **Inbox** | petitio detail pane; approve / defer / decline / delegate with ratio decidendi |
+    | **Lex change** | amend a collegium's lex | **Officina** | lex status panel; pending amendments surface here |
+    
+    Screens not owned by a touchpoint:
+    
+    | Screen | Role |
+    |---|---|
+    | **Opening page** | the console's first view: the needs-you rows, work in flight by who moves next, and the ledger sections (flow, quality, cost, reliability, Chaos) as tables that click through to records (W-202) |
+    | **Acta** | read-only feed — consultations, decisions, dailies, evidence |
+    | **Agents** | roster, per-sella cost, provider limits |
+    | **Swimlane** | actors × time; the Patron is a lane |
+    | **Graph** | topology |
+    
+    ## 7. Rejects
+    
+    Banned as generic or as kitsch. A build containing one of these fails review.
+    
+    - **Serif body text, parchment, sepia, texture overlays, wax seals, Trajan,
+      ornamental borders.** The Latin lives in the vocabulary; in the pixels it is
+      costume. (Rejects the classical lens's serif-body move — the token set is the
+      Patron's and wins.)
+    - **Broadsheet pastiche** — justified multi-column prose, rules used as
+      decoration. Hairlines here carry structure or they are deleted.
+    - **The density toggle** (condensed/regular/relaxed). One audience, one density.
+      A preference we persist is a decision we refused to make.
+    - **Status-reflective nav glyphs** (Vercel's move). Our states are per item; a
+      nav icon averaging seven items' states says nothing.
+    - **Concentric status pulse rings** (agent-activity's move 2). Three nested rings
+      is a chart the size of a bullet; the drawer's waterfall bar says it legibly.
+    - **Per-project colour dots and colour-hashed identities.** A colour mapping
+      nothing learnable is decoration.
+    - **Batch-confirm staging in the Inbox** (inbox-attention's move 1). A decision
+      not committed when made is a decision you will re-litigate. Commit on the verb;
+      offer undo for 10 seconds.
+    - **Sparklines, donuts, gauges, KPI card strips, trend arrows, heatmap cells.**
+    - **Emoji as status** (⚠️ 🔴 🟡) anywhere in product chrome.
+    - **Swimlanes as a Board grouping axis.** Swimlane is its own screen (actors ×
+      time); on the Board, gate state is card metadata, not an axis.
+    - **Gradients, glassmorphism, hover lift, bounce/elastic easing, scroll-triggered
+      reveals.**
+    - **All-caps tracked-out eyebrow labels**, `A · B · C` middle-dot meta strings,
+      and `→` appended to link or button text.
+    
+    ## Patron interface & cost model (captured direction, 2026-09-23/24 — not adopted)
+    
+    **Principle: authority never transits a model.** The Patron's intent becomes a
+    record only by the Patron's own act — a click, a command, a decree typed into
+    the record layer. Any model between the Patron and the officina may *draft*;
+    none may *relay*. A relay holding delegated authority is the Mast-`send` class
+    (a peer channel mistaken for a permission boundary) — the same class W-044
+    closes for talk — and the standing rule "never relay a mid-turn Patron message
+    into a running workflow" already recorded its failure empirically.
+    
+    **Three interface tiers, by cost:**
+    
+    | tier | answers | cost profile | may never |
+    |---|---|---|---|
+    | Deterministic (console, `check`/`query`/`context`, generated views) | status: the board, what's blocking, what awaits the Patron | zero model tokens | — |
+    | Concierge (fast tier — Haiku/Luna class) | conversation, drafting records from rambling intent, explaining findings plainly | pennies; always-on is affordable | hold authority, relay live, sign anything; output is a draft in the Inbox awaiting the Patron's click |
+    | Orchestrator (frontier tier — Fable/Astra class) | driving cascades: dispatch, adjudication, merge mechanics | metered per cascade, not per hour | be a chat presence — chat through it is the most expensive possible UI (two spend-limit deaths in one week) |
+    
+    **The record bus is the async channel.** Petitio → answer, greenlight,
+    decision: the Inbox *is* the chat interface for the asynchronous half.
+    Provenance is structural — the Patron's click writes the record; nothing
+    paraphrases law. The concierge's whole contract is draft-and-confirm.
+    
+    **The orchestrator is a burst worker.** Wakes on a decree, a ready queue, or a
+    D-020 escalation trigger; boots from `bisellium context` (bounded,
+    task-specific bundle); drives one cascade; writes the handoff; exits.
+    Consequences: cost becomes bundle × cascades instead of presence × hours;
+    context bloat inverts (a fresh boot ~15–20k tokens is smaller than a lived-in
+    session, and burst resets bloat rather than accruing it); the stable bundle
+    prefix rides prompt caching; the `context` command is the enforcement point
+    for per-section caps, staleness and duplication — a bloated bundle is a check
+    finding, not a slow death; any frontier model can hold the seat, because truth
+    lives in records (D-021, the Mast discipline — proven by two mid-week model
+    swaps with zero loss). The named residual: a crash loses only work since the
+    last handoff, so handoff-at-every-stage-transition is the discipline that
+    bounds it.
+    
+    **Escalation ladder**: the concierge invokes upward only on D-020's named
+    triggers. No trigger, no frontier spend.
+    
+    **Not**: a second review gate (D-014 untouched); an org decision (seats live
+    in D-020 and churn with releases); adopted — preconditions are Web II
+    (the console Inbox work) being scheduled, since building the concierge before
+    the record bus it drafts into would invert the dependency. Revisit triggers:
+    provider pricing/limit changes; concierge drafts proving unfaithful; Web II
+    scheduling, which makes this section the spec input.
+    
+    ## Patron decrees, 2026-09-24 — Web II starts
+    
+    Recorded verbatim from the Patron, 2026-09-24:
+    
+    > the live canvas uses a side panel instead of a top panel. at this point,
+    > i prefer the side panel.
+    
+    > that also means that we need to start with the agent model selection and
+    > task type delegation.
+    
+    **Consequences.** (1) The **side panel is the console's navigation**, as the
+    canvas designs draw it; the shipped top-bar layout (Inbox/Officina) migrates
+    to it. Every Web II spec builds to the side panel. (2) Web II's **first opus
+    is the agent-model-selection and task-type-delegation surface** (W-065),
+    ahead of the Board (W-064). This is the Patron's decree surface made
+    clickable: which model holds which seat, and which task types are delegated
+    to which tier — the D-020 mapping as UI, with the Patron as the only
+    authority who writes it. It is the concrete arrival of the standing
+    direction that everything below the human-only line (UI/UX, architecture)
+    becomes delegable by toggle/checklist. Design authority note: the writes
+    this screen performs are decree-writes (manifest seats, tier mapping);
+    they must land as records with the Patron's identity, never a model's —
+    the same rule as the Inbox record bus above.
+    
+    ## Patron rulings, 2026-10-10 — the opening page and the phone
+    
+    The Patron chose, on the producer's options after the agent-tools UI/UX
+    research (`docs/research/agent-tools-2026-10-10/uiux.md`):
+    
+    1. **The opening page is a ledger page, not a dashboard.** §1 stands: W-202
+       is worded as the officina's ledger opening page, and its sections are
+       tables and rules under §7's rejects (no tiles, sparklines or charts).
+       §8 gains the **Opening page** row.
+    2. **A phone view is in scope** (W-202): three jobs — what needs me, what
+       is moving, answer — plus a ping when something lands in needs-you.
+       Answering keeps the Inbox's rules (§6; a decision carries its reason).
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:71:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8.995932

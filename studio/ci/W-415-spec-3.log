@@ -1,0 +1,26 @@
+# opus: W-415
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: revise
+# at: 2026-10-26T07:12:48.621Z
+# tree: tree:e6090cc892dd37e456bc384c7c48bc6067f67a50
+# dispatch_prompt: ci/W-415-ui-prompt-3.md
+# design_digest: sha256:c738a843f1e60947104c910df24e20a8a1c1f7760aaffa97aa344b28ae372dcc
+# ticket: {"opus":"W-415","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"dbb15b1e76e17a711c61e05111b2b9155e8ec8e8","brief":"564ea96d11dfa9a0077bd0d41e710a4b4c2252cb","at":"2026-10-26T07:12:47.284Z"}
+
+## Findings
+
+1. blocking — brief:41 — Removing every navigation entry also removes the only cross-screen Inbox count; the collapsed captures conceal an outstanding human decision — replace with: “Collapsed navigation retains the existing nonzero Inbox count, visibly identified as Inbox and accessibly labelled; expanding restores the full navigation.” — check: apps/web/src/components/Sidebar.tsx; apps/web/tests-serve/w415.spec.ts, all four routes and three widths with a nonzero count.
+2. blocking — brief:55 — Both Officina 390px captures cut off budget text, action-row kind labels and the action count at the right edge. Different fixture data prevents establishing a new regression, but the proposed phone view still loses information — replace with: “At 390px, expanded and collapsed Officina panels contain their text, counts and row labels within the main pane; inner tracks shrink and text wraps without horizontal scrolling. This containment repair does not redesign Officina.” — check: apps/web/src/components/w025.css; apps/web/tests-serve/w415.spec.ts; officina-390-expanded.png and officina-390-collapsed.png.
+3. advisory — brief:123 — The isolated “B” reads as branding; neither it nor the expanded wordmark visibly explains the toggle action. Accessible naming does not supply that visual cue — replace with: “Keep the compact branded toggle and add a visible directional chevron within the same button to communicate collapse and expansion. Retain the native button semantics and state-specific accessible names.” — check: apps/web/src/components/Sidebar.tsx; expanded and collapsed captures at 1280, 640 and 390.
+4. advisory — brief:19 — At 640px, collapse widens the Board pane but squeezes its project explanation from two lines into six because the timestamp joins the same header row, making the header harder to scan — replace with: “Preserve the approved expanded Board. At 640px collapsed, allow the connection/refresh text to wrap onto its own line before compressing the project explanation; retain every header fact, phase and scroll cue.” — check: apps/web/src/components/w025.css; board-640-expanded.png and board-640-collapsed.png.
+
+## Recommendation
+
+The shared collapse mechanism is suitable, but the brief needs local revisions to preserve the Inbox signal and contain Officina’s phone content.
+A visible chevron serves the restrained direction better than introducing four navigation icons; all four screen titles already preserve current-screen identity.
+I found no additional colour or product-default choice requiring a separate Patron ruling beyond the named proposals.
+Keep D-116’s approved Board intact and carry the five accepted spec-review advisories into the build without reopening them.
+Verdict: revise

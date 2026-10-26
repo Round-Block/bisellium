@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:serve": "playwright test --config=playwright.serve.config.ts",
-    "test:policy": "node --test-reporter=tap --import tsx test/w406.test.ts && node --test-reporter=tap --import tsx test/w360.test.ts && node --test-reporter=tap --import tsx test/w350.test.ts && node --test-reporter=tap --import tsx test/w341.test.ts"
+    "test:policy": "node --test-reporter=tap --import tsx test/w415.test.ts && node --test-reporter=tap --import tsx test/w406.test.ts && node --test-reporter=tap --import tsx test/w360.test.ts && node --test-reporter=tap --import tsx test/w350.test.ts && node --test-reporter=tap --import tsx test/w341.test.ts"
   },
   "dependencies": {
     "react": "^19.3.0",

@@ -1010,7 +1010,7 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
 
     const board = page.locator(".board");
     const drawer = page.locator(".board-drawer");
-    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(1, 0);
+    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(73, 0);
     await expect(board).not.toHaveAttribute("inert", "");
 
     await page.setViewportSize({ width: 612, height: 900 });
@@ -1028,7 +1028,7 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     await page.setViewportSize({ width: 613, height: 900 });
     await expect(drawer).toBeVisible();
     await expect(board).not.toHaveAttribute("inert", "");
-    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(1, 0);
+    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(73, 0);
   });
 
   test("the binding breakpoint table, terminal reachability and both focus-return paths hold", async ({ page }) => {
@@ -1039,12 +1039,12 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
 
     const widths = [
       { viewport: 1440, board: 680, main: 1220, close: "escape" },
-      { viewport: 800, board: 188, main: 728, close: "escape" },
-      { viewport: 900, board: 140, main: 680, close: "escape" },
-      { viewport: 613, board: 1, main: 541, close: "escape" },
-      { viewport: 612, board: 0, main: 540, close: "escape" },
-      { viewport: 606, board: 0, main: 534, close: "escape" },
-      { viewport: 600, board: 0, main: 528, close: "escape" },
+      { viewport: 800, board: 260, main: 800, close: "escape" },
+      { viewport: 900, board: 360, main: 900, close: "escape" },
+      { viewport: 613, board: 73, main: 613, close: "escape" },
+      { viewport: 612, board: 0, main: 612, close: "escape" },
+      { viewport: 606, board: 0, main: 606, close: "escape" },
+      { viewport: 600, board: 0, main: 600, close: "escape" },
       { viewport: 390, board: 0, main: 390, close: "button" },
     ] as const;
 
