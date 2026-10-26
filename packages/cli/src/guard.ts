@@ -9,10 +9,15 @@
  * `strip`, `cliArgv` and `scriptOf`; a script a command runs is read and judged by its text. What
  * is left unjudged is deliberate evasion (D-045): eval, an alias, a function, a command or script
  * path built from a variable, a command substitution inside double quotes: a limit.
+ *
+ * W-418: at a main-thread PreToolUse whose input names a cwd, the guard first takes the review notices a PR perform or
+ * `review-request` left under that checkout's Git common directory (review-notice.ts) and refuses the call once with
+ * their text, so the session pushes them to the Patron; taking a notice removes it.
  */
 import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { takeNotices } from "./review-notice.js";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -454,6 +459,14 @@ export function guardRefusal(input: Dict): string | undefined {
       : undefined;
   }
   if (event !== "PreToolUse") return undefined;
+  // W-418: a notice a PR perform left for the Patron is handed to the main thread once, before anything else is judged;
+  // an input with no cwd (the hooks-check probe) reads none
+  const cwd = str(input["cwd"]);
+  if (main && cwd !== undefined) {
+    const notices = takeNotices(cwd);
+    if (notices.length > 0)
+      return `refused: ${notices.length === 1 ? "a PR waits" : `${notices.length} PRs wait`} on the Patron's review (W-418): send the Patron each notice below with PushNotification, then rerun this call: ${notices.map((n, i) => `${i + 1}) ${n}`).join(" ")}`;
+  }
   const tool = input["tool_name"];
   const args = isDict(input["tool_input"]) ? input["tool_input"] : {};
   if (tool === "Bash") {

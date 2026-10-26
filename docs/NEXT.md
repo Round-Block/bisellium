@@ -292,5 +292,9 @@ requests review from each `@login` or `@org/team` owner (`gh pr edit
 --add-reviewer`; any other owner is printed as skipped), and prints `notice:`
 and `review-requested:`. The first step that fails holds (`review-request`
 exits 1) with a `run: bisellium review-request` line; the steps after it are not
-run. Limits: a PR opened by hand is screened only when `review-request` is run
-for it.
+run. The guard (`hook-event guard`) takes every notice under the session's
+checkout at the main thread's next Bash, Write, Edit or NotebookEdit call and
+refuses that call once with their text, so the session sends each to the Patron
+with PushNotification. Limits: the push is the session's tool call, not the
+CLI's; a notice waits for the main thread's next guarded call; a PR opened by
+hand is screened only when `review-request` is run for it.

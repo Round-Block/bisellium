@@ -1,6 +1,8 @@
 /**
  * packages/cli/src/review-notice.ts — W-418: a PR whose diff touches a code-owned path names those paths, requests
- * the code owners' review, and leaves a notice for the Patron under the Git common directory. Node built-ins only.
+ * the code owners' review, and leaves a notice for the main session, which the guard (guard.ts) hands it once, so the
+ * session pushes it to the Patron's phone. Node built-ins only: the guard imports `takeNotices`, and a hook loads
+ * nothing heavy.
  *
  * The screen reads the owners file GitHub reads at the base ref (master), the first of `.github/CODEOWNERS`,
  * `CODEOWNERS` and `docs/CODEOWNERS` it holds, and the diff's paths (`git diff --name-only --no-renames --no-relative
@@ -14,13 +16,14 @@
  * a hold that names `resume`, and the steps after it are not run.
  */
 import { spawnSync } from "node:child_process";
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 
 /** The owners files GitHub reads for a PR, in the order it looks: the first the base ref holds is the one it uses. */
 export const OWNERS_FILES = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"] as const;
 /** A PR number as the verb and the notice store take it. */
 export const PR_NUMBER = /^[1-9][0-9]{0,8}$/;
+const NOTICE_MAX = 4096;
 /** A notice line is cut whole to this many characters (at most 1500 bytes), so the guard's 4096-byte bound always admits it. */
 const NOTICE_LINE = 500;
 const SHOWN = 5;
@@ -152,6 +155,35 @@ export function writeNotice(cwd: string, pr: number, text: string): string | und
   } catch (e) {
     return strip(e instanceof Error ? e.message : String(e));
   }
+}
+
+/** The guard's read (W-418): every notice under the Git common directory of the checkout at `cwd`, in PR order, each
+ *  removed as it is taken, so a notice is handed over once. Fail-open: an entry that is not a PR number, not a regular
+ *  file, over 4 KiB, or cannot be read or removed is left and not handed; a `cwd` outside a checkout has none. */
+export function takeNotices(cwd: string): string[] {
+  const common = commonDir(cwd, 1000);
+  if ("error" in common) return [];
+  const dir = noticeDir(common.path);
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (const name of names.filter((n) => PR_NUMBER.test(n)).sort((a, b) => Number(a) - Number(b))) {
+    const path = join(dir, name);
+    try {
+      const st = lstatSync(path);
+      if (!st.isFile() || st.size > NOTICE_MAX) continue;
+      const text = strip(readFileSync(path, "utf8")).trim();
+      unlinkSync(path);
+      if (text !== "") out.push(text);
+    } catch {
+      /* fail open: the entry stays */
+    }
+  }
+  return out;
 }
 
 /** An owner `gh pr edit --add-reviewer` takes: `@<login>` or `@<org>/<team>`, without the `@`. */
