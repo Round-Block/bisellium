@@ -17,7 +17,8 @@
 #
 # What `setup` does:
 #   1. stores a fine-grained, non-admin GitHub token in a gh config of its own
-#      ($AGENT_GH), apart from the Patron's gh login;
+#      ($AGENT_GH), apart from the Patron's gh login, and stops while that config holds
+#      any login but the agent's own (W-420), wiping nothing;
 #   2. clones the repo into $AGENT_DIR with git pointed at that token only;
 #   3. copies the Patron's local Claude settings and project memory across;
 #   4. merges the isolation entries into ~/.claude/settings.json (the sandbox
@@ -205,6 +206,11 @@ setup() {
     wipe_agent_gh
     die "The token has admin or webhook rights on $REPO. Use a token with only Contents, Pull requests, Actions (read), Checks (read), Commit statuses (read) and Metadata."
   }
+  # the agent's own login alone (W-420): any other login stored beside it refuses the setup; nothing is wiped, since a
+  # stray login is the Patron's to log out (each line names the command)
+  local logins
+  logins=$(agent_login_only) || die "$logins
+setup stopped: $AGENT_GH must hold the agent's own login alone, active on github.com; fix each line above, then run setup again (nothing was wiped)."
 
   # b. the agent clone, with git using only the agent token.
   if [[ -d $AGENT_DIR/.git ]]; then
