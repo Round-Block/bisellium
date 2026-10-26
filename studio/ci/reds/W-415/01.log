@@ -1,0 +1,102 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-415-b1\s --import tsx apps/web/test/w415.test.ts
+# exit: 1
+# at: 2026-10-26T09:58:17.707Z
+# sella: builder.W-415
+# tree: tree:4e42b37ce7e3eb952fbf4273453d834743b180b3
+# ticket: {"opus":"W-415","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-415/studio","head":"235b675f945d4a3e9147dc9a045c4b5e659b6bce","brief":"9a9945b9133799dcf30ec0bfd73be178db14fb40","at":"2026-10-26T09:58:08.839Z"}
+
+TAP version 13
+# Subtest: W-415-b1 behaviour 1: D-119's icon rail carries D-120's sole Inbox notification dot
+not ok 1 - W-415-b1 behaviour 1: D-119's icon rail carries D-120's sole Inbox notification dot
+  ---
+  duration_ms: 1.972147
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:1:434'
+  failureType: 'testCodeFailure'
+  error: "the shell owns D-119's wide boundary"
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { useEffect, useState } from "react";
+    import { parseRoute } from "./lib/route.js";
+    import { Sidebar } from "./components/Sidebar.js";
+    import { Officina } from "./screens/Officina.js";
+    import { Inbox } from "./screens/Inbox.js";
+    import { Seats } from "./screens/Seats.js";
+    import { Board } from "./screens/Board.js";
+    import { TokenPrompt } from "./components/TokenPrompt.js";
+    import { fetchInbox, hasToken, setUnauthorizedListener } from "./api.js";
+    import { READY, type ScreenStatus } from "./lib/screenState.js";
+    
+    function currentHash(): string {
+      return typeof window === "undefined" ? "" : window.location.hash;
+    }
+    
+    export function App() {
+      const [hash, setHash] = useState(currentHash());
+      const [needsYouCount, setNeedsYouCount] = useState(0);
+      const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
+      // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
+      // remounted by a screen's own layout changes and announces every state change.
+      const [status, setStatus] = useState<ScreenStatus>(READY);
+      const route = parseRoute(hash);
+    
+      useEffect(() => {
+        // The one 401 path every write shares: raised from wherever the write
+        // was issued (Inbox today, W-065's Seats and W-064's Board tomorrow),
+        // with no code of their own.
+        setUnauthorizedListener(() => setTokenPromptOpen(true));
+        return () => setUnauthorizedListener(undefined);
+      }, []);
+    
+      useEffect(() => {
+        const onHashChange = () => setHash(currentHash());
+        window.addEventListener("hashchange", onHashChange);
+        return () => window.removeEventListener("hashchange", onHashChange);
+      }, []);
+    
+      useEffect(() => {
+        if (route === "inbox") return;
+        if (location.search.includes("demo")) {
+          setNeedsYouCount(3);
+          return;
+        }
+        fetchInbox()
+          .then((r) => setNeedsYouCount(r.petitiones.length))
+          .catch(() => undefined);
+      }, [route]);
+    
+      return (
+        <div className="shell">
+          {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
+          <Sidebar route={route} needsYouCount={needsYouCount} />
+          {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
+          <main className="shell__main" tabIndex={0}>
+            {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
+          </main>
+          <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
+            {status.text}
+          </div>
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-415/apps/web/test/w415.test.ts:11:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 393.142492
