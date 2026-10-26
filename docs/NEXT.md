@@ -91,7 +91,8 @@ and the tree is not dirty, except the brief, the new spec rounds and the
 opus record, which ride the first commit (an ignored spec file is refused). `pr` rebases onto the fetched trunk, stops before
 push and PR if the rebase changes the SOURCE tree, pushes `--force-with-lease`,
 and creates the PR from `--title` and `--body-file` (without them it only names
-the command; an existing OPEN PR is reused). `merge` updates a BEHIND branch,
+the command; an existing OPEN PR is reused), then runs the review notice below on
+the pushed head. `merge` updates a BEHIND branch,
 refuses on a failing check, on fewer than `MIN_CHECKS` (5) checks in bucket
 `pass`, and on any open GHAS alert, then queues `--squash --auto` and, only when
 `CLEAN` with every check passing, asks directly; `BLOCKED` is never merged
@@ -272,7 +273,8 @@ launching a session, not the ticket.
 
 ## Review notices (W-418)
 
-`bisellium review-request <pr> [--repo <dir>]` screens an open PR into master,
+After it opens or updates a PR, the `pr` rung screens the pushed head, and
+`bisellium review-request <pr> [--repo <dir>]` screens any open PR into master,
 one opened by hand included (it fetches master and `refs/pull/<pr>/head` from
 origin and checks that head against GitHub's). The screen reads the owners file
 GitHub reads at master (the first of `.github/CODEOWNERS`, `CODEOWNERS` and
