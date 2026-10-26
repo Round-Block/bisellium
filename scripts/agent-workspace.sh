@@ -50,12 +50,15 @@
 # `verify` only reads: it writes no file (W-398). A user settings file that differs from the merge is a FAIL line with
 # one indented line per entry the merge would add; `setup` and `guard` are what write it. `--inside` adds the checks that only mean something from
 # a sandboxed Claude session (the Patron's folder is read-only, credentials are
-# unreadable, the agent clone can reach the remote).
+# unreadable, the agent clone can reach the remote). Both fail while the agent gh config holds any login but the
+# agent's own, $AGENT_LOGIN, active on github.com (W-420).
 set -euo pipefail
 
 PATRON_DIR=${PATRON_DIR:-$HOME/projects/bisellium}
 AGENT_DIR=${AGENT_DIR:-$HOME/agents/bisellium}
 AGENT_GH=${AGENT_GH:-$HOME/.config/agent-gh}
+# the agent's own GitHub login (W-420): the one login $AGENT_GH may hold, on github.com, active
+AGENT_LOGIN=${AGENT_LOGIN:-bisellium-agent}
 # W-362's guard worktree, replaced by the Patron's clone (W-379): `guard` removes it once GUARD_BIN proves it the old guard
 OLD_GUARD_DIR=${OLD_GUARD_DIR:-$HOME/projects/bisellium-guard}
 GUARD_BIN=${GUARD_BIN:-$HOME/.local/bin/bisellium}
@@ -117,6 +120,61 @@ refused() {
 # No admin or webhook rights: needs a working token first, so no vacuous pass.
 token_refused_admin() {
   token_reads_repo >/dev/null && refused "repos/$REPO/hooks" && refused "repos/$REPO/actions/permissions"
+}
+# The agent gh config holds one login, the agent's own (W-420). gh lists every login it stores with
+# `auth status --json hosts`, whose accounts carry host, login, active, state, tokenSource and gitProtocol and no token
+# (gh prints one only with --show-token, never passed here); its stderr is dropped and its stdout goes only to the judge
+# below. The judge prints a host or a login only in its form, so never a GitHub token: a login is letters, digits and
+# `-`, at most 39 characters; a host is dotted labels of the same, with an optional port; a token holds `_`, or (the
+# legacy form) is 40 hex digits with no dot. It fails closed: gh failing (an unreadable or malformed config, a gh with no --json),
+# output that is not that JSON, no login, a second login, a login on another host, or the one login not $AGENT_LOGIN or
+# not active. One line per fault, each naming its fix; status 1 when any. Reads only. gh runs with none of its own
+# ambient auth or host inputs (`gh help environment`: GH_TOKEN, GITHUB_TOKEN, GH_ENTERPRISE_TOKEN,
+# GITHUB_ENTERPRISE_TOKEN, GH_HOST), which would list an account from the environment as if $AGENT_GH stored it, and
+# none of its forced-terminal inputs (GH_FORCE_TTY, CLICOLOR_FORCE), which colour the JSON.
+LOGINS_JS='
+const [own, dir] = process.argv.slice(1);
+const LOGIN = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
+const HOST = /^[A-Za-z0-9-]{1,63}(\.[A-Za-z0-9-]{1,63}){1,8}(:[0-9]{1,5})?$/;
+const sq = (s) => "\x27" + s.split("\x27").join("\x27\\\x27\x27") + "\x27";
+const env = "GH_CONFIG_DIR=" + sq(dir);
+const say = (l) => { console.log(l); process.exit(1); };
+const bad = (why) => say("gh auth status for " + dir + " is not the form verify reads (" + why + "); log out every login (" + env + " gh auth logout) and run setup again");
+if (!LOGIN.test(own)) say("AGENT_LOGIN is not a GitHub login (letters, digits and hyphens); set it to the agent\x27s own login");
+let doc;
+try { doc = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { bad("not JSON"); }
+const obj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+if (!obj(doc) || !obj(doc.hosts)) bad("no hosts object");
+const all = [];
+for (const [host, list] of Object.entries(doc.hosts)) {
+  if (!HOST.test(host)) bad("a host that is not a host name");
+  if (!Array.isArray(list)) bad("a host whose accounts are not a list");
+  for (const a of list) {
+    if (!obj(a) || typeof a.login !== "string" || !LOGIN.test(a.login)) bad("an account with no GitHub login");
+    if (typeof a.active !== "boolean") bad("an account with no active flag");
+    all.push({ host, login: a.login, active: a.active });
+  }
+}
+const lines = [];
+if (all.length === 0) lines.push(dir + " holds no login; run setup with the agent\x27s token");
+for (const a of all)
+  if (a.host !== "github.com" || a.login !== own)
+    lines.push(dir + " holds the login " + a.login + " on " + a.host + ", not the agent\x27s own (" + own + " on github.com); log it out: " + env + " gh auth logout -h " + a.host + " -u " + a.login);
+const mine = all.filter((a) => a.host === "github.com" && a.login === own);
+if (all.length > 0 && mine.length === 0) lines.push(dir + " holds no login " + own + " on github.com; run setup with the agent\x27s token");
+if (mine.length > 1) lines.push(dir + " lists " + own + " on github.com " + mine.length + " times; log it out (" + env + " gh auth logout -h github.com -u " + own + ") and run setup again");
+if (mine.length === 1 && !mine[0].active) lines.push(own + " is not the active login on github.com; switch to it: " + env + " gh auth switch -h github.com -u " + own);
+for (const l of lines) console.log(l);
+process.exit(lines.length === 0 ? 0 : 1);
+'
+agent_login_only() {
+  local out st=0
+  out=$(unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GH_HOST GH_FORCE_TTY CLICOLOR_FORCE; agent_gh auth status --json hosts 2>/dev/null) || st=$?
+  if ((st != 0)); then
+    echo "gh could not list the logins in $AGENT_GH (exit $st); make its hosts.yml readable YAML, or remove $AGENT_GH and run setup again"
+    return 1
+  fi
+  node --input-type=commonjs -e "$LOGINS_JS" -- "$AGENT_LOGIN" "$AGENT_GH" <<<"$out"
 }
 
 set_helper() {
@@ -506,6 +564,7 @@ verify() {
   check "agent clone uses the agent credential helper" helper_is_set
   check "agent token reads $REPO" token_reads_repo
   check "agent token has no admin or webhook rights on $REPO" token_refused_admin
+  check_shown "the agent gh config $AGENT_GH holds only the agent's own login, active on github.com" agent_login_only
   check "the hook guard's installer inputs hold (PATH, PATRON_DIR on master, GUARD_BIN)" guard_inputs
   if have "$RL"; then check "GUARD_BIN leads into PATRON_DIR" guard_linked; else skipped "GUARD_BIN leads into PATRON_DIR" "$RL is not an executable file"; fi
   # the probe runs GUARD_BIN, whose env finds node through PATH: only once the inputs, PATH and the programs among them, hold
