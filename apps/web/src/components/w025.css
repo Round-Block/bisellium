@@ -200,11 +200,13 @@
 @media (max-width: 959px) {
   .shell { --sidebar-width: 0px; grid-template-columns: 1fr; grid-template-rows: 48px 1fr; }
   .shell:has(.token-prompt) { grid-template-rows: auto 48px 1fr; }
+  .shell__main { grid-row: -2 / -1; }
   .sidebar { height: 48px; flex-direction: row; align-items: flex-start; border-right: none; border-bottom: 1px solid var(--rule); padding: 6px; z-index: 20; }
   .sidebar__links, .sidebar__bottom { display: none; }
   .shell--overlay-open .sidebar { position: fixed; inset: 0 auto 0 0; width: min(280px, calc(100% - 48px)); height: 100%; flex-direction: column; align-items: stretch; border-right: 1px solid var(--rule); border-bottom: none; padding: 6px 6px 16px; box-shadow: 8px 0 24px var(--shadow-drawer); }
   .shell--overlay-open .sidebar__links { display: flex; }
   .shell--overlay-open .sidebar__toggle { align-self: flex-start; }
+  .shell--overlay-open .shell__main { overflow: hidden; }
   .sidebar__bottom { display: none; }
   .seats__confirm-bar { flex-wrap: wrap; }
 }

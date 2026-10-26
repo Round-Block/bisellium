@@ -10,7 +10,10 @@ export interface SidebarProps {
   route: string;
   needsYouCount: number;
   collapsed?: boolean;
+  overlay?: boolean;
+  overlayOpen?: boolean;
   onToggle?: () => void;
+  onNavigate?: () => void;
 }
 
 type IconName = "panel" | "inbox" | "board" | "seats" | "officina";
@@ -26,19 +29,39 @@ function SidebarIcon({ name }: { name: IconName }) {
   return <svg className="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export function Sidebar({ route, needsYouCount, collapsed = false, onToggle = () => undefined }: SidebarProps) {
+export function Sidebar({ route, needsYouCount, collapsed = false, overlay = false, overlayOpen = false, onToggle = () => undefined, onNavigate = () => undefined }: SidebarProps) {
   const visibleInboxCount = collapsed && needsYouCount > 9 ? "9+" : needsYouCount;
-
+  const afterRender = (action: () => void) => window.requestAnimationFrame(action);
+  const toggle = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    const button = event.currentTarget;
+    const nav = button.closest(".sidebar");
+    onToggle();
+    if (!overlay) return;
+    afterRender(() => overlayOpen
+      ? button.focus()
+      : nav?.querySelector<HTMLAnchorElement>(".sidebar__link")?.focus());
+  };
+  const dismiss = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    const button = event.currentTarget.closest(".sidebar")?.querySelector<HTMLButtonElement>(".sidebar__toggle");
+    onNavigate();
+    if (overlay) afterRender(() => button?.focus());
+  };
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (!overlayOpen || event.key !== "Escape") return;
+    const button = event.currentTarget.querySelector<HTMLButtonElement>(".sidebar__toggle");
+    onToggle();
+    afterRender(() => button?.focus());
+  };
 
   return (
-    <nav id="console-sidebar" className="sidebar" aria-label="Console navigation">
+    <nav id="console-sidebar" className="sidebar" aria-label="Console navigation" onKeyDown={onKeyDown}>
       <button
         type="button"
         className="sidebar__toggle"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         aria-expanded={!collapsed}
         aria-controls="sidebar-links"
-        onClick={onToggle}
+        onClick={toggle}
       >
         <SidebarIcon name="panel" />
       </button>
@@ -48,7 +71,7 @@ export function Sidebar({ route, needsYouCount, collapsed = false, onToggle = ()
         const classes = ["sidebar__link", active && "sidebar__link--active"].filter(Boolean).join(" ");
         const inboxCountLabel = e.route === "inbox" && needsYouVisible(needsYouCount) ? `Inbox ${needsYouCount}` : undefined;
         return (
-          <a key={e.route} className={classes} href={e.href} title={collapsed ? e.label : undefined} aria-label={inboxCountLabel ?? (collapsed ? e.label : undefined)} aria-current={active ? "page" : undefined}>
+          <a key={e.route} className={classes} href={e.href} title={collapsed ? e.label : undefined} aria-label={inboxCountLabel ?? (collapsed ? e.label : undefined)} aria-current={active ? "page" : undefined} onClick={dismiss}>
             <SidebarIcon name={e.route as Exclude<IconName, "panel">} />
             <span className="sidebar__link-text">{e.label}</span>
             {e.route === "inbox" && needsYouVisible(needsYouCount) && " "}
@@ -57,7 +80,7 @@ export function Sidebar({ route, needsYouCount, collapsed = false, onToggle = ()
         );
       })}
       </div>
-      {!collapsed && (
+      {!collapsed && !overlay && (
         <div className="sidebar__bottom">
           <span className="sidebar__meta">studio/</span>
         </div>

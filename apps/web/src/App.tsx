@@ -13,12 +13,17 @@ function currentHash(): string {
   return typeof window === "undefined" ? "" : window.location.hash;
 }
 
+function initialWideSidebar(): boolean {
+  return typeof window === "undefined" || window.matchMedia("(min-width: 960px)").matches;
+}
+
 export function App() {
   const [hash, setHash] = useState(currentHash());
   const [needsYouCount, setNeedsYouCount] = useState(0);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const wideSidebar = typeof window === "undefined" || window.matchMedia("(min-width: 960px)").matches;
+  const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
+  const [overlayOpen, setOverlayOpen] = useState(false);
   // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
   // remounted by a screen's own layout changes and announces every state change.
   const [status, setStatus] = useState<ScreenStatus>(READY);
@@ -39,6 +44,17 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const query = window.matchMedia("(min-width: 960px)");
+    const onChange = (event: MediaQueryListEvent) => {
+      setWideSidebar(event.matches);
+      setOverlayOpen(false);
+    };
+    setWideSidebar(query.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
     if (route === "inbox") return;
     if (location.search.includes("demo")) {
       setNeedsYouCount(3);
@@ -50,9 +66,25 @@ export function App() {
   }, [route]);
 
   return (
-    <div className={["shell", wideSidebar && sidebarCollapsed && "shell--sidebar-collapsed"].filter(Boolean).join(" ")}>
+    <div className={[
+      "shell",
+      wideSidebar && sidebarCollapsed && "shell--sidebar-collapsed",
+      !wideSidebar && overlayOpen && "shell--overlay-open",
+    ].filter(Boolean).join(" ")}>
       {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
-      <Sidebar route={route} needsYouCount={needsYouCount} collapsed={wideSidebar && sidebarCollapsed} onToggle={() => setSidebarCollapsed((value) => !value)} />
+      <Sidebar
+        route={route}
+        needsYouCount={needsYouCount}
+        collapsed={wideSidebar ? sidebarCollapsed : !overlayOpen}
+        overlay={!wideSidebar}
+        overlayOpen={overlayOpen}
+        onToggle={() => wideSidebar
+          ? setSidebarCollapsed((value) => !value)
+          : setOverlayOpen((value) => !value)}
+        onNavigate={() => {
+          if (!wideSidebar) setOverlayOpen(false);
+        }}
+      />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
         {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
