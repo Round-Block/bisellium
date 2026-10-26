@@ -270,3 +270,25 @@ unticketed, `pr`, `cleanup` and the spec commit run only inside
 `next --perform`, and dispatch preconditions (budget, stale handover) gate
 launching a session, not the ticket.
 
+## Review notices (W-418)
+
+`bisellium review-request <pr> [--repo <dir>]` screens an open PR into master,
+one opened by hand included (it fetches master and `refs/pull/<pr>/head` from
+origin and checks that head against GitHub's). The screen reads the owners file
+GitHub reads at master (the first of `.github/CODEOWNERS`, `CODEOWNERS` and
+`docs/CODEOWNERS`) and the paths of `master...<head>` (both sides of a rename):
+a leading or inner `/` anchors a pattern, a trailing `/` matches a directory
+only, a bare name matches at any depth, and the last matching line names the
+owners (a line with none leaves the path unowned). A line the screen does not
+read (a glob, an escape, a negation, a `#` inside the pattern, a control or
+non-ASCII space, an empty, `.` or `..` segment) holds it, so no path passes as
+unowned through it. It prints `code-owned: <path>` per code-owned path
+(`code-owned: none` when there is none), reads the PR's title, leaves one notice
+line (`PR #<n> needs your review: <title> (code-owned: <up to five paths>[ and
+<k> more])`, cut to 500 characters) at `<git common dir>/bisellium/notice/<n>`,
+requests review from each `@login` or `@org/team` owner (`gh pr edit
+--add-reviewer`; any other owner is printed as skipped), and prints `notice:`
+and `review-requested:`. The first step that fails holds (`review-request`
+exits 1) with a `run: bisellium review-request` line; the steps after it are not
+run. Limits: a PR opened by hand is screened only when `review-request` is run
+for it.

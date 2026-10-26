@@ -52,5 +52,6 @@ export const USAGE =
   "       bisellium next <opus> [--perform [--chain]] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium next --all [--studio <dir>] [--repo <dir>]\n" +
+  "       bisellium review-request <pr> [--repo <dir>]\n" +
   "       bisellium milestones [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium docs registry [--repo <dir>] [--now <iso>]";

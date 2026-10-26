@@ -107,7 +107,7 @@ for (const file of files) {
     }
   }
 }
-check("scanned every known usage constant", seen === 43, `${seen}`);
+check("scanned every known usage constant", seen === 44, `${seen}`);
 
 // W-065 behaviour 17: the contract is documented — this opus's half of it.
 // Asserts nothing about the origin tuple, the token-paste flow or the proxy
