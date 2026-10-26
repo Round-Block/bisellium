@@ -1,0 +1,30 @@
+# opus: W-417
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-26T06:05:45.929Z
+# tree: tree:e6090cc892dd37e456bc384c7c48bc6067f67a50
+# brief: briefs/W-417.md blob:22329f593e1ce62ff58aec2b1bcd53b351a65d87
+# ticket: {"opus":"W-417","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"dbb15b1e76e17a711c61e05111b2b9155e8ec8e8","brief":"22329f593e1ce62ff58aec2b1bcd53b351a65d87","at":"2026-10-26T06:05:40.417Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-417-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — confirmed on master dbb15b1e first: every invalid-parent form is refused (exit 2), but only five by the screen with this opus's line (an empty or non-string parent, an unreadable parent record, a parent with no or a non-native kind, a ui parent); nine only by W-403's cut or as "neither" (no record W-99, w-6, ../opera/W-6, which master reads as W-6's record, the opus itself, no state, state don, a non-string state, and the remainder forms), so master would grant each without the cut — check: brief:19, brief:20, master-forms.out
+2. advisory — the design adopts spec round 4's replacement text whole: recordForm requires an OPUS_ID that is not the opus's own; reserved requires a record that exists and reads, a native non-ui kind and a lifecycle state, before either kind; backlog and halted are valid non-remainder states; then the cut is lifted — check: brief:26, brief:27, brief:29, brief:31, ci/W-403-spec-4.log
+3. advisory — every promise was checked against every Input domain row: the opus's parent (row 1), the parent's record (row 2), kind (row 3), state (row 4), the kinds read for a screened parent (row 5), reused gates (row 6); symlinked or oversized parent records and the unreadable opus record are stated limits on reused readers — check: brief:66, brief:70, brief:72, brief:74, brief:92, brief:93, brief:94, brief:95, brief:96, brief:97
+4. advisory — unchanged code the promises lean on is stated as a limit (D-076 E): readRecord, remainder, causeFix, codeOwnedNames, namesWord, readContainedRegularFile, splitFront, yaml, isNativeOpusKind, titleProblem, STATES, OPUS_ID's pattern, parseVerdictLog, CLASS_TAG, patronDecisionProblem, runGreenlight, git and node; check's opus.parent rule is not moved into the screen — check: brief:80, brief:81, brief:82
+5. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master at "a cause fix whose parent W-99 has no record: refused" (the cut's line); b2 on master and on stage 1 at "a cause fix whose parent W-6 is done and not split: greenlit"; each row passes at its stage and b1 on stage 2; the four-commit series equals the prototype — check: red-accept.out, red-b1-master.out, red-b2-master.out, red-b2-stage1.out, series.out
+6. advisory — nineteen kills, each a one-hunk mutation of one source file, fail their row at a pinned assertion with ERR_ASSERTION, covering every pinned promise and row — check: kills.out, promise-ledger.md
+7. advisory — exactly four existing assertions flip, in W-403-b1 and W-403-b2, each moved with the behaviour that flips it; master's w403.test.ts on the new source fails those two rows only, and each assertion put back fails at itself — check: flip-summary.out, flip-u2.out, brief:134
+8. advisory — the Codex test check lists the same four flips, all named, Unnamed None, and ten must-stay-green rows (board.test.ts STATES, W-096 behaviour 5, W-163-b5, W-163-b6, W-121 b5, W-178-b4, W-376-b1, W-392-b1, W-288-b3, docs real repo); each lives in a file run whole and passing on the prototype — check: fixture-census.md, green-summary.out
+9. advisory — on the real officina the prototype differs from master on one record, W-381, now admitted as a cause fix under W-376; all six real parent links pass the screen; the sample officina has none — check: brief:33, real-probe.out, enumerate.out
+10. advisory — the brief passes admission; lint, format of docs/VERBS.md and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: admission.out, lint-proto.out, format-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+11. advisory — no owned path is code-owned; W-403 is done and no opus in flight owns these files — check: brief:44
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-417.md` (spec round 1), master dbb15b1e; two behaviours; four W-403 assertions flipped, each named.
