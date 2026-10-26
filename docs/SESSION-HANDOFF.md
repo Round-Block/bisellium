@@ -47,49 +47,49 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, one UI (Patron 2026-10-24, narrowing D-111's two each), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-418 — a PR needing the Patron's review notifies the Patron away from the terminal (Patron 10-25; greenlit; M10; spec signed 10-26)
-2. W-420 — agent-workspace verify fails when the agent gh config holds any login but the agent's own (security, D-039 high; greenlit 10-26; M8)
-3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (W-350 merged unseen; Patron 2026-10-24) (high; greenlit 10-25) `next.ts`
-4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
-5. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
-6. W-393 — cause fix for repeat class spec×input-domain-missing-or-unenforceable (D-076 D high)
-7. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
-8. W-394 — cause fix for repeat class review×evidence-backfilled-or-absent (D-076 D high)
-9. W-395 — cause fix for repeat class spec×promise-unattainable-under-accepted-domain (D-076 D high)
-10. W-349 — flaky row W-279-b3 failed twice in the merge queue: print its capture, then fix the cause (D-039 high)
-11. W-399 — a record verb refuses a write whose sella is not its ticket's actor (high) (provider parity, Patron 2026-10-24)
-12. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (high)
-13. W-364 — the CLI half first: verify and ci --opus refuse outside a `bisellium run` session (D-039 high; carries W-290; Defaults to the Patron before branch)
-14. W-242 — the hook-set code cuts W-310 left at spec (no .claude/ change)
-15. W-372 — a dispatched agent waits for its long background perform (D-106 D)
-16. W-400 — CLAUDE.md and AGENTS.md code-owned; a stale render blocks the merge queue
-17. W-401 — every launched session receipts its provider, model and containment policy
-18. W-245 — provider-agnostic closing step: delete the duplicates, assert parity in a test
-19. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high) `next.ts`
-20. W-382 — done accepts the branch's UI ruling when master moved under the queue `next.ts`
-21. W-333 — the queue as a record, `studio/queue.yml` `next.ts`
-22. W-283 — the Status page served, not republished (Patron yes; `.github` change: Patron's)
-23. W-374 — next --all prints only opera in flight; --everything keeps the full list `next.ts`
-24. W-375 — context serves the lex without §9 and §12 (boot trim)
-25. W-363 — W-309's remainder: spec review runs through next; the chain refreshes the handoff `next.ts`
-26. W-380 — prune old evidence to small text (Patron yes)
-27. W-331 — `next.ts` split by region, no behaviour change `next.ts`
-28. W-183 — heavy-job slots `next.ts`
-29. W-169 — lane claims, the second lane (D-075 F; D-087 C) `next.ts`
-30. W-332 — step tickets close the retired dispatch guard's gap `next.ts`
-31. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline` `next.ts`
-32. W-304 — seats read live from one settings store, no PR to take effect (D-074) — the console MVP starts here
-33. W-298 — the `petitio` verb to the Patron; `next` holds on an open one
-34. W-280 — Inbox and `newItem` fail-open fixes (`newItem` half)
-35. W-261 — woken orchestration: the cascade loop waits on a GitHub event; the wake launches through `bisellium run` (D-087 F)
-36. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
+1. W-418 — a PR needing the Patron's review notifies the Patron away from the terminal (in build: fix round 1)
+2. W-420 — agent-workspace verify fails when the agent gh config holds any login but the agent's own (security high; spec passed, Defaults yes 10-26)
+3. W-423 — cause fix for security×symlink-parent-write-escape: one shared helper refuses a symlinked folder (D-076 D high; W-418 r1; greenlit 10-26)
+4. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
+5. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
+6. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
+7. W-393 — cause fix for repeat class spec×input-domain-missing-or-unenforceable (D-076 D high)
+8. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
+9. W-394 — cause fix for repeat class review×evidence-backfilled-or-absent (D-076 D high)
+10. W-395 — cause fix for repeat class spec×promise-unattainable-under-accepted-domain (D-076 D high)
+11. W-349 — flaky row W-279-b3 failed twice in the merge queue: print its capture, then fix the cause (D-039 high)
+12. W-399 — a record verb refuses a write whose sella is not its ticket's actor (high)
+13. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (high)
+14. W-364 — the CLI half first: verify and ci --opus refuse outside a `bisellium run` session (D-039 high; carries W-290; Defaults to the Patron before branch)
+15. W-242 — the hook-set code cuts W-310 left at spec (no .claude/ change)
+16. W-372 — a dispatched agent waits for its long background perform (D-106 D)
+17. W-400 — CLAUDE.md and AGENTS.md code-owned; a stale render blocks the merge queue
+18. W-401 — every launched session receipts its provider, model and containment policy
+19. W-245 — provider-agnostic closing step: delete the duplicates, assert parity in a test
+20. W-227 — cleanup finishes when the sandbox keeps a removed worktree's metadata (high) `next.ts`
+21. W-382 — done accepts the branch's UI ruling when master moved under the queue `next.ts`
+22. W-333 — the queue as a record, `studio/queue.yml` `next.ts`
+23. W-283 — the Status page served, not republished (Patron yes; `.github` change: Patron's)
+24. W-374 — next --all prints only opera in flight; --everything keeps the full list `next.ts`
+25. W-375 — context serves the lex without §9 and §12 (boot trim)
+26. W-363 — W-309's remainder: spec review runs through next; the chain refreshes the handoff `next.ts`
+27. W-380 — prune old evidence to small text (Patron yes)
+28. W-331 — `next.ts` split by region, no behaviour change `next.ts`
+29. W-183 — heavy-job slots `next.ts`
+30. W-169 — lane claims, the second lane (D-075 F; D-087 C) `next.ts`
+31. W-332 — step tickets close the retired dispatch guard's gap `next.ts`
+32. W-308 — the opus timeline stamped in the record; read-only `next <id> --timeline` `next.ts`
+33. W-304 — seats read live from one settings store, no PR to take effect (D-074) — the console MVP starts here
+34. W-298 — the `petitio` verb to the Patron; `next` holds on an open one
+35. W-280 — Inbox and `newItem` fail-open fixes (`newItem` half)
+36. W-261 — woken orchestration: the cascade loop waits on a GitHub event; the wake launches through `bisellium run` (D-087 F)
+37. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-415 — the sidebar collapses on every screen, and every screen reflows on browser zoom (Patron 10-25 on W-406's screens; greenlit 10-25)
+1. W-415 — the sidebar collapses on every screen, and screens reflow on zoom (merged #787; master verify passed #788; done after D-122)
 2. W-350 — merged 10-21 (#663), verifying: a master verify, then the Patron's ruling on its production-font baselines (D-099 E); `next` names a spec step on a stale handover: check first.
 3. W-407, W-408 — Inbox, then Officina, to DIRECTION §6; then the Board's five: W-409, W-410, W-411, W-412, W-413 (greenlit 10-25)
-4. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-5. W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-385 to W-391, W-397.
+4. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-385 to W-391, W-397.
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
 
 ## Open Patron choices (10-20, not rushed)
