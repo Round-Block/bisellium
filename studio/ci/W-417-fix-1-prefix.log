@@ -1,0 +1,43 @@
+# opus: W-417
+# evidence: fix round 1 pre-fix run (D-117)
+# commit: de210726 (round-one code plus the new test cases)
+# command: node --import tsx --test --test-name-pattern=W-417-b2 packages/cli/src/w403.test.ts
+✖ W-417-b2 behaviour 2: greenlight --auto greenlights a D-076 D cause fix that carries a parent the screen passed, in any lifecycle state, and still refuses one whose parent's spec logs cannot be judged (291.568282ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 969.779229
+
+✖ failing tests:
+
+test at packages/cli/src/w403.test.ts:21:7160
+✖ W-417-b2 behaviour 2: greenlight --auto greenlights a D-076 D cause fix that carries a parent the screen passed, in any lifecycle state, and still refuses one whose parent's spec logs cannot be judged (291.568282ms)
+  AssertionError [ERR_ASSERTION]: a cause fix whose backlog parent's spec log cannot be read: refused
+  + actual - expected
+  
+    {
+  +   code: 0,
+  +   err: '',
+  +   out: 'W-102: greenlit (auto, D-1: D-076 D: a cause fix for tests×ruled-case-uncovered, an S1 class in the failed reviews of 2 opera: W-6, W-7)'
+  -   code: 2,
+  -   err: "W-102: greenlight --auto refused: W-102's parent W-103's spec log ci/W-103-spec-1.log cannot be read (target is not a regular file); only the Patron greenlights what the records cannot judge",
+  -   out: ''
+    }
+  
+      at refused (/home/edckt/agents/bisellium/.worktrees/W-417/packages/cli/src/w403.test.ts:567:12)
+      at TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-417/packages/cli/src/w403.test.ts:589:3)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { code: 0, out: 'W-102: greenlit (auto, D-1: D-076 D: a cause fix for tests×ruled-case-uncovered, an S1 class in the failed reviews of 2 opera: W-6, W-7)', err: '' },
+    expected: { code: 2, out: '', err: "W-102: greenlight --auto refused: W-102's parent W-103's spec log ci/W-103-spec-1.log cannot be read (target is not a regular file); only the Patron greenlights what the records cannot judge" },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
