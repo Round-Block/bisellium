@@ -467,3 +467,66 @@ test("W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scop
   // the remainder itself still passes
   assert.equal(w.green("W-2", "--auto").code, 0, "W-2, clear of every reserved form: greenlit");
 });
+
+// W-417 (studio/briefs/W-417.md): W-403's remainder, split under D-061 §4. A parent is screened before either kind: an opus
+// id (OPUS_ID) that is not the opus's own, naming a record that exists and reads, with a native kind that is not ui and a
+// lifecycle state; a cause fix that carries a parent the screen passed is a cause fix (b2).
+test("W-417-b1 behaviour 1: greenlight --auto refuses, before either kind, a parent that is not another opus's id naming a readable record with a native non-ui kind and a lifecycle state", () => {
+  const w = world();
+  decided(w);
+  const refused = (name: string, args: string[], err: string): void => {
+    const before = w.snapshot();
+    assert.deepEqual(w.green(...args), { code: 2, out: "", err }, name);
+    assert.deepEqual(w.snapshot(), before, `${name}: writes nothing`);
+  };
+  const UNSCREENED = "only the Patron greenlights a record the screen cannot read";
+  /** an otherwise qualifying cause fix (an S1 class two other opera's failed reviews carry, kind feature, 2 points) carrying `parent` */
+  const fix = (id: string, parent: unknown, note: string): void => w.opus(id, { title: `cause fix for tests×ruled-case-uncovered, ${note}`, kind: "feature", parent, value: 2 });
+  /** a parent record whose `state:` line is replaced (removed, or a form opusText cannot write) */
+  const stated = (id: string, title: string, line: string): void => put(join(w.studio, "opera", `${id}.md`), opusText(id, { title, kind: "feature", value: 2 }).replace("state: backlog\n", line));
+  // the parent's id: an opus id (W- and digits) that is not the opus's own
+  fix("W-60", "W-99", "a mistyped parent");
+  refused("a cause fix whose parent W-99 has no record: refused", ["W-60", "--auto"], `W-60: greenlight --auto refused: W-60's parent W-99 has no record; ${UNSCREENED}`);
+  fix("W-61", "w-6", "a lower-case parent");
+  refused("a cause fix whose parent w-6 is not an opus id: refused", ["W-61", "--auto"], `W-61: greenlight --auto refused: W-61's parent is "w-6", not an opus id; ${UNSCREENED}`);
+  fix("W-62", "../opera/W-6", "a parent written as a relative name");
+  refused("a cause fix whose parent ../opera/W-6 is not an opus id: refused", ["W-62", "--auto"], `W-62: greenlight --auto refused: W-62's parent is "../opera/W-6", not an opus id; ${UNSCREENED}`);
+  fix("W-63", "", "an empty parent");
+  refused("a cause fix whose parent is empty: refused", ["W-63", "--auto"], `W-63: greenlight --auto refused: W-63's parent is "", not an opus id; ${UNSCREENED}`);
+  fix("W-64", "W-64", "its own parent");
+  refused("a cause fix that is its own parent: refused", ["W-64", "--auto"], `W-64: greenlight --auto refused: W-64's parent is W-64 itself, not another opus; ${UNSCREENED}`);
+  // the parent's record: it exists and reads
+  put(join(w.studio, "opera", "W-66.md"), "a record with no front matter\n");
+  fix("W-65", "W-66", "under an unreadable parent");
+  refused("a cause fix whose parent's record cannot be read: refused", ["W-65", "--auto"], `W-65: greenlight --auto refused: W-65's parent W-66's record cannot be read (it has no front matter); ${UNSCREENED}`);
+  // the parent's state: one of the lifecycle's
+  stated("W-68", "a parent with no state", "");
+  fix("W-67", "W-68", "under a stateless parent");
+  refused("a cause fix whose parent has no state: refused", ["W-67", "--auto"], `W-67: greenlight --auto refused: W-67's parent W-68's state is absent, not a lifecycle state; ${UNSCREENED}`);
+  w.opus("W-70", { title: "a parent whose state is mistyped", kind: "feature", state: "don", value: 2 });
+  fix("W-69", "W-70", "under a parent in state don");
+  refused("a cause fix whose parent's state is mistyped (don): refused", ["W-69", "--auto"], `W-69: greenlight --auto refused: W-69's parent W-70's state is "don", not a lifecycle state; ${UNSCREENED}`);
+  stated("W-72", "a parent whose state is a list", 'state: ["done"]\n');
+  fix("W-71", "W-72", "under a parent whose state is a list");
+  refused("a cause fix whose parent's state is not a string ([done]): refused", ["W-71", "--auto"], `W-71: greenlight --auto refused: W-71's parent W-72's state is ["done"], not a lifecycle state; ${UNSCREENED}`);
+  // the parent's kind: native, and not ui
+  w.opus("W-74", { title: "a parent with no kind", kind: null, state: "done", value: 2 });
+  fix("W-73", "W-74", "under a parent with no kind");
+  refused("a cause fix whose parent has no kind: refused", ["W-73", "--auto"], `W-73: greenlight --auto refused: W-73's parent W-74's kind is absent, not a native opus kind; ${UNSCREENED}`);
+  w.opus("W-76", { title: "a parent whose kind is not native", kind: "epic", state: "done", value: 2 });
+  fix("W-75", "W-76", "under a parent of kind epic");
+  refused("a cause fix whose parent's kind is not a native kind (epic): refused", ["W-75", "--auto"], `W-75: greenlight --auto refused: W-75's parent W-76's kind is "epic", not a native opus kind; ${UNSCREENED}`);
+  w.opus("W-78", { title: "a ui parent", kind: "ui", state: "done", value: 2 });
+  fix("W-77", "W-78", "under a ui parent");
+  refused("a cause fix whose parent is kind ui: refused", ["W-77", "--auto"], "W-77: greenlight --auto refused: W-77's parent W-78 is kind ui; a ui opus's remainder is the Patron's to greenlight");
+  // a remainder's parent passes the same screen first
+  w.opus("W-79", { title: "a part two whose parent is mistyped", parent: "W-99", value: 2 });
+  refused("a remainder whose parent W-99 has no record: refused by the screen", ["W-79", "--auto"], `W-79: greenlight --auto refused: W-79's parent W-99 has no record; ${UNSCREENED}`);
+  w.opus("W-81", { title: "a split parent whose state is mistyped", kind: "feature", state: "don", value: 2 });
+  w.spec("W-81", SPLIT);
+  w.opus("W-80", { title: "W-81's part two", parent: "W-81", value: 2 });
+  refused("a remainder whose split parent's state is mistyped (don): refused by the screen", ["W-80", "--auto"], `W-80: greenlight --auto refused: W-80's parent W-81's state is "don", not a lifecycle state; ${UNSCREENED}`);
+  // the remainder W-2 and the parentless cause fix W-5 still pass the screen
+  assert.equal(w.green("W-2", "--auto").code, 0, "W-2, a remainder whose parent passes the screen: greenlit");
+  assert.equal(w.green("W-5", "--auto").code, 0, "W-5, a cause fix with no parent: greenlit");
+});
