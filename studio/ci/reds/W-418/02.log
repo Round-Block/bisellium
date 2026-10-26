@@ -1,0 +1,60 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-418-b2\s --import tsx packages/cli/src/next-queue.test.ts
+# exit: 1
+# at: 2026-10-26T13:41:42.101Z
+# sella: architect
+# tree: tree:de25a02a45085ea22934d12a386ae776cf8bb217
+# ticket: {"opus":"W-418","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-418/studio","head":"e8a2b6cdec13a77d5c99bd6bb17078c390b37dd6","brief":"d459e01d8ed470bda688b6313e95807cbf7ee991","at":"2026-10-26T13:41:42.034Z"}
+
+TAP version 13
+# Subtest: W-418-b2 behaviour 2: the pr rung screens the pushed head it opens or updates a PR on, leaves the notice and requests review
+not ok 1 - W-418-b2 behaviour 2: the pr rung screens the pushed head it opens or updates a PR on, leaves the notice and requests review
+  ---
+  duration_ms: 2750.113973
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-418/packages/cli/src/next-queue.test.ts:12:424'
+  failureType: 'testCodeFailure'
+  error: |-
+    a created PR: the code-owned path, the notice and the request
+    --- exit 0
+    --- stdout
+    next: W-900 pr performed
+    mode: merge-queue
+    PR=901 base=489698b head=0b9911d
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + []
+    - [
+    -   'code-owned: docs/ADOPTION.md',
+    -   'notice: PR #901 needs your review: W-900: notify the Patron (code-owned: docs/ADOPTION.md)',
+    -   'review-requested: patron'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'code-owned: docs/ADOPTION.md'
+    1: 'notice: PR #901 needs your review: W-900: notify the Patron (code-owned: docs/ADOPTION.md)'
+    2: 'review-requested: patron'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-418/packages/cli/src/next-queue.test.ts:817:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2775.413582
