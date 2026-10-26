@@ -47,8 +47,8 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, one UI (Patron 2026-10-24, narrowing D-111's two each), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-417 — W-403's remainder: greenlight --auto admits a cause fix with a parent only if that parent is a valid, readable, non-ui record (greenlit 10-25; M7)
-2. W-418 — a PR needing the Patron's review notifies the Patron away from the terminal (Patron 10-25; greenlit; M10; W-417/W-418 placed by the producer, re-rank freely)
+1. W-418 — a PR needing the Patron's review notifies the Patron away from the terminal (Patron 10-25; greenlit; M10; spec signed 10-26)
+2. W-420 — agent-workspace verify fails when the agent gh config holds any login but the agent's own (security, D-039 high; greenlit 10-26; M8)
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (W-350 merged unseen; Patron 2026-10-24) (high; greenlit 10-25) `next.ts`
 4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
 5. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
