@@ -236,7 +236,8 @@ test("W-403-b1 behaviour 1: greenlight --auto greenlights a D-061 §4 remainder 
   n.opus("W-10", { title: "W-11's part two", parent: "W-11", value: 2 });
   refused("a parent not yet greenlit", n, ["W-10", "--auto"], "W-10: greenlight --auto refused: W-10 is neither a D-061 §4 remainder (its parent W-11 is backlog, not greenlit or done) nor a D-076 D cause fix (its title names no review class (<area>×<slug>)), so only the Patron greenlights it");
   n.opus("W-12", { title: "an orphan", parent: "W-99", value: 2 });
-  refused("a parent with no record", n, ["W-12", "--auto"], "W-12: greenlight --auto refused: W-12 is neither a D-061 §4 remainder (its parent W-99 has no record) nor a D-076 D cause fix (its title names no review class (<area>×<slug>)), so only the Patron greenlights it");
+  // W-417: a parent with no record is refused by the screen, before either kind
+  refused("a parent with no record", n, ["W-12", "--auto"], "W-12: greenlight --auto refused: W-12's parent W-99 has no record; only the Patron greenlights a record the screen cannot read");
   n.opus("W-14", { title: "a parent split by another seat", kind: "feature", state: "done", value: 2 });
   n.spec("W-14", [[1, "architect", "passed"], [2, "producer", "failed"], [3, "architect", "passed"], [4, "producer", "failed"]]);
   n.opus("W-13", { title: "W-14's part two", parent: "W-14", value: 2 });
@@ -387,7 +388,8 @@ test("W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scop
   refused("a parent whose record cannot be read: refused", ["W-44", "--auto"], `W-44: greenlight --auto refused: W-44's parent W-45's record cannot be read (it has no front matter); ${UNSCREENED}`);
   w.opus("W-46", { title: "cause fix for tests×ruled-case-uncovered, under a ui parent", kind: "feature", parent: "W-22", value: 2 });
   refused("a cause fix whose parent is kind ui: refused", ["W-46", "--auto"], "W-46: greenlight --auto refused: W-46's parent W-22 is kind ui; a ui opus's remainder is the Patron's to greenlight");
-  // the D-061 §4 cut (spec round 5): a cause fix that carries any parent is refused, whatever the parent (W-417 is to check it)
+  // the D-061 §4 cut (spec round 5): a cause fix that carries a valid parent is refused (W-417 behaviour 2 lifts it); W-417's
+  // screen refuses an invalid parent before either kind
   const PARENTED = "a cause fix that carries a parent waits for W-417, so only the Patron greenlights it";
   w.opus("W-47", { title: "cause fix for tests×ruled-case-uncovered, part of W-6", kind: "feature", parent: "W-6", value: 2 });
   refused(
@@ -399,14 +401,14 @@ test("W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scop
   refused(
     "a cause fix whose parent W-99 has no record: refused",
     ["W-48", "--auto"],
-    `W-48: greenlight --auto refused: W-48 reads as a D-076 D cause fix but carries parent W-99 and is not its D-061 §4 remainder (its parent W-99 has no record); ${PARENTED}`,
+    `W-48: greenlight --auto refused: W-48's parent W-99 has no record; ${UNSCREENED}`,
   );
   w.opus("W-50", { title: "a parent whose state is mistyped", kind: "feature", state: "don", value: 2 });
   w.opus("W-49", { title: "cause fix for tests×ruled-case-uncovered, under a parent in state don", kind: "feature", parent: "W-50", value: 2 });
   refused(
     "a cause fix whose parent's state is mistyped (don): refused",
     ["W-49", "--auto"],
-    `W-49: greenlight --auto refused: W-49 reads as a D-076 D cause fix but carries parent W-50 and is not its D-061 §4 remainder (its parent W-50 is don, not greenlit or done); ${PARENTED}`,
+    `W-49: greenlight --auto refused: W-49's parent W-50's state is "don", not a lifecycle state; ${UNSCREENED}`,
   );
   // not reserved: a word inside a longer token, a glob pattern, and a recurring class whose slug holds the word
   w.opus("W-34", { title: "cause fix for tests×security-boundary-cases-uncovered, in sandboxed rows and x.secret files", kind: "feature", value: 3 });
