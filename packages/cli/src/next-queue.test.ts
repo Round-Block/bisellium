@@ -3,10 +3,11 @@
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
+import { takeNotices } from "./review-notice.js";
 import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SLUG, SlotValue, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
 
 /** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
@@ -749,6 +750,20 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   held("a notice that cannot be written", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (EEXIST: file already exists, mkdir '${dirname(notice)}')`], undefined, 0);
   rmSync(dirname(notice), { force: true });
 
+  // fix round 1: a symlinked <common>/bisellium or <common>/bisellium/notice holds, and nothing is written outside it
+  const bis = dirname(dirname(notice));
+  const away = scratch("w418-b1-away");
+  rmSync(bis, { recursive: true, force: true });
+  symlinkSync(away, bis);
+  held("a symlinked bisellium directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (${bis} is a symlink, not a directory)`], undefined, 0);
+  assert.deepEqual(readdirSync(away), [], "nothing is written outside through the bisellium link");
+  rmSync(bis);
+  mkdirSync(bis);
+  symlinkSync(away, dirname(notice));
+  held("a symlinked notice directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (${dirname(notice)} is a symlink, not a directory)`], undefined, 0);
+  assert.deepEqual(readdirSync(away), [], "nothing is written outside through the notice link");
+  rmSync(bis, { recursive: true, force: true });
+
   // the owners file GitHub reads: with no .github/CODEOWNERS, the root's before docs/'s, then docs/'s alone
   master({ ".github/CODEOWNERS": null, CODEOWNERS: "/src/ @patron\n", "docs/CODEOWNERS": "/vendor/ @writer\n" });
   const root = request(["901"], [view(), title]);
@@ -782,7 +797,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
 
 /** A queue-mode, review-met world whose opus branch touches docs/ADOPTION.md and src/plain.ts, with master's owners
  *  file naming docs/ADOPTION.md, and a PR that appears once `gh pr create` ran. */
-function w418PrWorld(tag: string, edit: Reply = { stdout: "" }): World {
+function w418PrWorld(tag: string, edit: Reply = { stdout: "" }, pr: number = PR_NUMBER): World {
   const touch = (w: World): void => {
     put(w.wt, "docs/ADOPTION.md", "adoption\n");
     put(w.wt, "src/plain.ts", "plain\n");
@@ -794,8 +809,8 @@ function w418PrWorld(tag: string, edit: Reply = { stdout: "" }): World {
   const created = join(w.root, "created.flag");
   scenario(w, {
     rules: { stdout: QUEUE_RULES },
-    list: { replies: [{ stdout: [] }], alts: [{ ifExists: created, replies: [{ stdout: [cand(w, { state: "OPEN" })] }] }] },
-    create: { stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n`, touch: created },
+    list: { replies: [{ stdout: [] }], alts: [{ ifExists: created, replies: [{ stdout: [cand(w, { state: "OPEN", number: pr })] }] }] },
+    create: { stdout: `https://github.com/${SLUG}/pull/${pr}\n`, touch: created },
     view: { stdout: { title: W418_TITLE } },
     edit,
   });
@@ -838,6 +853,15 @@ test("W-418-b2 behaviour 2: the pr rung screens the pushed head it opens or upda
   assert.deepEqual(w418After(p), ["code-owned: none (no .github/CODEOWNERS, CODEOWNERS or docs/CODEOWNERS at refs/heads/master)"], ran("no owners file", p));
   assert.equal(p.status, 0, ran("performed", p));
   assert.deepEqual([w418Read(w418Notice(plain, PR_NUMBER)), w418Edits(plain), w418Views(plain)], [undefined, [], []], "nothing left, requested or read");
+
+  // fix round 1: a 13-digit PR number is written by the rung, and is the number takeNotices (the guard) hands over
+  const big = 1234567890123;
+  const bw = w418PrWorld("w418-b2-big", { stdout: "" }, big);
+  const bo = performPr(bw);
+  const bigText = `PR #${big} needs your review: ${W418_TITLE} (code-owned: docs/ADOPTION.md)`;
+  assert.deepEqual(w418After(bo), ["code-owned: docs/ADOPTION.md", `notice: ${bigText}`, "review-requested: patron"], ran("a large PR number: the notice and the request", bo));
+  assert.equal(w418Read(w418Notice(bw, big)), `${bigText}\n`, "the large number's notice is left");
+  assert.deepEqual(takeNotices(bw.repo), [bigText], "takeNotices hands the large number's notice over");
 
   // a failing review request: held after the push and the PR, the notice left, the resume line
   const f = w418PrWorld("w418-b2-fails", { exit: 1, stderr: "could not request reviewer\n" });

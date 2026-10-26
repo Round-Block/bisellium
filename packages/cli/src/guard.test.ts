@@ -757,4 +757,30 @@ test("W-418-b3 behaviour 3: the guard hands the main thread every review notice 
   chmodSync(dir, 0o700);
   assert.deepEqual(await guard(bash("ls", { cwd: tmp() })), { code: 0, err: "" }, "a cwd outside every checkout has none");
   assert.deepEqual(await guard(bash("ls", { cwd: repo })), { code: 2, err: `${once}1) PR #909 needs your review: kept (code-owned: c)` }, "once removable, it is handed");
+
+  // fix round 1: a symlinked <common>/bisellium or <common>/bisellium/notice is neither read nor emptied
+  const common = join(repo, ".git");
+  const outside = tmp();
+  const outsideNotice = join(outside, "notice");
+  mkdirSync(outsideNotice);
+  writeFileSync(join(outsideNotice, "950"), "PR #950 needs your review: outside (code-owned: e)\n");
+  const survives = (): boolean => existsSync(join(outsideNotice, "950"));
+  rmSync(join(common, "bisellium"), { recursive: true, force: true });
+  symlinkSync(outside, join(common, "bisellium"));
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), survives()], [{ code: 0, err: "" }, true], "a symlinked bisellium directory hands nothing and deletes nothing outside");
+  rmSync(join(common, "bisellium"));
+  mkdirSync(join(common, "bisellium"));
+  symlinkSync(outsideNotice, join(common, "bisellium", "notice"));
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), survives()], [{ code: 0, err: "" }, true], "a symlinked notice directory hands nothing and deletes nothing outside");
+  rmSync(join(common, "bisellium", "notice"));
+  mkdirSync(join(common, "bisellium", "notice"));
+  writeFileSync(join(outside, "951"), "PR #951 needs your review: a numeric file outside (code-owned: f)\n");
+  symlinkSync(join(outside, "951"), join(common, "bisellium", "notice", "951"));
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), existsSync(join(outside, "951"))], [{ code: 0, err: "" }, true], "a notice file that is a symlink is neither read nor deleted");
+
+  // fix round 1: a notice for a 10-15-digit PR (what the pr rung writes) is handed; a 16-digit name is not a PR number
+  leave("1234567890123", "PR #1234567890123 needs your review: a large number (code-owned: d)\n");
+  leave("1234567890123456", "PR #1234567890123456 needs your review: too large (code-owned: d)\n");
+  assert.deepEqual(await guard(bash("ls", { cwd: repo })), { code: 2, err: `${once}1) PR #1234567890123 needs your review: a large number (code-owned: d)` }, "a 13-digit PR number's notice is handed");
+  assert.deepEqual(left("1234567890123", "1234567890123456"), [false, true], "the large notice is taken; a 16-digit name stays");
 });
