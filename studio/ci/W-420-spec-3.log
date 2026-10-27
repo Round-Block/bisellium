@@ -1,0 +1,28 @@
+# opus: W-420
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-26T14:01:55.723Z
+# tree: tree:ef94a3ae8948e60f37e621580f87a06590fe6b38
+# brief: briefs/W-420.md blob:3573dcaa4562514180c0ac4c09b87cf20b514cd3
+# ticket: {"opus":"W-420","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"a61e2794c30048de3f1f114e994f88ec148be2c9","brief":"3573dcaa4562514180c0ac4c09b87cf20b514cd3","at":"2026-10-26T14:01:50.842Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-420-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2's S1 adopted: agent_login_only now runs gh in a subshell that unsets GH_TOKEN, GITHUB_TOKEN, GH_ENTERPRISE_TOKEN, GITHUB_ENTERPRISE_TOKEN and GH_HOST, and W-420-b1 sets every one (with the stand-in logging which reached it) and asserts none did; gh 2.101.0's own list (`gh help environment`) was probed variable by variable: each auth input lists an environment account as if stored, GH_HOST alone adds an account with no login — check: brief:49, brief:75, brief:106, probe-env.out, kills.out
+2. advisory — the architect's re-check found two more inputs and closed them: GH_FORCE_TTY and CLICOLOR_FORCE colour gh's JSON (a false FAIL), so both are cleared and pinned with the five (K27, K28); an empty AGENT_LOGIN is the default bisellium-agent, pinned by "AGENT_LOGIN empty, the default: verify: the line" (K29); every other gh variable is a stated limit with its probed reason — check: brief:89, brief:104, brief:106, probe-env.out
+3. advisory — round 2's two S4 advisories adopted as given: Input domain row 10 names the reused node subprocess and its refusal path (check_shown in verify, die in setup), and the test-input sentence names the rows' readers and their rejecting assertions — check: brief:95, brief:108
+4. advisory — every promise was checked again against every Input domain row (rows 1 to 10): each refusal fails closed (FAIL and exit 1 in verify, stop before the clone in setup), and no listing, gh exit, output form, AGENT_LOGIN value, ambient variable or node exit passes where the rule fails; reused code the promises lean on (agent_gh, its other callers' three-variable filter, check_shown, die, gh, node and its NODE_OPTIONS) is a stated limit (D-076 E) — check: brief:85, brief:90, brief:91, promise-ledger.md
+5. advisory — the prototype was re-cut on master's tip a61e2794 (the owned files are unchanged since 3acf8946) and the series applies there; each red fails by assertion on its previous stage and the replay classifier accepts it (b1 on master at "the agent's own login alone: verify: the line"; b2 on stage 1 at "a second login, inactive: setup asked gh for the logins once"); each row passes at its stage — check: brief:11, applies.out, red-accept.out, series.out
+6. advisory — twenty-nine kills, each a one-hunk mutation of scripts/agent-workspace.sh, fail their row with ERR_ASSERTION at the assertion they guard; dropping one of the first three variables from the unset alone is an equivalent mutant (agent_gh drops it again), so K10 removes both clearings — check: brief:138, kills.out
+7. advisory — no existing row flips: master's w362, w369, w379 and w398 tests pass whole on the new source; the Codex test check, rerun on revision 2, lists no flips, Unnamed None, and the same sixteen must-stay-green rows, each in a file run whole and passing on the prototype — check: brief:170, fixture-census.md, green-summary.out
+8. advisory — the brief passes admission; lint, prettier, bash -n and the typecheck pass; both officina checks pass with 0 blocking on the prototype; no owned path is code-owned and no opus in flight (W-418 building) touches them — check: brief:41, admission.out, lint-proto.out, format-proto.out, bash-n-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-420.md` (spec round 3), master a61e2794; two behaviours; no existing row flipped.
+Round-2 findings adopted: 1 (S1, brief:103, Input domain row 8, all five ambient auth and host inputs cleared and pinned), 2 (S4, brief:104, row 10 for the node subprocess) and 3 (S4, brief:92, the test-input sentence).

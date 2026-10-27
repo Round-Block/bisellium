@@ -1,0 +1,29 @@
+# opus: W-420
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-26T12:23:47.171Z
+# tree: tree:463a0999076a0b49c503eba881679f979e9ed3a5
+# brief: briefs/W-420.md blob:e762ac9c5910ef1f603c776fa200f488f674789e
+# ticket: {"opus":"W-420","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"3acf8946c61b4dca6cd91d54942a675f20160bb0","brief":"e762ac9c5910ef1f603c776fa200f488f674789e","at":"2026-10-26T12:23:41.595Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-420-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the probe of gh 2.101.0 lists every stored login per host with `gh auth status --json hosts` (fields active, gitProtocol, host, login, state, tokenSource; no token field), exits 0 on an empty config and 1 on an unreadable or malformed hosts.yml; the real agent gh config still holds edckt beside bisellium-agent, and the prototype's judge fails it naming the logout command — check: brief:19, probe.out, judge-real.out
+2. advisory — the agent's own login is a configured name, AGENT_LOGIN (default bisellium-agent), not the active login, since a Patron token could also read the repo; the rule is exactly one login, on github.com, active — check: brief:17, brief:176
+3. advisory — every form fails closed: gh non-zero, output not JSON or with no hosts object, a host or login out of form, no boolean active, no login, a stray login, another host, the own login absent, twice or inactive, and AGENT_LOGIN out of form — check: brief:96, brief:97, brief:98, brief:99, brief:100, brief:101
+4. advisory — nothing printed can be a token: gh is never asked for one, its stderr is dropped, and the login and host forms exclude `_` and the legacy 40-hex form; the rows' stand-in gh carries token-shaped canaries in every account and on stderr and no output holds one — check: brief:32, brief:73, kills.out
+5. advisory — every promise was checked against every Input domain row (rows 1 to 9); unchanged code the promises lean on is a stated limit (D-076 E): agent_gh, check_shown, FAILS, die, setup's token steps, token_reads_repo, token_refused_admin, wipe_agent_gh, gh, node and bash — check: brief:71, brief:75, brief:81, brief:83, brief:104
+6. advisory — each red fails by assertion and the replay classifier accepts it: b1 on master at "the agent's own login alone: verify: the line"; b2 on master and on stage 1 at "a second login, inactive: setup asked gh for the logins once"; each row passes at its stage; the four-commit series equals the prototype — check: red-accept.out, red-b1-master.out, red-b2-stage1.out, series.out
+7. advisory — twenty-four kills, each a one-hunk mutation of scripts/agent-workspace.sh, fail their row at a pinned assertion with ERR_ASSERTION, covering every pinned promise and row — check: kills.out, promise-ledger.md
+8. advisory — no existing row flips: master's w362, w369, w379 and w398 tests pass whole on the new source; the Codex test check lists no flips, Unnamed None, and sixteen must-stay-green rows, each in a file run whole and passing on the prototype — check: green-summary.out, fixture-census.md
+9. advisory — the brief passes admission; lint, prettier, bash -n and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: admission.out, lint-proto.out, format-proto.out, bash-n-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+10. advisory — no owned path is code-owned and no opus in flight owns these files — check: brief:41
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-420.md` (spec round 1), master 3acf8946; two behaviours; no existing row flipped.

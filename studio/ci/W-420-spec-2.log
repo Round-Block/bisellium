@@ -1,0 +1,20 @@
+# opus: W-420
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1786e-9b4e-7cc3-9332-5f0ddfe3c31f
+# outcome: failed
+# at: 2026-10-26T13:45:11.365Z
+# tree: tree:ef94a3ae8948e60f37e621580f87a06590fe6b38
+# brief: briefs/W-420.md blob:e762ac9c5910ef1f603c776fa200f488f674789e
+# ticket: {"opus":"W-420","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a61e2794c30048de3f1f114e994f88ec148be2c9","brief":"e762ac9c5910ef1f603c776fa200f488f674789e","at":"2026-10-26T13:45:06.194Z"}
+
+## Findings
+1. blocking — brief:103 [severity: S1] [design: changes] `agent_gh` does not clear the supported `GITHUB_ENTERPRISE_TOKEN` or `GH_HOST`; a Patron shell configured for GitHub Enterprise can therefore make `verify` or `setup` misreport an environment-sourced account as stored in `$AGENT_GH`, while `W-420-b1` tests only three token variables. Replace brief:103 with `| 8. Ambient GitHub auth inputs (\`GH_TOKEN\`, \`GITHUB_TOKEN\`, \`GH_ENTERPRISE_TOKEN\`, \`GITHUB_ENTERPRISE_TOKEN\`, and \`GH_HOST\`) | none reaches the status call | \`agent_login_only\`: clears all five before gh runs; pinned by \`W-420-b1\` with every variable set |`. [class: mechanism×partial-env-filter-false-red] — check: packages/cli/src/w398.test.ts
+2. advisory — brief:104 [severity: S4] The Input domain omits the added reused `node --input-type=commonjs -e "$LOGINS_JS"` subprocess and the functions that convert its non-zero exit into refusal. Replace brief:104 with its current gates row followed by `| 10. \`node --input-type=commonjs -e "$LOGINS_JS" -- "$AGENT_LOGIN" "$AGENT_GH"\` | exit 0 | \`agent_login_only\` propagates non-zero to \`check_shown\` in verify and \`die\` in setup |`. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+3. advisory — brief:92 [severity: S4] The added test readers—`ghWorld`, `account`, `block`, `sq`, `ghLine`, and the W-420 rows’ fixture, call-log, and subprocess-result reads—have no Input-domain entry, although throws and assertions fail their rows closed. Replace brief:92 with its current text followed by `Test inputs are the fixed SCRIPT, status.json, status.exit, hosts.yml, the gh call log, subprocess results, and values consumed by account/block/sq/ghLine; fixture read/write functions throw, and assert.equal/assert.deepEqual/assert.doesNotMatch reject every absent or mismatching result.` [class: spec×input-without-named-rejector] — check: packages/cli/src/w398.test.ts
+
+## Verdict
+The ambient GitHub Enterprise authentication path is a design-changing S1; the remaining input-boundary omissions are advisory and fail closed.
+VERDICT: FAIL

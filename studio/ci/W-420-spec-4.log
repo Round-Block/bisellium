@@ -1,0 +1,21 @@
+# opus: W-420
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1786e-9b4e-7cc3-9332-5f0ddfe3c31f
+# outcome: passed
+# at: 2026-10-26T14:10:25.193Z
+# tree: tree:ef94a3ae8948e60f37e621580f87a06590fe6b38
+# brief: briefs/W-420.md blob:3573dcaa4562514180c0ac4c09b87cf20b514cd3
+# ticket: {"opus":"W-420","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"a61e2794c30048de3f1f114e994f88ec148be2c9","brief":"3573dcaa4562514180c0ac4c09b87cf20b514cd3","at":"2026-10-26T14:10:21.271Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-420-spec-2.log #1: closed — brief:49 and brief:106 specify that `agent_login_only` clears `GITHUB_ENTERPRISE_TOKEN`, `GH_HOST`, the other ambient auth variables, and forced-terminal inputs; `W-420-b1` sets and logs every variable, while `probe-env.out` demonstrates the corrected boundary.
+
+## Verdict
+The revised specification closes the earlier blocker and fully states the remaining input and feasibility limits.
+VERDICT: PASS
