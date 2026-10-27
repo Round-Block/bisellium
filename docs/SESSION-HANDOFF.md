@@ -20,17 +20,18 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 - `next` holds a signature or red on a stale handover: `bisellium handoff --opus <id> --sella producer --next … --studio <worktree>/studio`, commit the record. Every record write, the builder's `red` too, needs a `next` just before it at the same head (tell the builder; its brief forbids `next`). Sign findings as `n. advisory — … — check: …` or `No findings`.
 - A ui opus's master `verify` runs from a writable worktree on a `verify/<id>-<date>` branch at master (the main checkout is read-only for app paths: EROFS), its logs landed by a records PR; done then needs a Patron ruling on master's tree (D-116 for W-406) until W-382. `verify` refuses a dirty tree. One heavy job at a time (D-075 F): during a verify, no master move.
 - A new opus record lands in the same PR as its Queue line. Prompts with backticks go in a kept file, never an unquoted heredoc.
-- Records PRs: run `check -- studio --repo .` before pushing (a new opus needs a milestone; a greenlit one its Queue line); push with `git push origin HEAD:<branch>` (read-only config lock); after `gh pr merge --auto` confirm isInMergeQueue; a queued branch cannot be pushed: dequeue first. Push-notify the Patron for every PR needing their review (until W-418). The clerk has Read and Write only.
+- Records PRs: run `check -- studio --repo .` before pushing (a new opus needs a milestone; a greenlit one its Queue line); push with `git push origin HEAD:<branch>` (read-only config lock); after `gh pr merge --auto` confirm isInMergeQueue; a queued branch cannot be pushed: dequeue first. Push-notify the Patron at every wait on them (W-418 covers PR reviews only). The clerk has Read and Write only.
 - An agent session cannot pull a merged `.claude/` change (read-only mount; restore what a failed pull applied): the Patron runs `git -C ~/agents/bisellium pull --ff-only origin master` (W-239). Code-owner review gates PRs touching `.github/`, `.claude/`, `studio/leges/`, `studio/decisions/`, `studio/bisellium.yml`, `studio/prompts/`, `docs/ADOPTION.md`, `scripts/ci-certify.mjs`; a push dismisses approval; re-request the Patron's review (`gh pr edit <n> --add-reviewer edckt`).
 - A build verdict's `## Earlier findings` may name only the previous round's own findings; spec review is capped at two rounds (D-061 §4). A subagent running a kept record script is refused by the auto-mode classifier: stop and report, no retry via another agent. A Ruling cannot pair with an Earlier-findings line: the same session reissues its verdict.
 - `--expect pr --body-file` takes a file under the repo or `$TMPDIR` only. `--expect spec` is two performs. The evidence copies of kept scripts carry the `next` calls; `scripts/` lacks them. Uncommitted tracked edits in the main checkout block the spec and merge performs' fast-forward: `git stash push -m <tag> -- <paths>`, rerun, `git stash apply <sha>`, drop by tag.
 - A merge perform printing `QUEUE_TIMEOUT` with the PR still queued reruns with `--poll-ms 20000 --max-polls 150`. A queued PR shows no auto-merge request: check `isInMergeQueue` (gh api graphql) before touching it. Records PRs use `--auto` without `--squash`.
 - A publish refused for a newer live version is a version conflict, not a permission refusal: read the live page, merge, publish. Status republish: Read all of the saved live page first (until W-283). Done reads certify's certificate from its check run (W-370, W-396); a merge commit without one falls back to the artifact host, named once if refused (never a wildcard or a settings edit, D-106 C).
-- A ladder-runner runs a land or merge perform in the foreground until W-372 lands (D-106 D). Codex UI builders get `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 lands (D-106 D).
+- Merge: the ladder-runner enqueues with `--max-polls 2`; the orchestrator waits on isInMergeQueue until W-372. Codex UI builders get `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 lands (D-106 D).
+- 10-27 traps: ~/.bisellium-evidence/current-state.md, Lessons.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and the daily retro.
 - Records dates are UTC; the Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the first opus after W-292.
-6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review prompt `studio/prompts/spec-review.md`; spec review spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w406.py (row 156; a new script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (paths under ~/.bisellium-evidence/).
+6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review prompt `studio/prompts/spec-review.md`; spec review spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w406.py (row 156; a new script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each ladder step.
 7. Use `npm run -s bisellium --` (the `bisellium` on PATH is stale). The `next` cleanup step busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 8. Until W-333's `studio/queue.yml` lands (D-077 B), lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten at each refresh (D-109).
 
@@ -47,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, one UI (Patron 2026-10-24, narrowing D-111's two each), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-425 — W-423's remainder: the containment census classifies stream constructors (WriteStream, createWriteStream) as path writes (D-076 D high; ci/W-423-spec-4.log #1; greenlit 10-27)
+1. W-425 — W-423's remainder: the containment census classifies stream constructors (WriteStream, createWriteStream) as path writes (D-076 D high; in build: review r2 next)
 2. W-426 — the ui-lead and ui-spec-review prompts ask whether a DIRECTION rule makes sense on the screen and who ruled it, not only conformance (high, Patron 10-27; touches studio/prompts/: Patron merges)
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
 4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
@@ -85,7 +86,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 36. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-407, W-408 — Inbox, then Officina, to DIRECTION §6; then the Board's five: W-409, W-410, W-411, W-412, W-413 (greenlit 10-25)
+1. W-407, W-408 — Inbox, then Officina, to DIRECTION §6 (W-407 in spec: signature r8 to record, then reviews and the Patron's yes); then the Board's five: W-409, W-410, W-411, W-412, W-413 (greenlit 10-25)
 2. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-385 to W-391, W-397.
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
 
@@ -94,3 +95,4 @@ Later: every other opus record, re-ranked under D-083 A (last ranked list: histo
 2. Agent prompts as project artifacts: commit each opus's dispatch prompts and kept models, scrubbed (the remote is public).
 3. Live agent monitoring in the console: W-136 is the plan; re-check it against W-242.
 4. Switch on `greenlight --auto`: land D-114 and `auto_greenlit_by: D-114` in `studio/bisellium.yml` (code-owned; draft in ~/.bisellium-evidence/W-403-spec/).
+5. Greenlit 10-27, held unfiled (Patron): `next --perform` records a usage reading per ladder step; checkpoint rows print each opus's plan cost. File when told.
