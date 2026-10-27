@@ -1519,3 +1519,122 @@ test("W-355-b4 behaviour 4: a duplicate or blank design-collegium row in the own
   putBrief(r);
   specHeld(specNext(r), "the engineering pair: a blank design magister holds", /^bisellium\.yml#spec_reviewer: bisellium\.yml#collegia: the design row's magister must be a nonblank string$/);
 });
+
+// ---------------------------------------------------------------------------
+// W-424: past ready, a kind: ui opus's spec rung honours the seat its trunk record says signed at ready (pre-D-091 and
+// D-098 A signatures). Select with --test-name-pattern='^W-424-b1\s'.
+// ---------------------------------------------------------------------------
+test("W-424-b1 behaviour 1: past ready, a kind: ui opus's spec signer is the seat its trunk record says signed at ready, when that seat is the UI signer or the design magister, and its pinned log still decides", () => {
+  const atReady = (sella: unknown, status: unknown = "passed"): Record<string, unknown> => ({ spec: { sella, status, evidence: `briefs/${OPUS}.md`, at: "2026-10-21T06:28:50.104Z" } });
+  const uiPast = (probationes: unknown, state = "verifying", manifest = pairingManifest()) => readSpecReviewer(manifest, { kind: "ui", state, probationes });
+  const kept = { signer: UI_ARCHITECT, reviewer: undefined };
+
+  // readSpecReviewer: the recorded seat, in every PAST_READY state
+  for (const state of ["building", "verifying", "review", "done"])
+    assert.deepEqual(uiPast(atReady("architect"), state), { signer: "architect", reviewer: undefined }, `${state}: a spec the design magister signed at ready keeps the design magister`);
+  assert.deepEqual(uiPast(atReady(UI_ARCHITECT)), kept, "a spec the UI signer signed at ready keeps the UI signer");
+  const chief = pairingManifest((m) => {
+    m.collegia[0]!.magister = "chief";
+    m.sellae.push({ id: "chief", collegium: "design", kind: "agent", model: "claude-opus-5-5" } as never);
+  });
+  assert.deepEqual(uiPast(atReady("chief"), "verifying", chief), { signer: "chief", reviewer: undefined }, "the design magister is the manifest's, not a fixed id");
+  assert.deepEqual(uiPast(atReady("architect"), "verifying", chief), kept, "ruled: a seat that is no longer the design magister keeps the UI signer");
+
+  // ruled: every other record keeps today's UI signer
+  const ruled: [string, unknown][] = [
+    ["the ui-lead", atReady("ui-lead")],
+    ["the spec reviewer", atReady(SR)],
+    ["the UI spec reviewer", atReady(UI_REVIEWER)],
+    ["an undeclared seat", atReady("ghost")],
+    ["a mis-cased seat", atReady("Architect")],
+    ["an empty seat", atReady("")],
+    ["a non-string seat", atReady(7)],
+    ["no seat", { spec: { status: "passed" } }],
+    ["a failed status", atReady("architect", "failed")],
+    ["a pending status", atReady("architect", "pending")],
+    ["no status", { spec: { sella: "architect" } }],
+    ["a spec probatio that is not a mapping", { spec: "passed" }],
+    ["no spec probatio", {}],
+    ["probationes that are a list", [atReady("architect")]],
+    ["no probationes", undefined],
+  ];
+  for (const [name, probationes] of ruled) assert.deepEqual(uiPast(probationes), kept, `ruled: ${name} keeps the UI signer`);
+
+  // before ready, and on every other kind, nothing changes
+  assert.deepEqual(uiPast(atReady("architect"), "greenlit"), { signer: UI_ARCHITECT, reviewer: { sella: UI_REVIEWER, model: UI_REVIEWER_MODEL, design: UI_ARCHITECT } }, "greenlit: the recorded seat is not read");
+  assert.deepEqual(readSpecReviewer(pairingManifest(), { kind: "feature", state: "verifying", probationes: atReady(UI_ARCHITECT) }), { signer: "architect", reviewer: undefined }, "another kind keeps the design magister");
+
+  // deriveNext: W-350's shape, merged and certified, its trunk record verifying with the spec passed at ready
+  const brief = briefText(1);
+  const pin = `briefs/${OPUS}.md blob:${createHash("sha1").update(`blob ${Buffer.byteLength(brief)}\0`).update(brief).digest("hex")}`;
+  const log = (round: number, sella: string, outcome: "passed" | "failed", briefPin = pin): string =>
+    [`# opus: ${OPUS}`, "# phase: spec", `# round: ${round}`, `# sella: ${sella}`, "# model: gpt-5.6-sol", `# outcome: ${outcome}`, `# at: 2026-10-21T00:00:0${round}.000Z`, `# brief: ${briefPin}`, "", NO_FINDINGS.trimEnd(), ""].join("\n");
+  const src = (files: Record<string, string>) => ({
+    read: (rel: string) => files[rel],
+    list: (dir: string) => Object.keys(files).filter((rel) => rel.startsWith(`${dir}/`)).map((rel) => rel.slice(dir.length + 1)),
+  });
+  const manifest = pairingManifest();
+  const merged = { number: 901, state: "MERGED" as const, mss: "CLEAN", headRefName: `opus/${OPUS}`, headRefOid: "a".repeat(40), baseRefName: "master", repo: "o/r", mergeOid: "b".repeat(40) };
+  const facts = (files: Record<string, string>, trunkProbationes: unknown, ownerProbationes: unknown = trunkProbationes): Facts => {
+    const trunkRecord = { id: OPUS, title: "UI fixture", kind: "ui", state: "verifying", probationes: trunkProbationes };
+    const owner = { ...trunkRecord, probationes: ownerProbationes };
+    return {
+      id: OPUS,
+      repo: "/fixture",
+      studioRel: "studio",
+      studioAbs: "/fixture/studio",
+      excludes: [],
+      design: "architect",
+      tip: undefined,
+      wt: { dir: "/fixture/.worktrees/W-900", studio: "/fixture/.worktrees/W-900/studio", usable: false },
+      trunk: src(files),
+      trunkRecord,
+      certified: () => true,
+      branch: undefined,
+      branchRecord: undefined,
+      work: src(files),
+      choreDone: false,
+      residue: false,
+      pushed: false,
+      manifest,
+      specOwner: { where: "the main checkout (studio)", record: owner, manifest },
+      curTree: () => undefined,
+      buildRounds: () => ({ error: "unused" }),
+      gates: () => undefined,
+      redFindings: () => [],
+      replay: () => undefined,
+      uiSpecProblems: () => [],
+      uiReviewProblems: () => [],
+      uiReviewInput: () => undefined,
+      pr: () => ({ kind: "settled", pr: merged }),
+      owed: () => ({ owed: [] }),
+      evidenceAt: () => 0,
+      wtCiProblem: () => undefined,
+      wtChanges: () => ({ spec: [], other: [], bad: [] }),
+      mainChanges: () => ({ spec: [], other: [], bad: [] }),
+    };
+  };
+  const signedAsArchitect = { [`briefs/${OPUS}.md`]: brief, [`ci/${OPUS}-spec-1.log`]: log(1, "architect", "passed") };
+  const done = deriveNext(facts(signedAsArchitect, atReady("architect")));
+  assert.deepEqual([done.step, done.status, done.why, done.command, done.ticket], ["done", "named", `${OPUS} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${OPUS} --perform --expect done`, { action: "done", round: 0 }], "a merged opus whose architect signed at ready, with that passing pinned log, names done, not a spec round");
+
+  const asUi = deriveNext(facts({ [`briefs/${OPUS}.md`]: brief, [`ci/${OPUS}-spec-1.log`]: log(1, UI_ARCHITECT, "passed") }, atReady(UI_ARCHITECT)));
+  assert.equal(asUi.step, "done", "a merged opus the UI signer signed at ready names done");
+
+  // the recorded seat names who must have signed; its passing log, pinned to the current brief, still decides. The order's seat is
+  // Facts.design, which gatherFacts derives from the same readSpecReviewer call; the reason names the signer this rung selected
+  const specRound = (d: ReturnType<typeof deriveNext>, why: RegExp, name: string): void => {
+    assert.deepEqual([d.step, d.status, d.order?.round], ["spec", "named", 2], `${name}: the spec rung orders a signature, round 2`);
+    assert.match(d.why, why, `${name}: the reason names the UI signer's missing signature`);
+  };
+  const missingUi = /^no passing ui-architect spec log \(ci\/W-900-spec-<n>\.log with phase spec\) names the current briefs\/W-900\.md$/;
+  specRound(deriveNext(facts(signedAsArchitect, atReady("ui-lead"))), missingUi, "ruled: a recorded ui-lead keeps the UI signer");
+  specRound(deriveNext(facts(signedAsArchitect, atReady("architect", "failed"))), missingUi, "ruled: a spec not recorded passed keeps the UI signer");
+  specRound(deriveNext(facts(signedAsArchitect, atReady("ui-lead"), atReady("architect"))), missingUi, "the trunk record's seat is read, not the owner checkout's");
+  const stale = deriveNext(facts({ [`briefs/${OPUS}.md`]: brief, [`ci/${OPUS}-spec-1.log`]: log(1, "architect", "passed", `briefs/${OPUS}.md blob:${"0".repeat(40)}`) }, atReady("architect")));
+  assert.deepEqual([stale.step, stale.status, stale.order?.round], ["spec", "named", 2], "a recorded architect whose log names another brief is ordered to sign again");
+  assert.match(stale.why, /^no passing architect spec log \(ci\/W-900-spec-<n>\.log with phase spec\) names the current briefs\/W-900\.md$/, "the stale pin is the reason");
+  const failed = deriveNext(facts({ [`briefs/${OPUS}.md`]: brief, [`ci/${OPUS}-spec-1.log`]: log(1, "architect", "failed") }, atReady("architect")));
+  assert.deepEqual([failed.step, failed.status, failed.order?.round], ["spec", "named", 2], "a recorded architect with only a failed log is ordered to sign");
+  assert.match(failed.why, /^no passing architect spec log \(ci\/W-900-spec-<n>\.log with phase spec\) names the current briefs\/W-900\.md$/, "the failed log is no signature");
+});
