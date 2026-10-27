@@ -1581,3 +1581,18 @@ export function k(p: string, cb: (e: unknown) => void) { readFile(p, (err) => cb
   assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), ["a:readFileSync#1", "b:readFileSync#1", "c:readFileSync#1", "d:readFileSync#1", "e:readFileSync#1", "f:createReadStream#1", "g:readFileSync#1", "h:readFileSync#1"].map(w425Key), "a variable, shorthand, non-literal, spread, computed or numeric flag outside the helper fails; a callback or an encoding does not");
   assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
 });
+
+test("W-425-b4 fix 1: an inherited or non-plain options property counts as a write", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { readFileSync } from "node:fs";
+export function a(p: string) { return readFileSync(p, { __proto__: { flag: "w+" } }); }
+export function b(p: string) { return readFileSync(p, { "__proto__": { flag: "w+" } }); }
+export function c(p: string) { return readFileSync(p, { ["__proto__"]: { flag: "w+" } }); }
+export function d(p: string) { return readFileSync(p, { get flag() { return "w+"; } }); }
+export function e(p: string) { return readFileSync(p, { get encoding() { return "utf8" as const; } }); }
+export function f(p: string) { return readFileSync(p, { encoding() { return "utf8"; } } as never); }
+export function g(p: string) { return readFileSync(p, { encoding: "utf8", flag: "r" }); }
+`);
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), ["a:readFileSync#1", "b:readFileSync#1", "c:readFileSync#1", "d:readFileSync#1", "e:readFileSync#1", "f:readFileSync#1"].map(w425Key), "an inherited __proto__ flag, a getter or a method property outside the helper fails; a plain encoding and read flag do not");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
+});
