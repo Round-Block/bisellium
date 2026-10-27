@@ -2110,3 +2110,26 @@ test("W-428-b2 behaviour 2: only a commit adding or changing a path under ci/red
   expectStep(h, "build", "held", "a failed read of the evidence commits: held");
   assert.equal(h.kv.get("why"), `git cannot list the evidence commits on opus/${OPUS} after ci/${OPUS}-review-1.log, so the evidence commits after it cannot be counted (W-428)`, ran("a failed read of the evidence commits: why", h));
 });
+
+test("W-428-b3 behaviour 3: a blocker is an evidence finding only when every class tag it carries is whole and an evidence class and it is not a security blocker; an untagged, mixed, malformed or security blocker keeps the builder's fix round", { timeout: 1_800_000 }, () => {
+  const w = w167("w428-b3", [found(evidenceBlocker())]);
+  const LOG = `studio/ci/${OPUS}-review-1.log`;
+  let k = 0;
+  /** Round 1's findings become `lines` (committed), then an evidence commit follows the log. */
+  const after = (lines: string[], fn: () => void): void =>
+    trial(w, [{ dir: "wt", rel: LOG, text: (t) => t.replace(`1. ${evidenceBlocker()}`, found(...lines)) }], () => {
+      keepRed(w, `fix1-b${++k}.log`);
+      commit(w.wt, `studio(${OPUS}): fix round 1 red ${k}`);
+      fn();
+    });
+  after([evidenceBlocker(), evidenceBlocker("a second red missing")], () => {
+    const o = n167(w);
+    reviewNamed(o, 2, "two evidence blockers: review round 2");
+    assert.equal(o.kv.get("why"), EVIDENCE_FIX(1), ran("two evidence blockers: why", o));
+  });
+  after([evidenceBlocker(), plain()], () => buildFix(n167(w), "a second blocker with no class tag: build, phase fix"));
+  after([`${evidenceBlocker()} [class: tests×one-sided-bound-assertion]`], () => buildFix(n167(w), "a blocker tagged evidence and another class: build, phase fix"));
+  after([`${evidenceBlocker()} [class:review×evidence]`], () => buildFix(n167(w), "a malformed tag beside the evidence tag: build, phase fix"));
+  after([`blocking (security): a red recorded on the fixed tree at brief:1 [severity: S1] ${EVIDENCE_TAG}. check: none: fixture`], () => buildFix(n167(w), "a security blocker carrying the evidence tag: build, phase fix"));
+  after([plain(), `advisory: a red missing at brief:1 [severity: S3] ${EVIDENCE_TAG}. check: none: fixture`], () => buildFix(n167(w), "the evidence tag on an advisory finding only: build, phase fix"));
+});
