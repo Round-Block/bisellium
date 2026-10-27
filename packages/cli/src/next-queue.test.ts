@@ -733,7 +733,9 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   refused("a head GitHub moved", ["901"], [view({ headRefOid: "1".repeat(40) })], `PR #901's head on origin is ${head.slice(0, 12)}, not 111111111111 as GitHub reported; rerun`);
   refused("no pull ref on origin", ["903"], [{ stdout: { number: 903, state: "OPEN", baseRefName: "master", headRefOid: head } }], "git fetch origin refs/pull/903/head failed (fatal: couldn't find remote ref refs/pull/903/head)");
   const outside = request(["901", "--repo", bare], [view()]);
-  assert.deepEqual([outside.status, lines(outside)[1]], [1, "why: git fetch origin master failed (fatal: not a git repository (or any of the parent directories): .git)"], ran("a --repo outside a checkout", outside));
+  // git words the rest of this line by environment (a mount point in a sandbox cell), so only its stable prefix is asserted
+  const outsideWhy = "why: git fetch origin master failed (fatal: not a git repository";
+  assert.deepEqual([outside.status, lines(outside)[1]?.slice(0, outsideWhy.length)], [1, outsideWhy], ran("a --repo outside a checkout", outside));
 
   // holds after the screen: exit 1, the steps after the failing one not run, the resume line
   const held = (label: string, views: Reply[], edit: Reply, tail: string[], left: string | undefined, edits: number): void => {
