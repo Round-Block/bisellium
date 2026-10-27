@@ -1188,7 +1188,12 @@ export function deriveNext(f: Facts): Derived {
     // never sent back to the builder; `redo` is a round failed at this tree and brief with no such fix. A read that fails holds
     const outside = failedNow ? fixedOutside(f, read.rounds.find((r) => r.n === gate?.round)) : 0;
     if (typeof outside !== "number") return hold("build", outside.why);
-    const redo = failedNow && outside === 0;
+    // W-428: a failed round whose blockers are all evidence findings is fixed by committing evidence under ci/reds/<id>/,
+    // a record W-328 does not count: such a commit after its log orders the re-review too. A read that fails holds
+    const failedRound = read.rounds.find((r) => r.n === gate?.round);
+    const evidenceFix = failedNow && outside === 0 && failedRound !== undefined && evidenceOnly(failedRound) ? fixedEvidence(f, failedRound) : 0;
+    if (typeof evidenceFix !== "number") return hold("build", evidenceFix.why);
+    const redo = failedNow && outside === 0 && evidenceFix === 0;
     // W-309 (D-072 C, D-086 D): after a failed round's fix commits, its fix check at this tree comes before the suite and the
     // re-review: none recorded at this tree is the review rung's fix-check perform; an open path goes back to the builder
     const fixRound = gate !== undefined && gate.status === "failed" && gate.tree !== cur ? gate.round : undefined;
@@ -1262,7 +1267,7 @@ export function deriveNext(f: Facts): Derived {
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");
-      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : failedNow ? `review round ${gate.round} failed at this tree and brief; ${outside} commit(s) after its log are empty or change a path that is not an officina record (D-086 B)` : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
+      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : failedNow ? (outside > 0 ? `review round ${gate.round} failed at this tree and brief; ${outside} commit(s) after its log are empty or change a path that is not an officina record (D-086 B)` : `review round ${gate.round} failed at this tree and brief on evidence findings only; ${evidenceFix} commit(s) after its log add or change a path under ci/reds/${id}/ (W-428)`) : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
         phase: "review",
         round: Math.max(0, ...rounds.map((r) => r.n)) + 1,
         resume: rounds.length > 0,
@@ -1568,16 +1573,53 @@ function fixedOutside(f: Facts, round: BuildReviewRound | undefined): number | {
   const uncounted = "so the commits after it cannot be counted (D-086 B)";
   if (round === undefined) return { why: `the failed review round's log cannot be read, ${uncounted}` };
   const ref = `refs/heads/opus/${f.id}`;
-  const at = git(f.repo, ["log", "-1", "--format=%H", ref, "--", join(f.studioRel, round.log)]);
-  if (at.status !== 0 || at.error !== undefined) return { why: `git cannot read which commit on opus/${f.id} last changed ${round.log}, ${uncounted}` };
-  const since = at.stdout.trim();
-  if (since === "") return { why: `${round.log} is not committed on opus/${f.id} (commit it), ${uncounted}` };
+  const since = logCommit(f, round, uncounted);
+  if (typeof since !== "string") return since;
   const log = git(f.repo, ["log", "--first-parent", "--no-merges", "--name-only", "-z", "--format=%x01%H", `${since}..${ref}`]);
   if (log.status !== 0 || log.error !== undefined) return { why: `git cannot list the commits on opus/${f.id} after ${round.log}, ${uncounted}` };
   return log.stdout
     .split("\x01")
     .slice(1)
     .filter((c) => !recordOnly(c.split("\0").slice(1).map((p) => p.replace(/^\n/, "")).filter((p) => p !== ""), f.studioRel)).length;
+}
+/** W-328 (D-086 B), W-428: the commit on opus/<id> that last changed `round`'s log, or why not, each why ending `uncounted`. */
+function logCommit(f: Facts, round: BuildReviewRound, uncounted: string): string | { why: string } {
+  const at = git(f.repo, ["log", "-1", "--format=%H", `refs/heads/opus/${f.id}`, "--", join(f.studioRel, round.log)]);
+  if (at.status !== 0 || at.error !== undefined) return { why: `git cannot read which commit on opus/${f.id} last changed ${round.log}, ${uncounted}` };
+  const since = at.stdout.trim();
+  return since === "" ? { why: `${round.log} is not committed on opus/${f.id} (commit it), ${uncounted}` } : since;
+}
+/** W-428: the `[class:]` tags (`CLASS_TAG`, D-070 B) of a finding that only missing or false evidence makes: its fix is evidence committed under ci/reds/<id>/, never a source change. */
+const EVIDENCE_CLASSES: ReadonlySet<string> = new Set(["review×evidence-backfilled-or-absent"]);
+/**
+ * W-428: every standing blocker of the failed round is an evidence finding, read from its text (`RecordedFinding.text`,
+ * `parseVerdictLog`'s) and failing closed: it does not open `blocking (security)` (D-044), each `[class:` in it opens a whole
+ * tag (`CLASS_TAG`), it carries at least one, and every one is in EVIDENCE_CLASSES. An untagged, malformed, mixed or
+ * security blocker is not, so its round goes back to the builder.
+ */
+function evidenceOnly(round: BuildReviewRound): boolean {
+  return (
+    round.blockers.length > 0 &&
+    round.blockers.every((b) => {
+      const tags = classesIn(b.text);
+      return !/^\**blocking \(security\)/i.test(b.text) && tags.length > 0 && tags.length === b.text.split("[class:").length - 1 && tags.every((c) => EVIDENCE_CLASSES.has(c));
+    })
+  );
+}
+/**
+ * W-428: how many commits on opus/<id>'s first-parent line after the one that last changed `round`'s log, merges aside, add
+ * or change a path under <studio>/ci/reds/<id>/ (renames read as a delete and an add; a delete alone is no evidence); what
+ * else a commit changes is not read here (W-328's `fixedOutside` counted it first). Every read fails closed: a git read
+ * that fails is a hold's why, never a count.
+ */
+function fixedEvidence(f: Facts, round: BuildReviewRound): number | { why: string } {
+  const uncounted = "so the evidence commits after it cannot be counted (W-428)";
+  const since = logCommit(f, round, uncounted);
+  if (typeof since !== "string") return since;
+  const reds = `${join(f.studioRel, "ci", "reds", f.id)}/`;
+  const log = git(f.repo, ["--literal-pathspecs", "log", "--first-parent", "--no-merges", "--no-renames", "--diff-filter=AM", "--format=%H", `${since}..refs/heads/opus/${f.id}`, "--", reds]);
+  if (log.status !== 0 || log.error !== undefined) return { why: `git cannot list the evidence commits on opus/${f.id} after ${round.log}, ${uncounted}` };
+  return log.stdout.split("\n").filter((l) => l !== "").length;
 }
 /**
  * W-309: the fix check of round `n` at tree `cur`, `<repo>/.bisellium/reviews/<id>/fix-<n>/check.json` as the perform writes it.

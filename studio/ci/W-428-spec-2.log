@@ -1,0 +1,19 @@
+# opus: W-428
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17dfb-e854-70d0-a55d-6e4109ed87e7
+# outcome: passed
+# at: 2026-10-27T15:34:45.337Z
+# tree: tree:d4b05f2233a4b94e75ee203afa4717293af0669f
+# brief: briefs/W-428.md blob:b26a9be25b76872756cc352884878a889639babc
+# ticket: {"opus":"W-428","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"6c7edf054576264a8645294f00d6f6d994962a4f","brief":"b26a9be25b76872756cc352884878a889639babc","at":"2026-10-27T15:34:41.811Z"}
+
+## Findings
+1. advisory — brief:69 Row 2 starts after `logCommit` has found the anchor, so the new `git log -1` reader lacks its valid exit-zero/nonempty-hash domain and named rejection in the Input domain. Replace brief:69 with: `| 2. The failed log’s anchor commit and the later commits on opus/<id>’s first-parent line | the anchor lookup exits 0 and yields one commit hash; the later list recognises non-merge commits adding or modifying a file under <studio>/ci/reds/<id>/, with every other form not an evidence fix | logCommit: a failed lookup or empty answer returns { why } and deriveNext holds; fixedEvidence: a count of 0 keeps redo and a failed list returns { why } and deriveNext holds |`. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief.input.changed-reader-coverage
+2. advisory — brief:57 Promise evidence-review can be preempted by the unchanged trunk and later-lane conflict guards, which are absent from its stated limits. Replace brief:57 with: `- Unchanged code the promises lean on is a stated limit, not a guarantee (D-076 E): readBuildRounds, parseBuildReviewLog, parseVerdictLog and CLASS_TAG (the blockers and their tags), reviewGate, f.curTree(), the brief pin, classLoop, repeatHold, fixedOutside’s count and recordOnly, readFixCheck, f.gates(), mergeTreeConflict, furtherAlongBranches, dispatch, the git helper, and git’s own log and pathspec reading.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-ladder.test.ts
+
+## Verdict
+The design may proceed with these two advisory corrections applied during the build.
+VERDICT: PASS

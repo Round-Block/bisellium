@@ -2051,3 +2051,85 @@ test("W-416-b2 behaviour 2: a passed ui review recorded before the current ui-le
     ran("the order names the superseded review and the current input", due),
   );
 });
+
+// ---------------------------------------------------------------------------
+// W-428: a failed round whose blockers are all evidence findings is fixed by evidence committed under ci/reds/<id>/ (a
+// record, which W-328 does not count): such a commit after its log orders the re-review, never the builder.
+// ---------------------------------------------------------------------------
+const EVIDENCE_TAG = "[class: review×evidence-backfilled-or-absent]";
+const evidenceBlocker = (t = "no recorded red for the fix round's regression row"): string => `blocking: ${t} at brief:1 [severity: S1] ${EVIDENCE_TAG}. check: studio/ci/reds/${OPUS}/`;
+const EVIDENCE_FIX = (k: number): string => `review round 1 failed at this tree and brief on evidence findings only; ${k} commit(s) after its log add or change a path under ci/reds/${OPUS}/ (W-428)`;
+const redRel = (name: string, opus = OPUS): string => `ci/reds/${opus}/${name}`;
+/** A kept red written under the worktree's ci/reds/<opus>/ (behaviour 1's own red text, so the red checks read a red), not committed. */
+const keepRed = (w: World, name: string, extra = "", opus = OPUS): void => put(w.wtStudio, redRel(name, opus), `${readFileSync(join(w.wtStudio, redRel("01.log")), "utf8")}${extra}`);
+
+test("W-428-b1 behaviour 1: a failed round whose blockers are all evidence findings, then a commit adding or changing evidence under ci/reds/<id>/, orders the re-review, never the builder", { timeout: 1_800_000 }, () => {
+  const w = w167("w428-b1", [found(evidenceBlocker(), evidenceBlocker("the b2 red was recorded on the fixed tree"))]);
+  buildFix(n167(w), "no evidence committed yet: build, phase fix");
+  // the evidence commit carries another record beside it: the opus record's handoff, in the same commit
+  keepRed(w, "fix1-b1.log");
+  verb(w.wt, ["handoff", "--opus", OPUS, "--sella", "producer", "--next", "re-review the kept red", "--studio", w.wtStudio, "--now", "2026-10-02T09:30:00.000Z"]);
+  commit(w.wt, `studio(${OPUS}): fix round 1 red, with the handoff`);
+  const o = n167(w);
+  reviewNamed(o, 2, "an evidence commit: review round 2");
+  assert.equal(o.kv.get("role"), "censor", ran("an evidence commit: the censor's order", o));
+  assert.equal(o.kv.get("why"), EVIDENCE_FIX(1), ran("an evidence commit: why", o));
+  assert.equal(o.kv.has("fix-check"), false, ran("an evidence commit: no fix check is ordered (the source tree is unchanged)", o));
+  // a later commit that changes the kept red counts too
+  keepRed(w, "fix1-b1.log", "# re-run\n");
+  commit(w.wt, `studio(${OPUS}): fix round 1 red, re-run`);
+  const again = n167(w);
+  reviewNamed(again, 2, "a changed red: review round 2");
+  assert.equal(again.kv.get("why"), EVIDENCE_FIX(2), ran("a changed red: why", again));
+});
+
+test("W-428-b2 behaviour 2: only a commit adding or changing a path under ci/reds/<id>/ is an evidence fix; another record, another opus's red or a deleted red is not, and a failed read holds", { timeout: 1_800_000 }, () => {
+  const w = world("w428-b2", "build");
+  keepRed(w, "spare.log");
+  commit(w.wt, `studio(${OPUS}): a spare red, before the review`);
+  record167(w, [found(evidenceBlocker())]);
+  handoffAt(w, "wt", T.handoffFresh);
+  buildFix(n167(w), "no commit after the log: build, phase fix");
+  handoffAt(w, "wt", "2026-10-02T09:30:00.000Z");
+  buildFix(n167(w), "a commit of the opus record only: build, phase fix");
+  keepRed(w, "fix1-b1.log", "", "W-901");
+  commit(w.wt, `studio(${OPUS}): another opus's red`);
+  buildFix(n167(w), "a commit of another opus's red: build, phase fix");
+  rmSync(join(w.wtStudio, redRel("spare.log")));
+  commit(w.wt, `studio(${OPUS}): the spare red deleted`);
+  buildFix(n167(w), "a commit deleting a red: build, phase fix");
+  // W-425's shape: the evidence commit, then a handoff commit after it
+  keepRed(w, "fix1-b1.log");
+  commit(w.wt, `studio(${OPUS}): fix round 1 red`);
+  handoffAt(w, "wt", "2026-10-02T09:45:00.000Z");
+  const o = n167(w);
+  reviewNamed(o, 2, "an evidence commit, then a handoff: review round 2");
+  assert.equal(o.kv.get("why"), EVIDENCE_FIX(1), ran("an evidence commit, then a handoff: why", o));
+  // a failed git read of the evidence commits holds, never counts
+  const h = n167(w, { GIT_STUB_REAL: failingGit("w428-b2-git", ["--diff-filter=AM"]) });
+  expectStep(h, "build", "held", "a failed read of the evidence commits: held");
+  assert.equal(h.kv.get("why"), `git cannot list the evidence commits on opus/${OPUS} after ci/${OPUS}-review-1.log, so the evidence commits after it cannot be counted (W-428)`, ran("a failed read of the evidence commits: why", h));
+});
+
+test("W-428-b3 behaviour 3: a blocker is an evidence finding only when every class tag it carries is whole and an evidence class and it is not a security blocker; an untagged, mixed, malformed or security blocker keeps the builder's fix round", { timeout: 1_800_000 }, () => {
+  const w = w167("w428-b3", [found(evidenceBlocker())]);
+  const LOG = `studio/ci/${OPUS}-review-1.log`;
+  let k = 0;
+  /** Round 1's findings become `lines` (committed), then an evidence commit follows the log. */
+  const after = (lines: string[], fn: () => void): void =>
+    trial(w, [{ dir: "wt", rel: LOG, text: (t) => t.replace(`1. ${evidenceBlocker()}`, found(...lines)) }], () => {
+      keepRed(w, `fix1-b${++k}.log`);
+      commit(w.wt, `studio(${OPUS}): fix round 1 red ${k}`);
+      fn();
+    });
+  after([evidenceBlocker(), evidenceBlocker("a second red missing")], () => {
+    const o = n167(w);
+    reviewNamed(o, 2, "two evidence blockers: review round 2");
+    assert.equal(o.kv.get("why"), EVIDENCE_FIX(1), ran("two evidence blockers: why", o));
+  });
+  after([evidenceBlocker(), plain()], () => buildFix(n167(w), "a second blocker with no class tag: build, phase fix"));
+  after([`${evidenceBlocker()} [class: tests×one-sided-bound-assertion]`], () => buildFix(n167(w), "a blocker tagged evidence and another class: build, phase fix"));
+  after([`${evidenceBlocker()} [class:review×evidence]`], () => buildFix(n167(w), "a malformed tag beside the evidence tag: build, phase fix"));
+  after([`blocking (security): a red recorded on the fixed tree at brief:1 [severity: S1] ${EVIDENCE_TAG}. check: none: fixture`], () => buildFix(n167(w), "a security blocker carrying the evidence tag: build, phase fix"));
+  after([plain(), `advisory: a red missing at brief:1 [severity: S3] ${EVIDENCE_TAG}. check: none: fixture`], () => buildFix(n167(w), "the evidence tag on an advisory finding only: build, phase fix"));
+});

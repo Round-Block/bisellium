@@ -1,0 +1,24 @@
+# opus: W-428
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T15:29:59.887Z
+# tree: tree:d4b05f2233a4b94e75ee203afa4717293af0669f
+# brief: briefs/W-428.md blob:b26a9be25b76872756cc352884878a889639babc
+# ticket: {"opus":"W-428","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"6c7edf054576264a8645294f00d6f6d994962a4f","brief":"b26a9be25b76872756cc352884878a889639babc","at":"2026-10-27T15:29:55.630Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-428-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — next reads a failed round's standing blockers through the reader it already uses (readBuildRounds, parseVerdictLog) and judges them with a new evidenceOnly: every blocker carries only whole [class:] tags in EVIDENCE_CLASSES (review×evidence-backfilled-or-absent, the one evidence class in the officina's logs), and none opens blocking (security); an untagged, malformed, mixed or security blocker fails closed to the builder's fix round — check: class-census.out, brief Intent decision 1, Input domain row 1, red-b3.out
+2. advisory — fixedEvidence counts non-merge first-parent commits after the log that add or modify a file under <studio>/ci/reds/<id>/ (git --literal-pathspecs log --no-renames --diff-filter=AM); a commit of other records only, another opus's reds or a delete does not count; a failed git list holds the build rung; logCommit is lifted out of fixedOutside with W-328's whys unchanged — check: prototype.diff, red-b2.out, kills.out K2 K3 K7
+3. advisory — no fix check is ordered for such a round: the evidence commit leaves the source tree unchanged and W-309's check runs only at a changed tree; the re-review judges the evidence (D-066 C) — check: brief Intent decision 2, W-428-b1 "an evidence commit: no fix check is ordered (the source tree is unchanged)"
+4. advisory — W-328's behaviour is unchanged: the W-328 rows pass at master and at every stage, the neighbouring rows and the Codex check's must-stay-green rows pass at the tip, and the Codex check lists Flips None and Unnamed None — check: w328-master.out, w328-stage3.out, neighbours.out, neighbours-<file>.out, fixture-census.md
+5. advisory — three reds, one at a time, each accepted at assertion level on the commit before its behaviour; eight one-hunk kills of next.ts each fail their row at the pinned assertion (K8 on W-328-b1); lint, format, typecheck and both officina checks pass; admission on master's code and the ledger on master's validator pass — check: red-accept.out, kills.out, gates-run.log, admission.out, ledger-probe.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-428.md` (spec round 1), prototyped over master 6c7edf05; three behaviours in next.ts and next-review.test.ts, no flips, no code-owned path.
