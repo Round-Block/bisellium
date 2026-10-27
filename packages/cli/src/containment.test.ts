@@ -1523,3 +1523,19 @@ export function i(x: unknown) { return x instanceof ReadStream; }
   assert.deepEqual(w423Unclassified(scan.fs), [], "both stream classes are classified");
   assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), [w425Key("w:WriteStream#1"), w425Key("m:WriteStream#1")], "a governed WriteStream outside the helper fails; a ReadStream with no flags and one in a helper caller do not");
 });
+
+test("W-425-b2 behaviour 2: a read called with a literal write flag is a write, and a read flag, an encoding or no options stays a read", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { createReadStream, readFileSync, ReadStream } from "node:fs";
+import * as fsp from "node:fs/promises";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
+export function a(p: string) { return readFileSync(p, { flag: "w+" }); }
+export function b(p: string) { return createReadStream(p, { flags: "a" }); }
+export function c(p: string) { return new ReadStream(p, { "flags": "r+" }); }
+export async function d(p: string) { return fsp.readFile(p, { encoding: "utf8", flag: \`wx\` }); }
+export function e(p: string) { return [readFileSync(p), readFileSync(p, "utf8"), readFileSync(p, { encoding: "utf8", flag: "r" }), createReadStream(p, { flags: "rs" }), new ReadStream(p, { flags: "sr" })]; }
+export function h(root: string) { return readFileSync(ensureRealDirectory(root, "notice") + "/x", { flag: "a+" }); }
+`);
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), [w425Key("a:readFileSync#1"), w425Key("b:createReadStream#1"), w425Key("c:ReadStream#1"), w425Key("d:readFile#1")], "a read with a literal write flag outside the helper fails; a read flag, an encoding, no options or a helper caller does not");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
+});
