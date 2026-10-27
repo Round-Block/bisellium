@@ -1,0 +1,21 @@
+# opus: W-425
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a17d7c-6718-7f02-a7c2-9596fc9f48b6
+# outcome: failed
+# at: 2026-10-27T23:09:25.938Z
+# tree: tree:965798285e8aed10fc1db0a9459598494a66d4b7
+# brief: briefs/W-425.md blob:93526221f33b7c551d9082a60cad28fbc5ae3796
+# ticket: {"opus":"W-425","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-425/studio","head":"f8b7273262f1e8be9c33d992bbcbc36b9a891966","brief":"93526221f33b7c551d9082a60cad28fbc5ae3796","at":"2026-10-27T23:09:21.218Z"}
+
+## Findings
+1. blocking — studio/ci/reds/W-425/fix1-b4.log:3 [severity: S1] The log expressly says the red was not recorded before the fix; this post-review hybrid replay is backfilled evidence, not the pre-fix red required by brief:98. This is ci/W-425-review-2.log #1 carried open. [class: review×evidence-backfilled-or-absent] — check: studio/ci/reds/W-425/
+
+## Earlier findings
+- ci/W-425-review-2.log #1: open — studio/ci/reds/W-425/fix1-b4.log:3 expressly says the red was not recorded before the fix; this post-review hybrid replay is backfilled evidence, not the required recorded pre-fix red.
+
+## Verdict
+The behavior fix remains correct, but the only added red is explicitly backfilled, so the prior evidence blocker remains open.
+VERDICT: FAIL
