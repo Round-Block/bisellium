@@ -297,7 +297,7 @@ const W425_FLAG_READS = new Set(["readFileSync", "readFile", "createReadStream",
 const W425_READ_FLAGS = new Set(["r", "rs", "sr"]);
 /** W-425: whether a read's options (its second argument) may name a write flag. It is a read only when no options, an
  * encoding string or a callback is passed, or an object literal whose every `flag` or `flags` is a literal read flag and which has
- * no `__proto__` key (an inherited flag), spread or computed key; a getter, setter, method or shorthand named `flag` or `flags`, and
+ * no `__proto__` key other than `__proto__: null` (an inherited flag), spread or computed key; a getter, setter, method or shorthand named `flag` or `flags`, and
  * any other form (a variable, a call, a numeric or non-literal flag) fails closed as a write. A property on any other name is ignored. */
 function w425WriteFlag(args: readonly ts.Expression[]): boolean {
   if (args.slice(0, 2).some(ts.isSpreadElement)) return true;
@@ -307,7 +307,7 @@ function w425WriteFlag(args: readonly ts.Expression[]): boolean {
   return o.properties.some((p) => {
     if (ts.isSpreadAssignment(p) || ts.isComputedPropertyName(p.name)) return true;
     const key = ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) ? p.name.text : undefined;
-    if (key === "__proto__") return true;
+    if (key === "__proto__") return !(ts.isPropertyAssignment(p) && p.initializer.kind === ts.SyntaxKind.NullKeyword);
     if (key !== "flag" && key !== "flags") return false;
     return !(ts.isPropertyAssignment(p) && ts.isStringLiteralLike(p.initializer) && W425_READ_FLAGS.has(p.initializer.text));
   });
@@ -1590,7 +1590,8 @@ export function k(p: string, cb: (e: unknown) => void) { readFile(p, (err) => cb
 
 test("W-425-b4 fix 1: an inherited or non-plain options property counts as a write", () => {
   const listed = WRITE_LIMITS.map(([k]) => k);
-  const scan = w425Scan(`import { readFileSync } from "node:fs";
+  const scan = w425Scan(`import { createReadStream, ReadStream, readFile, readFileSync } from "node:fs";
+declare const x: object;
 export function a(p: string) { return readFileSync(p, { __proto__: { flag: "w+" } }); }
 export function b(p: string) { return readFileSync(p, { "__proto__": { flag: "w+" } }); }
 export function c(p: string) { return readFileSync(p, { ["__proto__"]: { flag: "w+" } }); }
@@ -1600,9 +1601,15 @@ export function f(p: string, flag: string) { return readFileSync(p, { flag }); }
 export function g(p: string) { return readFileSync(p, { 0: "x", flag: "r" }); }
 export function h(p: string) { return readFileSync(p, { get encoding() { return "utf8" as const; } }); }
 export function k(p: string) { return readFileSync(p, { encoding() { return "utf8"; } }); }
+export function m(p: string) { return readFileSync(p, { __proto__: null, flag: "r" }); }
+export function n(p: string) { return readFile(p, { "__proto__": null, flag: "r" }, () => undefined); }
+export function o(p: string) { return createReadStream(p, { __proto__: null, flags: "r" }); }
+export function q(p: string) { return new ReadStream(p, { __proto__: null, flags: "rs" }); }
+export function r(p: string) { return readFileSync(p, { __proto__: {}, flag: "r" }); }
+export function t(p: string) { return readFileSync(p, { __proto__: x, flag: "r" }); }
 `);
-  assert.deepEqual(scan.fs.map((x) => x.key), "abcdefghk".split("").map((f) => w425Key(`${f}:readFileSync#1`)), "every direct read in the fixture is a site, the accepted controls included");
-  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), "abcdef".split("").map((f) => w425Key(`${f}:readFileSync#1`)), "an inherited __proto__ flag, or a getter, method or shorthand flag outside the helper fails; a numeric key, a getter or a method on another name does not");
+  assert.deepEqual(scan.fs.map((x) => x.key), ["a", "b", "c", "d", "e", "f", "g", "h", "k", "m", "n", "o", "q", "r", "t"].map((f) => w425Key(`${f}:${{ n: "readFile", o: "createReadStream", q: "ReadStream" }[f] ?? "readFileSync"}#1`)), "every direct read in the fixture is a site, the accepted controls included");
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), "abcdefrt".split("").map((f) => w425Key(`${f}:readFileSync#1`)), "an inherited __proto__ flag (any value but null), or a getter, method or shorthand flag outside the helper fails; a numeric key, a getter or a method on another name, or a null __proto__, does not");
   assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
 });
 
