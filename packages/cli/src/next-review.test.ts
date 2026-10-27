@@ -2051,3 +2051,34 @@ test("W-416-b2 behaviour 2: a passed ui review recorded before the current ui-le
     ran("the order names the superseded review and the current input", due),
   );
 });
+
+// ---------------------------------------------------------------------------
+// W-428: a failed round whose blockers are all evidence findings is fixed by evidence committed under ci/reds/<id>/ (a
+// record, which W-328 does not count): such a commit after its log orders the re-review, never the builder.
+// ---------------------------------------------------------------------------
+const EVIDENCE_TAG = "[class: review×evidence-backfilled-or-absent]";
+const evidenceBlocker = (t = "no recorded red for the fix round's regression row"): string => `blocking: ${t} at brief:1 [severity: S1] ${EVIDENCE_TAG}. check: studio/ci/reds/${OPUS}/`;
+const EVIDENCE_FIX = (k: number): string => `review round 1 failed at this tree and brief on evidence findings only; ${k} commit(s) after its log add or change a path under ci/reds/${OPUS}/ (W-428)`;
+const redRel = (name: string, opus = OPUS): string => `ci/reds/${opus}/${name}`;
+/** A kept red written under the worktree's ci/reds/<opus>/ (behaviour 1's own red text, so the red checks read a red), not committed. */
+const keepRed = (w: World, name: string, extra = "", opus = OPUS): void => put(w.wtStudio, redRel(name, opus), `${readFileSync(join(w.wtStudio, redRel("01.log")), "utf8")}${extra}`);
+
+test("W-428-b1 behaviour 1: a failed round whose blockers are all evidence findings, then a commit adding or changing evidence under ci/reds/<id>/, orders the re-review, never the builder", { timeout: 1_800_000 }, () => {
+  const w = w167("w428-b1", [found(evidenceBlocker(), evidenceBlocker("the b2 red was recorded on the fixed tree"))]);
+  buildFix(n167(w), "no evidence committed yet: build, phase fix");
+  // the evidence commit carries another record beside it: the opus record's handoff, in the same commit
+  keepRed(w, "fix1-b1.log");
+  verb(w.wt, ["handoff", "--opus", OPUS, "--sella", "producer", "--next", "re-review the kept red", "--studio", w.wtStudio, "--now", "2026-10-02T09:30:00.000Z"]);
+  commit(w.wt, `studio(${OPUS}): fix round 1 red, with the handoff`);
+  const o = n167(w);
+  reviewNamed(o, 2, "an evidence commit: review round 2");
+  assert.equal(o.kv.get("role"), "censor", ran("an evidence commit: the censor's order", o));
+  assert.equal(o.kv.get("why"), EVIDENCE_FIX(1), ran("an evidence commit: why", o));
+  assert.equal(o.kv.has("fix-check"), false, ran("an evidence commit: no fix check is ordered (the source tree is unchanged)", o));
+  // a later commit that changes the kept red counts too
+  keepRed(w, "fix1-b1.log", "# re-run\n");
+  commit(w.wt, `studio(${OPUS}): fix round 1 red, re-run`);
+  const again = n167(w);
+  reviewNamed(again, 2, "a changed red: review round 2");
+  assert.equal(again.kv.get("why"), EVIDENCE_FIX(2), ran("a changed red: why", again));
+});
