@@ -1,0 +1,61 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-423-b1\s --import tsx packages/cli/src/next-queue.test.ts
+# exit: 1
+# at: 2026-10-27T09:07:57.754Z
+# sella: architect
+# tree: tree:e4425936dcf19b877283372211c0fa3e11e89acd
+# ticket: {"opus":"W-423","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-423/studio","head":"1f1f0d5a6b7d9db2420ab92a5d7f8cd4b86523be","brief":"28efe8b831585379f52223980ede33a7d7553306","at":"2026-10-27T09:07:57.716Z"}
+
+TAP version 13
+# Subtest: W-423-b1 behaviour 1: a queue-mode pr writes its binding only through real directories below the Git common directory, and a symlinked level holds before the push
+not ok 1 - W-423-b1 behaviour 1: a queue-mode pr writes its binding only through real directories below the Git common directory, and a symlinked level holds before the push
+  ---
+  duration_ms: 2089.971548
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-423/packages/cli/src/next-queue.test.ts:16:601'
+  failureType: 'testCodeFailure'
+  error: |-
+    a symlinked bisellium level: no push
+    --- exit 0
+    --- stdout
+    next: W-900 pr performed
+    mode: merge-queue
+    PR=901 base=8c401be head=25a52ed
+    code-owned: none (no .github/CODEOWNERS, CODEOWNERS or docs/CODEOWNERS at refs/heads/master)
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+        'git fetch master:master',
+    +   'git push --force-with-lease',
+    +   'gh pr create'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'git fetch master:master'
+  actual:
+    0: 'git fetch master:master'
+    1: 'git push --force-with-lease'
+    2: 'gh pr create'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-423/packages/cli/src/next-queue.test.ts:912:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2579.575342

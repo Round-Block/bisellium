@@ -1,8 +1,8 @@
 /**
  * packages/cli/src/review-notice.ts — W-418: a PR whose diff touches a code-owned path names those paths, requests
  * the code owners' review, and leaves a notice for the main session, which the guard (guard.ts) hands it once, so the
- * session pushes it to the Patron's phone. Node built-ins only: the guard imports `takeNotices`, and a hook loads
- * nothing heavy.
+ * session pushes it to the Patron's phone. Node built-ins and the shared containment helper only (W-423: `ids.js`, itself
+ * node built-ins only): the guard imports `takeNotices`, and a hook loads nothing heavy.
  *
  * The screen reads the owners file GitHub reads at the base ref (master), the first of `.github/CODEOWNERS`,
  * `CODEOWNERS` and `docs/CODEOWNERS` it holds, and the diff's paths (`git diff --name-only --no-renames --no-relative
@@ -16,8 +16,9 @@
  * a hold that names `resume`, and the steps after it are not run.
  */
 import { spawnSync } from "node:child_process";
-import { lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, join } from "node:path";
+import { lstatSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
+import { ensureRealDirectory, existingRealDirectory } from "@bisellium/commands/ids.js";
 
 /** The owners files GitHub reads for a PR, in the order it looks: the first the base ref holds is the one it uses. */
 export const OWNERS_FILES = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"] as const;
@@ -140,17 +141,9 @@ function commonDir(cwd: string, timeout?: number): { path: string } | { error: s
   if (r.error !== undefined || r.status !== 0 || dir === "" || !isAbsolute(dir)) return { error: failed(r) };
   return { path: dir };
 }
-const noticeDir = (common: string): string => join(common, "bisellium", "notice");
-
-/** Why `path` may not be used as a directory of the store: it is a symlink, which would send a write or a delete out of
- *  the Git common directory. Undefined when it is absent or a real entry (a non-directory fails at its own use). */
-function linked(path: string): string | undefined {
-  try {
-    return lstatSync(path).isSymbolicLink() ? `${path} is a symlink, not a directory` : undefined;
-  } catch {
-    return undefined;
-  }
-}
+/** W-423: the store's levels below the Git common directory, each a real directory the shared containment helper makes
+ *  (`ensureRealDirectory`) or proves (`existingRealDirectory`): a symlinked level would send a write or a delete out. */
+const NOTICE_LEVELS = ["bisellium", "notice"] as const;
 
 /** Leaves the notice for PR `pr` at `<git common dir>/bisellium/notice/<pr>` (one line, written whole by a rename),
  *  replacing an older one for the same PR. Undefined when written, else why not. */
@@ -158,16 +151,9 @@ export function writeNotice(cwd: string, pr: number, text: string): string | und
   const common = commonDir(cwd);
   if ("error" in common) return `git rev-parse --git-common-dir failed (${common.error})`;
   if (!NOTICE_PR.test(String(pr))) return `${pr} is not a PR number the notice store takes`;
-  const dir = noticeDir(common.path);
-  const temp = join(dir, `.${pr}.${process.pid}`);
   try {
-    for (const part of [dirname(dir), dir]) {
-      const before = linked(part);
-      if (before !== undefined) return before;
-      mkdirSync(part, { recursive: true });
-      const after = linked(part);
-      if (after !== undefined) return after;
-    }
+    const dir = ensureRealDirectory(common.path, ...NOTICE_LEVELS);
+    const temp = join(dir, `.${pr}.${process.pid}`);
     writeFileSync(temp, `${text}\n`);
     renameSync(temp, join(dir, String(pr)));
     return undefined;
@@ -182,10 +168,11 @@ export function writeNotice(cwd: string, pr: number, text: string): string | und
 export function takeNotices(cwd: string): string[] {
   const common = commonDir(cwd, 1000);
   if ("error" in common) return [];
-  const dir = noticeDir(common.path);
-  if (linked(dirname(dir)) !== undefined || linked(dir) !== undefined) return [];
+  let dir: string | undefined;
   let names: string[];
   try {
+    dir = existingRealDirectory(common.path, ...NOTICE_LEVELS);
+    if (dir === undefined) return [];
     names = readdirSync(dir);
   } catch {
     return [];

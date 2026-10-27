@@ -15,9 +15,10 @@
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { isSeq, type Document } from "yaml";
+import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "./ids.js";
 import { readContainedRegularFile, utcTimestampProblem } from "./opus-model.js";
 
 export type TicketAction = "verdict-spec" | "verdict-build" | "review" | "red" | "ready" | "done" | "branch" | "merge";
@@ -130,21 +131,23 @@ export function setPendingTicket(studio: string, opus: string, ticket: StepTicke
   if (facts !== undefined && "error" in facts) return facts.error;
   const common = facts?.common ?? gitIn(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
   if (common === undefined || common === "") return `${root} is not inside a git checkout`;
-  const dir = ticketsDir(common);
-  const path = join(dir, `${opus}.json`);
+  const path = join(ticketsDir(common), `${opus}.json`);
   try {
+    // W-423: <common>/bisellium/tickets through the shared containment helper, so a symlinked level refuses
     if (ticket === undefined) {
+      const real = existingRealDirectory(common, "bisellium", "tickets");
+      if (real === undefined) return undefined;
       try {
-        unlinkSync(path);
+        unlinkSync(join(real, `${opus}.json`));
       } catch (e) {
         if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
       }
       return undefined;
     }
-    mkdirSync(dir, { recursive: true });
+    const dir = ensureRealDirectory(common, "bisellium", "tickets");
     const staged = join(dir, `.${opus}.json.tmp`);
     writeFileSync(staged, `${ticketLine(ticket)}\n`);
-    renameSync(staged, path);
+    renameSync(staged, join(dir, `${opus}.json`));
     return undefined;
   } catch (e) {
     return `could not ${ticket === undefined ? "delete" : "write"} ${path}: ${(e as Error).message}`;
@@ -175,7 +178,13 @@ export function requireTicket(i: { studio: string; manifest: unknown; opus: stri
     const common = gitIn(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
     if (top !== facts.top || common !== facts.common) return refuse(`facts unreadable: --repo ${repo} is not the checkout of ${resolve(i.studio)}`);
   }
-  const dir = ticketsDir(facts.common);
+  let dir: string | undefined;
+  try {
+    dir = existingRealDirectory(facts.common, "bisellium", "tickets"); // W-423: a symlinked level is unreadable
+  } catch (e) {
+    return refuse(`unreadable: ${(e as Error).message}`);
+  }
+  if (dir === undefined) return refuse("absent");
   const read = readContainedRegularFile(dir, i.opus + ".json", "");
   if ("error" in read) return refuse(read.code === "ENOENT" ? "absent" : "unreadable");
   const text = read.bytes.toString("utf8");
@@ -198,6 +207,7 @@ export function requireTicket(i: { studio: string; manifest: unknown; opus: stri
 export function claimTicket(path: string, line: string): { claimed: string } | { refusal: string } {
   const claimed = join(dirname(path), basename(path, ".json") + ".claimed");
   try {
+    requireRealDirectory(dirname(path)); // W-423: the tickets directory is still a real one
     renameSync(path, claimed);
   } catch (e) {
     return { refusal: `unclaimable: ${(e as Error).message}` };
@@ -210,6 +220,7 @@ export function claimTicket(path: string, line: string): { claimed: string } | {
 /** Deletes the claimed file after a successful write; a failure is a warning (the file is never read as a ticket). */
 export function dropClaim(claimed: string): string | undefined {
   try {
+    requireRealDirectory(dirname(claimed)); // W-423: the tickets directory is still a real one
     unlinkSync(claimed);
     return undefined;
   } catch (e) {

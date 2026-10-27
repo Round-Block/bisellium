@@ -3,7 +3,7 @@
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
@@ -749,7 +749,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   rmSync(dirname(notice), { recursive: true, force: true });
   mkdirSync(dirname(dirname(notice)), { recursive: true });
   writeFileSync(dirname(notice), "a file where the notice directory belongs\n");
-  held("a notice that cannot be written", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (EEXIST: file already exists, mkdir '${dirname(notice)}')`], undefined, 0);
+  held("a notice that cannot be written", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (record directory must be a real directory, not a symbolic link: ${dirname(notice)})`], undefined, 0);
   rmSync(dirname(notice), { force: true });
 
   // fix round 1: a symlinked <common>/bisellium or <common>/bisellium/notice holds, and nothing is written outside it
@@ -757,12 +757,12 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const away = scratch("w418-b1-away");
   rmSync(bis, { recursive: true, force: true });
   symlinkSync(away, bis);
-  held("a symlinked bisellium directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (${bis} is a symlink, not a directory)`], undefined, 0);
+  held("a symlinked bisellium directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (record directory must be a real directory, not a symbolic link: ${bis})`], undefined, 0);
   assert.deepEqual(readdirSync(away), [], "nothing is written outside through the bisellium link");
   rmSync(bis);
   mkdirSync(bis);
   symlinkSync(away, dirname(notice));
-  held("a symlinked notice directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (${dirname(notice)} is a symlink, not a directory)`], undefined, 0);
+  held("a symlinked notice directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (record directory must be a real directory, not a symbolic link: ${dirname(notice)})`], undefined, 0);
   assert.deepEqual(readdirSync(away), [], "nothing is written outside through the notice link");
   rmSync(bis, { recursive: true, force: true });
 
@@ -884,4 +884,57 @@ test("W-418-b2 behaviour 2: the pr rung screens the pushed head it opens or upda
   );
   assert.deepEqual([h.status, h.first], [1, `next: ${OPUS} pr held`], ran("held, exit 1", h));
   assert.deepEqual([mutating(f), w418Read(w418Notice(f, PR_NUMBER))], [["git fetch master:master", "git push --force-with-lease", "gh pr create"], `${W418_ONE}\n`], "the PR was opened and the notice left");
+});
+
+// ---------------------------------------------------------------------------
+// W-423 rows b1-b2 (studio/briefs/W-423.md): the queue binding is written, probed and removed only through real
+// directories below the Git common directory (the shared containment helper, packages/commands/src/ids.ts); a symlinked
+// level holds the pr before anything is written, pushed or removed outside it.
+// ---------------------------------------------------------------------------
+const w423Common = (w: World): string => git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+const W423_REFUSED = "record directory must be a real directory, not a symbolic link: ";
+const w423Why = (o: Out): string | undefined => o.out.split("\n").find((l) => l.startsWith("why:"));
+/** Links `<common>/bisellium` (level `bisellium`) or `<common>/bisellium/queue` (level `queue`) to `away`; the refused level's real path. */
+function w423Link(common: string, level: "bisellium" | "queue", away: string): string {
+  if (level === "queue") mkdirSync(join(common, "bisellium"));
+  const levels = level === "bisellium" ? ["bisellium"] : ["bisellium", "queue"];
+  symlinkSync(away, join(common, ...levels));
+  return join(realpathSync(common), ...levels);
+}
+
+test("W-423-b1 behaviour 1: a queue-mode pr writes its binding only through real directories below the Git common directory, and a symlinked level holds before the push", { timeout: 3_600_000 }, () => {
+  for (const level of ["bisellium", "queue"] as const) {
+    const w = queueWorld(`w423-b1-${level}`, { stdout: QUEUE_RULES });
+    const common = w423Common(w);
+    const away = scratch(`w423-b1-away-${level}`);
+    const refused = w423Link(common, level, away);
+    const o = performPr(w);
+    assert.deepEqual(mutating(w), ["git fetch master:master"], ran(`a symlinked ${level} level: no push`, o));
+    assert.deepEqual([o.status, w423Why(o)], [1, `why: cannot write the queue binding ${join(common, "bisellium", "queue", "opus%2FW-900")}: ${W423_REFUSED}${refused}`], ran(`a symlinked ${level} level: held, naming the level`, o));
+    assert.deepEqual(readdirSync(away), [], `a symlinked ${level} level: nothing is written outside the Git common directory`);
+    assert.equal(remoteBranchExists(w), false, `a symlinked ${level} level: nothing was pushed`);
+  }
+  const w = queueWorld("w423-b1-real", { stdout: QUEUE_RULES });
+  const head = tipOf(w);
+  const o = performPr(w);
+  assert.equal(o.status, 0, ran("real directories: the queue-mode pr is performed", o));
+  assert.equal(bound(w), `${head}\n`, "real directories: the binding holds the pushed head");
+});
+
+test("W-423-b2 behaviour 2: a direct-mode pr probes and removes its binding only through real directories below the Git common directory, and a symlinked level holds before the rebase", { timeout: 3_600_000 }, () => {
+  for (const level of ["bisellium", "queue"] as const) {
+    const w = queueWorld(`w423-b2-${level}`, { stdout: [] }, false);
+    const common = w423Common(w);
+    const away = scratch(`w423-b2-away-${level}`);
+    const outside = join(away, ...(level === "bisellium" ? ["queue"] : []), "opus%2FW-900");
+    mkdirSync(dirname(outside), { recursive: true });
+    writeFileSync(outside, "an outside binding\n");
+    const refused = w423Link(common, level, away);
+    const before = tipOf(w);
+    const o = performPr(w);
+    assert.deepEqual(mutating(w), ["git fetch master:master"], ran(`a symlinked ${level} level: no rebase, no push`, o));
+    assert.deepEqual([o.status, w423Why(o)], [1, `why: cannot read the queue binding: ${W423_REFUSED}${refused}`], ran(`a symlinked ${level} level: held before the rebase, naming the level`, o));
+    assert.equal(readFileSync(outside, "utf8"), "an outside binding\n", `a symlinked ${level} level: the outside binding is not removed`);
+    assert.deepEqual([tipOf(w), remoteBranchExists(w)], [before, false], `a symlinked ${level} level: no rebase and nothing pushed`);
+  }
 });

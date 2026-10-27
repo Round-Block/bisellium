@@ -9,12 +9,13 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { doneAt, EVENTS_LOG_REL } from "@bisellium/core";
 import { ruledCases } from "@bisellium/commands/brief-admission.js";
 import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { actionFacts, claimTicket, dropClaim, requireTicket, setPendingTicket, ticketLine, type StepTicket } from "@bisellium/commands/ticket.js";
 import { readSequence, reconcileFindings } from "@bisellium/commands/verdict.js";
 import * as schema from "@bisellium/schema";
 import { fakeProfile, type HarnessProfile } from "@bisellium/shim";
@@ -553,4 +554,75 @@ test("W-334-b2 malformed tokens: a digit run followed by a word character is not
   }
 
   assert.deepEqual(failed, [], "a malformed token is read as the number of its digit prefix");
+});
+
+// ---------------------------------------------------------------------------
+// W-423 row b4 (studio/briefs/W-423.md): the step-ticket store <git common dir>/bisellium/tickets is written, read,
+// claimed and deleted only through real directories below the Git common directory (the shared containment helper);
+// a symlinked level refuses each, and nothing outside it is written, read as a ticket, renamed or removed.
+// ---------------------------------------------------------------------------
+test("W-423-b4 behaviour 4: the step-ticket store writes, reads, claims and deletes only through real directories below the Git common directory, and a symlinked level refuses each", () => {
+  const t = mkdtempSync(join(tmpdir(), "w423-b4-"));
+  try {
+    const repo = join(t, "repo it's ü");
+    const studio = join(repo, "studio");
+    mkdirSync(studio, { recursive: true });
+    const g = (...args: string[]): string => {
+      const r = spawnSync("git", ["-C", repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", ...args], { encoding: "utf8" });
+      assert.equal(r.status, 0, `git ${args.join(" ")}: ${r.stderr}`);
+      return r.stdout.trim();
+    };
+    g("init", "-q");
+    writeFileSync(join(studio, "x"), "x\n");
+    g("add", ".");
+    g("commit", "-qm", "one");
+    const common = g("rev-parse", "--path-format=absolute", "--git-common-dir");
+    const real = realpathSync(common);
+    const facts = actionFacts(studio, "W-900");
+    if ("error" in facts) throw new Error(facts.error);
+    const ticket: StepTicket = { opus: "W-900", step: "red", action: "red", round: 1, actor: "builder", studio: facts.studio, head: facts.head, brief: facts.brief, at: "2026-10-27T00:00:00.000Z" };
+    const line = ticketLine(ticket);
+    const ask = { studio, manifest: { step_tickets: "required" }, opus: "W-900", verb: "red", action: "red" as const, round: 1 };
+    const run = `run: bisellium next W-900 --studio ${join(dirname(common), "studio")} --repo ${dirname(common)}`;
+    const pending = join(common, "bisellium", "tickets", "W-900.json");
+    const claimed = join(common, "bisellium", "tickets", "W-900.claimed");
+    const refused = (...levels: string[]): string => `record directory must be a real directory, not a symbolic link: ${join(real, ...levels)}`;
+
+    // a symlinked bisellium level: nothing is written, read, claimed or deleted through it
+    const away = join(t, "away");
+    mkdirSync(join(away, "tickets"), { recursive: true });
+    symlinkSync(away, join(common, "bisellium"));
+    assert.equal(setPendingTicket(studio, "W-900", ticket), `could not write ${pending}: ${refused("bisellium")}`, "a symlinked bisellium level: the ticket is not written");
+    assert.deepEqual(readdirSync(join(away, "tickets")), [], "a symlinked bisellium level: nothing is written outside the Git common directory");
+    writeFileSync(join(away, "tickets", "W-900.json"), `${line}\n`);
+    writeFileSync(join(away, "tickets", "W-900.claimed"), `${line}\n`);
+    const outsideRead = requireTicket(ask);
+    assert.deepEqual(outsideRead, { refusal: `W-900: red refused: no matching next ticket (unreadable: ${refused("bisellium")})\n${run}` }, "a symlinked bisellium level: an outside ticket is not read");
+    assert.equal(setPendingTicket(studio, "W-900", undefined), `could not delete ${pending}: ${refused("bisellium")}`, "a symlinked bisellium level: the delete refuses");
+    assert.deepEqual(claimTicket(pending, line), { refusal: `unclaimable: record directory must be a real directory, not a symbolic link: ${join(common, "bisellium", "tickets")}` }, "a symlinked bisellium level: the claim refuses");
+    assert.equal(dropClaim(claimed), `warning: could not delete ${claimed}: record directory must be a real directory, not a symbolic link: ${join(common, "bisellium", "tickets")}`, "a symlinked bisellium level: the claimed file is not deleted");
+    assert.deepEqual(readdirSync(join(away, "tickets")).sort(), ["W-900.claimed", "W-900.json"], "a symlinked bisellium level: the outside files are neither renamed nor removed");
+
+    // a symlinked tickets level
+    rmSync(join(common, "bisellium"));
+    mkdirSync(join(common, "bisellium"));
+    symlinkSync(join(away, "tickets"), join(common, "bisellium", "tickets"));
+    assert.equal(setPendingTicket(studio, "W-900", ticket), `could not write ${pending}: ${refused("bisellium", "tickets")}`, "a symlinked tickets level: the ticket is not written");
+    assert.deepEqual(requireTicket(ask), { refusal: `W-900: red refused: no matching next ticket (unreadable: ${refused("bisellium", "tickets")})\n${run}` }, "a symlinked tickets level: an outside ticket is not read");
+    assert.deepEqual(readdirSync(join(away, "tickets")).sort(), ["W-900.claimed", "W-900.json"], "a symlinked tickets level: the outside files are untouched");
+
+    // real directories: written, read, claimed and deleted as before
+    rmSync(join(common, "bisellium"), { recursive: true });
+    assert.equal(setPendingTicket(studio, "W-900", ticket), undefined, "real directories: the ticket is written");
+    const read = requireTicket(ask);
+    assert.deepEqual("line" in read ? [read.line, read.path] : read, [line, join(real, "bisellium", "tickets", "W-900.json")], "real directories: the ticket is read");
+    const claim = "line" in read ? claimTicket(read.path, read.line) : read;
+    assert.deepEqual(claim, { claimed: join(real, "bisellium", "tickets", "W-900.claimed") }, "real directories: the ticket is claimed");
+    assert.equal(dropClaim(join(real, "bisellium", "tickets", "W-900.claimed")), undefined, "real directories: the claimed file is deleted");
+    assert.equal(setPendingTicket(studio, "W-900", undefined), undefined, "real directories: a delete with no ticket is quiet");
+    assert.deepEqual(readdirSync(join(real, "bisellium", "tickets")), [], "real directories: nothing is left");
+    assert.equal(existsSync(join(away, "tickets", "W-900.json")), true, "the outside ticket was never touched");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
 });
