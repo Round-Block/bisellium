@@ -47,8 +47,8 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, one UI (Patron 2026-10-24, narrowing D-111's two each), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-423 — cause fix for security×symlink-parent-write-escape: one shared helper refuses a symlinked folder (D-076 D high; W-418 r1; greenlit 10-26; spec r4 failed, split per D-061 §4: architect cuts to round 5)
-2. W-425 — W-423's remainder: the containment census classifies stream constructors (WriteStream, createWriteStream) as path writes (D-076 D high; ci/W-423-spec-4.log #1; greenlit 10-27)
+1. W-425 — W-423's remainder: the containment census classifies stream constructors (WriteStream, createWriteStream) as path writes (D-076 D high; ci/W-423-spec-4.log #1; greenlit 10-27)
+2. W-426 — the ui-lead and ui-spec-review prompts ask whether a DIRECTION rule makes sense on the screen and who ruled it, not only conformance (high, Patron 10-27; touches studio/prompts/: Patron merges)
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
 4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
 5. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
