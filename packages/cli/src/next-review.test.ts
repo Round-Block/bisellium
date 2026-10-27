@@ -2082,3 +2082,31 @@ test("W-428-b1 behaviour 1: a failed round whose blockers are all evidence findi
   reviewNamed(again, 2, "a changed red: review round 2");
   assert.equal(again.kv.get("why"), EVIDENCE_FIX(2), ran("a changed red: why", again));
 });
+
+test("W-428-b2 behaviour 2: only a commit adding or changing a path under ci/reds/<id>/ is an evidence fix; another record, another opus's red or a deleted red is not, and a failed read holds", { timeout: 1_800_000 }, () => {
+  const w = world("w428-b2", "build");
+  keepRed(w, "spare.log");
+  commit(w.wt, `studio(${OPUS}): a spare red, before the review`);
+  record167(w, [found(evidenceBlocker())]);
+  handoffAt(w, "wt", T.handoffFresh);
+  buildFix(n167(w), "no commit after the log: build, phase fix");
+  handoffAt(w, "wt", "2026-10-02T09:30:00.000Z");
+  buildFix(n167(w), "a commit of the opus record only: build, phase fix");
+  keepRed(w, "fix1-b1.log", "", "W-901");
+  commit(w.wt, `studio(${OPUS}): another opus's red`);
+  buildFix(n167(w), "a commit of another opus's red: build, phase fix");
+  rmSync(join(w.wtStudio, redRel("spare.log")));
+  commit(w.wt, `studio(${OPUS}): the spare red deleted`);
+  buildFix(n167(w), "a commit deleting a red: build, phase fix");
+  // W-425's shape: the evidence commit, then a handoff commit after it
+  keepRed(w, "fix1-b1.log");
+  commit(w.wt, `studio(${OPUS}): fix round 1 red`);
+  handoffAt(w, "wt", "2026-10-02T09:45:00.000Z");
+  const o = n167(w);
+  reviewNamed(o, 2, "an evidence commit, then a handoff: review round 2");
+  assert.equal(o.kv.get("why"), EVIDENCE_FIX(1), ran("an evidence commit, then a handoff: why", o));
+  // a failed git read of the evidence commits holds, never counts
+  const h = n167(w, { GIT_STUB_REAL: failingGit("w428-b2-git", ["--diff-filter=AM"]) });
+  expectStep(h, "build", "held", "a failed read of the evidence commits: held");
+  assert.equal(h.kv.get("why"), `git cannot list the evidence commits on opus/${OPUS} after ci/${OPUS}-review-1.log, so the evidence commits after it cannot be counted (W-428)`, ran("a failed read of the evidence commits: why", h));
+});
