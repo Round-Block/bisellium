@@ -1,0 +1,25 @@
+# opus: W-425
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17ce0-a355-7680-9a38-4144900c9c7f
+# outcome: passed
+# at: 2026-10-27T23:24:57.515Z
+# tree: tree:965798285e8aed10fc1db0a9459598494a66d4b7
+# brief: briefs/W-425.md blob:31938d6ce5b7b7870a9987230118d9dc5f433142
+# ticket: {"opus":"W-425","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-425/studio","head":"938bbbc5d2d8558674bbccd8f7ad159a4e3d1d5c","brief":"31938d6ce5b7b7870a9987230118d9dc5f433142","at":"2026-10-27T23:24:53.508Z"}
+
+## Findings
+1. advisory — brief:77 [severity: S2] The valid-domain cell classifies `{ __proto__: { flag: "w+" } }` as a read because it has no `flag` or `flags` member of its own, contradicting behaviour 4 and `w425WriteFlag`. Replace brief:77’s Valid domain text with: “recognises no options, an encoding string, a callback, and an object literal with no spread or computed key, whose every `flag` or `flags` member is a plain property assignment of literal `r`, `rs` or `sr` and whose every `__proto__` member is a plain property assignment of literal `null`, as a read; every other form is judged a write”; add `W-425-b4` to its pins. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/containment.test.ts W-425-b4
+
+2. advisory — brief:102 [severity: S4] The cited census evidence covers behaviours 1–3 and a 69-test prototype tip, not newly numbered behaviour 4. Replace brief:102 with: “For behaviours 1–3, each red and later stage has the existing replay and whole-census evidence (`red-accept.out`, `census-red-b<k>.out`, `census-stage<k>.out`: 69 tests at the prototype tip). For behaviour 4, the builder records the canonical `04.log`, a whole-file run on the revert where only `W-425-b4` fails, and a whole-file passing run after reapplication.” [class: spec×stale-citation-residue] — check: /home/edckt/.bisellium-evidence/W-425-spec/census-red-b1.out through census-stage3.out
+
+3. advisory — brief:129 [severity: S4] The size statement still says three behaviours after behaviour 4 was added. Replace brief:129 with: “Size: four behaviours in one test file: 3 points, as filed. No code-owned path in the diff.” [class: spec×stale-citation-residue] — check: none: numbered-behaviour count
+
+## Earlier findings
+- ci/W-425-spec-4.log #1: closed — brief:96 numbers fix 1 as behaviour 4, brief:98 gives its revert red, and brief:103 requires its round-4 `next` ticket and canonical `04.log` to be committed before reapplication; the r5 probes show b1–b3 passing and b4 failing on that revert.
+
+## Verdict
+The round-4 ticket blocker is closed; the remaining boundary and citation defects are advisory.
+VERDICT: PASS

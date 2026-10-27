@@ -1,0 +1,22 @@
+# opus: W-425
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T23:15:04.930Z
+# tree: tree:965798285e8aed10fc1db0a9459598494a66d4b7
+# brief: briefs/W-425.md blob:226dcb554ad3a459e75b614a9e82aae21f0687be
+# ticket: {"opus":"W-425","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-425/studio","head":"f7238700478e79034a4e93c4c4c93dd731cb82e4","brief":"226dcb554ad3a459e75b614a9e82aae21f0687be","at":"2026-10-27T23:15:04.242Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-425-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — the class loop of ci/W-425-review-2.log and ci/W-425-review-3.log (class review×evidence-backfilled-or-absent) is an evidence blocker inside the stated domain, not a rule form outside it: both reviews say the behaviour fix is correct, and only studio/ci/reds/W-425/fix1-b4.log:3 (a b4 red replayed after review r2, not recorded before the fix, brief:98) fails; the brief is amended in Acceptance only (a fix round's red is recorded where the fix is absent, before the fix commit; a replayed or hybrid red is not evidence), and its design, Input domain and Limits do not change — check: ci/W-425-review-3.log #1, studio/briefs/W-425.md blob 226dcb55 (opus/W-425 6eb1add8)
+2. advisory — the remedy is a builder fix round (Patron ruling 10-28, no acceptance of the replay): commit a revert of the fix's implementation on top of opus/W-425, record the b4 red there with `bisellium red` under its own `next` ticket, then re-apply the fix; the red log replaces the replayed one as the recorded pre-fix red — check: studio/ci/reds/W-425/
+3. advisory — the brief's limits stand as signed in round 1: FileReadStream, FileWriteStream and Utf8Stream stay unclassified (fail closed), and an unprovable read flag is over-refused as a write — check: brief Limits, Input domain row 2
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072, D-085 C), the brief at `studio/briefs/W-425.md` blob 226dcb55 as amended on opus/W-425 at 6eb1add8 (spec round 3); the standing review blocker is evidence, fixed by a builder round that records a genuine b4 red.

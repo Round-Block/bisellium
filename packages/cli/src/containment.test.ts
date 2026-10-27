@@ -271,6 +271,8 @@ interface Site {
   key: string;
   rel: string;
   fn: string;
+  /** W-425: a read (W425_FLAG_READS) whose options may name a write flag: the rule judges it a write. */
+  writeFlag?: true;
 }
 
 interface CDScan {
@@ -286,8 +288,30 @@ interface CDScan {
   outOfDomain: string[];
 }
 
-/** W-423: the fs module's names that are values, not functions: a use of one is not a call to judge. */
-const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "Stats", "Dirent", "Dir", "ReadStream", "WriteStream"]);
+/** W-423: the fs module's names that are values opening no path: a use of one is not a call to judge. W-425: the stream classes
+ * ReadStream and WriteStream open a path when constructed, so they are not here: a construction is a direct site, and any other
+ * use is an `fsUses` finding. */
+const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "Stats", "Dirent", "Dir"]);
+/** W-425: the read-only names whose options take a `flag` or `flags`, and node's read flags (O_RDONLY, with or without O_SYNC). */
+const W425_FLAG_READS = new Set(["readFileSync", "readFile", "createReadStream", "ReadStream"]);
+const W425_READ_FLAGS = new Set(["r", "rs", "sr"]);
+/** W-425: whether a read's options (its second argument) may name a write flag. It is a read only when no options, an
+ * encoding string or a callback is passed, or an object literal whose every `flag` or `flags` is a literal read flag and which has
+ * no `__proto__` key other than `__proto__: null` (an inherited flag), spread or computed key; a getter, setter, method or shorthand named `flag` or `flags`, and
+ * any other form (a variable, a call, a numeric or non-literal flag) fails closed as a write. A property on any other name is ignored. */
+function w425WriteFlag(args: readonly ts.Expression[]): boolean {
+  if (args.slice(0, 2).some(ts.isSpreadElement)) return true;
+  const o = args[1];
+  if (o === undefined || ts.isStringLiteralLike(o) || ts.isArrowFunction(o) || ts.isFunctionExpression(o)) return false;
+  if (!ts.isObjectLiteralExpression(o)) return true;
+  return o.properties.some((p) => {
+    if (ts.isSpreadAssignment(p) || ts.isComputedPropertyName(p.name)) return true;
+    const key = ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) ? p.name.text : undefined;
+    if (key === "__proto__") return !(ts.isPropertyAssignment(p) && p.initializer.kind === ts.SyntaxKind.NullKeyword);
+    if (key !== "flag" && key !== "flags") return false;
+    return !(ts.isPropertyAssignment(p) && ts.isStringLiteralLike(p.initializer) && W425_READ_FLAGS.has(p.initializer.text));
+  });
+}
 const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "existingRealDirectory", "readContainedRegularFile", "createNextRecord"]);
 
 // What a name can be bound to: the fs module, `Date`, the global object (whose `.Date` is `Date`), or node:module.
@@ -440,7 +464,10 @@ function scanCD(root: string, rels: string[]): CDScan {
         const type = ts.isTypeNode(top.parent) || ts.isQualifiedName(top.parent);
         if (fsName !== undefined && !type) {
           const fn = enclosingFunctionName(n);
-          if (ts.isCallExpression(top.parent) && top.parent.expression === top) out.fs.push({ key: `${rel}:${fn}:${fsName}#${nth(`F:${fn}:${fsName}`)}`, rel, fn });
+          // W-425: a construction (`new WriteStream(p)`) is a direct site, as a call is; a value opening no path stays exempt
+          const direct = (ts.isCallExpression(top.parent) || (ts.isNewExpression(top.parent) && !W423_FS_VALUES.has(fsName))) && top.parent.expression === top;
+          const writeFlag = direct && W425_FLAG_READS.has(fsName) && w425WriteFlag(top.parent.arguments ?? []);
+          if (direct) out.fs.push({ key: `${rel}:${fn}:${fsName}#${nth(`F:${fn}:${fsName}`)}`, rel, fn, ...(writeFlag ? { writeFlag: true as const } : {}) });
           else if (!RAW_FS.has(fsName) && !W423_FS_VALUES.has(fsName)) out.fsUses.push(`${rel}:${fn}: ${fsName} is used other than as a direct call`);
         }
         if (fnRef !== undefined && !type) {
@@ -1370,10 +1397,12 @@ process.exitCode = failed ? 1 : 0;
 // here, and so does a limit that no longer names such a write.
 // ---------------------------------------------------------------------------
 const W423_GOVERNED = ["packages/cli/src/", "packages/commands/src/"];
-/** The fs functions that change no file system name or content: a read, a stat, a listing, a check, a close. */
-const W423_READ_ONLY = new Set(["readFileSync", "readFile", "createReadStream", "existsSync", "exists", "statSync", "stat", "lstatSync", "lstat", "fstatSync", "fstat", "statfsSync", "statfs", "readdirSync", "readdir", "opendirSync", "opendir", "realpathSync", "realpath", "readlinkSync", "readlink", "accessSync", "access", "readSync", "read", "readvSync", "readv", "closeSync", "close", "fsyncSync", "fsync", "fdatasyncSync", "fdatasync", "watch", "watchFile", "unwatchFile", "glob", "globSync"]);
-/** The fs functions that can create, change, rename or remove a name or its content (an open, with a write flag). */
-const W423_WRITES = new Set(["writeFileSync", "writeFile", "appendFileSync", "appendFile", "createWriteStream", "writeSync", "write", "writevSync", "writev", "openSync", "open", "openAsBlob", "mkdirSync", "mkdir", "mkdtempSync", "mkdtemp", "rmSync", "rm", "rmdirSync", "rmdir", "unlinkSync", "unlink", "renameSync", "rename", "copyFileSync", "copyFile", "cpSync", "cp", "linkSync", "link", "symlinkSync", "symlink", "truncateSync", "truncate", "ftruncateSync", "ftruncate", "chmodSync", "chmod", "lchmodSync", "lchmod", "fchmodSync", "fchmod", "chownSync", "chown", "lchownSync", "lchown", "fchownSync", "fchown", "utimesSync", "utimes", "lutimesSync", "lutimes", "futimesSync", "futimes"]);
+/** The fs functions that change no file system name or content: a read, a stat, a listing, a check, a close (W-425: and the
+ * ReadStream class, constructed). */
+const W423_READ_ONLY = new Set(["readFileSync", "readFile", "createReadStream", "ReadStream", "existsSync", "exists", "statSync", "stat", "lstatSync", "lstat", "fstatSync", "fstat", "statfsSync", "statfs", "readdirSync", "readdir", "opendirSync", "opendir", "realpathSync", "realpath", "readlinkSync", "readlink", "accessSync", "access", "readSync", "read", "readvSync", "readv", "closeSync", "close", "fsyncSync", "fsync", "fdatasyncSync", "fdatasync", "watch", "watchFile", "unwatchFile", "glob", "globSync"]);
+/** The fs functions that can create, change, rename or remove a name or its content (an open, with a write flag; W-425: and
+ * the WriteStream class, constructed). */
+const W423_WRITES = new Set(["writeFileSync", "writeFile", "appendFileSync", "appendFile", "createWriteStream", "WriteStream", "writeSync", "write", "writevSync", "writev", "openSync", "open", "openAsBlob", "mkdirSync", "mkdir", "mkdtempSync", "mkdtemp", "rmSync", "rm", "rmdirSync", "rmdir", "unlinkSync", "unlink", "renameSync", "rename", "copyFileSync", "copyFile", "cpSync", "cp", "linkSync", "link", "symlinkSync", "symlink", "truncateSync", "truncate", "ftruncateSync", "ftruncate", "chmodSync", "chmod", "lchmodSync", "lchmod", "fchmodSync", "fchmod", "chownSync", "chown", "lchownSync", "lchown", "fchownSync", "fchown", "utimesSync", "utimes", "lutimesSync", "lutimes", "futimesSync", "futimes"]);
 const w423Name = (s: Site): string => s.key.split(":")[2]!.replace(/#\d+$/, "");
 const w423Governed = (s: Site): boolean => W423_GOVERNED.some((g) => s.key.startsWith(g));
 const W423_LIMIT = {
@@ -1435,10 +1464,11 @@ const WRITE_LIMITS: readonly (readonly [key: string, limit: keyof typeof W423_LI
 function w423Unclassified(sites: readonly Site[]): string[] {
   return sites.filter((s) => w423Governed(s) && !W423_READ_ONLY.has(w423Name(s)) && !W423_WRITES.has(w423Name(s))).map((s) => s.key);
 }
-/** The governed direct writes neither in a containment-helper caller, nor in an approved helper's body, nor listed. */
+/** The governed direct writes (W-425: a read whose options may name a write flag included) neither in a containment-helper
+ * caller, nor in an approved helper's body, nor listed. */
 function w423Unrouted(sites: readonly Site[], callers: ReadonlySet<string>, listed: readonly string[]): string[] {
   return sites
-    .filter((s) => w423Governed(s) && W423_WRITES.has(w423Name(s)))
+    .filter((s) => w423Governed(s) && (W423_WRITES.has(w423Name(s)) || s.writeFlag === true))
     .filter((s) => !callers.has(`${s.rel}:${s.fn}`) && !APPROVED_HELPERS.has(`${s.rel}:${s.fn}`))
     .map((s) => s.key)
     .filter((k) => !listed.includes(k));
@@ -1480,4 +1510,110 @@ export const g = lutimesSync;
   assert.deepEqual(w423Unrouted([...scanCD_.fs, ...added], scanCD_.helperCallers, listed), ["packages/cli/src/integrate.ts:newBinding:writeFileSync#1", "packages/commands/src/ticket.ts:newTicket:openSync#1"], "a new governed direct write fails; a read and an ungoverned file are not judged");
   assert.deepEqual(w423Unrouted([...scanCD_.fs, ...added], new Set([...scanCD_.helperCallers, "packages/cli/src/integrate.ts:newBinding", "packages/commands/src/ticket.ts:newTicket"]), listed), [], "a new governed direct write in a function that calls the helper passes");
   assert.deepEqual(w423Stale(scanCD_.fs, scanCD_.helperCallers, [...listed, "packages/cli/src/integrate.ts:gone:writeFileSync#1"]), ["packages/cli/src/integrate.ts:gone:writeFileSync#1"], "a limit naming no such write is stale");
+});
+
+// ---------------------------------------------------------------------------
+// W-425 (studio/briefs/W-425.md): W-423's remainder. A stream class constructed on a path is a direct fs site (WriteStream a
+// write, ReadStream a read), any other use of one fails, and a read whose options may name a write flag is judged a write.
+// Each row scans one governed fixture file with the real scanCD and judges it with W-423-b5's own rule.
+// ---------------------------------------------------------------------------
+function w425Scan(src: string): CDScan {
+  const dir = mkdtempSync(join(tmpdir(), "w425-census-"));
+  try {
+    const rel = "packages/cli/src/w425-fixture.ts";
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    writeFileSync(join(dir, rel), src);
+    const scan = scanCD(dir, [rel]);
+    if (scan.outOfDomain.length > 0) throw new Error(`w425 fixture is out of domain: ${scan.outOfDomain.join("; ")}`);
+    return scan;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+const w425Key = (s: string): string => `packages/cli/src/w425-fixture.ts:${s}`;
+
+test("W-425-b1 behaviour 1: a stream class constructed on a path is a direct fs site, a WriteStream a write, and any other use of one fails", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { ReadStream, WriteStream } from "node:fs";
+import * as fs from "node:fs";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
+export function w(p: string) { return new WriteStream(p); }
+export function m(p: string) { return new fs.WriteStream(p, { flags: "a" }); }
+export function r(p: string) { return new ReadStream(p); }
+export function h(root: string) { return new WriteStream(ensureRealDirectory(root, "notice") + "/x"); }
+export function t(s: WriteStream): ReadStream | undefined { void s; return undefined; }
+export const keep = fs.WriteStream;
+export function i(x: unknown) { return x instanceof ReadStream; }
+`);
+  assert.deepEqual([scan.fs.map((x) => x.key), scan.fsUses], [[w425Key("w:WriteStream#1"), w425Key("m:WriteStream#1"), w425Key("r:ReadStream#1"), w425Key("h:WriteStream#1")], [w425Key("<module>: WriteStream is used other than as a direct call"), w425Key("i: ReadStream is used other than as a direct call")]], "a stream class constructed on a path is a direct fs site, and any other use of one fails");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "both stream classes are classified");
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), [w425Key("w:WriteStream#1"), w425Key("m:WriteStream#1")], "a governed WriteStream outside the helper fails; a ReadStream with no flags and one in a helper caller do not");
+});
+
+test("W-425-b2 behaviour 2: a read called with a literal write flag is a write, and a read flag, an encoding or no options stays a read", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { createReadStream, readFileSync, ReadStream } from "node:fs";
+import * as fsp from "node:fs/promises";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
+export function a(p: string) { return readFileSync(p, { flag: "w+" }); }
+export function b(p: string) { return createReadStream(p, { flags: "a" }); }
+export function c(p: string) { return new ReadStream(p, { "flags": "r+" }); }
+export async function d(p: string) { return fsp.readFile(p, { encoding: "utf8", flag: \`wx\` }); }
+export function e(p: string) { return [readFileSync(p), readFileSync(p, "utf8"), readFileSync(p, { encoding: "utf8", flag: "r" }), createReadStream(p, { flags: "rs" }), new ReadStream(p, { flags: "sr" })]; }
+export function h(root: string) { return readFileSync(ensureRealDirectory(root, "notice") + "/x", { flag: "a+" }); }
+`);
+  assert.deepEqual(scan.fs.map((x) => x.key), ["a:readFileSync#1", "b:createReadStream#1", "c:ReadStream#1", "d:readFile#1", "e:readFileSync#1", "e:readFileSync#2", "e:readFileSync#3", "e:createReadStream#1", "e:ReadStream#1", "h:readFileSync#1"].map(w425Key), "every direct read in the fixture is a site, the accepted ones included");
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), [w425Key("a:readFileSync#1"), w425Key("b:createReadStream#1"), w425Key("c:ReadStream#1"), w425Key("d:readFile#1")], "a read with a literal write flag outside the helper fails; a read flag, an encoding, no options or a helper caller does not");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
+});
+
+test("W-425-b3 behaviour 3: a read whose options the rule cannot read is judged a write, failing closed", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { constants, createReadStream, readFile, readFileSync } from "node:fs";
+declare const opts: { flag?: string };
+declare const mode: string;
+declare const args: [string, { flag: string }];
+export function a(p: string) { return readFileSync(p, opts); }
+export function b(p: string, flag: string) { return readFileSync(p, { flag }); }
+export function c(p: string) { return readFileSync(p, { flag: mode }); }
+export function d(p: string) { return readFileSync(p, { ...opts }); }
+export function e(p: string) { return readFileSync(p, { ["flag"]: "r" }); }
+export function f(p: string) { return createReadStream(p, { flags: constants.O_RDWR }); }
+export function g(p: string) { return readFileSync(p, { flag: 0 }); }
+export function h() { return readFileSync(...args); }
+export function k(p: string, cb: (e: unknown) => void) { readFile(p, (err) => cb(err)); return readFileSync(p, { encoding: "utf8" }); }
+`);
+  assert.deepEqual(scan.fs.map((x) => x.key), ["a:readFileSync#1", "b:readFileSync#1", "c:readFileSync#1", "d:readFileSync#1", "e:readFileSync#1", "f:createReadStream#1", "g:readFileSync#1", "h:readFileSync#1", "k:readFile#1", "k:readFileSync#1"].map(w425Key), "every direct read in the fixture is a site, the accepted callback and encoding ones included");
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), ["a:readFileSync#1", "b:readFileSync#1", "c:readFileSync#1", "d:readFileSync#1", "e:readFileSync#1", "f:createReadStream#1", "g:readFileSync#1", "h:readFileSync#1"].map(w425Key), "a variable, shorthand, non-literal, spread, computed or numeric flag outside the helper fails; a callback or an encoding does not");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
+});
+
+test("W-425-b4 fix 1: an inherited or non-plain options property counts as a write", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { createReadStream, ReadStream, readFile, readFileSync } from "node:fs";
+declare const x: object;
+export function a(p: string) { return readFileSync(p, { __proto__: { flag: "w+" } }); }
+export function b(p: string) { return readFileSync(p, { "__proto__": { flag: "w+" } }); }
+export function c(p: string) { return readFileSync(p, { ["__proto__"]: { flag: "w+" } }); }
+export function d(p: string) { return readFileSync(p, { get flag() { return "w+"; } }); }
+export function e(p: string) { return readFileSync(p, { flag() { return "r"; } }); }
+export function f(p: string, flag: string) { return readFileSync(p, { flag }); }
+export function g(p: string) { return readFileSync(p, { 0: "x", flag: "r" }); }
+export function h(p: string) { return readFileSync(p, { get encoding() { return "utf8" as const; } }); }
+export function k(p: string) { return readFileSync(p, { encoding() { return "utf8"; } }); }
+export function m(p: string) { return readFileSync(p, { __proto__: null, flag: "r" }); }
+export function n(p: string) { return readFile(p, { "__proto__": null, flag: "r" }, () => undefined); }
+export function o(p: string) { return createReadStream(p, { __proto__: null, flags: "r" }); }
+export function q(p: string) { return new ReadStream(p, { __proto__: null, flags: "rs" }); }
+export function r(p: string) { return readFileSync(p, { __proto__: {}, flag: "r" }); }
+export function t(p: string) { return readFileSync(p, { __proto__: x, flag: "r" }); }
+`);
+  assert.deepEqual(scan.fs.map((x) => x.key), ["a", "b", "c", "d", "e", "f", "g", "h", "k", "m", "n", "o", "q", "r", "t"].map((f) => w425Key(`${f}:${{ n: "readFile", o: "createReadStream", q: "ReadStream" }[f] ?? "readFileSync"}#1`)), "every direct read in the fixture is a site, the accepted controls included");
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), "abcdefrt".split("").map((f) => w425Key(`${f}:readFileSync#1`)), "an inherited __proto__ flag (any value but null), or a getter, method or shorthand flag outside the helper fails; a numeric key, a getter or a method on another name, or a null __proto__, does not");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
+});
+
+test("W-425-b5 fix 1: a malformed fixture is rejected, not scanned", () => {
+  assert.throws(() => w425Scan("export const x = ;\n"), /out of domain/, "an unparseable source is rejected");
+  assert.throws(() => w425Scan(`import { readFileSync } from "node:fs";\nexport const r = require("node:fs");\nexport const s = readFileSync("x");\n`), /out of domain/, "an fs binding the scan cannot follow is rejected");
 });

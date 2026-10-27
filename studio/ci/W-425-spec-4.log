@@ -1,0 +1,20 @@
+# opus: W-425
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17ce0-a355-7680-9a38-4144900c9c7f
+# outcome: failed
+# at: 2026-10-27T23:17:42.570Z
+# tree: tree:965798285e8aed10fc1db0a9459598494a66d4b7
+# brief: briefs/W-425.md blob:226dcb554ad3a459e75b614a9e82aae21f0687be
+# ticket: {"opus":"W-425","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-425/studio","head":"f7238700478e79034a4e93c4c4c93dd731cb82e4","brief":"226dcb554ad3a459e75b614a9e82aae21f0687be","at":"2026-10-27T23:17:39.010Z"}
+
+## Findings
+1. blocking — brief:99 [severity: S1] [design: changes] The brief declares only three numbered behaviours, so `next` never issues a round-4 red ticket; with `step_tickets: required`, `bisellium red --behaviour 4` therefore refuses, making the promised genuine b4 red impossible. Replace brief:99 with: “Add fix 1 as numbered behaviour 4 with its red command; after committing the implementation revert, run `bisellium next W-425` to issue its round-4 ticket, record canonical `ci/reds/W-425/04.log`, commit that log before reapplying the fix, and reject replayed or hybrid evidence.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next.ts and packages/commands/src/lifecycle.ts
+
+## Earlier findings
+
+## Verdict
+The amended evidence remedy cannot execute under the studio’s required ticket mechanism.
+VERDICT: FAIL

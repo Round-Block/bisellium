@@ -1,0 +1,23 @@
+# opus: W-425
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T23:22:17.486Z
+# tree: tree:965798285e8aed10fc1db0a9459598494a66d4b7
+# brief: briefs/W-425.md blob:31938d6ce5b7b7870a9987230118d9dc5f433142
+# ticket: {"opus":"W-425","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-425/studio","head":"938bbbc5d2d8558674bbccd8f7ad159a4e3d1d5c","brief":"31938d6ce5b7b7870a9987230118d9dc5f433142","at":"2026-10-27T23:22:16.838Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-425-spec/promise-ledger-r5.md
+
+## Findings
+
+1. advisory — ci/W-425-spec-4.log #1 holds and is taken: `next`'s reds rung counts the brief's numbered behaviours (`countBehaviours`, packages/cli/src/next.ts:1134) and tickets `red` only for a missing `ci/reds/W-425/<nn>.log` up to that count (next.ts:1137-1152, the ticket at next.ts:1672), and `red` requires the ticket for its behaviour (`requireTicket` with `round: behaviour`, packages/commands/src/lifecycle.ts:1115) and writes `ci/reds/W-425/<nn>.log` (lifecycle.ts:1160); with three behaviours no round-4 ticket can exist. Revision 3 adds fix 1 as numbered behaviour 4 (row `W-425-b4`) with its red command, and replaces brief:99 with the reviewer's order: commit the revert, run `bisellium next W-425` for the round-4 ticket, record the canonical `studio/ci/reds/W-425/04.log`, commit it before re-applying the fix; a replayed or hybrid red is rejected and `fix1-b4.log` is superseded — check: studio/briefs/W-425.md behaviour 4 and Acceptance, r5/admission.out
+2. advisory — the revert is prototyped: restoring only `w425WriteFlag` and its doc comment to eb4465ce's text (r5/revert-probe.py, r5/revert-probe.diff) leaves rows b1 to b3 and b5 passing, so `red`'s prerequisite commands pass, and fails `W-425-b4` by ERR_ASSERTION at its `w423Unrouted` assertion (listed c, d, e, f; missing a, b, r, t) — check: r5/probe-b1.out to r5/probe-b5.out
+3. advisory — the remedy is a builder fix round (Patron ruling 10-28, no acceptance of the replay): the `W-425-b5` row (w425Scan's rejection, review r1 #3) stays test hardening with no numbered behaviour and no red, a stated limit; the signed prototype (round 1, three behaviours) is not re-staged, so the reds rung is not replayed for behaviour 4 — check: brief Behaviours to test intro, studio/ci/reds/W-425/
+4. advisory — the brief's limits stand as signed in round 1: FileReadStream, FileWriteStream and Utf8Stream stay unclassified (fail closed), and an unprovable read flag is over-refused as a write — check: brief Limits, Input domain row 2
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-425.md` in the opus worktree over 938bbbc5 (spec round 5): fix 1 is numbered behaviour 4 with its red command, and its red is recorded at a revert commit under its own round-4 ticket.

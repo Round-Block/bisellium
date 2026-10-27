@@ -1,0 +1,21 @@
+# opus: W-425
+# phase: build
+# round: 4
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a17d7c-6718-7f02-a7c2-9596fc9f48b6
+# outcome: passed
+# at: 2026-10-27T23:27:40.299Z
+# tree: tree:965798285e8aed10fc1db0a9459598494a66d4b7
+# brief: briefs/W-425.md blob:31938d6ce5b7b7870a9987230118d9dc5f433142
+# ticket: {"opus":"W-425","step":"review","action":"verdict-build","round":4,"actor":"censor","studio":".worktrees/W-425/studio","head":"61a90ab03154550986b3c215142a8e8ccebfb737","brief":"31938d6ce5b7b7870a9987230118d9dc5f433142","at":"2026-10-27T23:27:11.929Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-425-review-3.log #1: closed — studio/ci/reds/W-425/04.log:1 records the canonical behaviour-4 red, and line 7 ties it to the round-4 ticket and revert commit before the fix was re-applied; brief:103 expressly supersedes the hybrid replay.
+
+## Verdict
+The canonical pre-reapplication red closes the carried evidence blocker, with no new blocking defect in this delta.
+VERDICT: PASS

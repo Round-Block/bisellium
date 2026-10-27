@@ -1,0 +1,88 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-425-b4\s --import tsx packages/cli/src/containment.test.ts
+# exit: 1
+# at: 2026-10-27T23:25:56.587Z
+# sella: builder.W-425
+# tree: tree:fd8608506efa2f0b9ee60cd8011d91cb41a34ac1
+# ticket: {"opus":"W-425","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-425/studio","head":"513f0b9c7051de16ca1bf5f4b936729458194bbc","brief":"31938d6ce5b7b7870a9987230118d9dc5f433142","at":"2026-10-27T23:25:52.449Z"}
+
+PASS  source set is non-empty                                                145
+PASS  inventory A: pinned list length matches the scan's own count           pinned=22 scan=22
+PASS  inventory A: every safeItemPath call site is pinned, none missing      
+PASS  inventory A: scan order matches the pinned order exactly               {"scanA":["packages/cli/src/next.ts:runNext:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1","packages/cli/src/retro.ts:readOpus:opera#1","packages/cli/src/retro.ts:draftOpusRetro:acta#1","packages/cli/src/retro.ts:draftOpusRetro:opera#1","packages/commands/src/lifecycle.ts:runReady:opera#1","packages/commands/src/lifecycle.ts:runDone:opera#1","packages/commands/src/lifecycle.ts:runReview:opera#1","packages/commands/src/lifecycle.ts:runHalt:opera#1","packages/commands/src/lifecycle.ts:runHalt:decisions#1","packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1","packages/commands/src/lifecycle.ts:runWaive:opera#1","packages/commands/src/lifecycle.ts:runAmend:opera#1","packages/commands/src/verdict.ts:readSequence:ci#1","packages/commands/src/verdict.ts:runVerdict:opera#1","packages/commands/src/verify.ts:runVerify:opera#1","packages/commands/src/writes.ts:runHandoff:opera#1","packages/commands/src/writes.ts:runEmit:opera#1","packages/commands/src/writes.ts:runAnswer:petitiones#1","packages/commands/src/writes.ts:runAnswer:opera#1","packages/commands/src/writes.ts:runGreenlight:opera#1"],"PINNED_A":["packages/cli/src/next.ts:runNext:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1","packages/cli/src/retro.ts:readOpus:opera#1","packages/cli/src/retro.ts:draftOpusRetro:acta#1","packages/cli/src/retro.ts:draftOpusRetro:opera#1","packages/commands/src/lifecycle.ts:runReady:opera#1","packages/commands/src/lifecycle.ts:runDone:opera#1","packages/commands/src/lifecycle.ts:runReview:opera#1","packages/commands/src/lifecycle.ts:runHalt:opera#1","packages/commands/src/lifecycle.ts:runHalt:decisions#1","packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1","packages/commands/src/lifecycle.ts:runWaive:opera#1","packages/commands/src/lifecycle.ts:runAmend:opera#1","packages/commands/src/verdict.ts:readSequence:ci#1","packages/commands/src/verdict.ts:runVerdict:opera#1","packages/commands/src/verify.ts:runVerify:opera#1","packages/commands/src/writes.ts:runHandoff:opera#1","packages/commands/src/writes.ts:runEmit:opera#1","packages/commands/src/writes.ts:runAnswer:petitiones#1","packages/commands/src/writes.ts:runAnswer:opera#1","packages/commands/src/writes.ts:runGreenlight:opera#1"]}
+PASS  inventory B: pinned list length matches the scan's own count           pinned=53 scan=53
+PASS  inventory B: every raw id-to-path join is pinned, none missing         
+PASS  inventory B: scan order matches the pinned order exactly               {"scanB":["apps/server/src/store.ts:opus#1","apps/web/tests-serve/answer.spec.ts:<module>#1","apps/web/tests-serve/board.spec.ts:setOpusState#1","apps/web/tests-serve/board.spec.ts:setOpusTitle#1","apps/web/tests-serve/board.spec.ts:setOpusBody#1","apps/web/tests-serve/board.spec.ts:setTraditioNext#1","apps/web/tests-serve/walk.spec.ts:<module>#1","packages/cli/src/branch.ts:readOpusRecord#1","packages/cli/src/branch.ts:readOpusRecord#2","packages/cli/src/branch.ts:readOpusRecord#3","packages/cli/src/branch.ts:mergeOpusBranch#1","packages/cli/src/branch.ts:runBranch#1","packages/cli/src/branch.ts:runMerge#1","packages/cli/src/close.ts:closeChecks#1","packages/cli/src/init.ts:initStudio#1","packages/cli/src/new.ts:runNew#1","packages/cli/src/new.ts:runNew#2","packages/cli/src/next.ts:recordRel#1","packages/cli/src/next.ts:briefRel#1","packages/cli/src/next.ts:readFixCheck#1","packages/cli/src/next.ts:dispatch#1","packages/cli/src/next.ts:fixCheckSteps#1","packages/cli/src/prune.ts:pruneStaleOpusBranches#1","packages/cli/src/prune.ts:pruneCiLogs#1","packages/cli/src/retro.ts:draftRetro#1","packages/cli/src/retro.ts:draftRetro#2","packages/cli/src/retro.ts:draftRetro#3","packages/cli/src/tick.ts:writeDailyActum#1","packages/commands/src/auto-greenlight.ts:readRecord#1","packages/commands/src/builder-run.ts:attachReceipt#1","packages/commands/src/builder-run.ts:runBuilderCommand#1","packages/commands/src/builder-run.ts:admitCurrentGates#1","packages/commands/src/builder-run.ts:admitCurrentRunReceipt#1","packages/commands/src/builder-run.ts:admitCurrentRunReceipt#2","packages/commands/src/context.ts:buildContextFor#1","packages/commands/src/ids.ts:createNextRecord#1","packages/commands/src/lifecycle.ts:unsafeOpusProblem#1","packages/commands/src/lifecycle.ts:runReady#1","packages/commands/src/lifecycle.ts:runHalt#1","packages/commands/src/lifecycle.ts:patronDecisionProblem#1","packages/commands/src/lifecycle.ts:runWaive#1","packages/commands/src/opus-model.ts:currentDesign#1","packages/commands/src/opus-model.ts:ruling#1","packages/commands/src/talk.ts:writeActum#1","packages/commands/src/talk.ts:writeActum#2","packages/commands/src/verdict.ts:runVerdict#1","packages/commands/src/verify.ts:runVerify#1","packages/commands/src/writes.ts:safeItemPath#1","packages/commands/src/writes.ts:recordOwnerRefusal#1","packages/commands/src/writes.ts:runAnswer#1","packages/commands/src/writes.ts:runAnswer#2","packages/commands/src/writes.ts:runAnswer#3","packages/commands/src/writes.ts:runGreenlight#1"],"pinnedBKeys":["apps/server/src/store.ts:opus#1","apps/web/tests-serve/answer.spec.ts:<module>#1","apps/web/tests-serve/board.spec.ts:setOpusState#1","apps/web/tests-serve/board.spec.ts:setOpusTitle#1","apps/web/tests-serve/board.spec.ts:setOpusBody#1","apps/web/tests-serve/board.spec.ts:setTraditioNext#1","apps/web/tests-serve/walk.spec.ts:<module>#1","packages/cli/src/branch.ts:readOpusRecord#1","packages/cli/src/branch.ts:readOpusRecord#2","packages/cli/src/branch.ts:readOpusRecord#3","packages/cli/src/branch.ts:mergeOpusBranch#1","packages/cli/src/branch.ts:runBranch#1","packages/cli/src/branch.ts:runMerge#1","packages/cli/src/close.ts:closeChecks#1","packages/cli/src/init.ts:initStudio#1","packages/cli/src/new.ts:runNew#1","packages/cli/src/new.ts:runNew#2","packages/cli/src/next.ts:recordRel#1","packages/cli/src/next.ts:briefRel#1","packages/cli/src/next.ts:readFixCheck#1","packages/cli/src/next.ts:dispatch#1","packages/cli/src/next.ts:fixCheckSteps#1","packages/cli/src/prune.ts:pruneStaleOpusBranches#1","packages/cli/src/prune.ts:pruneCiLogs#1","packages/cli/src/retro.ts:draftRetro#1","packages/cli/src/retro.ts:draftRetro#2","packages/cli/src/retro.ts:draftRetro#3","packages/cli/src/tick.ts:writeDailyActum#1","packages/commands/src/auto-greenlight.ts:readRecord#1","packages/commands/src/builder-run.ts:attachReceipt#1","packages/commands/src/builder-run.ts:runBuilderCommand#1","packages/commands/src/builder-run.ts:admitCurrentGates#1","packages/commands/src/builder-run.ts:admitCurrentRunReceipt#1","packages/commands/src/builder-run.ts:admitCurrentRunReceipt#2","packages/commands/src/context.ts:buildContextFor#1","packages/commands/src/ids.ts:createNextRecord#1","packages/commands/src/lifecycle.ts:unsafeOpusProblem#1","packages/commands/src/lifecycle.ts:runReady#1","packages/commands/src/lifecycle.ts:runHalt#1","packages/commands/src/lifecycle.ts:patronDecisionProblem#1","packages/commands/src/lifecycle.ts:runWaive#1","packages/commands/src/opus-model.ts:currentDesign#1","packages/commands/src/opus-model.ts:ruling#1","packages/commands/src/talk.ts:writeActum#1","packages/commands/src/talk.ts:writeActum#2","packages/commands/src/verdict.ts:runVerdict#1","packages/commands/src/verify.ts:runVerify#1","packages/commands/src/writes.ts:safeItemPath#1","packages/commands/src/writes.ts:recordOwnerRefusal#1","packages/commands/src/writes.ts:runAnswer#1","packages/commands/src/writes.ts:runAnswer#2","packages/commands/src/writes.ts:runAnswer#3","packages/commands/src/writes.ts:runGreenlight#1"]}
+PASS  inventory B: every pinned disposition is a recognized value            ["guarded","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","derived","derived","derived","guarded","guarded","guarded","guarded","guarded","derived","guarded","derived","derived","derived","bypass","guarded","guarded","guarded","guarded","guarded","guarded","derived","derived","guarded","guarded","guarded","guarded","guarded","guarded","guarded","derived","derived","guarded","guarded","helper","bypass-via-verify","guarded","derived","derived","guarded"]
+PASS  source set C/D is non-empty                                            178
+PASS  inventory C: pinned list length matches the scan's own count           pinned=4 scan=4
+PASS  inventory C: every raw date parse is pinned, none missing              
+PASS  inventory C: scan order matches the pinned order exactly               
+PASS  inventory C: pinned keys are unique                                    
+PASS  inventory C: every pinned disposition comes from the table             
+PASS  inventory D: pinned list length matches the scan's own count           pinned=310 scan=310
+PASS  inventory D: every raw file access is pinned, none missing             
+PASS  inventory D: scan order matches the pinned order exactly               
+PASS  inventory D: pinned keys are unique                                    
+PASS  inventory D: every pinned disposition comes from the table             
+PASS  every helper pin is inside an approved helper                          
+PASS  every contained pin's function calls a containment helper              
+PASS  every why is non-empty                                                 
+PASS  no out-of-domain fs binding                                            {"unexpected":[],"stale":[]}
+PASS  every pinned escape has a why                                          
+TAP version 13
+# Subtest: W-425-b4 fix 1: an inherited or non-plain options property counts as a write
+not ok 1 - W-425-b4 fix 1: an inherited or non-plain options property counts as a write
+  ---
+  duration_ms: 158.747424
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-425/packages/cli/src/containment.test.ts:169:789'
+  failureType: 'testCodeFailure'
+  error: |-
+    an inherited __proto__ flag (any value but null), or a getter, method or shorthand flag outside the helper fails; a numeric key, a getter or a method on another name, or a null __proto__, does not
+    + actual - expected
+    
+      [
+    -   'packages/cli/src/w425-fixture.ts:a:readFileSync#1',
+    -   'packages/cli/src/w425-fixture.ts:b:readFileSync#1',
+        'packages/cli/src/w425-fixture.ts:c:readFileSync#1',
+        'packages/cli/src/w425-fixture.ts:d:readFileSync#1',
+        'packages/cli/src/w425-fixture.ts:e:readFileSync#1',
+        'packages/cli/src/w425-fixture.ts:f:readFileSync#1',
+    -   'packages/cli/src/w425-fixture.ts:r:readFileSync#1',
+    -   'packages/cli/src/w425-fixture.ts:t:readFileSync#1'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'packages/cli/src/w425-fixture.ts:a:readFileSync#1'
+    1: 'packages/cli/src/w425-fixture.ts:b:readFileSync#1'
+    2: 'packages/cli/src/w425-fixture.ts:c:readFileSync#1'
+    3: 'packages/cli/src/w425-fixture.ts:d:readFileSync#1'
+    4: 'packages/cli/src/w425-fixture.ts:e:readFileSync#1'
+    5: 'packages/cli/src/w425-fixture.ts:f:readFileSync#1'
+    6: 'packages/cli/src/w425-fixture.ts:r:readFileSync#1'
+    7: 'packages/cli/src/w425-fixture.ts:t:readFileSync#1'
+  actual:
+    0: 'packages/cli/src/w425-fixture.ts:c:readFileSync#1'
+    1: 'packages/cli/src/w425-fixture.ts:d:readFileSync#1'
+    2: 'packages/cli/src/w425-fixture.ts:e:readFileSync#1'
+    3: 'packages/cli/src/w425-fixture.ts:f:readFileSync#1'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-425/packages/cli/src/containment.test.ts:1610:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 168.505764
