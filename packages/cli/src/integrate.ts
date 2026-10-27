@@ -12,7 +12,7 @@
  * `--match-head-commit`. `BLOCKED` is never merged directly.
  */
 import { spawnSync } from "node:child_process";
-import { accessSync, constants, lstatSync, mkdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, constants, lstatSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
@@ -353,11 +353,11 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
  *  file is only a trigger: the sync's commit is the one it fetches into the Patron's clone; the reviewed commit written
  *  here is for a reader. The line says whether it was asked. */
 function requestSync(repo: string, target: string): string {
-  const file = bisFile(repo, "sync");
+  const common = gitCommonDir(repo);
   try {
-    if ("error" in file) throw new Error(file.error);
-    mkdirSync(dirname(file.path), { recursive: true });
-    writeFileSync(file.path, `${target}\n`);
+    if ("error" in common) throw new Error(common.error);
+    // W-423: <common>/bisellium through the shared containment helper, so a symlinked level refuses before the write
+    writeFileSync(join(ensureRealDirectory(common.path, "bisellium"), "sync"), `${target}\n`);
     return "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)";
   } catch (e) {
     return `sync: not requested (${thrown(e)})`;
