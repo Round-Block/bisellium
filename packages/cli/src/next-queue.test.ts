@@ -3,7 +3,7 @@
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
@@ -884,4 +884,39 @@ test("W-418-b2 behaviour 2: the pr rung screens the pushed head it opens or upda
   );
   assert.deepEqual([h.status, h.first], [1, `next: ${OPUS} pr held`], ran("held, exit 1", h));
   assert.deepEqual([mutating(f), w418Read(w418Notice(f, PR_NUMBER))], [["git fetch master:master", "git push --force-with-lease", "gh pr create"], `${W418_ONE}\n`], "the PR was opened and the notice left");
+});
+
+// ---------------------------------------------------------------------------
+// W-423 rows b1-b2 (studio/briefs/W-423.md): the queue binding is written, probed and removed only through real
+// directories below the Git common directory (the shared containment helper, packages/commands/src/ids.ts); a symlinked
+// level holds the pr before anything is written, pushed or removed outside it.
+// ---------------------------------------------------------------------------
+const w423Common = (w: World): string => git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+const W423_REFUSED = "record directory must be a real directory, not a symbolic link: ";
+const w423Why = (o: Out): string | undefined => o.out.split("\n").find((l) => l.startsWith("why:"));
+/** Links `<common>/bisellium` (level `bisellium`) or `<common>/bisellium/queue` (level `queue`) to `away`; the refused level's real path. */
+function w423Link(common: string, level: "bisellium" | "queue", away: string): string {
+  if (level === "queue") mkdirSync(join(common, "bisellium"));
+  const levels = level === "bisellium" ? ["bisellium"] : ["bisellium", "queue"];
+  symlinkSync(away, join(common, ...levels));
+  return join(realpathSync(common), ...levels);
+}
+
+test("W-423-b1 behaviour 1: a queue-mode pr writes its binding only through real directories below the Git common directory, and a symlinked level holds before the push", { timeout: 3_600_000 }, () => {
+  for (const level of ["bisellium", "queue"] as const) {
+    const w = queueWorld(`w423-b1-${level}`, { stdout: QUEUE_RULES });
+    const common = w423Common(w);
+    const away = scratch(`w423-b1-away-${level}`);
+    const refused = w423Link(common, level, away);
+    const o = performPr(w);
+    assert.deepEqual(mutating(w), ["git fetch master:master"], ran(`a symlinked ${level} level: no push`, o));
+    assert.deepEqual([o.status, w423Why(o)], [1, `why: cannot write the queue binding ${join(common, "bisellium", "queue", "opus%2FW-900")}: ${W423_REFUSED}${refused}`], ran(`a symlinked ${level} level: held, naming the level`, o));
+    assert.deepEqual(readdirSync(away), [], `a symlinked ${level} level: nothing is written outside the Git common directory`);
+    assert.equal(remoteBranchExists(w), false, `a symlinked ${level} level: nothing was pushed`);
+  }
+  const w = queueWorld("w423-b1-real", { stdout: QUEUE_RULES });
+  const head = tipOf(w);
+  const o = performPr(w);
+  assert.equal(o.status, 0, ran("real directories: the queue-mode pr is performed", o));
+  assert.equal(bound(w), `${head}\n`, "real directories: the binding holds the pushed head");
 });
