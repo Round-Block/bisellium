@@ -1,5 +1,9 @@
-shots: 4 ci/shots/W-350
-shot: board.png 1280x900 42571
-shot: inbox.png 1280x900 37346
-shot: officina.png 1280x900 39312
-shot: seats.png 1280x900 67613
+shots: 8 ci/shots/W-350
+shot: board-1280.png 1280x900 43991
+shot: board-390.png 390x900 24153
+shot: inbox-1280.png 1280x900 45198
+shot: inbox-390.png 390x900 33152
+shot: officina-1280.png 1280x900 62353
+shot: officina-390.png 390x900 36628
+shot: seats-1280.png 1280x900 71132
+shot: seats-390.png 390x900 42216
