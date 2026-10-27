@@ -271,6 +271,8 @@ interface Site {
   key: string;
   rel: string;
   fn: string;
+  /** W-425: a read (W425_FLAG_READS) whose options may name a write flag: the rule judges it a write. */
+  writeFlag?: true;
 }
 
 interface CDScan {
@@ -290,6 +292,15 @@ interface CDScan {
  * ReadStream and WriteStream open a path when constructed, so they are not here: a construction is a direct site, and any other
  * use is an `fsUses` finding. */
 const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "Stats", "Dirent", "Dir"]);
+/** W-425: the read-only names whose options take a `flag` or `flags`, and node's read flags (O_RDONLY, with or without O_SYNC). */
+const W425_FLAG_READS = new Set(["readFileSync", "readFile", "createReadStream", "ReadStream"]);
+const W425_READ_FLAGS = new Set(["r", "rs", "sr"]);
+/** W-425: whether a read's options (its second argument) name a write flag: a literal `flag` or `flags` that is not a read flag. */
+function w425WriteFlag(args: readonly ts.Expression[]): boolean {
+  const o = args[1];
+  if (o === undefined || !ts.isObjectLiteralExpression(o)) return false;
+  return o.properties.some((p) => ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name)) && (p.name.text === "flag" || p.name.text === "flags") && ts.isStringLiteralLike(p.initializer) && !W425_READ_FLAGS.has(p.initializer.text));
+}
 const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "existingRealDirectory", "readContainedRegularFile", "createNextRecord"]);
 
 // What a name can be bound to: the fs module, `Date`, the global object (whose `.Date` is `Date`), or node:module.
@@ -444,7 +455,8 @@ function scanCD(root: string, rels: string[]): CDScan {
           const fn = enclosingFunctionName(n);
           // W-425: a construction (`new WriteStream(p)`) is a direct site, as a call is; a value opening no path stays exempt
           const direct = (ts.isCallExpression(top.parent) || (ts.isNewExpression(top.parent) && !W423_FS_VALUES.has(fsName))) && top.parent.expression === top;
-          if (direct) out.fs.push({ key: `${rel}:${fn}:${fsName}#${nth(`F:${fn}:${fsName}`)}`, rel, fn });
+          const writeFlag = direct && W425_FLAG_READS.has(fsName) && w425WriteFlag(top.parent.arguments ?? []);
+          if (direct) out.fs.push({ key: `${rel}:${fn}:${fsName}#${nth(`F:${fn}:${fsName}`)}`, rel, fn, ...(writeFlag ? { writeFlag: true as const } : {}) });
           else if (!RAW_FS.has(fsName) && !W423_FS_VALUES.has(fsName)) out.fsUses.push(`${rel}:${fn}: ${fsName} is used other than as a direct call`);
         }
         if (fnRef !== undefined && !type) {
@@ -1441,10 +1453,11 @@ const WRITE_LIMITS: readonly (readonly [key: string, limit: keyof typeof W423_LI
 function w423Unclassified(sites: readonly Site[]): string[] {
   return sites.filter((s) => w423Governed(s) && !W423_READ_ONLY.has(w423Name(s)) && !W423_WRITES.has(w423Name(s))).map((s) => s.key);
 }
-/** The governed direct writes neither in a containment-helper caller, nor in an approved helper's body, nor listed. */
+/** The governed direct writes (W-425: a read whose options may name a write flag included) neither in a containment-helper
+ * caller, nor in an approved helper's body, nor listed. */
 function w423Unrouted(sites: readonly Site[], callers: ReadonlySet<string>, listed: readonly string[]): string[] {
   return sites
-    .filter((s) => w423Governed(s) && W423_WRITES.has(w423Name(s)))
+    .filter((s) => w423Governed(s) && (W423_WRITES.has(w423Name(s)) || s.writeFlag === true))
     .filter((s) => !callers.has(`${s.rel}:${s.fn}`) && !APPROVED_HELPERS.has(`${s.rel}:${s.fn}`))
     .map((s) => s.key)
     .filter((k) => !listed.includes(k));
