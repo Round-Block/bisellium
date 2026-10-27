@@ -6,7 +6,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -397,6 +397,32 @@ test("W-369-b3 behaviour 3: the merge rung's hold on a path the session may not 
     const unwritten = fetchTrunk(main, target);
     assert.ok(!unwritten.ok);
     assert.match(unwritten.after?.[1] ?? "", /^sync: not requested \(.*\)$/, "a request that cannot be written is said so");
+  } finally {
+    chmodSync(join(main, "packages"), 0o755);
+  }
+});
+
+// W-423 row b3 (studio/briefs/W-423.md): the sync request is written only through real directories below the Git common
+// directory (the shared containment helper); a symlinked bisellium level is not requested, and the hold says so.
+test("W-423-b3 behaviour 3: the merge rung's sync request is written only through a real bisellium directory below the Git common directory, and a symlinked one is not requested", (t) => {
+  if (process.getuid?.() === 0) return t.skip("root writes a read-only directory");
+  const { main, advance } = mainCheckout();
+  const bis = join(main, ".git", "bisellium");
+  const away = tmp();
+  symlinkSync(away, bis);
+  chmodSync(join(main, "packages"), 0o555);
+  try {
+    const target = advance("packages/a", "root");
+    const patron = `patron: git -C ${quoted(main)} merge --ff-only ${target}`;
+    const linked = fetchTrunk(main, target);
+    assert.ok(!linked.ok, "a symlinked bisellium level: the fast-forward is held");
+    assert.deepEqual(linked.after, [patron, `sync: not requested (record directory must be a real directory, not a symbolic link: ${join(realpathSync(join(main, ".git")), "bisellium")})`], "a symlinked bisellium level: not requested, and said so");
+    assert.deepEqual(readdirSync(away), [], "a symlinked bisellium level: nothing is written outside the Git common directory");
+    rmSync(bis);
+    const real = fetchTrunk(main, target);
+    assert.ok(!real.ok, "a real bisellium directory: the fast-forward is held");
+    assert.deepEqual(real.after, [patron, "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)"], "a real bisellium directory: requested");
+    assert.equal(readFileSync(join(bis, "sync"), "utf8"), `${target}\n`, "a real bisellium directory: the request names the reviewed commit");
   } finally {
     chmodSync(join(main, "packages"), 0o755);
   }
