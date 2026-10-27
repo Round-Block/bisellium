@@ -1481,3 +1481,39 @@ export const g = lutimesSync;
   assert.deepEqual(w423Unrouted([...scanCD_.fs, ...added], new Set([...scanCD_.helperCallers, "packages/cli/src/integrate.ts:newBinding", "packages/commands/src/ticket.ts:newTicket"]), listed), [], "a new governed direct write in a function that calls the helper passes");
   assert.deepEqual(w423Stale(scanCD_.fs, scanCD_.helperCallers, [...listed, "packages/cli/src/integrate.ts:gone:writeFileSync#1"]), ["packages/cli/src/integrate.ts:gone:writeFileSync#1"], "a limit naming no such write is stale");
 });
+
+// ---------------------------------------------------------------------------
+// W-425 (studio/briefs/W-425.md): W-423's remainder. A stream class constructed on a path is a direct fs site (WriteStream a
+// write, ReadStream a read), any other use of one fails, and a read whose options may name a write flag is judged a write.
+// Each row scans one governed fixture file with the real scanCD and judges it with W-423-b5's own rule.
+// ---------------------------------------------------------------------------
+function w425Scan(src: string): CDScan {
+  const dir = mkdtempSync(join(tmpdir(), "w425-census-"));
+  try {
+    const rel = "packages/cli/src/w425-fixture.ts";
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    writeFileSync(join(dir, rel), src);
+    return scanCD(dir, [rel]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+const w425Key = (s: string): string => `packages/cli/src/w425-fixture.ts:${s}`;
+
+test("W-425-b1 behaviour 1: a stream class constructed on a path is a direct fs site, a WriteStream a write, and any other use of one fails", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { ReadStream, WriteStream } from "node:fs";
+import * as fs from "node:fs";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
+export function w(p: string) { return new WriteStream(p); }
+export function m(p: string) { return new fs.WriteStream(p, { flags: "a" }); }
+export function r(p: string) { return new ReadStream(p); }
+export function h(root: string) { return new WriteStream(ensureRealDirectory(root, "notice") + "/x"); }
+export function t(s: WriteStream): ReadStream | undefined { void s; return undefined; }
+export const keep = fs.WriteStream;
+export function i(x: unknown) { return x instanceof ReadStream; }
+`);
+  assert.deepEqual([scan.fs.map((x) => x.key), scan.fsUses], [[w425Key("w:WriteStream#1"), w425Key("m:WriteStream#1"), w425Key("r:ReadStream#1"), w425Key("h:WriteStream#1")], [w425Key("<module>: WriteStream is used other than as a direct call"), w425Key("i: ReadStream is used other than as a direct call")]], "a stream class constructed on a path is a direct fs site, and any other use of one fails");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "both stream classes are classified");
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), [w425Key("w:WriteStream#1"), w425Key("m:WriteStream#1")], "a governed WriteStream outside the helper fails; a ReadStream with no flags and one in a helper caller do not");
+});
