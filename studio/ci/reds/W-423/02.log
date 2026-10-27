@@ -1,0 +1,63 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-423-b2\s --import tsx packages/cli/src/next-queue.test.ts
+# exit: 1
+# at: 2026-10-27T09:08:00.767Z
+# sella: architect
+# tree: tree:a0adf205548ce29efbed423f47b8c1c68d468104
+# ticket: {"opus":"W-423","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-423/studio","head":"ac4083b5f6c43308df664ff75fd417cbe0ad5b7e","brief":"28efe8b831585379f52223980ede33a7d7553306","at":"2026-10-27T09:08:00.728Z"}
+
+TAP version 13
+# Subtest: W-423-b2 behaviour 2: a direct-mode pr probes and removes its binding only through real directories below the Git common directory, and a symlinked level holds before the rebase
+not ok 1 - W-423-b2 behaviour 2: a direct-mode pr probes and removes its binding only through real directories below the Git common directory, and a symlinked level holds before the rebase
+  ---
+  duration_ms: 2080.40885
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-423/packages/cli/src/next-queue.test.ts:17:60'
+  failureType: 'testCodeFailure'
+  error: |-
+    a symlinked bisellium level: no rebase, no push
+    --- exit 0
+    --- stdout
+    next: W-900 pr performed
+    mode: direct
+    PR=901 base=7d54f3a head=95166c7
+    code-owned: none (no .github/CODEOWNERS, CODEOWNERS or docs/CODEOWNERS at refs/heads/master)
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+        'git fetch master:master',
+    +   'git rebase',
+    +   'git push --force-with-lease',
+    +   'gh pr create'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'git fetch master:master'
+  actual:
+    0: 'git fetch master:master'
+    1: 'git rebase'
+    2: 'git push --force-with-lease'
+    3: 'gh pr create'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-423/packages/cli/src/next-queue.test.ts:935:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2094.603959
