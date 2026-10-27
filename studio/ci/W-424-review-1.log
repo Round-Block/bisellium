@@ -1,0 +1,19 @@
+# opus: W-424
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a17c1a-a6ee-7300-8161-14bb30aa6bc2
+# outcome: passed
+# at: 2026-10-27T06:46:28.280Z
+# tree: tree:fe3e0d1318bf8369694c8f14b896f0638893ffde
+# brief: briefs/W-424.md blob:6bcf7f3efe6093350a4ed2fff13b6c49aa1d9d25
+# ticket: {"opus":"W-424","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-424/studio","head":"3842cb4f2a15458e7421efc15f2c2330c823bc86","brief":"6bcf7f3efe6093350a4ed2fff13b6c49aa1d9d25","at":"2026-10-27T06:44:42.682Z"}
+
+## Findings
+1. advisory — studio/briefs/W-424.md:56 The evidence promise overstates the unchanged `signedSpec`: before a branch it reads the main-checkout filesystem and accepts legacy passing logs without a `# brief:` pin. Name both accepted forms. — check: packages/cli/src/next-spec.test.ts [severity: S2] [class: spec×promise-unattainable-under-accepted-domain]
+2. advisory — studio/briefs/W-424.md:78 The input-domain row incorrectly makes trunk provenance and a current-brief pin unconditional, omitting the pre-branch filesystem source and legacy pinless logs. — check: packages/cli/src/next-spec.test.ts [severity: S2] [class: spec×input-domain-missing-or-unenforceable]
+
+## Verdict
+The source change implements behaviour 1 within its declared file boundary, and the recorded red and gates are valid. The two carried specification issues concern unchanged, incompletely described forms and are advisory only.
+VERDICT: PASS

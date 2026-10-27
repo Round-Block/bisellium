@@ -217,6 +217,8 @@ const declared = (list: unknown, id: string): Dict[] => (Array.isArray(list) ? l
  * W-162: the one reader of `bisellium.yml#spec_reviewer`. Absent keeps today's ladder; anything else must name one
  * declared, live codex agent on exactly `gpt-5.6-sol` who is not the design magister, or `next` holds at `spec`.
  * The trunk record's state says whether the gate still applies: `greenlit` yes, a PAST_READY state passed it at `ready`.
+ * W-424: past ready, a kind: ui opus's signer is the seat its record says signed at ready (`signedAtReady`), so a spec signed
+ * before the UI pair (D-091) or while D-098 A had removed it is not ordered again; callers pass the trunk's probationes.
  */
 export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: string; reviewer: SpecReviewer | undefined } | { error: string } {
   const m: unknown = manifest;
@@ -231,7 +233,7 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: strin
     if (ui.pairing !== undefined) {
       if ("error" in designDomain) return { error: designDomain.error };
       const state = str(rec["state"]);
-      if (state !== undefined && PAST_READY.has(state)) return { signer: ui.pairing.signer, reviewer: undefined };
+      if (state !== undefined && PAST_READY.has(state)) return { signer: signedAtReady(rec, [ui.pairing.signer, designDomain.magister]) ?? ui.pairing.signer, reviewer: undefined };
       if (state !== "greenlit") return { error: `bisellium.yml#ui_spec_signer/ui_spec_reviewer: the trunk record's state ${state ?? "(absent)"} is outside the gate's domain` };
       return { signer: ui.pairing.signer, reviewer: ui.pairing.reviewer };
     }
@@ -259,6 +261,17 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: strin
   if (state !== undefined && PAST_READY.has(state)) return { signer: magister, reviewer: undefined };
   if (state !== "greenlit") return bad(`the trunk record's state ${state ?? "(absent)"} is outside the gate's domain`);
   return { signer: magister, reviewer: { sella, model: REVIEWER_MODEL, design: magister } };
+}
+
+/**
+ * W-424: the seat `rec.probationes.spec` records as the ready signer (status `passed`, a non-empty string `sella`) when it is one of
+ * `seats` (the current UI signer or the design magister); any other record, status or seat is undefined, and the caller keeps its
+ * signer. `signedSpec` still needs that seat's passing, pinned spec log: the record names the seat, never the evidence.
+ */
+function signedAtReady(rec: Dict, seats: string[]): string | undefined {
+  const p = isDict(rec["probationes"]) ? rec["probationes"]["spec"] : undefined;
+  const sella = isDict(p) && p["status"] === "passed" ? str(p["sella"]) : undefined;
+  return sella !== undefined && seats.includes(sella) ? sella : undefined;
 }
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
@@ -786,7 +799,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const ownerWhere = tip === undefined ? `the main checkout (${studioRel})` : usable ? join(".worktrees", id, studioRel) : `opus/${id}`;
   const specOwner = readSpecOwner(tip === undefined ? fsSrc(studioAbs) : branch, id, ownerWhere, () => (tip === undefined ? { manifest } : usable ? readWorktreeManifest(wt.studio) : branchManifest(branch, id)));
   // the one signer every later reader (red attribution, signedAfter, commits) uses is the spec rung's own selection
-  const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"] });
+  const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"], probationes: trunkRecord?.["probationes"] });
   const design = pairing !== undefined && !("error" in pairing) ? pairing.signer : defaultDesign;
   const remoteTracking = refExists(repo, `refs/remotes/origin/opus/${id}`);
   const choreRef = `refs/heads/chore/done-${id}`;
@@ -1008,7 +1021,7 @@ export function deriveNext(f: Facts): Derived {
   const owner = f.specOwner;
   if ("error" in owner) return hold("spec", owner.error);
   const ownerUi = owner.record["kind"] === "ui";
-  const gate = readSpecReviewer(owner.manifest, { ...owner.record, state: f.trunkRecord?.["state"] });
+  const gate = readSpecReviewer(owner.manifest, { ...owner.record, state: f.trunkRecord?.["state"], probationes: f.trunkRecord?.["probationes"] });
   if ("error" in gate) return hold("spec", gate.error);
   const signer = gate.signer;
   // W-305 (D-075 D): the fast lane. A brief that `readBriefForm` reads as light (one behaviour, one to three Files owned, no

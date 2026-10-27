@@ -1,0 +1,19 @@
+# opus: W-424
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17c06-34e5-7872-a243-7993fa545cea
+# outcome: passed
+# at: 2026-10-27T06:27:32.366Z
+# tree: tree:bf6da659a3d03caba9893dbc3a18b5264c443c8d
+# brief: briefs/W-424.md blob:6bcf7f3efe6093350a4ed2fff13b6c49aa1d9d25
+# ticket: {"opus":"W-424","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"da587fde679c4b5e6757b1979d16cf36e1f3fae5","brief":"6bcf7f3efe6093350a4ed2fff13b6c49aa1d9d25","at":"2026-10-27T06:27:29.049Z"}
+
+## Findings
+1. advisory — brief:56 `signedSpec` does not require a current-brief pin when the header is absent, and with `f.tip` undefined it reads `f.work`, not the committed trunk. Replace brief:56 with: “Promise evidence: the record names the seat, never the evidence. When `f.tip` is undefined, `signedSpec` reads the main-checkout filesystem: modified tracked bytes and untracked or ignored entries are visible, while unreadable entries are not; it accepts the selected seat’s matching spec log when its outcome starts with `passed` and its `# brief:` is absent as legacy evidence or names the current brief. With a branch and no reviewer, the reused reader checks no brief pin.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-spec.test.ts
+2. advisory — brief:78 The input row incorrectly names the trunk as the unconditional source and excludes legacy pinless logs that `signedSpec` accepts. Replace brief:78 with: “| 6. The selected seat’s spec-log sequence from the source `deriveNext` supplies | `f.work` when `f.tip` is absent, otherwise the committed opus branch when no reviewer applies; `signedSpec` recognises a correctly named log whose parsed headers name this opus, phase `spec`, the selected seat and an outcome starting with `passed`; while bound, an absent pin is accepted as legacy and an explicit pin must name the current brief | `signedSpec`, unchanged: every other log is ignored, and no recognised log orders that seat’s signature round; the main-checkout filesystem may differ from trunk through modified, untracked, ignored or unreadable entries |” [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-spec.test.ts
+
+## Verdict
+The design is feasible; the two advisory replacements narrow its evidence promise to the reused reader’s actual source and pin semantics.
+VERDICT: PASS
