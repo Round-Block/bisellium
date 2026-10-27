@@ -1,0 +1,18 @@
+# opus: W-423
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a17cb2-4e8d-74f1-aa9c-a4f876ea17f3
+# outcome: passed
+# at: 2026-10-27T09:34:34.561Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# brief: briefs/W-423.md blob:28efe8b831585379f52223980ede33a7d7553306
+# ticket: {"opus":"W-423","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-423/studio","head":"7d09773b90e45430f2896a297b407f6c85d62b90","brief":"28efe8b831585379f52223980ede33a7d7553306","at":"2026-10-27T09:30:21.111Z"}
+
+## Findings
+No findings
+
+## Verdict
+The five behaviours, declared source scope, genuine reds, and certified gates match the signed brief; the unpinned rows are expressly stated unchanged limits.
+VERDICT: PASS
