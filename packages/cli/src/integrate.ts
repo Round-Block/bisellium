@@ -16,6 +16,7 @@ import { accessSync, constants, lstatSync, mkdirSync, realpathSync, unlinkSync, 
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
 import { reviewNotice } from "./review-notice.js";
 
 /** The fewest passing checks a merge needs; only checks in bucket `pass` count. */
@@ -630,12 +631,18 @@ export function dirtyHold(cwd: string, allow?: (path: string) => boolean): StepR
 // ---------------------------------------------------------------------------
 
 const thrown = (e: unknown): string => clean(e instanceof Error ? e.message : String(e));
-/** `<git common dir>/bisellium/<parts…>` (W-199, W-369). */
-function bisFile(repo: string, ...parts: string[]): { path: string } | { error: string } {
+/** W-423: the absolute Git common directory of `repo`, the anchor of the `bisellium/` store: every write below it goes
+ *  through the shared containment helper (`ensureRealDirectory`, `existingRealDirectory`, `requireRealDirectory`). */
+function gitCommonDir(repo: string): { path: string } | { error: string } {
   const r = git(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
   const dir = r.stdout.trim();
   if (r.error !== undefined || r.status !== 0 || dir === "" || !isAbsolute(dir)) return { error: why(r) };
-  return { path: join(dir, "bisellium", ...parts) };
+  return { path: dir };
+}
+/** `<git common dir>/bisellium/<parts…>` (W-199, W-369), as a name for a message; a write goes through the helper. */
+function bisFile(repo: string, ...parts: string[]): { path: string } | { error: string } {
+  const common = gitCommonDir(repo);
+  return "error" in common ? common : { path: join(common.path, "bisellium", ...parts) };
 }
 /** W-199: the file whose presence binds a queue-mode PR head: `<git common dir>/bisellium/queue/<encodeURIComponent(branch)>`. */
 const queueFile = (repo: string, branch: string): { path: string } | { error: string } => bisFile(repo, "queue", encodeURIComponent(branch));
@@ -647,6 +654,18 @@ function readBinding(repo: string, branch: string): { kind: "absent" | "bound"; 
     return { kind: lstatSync(file.path, { throwIfNoEntry: false }) === undefined ? "absent" : "bound", path: file.path };
   } catch (e) {
     return { kind: "error", reason: thrown(e) };
+  }
+}
+/** W-199, W-423: writes the queue binding (`<oid>` and a newline) in `<git common dir>/bisellium/queue`, each level a real
+ *  directory the shared containment helper makes or proves; a symlinked level refuses before anything is written. */
+function writeBinding(repo: string, branch: string, oid: string): string | undefined {
+  const common = gitCommonDir(repo);
+  if ("error" in common) return common.error;
+  try {
+    writeFileSync(join(ensureRealDirectory(common.path, "bisellium", "queue"), encodeURIComponent(branch)), `${oid}\n`);
+    return undefined;
+  } catch (e) {
+    return thrown(e);
   }
 }
 
@@ -676,12 +695,8 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
       if (head.kind !== "tip") return held(head.kind === "error" ? head.reason : "cannot read HEAD: absent");
       const file = queueFile(repo, branch);
       if ("error" in file) return held(`cannot write the queue binding: ${file.error}`);
-      try {
-        mkdirSync(dirname(file.path), { recursive: true });
-        writeFileSync(file.path, `${head.oid}\n`);
-      } catch (e) {
-        return held(`cannot write the queue binding ${file.path}: ${thrown(e)}`);
-      }
+      const wrote = writeBinding(repo, branch, head.oid);
+      if (wrote !== undefined) return held(`cannot write the queue binding ${file.path}: ${wrote}`);
     } else {
       const read = readBinding(repo, branch);
       if (read.kind === "error") return held(`cannot read the queue binding: ${read.reason}`);
