@@ -52,6 +52,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 1a. W-425 — W-423's remainder: the containment census classifies stream constructors (WriteStream, createWriteStream) as path writes (D-076 D high; held after review r2 failed on evidence only, its red committed as ci/reds/W-425/fix1-b4.log; review r3 once W-428 lands)
 2. W-426 — the ui-lead and ui-spec-review prompts ask whether a DIRECTION rule makes sense on the screen and who ruled it, not only conformance (high, Patron 10-27; touches studio/prompts/: Patron merges) Then W-429 — petitio length limits: subject ≤ 70 characters, ask ≤ 200 words; check refuses longer; the clerk and architect write within them (Patron 10-27).
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
+3a. W-430 — usage in the records: next --perform appends a usage reading (Claude 5h/week, Codex week, context %) at each ladder step; checkpoint rows print each opus's plan cost (Patron greenlit 10-27) `next.ts`
 4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
 5. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
 6. W-393 — cause fix for repeat class spec×input-domain-missing-or-unenforceable (D-076 D high)
@@ -96,4 +97,3 @@ Later: every other opus record, re-ranked under D-083 A (last ranked list: histo
 2. Agent prompts as project artifacts: commit each opus's dispatch prompts and kept models, scrubbed (the remote is public).
 3. Live agent monitoring in the console: W-136 is the plan; re-check it against W-242.
 4. Switch on `greenlight --auto`: land D-114 and `auto_greenlit_by: D-114` in `studio/bisellium.yml` (code-owned; draft in ~/.bisellium-evidence/W-403-spec/).
-5. Greenlit 10-27, held unfiled (Patron): `next --perform` records a usage reading per ladder step; checkpoint rows print each opus's plan cost. File when told.
