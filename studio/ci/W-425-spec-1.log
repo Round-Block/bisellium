@@ -1,0 +1,24 @@
+# opus: W-425
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T10:20:28.949Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# brief: briefs/W-425.md blob:93526221f33b7c551d9082a60cad28fbc5ae3796
+# ticket: {"opus":"W-425","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"93526221f33b7c551d9082a60cad28fbc5ae3796","at":"2026-10-27T10:20:22.866Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-425-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the census rule closes W-423's remainder in its own scan (D-042): a `new` of an fs class is a direct site, `ReadStream` and `WriteStream` leave `W423_FS_VALUES` and are classified (read, write), and a read of `readFileSync`, `readFile`, `createReadStream` or `ReadStream` whose options are not proved read-only carries `writeFlag` and is judged a write by `w423Unrouted`; `createWriteStream` was already in `W423_WRITES` — check: prototype.diff, brief Interfaces
+2. advisory — the flag rule fails closed (D-085 D): it recognises no options, an encoding string, a callback, and an object literal whose every `flag`/`flags` is the literal `r`, `rs` or `sr`; a literal write flag and every form it cannot read (variable, call, spread, shorthand, computed key, numeric or non-literal flag) are writes; the over-refusal of an unprovable read flag is a stated limit — check: brief Input domain row 2, red-b2.out, red-b3.out
+3. advisory — no governed source uses a stream class, createReadStream, createWriteStream or a flagged read, and every governed flag-taking read passes no options or an encoding string, so no site migrates and W-423-b5 and W-163-b6 stay green at every stage — check: streams.out, enumerate-reads.out, census-stage3.out
+4. advisory — three reds, one at a time, each accepted at assertion level on the commit before its behaviour; three one-hunk source kills of packages/cli/src/docs.ts fail W-423-b5 on the prototype and pass it on master, and eight rule probes of the scanner each fail their row; gates, admission on master's code and the ledger on master's validator pass; the Codex test check lists no flips and Unnamed None — check: red-accept.out, srckills.out, kills.out, gates.sh outputs, admission.out, ledger-probe.out, fixture-census.md
+5. advisory — FileReadStream, FileWriteStream and Utf8Stream stay unclassified (fail closed as unclassified sites or fsUses), a stated limit and out of scope — check: brief Limits, Out of scope
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-425.md` (spec round 1), prototyped over master b9d7d142; three behaviours in one test file (the census), no flips, no code-owned path.

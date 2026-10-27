@@ -1,0 +1,19 @@
+# opus: W-425
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17ce0-a355-7680-9a38-4144900c9c7f
+# outcome: passed
+# at: 2026-10-27T10:27:42.641Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# brief: briefs/W-425.md blob:93526221f33b7c551d9082a60cad28fbc5ae3796
+# ticket: {"opus":"W-425","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"93526221f33b7c551d9082a60cad28fbc5ae3796","at":"2026-10-27T10:27:38.006Z"}
+
+## Findings
+1. advisory — brief:72 [severity: S4] The added `w425Scan` reader has no declared domain or fail-closed rejector for its fixture source, temporary directory, or `scanCD.outOfDomain`; a trailing parse error can leave the asserted sites intact and pass unnoticed. Replace brief:72 with: “A rejection fails closed: the census row fails `npm test`. The rows’ test inputs are their fixed source strings and the OS temporary directory: valid when `mkdtempSync` creates the scratch tree, fixture I/O succeeds, each source is parseable TypeScript, and `scanCD(...).outOfDomain` is empty; `w425Scan` throws on any I/O failure, missing or unparseable source, or non-empty `outOfDomain`, and each row’s assertions reject any other scan result.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/containment.test.ts
+2. advisory — brief:82 [severity: S4] The b2 and b3 assertions can still pass if their accepted no-options, encoding, read-flag, or callback calls disappear from `scan.fs`, so “stays a read” and “every read is classified” are one-sided pins. Replace brief:82 with its current text followed by: “Each row also asserts `scan.fs.map((x) => x.key)` exactly for every direct call or construction in its fixture, including b2’s five accepted reads and b3’s callback and encoding controls, before applying `w423Unclassified` and `w423Unrouted`.” [class: tests×one-sided-bound-assertion] — check: packages/cli/src/containment.test.ts
+
+## Verdict
+The production census design is feasible and fail-closed; only its fixture-input boundary and accepted-read pins need advisory tightening.
+VERDICT: PASS
