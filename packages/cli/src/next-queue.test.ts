@@ -920,3 +920,21 @@ test("W-423-b1 behaviour 1: a queue-mode pr writes its binding only through real
   assert.equal(o.status, 0, ran("real directories: the queue-mode pr is performed", o));
   assert.equal(bound(w), `${head}\n`, "real directories: the binding holds the pushed head");
 });
+
+test("W-423-b2 behaviour 2: a direct-mode pr probes and removes its binding only through real directories below the Git common directory, and a symlinked level holds before the rebase", { timeout: 3_600_000 }, () => {
+  for (const level of ["bisellium", "queue"] as const) {
+    const w = queueWorld(`w423-b2-${level}`, { stdout: [] }, false);
+    const common = w423Common(w);
+    const away = scratch(`w423-b2-away-${level}`);
+    const outside = join(away, ...(level === "bisellium" ? ["queue"] : []), "opus%2FW-900");
+    mkdirSync(dirname(outside), { recursive: true });
+    writeFileSync(outside, "an outside binding\n");
+    const refused = w423Link(common, level, away);
+    const before = tipOf(w);
+    const o = performPr(w);
+    assert.deepEqual(mutating(w), ["git fetch master:master"], ran(`a symlinked ${level} level: no rebase, no push`, o));
+    assert.deepEqual([o.status, w423Why(o)], [1, `why: cannot read the queue binding: ${W423_REFUSED}${refused}`], ran(`a symlinked ${level} level: held before the rebase, naming the level`, o));
+    assert.equal(readFileSync(outside, "utf8"), "an outside binding\n", `a symlinked ${level} level: the outside binding is not removed`);
+    assert.deepEqual([tipOf(w), remoteBranchExists(w)], [before, false], `a symlinked ${level} level: no rebase and nothing pushed`);
+  }
+});
