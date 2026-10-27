@@ -1591,8 +1591,21 @@ function logCommit(f: Facts, round: BuildReviewRound, uncounted: string): string
 }
 /** W-428: the `[class:]` tags (`CLASS_TAG`, D-070 B) of a finding that only missing or false evidence makes: its fix is evidence committed under ci/reds/<id>/, never a source change. */
 const EVIDENCE_CLASSES: ReadonlySet<string> = new Set(["review×evidence-backfilled-or-absent"]);
-/** W-428: the failed round's standing blockers are evidence findings: one carries a tag in EVIDENCE_CLASSES. */
-const evidenceOnly = (round: BuildReviewRound): boolean => round.blockers.some((b) => classesIn(b.text).some((c) => EVIDENCE_CLASSES.has(c)));
+/**
+ * W-428: every standing blocker of the failed round is an evidence finding, read from its text (`RecordedFinding.text`,
+ * `parseVerdictLog`'s) and failing closed: it does not open `blocking (security)` (D-044), each `[class:` in it opens a whole
+ * tag (`CLASS_TAG`), it carries at least one, and every one is in EVIDENCE_CLASSES. An untagged, malformed, mixed or
+ * security blocker is not, so its round goes back to the builder.
+ */
+function evidenceOnly(round: BuildReviewRound): boolean {
+  return (
+    round.blockers.length > 0 &&
+    round.blockers.every((b) => {
+      const tags = classesIn(b.text);
+      return !/^\**blocking \(security\)/i.test(b.text) && tags.length > 0 && tags.length === b.text.split("[class:").length - 1 && tags.every((c) => EVIDENCE_CLASSES.has(c));
+    })
+  );
+}
 /**
  * W-428: how many commits on opus/<id>'s first-parent line after the one that last changed `round`'s log, merges aside, add
  * or change a path under <studio>/ci/reds/<id>/ (renames read as a delete and an add; a delete alone is no evidence); what
