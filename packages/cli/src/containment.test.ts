@@ -40,7 +40,7 @@ const repo = resolve(process.argv[2] ?? ".");
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(70)} ${detail}`);
+  console.error(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(70)} ${detail}`); // W-423: stderr, so a selected row's TAP opens stdout
   if (!ok) failed++;
 };
 
@@ -276,12 +276,18 @@ interface Site {
 interface CDScan {
   c: Site[];
   d: Site[];
+  /** W-423: every direct call of any fs function (node:fs, node:fs/promises), RAW_FS or not, keyed as `d` is. */
+  fs: Site[];
+  /** W-423: every use of an fs function outside RAW_FS other than as a direct call (W423_FS_VALUES aside). */
+  fsUses: string[];
   /** `rel:fn` of every function that calls a containment helper. */
   helperCallers: Set<string>;
   /** Anything that binds `fs` outside the static imports the scan understands. */
   outOfDomain: string[];
 }
 
+/** W-423: the fs module's names that are values, not functions: a use of one is not a call to judge. */
+const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "Stats", "Dirent", "Dir", "ReadStream", "WriteStream"]);
 const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "existingRealDirectory", "readContainedRegularFile", "createNextRecord"]);
 
 // What a name can be bound to: the fs module, `Date`, the global object (whose `.Date` is `Date`), or node:module.
@@ -318,7 +324,7 @@ function scanCD(root: string, rels: string[]): CDScan {
   };
   const program = ts.createProgram(rels.map((r) => join(root, r)), options);
   const checker = program.getTypeChecker();
-  const out: CDScan = { c: [], d: [], helperCallers: new Set(), outOfDomain: [] };
+  const out: CDScan = { c: [], d: [], fs: [], fsUses: [], helperCallers: new Set(), outOfDomain: [] };
   for (const rel of rels) {
     const sf = program.getSourceFile(join(root, rel));
     if (!sf) {
@@ -422,8 +428,21 @@ function scanCD(root: string, rels: string[]): CDScan {
           }
           if (base === "mod" && name === undefined) escapes.add(`${rel}:${enclosingFunctionName(n)}: a computed member of node:module is used where the scan cannot follow it`);
         }
+        // W-423: every fs function, RAW_FS or not: a direct call is an `fs` site; any other use, outside RAW_FS (whose
+        // own rule above holds) and the fs module's values, is an `fsUses` finding
+        let fsName: string | undefined;
+        if (ts.isIdentifier(n)) fsName = named.get(n.text);
+        else if (kindOf(n.expression) === "fs") {
+          const m = memberOf(n);
+          fsName = m === undefined ? "<computed>" : memberKind("fs", m) === undefined ? m : undefined;
+        }
         const top = outer(n);
         const type = ts.isTypeNode(top.parent) || ts.isQualifiedName(top.parent);
+        if (fsName !== undefined && !type) {
+          const fn = enclosingFunctionName(n);
+          if (ts.isCallExpression(top.parent) && top.parent.expression === top) out.fs.push({ key: `${rel}:${fn}:${fsName}#${nth(`F:${fn}:${fsName}`)}`, rel, fn });
+          else if (!RAW_FS.has(fsName) && !W423_FS_VALUES.has(fsName)) out.fsUses.push(`${rel}:${fn}: ${fsName} is used other than as a direct call`);
+        }
         if (fnRef !== undefined && !type) {
           if (ts.isCallExpression(top.parent) && top.parent.expression === top) site(fnRef.list, fnRef.tag, n, fnRef.what);
           else escapes.add(`${rel}:${enclosingFunctionName(n)}: ${fnRef.what} is used other than as a direct call`);
@@ -1342,3 +1361,124 @@ test("W-163-b6 round 2: the bright line's two raw reads left the pins and the se
 // W163_DUMP=1 prints the scan (C, D, out-of-domain, helper callers) as one JSON line: the input of the PINNED_D generator.
 if (process.env["W163_DUMP"]) console.log("DUMP" + JSON.stringify({ c: scanCD_.c.map((x) => x.key), d: scanCD_.d.map((x) => x.key), out: scanCD_.outOfDomain, hc: [...scanCD_.helperCallers] }));
 process.exitCode = failed ? 1 : 0;
+
+// ---------------------------------------------------------------------------
+// W-423 (studio/briefs/W-423.md) — behaviour 5: a governed write goes through the shared containment helper. Every direct
+// node:fs or node:fs/promises call in packages/cli/src and packages/commands/src (scanCD's `fs` list, RAW_FS or not) is
+// classified, read-only or write-capable, and an unclassified one fails; each write-capable one sits in a function that calls a
+// containment helper (CONTAINMENT_HELPERS, so its directory is made or proved real below its anchor), or in an approved
+// helper's own body, or is one of WRITE_LIMITS: a stated limit of a named class. A new direct write anywhere else fails
+// here, and so does a limit that no longer names such a write.
+// ---------------------------------------------------------------------------
+const W423_GOVERNED = ["packages/cli/src/", "packages/commands/src/"];
+/** The fs functions that change no file system name or content: a read, a stat, a listing, a check, a close. */
+const W423_READ_ONLY = new Set(["readFileSync", "readFile", "createReadStream", "existsSync", "exists", "statSync", "stat", "lstatSync", "lstat", "fstatSync", "fstat", "statfsSync", "statfs", "readdirSync", "readdir", "opendirSync", "opendir", "realpathSync", "realpath", "readlinkSync", "readlink", "accessSync", "access", "readSync", "read", "readvSync", "readv", "closeSync", "close", "fsyncSync", "fsync", "fdatasyncSync", "fdatasync", "watch", "watchFile", "unwatchFile", "glob", "globSync"]);
+/** The fs functions that can create, change, rename or remove a name or its content (an open, with a write flag). */
+const W423_WRITES = new Set(["writeFileSync", "writeFile", "appendFileSync", "appendFile", "createWriteStream", "writeSync", "write", "writevSync", "writev", "openSync", "open", "openAsBlob", "mkdirSync", "mkdir", "mkdtempSync", "mkdtemp", "rmSync", "rm", "rmdirSync", "rmdir", "unlinkSync", "unlink", "renameSync", "rename", "copyFileSync", "copyFile", "cpSync", "cp", "linkSync", "link", "symlinkSync", "symlink", "truncateSync", "truncate", "ftruncateSync", "ftruncate", "chmodSync", "chmod", "lchmodSync", "lchmod", "fchmodSync", "fchmod", "chownSync", "chown", "lchownSync", "lchown", "fchownSync", "fchown", "utimesSync", "utimes", "lutimesSync", "lutimes", "futimesSync", "futimes"]);
+const w423Name = (s: Site): string => s.key.split(":")[2]!.replace(/#\d+$/, "");
+const w423Governed = (s: Site): boolean => W423_GOVERNED.some((g) => s.key.startsWith(g));
+const W423_LIMIT = {
+  TEMP: "writes under OS temp, in a directory it made itself (and, for the builder run, its lease under <repo>/.bisellium/): never the officina or the Git common directory",
+  REPO: "writes a fixed repository file (docs/registry.json, the generated root instructions): never the officina or the Git common directory",
+  DOT: "writes under <repo>/.bisellium/, the runtime directory beside the officina: never the officina or the Git common directory; follow-on: route it through the helper",
+  SEAM: "a test seam: a barrier in a directory a test-only variable names, or the provider fixture's <cwd>/.git/index.lock probe",
+  READ: "an open with O_RDONLY | O_NOFOLLOW: it writes nothing",
+  ROOT: "a fixed-name file directly in the officina root (health.json, bisellium.yml, PAUSED, models.json): no directory level below the anchor for the helper to prove",
+  INIT: "init creates the officina from nothing; follow-on: refuse a symlinked root component before the first write",
+} as const;
+const WRITE_LIMITS: readonly (readonly [key: string, limit: keyof typeof W423_LIMIT])[] = [
+  ["packages/cli/src/branch.ts:rebaseOntoTrunk:rmSync#1", "TEMP"],
+  ["packages/cli/src/branch.ts:rebaseOntoTrunk:rmSync#2", "TEMP"],
+  ["packages/cli/src/docs.ts:runDocs:mkdirSync#1", "REPO"],
+  ["packages/cli/src/docs.ts:runDocs:writeFileSync#1", "REPO"],
+  ["packages/cli/src/init.ts:initStudio:mkdirSync#1", "INIT"],
+  ["packages/cli/src/init.ts:initStudio:mkdirSync#2", "INIT"],
+  ["packages/cli/src/init.ts:initStudio:writeFileSync#1", "INIT"],
+  ["packages/cli/src/init.ts:initStudio:writeFileSync#2", "INIT"],
+  ["packages/cli/src/init.ts:initStudio:writeFileSync#3", "INIT"],
+  ["packages/cli/src/init.ts:initStudio:writeFileSync#4", "INIT"],
+  ["packages/cli/src/init.ts:initStudio:writeFileSync#5", "INIT"],
+  ["packages/cli/src/init.ts:initStudio:writeFileSync#6", "INIT"],
+  ["packages/cli/src/instructions.ts:runInstructions:writeFileSync#1", "REPO"],
+  ["packages/cli/src/instructions.ts:runInstructions:writeFileSync#2", "REPO"],
+  ["packages/cli/src/instructions.ts:runInstructions:writeFileSync#3", "REPO"],
+  ["packages/cli/src/new.ts:waitAtIdsTestBarrier:writeFileSync#1", "SEAM"],
+  ["packages/cli/src/next.ts:readOutput:openSync#1", "READ"],
+  ["packages/cli/src/next.ts:installMarker:mkdirSync#1", "DOT"],
+  ["packages/cli/src/next.ts:installMarker:unlinkSync#1", "DOT"],
+  ["packages/cli/src/next.ts:installMarker:writeFileSync#1", "DOT"],
+  ["packages/cli/src/next.ts:log:appendFileSync#1", "DOT"],
+  ["packages/cli/src/next.ts:once:unlinkSync#1", "DOT"],
+  ["packages/cli/src/tick.ts:writeHealthFile:writeFileSync#1", "ROOT"],
+  ["packages/commands/src/builder-run.ts:gitWriteProbe:openSync#1", "SEAM"],
+  ["packages/commands/src/builder-run.ts:gitWriteProbe:unlinkSync#1", "SEAM"],
+  ["packages/commands/src/builder-run.ts:acquireProducerLease:mkdirSync#1", "DOT"],
+  ["packages/commands/src/builder-run.ts:acquireProducerLease:mkdirSync#2", "DOT"],
+  ["packages/commands/src/builder-run.ts:acquireProducerLease:writeFileSync#1", "DOT"],
+  ["packages/commands/src/builder-run.ts:acquireProducerLease:rmSync#1", "DOT"],
+  ["packages/commands/src/builder-run.ts:cleanupAbandonedRuntime:rmSync#1", "TEMP"],
+  ["packages/commands/src/builder-run.ts:runBuilderCommand:rmSync#1", "TEMP"],
+  ["packages/commands/src/builder-run.ts:runBuilderCommand:rmSync#2", "TEMP"],
+  ["packages/commands/src/ci.ts:defaultInstallDeps:rmSync#1", "TEMP"],
+  ["packages/commands/src/delegate.ts:runDelegate:writeFileSync#1", "ROOT"],
+  ["packages/commands/src/delegate.ts:runDelegate:writeFileSync#2", "ROOT"],
+  ["packages/commands/src/pause.ts:runPause:mkdirSync#1", "ROOT"],
+  ["packages/commands/src/pause.ts:runPause:writeFileSync#1", "ROOT"],
+  ["packages/commands/src/pause.ts:runResume:rmSync#1", "ROOT"],
+  ["packages/commands/src/probe.ts:probeBattery:writeFileSync#1", "ROOT"],
+  ["packages/commands/src/probe.ts:probeBattery:renameSync#1", "ROOT"],
+  ["packages/cli/src/branch.ts:rebaseOntoTrunk:mkdtempSync#1", "TEMP"],
+  ["packages/commands/src/builder-run.ts:runBuilderCommand:mkdtempSync#1", "TEMP"],
+  ["packages/commands/src/ci.ts:defaultInstallDeps:mkdtempSync#1", "TEMP"],
+];
+
+/** The governed direct fs calls whose function is in neither class (a computed member included): out of the rule's domain. */
+function w423Unclassified(sites: readonly Site[]): string[] {
+  return sites.filter((s) => w423Governed(s) && !W423_READ_ONLY.has(w423Name(s)) && !W423_WRITES.has(w423Name(s))).map((s) => s.key);
+}
+/** The governed direct writes neither in a containment-helper caller, nor in an approved helper's body, nor listed. */
+function w423Unrouted(sites: readonly Site[], callers: ReadonlySet<string>, listed: readonly string[]): string[] {
+  return sites
+    .filter((s) => w423Governed(s) && W423_WRITES.has(w423Name(s)))
+    .filter((s) => !callers.has(`${s.rel}:${s.fn}`) && !APPROVED_HELPERS.has(`${s.rel}:${s.fn}`))
+    .map((s) => s.key)
+    .filter((k) => !listed.includes(k));
+}
+/** The listed limits that do not name a governed direct write outside every helper caller (gone, moved or now contained). */
+function w423Stale(sites: readonly Site[], callers: ReadonlySet<string>, listed: readonly string[]): string[] {
+  const open = new Set(w423Unrouted(sites, callers, []));
+  return listed.filter((k) => !open.has(k));
+}
+
+test("W-423-b5 behaviour 5: every governed direct fs call is classified, and every write calls the shared containment helper, is the helper's own, or is a stated limit; a new one fails", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  assert.deepEqual(w423Unclassified(scanCD_.fs), [], "every governed direct fs call is classified read-only or write-capable");
+  assert.deepEqual(scanCD_.fsUses.filter((u) => W423_GOVERNED.some((g) => u.startsWith(g))), [], "no governed fs function is used other than as a direct call");
+  assert.deepEqual(w423Unrouted(scanCD_.fs, scanCD_.helperCallers, listed), [], "every governed direct write calls the shared containment helper or is a stated limit");
+  assert.deepEqual(w423Stale(scanCD_.fs, scanCD_.helperCallers, listed), [], "every stated limit names a governed direct write outside the helper");
+  assert.deepEqual([new Set(listed).size, WRITE_LIMITS.every(([, c]) => W423_LIMIT[c].trim() !== ""), [...W423_READ_ONLY].filter((n) => W423_WRITES.has(n))], [listed.length, true, []], "every limit is listed once, with its class's reason, and no name is in both classes");
+  // the real scan of a governed fixture: a write outside RAW_FS (linkSync, fs/promises chmod) is a site; an alias fails
+  const dir = mkdtempSync(join(tmpdir(), "w423-census-"));
+  let fixture: CDScan;
+  try {
+    const rel = "packages/cli/src/w423-fixture.ts";
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    writeFileSync(join(dir, rel), `import { linkSync, lutimesSync } from "node:fs";
+import * as fsp from "node:fs/promises";
+export async function f(a: string, b: string) { linkSync(a, b); await fsp.chmod(a, 0o600); return fsp.statfs(a); }
+export const g = lutimesSync;
+`);
+    fixture = scanCD(dir, [rel]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  assert.deepEqual([fixture.fs.map((x) => x.key), fixture.fsUses], [["packages/cli/src/w423-fixture.ts:f:linkSync#1", "packages/cli/src/w423-fixture.ts:f:chmod#1", "packages/cli/src/w423-fixture.ts:f:statfs#1"], ["packages/cli/src/w423-fixture.ts:<module>: lutimesSync is used other than as a direct call"]], "the full scan finds a write outside RAW_FS, and an alias of one");
+  assert.deepEqual(w423Unrouted(fixture.fs, fixture.helperCallers, listed), ["packages/cli/src/w423-fixture.ts:f:linkSync#1", "packages/cli/src/w423-fixture.ts:f:chmod#1"], "a governed linkSync or chmod outside the helper fails");
+  // the rule bites on synthetic sites: an unclassified name fails; a read and an ungoverned file are not judged
+  const site = (key: string): Site => ({ key, rel: key.split(":")[0]!, fn: key.split(":")[1]! });
+  const added = [site("packages/cli/src/integrate.ts:newBinding:writeFileSync#1"), site("packages/commands/src/ticket.ts:newTicket:openSync#1"), site("packages/cli/src/integrate.ts:newRead:readFileSync#1"), site("packages/core/src/log.ts:newLog:appendFileSync#1"), site("packages/cli/src/integrate.ts:newKind:frobSync#1")];
+  assert.deepEqual(w423Unclassified([...scanCD_.fs, ...added]), ["packages/cli/src/integrate.ts:newKind:frobSync#1"], "an unclassified governed fs function fails");
+  assert.deepEqual(w423Unrouted([...scanCD_.fs, ...added], scanCD_.helperCallers, listed), ["packages/cli/src/integrate.ts:newBinding:writeFileSync#1", "packages/commands/src/ticket.ts:newTicket:openSync#1"], "a new governed direct write fails; a read and an ungoverned file are not judged");
+  assert.deepEqual(w423Unrouted([...scanCD_.fs, ...added], new Set([...scanCD_.helperCallers, "packages/cli/src/integrate.ts:newBinding", "packages/commands/src/ticket.ts:newTicket"]), listed), [], "a new governed direct write in a function that calls the helper passes");
+  assert.deepEqual(w423Stale(scanCD_.fs, scanCD_.helperCallers, [...listed, "packages/cli/src/integrate.ts:gone:writeFileSync#1"]), ["packages/cli/src/integrate.ts:gone:writeFileSync#1"], "a limit naming no such write is stale");
+});
