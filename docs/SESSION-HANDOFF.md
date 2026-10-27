@@ -45,7 +45,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, one UI (Patron 2026-10-24, narrowing D-111's two each), each taking its queue's top. Halted: W-239 (D-106 D).
+Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 2026-10-27: push the Codex-heavy UI streams; was one each from 10-24), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
 1. W-428 — next counts an evidence-only fix commit under ci/reds/<id>/ as the fix for an evidence-only review blocker and orders the re-review (high, Patron 10-27; unblocks W-425) `next.ts`
@@ -88,7 +88,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 36. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-407, W-408 — Inbox, then Officina, to DIRECTION §6 (W-407 in spec: signature r8 to record, then reviews and the Patron's yes); then the Board's five: W-409, W-410, W-411, W-412, W-413 (greenlit 10-25)
+1. W-407, W-408 — Inbox, then Officina, to DIRECTION §6 in parallel (W-407 in spec: Sol's Outlook revision e, then signature r11, review, ui-lead and the Patron's yes; W-408 in spec: Sol drafting); then the Board's five: W-409, W-410, W-411, W-412, W-413 (greenlit 10-25)
 2. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-427 — Inbox severity colours from the Dracula palette, set by the respective lead (Patron 10-27; after W-407; greenlight to queue it); W-385 to W-391, W-397.
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
 
