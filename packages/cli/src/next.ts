@@ -1594,14 +1594,17 @@ const EVIDENCE_CLASSES: ReadonlySet<string> = new Set(["review×evidence-backfil
 /** W-428: the failed round's standing blockers are evidence findings: one carries a tag in EVIDENCE_CLASSES. */
 const evidenceOnly = (round: BuildReviewRound): boolean => round.blockers.some((b) => classesIn(b.text).some((c) => EVIDENCE_CLASSES.has(c)));
 /**
- * W-428: how many commits on opus/<id>'s first-parent line after the one that last changed `round`'s log, merges aside, touch
- * ci/reds/. Every read fails closed: a git read that fails is a hold's why, never a count.
+ * W-428: how many commits on opus/<id>'s first-parent line after the one that last changed `round`'s log, merges aside, add
+ * or change a path under <studio>/ci/reds/<id>/ (renames read as a delete and an add; a delete alone is no evidence); what
+ * else a commit changes is not read here (W-328's `fixedOutside` counted it first). Every read fails closed: a git read
+ * that fails is a hold's why, never a count.
  */
 function fixedEvidence(f: Facts, round: BuildReviewRound): number | { why: string } {
   const uncounted = "so the evidence commits after it cannot be counted (W-428)";
   const since = logCommit(f, round, uncounted);
   if (typeof since !== "string") return since;
-  const log = git(f.repo, ["log", "--first-parent", "--no-merges", "--format=%H", `${since}..refs/heads/opus/${f.id}`, "--", `${join(f.studioRel, "ci", "reds")}/`]);
+  const reds = `${join(f.studioRel, "ci", "reds", f.id)}/`;
+  const log = git(f.repo, ["--literal-pathspecs", "log", "--first-parent", "--no-merges", "--no-renames", "--diff-filter=AM", "--format=%H", `${since}..refs/heads/opus/${f.id}`, "--", reds]);
   if (log.status !== 0 || log.error !== undefined) return { why: `git cannot list the evidence commits on opus/${f.id} after ${round.log}, ${uncounted}` };
   return log.stdout.split("\n").filter((l) => l !== "").length;
 }
