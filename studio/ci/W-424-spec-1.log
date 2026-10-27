@@ -1,0 +1,29 @@
+# opus: W-424
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T06:21:39.812Z
+# tree: tree:c6406e495b70ef91bf929adfbd66f07d9aed776a
+# brief: briefs/W-424.md blob:6bcf7f3efe6093350a4ed2fff13b6c49aa1d9d25
+# ticket: {"opus":"W-424","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"f7255afbc212ec0bbbe9f7a69c752f76acd474e9","brief":"6bcf7f3efe6093350a4ed2fff13b6c49aa1d9d25","at":"2026-10-27T06:21:34.238Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-424-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — probed first, on a disposable clone of master 9885c91e: master's next names W-350 a spec held, ticket verdict-spec round 9, and done W-350 refuses "no matching next ticket (action is verdict-spec, want done)"; W-350's record says probationes.spec passed by architect, and ci/W-350-spec-7.log is a passing architect signature pinned to the current brief blob a6247df7 — check: done-master.out, done-probe.sh, brief:15, brief:17
+2. advisory — the rule adopted from the architect's 2026-10-27 review: past ready, a kind: ui opus's signer is the seat its trunk record's probationes.spec names as passed, when that seat is the current UI signer or the design magister; any other seat, status or shape keeps the UI signer, and signedSpec still needs that seat's passing, pinned log; no W-350 spec log is written or backfilled — check: brief:19, brief:23, rows-b1.ts.txt
+3. advisory — improved on the review with reasons: the seat is read from the trunk record (both callers pass its probationes beside its state, so Facts.design stays the spec rung's seat), and the :259 symmetry change is not made because it would be a no-op — check: brief:21, brief:25, prototype.diff
+4. advisory — the read enumeration over all 424 opus records at origin/master: the prototype changes the signer of W-350 and W-339 (done) only; the six past-ready ui records signed by ui-architect and every non-ui record keep their signer — check: enumerate.out, brief:27
+5. advisory — acceptance on the real records: with the prototype, next W-350 names done ("W-350 is MERGED, fetched and cleaned up; the trunk record is not done", ticket done round 0), and done W-350 then prints "W-350: done", so the done rung accepts D-124's ruling as it stands — check: done-proto.out, brief:109
+6. advisory — the red fails by assertion on master at "building: a spec the design magister signed at ready keeps the design magister" and the host replay classifier accepts it; the row passes on the prototype; the two-commit series equals the prototype — check: red-accept.out, red-b1-master.out, proto-b1-stage1.out, series.out
+7. advisory — ten kills, each a one-hunk mutation of next.ts, fail the row at the assertion they guard with ERR_ASSERTION, two of them on unchanged signedSpec (the pin and the outcome) — check: kills.out, kills.py, brief:98
+8. advisory — no existing row flips: nine test files that reach the changed code pass whole on the prototype; the Codex test check lists no flips, Unnamed None, and thirty-five must-stay-green rows, each in a file run whole and passing — check: green-summary.out, fixture-census.md, brief:110
+9. advisory — the brief passes admission on master's code, and the promise ledger passes master's validator; lint of both touched files and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: admission.out, ledger-probe.out, lint-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out, brief:113
+10. advisory — unchanged code the promises lean on is stated as a limit (D-076 E), the done verb and signedSpec included; no owned path is code-owned — check: brief:62, brief:36
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-424.md` (spec round 1), master 9885c91e; one behaviour; no existing row flipped; the done rung accepts D-124 as it stands once next stops naming a spec round for W-350.
