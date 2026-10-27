@@ -1552,3 +1552,23 @@ export function h(root: string) { return readFileSync(ensureRealDirectory(root, 
   assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), [w425Key("a:readFileSync#1"), w425Key("b:createReadStream#1"), w425Key("c:ReadStream#1"), w425Key("d:readFile#1")], "a read with a literal write flag outside the helper fails; a read flag, an encoding, no options or a helper caller does not");
   assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
 });
+
+test("W-425-b3 behaviour 3: a read whose options the rule cannot read is judged a write, failing closed", () => {
+  const listed = WRITE_LIMITS.map(([k]) => k);
+  const scan = w425Scan(`import { constants, createReadStream, readFile, readFileSync } from "node:fs";
+declare const opts: { flag?: string };
+declare const mode: string;
+declare const args: [string, { flag: string }];
+export function a(p: string) { return readFileSync(p, opts); }
+export function b(p: string, flag: string) { return readFileSync(p, { flag }); }
+export function c(p: string) { return readFileSync(p, { flag: mode }); }
+export function d(p: string) { return readFileSync(p, { ...opts }); }
+export function e(p: string) { return readFileSync(p, { ["flag"]: "r" }); }
+export function f(p: string) { return createReadStream(p, { flags: constants.O_RDWR }); }
+export function g(p: string) { return readFileSync(p, { flag: 0 }); }
+export function h() { return readFileSync(...args); }
+export function k(p: string, cb: (e: unknown) => void) { readFile(p, (err) => cb(err)); return readFileSync(p, { encoding: "utf8" }); }
+`);
+  assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), ["a:readFileSync#1", "b:readFileSync#1", "c:readFileSync#1", "d:readFileSync#1", "e:readFileSync#1", "f:createReadStream#1", "g:readFileSync#1", "h:readFileSync#1"].map(w425Key), "a variable, shorthand, non-literal, spread, computed or numeric flag outside the helper fails; a callback or an encoding does not");
+  assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
+});
