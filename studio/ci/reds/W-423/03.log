@@ -1,0 +1,51 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-423-b3\s --import tsx packages/cli/src/w369.test.ts
+# exit: 1
+# at: 2026-10-27T09:08:10.304Z
+# sella: architect
+# tree: tree:fcd75dcb3ca3a37733e3f3b5b16f2211d35783a3
+# ticket: {"opus":"W-423","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-423/studio","head":"1e9342487ff58995fca474827981602130a02fa9","brief":"28efe8b831585379f52223980ede33a7d7553306","at":"2026-10-27T09:08:10.267Z"}
+
+TAP version 13
+# Subtest: W-423-b3 behaviour 3: the merge rung's sync request is written only through a real bisellium directory below the Git common directory, and a symlinked one is not requested
+not ok 1 - W-423-b3 behaviour 3: the merge rung's sync request is written only through a real bisellium directory below the Git common directory, and a symlinked one is not requested
+  ---
+  duration_ms: 96.384744
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-423/packages/cli/src/w369.test.ts:16:465'
+  failureType: 'testCodeFailure'
+  error: |-
+    a symlinked bisellium level: not requested, and said so
+    + actual - expected
+    
+      [
+        "patron: git -C '/tmp/claude-1000/w369-DosMNk/main it'\\''s ü/main' merge --ff-only dc6bb3cbff9cb257e3b8cc82e2cc2efb9524a662",
+    +   'sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)'
+    -   "sync: not requested (record directory must be a real directory, not a symbolic link: /tmp/claude-1000/w369-DosMNk/main it's ü/main/.git/bisellium)"
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: "patron: git -C '/tmp/claude-1000/w369-DosMNk/main it'\\''s ü/main' merge --ff-only dc6bb3cbff9cb257e3b8cc82e2cc2efb9524a662"
+    1: "sync: not requested (record directory must be a real directory, not a symbolic link: /tmp/claude-1000/w369-DosMNk/main it's ü/main/.git/bisellium)"
+  actual:
+    0: "patron: git -C '/tmp/claude-1000/w369-DosMNk/main it'\\''s ü/main' merge --ff-only dc6bb3cbff9cb257e3b8cc82e2cc2efb9524a662"
+    1: 'sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-423/packages/cli/src/w369.test.ts:419:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 579.983189
