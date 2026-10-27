@@ -749,7 +749,7 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   rmSync(dirname(notice), { recursive: true, force: true });
   mkdirSync(dirname(dirname(notice)), { recursive: true });
   writeFileSync(dirname(notice), "a file where the notice directory belongs\n");
-  held("a notice that cannot be written", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (EEXIST: file already exists, mkdir '${dirname(notice)}')`], undefined, 0);
+  held("a notice that cannot be written", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (record directory must be a real directory, not a symbolic link: ${dirname(notice)})`], undefined, 0);
   rmSync(dirname(notice), { force: true });
 
   // fix round 1: a symlinked <common>/bisellium or <common>/bisellium/notice holds, and nothing is written outside it
@@ -757,12 +757,12 @@ test("W-418-b1 behaviour 1: review-request screens an open PR's head against mas
   const away = scratch("w418-b1-away");
   rmSync(bis, { recursive: true, force: true });
   symlinkSync(away, bis);
-  held("a symlinked bisellium directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (${bis} is a symlink, not a directory)`], undefined, 0);
+  held("a symlinked bisellium directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (record directory must be a real directory, not a symbolic link: ${bis})`], undefined, 0);
   assert.deepEqual(readdirSync(away), [], "nothing is written outside through the bisellium link");
   rmSync(bis);
   mkdirSync(bis);
   symlinkSync(away, dirname(notice));
-  held("a symlinked notice directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (${dirname(notice)} is a symlink, not a directory)`], undefined, 0);
+  held("a symlinked notice directory", [view(), title], { stdout: "" }, [`why: PR #901 touches code-owned paths, but its notice could not be written (record directory must be a real directory, not a symbolic link: ${dirname(notice)})`], undefined, 0);
   assert.deepEqual(readdirSync(away), [], "nothing is written outside through the notice link");
   rmSync(bis, { recursive: true, force: true });
 
