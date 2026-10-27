@@ -1,0 +1,20 @@
+# opus: W-423
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17c75-3895-77d1-a93c-1789f0acf30a
+# outcome: failed
+# at: 2026-10-27T08:27:38.300Z
+# tree: tree:fe3e0d1318bf8369694c8f14b896f0638893ffde
+# brief: briefs/W-423.md blob:21e25e02cba207bab162fbc13d226a506e2af66c
+# ticket: {"opus":"W-423","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"9e2c835360e411aae25964735c5c0d1f8ad2ca74","brief":"21e25e02cba207bab162fbc13d226a506e2af66c","at":"2026-10-27T08:27:32.483Z"}
+
+## Findings
+1. blocking — brief:66 [severity: S1] [design: changes] `scanCD` silently ignores direct filesystem functions absent from `RAW_FS`; an ordinary contributor mistake such as adding `linkSync` in a governed CLI command therefore lets the real `npm test` caller pass while the command writes through an unchecked parent, and the synthetic row tests only already-classified names. Replace brief:66 with: “**The census rule** (`containment.test.ts`, row `W-423-b5`) requires `scanCD` to classify every direct `node:fs` or `node:fs/promises` call as read-only or write-capable; an unclassified filesystem function is out of domain and fails the row. `w423Unrouted` rejects every classified write outside a helper caller, approved helper body or `WRITE_LIMITS`, and `w423Stale` rejects obsolete limits.” [class: security×symlink-parent-write-escape] — check: packages/cli/src/containment.test.ts
+2. advisory — brief:68 [severity: S2] The “binds the pushed head” promise combines `readRef(wt, "HEAD")` with a later `git push … branch`, while its displayed path comes from `queueFile`’s `gitCommonDir` and the actual write uses a second `gitCommonDir`; neither disagreement is stated. Replace brief:68 with: “Promise queue: containment trusts `writeBinding`’s `gitCommonDir` result; `queueFile`’s earlier result is diagnostic and may name another path if repository metadata changes. Binding bytes trust `readRef(wt, "HEAD")`; the later reused push may push another oid if the branch moves meanwhile, so equality with the pushed head is guaranteed only without intervening branch movement; the binding-name symlink remains a stated limit.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: D-070 C reader-disagreement limit
+3. advisory — brief:70 [severity: S3] The sentence says `unbind` guards a level swapped after the probe, but replacing the probed directory with a different real directory passes `requireRealDirectory` and can delete the new directory’s same-named entry. Replace brief:70 with: “Promise direct: `readBinding` supplies the lexical binding path and `unbind` re-proves that its current parent is real before removal; replacement by a symlink refuses, but replacement by another real directory can make the probe and removal address different entries and is a stated TOCTOU limit.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: D-070 C reader-disagreement limit
+
+## Verdict
+The signed brief has a design-changing security gap in the proposed future-write census and is not ready to build.
+VERDICT: FAIL

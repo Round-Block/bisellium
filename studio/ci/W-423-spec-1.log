@@ -1,0 +1,29 @@
+# opus: W-423
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T08:23:13.925Z
+# tree: tree:fe3e0d1318bf8369694c8f14b896f0638893ffde
+# brief: briefs/W-423.md blob:21e25e02cba207bab162fbc13d226a506e2af66c
+# ticket: {"opus":"W-423","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"9e2c835360e411aae25964735c5c0d1f8ad2ca74","brief":"21e25e02cba207bab162fbc13d226a506e2af66c","at":"2026-10-27T08:23:08.775Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-423-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the cause found by the read enumeration: every write under <git common dir>/bisellium (15 sites: the queue binding, the sync request, the step tickets, the notices) was pinned `outside` in W-163's census, so containment was never asked of it; none proves its directory, and W-418's notice store alone had a per-site lstat check — check: enumerate.mts, enumerate-master.out, brief:17, brief:19
+2. advisory — the design: the fifteen sites move onto the existing shared helper (ensureRealDirectory and requireRealDirectory in packages/commands/src/ids.ts, plus a new non-creating existingRealDirectory), anchored at the Git common directory as git prints it; a refusal surfaces through each site's existing hold or error; the TOCTOU window and the file's own name are stated limits (D-045, D-076 E) — check: brief:23, brief:47, prototype.diff
+3. advisory — the rule the class lacked is a census row (W-423-b5) over W-163's own AST scan: a governed direct write sits in a helper caller, in an approved helper body, or in WRITE_LIMITS (40 keys, seven classes); a new one, a function that stops calling the helper, or a stale limit fails npm test; the census's check lines move to stderr so the selected row's TAP opens stdout — check: brief:24, brief:66, rows-b5.ts.txt, gen-rows-b5.py
+4. advisory — scope phased as the dispatch allowed: the Git-common-directory store now; INIT, DOT and the other packages proposed as follow-up filings; W-099 not closed; no code-owned path and no next.ts region touched — check: brief:172, brief:41
+5. advisory — five behaviours, one red each, one at a time: each red fails by assertion on the commit before its behaviour and the host classifier accepts it; each row passes at its stage and every later one; the census file passes whole at every series commit; the ten-commit series equals the prototype — check: red-accept.out, series.out, reds.sh
+6. advisory — fifteen kills, each a one-hunk mutation of one source file, fail their row at the guarded assertion with ERR_ASSERTION, two of them on the unchanged and new helper bodies — check: kills.out, kills.py
+7. advisory — two existing rows flip and are named: W-163-b6 (the pins move) and W-418-b1 (three holds now carry the helper's message); master's other two edited test files pass whole on the prototype's source; twenty-five test files that reach the changed code pass whole on the prototype — check: flip-summary.out, green-summary.out, brief:158
+8. advisory — the Codex test check lists the two flips, both named, Unnamed None, and must-stay-green rows in ten test files; each file was run whole and passes on the prototype, w362.test.ts added to green.sh because the check named it — check: fixture-census.md, green-summary.out, green.sh
+9. advisory — the brief passes admission on master's code and the promise ledger passes master's validator; lint, format:check, the typecheck and both officina checks pass on the prototype — check: admission.out, ledger-probe.out, lint-proto.out, format-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+10. advisory — unchanged code the promises lean on is stated as a limit (D-076 E): ensureRealDirectory, requireRealDirectory, readContainedRegularFile and the census scan among it — check: brief:82
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-423.md` (spec round 1), master 9e2c8353; five behaviours; two existing rows flipped and named; the Git-common-directory store moves onto the shared containment helper and a census rule refuses a new direct write outside it.

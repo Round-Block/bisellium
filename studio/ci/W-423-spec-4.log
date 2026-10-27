@@ -1,0 +1,21 @@
+# opus: W-423
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17c75-3895-77d1-a93c-1789f0acf30a
+# outcome: failed
+# at: 2026-10-27T08:42:20.012Z
+# tree: tree:fe3e0d1318bf8369694c8f14b896f0638893ffde
+# brief: briefs/W-423.md blob:8e8528b01781c0617fbc42e7aee46d43e2313987
+# ticket: {"opus":"W-423","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"665f13bbfcc4e0f0e4d15fed54df3bb04bdae230","brief":"8e8528b01781c0617fbc42e7aee46d43e2313987","at":"2026-10-27T08:42:16.043Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-423-spec/prototype.diff:30 Reached by ci/W-423-spec-2.log #1’s class: `W423_FS_VALUES` exempts `WriteStream`, although its constructor opens a path for writing; `new WriteStream(path)` in governed code therefore produces neither an `fs` site nor an `fsUses` refusal, letting `npm test` pass while a write bypasses containment and breaking brief:66 and brief:100. [severity: S1] [design: changes] [class: security×symlink-parent-write-escape] — check: packages/cli/src/containment.test.ts
+
+## Earlier findings
+- ci/W-423-spec-2.log #1: closed — revision 2 scans direct functions outside `RAW_FS`; its real fixture catches `linkSync` and `chmod`, and `scan-probe-r1.out` fails when that coverage is removed while `scan-probe.out` passes at the tip
+
+## Verdict
+The revised direct-call census closes the earlier instance, but its `WriteStream` exemption leaves a sibling write bypass in the same security class.
+VERDICT: FAIL

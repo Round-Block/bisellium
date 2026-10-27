@@ -1,0 +1,33 @@
+# opus: W-423
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T08:40:22.036Z
+# tree: tree:fe3e0d1318bf8369694c8f14b896f0638893ffde
+# brief: briefs/W-423.md blob:8e8528b01781c0617fbc42e7aee46d43e2313987
+# ticket: {"opus":"W-423","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"665f13bbfcc4e0f0e4d15fed54df3bb04bdae230","brief":"8e8528b01781c0617fbc42e7aee46d43e2313987","at":"2026-10-27T08:40:21.359Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-423-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2's finding 1 (S1) adopted with its replacement text for brief:66: scanCD gains `fs`, every direct node:fs or node:fs/promises call whatever its name, and `fsUses`, any other use of a function outside RAW_FS; W-423-b5 now requires every governed call to be classified read-only or write-capable (an unclassified one, a computed member included, fails), and judges every write-capable one, linkSync and chmod included — check: brief:66, brief:78, brief:100, scan-edits.py, rows-b5.ts.txt
+2. advisory — the finding's red: the real scanCD of a governed fixture finds linkSync, an fs/promises chmod and statfs as calls and an alias of lutimesSync as a use, and w423Unrouted lists the linkSync and the chmod; with scanCD's `fs` list cut back to RAW_FS names (revision 1's reach) the row fails by assertion, and it passes at the tip; the scanner lives in the test file, so this red is a probe, not a kill — check: scan-probe.sh, scan-probe-summary.out, scan-probe-r1.out, brief:130
+3. advisory — the full scan (enumerate-fs.out) finds 383 governed direct fs calls, none unclassified and no governed alias; outside RAW_FS only mkdtempSync can write, at four sites, three under OS temp outside every helper caller, now WRITE_LIMITS entries of class TEMP (43 limits), the fourth (artifactCertificate) in a helper caller — check: enumerate-fs.out, brief:173
+4. advisory — round 2's findings 2 and 3 adopted: Promise queue states that containment trusts writeBinding's gitCommonDir and queueFile's path is diagnostic, and that the bytes trust readRef(wt, "HEAD") so equality with the pushed head holds only without intervening branch movement; Promise direct states that readBinding supplies the lexical path unbind removes, and that replacement by another real directory is a TOCTOU limit — check: brief:68, brief:70
+5. advisory — the cause and the design are unchanged from revision 1: the fifteen writes under <git common dir>/bisellium were pinned `outside`, and all move onto the shared helper (ensureRealDirectory, requireRealDirectory and the new existingRealDirectory in ids.ts), anchored at the Git common directory — check: brief:17, brief:19, brief:23, brief:47
+6. advisory — five behaviours, one red each, one at a time: each red fails by assertion on the commit before its behaviour and the host classifier accepts it; each row passes at its stage and every later one; the census file passes whole at every series commit; the ten-commit series equals the prototype — check: red-accept.out, series.out, reds.sh
+7. advisory — fifteen kills, each a one-hunk mutation of one source file, fail their row at the guarded assertion with ERR_ASSERTION, rerun on revision 2's series — check: kills.out, kills.py
+8. advisory — two existing rows flip and are named, W-163-b6 and W-418-b1; master's other two edited test files pass whole on the prototype's source; the Codex test check, rerun on revision 2, lists the same two flips, Unnamed None, and must-stay-green rows in ten test files, each run whole and passing — check: flip-summary.out, green-summary.out, fixture-census.md, brief:159
+9. advisory — the brief passes admission on master's code and the promise ledger passes master's validator; lint, format:check, the typecheck and both officina checks pass on the prototype; no code-owned path is touched — check: admission.out, ledger-probe.out, lint-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out, brief:41
+10. advisory — unchanged code the promises lean on is stated as a limit (D-076 E), the census scan among it; the two classes are reviewed lists of names, so a function node adds later fails until it is classified — check: brief:82, brief:78
+
+## Earlier findings
+
+- ci/W-423-spec-2.log #1: closed — scanCD's fs list and W-423-b5's classification, rows-b5.ts.txt and scan-edits.py; brief:66 carries the replacement text; scan-probe-summary.out shows the row failing with the scan cut back to RAW_FS names
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-423.md` (spec round 3), master 9e2c8353 (master since moved by studio records only); five behaviours; two existing rows flipped and named. Round 2's findings adopted: 1 (every governed fs call classified, an unclassified one failing), 2 and 3 (the reader disagreements stated as limits).

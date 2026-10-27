@@ -1,0 +1,28 @@
+# opus: W-423
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-27T08:55:50.071Z
+# tree: tree:e2d92d5a13f96a16cf0cdae4eabb17c2dd262096
+# brief: briefs/W-423.md blob:28efe8b831585379f52223980ede33a7d7553306
+# ticket: {"opus":"W-423","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"4235563eb4c5e6254e577cc142c786e45a9054ca","brief":"28efe8b831585379f52223980ede33a7d7553306","at":"2026-10-27T08:55:44.676Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-423-spec/promise-ledger-r5.md
+
+## Findings
+
+1. advisory — round 4's finding 1 (S1) is cut, not fixed (D-061 §4): W423_FS_VALUES exempts WriteStream and ReadStream, so a constructed stream is neither an `fs` site nor an `fsUses` finding, and createReadStream, readFile and readFileSync are judged read-only by name even with a write flag; every claim of full coverage is narrowed to the classified calls and the remainder is a stated limit naming W-425 (greenlit high) — check: brief:66, brief:78, brief:87, brief:101, brief:179
+2. advisory — the cut's fact check: no governed source or test uses a stream class, createReadStream, or a read with a flag today; node 25's non-function exports are listed, FileReadStream, FileWriteStream and Utf8Stream are not exempt (a use fails as fsUses, a call as unclassified), and a ReadStream with flags "w" and readFileSync with flag "w+" each truncate an existing file — check: streams-r5.sh, streams-r5.out
+3. advisory — the design, the five behaviours, the rows and the prototype are unchanged from revision 2 (signed round 3); the Prototype line's sha256 still matches prototype.mbox, so its reds, kills, flips and gates stand — check: brief:11, red-accept.out, kills.out, flip-summary.out, green-summary.out
+4. advisory — the cut brief passes admission on master's code (master has no source change since 9e2c8353) and the round 5 ledger passes master's validator — check: admission-r5.out, ledger-probe-r5.out, promise-ledger-r5.md
+
+## Earlier findings
+
+- ci/W-423-spec-4.log #1: closed — split per D-061 §4: the stream constructors and write flags are a stated limit in brief:66, brief:78, brief:87, brief:101 and Out of scope, filed as W-425 (studio/opera/W-425.md, greenlit high); streams-r5.out shows no governed use today
+- ci/W-423-spec-2.log #1: closed — scanCD's fs list and W-423-b5's classification, rows-b5.ts.txt and scan-edits.py; scan-probe-summary.out shows the row failing with the scan cut back to RAW_FS names
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-423.md` (spec round 5, a cut after round 4's failed review), master 9e2c8353 (master since moved by studio records only); five behaviours, unchanged; two existing rows flipped and named; the stream-constructor remainder is W-425.
