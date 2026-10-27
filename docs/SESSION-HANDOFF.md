@@ -48,7 +48,8 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, one UI (Patron 2026-10-24, narrowing D-111's two each), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-425 — W-423's remainder: the containment census classifies stream constructors (WriteStream, createWriteStream) as path writes (D-076 D high; in build: review r2 next)
+1. W-428 — next counts an evidence-only fix commit under ci/reds/<id>/ as the fix for an evidence-only review blocker and orders the re-review (high, Patron 10-27; unblocks W-425) `next.ts`
+1a. W-425 — W-423's remainder: the containment census classifies stream constructors (WriteStream, createWriteStream) as path writes (D-076 D high; held after review r2 failed on evidence only, its red committed as ci/reds/W-425/fix1-b4.log; review r3 once W-428 lands)
 2. W-426 — the ui-lead and ui-spec-review prompts ask whether a DIRECTION rule makes sense on the screen and who ruled it, not only conformance (high, Patron 10-27; touches studio/prompts/: Patron merges)
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
 4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
