@@ -16,7 +16,7 @@ import { accessSync, constants, lstatSync, mkdirSync, realpathSync, unlinkSync, 
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
-import { ensureRealDirectory } from "@bisellium/commands/ids.js";
+import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { reviewNotice } from "./review-notice.js";
 
 /** The fewest passing checks a merge needs; only checks in bucket `pass` count. */
@@ -646,12 +646,16 @@ function bisFile(repo: string, ...parts: string[]): { path: string } | { error: 
 }
 /** W-199: the file whose presence binds a queue-mode PR head: `<git common dir>/bisellium/queue/<encodeURIComponent(branch)>`. */
 const queueFile = (repo: string, branch: string): { path: string } | { error: string } => bisFile(repo, "queue", encodeURIComponent(branch));
-/** W-199: `absent` only when `lstat` finds no entry; any entry is `bound`; any other failure is `error`. */
+/** W-199: `absent` only when `lstat` finds no entry; any entry is `bound`; any other failure is `error`. W-423: the
+ *  directory is read through the shared containment helper, so a symlinked level of `bisellium/queue` is an `error`. */
 function readBinding(repo: string, branch: string): { kind: "absent" | "bound"; path: string } | { kind: "error"; reason: string } {
-  const file = queueFile(repo, branch);
-  if ("error" in file) return { kind: "error", reason: file.error };
+  const common = gitCommonDir(repo);
+  if ("error" in common) return { kind: "error", reason: common.error };
   try {
-    return { kind: lstatSync(file.path, { throwIfNoEntry: false }) === undefined ? "absent" : "bound", path: file.path };
+    const dir = existingRealDirectory(common.path, "bisellium", "queue");
+    if (dir === undefined) return { kind: "absent", path: join(common.path, "bisellium", "queue", encodeURIComponent(branch)) };
+    const path = join(dir, encodeURIComponent(branch));
+    return { kind: lstatSync(path, { throwIfNoEntry: false }) === undefined ? "absent" : "bound", path };
   } catch (e) {
     return { kind: "error", reason: thrown(e) };
   }
@@ -663,6 +667,16 @@ function writeBinding(repo: string, branch: string, oid: string): string | undef
   if ("error" in common) return common.error;
   try {
     writeFileSync(join(ensureRealDirectory(common.path, "bisellium", "queue"), encodeURIComponent(branch)), `${oid}\n`);
+    return undefined;
+  } catch (e) {
+    return thrown(e);
+  }
+}
+/** W-199, W-423: removes the binding `readBinding` found, its directory proved real again first (`requireRealDirectory`). */
+function unbind(path: string): string | undefined {
+  try {
+    requireRealDirectory(dirname(path));
+    unlinkSync(path);
     return undefined;
   } catch (e) {
     return thrown(e);
@@ -716,11 +730,8 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
     const push = git(wt, ["push", "-q", "--force-with-lease", "origin", branch]);
     if (push.status !== 0) return held(`push failed: ${why(push)}`);
     if (bound !== "") {
-      try {
-        unlinkSync(bound);
-      } catch (e) {
-        return held(`pushed, but the queue binding ${bound} could not be removed: ${thrown(e)}`);
-      }
+      const gone = unbind(bound);
+      if (gone !== undefined) return held(`pushed, but the queue binding ${bound} could not be removed: ${gone}`);
     }
     let number = existing?.number;
     if (existing === undefined) {

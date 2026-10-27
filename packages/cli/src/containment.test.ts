@@ -282,7 +282,7 @@ interface CDScan {
   outOfDomain: string[];
 }
 
-const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "readContainedRegularFile", "createNextRecord"]);
+const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "existingRealDirectory", "readContainedRegularFile", "createNextRecord"]);
 
 // What a name can be bound to: the fs module, `Date`, the global object (whose `.Date` is `Date`), or node:module.
 type Kind = "fs" | "date" | "global" | "mod";
@@ -820,7 +820,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/integrate.ts:requestSync:mkdirSync#1", disposition: "outside", why: "W-369: creates the sync request's directory under the Git common directory (<common>/bisellium), a git dir, never an officina" },
   { key: "packages/cli/src/integrate.ts:requestSync:writeFileSync#1", disposition: "outside", why: "W-369: writes the sync request file under the Git common directory (<common>/bisellium/sync), a git dir, never an officina" },
   { key: "packages/cli/src/integrate.ts:writeBinding:writeFileSync#1", disposition: "contained", why: "writes the merge-queue binding file <common>/bisellium/queue/<branch> under the Git common directory (W-423: through the shared containment helper, so a symlinked level below the common directory refuses)" },
-  { key: "packages/cli/src/integrate.ts:result:unlinkSync#1", disposition: "outside", why: "removes the merge-queue binding file under the Git common directory after a direct-mode push, a git dir, never an officina" },
+  { key: "packages/cli/src/integrate.ts:unbind:unlinkSync#1", disposition: "contained", why: "removes the merge-queue binding after a direct-mode push, its directory proved real again by requireRealDirectory, under the Git common directory (W-423: through the shared containment helper, so a symlinked level below the common directory refuses)" },
   { key: "packages/cli/src/new.ts:waitAtIdsTestBarrier:writeFileSync#1", disposition: "outside", why: "test barrier file in a directory named by a test-only environment variable" },
   { key: "packages/cli/src/new.ts:newItem:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
   { key: "packages/cli/src/new.ts:runNew:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },

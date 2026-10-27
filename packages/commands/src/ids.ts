@@ -122,6 +122,23 @@ export function requireRealDirectory(path: string): void {
   }
 }
 
+/** W-423: `<root>/<segments…>` as an existing real directory, never created: undefined when a level is absent, and a
+ *  throw, as `ensureRealDirectory`'s, when a level is a symlink or not a directory. The root is realpath'd, so it is the
+ *  anchor: a symlink above it is the file system's to follow, one at or below a segment refuses. For a probe, a read or a
+ *  removal that must not create the directory. */
+export function existingRealDirectory(root: string, ...segments: string[]): string | undefined {
+  let current = realpathSync(root);
+  for (const segment of segments) {
+    if (segment === "" || segment === "." || segment === ".." || /[\\/]/.test(segment)) {
+      throw new Error(`record directory segment must be one plain name: ${JSON.stringify(segment)}`);
+    }
+    current = join(current, segment);
+    if (lstatSync(current, { throwIfNoEntry: false }) === undefined) return undefined;
+    requireRealDirectory(current);
+  }
+  return current;
+}
+
 /** `<root>/<segments…>` as a real directory, created one level at a time. The root is realpath'd, and every level is
  *  checked with `requireRealDirectory` before anything is created inside it — a symlinked level refuses and nothing
  *  lands outside. Each segment is one plain name. Returns the directory's path. */
