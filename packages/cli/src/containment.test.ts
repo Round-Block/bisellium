@@ -296,9 +296,8 @@ const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "St
 const W425_FLAG_READS = new Set(["readFileSync", "readFile", "createReadStream", "ReadStream"]);
 const W425_READ_FLAGS = new Set(["r", "rs", "sr"]);
 /** W-425: whether a read's options (its second argument) may name a write flag. It is a read only when no options, an
- * encoding string or a callback is passed, or an object literal whose every `flag` or `flags` is a literal read flag and which has
- * no `__proto__` key other than `__proto__: null` (an inherited flag), spread or computed key; a getter, setter, method or shorthand named `flag` or `flags`, and
- * any other form (a variable, a call, a numeric or non-literal flag) fails closed as a write. A property on any other name is ignored. */
+ * encoding string or a callback is passed, or an object literal whose every `flag` or `flags` is a literal read flag; any other
+ * form (a variable, a call, a spread, a shorthand, a computed key, a numeric or non-literal flag) fails closed as a write. */
 function w425WriteFlag(args: readonly ts.Expression[]): boolean {
   if (args.slice(0, 2).some(ts.isSpreadElement)) return true;
   const o = args[1];
@@ -307,7 +306,6 @@ function w425WriteFlag(args: readonly ts.Expression[]): boolean {
   return o.properties.some((p) => {
     if (ts.isSpreadAssignment(p) || ts.isComputedPropertyName(p.name)) return true;
     const key = ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) ? p.name.text : undefined;
-    if (key === "__proto__") return !(ts.isPropertyAssignment(p) && p.initializer.kind === ts.SyntaxKind.NullKeyword);
     if (key !== "flag" && key !== "flags") return false;
     return !(ts.isPropertyAssignment(p) && ts.isStringLiteralLike(p.initializer) && W425_READ_FLAGS.has(p.initializer.text));
   });
