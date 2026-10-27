@@ -296,18 +296,20 @@ const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "St
 const W425_FLAG_READS = new Set(["readFileSync", "readFile", "createReadStream", "ReadStream"]);
 const W425_READ_FLAGS = new Set(["r", "rs", "sr"]);
 /** W-425: whether a read's options (its second argument) may name a write flag. It is a read only when no options, an
- * encoding string or a callback is passed, or an object literal whose every `flag` or `flags` is a literal read flag; any other
- * form (a variable, a call, a spread, a shorthand, a computed key, a numeric or non-literal flag) fails closed as a write. */
+ * encoding string or a callback is passed, or an object literal of plain, non-computed, non-`__proto__` property assignments whose
+ * every `flag` or `flags` is a literal read flag; any other form (a variable, a call, a spread, a shorthand, a computed key, a
+ * `__proto__` key, a getter, setter or method, a numeric or non-literal flag) fails closed as a write. */
 function w425WriteFlag(args: readonly ts.Expression[]): boolean {
   if (args.slice(0, 2).some(ts.isSpreadElement)) return true;
   const o = args[1];
   if (o === undefined || ts.isStringLiteralLike(o) || ts.isArrowFunction(o) || ts.isFunctionExpression(o)) return false;
   if (!ts.isObjectLiteralExpression(o)) return true;
   return o.properties.some((p) => {
-    if (ts.isSpreadAssignment(p) || ts.isComputedPropertyName(p.name)) return true;
-    const key = ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) ? p.name.text : undefined;
+    if (!ts.isPropertyAssignment(p) || !(ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name))) return true;
+    const key = p.name.text;
+    if (key === "__proto__") return true;
     if (key !== "flag" && key !== "flags") return false;
-    return !(ts.isPropertyAssignment(p) && ts.isStringLiteralLike(p.initializer) && W425_READ_FLAGS.has(p.initializer.text));
+    return !(ts.isStringLiteralLike(p.initializer) && W425_READ_FLAGS.has(p.initializer.text));
   });
 }
 const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "existingRealDirectory", "readContainedRegularFile", "createNextRecord"]);
@@ -1521,7 +1523,9 @@ function w425Scan(src: string): CDScan {
     const rel = "packages/cli/src/w425-fixture.ts";
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
     writeFileSync(join(dir, rel), src);
-    return scanCD(dir, [rel]);
+    const scan = scanCD(dir, [rel]);
+    if (scan.outOfDomain.length > 0) throw new Error(`w425 fixture is out of domain: ${scan.outOfDomain.join("; ")}`);
+    return scan;
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -1558,6 +1562,7 @@ export async function d(p: string) { return fsp.readFile(p, { encoding: "utf8", 
 export function e(p: string) { return [readFileSync(p), readFileSync(p, "utf8"), readFileSync(p, { encoding: "utf8", flag: "r" }), createReadStream(p, { flags: "rs" }), new ReadStream(p, { flags: "sr" })]; }
 export function h(root: string) { return readFileSync(ensureRealDirectory(root, "notice") + "/x", { flag: "a+" }); }
 `);
+  assert.deepEqual(scan.fs.map((x) => x.key), ["a:readFileSync#1", "b:createReadStream#1", "c:ReadStream#1", "d:readFile#1", "e:readFileSync#1", "e:readFileSync#2", "e:readFileSync#3", "e:createReadStream#1", "e:ReadStream#1", "h:readFileSync#1"].map(w425Key), "every direct read in the fixture is a site, the accepted ones included");
   assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), [w425Key("a:readFileSync#1"), w425Key("b:createReadStream#1"), w425Key("c:ReadStream#1"), w425Key("d:readFile#1")], "a read with a literal write flag outside the helper fails; a read flag, an encoding, no options or a helper caller does not");
   assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
 });
@@ -1578,6 +1583,7 @@ export function g(p: string) { return readFileSync(p, { flag: 0 }); }
 export function h() { return readFileSync(...args); }
 export function k(p: string, cb: (e: unknown) => void) { readFile(p, (err) => cb(err)); return readFileSync(p, { encoding: "utf8" }); }
 `);
+  assert.deepEqual(scan.fs.map((x) => x.key), ["a:readFileSync#1", "b:readFileSync#1", "c:readFileSync#1", "d:readFileSync#1", "e:readFileSync#1", "f:createReadStream#1", "g:readFileSync#1", "h:readFileSync#1", "k:readFile#1", "k:readFileSync#1"].map(w425Key), "every direct read in the fixture is a site, the accepted callback and encoding ones included");
   assert.deepEqual(w423Unrouted(scan.fs, scan.helperCallers, listed), ["a:readFileSync#1", "b:readFileSync#1", "c:readFileSync#1", "d:readFileSync#1", "e:readFileSync#1", "f:createReadStream#1", "g:readFileSync#1", "h:readFileSync#1"].map(w425Key), "a variable, shorthand, non-literal, spread, computed or numeric flag outside the helper fails; a callback or an encoding does not");
   assert.deepEqual(w423Unclassified(scan.fs), [], "every read is classified");
 });
