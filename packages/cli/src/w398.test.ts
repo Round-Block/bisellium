@@ -5,11 +5,13 @@
  * under the OS tmp dir; nothing here reads or writes the real ~/.claude, ~/projects, ~/.local/bin or the agent clone.
  * W-402 rows b1 and b2 (studio/briefs/W-402.md): --check names every wrong-type field, one line each in merge()'s order,
  * never Node's message; selected by `--test-name-pattern='^W-402-b<k>\s'`.
+ * W-420 rows b1 and b2 (studio/briefs/W-420.md): verify, verify --inside and setup fail while the agent gh config holds
+ * any login but the agent's own; selected by `--test-name-pattern='^W-420-b<k>\s'`.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -331,4 +333,253 @@ test("W-402-b2 behaviour 2: several wrong types at once are each named, one line
     assert.equal(lstatSync(w.settings).mtimeMs, old.getTime(), `${what}: its mtime is unchanged`);
     assert.deepEqual(snapshot(w.f), before, `${what}: no file under the home changed`);
   }
+});
+
+// W-420 (studio/briefs/W-420.md): verify, verify --inside and setup fail while the agent gh config ($AGENT_GH) holds any
+// login but the agent's own ($AGENT_LOGIN, active on github.com). A stand-in gh answers from fixture files, never the
+// network; nothing here reads the real ~/.config/agent-gh. Selected by `--test-name-pattern='^W-420-b<k>\s'`.
+
+/** A token-shaped canary: the stand-in gh puts it in every account and on its stderr; no line the script prints holds it. */
+const CANARY = "ghp_W420CANARY000000000000000000000000";
+/** gh's ambient auth and host inputs (`gh help environment`, gh 2.101.0) and its forced-terminal inputs, by name. */
+const AMBIENT = ["GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "GH_HOST", "GH_FORCE_TTY", "CLICOLOR_FORCE"];
+const ghLine = (gh: string): string => `the agent gh config ${gh} holds only the agent's own login, active on github.com`;
+/** A path single-quoted for the shell, as the judge prints it. */
+const sq = (s: string): string => `'${s.split("'").join("'\\''")}'`;
+
+/** A home (its name holds a space, a quote and a non-ASCII letter) whose agent gh config is `agent gh/`, and a stand-in
+ *  gh that logs each call to a file outside the home (its config dir, which of AMBIENT reached it, its
+ *  arguments). It answers `auth status --json hosts` with status.json's text, the canary on stderr and status.exit's code;
+ *  `auth login` reads its stdin; `api repos/Round-Block/bisellium` prints the repo; every other call fails as a 404 would.
+ *  A stand-in git and npm log (outside the home) and fail. The agent clone is a non-empty folder with no .git, so setup's next step refuses. */
+function ghWorld(): {
+  f: string;
+  gh: string;
+  status: (body: string, exit?: number) => void;
+  hosts: (accounts: Record<string, unknown[]>) => void;
+  log: string;
+  logs: string;
+  run: (args: string[], env?: Record<string, string>, input?: string) => { code: number | null; out: string };
+  calls: () => string[];
+} {
+  const f = join(tmp(), "home ü it's");
+  const logs = tmp();
+  const log = join(logs, "gh.log");
+  const gh = join(f, "agent gh");
+  put(join(gh, "hosts.yml"), "# the fixture's config: the stand-in gh never reads it\n");
+  put(join(f, "agent", "keep"), "not a clone\n");
+  put(
+    join(f, "stub", "gh"),
+    [
+      "#!/bin/sh",
+      `printf '%s|%s|%s\\n' "$GH_CONFIG_DIR" "${AMBIENT.map((v) => `\${${v}+${v} }`).join("")}" "$*" >> "$W420_LOG"`,
+      'case "$*" in',
+      `"auth status --json hosts") cat "$HOME/status.json"; echo "${CANARY} (stderr)" >&2; exit "$(cat "$HOME/status.exit")" ;;`,
+      '"auth login --with-token --insecure-storage") cat >/dev/null; exit 0 ;;',
+      '"api repos/Round-Block/bisellium --jq .full_name") echo Round-Block/bisellium; exit 0 ;;',
+      "esac",
+      'echo "HTTP 404: Not Found" >&2',
+      "exit 1",
+      "",
+    ].join("\n"),
+    0o755,
+  );
+  for (const t of ["git", "npm"]) put(join(f, "stub", t), `#!/bin/sh\necho "${t} $*" >> "${join(logs, `${t}.log`)}"\nexit 1\n`, 0o755);
+  const status = (body: string, exit = 0): void => {
+    put(join(f, "status.json"), body);
+    put(join(f, "status.exit"), `${exit}\n`);
+  };
+  const hosts = (accounts: Record<string, unknown[]>): void => status(`${JSON.stringify({ hosts: accounts })}\n`);
+  const run = (args: string[], env: Record<string, string> = {}, input?: string): { code: number | null; out: string } => {
+    const r = spawnSync("bash", [SCRIPT, ...args], {
+      encoding: "utf8",
+      cwd: f,
+      input: input ?? "",
+      env: {
+        PATH: [join(f, "stub"), dirname(process.execPath), "/usr/bin", "/bin"].join(":"),
+        HOME: f,
+        PATRON_DIR: join(f, "patron"),
+        AGENT_DIR: join(f, "agent"),
+        AGENT_GH: gh,
+        GUARD_BIN: join(f, "bin", "bisellium"),
+        OLD_GUARD_DIR: join(f, "old guard"),
+        W420_LOG: log,
+        // every ambient gh auth, host and forced-terminal input set: the check clears each before gh runs
+        GH_TOKEN: CANARY,
+        GITHUB_TOKEN: CANARY,
+        GH_ENTERPRISE_TOKEN: CANARY,
+        GITHUB_ENTERPRISE_TOKEN: CANARY,
+        GH_HOST: "ghe.example.com",
+        GH_FORCE_TTY: "1",
+        CLICOLOR_FORCE: "1",
+        ...env,
+      },
+    });
+    return { code: r.status, out: `${r.stdout}${r.stderr}` };
+  };
+  const calls = (): string[] => (existsSync(log) ? readFileSync(log, "utf8").split("\n").filter((l) => l !== "") : []);
+  return { f, gh, status, hosts, log, logs, run, calls };
+}
+
+/** One gh account as `gh auth status --json hosts` (gh 2.101.0) lists it, with the canary as a token field gh does not print. */
+const account = (gh: string, login: string, active: boolean, host = "github.com"): Record<string, unknown> => ({ active, gitProtocol: "https", host, login, state: "success", tokenSource: `${gh}/hosts.yml`, token: CANARY });
+
+/** The line named `line` and the indented lines under it. */
+function block(out: string, line: string): string[] {
+  const lines = out.split("\n");
+  const i = lines.findIndex((l) => l === `ok ${line}` || l === `FAIL ${line}`);
+  if (i < 0) return [];
+  const b = [lines[i] ?? ""];
+  for (const l of lines.slice(i + 1)) {
+    if (!l.startsWith("  ")) break;
+    b.push(l);
+  }
+  return b;
+}
+
+test("W-420-b1 behaviour 1: verify and verify --inside fail while the agent gh config holds any login but the agent's own, active on github.com, naming each fix and never a token", () => {
+  const w = ghWorld();
+  const g = w.gh;
+  const LINE = ghLine(g);
+  const env = `GH_CONFIG_DIR=${sq(g)}`;
+  const stray = (login: string, host = "github.com"): string => `  ${g} holds the login ${login} on ${host}, not the agent's own (bisellium-agent on github.com); log it out: ${env} gh auth logout -h ${host} -u ${login}`;
+  const noOwn = `  ${g} holds no login bisellium-agent on github.com; run setup with the agent's token`;
+  const form = (why: string): string => `  gh auth status for ${g} is not the form verify reads (${why}); log out every login (${env} gh auth logout) and run setup again`;
+  const judge = (what: string, args: string[], expected: string[], extra: Record<string, string> = {}): string => {
+    const how = ["verify", ...args].join(" ");
+    const before = snapshot(w.f);
+    const n = w.calls().length;
+    const r = w.run(["verify", ...args], extra);
+    assert.deepEqual(block(r.out, LINE), expected, `${what}: ${how}: the line`);
+    assert.doesNotMatch(r.out, /W420CANARY/, `${what}: ${how} prints no token`);
+    assert.deepEqual(snapshot(w.f), before, `${what}: ${how} writes no file under the home`);
+    if (expected[0]?.startsWith("FAIL")) assert.equal(r.code, 1, `${what}: ${how} exits 1`);
+    // gh is asked once, in the agent gh config, with none of AMBIENT (each set by run), and never for a token
+    assert.deepEqual(
+      w.calls().slice(n).filter((c) => c.includes("auth status")),
+      [`${g}||auth status --json hosts`],
+      `${what}: ${how} asks gh once for the logins, in AGENT_GH, with no ambient gh auth, host or terminal input`,
+    );
+    return r.out;
+  };
+
+  // the agent's own login alone: ok, with no line under it
+  w.hosts({ "github.com": [account(g, "bisellium-agent", true)] });
+  for (const args of [[], ["--inside"]]) judge("the agent's own login alone", args, [`ok ${LINE}`]);
+
+  // the finding (2026-10-26): the Patron's login stored, inactive, beside the agent's
+  w.hosts({ "github.com": [account(g, "bisellium-agent", true), account(g, "edckt", false)] });
+  for (const args of [[], ["--inside"]]) judge("a second login, inactive", args, [`FAIL ${LINE}`, stray("edckt")]);
+  // the command pastes as it reads: run by sh, it asks gh to log that login out of the agent gh config
+  const cmd = stray("edckt").replace(/^.* log it out: /, "");
+  const n = w.calls().length;
+  spawnSync("sh", ["-c", cmd], { encoding: "utf8", env: { PATH: [join(w.f, "stub"), "/usr/bin", "/bin"].join(":"), HOME: w.f, W420_LOG: w.log } });
+  assert.deepEqual(w.calls().slice(n), [`${g}||auth logout -h github.com -u edckt`], "the logout command pastes as it reads");
+
+  // the other forms, each a FAIL naming each fault and its fix (verify; verify --inside runs the same check)
+  for (const [what, accounts, expected] of [
+    ["the Patron's login alone, active", { "github.com": [account(g, "edckt", true)] }, [stray("edckt"), noOwn]],
+    ["the agent's login inactive, another active", { "github.com": [account(g, "bisellium-agent", false), account(g, "edckt", true)] }, [stray("edckt"), `  bisellium-agent is not the active login on github.com; switch to it: ${env} gh auth switch -h github.com -u bisellium-agent`]],
+    ["no login", {}, [`  ${g} holds no login; run setup with the agent's token`]],
+    ["the agent's login on another host too", { "github.com": [account(g, "bisellium-agent", true)], "ghe.example.com": [account(g, "bisellium-agent", true, "ghe.example.com")] }, [stray("bisellium-agent", "ghe.example.com")]],
+    ["the agent's login on another host alone", { "ghe.example.com:8443": [account(g, "bisellium-agent", true, "ghe.example.com:8443")] }, [stray("bisellium-agent", "ghe.example.com:8443"), noOwn]],
+    ["the agent's login listed twice", { "github.com": [account(g, "bisellium-agent", true), account(g, "bisellium-agent", false)] }, [`  ${g} lists bisellium-agent on github.com 2 times; log it out (${env} gh auth logout -h github.com -u bisellium-agent) and run setup again`]],
+    ["a login in another case", { "github.com": [account(g, "Bisellium-Agent", true)] }, [stray("Bisellium-Agent"), noOwn]],
+    ["three logins", { "github.com": [account(g, "bisellium-agent", true), account(g, "edckt", false), account(g, "someone-else", false)] }, [stray("edckt"), stray("someone-else")]],
+  ] as const) {
+    w.hosts(accounts as Record<string, unknown[]>);
+    judge(what, [], [`FAIL ${LINE}`, ...expected]);
+  }
+  w.hosts({ "github.com": [account(g, "bisellium-agent", false)] });
+  judge("the agent's login alone, inactive", ["--inside"], [`FAIL ${LINE}`, `  bisellium-agent is not the active login on github.com; switch to it: ${env} gh auth switch -h github.com -u bisellium-agent`]);
+
+  // gh cannot list the logins (an unreadable or malformed hosts.yml, a gh with no --json): its exit, never its words
+  for (const exit of [1, 4]) {
+    w.status("", exit);
+    judge(`gh exits ${exit}`, [], [`FAIL ${LINE}`, `  gh could not list the logins in ${g} (exit ${exit}); make its hosts.yml readable YAML, or remove ${g} and run setup again`]);
+  }
+  // gh's output is not the form the judge reads: fails closed, printing no part of it
+  const one = (over: Record<string, unknown>): string => `${JSON.stringify({ hosts: { "github.com": [{ ...account(g, "bisellium-agent", true), ...over }] } })}\n`;
+  for (const [what, body, why] of [
+    ["empty output", "", "not JSON"],
+    ["not JSON", `${CANARY}\n`, "not JSON"],
+    ["a JSON list", "[]\n", "no hosts object"],
+    ["no hosts", "{}\n", "no hosts object"],
+    ["hosts a list", '{"hosts":[]}\n', "no hosts object"],
+    ["hosts null", '{"hosts":null}\n', "no hosts object"],
+    ["a host whose accounts are an object", '{"hosts":{"github.com":{}}}\n', "a host whose accounts are not a list"],
+    ["a host name with an underscore", `${JSON.stringify({ hosts: { [CANARY]: [account(g, "bisellium-agent", true)] } })}\n`, "a host that is not a host name"],
+    ["a host of 40 hex digits (the legacy token form)", `${JSON.stringify({ hosts: { ["0123456789abcdef0123456789abcdef01234567"]: [account(g, "bisellium-agent", true)] } })}\n`, "a host that is not a host name"],
+    ["an account that is not an object", '{"hosts":{"github.com":["bisellium-agent"]}}\n', "an account with no GitHub login"],
+    ["an account with no login", one({ login: undefined }), "an account with no GitHub login"],
+    ["a login that is not a string", one({ login: 7 }), "an account with no GitHub login"],
+    ["a token-shaped login", one({ login: CANARY }), "an account with no GitHub login"],
+    ["an empty login", one({ login: "" }), "an account with no GitHub login"],
+    ["a login of 40 characters", one({ login: "a".repeat(40) }), "an account with no GitHub login"],
+    ["no active flag", one({ active: undefined }), "an account with no active flag"],
+    ["an active flag that is a string", one({ active: "true" }), "an account with no active flag"],
+  ] as const) {
+    w.status(body);
+    judge(what, [], [`FAIL ${LINE}`, form(why)]);
+  }
+
+  // the agent's own login is the configured one: AGENT_LOGIN names it; a value that is not a login fails closed, unprinted
+  w.hosts({ "github.com": [account(g, "other-agent", true)] });
+  judge("AGENT_LOGIN other-agent, its login alone", [], [`ok ${LINE}`], { AGENT_LOGIN: "other-agent" });
+  judge("the default AGENT_LOGIN, another login alone", [], [`FAIL ${LINE}`, stray("other-agent"), noOwn]);
+  judge("AGENT_LOGIN empty, the default", [], [`FAIL ${LINE}`, stray("other-agent"), noOwn], { AGENT_LOGIN: "" });
+  judge("AGENT_LOGIN not a login", [], [`FAIL ${LINE}`, "  AGENT_LOGIN is not a GitHub login (letters, digits and hyphens); set it to the agent's own login"], { AGENT_LOGIN: CANARY });
+  w.hosts({ "github.com": [account(g, "a".repeat(39), true)] });
+  judge("a login of 39 characters, configured", [], [`ok ${LINE}`], { AGENT_LOGIN: "a".repeat(39) });
+});
+
+test("W-420-b2 behaviour 2: setup refuses to finish while the agent gh config holds any login but the agent's own, and wipes nothing", () => {
+  const w = ghWorld();
+  const g = w.gh;
+  const env = `GH_CONFIG_DIR=${sq(g)}`;
+  const TOKEN = "github_pat_W420SETUPCANARY0000000000";
+  const stopped = `setup stopped: ${g} must hold the agent's own login alone, active on github.com; fix each line above, then run setup again (nothing was wiped).`;
+  const next = `${join(w.f, "agent")} exists and is not empty; move it away first.`;
+  const hostsYml = readFileSync(join(g, "hosts.yml"), "utf8");
+  const setup = (what: string): string[] => {
+    const n = w.calls().length;
+    const r = w.run(["setup"], {}, `${TOKEN}\n`);
+    const lines = r.out.split("\n").filter((l) => l !== "");
+    assert.equal(r.code, 1, `${what}: setup exits 1: ${r.out}`);
+    assert.doesNotMatch(r.out, /W420CANARY|W420SETUPCANARY/, `${what}: setup prints no token`);
+    const made = w.calls().slice(n).map((c) => c.split("|")[2]);
+    assert.deepEqual(made.slice(0, 2), ["auth login --with-token --insecure-storage", "api repos/Round-Block/bisellium --jq .full_name"], `${what}: setup stored the token and read the repo first`);
+    assert.equal(made.filter((c) => /^auth (logout|switch)/.test(c ?? "")).length, 0, `${what}: setup logged nothing out and switched nothing`);
+    assert.equal(made.filter((c) => c === "auth status --json hosts").length, 1, `${what}: setup asked gh for the logins once`);
+    const kept = join(g, "hosts.yml");
+    assert.equal(existsSync(kept) ? readFileSync(kept, "utf8") : "(wiped)", hostsYml, `${what}: the agent gh config was not wiped`);
+    return lines;
+  };
+  const refused = (what: string, expected: string[]): void => {
+    const lines = setup(what);
+    assert.deepEqual(lines, [...expected, stopped], `${what}: setup prints each fault and stops`);
+    assert.equal(existsSync(join(w.logs, "git.log")), false, `${what}: setup ran no git`);
+    assert.equal(existsSync(join(w.logs, "npm.log")), false, `${what}: setup ran no npm`);
+  };
+
+  // the finding: the Patron's login stored, inactive, beside the agent's
+  w.hosts({ "github.com": [account(g, "bisellium-agent", true), account(g, "edckt", false)] });
+  refused("a second login, inactive", [`${g} holds the login edckt on github.com, not the agent's own (bisellium-agent on github.com); log it out: ${env} gh auth logout -h github.com -u edckt`]);
+  // a token of another login, alone
+  w.hosts({ "github.com": [account(g, "edckt", true)] });
+  refused("a token of another login", [
+    `${g} holds the login edckt on github.com, not the agent's own (bisellium-agent on github.com); log it out: ${env} gh auth logout -h github.com -u edckt`,
+    `${g} holds no login bisellium-agent on github.com; run setup with the agent's token`,
+  ]);
+  // gh cannot list the logins
+  w.status("", 1);
+  refused("gh exits 1", [`gh could not list the logins in ${g} (exit 1); make its hosts.yml readable YAML, or remove ${g} and run setup again`]);
+  // output not of the form
+  w.status("[]\n");
+  refused("a JSON list", [`gh auth status for ${g} is not the form verify reads (no hosts object); log out every login (${env} gh auth logout) and run setup again`]);
+
+  // the agent's own login alone: setup goes on to its next step (here the fixture's agent folder refuses it)
+  w.hosts({ "github.com": [account(g, "bisellium-agent", true)] });
+  const lines = setup("the agent's own login alone");
+  assert.deepEqual(lines, [next], "the agent's own login alone: setup passes the check and stops only at its next step");
 });
