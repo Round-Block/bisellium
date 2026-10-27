@@ -286,8 +286,10 @@ interface CDScan {
   outOfDomain: string[];
 }
 
-/** W-423: the fs module's names that are values, not functions: a use of one is not a call to judge. */
-const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "Stats", "Dirent", "Dir", "ReadStream", "WriteStream"]);
+/** W-423: the fs module's names that are values opening no path: a use of one is not a call to judge. W-425: the stream classes
+ * ReadStream and WriteStream open a path when constructed, so they are not here: a construction is a direct site, and any other
+ * use is an `fsUses` finding. */
+const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "Stats", "Dirent", "Dir"]);
 const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "existingRealDirectory", "readContainedRegularFile", "createNextRecord"]);
 
 // What a name can be bound to: the fs module, `Date`, the global object (whose `.Date` is `Date`), or node:module.
@@ -440,7 +442,9 @@ function scanCD(root: string, rels: string[]): CDScan {
         const type = ts.isTypeNode(top.parent) || ts.isQualifiedName(top.parent);
         if (fsName !== undefined && !type) {
           const fn = enclosingFunctionName(n);
-          if (ts.isCallExpression(top.parent) && top.parent.expression === top) out.fs.push({ key: `${rel}:${fn}:${fsName}#${nth(`F:${fn}:${fsName}`)}`, rel, fn });
+          // W-425: a construction (`new WriteStream(p)`) is a direct site, as a call is; a value opening no path stays exempt
+          const direct = (ts.isCallExpression(top.parent) || (ts.isNewExpression(top.parent) && !W423_FS_VALUES.has(fsName))) && top.parent.expression === top;
+          if (direct) out.fs.push({ key: `${rel}:${fn}:${fsName}#${nth(`F:${fn}:${fsName}`)}`, rel, fn });
           else if (!RAW_FS.has(fsName) && !W423_FS_VALUES.has(fsName)) out.fsUses.push(`${rel}:${fn}: ${fsName} is used other than as a direct call`);
         }
         if (fnRef !== undefined && !type) {
@@ -1370,10 +1374,12 @@ process.exitCode = failed ? 1 : 0;
 // here, and so does a limit that no longer names such a write.
 // ---------------------------------------------------------------------------
 const W423_GOVERNED = ["packages/cli/src/", "packages/commands/src/"];
-/** The fs functions that change no file system name or content: a read, a stat, a listing, a check, a close. */
-const W423_READ_ONLY = new Set(["readFileSync", "readFile", "createReadStream", "existsSync", "exists", "statSync", "stat", "lstatSync", "lstat", "fstatSync", "fstat", "statfsSync", "statfs", "readdirSync", "readdir", "opendirSync", "opendir", "realpathSync", "realpath", "readlinkSync", "readlink", "accessSync", "access", "readSync", "read", "readvSync", "readv", "closeSync", "close", "fsyncSync", "fsync", "fdatasyncSync", "fdatasync", "watch", "watchFile", "unwatchFile", "glob", "globSync"]);
-/** The fs functions that can create, change, rename or remove a name or its content (an open, with a write flag). */
-const W423_WRITES = new Set(["writeFileSync", "writeFile", "appendFileSync", "appendFile", "createWriteStream", "writeSync", "write", "writevSync", "writev", "openSync", "open", "openAsBlob", "mkdirSync", "mkdir", "mkdtempSync", "mkdtemp", "rmSync", "rm", "rmdirSync", "rmdir", "unlinkSync", "unlink", "renameSync", "rename", "copyFileSync", "copyFile", "cpSync", "cp", "linkSync", "link", "symlinkSync", "symlink", "truncateSync", "truncate", "ftruncateSync", "ftruncate", "chmodSync", "chmod", "lchmodSync", "lchmod", "fchmodSync", "fchmod", "chownSync", "chown", "lchownSync", "lchown", "fchownSync", "fchown", "utimesSync", "utimes", "lutimesSync", "lutimes", "futimesSync", "futimes"]);
+/** The fs functions that change no file system name or content: a read, a stat, a listing, a check, a close (W-425: and the
+ * ReadStream class, constructed). */
+const W423_READ_ONLY = new Set(["readFileSync", "readFile", "createReadStream", "ReadStream", "existsSync", "exists", "statSync", "stat", "lstatSync", "lstat", "fstatSync", "fstat", "statfsSync", "statfs", "readdirSync", "readdir", "opendirSync", "opendir", "realpathSync", "realpath", "readlinkSync", "readlink", "accessSync", "access", "readSync", "read", "readvSync", "readv", "closeSync", "close", "fsyncSync", "fsync", "fdatasyncSync", "fdatasync", "watch", "watchFile", "unwatchFile", "glob", "globSync"]);
+/** The fs functions that can create, change, rename or remove a name or its content (an open, with a write flag; W-425: and
+ * the WriteStream class, constructed). */
+const W423_WRITES = new Set(["writeFileSync", "writeFile", "appendFileSync", "appendFile", "createWriteStream", "WriteStream", "writeSync", "write", "writevSync", "writev", "openSync", "open", "openAsBlob", "mkdirSync", "mkdir", "mkdtempSync", "mkdtemp", "rmSync", "rm", "rmdirSync", "rmdir", "unlinkSync", "unlink", "renameSync", "rename", "copyFileSync", "copyFile", "cpSync", "cp", "linkSync", "link", "symlinkSync", "symlink", "truncateSync", "truncate", "ftruncateSync", "ftruncate", "chmodSync", "chmod", "lchmodSync", "lchmod", "fchmodSync", "fchmod", "chownSync", "chown", "lchownSync", "lchown", "fchownSync", "fchown", "utimesSync", "utimes", "lutimesSync", "lutimes", "futimesSync", "futimes"]);
 const w423Name = (s: Site): string => s.key.split(":")[2]!.replace(/#\d+$/, "");
 const w423Governed = (s: Site): boolean => W423_GOVERNED.some((g) => s.key.startsWith(g));
 const W423_LIMIT = {
