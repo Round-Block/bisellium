@@ -295,11 +295,20 @@ const W423_FS_VALUES = new Set(["constants", "F_OK", "R_OK", "W_OK", "X_OK", "St
 /** W-425: the read-only names whose options take a `flag` or `flags`, and node's read flags (O_RDONLY, with or without O_SYNC). */
 const W425_FLAG_READS = new Set(["readFileSync", "readFile", "createReadStream", "ReadStream"]);
 const W425_READ_FLAGS = new Set(["r", "rs", "sr"]);
-/** W-425: whether a read's options (its second argument) name a write flag: a literal `flag` or `flags` that is not a read flag. */
+/** W-425: whether a read's options (its second argument) may name a write flag. It is a read only when no options, an
+ * encoding string or a callback is passed, or an object literal whose every `flag` or `flags` is a literal read flag; any other
+ * form (a variable, a call, a spread, a shorthand, a computed key, a numeric or non-literal flag) fails closed as a write. */
 function w425WriteFlag(args: readonly ts.Expression[]): boolean {
+  if (args.slice(0, 2).some(ts.isSpreadElement)) return true;
   const o = args[1];
-  if (o === undefined || !ts.isObjectLiteralExpression(o)) return false;
-  return o.properties.some((p) => ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name)) && (p.name.text === "flag" || p.name.text === "flags") && ts.isStringLiteralLike(p.initializer) && !W425_READ_FLAGS.has(p.initializer.text));
+  if (o === undefined || ts.isStringLiteralLike(o) || ts.isArrowFunction(o) || ts.isFunctionExpression(o)) return false;
+  if (!ts.isObjectLiteralExpression(o)) return true;
+  return o.properties.some((p) => {
+    if (ts.isSpreadAssignment(p) || ts.isComputedPropertyName(p.name)) return true;
+    const key = ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) ? p.name.text : undefined;
+    if (key !== "flag" && key !== "flags") return false;
+    return !(ts.isPropertyAssignment(p) && ts.isStringLiteralLike(p.initializer) && W425_READ_FLAGS.has(p.initializer.text));
+  });
 }
 const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "existingRealDirectory", "readContainedRegularFile", "createNextRecord"]);
 
