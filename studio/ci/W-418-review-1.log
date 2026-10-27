@@ -1,0 +1,19 @@
+# opus: W-418
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a178b4-53a0-7c23-b303-b182f0f7e16c
+# outcome: failed
+# at: 2026-10-26T14:59:31.790Z
+# tree: tree:6d9e5c328f61474789fa527fd3af05a2372278ae
+# brief: briefs/W-418.md blob:d459e01d8ed470bda688b6313e95807cbf7ee991
+# ticket: {"opus":"W-418","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-418/studio","head":"b2acf14be8bcb073aed5052237a84163eb125bd3","brief":"d459e01d8ed470bda688b6313e95807cbf7ee991","at":"2026-10-26T14:54:04.913Z"}
+
+## Findings
+1. blocking — packages/cli/src/review-notice.ts:151 [severity: S1] A symlink at `<common>/bisellium` or `<common>/bisellium/notice` is followed by both the writer and reader, allowing notice writes—and deletion of numeric files by `takeNotices`—outside the Git common directory; brief:152 limits only symlinked parents of the common directory, not these internal components. [class: security×symlink-parent-write-escape] — check: packages/cli/src/next-queue.test.ts W-418-b1 and packages/cli/src/guard.test.ts W-418-b3
+2. advisory — packages/cli/src/review-notice.ts:174 [severity: S3] `openPr` accepts 10–15-digit created PR numbers and writes their notices, but `takeNotices` filters them out through the nine-digit `PR_NUMBER`, so they are never handed over; pin a large-number `pr` rung followed by the guard, or align the bounds. [class: tests×ruled-case-uncovered] — check: packages/cli/src/next-queue.test.ts W-418-b2 and packages/cli/src/guard.test.ts W-418-b3
+
+## Verdict
+The recorded behaviors and reds otherwise align, but the notice store permits a symlink-directed write and deletion outside its intended directory.
+VERDICT: FAIL

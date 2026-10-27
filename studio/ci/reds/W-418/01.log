@@ -1,0 +1,84 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-418-b1\s --import tsx packages/cli/src/next-queue.test.ts
+# exit: 1
+# at: 2026-10-26T13:41:38.394Z
+# sella: architect
+# tree: tree:858aaacd998bf659166c352de1e62b80afb5a810
+# ticket: {"opus":"W-418","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-418/studio","head":"9387615e42d959864a204e99e12f91d751e1f20f","brief":"d459e01d8ed470bda688b6313e95807cbf7ee991","at":"2026-10-26T13:41:38.344Z"}
+
+TAP version 13
+# Subtest: W-418-b1 behaviour 1: review-request screens an open PR's head against master's owners file, leaves the notice and requests review
+not ok 1 - W-418-b1 behaviour 1: review-request screens an open PR's head against master's owners file, leaves the notice and requests review
+  ---
+  duration_ms: 2269.814867
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-418/packages/cli/src/next-queue.test.ts:5:1021'
+  failureType: 'testCodeFailure'
+  error: |-
+    the code-owned paths, the notice and the request
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+           bisellium init [dir] [--now <iso>] [--timezone <iana>]
+           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+           bisellium retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]
+           bisellium context [--sella <sella>] [dir | --stu
+    + actual - expected
+    
+    + []
+    - [
+    -   'review-request: PR #901',
+    -   'code-owned: .github/workflows/ci.yml',
+    -   'code-owned: .github/workflows/new.yml',
+    -   'code-owned: docs/ADOPTION.md',
+    -   'code-owned: docs/ADOPTION.md.bak',
+    -   `code-owned: docs/a b'"é.md`,
+    -   'code-owned: docs/link',
+    -   'code-owned: docs/new line.md',
+    -   'code-owned: pkg/leges/x.md',
+    -   'code-owned: pkg/owners.txt',
+    -   'code-owned: vendor/lib.js',
+    -   `notice: PR #901 needs your review: W-900: notify the Patron (code-owned: .github/workflows/ci.yml, .github/workflows/new.yml, docs/ADOPTION.md, docs/ADOPTION.md.bak, docs/a b'"é.md and 5 more)`,
+    -   'review-requested: org/leads, patron, writer',
+    -   'review-request: skipped someone@example.com (not an @login or @org/team)'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'review-request: PR #901'
+    1: 'code-owned: .github/workflows/ci.yml'
+    2: 'code-owned: .github/workflows/new.yml'
+    3: 'code-owned: docs/ADOPTION.md'
+    4: 'code-owned: docs/ADOPTION.md.bak'
+    5: `code-owned: docs/a b'"é.md`
+    6: 'code-owned: docs/link'
+    7: 'code-owned: docs/new line.md'
+    8: 'code-owned: pkg/leges/x.md'
+    9: 'code-owned: pkg/owners.txt'
+    10: 'code-owned: vendor/lib.js'
+    11: `notice: PR #901 needs your review: W-900: notify the Patron (code-owned: .github/workflows/ci.yml, .github/workflows/new.yml, docs/ADOPTION.md, docs/ADOPTION.md.bak, docs/a b'"é.md and 5 more)`
+    12: 'review-requested: org/leads, patron, writer'
+    13: 'review-request: skipped someone@example.com (not an @login or @org/team)'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-418/packages/cli/src/next-queue.test.ts:663:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3108.441145

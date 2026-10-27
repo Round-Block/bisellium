@@ -4,9 +4,11 @@
  * inputs to `runHookEvent`; b5 checks a fixture repo and reads the real `.claude/`; b6 runs
  * `hooks check --repo` with PATH pointing at a `bisellium` it chose. Fixtures live under the OS tmp dir.
  * W-362 row b1 (studio/briefs/W-362.md): env's split string and a shell option's operand.
+ * W-418 row b3 (studio/briefs/W-418.md): the guard hands the main thread the review notices under its checkout.
  */
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
@@ -697,4 +699,88 @@ test("W-362-b1 fix 2: env -S splits on every GNU whitespace and keeps loop words
   }
   assert.equal((await guard(bash("env -S 'bash -c \"until | true\"'", {}, true))).code, 2, "a real loop in a shell inside the string is still judged");
   assert.equal((await guard(bash("while true; do sleep 1; done", {}, true))).code, 2, "a plain background loop is still refused");
+});
+
+// W-418 (studio/briefs/W-418.md) row b3: the guard hands the main thread the review notices left under its checkout's
+// Git common directory, once, by refusing the call; a subagent, an input with no cwd, and a cwd outside a checkout get none.
+test("W-418-b3 behaviour 3: the guard hands the main thread every review notice under its checkout once, refusing that call", async () => {
+  const repo = tmp();
+  const g = (cwd: string, ...args: string[]): string => execFileSync("git", args, { cwd, encoding: "utf8" });
+  g(repo, "init", "-q", "-b", "master");
+  g(repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "--allow-empty", "-m", "init");
+  const wt = join(tmp(), "wt");
+  g(repo, "worktree", "add", "-q", "--detach", wt);
+  const dir = join(repo, ".git", "bisellium", "notice");
+  const leave = (name: string, text: string): void => {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, name), text);
+  };
+  const left = (...names: string[]): boolean[] => names.map((n) => existsSync(join(dir, n)));
+  const once = "refused: a PR waits on the Patron's review (W-418): send the Patron each notice below with PushNotification, then rerun this call: ";
+  leave("902", "PR #902 needs your review: second (code-owned: a)\n");
+  leave("901", "PR #901 needs your review: first\u001b[31m (code-owned: .github/x)\n");
+  for (const [name, text] of [[".903.77", "a temporary file\n"], ["abc", "not a PR\n"], ["0904", "a leading zero\n"], ["906", "x".repeat(4097)]] as const) leave(name, text);
+  mkdirSync(join(dir, "905"));
+  symlinkSync(join(repo, "README-not-here"), join(dir, "910"));
+  writeFileSync(join(repo, "README-not-here"), "PR #910 through a symlink\n");
+  const kept = [".903.77", "abc", "0904", "905", "906", "910"];
+
+  assert.deepEqual(await guard(bash("ls", { cwd: repo, agent_id: "a1", agent_type: "builder" })), { code: 0, err: "" }, "a subagent's call is not refused");
+  const here = process.cwd();
+  process.chdir(repo);
+  try {
+    assert.deepEqual(await guard({ hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "ls" } }), { code: 0, err: "" }, "an input with no cwd (the hooks-check probe), run inside the checkout, is not refused");
+  } finally {
+    process.chdir(here);
+  }
+  assert.deepEqual(left("901", "902"), [true, true], "neither takes a notice");
+  assert.deepEqual(
+    await guard(bash("ls", { cwd: repo })),
+    { code: 2, err: "refused: 2 PRs wait on the Patron's review (W-418): send the Patron each notice below with PushNotification, then rerun this call: 1) PR #901 needs your review: first [31m (code-owned: .github/x) 2) PR #902 needs your review: second (code-owned: a)" },
+    "the main thread's call is refused with every notice, in PR order, controls stripped",
+  );
+  assert.deepEqual(left("901", "902", ...kept), [false, false, true, true, true, true, true, true], "both are taken; a name that is not a PR number, a directory, a symlink and an oversized file stay");
+  assert.deepEqual(await guard(bash("ls", { cwd: repo })), { code: 0, err: "" }, "the rerun goes through: each notice is handed once");
+
+  leave("907", "PR #907 needs your review: from a worktree (code-owned: b)\n");
+  assert.deepEqual(
+    await guard({ hook_event_name: "PreToolUse", tool_name: "Write", tool_input: { file_path: join(wt, "notes.txt"), content: "" }, cwd: wt }),
+    { code: 2, err: `${once}1) PR #907 needs your review: from a worktree (code-owned: b)` },
+    "a Write from a linked worktree reads the shared Git common directory",
+  );
+  leave("908", "\n");
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), left("908")], [{ code: 0, err: "" }, [false]], "an empty notice is removed and hands nothing");
+  leave("909", "PR #909 needs your review: kept (code-owned: c)\n");
+  chmodSync(dir, 0o500);
+  lockedDirs.push(dir);
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), left("909")], [{ code: 0, err: "" }, [true]], "a notice that cannot be removed is not handed");
+  chmodSync(dir, 0o700);
+  assert.deepEqual(await guard(bash("ls", { cwd: tmp() })), { code: 0, err: "" }, "a cwd outside every checkout has none");
+  assert.deepEqual(await guard(bash("ls", { cwd: repo })), { code: 2, err: `${once}1) PR #909 needs your review: kept (code-owned: c)` }, "once removable, it is handed");
+
+  // fix round 1: a symlinked <common>/bisellium or <common>/bisellium/notice is neither read nor emptied
+  const common = join(repo, ".git");
+  const outside = tmp();
+  const outsideNotice = join(outside, "notice");
+  mkdirSync(outsideNotice);
+  writeFileSync(join(outsideNotice, "950"), "PR #950 needs your review: outside (code-owned: e)\n");
+  const survives = (): boolean => existsSync(join(outsideNotice, "950"));
+  rmSync(join(common, "bisellium"), { recursive: true, force: true });
+  symlinkSync(outside, join(common, "bisellium"));
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), survives()], [{ code: 0, err: "" }, true], "a symlinked bisellium directory hands nothing and deletes nothing outside");
+  rmSync(join(common, "bisellium"));
+  mkdirSync(join(common, "bisellium"));
+  symlinkSync(outsideNotice, join(common, "bisellium", "notice"));
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), survives()], [{ code: 0, err: "" }, true], "a symlinked notice directory hands nothing and deletes nothing outside");
+  rmSync(join(common, "bisellium", "notice"));
+  mkdirSync(join(common, "bisellium", "notice"));
+  writeFileSync(join(outside, "951"), "PR #951 needs your review: a numeric file outside (code-owned: f)\n");
+  symlinkSync(join(outside, "951"), join(common, "bisellium", "notice", "951"));
+  assert.deepEqual([await guard(bash("ls", { cwd: repo })), existsSync(join(outside, "951"))], [{ code: 0, err: "" }, true], "a notice file that is a symlink is neither read nor deleted");
+
+  // fix round 1: a notice for a 10-15-digit PR (what the pr rung writes) is handed; a 16-digit name is not a PR number
+  leave("1234567890123", "PR #1234567890123 needs your review: a large number (code-owned: d)\n");
+  leave("1234567890123456", "PR #1234567890123456 needs your review: too large (code-owned: d)\n");
+  assert.deepEqual(await guard(bash("ls", { cwd: repo })), { code: 2, err: `${once}1) PR #1234567890123 needs your review: a large number (code-owned: d)` }, "a 13-digit PR number's notice is handed");
+  assert.deepEqual(left("1234567890123", "1234567890123456"), [false, true], "the large notice is taken; a 16-digit name stays");
 });

@@ -1,0 +1,21 @@
+# opus: W-418
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a178b4-53a0-7c23-b303-b182f0f7e16c
+# outcome: passed
+# at: 2026-10-27T02:35:01.825Z
+# tree: tree:d9d03cb0d7e0c79680b5748ee50e885a501f222a
+# brief: briefs/W-418.md blob:d459e01d8ed470bda688b6313e95807cbf7ee991
+# ticket: {"opus":"W-418","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-418/studio","head":"7d29c23927a1147eff08b01949e3e949ca81f42f","brief":"d459e01d8ed470bda688b6313e95807cbf7ee991","at":"2026-10-27T02:33:25.402Z"}
+
+## Findings
+1. advisory — packages/cli/src/integrate.ts:721 [severity: S3] For the newly supported 10–15-digit PR form, a failed review request prints a `run:` value containing literal angle-bracket placeholders and an unquoted parenthetical, so it is not an executable recovery command; the new test merely asserts that unusable text. [class: workflow×failure-report-not-actionable] — check: packages/cli/src/next-queue.test.ts W-418-b2 should execute the emitted recovery command
+
+## Earlier findings
+- ci/W-418-review-1.log #1: closed — `writeNotice` now rejects symlinked `<common>/bisellium` and `notice` components before writing, while `takeNotices` refuses them before reading or deleting; W-418-b1 and W-418-b3 verify that outside files remain untouched.
+
+## Verdict
+The security blocker is closed; the remaining large-PR recovery defect is advisory.
+VERDICT: PASS

@@ -1,0 +1,20 @@
+# opus: W-418
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a177d6-ae93-7e90-a04d-3419ec2e87be
+# outcome: failed
+# at: 2026-10-26T10:57:49.246Z
+# tree: tree:79b7a3e3a3a5959f9193f592cc9878dd28ea9394
+# brief: briefs/W-418.md blob:e596deb2923f1fe5c68f135dd2244ebecb47a386
+# ticket: {"opus":"W-418","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"0e65054e0c4789303c2ee3858ce839ed27f22109","brief":"e596deb2923f1fe5c68f135dd2244ebecb47a386","at":"2026-10-26T10:57:38.554Z"}
+
+## Findings
+1. blocking — brief:146 [severity: S1] [design: changes] A routine CODEOWNERS edit adding a supported GitHub glob such as `*.md @edckt` reaches both real callers, but `readOwners`/`codeOwned` merely print it as unread and may return `code-owned: none`, so the `pr` rung and `review-request` succeed without a notice or review request; W-418-b1 codifies rather than catches this failure. Replace brief:146 with: `| 5. A line of the owners file | blank, comment, or a supported plain pattern; a glob, negation, escape or bare / is outside the domain | screenDiff: any unread entry returned by readOwners is an error, so review-request refuses and the pr rung holds before the title, notice or request; pinned by W-418-b1 "an unread owners line holds" |` [class: spec×input-without-named-rejector] — check: packages/cli/src/next-queue.test.ts W-418-b1
+2. blocking — brief:142 [severity: S1] [design: keeps] A plausible copied command containing two different `--repo` flags is accepted because `parseFlags` silently keeps the last value, so the real `review-request` caller can screen and mutate the wrong checkout; none of the six usage cases tests the declared “at most one” boundary. Replace brief:142 with: `| 1. review-request's argument vector (including duplicate --repo) | one operand matching PR_NUMBER and at most one --repo <dir> | runReviewRequest rejects every listed form, including a repeated --repo, as a usage error before any read; pinned by W-418-b1 "usage: duplicate --repo" and the existing usage cases |` [class: spec×input-without-named-rejector] — check: packages/cli/src/next-queue.test.ts W-418-b1
+3. advisory — brief:95 [severity: S2] The prototype caps only the title, and W-418-b1’s own expected notice exceeds 120 characters, so the statement that the whole line is also cut to 120 is false. Replace brief:95 with: `**noticeText(pr, title, paths)** (new, pure): PR #<pr> needs your review: <title> (code-owned: <p1>, …, <p5>[ and <k> more]). The title loses its controls and is cut to 120 characters; the complete line loses controls but has no separate length cap, and Promise skip governs a resulting file over NOTICE_MAX.` [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-queue.test.ts W-418-b1
+
+## Verdict
+The brief has two substantive fail-open input paths, including one that requires a behaviour change; the notice-length overstatement is advisory.
+VERDICT: FAIL

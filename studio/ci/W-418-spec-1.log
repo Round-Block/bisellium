@@ -1,0 +1,30 @@
+# opus: W-418
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-26T10:51:01.000Z
+# tree: tree:79b7a3e3a3a5959f9193f592cc9878dd28ea9394
+# brief: briefs/W-418.md blob:e596deb2923f1fe5c68f135dd2244ebecb47a386
+# ticket: {"opus":"W-418","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"0e65054e0c4789303c2ee3858ce839ed27f22109","brief":"e596deb2923f1fe5c68f135dd2244ebecb47a386","at":"2026-10-26T10:50:55.485Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-418-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — probed first, read only: the agent's gh acts as bisellium-agent, not edckt, so GitHub notifies edckt of its requests; review_requested by bisellium-agent for edckt lands on #773, #778, #781, #782 and #784, and #773's, made at open, did not reach the Patron (approved 98 minutes later, after they asked) — check: probe-a-account.out, probe-a-timeline.out, probe-a-pr773.out, brief:19, brief:20, brief:21
+2. advisory — the channel chosen works with what exists: the orchestrator session's PushNotification returned "Mobile push requested" for #778, #781, #782 and #784 and the Patron approved each 16 s to 15 min later; the CLI cannot call it, so the CLI leaves a notice and the already-wired guard hands it to the main thread, stated as a limit and as Defaults 1 — check: probe-b-notify.out, brief:22, brief:24, brief:27, brief:126, brief:248
+3. advisory — the screen read on the real records: master's CODEOWNERS is nine anchored rules with no unread line; over the last 40 squash merges it names six PRs (#784, #782, #781, #778, #773, #743) and not #783 or #785, agreeing with GitHub's own requests on every probed PR; five of six were records PRs opened by hand, hence the review-request verb — check: enumerate.out, brief:31, brief:33
+4. advisory — every promise was checked against every Input domain row: argv (row 1), GitHub's view (row 2), the fetches (row 3), the owners file (row 4), its lines (row 5), the diff paths with space, quote, non-ASCII, newline and symlink (row 6), the title (row 7), the notice directory (row 8), the owners (row 9), the rung's PR (row 10), the hook input (row 11), the notice entries (row 12), reused gates (row 13); each unpinned form is a stated limit scoped in the ledger — check: brief:142, brief:143, brief:144, brief:145, brief:146, brief:147, brief:148, brief:149, brief:150, brief:151, brief:152, brief:153, brief:154
+5. advisory — unchanged code the promises lean on is stated as a limit (D-076 E): repoSlug, clean, quoted, sh, git, parseFlags, fetchTrunk, openPr's push and create, TRUNK_REF, runHookEvent, handleGuard, the rest of guardRefusal, the settings' guard wiring, gh, git and node; the push being the session's call and the Patron's clone running the guard are limits too — check: brief:125, brief:126, brief:128
+6. advisory — each red fails by assertion and the host replay classifier accepts it: b1 on master (no verb, the usage banner), b2 on master and on stage 1 (nothing after PR=), b3 on master and on stage 2 (the call runs); each row passes at its stage and every later one; the six-commit series equals the prototype — check: red-accept.out, red-b1-master.out, red-b2-stage1.out, red-b3-stage2.out, series.out
+7. advisory — thirty-one kills, each a one-hunk mutation of one source file, fail their row at a pinned assertion with ERR_ASSERTION, covering every pinned promise and row — check: kills.out, promise-ledger.md
+8. advisory — exactly two existing checks flip, each moved with its behaviour: W-163-b6 in containment.test.ts (five new raw file sites pinned outside) and usage.test.ts "scanned every known usage constant" (43 to 44); master's files on the whole source fail those two only, and each put back fails at itself — check: flip-summary.out, flip-u3.out, flip-u3-usage.out, flip-F1.out, flip-F2.out
+9. advisory — the Codex test check lists the same two flips, both named, Unnamed None, and thirty-seven must-stay-green rows (cli.test.ts banner rows, talk-boundary behaviour 2, verdict-citation W-306-b1, the next-world scenario fixture, W-124 behaviour 3, W-168-b3, W-197, W-292-b1, the W-310 and W-362 guard rows, docs real repo, W-288-b3, W-140-b2, W-376-b1, W-392-b1, the check.test.ts zero-blocking rows, W-369-b3); each lives in a file run whole and passing on the prototype — check: fixture-census.md, green-summary.out
+10. advisory — the brief passes admission on master's code; lint of the eleven touched code files, format of docs/NEXT.md and the typecheck pass; both officina checks pass with 0 blocking on the prototype — check: admission.out, lint-proto.out, format-proto.out, typecheck-proto.out, check-studio-proto.out, check-sample-proto.out
+11. advisory — no owned path is code-owned and .claude/settings.json is not changed; no opus in building owns these files — check: brief:58
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-418.md` (spec round 1), master 0e65054e; three behaviours; two existing checks flipped, each named.

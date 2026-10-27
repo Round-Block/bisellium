@@ -16,6 +16,7 @@ import { accessSync, constants, lstatSync, mkdirSync, realpathSync, unlinkSync, 
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
+import { reviewNotice } from "./review-notice.js";
 
 /** The fewest passing checks a merge needs; only checks in bucket `pass` count. */
 export const MIN_CHECKS = 5;
@@ -714,8 +715,11 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
       if (created.status !== 0 || found === null) return held(`pr create failed: ${why(created)}`);
       number = Number(found[1]);
     }
+    if (number === undefined) return held("no PR number");
     const short = (ref: string): string => git(wt, ["rev-parse", "--short", ref]).stdout.trim();
-    return { ok: true, lines: [`PR=${number} base=${short("master")} head=${short("HEAD")}`] };
+    // W-418: the pushed head's code-owned paths, the notice for the Patron and the code owners' review request
+    const notice = reviewNotice({ cwd: wt, slug: slug.slug, pr: number, base: TRUNK_REF, head: "HEAD", resume: number > 999_999_999 ? `bisellium next ${id} --perform --expect pr --title "<title>" --body-file <a file> (review-request takes a PR number of at most nine digits)` : `bisellium review-request ${number} --repo ${quoted(repo)}` });
+    return { ok: notice.ok, lines: [`PR=${number} base=${short("master")} head=${short("HEAD")}`, ...notice.lines] };
   };
   const done = result();
   return { ok: done.ok, lines: [`mode: ${mode}`, ...done.lines] };

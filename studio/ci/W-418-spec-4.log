@@ -1,0 +1,22 @@
+# opus: W-418
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a177d6-ae93-7e90-a04d-3419ec2e87be
+# outcome: passed
+# at: 2026-10-26T11:40:17.779Z
+# tree: tree:463a0999076a0b49c503eba881679f979e9ed3a5
+# brief: briefs/W-418.md blob:d459e01d8ed470bda688b6313e95807cbf7ee991
+# ticket: {"opus":"W-418","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"3acf8946c61b4dca6cd91d54942a675f20160bb0","brief":"d459e01d8ed470bda688b6313e95807cbf7ee991","at":"2026-10-26T11:40:14.693Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-418-spec-2.log #1: closed — `screenDiff` now turns every unread line returned by `readOwners` into an error before title, notice or request processing (`src-final/review-notice.ts:123`), with W-418-b1 covering twelve forms and multiple unread lines.
+- ci/W-418-spec-2.log #2: closed — `runReviewRequest` rejects repeated and empty `--repo` values before external reads (`src-final/review-request.ts:26`), and W-418-b1 pins both usage errors.
+
+## Verdict
+Revision 3 closes both earlier blockers, adopts the notice-length correction, and introduces no new D-046 finding.
+VERDICT: PASS

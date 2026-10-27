@@ -91,7 +91,8 @@ and the tree is not dirty, except the brief, the new spec rounds and the
 opus record, which ride the first commit (an ignored spec file is refused). `pr` rebases onto the fetched trunk, stops before
 push and PR if the rebase changes the SOURCE tree, pushes `--force-with-lease`,
 and creates the PR from `--title` and `--body-file` (without them it only names
-the command; an existing OPEN PR is reused). `merge` updates a BEHIND branch,
+the command; an existing OPEN PR is reused), then runs the review notice below on
+the pushed head. `merge` updates a BEHIND branch,
 refuses on a failing check, on fewer than `MIN_CHECKS` (5) checks in bucket
 `pass`, and on any open GHAS alert, then queues `--squash --auto` and, only when
 `CLEAN` with every check passing, asks directly; `BLOCKED` is never merged
@@ -270,3 +271,30 @@ unticketed, `pr`, `cleanup` and the spec commit run only inside
 `next --perform`, and dispatch preconditions (budget, stale handover) gate
 launching a session, not the ticket.
 
+## Review notices (W-418)
+
+After it opens or updates a PR, the `pr` rung screens the pushed head, and
+`bisellium review-request <pr> [--repo <dir>]` screens any open PR into master,
+one opened by hand included (it fetches master and `refs/pull/<pr>/head` from
+origin and checks that head against GitHub's). The screen reads the owners file
+GitHub reads at master (the first of `.github/CODEOWNERS`, `CODEOWNERS` and
+`docs/CODEOWNERS`) and the paths of `master...<head>` (both sides of a rename):
+a leading or inner `/` anchors a pattern, a trailing `/` matches a directory
+only, a bare name matches at any depth, and the last matching line names the
+owners (a line with none leaves the path unowned). A line the screen does not
+read (a glob, an escape, a negation, a `#` inside the pattern, a control or
+non-ASCII space, an empty, `.` or `..` segment) holds it, so no path passes as
+unowned through it. It prints `code-owned: <path>` per code-owned path
+(`code-owned: none` when there is none), reads the PR's title, leaves one notice
+line (`PR #<n> needs your review: <title> (code-owned: <up to five paths>[ and
+<k> more])`, cut to 500 characters) at `<git common dir>/bisellium/notice/<n>`,
+requests review from each `@login` or `@org/team` owner (`gh pr edit
+--add-reviewer`; any other owner is printed as skipped), and prints `notice:`
+and `review-requested:`. The first step that fails holds (`review-request`
+exits 1) with a `run: bisellium review-request` line; the steps after it are not
+run. The guard (`hook-event guard`) takes every notice under the session's
+checkout at the main thread's next Bash, Write, Edit or NotebookEdit call and
+refuses that call once with their text, so the session sends each to the Patron
+with PushNotification. Limits: the push is the session's tool call, not the
+CLI's; a notice waits for the main thread's next guarded call; a PR opened by
+hand is screened only when `review-request` is run for it.
