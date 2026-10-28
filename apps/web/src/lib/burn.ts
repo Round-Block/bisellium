@@ -1,13 +1,31 @@
 /**
- * apps/web/src/lib/burn.ts — pure fraction/colour math behind BurnBar.
+ * apps/web/src/lib/burn.ts — one fail-closed classifier behind BurnBar.
  */
-export type BurnColor = "ink" | "amber";
-
-export function burnFraction(spent: number, allowance: number): number {
-  if (!allowance || allowance <= 0) return spent > 0 ? 1 : 0;
-  return Math.min(1, Math.max(0, spent / allowance));
+export interface BurnMeasure {
+  spent: number;
+  allowance: number;
+  fraction: number;
+  over: boolean;
+  overBy: number;
+  state: "normal" | "approaching" | "spent" | "over";
+  severity: "normal" | "high" | "blocking";
 }
 
-export function burnColor(spent: number, allowance: number): BurnColor {
-  return spent >= allowance ? "amber" : "ink";
+export const BUDGET_APPROACHING_FRACTION = 0.8;
+
+export function burnMeasure(spent: unknown, allowance: unknown): BurnMeasure | undefined {
+  if (typeof spent !== "number" || !Number.isFinite(spent) || spent < 0) return undefined;
+  if (typeof allowance !== "number" || !Number.isFinite(allowance) || allowance <= 0) return undefined;
+  const ratio = spent / allowance;
+  const over = spent > allowance;
+  const state = over ? "over" : spent === allowance ? "spent" : ratio >= BUDGET_APPROACHING_FRACTION ? "approaching" : "normal";
+  return {
+    spent,
+    allowance,
+    fraction: Math.min(ratio, 1),
+    over,
+    overBy: Math.max(spent - allowance, 0),
+    state,
+    severity: state === "over" ? "blocking" : state === "normal" ? "normal" : "high",
+  };
 }

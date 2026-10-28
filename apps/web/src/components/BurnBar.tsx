@@ -1,27 +1,32 @@
-/**
- * apps/web/src/components/BurnBar.tsx — two right-aligned mono numerals
- * and a 4px rule filled to the spent fraction. Fraction/colour math lives
- * in ../lib/burn.ts so it's testable without a DOM.
- */
-import { burnColor, burnFraction } from "../lib/burn.js";
+/** Budget pie plus visible mono text equivalent. Classification lives in
+ * ../lib/burn.ts so malformed and over-allowance values fail consistently. */
+import React from "react";
+import { burnMeasure } from "../lib/burn.js";
 import "./w025.css";
 
 export interface BurnBarProps {
-  spent: number;
-  allowance: number;
+  spent: unknown;
+  allowance: unknown;
 }
 
 export function BurnBar({ spent, allowance }: BurnBarProps) {
-  const fraction = burnFraction(spent, allowance);
-  const color = burnColor(spent, allowance);
+  const measure = burnMeasure(spent, allowance);
+  if (measure === undefined) return <p className="budget-meter__unavailable">Budget unavailable.</p>;
+  const stateLabel = measure.state === "over" ? "over allowance" : measure.state === "spent" ? "fully spent" : measure.state === "approaching" ? "approaching allowance" : "within allowance";
   return (
-    <div className="burn-bar">
-      <span className="burn-bar__numerals">
-        {spent} / {allowance}
+    <div className={`budget-meter budget-meter--${measure.state}`}>
+      <span className="budget-meter__pie" style={{ "--budget-fraction": `${measure.fraction}turn` } as React.CSSProperties} aria-hidden="true" />
+      <span className="budget-meter__reading">
+        <span className="budget-meter__line">
+          <span className={`severity-cue severity-cue--${measure.severity}`} data-budget-state={measure.state} aria-hidden="true" />
+          <span className="budget-meter__numerals" aria-label={`${stateLabel}: ${measure.spent.toLocaleString()} tokens spent of ${measure.allowance.toLocaleString()} allowance`}>
+            <span className="budget-meter__spent">{measure.spent.toLocaleString()}</span>
+            <span className="budget-meter__separator">/</span>
+            <span className="budget-meter__allowance">{measure.allowance.toLocaleString()}</span>
+          </span>
+        </span>
+        {measure.over && <span className="budget-meter__over">+{measure.overBy.toLocaleString()} over</span>}
       </span>
-      <div className="burn-bar__rail">
-        <div className={`burn-bar__fill burn-bar__fill--${color}`} style={{ width: `${fraction * 100}%` }} />
-      </div>
     </div>
   );
 }
