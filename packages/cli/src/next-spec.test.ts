@@ -1638,3 +1638,38 @@ test("W-424-b1 behaviour 1: past ready, a kind: ui opus's spec signer is the sea
   assert.deepEqual([failed.step, failed.status, failed.order?.round], ["spec", "named", 2], "a recorded architect with only a failed log is ordered to sign");
   assert.match(failed.why, /^no passing architect spec log \(ci\/W-900-spec-<n>\.log with phase spec\) names the current briefs\/W-900\.md$/, "the failed log is no signature");
 });
+
+// ---------------------------------------------------------------------------
+// W-426: the ui-lead's order names the main checkout's prompts/ui-input.md as the prompt to fill (its sense clause is
+// process.prompt_templates', rules/prompts.test.ts). Rows are selectable with --test-name-pattern='^W-426-b<n>\s'.
+// ---------------------------------------------------------------------------
+test("W-426-b3 behaviour 3: the ui-lead's order names the main checkout's prompts/ui-input.md as the prompt to fill, before and after the branch", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w426-b3");
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  const o = specNext(w);
+  expectStep(o, "spec", "named", "a passed review with no UI input orders the ui-lead");
+  assert.equal(o.kv.get("role"), "ui-lead", ran("role", o));
+  assert.match(
+    o.kv.get("command") ?? "",
+    /^dispatch ui-lead for its UI input on the signed brief, with the prompt filled from studio\/prompts\/ui-input\.md \(W-426\); keep the dispatch prompt as ci\/W-900-ui-prompt-3\.md under studio; record with: /,
+    ran("the order names the template", o),
+  );
+
+  // after the branch the order binds the worktree's studio, and the template stays the main checkout's
+  const b = uiWorld("w426-b3-branch", { kind: "opus" });
+  putBrief(b);
+  sign(b, 1);
+  review(b, 2, "passed");
+  expectStep(next(b, [OPUS, "--perform", "--expect", "branch"]), "branch", "performed", "branch commits the spec");
+  editRecord(b, "wt", (doc) => doc.setIn(["kind"], "ui"));
+  commit(b.wt, "studio: W-900 is a ui opus");
+  const p = specNext(b);
+  expectStep(p, "spec", "named", "a branch record amended to kind: ui orders the ui-lead");
+  assert.match(
+    p.kv.get("command") ?? "",
+    /^dispatch ui-lead for its UI input on the signed brief, with the prompt filled from studio\/prompts\/ui-input\.md \(W-426\); keep the dispatch prompt as ci\/W-900-ui-prompt-3\.md under \.worktrees\/W-900\/studio; record with: /,
+    ran("after the branch: the main checkout's template", p),
+  );
+});
