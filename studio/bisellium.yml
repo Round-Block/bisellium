@@ -2,6 +2,7 @@ bisellium: 1
 studio: Bisellium
 patron: patron
 timezone: UTC
+auto_greenlit_by: D-114
 hooks: { default_sella: guest }
 collegia:
   - { id: production, name: Production, magister: producer, lex: leges/production.md }
