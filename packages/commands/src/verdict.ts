@@ -682,14 +682,16 @@ function killProblem(c: RuledCase, entries: readonly { text: string; briefs: Set
   return first;
 }
 
-/** W-215: why a sessioned verdict cannot be recorded, or undefined. `text` is the whole log to be written. */
-function sessionedProblem(text: string, id: string, rel: string, outcome: string, recorded: string, previous: Parsed | undefined, previousLog: string | undefined): string | undefined {
-  if (outcome !== "passed" && outcome !== "failed") return "a sessioned verdict's outcome is exactly passed or failed";
+/** W-215: why a sessioned verdict cannot be recorded, or undefined. `text` is the whole log to be written. W-433: the ui-lead's
+ *  UI spec input (`uiInput`) may also be `revise`, judged as `failed` is: it needs a standing blocking finding. */
+function sessionedProblem(text: string, id: string, rel: string, outcome: string, recorded: string, previous: Parsed | undefined, previousLog: string | undefined, uiInput: boolean): string | undefined {
+  const revise = uiInput && outcome === "revise";
+  if (outcome !== "passed" && outcome !== "failed" && !revise) return "a sessioned verdict's outcome is exactly passed or failed";
   const parsed = parseVerdictLog(text, id, rel);
   if ("error" in parsed) return parsed.error;
   const standing = parsed.findings.some((f) => f.blocking);
   if (recorded === "passed" && standing) return `${rel}: outcome passed beside a standing blocking finding`;
-  if (recorded === "failed" && !standing) return `${rel}: outcome failed with no standing blocking finding (a withdrawn or converted one does not stand)`;
+  if ((recorded === "failed" || revise) && !standing) return `${rel}: outcome ${recorded} with no standing blocking finding (a withdrawn or converted one does not stand)`;
   if (recorded === "passed" && parsed.earlier.some((e) => e.status === "open")) return `${rel}: an open earlier finding stands, so the round cannot pass`;
   if (previous !== undefined && previousLog !== undefined) {
     const want = previous.findings.filter((f) => f.blocking).map((f) => `${previousLog} #${f.n}`);
@@ -1077,7 +1079,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
         header = headerText();
       }
     }
-    const problem = sessionedProblem(`${header}\n\n${transcript.toString("utf8")}`, opusId, rel, outcome, recorded, last?.parsed, last?.log);
+    const problem = sessionedProblem(`${header}\n\n${transcript.toString("utf8")}`, opusId, rel, outcome, recorded, last?.parsed, last?.log, !plain && phase === "spec");
     if (problem !== undefined) {
       console.error(problem);
       return { exitCode: 2 };

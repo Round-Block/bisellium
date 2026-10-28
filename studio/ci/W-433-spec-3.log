@@ -1,0 +1,25 @@
+# opus: W-433
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-28T06:51:16.384Z
+# tree: tree:a52255c9d081a77b9a3958e9c95d5d60ce49c5b0
+# brief: briefs/W-433.md blob:2fdb93406165c48a932c6a5676d12040d9e89d81
+# ticket: {"opus":"W-433","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"36e2bcf5d73ae59ff719cabbeec78540d30ce09b","brief":"2fdb93406165c48a932c6a5676d12040d9e89d81","at":"2026-10-28T06:50:41.159Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-433-spec/promise-ledger-r2.md
+
+## Findings
+
+1. advisory — round 2's S1 is closed by one record source: uiSpecProblems and uiSpecInput read the spec owner's record (ownerRecord, W-355's readSpecOwner), the one ownerUi and the verdict writer read, never the trunk's; an uncommitted opus to ui correction now orders the ui-lead and then the signer, never the branch — check: prototype-r2.diff, red-b2-r2.out, master-b2-r2.sum, kills-r2.out K6 and K7
+2. advisory — with opus/<id> and no usable worktree a kind: ui spec now holds at spec whatever its committed input records, where master named ready; a settled PR is exempt (uiOpen, the branch rung's own pr() read) so a merged opus never walks back to spec, pinned by the existing rows W-275-b3 and W-141-b2 round 1 — check: red-b2-r2.out, kills-r2.out K8 to K10, files-r2.out
+3. advisory — one existing row flips by design and is named: W-348-b2's injected ready case on a branch with no usable worktree; its fixture is made usable and the row keeps pinning W-348's ready attribution; the Codex test check lists that flip alone and Unnamed None — check: flip-W-348-b2-r2.out, fixture-census-r2.md
+4. advisory — two reds one at a time, each accepted at assertion level; row b2's three tests each fail by assertion on behaviour 1's commit and on master itself; next-spec.test.ts run whole fails exactly the new tests at each red commit and passes whole (34) at stage 2; ten other test files pass whole with equal counts on master and the prototype — check: red-accept-r2.out, master-b2-r2.out, census-stage2-r2.out, files-r2.out, verdict-counts-r2.out
+5. advisory — gates pass on the prototype (lint, format:check, typecheck, both officina checks 0 blocking; docs/VERBS.md at its 450-line cap) and admission on master's code returns no problem; docs/ADOPTION.md is code-owned, named in Files owned and Defaults — check: gates-r2.out, admission-r2.out, .github/CODEOWNERS
+6. advisory — stated limits: after the branch with a usable worktree the orders are unpinned; a merged opus with a non-passed input is unpinned; an unchanged re-sign leaves the input current (W-431); unchanged code the promises lean on (readSpecOwner, opusWorktree, pr()'s identifyPr and classify, W-215 and W-338 readers) is named as a limit (D-076 E) — check: brief Limits, Out of scope
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-433.md` (spec round 3), prototyped over origin/master 76ae7c0f; two behaviours across verdict.ts, opus-model.ts and next.ts with rows in next-spec.test.ts, one named flip (W-348-b2), one code-owned path (docs/ADOPTION.md).

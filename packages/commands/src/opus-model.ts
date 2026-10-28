@@ -685,7 +685,8 @@ function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest
 
 export function inspectUiDesignInput(root: string, record: NativeRecord, id: string): {
   digest?: string;
-  input?: { relative: string; round: number; at: string };
+  /** W-433: `outcome` is the input's `# outcome:` header: passed, failed or revise */
+  input?: { relative: string; round: number; at: string; outcome: string };
   problems: string[];
 } {
   const design = currentDesign(root, record, id);
@@ -693,7 +694,7 @@ export function inspectUiDesignInput(root: string, record: NativeRecord, id: str
   const inspected = authoritativeUiInput(root, record, design.digest);
   return {
     digest: design.digest,
-    input: inspected.input ? { relative: inspected.input.relative, round: inspected.input.round, at: inspected.input.at } : undefined,
+    input: inspected.input ? { relative: inspected.input.relative, round: inspected.input.round, at: inspected.input.at, outcome: inspected.input.header.values.get("outcome") ?? "" } : undefined,
     problems: inspected.problems,
   };
 }

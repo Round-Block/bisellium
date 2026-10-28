@@ -1,0 +1,19 @@
+# opus: W-433
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a180df-4143-70b3-a668-c582a29ab43a
+# outcome: failed
+# at: 2026-10-28T05:02:28.995Z
+# tree: tree:9300ecb3130df22db106fe7de6348870519f18e0
+# brief: briefs/W-433.md blob:e538238005c542702f87162175a9f26e92dde425
+# ticket: {"opus":"W-433","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"76ae7c0fc1ff2bf56aefcc59b0d9708ef3a3b204","brief":"e538238005c542702f87162175a9f26e92dde425","at":"2026-10-28T05:02:24.908Z"}
+
+## Findings
+1. blocking — brief:73 The new reader is not fail-closed across its record sources: before the branch `ownerUi` uses the working record while `uiSpecInput` uses the trunk record, so an ordinary uncommitted `opus`→`ui` correction lets `bisellium next` ignore a valid current `revise` and name the branch; with a branch but no usable worktree, it likewise skips a committed non-passed input, and no existing test covers either path. Replace brief:73 with: `| 2. The current ui-lead input's outcome and the record source establishing the kind: ui spec | Before the branch, ownerUi and uiSpecInput both trust the main checkout's working record and studio; after the branch, both trust the usable opus-worktree record and studio. Committed trunk or branch records may disagree in uncommitted kind, title or spec and are not substituted; an absent or unusable owner holds at spec. A current passed input may proceed, while revise or failed orders the signer. | deriveNext, through uiCurrent and inspectUiDesignInput: source disagreement or an unusable owner holds at spec; revise or failed names the signer and no branch. Pinned by W-433-b2 source-selection cases. |` [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-spec.test.ts (add W-433-b2 working-record drift and unusable-worktree cases)
+
+## Verdict
+The writer behavior is feasible, but the ladder can fail open over an in-domain non-passed UI input because its new reader does not share a fail-closed record source.
+
+VERDICT: FAIL

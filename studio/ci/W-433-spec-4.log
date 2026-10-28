@@ -1,0 +1,22 @@
+# opus: W-433
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a180df-4143-70b3-a668-c582a29ab43a
+# outcome: passed
+# at: 2026-10-28T06:54:02.356Z
+# tree: tree:a52255c9d081a77b9a3958e9c95d5d60ce49c5b0
+# brief: briefs/W-433.md blob:2fdb93406165c48a932c6a5676d12040d9e89d81
+# ticket: {"opus":"W-433","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"36e2bcf5d73ae59ff719cabbeec78540d30ce09b","brief":"2fdb93406165c48a932c6a5676d12040d9e89d81","at":"2026-10-28T06:53:58.609Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-433-spec-2.log #1: closed — brief:98 now uses the spec owner’s record for both input readers, while W-433-b2 pins working-record drift and the no-usable-worktree hold
+
+## Verdict
+Revision 2 closes the prior source-selection blocker with a fail-closed contract and matching evidence.
+
+VERDICT: PASS

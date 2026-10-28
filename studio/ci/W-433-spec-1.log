@@ -1,0 +1,24 @@
+# opus: W-433
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-28T04:54:31.466Z
+# tree: tree:0ebb8d26195a5c6c7c63504e079010a1ecf95ca9
+# brief: briefs/W-433.md blob:e538238005c542702f87162175a9f26e92dde425
+# ticket: {"opus":"W-433","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"42702b798e18768125178a11df699a762680757e","brief":"e538238005c542702f87162175a9f26e92dde425","at":"2026-10-28T04:54:30.834Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-433-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the writer admits `revise` only for the ui-lead's UI spec input (`sessionedProblem`'s `uiInput`, the call site's `!plain && phase === "spec"`), judged as `failed` (a standing blocker is required; the next sessioned round accounts for it); every other seat keeps `passed` or `failed`, and the session and reason rules are unchanged — check: prototype.diff, brief Interfaces, kills.out K1 to K3
+2. advisory — the ladder dead end still holds on master 42702b79: a current ui-lead `revise` or `failed` input lets the spec rung name the branch (red-b2.out; W-415 reached done over a three-blocker revise); the prototype orders the signer at the next round, and the edited brief makes the input stale so review and ui-lead follow — check: red-b2.out, proto-b2-stage2.out, enumerate.out, kills.out K4 and K5
+3. advisory — two reds, one at a time, each accepted at assertion level on the commit before its behaviour; next-spec.test.ts run whole fails exactly the new row at each red commit and passes whole at each stage; the other touched and must-stay-green test files pass on the prototype; the Codex test check lists Flips None and Unnamed None — check: red-accept.out, census-stage2.out, files.out, files2.out, fixture-census.md
+4. advisory — gates pass on the prototype (lint, format:check, typecheck, both officina checks 0 blocking; docs/VERBS.md kept at its 450-line cap) and admission on master's code returns no problem — check: gates.out, admission.out
+5. advisory — stated limits: after the branch the signer order is the same unpinned line; an unchanged re-sign leaves the input current (W-431); the ui-lead's dispatch order still omits --session; unchanged code the promises lean on is named as a limit (D-076 E) — check: brief Limits, Out of scope
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-433.md` (spec round 1), prototyped over master 42702b79; two behaviours across verdict.ts, opus-model.ts and next.ts with rows in next-spec.test.ts, no flips, no code-owned path.
