@@ -51,6 +51,7 @@ import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
+import { appendReading, readingLine, takeReading, type Reading } from "./usage-reading.js";
 
 export { MIN_CHECKS };
 
@@ -2649,6 +2650,16 @@ function historyRowRefusal(repo: string, id: string): string | undefined {
   return `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run`;
 }
 
+/** W-430: the usage reading a performed rung takes at `nowMs`, labelled `<opus> <step>`: appended to the readings file under
+ *  the home folder and printed as its `usage:` line. A reading that cannot be recorded is printed with why; the step's
+ *  result never depends on it. */
+function rungUsage(id: string, step: Step, nowMs: number): string[] {
+  const home = homedir();
+  const reading: Reading = takeReading(home, new Date(nowMs), `${id} ${step}`, { opus: id, step });
+  const bad = appendReading(home, reading);
+  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`])];
+}
+
 const CERTIFY_LOG_MAX = 16 * 1024 * 1024;
 const RECEIPT_MAX = 1024 * 1024;
 
@@ -3131,7 +3142,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     }
 
     // ---- --perform on a performable rung: take the marker, re-derive, check --expect, act once; W-292: --chain repeats it ----
-    type Once = { code: number; lines: string[]; after: string[]; ok: boolean; next?: Derived };
+    // W-430: `usage`, the reading lines of a rung performed; the output prints every rung's after its last lines
+    type Once = { code: number; lines: string[]; after: string[]; ok: boolean; next?: Derived; usage?: string[] };
     const once = async (d1: Derived): Promise<Once> => {
       const halt = (lines: string[]): Once => ({ code: 1, lines, after: [], ok: false });
       if (a.expect !== undefined && a.expect !== d1.step) return halt(refusalLines(d1));
@@ -3194,11 +3206,13 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
             result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : (handoffHold(f) ?? performDone(f, d2));
         }
         log(`${d2.step} ${result.ok ? "performed" : "held"}`);
+        // W-430: every rung performed (or held once performing) takes a usage reading, appended and printed
+        const usageLines = rungUsage(id, d2.step, a.testClock ? a.nowMs : Date.now());
         f = gather(repo, opened.root, id);
         const d3 = deriveNext(f);
         for (const l of refreshTicket(f, d3, a.nowMs)) log(l);
         const after = [`next-step: ${d3.step}`, ...(d3.status === "held" ? [`next-why: ${one(d3.why)}`] : [])];
-        return { code: result.ok ? 0 : 1, lines: [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note], after, ok: result.ok, next: d3 };
+        return { code: result.ok ? 0 : 1, lines: [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note], after, ok: result.ok, next: d3, usage: usageLines };
       } finally {
         try {
           if (readFileSync(markerPath(repo, id), "utf8") === ours) unlinkSync(markerPath(repo, id));
@@ -3209,17 +3223,19 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     };
     // the chain moves only forward: each rung is performed at most once, so it ends after pr at the latest
     const lines: string[] = [];
+    const readingLines: string[] = [];
     for (let d = d1; ; ) {
       const r = await once(d);
       lines.push(...r.lines);
-      if (!r.ok || !a.chain || r.next === undefined) return say(r.code, [...lines, ...r.after]);
+      readingLines.push(...(r.usage ?? []));
+      if (!r.ok || !a.chain || r.next === undefined) return say(r.code, [...lines, ...r.after, ...readingLines]);
       const was = STEPS.indexOf(d.step);
       // the one derivation after the rung, the one `next-step` prints, decides whether the chain goes on: it is not derived again
       d = r.next;
-      if (STEPS.indexOf(d.step) <= was) return say(0, [...lines, ...r.after]);
+      if (STEPS.indexOf(d.step) <= was) return say(0, [...lines, ...r.after, ...readingLines]);
       // a later rung of the chain that derives held (gh failing at pr discovery, say) is the chain's hold, never a success
-      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, whyLine(d), ...d.extra.map(([k, v]) => `${k}: ${one(v)}`), ...r.after]);
-      if (!performable(d)) return say(0, [...lines, ...r.after]);
+      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, whyLine(d), ...d.extra.map(([k, v]) => `${k}: ${one(v)}`), ...r.after, ...readingLines]);
+      if (!performable(d)) return say(0, [...lines, ...r.after, ...readingLines]);
     }
   } catch (e) {
     console.error(`next: ${id} failed: ${clean((e as Error).message)}`);

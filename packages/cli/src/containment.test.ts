@@ -918,6 +918,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/tick.ts:writeTickReceipt:writeFileSync#1", disposition: "contained", why: "receipts/tick/<session>.json in a real receipts/tick/ checked by ensureRealDirectory" },
   { key: "packages/cli/src/tick.ts:writeDailyActum:mkdirSync#1", disposition: "contained", why: "acta/<date>-<sella>-daily.md in a real acta/ checked by ensureRealDirectory before the turn is spent" },
   { key: "packages/cli/src/tick.ts:writeDailyActum:writeFileSync#1", disposition: "contained", why: "acta/<date>-<sella>-daily.md in a real acta/ checked by ensureRealDirectory before the turn is spent" },
+  { key: "packages/cli/src/usage-reading.ts:appendReading:appendFileSync#1", disposition: "contained", why: "W-430: appends a usage reading to <home>/.bisellium-evidence/usage/readings.jsonl in a real usage/ folder checked by ensureRealDirectory before the append; outside every officina and Git directory" },
   { key: "packages/commands/src/builder-run.ts:gitWriteProbe:openSync#1", disposition: "outside", why: "creates and removes .git/index.lock to probe git writability" },
   { key: "packages/commands/src/builder-run.ts:gitWriteProbe:unlinkSync#1", disposition: "outside", why: "creates and removes .git/index.lock to probe git writability" },
   { key: "packages/commands/src/builder-run.ts:acquireProducerLease:mkdirSync#1", disposition: "outside", why: "the producer lease under .bisellium/leases/" },

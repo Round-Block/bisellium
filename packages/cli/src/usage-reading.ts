@@ -9,9 +9,10 @@
  * CONTEXT_WIND_DOWN context tokens; `tick` and `next --all` print the Codex burn the rest of the week needs. See
  * studio/briefs/W-430.md.
  */
-import { readdirSync, statSync } from "node:fs";
+import { appendFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { instant } from "@bisellium/schema";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 
 type Dict = Record<string, unknown>;
@@ -23,6 +24,7 @@ const str = (v: unknown): string | null => (typeof v === "string" && v !== "" ? 
 const EVIDENCE = ".bisellium-evidence";
 const USAGE = "usage";
 const CLAUDE_FILE = "claude-latest.json";
+const READINGS = "readings.jsonl";
 /** A status-line reading older than this is stale: its values are kept, but no hold reads them. */
 export const STALE_MS = 30 * 60_000;
 /** Codex's week window, in minutes, as its `rate_limits` name it. */
@@ -156,4 +158,16 @@ export function readingLine(r: Reading): string {
       : `Claude 5h ${pctText(r.claude_5h_used)}, week ${pctText(r.claude_week_used)}, context ${r.context_tokens === null ? "unread" : `${r.context_tokens} tokens`}${claudeFresh(r) ? "" : ` (stale: seen ${r.claude_seen})`}`;
   const codex = r.codex_week_used === null ? "Codex unread (no session log holds a week rate_limits)" : `Codex week ${pctText(r.codex_week_used)}, resets ${r.codex_resets === null ? "unread" : isoSec(r.codex_resets)}`;
   return `usage: ${claude}; ${codex}`;
+}
+
+/** Appends the reading to `<home>/.bisellium-evidence/usage/readings.jsonl` through the shared containment helper; the
+ *  error message when it cannot, never a throw. */
+export function appendReading(home: string, r: Reading): string | undefined {
+  try {
+    const dir = ensureRealDirectory(home, EVIDENCE, USAGE);
+    appendFileSync(join(dir, READINGS), `${JSON.stringify(r)}\n`);
+    return undefined;
+  } catch (e) {
+    return (e as Error).message.split("\n")[0];
+  }
 }
