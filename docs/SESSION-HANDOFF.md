@@ -44,14 +44,14 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 2026-10-27: push the Codex-heavy UI streams; was one each from 10-24), each taking its queue's top. Halted: W-239 (D-106 D).
+Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Engineering PAUSED (Patron 10-28) until 10-29 06:00Z; W-426's requeue rides. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-00. W-442 — urgent: W-406-b3 fails on Wednesdays; built, held on W-445. Then W-445, W-443 (cause fixes), W-446 (flaky W-406-b1)
-00a. W-433 — record a ui-lead revise on a sessioned spec (blocks W-407, W-408)
+00. W-450 — certify re-attests a served Playwright red (TAP reporter). Then W-442 (PR #835 refused at certify; rebuild), W-445, W-443, W-446
+00a. W-433 — record a ui-lead revise on a sessioned spec (blocks W-407, W-408); r2 signed; held
 0. W-430 — usage in the records (signed r1, review next). Then W-444 — reply length Stop hook (.claude/: Patron merges)
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
-2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (high; PR #825, requeue after W-442). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
+2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (high; PR #825, requeue from 10-29 00:00Z). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
 2a. W-431, W-432 — verb dead ends: unchanged re-sign, carried open finding
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
 3b. W-261 — woken orchestration (D-126 1: the overrun study's first cause)
