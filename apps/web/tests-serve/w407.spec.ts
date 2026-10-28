@@ -301,3 +301,80 @@ test("W-407-b5 secondary groups are non-interactive labels and empty Inbox has n
   await expect(page.locator(".inbox")).not.toContainText("/tmp/studio");
   await expect(page.locator(".inbox")).not.toContainText(/as of|generated/i);
 });
+
+test("W-407-b6 refresh failure and removed selection preserve the decision in progress", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { __w407Visible: boolean }).__w407Visible = true;
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => (window as unknown as { __w407Visible: boolean }).__w407Visible ? "visible" : "hidden",
+    });
+  });
+  await page.clock.install({ time: new Date(FIXED_NOW) });
+  for (const width of [1280, 390]) {
+    let reads = 0;
+    let failNext = false;
+    let response = [...MANY_RESPONSE];
+    await page.unroute("**/api/inbox");
+    await page.route("**/api/inbox", (route) => {
+      reads += 1;
+      if (failNext) {
+        failNext = false;
+        return route.abort("failed");
+      }
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones: response }) });
+    });
+    await openInbox(page, width, `w407-b6-${width}`, false);
+    await expect.poll(() => reads).toBe(1);
+    const items = page.locator(".inbox__item");
+    const list = page.locator(".inbox__list-pane");
+    await items.nth(6).click();
+    await list.evaluate((node) => { node.scrollTop = 220; });
+    const ratio = page.locator(".inbox__input-ratio");
+    await ratio.fill("half-typed ratio");
+    const scrollBefore = await list.evaluate((node) => node.scrollTop);
+    const selectedSubject = await page.locator(".inbox__expanded-subject").textContent();
+
+    failNext = true;
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(2);
+    await expect(page.locator(".screen-notice")).toHaveText("Could not load the inbox.");
+    await expect(items).toHaveCount(14);
+    await expect(items.nth(6)).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText(selectedSubject ?? "");
+    await expect(ratio).toHaveValue("half-typed ratio");
+    await expect(ratio).toBeFocused();
+    expect(await list.evaluate((node) => node.scrollTop), `${width}: failure preserves list scroll`).toBe(scrollBefore);
+
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(3);
+    await expect(page.locator(".screen-notice")).toHaveCount(0);
+    await expect(items.nth(6)).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText(selectedSubject ?? "");
+    await expect(ratio).toHaveValue("half-typed ratio");
+    await expect(ratio).toBeFocused();
+    expect(await list.evaluate((node) => node.scrollTop), `${width}: recovery preserves list scroll`).toBe(scrollBefore);
+
+    response = response.filter(({ id }) => id !== "P-09").concat({ id: "P-new", opus: "W-408", from: "architect", opened: Date.UTC(2026, 9, 28, 9), subject: "Newly arrived decision", body: "New work." });
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(4);
+    await expect(items).toHaveCount(14);
+    await expect(items.filter({ hasText: "Newly arrived decision" })).toHaveClass(/inbox__item--unread/);
+    await expect(page.locator('.inbox__item[aria-selected="true"]')).toHaveCount(0);
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-09");
+    await expect(page.locator(".inbox__withdrawn")).toHaveText("This petitio no longer needs a decision.");
+    await expect(ratio).toHaveValue("half-typed ratio");
+    await expect(ratio).toBeFocused();
+    for (const name of ["approve", "defer", "decline"]) await expect(page.getByRole("button", { name: new RegExp(name, "i") })).toBeDisabled();
+    expect(await list.evaluate((node) => node.scrollTop), `${width}: removal preserves list scroll`).toBe(scrollBefore);
+
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await expect.poll(() => reads).toBe(5);
+    expect(reads, `${width}: simultaneous tab-return events coalesce`).toBe(5);
+
+    await served!.close(); served = undefined;
+  }
+});

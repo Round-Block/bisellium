@@ -109,3 +109,22 @@ test("W-407-b5 behaviour 5: secondary groups are honest labels and empty has no 
   assert.match(view, /Nothing waiting on you/, "the ruled empty line remains exact");
   assert.doesNotMatch(view, /Colophon|generatedAt|as of/i, "Inbox renders no colophon timestamp, generated-at or as-of text");
 });
+
+test("W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptive", () => {
+  const hook = readOptional("apps/web/src/lib/useVisibleRefresh.ts");
+  const inbox = read("apps/web/src/screens/Inbox.tsx");
+  const view = read("apps/web/src/screens/InboxView.tsx");
+  assert.match(hook, /useVisibleRefresh\(refresh: \(\) => void, intervalMs = DEFAULT_VISIBLE_REFRESH_INTERVAL_MS\): void/, "the shared hook has the promised API and default");
+  assert.match(hook, /DEFAULT_VISIBLE_REFRESH_INTERVAL_MS = 30_000/, "the default interval is thirty seconds");
+  assert.match(hook, /document\.visibilityState === "visible"[\s\S]*refreshRef\.current\(\)/, "every read is visibility guarded");
+  // sleep-seam: refreshWhenVisible -- lexical assertion for the browser timer registration, not a test wait
+  assert.match(hook, /refreshWhenVisible\(\);[\s\S]*setInterval\(refreshWhenVisible, intervalMs\)[\s\S]*addEventListener\("focus", refreshWhenVisible\)[\s\S]*addEventListener\("visibilitychange", refreshWhenVisible\)/, "visible mount, interval, focus and visibility change share one read function");
+  assert.match(hook, /clearInterval\(interval\)[\s\S]*removeEventListener\("focus", refreshWhenVisible\)[\s\S]*removeEventListener\("visibilitychange", refreshWhenVisible\)/, "unmount removes interval and listeners");
+  assert.match(inbox, /const refreshInbox = useCallback\(\(\): void =>/, "Inbox passes one stable refresh callback");
+  assert.match(inbox, /useVisibleRefresh\(refreshInbox\)/, "Inbox consumes the shared mechanism");
+  assert.match(inbox, /if \(refreshingRef\.current\) \{[\s\S]*if \(refreshIntentRef\.current !== null\) pendingRefreshRef\.current = true;[\s\S]*return;/, "overlapping focus and visibility reads coalesce while an explicit answer refresh is queued");
+  assert.match(inbox, /if \(!hasSuccessfulLoadRef\.current\) setData\(EMPTY\);[\s\S]*setReadFailed\(true\)/, "only a failed first load replaces the response with the empty failure state");
+  assert.match(inbox, /findIndex\(\(petitio\) => petitio\.id === currentId\)[\s\S]*retainedIndex >= 0/, "refresh reconciles selection by petitio id");
+  assert.match(inbox, /const keepDetached = intent === null[\s\S]*setDetachedPetition\(keepDetached \? currentPetition : null\)/, "an ordinary refresh retains a removed selected decision instead of advancing");
+  assert.match(view, /This petitio no longer needs a decision\./, "a removed selected decision explains why its controls are disabled");
+});
