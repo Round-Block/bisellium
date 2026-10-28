@@ -328,24 +328,41 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     await expect.poll(() => reads).toBe(1);
     const items = page.locator(".inbox__item");
     const list = page.locator(".inbox__list-pane");
-    failNext = true;
-    await page.clock.fastForward(30_000);
-    await expect.poll(() => reads).toBe(2);
-    if (width === 390) await expect(page.locator(".inbox__list-pane .screen-notice")).toHaveText("Could not load the inbox.");
     await items.nth(6).click();
-    await list.evaluate((node) => { node.scrollTop = 220; });
+    const target = await list.evaluate((node) => {
+      node.scrollTop = Math.min(220, node.scrollHeight - node.clientHeight - 40);
+      return node.scrollTop;
+    });
+    // below 840px the list is hidden behind the detail, so only the wide layout has a reader position to keep
+    if (width === 1280) expect(target, `${width}: the list scrolls without a notice`).toBeGreaterThan(0);
     const ratio = page.locator(".inbox__input-ratio");
     await ratio.fill("half-typed ratio");
     const scrollBefore = await list.evaluate((node) => node.scrollTop);
+    expect(scrollBefore, `${width}: the position is the one set`).toBe(target);
+    // what the reader sees: the selected row's top within the list pane (null while the list is hidden behind the detail)
+    const rowTop = async (): Promise<number | null> => {
+      const [row, pane] = await Promise.all([items.nth(6).boundingBox(), list.boundingBox()]);
+      return row === null || pane === null ? null : row.y - pane.y;
+    };
+    const topBefore = await rowTop();
+    const sameTop = async (when: string): Promise<void> => {
+      const top = await rowTop();
+      if (topBefore === null || top === null) return;
+      expect(Math.abs(top - topBefore), `${width}: ${when} keeps the selected row where the reader sees it`).toBeLessThanOrEqual(1);
+    };
+    failNext = true;
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(2);
     const selectedSubject = await page.locator(".inbox__expanded-subject").textContent();
 
-    await expect(page.locator(".screen-notice")).toHaveText("Could not load the inbox.");
+    await expect(page.locator(".inbox__list-pane .screen-notice")).toHaveText("Could not load the inbox.");
+    await expect(page.locator(".inbox__reading-pane .screen-notice")).toHaveText("Could not load the inbox.");
     await expect(items).toHaveCount(14);
     await expect(items.nth(6)).toHaveAttribute("aria-selected", "true");
     await expect(page.locator(".inbox__expanded-subject")).toHaveText(selectedSubject ?? "");
     await expect(ratio).toHaveValue("half-typed ratio");
     await expect(ratio).toBeFocused();
-    expect(await list.evaluate((node) => node.scrollTop), `${width}: failure preserves list scroll`).toBe(scrollBefore);
+    await sameTop("failure");
 
     await page.clock.fastForward(30_000);
     await expect.poll(() => reads).toBe(3);
@@ -354,7 +371,7 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     await expect(page.locator(".inbox__expanded-subject")).toHaveText(selectedSubject ?? "");
     await expect(ratio).toHaveValue("half-typed ratio");
     await expect(ratio).toBeFocused();
-    expect(await list.evaluate((node) => node.scrollTop), `${width}: recovery preserves list scroll`).toBe(scrollBefore);
+    await sameTop("recovery");
 
     response = response.filter(({ id }) => id !== "P-09").concat({ id: "P-new", opus: "W-408", from: "architect", opened: Date.UTC(2026, 9, 28, 9), subject: "Newly arrived decision", body: "New work." });
     await page.clock.fastForward(30_000);
@@ -376,6 +393,7 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     await expect.poll(() => reads).toBe(5);
     expect(reads, `${width}: simultaneous tab-return events coalesce`).toBe(5);
 
+    if (width === 390) await page.getByRole("button", { name: "Back to Inbox" }).click();
     await items.first().click();
     await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-03");
     await ratio.fill("sole draft");
