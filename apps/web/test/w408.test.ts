@@ -91,3 +91,11 @@ test("W-408-b4 behaviour 4: Health is two detailed disclosures with one verdigri
   assert.match(css, /\.officina__brake\s*{[^}]*background:\s*var\(--verdigris\)/s, "the brake is the verdigris fill");
   assert.match(served, /health detail discloses its rows and brake/, "served Chromium pins disclosure and write behavior");
 });
+
+test("W-408-b5 behaviour 5: one W-407 visible-refresh helper keeps Officina detail current", () => {
+  assert.match(screen, /import \{ useVisibleRefresh \} from "\.\.\/lib\/useVisibleRefresh\.js"/, "Officina imports W-407's shared refresh helper");
+  assert.match(screen, /useVisibleRefresh\(refresh\)/, "Officina consumes the shared helper");
+  assert.doesNotMatch(screen, /setInterval|setTimeout|addEventListener\(|visibilitychange/, "the screen owns no refresh listener or timer");
+  assert.doesNotMatch(screen, /fetchInbox|datePresentation/, "the detail refresh owns no Home or Inbox summary read");
+  assert.match(served, /visible interval and focus refresh detail reads/, "served Chromium pins refreshed content without reload");
+});
