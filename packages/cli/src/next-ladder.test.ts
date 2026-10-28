@@ -878,7 +878,7 @@ test("W-299-b3 behaviour 3: next --all prints every open opus's derived next ste
   const all = next(w, ["--all"], { clock: false });
   assert.equal(all.status, 0, ran("next --all exits 0", all));
   const lines = all.out.trimEnd().split("\n");
-  assert.deepEqual(lines.map((l) => /^next: (\S+) /.exec(l)?.[1] ?? l), ["W-12", OPUS, "W-1000", "open: 3"], ran("the open opera, in id order, then the count", all));
+  assert.deepEqual(lines.map((l) => /^next: (\S+) /.exec(l)?.[1] ?? l), ["W-12", OPUS, "W-1000", "codex: unread (no session log holds a week rate_limits)", "open: 3"], ran("the open opera, in id order, then the codex line (W-430: the fixture home holds no Codex log) and the count", all));
   for (const l of lines.slice(0, 3)) assert.match(l, /^next: \S+ \S+ (named|held|complete) · actor: \S+ · why: \S.* · traditio: \S/, ran("one line per opus: step, status, actor, why and traditio", all));
   assert.ok(lines[0]!.endsWith(" · traditio: producer at 2026-10-02T09:00:00.000Z: spec it; blocked on the Patron's ruling"), ran("the traditio: sella, time, next and what blocks it", all));
   assert.ok(lines[2]!.endsWith(" · traditio: none"), ran("a record with no traditio says none", all));

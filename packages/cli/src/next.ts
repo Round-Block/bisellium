@@ -51,7 +51,7 @@ import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
-import { appendReading, costPhrase, opusCost, readReadings, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
+import { appendReading, codexBurnLine, costPhrase, opusCost, readReadings, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
 
 export { MIN_CHECKS };
 
@@ -2985,6 +2985,7 @@ function handoverLine(t: unknown): { line: string } | { error: string } {
  * handover hold, no step health). Reads only: no ticket, marker or step log. An unreadable record, an unknown opus, a
  * malformed traditio, a held derivation or a throw makes the run exit 1, after every line is printed.
  * W-404: then, when the officina has a milestones.yml, the milestones line (exits.ts), before `open:`; a held one exits 1.
+ * W-430: then the Codex burn the rest of the week needs (usage-reading.ts), before `open:`; it never fails the run.
  */
 function runAll(repo: string, studioAbs: string): { exitCode: number } {
   let names: string[];
@@ -3036,6 +3037,8 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
     lines.push(milestones.line);
     if (milestones.held) failed = true;
   }
+  const now = new Date();
+  lines.push(codexBurnLine(takeReading(homedir(), now, "next --all"), now));
   lines.push(`open: ${open}`);
   console.log(lines.map((l) => clean(l, 1000)).join("\n"));
   return { exitCode: failed ? 1 : 0 };

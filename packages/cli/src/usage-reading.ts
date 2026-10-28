@@ -242,3 +242,15 @@ export function windDown(r: Reading): string | undefined {
   if (r.context_tokens === null || !claudeFresh(r) || r.context_tokens < CONTEXT_WIND_DOWN) return undefined;
   return `context ${r.context_tokens} tokens is past ${CONTEXT_WIND_DOWN}: let running tasks finish, refresh the session handoff, and start no new work (W-430)`;
 }
+
+/** The Codex burn the rest of the week needs at `now`: `codex: week 61% used, resets <iso> (101.6 h left): 0.38%/h
+ *  (9.2%/day) uses the rest`. */
+export function codexBurnLine(r: Reading, now: Date): string {
+  if (r.codex_week_used === null || r.codex_resets === null) return "codex: unread (no session log holds a week rate_limits)";
+  const left = (r.codex_resets * 1000 - now.getTime()) / 3_600_000;
+  const resets = isoSec(r.codex_resets);
+  if (left <= 0) return `codex: the week read at ${r.codex_seen ?? "an unknown time"} reset at ${resets}; no reading since`;
+  const rest = Math.max(0, 100 - r.codex_week_used);
+  const perHour = rest / left;
+  return `codex: week ${r.codex_week_used}% used, resets ${resets} (${left.toFixed(1)} h left): ${perHour.toFixed(2)}%/h (${(perHour * 24).toFixed(1)}%/day) uses the rest`;
+}

@@ -183,8 +183,8 @@ function exitWorld(tag: string): { repo: string; studio: string } {
   return { repo, studio: join(repo, "studio") };
 }
 
-function bisellium(cwd: string, args: string[]): { status: number | null; out: string; err: string } {
-  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, encoding: "utf8", timeout: 120_000, env: { ...process.env, BISELLIUM_SELLA: "" } });
+function bisellium(cwd: string, args: string[], env: NodeJS.ProcessEnv = {}): { status: number | null; out: string; err: string } {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, encoding: "utf8", timeout: 120_000, env: { ...process.env, BISELLIUM_SELLA: "", ...env } });
   return { status: r.status, out: r.stdout ?? "", err: r.stderr ?? "" };
 }
 
@@ -376,12 +376,16 @@ test("W-404-b2 behaviour 2: next --all prints the milestones report as one line 
   const w = exitWorld("b2");
   milestones(w.studio, FOUR);
   fourOpera(w.studio, "backlog");
-  const all = (): { status: number | null; out: string; err: string } => bisellium(w.repo, ["next", "--all", "--studio", w.studio, "--repo", w.repo]);
+  // W-430: next --all prints the Codex burn before the open count; a home with no Codex log makes it the unread line
+  const home = mkdtempSync(join(tmpdir(), "w404-home-"));
+  dirs.push(home);
+  const CODEX = "codex: unread (no session log holds a week rate_limits)\n";
+  const all = (): { status: number | null; out: string; err: string } => bisellium(w.repo, ["next", "--all", "--studio", w.studio, "--repo", w.repo], { HOME: home });
   const LINE = "milestones: 1 of 4 exits met, 30% by weight · M1 open: opus W-1; path W-1, W-2, W-3 · M2 met: rule acta.kind; path none · M3 open: needs; path none · M4 open: no exit; path none";
 
   const before = snapshot(w.repo);
   const r = all();
-  assert.equal(r.out, `${LINE}\nopen: 0\n`, "the milestones line, then the open count");
+  assert.equal(r.out, `${LINE}\n${CODEX}open: 0\n`, "the milestones line, then the codex line and the open count");
   assert.equal(r.status, 0, "exit 0");
   assert.equal(snapshot(w.repo), before, "next --all writes nothing: every file under the repository, .git included, is byte-identical");
 
@@ -399,17 +403,17 @@ test("W-404-b2 behaviour 2: next --all prints the milestones report as one line 
   // filings do not move it
   opus(w.studio, "W-6", "backlog", "milestone: M1\nvalue: 8\n");
   opus(w.studio, "W-8", "done", "milestone: M99\nvalue: 3\n");
-  assert.equal(all().out, `${LINE}\nopen: 0\n`, "filing more opera, and an opus naming an undeclared milestone, change nothing");
+  assert.equal(all().out, `${LINE}\n${CODEX}open: 0\n`, "filing more opera, and an opus naming an undeclared milestone, change nothing");
 
   // malformed: a held line, and the run exits 1 after every line
   milestones(w.studio, "milestones: []\n");
   const held = all();
-  assert.equal(held.out, "milestones: held · why: milestones.yml is malformed: it lists no milestone\nopen: 0\n", "a malformed milestones.yml: the held line");
+  assert.equal(held.out, `milestones: held · why: milestones.yml is malformed: it lists no milestone\n${CODEX}open: 0\n`, "a malformed milestones.yml: the held line");
   assert.equal(held.status, 1, "a malformed milestones.yml: exit 1");
 
   // absent: no line, as before W-404
   rmSync(join(w.studio, "milestones.yml"));
   const absent = all();
-  assert.equal(absent.out, "open: 0\n", "no milestones.yml: no milestones line");
+  assert.equal(absent.out, `${CODEX}open: 0\n`, "no milestones.yml: no milestones line");
   assert.equal(absent.status, 0, "no milestones.yml: exit 0");
 });
