@@ -1,0 +1,40 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=^W-407-b6\s --import tsx apps/web/test/w407.test.ts
+# exit: 1
+# at: 2026-10-28T22:13:43.447Z
+# sella: ui-architect
+# tree: tree:4150bc9debc1b1794f2d83baa7b9163471514483
+# ticket: {"opus":"W-407","step":"reds","action":"red","round":6,"actor":"producer","studio":".worktrees/W-407/studio","head":"b543e4b6d4cae6c3765b9f3d9d5dd3e8afc9018f","brief":"2df0e86a628dfb5019233525a5592ddd073ca483","at":"2026-10-28T22:13:43.411Z"}
+
+TAP version 13
+# Subtest: W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptive
+not ok 1 - W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptive
+  ---
+  duration_ms: 3.033246
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-407/apps/web/test/w407.test.ts:2:5903'
+  failureType: 'testCodeFailure'
+  error: 'the shared hook has the promised API and default'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    export function useVisibleRefresh(refresh: () => void): void { refresh(); }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-407/apps/web/test/w407.test.ts:117:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11.759948
