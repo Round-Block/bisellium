@@ -259,3 +259,44 @@ test("W-430-b4 behaviour 4: past 300000 context tokens on a fresh status line a 
   const performed = next(p, [OPUS, "--perform", "--expect", "branch"]);
   assert.equal(performed.first, `next: ${OPUS} branch performed`, ran("past the wind-down, the branch rung is still performed", performed));
 });
+
+test("W-430-b5 behaviour 5: tick and next --all print the Codex burn the rest of the week needs against the time left to its reset", { timeout: 600_000 }, async () => {
+  const { runTick } = (await import("./tick.js")) as { runTick: (args: string[], opts: Dict) => Promise<{ exitCode: number }> };
+  const studio = scratchHome("b5-studio");
+  cpSync(join(dirname(new URL(import.meta.url).pathname), "..", "..", "..", "examples", "sample-studio"), studio, { recursive: true });
+  const now = new Date("2026-10-28T02:00:00.000Z");
+  const home = scratchHome("b5-home");
+  codexLogs(home, now);
+  const capture = async (args: string[], h: string): Promise<string[]> => {
+    const logs: string[] = [];
+    const real = console.log;
+    console.log = (...a: unknown[]): void => void logs.push(a.map(String).join(" "));
+    try {
+      await runTick(args, { now, home: h, listModels: async () => [], versions: async () => ({}) });
+    } finally {
+      console.log = real;
+    }
+    return logs;
+  };
+  const LINE = `codex: week 61% used, resets ${RESETS_ISO} (124.0 h left): 0.31%/h (7.5%/day) uses the rest`;
+  const dry = await capture(["--studio", studio, "--dry-run"], home);
+  assert.equal(dry.filter((l) => l.startsWith("codex: ")).length, 1, `tick --dry-run: one codex line: ${dry.join(" | ")}`);
+  assert.equal(dry.find((l) => l.startsWith("codex: ")), LINE, "39% left over 124.0 h");
+  write(join(studio, "bisellium.yml"), readFileSync(join(studio, "bisellium.yml"), "utf8").replace(/\{ id: ([a-z-]+), name: /g, "{ id: $1, autonomy: L0, name: "));
+  const acted = await capture(["--studio", studio], home);
+  assert.equal(acted.find((l) => l.startsWith("codex: ")), LINE, `tick: the same line: ${acted.join(" | ")}`);
+  assert.equal((await capture(["--studio", studio, "--dry-run"], scratchHome("b5-none"))).find((l) => l.startsWith("codex: ")), "codex: unread (no session log holds a week rate_limits)", "no session log: unread");
+  const past = scratchHome("b5-past");
+  codexLog(past, "2026/10/28", "rollout-p.jsonl", [tokenCount("2026-10-20T01:00:00.000Z", week(97, 1790000000))], now, 60_000);
+  assert.equal((await capture(["--studio", studio, "--dry-run"], past)).find((l) => l.startsWith("codex: ")), "codex: the week read at 2026-10-20T01:00:00.000Z reset at 2026-09-21T14:13:20Z; no reading since", "the week has reset since the last reading");
+
+  // next --all, on the real clock: the same line before the open count
+  const w = world("w430-b5", "greenlight");
+  const resets = Math.floor(Date.now() / 1000) + 100 * 3600;
+  codexLog(w.home, "2026/10/28", "rollout-a.jsonl", [tokenCount("2026-10-28T01:00:00.000Z", week(61, resets))], new Date(), 60_000);
+  const all = next(w, ["--all"], { clock: false });
+  const lines = all.out.trimEnd().split("\n");
+  assert.equal(all.status, 0, ran("next --all exits 0", all));
+  assert.match(lines.at(-2) ?? "", /^codex: week 61% used, resets \S+Z \((99\.9|100\.0) h left\): 0\.39%\/h \(9\.4%\/day\) uses the rest$/, ran("the codex line, before the open count", all));
+  assert.equal(lines.at(-1), "open: 1", ran("then the open count", all));
+});
