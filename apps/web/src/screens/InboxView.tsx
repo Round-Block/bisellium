@@ -82,6 +82,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
           <h1 className="inbox__mobile-title">Inbox</h1>
         </div>
         <section className="inbox__list-pane" aria-label="Needs your decision">
+          {notice !== undefined && <p className="screen-notice">{notice}</p>}
           <div className="inbox__queue" role="listbox" aria-label="Needs your decision">
             {petitiones.map((petitio, index) => {
               const hasFocus = index === focusIndex;

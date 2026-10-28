@@ -125,6 +125,8 @@ test("W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptiv
   assert.match(inbox, /if \(refreshingRef\.current\) \{[\s\S]*if \(refreshIntentRef\.current !== null\) pendingRefreshRef\.current = true;[\s\S]*return;/, "overlapping focus and visibility reads coalesce while an explicit answer refresh is queued");
   assert.match(inbox, /if \(!hasSuccessfulLoadRef\.current\) setData\(EMPTY\);[\s\S]*setReadFailed\(true\)/, "only a failed first load replaces the response with the empty failure state");
   assert.match(inbox, /findIndex\(\(petitio\) => petitio\.id === currentId\)[\s\S]*retainedIndex >= 0/, "refresh reconciles selection by petitio id");
-  assert.match(inbox, /const keepDetached = intent === null[\s\S]*setDetachedPetition\(keepDetached \? currentPetition : null\)/, "an ordinary refresh retains a removed selected decision instead of advancing");
+  assert.match(inbox, /const keepDetached = intent === null && refreshIntentRef\.current === null[\s\S]*setDetachedPetition\(keepDetached \? currentPetition : null\)/, "an ordinary settle cannot detach an answered decision while its explicit reconciliation is queued");
+  assert.match(view, /<section className="inbox__list-pane"[\s\S]*notice !== undefined && <p className="screen-notice">\{notice\}<\/p>[\s\S]*inbox__queue/, "a background read failure is visible above the list in every layout");
+  assert.match(view, /if \(petitiones\.length === 0\)[\s\S]*Nothing waiting on you/, "an empty ordinary refresh replaces a retained reading while its draft remains state-owned");
   assert.match(view, /This petitio no longer needs a decision\./, "a removed selected decision explains why its controls are disabled");
 });

@@ -328,6 +328,10 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     await expect.poll(() => reads).toBe(1);
     const items = page.locator(".inbox__item");
     const list = page.locator(".inbox__list-pane");
+    failNext = true;
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(2);
+    if (width === 390) await expect(page.locator(".inbox__list-pane .screen-notice")).toHaveText("Could not load the inbox.");
     await items.nth(6).click();
     await list.evaluate((node) => { node.scrollTop = 220; });
     const ratio = page.locator(".inbox__input-ratio");
@@ -335,9 +339,6 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     const scrollBefore = await list.evaluate((node) => node.scrollTop);
     const selectedSubject = await page.locator(".inbox__expanded-subject").textContent();
 
-    failNext = true;
-    await page.clock.fastForward(30_000);
-    await expect.poll(() => reads).toBe(2);
     await expect(page.locator(".screen-notice")).toHaveText("Could not load the inbox.");
     await expect(items).toHaveCount(14);
     await expect(items.nth(6)).toHaveAttribute("aria-selected", "true");
@@ -374,6 +375,23 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     });
     await expect.poll(() => reads).toBe(5);
     expect(reads, `${width}: simultaneous tab-return events coalesce`).toBe(5);
+
+    await items.first().click();
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-03");
+    await ratio.fill("sole draft");
+    response = response.filter(({ id }) => id === "P-03");
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(6);
+    response = [];
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(7);
+    await expect(page.locator(".inbox__empty")).toHaveText("Nothing waiting on you");
+    await expect(page.locator(".inbox__expanded-subject, .inbox__withdrawn")).toHaveCount(0);
+    response = [{ id: "P-03", opus: "W-407", from: "builder-a", opened: Date.UTC(2026, 9, 17, 10, 30), subject: "Decision P-03", body: "Ask for P-03." }];
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => reads).toBe(8);
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-03");
+    await expect(ratio).toHaveValue("sole draft");
 
     await served!.close(); served = undefined;
   }

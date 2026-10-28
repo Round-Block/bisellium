@@ -97,7 +97,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       const currentPetition = detachedPetitionRef.current ?? current[currentIndex];
       const currentId = currentPetition?.id;
       const retainedIndex = currentId === undefined ? -1 : d.petitiones.findIndex((petitio) => petitio.id === currentId);
-      const keepDetached = intent === null && currentPetition !== undefined && retainedIndex < 0;
+      const keepDetached = intent === null && refreshIntentRef.current === null && currentPetition !== undefined && retainedIndex < 0;
       const nextIndex = retainedIndex >= 0
         ? retainedIndex
         : reconcileFocusIndex(intent?.preferredIndex ?? currentIndex, d.petitiones.length);

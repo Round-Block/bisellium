@@ -949,6 +949,11 @@
   border-right: 1px solid var(--rule);
 }
 
+.inbox__list-pane > .screen-notice {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
 .inbox__reading-pane {
   min-width: 0;
   min-height: 0;
