@@ -55,3 +55,22 @@ test("W-408-b2 behaviour 2: detailed work in flight groups active opera by lifec
   assert.match(screen, /row\.note && <span className="officina__work-note">/, "a distinct Board gate label may earn a row field");
   assert.match(served, /detailed work-in-flight groups/, "served Chromium pins grouped rows");
 });
+
+test("W-408-b3 behaviour 3: Budget pairs an accessible pie with numerals and posture", () => {
+  assert.match(screen, /<h2 className="officina__panel-heading">Budget<\/h2>[^]*Current token budget by collegium\./, "Budget is one word and its unit names collegia");
+  assert.match(burn, /BUDGET_APPROACHING_FRACTION = 0\.8/, "the approaching threshold is one Patron-changeable constant");
+  assert.match(burn, /spent > allowance/, "exactly at allowance remains distinct from past allowance");
+  assert.match(burn, /overBy:\s*Math\.max\(spent - allowance, 0\)/, "the overage is a fail-closed numeric fact");
+  assert.match(burn, /state === "over" \? "blocking" : state === "normal" \? "normal" : "high"/, "Budget reuses the shared normal, high and blocking severity levels");
+  assert.match(burnBar, /budget-meter__pie[^]*--budget-fraction[^]*aria-hidden="true"/, "each collegium has one decorative pie backed by text");
+  assert.match(burnBar, /severity-cue severity-cue--\$\{measure\.severity\}[^]*data-budget-state=\{measure\.state\}[^]*budget-meter__numerals/, "the shared shape cue sits beside the numerals");
+  assert.match(burnBar, /budget-meter__numerals[^]*aria-label=\{`\$\{stateLabel\}: \$\{measure\.spent\.toLocaleString\(\)\} tokens spent of \$\{measure\.allowance\.toLocaleString\(\)\} allowance`\}/, "visible mono numerals name the accessible fraction and state");
+  assert.match(burnBar, /\+\{measure\.overBy\.toLocaleString\(\)\} over/, "past allowance gains the exact +N over label");
+  assert.match(css, /\.budget-meter__pie\s*{[^}]*border-radius:\s*50%[^}]*conic-gradient\(var\(--budget-state-color\) 0 var\(--budget-fraction\), var\(--rule\)/s, "the pie is palette spent versus muted remaining allowance");
+  assert.match(css, /budget-meter--normal[^}]*ink-3[^]*budget-meter--approaching[^}]*budget-meter--spent[^}]*severity-high[^]*budget-meter--over[^}]*severity-blocking/s, "normal, approaching/spent and over use neutral ink, Orange and Red");
+  assert.match(css, /@media \(width <= 700px\)[^]*\.budget-meter__reading\s*{[^}]*grid-column:\s*1 \/ -1[^}]*grid-row:\s*3/s, "zoom and phone widths reserve a full ruled line for complete Budget numerals");
+  assert.doesNotMatch(css, /\.budget-meter__pie\s*{[^}]*var\(--ink\)/s, "Budget pies never use white ink as their spent colour");
+  assert.doesNotMatch(css, /burn-bar__rail|budget-meter__rail/, "the superseded 4px burn rule is gone");
+  assert.match(direction, /Budget pies reuse the shared\s+severity palette[^]*No\s+white pie/, "DIRECTION records the dated palette ruling");
+  assert.match(served, /Budget pies normal, approaching, spent and over allowance/, "served widths pin palette pies, shapes, numerals, overage and posture");
+});
