@@ -68,42 +68,31 @@ test("W-345-b4 behaviour 4: a failed Inbox read clears records before showing th
   );
 });
 
-test("W-345-b5 behaviour 5: the answer pane remains reachable at phone width", () => {
+test("W-345-b5 behaviour 5: the selected answer controls remain reachable in Outlook mobile detail", () => {
   const css = read("src/components/w025.css");
-  const inboxAt = css.indexOf("/* ── Inbox");
-  const phoneAt = css.indexOf("@media (max-width: 899px)", inboxAt);
-  const phone = css.slice(phoneAt, css.indexOf(".inbox__title", phoneAt));
-  assert.doesNotMatch(phone, /\.inbox__detail\s*\{[^}]*display:\s*none;/, "the phone rule never hides the answer pane");
-  assert.match(phone, /\.inbox--split\s*\{[^}]*height:\s*auto;/, "the stacked phone Inbox grows to fit its answer pane");
-  assert.match(phone, /\.inbox__list\s*\{[^}]*max-height:\s*40vh;/, "the petition list leaves room for the phone answer pane");
-  for (const [selector, property] of [
-    ["inbox__row", "min-height"],
-    ["inbox__input-ratio", "min-height"],
-    ["inbox__btn-action", "min-height"],
-  ]) {
-    assert.match(phone, new RegExp(`\\.${selector}\\s*\\{[^}]*${property}:\\s*44px;`), `${selector} has a 44px phone touch target`);
-  }
   const view = read("src/screens/InboxView.tsx");
-  assert.match(view, /<button[\s\S]*?className=\{rowClasses\}[\s\S]*?aria-pressed=\{focused\}[\s\S]*?tabIndex=\{focused \? 0 : -1\}/, "petition selectors expose button and roving-tab semantics");
-  assert.match(view, /selectedRowRef\.current\?\.focus\(\{ preventScroll: true \}\);[\s\S]*?selectedRowRef\.current\?\.scrollIntoView\(\{ block: "nearest" \}\);/, "selection movement focuses and reveals the selected petition");
-  assert.match(css, /\.inbox__row:focus-visible[\s\S]*?outline:\s*2px solid var\(--verdigris\);[\s\S]*?outline-offset:\s*2px;/, "petition selectors have the visible two-pixel focus ring");
+  assert.match(view, /className=\{\["inbox__item", "inbox__row"[\s\S]*?role="option"[\s\S]*?aria-selected=\{hasFocus && !decisionUnavailable\}[\s\S]*?tabIndex=\{hasFocus \? 0 : -1\}/, "petition rows expose listbox and roving-tab semantics without selecting a withdrawn row");
+  assert.match(view, /focusedItemRef\.current\?\.focus\(\{ preventScroll: true \}\);[\s\S]*?focusedItemRef\.current\?\.scrollIntoView\(\{ block: "nearest" \}\)/, "selection movement focuses and reveals only as far as needed");
+  assert.match(css, /\.inbox__item--focused\s*\{[^}]*background:\s*var\(--wash\)/, "the selected wash alone identifies the roving keyboard item");
+  assert.match(css, /\.inbox__item:focus,[\s\S]*?\.inbox__item:focus-visible\s*\{[^}]*outline:\s*0;[^}]*box-shadow:\s*none/, "petition rows add neither a focus underline nor a surrounding box");
+  assert.match(css, /@media \(max-width: 839px\)[\s\S]*?\.inbox__workspace--detail \.inbox__list-pane\s*\{[^}]*display:\s*none;[\s\S]*?\.inbox__workspace--detail \.inbox__reading-pane\s*\{[^}]*display:\s*grid;/, "the narrow layout replaces the list with its full-screen reading pane");
+  assert.match(view, /className="inbox__back"[\s\S]*Back to Inbox/, "the narrow reading pane has a visible Back control");
   const policy = read("tests-serve/states-policy.ts");
   assert.doesNotMatch(policy, /inbox:(?:refused|pending)/, "W-341 has no phone exception for answer states");
   const screenshots = read("tests-serve/screenshots.spec.ts");
-  assert.match(screenshots, /await expect\(page\.locator\("\.inbox__detail"\)\)\.toBeVisible\(\);/, "screenshot readiness requires the phone answer pane");
-  assert.doesNotMatch(screenshots, /page\.locator\("\.inbox__detail"\)\)\.toBeHidden\(\)/, "screenshot readiness never expects a hidden phone answer pane");
+  assert.match(screenshots, /await expect\(page\.locator\("\.inbox__queue"\)\)\.toBeVisible\(\);/, "screenshot readiness requires the settled phone list");
 });
 
-test("W-345-b6 behaviour 6: Inbox offers the ruled verbs and records Follow up as ask-back", async () => {
+test("W-345-b6 behaviour 6: Inbox offers DIRECTION's verbs and records Defer as ask-back", async () => {
   const m = await logic();
-  assert.deepEqual(m["VERB_KEYS"], { "1": "approve", "2": "decline", "3": "followup" }, "approve, decline and follow up have drawn, working shortcuts");
+  assert.deepEqual(m["VERB_KEYS"], { "1": "approve", "2": "defer", "3": "decline" }, "approve, defer and decline have drawn, working shortcuts");
   const buildReply = m["buildReply"] as (verb: string, text: string) => string;
   const answerOptions = m["answerOptions"] as (verb: string) => { askBack?: boolean } | undefined;
   const resolveAction = m["resolveVerbAction"] as (key: string, expanded: string | null, focused: string | undefined, text: string) => unknown;
-  assert.equal(buildReply("followup", "  Could you test ‘理由’?  "), "Could you test ‘理由’?", "Follow up records trimmed open text without a verdict prefix");
-  assert.deepEqual(answerOptions("followup"), { askBack: true }, "Follow up selects the endpoint's ask-back record form");
-  assert.equal(resolveAction("3", "P-1", "P-1", "   "), null, "Follow up refuses whitespace-only text");
-  assert.deepEqual(resolveAction("3", "P-1", "P-1", "Could you test ‘理由’?"), { petitioId: "P-1", verb: "followup" }, "Follow up accepts non-empty Unicode and quoted text");
+  assert.equal(buildReply("defer", "  Could you test ‘理由’?  "), "defer: Could you test ‘理由’?", "Defer records a verdict prefix and trimmed Unicode reason");
+  assert.deepEqual(answerOptions("defer"), { askBack: true }, "Defer selects the endpoint's ask-back record form");
+  assert.equal(resolveAction("2", "P-1", "P-1", "   "), null, "Defer refuses whitespace-only text");
+  assert.deepEqual(resolveAction("2", "P-1", "P-1", "Could you test ‘理由’?"), { petitioId: "P-1", verb: "defer" }, "Defer accepts non-empty Unicode and quoted text");
   assert.equal(typeof m["reconcileFocusIndex"], "function", "inboxLogic exports selection reconciliation");
   const reconcile = m["reconcileFocusIndex"] as (index: number, count: number) => number;
   assert.equal(reconcile(2, 2), 1, "selection reconciles to a remaining petition after removal");
@@ -114,36 +103,40 @@ test("W-345-b6 behaviour 6: Inbox offers the ruled verbs and records Follow up a
       petitiones: [{ id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }],
       opera: [],
       focusIndex: 0,
+      expandedId: "P-1",
       reason: "because",
-      confirmation: "Recorded follow-up reply for P-1; the petition remains open awaiting the asker's reply.",
+      confirmation: "Recorded defer answer for P-1; the petition remains open awaiting the asker's reply.",
       onReasonChange: () => undefined,
       onFocusChange: () => undefined,
+      onExpandChange: () => undefined,
       onSubmit: () => undefined,
     }),
   );
-  assert.equal((html.match(/class="inbox__btn-action"/g) ?? []).length, 3, "the answer pane offers exactly three truthful verbs");
+  assert.equal((html.match(/class="inbox__btn-action"/g) ?? []).length, 4, "the expansion offers all four ruled verbs");
   assert.match(html, />approve</, "approve is offered");
+  assert.match(html, />defer</, "defer is offered");
   assert.match(html, />decline</, "decline is offered");
-  assert.match(html, />follow up</, "follow up is offered");
-  assert.doesNotMatch(html, />defer<|>delegate</, "defer and delegate are absent");
-  assert.match(html, /Approve and Decline record this text as a verdict and resolve the petition\. Follow up records the text without a verdict, returns it to the asker and keeps it open\./, "all three consequences are visible before submission");
-  assert.match(html, /Recorded follow-up reply for P-1; the petition remains open awaiting the asker&#x27;s reply\./, "the exact Follow up record effect is visible after success");
+  assert.match(html, />delegate</, "delegate is visible");
+  assert.match(html, /Ratio decidendi/, "the shared reason is named");
+  assert.match(html, /Recorded defer answer for P-1; the petition remains open awaiting the asker&#x27;s reply\./, "the exact Defer record effect is visible after success");
   const withoutSelection = renderToStaticMarkup(
     React.createElement(view["InboxView"] as ComponentType<Record<string, unknown>>, {
       petitiones: [{ id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }],
       opera: [],
       focusIndex: 9,
+      expandedId: null,
       reason: "",
       confirmation: "Recorded decline answer for P-2; the petition is resolved.",
       onReasonChange: () => undefined,
       onFocusChange: () => undefined,
+      onExpandChange: () => undefined,
       onSubmit: () => undefined,
     }),
   );
   assert.match(withoutSelection, /Recorded decline answer for P-2; the petition is resolved\./, "confirmation renders without a selected petition");
   const inbox = read("src/screens/Inbox.tsx");
   assert.match(inbox, /setFocusIndex\(\(index\) => reconcileFocusIndex\(index, petitiones\.length\)\);/, "a refreshed list reconciles selection after removal");
-  assert.match(inbox, /onNeedsYouCount\?\.\(d\.petitiones\.length\);/, "a successful refresh reports the remaining needs-you count to the shell");
+  assert.match(inbox, /onNeedsYouCountRef\.current\?\.\(d\.petitiones\.length\);/, "a successful refresh reports the remaining needs-you count to the shell through the stable callback's current listener");
   const app = read("src/App.tsx");
   assert.match(app, /<Inbox onStatus=\{setStatus\} onNeedsYouCount=\{setNeedsYouCount\} \/>/, "the shell badge follows the Inbox's refreshed needs-you count");
   assert.match(inbox, /const reportedStatus = confirmation !== undefined[\s\S]*?status\.state === "ready"[\s\S]*?text: confirmation/, "the existing shell live region receives the recorded effect");
@@ -153,5 +146,5 @@ test("W-345-b6 behaviour 6: Inbox offers the ruled verbs and records Follow up a
   assert.match(confirmationRule, /color:\s*var\(--ink-2\);/, "confirmation prose uses ink-2 rather than a gate colour");
   assert.doesNotMatch(confirmationRule, /var\(--ok\)/, "confirmation prose never uses the ok gate colour");
   const screenshots = read("tests-serve/screenshots.spec.ts");
-  assert.match(screenshots, /toHaveText\(\[\/approve\/, \/decline\/, \/follow up\/\]\)/, "screenshot readiness requires the three ruled actions");
+  assert.match(screenshots, /toHaveText\(\[\/approve\/, \/defer\/, \/decline\/, \/delegate\/\]\)/, "screenshot readiness requires the four ruled actions");
 });

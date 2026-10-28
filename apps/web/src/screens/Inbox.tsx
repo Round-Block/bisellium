@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type JSX } from "react";
+import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
 import { InboxView } from "./InboxView.js";
 import {
@@ -11,6 +11,9 @@ import {
   reasonForPetition,
   resolveVerbAction,
   withReasonForPetition,
+  decodeInboxReadSet,
+  encodeInboxReadSet,
+  INBOX_READ_STORAGE_KEY,
   type Verb,
 } from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
@@ -23,8 +26,8 @@ const DEV_DATA: InboxResponse = {
     {
       id: "P-008", opus: "W-026", from: "architect",
       opened: Date.UTC(2026, 9, 27, 8),
-      subject: "Approve visual hierarchy pass for Officina screen",
-      body: "The W-026 visual pass restructures the Officina screen from a single-column document layout to a sidebar + grid dashboard. Changes include pie charts for burn posture, side-by-side panels for Engine and Integrity, and responsive breakpoints at 899px and 599px. Review the [design direction](docs/design/DIRECTION.md) and [served evidence](ci/W-026-served.log). Recommend approval.",
+      subject: "Approve the Outlook-style Inbox decision layout",
+      body: "The Inbox now keeps the needs-you list beside an independently scrolling reading pane on wide screens, then changes to list and full-screen detail navigation below 840px. Review the [design direction](docs/design/DIRECTION.md) and [served evidence](https://example.test/W-407). Recommend approval.",
     },
     {
       id: "P-009", opus: "W-024", from: "builder-a",
@@ -57,32 +60,78 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const [outcome, setOutcome] = useState<"refused" | "error" | undefined>(undefined);
+  const [readPetitionIds, setReadPetitionIds] = useState<Set<string>>(() => {
+    try { return decodeInboxReadSet(localStorage.getItem(INBOX_READ_STORAGE_KEY)); }
+    catch { return new Set(); }
+  });
 
   const demo = location.search.includes("demo");
+  const dataRef = useRef(data);
+  const focusIndexRef = useRef(focusIndex);
+  const expandedIdRef = useRef(expandedId);
+  const onNeedsYouCountRef = useRef(onNeedsYouCount);
+  const refreshIntentRef = useRef<{ preferredIndex: number; reopenDetail: boolean; reveal: boolean } | null>(null);
+  dataRef.current = data;
+  focusIndexRef.current = focusIndex;
+  expandedIdRef.current = expandedId;
+  onNeedsYouCountRef.current = onNeedsYouCount;
 
-  function reload(): void {
-    fetchInbox()
+  const refreshInbox = useCallback((): void => {
+    const settle = (d: InboxResponse): void => {
+      const current = dataRef.current.petitiones;
+      const currentIndex = focusIndexRef.current;
+      const currentId = current[currentIndex]?.id;
+      const intent = refreshIntentRef.current;
+      refreshIntentRef.current = null;
+      const retainedIndex = currentId === undefined ? -1 : d.petitiones.findIndex((petitio) => petitio.id === currentId);
+      const nextIndex = retainedIndex >= 0
+        ? retainedIndex
+        : reconcileFocusIndex(intent?.preferredIndex ?? currentIndex, d.petitiones.length);
+      const detailWasOpen = intent?.reopenDetail ?? expandedIdRef.current !== null;
+      setData(d);
+      setFocusIndex(nextIndex);
+      setExpandedId(detailWasOpen ? (d.petitiones[nextIndex]?.id ?? null) : null);
+      if (intent?.reveal && d.petitiones.length > 0) setFocusRequest((request) => request + 1);
+      onNeedsYouCountRef.current?.(d.petitiones.length);
+      setLoaded(true);
+      setReadFailed(false);
+    };
+    if (demo) {
+      settle(DEV_DATA);
+      return;
+    }
+    void fetchInbox()
       .then((d) => {
-        setData(d);
-        onNeedsYouCount?.(d.petitiones.length);
-        setLoaded(true);
-        setReadFailed(false);
+        settle(d);
       })
       .catch(() => {
         setData(EMPTY);
         setLoaded(true);
         setReadFailed(true);
       });
-  }
+  }, [demo]);
 
-  useEffect(() => {
-    if (demo) { setData(DEV_DATA); onNeedsYouCount?.(DEV_DATA.petitiones.length); setLoaded(true); return; }
-    reload();
-  }, []);
+  useEffect(() => { refreshInbox(); }, [refreshInbox]);
 
   const petitiones = data.petitiones;
   const focusedId = petitiones[focusIndex]?.id;
   const reason = reasonForPetition(reasons, focusedId);
+
+  function markRead(petitioId: string): void {
+    setReadPetitionIds((current) => {
+      const next = new Set(current).add(petitioId);
+      try {
+        localStorage.setItem(INBOX_READ_STORAGE_KEY, encodeInboxReadSet(next));
+        return next;
+      } catch {
+        return new Set();
+      }
+    });
+  }
+
+  useEffect(() => {
+    if (focusedId !== undefined && window.matchMedia("(min-width: 840px)").matches) markRead(focusedId);
+  }, [focusedId]);
 
   useEffect(() => {
     setFocusIndex((index) => reconcileFocusIndex(index, petitiones.length));
@@ -92,16 +141,35 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
     function onKey(e: KeyboardEvent): void {
       if (isTextEntryTarget(e.target)) return;
       if (e.key === "j" || e.key === "k") {
-        setFocusIndex((i) => moveFocus(i, petitiones.length, e.key as "j" | "k"));
+        setFocusIndex((i) => {
+          const next = moveFocus(i, petitiones.length, e.key as "j" | "k");
+          if (expandedId !== null) setExpandedId(petitiones[next]?.id ?? null);
+          if (window.matchMedia("(min-width: 840px)").matches && petitiones[next] !== undefined) markRead(petitiones[next]!.id);
+          return next;
+        });
         setFocusRequest((request) => request + 1);
         return;
       }
-      const action = resolveVerbAction(e.key, focusedId ?? null, focusedId, reason);
+      if (e.key === "Enter" && focusedId !== undefined) {
+        markRead(focusedId);
+        setExpandedId(focusedId);
+        return;
+      }
+      if (e.key === "Escape") {
+        const target = e.target as { closest?: (selector: string) => Element | null } | null;
+        if (typeof target?.closest === "function" && target.closest(".sidebar") !== null) return;
+        if (expandedId === null) return;
+        setExpandedId(null);
+        setFocusRequest((request) => request + 1);
+        return;
+      }
+      const decisionVisible = window.matchMedia("(min-width: 840px)").matches || expandedId === focusedId;
+      const action = resolveVerbAction(e.key, decisionVisible ? (focusedId ?? null) : null, focusedId, reason);
       if (action) submit(action.petitioId, action.verb);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [petitiones.length, focusedId, reason]);
+  }, [petitiones, focusedId, expandedId, reason]);
 
   function submit(petitioId: string, verb: Verb): void {
     if (sendingRef.current) return;
@@ -118,7 +186,10 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       if (result.kind === "ok") {
         setReasons((current) => withReasonForPetition(current, petitioId, ""));
         setConfirmation(recordedEffect(verb, petitioId));
-        if (!demo) reload();
+        if (!demo) {
+          refreshIntentRef.current = { preferredIndex: focusIndex, reopenDetail: expandedId !== null, reveal: true };
+          refreshInbox();
+        }
       } else if (result.kind === "refused") {
         setError(result.output || "refused");
         setOutcome("refused");
@@ -151,11 +222,14 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       confirmation={confirmation}
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
       busy={sending}
+      readPetitionIds={readPetitionIds}
       onReasonChange={(value) => {
         if (focusedId !== undefined) setReasons((current) => withReasonForPetition(current, focusedId, value));
       }}
       onFocusChange={setFocusIndex}
       onExpandChange={setExpandedId}
+      onRead={markRead}
+      onReturnToList={() => setFocusRequest((request) => request + 1)}
       onSubmit={submit}
     />
   );

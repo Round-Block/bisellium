@@ -109,6 +109,10 @@ export function InboxView(props: InboxViewProps): JSX.Element {
               );
             })}
           </div>
+          <div className="inbox__secondary" aria-label="Other Inbox groups">
+            <p>You asked <span>Not available yet</span></p>
+            <p>For information <span>Not available yet</span></p>
+          </div>
         </section>
 
         <section className="inbox__reading-pane" aria-label="Selected decision">
@@ -149,7 +153,31 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                     onChange={(event) => onReasonChange(event.target.value)}
                     placeholder="Reason for this decision"
                   />
-                  <div className="inbox__decision-panel" />
+                  <div className="inbox__decision-panel">
+                    {notice !== undefined && <p className="screen-notice">{notice}</p>}
+                    {decisionUnavailable && <p className="inbox__withdrawn">This petitio no longer needs a decision.</p>}
+                    {error && <p className="inbox__error">{error}</p>}
+                    <div className="inbox__action-group">
+                      {VERBS.map(({ verb, key }) => {
+                        const unavailable = verb === "delegate";
+                        return (
+                          <button
+                            key={verb}
+                            type="button"
+                            className="inbox__btn-action"
+                            disabled={decisionUnavailable || unavailable || !canSubmit(reason, busy)}
+                            aria-describedby={unavailable ? delegateDescriptionId : undefined}
+                            onClick={() => onSubmit(selectedPetition.id, verb)}
+                          >
+                            {key && <span className="inbox__hotkey">{key}</span>}
+                            {verb}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p id={delegateDescriptionId} className="inbox__delegate-note">Delegation is not available yet</p>
+                    <p className="inbox__nav-hint">j/k move · Esc back</p>
+                  </div>
                 </div>
               </div>
             </div>
