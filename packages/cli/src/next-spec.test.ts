@@ -1673,3 +1673,57 @@ test("W-426-b3 behaviour 3: the ui-lead's order names the main checkout's prompt
     ran("after the branch: the main checkout's template", p),
   );
 });
+
+// ---------------------------------------------------------------------------
+// W-433: a ui-lead input recorded `revise` carries its own session and is recorded, judged as a failed round is; and a current
+// input that is not passed orders the signer, never the branch. Rows are selectable with --test-name-pattern='^W-433-b<n>\s'.
+// ---------------------------------------------------------------------------
+const W433_REVISE = ["## Findings", "1. blocking — brief:1 — The narrow arrangement crowds the decision controls against the reading column throughout. — check: shots/narrow.png", "## Recommendation", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: revise", ""].join("\n");
+/** A passed ui-lead input whose Findings is "No findings" alone, as the strict log reader of a sessioned sequence reads it. */
+const W433_PASSED = ["## Findings", "No findings", "## Recommendation", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: passed", ""].join("\n");
+/** The ui-lead's input at `round` with `outcome` and `body`, its prompt kept where the order names it. */
+function w433Input(w: World, round: number, outcome: string, body: string, extra: string[] = []): { status: number | null; out: string } {
+  put(w.studio, `ci/${OPUS}-ui-prompt-${round}.md`, UI_PROMPT);
+  return specRun(w, round, "ui-lead", outcome, body, ["--dispatch-prompt", `ci/${OPUS}-ui-prompt-${round}.md`, ...extra]);
+}
+
+test("W-433-b1 behaviour 1: a ui-lead revise on a sessioned sequence carries its own session and is recorded; nothing else loosens", { timeout: 1_800_000 }, () => {
+  const w = uiWorld("w433-b1");
+  putBrief(w);
+  const first = w433Input(w, 1, "passed", W433_PASSED, ["--session", "astra-a"]);
+  assert.equal(first.status, 0, `a sessioned ui-lead input is recorded\n${first.out}`);
+  const reason = ["--session-reason", "the ui-lead runs a fresh read-only session each round"];
+  // unchanged: a later round of the sequence still names a session, and a replaced one its reason
+  const bare = w433Input(w, 2, "revise", W433_REVISE);
+  assert.equal(bare.status, 2, `a revise with no --session exits 2\n${bare.out}`);
+  assert.match(bare.out, /records session astra-a; a later verdict of the sequence needs --session/, "the sequence's session is still required");
+  const unreasoned = w433Input(w, 2, "revise", W433_REVISE, ["--session", "astra-b"]);
+  assert.equal(unreasoned.status, 2, `a replaced session with no reason exits 2\n${unreasoned.out}`);
+  assert.match(unreasoned.out, /replacing it with astra-b needs --session-reason/, "a replaced session still needs its reason");
+  assert.equal(existsSync(join(w.studio, "ci", `${OPUS}-spec-2.log`)), false, "no refused round is written");
+
+  const revise = w433Input(w, 2, "revise", W433_REVISE, ["--session", "astra-b", ...reason]);
+  assert.equal(revise.status, 0, `a sessioned ui-lead revise with a standing blocker is recorded\n${revise.out}`);
+  const log = logAt(w.studio, 2);
+  for (const line of ["# sella: ui-lead", "# session: astra-b", `# session_reason: ${reason[1]}`, "# outcome: revise", `# dispatch_prompt: ci/${OPUS}-ui-prompt-2.md`])
+    assert.ok(log.split("\n").includes(line), `the revise log carries ${line}\n${log}`);
+  const same = w433Input(w, 3, "revise", W433_REVISE, ["--session", "astra-b"]);
+  assert.equal(same.status, 2, `a later round that drops the earlier blocker's account exits 2\n${same.out}`);
+  assert.match(same.out, /"## Earlier findings" must account for ci\/W-900-spec-2\.log #1/, "the next round accounts for the revise's standing blocker, as after a failed round");
+  const accounted = w433Input(w, 3, "passed", W433_PASSED.replace("## Recommendation", `## Earlier findings\n- ci/${OPUS}-spec-2.log #1: closed — the controls now sit beside the reading column\n\n## Recommendation`), ["--session", "astra-c", ...reason]);
+  assert.equal(accounted.status, 0, `a later round that accounts for it is recorded\n${accounted.out}`);
+
+  // judged as failed is: a revise with no standing blocker is refused, and every other seat keeps passed or failed
+  const v = uiWorld("w433-b1-advisory");
+  putBrief(v);
+  assert.equal(w433Input(v, 1, "passed", W433_PASSED, ["--session", "astra-a"]).status, 0, "the first input is recorded");
+  const advisory = w433Input(v, 2, "revise", W433_REVISE.replace("1. blocking", "1. advisory"), ["--session", "astra-b", ...reason]);
+  assert.equal(advisory.status, 2, `a sessioned revise with no standing blocker exits 2\n${advisory.out}`);
+  assert.match(advisory.out, /outcome revise with no standing blocking finding/, "a revise needs a standing blocker, as failed does");
+  const odd = w433Input(v, 2, "maybe", W433_REVISE, ["--session", "astra-b", ...reason]);
+  assert.equal(odd.status, 2, `another UI outcome exits 2\n${odd.out}`);
+  const reviewer = specRun(v, 2, SR, "revise", NO_FINDINGS, ["--model", SR_MODEL, "--session", "sr-a"]);
+  assert.equal(reviewer.status, 2, `a sessioned spec review recorded revise exits 2\n${reviewer.out}`);
+  assert.match(reviewer.out, /a sessioned verdict's outcome is exactly passed or failed/, "only the ui-lead input gains revise");
+  assert.equal(existsSync(join(v.studio, "ci", `${OPUS}-spec-2.log`)), false, "no refused round is written");
+});
