@@ -1,0 +1,49 @@
+# behaviour: 1
+# command: npx playwright test --config=apps/web/playwright.serve.config.ts --grep W-442-b1\s
+# exit: 1
+# at: 2026-10-28T04:59:46.613Z
+# sella: builder.W-442
+# tree: tree:07963544b0a24394cbf95c66a8ac0604ad85ce1b
+# ticket: {"opus":"W-442","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-442/studio","head":"fecbc5cf15747a9cb792e92fac92d85155cff30e","brief":"dcd63f7886512cd0de2fe01aedcf9ebeb16f2f09","at":"2026-10-28T04:59:42.241Z"}
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+dist/assets/index-D7wt94Ph.css                       26.52 kB │ gzip:  5.26 kB
+dist/assets/index-B6GfA8k4.js                       272.63 kB │ gzip: 84.96 kB
+
+✓ built in 194ms
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › apps/web/tests-serve/w442.spec.ts:23:1 › W-442-b1 Officina today rule clears every weekday letter at 1280 and 390 (4.4s)
+
+
+  1) [chromium] › apps/web/tests-serve/w442.spec.ts:23:1 › W-442-b1 Officina today rule clears every weekday letter at 1280 and 390 
+
+    Error: 2026-10-28 1280: today rule and weekday letter do not overlap
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      53 |       expect(ruleBox!.height, `${at}: the today rule remains full-height`).toBeCloseTo(columnBox!.height, 0);
+      54 |       const separated = ruleBox!.x >= letterBox!.x + letterBox!.width - 0.5 || ruleBox!.x + ruleBox!.width <= letterBox!.x + 0.5;
+    > 55 |       expect(separated, `${at}: today rule and weekday letter do not overlap`).toBe(true);
+         |                                                                                ^
+      56 |       const onTop = await rule.evaluate((el) => {
+      57 |         const box = el.getBoundingClientRect();
+      58 |         return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === el;
+        at /home/edckt/agents/bisellium/.worktrees/W-442/apps/web/tests-serve/w442.spec.ts:55:80
+
+    Error Context: apps/web/test-results/w442-W-442-b1-Officina-tod-bdd91-kday-letter-at-1280-and-390-chromium/error-context.md
+
+  1 failed
+    [chromium] › apps/web/tests-serve/w442.spec.ts:23:1 › W-442-b1 Officina today rule clears every weekday letter at 1280 and 390 
