@@ -174,6 +174,8 @@ test("W-406-b2 Board header preserves live and stale refresh time above one foot
 
 test("W-406-b3 Officina today rule clears the last day letter at 1280 and 390", async ({ page }) => {
   for (const width of [1280, 390] as const) {
+    // W-442: pinned to a Wednesday, the widest letter, so the row no longer reads the real clock.
+    await page.clock.setFixedTime(new Date("2026-10-28T12:00:00.000Z"));
     await open(page, "officina", width);
     const rule = page.locator(".fasti-strip__today-rule");
     await expect(rule, `${width}: exactly one day is today`).toHaveCount(1);

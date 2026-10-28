@@ -1,0 +1,24 @@
+# opus: W-442
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-28T05:43:37.682Z
+# tree: tree:97389e8341c0a3706bc77411e069f8d3134e5e81
+# brief: briefs/W-442.md blob:0315855d2da868a009ee8db249ed329750e5e3c6
+# ticket: {"opus":"W-442","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-442/studio","head":"a07d2bd7e8badc0607c70ac7ab51b700c9e2f44d","brief":"0315855d2da868a009ee8db249ed329750e5e3c6","at":"2026-10-28T05:43:26.972Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-442-build/fix1/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review round 4's S1 is fixed: brief line 78 now cites K1's policy-row kill by absolute path, `/home/edckt/.bisellium-evidence/W-442-build/fix1/kill-K1-policy.out` from `/home/edckt/.bisellium-evidence/W-442-build/fix1/kill-policy.sh`, which fails `W-406-b3`'s built policy row by ERR_ASSERTION at "the today rule is offset beyond the trailing edge", run at opus/W-442 76abba78 — check: /home/edckt/.bisellium-evidence/W-442-build/fix1/kill-K1-policy.out, /home/edckt/.bisellium-evidence/W-442-build/fix1/kill-policy-head.out
+2. advisory — the brief's other citations that resolved to stale evidence under W-442-spec/ are swept: the Status line's kills name `kill-K1.out` and `kill-K2.out` and the rerun policy kill by absolute path (the round-1 `kill-K1-policy.out` superseded), and its promise ledger is the fix-round ledger by absolute path; the census, `red-w406-policy.out` and `stage1-policy.out` cite rows and pass results, not the message, and still hold — check: /home/edckt/.bisellium-evidence/W-442-build/fix1/promise-ledger.md, /home/edckt/.bisellium-evidence/W-442-build/fix1/ledger.py
+3. advisory — Interfaces now says the prototype's `W-406-b3` policy assertion keeps the round-1 message while the build carries the renamed one, and only the message differs; the prototype and its pinned sha are unchanged — check: /home/edckt/.bisellium-evidence/W-442-spec/prototype.diff, apps/web/test/w406.test.ts W-406-b3
+4. advisory — round 3's fixes stand (the red command's quoted grep replays to the recorded red; the renamed policy message throughout); the design is unchanged — check: /home/edckt/.bisellium-evidence/W-442-build/fix1/red-cmd-replay-payload.out, studio/ci/reds/W-442/01.log
+5. advisory — the Status line now records the Patron's ruling of 2026-10-28: a third spec review past D-061 §4's ceiling, after build review round 2 (ci/W-442-review-2.log) failed only on the corrected brief lacking an independent spec pass; no other brief text changed since spec round 5 (commit a07d2bd7) — check: none: the change is one Status-line sentence recording a ruling, with no behaviour or citation
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-442.md` with fix rounds 1 and 2 (commits 6c80c897, cbb757ba: the K1 policy kill and the promise ledger cited by absolute path) and the Patron's third-review ruling recorded (a07d2bd7), spec round 6; design unchanged.

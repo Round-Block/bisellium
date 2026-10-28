@@ -1,0 +1,19 @@
+# opus: W-442
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a180f5-be3d-7d43-98d0-cb7316576b0b
+# outcome: failed
+# at: 2026-10-28T05:24:48.624Z
+# tree: tree:97389e8341c0a3706bc77411e069f8d3134e5e81
+# brief: briefs/W-442.md blob:dcd63f7886512cd0de2fe01aedcf9ebeb16f2f09
+# ticket: {"opus":"W-442","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-442/studio","head":"9a54cb410425be7e9c7a48dc3708279cb68b8ab4","brief":"dcd63f7886512cd0de2fe01aedcf9ebeb16f2f09","at":"2026-10-28T05:22:29.609Z"}
+
+## Findings
+1. blocking — studio/briefs/W-442.md:69 The unquoted `\s` is consumed by the shell, passing `W-442-b1s` to Playwright and selecting no test. The valid recorded red does not make this declared replay command true (brief:69). [severity: S1] [class: spec×genuine-red-replayability-deferred-to-mint] — check: none: execute the exact command copied from the brief and require W-442-b1 to run and fail by assertion
+2. advisory — studio/briefs/W-442.md:41 The signed interface retains the assertion message “the today rule uses the trailing edge,” while `apps/web/test/w406.test.ts:86` correctly renames it “the today rule is offset beyond the trailing edge”; Acceptance still identifies the obsolete message. [severity: S4] [class: spec×prose-contradiction-under-revision] — check: apps/web/test/w406.test.ts W-406-b3
+
+## Verdict
+The required genuine-red invocation remains non-replayable, matching the unresolved failed spec-review verdict. The round therefore fails despite the coherent layout implementation.
+VERDICT: FAIL

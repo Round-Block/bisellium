@@ -304,10 +304,13 @@
   border: 1px solid var(--verdigris);
 }
 
+/* W-442: the rule sits in the 4px gap after the today column, 1px clear of
+ * the column's edge, so it clears the widest weekday letter (W fills the
+ * 12px column) on every weekday. */
 .fasti-strip__today-rule {
   position: absolute;
   top: 0;
-  right: 0;
+  right: -2px;
   bottom: 0;
   width: 1px;
   background: var(--ink);

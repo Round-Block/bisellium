@@ -1,0 +1,22 @@
+# opus: W-442
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18096-c83c-7b80-8617-6f209fd60e03
+# outcome: failed
+# at: 2026-10-28T05:31:05.116Z
+# tree: tree:97389e8341c0a3706bc77411e069f8d3134e5e81
+# brief: briefs/W-442.md blob:39ae771e7266e75b021d30093f42e5a4d8810958
+# ticket: {"opus":"W-442","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-442/studio","head":"b4b499992ef1f4ca76c5b7de6d115c4180e4647e","brief":"39ae771e7266e75b021d30093f42e5a4d8810958","at":"2026-10-28T05:31:00.412Z"}
+
+## Findings
+1. blocking — studio/briefs/W-442.md:78 brief:78 The changed line’s bare `kill-K1-policy.out` citation resolves under the evidence root declared at brief:3, but that file still reports “the today rule uses the trailing edge”; the rerun supporting the new message exists only under `W-442-build/fix1`. Replace brief:78 with: `- K1 also fails \`W-406-b3\`'s policy row by \`ERR_ASSERTION\` at "the today rule is offset beyond the trailing edge" (\`/home/edckt/.bisellium-evidence/W-442-build/fix1/kill-K1-policy.out\`, from \`/home/edckt/.bisellium-evidence/W-442-build/fix1/kill-policy.sh\`), the Node TAP form the ledger validator reads.` [severity: S1] [design: keeps] [class: spec×stale-citation-residue] — check: none: require every bare evidence citation to resolve under the brief’s declared evidence root and contain the claimed assertion
+
+## Earlier findings
+- ci/W-442-spec-2.log #1: closed — brief:65 and brief:69 now single-quote `W-442-b1\s`, and `red-cmd-replay-payload.out` shows one W-442-b1 test ran and failed at the promised Wednesday overlap assertion.
+
+## Verdict
+The selector blocker is closed, but the revised policy-message claim cites stale evidence from the declared evidence root.
+
+VERDICT: FAIL
