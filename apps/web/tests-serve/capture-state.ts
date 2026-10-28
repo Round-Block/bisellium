@@ -54,7 +54,7 @@ export async function expectCapturedScreenSettled(page: Page, route: CaptureRout
       .toBe(true);
   } else {
     await expect(page.locator('.shell__status[data-state="ready"]'), "officina: every panel read has settled").toHaveCount(1);
-    await expect(page.locator(".officina__panel-heading"), "officina: every settled panel is mounted").toHaveCount(4);
+    await expect(page.locator(".officina__panel-heading"), "officina: every settled detail section is mounted").toHaveCount(3);
     await expect(page.locator(".officina__loading"), "officina: no section remains loading").toHaveCount(0);
   }
 

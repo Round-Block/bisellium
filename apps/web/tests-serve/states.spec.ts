@@ -167,22 +167,23 @@ const DRIVERS: Record<string, Driver> = {
   "officina:loading": async (page) => {
     const held = hold(page, "**/api/health");
     await signIn(page, "officina");
-    await expect(page.locator(".panel--engine .officina__loading")).toHaveText("Loading health…");
+    await expect(page.locator(".panel--health .officina__loading")).toHaveText("Loading health…");
     return held.release;
   },
   "officina:empty": async (page) => {
     await json(page, "**/api/aerarium*", []);
-    await json(page, "**/api/acta*", []);
-    await json(page, "**/api/completion", { meter: null, estimate: null });
+    await json(page, "**/api/opera*", []);
     await json(page, "**/api/health", { at: "2026-09-25T09:35:43.947Z", ok: true, blocks: 0, advisories: 0, findingsByRule: {}, autonomy: { paused: false }, lastTick: "2026-09-25T09:35:43.947Z", due: [] });
     await signIn(page, "officina");
-    await expect(page.locator(".panel--engine")).toContainText("Nothing pending.");
-    await expect(page.locator(".panel--completion")).toContainText("No milestone records");
+    await expect(page.locator(".panel--work")).toContainText("Nothing in flight.");
+    await expect(page.locator(".panel--budget")).toContainText("No budget allocation is recorded for this week.");
+    await expect(page.locator(".panel--health")).toContainText("No findings.");
+    await expect(page.locator(".panel--health")).toContainText("Nothing pending.");
   },
   "officina:error": async (page) => {
     await fail(page, "**/api/health");
     await signIn(page, "officina");
-    await expect(page.locator(".panel--engine")).toContainText("Could not load health.");
+    await expect(page.locator(".panel--health")).toContainText("Could not load health.");
   },
 };
 

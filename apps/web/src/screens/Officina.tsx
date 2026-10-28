@@ -5,6 +5,7 @@ import { boardModel } from "../lib/board.js";
 import { officinaWorkGroups } from "../lib/officinaWork.js";
 import { formatPosture } from "../lib/posture.js";
 import { integritySummary } from "../lib/officinaTruth.js";
+import { useVisibleRefresh } from "../lib/useVisibleRefresh.js";
 import { BurnBar } from "../components/BurnBar.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 
@@ -68,6 +69,7 @@ export function Officina({ onStatus }: { onStatus?: (status: ScreenStatus) => vo
     fetchOfficina().then(setOfficina).catch(() => setOfficina("failed"));
     fetchOpera().then(setOpera).catch(() => setOpera("failed"));
   }, [demo]);
+  useVisibleRefresh(refresh);
 
   const parts = [aerarium, health, officina, opera];
   const status = screenStatus("officina", {
