@@ -801,7 +801,7 @@
   border: 1px solid var(--verdigris);
   border-radius: 2px;
   padding: 0 12px;
-  background: var(--surface);
+  background: var(--verdigris);
   color: var(--surface);
   font-family: var(--font-body);
   font-size: 13px;
@@ -844,9 +844,9 @@
   gap: 8px;
   padding: 10px 4px;
   font-family: var(--font-body);
-  font-size: 17px;
+  font-size: 13px;
   line-height: 18px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   list-style: none;
 }
@@ -856,7 +856,7 @@
 }
 
 .officina__health-row > summary::before {
-  content: "";
+  content: "\25B8";
   color: var(--ink-2);
 }
 
