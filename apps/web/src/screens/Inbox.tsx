@@ -17,6 +17,7 @@ import {
   type Verb,
 } from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
+import { useVisibleRefresh } from "../lib/useVisibleRefresh.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
 
@@ -57,6 +58,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
   // W-341: the read and write outcomes the states matrix names. A failed read never invents petitions.
   const [loaded, setLoaded] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
+  const [detachedPetition, setDetachedPetition] = useState<InboxResponse["petitiones"][number] | null>(null);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const [outcome, setOutcome] = useState<"refused" | "error" | undefined>(undefined);
@@ -69,35 +71,50 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
   const dataRef = useRef(data);
   const focusIndexRef = useRef(focusIndex);
   const expandedIdRef = useRef(expandedId);
+  const detachedPetitionRef = useRef(detachedPetition);
+  const hasSuccessfulLoadRef = useRef(false);
+  const refreshingRef = useRef(false);
+  const pendingRefreshRef = useRef(false);
   const onNeedsYouCountRef = useRef(onNeedsYouCount);
   const refreshIntentRef = useRef<{ preferredIndex: number; reopenDetail: boolean; reveal: boolean } | null>(null);
   dataRef.current = data;
   focusIndexRef.current = focusIndex;
   expandedIdRef.current = expandedId;
+  detachedPetitionRef.current = detachedPetition;
   onNeedsYouCountRef.current = onNeedsYouCount;
 
   const refreshInbox = useCallback((): void => {
+    if (refreshingRef.current) {
+      if (refreshIntentRef.current !== null) pendingRefreshRef.current = true;
+      return;
+    }
+    refreshingRef.current = true;
+    const intent = refreshIntentRef.current;
+    refreshIntentRef.current = null;
     const settle = (d: InboxResponse): void => {
       const current = dataRef.current.petitiones;
       const currentIndex = focusIndexRef.current;
-      const currentId = current[currentIndex]?.id;
-      const intent = refreshIntentRef.current;
-      refreshIntentRef.current = null;
+      const currentPetition = detachedPetitionRef.current ?? current[currentIndex];
+      const currentId = currentPetition?.id;
       const retainedIndex = currentId === undefined ? -1 : d.petitiones.findIndex((petitio) => petitio.id === currentId);
+      const keepDetached = intent === null && currentPetition !== undefined && retainedIndex < 0;
       const nextIndex = retainedIndex >= 0
         ? retainedIndex
         : reconcileFocusIndex(intent?.preferredIndex ?? currentIndex, d.petitiones.length);
       const detailWasOpen = intent?.reopenDetail ?? expandedIdRef.current !== null;
       setData(d);
       setFocusIndex(nextIndex);
-      setExpandedId(detailWasOpen ? (d.petitiones[nextIndex]?.id ?? null) : null);
+      setDetachedPetition(keepDetached ? currentPetition : null);
+      setExpandedId(detailWasOpen ? (keepDetached ? currentPetition.id : (d.petitiones[nextIndex]?.id ?? null)) : null);
       if (intent?.reveal && d.petitiones.length > 0) setFocusRequest((request) => request + 1);
       onNeedsYouCountRef.current?.(d.petitiones.length);
+      hasSuccessfulLoadRef.current = true;
       setLoaded(true);
       setReadFailed(false);
     };
     if (demo) {
       settle(DEV_DATA);
+      refreshingRef.current = false;
       return;
     }
     void fetchInbox()
@@ -105,17 +122,31 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
         settle(d);
       })
       .catch(() => {
-        setData(EMPTY);
+        if (!hasSuccessfulLoadRef.current) setData(EMPTY);
         setLoaded(true);
         setReadFailed(true);
+      })
+      .finally(() => {
+        refreshingRef.current = false;
+        if (pendingRefreshRef.current || refreshIntentRef.current !== null) {
+          pendingRefreshRef.current = false;
+          refreshInbox();
+        }
       });
   }, [demo]);
 
-  useEffect(() => { refreshInbox(); }, [refreshInbox]);
+  useVisibleRefresh(refreshInbox);
 
   const petitiones = data.petitiones;
   const focusedId = petitiones[focusIndex]?.id;
-  const reason = reasonForPetition(reasons, focusedId);
+  const decisionId = detachedPetition?.id ?? focusedId;
+  const reason = reasonForPetition(reasons, decisionId);
+  const decisionUnavailable = detachedPetition !== null;
+
+  function chooseIndex(index: number): void {
+    setDetachedPetition(null);
+    setFocusIndex(index);
+  }
 
   function markRead(petitioId: string): void {
     setReadPetitionIds((current) => {
@@ -130,8 +161,8 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
   }
 
   useEffect(() => {
-    if (focusedId !== undefined && window.matchMedia("(min-width: 840px)").matches) markRead(focusedId);
-  }, [focusedId]);
+    if (!decisionUnavailable && focusedId !== undefined && window.matchMedia("(min-width: 840px)").matches) markRead(focusedId);
+  }, [focusedId, decisionUnavailable]);
 
   useEffect(() => {
     setFocusIndex((index) => reconcileFocusIndex(index, petitiones.length));
@@ -141,6 +172,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
     function onKey(e: KeyboardEvent): void {
       if (isTextEntryTarget(e.target)) return;
       if (e.key === "j" || e.key === "k") {
+        setDetachedPetition(null);
         setFocusIndex((i) => {
           const next = moveFocus(i, petitiones.length, e.key as "j" | "k");
           if (expandedId !== null) setExpandedId(petitiones[next]?.id ?? null);
@@ -163,13 +195,13 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
         setFocusRequest((request) => request + 1);
         return;
       }
-      const decisionVisible = window.matchMedia("(min-width: 840px)").matches || expandedId === focusedId;
+      const decisionVisible = !decisionUnavailable && (window.matchMedia("(min-width: 840px)").matches || expandedId !== null);
       const action = resolveVerbAction(e.key, decisionVisible ? (focusedId ?? null) : null, focusedId, reason);
       if (action) submit(action.petitioId, action.verb);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [petitiones, focusedId, expandedId, reason]);
+  }, [petitiones, focusedId, expandedId, reason, decisionUnavailable]);
 
   function submit(petitioId: string, verb: Verb): void {
     if (sendingRef.current) return;
@@ -223,10 +255,12 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
       busy={sending}
       readPetitionIds={readPetitionIds}
+      detachedPetition={detachedPetition}
+      decisionUnavailable={decisionUnavailable}
       onReasonChange={(value) => {
-        if (focusedId !== undefined) setReasons((current) => withReasonForPetition(current, focusedId, value));
+        if (decisionId !== undefined) setReasons((current) => withReasonForPetition(current, decisionId, value));
       }}
-      onFocusChange={setFocusIndex}
+      onFocusChange={chooseIndex}
       onExpandChange={setExpandedId}
       onRead={markRead}
       onReturnToList={() => setFocusRequest((request) => request + 1)}

@@ -56,15 +56,15 @@ test("W-345-b3 behaviour 3: each reason belongs to one petition", async () => {
   assert.equal(readReason(both, undefined), "", "no selected petition exposes no reason");
   const source = read("src/screens/Inbox.tsx");
   assert.match(source, /const \[reasons, setReasons\] = useState<Record<string, string>>\(\{\}\);/, "Inbox stores reasons by petition id");
-  assert.match(source, /const reason = reasonForPetition\(reasons, focusedId\);/, "the visible reason follows the selected petition id");
+  assert.match(source, /const decisionId = detachedPetition\?\.id \?\? focusedId;[\s\S]*const reason = reasonForPetition\(reasons, decisionId\);/, "the visible reason follows the selected or retained petition id");
 });
 
-test("W-345-b4 behaviour 4: a failed Inbox read clears records before showing the failure", () => {
+test("W-345-b4 behaviour 4: only a failed first Inbox read clears records", () => {
   const source = read("src/screens/Inbox.tsx");
   assert.match(
     source,
-    /\.catch\(\(\) => \{\s*setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);\s*\}\);/,
-    "every failed read replaces prior data with EMPTY, settles loading and enters the failure state",
+    /\.catch\(\(\) => \{\s*if \(!hasSuccessfulLoadRef\.current\) setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);/,
+    "a first-load failure is empty while a background failure retains the last successful response",
   );
 });
 
