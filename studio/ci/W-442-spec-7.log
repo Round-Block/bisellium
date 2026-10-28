@@ -1,0 +1,22 @@
+# opus: W-442
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18096-c83c-7b80-8617-6f209fd60e03
+# outcome: passed
+# at: 2026-10-28T05:45:15.374Z
+# tree: tree:97389e8341c0a3706bc77411e069f8d3134e5e81
+# brief: briefs/W-442.md blob:0315855d2da868a009ee8db249ed329750e5e3c6
+# ticket: {"opus":"W-442","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":".worktrees/W-442/studio","head":"840442d2c3086ddbd5b34def6f1570dbfc70d7c2","brief":"0315855d2da868a009ee8db249ed329750e5e3c6","at":"2026-10-28T05:45:11.906Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-442-spec-4.log #1: closed — brief:78 now cites the fix-round policy-kill output and script by absolute path; that output reports `ERR_ASSERTION` at “the today rule is offset beyond the trailing edge,” while brief:3 explicitly marks the round-1 output superseded.
+
+## Verdict
+The delta closes the stale-evidence blocker without changing the design or introducing a new defect.
+
+VERDICT: PASS
