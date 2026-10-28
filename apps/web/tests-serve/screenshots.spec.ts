@@ -104,11 +104,10 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
       .toBe(true);
     await expect(page.locator(".seats__confirm-bar")).toHaveCount(0);
   } else {
-    await expect(page.locator(".panel--completion")).toContainText("No milestone records");
-    await expect(page.locator(".officina__collegium-name")).toHaveCount(4);
-    await expect(page.locator(".officina__as-of")).toHaveCount(2);
-    await expect(page.locator(".fasti-strip__tick--filled")).toHaveCount(1);
-    await expect(page.locator(".panel--engine")).toContainText("W-002");
+    await expect(page.locator(".officina__panel-heading")).toHaveText(["Work in flight", "Budget", "Health"]);
+    await expect(page.locator(".officina__budget-row")).toHaveCount(4);
+    await expect(page.locator(".officina__health-row > summary")).toHaveCount(2);
+    await expect(page.locator(".fasti-strip")).toHaveCount(0);
   }
   await expect(page.locator("body"), `${route}-${width}: no loading copy remains before capture`).not.toContainText(LOADING_COPY);
 }

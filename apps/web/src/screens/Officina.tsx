@@ -1,255 +1,139 @@
-import { useEffect, useState } from "react";
-import { fetchActa, fetchAerarium, fetchCompletion, fetchHealth, fetchOfficina } from "../api.js";
-import type { AerariumEntry, CompletionResponse, HealthResponse, OfficinaResponse } from "../api.js";
+import React, { useCallback, useEffect, useState } from "react";
+import { fetchAerarium, fetchHealth, fetchOfficina, fetchOpera, submitPause, submitResume } from "../api.js";
+import type { AerariumEntry, HealthResponse, OfficinaResponse, OpusEntry } from "../api.js";
+import { boardModel } from "../lib/board.js";
+import { officinaWorkGroups } from "../lib/officinaWork.js";
 import { formatPosture } from "../lib/posture.js";
-import { healthStamp, integritySummary } from "../lib/officinaTruth.js";
-import { FastiStrip } from "../components/FastiStrip.js";
-import type { ActaEntry } from "../lib/fasti.js";
+import { integritySummary } from "../lib/officinaTruth.js";
+import { BurnBar } from "../components/BurnBar.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 
-function fmt(n: number): string {
-  return n.toLocaleString();
-}
-
-function pieColor(spent: number, allowance: number): string {
-  return spent >= allowance ? "var(--amber)" : "var(--ink)";
-}
-
-function pieStyle(spent: number, allowance: number): React.CSSProperties {
-  const ratio = allowance > 0 ? Math.min(spent / allowance, 1) : 0;
-  const deg = Math.round(ratio * 360);
-  const color = pieColor(spent, allowance);
-  return { background: `conic-gradient(${color} 0deg ${deg}deg, var(--rule) ${deg}deg 360deg)` };
-}
-
 const DEV_AERARIUM: AerariumEntry[] = [
-  { collegium: "production", period: "2026-W38", allowance: { tokens: 200_000 }, burn: { tokens: 47_200 }, posture: "ok" },
-  { collegium: "engineering", period: "2026-W38", allowance: { tokens: 3_000_000 }, burn: { tokens: 1_880_000 }, posture: "conserve" },
-  { collegium: "qa", period: "2026-W38", allowance: { tokens: 500_000 }, burn: { tokens: 312_000 }, posture: "ok" },
+  { collegium: "engineering", period: "2026-W44", allowance: { tokens: 3_000_000 }, burn: { tokens: 1_880_000 }, posture: "conserve" },
+  { collegium: "production", period: "2026-W44", allowance: { tokens: 500_000 }, burn: { tokens: 650_000 }, posture: "closeout" },
 ];
-
-const DEV_ACTA: ActaEntry[] = [
-  { id: "cascade-7", author: "opus-4.6", kind: "cascade", title: "Cascade 7", at: "2026-09-17T10:00:00Z", evidence: null },
-  { id: "cascade-8", author: "opus-4.6", kind: "cascade", title: "Cascade 8", at: "2026-09-18T14:00:00Z", evidence: null },
-  { id: "cascade-9", author: "sonnet-5", kind: "cascade", title: "Cascade 9", at: "2026-09-19T09:00:00Z", evidence: null },
-];
-
-const DEV_COMPLETION: CompletionResponse = {
-  meter: {
-    rows: [
-      { id: "M1", title: "Build process, first version", weight: 10, done: 18, planned: 20, met: false, pct: 90 },
-      { id: "M2", title: "Records you can trust", weight: 10, done: 6, planned: 24, met: false, pct: 25 },
-    ],
-    overall: 11.5,
-  },
-  estimate: { kind: "estimate", line: "Estimated finish: in about 14 days (10 to 28 days), around 20 Oct 2026, at the pace of the last 3 weeks." },
-};
-
 const DEV_HEALTH: HealthResponse = {
-  at: "2026-09-19T14:00:00.000Z",
-  ok: false,
-  blocks: 0,
-  advisories: 4,
-  findingsByRule: { "acta.daily": 2, "opus.untracked": 1, "link.dead": 1 },
-  autonomy: { paused: false },
-  lastTick: "2026-09-19T13:48:22.091Z",
-  due: [
-    { kind: "retro", id: "cascade-8" },
-    { kind: "tick", id: "daily" },
-  ],
+  at: "2026-10-28T00:00:00Z", ok: false, blocks: 1, advisories: 3,
+  findingsByRule: { "traditio.stage": 2, "opus.untracked": 1 }, autonomy: { paused: false },
+  lastTick: "2026-10-28T00:00:00Z", due: [{ kind: "daily", id: "producer" }, { kind: "traditio", id: "W-408" }],
 };
+const DEV_OFFICINA: OfficinaResponse = {
+  studio: "studio", patron: "patron", collegia: [], sellae: [], probationes: [{ id: "patron", kind: "human" }], wip_limit: 4,
+  lifecycle: { id: "opus", states: [
+    { id: "building", name: "Building", phase: "in_progress" },
+    { id: "spec_review", name: "Spec review", phase: "awaiting_review" },
+    { id: "blocked", name: "Blocked", phase: "halted" },
+    { id: "done", name: "Done", phase: "done" },
+  ] },
+};
+const opus = (id: string, state: string, pending?: string): OpusEntry => ({
+  id, title: `${id} officina work`, body: "", kind: "ui", collegium: "engineering", sella: "builder", state, tokens: 0,
+  probationes: pending ? { [pending]: { status: "pending" } } : {}, traditio: undefined,
+});
+const DEV_OPERA = [opus("W-408", "building", "patron"), opus("W-407", "spec_review"), opus("W-415", "building", "ci"), opus("W-406", "blocked")];
+
+type ReadState<T> = T | "failed" | undefined;
+type Severity = "blocking" | "high" | "normal" | "low";
+
+function SeverityCue({ level }: { level: Severity }) {
+  return <span className={`severity-cue severity-cue--${level}`} aria-hidden="true" />;
+}
 
 export interface OfficinaViewProps {
-  aerarium: AerariumEntry[] | "failed" | undefined; // undefined = not loaded yet
-  health: HealthResponse | "failed" | undefined;
-  completion?: CompletionResponse | "failed"; // undefined = loading
-  acta: ActaEntry[];
-  now: Date;
-}
-
-/** The two health panels share one loading/failed copy; a loaded health gets the as-of stamp. */
-function healthState(health: OfficinaViewProps["health"]): React.ReactNode {
-  if (health === undefined) return <p className="officina__loading">Loading health…</p>;
-  if (health === "failed") return <p className="officina__empty">Could not load health.</p>;
-  return undefined;
-}
-
-const pct1 = (n: number): string => `${n.toFixed(1)}%`;
-
-function Bar({ pct }: { pct: number }) {
-  return (
-    <div className="officina__bar">
-      <div className="officina__bar-fill" style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }} />
-    </div>
-  );
-}
-
-/** W-153: overall %, the estimate line verbatim, one row per milestone. */
-function CompletionPanel({ completion }: { completion: OfficinaViewProps["completion"] }) {
-  if (completion === undefined) return <p className="officina__loading">Loading completion…</p>;
-  if (completion === "failed") return <p className="officina__empty">Could not load completion.</p>;
-  if (completion.meter === null) return <p className="officina__empty">No milestone records</p>;
-  // any null or non-finite figure (a non-finite value serialises as null) is never drawn: no estimate, no crash
-  const figures = [completion.meter.overall, ...completion.meter.rows.flatMap((r) => [r.done, r.planned, r.pct])];
-  if (!figures.every((n) => typeof n === "number" && Number.isFinite(n))) return <p className="officina__empty">No estimate</p>;
-  return (
-    <>
-      <p className="officina__completion-overall">Overall {pct1(completion.meter.overall)}</p>
-      <Bar pct={completion.meter.overall} />
-      {typeof completion.estimate?.line === "string" && <p className="officina__completion-estimate">{completion.estimate.line}</p>}
-      <div className="officina__completion-rows">
-        {completion.meter.rows.map((r) => (
-          <div key={r.id} className="officina__completion-row">
-            <span className="officina__completion-id">{r.id}</span>
-            <span className="officina__completion-title">{r.title}</span>
-            <span className="officina__completion-points">{r.done}/{r.planned}</span>
-            <span className="officina__completion-pct">{pct1(r.pct)}</span>
-            <Bar pct={r.pct} />
-          </div>
-        ))}
-      </div>
-    </>
-  );
+  aerarium: ReadState<AerariumEntry[]>;
+  health: ReadState<HealthResponse>;
+  officina: ReadState<OfficinaResponse>;
+  opera: ReadState<OpusEntry[]>;
+  brakePending?: boolean;
+  brakeMessage?: string;
+  onBrake?: () => void;
 }
 
 export function Officina({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}) {
-  const [, setOfficina] = useState<OfficinaResponse>();
   const [aerarium, setAerarium] = useState<OfficinaViewProps["aerarium"]>();
   const [health, setHealth] = useState<OfficinaViewProps["health"]>();
-  const [acta, setActa] = useState<ActaEntry[]>([]);
-  // W-341: the strip's read settles too (a failed one degrades to no ticks, as before).
-  const [actaSettled, setActaSettled] = useState(false);
-  const [completion, setCompletion] = useState<OfficinaViewProps["completion"]>();
-
+  const [officina, setOfficina] = useState<OfficinaViewProps["officina"]>();
+  const [opera, setOpera] = useState<OfficinaViewProps["opera"]>();
+  const [brakePending, setBrakePending] = useState(false);
+  const [brakeMessage, setBrakeMessage] = useState<string>();
   const demo = location.search.includes("demo");
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (demo) {
-      setAerarium(DEV_AERARIUM);
-      setHealth(DEV_HEALTH);
-      setActa(DEV_ACTA);
-      setCompletion(DEV_COMPLETION);
-      setActaSettled(true);
+      setAerarium(DEV_AERARIUM); setHealth(DEV_HEALTH); setOfficina(DEV_OFFICINA); setOpera(DEV_OPERA);
       return;
     }
-    fetchOfficina().then(setOfficina).catch(() => undefined);
     fetchAerarium().then(setAerarium).catch(() => setAerarium("failed"));
     fetchHealth().then(setHealth).catch(() => setHealth("failed"));
-    fetchActa()
-      .then(setActa)
-      .catch(() => undefined)
-      .finally(() => setActaSettled(true));
-    fetchCompletion().then(setCompletion).catch(() => setCompletion("failed"));
+    fetchOfficina().then(setOfficina).catch(() => setOfficina("failed"));
+    fetchOpera().then(setOpera).catch(() => setOpera("failed"));
   }, [demo]);
 
-  // The panels keep their own loading, failed and empty copy; the screen's one status reaches the shell's region.
-  const parts = [aerarium, health, completion];
+  const parts = [aerarium, health, officina, opera];
   const status = screenStatus("officina", {
-    loaded: actaSettled && parts.every((p) => p !== undefined),
+    loaded: parts.every((part) => part !== undefined),
     failed: parts.includes("failed") || undefined,
-    empty:
-      Array.isArray(aerarium) && aerarium.length === 0 && typeof completion === "object" && completion.meter === null && acta.length === 0 && typeof health === "object" && health.due.length === 0,
+    empty: Array.isArray(aerarium) && aerarium.length === 0 && Array.isArray(opera) && opera.length === 0
+      && typeof health === "object" && health.blocks === 0 && health.advisories === 0 && health.due.length === 0,
   });
   useEffect(() => onStatus?.(status), [status.state, status.text]);
 
-  return <OfficinaView aerarium={aerarium} health={health} completion={completion} acta={acta} now={new Date()} />;
+  const toggleBrake = async () => {
+    if (typeof health !== "object" || brakePending) return;
+    const paused = health.autonomy.paused;
+    setBrakePending(true); setBrakeMessage(undefined);
+    const result = paused ? await submitResume() : await submitPause();
+    setBrakePending(false);
+    if (result.kind === "ok") setHealth({ ...health, autonomy: paused ? { paused: false } : { paused: true } });
+    else setBrakeMessage(result.kind === "refused" && result.output ? result.output : "The brake did not change. Try again.");
+  };
+
+  return <OfficinaView aerarium={aerarium} health={health} officina={officina} opera={opera} brakePending={brakePending} brakeMessage={brakeMessage} onBrake={() => void toggleBrake()} />;
 }
 
-export function OfficinaView({ aerarium, health, completion, acta, now }: OfficinaViewProps) {
-  const loaded = typeof health === "object" ? health : undefined;
-  const summary = loaded ? integritySummary(loaded) : undefined;
-  const asOf = loaded && <p className="officina__as-of">{healthStamp(loaded.at, now)}</p>;
+export function OfficinaView({ aerarium, health, officina, opera, brakePending = false, brakeMessage, onBrake }: OfficinaViewProps) {
+  const work = typeof officina === "object" && Array.isArray(opera) ? officinaWorkGroups(boardModel(officina, opera)) : undefined;
+  const loadedHealth = typeof health === "object" ? health : undefined;
+  const integrity = loadedHealth ? integritySummary(loadedHealth) : undefined;
+
   return (
     <div className="officina">
-      <div className="officina__header">
-        <h1 className="officina__title">Officina</h1>
-      </div>
+      <header className="officina__header"><h1 className="officina__title">Officina</h1><p className="officina__lede">Work, spend and operating health in detail.</p></header>
 
-      <FastiStrip acta={acta} today={now} />
-
-      <section className="officina__panel panel--completion">
-        <h2 className="officina__panel-heading">Completion</h2>
-        <CompletionPanel completion={completion} />
+      <section className="officina__panel panel--work">
+        <h2 className="officina__panel-heading">Work in flight</h2>
+        <p className="officina__unit">Active opera grouped by lifecycle phase; each row names who moves next.</p>
+        {(officina === undefined || opera === undefined) && <p className="officina__loading">Loading work in flight…</p>}
+        {(officina === "failed" || opera === "failed") && <p className="officina__empty">Could not load work in flight.</p>}
+        {work && work.every((group) => group.rows.length === 0) && <p className="officina__empty">Nothing in flight.</p>}
+        {work && work.some((group) => group.rows.length > 0) && <div className="officina__work-groups">{work.map((group) => (
+          <div key={group.id} className="officina__work-group" data-group={group.id}>
+            <h3>{group.label}<span>{group.rows.length}</span></h3>
+            {group.rows.length === 0 ? <p className="officina__quiet">None</p> : group.rows.map((row) => <div key={row.id} className="officina__row officina__work-row"><span className="officina__value-mono">{row.id}</span><span>{row.title}</span>{row.note && <span className="officina__work-note">{row.note}</span>}</div>)}
+          </div>
+        ))}</div>}
       </section>
 
-      {/* Top row: Status (full width) */}
-      <section className="officina__panel panel--status-wide">
-        <h2 className="officina__panel-heading">Posture and burn</h2>
+      <section className="officina__panel panel--budget">
+        <h2 className="officina__panel-heading">Budget</h2>
+        <p className="officina__unit">Current token budget by collegium.</p>
         {aerarium === undefined && <p className="officina__loading">Loading budget allocations…</p>}
         {aerarium === "failed" && <p className="officina__empty">Could not load budget allocations.</p>}
-        {Array.isArray(aerarium) && aerarium.length === 0 && (
-          <>
-            <p className="officina__empty">No budget allocation is recorded for this week. Burn and posture are unavailable.</p>
-            <p className="officina__empty">Set one with bisellium budget.</p>
-          </>
-        )}
-        {Array.isArray(aerarium) && aerarium.length > 0 && (
-          <div className="officina__grid-3col">
-            {aerarium.map((entry) => {
-              const { word, reason } = formatPosture(entry);
-              return (
-                <div key={entry.collegium} className="officina__metric-card">
-                  <span className="officina__collegium-name">{entry.collegium}</span>
-                  <div className="officina__posture-row">
-                    <div className="officina__pie" style={pieStyle(entry.burn.tokens, entry.allowance.tokens)} />
-                    <div className="officina__posture-text">
-                      <span className="officina__posture-word">{word}</span>
-                      <span className="officina__posture-reason">{reason}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {Array.isArray(aerarium) && aerarium.length === 0 && <p className="officina__empty">No budget allocation is recorded for this week. Spend and posture are unavailable.</p>}
+        {Array.isArray(aerarium) && aerarium.length > 0 && <div className="officina__budget-rows">{aerarium.map((entry) => { const { word, reason } = formatPosture(entry); return (
+          <div key={entry.collegium} className="officina__budget-row"><span className="officina__collegium-name">{entry.collegium}</span><BurnBar spent={entry.burn.tokens} allowance={entry.allowance.tokens} /><div className="officina__posture-text"><span className="officina__posture-word">{word}</span><span className="officina__posture-reason">{reason}</span></div></div>
+        ); })}</div>}
       </section>
 
-      {/* Bottom row: Pending actions (span 6) + Integrity (span 6) */}
-      <section className="officina__panel panel--engine">
-        <div className="officina__panel-header">
-          <h2 className="officina__panel-heading">Pending actions</h2>
-          {loaded && <span className="officina__count">{loaded.due.length}</span>}
-        </div>
-        {healthState(health)}
-        {loaded && (
-          <>
-            {asOf}
-            {loaded.due.length === 0 && <p className="officina__empty">Nothing pending.</p>}
-            <div className="officina__table officina__table--zebra">
-              {loaded.due.map((d, i) => (
-                <div key={`${d.kind}:${d.id}:${i}`} className="officina__row">
-                  <span className="officina__value-mono">{d.id}</span>
-                  <span className="officina__label-secondary">{d.kind}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      <section className="officina__panel panel--integrity">
-        <h2 className="officina__panel-heading">Contract integrity</h2>
-        {healthState(health)}
-        {summary && (
-          <>
-            {asOf}
-            <p className="officina__integrity-summary">
-              <span>{summary.stops}</span> <span>{summary.warns}</span>
-            </p>
-            <p className="officina__label">All findings by area</p>
-            <div className="officina__table officina__table--zebra">
-              {summary.rows.map((r) => (
-                <details key={r.family} className="officina__row" title={r.rules.join(", ")}>
-                  <summary>
-                    <span className="officina__label">{r.label}</span>
-                    <span className="officina__value-mono">{fmt(r.count)}</span>
-                  </summary>
-                  <p className="officina__rule-ids">{r.rules.join(", ")}</p>
-                </details>
-              ))}
-            </div>
-          </>
-        )}
+      <section className="officina__panel panel--health">
+        <h2 className="officina__panel-heading">Health</h2>
+        <p className="officina__unit">Current lex and process detail.</p>
+        {health === undefined && <p className="officina__loading">Loading health…</p>}
+        {health === "failed" && <p className="officina__empty">Could not load health.</p>}
+        {loadedHealth && integrity && <div className="officina__health-rows">
+          <details className="officina__health-row panel--lex"><summary><span>Lex status</span><span className="officina__severity-summary">{loadedHealth.blocks === 0 && loadedHealth.advisories === 0 ? <span><SeverityCue level="normal" />Normal</span> : <>{loadedHealth.blocks > 0 && <span><SeverityCue level="blocking" />{loadedHealth.blocks.toLocaleString()} blocking</span>}{loadedHealth.advisories > 0 && <span><SeverityCue level="high" />{loadedHealth.advisories.toLocaleString()} high</span>}</>}</span></summary><div className="officina__health-detail"><p className="officina__health-copy">{integrity.stops} {integrity.warns}</p>{integrity.rows.length > 0 && <p className="officina__health-copy">Severity is available only in aggregate.</p>}{integrity.rows.length === 0 && <p>No findings.</p>}{integrity.rows.map((row) => <p key={row.family} className="officina__rule-family"><span>{row.label}</span><span>{row.count}</span></p>)}</div></details>
+          <details className="officina__health-row panel--process"><summary><span>Process health</span><span className="officina__severity-summary"><span><SeverityCue level={loadedHealth.due.length > 0 ? "low" : "normal"} />{loadedHealth.due.length > 0 ? `${loadedHealth.due.length.toLocaleString()} low due` : "Normal"}</span></span></summary><div className="officina__health-detail"><p className="officina__brake-explanation">New pieces of work do not start; work already running carries on.</p><div className="officina__brake-row"><div className="officina__brake-state"><span>New work</span><strong>{loadedHealth.autonomy.paused ? "Stopped" : "Running"}</strong></div><button type="button" className="officina__brake" disabled={brakePending} onClick={onBrake}>{brakePending ? "Changing…" : loadedHealth.autonomy.paused ? "Resume new work" : "Stop new work"}</button></div>{brakeMessage && <p className="officina__write-error">{brakeMessage}</p>}{loadedHealth.due.length === 0 ? <p>Nothing pending.</p> : loadedHealth.due.map((due, index) => <p key={`${due.kind}:${due.id}:${index}`} className="officina__process-row"><span className="officina__value-mono">{due.id}</span><span className="officina__severity-label"><SeverityCue level="low" />{due.kind}</span></p>)}</div></details>
+        </div>}
       </section>
     </div>
   );
