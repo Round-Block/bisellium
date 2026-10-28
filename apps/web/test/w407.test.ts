@@ -63,3 +63,25 @@ test("W-407-b2 behaviour 2: selected reading, neutral divided rows, evidence and
     { label: "web", href: "https://example.test/x", actionable: true },
   ]);
 });
+
+test("W-407-b3 behaviour 3: roving selection, read state and narrow detail returns", async () => {
+  const inbox = read("apps/web/src/screens/Inbox.tsx");
+  const view = read("apps/web/src/screens/InboxView.tsx");
+  const css = read("apps/web/src/components/w025.css");
+  assert.match(view, /className=\{\["inbox__item", "inbox__row"[\s\S]*role="option"[\s\S]*aria-selected=\{hasFocus && !decisionUnavailable\}[\s\S]*tabIndex=\{hasFocus \? 0 : -1\}/, "rows use roving listbox semantics and no stale row claims selection");
+  assert.match(inbox, /e\.key === "j" \|\| e\.key === "k"/, "j and k move");
+  assert.match(inbox, /e\.key === "Enter"[\s\S]*setExpandedId\(focusedId\)/, "Enter opens the selected narrow item");
+  assert.match(inbox, /e\.key === "Escape"[\s\S]*target\.closest\("\.sidebar"\)[\s\S]*expandedId === null[\s\S]*setExpandedId\(null\)[\s\S]*setFocusRequest/, "Inbox Escape returns to the selected row without stealing sidebar Escape");
+  assert.match(view, /scrollIntoView\(\{ block: "nearest" \}\)/, "selection reveal scrolls only as far as needed");
+  assert.doesNotMatch(view, /behavior:\s*"smooth"|block:\s*"start"|inbox__position/, "selection has no smooth stable-offset reveal or position marker");
+  assert.match(inbox, /const reason = reasonForPetition\(reasons, (?:focusedId|decisionId)\)/, "the ratio is keyed to the decision rather than the expansion container");
+  assert.match(inbox, /refreshIntentRef\.current = \{ preferredIndex: focusIndex, reopenDetail: expandedId !== null, reveal: true \}[\s\S]*refreshInbox\(\)/, "post-answer reconciliation keeps narrow detail state and reveals nearest");
+  assert.match(css, /\.inbox__workspace--detail \.inbox__list-pane\s*\{[^}]*display:\s*none;[\s\S]*\.inbox__workspace--detail \.inbox__reading-pane\s*\{[^}]*display:\s*grid;/s, "narrow detail replaces rather than stacks below the list");
+  assert.match(inbox, /localStorage\.getItem\(INBOX_READ_STORAGE_KEY\)[\s\S]*catch \{ return new Set\(\); \}/, "denied read storage renders every row unread");
+  assert.match(inbox, /localStorage\.setItem\(INBOX_READ_STORAGE_KEY, encodeInboxReadSet\(next\)\)[\s\S]*catch \{[\s\S]*return new Set\(\);/, "denied write storage falls back to every row unread");
+  const logic = await import("../src/screens/inboxLogic.js");
+  assert.equal(logic.INBOX_READ_STORAGE_KEY, "bisellium.inbox.read");
+  assert.deepEqual([...logic.decodeInboxReadSet('["P-2","P-1","P-2"]')], ["P-2", "P-1"]);
+  for (const rejected of [null, "not json", "{}", '["P-1",2]', '[""]']) assert.deepEqual([...logic.decodeInboxReadSet(rejected)], []);
+  assert.equal(logic.encodeInboxReadSet(new Set(["P-2", "P-1"])), '["P-1","P-2"]');
+});

@@ -153,3 +153,107 @@ test("W-407-b2 reading strips Markdown syntax, separates evidence, and rows stay
   await expect(unavailable).toHaveCount(8);
   await expect(unavailable.first()).toContainText("#evidence — Not available in this console");
 });
+
+test("W-407-b3 roving selection reveals nearest, reconciles answers, and phone Back or Escape restores focus", async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (options?: boolean | ScrollIntoViewOptions): void {
+      (window as unknown as { __w407Reveal?: ScrollIntoViewOptions }).__w407Reveal = typeof options === "object" ? options : undefined;
+      nativeScrollIntoView.call(this, options);
+    };
+  });
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
+
+  for (const width of [1280, 390]) {
+    const writes: { petitio: string; reply: string }[] = [];
+    let remaining = [...MANY_RESPONSE];
+    await page.unroute("**/api/inbox");
+    await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones: remaining }) }));
+    await page.unroute("**/api/answer");
+    await page.route("**/api/answer", (route) => {
+      const body = route.request().postDataJSON() as { petitio: string; reply: string };
+      writes.push(body);
+      remaining = remaining.filter(({ id }) => id !== body.petitio);
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, output: "recorded" }) });
+    });
+    await openInbox(page, width, `w407-b3-${width}`, false);
+    const items = page.locator(".inbox__item");
+    const list = page.locator(".inbox__list-pane");
+    await expect(items).toHaveCount(14);
+    await expect(page.locator(".inbox__item--unread")).toHaveCount(width === 1280 ? 13 : 14);
+    await items.first().focus();
+    await expect(items.first()).toHaveCSS("outline-width", "0px");
+    expect(await items.first().evaluate((node) => getComputedStyle(node).boxShadow), `${width}: focus adds neither underline nor row box`).toBe("none");
+    await expect(items.locator(".inbox__subject")).toHaveText(MANY_ORDER.map((id) => `Decision ${id}`));
+    await expect(items.locator(".inbox__date")).toHaveText(MANY_DATES);
+    await expect(page.locator(".inbox__position")).toHaveCount(0);
+    const before = await list.evaluate((node) => node.scrollTop);
+    for (let step = 0; step < 6; step++) await page.keyboard.press("j");
+    await expect(items.nth(6)).toBeFocused();
+    await expect(items.nth(6).locator(".inbox__subject")).toHaveText("Decision P-09");
+    expect(await page.evaluate(() => (window as unknown as { __w407Reveal?: ScrollIntoViewOptions }).__w407Reveal)).toEqual({ block: "nearest" });
+    const selectedInsideList = await items.nth(6).evaluate((node) => {
+      const row = node.getBoundingClientRect();
+      const pane = node.closest(".inbox__list-pane")!.getBoundingClientRect();
+      return row.top >= pane.top && row.bottom <= pane.bottom;
+    });
+    expect(selectedInsideList, `${width}: nearest reveal keeps the selected row visible`).toBe(true);
+    expect(await list.evaluate((node) => node.scrollTop), `${width}: j×6 does not slide a queue whose selected row was already visible`).toBe(before);
+
+    if (width === 390) {
+      await expect(page.locator(".inbox__reading-pane")).toBeHidden();
+      await page.keyboard.press("Enter");
+      await expect(page.locator(".inbox__reading-pane")).toBeVisible();
+    }
+    await expect(items.nth(6)).not.toHaveClass(/inbox__item--unread/);
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-09");
+    const ratio = page.locator(".inbox__input-ratio");
+    await ratio.fill("middle reason");
+    await page.getByRole("button", { name: /approve/i }).click();
+    await expect(items).toHaveCount(13);
+    await expect(items.nth(6)).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-14");
+    await expect(ratio).toHaveValue("");
+
+    if (width === 390) {
+      await page.keyboard.press("Escape");
+      await expect(list).toBeVisible();
+      await expect(items.nth(6)).toBeFocused();
+      await items.nth(6).click();
+      await expect(page.getByRole("button", { name: "Back to Inbox" })).toBeVisible();
+      await page.getByRole("button", { name: "Back to Inbox" }).click();
+      await expect(items.nth(6)).toBeFocused();
+      await page.keyboard.press("Enter");
+    }
+    await ratio.fill("next reason");
+    if (width === 390) await page.getByRole("button", { name: "Back to Inbox" }).focus();
+    else await items.nth(6).focus();
+    await page.keyboard.press("1");
+    await expect.poll(() => writes.length).toBe(2);
+    expect(writes).toEqual([
+      { petitio: "P-09", reply: "approve: middle reason" },
+      { petitio: "P-14", reply: "approve: next reason" },
+    ]);
+    await served!.close(); served = undefined;
+  }
+
+  for (const width of [640, 390]) {
+    await openInbox(page, width, `w407-b3-overlay-${width}`);
+    await page.getByRole("option").first().click();
+    const subject = await page.locator(".inbox__expanded-subject").textContent();
+    const toggle = page.locator(".sidebar__toggle");
+    await toggle.click();
+    await expect(page.locator('.sidebar__link[href="#/inbox"]')).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(toggle).toBeFocused();
+    await expect(page.locator(".inbox__expanded-subject"), `${width}: sidebar Escape does not close Inbox detail`).toHaveText(subject ?? "");
+    await served!.close(); served = undefined;
+  }
+
+  await page.addInitScript(() => {
+    Storage.prototype.getItem = () => { throw new DOMException("denied"); };
+    Storage.prototype.setItem = () => { throw new DOMException("denied"); };
+  });
+  await openInbox(page, 1280, "w407-b3-storage-denied");
+  await expect(page.locator(".inbox__item--unread")).toHaveCount(3);
+});
