@@ -1,0 +1,29 @@
+# opus: W-407
+# phase: spec
+# round: 8
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17c8f-e83b-7df0-952d-228b98b8bc67
+# outcome: passed
+# at: 2026-10-27T14:18:42.595Z
+# tree: tree:1347902e89298d678438fa564c760359bb059067
+# brief: briefs/W-407.md blob:53b4bc96299a003e0df5d24168f75bebca931c84
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":8,"actor":"architect","studio":"studio","head":"8cc634c092fed0aa443d82df227f8597960c141b","brief":"53b4bc96299a003e0df5d24168f75bebca931c84","at":"2026-10-27T14:18:37.028Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-407-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The producer's 2026-10-27 fold-in is implemented without increasing the five-behaviour shape: b2 owns server response order, and b3 owns reveal and position — check: studio/briefs/W-407.md, apps/web/test/w407.test.ts
+2. advisory — `Store.api.needsYou()` normalises through `instant()`, orders dated records oldest-first, preserves source filename order for ties, and places missing or malformed instants last; Inbox has no client sort — check: apps/server/src/store.ts, apps/web/src/screens/Inbox.tsx, apps/web/src/screens/InboxView.tsx
+3. advisory — The fourteen-record served row at 1280 and 390 proves ordered ages, `j`×6, post-answer focus/expansion/ratio agreement, a stable 96px reveal offset, smooth/reduced-motion selection and the same click path — check: apps/web/tests-serve/w407.spec.ts, w407-served-stage-r8.out
+4. advisory — The neutral mono marker renders `1 of 14`, `7 of 14`, `7 of 13` and `1 of 1`, is absent at zero, and stays sticky while `.shell__main` scrolls; no nested list scroller was added — check: apps/web/src/screens/InboxView.tsx, apps/web/src/components/w025.css, w407-served-stage-r8.out
+5. advisory — W-345-b5's nearest-scroll source pin is the only additional predecessor flip; it now requires the start-aligned reduced-motion-aware reveal while preserving phone reachability — check: studio/briefs/W-407.md, apps/web/test/w345.test.ts, w345-policy-r8.out, inbox-served-stage-r8.out
+6. advisory — All five policy rows fail by assertion on 27e39d31 and their ordered red commits, every predecessor passes on later reds, and every cumulative feature stage is green — check: reds-host-r8.out, red-master-b1.out, red-master-b2.out, red-master-b3.out, red-master-b4.out, red-master-b5.out, green-b5.out
+7. advisory — The three whole census files pass on base and final stage; every fixture-census must-stay-green file, W-407, W-345, W-415 and touched screenshot readiness row passes on the final stage — check: census-master-stage-r8.out, census-must-green-r8.out, served-r8.out
+8. advisory — Twenty-three source-mutation kills cover every Promise and pinned Input row, including order, reveal offset/motion and sticky position; the refreshed ledger validator returns no problems — check: make-kills-r8.out, kill-order.out, kill-reveal.out, kill-reveal-offset.out, kill-position.out, promise-ledger.md, ledger-check-r8.out
+9. advisory — The ten non-numbered prototype commits reapply to the expected final tree, typecheck passes, and thirteen requested captures cover focused, empty, long-subject and fourteen-item load/mid states without writing `studio/ci/shots/` — check: prototype.mbox, mbox-check.out, typecheck-r8.out, capture-shots-r8.out, capture-many-r8.out, shots/
+
+## Verdict
+
+passed — signature round 8 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-407.md`; the oldest-first ordering, stable reveal and sticky position marker are staged in one prototype with sha256 `0b35213ff47bb5a39cdeea34d8cfd2a613ab0c087db3149c463010437573e20c`, and no record write, `next` or `verdict` was performed.

@@ -1,0 +1,31 @@
+# opus: W-407
+# phase: spec
+# round: 13
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a17ff4-bdc9-7151-8def-0d82e5a67f61
+# session_reason: the round-10 ui-lead session ended with an earlier orchestrator session; a fresh read-only Astra session gave round 13's input after reading its round-10 input
+# outcome: revise
+# at: 2026-10-28T22:04:15.601Z
+# tree: tree:f1f3f405ac94091ff8a8f44407b775584a48ab21
+# dispatch_prompt: ci/W-407-ui-prompt-13.md
+# design_digest: sha256:807b4b9a816e5966bfe95b785a8a187522f69390c62f3d4cedf7642cafa6417b
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":13,"actor":"ui-lead","studio":"studio","head":"55205c515bbfe526f92ca5345489cfb09d4b3cbc","brief":"24d14b7294b278ed754daf2606f545bc2ef93c34","at":"2026-10-28T22:04:09.641Z"}
+
+## Findings
+
+1. advisory — brief:25 — Round-10 finding 1 no longer holds: repository/hash evidence now exposes its target as selectable text with an unavailable explanation; only HTTP(S) evidence looks actionable — replace with: “Retain this resolved evidence treatment.” — check: apps/web/src/screens/InboxView.tsx; shots/inbox-1280-open-keyboard-focus.png
+2. blocking — brief:95 — A successful refresh that removes the selected petitio silently substitutes another decision at the clamped index, including inside narrow detail. This changes the subject under the reader without their action; declaring removal a limit does not preserve the current decision — replace with: “If an ordinary refresh removes the selected petitio, retain its reading content and draft, explain that it no longer needs a decision, and disable submission until the Patron selects another item. Only an explicit successful answer advances automatically.” — check: apps/web/src/screens/Inbox.tsx; extend apps/web/tests-serve/w407.spec.ts b6 with selected-item removal at 1280 and 390
+3. advisory — brief:178 — The agent-written rule requiring `You asked 0` and `For information 0` does not make sense on these captures: neither collection is read, yet both present authoritative counts and expandable controls that reveal nothing — replace with: “Until authoritative reads exist, retain the secondary labels as non-interactive unavailable text without numeric counts.” — check: apps/web/src/screens/InboxView.tsx; apps/web/tests-serve/w407.spec.ts b5; contact-390-r12.png
+4. advisory — brief:52 — The prototype’s DIRECTION amendment still specifies ages and an empty-state colophon, contradicting revision f’s approved dates and unstamped Inbox — replace with: “Update §6 to record the 2026-10-28 first-notified dates, selected shade alone for focus, no Inbox colophon, and shared visible refresh; scope these exceptions to Inbox.” — check: docs/design/DIRECTION.md; apps/web/test/w407.test.ts
+5. advisory — brief:23 — The brief fixes a 72ch reading cap outside its named Defaults, whereas DIRECTION’s agent-written general cap is 68ch. The captures support a bounded reading measure, but neither exact number should acquire Patron authority implicitly — replace with: “Name 72ch as a proposed Inbox reading-measure default, superseding the general 68ch cap for this screen.” — check: studio/briefs/W-407.md Defaults; apps/web/src/components/w025.css
+
+## Recommendation
+
+Round 10’s earlier subject-wrapping and delegate-explanation closures remain sound; action keys remain printed, although movement guidance is now absent from the narrow list, and the former 40px-row requirement is superseded by the approved Outlook rows.
+At 1280, 640 and 390, asker/date summaries, unread edges, complete detail subjects, semantic lists and pinned actions read coherently as a decision queue.
+The selected row is perceivable in both keyboard-focus captures, but its 1.21:1 shade difference is subtle and does not distinguish selection from actual keyboard ownership; that is the accepted Patron trade-off.
+Visible refresh helps freshness, and the tested arrival preserves the active draft, but b6 appends its new row and does not establish visual stability for insertion above the reader or removal of their decision.
+Round 12’s failed-refresh fix remains required build work, and its advisories remain build guidance without re-judgment.
+The additional blocking change preserves the approved design; W-406’s Board and W-415’s sidebar and zoom reflow should remain unchanged.
+Verdict: revise

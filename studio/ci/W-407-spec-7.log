@@ -1,0 +1,29 @@
+# opus: W-407
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17c8f-e83b-7df0-952d-228b98b8bc67
+# outcome: passed
+# at: 2026-10-27T13:10:03.389Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# brief: briefs/W-407.md blob:ed915ddecf873bc9d815384ef23dd8ed3921e3fc
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"ed915ddecf873bc9d815384ef23dd8ed3921e3fc","at":"2026-10-27T13:09:58.092Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-407-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The Patron's 2026-10-27 objection is adopted through the producer's design call: DIRECTION §6 now specifies one queue filling the main pane, an inner ~72ch focused reading measure and no preview pane — check: docs/design/DIRECTION.md, studio/briefs/W-407.md
+2. advisory — At 1280, 640 and 390 the queue aligns to the title and reaches the main pane's right gutter, while only the expanded subject, ask, evidence line and ratio field are capped at 72ch and the 1280 reading block remains at least 40ch — check: apps/web/src/components/w025.css, apps/web/src/screens/InboxView.tsx, apps/web/tests-serve/w407.spec.ts, w407-served-stage-r7.out
+3. advisory — Collapsed rows, secondary groups and the empty state span the queue; exact 40px rows, full 180-character expanded subjects, write effects, reload coherence and scoped Escape remain unchanged — check: apps/web/tests-serve/w407.spec.ts, inbox-served-stage-r7.out
+4. advisory — The additional W-415-b2 fixed-measure-to-full-pane expectation flip is named in Acceptance and its served shell/reflow file passes in full — check: studio/briefs/W-407.md, apps/web/tests-serve/w415.spec.ts, w415-served-stage-r7.out
+5. advisory — All five policy rows fail by assertion on 27e39d31 and their ordered red commits, every predecessor passes on later reds, and every cumulative feature stage is green — check: reds-host-r7.out, red-master-b1.out, red-master-b2.out, red-master-b3.out, red-master-b4.out, red-master-b5.out, pre-red-b5.out, green-b5.out
+6. advisory — Every fixture-census must-stay-green file passes; inboxview, tokens and containment also pass whole on both base and the final prototype stage — check: census-must-green-r7.out, census-master-stage-r7.out, census-master-r7-inboxview.out, census-master-r7-tokens.out, census-master-r7-containment.out, census-stage-r7-inboxview.out, census-stage-r7-tokens.out, census-stage-r7-containment.out
+7. advisory — The touched W-407 and W-415 served files and migrated Inbox predecessor pass; screenshot readiness passes while the absent-baseline comparison remains the ruled W-350 recapture limit — check: served-r7.out, screenshots-stage-r7.out
+8. advisory — Nineteen source-mutation kills cover every pinned promise and input row, including full-pane and 72ch measure regressions; the round-7 ledger validator returns no problems — check: make-kills-r7.out, kill-measure.out, kill-reading-measure.out, promise-ledger.md, ledger-check-r7.out
+9. advisory — The ten non-numbered prototype commits reapply to the expected final tree and refreshed captures cover focused, empty and long-subject states at all three widths without writing studio/ci/shots — check: prototype.mbox, mbox-check.out, capture-shots-r7.out, shots/
+
+## Verdict
+
+passed — signature round 7 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-407.md`; the Patron-requested full-pane revision is staged in one prototype with sha256 `755bf1e3d203bf07cf68f2c399e97d383c5eb6eadc217ee4e693eba93d338b66`, and no record write, `next` or `verdict` was performed.

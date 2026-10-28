@@ -1,0 +1,29 @@
+# opus: W-407
+# phase: spec
+# round: 11
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17c8f-e83b-7df0-952d-228b98b8bc67
+# outcome: passed
+# at: 2026-10-28T00:36:02.401Z
+# tree: tree:6a81b11f3fa8e622a465deea5762b8ad77c3b2af
+# brief: briefs/W-407.md blob:24d14b7294b278ed754daf2606f545bc2ef93c34
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":11,"actor":"architect","studio":"studio","head":"7485661c79bca1980ac84267f3946341385d9afc","brief":"24d14b7294b278ed754daf2606f545bc2ef93c34","at":"2026-10-28T00:35:56.465Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-407-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The Patron-ruled Outlook surface keeps a 320px independent list wide, full-screen list/detail narrow, persistent scrollbars and a bottom-pinned action bar — check: apps/web/test/w407.test.ts, gates-proto.out
+2. advisory — Rows show fixed en-GB/UTC first-notified dates, selected wash alone for selected-and-focused, no focus underline/box, and a verdigris left edge only for unread — check: apps/web/tests-serve/w407.spec.ts, inbox-1280-open-keyboard-focus.png, inbox-390-keyboard-focus.png
+3. advisory — Measured contrast is 1.21:1 wash-to-surface, 11.06:1 text-to-wash and 13.36:1 text-to-surface; the full-row state is visible under 2.4.7 and wholly unobscured under 2.4.11 — check: studio/briefs/W-407.md, apps/web/src/tokens.css
+4. advisory — Inbox renders no source, generated-at, timestamp or as-of colophon; its empty state is exactly one line — check: apps/web/test/w407.test.ts, inbox-1280-open-empty.png
+5. advisory — `useVisibleRefresh` is the one shared 30-second visibility-aware mechanism; a new item arrives unread without stealing selection, focus, scroll or half-typed ratio — check: apps/web/src/lib/useVisibleRefresh.ts, w407-served-final-r12.out
+6. advisory — Six policy reds fail by assertion on 27e39d31 and ordered red commits, all cumulative rows are green, and twelve non-numbered patches replay to the final tree — check: reds-host-r12.out, mbox-check-r12.out
+7. advisory — The three whole census files pass on base and final, and all must-stay-green policy/served files including W-345, W-415 and Inbox states pass — check: census-master-stage-r12.out, census-must-green-r12.out
+8. advisory — Thirty-five refreshed captures plus four r12 contact sheets cover both 1280 sidebar states, 640, 390, empty, long subject, fourteen items, read/unread, keyboard focus and long-ask scroll with pinned actions — check: capture-r12.json, contact-1280-open-r12.png, contact-390-r12.png
+9. advisory — Scope remains six behaviours; retries/backoff, overlapping-read arbitration, push transport, W-408 rendering, severity and source-side subject/ask limits remain explicit follow-ups — check: studio/briefs/W-407.md, promise-ledger.md
+
+## Verdict
+
+passed — signature round 12 replaces round 11 after revision f by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-407.md`; the six-behaviour prototype on base `27e39d31` has sha256 `f99dc85fcf64a27853b4c734c365cac8ad5507ebf840d91ae4956d83077260d7`, and no record write, `next` or `verdict` was performed.

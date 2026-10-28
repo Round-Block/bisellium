@@ -1,0 +1,25 @@
+# opus: W-407
+# phase: spec
+# round: 3
+# sella: ui-lead
+# outcome: revise
+# at: 2026-10-27T10:27:59.320Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# dispatch_prompt: ci/W-407-ui-prompt-3.md
+# design_digest: sha256:543ad01ef867dc5961f941a3cb6f3bd0a1631f6325cb0798470e6d4cacff5a3b
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"b2604bcdbc8d5de02afdecefc3049c479e8c6954","at":"2026-10-27T10:27:52.114Z"}
+
+## Findings
+
+1. blocking — brief:75 — The expanded item never reveals its complete subject. At 390 even the first capture’s subject is truncated; longer subjects also truncate at 640. The removed detail heading exposed more context, and the body may omit the subject entirely. This imposes an unlisted layout choice that hides decision information — replace with: “Collapsed subjects use one-line ellipsis. The expanded item also displays its complete subject, wrapping without clipping before the ask.” — check: apps/web/tests-serve/w407.spec.ts b2, using a 180-character subject with an empty body at 1280, 640 and 390.
+2. advisory — brief:97 — The action buttons print `1`/`2`/`3` correctly, but neither `j`/`k` nor Escape is printed. DIRECTION §5’s visible shortcut guidance needs an equivalent at the foot of the expansion — replace with: “Keep action keys beside their verbs; print ‘j/k move · Esc collapse’ below the expanded decision controls, wrapping within the narrow measure.” — check: apps/web/src/screens/InboxView.tsx and apps/web/tests-serve/w407.spec.ts b3.
+3. advisory — brief:114 — Delegate’s explanation exists only in a native title on a disabled control, so keyboard users cannot focus it to discover why it stays disabled. The wording also exposes an implementation detail — replace with: “Delegate remains disabled and unkeyed, with visible adjacent text ‘Delegation is not available yet’, associated with the control through aria-describedby.” — check: apps/web/tests-serve/w407.spec.ts b4.
+4. advisory — brief:89 — The prototype’s narrow-width CSS sets rows to 39px, and the migrated phone test explicitly expects 39px; the promised 40px geometry is checked only at desktop width — replace with: “Every collapsed row measures exactly 40px including its separator at 1280, 640 and 390; retain that expectation in the migrated phone test.” — check: apps/web/src/components/w025.css, apps/web/tests-serve/w407.spec.ts b2 and apps/web/tests-serve/inbox.spec.ts W-345-b5.
+
+## Recommendation
+
+The title-aligned column, in-flow decision, amber ownership rules, mono identities, weight-only ages, secondary groups and quiet empty state read as DIRECTION’s Inbox.
+The shared reason and four verbs remain together at narrow widths, improving on the previous stacked layout, but the complete subject must remain readable.
+The architect can correct that omission within the existing design; no additional colour ruling or change to W-406’s Board or W-415’s shell is needed.
+The spec review’s existing blocker remains a required build fix, and its three advisories remain build guidance.
+Verdict: revise

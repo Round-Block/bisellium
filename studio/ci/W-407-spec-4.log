@@ -1,0 +1,30 @@
+# opus: W-407
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17c8f-e83b-7df0-952d-228b98b8bc67
+# outcome: passed
+# at: 2026-10-27T10:45:05.957Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# brief: briefs/W-407.md blob:48bbdebcb0263bbe18e02907aa2f506a149e86e7
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"48bbdebcb0263bbe18e02907aa2f506a149e86e7","at":"2026-10-27T10:45:02.438Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-407-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Round-2 blocker 1 is fixed: after answering the middle of three, reload reconciles focus and expansion at the surviving index, the ratio follows that expanded id, and the next numeric action writes that same petitio — check: apps/web/src/screens/Inbox.tsx, apps/web/tests-serve/w407.spec.ts, w407-served-stage-r4.out
+2. advisory — Round-2 evidence-link advice is adopted: every admitted repository-relative, hash and HTTP(S) href is rendered exactly, repository/hash navigation is a stated limit, and only HTTP(S) links are promised to reach their target — check: studio/briefs/W-407.md, apps/web/tests-serve/w407.spec.ts
+3. advisory — Round-2 Colophon advice is adopted: Inbox uses the response's resolved absolute Store studioDir with a literal fallback, explicitly distinct from the Board manifest name — check: docs/ARCHITECTURE.md, apps/web/src/screens/InboxView.tsx, apps/web/tests-serve/w407.spec.ts
+4. advisory — Round-2 Escape advice is adopted: only an Escape originating inside Inbox collapses its expansion, while W-415's sidebar overlay closes independently at 640 and 390 — check: apps/web/src/screens/Inbox.tsx, apps/web/tests-serve/w407.spec.ts, w415-served-stage-r4.out
+5. advisory — Round-3 blocker 1 is fixed: the expanded item repeats its complete subject before the ask, and a 180-character subject with empty body wraps without clipping at 1280, 640 and 390 — check: apps/web/src/screens/InboxView.tsx, apps/web/src/components/w025.css, shots/inbox-1280-long-subject.png, shots/inbox-640-long-subject.png, shots/inbox-390-long-subject.png
+6. advisory — Round-3 interaction advice is adopted: the expansion prints `j/k move · Esc collapse`, delegate has adjacent visible unavailable text linked with aria-describedby, and every collapsed row remains exactly 40px at all three ruled widths — check: apps/web/src/screens/InboxView.tsx, apps/web/tests-serve/w407.spec.ts, inbox-served-stage-r4.out
+7. advisory — The five assertion reds fail on 27e39d31 and each ordered red commit, every predecessor passes on each later red commit, every cumulative stage stays green, and the final W-407, Inbox, W-345 and W-415 served rows pass — check: reds-host-r4.out, pre-red-b5.out, red-master-b1.out, red-master-b2.out, red-master-b3.out, red-master-b4.out, red-master-b5.out, green-b5.out, w407-served-stage-r4.out, inbox-served-stage-r4.out, w415-served-stage-r4.out
+8. advisory — All fixture-census must-stay-green rows touching owned files pass; the three requested census files pass whole on both 27e39d31 and the final prototype stage — check: census-must-green.sh, census-green-*.out, census-master-r4-inboxview.out, census-master-r4-tokens.out, census-master-r4-containment.out, census-stage-r4-inboxview.out, census-stage-r4-tokens.out, census-stage-r4-containment.out
+9. advisory — Acceptance names the additional W-345-b3 source-expectation and W-345-b5 phone-height flips; the existing clickable-row, cyan-consumer and containment census intents remain green with their revised expectations — check: studio/briefs/W-407.md, apps/web/test/w345.test.ts, apps/web/test/inboxview.test.ts, apps/web/test/tokens.test.ts, packages/cli/src/containment.test.ts
+10. advisory — The ten non-numbered prototype commits reapply to the expected final tree, the round-4 ledger validator returns no problems, and refreshed captures cover focused, empty and long-subject states without writing studio/ci/shots — check: prototype.mbox, mbox-check.out, ledger-check-r4.out, capture-shots-r4.out, shots/
+
+## Verdict
+
+passed — signature round 4 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-407.md`; all round-2 review and round-3 ui-lead items are adopted in one prototype with sha256 `4de6292d098b62b1cb1aced904771ec0750d78ab3b1f312ddfbbf4281c951637`, and no record write, `next` or `verdict` was performed.

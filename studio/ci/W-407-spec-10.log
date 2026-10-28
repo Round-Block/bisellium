@@ -1,0 +1,33 @@
+# opus: W-407
+# phase: spec
+# round: 10
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a17dbd-8dcd-7062-bed9-65e6809a8718
+# outcome: passed
+# at: 2026-10-27T14:26:31.848Z
+# tree: tree:1347902e89298d678438fa564c760359bb059067
+# dispatch_prompt: ci/W-407-ui-prompt-10.md
+# design_digest: sha256:409f1523eff0959cf4d6ce4fcf2290bd7f26db71f5ed459a59400bf4decb189d
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":10,"actor":"ui-lead","studio":"studio","head":"8cc634c092fed0aa443d82df227f8597960c141b","brief":"53b4bc96299a003e0df5d24168f75bebca931c84","at":"2026-10-27T14:26:26.385Z"}
+
+## Findings
+
+1. advisory — brief:161 — Default 4’s agent-written rule makes unresolved repository references look actionable: the fourteen-item captures show a cyan “evidence” link although its destination cannot open in the console. This invites a failed navigation during a decision — replace with: “Keep HTTP(S) evidence links actionable. Display unresolved repository and hash references as selectable text with their target and the explanation ‘Not available in this console’, without a navigation action.” — check: apps/web/tests-serve/w407.spec.ts b2; shots/inbox-1280-many-mid.png; shots/inbox-390-many-mid.png
+
+## Recommendation
+
+Round 6 recorded no findings; none remains open.
+The four earlier findings it closed remain closed: the complete expanded subject wraps, movement and action keys are printed, delegate has its visible explanation, and collapsed rows retain 40px height.
+
+The full-pane queue makes sense under the Patron’s rejection of the agent-written 720px limit: the expansion belongs visibly to its row, while the inner reading measure keeps the ask and reason together.
+Amber ownership rules, mono sella ids and weight-only ages support scanning; the secondary groups remain quiet, and the empty state rests with one line and the Colophon.
+At 640 the content wraps legibly; at 390 the complete subject and adjacent controls improve substantially on the pre-change Inbox’s separated regions.
+
+Oldest-first order is a sensible producer default because it exposes the longest waits first.
+The settled fourteen-item captures show that revealing the seventh item leaves its decision controls visible, and the neutral sticky count preserves position when the Inbox title scrolls away.
+The marker does not obscure the captured decision text; these still captures cannot establish the comfort of repeated smooth movement, and round 9’s three advisories remain build guidance without re-adjudication.
+
+I find no additional brief-imposed layout, colour or default choice beyond the ten named Defaults; the evidence-affordance finding concerns Default 4.
+The prototype’s changes leave W-406’s Board and W-415’s sidebar and zoom reflow intact.
+Verdict: passed

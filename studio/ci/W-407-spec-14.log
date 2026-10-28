@@ -1,0 +1,29 @@
+# opus: W-407
+# phase: spec
+# round: 14
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17c8f-e83b-7df0-952d-228b98b8bc67
+# outcome: passed
+# at: 2026-10-28T22:04:56.013Z
+# tree: tree:f1f3f405ac94091ff8a8f44407b775584a48ab21
+# brief: briefs/W-407.md blob:2df0e86a628dfb5019233525a5592ddd073ca483
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":14,"actor":"architect","studio":"studio","head":"55205c515bbfe526f92ca5345489cfb09d4b3cbc","brief":"2df0e86a628dfb5019233525a5592ddd073ca483","at":"2026-10-28T22:04:52.064Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-407-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — A failed background read after first success keeps the last response, selected/open decision, DOM focus, scroll and keyed ratio through failure and recovery; only failed first load is empty — check: apps/web/tests-serve/w407.spec.ts b6 at 1280/390, apps/web/tests-serve/inbox.spec.ts W-345-b4
+2. advisory — An ordinary success that removes selection retains its reading snapshot and draft, shows the exact withdrawn notice, removes live `aria-selected` and disables every submission until another row is chosen; explicit answer alone advances — check: apps/web/tests-serve/w407.spec.ts b3/b6, inbox-1280-open-removed-selected.png, inbox-390-removed-selected.png
+3. advisory — `InboxResponse` gains only optional `opened`; `Store.api.needsYou()` returns exactly `opera` and `petitiones` and no absolute studio field — check: apps/server/test/server.test.ts, apps/web/src/api.ts, docs/ARCHITECTURE.md
+4. advisory — The selected wash measures 1.21:1 against surface, while text measures 11.06:1 on wash and 13.36:1 on surface; 1.21:1 is the Patron-accepted trade-off and is not claimed to conform to WCAG 1.4.11's 3:1 threshold — check: studio/briefs/W-407.md Defaults 2, apps/web/src/tokens.css
+5. advisory — One in-flight guard coalesces simultaneous focus/visibility refreshes while preserving a queued explicit answer reconcile — check: apps/web/src/screens/Inbox.tsx, apps/web/tests-serve/w407.spec.ts b6
+6. advisory — `You asked` and `For information` are non-interactive unavailable labels without invented counts until authoritative reads exist — check: apps/web/test/w407.test.ts b5, inbox-1280-open-secondary-labels.png, inbox-390-secondary-labels.png
+7. advisory — DIRECTION §6 now records the 2026-10-28 first-notified date, shade-only focus, no Inbox colophon and shared visible-refresh rulings — check: docs/design/DIRECTION.md §6, apps/web/test/w407.test.ts b1
+8. advisory — The proposed Inbox-specific 72ch reading measure is named as a Patron-changeable Default rather than silently overriding DIRECTION's general 68ch measure — check: studio/briefs/W-407.md Defaults 14, apps/web/src/components/w025.css
+9. advisory — Six assertion reds fail on base and ordered red commits, cumulative rows and changed-file census pass, twelve non-numbered patches replay exactly, the promise ledger validates, and all four r13 contact sheets plus six new state captures were visually inspected — check: reds-host-r13.out, census-must-green-r13.out, mbox-check-r13.out, ledger-check-r13.out, contact-1280-open-r13.png, contact-390-r13.png
+
+## Verdict
+
+passed — revision g answers round-12 Opus and round-13 UI findings for `studio/briefs/W-407.md`; the six-behaviour prototype on base `27e39d31` has sha256 `b47798ee76e9cad251c0d012b3147c4652f6be74f31290f54e598eb92d0c5675`, and no record write, `next` or `verdict` was performed.
