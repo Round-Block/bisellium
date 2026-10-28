@@ -85,3 +85,18 @@ test("W-407-b3 behaviour 3: roving selection, read state and narrow detail retur
   for (const rejected of [null, "not json", "{}", '["P-1",2]', '[""]']) assert.deepEqual([...logic.decodeInboxReadSet(rejected)], []);
   assert.equal(logic.encodeInboxReadSet(new Set(["P-2", "P-1"])), '["P-1","P-2"]');
 });
+
+test("W-407-b4 behaviour 4: verdicts keep the answer route and every visible verb requires a ratio", () => {
+  const api = read("apps/web/src/api.ts");
+  const inbox = read("apps/web/src/screens/Inbox.tsx");
+  const view = read("apps/web/src/screens/InboxView.tsx");
+  const logic = read("apps/web/src/screens/inboxLogic.ts");
+  assert.match(api, /postWrite\("\/api\/answer", body\)/, "the existing answer route remains the one write mechanism");
+  assert.match(inbox, /submitAnswer\(petitioId, buildReply\(verb, reason\), answerOptions\(verb\)\)/, "all enabled verbs keep the existing body constructor");
+  assert.match(logic, /"1": "approve"[\s\S]*"2": "defer"[\s\S]*"3": "decline"/, "1, 2 and 3 have the ruled mapping");
+  for (const verb of ["approve", "defer", "decline", "delegate"]) assert.match(view, new RegExp(`verb: "${verb}"`), `${verb} is visible`);
+  assert.match(view, />Ratio decidendi</, "the ruled reason is named");
+  assert.match(view, /verb === "delegate"[\s\S]*disabled=\{decisionUnavailable \|\| unavailable \|\| !canSubmit/, "delegate is honestly disabled and a refresh-detached decision cannot be submitted");
+  assert.match(view, /aria-describedby=\{unavailable \? delegateDescriptionId : undefined\}/, "delegate points to its visible explanation");
+  assert.match(view, /Delegation is not available yet/, "delegate's unavailable state is visible text");
+});

@@ -257,3 +257,31 @@ test("W-407-b3 roving selection reveals nearest, reconciles answers, and phone B
   await openInbox(page, 1280, "w407-b3-storage-denied");
   await expect(page.locator(".inbox__item--unread")).toHaveCount(3);
 });
+
+test("W-407-b4 keys 1/2/3 keep approve, defer and decline answer bodies while delegate stays honest", async ({ page }) => {
+  const writes: unknown[] = [];
+  await page.route("**/api/answer", async (route) => {
+    writes.push(route.request().postDataJSON());
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, output: "recorded" }) });
+  });
+  await openInbox(page, 1280, "w407-b4");
+  await expect(page.getByText("Ratio decidendi", { exact: true })).toBeVisible();
+  const ratio = page.locator(".inbox__input-ratio");
+  for (const [index, verb] of (["approve", "defer", "decline"] as const).entries()) {
+    await ratio.fill(`${verb} because`);
+    await page.getByRole("option").first().focus();
+    await page.keyboard.press(String(index + 1));
+    await expect.poll(() => writes.length).toBe(index + 1);
+    await expect(ratio).toHaveValue("");
+  }
+  expect(writes).toEqual([
+    { petitio: "P-008", reply: "approve: approve because" },
+    { petitio: "P-008", reply: "defer: defer because", askBack: true },
+    { petitio: "P-008", reply: "decline: decline because" },
+  ]);
+  const delegate = page.getByRole("button", { name: "delegate" });
+  await expect(delegate).toBeDisabled();
+  const note = page.getByText("Delegation is not available yet", { exact: true });
+  await expect(note).toBeVisible();
+  await expect(delegate).toHaveAttribute("aria-describedby", await note.getAttribute("id") ?? "missing-description");
+});
