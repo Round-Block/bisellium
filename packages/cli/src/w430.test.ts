@@ -145,3 +145,42 @@ test("W-430-b1 behaviour 1: a usage reading reads Claude's 5h, week and context 
   write(join(stale, ".bisellium-evidence", "usage", "claude-latest.json"), "{ not json");
   assert.equal(takeReading(stale, now, "bad").claude_seen, null, "a malformed status-line file: unread");
 });
+
+test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung it performs, labelled with the opus and step, and prints it; a report run appends none", { timeout: 600_000 }, () => {
+  const w = world("w430-b2", "spec");
+  const now = new Date(NOW_ISO);
+  claudeFile(w.home, NOW_ISO);
+  codexLogs(w.home, now);
+  const report = next(w, [OPUS]);
+  assert.equal(report.first, `next: ${OPUS} branch named`, ran("control: branch is the next rung", report));
+  assert.deepEqual(readingsOf(w.home), [], ran("a report run appends no reading", report));
+  const o = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  assert.equal(o.first, `next: ${OPUS} branch performed`, ran("the rung is performed", o));
+  const all = readingsOf(w.home);
+  assert.equal(all.length, 1, ran("one reading appended", o));
+  assert.deepEqual(all[0], {
+    at: NOW_ISO,
+    label: `${OPUS} branch`,
+    opus: OPUS,
+    step: "branch",
+    codex_week_used: 61,
+    codex_resets: RESETS,
+    codex_from: "rollout-mid.jsonl",
+    codex_seen: "2026-10-28T01:30:00.000Z",
+    claude_5h_used: 20,
+    claude_week_used: 85,
+    claude_seen: NOW_ISO,
+    context_tokens: 171318,
+  }, ran("the reading: at the verb's clock, both plans, the rung named", o));
+  assert.equal(lineOf(o.out, "usage: "), `usage: Claude 5h 20%, week 85%, context 171318 tokens; Codex week 61%, resets ${RESETS_ISO}`, ran("printed as its line", o));
+
+  // a reading that cannot be recorded is said so, and the rung is still performed
+  const s = world("w430-b2-symlink", "spec");
+  const elsewhere = scratchHome("b2-elsewhere");
+  mkdirSync(join(s.home, ".bisellium-evidence"), { recursive: true });
+  symlinkSync(elsewhere, join(s.home, ".bisellium-evidence", "usage"));
+  const held = next(s, [OPUS, "--perform", "--expect", "branch"]);
+  assert.equal(held.first, `next: ${OPUS} branch performed`, ran("a symlinked usage folder: the rung is still performed", held));
+  assert.match(lineOf(held.out, "usage-error: ") ?? "", /^usage-error: the reading was not recorded: \S/, ran("and the reading's failure is printed", held));
+  assert.equal(existsSync(join(elsewhere, "readings.jsonl")), false, "nothing written through the symlink");
+});
