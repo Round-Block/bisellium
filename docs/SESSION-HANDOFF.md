@@ -47,9 +47,10 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 2026-10-27: push the Codex-heavy UI streams; was one each from 10-24), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-0. W-430 — usage and reply length in the records: a usage reading at each ladder step, carried in each reply; a Stop hook caps a reply's length (Patron 10-28: next) `next.ts`
+00. W-442 — urgent (Patron 10-28: fix now): W-406-b3 fails on Wednesdays, blocking every app PR
+0. W-430 — usage and reply length in the records: a usage reading at each ladder step, carried in each reply; a Stop hook caps a reply's length `next.ts`
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
-2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (high; gates passed 10-28, review next; studio/prompts/: Patron merges). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
+2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (high; PR #825, requeue after W-442). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
 2a. W-431, W-432, W-433 — verb dead ends (10-28): unchanged re-sign, carried open finding, ui-lead revise with a session
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
 3b. W-261 — woken orchestration (D-126 1: the overrun study's first cause)
