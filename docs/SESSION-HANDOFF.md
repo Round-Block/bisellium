@@ -91,6 +91,6 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
 1. W-407 — Inbox: waits on W-433 to record Astra r13; then r14 signature, review, Astra, branch, Terra. Then W-408 — Officina: spec done (r8), branch after W-407. Then the Board's five: W-409 W-410 W-411 W-412 W-413.
-1a. W-435 — Home, a card dashboard (D-127; screens approved 10-28; equal card heights per row); its data: W-439, W-440.
+1a. W-451 (was W-435) — Home, a card dashboard, UI 2 now (D-127; screens approved 10-28; equal card heights per row); its data: W-439, W-440.
 2. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-427 (severity colours, after W-407), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
