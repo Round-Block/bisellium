@@ -234,3 +234,28 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   row("<tr><td>W-2 shipped</td></tr>");
   assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /adds no history row naming W-1; add it, then re-run$/, "no row names it: W-214's refusal, unchanged");
 });
+
+test("W-430-b4 behaviour 4: past 300000 context tokens on a fresh status line a dispatch order waits, telling the session to let running work finish and refresh the handoff; a rung the verb performs still runs", { timeout: 600_000 }, () => {
+  const w = world("w430-b4", "greenlight");
+  put(w.repo, BRIEF_REL, briefText(w.behaviours));
+  const order = (): ReturnType<typeof next> => next(w, [OPUS, "--budget", "100000"]);
+  const named = order();
+  assert.equal(named.first, `next: ${OPUS} spec named`, ran("control: no status-line file, the spec order is named", named));
+  assert.equal(named.kv.get("role"), "architect", ran("control: an architect order", named));
+  claudeFile(w.home, NOW_ISO, { ctx: [0, 0, 299_999] });
+  assert.equal(order().first, `next: ${OPUS} spec named`, "299999 tokens: named");
+  claudeFile(w.home, NOW_ISO, { ctx: [1, 0, 299_999] });
+  const held = order();
+  assert.equal(held.first, `next: ${OPUS} spec held`, ran("300000 tokens: held", held));
+  assert.equal(held.status, 1, ran("held exits 1", held));
+  assert.equal(held.kv.get("why"), "context 300000 tokens is past 300000: let running tasks finish, refresh the session handoff, and start no new work (W-430)", ran("the wind-down why", held));
+  assert.equal(held.kv.has("command"), false, ran("no dispatch command is named", held));
+  claudeFile(w.home, "2026-10-02T11:29:00.000Z", { ctx: [1, 0, 399_999] });
+  assert.equal(order().first, `next: ${OPUS} spec named`, "a status line 31 minutes old holds nothing");
+
+  // a rung the verb performs is running work: it still runs
+  const p = world("w430-b4-perform", "spec");
+  claudeFile(p.home, NOW_ISO, { ctx: [0, 0, 400_000] });
+  const performed = next(p, [OPUS, "--perform", "--expect", "branch"]);
+  assert.equal(performed.first, `next: ${OPUS} branch performed`, ran("past the wind-down, the branch rung is still performed", performed));
+});
