@@ -1,0 +1,19 @@
+# opus: W-426
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a17ff7-549d-76a3-a8c7-64065b466244
+# outcome: passed
+# at: 2026-10-28T00:48:20.689Z
+# tree: tree:6a81b11f3fa8e622a465deea5762b8ad77c3b2af
+# brief: briefs/W-426.md blob:dd1a5039b86facfa52ff0e863fbd1bb1dde193b7
+# ticket: {"opus":"W-426","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"7485661c79bca1980ac84267f3946341385d9afc","brief":"dd1a5039b86facfa52ff0e863fbd1bb1dde193b7","at":"2026-10-28T00:48:17.137Z"}
+
+## Findings
+1. advisory — brief:73 [severity: S4] The Input domain omits the inputs read by `dispatch`’s changed UI-order line and the added or changed test readers; line 60’s unchanged-computation limit does not supply their domains and rejectors. Replace brief:73 with: `| 4. The reused gates | npm test, npm run -s typecheck, lint, format:check, both officina checks and bisellium ci --opus W-426 --studio studio exit 0 on the opus branch | each command’s non-zero exit fails acceptance; unpinned, reused unchanged (D-076 E) |` followed by `| 5. dispatch’s changed UI-order line: id, o.round, sella, f.studioRel and studioRel | id and the main-checkout studio passed runNext validation; o.round is spec.maxRound + 1 from strict spec evidence; sella is the constant ui-lead; studioRel is the main studio before branch or its constructed worktree path afterward | runNext refuses an invalid id or an outside-repository studio, and specEvidence refuses invalid evidence before dispatch is reached |`, `| 6. W-426-b1/b2’s templates, message and found test reads | an initStudio temporary officina, an absent or ALL-member skip tuple, and process.prompt_templates findings matching each assertion | filesystem calls throw, while assert.deepEqual and assert.ok reject differing or absent results |`, and `| 7. W-426-b3’s pre- and post-branch derived orders | the expected spec step, ui-lead role and exact command prefix | expectStep, assert.equal and assert.match reject every mismatch |`. [class: spec×input-without-named-rejector] — check: none: brief.input.named-rejector should census every changed production and test reader
+
+## Verdict
+The design and promises are feasible; the remaining input-census correction is advisory.
+
+VERDICT: PASS
