@@ -51,7 +51,7 @@ import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
-import { appendReading, readingLine, takeReading, type Reading } from "./usage-reading.js";
+import { appendReading, costPhrase, opusCost, readReadings, readingLine, takeReading, type Reading } from "./usage-reading.js";
 
 export { MIN_CHECKS };
 
@@ -2635,8 +2635,10 @@ function handoffHold(f: Facts): StepResult | undefined {
   return findings.length === 0 ? undefined : held(findings);
 }
 
-/** W-214: why done may not commit yet: master keeps the history page and the working tree adds no line naming `id` to it. Reads only; a git failure is a reason. */
-function historyRowRefusal(repo: string, id: string): string | undefined {
+/** W-214: why done may not commit yet: master keeps the history page and the working tree adds no line naming `id` to it.
+ *  W-430: or no added line naming `id` carries its cost phrase, when the readings under `home` name the opus (none, or an
+ *  unreadable readings file, asks nothing). Reads only; a git failure is a reason. */
+export function historyRowRefusal(repo: string, id: string, home = homedir()): string | undefined {
   const kept = git(repo, ["ls-tree", "-z", "--name-only", TRUNK, "--", HISTORY]);
   if (kept.error !== undefined || kept.status !== 0) return `master's tree cannot be read: ${one(kept.error?.message ?? kept.stderr)}`;
   if (kept.stdout === "") return undefined;
@@ -2646,18 +2648,32 @@ function historyRowRefusal(repo: string, id: string): string | undefined {
   // added lines only: everything after the first hunk header, so the `+++ b/<path>` header is never read as a row
   const lines = diff.stdout.split("\n");
   const added = lines.slice(lines.findIndex((l) => l.startsWith("@@")) + 1).filter((l) => l.startsWith("+"));
-  if (added.some((l) => named.test(l))) return undefined;
-  return `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run`;
+  const rows = added.filter((l) => named.test(l));
+  if (rows.length === 0) return `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run`;
+  const cost = costOf(home, id);
+  if ("none" in cost || rows.some((l) => l.includes(cost.phrase))) return undefined;
+  return `the checkpoint row naming ${id} carries no cost: add "${cost.phrase}" beside its hours (W-430: its plan cost from the usage readings), then re-run`;
 }
 
 /** W-430: the usage reading a performed rung takes at `nowMs`, labelled `<opus> <step>`: appended to the readings file under
- *  the home folder and printed as its `usage:` line. A reading that cannot be recorded is printed with why; the step's
- *  result never depends on it. */
+ *  the home folder and printed as its `usage:` line, then the opus's cost so far as its `cost:` line (the phrase its
+ *  checkpoint row carries). A reading that cannot be recorded is printed with why; the step's result never depends on it. */
 function rungUsage(id: string, step: Step, nowMs: number): string[] {
   const home = homedir();
   const reading: Reading = takeReading(home, new Date(nowMs), `${id} ${step}`, { opus: id, step });
   const bad = appendReading(home, reading);
-  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`])];
+  const cost = costOf(home, id);
+  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`]), `cost: ${"phrase" in cost ? cost.phrase : `none (${cost.none})`}`];
+}
+
+/** W-430: the opus's cost from the readings file, as its checkpoint row carries it, or why there is none. Its own done
+ *  readings are left out, so a done held and run again asks the same phrase; a cost that read neither plan asks none. */
+function costOf(home: string, id: string): { phrase: string } | { none: string } {
+  const all = readReadings(home);
+  if ("error" in all) return { none: `the readings file cannot be read: ${all.error}` };
+  const c = opusCost(all.filter((r) => r.opus !== id || r.step !== "done"), id);
+  if (c === undefined) return { none: `no usage reading names ${id} before its done` };
+  return c.claude === null && c.codex === null ? { none: `no usage reading of ${id} read either plan` } : { phrase: costPhrase(c) };
 }
 
 const CERTIFY_LOG_MAX = 16 * 1024 * 1024;

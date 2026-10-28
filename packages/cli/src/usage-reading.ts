@@ -33,6 +33,7 @@ const WEEK_MINUTES = 10_080;
 const CODEX_FILES = 3;
 const CODEX_MAX = 256 * 1024 * 1024;
 const CLAUDE_MAX = 64 * 1024;
+const READINGS_MAX = 16 * 1024 * 1024;
 
 /** One reading. The field names are `usage-reading.sh`'s, so its lines and next's read alike; `opus` and `step` name
  *  the rung a `next --perform` reading was taken at. */
@@ -170,4 +171,65 @@ export function appendReading(home: string, r: Reading): string | undefined {
   } catch (e) {
     return (e as Error).message.split("\n")[0];
   }
+}
+
+/** The readings file's lines in file order, each a reading with an `at`; a line that does not parse is skipped. */
+export function readReadings(home: string): Reading[] | { error: string } {
+  const file = readContainedRegularFile(join(home, EVIDENCE), `${USAGE}/${READINGS}`, USAGE, READINGS_MAX);
+  if ("error" in file) return file.code === "ENOENT" ? [] : { error: file.error.split("\n")[0] ?? file.error };
+  const out: Reading[] = [];
+  for (const line of file.bytes.toString("utf8").split("\n")) {
+    if (line.trim() === "") continue;
+    try {
+      const v = JSON.parse(line) as unknown;
+      if (isDict(v) && instant(v["at"]) !== undefined) out.push(v as unknown as Reading);
+    } catch {
+      /* a torn or foreign line is not a reading */
+    }
+  }
+  return out;
+}
+
+export interface Cost {
+  /** Percentage points of each plan's week, null when no interval of the opus read that plan at both ends. */
+  claude: number | null;
+  codex: number | null;
+  hours: number;
+  readings: number;
+}
+
+/** The plan use one reading interval shows: the rise, or the later value when the week reset between them. */
+const rise = (from: number | null | undefined, to: number | null | undefined): number | null =>
+  typeof from !== "number" || typeof to !== "number" ? null : to >= from ? to - from : to;
+
+/** An opus's cost: each interval between two consecutive readings in file order belongs to the opus whose rung reading
+ *  closes it, so the opera's costs add up to the plans' whole use; its hours run from its first reading to its last.
+ *  Undefined when no reading names the opus. */
+export function opusCost(readings: Reading[], id: string): Cost | undefined {
+  let claude: number | null = null;
+  let codex: number | null = null;
+  let first: number | undefined;
+  let last: number | undefined;
+  let n = 0;
+  readings.forEach((r, i) => {
+    if (r.opus !== id) return;
+    n++;
+    const at = instant(r.at)!.getTime();
+    first ??= at;
+    last = at;
+    const prev = readings[i - 1];
+    const c = rise(prev?.claude_week_used, r.claude_week_used);
+    const x = rise(prev?.codex_week_used, r.codex_week_used);
+    if (c !== null) claude = (claude ?? 0) + c;
+    if (x !== null) codex = (codex ?? 0) + x;
+  });
+  if (n === 0 || first === undefined || last === undefined) return undefined;
+  return { claude, codex, hours: (last - first) / 3_600_000, readings: n };
+}
+
+const points = (v: number | null): string => (v === null ? "unread" : `+${Math.round(v * 10) / 10}%`);
+
+/** The cost as the checkpoint row carries it: `Claude week +4%, Codex week +9% over 3.2 h`. */
+export function costPhrase(c: Cost): string {
+  return `Claude week ${points(c.claude)}, Codex week ${points(c.codex)} over ${c.hours.toFixed(1)} h`;
 }
