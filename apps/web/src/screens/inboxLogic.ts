@@ -2,15 +2,15 @@
  * model (DIRECTION.md §5, brief behaviours 5-8), kept free of React so it
  * is unit-testable without a DOM. `Inbox.tsx` is the only caller. */
 
-export type Verb = "approve" | "decline" | "followup";
+export type Verb = "approve" | "defer" | "decline" | "delegate";
 
 /** Approve and decline resolve an answer. Defer reuses the endpoint's
  * ask-back form, records its verdict prefix and leaves the thread awaiting
  * the asker's reply. Delegate has no key or write until a record route exists. */
 export const VERB_KEYS: Readonly<Record<string, Verb>> = {
   "1": "approve",
-  "2": "decline",
-  "3": "followup",
+  "2": "defer",
+  "3": "decline",
 };
 
 /** Window shortcuts never consume keystrokes intended for a form control or
@@ -66,16 +66,15 @@ export function canSubmit(reason: string, sending = false): boolean {
 /** Resolve actions carry their verdict as a fixed reply prefix. Defer's
  * distinct open-thread effect is carried by `askBack: true`. */
 export function buildReply(verb: Verb, reason: string): string {
-  if (verb === "followup") return reason.trim();
   return `${verb}: ${reason.trim()}`;
 }
 
 export function answerOptions(verb: Verb): { askBack: true } | undefined {
-  return verb === "followup" ? { askBack: true } : undefined;
+  return verb === "defer" ? { askBack: true } : undefined;
 }
 
 export function recordedEffect(verb: Verb, petitioId: string): string {
-  if (verb === "followup") return `Recorded follow-up reply for ${petitioId}; the petition remains open awaiting the asker's reply.`;
+  if (verb === "defer") return `Recorded defer answer for ${petitioId}; the petition remains open awaiting the asker's reply.`;
   return `Recorded ${verb} answer for ${petitioId}; the petition is resolved.`;
 }
 
