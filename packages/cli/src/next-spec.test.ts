@@ -1727,3 +1727,70 @@ test("W-433-b1 behaviour 1: a ui-lead revise on a sessioned sequence carries its
   assert.match(reviewer.out, /a sessioned verdict's outcome is exactly passed or failed/, "only the ui-lead input gains revise");
   assert.equal(existsSync(join(v.studio, "ci", `${OPUS}-spec-2.log`)), false, "no refused round is written");
 });
+
+test("W-433-b2 behaviour 2: a current ui-lead input recorded revise or failed orders the signer at the next round, never the branch", { timeout: 1_800_000 }, () => {
+  for (const outcome of ["revise", "failed"]) {
+    const w = uiWorld(`w433-b2-${outcome}`);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "passed");
+    const input = w433Input(w, 3, outcome, W433_REVISE.replace("Verdict: revise", `Verdict: ${outcome}`));
+    assert.equal(input.status, 0, `the ui-lead's ${outcome} is recorded\n${input.out}`);
+    const o = specNext(w);
+    expectStep(o, "spec", "named", `a current ui-lead ${outcome} orders the signer, never the branch`);
+    assert.equal(o.kv.get("role"), "architect", ran(`${outcome}: role`, o));
+    assert.equal(o.kv.get("sella"), "architect", ran(`${outcome}: sella`, o));
+    assert.equal(o.kv.get("round"), "4", ran(`${outcome}: the next round`, o));
+    assert.equal(o.kv.get("why"), `ci/${OPUS}-spec-3.log records the ui-lead's outcome ${outcome} on the current brief; the signer revises the brief and signs again`, ran(`${outcome}: why`, o));
+    assert.match(o.kv.get("inputs") ?? "", /ci\/W-900-spec-3\.log/, ran(`${outcome}: the input is an input`, o));
+    if (outcome === "failed") continue;
+
+    // the revised brief makes the input stale: signature and review again, then the ui-lead on the new brief, then the branch
+    appendFileSync(briefPath(w), "\nRevised for the ui-lead's input.\n");
+    sign(w, 4);
+    review(w, 5, "passed");
+    const again = specNext(w);
+    expectStep(again, "spec", "named", "the revised, re-signed and reviewed brief orders the ui-lead again");
+    assert.equal(again.kv.get("role"), "ui-lead", ran("role after the revision", again));
+    assert.equal(again.kv.get("round"), "6", ran("round after the revision", again));
+    assert.match(again.kv.get("why") ?? "", /stale design_digest/, ran("the earlier input is stale", again));
+    assert.equal(uiInput(w, 6).status, 0, "the passed input on the new brief is recorded");
+    expectStep(specNext(w), "branch", "named", "a current passed input names branch, as before");
+  }
+});
+
+test("W-433-b2 behaviour 2 source selection: before opus/<id> the ui-lead's input is judged against the main checkout's record, the one the writer reads, never the trunk's", { timeout: 1_800_000 }, () => {
+  // the trunk's record is kind: opus; an uncommitted correction makes the main checkout's kind: ui
+  const w = uiWorld("w433-b2-drift", { kind: "opus" });
+  editRecord(w, "repo", (doc) => doc.setIn(["kind"], "ui"));
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "passed");
+  const order = specNext(w);
+  expectStep(order, "spec", "named", "drift: the working record's kind orders the ui-lead, never the branch");
+  assert.equal(order.kv.get("role"), "ui-lead", ran("drift: the ui-lead's role", order));
+  assert.equal(order.kv.get("round"), "3", ran("drift: the ui-lead's round", order));
+  const input = w433Input(w, 3, "revise", W433_REVISE);
+  assert.equal(input.status, 0, `the ui-lead's revise under the working record's kind is recorded
+${input.out}`);
+  const o = specNext(w);
+  expectStep(o, "spec", "named", "drift: a current revise under the working record's kind orders the signer, never the branch");
+  assert.equal(o.kv.get("role"), "architect", ran("drift: the signer's role", o));
+  assert.equal(o.kv.get("round"), "4", ran("drift: the signer's round", o));
+  assert.equal(o.kv.get("why"), `ci/${OPUS}-spec-3.log records the ui-lead's outcome revise on the current brief; the signer revises the brief and signs again`, ran("drift: why", o));
+});
+
+test("W-433-b2 behaviour 2 source selection: with opus/<id> but no usable worktree a kind: ui spec holds at spec, whatever its committed input records", { timeout: 1_800_000 }, () => {
+  for (const outcome of ["revise", "passed"]) {
+    const w = uiWorld(`w433-b2-nowt-${outcome}`);
+    putBrief(w);
+    sign(w, 1);
+    review(w, 2, "passed");
+    const input = w433Input(w, 3, outcome, outcome === "revise" ? W433_REVISE : W433_PASSED);
+    assert.equal(input.status, 0, `the ui-lead's ${outcome} is recorded
+${input.out}`);
+    landed(w);
+    git(w.repo, ["branch", BRANCH]);
+    specHeld(specNext(w), `no usable worktree: a committed ${outcome} input holds at spec`, /^the ui-lead's input on the current brief is read only in \.worktrees\/W-900, which is not a usable worktree on opus\/W-900; run: git worktree add \.worktrees\/W-900 opus\/W-900$/);
+  }
+});
