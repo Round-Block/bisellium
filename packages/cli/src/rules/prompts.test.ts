@@ -1,5 +1,6 @@
 /**
- * W-241 rows b1-b2 (studio/briefs/W-241.md) and W-258 row b1 (studio/briefs/W-258.md): process.prompt_templates. node:test TAP, selected by
+ * W-241 rows b1-b2 (studio/briefs/W-241.md), W-258 row b1 (studio/briefs/W-258.md) and W-426 rows b1-b2
+ * (studio/briefs/W-426.md): process.prompt_templates. node:test TAP, selected by
  * `--test-name-pattern='^W-<id>-b<n>\s'`. Every row builds its own officina under the OS tmp dir and reads no
  * studio/ file. Assertion messages carry rule levels, officina-relative paths and slot names only.
  */
@@ -31,6 +32,9 @@ const NEEDS: Record<string, string[]> = {
   "prompts/build-review.md": [...REVIEW_SLOTS, "fills the eight slots", DATA],
 };
 const PATHS = Object.keys(NEEDS);
+// W-426: the UI judges' sense texts and templates, which the Ops lex clause does not name
+const SENSE = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
+const SPEC_REVIEW = "prompts/spec-review.md";
 const MARKER = "(check: process.prompt_templates)";
 const CLAUSE = `- \`ops-lead\` owns ${PATHS.map((p) => `\`studio/${p}\``).join(", ")} ${MARKER}`;
 
@@ -135,4 +139,33 @@ test("W-258-b1 behaviour 1: the builder brief template carries the builder's sel
   }
   write([...base, ...SELF_REVIEW.map((s) => s.toLowerCase())]);
   assert.deepEqual(found(root), [`block ${BUILDER}`], "a self-review in another case blocks");
+});
+
+const put = (root: string, path: string, needs: readonly string[]): void => writeFileSync(join(root, path), `# t\n\n---\n\n${needs.join("\n")}\n`);
+const message = (root: string, where: string): string => checkStudio(root, NOW).findings.find((f) => f.rule === "process.prompt_templates" && f.where === where)?.message ?? "";
+
+test("W-426-b1 behaviour 1: the spec review template asks a kind: ui reviewer whether each rule makes sense on the screen and who ruled it", () => {
+  const root = mkdtempSync(join(tmpdir(), "bisellium w426 'é-"));
+  dirs.push(root);
+  assert.ok(initStudio(root, { now: NOW }).root);
+  declareOps(root);
+  lex(root, CLAUSE);
+  templates(root);
+  put(root, SPEC_REVIEW, ["# Spec review prompt (D-046)"]);
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "a spec review without the sense texts blocks");
+  for (const s of SENSE) assert.ok(message(root, SPEC_REVIEW).includes(s), `the finding names ${s}`);
+  put(root, SPEC_REVIEW, SENSE);
+  assert.deepEqual(found(root), [], "the sense texts clear it, with the Ops lex clause naming the three templates only");
+  for (const s of SENSE) {
+    put(root, SPEC_REVIEW, SENSE.filter((x) => x !== s));
+    assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], `a spec review without ${s} blocks`);
+  }
+  put(root, SPEC_REVIEW, SENSE.map((s) => s.toUpperCase()));
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "sense texts in another case block");
+  rmSync(join(root, SPEC_REVIEW));
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "an absent spec review blocks");
+  mkdirSync(join(root, SPEC_REVIEW));
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "a directory at the spec review path blocks");
+  const plain = officina();
+  assert.deepEqual(found(plain), [], "no ops collegium: the rule does not apply");
 });
