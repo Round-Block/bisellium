@@ -184,3 +184,53 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
   assert.match(lineOf(held.out, "usage-error: ") ?? "", /^usage-error: the reading was not recorded: \S/, ran("and the reading's failure is printed", held));
   assert.equal(existsSync(join(elsewhere, "readings.jsonl")), false, "nothing written through the symlink");
 });
+
+test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading intervals its rungs close; next --perform prints it and done asks its checkpoint row to carry it", { timeout: 600_000 }, async () => {
+  // the perform prints the cost so far, the reading it just took included
+  const w = world("w430-b3", "spec");
+  claudeFile(w.home, NOW_ISO, { week: 85 });
+  codexLogs(w.home, new Date(NOW_ISO));
+  write(join(w.home, ".bisellium-evidence", "usage", "readings.jsonl"), JSON.stringify({ at: "2026-10-02T10:00:00.000Z", label: "before", codex_week_used: 55, claude_week_used: 80 }) + "\n");
+  const o = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  assert.equal(o.first, `next: ${OPUS} branch performed`, ran("the rung is performed", o));
+  assert.equal(lineOf(o.out, "cost: "), "cost: Claude week +5%, Codex week +6% over 0.0 h", ran("its cost: the interval its reading closes", o));
+
+  const m = await load();
+  const opusCost = fn(m, "opusCost");
+  const costPhrase = fn(m, "costPhrase");
+  const at = (h: number): string => new Date(Date.UTC(2026, 9, 28, h)).toISOString();
+  const r = (h: number, opus: string | undefined, claude: number | null, codex: number | null): Reading =>
+    ({ at: at(h), label: opus ?? "script", ...(opus === undefined ? {} : { opus, step: "x" }), codex_week_used: codex, codex_resets: null, codex_from: null, codex_seen: null, claude_5h_used: null, claude_week_used: claude, claude_seen: null, context_tokens: null }) as Reading;
+  const lines = [r(0, "W-1", 10, 20), r(1, "W-2", 12, 25), r(2, "W-1", 15, 27), r(3, undefined, 16, 30), r(4, "W-1", 3, 31), r(5, "W-2", null, 33)];
+  assert.deepEqual(opusCost(lines, "W-1"), { claude: 6, codex: 3, hours: 4, readings: 3 }, "W-1 closes 1->2 (+3, +2) and 3->4 (a reset: +3, then +1); its first reading closes none");
+  assert.deepEqual(opusCost(lines, "W-2"), { claude: 2, codex: 7, hours: 4, readings: 2 }, "W-2 closes 0->1 (+2, +5) and 4->5 (Claude unread: no rise; +2)");
+  assert.equal(opusCost(lines, "W-3"), undefined, "no reading names it: no cost");
+  assert.equal(costPhrase({ claude: 6, codex: 3, hours: 4, readings: 3 }), "Claude week +6%, Codex week +3% over 4.0 h");
+  assert.equal(costPhrase({ claude: null, codex: 2.25, hours: 0.25, readings: 1 }), "Claude week unread, Codex week +2.3% over 0.3 h");
+
+  // done's history-row check: the row naming the opus carries its cost, when the readings name it
+  const { historyRowRefusal } = (await import("./next.js")) as { historyRowRefusal: (repo: string, id: string, home?: string) => string | undefined };
+  const repo = scratchHome("b3-repo");
+  const HISTORY = "docs/design/dossier/progress-body.html";
+  git(repo, ["init", "-q", "-b", "master"]);
+  write(join(repo, HISTORY), "<table>\n</table>\n");
+  git(repo, ["add", "-A"]);
+  git(repo, ["commit", "-q", "-m", "history"]);
+  const home = scratchHome("b3-home");
+  write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
+  const row = (text: string): void => write(join(repo, HISTORY), `<table>\n${text}\n</table>\n`);
+  row("<tr><td>W-1 shipped</td><td>Cycle about 240 min</td></tr>");
+  assert.equal(historyRowRefusal(repo, "W-1", home), `the checkpoint row naming W-1 carries no cost: add "Claude week +6%, Codex week +3% over 4.0 h" beside its hours (W-430: its plan cost from the usage readings), then re-run`, "a row without the cost: refused, naming the phrase");
+  row("<tr><td>W-1 shipped</td><td>Cycle about 240 min; Claude week +6%, Codex week +3% over 4.0 h</td></tr>");
+  assert.equal(historyRowRefusal(repo, "W-1", home), undefined, "the row carries it: done may commit");
+  // a done held and run again: its own done readings leave the phrase as it was; a cost that read neither plan asks none
+  writeFileSync(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), [...lines, { ...r(6, "W-1", 40, 50), step: "done" }, r(7, "W-4", null, null), r(8, "W-4", null, null)].map((l) => JSON.stringify(l)).join("\n") + "\n");
+  row("<tr><td>W-1 shipped</td><td>Cycle about 240 min</td></tr>");
+  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /add "Claude week \+6%, Codex week \+3% over 4\.0 h" beside its hours/, "a held done's own reading leaves the phrase as it was");
+  row("<tr><td>W-4 shipped</td><td>Cycle about 30 min</td></tr>");
+  assert.equal(historyRowRefusal(repo, "W-4", home), undefined, "a cost that read neither plan asks none");
+  row("<tr><td>W-3 shipped</td><td>Cycle about 30 min</td></tr>");
+  assert.equal(historyRowRefusal(repo, "W-3", home), undefined, "no reading names W-3: no cost is asked");
+  row("<tr><td>W-2 shipped</td></tr>");
+  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /adds no history row naming W-1; add it, then re-run$/, "no row names it: W-214's refusal, unchanged");
+});
