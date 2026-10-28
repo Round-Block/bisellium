@@ -215,15 +215,29 @@ badge. It is the only footer in the product.
 
 ## 6. Per-screen notes
 
-**Inbox** — a queue of decisions, not a mail client. One column at a 720px
-measure, left-aligned to the screen title; **no preview pane**, because two panes
-invite reading instead of deciding. The focused item is expanded and shows its
-ask, its evidence links and the four verbs; every other item is a 40px row —
-amber 2px left rule if it is yours, title at 13/18, asker's sella id in mono 12,
-age as a right-aligned mono numeral that escalates in *weight* (500 → 700) with
-age, never in colour. "You asked" and "For information" sit below a rule,
-collapsed, and never carry amber. The empty state is the resting state: one line,
-"Nothing waiting on you", then the colophon. No celebration graphic.
+**Inbox** — Outlook is the interaction reference for this decision queue. On a
+wide main pane, needs-you rows occupy a left list pane and the selected petitio's
+full subject, ask, evidence, ratio decidendi and four verbs occupy an independently
+scrolling reading pane on the right; subject, ask and evidence scroll above a
+bottom-pinned decision bar, and scrolling the reading pane does not move the
+list. At narrow widths the list fills the screen, and opening one row replaces it
+with a full-screen reading/decision view whose visible Back control or `Esc`
+returns to the same selected, focused row; its decision bar remains pinned at
+the bottom. Both panes use persistent vertical scrollbars when present. List
+rows put asker and the right-aligned first-notified date (`27 Oct`, en-GB/UTC)
+on line one, then clamp the subject to two lines. The selected row's light tint
+alone identifies both selection and keyboard focus, with adequate padding and a
+hairline between every item. A 2px verdigris left rule means
+unread and disappears when that petitio is opened; **Inbox rows and dates never
+use amber or severity colour** because every row already waits on the Patron.
+"You asked" and "For information" sit below a rule as non-interactive labels
+until their authoritative reads exist. The empty state is the resting state:
+one line, "Nothing waiting on you". The Inbox has no generated-at or colophon
+stamp. While it is visible it shares the console's visibility-aware refresh
+loop, showing newly arrived work without stealing selection, focus, scroll or a
+draft. No celebration graphic. (Patron rulings, 2026-10-27 and 2026-10-28;
+supersede the agent-written single-column/no-preview, amber-row, relative-age,
+focus-ring and colophon text from 5e5efd88.)
 
 **Officina** — the fasti strip, then four panels stacked between hairlines, no
 boxes: decreta pending, posture and burn, lex status, process health. Burn is two
@@ -260,7 +274,7 @@ between screens is a lex change (check: design.screen-map).
 |---|---|---|---|
 | **Decretum** | backlog → greenlit / declined | **Board** | fasti strip + decretum queue; greenlight is the Board's verb |
 | **Budget allocation** | per-collegium stipendium | **Officina** | posture and burn panel; the Patron sees the allocation and its effect |
-| **Arbitrium** | human probatio verdict | **Inbox** | the focused petitio expanded in place (no pane, §6); approve / defer / decline / delegate with ratio decidendi |
+| **Arbitrium** | human probatio verdict | **Inbox** | Outlook split list/reading panes wide and full-screen reading with Back narrow (§6); approve / defer / decline / delegate with ratio decidendi |
 | **Lex change** | amend a collegium's lex | **Officina** | lex status panel; pending amendments surface here |
 
 Screens not owned by a touchpoint:
