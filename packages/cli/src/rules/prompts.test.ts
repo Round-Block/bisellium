@@ -37,7 +37,7 @@ const SENSE = ["for sense, not only conformance", "the Patron ruled it or an age
 const SPEC_REVIEW = "prompts/spec-review.md";
 const UI_INPUT = "prompts/ui-input.md";
 const UI_INPUT_NEEDS = ["<ID>", "<OPUS>", "<READ>", "<SHOTS>", "<QUESTIONS>", DATA, ...SENSE];
-const UI_NEEDS: Record<string, readonly string[]> = { [SPEC_REVIEW]: SENSE };
+const UI_NEEDS: Record<string, readonly string[]> = { [SPEC_REVIEW]: SENSE, [UI_INPUT]: UI_INPUT_NEEDS };
 const ALL: Record<string, readonly string[]> = { ...NEEDS, ...UI_NEEDS };
 const MARKER = "(check: process.prompt_templates)";
 const CLAUSE = `- \`ops-lead\` owns ${PATHS.map((p) => `\`studio/${p}\``).join(", ")} ${MARKER}`;

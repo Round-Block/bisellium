@@ -35,6 +35,7 @@ export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
 /** W-426: the UI judges' templates and their texts; the Ops lex clause names `PROMPT_TEMPLATES` only. */
 const SENSE_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   "prompts/spec-review.md": SENSE,
+  "prompts/ui-input.md": ["<ID>", "<OPUS>", "<READ>", "<SHOTS>", "<QUESTIONS>", DATA, ...SENSE],
 };
 
 export function checkPromptTemplates(root: string, opts: RuleOpts): Finding[] {
