@@ -35,6 +35,8 @@ const PATHS = Object.keys(NEEDS);
 // W-426: the UI judges' sense texts and templates, which the Ops lex clause does not name
 const SENSE = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
 const SPEC_REVIEW = "prompts/spec-review.md";
+const UI_INPUT = "prompts/ui-input.md";
+const UI_INPUT_NEEDS = ["<ID>", "<OPUS>", "<READ>", "<SHOTS>", "<QUESTIONS>", DATA, ...SENSE];
 const UI_NEEDS: Record<string, readonly string[]> = { [SPEC_REVIEW]: SENSE };
 const ALL: Record<string, readonly string[]> = { ...NEEDS, ...UI_NEEDS };
 const MARKER = "(check: process.prompt_templates)";
@@ -170,4 +172,27 @@ test("W-426-b1 behaviour 1: the spec review template asks a kind: ui reviewer wh
   assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "a directory at the spec review path blocks");
   const plain = officina();
   assert.deepEqual(found(plain), [], "no ops collegium: the rule does not apply");
+});
+
+test("W-426-b2 behaviour 2: the ui-lead's input template carries its five slots, the data phrase and the sense texts", () => {
+  const root = officina();
+  declareOps(root);
+  lex(root, CLAUSE);
+  templates(root);
+  rmSync(join(root, UI_INPUT), { force: true });
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "an absent ui-input template blocks");
+  put(root, UI_INPUT, UI_INPUT_NEEDS.filter((n) => !SENSE.includes(n)));
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "a ui-input template without the sense texts blocks");
+  for (const s of SENSE) assert.ok(message(root, UI_INPUT).includes(s), `the finding names ${s}`);
+  put(root, UI_INPUT, UI_INPUT_NEEDS);
+  assert.deepEqual(found(root), [], "a complete ui-input template clears it, with the Ops lex clause naming the three templates only");
+  for (const n of UI_INPUT_NEEDS) {
+    put(root, UI_INPUT, UI_INPUT_NEEDS.filter((x) => x !== n));
+    assert.deepEqual(found(root), [`block ${UI_INPUT}`], `a ui-input template without ${n} blocks`);
+  }
+  put(root, UI_INPUT, UI_INPUT_NEEDS.map((n) => (SENSE.includes(n) ? n.toUpperCase() : n)));
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "sense texts in another case block");
+  rmSync(join(root, UI_INPUT));
+  mkdirSync(join(root, UI_INPUT));
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "a directory at the ui-input path blocks");
 });
