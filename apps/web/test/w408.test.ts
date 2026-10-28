@@ -74,3 +74,20 @@ test("W-408-b3 behaviour 3: Budget pairs an accessible pie with numerals and pos
   assert.match(direction, /Budget pies reuse the shared\s+severity palette[^]*No\s+white pie/, "DIRECTION records the dated palette ruling");
   assert.match(served, /Budget pies normal, approaching, spent and over allowance/, "served widths pin palette pies, shapes, numerals, overage and posture");
 });
+
+test("W-408-b4 behaviour 4: Health is two detailed disclosures with one verdigris brake", () => {
+  assert.match(screen, /Current lex and process detail\./, "Health names its detail unit");
+  assert.match(screen, /<details className="officina__health-row panel--lex">/, "lex status is a disclosure");
+  assert.match(screen, /<details className="officina__health-row panel--process">/, "process health is a disclosure");
+  assert.doesNotMatch(screen, /healthStamp|officina__as-of|Last tick/, "generated and as-of stamps are absent");
+  assert.match(css, /\.officina__health-row > summary\s*{[^}]*font-size:\s*13px[^}]*font-weight:\s*400/s, "health summaries use the page row type");
+  assert.match(css, /\.officina__health-row > summary::before\s*{[^}]*content:\s*"\\25B8"[^}]*}[^]*\.officina__health-row\[open\] > summary::before\s*{[^}]*content:\s*"\\25BE"/s, "health summaries show changing disclosure indicators");
+  assert.match(tokens, /--severity-blocking:\s*var\(--bad\)[^]*--severity-high:\s*var\(--amber\)[^]*--severity-low:\s*#6272a4/s, "Health and W-427 share one severity token set");
+  assert.match(screen, /SeverityCue level="blocking"[^]*SeverityCue level="high"[^]*level=\{loadedHealth\.due\.length > 0 \? "low" : "normal"\}/, "block, advisory/high, due/low and normal all map explicitly");
+  assert.match(screen, /Severity is available only in aggregate\.[^]*officina__rule-family[^]*<span>\{row\.label\}<\/span>/, "unclassified rule families carry no invented severity cue");
+  assert.match(css, /severity-cue--blocking[^]*severity-blocking[^]*severity-cue--high[^]*severity-high[^]*severity-cue--normal[^]*border-radius:\s*50%[^]*severity-cue--low[^]*severity-low[^]*clip-path/s, "every severity colour has a distinct shape cue");
+  assert.match(screen, /New pieces of work do not start; work already running carries on\./, "Process health explains the brake in one line");
+  assert.match(screen, /Resume new work[^]*Stop new work/, "the brake labels state their effect");
+  assert.match(css, /\.officina__brake\s*{[^}]*background:\s*var\(--verdigris\)/s, "the brake is the verdigris fill");
+  assert.match(served, /health detail discloses its rows and brake/, "served Chromium pins disclosure and write behavior");
+});
