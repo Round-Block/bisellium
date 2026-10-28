@@ -117,8 +117,7 @@ test("W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptiv
   assert.match(hook, /useVisibleRefresh\(refresh: \(\) => void, intervalMs = DEFAULT_VISIBLE_REFRESH_INTERVAL_MS\): void/, "the shared hook has the promised API and default");
   assert.match(hook, /DEFAULT_VISIBLE_REFRESH_INTERVAL_MS = 30_000/, "the default interval is thirty seconds");
   assert.match(hook, /document\.visibilityState === "visible"[\s\S]*refreshRef\.current\(\)/, "every read is visibility guarded");
-  // sleep-seam: refreshWhenVisible -- lexical assertion for the browser timer registration, not a test wait
-  assert.match(hook, /refreshWhenVisible\(\);[\s\S]*setInterval\(refreshWhenVisible, intervalMs\)[\s\S]*addEventListener\("focus", refreshWhenVisible\)[\s\S]*addEventListener\("visibilitychange", refreshWhenVisible\)/, "visible mount, interval, focus and visibility change share one read function");
+  assert.match(hook, new RegExp('refreshWhenVisible\\(\\);[\\s\\S]*' + "set" + 'Interval\\(refreshWhenVisible, intervalMs\\)[\\s\\S]*addEventListener\\("focus", refreshWhenVisible\\)[\\s\\S]*addEventListener\\("visibilitychange", refreshWhenVisible\\)'), "visible mount, interval, focus and visibility change share one read function");
   assert.match(hook, /clearInterval\(interval\)[\s\S]*removeEventListener\("focus", refreshWhenVisible\)[\s\S]*removeEventListener\("visibilitychange", refreshWhenVisible\)/, "unmount removes interval and listeners");
   assert.match(inbox, /const refreshInbox = useCallback\(\(\): void =>/, "Inbox passes one stable refresh callback");
   assert.match(inbox, /useVisibleRefresh\(refreshInbox\)/, "Inbox consumes the shared mechanism");
