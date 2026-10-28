@@ -83,7 +83,7 @@ test("W-406-b3 behaviour 3: the Officina today rule clears its weekday glyph at 
   const css = read("apps/web/src/components/w025.css");
   const served = read("apps/web/tests-serve/w406.spec.ts");
 
-  assert.match(css, /\.fasti-strip__today-rule\s*\{[^}]*right:\s*0;/s, "the today rule uses the trailing edge");
+  assert.match(css, /\.fasti-strip__today-rule\s*\{[^}]*right:\s*-2px;/s, "the today rule is offset beyond the trailing edge");
   assert.match(served, /W-406-b3 Officina today rule clears the last day letter at 1280 and 390/, "the served row names both ruled widths");
   assert.match(served, /today rule and weekday letter do not overlap/, "the served row compares the marker and glyph boxes");
 });
