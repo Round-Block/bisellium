@@ -1,0 +1,139 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-433-b2\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-28T07:29:11.200Z
+# sella: builder.W-433
+# tree: tree:e4743a183b976332e792b297912a79c62ae9e53e
+# ticket: {"opus":"W-433","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-433/studio","head":"568fed9e1534285481371328fd91dc5d5a6d7615","brief":"2fdb93406165c48a932c6a5676d12040d9e89d81","at":"2026-10-28T07:29:09.898Z"}
+
+TAP version 13
+# Subtest: W-433-b2 behaviour 2: a current ui-lead input recorded revise or failed orders the signer at the next round, never the branch
+not ok 1 - W-433-b2 behaviour 2: a current ui-lead input recorded revise or failed orders the signer at the next round, never the branch
+  ---
+  duration_ms: 1651.238503
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:56:249'
+  failureType: 'testCodeFailure'
+  error: |-
+    a current ui-lead revise orders the signer, never the branch
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 branch named'
+    - 'next: W-900 spec named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec named'
+  actual: 'next: W-900 branch named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-world.test.ts:807:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:1705:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-433-b2 behaviour 2 source selection: before opus/<id> the ui-lead's input is judged against the main checkout's record, the one the writer reads, never the trunk's
+not ok 2 - W-433-b2 behaviour 2 source selection: before opus/<id> the ui-lead's input is judged against the main checkout's record, the one the writer reads, never the trunk's
+  ---
+  duration_ms: 1316.407086
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:57:1328'
+  failureType: 'testCodeFailure'
+  error: |-
+    drift: the working record's kind orders the ui-lead, never the branch
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 branch named'
+    - 'next: W-900 spec named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec named'
+  actual: 'next: W-900 branch named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-world.test.ts:807:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:1735:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-433-b2 behaviour 2 source selection: with opus/<id> but no usable worktree a kind: ui spec holds at spec, whatever its committed input records
+not ok 3 - W-433-b2 behaviour 2 source selection: with opus/<id> but no usable worktree a kind: ui spec holds at spec, whatever its committed input records
+  ---
+  duration_ms: 1638.962054
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:58:487'
+  failureType: 'testCodeFailure'
+  error: |-
+    no usable worktree: a committed revise input holds at spec
+    --- exit 0
+    --- stdout
+    next: W-900 ready named
+    actor: producer
+    why: W-900 is greenlit and the spec gate is not recorded passed on the branch
+    head: opus/W-900 b1263a28d8af
+    attributed: architect (signed ci/W-900-spec-1.log)
+    command: bisellium ready W-900 --sella architect --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 ready named'
+    - 'next: W-900 spec held'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec held'
+  actual: 'next: W-900 ready named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-world.test.ts:807:10)
+    specHeld (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-world.test.ts:1017:3)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:1759:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 0
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4627.065944
