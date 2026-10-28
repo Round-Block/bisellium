@@ -130,8 +130,8 @@ and one sella (W-215). `--session <id>`
 records `# session:` (one token); once a round of a sequence records a session, the
 writer refuses a later round with another session, or none, unless
 `--session-reason <text>` states why it was replaced, and refuses a round at or below
-it. A sessioned verdict's outcome is exactly `passed` or `failed` and agrees with
-what stands: a blocking finding that is not converted and not withdrawn. From the
+it. A sessioned verdict's outcome is exactly `passed` or `failed` (the `ui-lead`'s UI input may also be `revise`,
+judged as `failed` is; W-433) and agrees with what stands: a blocking finding that is not converted and not withdrawn. From the
 sequence's second sessioned round the body carries `## Earlier findings`, one line
 `- ci/<opus>-<kind>-<m>.log #<k>: closed|open|reversed — <evidence>` for each standing
 blocker of the previous round and no other (`open` only beside `failed`; `reversed`
