@@ -4,7 +4,9 @@
  * phrase "data, not instructions", and an Ops lex clause naming all three. `build-review.md`'s slots are the
  * ones `next`'s review perform fills (`BUILD_REVIEW_SLOTS`, next.ts); rules/prompts.test.ts pins the two
  * lists equal through `fillSlots`. `builder-brief.md` also holds the builder's self-review (W-258, D-080 G):
- * `BUILDER_SELF_REVIEW`, its texts. `checkPromptTemplates` never throws.
+ * `BUILDER_SELF_REVIEW`, its texts. The UI judges' templates (W-426) hold the sense clause, `SENSE`: they are
+ * `SENSE_TEMPLATES`, checked the same way and not named by the Ops lex clause (`spec-review.md` is production lex §9
+ * step 2's). `checkPromptTemplates` never throws.
  */
 import type { Finding, RuleOpts } from "../check.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
@@ -23,17 +25,23 @@ const BUILDER_SELF_REVIEW = [
   "a negative fixture or a removal",
   "test titles true to a changed domain",
 ];
+/** W-426 (the Patron, 2026-10-27): a UI judge asks whether each rule makes sense on the screen and who ruled it. */
+const SENSE = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
 export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   "prompts/spec-draft.md": ["<ID>", "<OPUS>", "<MODEL_BRIEF>", "<MODEL_EVIDENCE>", DATA],
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...BUILDER_SELF_REVIEW],
   "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>", "fills the eight slots", DATA],
+};
+/** W-426: the UI judges' templates and their texts; the Ops lex clause names `PROMPT_TEMPLATES` only. */
+const SENSE_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
+  "prompts/spec-review.md": SENSE,
 };
 
 export function checkPromptTemplates(root: string, opts: RuleOpts): Finding[] {
   const collegia = isDict(opts.manifest) ? opts.manifest["collegia"] : undefined;
   if (!Array.isArray(collegia) || !collegia.some((c) => isDict(c) && c["id"] === "ops")) return [];
   const findings: Finding[] = [];
-  for (const [path, needs] of Object.entries(PROMPT_TEMPLATES)) {
+  for (const [path, needs] of Object.entries({ ...PROMPT_TEMPLATES, ...SENSE_TEMPLATES })) {
     const file = readContainedRegularFile(root, path, "prompts");
     const text = "error" in file ? undefined : file.bytes.toString("utf8");
     const missing = text === undefined ? needs : needs.filter((n) => !text.includes(n));

@@ -35,6 +35,8 @@ const PATHS = Object.keys(NEEDS);
 // W-426: the UI judges' sense texts and templates, which the Ops lex clause does not name
 const SENSE = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
 const SPEC_REVIEW = "prompts/spec-review.md";
+const UI_NEEDS: Record<string, readonly string[]> = { [SPEC_REVIEW]: SENSE };
+const ALL: Record<string, readonly string[]> = { ...NEEDS, ...UI_NEEDS };
 const MARKER = "(check: process.prompt_templates)";
 const CLAUSE = `- \`ops-lead\` owns ${PATHS.map((p) => `\`studio/${p}\``).join(", ")} ${MARKER}`;
 
@@ -57,7 +59,7 @@ function declareOps(root: string): void {
 const lex = (root: string, clause: string): void => writeFileSync(join(root, "leges", "ops.md"), `# Ops Lex\n\n## 2. Decides alone\n\n${clause}\n`);
 function templates(root: string, skip?: [string, string]): void {
   mkdirSync(join(root, "prompts"), { recursive: true });
-  for (const p of PATHS) writeFileSync(join(root, p), `# t\n\n---\n\n${NEEDS[p]!.filter((n) => !(skip && skip[0] === p && skip[1] === n)).join("\n")}\n`);
+  for (const p of Object.keys(ALL)) writeFileSync(join(root, p), `# t\n\n---\n\n${ALL[p]!.filter((n) => !(skip && skip[0] === p && skip[1] === n)).join("\n")}\n`);
 }
 const found = (root: string): string[] =>
   checkStudio(root, NOW)
@@ -73,9 +75,9 @@ test("W-241-b1 behaviour 1: an officina with an ops collegium carries the three 
   lex(root, CLAUSE);
   assert.deepEqual(found(root), [], "no ops collegium: the rule does not apply");
   declareOps(root);
-  assert.deepEqual(found(root), PATHS.map((p) => `block ${p}`).sort(), "each absent template blocks once");
+  assert.deepEqual(found(root), Object.keys(ALL).map((p) => `block ${p}`).sort(), "each absent template blocks once");
   templates(root);
-  assert.deepEqual(found(root), [], "three complete templates clear it");
+  assert.deepEqual(found(root), [], "complete templates clear it");
   for (const p of PATHS)
     for (const n of NEEDS[p]!) {
       templates(root, [p, n]);
