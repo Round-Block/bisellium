@@ -47,7 +47,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 2026-10-27: push the Codex-heavy UI streams; was one each from 10-24), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-00. W-442 — urgent: W-406-b3 fails on Wednesdays; spec r2 failed (red command quoting, design keeps): branch, builder fixes. Then W-443 (cause fix)
+00. W-442 — urgent: W-406-b3 fails on Wednesdays; built, held on W-445. Then W-445, W-443 (cause fixes), W-446 (flaky W-406-b1)
 00a. W-433 — record a ui-lead revise on a sessioned spec (blocks W-407, W-408)
 0. W-430 — usage in the records (signed r1, review next). Then W-444 — reply length Stop hook (.claude/: Patron merges)
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
