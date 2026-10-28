@@ -1,0 +1,47 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-426-b1\s --import tsx packages/cli/src/rules/prompts.test.ts
+# exit: 1
+# at: 2026-10-28T00:48:41.333Z
+# sella: architect
+# tree: tree:13ab12e0855ae719ac1022af23823fb495d93131
+# ticket: {"opus":"W-426","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-426/studio","head":"5a5bb83b65e18e9190321c81dbc204df46c43418","brief":"dd1a5039b86facfa52ff0e863fbd1bb1dde193b7","at":"2026-10-28T00:48:41.296Z"}
+
+TAP version 13
+# Subtest: W-426-b1 behaviour 1: the spec review template asks a kind: ui reviewer whether each rule makes sense on the screen and who ruled it
+not ok 1 - W-426-b1 behaviour 1: the spec review template asks a kind: ui reviewer whether each rule makes sense on the screen and who ruled it
+  ---
+  duration_ms: 36.068051
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-426/packages/cli/src/rules/prompts.test.ts:28:163'
+  failureType: 'testCodeFailure'
+  error: |-
+    a spec review without the sense texts blocks
+    + actual - expected
+    
+    + []
+    - [
+    -   'block prompts/spec-review.md'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'block prompts/spec-review.md'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-426/packages/cli/src/rules/prompts.test.ts:155:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 530.860538

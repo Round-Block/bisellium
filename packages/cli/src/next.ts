@@ -1670,11 +1670,12 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
       `Record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --model ${o.reviewer.model} --outcome <passed|failed> --phase spec --from <file> --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}`,
     ].join("\n");
   } else if (step === "spec" && o.uiLead === true) {
-    // W-338 (D-088 E): the ui-lead's input on the signed brief; the prompt is kept at the name branch and the spec commit carry
+    // W-338 (D-088 E): the ui-lead's input on the signed brief; the prompt is kept at the name branch and the spec commit carry.
+    // W-426: it is filled from the main checkout's template, never the opus branch's
     role = "ui-lead";
     sella = "ui-lead";
     const prompt = `ci/${id}-ui-prompt-${o.round}.md`;
-    command = `dispatch ${sella} for its UI input on the signed brief; keep the dispatch prompt as ${prompt} under ${studioRel}; record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed|revise> --phase spec --dispatch-prompt ${prompt} --from <file> --studio ${studioRel}`;
+    command = `dispatch ${sella} for its UI input on the signed brief, with the prompt filled from ${f.studioRel}/prompts/ui-input.md (W-426); keep the dispatch prompt as ${prompt} under ${studioRel}; record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed|revise> --phase spec --dispatch-prompt ${prompt} --from <file> --studio ${studioRel}`;
   } else if (step === "spec") {
     role = "architect";
     sella = o.signer ?? f.design;

@@ -1,0 +1,24 @@
+# opus: W-426
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-28T00:44:06.332Z
+# tree: tree:6a81b11f3fa8e622a465deea5762b8ad77c3b2af
+# brief: briefs/W-426.md blob:dd1a5039b86facfa52ff0e863fbd1bb1dde193b7
+# ticket: {"opus":"W-426","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"7485661c79bca1980ac84267f3946341385d9afc","brief":"dd1a5039b86facfa52ff0e863fbd1bb1dde193b7","at":"2026-10-28T00:44:00.207Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-426-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — no ui-lead template existed: every kept ci/<id>-ui-prompt-<n>.md was hand-written, and spec-review.md had no sense clause; the clause goes into spec-review.md and a new studio/prompts/ui-input.md, and process.prompt_templates (W-241, W-258) is extended through SENSE_TEMPLATES rather than a new rule (D-042); the Ops lex clause still names W-241's three — check: brief Intent decisions 1 and 2, red-b1.out, red-b2.out
+2. advisory — next's ui-lead order names the main checkout's <studio>/prompts/ui-input.md before and after the branch, as the rebuttal line reads the main checkout's prompts (W-315) — check: red-b3.out, kills.out K6 K7
+3. advisory — the fills are not checked: a verdict-time check of the ui-lead's --dispatch-prompt would flip the UI prompt fixture of seven test files, and the spec review's fill is not kept under ci/; stated as a limit and Default 2 — check: brief Promise sense-input limit, Out of scope
+4. advisory — three flipped rows in prompts.test.ts (W-241-b1, W-241-b2, W-258-b1), each fixed by the shared fixture's edit in the feature commit that flips it; they pass at master and every stage — check: prompts-master.out, prompts-stage1.out to prompts-stage3.out, fixture-census.md
+5. advisory — three reds, one at a time, each accepted at assertion level; eight one-hunk kills guarded; lint, format, typecheck and both officina checks pass; admission on master's code and the ledger on master's validator pass; studio/prompts/ is code-owned, so the Patron merges — check: red-accept.out, kills.out, gates-run.log, admission.out, ledger-probe.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-426.md` (spec round 1), prototyped over master 184f4e9b; three behaviours, three named flips, two code-owned templates.

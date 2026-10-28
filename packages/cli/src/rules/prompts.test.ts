@@ -1,5 +1,6 @@
 /**
- * W-241 rows b1-b2 (studio/briefs/W-241.md) and W-258 row b1 (studio/briefs/W-258.md): process.prompt_templates. node:test TAP, selected by
+ * W-241 rows b1-b2 (studio/briefs/W-241.md), W-258 row b1 (studio/briefs/W-258.md) and W-426 rows b1-b2
+ * (studio/briefs/W-426.md): process.prompt_templates. node:test TAP, selected by
  * `--test-name-pattern='^W-<id>-b<n>\s'`. Every row builds its own officina under the OS tmp dir and reads no
  * studio/ file. Assertion messages carry rule levels, officina-relative paths and slot names only.
  */
@@ -31,6 +32,13 @@ const NEEDS: Record<string, string[]> = {
   "prompts/build-review.md": [...REVIEW_SLOTS, "fills the eight slots", DATA],
 };
 const PATHS = Object.keys(NEEDS);
+// W-426: the UI judges' sense texts and templates, which the Ops lex clause does not name
+const SENSE = ["for sense, not only conformance", "the Patron ruled it or an agent wrote it", "what the screen should do instead"];
+const SPEC_REVIEW = "prompts/spec-review.md";
+const UI_INPUT = "prompts/ui-input.md";
+const UI_INPUT_NEEDS = ["<ID>", "<OPUS>", "<READ>", "<SHOTS>", "<QUESTIONS>", DATA, ...SENSE];
+const UI_NEEDS: Record<string, readonly string[]> = { [SPEC_REVIEW]: SENSE, [UI_INPUT]: UI_INPUT_NEEDS };
+const ALL: Record<string, readonly string[]> = { ...NEEDS, ...UI_NEEDS };
 const MARKER = "(check: process.prompt_templates)";
 const CLAUSE = `- \`ops-lead\` owns ${PATHS.map((p) => `\`studio/${p}\``).join(", ")} ${MARKER}`;
 
@@ -53,7 +61,7 @@ function declareOps(root: string): void {
 const lex = (root: string, clause: string): void => writeFileSync(join(root, "leges", "ops.md"), `# Ops Lex\n\n## 2. Decides alone\n\n${clause}\n`);
 function templates(root: string, skip?: [string, string]): void {
   mkdirSync(join(root, "prompts"), { recursive: true });
-  for (const p of PATHS) writeFileSync(join(root, p), `# t\n\n---\n\n${NEEDS[p]!.filter((n) => !(skip && skip[0] === p && skip[1] === n)).join("\n")}\n`);
+  for (const p of Object.keys(ALL)) writeFileSync(join(root, p), `# t\n\n---\n\n${ALL[p]!.filter((n) => !(skip && skip[0] === p && skip[1] === n)).join("\n")}\n`);
 }
 const found = (root: string): string[] =>
   checkStudio(root, NOW)
@@ -69,9 +77,9 @@ test("W-241-b1 behaviour 1: an officina with an ops collegium carries the three 
   lex(root, CLAUSE);
   assert.deepEqual(found(root), [], "no ops collegium: the rule does not apply");
   declareOps(root);
-  assert.deepEqual(found(root), PATHS.map((p) => `block ${p}`).sort(), "each absent template blocks once");
+  assert.deepEqual(found(root), Object.keys(ALL).map((p) => `block ${p}`).sort(), "each absent template blocks once");
   templates(root);
-  assert.deepEqual(found(root), [], "three complete templates clear it");
+  assert.deepEqual(found(root), [], "complete templates clear it");
   for (const p of PATHS)
     for (const n of NEEDS[p]!) {
       templates(root, [p, n]);
@@ -135,4 +143,56 @@ test("W-258-b1 behaviour 1: the builder brief template carries the builder's sel
   }
   write([...base, ...SELF_REVIEW.map((s) => s.toLowerCase())]);
   assert.deepEqual(found(root), [`block ${BUILDER}`], "a self-review in another case blocks");
+});
+
+const put = (root: string, path: string, needs: readonly string[]): void => writeFileSync(join(root, path), `# t\n\n---\n\n${needs.join("\n")}\n`);
+const message = (root: string, where: string): string => checkStudio(root, NOW).findings.find((f) => f.rule === "process.prompt_templates" && f.where === where)?.message ?? "";
+
+test("W-426-b1 behaviour 1: the spec review template asks a kind: ui reviewer whether each rule makes sense on the screen and who ruled it", () => {
+  const root = mkdtempSync(join(tmpdir(), "bisellium w426 'é-"));
+  dirs.push(root);
+  assert.ok(initStudio(root, { now: NOW }).root);
+  declareOps(root);
+  lex(root, CLAUSE);
+  templates(root);
+  put(root, SPEC_REVIEW, ["# Spec review prompt (D-046)"]);
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "a spec review without the sense texts blocks");
+  for (const s of SENSE) assert.ok(message(root, SPEC_REVIEW).includes(s), `the finding names ${s}`);
+  put(root, SPEC_REVIEW, SENSE);
+  assert.deepEqual(found(root), [], "the sense texts clear it, with the Ops lex clause naming the three templates only");
+  for (const s of SENSE) {
+    put(root, SPEC_REVIEW, SENSE.filter((x) => x !== s));
+    assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], `a spec review without ${s} blocks`);
+  }
+  put(root, SPEC_REVIEW, SENSE.map((s) => s.toUpperCase()));
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "sense texts in another case block");
+  rmSync(join(root, SPEC_REVIEW));
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "an absent spec review blocks");
+  mkdirSync(join(root, SPEC_REVIEW));
+  assert.deepEqual(found(root), [`block ${SPEC_REVIEW}`], "a directory at the spec review path blocks");
+  const plain = officina();
+  assert.deepEqual(found(plain), [], "no ops collegium: the rule does not apply");
+});
+
+test("W-426-b2 behaviour 2: the ui-lead's input template carries its five slots, the data phrase and the sense texts", () => {
+  const root = officina();
+  declareOps(root);
+  lex(root, CLAUSE);
+  templates(root);
+  rmSync(join(root, UI_INPUT), { force: true });
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "an absent ui-input template blocks");
+  put(root, UI_INPUT, UI_INPUT_NEEDS.filter((n) => !SENSE.includes(n)));
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "a ui-input template without the sense texts blocks");
+  for (const s of SENSE) assert.ok(message(root, UI_INPUT).includes(s), `the finding names ${s}`);
+  put(root, UI_INPUT, UI_INPUT_NEEDS);
+  assert.deepEqual(found(root), [], "a complete ui-input template clears it, with the Ops lex clause naming the three templates only");
+  for (const n of UI_INPUT_NEEDS) {
+    put(root, UI_INPUT, UI_INPUT_NEEDS.filter((x) => x !== n));
+    assert.deepEqual(found(root), [`block ${UI_INPUT}`], `a ui-input template without ${n} blocks`);
+  }
+  put(root, UI_INPUT, UI_INPUT_NEEDS.map((n) => (SENSE.includes(n) ? n.toUpperCase() : n)));
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "sense texts in another case block");
+  rmSync(join(root, UI_INPUT));
+  mkdirSync(join(root, UI_INPUT));
+  assert.deepEqual(found(root), [`block ${UI_INPUT}`], "a directory at the ui-input path blocks");
 });
