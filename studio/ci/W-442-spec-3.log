@@ -1,0 +1,22 @@
+# opus: W-442
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-28T05:29:02.027Z
+# tree: tree:97389e8341c0a3706bc77411e069f8d3134e5e81
+# brief: briefs/W-442.md blob:39ae771e7266e75b021d30093f42e5a4d8810958
+# ticket: {"opus":"W-442","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-442/studio","head":"76abba782ef1743766bed254112c769bd93bd854","brief":"39ae771e7266e75b021d30093f42e5a4d8810958","at":"2026-10-28T05:27:59.614Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-442-build/fix1/promise-ledger.md
+
+## Findings
+
+1. advisory — build review round 1's blocking S1 is fixed: the Genuine red command (brief line 69, and the selector on line 65) now passes `--grep 'W-442-b1\s'` single-quoted, the spec reviewer's round-2 replacement, so the shell hands Playwright `W-442-b1\s` and the row is selected; run on the red commit fecbc5cf it ran 1 test and failed at "2026-10-28 1280: today rule and weekday letter do not overlap" (Expected: true, Received: false), the same failure as the recorded red; the `bisellium red` verb itself refused a replay (no matching next ticket, the ladder being past red), so the payload was run alone — check: /home/edckt/.bisellium-evidence/W-442-build/fix1/red-cmd-replay-payload.out, /home/edckt/.bisellium-evidence/W-442-build/fix1/red-cmd-replay.out, studio/ci/reds/W-442/01.log
+2. advisory — build review round 1's advisory S4 is fixed: every mention of W-406-b3's policy message (Files owned, Interfaces "The existing rows", Promise clears, Input domain row 1, Acceptance and the K1 policy line) is now "the today rule is offset beyond the trailing edge", matching the build's assertion; K1 (the rule back at `right: 0`) was rerun against the built policy row and fails it by ERR_ASSERTION at that message, and the ledger now points at that output — check: apps/web/test/w406.test.ts W-406-b3, /home/edckt/.bisellium-evidence/W-442-build/fix1/kill-K1-policy.out, /home/edckt/.bisellium-evidence/W-442-build/fix1/kill-policy.sh
+3. advisory — the design is unchanged: one CSS declaration, the served row W-442-b1, the two named W-406-b3 flips; the round-1 evidence stands — check: /home/edckt/.bisellium-evidence/W-442-spec/signature-r1.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-442.md` with fix round 1 (commit 6c80c897: the red command quotes its grep pattern, the policy message matches the build), spec round 3; design unchanged.
