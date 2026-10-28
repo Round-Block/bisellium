@@ -1,0 +1,44 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-433-b1\s --import tsx packages/cli/src/next-spec.test.ts
+# exit: 1
+# at: 2026-10-28T07:28:44.271Z
+# sella: builder.W-433
+# tree: tree:96b95336fdc4199c52e966fce8c4de9cd07fde22
+# ticket: {"opus":"W-433","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-433/studio","head":"20478fff8914063841a34e35ef8f0032742fe4b0","brief":"2fdb93406165c48a932c6a5676d12040d9e89d81","at":"2026-10-28T07:28:43.161Z"}
+
+TAP version 13
+# Subtest: W-433-b1 behaviour 1: a ui-lead revise on a sessioned sequence carries its own session and is recorded; nothing else loosens
+not ok 1 - W-433-b1 behaviour 1: a ui-lead revise on a sessioned sequence carries its own session and is recorded; nothing else loosens
+  ---
+  duration_ms: 1492.451243
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:43:9893'
+  failureType: 'testCodeFailure'
+  error: |-
+    a sessioned ui-lead revise with a standing blocker is recorded
+    a sessioned verdict's outcome is exactly passed or failed
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-433/packages/cli/src/next-spec.test.ts:1671:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1506.700181
