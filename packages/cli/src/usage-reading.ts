@@ -34,6 +34,8 @@ const CODEX_FILES = 3;
 const CODEX_MAX = 256 * 1024 * 1024;
 const CLAUDE_MAX = 64 * 1024;
 const READINGS_MAX = 16 * 1024 * 1024;
+/** Past this many context tokens a dispatch order is held: running work finishes, the handoff is refreshed (Patron 2026-10-27). */
+export const CONTEXT_WIND_DOWN = 300_000;
 
 /** One reading. The field names are `usage-reading.sh`'s, so its lines and next's read alike; `opus` and `step` name
  *  the rung a `next --perform` reading was taken at. */
@@ -232,4 +234,11 @@ const points = (v: number | null): string => (v === null ? "unread" : `+${Math.r
 /** The cost as the checkpoint row carries it: `Claude week +4%, Codex week +9% over 3.2 h`. */
 export function costPhrase(c: Cost): string {
   return `Claude week ${points(c.claude)}, Codex week ${points(c.codex)} over ${c.hours.toFixed(1)} h`;
+}
+
+/** Why a dispatch order waits when the reading's fresh status line shows the session's context past
+ *  CONTEXT_WIND_DOWN; undefined otherwise (a stale or unread status line holds nothing). */
+export function windDown(r: Reading): string | undefined {
+  if (r.context_tokens === null || !claudeFresh(r) || r.context_tokens < CONTEXT_WIND_DOWN) return undefined;
+  return `context ${r.context_tokens} tokens is past ${CONTEXT_WIND_DOWN}: let running tasks finish, refresh the session handoff, and start no new work (W-430)`;
 }

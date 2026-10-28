@@ -51,7 +51,7 @@ import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
-import { appendReading, costPhrase, opusCost, readReadings, readingLine, takeReading, type Reading } from "./usage-reading.js";
+import { appendReading, costPhrase, opusCost, readReadings, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
 
 export { MIN_CHECKS };
 
@@ -1768,12 +1768,15 @@ function handoverAt(t: unknown): number | string {
   return "error" in read ? `the record's traditio ${read.error}` : instant((t as Dict)["at"])!.getTime();
 }
 
-/** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too. */
-function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived {
+/** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too.
+ *  W-430: and a session under the context wind-down: `usage` (read once, only for an order) past it holds the order. */
+function gateDispatch(d: Derived, f: Facts, budget: number | undefined, usage?: () => Reading): Derived {
   if (d.status !== "named" || d.order === undefined) return d;
   const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [["underlying", d.why]] });
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
+  const wind = usage === undefined ? undefined : windDown(usage());
+  if (wind !== undefined) return refuse(wind);
   if (d.order.resume) {
     // W-293: before opus/<id> exists the handover is only the main checkout's record (`handoff` writes it there, D-021): an absent
     // or unparsable one holds, never falling back to an older trunk handover
@@ -3079,7 +3082,10 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   let f = gather(repo, opened.root, id);
   if (f.trunkRecord === undefined && f.branchRecord === undefined) return usage(`unknown opus: ${id}`);
   const env: Env = { repo, procRoot: a.testClock && process.env["BISELLIUM_TEST_PROC"] ? process.env["BISELLIUM_TEST_PROC"] : "/proc", nowMs: a.nowMs };
-  const derive = (facts: Facts): Derived => gateDispatch(deriveNext(facts), facts, a.budget);
+  // W-430: the session's usage, read at most once and only when a dispatch order is gated
+  let reading: Reading | undefined;
+  const sessionUsage = (): Reading => (reading ??= takeReading(homedir(), new Date(a.nowMs), `${id} next`));
+  const derive = (facts: Facts): Derived => gateDispatch(deriveNext(facts), facts, a.budget, sessionUsage);
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
