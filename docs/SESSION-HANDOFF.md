@@ -47,9 +47,9 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 2026-10-27: push the Codex-heavy UI streams; was one each from 10-24), each taking its queue's top. Halted: W-239 (D-106 D).
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-00. W-442 — urgent (Patron 10-28: fix now): W-406-b3 fails on Wednesdays, blocking every app PR
+00. W-442 — urgent: W-406-b3 fails on Wednesdays; spec r2 failed (red command quoting, design keeps): branch, builder fixes. Then W-443 (cause fix)
 00a. W-433 — record a ui-lead revise on a sessioned spec (blocks W-407, W-408)
-0. W-430 — usage and reply length in the records: a usage reading at each ladder step, carried in each reply; a Stop hook caps a reply's length `next.ts`
+0. W-430 — usage in the records (signed r1, review next). Then W-444 — reply length Stop hook (.claude/: Patron merges)
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
 2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (high; PR #825, requeue after W-442). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
 2a. W-431, W-432 — verb dead ends: unchanged re-sign, carried open finding
@@ -90,7 +90,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 36. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-407 — Inbox, revision g approved (10-28): record r13 input and r14 signature, then Opus review, Astra, branch, Terra. Then W-408 — the Officina detail page (no fasti or stamps, live; Sol revision d running). Then the Board's five: W-409 W-410 W-411 W-412 W-413.
+1. W-407 — Inbox: waits on W-433 to record Astra r13; then r14 signature, review, Astra, branch, Terra. Then W-408 — Officina: spec done (r8), branch after W-407. Then the Board's five: W-409 W-410 W-411 W-412 W-413.
 1a. W-435 — Home, a card dashboard (D-127; screens approved 10-28; equal card heights per row); its data: W-439, W-440.
 2. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-427 (severity colours, after W-407), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
