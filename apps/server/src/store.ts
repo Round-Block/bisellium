@@ -438,7 +438,13 @@ export class Store extends CoreStore {
         .map((w) => ({ id: w.id, title: w.meta["title"], collegium: w.meta["collegium"], sella: w.meta["sella"], traditio: w.meta["traditio"] }));
       const petitiones = (snap.petitiones ?? [])
         .filter((p) => p.state === "needs_you")
-        .map((p) => ({ id: p.id, opus: p.opusId, from: p.openedBy, subject: p.subject, body: p.body }));
+        .map((p, sourceOrder) => ({ id: p.id, opus: p.opusId, from: p.openedBy, opened: instant(p.openedAt)?.getTime(), subject: p.subject, body: p.body, sourceOrder }))
+        .sort((a, b) => {
+          if (a.opened === undefined) return b.opened === undefined ? a.sourceOrder - b.sourceOrder : 1;
+          if (b.opened === undefined) return -1;
+          return a.opened - b.opened || a.sourceOrder - b.sourceOrder;
+        })
+        .map(({ sourceOrder: _sourceOrder, ...petitio }) => petitio);
       return { opera, petitiones };
     },
 

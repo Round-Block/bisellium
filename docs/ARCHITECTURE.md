@@ -249,6 +249,18 @@ through `adapter-native` on every call (no cache to invalidate), and the POSTs
 never write directly: they call the runners `serve.ts` injected, which edit the
 files the next poll picks up.
 
+The Inbox read keeps that same path. `adapter-native` carries a petitio's
+optional `opened` instant into the Snapshot, and `GET /api/inbox` returns it as
+an epoch-millisecond `opened` beside the existing id, opus, from, subject and
+body fields. The server performs that conversion through schema's strict
+`instant()` helper rather than adding a browser-side raw date parser; it also
+orders dated needs-you records by that instant ascending (oldest waiting first),
+then keeps the adapter's filename order for equal, missing or malformed instants.
+`opened` is the only field this work adds to the existing Inbox response; the
+response does not expose the Store's absolute studio path. An older or fixture
+response therefore keeps rendering, with `Date unavailable` for an absent or
+malformed first-notified instant.
+
 ## 5. CI and the merge queue
 
 ```mermaid

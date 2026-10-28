@@ -22,16 +22,19 @@ const DEV_DATA: InboxResponse = {
   petitiones: [
     {
       id: "P-008", opus: "W-026", from: "architect",
+      opened: Date.UTC(2026, 9, 27, 8),
       subject: "Approve visual hierarchy pass for Officina screen",
-      body: "The W-026 visual pass restructures the Officina screen from a single-column document layout to a sidebar + grid dashboard. Changes include pie charts for burn posture, side-by-side panels for Engine and Integrity, and responsive breakpoints at 899px and 599px. All DIRECTION.md constraints are satisfied except the pie charts override the no-gauges rule per Patron instruction. Recommend approval — the layout matches the Claude desktop / Linear / Vercel reference pattern.",
+      body: "The W-026 visual pass restructures the Officina screen from a single-column document layout to a sidebar + grid dashboard. Changes include pie charts for burn posture, side-by-side panels for Engine and Integrity, and responsive breakpoints at 899px and 599px. Review the [design direction](docs/design/DIRECTION.md) and [served evidence](ci/W-026-served.log). Recommend approval.",
     },
     {
       id: "P-009", opus: "W-024", from: "builder-a",
+      opened: Date.UTC(2026, 9, 25, 8),
       subject: "Review inbox keyboard navigation edge case",
       body: "When the inbox has exactly one petitio and the user presses 'k' (move up), focusIndex wraps to -1 on the next render before the clamp in moveFocus catches it. This causes a brief flash of no-selection state. Proposed fix: clamp focusIndex to [0, length-1] inside the state setter callback rather than in moveFocus. The fix is two lines in Inbox.tsx. No test changes needed — the existing inboxLogic tests already cover the boundary, but the React state update order wasn't exercised.",
     },
     {
       id: "P-010", opus: "W-025", from: "censor",
+      opened: Date.UTC(2026, 9, 20, 8),
       subject: "Confirm gate-ladder mark alignment at 3px gaps",
       body: "QA found that gate-ladder marks render at 3px height with a 2px border-radius, which on non-retina displays can produce a visible rounding artifact — the bottom-left pixel appears clipped. This only affects the half-height variant (waived gates). Options: (A) reduce border-radius to 1px for half-height marks only, (B) increase mark height to 4px, or (C) accept the artifact as imperceptible at normal zoom. Recommending option A — smallest change, no layout shift.",
     },
@@ -43,6 +46,7 @@ const WRITE_FAILED = "Could not send the answer.";
 export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: ScreenStatus) => void; onNeedsYouCount?: (count: number) => void } = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [focusIndex, setFocusIndex] = useState(0);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState(0);
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +144,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       petitiones={data.petitiones}
       opera={data.opera}
       focusIndex={focusIndex}
+      expandedId={expandedId}
       focusRequest={focusRequest}
       reason={reason}
       error={error}
@@ -150,6 +155,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
         if (focusedId !== undefined) setReasons((current) => withReasonForPetition(current, focusedId, value));
       }}
       onFocusChange={setFocusIndex}
+      onExpandChange={setExpandedId}
       onSubmit={submit}
     />
   );

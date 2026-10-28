@@ -162,6 +162,7 @@ test("W-366-b2 behaviour 2: each accent has one non-status selector role", () =>
       ".board__project-select option => accent-yellow",
       ".board-drawer__banner-link => accent-cyan",
       ".board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
+      ".inbox__evidence a => accent-cyan",
       ".officina__title, .officina__panel-heading, .inbox__title, .inbox__detail-subject, .seats__heading, .seats__card-heading, .board__title, .board-drawer__title, .board-drawer__section-head => accent-purple",
       ".officina__row--link => accent-cyan",
     ].sort(),

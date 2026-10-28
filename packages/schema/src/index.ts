@@ -219,6 +219,8 @@ export interface Petitio {
   openedBy: string; // actor roleId, or "you"
   counterparty: string;
   state: PetitioState;
+  /** Record opening instant when the native source supplies a valid string. */
+  openedAt?: string;
   /** Inbox row label. Authoritative from the `subject:` front-matter key
    *  when present and valid (a non-blank string); otherwise a legacy
    *  derivation from `body`'s first paragraph (W-076: adapters/native's

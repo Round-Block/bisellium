@@ -4,9 +4,9 @@
 
 export type Verb = "approve" | "decline" | "followup";
 
-/** Approve and decline resolve an answer. Follow up uses the endpoint's
- * ask-back form: it records the Patron's unprefixed text, changes the petition
- * to awaiting_reply and returns direction to the original asker. */
+/** Approve and decline resolve an answer. Defer reuses the endpoint's
+ * ask-back form, records its verdict prefix and leaves the thread awaiting
+ * the asker's reply. Delegate has no key or write until a record route exists. */
 export const VERB_KEYS: Readonly<Record<string, Verb>> = {
   "1": "approve",
   "2": "decline",
@@ -63,9 +63,8 @@ export function canSubmit(reason: string, sending = false): boolean {
   return !sending && reason.trim().length > 0;
 }
 
-/** Resolve actions carry their verdict as a fixed reply prefix. Follow up is
- * open text with no verdict; its distinct record effect is carried by
- * `askBack: true` in `answerOptions`. */
+/** Resolve actions carry their verdict as a fixed reply prefix. Defer's
+ * distinct open-thread effect is carried by `askBack: true`. */
 export function buildReply(verb: Verb, reason: string): string {
   if (verb === "followup") return reason.trim();
   return `${verb}: ${reason.trim()}`;
@@ -78,6 +77,119 @@ export function answerOptions(verb: Verb): { askBack: true } | undefined {
 export function recordedEffect(verb: Verb, petitioId: string): string {
   if (verb === "followup") return `Recorded follow-up reply for ${petitioId}; the petition remains open awaiting the asker's reply.`;
   return `Recorded ${verb} answer for ${petitioId}; the petition is resolved.`;
+}
+
+const INBOX_DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+/** Stable notification date shared by the Inbox and its W-408 consumer. */
+export function datePresentation(opened: number | undefined): string {
+  if (opened === undefined || !Number.isFinite(opened)) return "Date unavailable";
+  return INBOX_DATE_FORMAT.format(new Date(opened));
+}
+
+export interface EvidenceLink { label: string; href: string; actionable: boolean }
+
+export type AskBlock =
+  | { kind: "paragraph"; text: string }
+  | { kind: "unordered"; items: string[] }
+  | { kind: "ordered"; items: string[] };
+
+export const INBOX_READ_STORAGE_KEY = "bisellium.inbox.read";
+
+const MARKDOWN_LINK = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+
+/** Reading prose shows a Markdown link once, as its human label. The target is
+ * represented separately on the Evidence line when its form is recognised. */
+export function askText(body: string): string {
+  return body.replace(MARKDOWN_LINK, (_whole, label: string) => label.trim());
+}
+
+/** The Inbox intentionally supports only prose and the two Markdown list
+ * forms needed for a long decision ask. React escapes every value, so raw
+ * HTML and all other Markdown stay inert text. */
+export function askBlocks(body: string): AskBlock[] {
+  const blocks: AskBlock[] = [];
+  let paragraph: string[] = [];
+  let list: Extract<AskBlock, { items: string[] }> | undefined;
+  const flushParagraph = (): void => {
+    if (paragraph.length === 0) return;
+    blocks.push({ kind: "paragraph", text: askText(paragraph.join("\n")) });
+    paragraph = [];
+  };
+  const flushList = (): void => {
+    if (list === undefined) return;
+    blocks.push(list);
+    list = undefined;
+  };
+
+  for (const line of body.split(/\r?\n/)) {
+    if (line.trim() === "") {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+    const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
+    const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+    if (unordered !== null) {
+      flushParagraph();
+      if (list?.kind !== "unordered") {
+        flushList();
+        list = { kind: "unordered", items: [] };
+      }
+      list.items.push(askText(unordered[1] ?? ""));
+      continue;
+    }
+    if (ordered !== null) {
+      flushParagraph();
+      if (list?.kind !== "ordered") {
+        flushList();
+        list = { kind: "ordered", items: [] };
+      }
+      list.items.push(askText(ordered[1] ?? ""));
+      continue;
+    }
+    flushList();
+    paragraph.push(line);
+  }
+  flushParagraph();
+  flushList();
+  return blocks;
+}
+
+/** A malformed or unfamiliar local value is rejected as an empty read set.
+ * Storage access itself is wrapped by Inbox.tsx because browsers may deny it. */
+export function decodeInboxReadSet(raw: string | null): Set<string> {
+  if (raw === null) return new Set();
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (!Array.isArray(value) || value.some((id) => typeof id !== "string" || id.length === 0)) return new Set();
+    return new Set(value);
+  } catch {
+    return new Set();
+  }
+}
+
+export function encodeInboxReadSet(ids: ReadonlySet<string>): string {
+  return JSON.stringify([...ids].sort());
+}
+
+/** Explicit HTTP(S) evidence remains actionable. Anchor and repository-relative
+ * evidence is classified for a visible unavailable reference, never an anchor. */
+export function evidenceLinks(body: string): EvidenceLink[] {
+  const links: EvidenceLink[] = [];
+  const seen = new Set<string>();
+  for (const match of body.matchAll(MARKDOWN_LINK)) {
+    const label = match[1]?.trim() ?? "";
+    const href = match[2]?.trim() ?? "";
+    if (!label || !/^(?:https?:\/\/|#|\.\.\/|\.\/|(?:docs|studio|ci|opera|petitiones)\/)/.test(href) || seen.has(href)) continue;
+    seen.add(href);
+    links.push({ label, href, actionable: /^https?:\/\//.test(href) });
+  }
+  return links;
 }
 
 export interface VerbAction {
