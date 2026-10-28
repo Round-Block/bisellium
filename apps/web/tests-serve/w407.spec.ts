@@ -100,3 +100,56 @@ test("W-407-b1 Outlook split keeps independent panes wide and replaces list with
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width}: no horizontal overflow`).toBeLessThanOrEqual(0);
   }
 });
+
+test("W-407-b2 reading strips Markdown syntax, separates evidence, and rows stay neutral and divided", async ({ page }) => {
+  const longSubject = "S".repeat(180);
+  const petitiones = [
+    { id: "P-long", opus: "W-407", from: "ui-lead", opened: Date.UTC(2026, 9, 27, 8), subject: longSubject, body: "" },
+    { id: "P-links", opus: "W-406", from: "architect", opened: Date.UTC(2026, 9, 25, 8), subject: "Evidence forms", body: "Read [https](https://example.test/e) and [http](http://example.test/e). Compare [hash](#evidence), [dot](./evidence.md), [parent](../evidence.md), [docs](docs/evidence.md), [studio](studio/evidence.md), [ci](ci/evidence.log), [opus](opera/W-407.md), and [petition](petitiones/P-1.md).\n\n- Alpha\n- Beta\n\n1. First\n2) Second\n\n<script>window.bad = true</script>" },
+    { id: "P-old", opus: "W-415", from: "producer", opened: Date.UTC(2026, 9, 20, 8), subject: "Old decision", body: "Age escalates by weight only." },
+  ];
+  await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) }));
+  await openInbox(page, 1280, "w407-b2", false);
+
+  for (const width of [1280, 640, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.reload();
+    const items = page.locator(".inbox__item");
+    await expect(items).toHaveCount(3);
+    for (const item of await items.all()) {
+      expect((await item.boundingBox())!.height, `${width}: every row has two Outlook lines, padding and divider`).toBeCloseTo(68, 0);
+      await expect(item).toHaveCSS("border-bottom-width", "1px");
+      await expect(item).toHaveCSS("border-left-width", "2px");
+    }
+    const dates = page.locator(".inbox__item .inbox__date");
+    expect(new Set(await dates.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).color))).size, "date never changes colour").toBe(1);
+    await expect(dates).toHaveText(["27 Oct", "25 Oct", "20 Oct"]);
+    const collapsedSubject = items.first().locator(".inbox__subject");
+    expect(await collapsedSubject.evaluate((node) => getComputedStyle(node).webkitLineClamp), `${width}: collapsed subject is capped at two lines`).toBe("2");
+    expect((await collapsedSubject.boundingBox())!.height, `${width}: collapsed subject never exceeds two text lines`).toBeLessThanOrEqual(36);
+    if (width < 840) await items.first().click();
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText(longSubject);
+    await expect(page.locator(".inbox__ask")).toHaveText("No content provided.");
+    const fullSubject = await page.locator(".inbox__expanded-subject").evaluate((node) => ({ clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, clientHeight: node.clientHeight, scrollHeight: node.scrollHeight }));
+    expect(fullSubject.scrollWidth, `${width}: full subject is not clipped horizontally`).toBeLessThanOrEqual(fullSubject.clientWidth + 1);
+    expect(fullSubject.scrollHeight, `${width}: full subject is not clipped vertically`).toBeLessThanOrEqual(fullSubject.clientHeight + 1);
+  }
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.reload();
+  await page.getByRole("option").nth(1).click();
+  const ask = page.locator(".inbox__ask");
+  await expect(ask).not.toContainText("[https](");
+  await expect(ask).toContainText("Read https and http.");
+  await expect(ask.locator("a")).toHaveCount(0);
+  await expect(ask.locator("ul > li")).toHaveText(["Alpha", "Beta"]);
+  await expect(ask.locator("ol > li")).toHaveText(["First", "Second"]);
+  await expect(ask.locator("script")).toHaveCount(0);
+  await expect(ask).toContainText("<script>window.bad = true</script>");
+  const anchors = page.locator(".inbox__evidence a");
+  await expect(anchors).toHaveCount(2);
+  expect(await anchors.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")))).toEqual(["https://example.test/e", "http://example.test/e"]);
+  const unavailable = page.locator(".inbox__evidence-unavailable");
+  await expect(unavailable).toHaveCount(8);
+  await expect(unavailable.first()).toContainText("#evidence — Not available in this console");
+});

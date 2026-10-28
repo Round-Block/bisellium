@@ -23,3 +23,43 @@ test("W-407-b1 behaviour 1: Inbox follows Outlook split and mobile layouts", () 
   assert.match(direction, /Outlook is the interaction reference[\s\S]*Patron rulings, 2026-10-27 and 2026-10-28/s, "DIRECTION records both Patron rulings");
   assert.match(served, /for \(const width of \[1280, 640, 390\]\)/, "served geometry pins desktop and both narrow widths");
 });
+
+test("W-407-b2 behaviour 2: selected reading, neutral divided rows, evidence and oldest-first order", async () => {
+  const view = read("apps/web/src/screens/InboxView.tsx");
+  const inbox = read("apps/web/src/screens/Inbox.tsx");
+  const css = read("apps/web/src/components/w025.css");
+  const server = read("apps/server/src/store.ts");
+  assert.match(view, /detachedPetition \?\? petitiones\.find\(\(petitio\) => petitio\.id === expandedId\) \?\? focusedPetition/, "the reading pane follows the selected or refresh-detached petition");
+  assert.match(view, /selectedPetition\.body \? askBlocks\(selectedPetition\.body\)/, "the ask uses the constrained safe-Markdown block renderer");
+  assert.match(view, /block\.kind === "unordered"[\s\S]*<ul[\s\S]*block\.kind === "ordered"[\s\S]*<ol/, "bulleted and numbered Markdown lists render as semantic lists");
+  assert.match(view, /link\.actionable[\s\S]*<a[\s\S]*inbox__evidence-unavailable[\s\S]*Not available in this console/, "only HTTP evidence is actionable");
+  assert.match(css, /\.inbox__reading\s*\{[^}]*max-width:\s*72ch;/s, "reading content remains capped at a readable measure");
+  assert.match(view, /inbox__row-meta[\s\S]*inbox__sella[\s\S]*inbox__date[\s\S]*inbox__subject/, "each row renders sella and notification date above its subject");
+  assert.match(css, /\.inbox__item\s*\{[^}]*grid-template-rows:\s*18px minmax\(0, 36px\);[^}]*height:\s*68px;[^}]*padding:\s*6px 12px 7px 14px;[^}]*border-bottom:\s*1px solid var\(--rule\)/s, "two-line rows have adequate padding and a hairline divider");
+  assert.match(css, /\.inbox__subject\s*\{[^}]*-webkit-line-clamp:\s*2;[^}]*overflow-wrap:\s*anywhere;/s, "arbitrary subjects wrap safely and stop after two lines");
+  assert.match(css, /\.inbox__item--focused\s*\{[^}]*background:\s*var\(--wash\)/s, "selection uses a quiet tint");
+  assert.match(css, /\.inbox__item:focus,[\s\S]*?\.inbox__item:focus-visible\s*\{[^}]*outline:\s*0;[^}]*box-shadow:\s*none/s, "keyboard focus adds no underline or box to the selected wash");
+  assert.match(css, /\.inbox__item--unread\s*\{[^}]*border-left-color:\s*var\(--verdigris\)/s, "the verdigris left mark means unread");
+  assert.doesNotMatch(view, /inbox__(?:item|row)--attention/, "Inbox rows carry no amber attention class");
+  assert.doesNotMatch(css, /\.inbox__(?:item|row|date)[^{]*\{[^}]*var\(--amber\)/s, "Inbox rows and dates use no amber");
+  assert.match(server, /opened: instant\(p\.openedAt\)\?\.getTime\(\)/, "the server normalises notification time through the shared strict instant helper");
+  assert.match(server, /return \{ opera, petitiones \};/, "the Inbox response adds opened only and does not expose the studio path");
+  assert.match(server, /\.sort\(\(a, b\) => \{[\s\S]*a\.opened === undefined[\s\S]*b\.opened === undefined[\s\S]*a\.opened - b\.opened \|\| a\.sourceOrder - b\.sourceOrder/, "the Inbox response orders dated petitiones oldest first and preserves filename order for ties and undated records");
+  assert.doesNotMatch(`${inbox}\n${view}`, /petitiones\.sort\(/, "the client preserves the server's Inbox order without a second sort");
+  const logic = await import("../src/screens/inboxLogic.js");
+  assert.equal(logic.datePresentation(Date.UTC(2026, 9, 27, 8)), "27 Oct");
+  assert.equal(logic.datePresentation(Date.UTC(2026, 0, 2, 23, 59)), "2 Jan");
+  assert.equal(logic.datePresentation(undefined), "Date unavailable");
+  assert.equal(logic.datePresentation(Number.NaN), "Date unavailable");
+  assert.equal(logic.askText("Read [the brief](docs/W.md) and [the web](https://example.test/x)."), "Read the brief and the web.");
+  assert.deepEqual(logic.askBlocks("Intro [brief](docs/W.md).\n\n- alpha\n- beta\n\n1. one\n2) two\n\n<b>literal</b>"), [
+    { kind: "paragraph", text: "Intro brief." },
+    { kind: "unordered", items: ["alpha", "beta"] },
+    { kind: "ordered", items: ["one", "two"] },
+    { kind: "paragraph", text: "<b>literal</b>" },
+  ]);
+  assert.deepEqual(logic.evidenceLinks("See [log](ci/W-1.log), [web](https://example.test/x), [bad](javascript:alert(1))."), [
+    { label: "log", href: "ci/W-1.log", actionable: false },
+    { label: "web", href: "https://example.test/x", actionable: true },
+  ]);
+});
