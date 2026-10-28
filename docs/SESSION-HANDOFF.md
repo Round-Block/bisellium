@@ -48,10 +48,11 @@ Order by cycle minutes saved, D-039 highs first; a high filed since starts after
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
 00. W-442 — urgent (Patron 10-28: fix now): W-406-b3 fails on Wednesdays, blocking every app PR
+00a. W-433 — record a ui-lead revise on a sessioned spec (blocks W-407, W-408)
 0. W-430 — usage and reply length in the records: a usage reading at each ladder step, carried in each reply; a Stop hook caps a reply's length `next.ts`
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
 2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (high; PR #825, requeue after W-442). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
-2a. W-431, W-432, W-433 — verb dead ends (10-28): unchanged re-sign, carried open finding, ui-lead revise with a session
+2a. W-431, W-432 — verb dead ends: unchanged re-sign, carried open finding
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
 3b. W-261 — woken orchestration (D-126 1: the overrun study's first cause)
 3c. W-434 — dispatch prompts as project artifacts, scrubbed (D-126 2)
