@@ -1237,6 +1237,7 @@ test("W-348-b2 behaviour 2: next reads every UI signature as ui-architect and ev
     redFindings: () => [],
     replay: () => undefined,
     uiSpecProblems: () => ui,
+    uiSpecInput: () => undefined,
     uiReviewProblems: () => [],
     uiReviewInput: () => undefined,
     pr: () => ({ kind: "none" }),
@@ -1263,7 +1264,8 @@ test("W-348-b2 behaviour 2: next reads every UI signature as ui-architect and ev
   assert.equal(lead.order?.sella, "ui-lead", "the passed UI review then orders ui-lead");
   assert.equal(lead.order?.round, 3, "the UI input is the next round");
 
-  const ready = deriveNext({ ...facts(passedFiles), tip: "branch-tip", branch: src(passedFiles), branchRecord: rec });
+  // W-433: the branch's spec is read in its usable worktree; with none a kind: ui spec holds at spec
+  const ready = deriveNext({ ...facts(passedFiles), tip: "branch-tip", branch: src(passedFiles), branchRecord: rec, wt: { dir: "/fixture/.worktrees/W-900", studio: "/fixture/.worktrees/W-900/studio", usable: true } });
   assert.equal(ready.step, "ready", "a passed UI spec on the branch reaches ready");
   assert.match(ready.command ?? "", /--sella ui-architect\b/, "ready names the UI signer");
   assert.deepEqual(ready.extra, [["attributed", "ui-architect (signed ci/W-900-spec-1.log)"]], "ready is attributed to the UI signer");
@@ -1604,6 +1606,7 @@ test("W-424-b1 behaviour 1: past ready, a kind: ui opus's spec signer is the sea
       redFindings: () => [],
       replay: () => undefined,
       uiSpecProblems: () => [],
+      uiSpecInput: () => undefined,
       uiReviewProblems: () => [],
       uiReviewInput: () => undefined,
       pr: () => ({ kind: "settled", pr: merged }),

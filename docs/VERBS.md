@@ -28,8 +28,8 @@ CR or LF. An existing target is never overwritten.
 For a native `kind: ui` opus, the `ui-lead`'s spec verdict is its required
 design input; any other seat's spec verdict (the architect's signature, the
 spec review) is an ordinary one, refused `--dispatch-prompt` (W-338). The
-input's outcome is exactly `passed`, `failed`, or `revise`; none of
-those values itself signs or vetoes a gate. `--dispatch-prompt` must name a
+input's outcome is exactly `passed`, `failed`, or `revise`; none signs a gate, and a current input that is not
+`passed` holds the branch: `next` orders the signer to revise the brief and sign again (W-433). `--dispatch-prompt` must name a
 contained regular file under `ci/`. The writer validates the Findings and
 Recommendation structure and records both that prompt and a `design_digest`
 of the exact title plus raw current brief (`briefs/<opus>.md` before `ready`

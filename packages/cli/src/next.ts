@@ -517,6 +517,8 @@ export interface Facts {
   /** W-326: the replay the brief's signed prototype allows, or why not; undefined when the brief names none */
   replay(): Replay | { why: string } | undefined;
   uiSpecProblems(): string[];
+  /** W-433: the current ui-lead input (`ci/<id>-spec-<n>.log`) and its outcome, read where uiSpecProblems reads, or undefined */
+  uiSpecInput(): { log: string; outcome: string } | undefined;
   uiReviewProblems(): string[];
   /** the authoritative ui-lead input (`ci/<id>-spec-<n>.log`) of a kind: ui opus whose branch carries a valid one */
   uiReviewInput(): string | undefined;
@@ -799,6 +801,8 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const ownerWhere = tip === undefined ? `the main checkout (${studioRel})` : usable ? join(".worktrees", id, studioRel) : `opus/${id}`;
   const specOwner = readSpecOwner(tip === undefined ? fsSrc(studioAbs) : branch, id, ownerWhere, () => (tip === undefined ? { manifest } : usable ? readWorktreeManifest(wt.studio) : branchManifest(branch, id)));
   // the one signer every later reader (red attribution, signedAfter, commits) uses is the spec rung's own selection
+  // W-433: the ui-lead's input is judged against the spec owner's record (the one ownerUi and the verdict writer read), never the trunk's
+  const ownerRecord = "error" in specOwner ? undefined : specOwner.record;
   const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"], probationes: trunkRecord?.["probationes"] });
   const design = pairing !== undefined && !("error" in pairing) ? pairing.signer : defaultDesign;
   const remoteTracking = refExists(repo, `refs/remotes/origin/opus/${id}`);
@@ -855,7 +859,8 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
       }
     }),
     // W-338: the checkout that carries the spec: the main checkout before the branch, its worktree after (as uiReviewProblems)
-    uiSpecProblems: memo(() => (tip === undefined ? uiProblems(branchRecord ?? trunkRecord, studioAbs, id) : usable ? uiProblems(branchRecord, wt.studio, id) : [])),
+    uiSpecProblems: memo(() => (tip === undefined ? uiProblems(ownerRecord, studioAbs, id) : usable ? uiProblems(ownerRecord, wt.studio, id) : [])),
+    uiSpecInput: memo(() => (tip === undefined ? uiCurrent(ownerRecord, studioAbs, id) : usable ? uiCurrent(ownerRecord, wt.studio, id) : undefined)),
     uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio, id) : [])),
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio, id) : undefined)),
     pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
@@ -918,6 +923,17 @@ function uiInput(rec: Dict | undefined, root: string, id: string): string | unde
   if (rec?.["kind"] !== "ui") return undefined;
   try {
     return inspectUiDesignInput(root, rec as NativeRecord, id).input?.relative;
+  } catch {
+    return undefined;
+  }
+}
+
+/** W-433: the current ui-lead input of a kind: ui record and its outcome, or undefined (none current, or another kind). */
+function uiCurrent(rec: Dict | undefined, root: string, id: string): { log: string; outcome: string } | undefined {
+  if (rec?.["kind"] !== "ui") return undefined;
+  try {
+    const input = inspectUiDesignInput(root, rec as NativeRecord, id).input;
+    return input === undefined ? undefined : { log: input.relative, outcome: input.outcome };
   } catch {
     return undefined;
   }
@@ -1096,7 +1112,18 @@ export function deriveNext(f: Facts): Derived {
   });
   if (onOpus && !uiPending && changed !== undefined && !("error" in changed) && changed.spec.length > 0) return { ...named("spec", "producer", `the signed spec on opus/${id} is not committed (${changed.spec.length} path(s))`, `bisellium next ${id} --perform --expect spec`), act: "commit-opus" };
   // W-338: a signed (and reviewed) kind: ui spec still needs the ui-lead's input on the current brief, where the spec is carried
-  if (spec.ok && ui.length > 0) return dispatch(f, "spec", ui.join("; "), { phase: "spec", round: spec.maxRound + 1, resume: false, inputs: [briefRel(id)], uiLead: true, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
+  // W-433: a PR the branch rung reads as settled settles the spec's UI input too, so a merged opus never walks back to spec: the
+  // branch rung's own memoised read, consulted only when a UI hold or order below would otherwise fire
+  const uiOpen = (): boolean => !((pre || !f.wt.usable || f.pushed) && f.pr().kind === "settled");
+  // W-433: after opus/<id> the ui-lead's input is read only in its usable worktree; with none a kind: ui spec cannot be judged
+  if (spec.ok && ownerUi && !pre && !f.wt.usable && uiOpen())
+    return hold("spec", `the ui-lead's input on the current brief is read only in ${join(".worktrees", id)}, which is not a usable worktree on opus/${id}; run: git worktree add .worktrees/${id} opus/${id}`);
+  if (spec.ok && ui.length > 0 && uiOpen()) return dispatch(f, "spec", ui.join("; "), { phase: "spec", round: spec.maxRound + 1, resume: false, inputs: [briefRel(id)], uiLead: true, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
+  // W-433: a current UI input the ui-lead did not pass (revise or failed) is the signer's to answer, never the branch's: the signer
+  // revises the brief and signs again, and the edit makes the input stale, so the ui-lead is ordered again on the new brief
+  const uiDone = spec.ok && ownerUi ? f.uiSpecInput() : undefined;
+  if (uiDone !== undefined && uiDone.outcome !== "passed" && uiOpen())
+    return dispatch(f, "spec", `${uiDone.log} records the ui-lead's outcome ${uiDone.outcome} on the current brief; the signer revises the brief and signs again`, { phase: "spec", round: spec.maxRound + 1, resume: true, inputs: [briefRel(id), uiDone.log], signer, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
   if (!spec.ok) {
     if (pre && reviewer !== undefined && spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound);
     return dispatch(f, "spec", spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
