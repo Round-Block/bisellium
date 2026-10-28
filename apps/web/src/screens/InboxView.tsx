@@ -109,6 +109,10 @@ export function InboxView(props: InboxViewProps): JSX.Element {
               );
             })}
           </div>
+          <div className="inbox__secondary" aria-label="Other Inbox groups">
+            <p>You asked <span>Not available yet</span></p>
+            <p>For information <span>Not available yet</span></p>
+          </div>
         </section>
 
         <section className="inbox__reading-pane" aria-label="Selected decision">

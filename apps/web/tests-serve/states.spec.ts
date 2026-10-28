@@ -50,8 +50,11 @@ async function signIn(page: Page, screen: Screen): Promise<void> {
 const REFUSAL = { ok: false, exitCode: 1, output: "refused by the W-341 row" };
 
 async function answerFirst(page: Page): Promise<void> {
-  await expect(page.locator(".inbox__row").first()).toBeVisible();
-  await page.locator(".inbox__input-ratio").fill("a reason for the record");
+  const first = page.locator(".inbox__row").first();
+  await expect(first).toBeVisible();
+  const ratio = page.locator(".inbox__input-ratio");
+  if (!(await ratio.isVisible())) await first.click();
+  await ratio.fill("a reason for the record");
   await page.locator(".inbox__btn-action").first().click();
 }
 

@@ -20,9 +20,11 @@ async function expectInboxSubjectsContained(page: Page, width: number): Promise<
   for (const row of await page.locator(".inbox__row").all()) {
     const subject = row.locator(".inbox__subject");
     const [rowBox, subjectBox] = await Promise.all([row.boundingBox(), subject.boundingBox()]);
-    expect(subjectBox!.y, `${width}: subject stays inside its 40px row`).toBeGreaterThanOrEqual(rowBox!.y);
+    expect(subjectBox!.y, `${width}: subject stays inside its divided row`).toBeGreaterThanOrEqual(rowBox!.y);
     expect(subjectBox!.y + subjectBox!.height, `${width}: subject does not cross the adjacent row`).toBeLessThanOrEqual(rowBox!.y + rowBox!.height + 1);
-    await expect(subject, `${width}: subject keeps its single-line ellipsis`).toHaveCSS("white-space", "nowrap");
+    await expect(subject, `${width}: subject wraps within its two-line clamp`).toHaveCSS("white-space", "normal");
+    expect(await subject.evaluate((node) => getComputedStyle(node).webkitLineClamp), `${width}: Outlook summary is capped at two subject lines`).toBe("2");
+    expect(subjectBox!.height, `${width}: subject uses no more than two 18px lines`).toBeLessThanOrEqual(36);
     await expect(subject).toHaveCSS("overflow", "hidden");
     await expect(subject).toHaveCSS("text-overflow", "ellipsis");
   }
@@ -123,9 +125,16 @@ test("W-415-b2 every screen stays inside 1280 and a 640 CSS-pixel zoom viewport"
     }
   }
   await page.setViewportSize({ width: 1280, height: 900 }); await page.goto(`${served!.baseURL}/?demo#/inbox`);
-  await expect(page.locator(".inbox--split")).toHaveCSS("grid-template-columns", /320px/);
+  await expect.poll(async () => (await page.locator(".inbox__workspace").boundingBox())!.width, "wide Inbox workspace fills W-407's main pane").toBeGreaterThan(900);
+  await expect.poll(async () => {
+    const [workspace, main] = await Promise.all([page.locator(".inbox__workspace").boundingBox(), page.locator(".shell__main").boundingBox()]);
+    return main!.x + main!.width - (workspace!.x + workspace!.width);
+  }, "wide Inbox keeps only its right gutter").toBeCloseTo(24, 0);
   await page.setViewportSize({ width: 640, height: 900 });
-  await expect.poll(() => page.locator(".inbox--split").evaluate((n) => getComputedStyle(n).gridTemplateColumns), "layout changes on live resize").not.toContain("320px");
+  await expect.poll(async () => {
+    const [workspace, main] = await Promise.all([page.locator(".inbox__workspace").boundingBox(), page.locator(".shell__main").boundingBox()]);
+    return main!.x + main!.width - (workspace!.x + workspace!.width);
+  }, "640 Inbox keeps only its right gutter").toBeCloseTo(24, 0);
   await page.setViewportSize({ width: 390, height: 900 });
   await expectInboxSubjectsContained(page, 390);
 });

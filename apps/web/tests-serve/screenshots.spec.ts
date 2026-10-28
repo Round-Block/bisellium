@@ -67,14 +67,15 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
     expect(fixture.petitiones[0]).toMatchObject({ id: "A-1", opus: "W-004" });
     await expect(page.locator(".inbox__row").first()).toHaveAttribute("data-focused", "true");
     if (width === 1280) {
-      await expect(page.locator(".inbox__detail-opus")).toHaveText("W-004");
-      await expect(page.locator(".inbox__detail-content")).toContainText("Drag-and-drop grew a second screen");
+      await expect(page.locator(".inbox__expanded-subject"), "the complete focused subject is ready before capture").toBeVisible();
+      await expect(page.locator(".inbox__meta").first()).toContainText("W-004");
+      await expect(page.locator(".inbox__ask")).toContainText("Drag-and-drop grew a second screen");
       await expect(page.locator(".inbox__input-ratio")).toBeVisible();
+      await expect(page.locator(".inbox__btn-action")).toHaveText([/approve/, /defer/, /decline/, /delegate/]);
     } else {
-      await expect(page.locator(".inbox__list")).toBeVisible();
-      await expect(page.locator(".inbox__detail")).toBeVisible();
+      await expect(page.locator(".inbox__queue")).toBeVisible();
+      await expect(page.locator(".inbox__reading-pane")).toBeHidden();
     }
-    await expect(page.locator(".inbox__btn-action")).toHaveText([/approve/, /decline/, /follow up/]);
   } else if (route === "board") {
     const officina = await page.request.get(`${served!.baseURL}/api/officina`);
     const fixture = (await officina.json()) as { lifecycle: { states: { phase: string }[] } };
