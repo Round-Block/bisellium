@@ -1,0 +1,24 @@
+# opus: W-442
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-28T03:38:29.277Z
+# tree: tree:0ebb8d26195a5c6c7c63504e079010a1ecf95ca9
+# brief: briefs/W-442.md blob:dcd63f7886512cd0de2fe01aedcf9ebeb16f2f09
+# ticket: {"opus":"W-442","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"42702b798e18768125178a11df699a762680757e","brief":"dcd63f7886512cd0de2fe01aedcf9ebeb16f2f09","at":"2026-10-28T03:38:24.174Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-442-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the producer's diagnosis holds and has a second cause: pinned to each weekday, the today letter's box in Instrument Sans is 7px (S, T, F), 10px (M, ending at the rule) and 12px (W, filling the 12px column), so the trailing-edge rule overlaps W at 1280 and 390 every Wednesday; and the row measured before the `font-display: block` web font loaded, so it could also pass on a Wednesday with fallback metrics — check: probe-master.out, probe-fonts-proto.out (F 6.328px before the load, 7.000px after), r0/red-b1.out
+2. advisory — the fix is one CSS declaration: the rule moves to `right: -2px`, into the 4px gap after the last column, 1px clear of the column edge; it clears every letter at both widths, is painted at its centre, and the whole served suite passes on stage 1 — check: probe-proto.out, stage1-served-suite.out, kills.out (K1 right: 0, K2 a clipping column, both guarded; K1 also fails W-406-b3's policy row by ERR_ASSERTION, kill-K1-policy.out)
+3. advisory — the new row W-442-b1 pins the browser clock to each day of one week and waits for the letter's font before measuring; on master it fails at "2026-10-28 1280: today rule and weekday letter do not overlap" on three runs of three, accepted at assertion level, and passes on stage 1 three of three; the selector is `W-442-b1\s` because Playwright greps the whole title path, so a `^` anchor matches nothing — check: red-accept.out, proto-b1-stage1*.out, r0/red-b1.out
+4. advisory — W-406-b3's policy row (`right: 0` to `right: -2px`) and served row (pinned to the Wednesday) are the flips, both named and changed in this opus; W-408 removes the fasti strip later and both rows flip with it ; the Codex test check lists that policy row as its one flip with Unnamed None, and every must-stay-green row it lists passes on stage 1 — check: red-w406-policy.out, red-w406-served.out, stage1-served.out, stage1-policy.out, fixture-census.md, stage1-served-suite.out, stage1-smoke.out
+5. advisory — gates, admission on master's code and the ledger on master's validator pass — check: gates.sh outputs, admission.out, ledger-probe.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-442.md` (spec round 1), prototyped over master f3d972d7; one behaviour, one CSS declaration and one new served row, two named flipped rows, no code-owned path.

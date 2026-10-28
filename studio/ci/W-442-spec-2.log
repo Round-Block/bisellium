@@ -1,0 +1,21 @@
+# opus: W-442
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18096-c83c-7b80-8617-6f209fd60e03
+# outcome: failed
+# at: 2026-10-28T03:44:34.207Z
+# tree: tree:0ebb8d26195a5c6c7c63504e079010a1ecf95ca9
+# brief: briefs/W-442.md blob:dcd63f7886512cd0de2fe01aedcf9ebeb16f2f09
+# ticket: {"opus":"W-442","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"42702b798e18768125178a11df699a762680757e","brief":"dcd63f7886512cd0de2fe01aedcf9ebeb16f2f09","at":"2026-10-28T03:44:31.082Z"}
+
+## Findings
+1. blocking — brief:69 The shell consumes the unquoted backslash, so the builder’s copied command passes `W-442-b1s` to Playwright, selects no test, and cannot reproduce the required red; `reds.sh` instead used a quoted pattern, so its evidence does not validate the written command. Replace brief:69 with: `**Genuine red:** \`bisellium red W-442 --behaviour 1 --sella builder --studio studio -- npx playwright test --config=apps/web/playwright.serve.config.ts --grep 'W-442-b1\s'\`, run from the repository root on the red commit, fails at "2026-10-28 1280: today rule and weekday letter do not overlap"; all three red runs fail there and all three stage-1 runs pass.` [severity: S1] [design: keeps] [class: spec×genuine-red-replayability-deferred-to-mint] — check: none: execute the exact copied shell command and require W-442-b1 to run and fail at its overlap assertion
+2. advisory — brief:61 The input table omits the new `startServed`/`bisellium serve` call and names no actual rejecting function for the reused gates. Replace brief:61 with: `| 3. The reused \`startServed(\`w442-${width}\`)\` / \`bisellium serve\` call and its returned base URL and token | resolves after reporting a port and non-empty token, readiness returns 200, and the token opens the Officina; it remains usable until close | \`startServed\` rejects spawn, early-exit and \`waitForReady\` failures; awaited navigation and Playwright \`expect\` reject an unusable URL, dead server or refused token |` followed by `| 4. The reused gates named in Acceptance | each command and required job exits 0 on the opus branch | \`runCi\` refuses when \`runStep\` returns non-zero; Playwright returns non-zero for a served-suite failure; the GitHub Actions step runner fails each required job on a non-zero step because none uses \`continue-on-error\`; reused unchanged, a stated limit |`. [severity: S4] [class: spec×input-without-named-rejector] — check: none: input-domain completeness is reviewed against the prototype diff
+3. advisory — brief:41 With `right: -2px`, the rule no longer “uses the trailing edge”; it is offset beyond that edge, so the retained assertion message is false. Replace brief:41 with: `**The existing rows.** \`W-406-b3\`'s served row calls \`page.clock.setFixedTime(new Date("2026-10-28T12:00:00.000Z"))\` before \`open\`; its assertions are unchanged. Its policy row asserts \`/\.fasti-strip__today-rule\s*\{[^}]*right:\s*-2px;/s\` under the message "the today rule is offset beyond the trailing edge"; its other assertions are unchanged, and Promise clears uses that renamed pin.` [severity: S4] [class: tests×test-title-made-false-by-domain-change] — check: apps/web/test/w406.test.ts W-406-b3
+
+## Verdict
+The written genuine-red command cannot select its test, so the required evidence is false until the design-preserving quoting fix is made.
+
+VERDICT: FAIL
