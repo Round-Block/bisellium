@@ -570,13 +570,13 @@ test("W-311-b1 behaviour 1: one CLI start leaves tsx's compile cache entries wri
 // ---------------------------------------------------------------------------
 test("W-179-b1 behaviour 1: test:suite runs every next row file once, side by side, in one node --test call", () => {
   const suite = (JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as { scripts: Record<string, string> }).scripts["test:suite"]!;
-  // the seven declared row files (studio/briefs/W-179.md): a next*.test.ts beside this one, or a test file importing the shared fixture, is one of them
-  const declared = ["next-branch", "next-done", "next-ladder", "next-queue", "next-review", "next-spec", "next"].map((f) => `packages/cli/src/${f}.test.ts`);
+  // the declared row files (studio/briefs/W-179.md; W-430 adds w430, which imports the shared fixture): a next*.test.ts beside this one, or a test file importing the shared fixture, is one of them
+  const declared = ["next-branch", "next-done", "next-ladder", "next-queue", "next-review", "next-spec", "next", "w430"].map((f) => `packages/cli/src/${f}.test.ts`);
   const found = readdirSync(HERE)
     .filter((f) => f.endsWith(".test.ts") && f !== "next-world.test.ts" && (f.startsWith("next") || readFileSync(join(HERE, f), "utf8").includes('from "./next-world.test.js"')))
     .sort()
     .map((f) => `packages/cli/src/${f}`);
-  assert.deepEqual(found, declared, "the next rows live in exactly the seven declared files");
+  assert.deepEqual(found, declared, "the next rows live in exactly the declared files");
   for (const f of declared) assert.ok(lstatSync(join(REPO_ROOT, f)).isFile(), `${f} is a regular file, not a link`);
   const segments = suite.split("&&").map((s) => s.trim().split(/\s+/));
   const runners = segments.filter((words) => words.some((w) => w.includes("packages/cli/src/next")));
