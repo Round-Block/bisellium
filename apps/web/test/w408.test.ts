@@ -39,3 +39,19 @@ test("W-408-b1 behaviour 1: Officina is a three-section detail ledger with one s
   assert.match(screenshotServed, /officina__panel-heading[^]*Work in flight[^]*Budget[^]*Health[^]*officina__budget-row[^]*officina__health-row/, "screenshot readiness waits for the three-section detail");
   assert.match(smoke, /three-section detail without fasti strip[^]*officina__panel-heading[^]*fasti-strip[^]*toHaveCount\(0\)/, "the non-CI smoke row follows the approved detail screen");
 });
+
+test("W-408-b2 behaviour 2: detailed work in flight groups active opera by lifecycle phase and names the mover", () => {
+  assert.match(screen, /officinaWorkGroups\(boardModel\(officina, opera\)\)/, "Officina reuses the Board read and model");
+  assert.match(work, /\["review", "building", "blocked"\]/, "the operational groups keep ruled order without a Patron summary");
+  assert.match(work, /column\.id === "needs_you" \|\| column\.id === "planned" \|\| column\.id === "done"/, "summary and terminal Board columns are not detail groups");
+  assert.match(work, /seen\.has\(card\.id\)/, "an opus cannot appear twice");
+  assert.match(screen, /Active opera grouped by lifecycle phase; each row names who moves next\./, "the subtitle matches lifecycle grouping and retains the mover field");
+  assert.doesNotMatch(work, /card\.blocked \|\| column\.id === "halted"/, "a failed gate cannot silently replace the lifecycle phase");
+  assert.match(work, /card\.sella \? `\$\{card\.sella} next`/, "a row without a pending gate still names its assigned next mover");
+  assert.match(css, /\.officina__work-groups\s*{[^}]*flex-direction:\s*column/s, "next-mover groups stack at every width");
+  assert.match(css, /\.officina__row\.officina__work-row\s*{[^}]*display:\s*grid/s, "each group uses left-aligned ruled rows");
+  assert.match(css, /\.officina__work-row > \.officina__value-mono\s*{[^}]*white-space:\s*nowrap/s, "opus ids never wrap");
+  assert.doesNotMatch(screen, /row\.state/, "a row does not repeat its group state");
+  assert.match(screen, /row\.note && <span className="officina__work-note">/, "a distinct Board gate label may earn a row field");
+  assert.match(served, /detailed work-in-flight groups/, "served Chromium pins grouped rows");
+});
