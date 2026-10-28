@@ -30,7 +30,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and the daily retro.
 - Records dates are UTC; the Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the first opus after W-292.
-6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review prompt `studio/prompts/spec-review.md`; spec review spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w406.py (row 156; a new script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each ladder step.
+6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review prompt `studio/prompts/spec-review.md`; spec review spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w428.py (row 164; a new script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
 7. Use `npm run -s bisellium --` (the `bisellium` on PATH is stale). The `next` cleanup step busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 8. Until W-333's `studio/queue.yml` lands (D-077 B), lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten at each refresh (D-109).
 
@@ -44,14 +44,14 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Engineering PAUSED (Patron 10-28) until 10-29 06:00Z; W-426 and W-433 ride. Halted: W-239 (D-106 D).
+Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Engineering PAUSED (Patron 10-28) until 10-29 06:00Z; W-433 rides. Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-00. W-450 — certify re-attests a served Playwright red (TAP reporter). Then W-442 (PR #835 refused at certify; rebuild), W-445, W-443, W-446
-00a. W-433 — record a ui-lead revise on a sessioned spec (blocks W-407, W-408)
-0. W-430 — usage in the records (signed r1, review next). Then W-444 — reply length Stop hook (.claude/: Patron merges)
+00. W-450 — certify re-attests a served Playwright red (TAP reporter). Then W-445, W-443, W-446 (W-442 merged; done needs a Patron ruling)
+00a. W-433 — record a ui-lead revise on a sessioned spec (blocks W-407)
+0. W-430 — usage in the records (signed r1, review next). Then W-444 — reply length Stop hook
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
-2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (high; PR #825, requeue from 10-29 00:00Z). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
+2. W-426 — UI prompts judge sense and who ruled a DIRECTION rule (merged #825; done held for checkpoint 166). Then W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
 2a. W-431, W-432 — verb dead ends: unchanged re-sign, carried open finding
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
 3b. W-261 — woken orchestration (D-126 1: the overrun study's first cause)
