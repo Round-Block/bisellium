@@ -100,3 +100,12 @@ test("W-407-b4 behaviour 4: verdicts keep the answer route and every visible ver
   assert.match(view, /aria-describedby=\{unavailable \? delegateDescriptionId : undefined\}/, "delegate points to its visible explanation");
   assert.match(view, /Delegation is not available yet/, "delegate's unavailable state is visible text");
 });
+
+test("W-407-b5 behaviour 5: secondary groups are honest labels and empty has no generated stamp", () => {
+  const view = read("apps/web/src/screens/InboxView.tsx");
+  assert.match(view, /<p>You asked <span>Not available yet<\/span><\/p>/, "You asked is an honest non-interactive label without a count");
+  assert.match(view, /<p>For information <span>Not available yet<\/span><\/p>/, "For information is an honest non-interactive label without a count");
+  assert.doesNotMatch(view, /<details|<summary|You asked <span>\d/, "secondary groups imply neither interaction nor invented counts");
+  assert.match(view, /Nothing waiting on you/, "the ruled empty line remains exact");
+  assert.doesNotMatch(view, /Colophon|generatedAt|as of/i, "Inbox renders no colophon timestamp, generated-at or as-of text");
+});

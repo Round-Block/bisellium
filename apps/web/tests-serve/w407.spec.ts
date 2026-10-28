@@ -285,3 +285,19 @@ test("W-407-b4 keys 1/2/3 keep approve, defer and decline answer bodies while de
   await expect(note).toBeVisible();
   await expect(delegate).toHaveAttribute("aria-describedby", await note.getAttribute("id") ?? "missing-description");
 });
+
+test("W-407-b5 secondary groups are non-interactive labels and empty Inbox has no generated stamp", async ({ page }) => {
+  await openInbox(page, 1280, "w407-b5-groups");
+  const groups = page.locator(".inbox__secondary p");
+  await expect(groups).toHaveText(["You asked Not available yet", "For information Not available yet"]);
+  await expect(page.locator(".inbox__secondary details, .inbox__secondary button")).toHaveCount(0);
+  await served!.close(); served = undefined;
+
+  await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones: [] }) }));
+  await openInbox(page, 1280, "w407-b5-empty", false);
+  await expect(page.locator(".inbox__empty")).toHaveText("Nothing waiting on you");
+  await expect(page.locator(".inbox__queue, .inbox__secondary, .inbox__position")).toHaveCount(0);
+  await expect(page.locator(".inbox > footer")).toHaveCount(0);
+  await expect(page.locator(".inbox")).not.toContainText("/tmp/studio");
+  await expect(page.locator(".inbox")).not.toContainText(/as of|generated/i);
+});
