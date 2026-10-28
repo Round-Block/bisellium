@@ -1,0 +1,21 @@
+# opus: W-442
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a180f5-be3d-7d43-98d0-cb7316576b0b
+# outcome: failed
+# at: 2026-10-28T05:39:28.371Z
+# tree: tree:97389e8341c0a3706bc77411e069f8d3134e5e81
+# brief: briefs/W-442.md blob:11b75b0accacaead8f38b295422d23147792937c
+# ticket: {"opus":"W-442","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-442/studio","head":"004193aaeb61d55c020b22bc68952a1612574107","brief":"11b75b0accacaead8f38b295422d23147792937c","at":"2026-10-28T05:38:48.014Z"}
+
+## Findings
+1. blocking — studio/opera/W-442.md:30 The handoff requires spec review before build review round 2, but the delta contains architect spec-5 after failed spec-reviewer round 4 and no succeeding spec-reviewer pass over the latest brief blob and brief:78 fix. Required spec evidence is therefore missing. [severity: S1] [class: spec-gate×self-signed] — check: none: require a passing spec-reviewer verdict against the newest signed brief blob before resuming build review
+
+## Earlier findings
+- ci/W-442-review-1.log #1: closed — brief:65 and brief:69 now single-quote `W-442-b1\s`, preserving the backslash for Playwright, and the supplied replay evidence records the selected row failing at the promised assertion.
+
+## Verdict
+The prior blocker is fixed, but the latest signed brief has not passed the required independent spec review.
+VERDICT: FAIL
