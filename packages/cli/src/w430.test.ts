@@ -237,6 +237,11 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
   const failed = appendReading(stalled, reading, (fd, data) => (calls++ === 0 ? half(fd, data) : 0));
   assert.match(failed ?? "", /\S/, "a write that makes no progress after a part: the failure is returned");
   assert.deepEqual(readReadings(stalled), [], "and the part written is not a reading");
+  const stalledFile = join(stalled, ".bisellium-evidence", "usage", "readings.jsonl");
+  assert.equal(readFileSync(stalledFile, "utf8"), "", "and the file is as it was before the failed append");
+  assert.equal(appendReading(stalled, reading), undefined, "a normal append after the failure succeeds");
+  assert.deepEqual(readReadings(stalled), [reading], "and is exactly one good reading");
+  assert.equal(readFileSync(stalledFile, "utf8"), `${JSON.stringify(reading)}\n`, "the file is the pre-failure bytes plus that line");
   const slow = scratchHome("b2-slow");
   assert.equal(appendReading(slow, reading, (fd, data) => writeSync(fd, data.subarray(0, 7))), undefined, "a write that takes several calls completes the line");
   assert.deepEqual(readReadings(slow), [reading], "and the whole line is the reading");
