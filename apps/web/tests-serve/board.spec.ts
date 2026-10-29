@@ -25,7 +25,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runGreenlight } from "@bisellium/commands/writes.js";
 import { boardModel, type BoardModel } from "../src/lib/board.js";
-import type { OfficinaResponse, OpusEntry } from "../src/api.js";
+import type { InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
 import { startServed, type ServedInstance } from "./harness.js";
 
 const PROJECT_ID = "sample-studio";
@@ -243,7 +243,8 @@ function appendUsageEvent(studioDir: string, itemId: string): void {
 async function expectedModel(served: ServedInstance): Promise<BoardModel> {
   const officina = (await (await fetch(`${served.baseURL}/api/officina`)).json()) as OfficinaResponse;
   const opera = (await (await fetch(`${served.baseURL}/api/opera`)).json()) as OpusEntry[];
-  return boardModel(officina, opera);
+  const inbox = (await (await fetch(`${served.baseURL}/api/inbox`)).json()) as InboxResponse;
+  return boardModel(officina, opera, inbox);
 }
 
 test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes", () => {
@@ -252,7 +253,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     await served?.close();
   });
 
-  test("renders every column, each count equal to the spec's own computation from GET /api/opera", async ({ page }) => {
+  test("renders every column, each count equal to the spec's own computation from GET /api/opera and /api/inbox", async ({ page }) => {
     served = await startServed("board-counts");
     const counter = await installWriteCounter(page);
     await openBoard(page, served);
@@ -655,9 +656,9 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await expect(page.locator(".board__column").last()).toBeInViewport();
     expect(lastName?.length).toBeGreaterThan(0);
 
-    // needs-you non-empty on this fixture (W-004's human "patron" gate is
-    // pending — see examples/sample-studio; W-003's own pending gate is
-    // "qa", kind agent, not human); initial visible column is needs_you.
+    // needs-you is non-empty on this fixture: W-004's human "patron" gate
+    // is pending and W-007 awaits greenlight. W-003's own pending gate is
+    // "qa", kind agent, not human; initial visible column is needs_you.
     await page.reload();
     await expect(page.locator(".board")).toBeVisible();
     const needsYouColumn = page.locator('.board__column[data-column-id="needs_you"]');
@@ -678,11 +679,16 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
   test("390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column", async ({ page }) => {
     served = await startServed("board-phone-empty-needsyou");
     const counter = await installWriteCounter(page);
-    // The fixture's only human gate (W-004's "patron") made NOT pending, so
-    // needs_you is empty — *Composition*'s other half: "An empty attention
-    // column is never the first thing the Patron sees" (censor round 1, B2).
+    // Resolve all three ruled ask sources: W-004's human gate, A-1's linked
+    // Inbox decision and W-007's greenlight request. Then needs_you is empty
+    // — *Composition*'s other half: "An empty attention column is never the
+    // first thing the Patron sees" (censor round 1, B2).
     const patronGatePath = join(served.studioDir, "opera", "W-004.md");
     writeFileSync(patronGatePath, readFileSync(patronGatePath, "utf8").replace("patron: { status: pending }", "patron: { status: passed }"), "utf8");
+    const decisionPath = join(served.studioDir, "petitiones", "A-1.md");
+    writeFileSync(decisionPath, readFileSync(decisionPath, "utf8").replace("state: needs_you", "state: answered"), "utf8");
+    const greenlightPath = join(served.studioDir, "opera", "W-007.md");
+    writeFileSync(greenlightPath, readFileSync(greenlightPath, "utf8").replace("state: backlog", "state: greenlit"), "utf8");
 
     await page.setViewportSize({ width: 390, height: 844 });
     await openBoard(page, served);

@@ -432,9 +432,12 @@ export class Store extends CoreStore {
       const now = this.now();
       const manifest = this.manifest();
       const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
+      const greenlightStates = new Set(
+        (this.adapter.describeLifecycles()[0]?.states ?? []).filter((state) => state.phase === "backlog").map((state) => state.id),
+      );
       const snap = this.snap(now);
       const opera = snap.opera
-        .filter((w) => Object.entries(w.probationes).some(([gid, g]) => humanGates.has(gid) && g.status === "pending"))
+        .filter((w) => greenlightStates.has(w.state) || Object.entries(w.probationes).some(([gid, g]) => humanGates.has(gid) && g.status === "pending"))
         .map((w) => ({ id: w.id, title: w.meta["title"], collegium: w.meta["collegium"], sella: w.meta["sella"], traditio: w.meta["traditio"] }));
       const petitiones = (snap.petitiones ?? [])
         .filter((p) => p.state === "needs_you")

@@ -42,7 +42,7 @@ interface PendingCloseRestoration {
 export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
   const [officina, setOfficina] = useState<OfficinaResponse | typeof EMPTY_OFFICINA>(EMPTY_OFFICINA);
   const [opera, setOpera] = useState<OpusEntry[]>([]);
-  const [inbox, setInbox] = useState<Pick<InboxResponse, "petitiones">>({ petitiones: [] });
+  const [inbox, setInbox] = useState<Pick<InboxResponse, "opera" | "petitiones">>({ opera: [], petitiones: [] });
   const [eventsByItem, setEventsByItem] = useState<Record<string, EventRow[]>>({});
   const [selected, setSelected] = useState<Selection | undefined>(undefined);
   const [focusedByColumn, setFocusedByColumn] = useState<Record<string, string | undefined>>({});
@@ -62,7 +62,7 @@ export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   // W-341: the last reconciliation's outcome; a later successful one clears it.
   const [readFailed, setReadFailed] = useState(false);
 
-  const model = boardModel(officina, opera);
+  const model = boardModel(officina, opera, inbox);
 
   // Refs mirroring state that stable (mount-once) closures need to read.
   const selectedRef = useRef<Selection | undefined>(undefined);

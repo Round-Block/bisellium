@@ -37,6 +37,9 @@ export interface CardRow {
   state: string;
   gates: Gate[];
   needsYou: boolean;
+  /** Why this opus belongs to the attention-membership column. Kept as
+   * structured data so presentation never has to infer an ask from copy. */
+  asks: { kind: "greenlight" | "inbox" | "human_gate"; count: number }[];
   blocked: boolean;
 }
 
@@ -96,12 +99,20 @@ export function cardRow(opus: OpusEntry, human: Set<string>): CardRow {
     state: opus.state,
     gates: [],
     needsYou,
+    asks: needsYou ? [{ kind: "human_gate", count: 1 }] : [],
     blocked,
   };
 }
 
-export function boardModel(o: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">, opera: OpusEntry[]): BoardModel {
+export function boardModel(
+  o: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">,
+  opera: OpusEntry[],
+  inbox: Pick<InboxResponse, "opera" | "petitiones"> = { opera: [], petitiones: [] },
+): BoardModel {
   const human = humanGateIds(o);
+  const inboxOpera = new Set(inbox.opera.map((entry) => entry.id));
+  const petitionCount = new Map<string, number>();
+  for (const petitio of inbox.petitiones) petitionCount.set(petitio.opus, (petitionCount.get(petitio.opus) ?? 0) + 1);
 
   // Unique phases, in the lifecycle's own declared order, backlog excluded.
   const phases: string[] = [];
@@ -125,6 +136,16 @@ export function boardModel(o: Pick<OfficinaResponse, "lifecycle" | "probationes"
     const phase = stateToPhase.get(opus.state);
     const card = cardRow(opus, human);
     card.gates = gateRow(o.probationes, opus.probationes);
+
+    const linkedDecisions = petitionCount.get(opus.id) ?? 0;
+    const greenlightAsk = phase === BACKLOG_PHASE;
+    const humanGateAsk = card.needsYou || (inboxOpera.has(opus.id) && !greenlightAsk);
+    card.asks = [
+      ...(greenlightAsk ? [{ kind: "greenlight" as const, count: 1 }] : []),
+      ...(linkedDecisions > 0 ? [{ kind: "inbox" as const, count: linkedDecisions }] : []),
+      ...(humanGateAsk && linkedDecisions === 0 ? [{ kind: "human_gate" as const, count: 1 }] : []),
+    ];
+    card.needsYou = card.asks.length > 0;
 
     if (card.needsYou) {
       const needsYouColumn = columns.get(NEEDS_YOU_COLUMN);
