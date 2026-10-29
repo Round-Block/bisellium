@@ -37,6 +37,8 @@ const HANDOFF_REL = "docs/SESSION-HANDOFF.md";
 /** W-454: the console's one navigation table (W-110), read in the reviewed tree as text and never run. */
 const NAV_REL = "apps/web/src/lib/nav.ts";
 const NAV_MAX_BYTES = 64 * 1024;
+/** W-454: the most image bytes one review attaches, W-340's eight 4 MiB shots; the count no longer bounds it. */
+const UI_REVIEW_TOTAL_BYTES = 32 * 1024 * 1024;
 /** W-454: the review viewports in codex -i order: every served screen at desktop, then every one at phone (W-340). */
 const UI_REVIEW_VIEWPORTS = [
   [1280, "desktop"],
@@ -195,6 +197,9 @@ function uiFact(studio, opus) {
     refuse(
       `UI review screenshots must be exactly ${order.map(([name]) => name).join(", ")} (${NAV_REL}'s routes at 1280 and 390); missing ${absent.join(", ") || "none"}; unexpected ${extra.join(", ") || "none"}`,
     );
+  const total = order.reduce((sum, [name]) => sum + byName.get(name).bytes.length, 0);
+  if (total > UI_REVIEW_TOTAL_BYTES)
+    refuse(`UI review screenshots total ${total} bytes, over the ${UI_REVIEW_TOTAL_BYTES} one review attaches`);
   const images = [];
   const lines = [`Attached UI screenshots in codex -i order (${order.length} files, each at most 4194304 bytes):`];
   for (const [name, width, viewport, route] of order) {
