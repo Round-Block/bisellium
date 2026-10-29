@@ -1,0 +1,31 @@
+# opus: W-461
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T13:32:15.775Z
+# tree: tree:a2896d4e9745012c100cf755b6e12f455b369f7d
+# brief: briefs/W-461.md blob:4a2cf056f186a73882592519324f1a077eb5dcbf
+# ticket: {"opus":"W-461","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"11222c8f5e117daedf1ee52456abfc703881f454","brief":"4a2cf056f186a73882592519324f1a077eb5dcbf","at":"2026-10-29T13:32:09.052Z"}
+
+# W-461 spec signature, round 3 (architect, claude-opus-5-5): revision 2
+
+Brief: studio/briefs/W-461.md revision 2, prototyped over master 11222c8f (series c87ff342, series.mbox sha256 d0fb0364d68771c9e9091f141550306bec72d1e78f793755090d4379f363a888); evidence in /home/edckt/.bisellium-evidence/W-461-spec/; revision 1 kept in /home/edckt/.bisellium-evidence/W-461-spec/r1/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-461-spec/promise-ledger.md
+
+## Rebuttal
+None: every finding of ci/W-461-spec-2.log is adopted.
+- #1 (S1, brief:78, the prior bundle path unruled): adopted. webBuild now never throws: presence is read with statSync (ENOENT or ENOTDIR absent, any other error an inspect refusal), the prior bundle's removal and the whole subprocess are in try blocks, and each failure returns ok: false (proto/web-build.ts; web-build.ts:44-64 on stage 2). brief:78 is the reviewer's row, extended with the overflow, the throw and the root's path forms; brief:77 adds the inspect refusal. New pins: W-461-b1 "an invalid or unremovable stale bundle is refused without throwing" (a directory at apps/web/dist/index.html, through red), and, to close the perform's path too, W-461-b2 "a bundle path the next build cannot remove holds the perform without throwing". Both are red on revision 1's stages, red exiting through ERR_FS_EISDIR (red-b1-cleanup-on-r1-stage1.out, red-b2-cleanup-on-r1-stage2.out, accepted: red-accept.out:3-4), pass on revision 2 (proto-b1-stage1.out, proto-b2-stage2.out, proto-w461-file.out), and are killed by K9 and K10 (kills.out: ten kills, all guarded).
+- #2 (S2, brief:49): adopted with the reviewer's text: no red log, no ticket claim, exit 1; ignored web artifacts may change.
+- #3 (S2, brief:73): adopted with the reviewer's text, plus "webBuild never throws, so no rejection exits through an exception".
+
+Checked again on revision 2: every series commit builds the web bundle and typechecks on its own (series-builds.out); lint, format, typecheck and the neighbouring rows pass on stage 2 (gates-proto.out, census-*-proto.out); admission returns no problem (admission.out); master's ledger validator returns no problem (ledger-probe.out). The Codex test check rerun on revision 2 found, on its first pass, five rows the draft flipped (r1/ keeps revision 1's census, which missed them): W-179-b1 (a new file importing the next fixture), W-376-b1 and W-392-b1 (start-anchored patterns), W-163-b6 and W-423-b5 (the helper's rmSync unclassified). The rows now live in next-branch.test.ts and assert whole lines, so the first three stay green; containment.test.ts classifies the write, so the last two flip with behaviour 1's code and are named in Acceptance. Its final pass (fixture-census.md) lists exactly those two flips, both named, and nothing unnamed; every must-stay-green row it lists passes on stage 2 (gates-proto.out, census-*-proto.out, census-tests-w121-w178-proto.out). Every series commit builds and typechecks on its own (series-builds.out). No certify-runner file changes (W-323: nothing splits out); no file is code-owned.
+
+## Findings
+1. advisory — the build runs in place in the caller's checkout, not in certify's fresh clone and confined cell, so an ignored file or a module difference can make the two disagree; stated as a limit on Promise red — check: lifecycle.ts:1125 (stage 2), run-builder-host.mjs:738-759 (master)
+2. advisory — a permission error at the bundle path, the inspect refusal, the spawn error, the timeout and the overflow are not exercised; each returns from the same try blocks the pinned cleanup and exit cases use — check: web-build.ts:44-64 (stage 2), kills.out K9
+
+## Verdict
+passed — red and the reds perform run certify's own web bundle build at each red and replayed implementation commit, through a helper that never throws, so a series like W-408's is refused or held when it is made; certify is unchanged.

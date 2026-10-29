@@ -1,0 +1,20 @@
+# opus: W-461
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a187be-1f6b-7ce3-b8d0-195c8a431b43
+# outcome: failed
+# at: 2026-10-29T13:03:43.805Z
+# tree: tree:a2896d4e9745012c100cf755b6e12f455b369f7d
+# brief: briefs/W-461.md blob:e0df0cc94bee862056ee984220b63b3de0d9c409
+# ticket: {"opus":"W-461","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"11222c8f5e117daedf1ee52456abfc703881f454","brief":"e0df0cc94bee862056ee984220b63b3de0d9c409","at":"2026-10-29T13:03:33.989Z"}
+
+## Findings
+1. blocking — brief:78 The prior bundle path is an unruled input: a plausible mistaken build can leave ignored `apps/web/dist/index.html` as a directory, causing `rmSync` to throw before `webBuild` returns a failure; real `bisellium red` and replay-perform callers then exit through a generic exception instead of the promised refusal or hold, and the existing stale-bundle test covers only a regular file. Replace brief:78 with: “| The prior bundle path and the `WEB_BUILD` subprocess outcome | recognises an absent or removable prior bundle path followed by exit 0 with `apps/web/dist/index.html` present; inability to inspect or remove the prior path, a non-zero exit, spawn error, timeout, or exit 0 without the bundle is refused | `webBuild`, which catches cleanup and subprocess failures and returns `ok: false`; pinned by `W-461-b1` ‘an invalid or unremovable stale bundle is refused without throwing’ and the existing non-zero and missing-bundle cases |”. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w461.test.ts W-461-b1
+2. advisory — brief:49 “Writes nothing” is unattainable because `webBuild` first removes the prior bundle and a failed build may leave partial ignored outputs. Replace brief:49 with: “**`red`**, under ‘Red order: one at a time’, after the existing checks and before any prerequisite or red command runs: `webBuild(<repository root>)`. On `ok: false` it prints the preparation failure, commit and build tail, does not create the red log or claim its ticket, and exits 1; the attempted build may have changed ignored web artifacts. A red without the opt-in builds nothing, as before.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose-only filesystem-side-effect limit
+3. advisory — brief:73 The fail-closed definition repeats the false promise that rejection writes nothing. Replace brief:73 with: “A rejection fails closed for recording: `red` exits 1 without creating the red log or claiming its ticket, though the attempted build may change ignored web artifacts; the perform holds and the next derivation names a builder.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose-only filesystem-side-effect limit
+
+## Verdict
+The intended sequencing is feasible, but the new helper lacks a fail-closed boundary for an invalid prior bundle path.
+VERDICT: FAIL

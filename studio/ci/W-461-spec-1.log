@@ -1,0 +1,25 @@
+# opus: W-461
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T12:58:46.801Z
+# tree: tree:a2896d4e9745012c100cf755b6e12f455b369f7d
+# brief: briefs/W-461.md blob:e0df0cc94bee862056ee984220b63b3de0d9c409
+# ticket: {"opus":"W-461","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"11222c8f5e117daedf1ee52456abfc703881f454","brief":"e0df0cc94bee862056ee984220b63b3de0d9c409","at":"2026-10-29T12:58:39.192Z"}
+
+# W-461 spec signature, round 1 (architect, claude-opus-5-5)
+
+Brief: studio/briefs/W-461.md, prototyped over master 11222c8f; evidence in /home/edckt/.bisellium-evidence/W-461-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-461-spec/promise-ledger.md
+
+Checked: the two reds fail by assertion on their red commits and are accepted by classifyReplay (red-accept.out); each row passes at its stage (proto-b1-stage1.out, proto-b2-stage2.out, proto-w461-file.out); 8 kills, every line guarded (kills.out); lint, format and typecheck on stage 2 (gates-proto.out); the neighbouring rows green (census-*-proto.out); admission returns no problem (admission.out); master's ledger validator returns no problem (ledger-probe.out); W-408's replayed series through the helper finds certify's first failing commit, c80e3a71 (w408-demo.out). The Codex test check (fixture-census.md) lists no flipped row and nothing unnamed; each must-stay-green file it lists (red-order.test.ts, brief-admission.test.ts, host-cells.test.mjs, next-branch.test.ts W-326-b1 to b3, run.test.ts W-130 and W-134) passes on stage 2. No certify-runner file changes, so nothing splits out first (W-323); no file is code-owned.
+
+## Findings
+1. advisory — the build runs in place in the caller's checkout, not in certify's fresh clone and confined cell, so an ignored file or a module difference can make the two disagree; stated as a limit on Promise red — check: lifecycle.ts:1125 (stage 2), run-builder-host.mjs:738-759 (master)
+2. advisory — a builder-made series' tip and any commit no red sits on are not built by red; the gates' served suite builds the tip, as today — check: brief limit "A builder-made series is checked at its red commits"
+
+## Verdict
+passed — red and the reds perform run certify's own web bundle build (imported from scripts/host-cells.mjs) at each red and each replayed implementation commit, so a series like W-408's is refused when it is made; certify is unchanged.

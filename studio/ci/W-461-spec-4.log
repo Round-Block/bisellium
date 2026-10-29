@@ -1,0 +1,21 @@
+# opus: W-461
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a187be-1f6b-7ce3-b8d0-195c8a431b43
+# outcome: passed
+# at: 2026-10-29T13:41:18.092Z
+# tree: tree:a2896d4e9745012c100cf755b6e12f455b369f7d
+# brief: briefs/W-461.md blob:4a2cf056f186a73882592519324f1a077eb5dcbf
+# ticket: {"opus":"W-461","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"11222c8f5e117daedf1ee52456abfc703881f454","brief":"4a2cf056f186a73882592519324f1a077eb5dcbf","at":"2026-10-29T13:41:12.581Z"}
+
+## Findings
+1. advisory — brief:98 The claim that every new pattern asserts a whole line is false: the cleanup checks at prototype lines 68 and 146 use start-anchored regexes without `$`, wrapped in `assert.ok`, so trailing incorrect output passes while W-376/W-392 remain green. Replace the sentence beginning “Three rows…” with: “Three rows the first draft flipped are kept green by appending the rows to `next-branch.test.ts` and changing every output assertion, including both cleanup checks, to `assert.equal` or a regex anchored at both ends; all three pass on stage 2.” [severity: S4] [class: tests×one-sided-bound-assertion] — check: packages/cli/src/rules/tests.test.ts W-376-b1 and W-392-b1
+
+## Earlier findings
+- ci/W-461-spec-2.log #1: closed — brief:45, brief:55, brief:73, brief:77-78, brief:87 and brief:91 specify fail-closed inspection and cleanup results, guarantee `webBuild` does not throw, and pin both the red and perform paths.
+
+## Verdict
+The round-2 cleanup blocker is closed on both red and perform paths; only the advisory assertion-boundary correction remains.
+VERDICT: PASS
