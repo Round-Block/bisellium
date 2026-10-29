@@ -3,12 +3,13 @@
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { takeNotices } from "./review-notice.js";
-import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SLUG, SlotValue, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
+import { BRANCH, Json, OPUS, Out, PR_NUMBER, QUEUE_CONTEXTS, QUEUE_RULES, REPO_ROOT, Reply, SETUP_ENV, SLUG, SlotValue, T, World, advanceOrigin, cand, cli, commit, expectHeld, expectStep, ghCalls, ghMerges, git, gitq, landMerge, mergedList, modeLine, mutating, next, openList, outLines, performMerge, performPr, pushed, put, queueWorld, ran, remoteBranchExists, reviewed, scenario, scratch, sourceTree, tipOf, unmatched, viewOf, world, writeReceipt } from "./next-world.test.js";
 
 /** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
 const bindingPath = (w: World): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "queue", encodeURIComponent(BRANCH));
@@ -937,4 +938,110 @@ test("W-423-b2 behaviour 2: a direct-mode pr probes and removes its binding only
     assert.equal(readFileSync(outside, "utf8"), "an outside binding\n", `a symlinked ${level} level: the outside binding is not removed`);
     assert.deepEqual([tipOf(w), remoteBranchExists(w)], [before, false], `a symlinked ${level} level: no rebase and nothing pushed`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// W-462 rows b1-b3 (studio/briefs/W-462.md): a reviewed PR head that the opus branch rewrites with its tree kept is a
+// rewrite: never pushed by the pr rung, checked commit by commit and red by red, pushed by the Patron alone with a lease
+// on the reviewed head, then rebound and its review requested again before merge requeues it.
+// ---------------------------------------------------------------------------
+const W462_ROW = "w462.test.mjs";
+/** a fixture test that fails until impl.txt exists: each behaviour's red is a real assertion failure */
+const W462_ROWS = [
+  'import { test } from "node:test";',
+  'import assert from "node:assert/strict";',
+  'import { existsSync } from "node:fs";',
+  'for (const n of [1, 2]) test(`W-900-b${n} fixture: the implementation is present`, () => assert.equal(existsSync("impl.txt"), true));',
+  "",
+].join("\n");
+const W462_BUILD = ['import { mkdirSync, writeFileSync } from "node:fs";', 'await import("./src/main.mjs");', 'mkdirSync(new URL("./dist/", import.meta.url), { recursive: true });', 'writeFileSync(new URL("./dist/index.html", import.meta.url), "<!doctype html>\\n");', ""].join("\n");
+const w462Short = (oid: string): string => oid.slice(0, 12);
+/** The opus series a builder leaves: a web workspace and a failing row, real reds recorded at that commit, then the implementation. */
+function w462Series(w: World): void {
+  put(w.wt, ".gitignore", `${readFileSync(join(w.wt, ".gitignore"), "utf8")}dist/\n`);
+  put(w.wt, "package.json", `${JSON.stringify({ name: "w462-fixture", private: true, workspaces: ["apps/web"] }, null, 2)}\n`);
+  put(w.wt, "apps/web/package.json", `${JSON.stringify({ name: "@bisellium/web", private: true, type: "module", scripts: { build: "node build.mjs" } }, null, 2)}\n`);
+  put(w.wt, "apps/web/build.mjs", W462_BUILD);
+  put(w.wt, "apps/web/src/main.mjs", "export {};\n");
+  put(w.wt, "docs/ADOPTION.md", "adoption\n");
+  put(w.wt, W462_ROW, W462_ROWS);
+  commit(w.wt, `test(${OPUS}): rows, red`);
+  const tree = sourceTree(w.wt);
+  for (let n = 1; n <= w.behaviours; n++)
+    put(w.wt, `studio/ci/reds/${OPUS}/${String(n).padStart(2, "0")}.log`, [`# behaviour: ${n}`, `# command: node --test-reporter=tap --test-name-pattern=^W-900-b${n}\\s ${W462_ROW}`, "# exit: 1", `# at: ${T.reds}`, `# sella: builder.${OPUS}`, `# tree: ${tree}`, "", "TAP version 13", `not ok 1 - W-900-b${n} fixture: the implementation is present`, "  ---", "  code: 'ERR_ASSERTION'", "  ...", ""].join("\n"));
+  commit(w.wt, `studio(${OPUS}): reds at the row commit`);
+  put(w.wt, "impl.txt", "the implementation\n");
+  commit(w.wt, `feat(${OPUS}): the implementation`);
+  writeReceipt(w, "current");
+}
+/** A queue-mode world whose reviewed head is pushed and its PR opened by the pr rung; the main checkout owns origin/master. */
+function w462World(tag: string): { w: World; reviewed: string } {
+  const w = queueWorld(tag, { stdout: QUEUE_RULES }, true, w462Series);
+  advanceOrigin(w, ".github/CODEOWNERS", "# fixture owners\n/docs/ADOPTION.md @patron\n");
+  const created = join(w.root, "created.flag");
+  scenario(w, {
+    rules: { stdout: QUEUE_RULES },
+    list: { replies: [{ stdout: [] }], alts: [{ ifExists: created, replies: [{ stdout: [cand(w, { state: "OPEN" })] }] }] },
+    create: { stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n`, touch: created },
+    view: { stdout: { title: W418_TITLE } },
+  });
+  const first = performPr(w);
+  assert.equal(first.status, 0, ran("the reviewed head is pushed and its PR opened", first));
+  rmSync(w.log, { force: true });
+  return { w, reviewed: tipOf(w) };
+}
+/** Move opus/W-900 to `oid` in its worktree, as a series repair does. */
+const w462Move = (w: World, oid: string): void => void git(w.wt, ["reset", "-q", "--hard", oid]);
+/** A new history ending at `tree` (default: the reviewed tree), its last commit on `parent`. */
+const w462Commit = (w: World, parent: string, message: string, tree: string): string => git(w.repo, ["commit-tree", tree, "-p", parent, "-m", message]);
+const w462Tree = (w: World, ref: string): string => git(w.repo, ["rev-parse", `${ref}^{tree}`]);
+const w462Patron = (o: Out): string[] => outLines(o).filter((l) => l.startsWith("patron: "));
+const w462Why = (o: Out): string | undefined => outLines(o).find((l) => l.startsWith("why: "));
+const w462Origin = (w: World): string => git(w.origin, ["rev-parse", `refs/heads/${BRANCH}`]);
+/** The tree of `ref` with `path` holding `text`, written through a scratch index (nothing checked out moves). */
+function w462Mutate(w: World, ref: string, path: string, text: string): string {
+  const env = { ...SETUP_ENV, GIT_INDEX_FILE: join(scratch("w462-index"), "index") };
+  const run = (args: string[], input?: string): string => {
+    const r = spawnSync("git", args, { cwd: w.repo, env, encoding: "utf8", ...(input === undefined ? {} : { input }) });
+    assert.equal(r.status, 0, `git ${args.join(" ")}: ${r.stderr}`);
+    return r.stdout.trim();
+  };
+  run(["read-tree", ref]);
+  const blob = run(["hash-object", "-w", "--stdin"], text);
+  run(["update-index", "--add", "--cacheinfo", `100644,${blob},${path}`]);
+  return run(["write-tree"]);
+}
+
+test("W-462-b1 behaviour 1: a PR head the opus branch rewrites with its tree kept is a rewrite, and the pr rung never pushes it", { timeout: 600_000 }, () => {
+  const { w, reviewed } = w462World("w462-b1");
+  const tree = w462Tree(w, reviewed);
+  const head = w462Commit(w, `${reviewed}~1`, `feat(${OPUS}): the implementation (rewritten)`, tree);
+  w462Move(w, head);
+
+  // (a) the rung names the rewrite, the reviewed head and the kept tree
+  const o = next(w, [OPUS]);
+  expectStep(o, "pr", "named", "a rewrite is the pr rung");
+  assert.equal(o.kv.get("rewrite"), `PR #${PR_NUMBER} ${w462Short(reviewed)} -> ${BRANCH} ${w462Short(head)}, tree ${w462Short(tree)}`, ran("the rung names the rewrite, the reviewed head and the kept tree", o));
+
+  // (b) the perform pushes nothing and asks the Patron once, for the one leased push
+  const p = performPr(w);
+  assert.deepEqual([p.status, p.first, mutating(w), w462Origin(w)], [1, `next: ${OPUS} pr held`, [], reviewed], ran("the reviewed head is not replaced", p));
+  assert.deepEqual(w462Patron(p), [`patron: git -C ${w.wt} push --force-with-lease=refs/heads/${BRANCH}:${reviewed} origin ${head}:refs/heads/${BRANCH}`], ran("the Patron's one leased push", p));
+
+  // (c) origin moved off the reviewed head: held, nothing checked or pushed
+  const side = join(scratch("w462-b1-side"), "c");
+  git(dirname(side), ["clone", "-q", "-b", BRANCH, w.origin, side]);
+  put(side, "notes.txt", "a push from elsewhere\n");
+  commit(side, "chore: someone else pushed");
+  git(side, ["push", "-q", "origin", `HEAD:refs/heads/${BRANCH}`]);
+  const moved = w462Origin(w);
+  const m = performPr(w);
+  assert.deepEqual([m.status, w462Why(m), w462Patron(m), w462Origin(w)], [1, `why: origin's ${BRANCH} is ${w462Short(moved)}, not PR #${PR_NUMBER}'s reviewed head ${w462Short(reviewed)}; nothing checked or pushed`, [], moved], ran("origin moved off the reviewed head", m));
+  git(side, ["push", "-q", "--force", "origin", `${reviewed}:refs/heads/${BRANCH}`]);
+
+  // (d) a rewrite that changes the record tree but not the source: held, a rewrite keeps the reviewed tree
+  put(w.wtStudio, "notes.md", "a record line the reviewed head does not carry\n");
+  commit(w.wt, `studio(${OPUS}): a note after the rewrite`);
+  const d = next(w, [OPUS]);
+  assert.deepEqual([d.first, w462Why(d)], [`next: ${OPUS} pr held`, `why: ${BRANCH} ${w462Short(tipOf(w))} rewrites PR #${PR_NUMBER}'s reviewed head ${w462Short(reviewed)} and changes its tree outside the source: a rewrite keeps the reviewed tree (W-462); commit the record after the Patron's push`], ran("a changed record tree is held", d));
 });
