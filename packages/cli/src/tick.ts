@@ -15,6 +15,8 @@
  * While paused (`bisellium pause`, see pause.ts) only (a) runs.
  */
 import { basename, dirname, join, resolve } from "node:path";
+import { homedir } from "node:os";
+import { codexBurnLine, takeReading } from "./usage-reading.js";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { listMd, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
@@ -397,6 +399,8 @@ export interface RunTickOptions {
   listModels?: () => Promise<ListedModel[]>;
   /** Injected vendor-version call — absent means the real `harnessVersions`. */
   versions?: () => Promise<{ claude?: string; codex?: string }>;
+  /** W-430: the home the usage reading reads (`~/.codex/sessions`) — absent means `os.homedir()`. */
+  home?: string;
 }
 export interface RunTickResult {
   exitCode: number;
@@ -520,6 +524,7 @@ export async function runTick(args: string[], opts: RunTickOptions = {}): Promis
   if (dryRun) {
     if (due.length === 0) console.log("nothing due");
     else for (const item of due) console.log(formatDue(item));
+    console.log(codexBurnLine(takeReading(opts.home ?? homedir(), now, "tick"), now));
     return { exitCode: 0 };
   }
 
@@ -545,6 +550,8 @@ export async function runTick(args: string[], opts: RunTickOptions = {}): Promis
     }
   }
   for (const item of due) if (item.kind !== "daily") console.log(formatDue(item));
+  // W-430: the Codex burn the rest of the week needs, read from the newest Codex session log
+  console.log(codexBurnLine(takeReading(opts.home ?? homedir(), now, "tick"), now));
 
   // Probe: every turn it spends is W-069's `probeBattery`'s, under its own
   // control rule and record — tick never writes models.json itself. A

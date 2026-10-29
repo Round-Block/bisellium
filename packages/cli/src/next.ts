@@ -51,6 +51,7 @@ import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
+import { appendReading, codexBurnLine, costPhrase, opusCost, readReadings, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
 
 export { MIN_CHECKS };
 
@@ -1767,12 +1768,15 @@ function handoverAt(t: unknown): number | string {
   return "error" in read ? `the record's traditio ${read.error}` : instant((t as Dict)["at"])!.getTime();
 }
 
-/** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too. */
-function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived {
+/** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too.
+ *  W-430: and a session under the context wind-down: `usage` (read once, only for an order) past it holds the order. */
+function gateDispatch(d: Derived, f: Facts, budget: number | undefined, usage?: () => Reading): Derived {
   if (d.status !== "named" || d.order === undefined) return d;
   const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [["underlying", d.why]] });
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
+  const wind = usage === undefined ? undefined : windDown(usage());
+  if (wind !== undefined) return refuse(wind);
   if (d.order.resume) {
     // W-293: before opus/<id> exists the handover is only the main checkout's record (`handoff` writes it there, D-021): an absent
     // or unparsable one holds, never falling back to an older trunk handover
@@ -2634,8 +2638,10 @@ function handoffHold(f: Facts): StepResult | undefined {
   return findings.length === 0 ? undefined : held(findings);
 }
 
-/** W-214: why done may not commit yet: master keeps the history page and the working tree adds no line naming `id` to it. Reads only; a git failure is a reason. */
-function historyRowRefusal(repo: string, id: string): string | undefined {
+/** W-214: why done may not commit yet: master keeps the history page and the working tree adds no line naming `id` to it.
+ *  W-430: or no added line naming `id` carries its cost phrase, when the readings under `home` name the opus (none, or an
+ *  unreadable readings file, asks nothing). Reads only; a git failure is a reason. */
+export function historyRowRefusal(repo: string, id: string, home = homedir()): string | undefined {
   const kept = git(repo, ["ls-tree", "-z", "--name-only", TRUNK, "--", HISTORY]);
   if (kept.error !== undefined || kept.status !== 0) return `master's tree cannot be read: ${one(kept.error?.message ?? kept.stderr)}`;
   if (kept.stdout === "") return undefined;
@@ -2645,8 +2651,32 @@ function historyRowRefusal(repo: string, id: string): string | undefined {
   // added lines only: everything after the first hunk header, so the `+++ b/<path>` header is never read as a row
   const lines = diff.stdout.split("\n");
   const added = lines.slice(lines.findIndex((l) => l.startsWith("@@")) + 1).filter((l) => l.startsWith("+"));
-  if (added.some((l) => named.test(l))) return undefined;
-  return `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run`;
+  const rows = added.filter((l) => named.test(l));
+  if (rows.length === 0) return `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run`;
+  const cost = costOf(home, id);
+  if ("none" in cost || rows.some((l) => l.includes(cost.phrase))) return undefined;
+  return `the checkpoint row naming ${id} carries no cost: add "${cost.phrase}" beside its hours (W-430: its plan cost from the usage readings), then re-run`;
+}
+
+/** W-430: the usage reading a performed rung takes at `nowMs`, labelled `<opus> <step>`: appended to the readings file under
+ *  the home folder and printed as its `usage:` line, then the opus's cost so far as its `cost:` line (the phrase its
+ *  checkpoint row carries). A reading that cannot be recorded is printed with why; the step's result never depends on it. */
+function rungUsage(id: string, step: Step, nowMs: number): string[] {
+  const home = homedir();
+  const reading: Reading = takeReading(home, new Date(nowMs), `${id} ${step}`, { opus: id, step });
+  const bad = appendReading(home, reading);
+  const cost = costOf(home, id);
+  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`]), `cost: ${"phrase" in cost ? cost.phrase : `none (${cost.none})`}`];
+}
+
+/** W-430: the opus's cost from the readings file, as its checkpoint row carries it, or why there is none. Its own done
+ *  readings are left out, so a done held and run again asks the same phrase; a cost that read neither plan asks none. */
+function costOf(home: string, id: string): { phrase: string } | { none: string } {
+  const all = readReadings(home);
+  if ("error" in all) return { none: `the readings file cannot be read: ${all.error}` };
+  const c = opusCost(all.filter((r) => r.opus !== id || r.step !== "done"), id);
+  if (c === undefined) return { none: `no usage reading names ${id} before its done` };
+  return c.claude === null && c.codex === null ? { none: `no usage reading of ${id} read either plan` } : { phrase: costPhrase(c) };
 }
 
 const CERTIFY_LOG_MAX = 16 * 1024 * 1024;
@@ -2955,6 +2985,7 @@ function handoverLine(t: unknown): { line: string } | { error: string } {
  * handover hold, no step health). Reads only: no ticket, marker or step log. An unreadable record, an unknown opus, a
  * malformed traditio, a held derivation or a throw makes the run exit 1, after every line is printed.
  * W-404: then, when the officina has a milestones.yml, the milestones line (exits.ts), before `open:`; a held one exits 1.
+ * W-430: then the Codex burn the rest of the week needs (usage-reading.ts), before `open:`; it never fails the run.
  */
 function runAll(repo: string, studioAbs: string): { exitCode: number } {
   let names: string[];
@@ -3006,6 +3037,8 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
     lines.push(milestones.line);
     if (milestones.held) failed = true;
   }
+  const now = new Date();
+  lines.push(codexBurnLine(takeReading(homedir(), now, "next --all"), now));
   lines.push(`open: ${open}`);
   console.log(lines.map((l) => clean(l, 1000)).join("\n"));
   return { exitCode: failed ? 1 : 0 };
@@ -3052,7 +3085,10 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   let f = gather(repo, opened.root, id);
   if (f.trunkRecord === undefined && f.branchRecord === undefined) return usage(`unknown opus: ${id}`);
   const env: Env = { repo, procRoot: a.testClock && process.env["BISELLIUM_TEST_PROC"] ? process.env["BISELLIUM_TEST_PROC"] : "/proc", nowMs: a.nowMs };
-  const derive = (facts: Facts): Derived => gateDispatch(deriveNext(facts), facts, a.budget);
+  // W-430: the session's usage, read at most once and only when a dispatch order is gated
+  let reading: Reading | undefined;
+  const sessionUsage = (): Reading => (reading ??= takeReading(homedir(), new Date(a.nowMs), `${id} next`));
+  const derive = (facts: Facts): Derived => gateDispatch(deriveNext(facts), facts, a.budget, sessionUsage);
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
@@ -3131,7 +3167,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     }
 
     // ---- --perform on a performable rung: take the marker, re-derive, check --expect, act once; W-292: --chain repeats it ----
-    type Once = { code: number; lines: string[]; after: string[]; ok: boolean; next?: Derived };
+    // W-430: `usage`, the reading lines of a rung performed; the output prints every rung's after its last lines
+    type Once = { code: number; lines: string[]; after: string[]; ok: boolean; next?: Derived; usage?: string[] };
     const once = async (d1: Derived): Promise<Once> => {
       const halt = (lines: string[]): Once => ({ code: 1, lines, after: [], ok: false });
       if (a.expect !== undefined && a.expect !== d1.step) return halt(refusalLines(d1));
@@ -3194,11 +3231,13 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
             result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : (handoffHold(f) ?? performDone(f, d2));
         }
         log(`${d2.step} ${result.ok ? "performed" : "held"}`);
+        // W-430: every rung performed (or held once performing) takes a usage reading, appended and printed
+        const usageLines = rungUsage(id, d2.step, a.testClock ? a.nowMs : Date.now());
         f = gather(repo, opened.root, id);
         const d3 = deriveNext(f);
         for (const l of refreshTicket(f, d3, a.nowMs)) log(l);
         const after = [`next-step: ${d3.step}`, ...(d3.status === "held" ? [`next-why: ${one(d3.why)}`] : [])];
-        return { code: result.ok ? 0 : 1, lines: [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note], after, ok: result.ok, next: d3 };
+        return { code: result.ok ? 0 : 1, lines: [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note], after, ok: result.ok, next: d3, usage: usageLines };
       } finally {
         try {
           if (readFileSync(markerPath(repo, id), "utf8") === ours) unlinkSync(markerPath(repo, id));
@@ -3209,17 +3248,19 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     };
     // the chain moves only forward: each rung is performed at most once, so it ends after pr at the latest
     const lines: string[] = [];
+    const readingLines: string[] = [];
     for (let d = d1; ; ) {
       const r = await once(d);
       lines.push(...r.lines);
-      if (!r.ok || !a.chain || r.next === undefined) return say(r.code, [...lines, ...r.after]);
+      readingLines.push(...(r.usage ?? []));
+      if (!r.ok || !a.chain || r.next === undefined) return say(r.code, [...lines, ...r.after, ...readingLines]);
       const was = STEPS.indexOf(d.step);
       // the one derivation after the rung, the one `next-step` prints, decides whether the chain goes on: it is not derived again
       d = r.next;
-      if (STEPS.indexOf(d.step) <= was) return say(0, [...lines, ...r.after]);
+      if (STEPS.indexOf(d.step) <= was) return say(0, [...lines, ...r.after, ...readingLines]);
       // a later rung of the chain that derives held (gh failing at pr discovery, say) is the chain's hold, never a success
-      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, whyLine(d), ...d.extra.map(([k, v]) => `${k}: ${one(v)}`), ...r.after]);
-      if (!performable(d)) return say(0, [...lines, ...r.after]);
+      if (d.status === "held" && CHAIN.has(d.step)) return say(1, [...lines, `next: ${id} ${d.step} held`, whyLine(d), ...d.extra.map(([k, v]) => `${k}: ${one(v)}`), ...r.after, ...readingLines]);
+      if (!performable(d)) return say(0, [...lines, ...r.after, ...readingLines]);
     }
   } catch (e) {
     console.error(`next: ${id} failed: ${clean((e as Error).message)}`);

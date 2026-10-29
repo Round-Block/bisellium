@@ -1,0 +1,21 @@
+# opus: W-430
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T12:22:47.158Z
+# tree: tree:3e8660f46fedc29041185bfa39beac20748e042d
+# brief: briefs/W-430.md blob:d3f7252a4c794b4316b5ca103f68ba7bb31c921c
+# ticket: {"opus":"W-430","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-430/studio","head":"c1af51364269437f3895f1e6e786ee9bf8784ca7","brief":"d3f7252a4c794b4316b5ca103f68ba7bb31c921c","at":"2026-10-29T12:22:40.490Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-430-d085/promise-ledger.md
+
+## Findings
+
+1. advisory — D-085 ruling on the class loop of build reviews 1 to 3 (review r3 #1, brief:89): the append is one O_APPEND write of a newline, the reading's line and a newline, never retried and never truncated back, so a failed append cannot remove or merge a reading another verb appended, and the leading newline starts each reading on a fresh line after a torn tail; a short write stays `usage-error` (review r2 #1) and its torn part is skipped by readers — check: pinned by `W-430-b2` "the concurrent reading survives the stalled append, and the torn part is not a reading" (red on opus head 5405f4b8 at `~/.bisellium-evidence/W-430-d085/red-b2-concurrent.out`, green on the prototype at `proto-b2.out`), "a write that stops short is not retried: one write per reading" and "and starts on a fresh line: both good readings, in order".
+2. advisory — what this design cannot promise is stated, not guaranteed (D-076 E): O_APPEND atomicity is the local filesystem's; a write stopped before only the final newline leaves a whole, counted reading although `usage-error` was printed; a script line (`echo >>`, no leading newline) right after a torn tail joins it; the file gains a blank line before each perform reading — check: brief:66 and brief:89 limit text.
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 4 at `studio/briefs/W-430.md`, amending Interfaces (the append), Promise append, Input domain row 3, behaviour 2 and Acceptance to the one-write append prototyped over opus/W-430 5405f4b8 (`~/.bisellium-evidence/W-430-d085/prototype-d085.diff`); no other promise changed.

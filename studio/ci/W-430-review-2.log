@@ -1,0 +1,24 @@
+# opus: W-430
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18685-5c52-7383-b71e-973f7fe532d2
+# outcome: failed
+# at: 2026-10-29T09:14:26.835Z
+# tree: tree:b0a4be845926ebd3609b9de2494861af0e03af0b
+# brief: briefs/W-430.md blob:3da9650a1a5b2617e2fe44f27b5149bf1cbb19ec
+# ticket: {"opus":"W-430","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-430/studio","head":"01b18e82bd043ef0516387088d9578e590c23524","brief":"3da9650a1a5b2617e2fe44f27b5149bf1cbb19ec","at":"2026-10-29T09:12:39.802Z"}
+
+## Findings
+1. blocking — packages/cli/src/usage-reading.ts:178 [severity: S1] brief:66 `writeSync`’s returned byte count is ignored, so a short write is reported as success while leaving a torn reading instead of printing `usage-error`; this is missing evidence for a performed rung. [class: review×evidence-backfilled-or-absent] — check: packages/cli/src/w430.test.ts
+
+## Earlier findings
+- ci/W-430-review-1.log #1: closed — packages/cli/src/usage-reading.ts:175 opens the final file with `O_NOFOLLOW`, checks the descriptor is regular before writing, and the added b2 case proves the symlink target remains unchanged.
+- ci/W-430-review-1.log #2: open — packages/cli/src/usage-reading.ts:93 now rejects fractional, past, or out-of-range numeric `resets_at` values that brief:88 still admits, and the added b1 case asserts that rejection rather than amending the signed domain.
+- ci/W-430-review-1.log #3: closed — packages/cli/src/usage-reading.ts:191 validates the reading shape and the added b3 cases prove foreign and wrong-type lines naming the opus are skipped.
+
+## Verdict
+The symlink and malformed-line blockers are closed, but the reset-domain blocker remains open and the new append path can silently record a partial line.
+
+VERDICT: FAIL

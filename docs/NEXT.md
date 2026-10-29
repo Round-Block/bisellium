@@ -33,6 +33,19 @@ otherwise (no derivation held) it exits 0. It takes no `<opus>` and no flag but 
 refuses a linked worktree as `next <opus>` does. A fresh session reads it, with the handoff's Queue, instead of a
 Resume point.
 
+**Usage in the records (W-430).** Every rung `--perform` performs appends one usage reading, labelled with the opus and the
+step, to `~/.bisellium-evidence/usage/readings.jsonl` (outside the officina; a symlinked or non-regular file or folder is
+refused) and prints it as `usage: Claude 5h <n>%, week <n>%, context <n> tokens; Codex week <n>%, resets <iso>` (a stale or
+unread source is said so), then `cost: Claude week +<n>%, Codex week +<n>% over <h> h`, the opus's plan use so far; a reading
+that cannot be recorded prints `usage-error: the reading was not recorded: <why>` and the rung's result stands. `done`
+refuses a checkpoint row naming the opus that lacks the cost phrase while its readings read a plan. A fresh status line
+showing at least 300000 context tokens holds a dispatch order (`why: context <n> tokens is past 300000: let running tasks
+finish, refresh the session handoff, and start no new work (W-430)`); a rung the verb performs still runs. `--all` (before
+`open:`) and `bisellium tick` print `codex: week <n>% used, resets <iso> (<h> h left): <n>%/h (<n>%/day) uses the rest`, or
+that the week has reset since the last reading, or that no Codex session log holds one. A reading line of the file counts only
+with its fields present and typed, and a Codex `resets_at` counts only as an integer Unix timestamp in seconds from the
+line's time to 10080 minutes after it.
+
 `next` is the cascade order as a verb (`packages/cli/src/next.ts`). From the
 record and its evidence alone it derives the one legal next step of the
 thirteen-rung ladder `STEPS` (`greenlight`, `spec`, `branch`, `ready`, `reds`,
