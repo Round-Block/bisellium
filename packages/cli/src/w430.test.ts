@@ -8,7 +8,7 @@
  * dir; nothing here reads or writes `studio/`, `examples/` (b5 copies examples/sample-studio first) or the real home.
  */
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
@@ -52,6 +52,8 @@ interface Cost {
 interface Mod {
   takeReading: (home: string, now: Date, label: string, rung?: { opus: string; step: string }) => Reading;
   readingLine: (r: Reading) => string;
+  appendReading: (home: string, r: Reading, write?: (fd: number, data: Buffer) => number) => string | undefined;
+  readReadings: (home: string) => Reading[] | { error: string };
   opusCost: (readings: Reading[], id: string) => Cost | undefined;
   costPhrase: (c: Cost) => string;
   codexBurnLine: (r: Reading, now: Date) => string;
@@ -168,7 +170,7 @@ test("W-430-b1 behaviour 1: a usage reading reads Claude's 5h, week and context 
   assert.equal(takeReading(stale, now, "bad").claude_seen, null, "a malformed status-line file: unread");
 });
 
-test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung it performs, labelled with the opus and step, and prints it; a report run appends none", { timeout: 600_000 }, () => {
+test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung it performs, labelled with the opus and step, and prints it; a report run appends none", { timeout: 600_000 }, async () => {
   const w = world("w430-b2", "spec");
   const now = new Date(NOW_ISO);
   claudeFile(w.home, NOW_ISO);
@@ -218,6 +220,26 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
   assert.equal(readFileSync(outside, "utf8"), "kept\n", ran("nothing appended through the readings file's symlink", linked));
   // one-sided: the text after the colon is the platform's or the helper's own refusal, which the row does not pin
   assert.match(lineOf(linked.out, "usage-error: ") ?? "", /^usage-error: the reading was not recorded: \S/, ran("and the refusal is printed", linked));
+
+  // a short write is a failure said so, never a success that leaves a torn reading
+  const m = await load();
+  const appendReading = fn(m, "appendReading");
+  const readReadings = fn(m, "readReadings");
+  const takeReading = fn(m, "takeReading");
+  const reading = takeReading(w.home, new Date(NOW_ISO), "short", { opus: OPUS, step: "branch" });
+  const tornHome = scratchHome("b2-torn");
+  const half = (fd: number, data: Buffer): number => writeSync(fd, data.subarray(0, Math.floor(data.length / 2)));
+  const torn = appendReading(tornHome, reading, (fd, data) => (writeSync(fd, data.subarray(0, 1)), 0));
+  assert.match(torn ?? "", /\S/, "a write that stops short: the failure is returned for the usage-error line");
+  assert.deepEqual(readReadings(tornHome), [], "and no torn line is a reading");
+  const stalled = scratchHome("b2-stalled");
+  let calls = 0;
+  const failed = appendReading(stalled, reading, (fd, data) => (calls++ === 0 ? half(fd, data) : 0));
+  assert.match(failed ?? "", /\S/, "a write that makes no progress after a part: the failure is returned");
+  assert.deepEqual(readReadings(stalled), [], "and the part written is not a reading");
+  const slow = scratchHome("b2-slow");
+  assert.equal(appendReading(slow, reading, (fd, data) => writeSync(fd, data.subarray(0, 7))), undefined, "a write that takes several calls completes the line");
+  assert.deepEqual(readReadings(slow), [reading], "and the whole line is the reading");
 });
 
 test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading intervals its rungs close; next --perform prints it and done asks its checkpoint row to carry it", { timeout: 600_000 }, async () => {
