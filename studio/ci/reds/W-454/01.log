@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-454-b1\s --import tsx scripts/review-packet.test.mjs
+# exit: 1
+# at: 2026-10-29T06:27:39.423Z
+# sella: builder.W-454
+# tree: tree:a556ba3c3bf17c1dbb976e7b2a4c2e4e0ca3ec62
+# ticket: {"opus":"W-454","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-454/studio","head":"c6e3e8716b638078b34f1e3f21d11762cd1c5636","brief":"e4dacff4b106be8adc46aa8b98759a124e3c5925","at":"2026-10-29T06:27:35.087Z"}
+
+TAP version 13
+# Subtest: W-454-b1 behaviour 1: a UI build packet attaches every screen of the reviewed tree's navigation table at 1280 then 390, each with its stated judgment or the stated default
+not ok 1 - W-454-b1 behaviour 1: a UI build packet attaches every screen of the reviewed tree's navigation table at 1280 then 390, each with its stated judgment or the stated default
+  ---
+  duration_ms: 65.870153
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-454/scripts/review-packet.test.mjs:992:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the navigation table's twelve screenshots build: UI review screenshots must be exactly inbox-1280.png, board-1280.png, seats-1280.png, officina-1280.png, inbox-390.png, board-390.png, seats-390.png, officina-390.png; missing none; unexpected atlas-1280.png, atlas-390.png, home-1280.png, home-390.png
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-454/scripts/review-packet.test.mjs:996:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 77.17211
