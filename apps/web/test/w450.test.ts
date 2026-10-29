@@ -64,8 +64,8 @@ test("W-450-b1 behaviour 1: a served row's failure prints the not-ok title certi
     classifyReplay: Classify;
   };
   const run = runServedReporters(FIXTURE);
-  assert.match(run.output, /^\s*Running 4 tests using \d+ workers?\b/m, "Playwright ran the four fixture rows on the served config");
-  assert.match(run.output, /^\s*1 failed\b/m, "exactly one fixture row failed on its every attempt");
+  assert.match(run.output, /^\s*Running 4 tests using \d+ workers?\s*$/m, "Playwright ran the four fixture rows on the served config");
+  assert.match(run.output, /^\s*1 failed\s*$/m, "exactly one fixture row failed on its every attempt");
   const lines = run.output.split("\n").map((line) => line.replace(/\r$/, ""));
   const titles = lines.flatMap((line) => HOST_TITLE.exec(line)?.[1] ?? []);
   assert.deepEqual(
