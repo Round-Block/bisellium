@@ -92,7 +92,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 42. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-409 — Board Needs-you counting. Then W-410 to W-413. W-408 parked until W-462 (Patron 10-29).
+1. W-409 — Board Needs-you counting. Then W-410 W-411 W-412 W-413. W-408 parked until W-462 (Patron 10-29).
 2. W-451 — Home: gates passed a0d5d440; data W-439, W-440. Then W-453 (D-128 D).
 3. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
