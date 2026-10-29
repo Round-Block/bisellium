@@ -167,9 +167,9 @@ test("W-341-b5 behaviour 5: the Officina reports loading, empty and error from i
   wired("Officina");
   const source = read("src/screens/Officina.tsx");
   assert.match(source, /screenStatus\("officina", \{/, "the Officina derives its one status from the matrix");
-  assert.match(source, /loaded: actaSettled && parts\.every\(\(p\) => p !== undefined\)/, "loading lasts until every read settles");
+  assert.match(source, /loaded: parts\.every\(\(part\) => part !== undefined\)/, "loading lasts until all four detail reads settle");
   assert.match(source, /failed: parts\.includes\("failed"\) \|\| undefined/, "any failed panel read is the error state");
-  assert.match(source, /\.finally\(\(\) => setActaSettled\(true\)\)/, "the strip's read settles on success or failure");
+  assert.match(source, /empty: Array\.isArray\(aerarium\) && aerarium\.length === 0 && Array\.isArray\(opera\) && opera\.length === 0\s*&& typeof health === "object" && health\.blocks === 0 && health\.advisories === 0 && health\.due\.length === 0/, "empty requires no budget, work, blocks, advisories or due process item");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(status\), \[status\.state, status\.text\]\)/, "the Officina reports each status change");
 });
 
