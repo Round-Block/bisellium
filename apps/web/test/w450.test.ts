@@ -102,12 +102,30 @@ test("W-450-b1 behaviour 1: a served row's failure prints the not-ok title certi
     ["ok 1 - a"],
     "a test unexpected on record but passing on a replay retry is flaky, and prints ok",
   );
-  // every character the host's line grammar cannot carry inside a title comes out as one space, so the line is re-attestable
-  for (const [name, ch] of [["LF", "\n"], ["CR", "\r"], ["NEL U+0085", "\u0085"], ["LS U+2028", "\u2028"], ["PS U+2029", "\u2029"], ["VT", "\v"], ["FF", "\f"], ["FS", "\x1c"], ["GS", "\x1d"], ["RS", "\x1e"]] as const) {
+  // the host's two readings of a printed line (scripts/run-builder-host.mjs): the recorded log's, by its multiline pattern
+  // over the whole text (:716), and the replay's, line by line after a split on LF and one trailing CR dropped (:770-771)
+  const hostReads = (printed: string): string[][] => [
+    [...`# log\n${printed}\n`.matchAll(/^not ok \d+ - (.*)$/gm)].map((m) => (m[1] ?? "").replace(/\r$/, "")),
+    `${printed}\n`.split("\n").flatMap((line) => HOST_TITLE.exec(line.replace(/\r$/, ""))?.[1] ?? []),
+  ];
+  const printedFor = (ch: string): [string[], string[][]] => {
     const printed = reporter.tapLines([fake(["a" + ch + "b"], "unexpected")]).slice(2);
-    assert.deepEqual(printed, ["not ok 1 - a b"], `a title holding ${name} prints as one line the host reads`);
-    assert.deepEqual(HOST_TITLE.exec(printed[0] ?? "")?.[1], "a b", `the host's pattern reads the title holding ${name}`);
-  }
+    return [printed, hostReads(printed.join("\n"))];
+  };
+  // ECMAScript's four line terminators: the host's `.` does not match them and its multiline `^` and `$` break at them
+  const FOLDED = [["LF", "\n"], ["CR", "\r"], ["CRLF", "\r\n"], ["LS U+2028", "\u2028"], ["PS U+2029", "\u2029"], ["LF LS CR PS", "\n\u2028\r\u2029"]] as const;
+  assert.deepEqual(
+    FOLDED.map(([name, ch]) => [name, ...printedFor(ch)]),
+    FOLDED.map(([name]) => [name, ["not ok 1 - a b"], [["a b"], ["a b"]]]),
+    "a title's run of line terminators, LF, CR, LS or PS, prints as one space, and both host readings read that one line",
+  );
+  // every other character is one the host's `.` matches, so it is kept as written
+  const KEPT = [["NEL U+0085", "\u0085"], ["VT", "\v"], ["FF", "\f"], ["FS", "\x1c"], ["GS", "\x1d"], ["RS", "\x1e"], ["TAB", "\t"], ["NUL", "\0"], ["NBSP U+00A0", "\u00a0"], ["BOM U+FEFF", "\ufeff"]] as const;
+  assert.deepEqual(
+    KEPT.map(([name, ch]) => [name, ...printedFor(ch)]),
+    KEPT.map(([name, ch]) => [name, [`not ok 1 - a${ch}b`], [[`a${ch}b`], [`a${ch}b`]]]),
+    "every other character the host's pattern reads, NEL, VT, FF, FS, GS and RS included, prints unchanged and both host readings read it",
+  );
   assert.deepEqual(reporter.tapLines([fake(["a\\b#c"], "unexpected")]).slice(2), ["not ok 1 - a\\\\b\\#c"], "backslash and hash are escaped");
   assert.throws(() => new reporter.default().onEnd({ status: "passed" }), "TapReporter.onEnd throws when the root suite is absent");
 });
