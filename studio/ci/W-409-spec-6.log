@@ -1,0 +1,27 @@
+# opus: W-409
+# phase: spec
+# round: 6
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a187ba-4788-76a3-87b2-499df130c3e1
+# outcome: passed
+# at: 2026-10-29T15:38:51.275Z
+# tree: tree:7c9a238f6fedb2dfad5c70bd81995405a5f1ef60
+# brief: briefs/W-409.md blob:55464fe434802edb1d3df1ead0694bd271b819a1
+# ticket: {"opus":"W-409","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"9eb8d0ef1821106ceb4b4649ea04b3b8e079285e","brief":"55464fe434802edb1d3df1ead0694bd271b819a1","at":"2026-10-29T15:38:46.669Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-409-spec/r6/promise-ledger.md
+
+## Findings
+
+1. advisory — Astra round-5 blocker 1 is adopted without a design expansion: waiting cards reserve three complete 18px title lines, one complete 14px ask line and one complete 14px owner/state line; truncated titles show an ellipsis, retain their native `title`, and stay within 108px on both copies at 1280, 640 and 390 — check: apps/web/src/components/w025.css, apps/web/tests-serve/w409.spec.ts, r6/b3-title-series-red.out, r6/w409-served-final.out, shots-r6/board-many-640-closed.png
+2. advisory — The required test-first revision is explicit in the series: commit `0fd58890` adds the served b3 assertion atop the former final prototype and fails with TAP `not ok 1`; commit `594d2d36` supplies the CSS and makes the row green — check: r6/reds-host.out, r6/b3-title-series-red.out, r6/mbox-check.out
+3. advisory — Spec round-4 blocker 1 is closed with fresh final-tree captures: the capture script rebuilds the served tree, names `index-CzfXxEuy.js`, records Inbox `1` for sample and `5` for many asks, and retains the W-406 cue and W-415 shell geometry — check: shots-r6/capture.log, shots-r6/board-sample-1280-expanded.png, shots-r6/board-many-1280-expanded.png
+4. advisory — Spec round-4 advisory 2 is adopted: the sample badge is `1` today and under D-135 because A-1/W-004 is the sole served open question and A-2 is `awaiting_reply`; committed W-350 baselines remain out of scope — check: studio/briefs/W-409.md, examples/sample-studio/petitiones/A-1.md, examples/sample-studio/petitiones/A-2.md, shots-r6/board-sample-1280-expanded.png
+5. advisory — Astra advisory 2 remains the Patron's unanswered Board-attention-cue question and introduces no W-409 brief or prototype change — check: /home/edckt/agents/bisellium/studio/ci/W-409-spec-5.log, studio/briefs/W-409.md, apps/web/src/App.tsx
+6. advisory — All eight commits build independently; the Genuine Node reds and served title red replay, every affected existing row and all three final served rows pass, and focused policy, resolver, view, typecheck, build, lint and format gates exit zero — check: series-builds.txt, r6/reds-host.out, r6/affected-rows.out, r6/w409-served-final.out, r6/gate-exits.txt
+7. advisory — The eight-commit mbox reapplies to the final tree, admission and promise-ledger checks return no problems, and the final prototype touches only the thirteen Files owned — check: r6/mbox-check.out, r6/admission.out, r6/ledger-check.out, prototype.mbox
+
+## Verdict
+
+passed — signature round 6 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-409.md`; the round-4 kept corrections and Astra round-5 blocker are adopted in the eight-commit prototype with sha256 `de3b02fa9c411b5bb07af522bbb32fb111c541e7bf22c332fe91bac406631d3d`, Astra advisory 2 remains for the Patron, and no record write, `next` or `verdict` was performed.

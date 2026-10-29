@@ -1,0 +1,28 @@
+# opus: W-409
+# phase: spec
+# round: 5
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18839-b030-7072-86a3-b57f5eebf266
+# outcome: revise
+# at: 2026-10-29T15:18:14.391Z
+# tree: tree:7c9a238f6fedb2dfad5c70bd81995405a5f1ef60
+# dispatch_prompt: ci/W-409-ui-prompt-5.md
+# design_digest: sha256:aff3f99173c5cbfdd8d19cb9de931310b6f5a4ab7222011c32502671743d1156
+# ticket: {"opus":"W-409","step":"spec","action":"verdict-spec","round":5,"actor":"ui-lead","studio":"studio","head":"9eb8d0ef1821106ceb4b4649ea04b3b8e079285e","brief":"1facf4d802ec62b5aa280eddda51ed3605e3de4b","at":"2026-10-29T15:18:08.719Z"}
+
+## Findings
+
+1. blocking — brief:51 — The agent-written containment promise treats a native title attribute and the 108px bound as sufficient legibility. In every many-asks capture, the added ask line squeezes the long title below its four-line clamp: text disappears after three visible lines without an ellipsis. The no-waiting captures retain an ellipsis. — replace with: “Waiting cards reserve complete line boxes for the title, ask kinds and owner/state. Clamp the title to the whole lines that fit, with a visible ellipsis whenever truncated; retain its complete native title and the 108px card bound.” — check: `/home/edckt/.bisellium-evidence/W-409-spec/shots-d135/board-many-640-closed.png`; `apps/web/tests-serve/w409.spec.ts`, W-409-b3, both card copies at all three widths.
+
+2. advisory — brief:120 — Addressed to the Patron: D-135 correctly excludes greenlights and human gates from the Inbox badge, but neither expanded nor collapsed navigation signals that Board-only asks exist. Someone working in Inbox must deliberately visit Board to discover them. This follows your ruling and is not a blocker. — replace with: “Retain D-135’s Inbox count. Ask the Patron whether a separate Board attention cue should be commissioned; W-409 does not introduce that shell default.” — check: `/home/edckt/.bisellium-evidence/W-409-spec/shots-d135/board-many-1280-expanded.png`; `apps/web/src/App.tsx`.
+
+## Recommendation
+
+There are no earlier ui-lead findings in the supplied record.
+Backlog membership reads sensibly: “Greenlight” explains why the same opus appears in Needs you and Planned, with lifecycle counts preserved.
+The ask-kind words remain readable at 1280, 640 and 390; the title truncation needs the focused correction above.
+The sample badge correctly shows 1 for one question; the many-asks badge correctly shows 5 for six question rows across five opera, so it matches D-135’s unit rather than the literal row count.
+W-406’s scroll cue and Board structure, W-415’s sidebar, and the existing palette remain intact; the proposed ask typography is an agent choice for Patron approval.
+The stale-bundle build finding is outside this judgment and has not been reopened.
+Verdict: revise

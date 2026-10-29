@@ -1,0 +1,32 @@
+# opus: W-409
+# phase: spec
+# round: 7
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18850-f27d-7c70-8ce0-f0e5b3be4842
+# session_reason: each ui-lead input runs in a fresh read-only Codex session (W-409-spec/ui-input-<n>-run.sh); round 7 judged the round-6 revision (ci/W-409-spec-6.log) with the kept prompt ci/W-409-ui-prompt-7.md and named round 5's findings (ci/W-409-spec-5.log, session 01a18839-b030-7072-86a3-b57f5eebf266) as no longer holding
+# outcome: passed
+# at: 2026-10-29T15:43:30.773Z
+# tree: tree:7c9a238f6fedb2dfad5c70bd81995405a5f1ef60
+# dispatch_prompt: ci/W-409-ui-prompt-7.md
+# design_digest: sha256:e0eb488cef5c64e2da5e08cc97157418f8a546eb9427b7a7a003105e7fcd1383
+# ticket: {"opus":"W-409","step":"spec","action":"verdict-spec","round":7,"actor":"ui-lead","studio":"studio","head":"9eb8d0ef1821106ceb4b4649ea04b3b8e079285e","brief":"55464fe434802edb1d3df1ead0694bd271b819a1","at":"2026-10-29T15:43:26.710Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+- ci/W-409-spec-5.log #1: closed — The round-6 captures show three complete waiting-title lines with a visible ellipsis and readable ask and owner/state lines inside 108px, and W-409-b3 verifies both card copies at 1280, 640 and 390.
+
+## Recommendation
+
+Round-5 blocker 1 no longer holds: the round-6 captures show three complete waiting-title lines with a visible ellipsis, readable ask and owner/state lines, and the 108px bound; W-409-b3 covers both copies at 1280, 640 and 390.
+Round-5 advisory 2 still describes the screens—Board-only asks lack a navigation cue—but the Patron has answered it by commissioning W-463, outside W-409.
+Backlog membership reads sensibly: “Greenlight” explains the Needs-you copy while the opus remains in Planned, without inflating lifecycle counts.
+The revised agent-written clamp and compact ask-line proposals make sense on these captures; no remaining rule applied here creates a legibility defect.
+The Inbox badge follows D-135: sample shows 1 for one question, and many asks shows 5 for six question rows across five opera, matching the ruled unit rather than the literal row count.
+The captures identify final bundle `index-CzfXxEuy.js`; comparison with master preserves W-406’s Board structure, scroll cue and liveness display, W-415’s sidebar, and the existing palette.
+The documented backlog-only Inbox status becomes ready while its visible list remains empty; otherwise, the visible changes stay within membership, counting and card text, without introducing an unrelated layout, colour or shell default.
+Verdict: passed

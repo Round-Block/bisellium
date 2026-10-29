@@ -1,0 +1,26 @@
+# opus: W-409
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a187ba-4788-76a3-87b2-499df130c3e1
+# outcome: passed
+# at: 2026-10-29T13:48:18.232Z
+# tree: tree:dfa1d32d64f600b89e19a9f9ceb58aa9fe1ed8c4
+# brief: briefs/W-409.md blob:55718f673e0d115dd15f90c21cfd4d1a42b7d95a
+# ticket: {"opus":"W-409","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"8ff8c3bb4b1dae9397f7aedb1d7c0374111f31cb","brief":"55718f673e0d115dd15f90c21cfd4d1a42b7d95a","at":"2026-10-29T13:48:16.003Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-409-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — W-345-b6 policy now requires Inbox refresh to call the shared distinct-opus counter, and the row passes in behaviour 2's implementation commit — check: census-fix/b2-w345-policy.out, apps/web/test/w345.test.ts
+2. advisory — W-345-b6 served Defer now counts two petitions on one opus as badge 1 before and after one remains, and passes in behaviour 2's implementation commit — check: census-fix/b2-inbox-defer.out, apps/web/tests-serve/inbox.spec.ts
+3. advisory — The Board count oracle now fetches the same whole Inbox response as the mounted Board and passes in behaviour 1's implementation commit — check: census-fix/b1-board-count.out, apps/web/tests-serve/board.spec.ts
+4. advisory — The 1280 geometry row keeps the exact 64px contract on a non-waiting Done card because waiting cards gain the ask-kind line, and passes in behaviour 3's implementation commit — check: census-fix/b3-board-geometry.out, apps/web/tests-serve/board.spec.ts
+5. advisory — All six rebuilt commits independently build, the assertion reds and final served rows pass, focused gates pass, and the portable mbox reapplies to the signed final tree — check: series-builds.txt, census-fix/reds-host.out, census-fix/w409-served-final.out, census-fix/gates-proto.out, census-fix/mbox-check.out
+6. advisory — Brief admission and the promise-ledger validator report no problems after the Files owned and Acceptance revisions — check: census-fix/admission.out, census-fix/ledger-check.out, promise-ledger.md
+
+## Verdict
+
+passed — signature round 1 rewritten by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for the census-revised `studio/briefs/W-409.md`; all four previously unnamed flipped rows are owned and migrated in the six-commit prototype with sha256 `f85897aac01ca2b39381347d55ab568a8bb714c5c052973d2379ac00ed2510e9`, and no record write, `next` or `verdict` was performed.
