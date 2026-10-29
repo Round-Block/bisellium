@@ -1,0 +1,40 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-430-b5\s --import tsx packages/cli/src/w430.test.ts
+# exit: 1
+# at: 2026-10-29T06:32:30.661Z
+# sella: architect
+# tree: tree:f125fd68da475f7185007d99c1ff65225b50e517
+# ticket: {"opus":"W-430","step":"reds","action":"red","round":5,"actor":"producer","studio":".worktrees/W-430/studio","head":"5a01dee989afb58b6d1b63dc8af844400a23d4a2","brief":"3da9650a1a5b2617e2fe44f27b5149bf1cbb19ec","at":"2026-10-29T06:32:30.607Z"}
+
+TAP version 13
+# Subtest: W-430-b5 behaviour 5: tick and next --all print the Codex burn the rest of the week needs against the time left to its reset
+not ok 1 - W-430-b5 behaviour 5: tick and next --all print the Codex burn the rest of the week needs against the time left to its reset
+  ---
+  duration_ms: 212.03306
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-430/packages/cli/src/w430.test.ts:4:3173'
+  failureType: 'testCodeFailure'
+  error: |-
+    tick --dry-run: one codex line: due: daily — producer | due: daily — architect | due: daily — eng-lead | due: daily — art-lead | due: daily — qa-lead | due: aerarium — 2026-W44 | due: traditio — W-002 | due: traditio — W-003 | due: traditio — W-004 | due: traditio — W-005 | due: probe — 3 pair(s)
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-430/packages/cli/src/w430.test.ts:283:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 227.854363
