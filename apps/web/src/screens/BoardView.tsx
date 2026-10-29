@@ -64,6 +64,19 @@ function Card({
     >
       <GateLadder gates={card.gates} />
       <span className="board__card-title" title={card.title}>{card.title}</span>
+      {(card.asks?.length ?? 0) > 0 && (
+        <span className="board__card-asks" aria-label="Needs you">
+          {card.asks?.map((ask) => (
+            <span key={ask.kind} className="board__card-ask">
+              {ask.kind === "greenlight"
+                ? "Greenlight"
+                : ask.kind === "inbox"
+                  ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
+                  : "Human gate"}
+            </span>
+          ))}
+        </span>
+      )}
       <span className="board__card-meta">
         {card.sella && <span className="board__card-sella">{card.sella}</span>}
         <span className="board__card-state">{card.state}</span>

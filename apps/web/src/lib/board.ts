@@ -39,7 +39,7 @@ export interface CardRow {
   needsYou: boolean;
   /** Why this opus belongs to the attention-membership column. Kept as
    * structured data so presentation never has to infer an ask from copy. */
-  asks: { kind: "greenlight" | "inbox" | "human_gate"; count: number }[];
+  asks?: { kind: "greenlight" | "inbox" | "human_gate"; count: number }[];
   blocked: boolean;
 }
 
@@ -153,7 +153,7 @@ export function boardModel(
       ...(linkedDecisions > 0 ? [{ kind: "inbox" as const, count: linkedDecisions }] : []),
       ...(humanGateAsk && linkedDecisions === 0 ? [{ kind: "human_gate" as const, count: 1 }] : []),
     ];
-    card.needsYou = card.asks.length > 0;
+    card.needsYou = (card.asks?.length ?? 0) > 0;
 
     if (card.needsYou) {
       const needsYouColumn = columns.get(NEEDS_YOU_COLUMN);

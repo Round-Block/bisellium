@@ -503,7 +503,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await served?.close();
   });
 
-  test("1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
+  test("1280px: 288px columns, sticky needs-you, non-waiting 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
     served = await startServed("board-1280");
     const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -521,7 +521,8 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const afterScroll = await needsYou.boundingBox();
     expect(afterScroll?.x).toBeCloseTo(beforeScroll?.x ?? 0, 0);
 
-    const card = page.locator(".board__card").first();
+    // Waiting cards gain the W-409 ask-kind line; the non-waiting Done card retains the original compact geometry.
+    const card = page.locator('.board__column[data-column-id="done"] .board__card').first();
     const cardBox = await card.boundingBox();
     expect(cardBox?.height).toBeCloseTo(64, 0);
     const cardShadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);

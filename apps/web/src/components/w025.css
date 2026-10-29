@@ -1844,6 +1844,23 @@
   overflow-wrap: anywhere;
 }
 
+.board__card-asks {
+  display: block;
+  min-width: 0;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board__card-ask + .board__card-ask::before {
+  content: ", ";
+}
+
 .board__card-meta {
   display: flex;
   gap: var(--sp-2);
