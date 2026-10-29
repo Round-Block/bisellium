@@ -1285,3 +1285,86 @@ test("W-326-b3 behaviour 3: after a replay the gates are the producer's; a build
   assert.equal(kb.kv.get("role"), "builder", ran("keeps: the required fix is a builder's", kb));
   assert.equal(kb.kv.get("required-fixes"), `ci/${OPUS}-spec-2.log #1`, ran("keeps: the builder's order names it", kb));
 });
+
+// ---------------------------------------------------------------------------
+// W-461: every red and implementation commit builds the web bundle certify's replay builds (studio/briefs/W-461.md).
+// The fixture's web workspace is a tiny `@bisellium/web` whose `build` script loads `src/main.mjs` and writes
+// `dist/index.html`, so `npm --workspace @bisellium/web run build` (certify's WEB_BUILD) fails on an unresolved import
+// as vite's does, in well under a second.
+// ---------------------------------------------------------------------------
+const W461_ROW = "w461.test.mjs";
+const W461_ROWS = [
+  'import { test } from "node:test";',
+  'import assert from "node:assert/strict";',
+  'import { readFileSync } from "node:fs";',
+  'const source = readFileSync(new URL("./source.txt", import.meta.url), "utf8");',
+  'test("W-900-b1 fixture behaviour 1", () => assert.match(source, /behaviour 1/));',
+  'test("W-900-b2 fixture behaviour 2", () => assert.match(source, /behaviour 2/));',
+  "",
+].join("\n");
+const W461_BUILD = [
+  'import { mkdirSync, writeFileSync } from "node:fs";',
+  'await import("./src/main.mjs");',
+  'mkdirSync(new URL("./dist/", import.meta.url), { recursive: true });',
+  'writeFileSync(new URL("./dist/index.html", import.meta.url), "<!doctype html>\\n");',
+  "",
+].join("\n");
+const W461_BUNDLE = ["apps", "web", "dist", "index.html"];
+
+/** The fixture's web workspace on the opus branch: it builds while src/main.mjs resolves. */
+function w461Web(dir: string, main = "export {};\n"): void {
+  put(dir, ".gitignore", `${readFileSync(join(dir, ".gitignore"), "utf8")}dist/\n`);
+  put(dir, "package.json", `${JSON.stringify({ name: "w461-fixture", private: true, workspaces: ["apps/web"] }, null, 2)}\n`);
+  put(dir, "apps/web/package.json", `${JSON.stringify({ name: "@bisellium/web", private: true, type: "module", scripts: { build: "node build.mjs" } }, null, 2)}\n`);
+  put(dir, "apps/web/build.mjs", W461_BUILD);
+  put(dir, "apps/web/src/main.mjs", main);
+  commit(dir, "chore: the fixture's web workspace");
+}
+const w461RedCmd = (k: number): string => `\`bisellium red ${OPUS} --behaviour ${k} --sella builder --studio studio -- node --test-reporter=tap --test-name-pattern='^W-900-b${k}\\s' ${W461_ROW}\``;
+function w461Brief(prototype: string[]): string {
+  return briefText(2)
+    .replace(`# ${OPUS} fixture brief\n`, `# ${OPUS} fixture brief\n\n${prototype.join("\n")}${prototype.length > 0 ? "\n\n" : ""}Red order: one at a time\n`)
+    .replace(/^([12])\. \*\*Fixture behaviour \1\.\*\*$/gm, (_, k: string) => `${k}. **Fixture behaviour ${k}.** **Genuine red:** ${w461RedCmd(Number(k))}`);
+}
+const w461Record = (w: World): Out => direct(w, w.wt, ["red", OPUS, "--behaviour", "1", "--sella", "builder", "--studio", w.wtStudio, "--", "node", "--test-reporter=tap", "--test-name-pattern=^W-900-b1\\s", W461_ROW]);
+const w461RedLog = (w: World): string => join(w.wtStudio, "ci", "reds", OPUS, "01.log");
+const w461Short = (w: World): string => git(w.wt, ["rev-parse", "--short", "HEAD"]);
+
+test("W-461-b1 behaviour 1: a red is recorded only at a commit whose web bundle builds as certify builds it", { timeout: 600_000 }, () => {
+  const w = world("w461-b1", "ready");
+  w461Web(w.wt, 'import "./lib.mjs";\n');
+  put(w.wt, BRIEF_REL, w461Brief([]));
+  put(w.wt, W461_ROW, W461_ROWS);
+  commit(w.wt, `test(${OPUS}): row b1, red`);
+
+  // (a) the builder's own series: a commit that imports a module only a later commit adds
+  const a = w461Record(w);
+  assert.equal(a.status, 1, ran("a red at a commit whose web bundle does not build is refused", a));
+  assert.match(a.err, new RegExp(`^red: red 1 replay preparation failed: web bundle build exited 1 at ${w461Short(w)}: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$`, "m"), ran("the refusal is certify's own preparation line, at the commit", a));
+  assert.equal(existsSync(w461RedLog(w)), false, "nothing is recorded");
+
+  // (a2) a prior bundle path that cannot be removed: a directory left where the bundle goes
+  mkdirSync(join(w.wt, ...W461_BUNDLE, "left"), { recursive: true });
+  const d = w461Record(w);
+  assert.ok(d.status === 1 && /^red: red 1 replay preparation failed: the prior apps\/web\/dist\/index\.html cannot be removed \(ERR_FS_EISDIR\) at [0-9a-f]+: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$/m.test(d.err), ran("an invalid or unremovable stale bundle is refused without throwing", d));
+  assert.equal(existsSync(w461RedLog(w)), false, "nothing is recorded");
+  rmSync(join(w.wt, ...W461_BUNDLE), { recursive: true });
+
+  // (b) a build that exits 0 but leaves no bundle, over a stale bundle from an earlier build
+  put(w.wt, "apps/web/src/lib.mjs", "export {};\n");
+  put(w.wt, "apps/web/build.mjs", 'await import("./src/main.mjs");\n');
+  commit(w.wt, `test(${OPUS}): the build writes no bundle`);
+  put(w.wt, W461_BUNDLE.join("/"), "<!doctype html>\nstale\n");
+  const b = w461Record(w);
+  assert.equal(b.status, 1, ran("a build that leaves no bundle is refused, a stale bundle notwithstanding", b));
+  assert.match(b.err, /^red: red 1 replay preparation failed: the web bundle build left no apps\/web\/dist\/index\.html at [0-9a-f]+: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$/m, ran("the refusal names the missing bundle", b));
+  assert.equal(existsSync(w461RedLog(w)), false, "nothing is recorded");
+
+  // (c) the same series once it builds: recorded as before
+  put(w.wt, "apps/web/build.mjs", W461_BUILD);
+  commit(w.wt, `test(${OPUS}): the build writes its bundle`);
+  const c = w461Record(w);
+  assert.equal(c.status, 0, ran("a red at a commit that builds is recorded", c));
+  assert.match(readFileSync(w461RedLog(w), "utf8"), /^not ok 1 - W-900-b1 fixture behaviour 1$/m, "the recorded red is the row's assertion failure");
+  assert.equal(existsSync(join(w.wt, ...W461_BUNDLE)), true, "the build left its bundle");
+});
