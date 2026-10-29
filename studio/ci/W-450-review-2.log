@@ -1,0 +1,21 @@
+# opus: W-450
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1869d-db66-73f2-a06f-45bdd6a86832
+# outcome: failed
+# at: 2026-10-29T09:08:42.026Z
+# tree: tree:48371fd72d8385f471676f352ecb1ab1c3c8c429
+# brief: briefs/W-450.md blob:9d7ac89e19075a39a1444956d333abaa8c731062
+# ticket: {"opus":"W-450","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-450/studio","head":"78c7f67ac3023337de346895dacb68009565da9c","brief":"9d7ac89e19075a39a1444956d333abaa8c731062","at":"2026-10-29T09:07:45.525Z"}
+
+## Findings
+1. blocking — apps/web/tests-serve/tap-reporter.ts:24 [severity: S1] Reached through the earlier finding’s class: the fix also folds NEL, VT, FF, FS, GS, and RS even though the unchanged host regex accepts them, changing valid titles and collapsing distinct inputs contrary to the exact `tapTitle` transformation at brief:37 and the “any strings” domain at brief:64. The new assertions at apps/web/test/w450.test.ts:106 enshrine that wrong normalization instead of preserving these host-readable characters. [class: tests×ruled-case-uncovered] — check: apps/web/test/w450.test.ts W-450-b1
+
+## Earlier findings
+- ci/W-450-review-1.log #1: closed — apps/web/tests-serve/tap-reporter.ts:24 now folds U+2028/U+2029, and apps/web/test/w450.test.ts:106-109 pins both emitted output and host-pattern recognition.
+
+## Verdict
+Round 2 fails because the separator fix over-normalizes valid title characters inside the brief’s stated domain.
+VERDICT: FAIL

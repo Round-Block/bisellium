@@ -1,0 +1,20 @@
+# opus: W-450
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18675-37b6-7551-bb4d-2335f8aa8638
+# outcome: passed
+# at: 2026-10-29T07:05:22.625Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-450.md blob:9d7ac89e19075a39a1444956d333abaa8c731062
+# ticket: {"opus":"W-450","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"5ea1d5a2eedefcb9f4328689ca968658899d8b69","brief":"9d7ac89e19075a39a1444956d333abaa8c731062","at":"2026-10-29T07:05:17.470Z"}
+
+## Findings
+1. advisory — brief:45 [severity: S2] A flaky served test can be `unexpected` in the no-retry recording but pass during the `CI=1` replay retries, making the reporter change its recorded `not ok` to replay `ok` and causing certify to refuse; `W-450-b1` forces identical retry settings and makes its red fail every attempt, so it does not prove the broader promise. Replace brief:45 with: `Promise reattest: a served Playwright red recorded after this opus carries one not-ok line per finally failing test; certify re-attests it when each recorded failure has the same titlePath under CI and remains unexpected after the replay retries. If a replay retry passes or CI changes the title, certify still refuses; the remaining host-side limits and W-442 evidence are unchanged.` [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/test/w450.test.ts W-450-b1
+2. advisory — brief:64 [severity: S3] The named functions do not fail closed on out-of-domain Playwright values: `tapTitle` coerces non-string title parts, `tapLines` maps an unknown outcome to `ok`, and `TapReporter.onEnd` maps a missing root suite to an empty stream. Replace brief:64–65 with rows specifying that `tapTitle` throws unless `titlePath()` returns only strings, `tapLines` uses an exhaustive switch and throws outside `expected|unexpected|flaky|skipped`, and add `| TapReporter lifecycle | onBegin supplies one root Suite before onEnd | TapReporter.onEnd throws when the root is absent; Playwright marks the reporter error failed |`. [class: spec×input-without-named-rejector] — check: apps/web/test/w450.test.ts W-450-b1
+3. advisory — brief:66 [severity: S4] The input table omits inputs read by changed readers: the module URL resolved into `TAP_REPORTER`, the exact `config.reporter` value read by the changed W-110 assertion, and the reused `classifyReplay(run)` result. Replace brief:66 with its fixture/run domain naming `writeFileSync`, `assert.match`, `assert.deepEqual`, and `assert.equal` as rejectors, followed by rows for `import.meta.url`/reporter loading rejected by `fileURLToPath` and Playwright’s reporter loader, `config.reporter` rejected by `assert.deepEqual`, and `{ accepted: true }` from `classifyReplay(run)` rejected by `assert.equal`. [class: spec×input-domain-missing-or-unenforceable] — check: apps/web/test/w450.test.ts W-450-b1; apps/web/test/served-config.test.ts W-110 behaviour 8
+
+## Verdict
+The spec may proceed with these advisory replacements; none is blocking under D-086 C.
+VERDICT: PASS

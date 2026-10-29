@@ -1,0 +1,21 @@
+# opus: W-450
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1869d-db66-73f2-a06f-45bdd6a86832
+# outcome: passed
+# at: 2026-10-29T10:16:36.259Z
+# tree: tree:19a411a936305cc2571d20f7b6cecbb6d9500839
+# brief: briefs/W-450.md blob:1e65a3c8875552f7d9445274efe10c1c48804d0a
+# ticket: {"opus":"W-450","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-450/studio","head":"c81026a22699c561a2f5d9730fc45e728a5e05bd","brief":"1e65a3c8875552f7d9445274efe10c1c48804d0a","at":"2026-10-29T10:16:12.151Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-450-review-2.log #1: closed — apps/web/tests-serve/tap-reporter.ts:24 now folds only LF, CR, U+2028, and U+2029, while apps/web/test/w450.test.ts:116-127 pins both host readings and preservation of NEL, VT, FF, FS, GS, RS, and other host-readable characters.
+
+## Verdict
+The round-3 change closes the over-normalization defect and adds matching regression coverage.
+VERDICT: PASS

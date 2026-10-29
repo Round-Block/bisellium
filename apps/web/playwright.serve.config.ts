@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 import { readBaselineWriteSource } from "./tests-serve/baseline-set.js";
 
@@ -12,6 +13,9 @@ export function readRefreshScreenshots(
 }
 
 const refreshScreenshots = readRefreshScreenshots();
+
+/** W-450: the TAP reporter, absolute so a config that spreads this one keeps it. */
+export const TAP_REPORTER = fileURLToPath(new URL("./tests-serve/tap-reporter.ts", import.meta.url));
 
 /**
  * apps/web/playwright.serve.config.ts — W-067. Unlike playwright.config.ts
@@ -37,7 +41,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env["CI"],
   retries: process.env["CI"] ? 2 : 0,
-  reporter: "list",
+  reporter: [["list"], [TAP_REPORTER]],
   updateSnapshots: refreshScreenshots ? "all" : "none",
   expect: {
     toHaveScreenshot: {

@@ -55,7 +55,7 @@ if (only === undefined || only === 8) {
     assert.equal(config.projects?.length, 1, "(a) exactly one project");
     assert.equal(config.projects?.[0]?.name, "chromium", "(a) the project is chromium");
     assert.equal(config.fullyParallel, true, "(a) fullyParallel is true");
-    assert.equal(config.reporter, "list", "(a) the reporter is list");
+    assert.deepEqual(config.reporter, [["list"], [here("../tests-serve/tap-reporter.ts")]], "(a) the reporters are list, then the TAP reporter");
 
     // (b) Genuine red: the config names a globalSetup module that exports the build.
     assert.equal(config.globalSetup, "./tests-serve/global-setup.ts", "(b) the config's globalSetup is ./tests-serve/global-setup.ts");
