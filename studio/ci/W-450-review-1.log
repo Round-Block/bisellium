@@ -1,0 +1,18 @@
+# opus: W-450
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1869d-db66-73f2-a06f-45bdd6a86832
+# outcome: failed
+# at: 2026-10-29T07:47:49.818Z
+# tree: tree:cd319a77c18518fd145b18776a1b75c7dd0f200c
+# brief: briefs/W-450.md blob:9d7ac89e19075a39a1444956d333abaa8c731062
+# ticket: {"opus":"W-450","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-450/studio","head":"e648017fc1b55b8b5ecc77eead598616a20902c2","brief":"9d7ac89e19075a39a1444956d333abaa8c731062","at":"2026-10-29T07:47:48.191Z"}
+
+## Findings
+1. blocking — apps/web/tests-serve/tap-reporter.ts:24 [severity: S1] `tapTitle` leaves U+2028/U+2029 unchanged, so a valid title containing either separator makes the host’s unchanged `^not ok \d+ - (.*)$` grammar find no title and refuse re-attestation, despite the accepted domain being “any strings” at brief:64. Extend `W-450-b1`, which currently exercises only `#`, to pin all accepted line separators and escapes. — check: apps/web/test/w450.test.ts W-450-b1 [class: tests×ruled-case-uncovered]
+
+## Verdict
+The reporter fails its core re-attestation behavior for title strings inside the brief’s declared domain.
+VERDICT: FAIL
