@@ -30,6 +30,7 @@ import { STATES, parseFrontMatter, readManifest, resolveSeat, type Manifest } fr
 import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
+import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
 import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, uiReviewSuperseded, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
@@ -2208,8 +2209,11 @@ async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (l
     const h = head();
     if (h === undefined) return held(`HEAD cannot be read after behaviour ${k}'s red log commit`);
     done.push(`red: behaviour ${k} ${name} ${h}`);
-    const built = apply(k, "feat");
-    if (built !== undefined) return held(built);
+    const applied = apply(k, "feat");
+    if (applied !== undefined) return held(applied);
+    // W-461: the implementation commit builds the web bundle certify's replay builds, before the next red is recorded on it
+    const built = webBuild(wt);
+    if (built.carried && !built.ok) return held(`behaviour ${k}'s implementation does not build at ${head() ?? "HEAD"}: ${webBuildReason(built)}; certify's replay would refuse the series`);
   }
   return { ok: true, lines: done };
 }
