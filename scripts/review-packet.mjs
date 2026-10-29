@@ -183,7 +183,7 @@ function uiFact(studio, opus) {
     refuse(`opera/${opus}.md: kind ${JSON.stringify(data.kind)} is not a native opus kind`);
   if (data.kind !== "ui")
     return { text: `UI evidence: not applicable (kind ${JSON.stringify(data.kind)}).\n`, images: [] };
-  const routes = navRoutes(runGit(studio, ["rev-parse", "--show-toplevel"]).trim());
+  const routes = navRoutes(gitLine(runGit(studio, ["rev-parse", "--show-toplevel"])));
   const order = UI_REVIEW_VIEWPORTS.flatMap(([width, viewport]) =>
     routes.map((route) => [`${route}-${width}.png`, width, viewport, route]),
   );
@@ -347,8 +347,13 @@ const nextFact = (id, studio) =>
  * path for a studio in the main checkout, and the main checkout's copy for one in a linked worktree.
  */
 function mainStudio(studio) {
-  const top = runGit(studio, ["rev-parse", "--show-toplevel"]).trim();
+  const top = gitLine(runGit(studio, ["rev-parse", "--show-toplevel"]));
   return join(mainTree(studio), relative(realpathSync(top), realpathSync(studio)));
+}
+
+/** One path line git printed: only its one line terminator goes, since a directory may begin or end in a space. */
+function gitLine(out) {
+  return out.replace(/\r?\n$/, "");
 }
 
 /** The repository's main work tree: the first entry `git worktree list` gives, from `dir`. */

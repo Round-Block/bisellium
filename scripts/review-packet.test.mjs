@@ -1089,6 +1089,32 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
     "a hand-run packet attaches the linked worktree's screens, not the main checkout's",
   );
 
+  // a worktree whose path ends in a space is a legitimate directory: git's one trailing newline is all that is stripped
+  const spaced = w454World(["inbox"]);
+  const spacedTree = join(spaced.w.repo, ".worktrees/W-1 ");
+  spaced.w.git("worktree", "add", "-q", "-b", "opus/W-1-spaced", spacedTree);
+  put(spacedTree, "apps/web/src/lib/nav.ts", navTable(["home", "inbox"]));
+  const spacedShots = w454Shots(join(spacedTree, "studio"), ["home", "inbox"]);
+  let spacedBuilt;
+  try {
+    spacedBuilt = buildPacket({
+      phase: "build",
+      opus: "W-1",
+      round: 1,
+      sella: "qa-lead",
+      studio: join(spacedTree, "studio"),
+      repo: spaced.w.repo,
+      packets: spaced.w.packets,
+    });
+  } catch (error) {
+    assert.fail(`a worktree path ending in a space builds its packet: ${error.message}`);
+  }
+  assert.deepEqual(
+    spacedBuilt.images.map((path) => relative(spacedShots.dir, path)),
+    ["home-1280.png", "inbox-1280.png", "home-390.png", "inbox-390.png"],
+    "the spaced worktree's table is the one read",
+  );
+
   // the table is read fail closed, before any shot
   const missing = w454World(["inbox"], { navText: null });
   w454Refuses("no navigation table file", missing.w, /^apps\/web\/src\/lib\/nav\.ts: /);
