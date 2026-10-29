@@ -1,0 +1,23 @@
+# opus: W-408
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a65faaa04c1ca7204
+# session_reason: the round-2 reviewer session a95015048be28a3a5 ended with an earlier orchestrator session; a fresh Claude Opus session reviewed round 5 after reading the round-2 and round-3 verdicts
+# outcome: passed
+# at: 2026-10-28T03:26:41.936Z
+# tree: tree:77ac00b4f130c68b4b5b3cd88ad10bd6c363f10c
+# brief: briefs/W-408.md blob:a381991e2a2a24c9ccd4ac5ae135c11f53b23e48
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"f3d972d7bff91755bdab2cc3e13515e31d4929c9","brief":"a381991e2a2a24c9ccd4ac5ae135c11f53b23e48","at":"2026-10-28T03:26:33.397Z"}
+
+## Findings
+1. advisory — brief:92 Behaviour 3 still says the pie is "Comment/Orange/Red" with "triangle/diamond/square". That contradicts brief:55, brief:75 and brief:130, where the normal Budget state is neutral `--ink-3` with a hollow circle and Comment/triangle is Health-low only. It also contradicts the b3 policy assertion (`budget-meter--normal[^}]*ink-3`) and the captures (engineering 63% is grey with a hollow circle). brief:110 ("flips the white spent sector to Comment/Orange/Red") carries the same stale wording, so this finding covers that sibling too. The code and tests are right, but the sentence describes a different palette. Replacement for brief:92: "…forms pin the neutral-ink/Orange/Red clamped pie, hollow-circle/diamond/square beside visible mono numerals, muted remainder, …". For brief:110: "…flips the white spent sector to neutral-ink/Orange/Red…". [severity: S2] [class: spec×stale-citation-residue] — check: apps/web/test/w408.test.ts W-408-b3
+2. advisory — brief:76 The Posture row names `posturePresentation()` as its rejecting function. No such function exists or is specified: the prototype's `apps/web/src/lib/posture.ts` exports `formatPosture()`, which posture.test.ts (W-025 b7) pins. The row's pin quote ("the pie is palette spent versus muted remaining allowance") and its ledger kill (kill-b3-pie-r14f) test pie geometry, not posture facts. The served b3 row does check the reason at 13px and its wrapping. Replacement rejecting cell: "`formatPosture()` (posture.test.ts W-025 b7) and served b3 font/containment assertions reject changed facts or separation from the pie (b3)". [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: apps/web/src/lib/posture.test.ts
+
+## Earlier findings
+- ci/W-408-spec-2.log #1: closed — brief:61 now states the detail-scrolls-once promise and pins it to b1's "the detail page keeps the one always-allocated shell scrollbar". The prototype's apps/web/test/w408.test.ts b1 asserts `.shell__main:has(> .officina)` has `overflow-y: scroll` and `scrollbar-gutter: stable` and that no `.officina` rule has `overflow-y: auto|scroll`. It also requires the served "detail frame and sole scrollbar" row. kill-b1-r14f.patch removes the rule, and kill-b1-r14f.out fails by assertion with that message.
+
+## Verdict
+passed — The input boundary covers every reader the rescoped detail page changes. Each promise is guaranteed or carries its stated limit. The Patron-ruled pies, severity palette and brake (D-127, DIRECTION §6 2026-10-28) make sense on the captured screens at 1280, 640 and 390. The earlier scroll-pin blocker is closed, and only two wording advisories remain.
+VERDICT: PASS

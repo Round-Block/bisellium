@@ -1,0 +1,22 @@
+# opus: W-408
+# phase: spec
+# round: 12
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a7e0e2e2a2c300edd
+# outcome: passed
+# at: 2026-10-29T05:36:27.520Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-408.md blob:25e47b49306ed28c172bb044771891897a075ef1
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":12,"actor":"spec-reviewer","studio":"studio","head":"e7fd20a92abd4c09b60a54ebe899e48bb73f5f98","brief":"25e47b49306ed28c172bb044771891897a075ef1","at":"2026-10-29T05:36:24.511Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-408-spec-10.log #1: closed — Files owned now lists `apps/web/test/w406.test.ts` and `apps/web/tests-serve/w442.spec.ts`. The new mbox (sha256 213b61cf…, mbox-check-i matches) changes W-406-b3's policy to look for the renamed fasti-absence served row and replaces W-442-b1 with an absence row. gates-proto-i.out shows w406.test.ts with 0 failures, the served W-406-b3 row passing (:553) and "W-442-b1 retired" passing (:579). Acceptance (brief:113-114) names both flips.
+- ci/W-408-spec-10.log #2: closed — Interfaces now say `screenshots.spec.ts` changes only its Officina readiness branch, and Files owned, the Patron-owned list and Out of scope are narrowed to match. The mbox hunk replaces only screenshots.spec.ts:107-111 with Work/Budget/Health readiness plus fasti absence. In gates-proto-i.out:609 the baseline test is skipped, which can only happen at the :160 skip after every readiness check has passed. officina-ci-census-i.out finds no remaining CI-run positive assertion for removed Officina markup.
+
+## Verdict
+passed — Revision i takes on both round-10 blockers and the advisory as stated. It changes only predecessor test contracts, which the prototype gates and the CI census cover, and leaves the signed design unchanged.
+VERDICT: PASS

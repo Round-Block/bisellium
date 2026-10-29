@@ -1,0 +1,25 @@
+# opus: W-408
+# phase: spec
+# round: 6
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17e0a-523c-7911-bdfd-fa0491f0b6ce
+# outcome: passed
+# at: 2026-10-28T03:37:37.212Z
+# tree: tree:77ac00b4f130c68b4b5b3cd88ad10bd6c363f10c
+# brief: briefs/W-408.md blob:28b90886890ae1c272b9f39666e6e43c5a7007cd
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"f3d972d7bff91755bdab2cc3e13515e31d4929c9","brief":"28b90886890ae1c272b9f39666e6e43c5a7007cd","at":"2026-10-28T03:37:05.941Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-408-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Astra round 6 blocker #1 is closed without changing the approved design: at 640 and 390 the Budget reading reflows beneath the pie/posture pair, reserves a full ruled line for both complete million-token numerals, and measures at least 6px of clear space on each side of the slash — check: `ui-input-6.md` finding 1, W-408-b3 policy/served text-range assertions, `kill-b3-r15g.out`, and `officina-640-narrow-data.png`
+2. advisory — Astra round 6 advisory #2 is adopted: Health retains classified colour/shape cues on aggregate blocking/advisory totals, while unclassified rule-family names and counts have no severity symbol and state that severity is available only in aggregate — check: `ui-input-6.md` finding 2, W-408-b4 policy/truth/served assertions, `kill-b4-r15g.out`, and all Health-open captures
+3. advisory — Spec review round 5 advisory #1 is adopted verbatim in substance: Behaviour 3 now says neutral-ink/Orange/Red and hollow-circle/diamond/square, and Acceptance says the former white sector becomes neutral-ink/Orange/Red — check: `/home/edckt/agents/bisellium/studio/ci/W-408-spec-5.log` finding 1 and brief lines 92/110
+4. advisory — Spec review round 5 advisory #2 is adopted with the real rejecting function: the Posture input row names `formatPosture()` and its W-025 b7 unit pin alongside served b3 font/containment checks — check: `/home/edckt/agents/bisellium/studio/ci/W-408-spec-5.log` finding 2, brief line 76 and `apps/web/src/lib/posture.test.ts`
+5. advisory — Revision g was rebuilt from 706d61d6 as five ordered red/feature pairs: base and ordered reds fail by assertion, cumulative greens and focused W-408/W-406/W-415/state/walk/type gates pass, the ten-commit mailbox replays to the staged tree, admission is empty, and every fresh PNG was inspected — check: `reds-host-revision-g.out`, `gates-proto-f.out`, `prototype.mbox`, `promise-ledger.md` and `shots/`
+
+## Verdict
+
+passed — revision g closes the 640/390 Budget text-equivalent crowding, removes unsupported per-family Health severity, adopts both round-5 spec wording corrections, and preserves the Patron-approved Officina design; prototype sha256 `3948d1e6a50c15b627b8af9caa15a055fa67a09cb32472836700dcf0f6323e21`

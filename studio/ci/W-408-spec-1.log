@@ -1,0 +1,25 @@
+# opus: W-408
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17e0a-523c-7911-bdfd-fa0491f0b6ce
+# outcome: passed
+# at: 2026-10-28T00:36:12.090Z
+# tree: tree:6a81b11f3fa8e622a465deea5762b8ad77c3b2af
+# brief: briefs/W-408.md blob:be16edc84c0b2c336f1464bfcd701b3cec7e63a9
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"7485661c79bca1980ac84267f3946341385d9afc","brief":"be16edc84c0b2c336f1464bfcd701b3cec7e63a9","at":"2026-10-28T00:36:07.191Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-408-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — W-407 must land first: it owns the shared visible-refresh hook, first-notified Inbox field/item target and the named CSS/served overlaps; W-408's helper is an explicitly marked compatibility copy — check: studio/briefs/W-408.md, apps/web/src/lib/useVisibleRefresh.ts, apps/web/src/api.ts
+2. advisory — Exactly six coupled behaviours fit the threshold, so no split is proposed; separating route/nav would open an unfinished page, while W-202 retains the later ledger modules, search, cadence and phone ping — check: studio/briefs/W-408.md, apps/web/test/w408.test.ts
+3. advisory — All nine replacement captures were inspected: Needs-you subjects and work titles start at their content tracks, the pinned 390 asker/date and every opus id stay on one line, all four work groups stack at every width, and health summaries match ordinary row type — check: /home/edckt/.bisellium-evidence/W-408-spec/shots/, apps/web/tests-serve/w408.spec.ts
+4. advisory — Six base reds and six ordered reds are assertion failures, six cumulative greens pass, the twelve-patch mbox reapplies to the identical tree, brief admission and promise-ledger validation are clean, and focused unit/type/served gates including W-415 and all 47 state/walk rows pass — check: reds-host.sh, red-b1.out, red-b6.out, green-b6.out, mbox-check.out, admission.out, ledger-check.out, gates-proto.out
+5. advisory — W-406 b1's Board track-press assertion fails on the unchanged Board seam and predates this rescope; W-408 changes no Board source, while W-406 b2 and the intentionally flipped no-fasti b3 pass — check: w406-rerun.out, gates-proto.out, apps/web/tests-serve/w406.spec.ts
+
+## Verdict
+
+passed — signature round 1 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-408.md`; the revised opening page is drafted and prototyped with sha256 `7ffc1d8eb90754ae76f458ff328ce6855482ec97e9b6889b0f8ec209467a2206`, all nine replacement captures were inspected, and no record write, `next` or `verdict` was performed.

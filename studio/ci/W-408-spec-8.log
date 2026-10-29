@@ -1,0 +1,23 @@
+# opus: W-408
+# phase: spec
+# round: 8
+# sella: ui-lead
+# outcome: passed
+# at: 2026-10-28T03:42:15.516Z
+# tree: tree:0ebb8d26195a5c6c7c63504e079010a1ecf95ca9
+# dispatch_prompt: ci/W-408-ui-prompt-8.md
+# design_digest: sha256:d7d1dc4fba6ef852815ad0f783bf50ba0a0fd5a748592306e0efb15b93dadff0
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":8,"actor":"ui-lead","studio":"studio","head":"42702b798e18768125178a11df699a762680757e","brief":"28b90886890ae1c272b9f39666e6e43c5a7007cd","at":"2026-10-28T03:42:10.643Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Revision g resolves both round-6 concerns: complete Budget numerals and the slash are legible at 640 and 390, and Health rule-family rows no longer imply unsupported severity.
+The captures show coherent work, budget and health detail at 1280, 640 and 390, with readable mover labels and discoverable disclosures.
+Exactly spent and over remain distinguishable without colour through diamond versus square, complete fractions, explanatory text and explicit overage.
+I found no remaining agent-written rule that makes the captured screen misleading, or additional choice requiring Patron direction beyond the named Defaults.
+The changes preserve the approved design, W-407 dependency and W-406/W-415 boundaries.
+Verdict: passed

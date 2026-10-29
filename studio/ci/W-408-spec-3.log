@@ -1,0 +1,25 @@
+# opus: W-408
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# outcome: revise
+# at: 2026-10-28T00:46:01.996Z
+# tree: tree:6a81b11f3fa8e622a465deea5762b8ad77c3b2af
+# dispatch_prompt: ci/W-408-ui-prompt-3.md
+# design_digest: sha256:30920dc1e704060281506d6d9df86bcebc437951e2d89dfa8e9c0935f2349502
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"7485661c79bca1980ac84267f3946341385d9afc","brief":"be16edc84c0b2c336f1464bfcd701b3cec7e63a9","at":"2026-10-28T00:46:00.232Z"}
+
+## Findings
+
+1. blocking — brief:104 — The Health rows look like static text in the empty captures and populated 390 bottom capture: neither shows an expansion marker. The prototype’s `summary { display: grid }` removes the native marker, leaving both detail and the pause brake visually undiscoverable — replace with: “Keep both Health summaries at 13px/400 with a visible disclosure indicator that changes when opened; preserve keyboard activation and expose the pause/resume control inside Process health.” — check: `apps/web/src/components/w025.css`; `apps/web/tests-serve/w408.spec.ts` b5, closed/open captures at 1280, 640 and 390.
+2. advisory — brief:17 — The captures show Needs you 4 and The Patron 1 without explaining their different units. Carrying the recorded spec advisory into screen copy would prevent these from looking like contradictory totals — replace with: “Identify Needs you as requests in Inbox and Work in flight as active work items from Board. Explain briefly that The Patron counts work awaiting a human gate; these counts need not match.” — check: `apps/web/src/screens/Officina.tsx`; b2/b3 captures with unequal counts and with an empty Inbox alongside a populated Patron group.
+3. advisory — brief:96 — The agent-written requirement that every work row contain exactly two fields overextends the Patron’s removal of repeated state words. “The Patron / W-408 / Opening ledger” names the work but gives no clue which decision it needs; a distinct gate name would earn its place — replace with: “Keep the non-wrapping id and left-aligned title; omit state words that repeat the group heading. Permit a concise, non-redundant gate or next-action label when supplied by the existing Board record.” — check: `apps/web/tests-serve/w408.spec.ts` b3; replace the exact span-count constraint with checks for readable content and absence of redundant state text.
+
+## Recommendation
+
+The approved order, stacked groups and ruled rows make a coherent ledger at 1280, 640 and 390; populated views require scrolling to complete the burn and health picture.
+The disclosure affordance needs a bounded correction, without redesigning the page or reopening the Patron’s rulings.
+Beyond the overstrict two-field requirement, I found no additional layout, colour or initial-state choice requiring a new Patron decision outside the named Defaults.
+W-202’s later modules remain appropriately outside this first cut; retain W-407’s predecessor relationship, the recorded scrollbar fix and build guidance, and W-406/W-415 behavior.
+Verdict: revise

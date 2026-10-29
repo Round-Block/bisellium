@@ -1,0 +1,18 @@
+# opus: W-408
+# phase: spec
+# round: 7
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a65faaa04c1ca7204
+# outcome: passed
+# at: 2026-10-28T03:39:54.390Z
+# tree: tree:0ebb8d26195a5c6c7c63504e079010a1ecf95ca9
+# brief: briefs/W-408.md blob:28b90886890ae1c272b9f39666e6e43c5a7007cd
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":"studio","head":"42702b798e18768125178a11df699a762680757e","brief":"28b90886890ae1c272b9f39666e6e43c5a7007cd","at":"2026-10-28T03:39:47.227Z"}
+
+## Findings
+No findings
+
+## Verdict
+passed — Revision g's changes are backed by real tests. The 640/390 Budget reflow is pinned by a CSS policy assertion and by served text-range bounds that require at least 6px of space on each side of the slash (w408.spec.ts:104-113). The rule-family rows with no invented severity are pinned by a served `.officina__rule-family .severity-cue` count of 0, a check on the aggregate-only copy, and kill-b4-r15g, which fails by assertion. The new 640 captures show complete, clearly separated numerals and plain rule-family rows under classified aggregate cues. These choices make sense against D-127. Both round-5 advisories are closed: brief:92 and brief:110 now say neutral-ink/Orange/Red, and brief:76 names the real `formatPosture()`.
+VERDICT: PASS
