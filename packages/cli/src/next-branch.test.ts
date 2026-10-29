@@ -1368,3 +1368,72 @@ test("W-461-b1 behaviour 1: a red is recorded only at a commit whose web bundle 
   assert.match(readFileSync(w461RedLog(w), "utf8"), /^not ok 1 - W-900-b1 fixture behaviour 1$/m, "the recorded red is the row's assertion failure");
   assert.equal(existsSync(join(w.wt, ...W461_BUNDLE)), true, "the build left its bundle");
 });
+
+/** A prototype series over the fixture's web workspace: test b1, then one implementation per behaviour, each editing src/main.mjs as `mains` says. */
+function w461Stage(w: World, mains: [string, Record<string, string>][]): string {
+  const base = git(w.wt, ["rev-parse", "HEAD"]);
+  put(w.wt, W461_ROW, W461_ROWS);
+  commit(w.wt, `test(${OPUS}): row b1, red`);
+  for (const [k, [main, files]] of mains.entries()) {
+    writeFileSync(join(w.wt, "source.txt"), `${readFileSync(join(w.wt, "source.txt"), "utf8")}behaviour ${k + 1}\n`);
+    put(w.wt, "apps/web/src/main.mjs", main);
+    for (const [rel, text] of Object.entries(files)) put(w.wt, rel, text);
+    commit(w.wt, `feat(${OPUS}): behaviour ${k + 1}`);
+  }
+  const path = join(w.root, "series.mbox");
+  writeFileSync(path, `${git(w.wt, ["format-patch", "--stdout", `${base}..HEAD`])}\n`);
+  git(w.wt, ["reset", "-q", "--hard", base]);
+  const digest = createHash("sha256").update(readFileSync(path)).digest("hex");
+  put(w.wt, BRIEF_REL, w461Brief([`Prototype: ${path} sha256:${digest}`]));
+  commit(w.wt, `spec(${OPUS}): the prototype line`);
+  return base;
+}
+const w461Subjects = (w: World, base: string): string[] => git(w.wt, ["log", "--reverse", "--format=%s", `${base}..HEAD`]).split("\n");
+
+test("W-461-b2 behaviour 2: the reds perform builds each implementation commit and holds at the first that does not build", { timeout: 600_000 }, () => {
+  // W-408's shape: behaviour 1's implementation imports a module only behaviour 2's adds; the series builds only at its tip
+  const w = world("w461-b2", "ready", { automated: true });
+  w461Web(w.wt);
+  const base = w461Stage(w, [
+    ['import "./lib.mjs";\n', {}],
+    ['import "./lib.mjs";\n', { "apps/web/src/lib.mjs": "export {};\n" }],
+  ]);
+  const p = next(w, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  expectStep(p, "reds", "held", "a series whose first implementation does not build holds");
+  assert.match(p.kv.get("why") ?? "", /^behaviour 1's implementation does not build at [0-9a-f]+: web bundle build exited 1; certify's replay would refuse the series$/, ran("the hold names behaviour 1's implementation and certify's build failure", p));
+  assert.deepEqual(w461Subjects(w, base), [`spec(${OPUS}): the prototype line`, `test(${OPUS}): row b1, red`, `chore(studio): ${OPUS} red b1`, `feat(${OPUS}): behaviour 1`], ran("what was committed is kept, and no red is recorded on the commit that does not build", p));
+
+  // the tip, which no red sits on: behaviour 2's implementation imports a module no commit adds
+  const t = world("w461-b2-tip", "ready", { automated: true });
+  w461Web(t.wt);
+  const tbase = w461Stage(t, [
+    ["export {};\n", {}],
+    ['import "./gone.mjs";\n', {}],
+  ]);
+  const q = next(t, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  expectStep(q, "reds", "held", "a series whose last implementation does not build holds");
+  assert.match(q.kv.get("why") ?? "", /^behaviour 2's implementation does not build at [0-9a-f]+: web bundle build exited 1; certify's replay would refuse the series$/, ran("the hold names the tip's implementation", q));
+  assert.equal(w461Subjects(t, tbase).length, 6, ran("both reds and both implementations are committed and kept", q));
+
+  // behaviour 1's build leaves a directory where the bundle goes (certify reads it as present); the next build in this
+  // checkout, red 2's, cannot remove it: the perform holds, it does not throw
+  const c = world("w461-b2-cleanup", "ready", { automated: true });
+  w461Web(c.wt);
+  w461Stage(c, [
+    ["export {};\n", { "apps/web/build.mjs": 'import { mkdirSync } from "node:fs";\nawait import("./src/main.mjs");\nmkdirSync(new URL("./dist/index.html/", import.meta.url), { recursive: true });\n' }],
+    ["export {};\n", {}],
+  ]);
+  const u = next(c, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  assert.ok(u.first === `next: ${OPUS} reds held` && /^behaviour 2's red was not recorded: red: red 2 replay preparation failed: the prior apps\/web\/dist\/index\.html cannot be removed \(ERR_FS_EISDIR\) at [0-9a-f]+: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$/.test(u.kv.get("why") ?? ""), ran("a bundle path the next build cannot remove holds the perform without throwing", u));
+
+  // the same shape once every implementation builds: performed, as before
+  const g = world("w461-b2-good", "ready", { automated: true });
+  w461Web(g.wt);
+  w461Stage(g, [
+    ['import "./lib.mjs";\n', { "apps/web/src/lib.mjs": "export {};\n" }],
+    ['import "./lib.mjs";\nimport "./more.mjs";\n', { "apps/web/src/more.mjs": "export {};\n" }],
+  ]);
+  const r = next(g, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  expectStep(r, "reds", "performed", "a series that builds at every commit is performed");
+  assert.equal(existsSync(join(g.wt, ...W461_BUNDLE)), true, "the last build left its bundle");
+});
