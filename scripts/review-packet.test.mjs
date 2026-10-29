@@ -1134,10 +1134,16 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
     w454World(["inbox"], { navText: navTable(["inbox"]).replace(" },", ", disabled: true },") }).w,
     line,
   );
-  w454Refuses(
-    "an empty label",
-    w454World(["inbox"], { navText: navTable(["inbox"]).replace('label: "INBOX"', 'label: ""') }).w,
-    line,
+  // the label grammar is any run free of `"` and `\`, the empty run included
+  const emptyLabel = w454World(["inbox", "board"], {
+    navText: navTable(["inbox", "board"]).replace('label: "INBOX"', 'label: ""'),
+  });
+  const emptyLabelPacket = w454Packet(emptyLabel.w);
+  assert.equal(emptyLabelPacket.status, 0, `an empty label is admitted: ${emptyLabelPacket.err}`);
+  assert.deepEqual(
+    emptyLabelPacket.built.images.map((path) => relative(emptyLabel.dir, path)),
+    ["inbox-1280.png", "board-1280.png", "inbox-390.png", "board-390.png"],
+    "the routes attach in table order",
   );
   w454Refuses(
     "an href off its route",
