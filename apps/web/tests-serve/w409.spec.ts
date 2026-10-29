@@ -113,11 +113,35 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
       await expect(card.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions are distinct on both copies`).toHaveText(["Greenlight", "2 Inbox decisions"]);
       await expect(card.locator(".board__card-title"), `${width}: complete long title remains available`).toHaveAttribute("title", longTitle);
       const geometry = await card.evaluate((node) => {
+        const title = node.querySelector<HTMLElement>(".board__card-title")!;
         const mark = node.querySelector<HTMLElement>(".board__card-asks")!;
+        const meta = node.querySelector<HTMLElement>(".board__card-meta")!;
         const box = node.getBoundingClientRect();
+        const titleBox = title.getBoundingClientRect();
         const markBox = mark.getBoundingClientRect();
-        return { cardHeight: box.height, markLeft: markBox.left, markRight: markBox.right, left: box.left, right: box.right };
+        const metaBox = meta.getBoundingClientRect();
+        const titleStyle = getComputedStyle(title);
+        return {
+          cardHeight: box.height,
+          titleHeight: titleBox.height,
+          titleLineHeight: Number.parseFloat(titleStyle.lineHeight),
+          titleClamp: Number.parseInt(titleStyle.webkitLineClamp, 10),
+          titleTruncated: title.scrollHeight > title.clientHeight,
+          markHeight: markBox.height,
+          markLineHeight: Number.parseFloat(getComputedStyle(mark).lineHeight),
+          metaHeight: metaBox.height,
+          metaLineHeight: Number.parseFloat(getComputedStyle(meta).lineHeight),
+          markLeft: markBox.left,
+          markRight: markBox.right,
+          left: box.left,
+          right: box.right,
+        };
       });
+      expect(geometry.titleClamp, `${width}: waiting title reserves three whole lines with a visible ellipsis on both copies`).toBe(3);
+      expect(geometry.titleHeight / geometry.titleLineHeight, `${width}: waiting title is not squeezed below its whole-line clamp`).toBeCloseTo(3, 2);
+      expect(geometry.titleTruncated, `${width}: the deliberately long waiting title is visibly clamped`).toBe(true);
+      expect(geometry.markHeight / geometry.markLineHeight, `${width}: ask kinds retain one complete line box`).toBeCloseTo(1, 2);
+      expect(geometry.metaHeight / geometry.metaLineHeight, `${width}: owner and state retain one complete line box`).toBeCloseTo(1, 2);
       expect(geometry.cardHeight, `${width}: marked card stays within the ruled 108px maximum`).toBeLessThanOrEqual(108.5);
       expect(geometry.markLeft, `${width}: ask mark starts inside its card`).toBeGreaterThanOrEqual(geometry.left - 0.5);
       expect(geometry.markRight, `${width}: ask mark ends inside its card`).toBeLessThanOrEqual(geometry.right + 0.5);
