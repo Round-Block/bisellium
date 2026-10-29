@@ -1,0 +1,23 @@
+# opus: W-408
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18741-0589-7a60-8513-2b5c87a7cfc1
+# outcome: passed
+# at: 2026-10-29T10:46:35.543Z
+# tree: tree:dce2994731b2e3daebac611d19c14b7ef47e2646
+# ui_input: ci/W-408-spec-19.log
+# design_digest: sha256:70b879c381666d0e5621f34b780aa0cb6af6594cf2df84b2624c0f4d699d02f3
+# ticket: {"opus":"W-408","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-408/studio","head":"42734eb70bb590e1affa463cb52113cf31910ddb","brief":"4912f95774d80135881aca9dfd95eed5218bc5c5","at":"2026-10-29T10:42:26.056Z"}
+
+## Findings
+1. advisory — apps/web/package.json:12 [severity: S3] Although brief:92 names `officinaWork.test.ts` as a b2 pinning test, neither the web policy script nor the root test suite invokes it, so its assertions can silently rot; served b2 still exercises the behavior, making this incomplete regression wiring rather than wrong product behavior. [class: mechanism×unpinned-by-test] — check: none: a gate-coverage check requiring every declared pinning test file to appear in a CI test command
+2. advisory — apps/web/src/lib/officinaWork.test.ts:8 [severity: S4] The test title still says work is grouped “by its operational next mover,” while the revised contract and its own assertions group by lifecycle phase and merely label the next mover. [class: tests×test-title-made-false-by-domain-change] — check: none: a test-title consistency check against the behavior heading
+
+## UI input disposition
+The authoritative ui-lead round-19 input supported the unchanged prototype. I inspected all eight attachments: Inbox, Board and Seats preserve their desktop/phone hierarchy and containment; Board retains an explicit horizontal-overflow cue; Officina preserves the Work-in-flight → Budget scan order, readable complete budget values and a single vertical continuation without visible clipping. Health falls below the initial 900px Officina captures, so those images do not independently show the disclosures or brake; the authoritative ui-lead input and passed served b4 evidence cover that portion.
+
+## Verdict
+The implementation and required evidence support the five behaviors; the two findings are non-blocking test-maintenance gaps.
+VERDICT: PASS
