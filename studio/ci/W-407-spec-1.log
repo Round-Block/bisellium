@@ -1,0 +1,29 @@
+# opus: W-407
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17c8f-e83b-7df0-952d-228b98b8bc67
+# outcome: passed
+# at: 2026-10-27T10:19:41.000Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# brief: briefs/W-407.md blob:b2604bcdbc8d5de02afdecefc3049c479e8c6954
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"b2604bcdbc8d5de02afdecefc3049c479e8c6954","at":"2026-10-27T10:19:30.457Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-407-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The shipped split selector/detail renderer and approve/decline/follow-up mapping are replaced in their existing screen and handler by one title-aligned queue and DIRECTION's approve/defer/decline mapping — check: studio/briefs/W-407.md, apps/web/src/screens/Inbox.tsx, apps/web/src/screens/InboxView.tsx
+2. advisory — The 720px maximum measure, exact adjacent 40px rows, in-flow focused decision and weight-only ages are served at 1280, 640 and 390 without a detail pane or page overflow — check: apps/web/tests-serve/w407.spec.ts, gates-proto.out, shots/
+3. advisory — W-024 behaviour 10 still proves every row clickable after its selector is migrated to native `.inbox__item.inbox__row` buttons — check: apps/web/test/inboxview.test.ts, census-master-inboxview.out, census-stage-inboxview.out
+4. advisory — Evidence links deliberately use DIRECTION's cyan link role and W-366-b2's exact inventory now names `.inbox__evidence a` — check: apps/web/test/tokens.test.ts, census-master-tokens.out, census-stage-tokens.out
+5. advisory — Opening instants are normalised in the server by schema's existing strict `instant()` helper and the browser receives epoch milliseconds, so W-163-b6 gains no raw date parse and remains green — check: apps/server/src/store.ts, apps/web/src/screens/inboxLogic.ts, census-master-containment.out, census-stage-containment.out
+6. advisory — Approve and decline preserve `/api/answer`; defer uses its existing ask-back record shape with a `defer:` ratio; delegate is visible, unkeyed and honestly disabled because no petitio delegation route exists — check: apps/web/src/screens/inboxLogic.ts, apps/web/tests-serve/w407.spec.ts, gates-proto.out
+7. advisory — Every fixture-census Must-stay-green file touching an owned path passes as a whole-file run; the three requested census files pass on both 27e39d31 and the final prototype stage — check: census-must-green.sh, census-green-*.out, census-master-*.out, census-stage-*.out
+8. advisory — The ten non-numbered prototype commits reapply to one final tree; all five reds are assertion failures, every cumulative green passes and the mbox sha256 is `da962eb45e6c0674132d0e79cb81047aa7746b25adb534b19d2e18c6da487160` — check: prototype.mbox, mbox-check.out, red-b1.out, red-b2.out, red-b3.out, red-b4.out, red-b5.out
+9. advisory — Petitio delegation and authoritative populated secondary collections remain explicit follow-ups; no screenshot baseline, machinery, officina bookkeeping or Patron-merged path is owned — check: studio/briefs/W-407.md, gates-proto.out
+
+## Verdict
+
+passed — signature round 1 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-407.md`; the prototype sha256 is `da962eb45e6c0674132d0e79cb81047aa7746b25adb534b19d2e18c6da487160`, and no record write, `next` or `verdict` was performed.

@@ -1,0 +1,24 @@
+# opus: W-407
+# phase: spec
+# round: 15
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: ace63766ff941b0e1
+# session_reason: the round-12 reviewer session a7ce9afe82fd776d5 ended with an earlier orchestrator session; a fresh Claude Opus session reviewed round 15 after reading the round-2, 5, 9 and 12 verdicts
+# outcome: passed
+# at: 2026-10-28T22:08:06.121Z
+# tree: tree:f1f3f405ac94091ff8a8f44407b775584a48ab21
+# brief: briefs/W-407.md blob:2df0e86a628dfb5019233525a5592ddd073ca483
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":15,"actor":"spec-reviewer","studio":"studio","head":"55205c515bbfe526f92ca5345489cfb09d4b3cbc","brief":"2df0e86a628dfb5019233525a5592ddd073ca483","at":"2026-10-28T22:08:01.211Z"}
+
+## Findings
+1. advisory — brief:33 The promise is that a failed background read "changes only the read-failure notice", and Interfaces brief:65 restates it. In the prototype, the only visible `.screen-notice` for a non-empty queue sits in the reading pane's action bar. Below 840px that pane is `display: none` until a row is opened, so at 390 a Patron looking at the list after a background failure sees the stale queue with no visible failure signal. Only the visually hidden `.shell__status` region announces it. Served b6 at 390 opens the seventh item before aborting, so it never sees this. Writes stay safe, because the server refuses a stale id. Replacement for brief:33's clause: "it changes only the read-failure notice, shown above the list pane in every layout (and repeated in the action bar when detail is open)", and add to b6 (brief:131): "at 390 with detail closed, the failure notice is visible above the list". [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: a served W-407-b6 step at 390 with the list showing (detail closed) that aborts one interval read and asserts a visible `Could not load the inbox.`
+2. advisory — brief:65 says a removed selected id "retains its last reading snapshot and reason" until another row is selected. When that ordinary refresh empties the queue (the Patron's only petitio answered elsewhere), `InboxView` returns early with `Nothing waiting on you`. The detached reading, withdrawn notice and half-typed draft then disappear from screen, though they remain in state. Replacement: append to brief:65 "when the removal leaves the queue empty, the empty line replaces the retained reading; the draft is kept in state but not shown". Alternatively, render the detached decision ahead of the empty early return. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: a served b6 step that removes the sole selected petitio and asserts the chosen behaviour
+3. advisory — brief:65 says "a stale in-flight ordinary read cannot consume a later answer reconciliation". That holds, but there is a second effect. If the ordinary read was already in flight and resolves after the write landed, it settles with `intent === null` and no answered id. `keepDetached` then shows the just-answered item as `This petitio no longer needs a decision.` with disabled controls, until the queued intent read advances. It is a transient false withdrawal shown next to the success confirmation. Replacement: append to brief:65 "while an explicit answer is queued, an ordinary settle that lacks the answered id does not detach it" (for example, skip `keepDetached` when `refreshIntentRef.current !== null`), or state it as a limit. [severity: S3] [class: tests×ruled-case-uncovered] — check: none
+
+## Earlier findings
+- ci/W-407-spec-12.log #1: closed — In prototype `Inbox.tsx`, `refreshInbox`'s catch now sets `EMPTY` only when `!hasSuccessfulLoadRef.current`. A later failure touches only `readFailed`, and selection, detail, detached state and reasons are left alone, so the `currentId`-undefined reopen-first path is gone. Served `w407.spec.ts` b6 (305ff) aborts one interval read at 1280 and 390 with the seventh item open and a half-typed ratio. Through failure and recovery it asserts 14 rows, `aria-selected`, the detail subject, the ratio value and focus, and list scroll. `w407-served-b6-r13.out` passes, and the mbox (`b47798ee…`, brief:11) postdates it. Brief:33, 65, 87 and 105 state it. Round-12 advisories #2 (no `studio` field, plus a server key test), #3 (1.4.11 named as not met; Defaults 2) and #4 (in-flight coalescing) are also addressed.
+
+## Verdict
+Revision g closes the round-12 blocker. A background failure no longer wipes the queue, and the input boundary stays sound. The new secondary labels, the shade-only focus with 1.4.11 named as an accepted trade-off, and the 72ch Default make sense on the r13 captures. What remains is three advisory gaps in the new refresh-retention states: the failure notice is not visible in the narrow list, the retained reading disappears when the queue empties, and an answered item is briefly shown as withdrawn.
+VERDICT: PASS

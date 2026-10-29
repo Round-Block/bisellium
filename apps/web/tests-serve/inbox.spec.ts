@@ -17,7 +17,7 @@ test("W-345-b1 typing shortcut characters in the reason keeps the petition and s
   });
   try {
     await page.goto(`${served.baseURL}/?demo=1#/inbox`);
-    const first = page.locator(".inbox__row").first();
+    const first = page.locator(".inbox__item").first();
     await expect(first).toHaveAttribute("data-focused", "true");
     const reason = page.locator(".inbox__input-ratio");
     await reason.click();
@@ -77,29 +77,20 @@ test("W-345-b3 moving between petitions never carries one reason into another", 
   }
 });
 
-test("W-345-b4 a failed refresh shows failure and no stale petition", async ({ page }) => {
+test("W-345-b4 a failed first read shows the empty failure state", async ({ page }) => {
   const served = await startServed("w345-b4");
-  let reads = 0;
-  await page.route("**/api/inbox", async (route) => {
-    reads++;
-    if (reads === 1) await route.continue();
-    else await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
-  });
+  await page.route("**/api/inbox", (route) => route.fulfill({ status: 500, contentType: "application/json", body: "{}" }));
   try {
     await signIn(page, served.baseURL, served.token);
-    await expect(page.locator(".inbox__row")).toHaveCount(1);
-    await page.locator(".inbox__input-ratio").fill("record this answer");
-    await page.getByRole("button", { name: /approve/i }).click();
     await expect(page.locator('.shell__status[data-state="error"]')).toHaveText("Could not load the inbox.");
     await expect(page.locator(".inbox__row")).toHaveCount(0);
     await expect(page.locator(".inbox__empty")).toHaveText("Could not load the inbox.");
-    await expect(page.locator(".inbox__confirmation")).toHaveText("Recorded approve answer for A-1; the petition is resolved.");
   } finally {
     await served.close();
   }
 });
 
-test("W-345-b5 the reason and answer controls are reachable at 390px", async ({ page }) => {
+test("W-345-b5 Outlook mobile opens full-screen controls and returns to its selected row at 390px", async ({ page }) => {
   const served = await startServed("w345-b5");
   const petitiones = Array.from({ length: 14 }, (_, index) => ({
     id: `P-${String(index + 1).padStart(2, "0")}`,
@@ -112,36 +103,42 @@ test("W-345-b5 the reason and answer controls are reachable at 390px", async ({ 
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await signIn(page, served.baseURL, served.token);
-    const detail = page.locator(".inbox__detail");
-    const rows = page.locator(".inbox__row");
+    const items = page.getByRole("option");
+    const list = page.locator(".inbox__list-pane");
+    const reading = page.locator(".inbox__reading-pane");
     const reason = page.locator(".inbox__input-ratio");
-    await expect(detail).toBeVisible();
-    await expect(reason).toBeVisible();
-    const first = rows.first();
+    await expect(list).toBeVisible();
+    await expect(reading).toBeHidden();
+    const first = items.first();
     await first.focus();
     await expect(first).toBeFocused();
-    await expect(first).toHaveAttribute("aria-pressed", "true");
-    const focusStyle = await first.evaluate((node) => {
+    await expect(first).toHaveAttribute("aria-selected", "true");
+    await page.keyboard.press("j");
+    const second = items.nth(1);
+    await expect(second).toBeFocused();
+    const focusStyle = await second.evaluate((node) => {
       const style = getComputedStyle(node);
-      return { width: style.outlineWidth, style: style.outlineStyle, offset: style.outlineOffset };
+      return { width: style.outlineWidth, shadow: style.boxShadow };
     });
-    expect(focusStyle).toEqual({ width: "2px", style: "solid", offset: "2px" });
-    for (let index = 1; index < petitiones.length; index++) await page.keyboard.press("j");
-    const last = rows.last();
+    expect(focusStyle.width).toBe("0px");
+    expect(focusStyle.shadow).toBe("none");
+    await expect(second).toHaveCSS("background-color", "rgb(52, 55, 70)");
+    for (let index = 2; index < petitiones.length; index++) await page.keyboard.press("j");
+    const last = items.last();
     await expect(last).toBeFocused();
-    await expect(last).toHaveAttribute("aria-pressed", "true");
-    const listBox = await page.locator(".inbox__list").boundingBox();
+    await expect(last).toHaveAttribute("aria-selected", "true");
+    const listBox = await list.boundingBox();
     const lastBox = await last.boundingBox();
     expect(listBox).not.toBeNull();
     expect(lastBox).not.toBeNull();
-    const listHeight = await page.locator(".inbox__list").evaluate((node) => node.getBoundingClientRect().height);
-    expect(listHeight).toBeLessThanOrEqual(844 * 0.4);
     expect(lastBox!.y).toBeGreaterThanOrEqual(listBox!.y);
-    expect(lastBox!.y + lastBox!.height).toBeLessThanOrEqual(listBox!.y + listBox!.height + 1);
-    expect(await page.locator(".inbox__list").evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
-    await page.keyboard.press("Tab");
-    await expect(reason).toBeFocused();
-    await reason.scrollIntoViewIfNeeded();
+    expect(lastBox!.y + lastBox!.height, "nearest reveal makes the complete taller row visible").toBeLessThanOrEqual(listBox!.y + listBox!.height);
+    expect(await list.evaluate((node) => node.scrollTop), "taller two-line rows scroll only when the selected row needs revealing").toBeGreaterThan(0);
+    await page.keyboard.press("Enter");
+    await expect(reading).toBeVisible();
+    await expect(list).toBeHidden();
+    await expect(page.getByRole("button", { name: "Back to Inbox" })).toBeVisible();
+    await reason.focus();
     await expect(reason).toBeInViewport();
     await reason.fill("phone answer reason");
     const approve = page.getByRole("button", { name: /approve/i });
@@ -150,24 +147,28 @@ test("W-345-b5 the reason and answer controls are reachable at 390px", async ({ 
     await expect(approve).toBeEnabled();
     await page.keyboard.press("Tab");
     await expect(approve).toBeFocused();
+    const defer = page.getByRole("button", { name: /defer/i });
     const decline = page.getByRole("button", { name: /decline/i });
-    const followup = page.getByRole("button", { name: /follow up/i });
+    await page.keyboard.press("Tab");
+    await expect(defer).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(decline).toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(followup).toBeFocused();
-    for (const target of [last, reason, approve, decline, followup]) {
+    for (const target of [reason, approve, defer, decline]) {
       const box = await target.boundingBox();
       expect(box).not.toBeNull();
       expect(box!.width).toBeGreaterThanOrEqual(44);
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
+    await page.getByRole("button", { name: "Back to Inbox" }).click();
+    await expect(list).toBeVisible();
+    await expect(last).toBeFocused();
+    expect((await last.boundingBox())!.height).toBeCloseTo(68, 0);
   } finally {
     await served.close();
   }
 });
 
-test("W-345-b6 Follow up sends ask-back open text and success names the open record", async ({ page }) => {
+test("W-345-b6 Defer sends ask-back verdict text and success names the open record", async ({ page }) => {
   const served = await startServed("w345-b6");
   let answered = false;
   const all = [
@@ -189,25 +190,20 @@ test("W-345-b6 Follow up sends ask-back open text and success names the open rec
     const badge = page.locator(".sidebar__badge");
     await expect(badge).toHaveText("2");
     const buttons = page.locator(".inbox__btn-action");
-    await expect(buttons).toHaveCount(3);
-    await expect(page.getByRole("button", { name: /defer|delegate/i })).toHaveCount(0);
-    await expect(page.locator(".inbox__action-effect")).toContainText("Follow up records the text without a verdict");
+    await expect(buttons).toHaveCount(4);
+    await expect(page.getByRole("button", { name: "delegate" })).toBeDisabled();
+    await expect(page.getByText("Ratio decidendi", { exact: true })).toBeVisible();
     await page.locator(".inbox__row").nth(1).click();
     await page.locator(".inbox__input-ratio").fill("Could you test ‘理由’?");
-    await page.getByRole("button", { name: /follow up/i }).click();
-    expect(answerBody).toEqual({ petitio: "P-2", reply: "Could you test ‘理由’?", askBack: true });
+    await page.getByRole("button", { name: /defer/i }).click();
+    expect(answerBody).toEqual({ petitio: "P-2", reply: "defer: Could you test ‘理由’?", askBack: true });
     await expect(page.locator(".inbox__row")).toHaveCount(1);
     await expect(badge).toHaveText("1");
-    await expect(page.locator(".inbox__detail-subject")).toHaveText("First");
+    await expect(page.locator(".inbox__subject").first()).toHaveText("First");
     await expect(page.locator(".inbox__input-ratio")).toBeVisible();
     const confirmation = page.locator(".inbox__confirmation");
-    await expect(confirmation).toHaveText("Recorded follow-up reply for P-2; the petition remains open awaiting the asker's reply.");
-    const [confirmationInset, titleInset] = await Promise.all([
-      confirmation.evaluate((node) => getComputedStyle(node).paddingLeft),
-      page.locator(".inbox__list .inbox__title").evaluate((node) => getComputedStyle(node).paddingLeft),
-    ]);
-    expect(confirmationInset).toBe(titleInset);
-    await expect(page.locator('.shell__status[data-state="ready"]')).toHaveText("Recorded follow-up reply for P-2; the petition remains open awaiting the asker's reply.");
+    await expect(confirmation).toHaveText("Recorded defer answer for P-2; the petition remains open awaiting the asker's reply.");
+    await expect(page.locator('.shell__status[data-state="ready"]')).toHaveText("Recorded defer answer for P-2; the petition remains open awaiting the asker's reply.");
   } finally {
     await served.close();
   }

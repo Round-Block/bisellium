@@ -1,0 +1,25 @@
+# opus: W-407
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1854b-f3b4-79c3-86e6-ce11050aad39
+# outcome: passed
+# at: 2026-10-29T02:21:19.309Z
+# tree: tree:d1a950fd513ef4e840ac3f62b2a806f3cdeff571
+# ui_input: ci/W-407-spec-16.log
+# design_digest: sha256:714bc247bdd31627e21758c48ea48e374154b5db0cf7691bc2196d7d27c1f040
+# ticket: {"opus":"W-407","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-407/studio","head":"c82034bd3ce4c956b97cdecaa74dc58808745396","brief":"2df0e86a628dfb5019233525a5592ddd073ca483","at":"2026-10-29T02:20:34.268Z"}
+
+## Findings
+No findings
+
+## UI input disposition
+The authoritative ui-lead input supports retaining withdrawn decisions. The attached Inbox, Board, Seats, and Officina desktop/phone pairs preserve their approved hierarchy, responsive composition, legibility, and scan order; none shows a visual regression from this narrowly scoped state fix.
+
+## Earlier findings
+- ci/W-407-review-1.log #1: closed — apps/web/src/screens/InboxView.tsx:55 now bypasses the empty early return for a detached petition, and the policy plus served b6 tests assert the retained subject, withdrawal notice, draft, and four disabled actions at 1280 and 390.
+
+## Verdict
+The delta closes the sole prior blocker with matching static and served coverage and introduces no new defect.
+VERDICT: PASS

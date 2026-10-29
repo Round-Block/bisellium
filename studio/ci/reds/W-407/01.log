@@ -1,0 +1,172 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-407-b1\s --import tsx apps/web/test/w407.test.ts
+# exit: 1
+# at: 2026-10-28T22:13:36.951Z
+# sella: ui-architect
+# tree: tree:38903ce645136ce740656d1c41d8e1edb23aae34
+# ticket: {"opus":"W-407","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-407/studio","head":"41d133265b92d42725c85b07337fcd1520475dee","brief":"2df0e86a628dfb5019233525a5592ddd073ca483","at":"2026-10-28T22:13:36.905Z"}
+
+TAP version 13
+# Subtest: W-407-b1 behaviour 1: Inbox follows Outlook split and mobile layouts
+not ok 1 - W-407-b1 behaviour 1: Inbox follows Outlook split and mobile layouts
+  ---
+  duration_ms: 2.169808
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-407/apps/web/test/w407.test.ts:1:558'
+  failureType: 'testCodeFailure'
+  error: 'the renderer has separate list and reading panes'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { useEffect, useRef, type JSX } from "react";
+    import type { InboxResponse } from "../api.js";
+    import { canSubmit, type Verb } from "./inboxLogic.js";
+    
+    export interface InboxViewProps {
+      petitiones: InboxResponse["petitiones"];
+      opera: InboxResponse["opera"];
+      focusIndex: number;
+      /** Incremented only by j/k movement, so the selected row receives DOM focus and is revealed without stealing focus on load. */
+      focusRequest?: number;
+      reason: string;
+      /** W-067: one line for a "refused" or "error" WriteResult. `null` when
+       *  there's nothing to say — never rendered any other way (no title/style/
+       *  href built from it: it's server `output`, i.e. officina content). */
+      error?: string | null;
+      /** The exact successful record effect, retained across the settling reload. */
+      confirmation?: string;
+      /** W-341: the screen's visible status line in a loading, read-error or pending state; absent at rest. */
+      notice?: string;
+      /** True while the selected answer is being recorded. */
+      busy?: boolean;
+      onReasonChange: (value: string) => void;
+      onFocusChange: (index: number) => void;
+      onSubmit: (petitioId: string, verb: Verb) => void;
+    }
+    
+    const VERBS: { verb: Verb; key: string }[] = [
+      { verb: "approve", key: "1" },
+      { verb: "decline", key: "2" },
+      { verb: "followup", key: "3" },
+    ];
+    
+    function verbLabel(verb: Verb): string {
+      return verb === "followup" ? "follow up" : verb;
+    }
+    
+    export function InboxView(props: InboxViewProps): JSX.Element {
+      const { petitiones, opera, focusIndex, focusRequest = 0, reason, error, confirmation, notice, busy = false, onReasonChange, onFocusChange, onSubmit } = props;
+      const selected = petitiones[focusIndex];
+      const selectedRowRef = useRef<HTMLButtonElement>(null);
+    
+      useEffect(() => {
+        if (focusRequest === 0) return;
+        selectedRowRef.current?.focus({ preventScroll: true });
+        selectedRowRef.current?.scrollIntoView({ block: "nearest" });
+      }, [focusRequest, selected?.id]);
+    
+      if (petitiones.length === 0 && opera.length === 0) {
+        return (
+          <div className="inbox">
+            <h1 className="inbox__title">Inbox</h1>
+            {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
+            <p className="inbox__empty">{notice ?? "Nothing waiting on you"}</p>
+          </div>
+        );
+      }
+    
+      return (
+        <div className="inbox inbox--split">
+          <div className="inbox__list">
+            <h1 className="inbox__title">Inbox</h1>
+            {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
+            {petitiones.map((p, i) => {
+              const focused = i === focusIndex;
+              const rowClasses = [
+                "inbox__row",
+                "inbox__row--attention",
+                focused ? "inbox__row--focused" : "",
+              ].filter(Boolean).join(" ");
+    
+              return (
+                <button
+                  key={p.id}
+                  ref={focused ? selectedRowRef : undefined}
+                  type="button"
+                  className={rowClasses}
+                  data-focused={focused}
+                  aria-pressed={focused}
+                  tabIndex={focused ? 0 : -1}
+                  onClick={() => onFocusChange(i)}
+                  onFocus={() => onFocusChange(i)}
+                >
+                  <span className="inbox__subject">{p.subject}</span>
+                  <span className="inbox__sella">{p.from}</span>
+                </button>
+              );
+            })}
+          </div>
+    
+          {selected && (
+            <div className="inbox__detail">
+              <div className="inbox__detail-header">
+                <span className="inbox__detail-opus">{selected.opus}</span>
+                <span className="inbox__detail-from">from {selected.from}</span>
+              </div>
+              <h2 className="inbox__detail-subject">{selected.subject}</h2>
+              <div className="inbox__detail-body">
+                {selected.body ? (
+                  <p className="inbox__detail-content">{selected.body}</p>
+                ) : (
+                  <p className="inbox__detail-placeholder">No content provided.</p>
+                )}
+              </div>
+              <div className="inbox__decision-panel">
+                {notice !== undefined && <p className="screen-notice">{notice}</p>}
+                {error && <p className="inbox__error">{error}</p>}
+                <p className="inbox__action-effect">Approve and Decline record this text as a verdict and resolve the petition. Follow up records the text without a verdict, returns it to the asker and keeps it open.</p>
+                <input
+                  className="inbox__input-ratio"
+                  value={reason}
+                  onChange={(e) => onReasonChange(e.target.value)}
+                  placeholder="Answer or follow-up text"
+                />
+                <div className="inbox__action-group">
+                  {VERBS.map(({ verb, key }) => (
+                    <button
+                      key={verb}
+                      type="button"
+                      className="inbox__btn-action"
+                      disabled={!canSubmit(reason, busy)}
+                      onClick={() => onSubmit(selected.id, verb)}
+                    >
+                      <span className="inbox__hotkey">{key}</span>
+                      {verbLabel(verb)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-407/apps/web/test/w407.test.ts:16:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 457.796036

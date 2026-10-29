@@ -1,0 +1,28 @@
+# opus: W-407
+# phase: spec
+# round: 6
+# sella: ui-lead
+# outcome: passed
+# at: 2026-10-27T10:50:41.186Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# dispatch_prompt: ci/W-407-ui-prompt-6.md
+# design_digest: sha256:cff7ab4b57d4de2087542d664adae7bdbb8008faab9dfb7b0be05bf502cc02cc
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"48bbdebcb0263bbe18e02907aa2f506a149e86e7","at":"2026-10-27T10:50:37.480Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Round-3 finding 1 is closed: the complete expanded subject wraps before the ask, including the 180-character empty-body case at all three widths (brief:92).
+Round-3 finding 2 is closed: `j/k move · Esc collapse` appears below the controls, with `1`/`2`/`3` beside approve/defer/decline (brief:96).
+Round-3 finding 3 is closed: disabled, unkeyed delegate has the visible explanation “Delegation is not available yet”, associated through `aria-describedby` (brief:100).
+Round-3 finding 4 is closed: the revised CSS and served assertions specify 40px collapsed rows at 1280, 640 and 390, including the migrated phone test (brief:111).
+
+The captures read as DIRECTION §6’s decision queue: a title-aligned 720px maximum column, an in-flow expansion, amber ownership rules, mono sella ids, weight-only age escalation, quiet secondary groups and the prescribed empty state.
+The shared reason field and four verbs remain legible at 640 and 390; the phone layout removes the pre-change separation between the selected row, its ask and its controls without losing the complete subject.
+The shortcut placement supplies the expansion’s equivalent of DIRECTION’s drawer footer.
+I find no additional layout, colour or default choice requiring a Patron ruling beyond the seven named Defaults.
+The prototype keeps W-406’s Board and W-415’s shell intact; the spec review’s two advisories remain build guidance without re-adjudication.
+Verdict: passed

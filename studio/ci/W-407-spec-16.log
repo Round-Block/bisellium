@@ -1,0 +1,34 @@
+# opus: W-407
+# phase: spec
+# round: 16
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1848f-3c21-7a92-89a4-b3dec3a8c434
+# session_reason: the round-13 ui-lead session gave its input on revision f; a fresh read-only Astra session judged revision g after reading its round-13 input
+# outcome: passed
+# at: 2026-10-28T22:11:39.936Z
+# tree: tree:f1f3f405ac94091ff8a8f44407b775584a48ab21
+# dispatch_prompt: ci/W-407-ui-prompt-16.md
+# design_digest: sha256:714bc247bdd31627e21758c48ea48e374154b5db0cf7691bc2196d7d27c1f040
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":16,"actor":"ui-lead","studio":"studio","head":"55205c515bbfe526f92ca5345489cfb09d4b3cbc","brief":"2df0e86a628dfb5019233525a5592ddd073ca483","at":"2026-10-28T22:11:34.189Z"}
+
+## Findings
+
+1. advisory — brief:25 — Round-13 finding 1’s closure still holds: repository evidence exposes its selectable target and unavailable explanation; HTTP(S) evidence remains actionable — replace with: Retain this treatment — check: apps/web/src/screens/InboxView.tsx; shots/inbox-1280-open-keyboard-focus.png
+2. advisory — brief:65 — Round-13 finding 2 no longer holds in the captured removal states: the original subject, reading and draft remain visible, the notice explains withdrawal, and submission is disabled at both widths — replace with: Retain this treatment and explicit-answer-only advancement — check: shots/inbox-1280-open-removed-selected.png; shots/inbox-390-removed-selected.png
+3. advisory — brief:184 — Round-13 finding 3 no longer holds: the agent-written zero-count disclosure rule has been replaced by readable, non-interactive unavailable labels — replace with: Retain labels without counts or disclosure controls until authoritative reads exist — check: shots/inbox-1280-open-secondary-labels.png; shots/inbox-390-secondary-labels.png
+4. advisory — brief:53 — Round-13 finding 4 no longer holds: the prototype’s DIRECTION amendment records first-notified dates, shade-only row focus, no Inbox colophon and shared visible refresh — replace with: Retain the Inbox-scoped amendment — check: .worktrees/W-407-spec/docs/design/DIRECTION.md
+5. advisory — brief:187 — Round-13 finding 5 no longer holds: 72ch is explicitly a proposed Inbox Default, changeable by the Patron; the captured prose and lists remain readable — replace with: Retain Default 14’s explicit distinction from the agent-written general 68ch measure — check: shots/inbox-1280-collapsed-long-ask.png; shots/inbox-390-long-ask-open.png
+
+## Earlier findings
+
+- ci/W-407-spec-13.log #2: closed — Revision g, brief:65, retains the removed petitio’s reading snapshot and draft, displays its withdrawal notice and disables submission; only an explicit successful answer advances automatically. The captures shots/inbox-1280-open-removed-selected.png and shots/inbox-390-removed-selected.png show the original subject and draft retained without substituting another decision.
+
+## Recommendation
+
+The captured withdrawal treatment keeps the reader oriented without substituting another subject, and Back remains visible at 390.
+The failed-refresh captures retain the decision and draft while showing a legible failure notice; the secondary labels communicate unavailable collections honestly.
+I found no additional agent-written rule that makes these captured screens incoherent, and no additional layout, colour or default fixed beyond the approved screens and named Defaults.
+The subtle selected shade remains the Patron’s accepted trade-off; the 72ch measure remains an agent proposal.
+Round 15’s three advisories remain build guidance without re-judgment, and W-406’s Board and W-415’s sidebar and zoom reflow remain unchanged.
+Verdict: passed

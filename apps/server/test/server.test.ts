@@ -1120,6 +1120,7 @@ async function main(): Promise<void> {
     const base = `http://127.0.0.1:${s.port}`;
     try {
       const r = await getJson(base, "/api/inbox");
+      check("W-407 inbox response has only opera and petitiones at top level", JSON.stringify(Object.keys(r.body ?? {}).sort()) === JSON.stringify(["opera", "petitiones"]), JSON.stringify(Object.keys(r.body ?? {}).sort()));
       const row = (r.body?.petitiones ?? []).find((p: { id: string }) => p.id === "W076-BODY");
       check("inbox body: W076-BODY is present", row !== undefined, JSON.stringify((r.body?.petitiones ?? []).map((p: { id: string }) => p.id)));
       check("inbox body: at least 2KB", typeof row?.body === "string" && row.body.length >= 2000, String(row?.body?.length));

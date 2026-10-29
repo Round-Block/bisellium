@@ -511,6 +511,7 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
       openedBy: data.from === "patron" ? "you" : data.from,
       counterparty: data.from === "patron" ? data.to : data.from,
       state: data.state,
+      openedAt: data.opened,
       subject: front ?? (derived || data.id),
       body,
     };

@@ -1,133 +1,192 @@
 import { useEffect, useRef, type JSX } from "react";
 import type { InboxResponse } from "../api.js";
-import { canSubmit, type Verb } from "./inboxLogic.js";
+import { askBlocks, canSubmit, datePresentation, evidenceLinks, type Verb } from "./inboxLogic.js";
 
 export interface InboxViewProps {
   petitiones: InboxResponse["petitiones"];
   opera: InboxResponse["opera"];
   focusIndex: number;
-  /** Incremented only by j/k movement, so the selected row receives DOM focus and is revealed without stealing focus on load. */
+  /** The item opened as the narrow full-screen detail; wide layouts always show the focused item. */
+  expandedId?: string | null;
+  /** Incremented when keyboard movement, back, or reconciliation must reveal the selected row. */
   focusRequest?: number;
   reason: string;
-  /** W-067: one line for a "refused" or "error" WriteResult. `null` when
-   *  there's nothing to say — never rendered any other way (no title/style/
-   *  href built from it: it's server `output`, i.e. officina content). */
   error?: string | null;
-  /** The exact successful record effect, retained across the settling reload. */
   confirmation?: string;
-  /** W-341: the screen's visible status line in a loading, read-error or pending state; absent at rest. */
   notice?: string;
-  /** True while the selected answer is being recorded. */
+  noticeIsFailure?: boolean;
   busy?: boolean;
+  readPetitionIds?: ReadonlySet<string>;
+  /** A selected decision removed by an ordinary refresh, retained until the Patron chooses another row. */
+  detachedPetition?: InboxResponse["petitiones"][number] | null;
+  decisionUnavailable?: boolean;
   onReasonChange: (value: string) => void;
   onFocusChange: (index: number) => void;
+  onExpandChange?: (id: string | null) => void;
+  onRead?: (id: string) => void;
+  onReturnToList?: () => void;
   onSubmit: (petitioId: string, verb: Verb) => void;
 }
 
-const VERBS: { verb: Verb; key: string }[] = [
+const VERBS: { verb: Verb; key?: string }[] = [
   { verb: "approve", key: "1" },
-  { verb: "decline", key: "2" },
-  { verb: "followup", key: "3" },
+  { verb: "defer", key: "2" },
+  { verb: "decline", key: "3" },
+  { verb: "delegate" },
 ];
 
-function verbLabel(verb: Verb): string {
-  return verb === "followup" ? "follow up" : verb;
-}
-
 export function InboxView(props: InboxViewProps): JSX.Element {
-  const { petitiones, opera, focusIndex, focusRequest = 0, reason, error, confirmation, notice, busy = false, onReasonChange, onFocusChange, onSubmit } = props;
-  const selected = petitiones[focusIndex];
-  const selectedRowRef = useRef<HTMLButtonElement>(null);
+  const {
+    petitiones, focusIndex, expandedId = null, focusRequest = 0,
+    reason, error, confirmation, notice, busy = false, readPetitionIds = new Set<string>(),
+    noticeIsFailure = false,
+    detachedPetition = null, decisionUnavailable = false,
+    onReasonChange, onFocusChange, onExpandChange = () => undefined, onReturnToList = () => undefined, onSubmit,
+    onRead = () => undefined,
+  } = props;
+  const focusedPetition = petitiones[focusIndex];
+  const selectedPetition = detachedPetition ?? petitiones.find((petitio) => petitio.id === expandedId) ?? focusedPetition;
+  const focusedItemRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (focusRequest === 0) return;
-    selectedRowRef.current?.focus({ preventScroll: true });
-    selectedRowRef.current?.scrollIntoView({ block: "nearest" });
-  }, [focusRequest, selected?.id]);
+    focusedItemRef.current?.focus({ preventScroll: true });
+    focusedItemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [focusRequest, focusedPetition?.id]);
 
-  if (petitiones.length === 0 && opera.length === 0) {
+  if (petitiones.length === 0 && detachedPetition === null) {
     return (
-      <div className="inbox">
+      <div className="inbox inbox--empty">
         <h1 className="inbox__title">Inbox</h1>
         {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
-        <p className="inbox__empty">{notice ?? "Nothing waiting on you"}</p>
+        <p className={["inbox__empty", noticeIsFailure && "inbox__notice--failure"].filter(Boolean).join(" ")}>{notice ?? "Nothing waiting on you"}</p>
       </div>
     );
   }
 
+  const selectedLinks = selectedPetition ? evidenceLinks(selectedPetition.body) : [];
+  const delegateDescriptionId = selectedPetition ? `delegate-unavailable-${selectedPetition.id}` : undefined;
+
   return (
-    <div className="inbox inbox--split">
-      <div className="inbox__list">
-        <h1 className="inbox__title">Inbox</h1>
-        {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
-        {petitiones.map((p, i) => {
-          const focused = i === focusIndex;
-          const rowClasses = [
-            "inbox__row",
-            "inbox__row--attention",
-            focused ? "inbox__row--focused" : "",
-          ].filter(Boolean).join(" ");
-
-          return (
-            <button
-              key={p.id}
-              ref={focused ? selectedRowRef : undefined}
-              type="button"
-              className={rowClasses}
-              data-focused={focused}
-              aria-pressed={focused}
-              tabIndex={focused ? 0 : -1}
-              onClick={() => onFocusChange(i)}
-              onFocus={() => onFocusChange(i)}
-            >
-              <span className="inbox__subject">{p.subject}</span>
-              <span className="inbox__sella">{p.from}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {selected && (
-        <div className="inbox__detail">
-          <div className="inbox__detail-header">
-            <span className="inbox__detail-opus">{selected.opus}</span>
-            <span className="inbox__detail-from">from {selected.from}</span>
-          </div>
-          <h2 className="inbox__detail-subject">{selected.subject}</h2>
-          <div className="inbox__detail-body">
-            {selected.body ? (
-              <p className="inbox__detail-content">{selected.body}</p>
-            ) : (
-              <p className="inbox__detail-placeholder">No content provided.</p>
-            )}
-          </div>
-          <div className="inbox__decision-panel">
-            {notice !== undefined && <p className="screen-notice">{notice}</p>}
-            {error && <p className="inbox__error">{error}</p>}
-            <p className="inbox__action-effect">Approve and Decline record this text as a verdict and resolve the petition. Follow up records the text without a verdict, returns it to the asker and keeps it open.</p>
-            <input
-              className="inbox__input-ratio"
-              value={reason}
-              onChange={(e) => onReasonChange(e.target.value)}
-              placeholder="Answer or follow-up text"
-            />
-            <div className="inbox__action-group">
-              {VERBS.map(({ verb, key }) => (
-                <button
-                  key={verb}
-                  type="button"
-                  className="inbox__btn-action"
-                  disabled={!canSubmit(reason, busy)}
-                  onClick={() => onSubmit(selected.id, verb)}
-                >
-                  <span className="inbox__hotkey">{key}</span>
-                  {verbLabel(verb)}
-                </button>
-              ))}
-            </div>
-          </div>
+    <div className={["inbox", expandedId !== null && "inbox--detail-open"].filter(Boolean).join(" ")}>
+      <h1 className="inbox__title">Inbox</h1>
+      {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
+      <div className={["inbox__workspace", expandedId !== null && "inbox__workspace--detail"].filter(Boolean).join(" ")}>
+        <div className="inbox__mobile-header">
+          <button
+            type="button"
+            className="inbox__back"
+            aria-label="Back to Inbox"
+            onClick={() => { onExpandChange(null); onReturnToList(); }}
+          >
+            <span aria-hidden="true">←</span> Back
+          </button>
+          <h1 className="inbox__mobile-title">Inbox</h1>
         </div>
-      )}
+        <section className="inbox__list-pane" aria-label="Needs your decision">
+          {notice !== undefined && <p className={["screen-notice", noticeIsFailure && "inbox__notice--failure"].filter(Boolean).join(" ")}>{notice}</p>}
+          <div className="inbox__queue" role="listbox" aria-label="Needs your decision">
+            {petitiones.length === 0 ? <p className="inbox__empty">Nothing waiting on you</p> : petitiones.map((petitio, index) => {
+              const hasFocus = index === focusIndex;
+              const unread = !readPetitionIds.has(petitio.id);
+              const notified = datePresentation(petitio.opened);
+              return (
+                <button
+                  key={petitio.id}
+                  type="button"
+                  className={["inbox__item", "inbox__row", hasFocus && !decisionUnavailable && "inbox__item--focused", unread && "inbox__item--unread"].filter(Boolean).join(" ")}
+                  data-focused={hasFocus && !decisionUnavailable}
+                  ref={hasFocus ? focusedItemRef : undefined}
+                  role="option"
+                  aria-selected={hasFocus && !decisionUnavailable}
+                  tabIndex={hasFocus ? 0 : -1}
+                  onFocus={() => onFocusChange(index)}
+                  onClick={() => { onFocusChange(index); onRead(petitio.id); onExpandChange(petitio.id); }}
+                >
+                  <span className="inbox__row-meta">
+                    <span className="inbox__sella">{petitio.from}</span>
+                    <span className="inbox__date">{notified}</span>
+                  </span>
+                  <span className="inbox__subject">{petitio.subject}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="inbox__secondary" aria-label="Other Inbox groups">
+            <p>You asked <span>Not available yet</span></p>
+            <p>For information <span>Not available yet</span></p>
+          </div>
+        </section>
+
+        <section className="inbox__reading-pane" aria-label="Selected decision">
+          {selectedPetition && (
+            <div className="inbox__expansion">
+              <div className="inbox__reading-scroll">
+                <div className="inbox__reading">
+                  <div className="inbox__meta"><span>{selectedPetition.opus}</span><span>from {selectedPetition.from}</span><span>{datePresentation(selectedPetition.opened)}</span></div>
+                  <h2 className="inbox__expanded-subject">{selectedPetition.subject}</h2>
+                  <div className="inbox__ask">
+                    {selectedPetition.body ? askBlocks(selectedPetition.body).map((block, index) => {
+                      if (block.kind === "unordered") return <ul key={index}>{block.items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ul>;
+                      if (block.kind === "ordered") return <ol key={index}>{block.items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ol>;
+                      return <p key={index}>{block.text}</p>;
+                    }) : <p>No content provided.</p>}
+                  </div>
+                  {selectedLinks.length > 0 && (
+                    <div className="inbox__evidence" aria-label="Evidence">
+                      <span className="inbox__evidence-label">Evidence</span>
+                      {selectedLinks.map((link) => link.actionable
+                        ? <a key={link.href} href={link.href}>{link.label}</a>
+                        : (
+                          <span key={link.href} className="inbox__evidence-unavailable">
+                            <span>{link.label}</span> <code>{link.href}</code> — Not available in this console
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="inbox__action-bar">
+                <div className="inbox__action-bar-inner">
+                  <label className="inbox__ratio-label" htmlFor={`ratio-${selectedPetition.id}`}>Ratio decidendi</label>
+                  <input
+                    id={`ratio-${selectedPetition.id}`}
+                    className="inbox__input-ratio"
+                    value={reason}
+                    onChange={(event) => onReasonChange(event.target.value)}
+                    placeholder="Reason for this decision"
+                  />
+                  <div className="inbox__decision-panel">
+                    {notice !== undefined && <p className={["screen-notice", noticeIsFailure && "inbox__notice--failure"].filter(Boolean).join(" ")}>{notice}</p>}
+                    {decisionUnavailable && <p className="inbox__withdrawn">This petitio no longer needs a decision.</p>}
+                    {error && <p className="inbox__error">{error}</p>}
+                    <div className="inbox__action-group">
+                      {VERBS.map(({ verb, key }) => {
+                        const unavailable = verb === "delegate";
+                        return (
+                          <button
+                            key={verb}
+                            type="button"
+                            className="inbox__btn-action"
+                            disabled={decisionUnavailable || unavailable || !canSubmit(reason, busy)}
+                            aria-describedby={unavailable ? delegateDescriptionId : undefined}
+                            onClick={() => onSubmit(selectedPetition.id, verb)}
+                          >
+                            {key && <span className="inbox__hotkey">{key}</span>}
+                            {verb}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p id={delegateDescriptionId} className="inbox__delegate-note">Delegation is not available yet</p>
+                    <p className="inbox__nav-hint">j/k move · Esc back</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,22 @@
+# opus: W-407
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a42a9134dbe268f8c
+# outcome: passed
+# at: 2026-10-27T10:48:07.751Z
+# tree: tree:c2173a913ad2619ff9bd0231b60c2762e01b6fc4
+# brief: briefs/W-407.md blob:48bbdebcb0263bbe18e02907aa2f506a149e86e7
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"b9d7d1427ffdfa3dc4d5506ab1f6ca287d3edab7","brief":"48bbdebcb0263bbe18e02907aa2f506a149e86e7","at":"2026-10-27T10:48:04.379Z"}
+
+## Earlier findings
+- ci/W-407-spec-2.log #1: closed — `reload(preferredIndex)` now sets `focusIndex` and `expandedId` from the same `reconcileFocusIndex()` result. The ratio field reads, writes and clears through `expandedId`. Served W-407-b3 answers the middle of three, then asserts that `aria-selected`, the expanded subject (`Third`) and an empty ratio all land on the same item, and that `1` posts P-3 with its own ratio. Brief:19, brief:61 and brief:76 state this.
+
+## Findings
+1. advisory — brief:61 On load the Inbox does not take DOM focus (`focusRequest` stays 0, which avoids stealing focus), so "begins focused" means only the roving tab stop and `aria-selected`. An Escape pressed before any Inbox element has DOM focus targets `body`, fails the `closest(".inbox")` guard and leaves the first expansion open. This follows brief:19's "originating inside `.inbox`" wording, but the promise reads as though it covers that first Escape. Replacement for brief:61's opening clause: "the first item begins as the roving tab stop (`tabindex=0`, `aria-selected`) and expanded, without taking DOM focus on load; until `j`/`k`, a click or Tab places focus inside the Inbox, Escape originates outside `.inbox` and leaves the expansion open". [severity: S4] [class: spec×prose-contradiction-under-revision] — check: none: a served b3 assertion that Escape pressed straight after load leaves `.inbox__expansion` visible
+2. advisory — brief:76 A row's `onFocus` moves `focusIndex` without moving `expandedId`. If a mouse-down focuses a different row and the pointer is released elsewhere (no `click`), focus and expansion separate again, and `1`/`2`/`3` do nothing until `j`/`k` or a click. The ratio and the write still follow the visible expansion, so no false record results. Replacement: append to brief:76's limit list: "a focus without a click (pointer released off the row) may leave focus and expansion apart; the numeric keys then no-op until `j`/`k` or a click". [severity: S3] [class: tests×ruled-case-uncovered] — check: none
+
+## Verdict
+The round-2 blocker (#1) and advisories #2–#4 are all closed in the brief, the prototype (mbox sha256 `4de6292d…` matches brief:11; ten commits replay to the expected tree; five reds and cumulative greens replay) and the served rows; the input boundary is sound; and the two remaining items are advisory wording and limit nits for the build.
+VERDICT: PASS

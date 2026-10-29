@@ -1,0 +1,27 @@
+# opus: W-407
+# phase: spec
+# round: 18
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1857e-29a5-7883-8c8b-0349719d83c7
+# outcome: passed
+# at: 2026-10-29T02:54:00.994Z
+# tree: tree:d1a950fd513ef4e840ac3f62b2a806f3cdeff571
+# brief: briefs/W-407.md blob:03c711321353676c50430d3f27694203afa97c20
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":18,"actor":"architect","studio":".worktrees/W-407/studio","head":"2f0c0403ad5a8afe1a84b0244264ac7d39a1bc10","brief":"03c711321353676c50430d3f27694203afa97c20","at":"2026-10-29T02:53:57.373Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-407-spec/r18/promise-ledger.md
+
+## Findings
+
+1. advisory — Input-domain row 10 now opens its Rejected by cell with the real aggregate policy rejector `assert.ok()`; the admission checker’s exact opener forms accept all twelve rows — check: /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:131, /home/edckt/.bisellium-evidence/W-407-spec/r18/audit-input-domain.out:10, /home/edckt/.bisellium-evidence/W-407-spec/r18/admission-check.out:1
+2. advisory — The Patron's 2026-10-29 “screens are good” ruling carries the approved proposal's fourteen-row element mapping exactly, including each W-451 role and every measured contrast — check: /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:23, /home/edckt/.bisellium-evidence/W-407-spec/palette/proposal.md:27
+3. advisory — Selected and keyboard-focused rows retain wash alone at 1.21:1 against surface; the brief records this below-3:1 state contrast as the Patron-accepted limit, not a conformance claim — check: /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:21, /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:28
+4. advisory — `--bad` remains an 8px non-text failure square; copy stays `--ink-2`, while amber withdrawal keeps a triangle so neither state relies on colour alone — check: /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:35, /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:36
+5. advisory — The builder is directed to add one exact Palette ruling sentence to the already-owned DIRECTION §6 entry, and this signing pass does not edit DIRECTION — check: /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:42, /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:74
+6. advisory — Direct fixture census names the W-407 b2/b6, W-366-b2 and W-361-b2 flips, plus the searched Inbox logic/view, W-341, W-345, W-415, states and screenshot rows that do not flip; every flipped file is within the unchanged twenty-five-path ownership set — check: /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:68, /home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md:171
+7. advisory — The unmutated palette scratch passes, and one-hunk unread and role mutations each produce Node TAP failure at the brief's exact pinned assertion; the round-18 ledger cites every Promise and Input domain row at current brief lines — check: /home/edckt/.bisellium-evidence/W-407-spec/r17/palette-policy-green.out:1, /home/edckt/.bisellium-evidence/W-407-spec/r17/kill-unread-ink3.out:1, /home/edckt/.bisellium-evidence/W-407-spec/r17/kill-palette-role.out:1, /home/edckt/.bisellium-evidence/W-407-spec/r18/promise-ledger.md:1
+
+## Verdict
+
+passed — round 18 repairs D-050 admission and re-signs `/home/edckt/agents/bisellium/.worktrees/W-407/studio/briefs/W-407.md` against `/home/edckt/.bisellium-evidence/W-407-spec/r18/promise-ledger.md`; `prototype.mbox` remains sha256 `b47798ee76e9cad251c0d012b3147c4652f6be74f31290f54e598eb92d0c5675` because this pass changes only the brief’s rejecting-function declaration and leaves the approved post-prototype palette diff for the builder, with no record write, `next`, recorder call or commit.

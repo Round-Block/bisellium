@@ -122,7 +122,7 @@ test("W-341-b2 behaviour 2: the Inbox shows and reports loading, empty, error, r
   wired("Inbox");
   const source = read("src/screens/Inbox.tsx");
   assert.doesNotMatch(source, /catch\(\(\) => setData\(DEV_DATA\)\)/, "a failed read never substitutes the demo petitions");
-  assert.match(source, /\.catch\(\(\) => \{\s*setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);\s*\}\)/, "a failed read clears stale records and is the settled error state");
+  assert.match(source, /\.catch\(\(\) => \{\s*if \(!hasSuccessfulLoadRef\.current\) setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);/, "a failed first read is empty while a background failure retains the last truthful records");
   assert.match(source, /screenStatus\("inbox", \{/, "the Inbox derives its one status from the matrix");
   assert.match(source, /pending: sending/, "an answer in flight is the pending state");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(reportedStatus\), \[reportedStatus\.state, reportedStatus\.text\]\)/, "the Inbox reports each state or recorded-answer change");

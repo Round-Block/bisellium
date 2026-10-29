@@ -1,0 +1,22 @@
+# opus: W-407
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1854b-f3b4-79c3-86e6-ce11050aad39
+# outcome: failed
+# at: 2026-10-29T01:37:55.494Z
+# tree: tree:3871b821c3c2f3063dc99fbdf6f5e8461d8ae6f5
+# ui_input: ci/W-407-spec-16.log
+# design_digest: sha256:714bc247bdd31627e21758c48ea48e374154b5db0cf7691bc2196d7d27c1f040
+# ticket: {"opus":"W-407","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-407/studio","head":"9ccaf44773f3c432e5fb76b86642bd25cad837dc","brief":"2df0e86a628dfb5019233525a5592ddd073ca483","at":"2026-10-29T01:35:07.077Z"}
+
+## Findings
+1. blocking — apps/web/src/screens/InboxView.tsx:55 When an ordinary refresh removes the sole selected petitio, retained state exists but the early empty return hides its subject, withdrawal notice, disabled controls, and draft, violating brief:33 and brief:65’s retention promise. The served expectations at apps/web/tests-serve/w407.spec.ts:406-407 affirm the contradiction instead of detecting it. [severity: S1] [class: tests×tests-that-agree-with-the-bug] — check: apps/web/tests-serve/w407.spec.ts: remove the sole selected petitio at 1280 and 390 and assert the retained subject, notice, draft, and disabled actions remain visible
+
+## UI input disposition
+The authoritative ui-lead input supports the Outlook split/detail hierarchy, honest secondary labels, withdrawal treatment, and unchanged Board/sidebar behavior. The attached Inbox pair confirms the desktop split and phone list state; the Board pair preserves column identity and horizontal overflow cues; the Seats pair preserves control grouping and vertical reflow; and the Officina pair preserves panel order and scanning. None depicts sole-item removal, so the images do not close the blocking retention defect.
+
+## Verdict
+The recorded reds are assertion failures, the certified gates pass, and the source diff stays within the twenty-five owned paths. The admitted sole-item refresh case nevertheless loses the decision in progress from view.
+VERDICT: FAIL
