@@ -19,6 +19,8 @@ import { runVerdict } from "./verdict.js";
 import { USAGE } from "@bisellium/commands/usage.js";
 // W-306: a namespace import, so on a writer without usageVerbs the row fails at an assertion, never at load
 import * as verdictModule from "@bisellium/commands/verdict.js";
+// W-445: a namespace import, so on a module without evidenceClaims the row fails at an assertion, never at load
+import * as admissionModule from "@bisellium/commands/brief-admission.js";
 
 const NOW = new Date("2026-10-05T12:00:00.000Z");
 const roots: string[] = [];
@@ -1315,3 +1317,38 @@ test("W-381-b2 behaviour 2: on a brief that names a prototype, each pinned line'
   admitted("an unpinned row owes no kill", cite(KILL_COVERING.replace(ROW_10, "brief:10, the flag: packages/x.ts:5 — scoped")));
   admitted("another seat's spec verdict needs no kill", NO, "qa-lead");
 });
+
+// W-445 (D-076 D): a quoted claim followed by a parenthesis opening with a backticked evidence citation, and the evidence roots
+const CLAIMS_BRIEF = [
+  "# W-300 fixture brief",
+  "Evidence in `/ev/root/` and `~/ev/two/`, kept beside `r0/` and `/ev/root/` again.",
+  'It fails at "the rule is offset" (`k1.out`, from `k1.sh`) and at \u201ca curly claim\u201d (`/ev/root/k2.out:12`).',
+  'Not a claim: "no paren" `k3.out`, x"glued" (`k4.out`), "a symbol" (`writeGates`), "a source" (`next.ts:12`), "spaced"   (  `k5.log`).',
+  "```",
+  '"fenced" (`k6.out`)',
+  "```",
+  '<!-- "commented" (`k7.out`) -->',
+  '"two" (`a.out`) then "three" (`/ev/dir/`)',
+  "",
+].join("\n");
+
+test("W-445-b1 behaviour 1: brief admission reads each quoted claim with the evidence citation its parenthesis opens with, and the brief's evidence roots", () => {
+  const m = admissionModule as unknown as Record<string, unknown>;
+  assert.equal(typeof m["evidenceClaims"], "function", "brief-admission exports evidenceClaims");
+  assert.equal(typeof m["evidenceRoots"], "function", "brief-admission exports evidenceRoots");
+  const claims = (m["evidenceClaims"] as (t: string) => unknown[])(CLAIMS_BRIEF);
+  assert.deepEqual(
+    claims,
+    [
+      { line: 3, claim: "the rule is offset", cite: "k1.out", path: "k1.out" },
+      { line: 3, claim: "a curly claim", cite: "/ev/root/k2.out:12", path: "/ev/root/k2.out", at: 12 },
+      { line: 4, claim: "spaced", cite: "k5.log", path: "k5.log" },
+      { line: 9, claim: "two", cite: "a.out", path: "a.out" },
+      { line: 9, claim: "three", cite: "/ev/dir/", path: "/ev/dir/" },
+    ],
+    "the claims, in brief order: no unparenthesised, word-glued, fenced, commented or non-evidence claim",
+  );
+  assert.deepEqual((m["evidenceRoots"] as (t: string) => string[])(CLAIMS_BRIEF), ["/ev/root/", "~/ev/two/", "/ev/dir/"], "the absolute and ~/ directory spans, each once");
+  assert.deepEqual((m["evidenceClaims"] as (t: string) => unknown[])("no claims here\n"), [], "a brief with no claim");
+});
+
