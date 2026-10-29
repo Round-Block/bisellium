@@ -1045,3 +1045,75 @@ test("W-462-b1 behaviour 1: a PR head the opus branch rewrites with its tree kep
   const d = next(w, [OPUS]);
   assert.deepEqual([d.first, w462Why(d)], [`next: ${OPUS} pr held`, `why: ${BRANCH} ${w462Short(tipOf(w))} rewrites PR #${PR_NUMBER}'s reviewed head ${w462Short(reviewed)} and changes its tree outside the source: a rewrite keeps the reviewed tree (W-462); commit the record after the Patron's push`], ran("a changed record tree is held", d));
 });
+
+test("W-462-b2 behaviour 2: the rewrite perform builds every commit and replays every red as certify does before it asks the Patron", { timeout: 600_000 }, () => {
+  const { w, reviewed } = w462World("w462-b2");
+  const tree = w462Tree(w, reviewed);
+  const rowCommit = git(w.repo, ["rev-list", "-1", `--grep=^test(${OPUS}): rows, red$`, reviewed]);
+  const back = (row: string): void => assert.deepEqual([gitq(w.wt, ["symbolic-ref", "-q", "HEAD"]), git(w.wt, ["rev-parse", "HEAD"])], [`refs/heads/${BRANCH}`, tipOf(w)], `${row}: the worktree is back on ${BRANCH}`);
+
+  // (a) a commit of the new history that does not build: held at it, nothing pushed
+  const broken = w462Commit(w, `${reviewed}~1`, "chore: a commit that does not build", w462Mutate(w, `${reviewed}~1`, "apps/web/src/main.mjs", 'import "./missing.mjs";\n'));
+  const head1 = w462Commit(w, broken, `feat(${OPUS}): the implementation (rewritten)`, tree);
+  w462Move(w, head1);
+  const a = performPr(w);
+  assert.deepEqual([a.status, w462Why(a), w462Patron(a), w462Origin(w)], [1, `why: commit ${w462Short(broken)} does not build: web bundle build exited 1; certify's replay would refuse a red on it; nothing pushed`, [], reviewed], ran("a commit that does not build holds the rewrite", a));
+  back("after a build hold");
+
+  // (b) a history in which a red no longer fails at the commit certify replays it at: held at that red
+  const squashed = w462Commit(w, `${rowCommit}~1`, `test(${OPUS}): rows and implementation`, w462Mutate(w, rowCommit, "impl.txt", "the implementation\n"));
+  const head2 = w462Commit(w, squashed, `studio(${OPUS}): reds (rewritten)`, tree);
+  w462Move(w, head2);
+  const b = performPr(w);
+  assert.deepEqual([b.status, w462Why(b), w462Patron(b)], [1, `why: red 1 did not reproduce its assertion failure at ${w462Short(head2)}: the command exited 0; nothing pushed`, []], ran("a red that does not replay holds the rewrite", b));
+  back("after a replay hold");
+
+  // (c) a history that builds at every commit and replays every red: the Patron is asked, with what was checked
+  const head3 = w462Commit(w, `${reviewed}~1`, `feat(${OPUS}): the implementation (rewritten)`, tree);
+  w462Move(w, head3);
+  const c = performPr(w);
+  const built = git(w.repo, ["rev-list", "--count", head3, "^refs/remotes/origin/master"]);
+  assert.equal(c.kv.get("rewrite"), `${BRANCH} ${w462Short(head3)} keeps PR #${PR_NUMBER}'s reviewed tree ${w462Short(tree)} over a new history (${built} commit(s) build, ${w.behaviours} red(s) replay)`, ran("every commit built and every red replayed", c));
+  assert.deepEqual([c.status, w462Patron(c), w462Origin(w)], [1, [`patron: git -C ${w.wt} push --force-with-lease=refs/heads/${BRANCH}:${reviewed} origin ${head3}:refs/heads/${BRANCH}`], reviewed], ran("then the Patron is asked for the leased push, and nothing is pushed", c));
+  back("after the checks");
+
+  // the checks run in place, so they start from a clean worktree, and a build or replay that leaves a change is refused
+  const pristine = (row: string): void => assert.equal(git(w.wt, ["status", "--porcelain=v1", "--untracked-files=all"]), "", `${row}: the worktree is clean`);
+  /** a new history whose middle commit's build also runs `extra`; the head keeps the reviewed tree */
+  const sideEffect = (what: string, extra: string): [string, string] => {
+    const c = w462Commit(w, `${reviewed}~1`, `chore: a build that ${what}`, w462Mutate(w, `${reviewed}~1`, "apps/web/build.mjs", `${W462_BUILD}${extra}`));
+    const h = w462Commit(w, c, `feat(${OPUS}): the implementation (rewritten)`, tree);
+    w462Move(w, h);
+    return [c, h];
+  };
+
+  // (d) an untracked path before the checks: held, nothing checked
+  put(w.wt, "scratch.txt", "an untracked file\n");
+  const d = performPr(w);
+  assert.deepEqual([d.status, w462Why(d), w462Patron(d)], [1, `why: refusing: ${w.wt} holds untracked path(s) scratch.txt; the checks build and replay in place, from a clean worktree: move them aside, then rerun; nothing checked or pushed`, []], ran("an untracked path before the checks holds the rewrite", d));
+  rmSync(join(w.wt, "scratch.txt"));
+
+  // (e) a build that writes a tracked path: held at it, the change undone
+  const [tracked] = sideEffect("writes a tracked path", 'writeFileSync(new URL("../../docs/ADOPTION.md", import.meta.url), "changed by a build\\n");\n');
+  const e = performPr(w);
+  assert.deepEqual([e.status, w462Why(e), w462Patron(e), w462Origin(w)], [1, `why: the build of ${w462Short(tracked)} left the worktree changed (docs/ADOPTION.md), cleaned; certify builds and replays in a fresh clone; nothing pushed`, [], reviewed], ran("a build that writes a tracked path holds the rewrite", e));
+  back("after a tracked write");
+  pristine("after a tracked write");
+
+  // (f) a build that leaves an untracked path: held at it, the path removed
+  const [untracked] = sideEffect("leaves an untracked path", 'writeFileSync(new URL("./stray.txt", import.meta.url), "left by a build\\n");\n');
+  const f = performPr(w);
+  assert.deepEqual([f.status, w462Why(f), w462Patron(f), w462Origin(w)], [1, `why: the build of ${w462Short(untracked)} left the worktree changed (apps/web/stray.txt), cleaned; certify builds and replays in a fresh clone; nothing pushed`, [], reviewed], ran("a build that leaves an untracked path holds the rewrite", f));
+  back("after an untracked write");
+  pristine("after an untracked write");
+
+  // (g) every check passes, but the worktree cannot be put back on the branch: no Patron command
+  const [, lostHead] = sideEffect("loses the branch", `import { execFileSync } from "node:child_process";\nexecFileSync("git", ["update-ref", "-d", "refs/heads/${BRANCH}"]);\n`);
+  const g = performPr(w);
+  const gWhy = w462Why(g) ?? "";
+  assert.deepEqual(
+    [g.status, gWhy.startsWith(`why: the worktree ${w.wt} could not be put back on ${BRANCH} at ${w462Short(lostHead)} clean (git checkout ${BRANCH} failed: `), gWhy.endsWith("): put it back by hand, then rerun; nothing pushed"), w462Patron(g), w462Origin(w)],
+    [1, true, true, [], reviewed],
+    ran("a worktree that cannot be put back holds the rewrite", g),
+  );
+});
