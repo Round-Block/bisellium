@@ -45,13 +45,13 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Engineering PAUSED (Patron 10-28) until 10-29 06:00Z. Halted: W-239 (D-106 D), W-435.
+Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
 000. W-454 — screenshot set follows the nav table; blocks W-451's review, lands first
 00. W-450 — certify re-attests a served Playwright red (TAP reporter). Then W-445, W-443, W-446 (W-442 done)
 00a. W-452 — collegium names the owning lead; kind ui retired (D-128); then the re-tag
-0. W-430 — usage in the records (signed r1, review next). Then W-444 — reply length Stop hook
+0. W-430 — usage in the records (fix round 1); W-455 — symlink cause fix: the containment helper refuses a symlinked final file (high; Patron greenlit 10-29). Then W-444 — reply length Stop hook
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
 1. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (high; moved up, Patron 10-29)
 2. W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
@@ -92,7 +92,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 36. W-301 — console writes commit and land by auto-merge PR, with a cross-process write lock
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-407 — Inbox: palette re-signed (Patron 10-29); next Terra build. Then W-408, W-409 W-410 W-411 W-412 W-413.
+1. W-408 — Officina detail (building). Then W-409 W-410 W-411 W-412 W-413.
 1a. W-451 — Home: gates passed a0d5d440; review waits on W-454; data W-439, W-440. Then W-453 (D-128 D).
 2. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-427 (severity colours, after W-407), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
