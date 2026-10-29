@@ -1,0 +1,18 @@
+# opus: W-461
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a187f6-f82d-7c71-9757-3834a7ca2bb3
+# outcome: failed
+# at: 2026-10-29T14:03:33.520Z
+# tree: tree:2383cd9e86c4b36222770990a3dfcfbe1d09a55d
+# brief: briefs/W-461.md blob:4a2cf056f186a73882592519324f1a077eb5dcbf
+# ticket: {"opus":"W-461","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-461/studio","head":"3bc3aa822a9004be581a438179a9959e1ae56f9f","brief":"4a2cf056f186a73882592519324f1a077eb5dcbf","at":"2026-10-29T14:01:10.595Z"}
+
+## Findings
+1. blocking — packages/commands/src/web-build.ts:52 `rmSync(bundle, { force: true })` follows a symlinked `apps/web/dist` parent; for example, `dist -> ..` removes tracked `apps/web/index.html`, while an outward link can delete another writable `index.html` before the build refuses. This violates the cleanup and fail-closed contract for a stated prior-bundle input (brief:45, brief:73, brief:78). [severity: S1] — check: packages/cli/src/next-branch.test.ts W-461-b1 symlink-parent cleanup case [class: security×symlink-parent-write-escape]
+
+## Verdict
+The recorded rows and gates support the intended sequencing, but the cleanup has a blocking symlink-parent write escape.
+VERDICT: FAIL

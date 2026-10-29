@@ -10,6 +10,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseFrontMatter } from "@bisellium/adapter-native";
 import { parseVerdictLog } from "@bisellium/commands/verdict.js";
+import { webBuild } from "@bisellium/commands/web-build.js";
 import { sourceTreeHash } from "@bisellium/shim";
 import { BRANCH, BRIEF_REL, BUDGET, Json, NOW_ISO, OPUS, Out, PROC_ENV, SR, SR_MODEL, T, WT_BRIEF, WT_STUDIO_REL, World, addReview, amend, architectOrder, branchExists, briefPath, briefText, calls, commit, deadPid, direct, editRecord, excludesHeld, expectHeld, expectStep, failingGit, fakeProc, ghCalls, git, gitCalls, handoffAt, landed, liveChild, markerPath, mergedList, mutating, next, put, putBrief, putMarker, putOutput, ran, recordOf, review, reviewHeld, reviewerOrder, scenario, scratch, sign, snap, sourceTree, specHeld, specLog, specNext, srWorld, stagedPaths, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, w206World, walk, world, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
@@ -1284,4 +1285,176 @@ test("W-326-b3 behaviour 3: after a replay the gates are the producer's; a build
   expectStep(kb, "build", "named", "keeps: build");
   assert.equal(kb.kv.get("role"), "builder", ran("keeps: the required fix is a builder's", kb));
   assert.equal(kb.kv.get("required-fixes"), `ci/${OPUS}-spec-2.log #1`, ran("keeps: the builder's order names it", kb));
+});
+
+// ---------------------------------------------------------------------------
+// W-461: every red and implementation commit builds the web bundle certify's replay builds (studio/briefs/W-461.md).
+// The fixture's web workspace is a tiny `@bisellium/web` whose `build` script loads `src/main.mjs` and writes
+// `dist/index.html`, so `npm --workspace @bisellium/web run build` (certify's WEB_BUILD) fails on an unresolved import
+// as vite's does, in well under a second.
+// ---------------------------------------------------------------------------
+const W461_ROW = "w461.test.mjs";
+const W461_ROWS = [
+  'import { test } from "node:test";',
+  'import assert from "node:assert/strict";',
+  'import { readFileSync } from "node:fs";',
+  'const source = readFileSync(new URL("./source.txt", import.meta.url), "utf8");',
+  'test("W-900-b1 fixture behaviour 1", () => assert.match(source, /behaviour 1/));',
+  'test("W-900-b2 fixture behaviour 2", () => assert.match(source, /behaviour 2/));',
+  "",
+].join("\n");
+const W461_BUILD = [
+  'import { mkdirSync, writeFileSync } from "node:fs";',
+  'await import("./src/main.mjs");',
+  'mkdirSync(new URL("./dist/", import.meta.url), { recursive: true });',
+  'writeFileSync(new URL("./dist/index.html", import.meta.url), "<!doctype html>\\n");',
+  "",
+].join("\n");
+const W461_BUNDLE = ["apps", "web", "dist", "index.html"];
+
+/** The fixture's web workspace on the opus branch: it builds while src/main.mjs resolves. */
+function w461Web(dir: string, main = "export {};\n"): void {
+  put(dir, ".gitignore", `${readFileSync(join(dir, ".gitignore"), "utf8")}dist/\n`);
+  put(dir, "package.json", `${JSON.stringify({ name: "w461-fixture", private: true, workspaces: ["apps/web"] }, null, 2)}\n`);
+  put(dir, "apps/web/package.json", `${JSON.stringify({ name: "@bisellium/web", private: true, type: "module", scripts: { build: "node build.mjs" } }, null, 2)}\n`);
+  put(dir, "apps/web/build.mjs", W461_BUILD);
+  put(dir, "apps/web/src/main.mjs", main);
+  commit(dir, "chore: the fixture's web workspace");
+}
+const w461RedCmd = (k: number): string => `\`bisellium red ${OPUS} --behaviour ${k} --sella builder --studio studio -- node --test-reporter=tap --test-name-pattern='^W-900-b${k}\\s' ${W461_ROW}\``;
+function w461Brief(prototype: string[]): string {
+  return briefText(2)
+    .replace(`# ${OPUS} fixture brief\n`, `# ${OPUS} fixture brief\n\n${prototype.join("\n")}${prototype.length > 0 ? "\n\n" : ""}Red order: one at a time\n`)
+    .replace(/^([12])\. \*\*Fixture behaviour \1\.\*\*$/gm, (_, k: string) => `${k}. **Fixture behaviour ${k}.** **Genuine red:** ${w461RedCmd(Number(k))}`);
+}
+const w461Record = (w: World): Out => direct(w, w.wt, ["red", OPUS, "--behaviour", "1", "--sella", "builder", "--studio", w.wtStudio, "--", "node", "--test-reporter=tap", "--test-name-pattern=^W-900-b1\\s", W461_ROW]);
+const w461RedLog = (w: World): string => join(w.wtStudio, "ci", "reds", OPUS, "01.log");
+const w461Short = (w: World): string => git(w.wt, ["rev-parse", "--short", "HEAD"]);
+
+test("W-461-b1 behaviour 1: a red is recorded only at a commit whose web bundle builds as certify builds it", { timeout: 600_000 }, () => {
+  const w = world("w461-b1", "ready");
+  w461Web(w.wt, 'import "./lib.mjs";\n');
+  put(w.wt, BRIEF_REL, w461Brief([]));
+  put(w.wt, W461_ROW, W461_ROWS);
+  commit(w.wt, `test(${OPUS}): row b1, red`);
+
+  // (a) the builder's own series: a commit that imports a module only a later commit adds
+  const a = w461Record(w);
+  assert.equal(a.status, 1, ran("a red at a commit whose web bundle does not build is refused", a));
+  assert.match(a.err, new RegExp(`^red: red 1 replay preparation failed: web bundle build exited 1 at ${w461Short(w)}: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$`, "m"), ran("the refusal is certify's own preparation line, at the commit", a));
+  assert.equal(existsSync(w461RedLog(w)), false, "nothing is recorded");
+
+  // (a2) a prior bundle path that cannot be removed: a directory left where the bundle goes
+  mkdirSync(join(w.wt, ...W461_BUNDLE, "left"), { recursive: true });
+  const d = w461Record(w);
+  assert.ok(d.status === 1 && /^red: red 1 replay preparation failed: the prior apps\/web\/dist\/index\.html cannot be removed \(ERR_FS_EISDIR\) at [0-9a-f]+: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$/m.test(d.err), ran("an invalid or unremovable stale bundle is refused without throwing", d));
+  assert.equal(existsSync(w461RedLog(w)), false, "nothing is recorded");
+  rmSync(join(w.wt, ...W461_BUNDLE), { recursive: true });
+
+  // (b) a build that exits 0 but leaves no bundle, over a stale bundle from an earlier build
+  put(w.wt, "apps/web/src/lib.mjs", "export {};\n");
+  put(w.wt, "apps/web/build.mjs", 'await import("./src/main.mjs");\n');
+  commit(w.wt, `test(${OPUS}): the build writes no bundle`);
+  put(w.wt, W461_BUNDLE.join("/"), "<!doctype html>\nstale\n");
+  const b = w461Record(w);
+  assert.equal(b.status, 1, ran("a build that leaves no bundle is refused, a stale bundle notwithstanding", b));
+  assert.match(b.err, /^red: red 1 replay preparation failed: the web bundle build left no apps\/web\/dist\/index\.html at [0-9a-f]+: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$/m, ran("the refusal names the missing bundle", b));
+  assert.equal(existsSync(w461RedLog(w)), false, "nothing is recorded");
+
+  // (c) the same series once it builds: recorded as before
+  put(w.wt, "apps/web/build.mjs", W461_BUILD);
+  commit(w.wt, `test(${OPUS}): the build writes its bundle`);
+  const c = w461Record(w);
+  assert.equal(c.status, 0, ran("a red at a commit that builds is recorded", c));
+  assert.match(readFileSync(w461RedLog(w), "utf8"), /^not ok 1 - W-900-b1 fixture behaviour 1$/m, "the recorded red is the row's assertion failure");
+  assert.equal(existsSync(join(w.wt, ...W461_BUNDLE)), true, "the build left its bundle");
+});
+
+test("W-461-b1 a symlinked dist parent is refused without removing anything", { timeout: 600_000 }, () => {
+  // the prior bundle path's parent is a link: the cleanup must not follow it to remove another index.html
+  const cases: [string, (root: string, outside: string) => string, (root: string, outside: string) => string][] = [
+    ["dist -> . (the tracked apps/web/index.html)", () => ".", (root) => join(root, "apps", "web", "index.html")],
+    ["dist -> an outside directory", (_root, outside) => outside, (_root, outside) => join(outside, "index.html")],
+  ];
+  for (const [label, linkTo, target] of cases) {
+    const root = scratch("w461-link");
+    const outside = scratch("w461-out");
+    put(root, "apps/web/package.json", `${JSON.stringify({ name: "@bisellium/web", private: true, type: "module", scripts: { build: "node build.mjs" } })}\n`);
+    put(root, "apps/web/index.html", "<!doctype html>\ntracked\n");
+    put(outside, "index.html", "<!doctype html>\noutside\n");
+    symlinkSync(linkTo(root, outside), join(root, "apps", "web", "dist"));
+    const r = webBuild(root);
+    assert.equal(existsSync(target(root, outside)), true, `${label}: the file behind the link is still there`);
+    assert.equal(r.carried && !r.ok, true, `${label}: webBuild refuses (ok: false)`);
+    assert.equal(r.carried && !r.ok ? r.kind : "", "cleanup", `${label}: the refusal is the cleanup's`);
+  }
+});
+
+/** A prototype series over the fixture's web workspace: test b1, then one implementation per behaviour, each editing src/main.mjs as `mains` says. */
+function w461Stage(w: World, mains: [string, Record<string, string>][]): string {
+  const base = git(w.wt, ["rev-parse", "HEAD"]);
+  put(w.wt, W461_ROW, W461_ROWS);
+  commit(w.wt, `test(${OPUS}): row b1, red`);
+  for (const [k, [main, files]] of mains.entries()) {
+    writeFileSync(join(w.wt, "source.txt"), `${readFileSync(join(w.wt, "source.txt"), "utf8")}behaviour ${k + 1}\n`);
+    put(w.wt, "apps/web/src/main.mjs", main);
+    for (const [rel, text] of Object.entries(files)) put(w.wt, rel, text);
+    commit(w.wt, `feat(${OPUS}): behaviour ${k + 1}`);
+  }
+  const path = join(w.root, "series.mbox");
+  writeFileSync(path, `${git(w.wt, ["format-patch", "--stdout", `${base}..HEAD`])}\n`);
+  git(w.wt, ["reset", "-q", "--hard", base]);
+  const digest = createHash("sha256").update(readFileSync(path)).digest("hex");
+  put(w.wt, BRIEF_REL, w461Brief([`Prototype: ${path} sha256:${digest}`]));
+  commit(w.wt, `spec(${OPUS}): the prototype line`);
+  return base;
+}
+const w461Subjects = (w: World, base: string): string[] => git(w.wt, ["log", "--reverse", "--format=%s", `${base}..HEAD`]).split("\n");
+
+test("W-461-b2 behaviour 2: the reds perform builds each implementation commit and holds at the first that does not build", { timeout: 600_000 }, () => {
+  // W-408's shape: behaviour 1's implementation imports a module only behaviour 2's adds; the series builds only at its tip
+  const w = world("w461-b2", "ready", { automated: true });
+  w461Web(w.wt);
+  const base = w461Stage(w, [
+    ['import "./lib.mjs";\n', {}],
+    ['import "./lib.mjs";\n', { "apps/web/src/lib.mjs": "export {};\n" }],
+  ]);
+  const p = next(w, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  expectStep(p, "reds", "held", "a series whose first implementation does not build holds");
+  assert.match(p.kv.get("why") ?? "", /^behaviour 1's implementation does not build at [0-9a-f]+: web bundle build exited 1; certify's replay would refuse the series$/, ran("the hold names behaviour 1's implementation and certify's build failure", p));
+  assert.deepEqual(w461Subjects(w, base), [`spec(${OPUS}): the prototype line`, `test(${OPUS}): row b1, red`, `chore(studio): ${OPUS} red b1`, `feat(${OPUS}): behaviour 1`], ran("what was committed is kept, and no red is recorded on the commit that does not build", p));
+
+  // the tip, which no red sits on: behaviour 2's implementation imports a module no commit adds
+  const t = world("w461-b2-tip", "ready", { automated: true });
+  w461Web(t.wt);
+  const tbase = w461Stage(t, [
+    ["export {};\n", {}],
+    ['import "./gone.mjs";\n', {}],
+  ]);
+  const q = next(t, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  expectStep(q, "reds", "held", "a series whose last implementation does not build holds");
+  assert.match(q.kv.get("why") ?? "", /^behaviour 2's implementation does not build at [0-9a-f]+: web bundle build exited 1; certify's replay would refuse the series$/, ran("the hold names the tip's implementation", q));
+  assert.equal(w461Subjects(t, tbase).length, 6, ran("both reds and both implementations are committed and kept", q));
+
+  // behaviour 1's build leaves a directory where the bundle goes (certify reads it as present); the next build in this
+  // checkout, red 2's, cannot remove it: the perform holds, it does not throw
+  const c = world("w461-b2-cleanup", "ready", { automated: true });
+  w461Web(c.wt);
+  w461Stage(c, [
+    ["export {};\n", { "apps/web/build.mjs": 'import { mkdirSync } from "node:fs";\nawait import("./src/main.mjs");\nmkdirSync(new URL("./dist/index.html/", import.meta.url), { recursive: true });\n' }],
+    ["export {};\n", {}],
+  ]);
+  const u = next(c, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  assert.ok(u.first === `next: ${OPUS} reds held` && /^behaviour 2's red was not recorded: red: red 2 replay preparation failed: the prior apps\/web\/dist\/index\.html cannot be removed \(ERR_FS_EISDIR\) at [0-9a-f]+: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded$/.test(u.kv.get("why") ?? ""), ran("a bundle path the next build cannot remove holds the perform without throwing", u));
+
+  // the same shape once every implementation builds: performed, as before
+  const g = world("w461-b2-good", "ready", { automated: true });
+  w461Web(g.wt);
+  w461Stage(g, [
+    ['import "./lib.mjs";\n', { "apps/web/src/lib.mjs": "export {};\n" }],
+    ['import "./lib.mjs";\nimport "./more.mjs";\n', { "apps/web/src/more.mjs": "export {};\n" }],
+  ]);
+  const r = next(g, [OPUS, "--perform", "--expect", "reds", ...BUDGET]);
+  expectStep(r, "reds", "performed", "a series that builds at every commit is performed");
+  assert.equal(existsSync(join(g.wt, ...W461_BUNDLE)), true, "the last build left its bundle");
 });

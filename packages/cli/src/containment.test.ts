@@ -965,6 +965,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#1", disposition: "outside", why: "reads the user-named --from findings file" },
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#2", disposition: "outside", why: "reads the findings from stdin (fd 0)" },
   { key: "packages/commands/src/verdict.ts:runVerdict:writeFileSync#1", disposition: "contained", why: "ci/<opus>-<phase>-<round>.log in a real ci/ checked by ensureRealDirectory, exclusive create" },
+  { key: "packages/commands/src/web-build.ts:webBuild:rmSync#1", disposition: "contained", why: "W-461: removes the ignored web bundle file apps/web/dist/index.html only after existingRealDirectory proved apps, web and dist real directories and lstat a regular file; a symlinked parent refuses as cleanup, nothing removed" },
   { key: "packages/commands/src/writes.ts:appendPatronTimeline:appendFileSync#1", disposition: "contained", why: "timeline/patron.jsonl in a real timeline/ checked by ensureRealDirectory" },
   { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#1", disposition: "contained", why: "acta/<date>-<slug>.md in a real acta/ checked by ensureRealDirectory before any write" },
   { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#2", disposition: "contained", why: "restores the petitio bytes just read through readContainedRegularFile; editOpusFrontMatter checked its directory" },

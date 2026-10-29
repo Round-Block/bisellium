@@ -1,0 +1,50 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-461-b2\s --import tsx packages/cli/src/next-branch.test.ts
+# exit: 1
+# at: 2026-10-29T13:42:36.209Z
+# sella: architect
+# tree: tree:e5b88e59e39d84deb21cbe7e08bf65fa1e967a20
+# ticket: {"opus":"W-461","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-461/studio","head":"dc73e171dab78f54d047c62ad6c05156bd6af1be","brief":"4a2cf056f186a73882592519324f1a077eb5dcbf","at":"2026-10-29T13:42:36.175Z"}
+
+TAP version 13
+# Subtest: W-461-b2 behaviour 2: the reds perform builds each implementation commit and holds at the first that does not build
+not ok 1 - W-461-b2 behaviour 2: the reds perform builds each implementation commit and holds at the first that does not build
+  ---
+  duration_ms: 1630.727683
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-461/packages/cli/src/next-branch.test.ts:37:404'
+  failureType: 'testCodeFailure'
+  error: |-
+    the hold names behaviour 1's implementation and certify's build failure
+    --- exit 1
+    --- stdout
+    next: W-900 reds held
+    why: behaviour 2's red was not recorded: red: red 2 replay preparation failed: web bundle build exited 1 at 1592a66: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded
+    test: behaviour 1 63fb827
+    red: behaviour 1 ci/reds/W-900/01.log 7caf529
+    feat: behaviour 1 1592a66
+    next-step: reds
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: "behaviour 2's red was not recorded: red: red 2 replay preparation failed: web bundle build exited 1 at 1592a66: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded"
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-461/packages/cli/src/next-branch.test.ts:1403:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1644.171452

@@ -1,0 +1,21 @@
+# opus: W-461
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a187f6-f82d-7c71-9757-3834a7ca2bb3
+# outcome: passed
+# at: 2026-10-29T15:29:25.517Z
+# tree: tree:844512642cb12bfd7376b7eeb1996abaf22fbc11
+# brief: briefs/W-461.md blob:4a2cf056f186a73882592519324f1a077eb5dcbf
+# ticket: {"opus":"W-461","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-461/studio","head":"42a8467a45a21227f848b50f547a72d4b610ce30","brief":"4a2cf056f186a73882592519324f1a077eb5dcbf","at":"2026-10-29T15:28:08.010Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-461-review-1.log #1: closed — packages/commands/src/web-build.ts:56 validates every bundle-parent component before removal, while packages/cli/src/next-branch.test.ts:1373 proves both in-tree and external symlink targets survive.
+
+## Verdict
+The symlink-parent escape is closed with matching regression and gate evidence.
+VERDICT: PASS
