@@ -1,0 +1,18 @@
+# opus: W-454
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18651-a73b-7e40-a0eb-86f5e877d0d8
+# outcome: passed
+# at: 2026-10-29T06:25:10.603Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-454.md blob:e4dacff4b106be8adc46aa8b98759a124e3c5925
+# ticket: {"opus":"W-454","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"e7fd20a92abd4c09b60a54ebe899e48bb73f5f98","brief":"e4dacff4b106be8adc46aa8b98759a124e3c5925","at":"2026-10-29T06:25:06.328Z"}
+
+## Findings
+1. advisory — brief:41 [severity: S2] The declared label domain admits `label: ""`, but the specified `[^"\\]+` regex refuses it. Replace brief:41 with: **`navRoutes(tree)`** (`review-packet.mjs`, not exported): reads `<tree>/apps/web/src/lib/nav.ts` by `readContainedRegularFile(tree, NAV_REL, "apps", 65536)`; finds the block opened by the exact line `export const NAV_ENTRIES = [` and closed by the first exact line `] as const;`; each nonblank line must be exactly `  { route: "<r>", href: "#/<r>", label: "<label>" },` with `<r>` matching `[a-z][a-z0-9-]{0,16}` and `<label>` containing at least one character and neither `"` nor `\`. It returns unique routes in table order and refuses read errors, a missing table, malformed entries, repeated routes or an empty table. [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/review-packet.test.mjs (W-454-b1 empty-label refusal)
+
+## Verdict
+The input boundary and promises are feasible; the sole accepted-domain overstatement is advisory.
+VERDICT: PASS
