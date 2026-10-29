@@ -668,3 +668,42 @@ export function readBriefForm(briefText: string): { light: boolean } | { error: 
   const form = briefForm(realLines(briefText));
   return form.error === undefined ? { light: form.light } : { error: form.error };
 }
+
+/** W-445: a claim the brief quotes and the evidence it cites for it, in the one form read: a quoted claim (`"…"` or `“…”`,
+ *  nonblank, on one line) followed, after optional whitespace, by `(` and, after optional whitespace, a backticked span:
+ *  `"<claim>" (\`<cite>\``, where the span (its `:<line>` split off) is an evidence citation (`EVIDENCE_CITE`): an absolute
+ *  or `~/` path, or one ending in `.out` or `.log`; a claim whose span is anything else (a source file, a symbol) is not read; a quote glued to a letter, mark, digit or `_` before it opens no claim. `path` is the span, any `:<line>` suffix (a positive integer of at most 15 digits) split off
+ *  into `at`. Text only, read from `realLines`: a fenced or commented line holds no claim. */
+export interface EvidenceClaim {
+  line: number;
+  claim: string;
+  cite: string;
+  path: string;
+  at?: number;
+}
+const CLAIM_CITE = /(?<![\p{L}\p{M}\p{N}_"“])(?:"([^"\r\n]*[^"\s][^"\r\n]*)"|“([^”\r\n]*[^”\s][^”\r\n]*)”)\s*\(\s*`([^`\r\n]+)`/gu;
+const CITE_AT = /^(.*[^:]):([1-9]\d{0,14})$/;
+/** W-445 r3: the citations read as evidence: an absolute or `~/` path, or a path ending in `.out` or `.log` (an output). */
+const EVIDENCE_CITE = /^(?:\/|~\/)|\.(?:out|log)$/;
+
+export function evidenceClaims(briefText: string): EvidenceClaim[] {
+  const out: EvidenceClaim[] = [];
+  realLines(briefText).forEach((text, i) => {
+    for (const m of text.matchAll(CLAIM_CITE)) {
+      const cite = m[3]!;
+      const at = CITE_AT.exec(cite);
+      if (!EVIDENCE_CITE.test(at ? at[1]! : cite)) continue;
+      out.push({ line: i + 1, claim: (m[1] ?? m[2])!, cite, path: at ? at[1]! : cite, ...(at ? { at: Number(at[2]) } : {}) });
+    }
+  });
+  return out;
+}
+
+/** W-445: the brief's evidence roots: every backticked span on a real line that is an absolute or `~/` path ending in `/`
+ *  (`Evidence in \`/abs/dir/\``), each once, in brief order. A bare citation resolves under these. */
+export function evidenceRoots(briefText: string): string[] {
+  const roots = new Set<string>();
+  for (const line of realLines(briefText))
+    for (const [, span] of line.matchAll(/`([^`\r\n]+)`/g)) if (/^(?:\/|~\/)\S*\/$/.test(span!)) roots.add(span!);
+  return [...roots];
+}
