@@ -48,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-461 — each commit builds before ready; then W-462; then #859 (W-408) via W-462 (high, 10-29)
+1. W-462 — re-push rewritten heads; then #859 (W-408)
 2. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
 3. W-445, W-443, W-446
 4. W-452 — collegium names the owning lead; kind ui retired (D-128), then re-tag
@@ -59,7 +59,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 9. W-414 — cause fix for tests×ruled-case-uncovered (D-076 D high; D-133)
 10. W-394 — cause fix for review×evidence-backfilled-or-absent (D-076 D high)
 11. W-395 — cause fix for spec×promise-unattainable-under-accepted-domain (D-076 D high)
-12. W-460 — cause fix for tests×tests-that-agree-with-the-bug (D-076 D high)
+12. W-460 — cause fix for tests×tests-that-agree-with-the-bug (D-076 D high); W-464 — for mechanism×replay-environment-not-pristine
 13. W-393 — cause fix for spec×input-domain-missing-or-unenforceable (D-076 D high)
 14. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
 15. W-383 — cause fix for tests×security-boundary-cases-uncovered (D-076 D high)
