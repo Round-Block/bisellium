@@ -132,6 +132,28 @@ test("W-430-b1 behaviour 1: a usage reading reads Claude's 5h, week and context 
   assert.equal(takeReading(second, now, "s").codex_week_used, 40, "a five-hour primary beside a week secondary: the secondary");
   assert.equal(takeReading(second, now, "s").claude_seen, null, "no status-line file: Claude unread");
 
+  // resets_at is epoch seconds between the line's timestamp and a week after it; any other value passes the line over
+  const odd = scratchHome("b1-resets");
+  codexLog(odd, "2026/10/28", "rollout-r.jsonl", [
+    tokenCount("2026-10-28T01:00:00.000Z", week(61)),
+    tokenCount("2026-10-28T01:10:00.000Z", week(62, RESETS * 1000)),
+    tokenCount("2026-10-28T01:20:00.000Z", week(63, 1e300)),
+    tokenCount("2026-10-28T01:30:00.000Z", week(64, 1)),
+    tokenCount("2026-10-28T01:40:00.000Z", week(65, RESETS + 0.5)),
+    tokenCount("2026-10-28T01:50:00.000Z", week(66, Date.parse("2026-11-04T01:50:01.000Z") / 1000)),
+  ], now, 60_000);
+  const kept = takeReading(odd, now, "odd");
+  assert.deepEqual([kept.codex_week_used, kept.codex_resets, kept.codex_seen], [61, RESETS, "2026-10-28T01:00:00.000Z"], "a millisecond, huge, past, fractional or beyond-a-week resets_at: the line is passed over for the last valid one");
+  assert.equal(readingLine(kept), `usage: Claude unread (no status-line file); Codex week 61%, resets ${RESETS_ISO}`, "the line of the valid one");
+  const onlyOdd = scratchHome("b1-resets-only");
+  codexLog(onlyOdd, "2026/10/28", "rollout-o.jsonl", [tokenCount("2026-10-28T01:10:00.000Z", week(62, 1e300)), tokenCount("2026-10-28T01:20:00.000Z", week(63, RESETS * 1000))], now, 60_000);
+  const none = takeReading(onlyOdd, now, "odd-only");
+  assert.deepEqual([none.codex_week_used, none.codex_resets], [null, null], "only out-of-range resets_at: Codex unread");
+  assert.equal(readingLine(none), "usage: Claude unread (no status-line file); Codex unread (no session log holds a week rate_limits)", "and the line says so, no throw");
+  const edge = scratchHome("b1-resets-edge");
+  codexLog(edge, "2026/10/28", "rollout-e.jsonl", [tokenCount("2026-10-28T01:00:00.000Z", week(70, Date.parse("2026-11-04T01:00:00.000Z") / 1000))], now, 60_000);
+  assert.equal(takeReading(edge, now, "edge").codex_week_used, 70, "a reset exactly 10080 minutes after the line: read");
+
   // nothing to read: every value null, said so
   const empty = scratchHome("b1-empty");
   const e = takeReading(empty, now, "none");
@@ -184,6 +206,18 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
   // one-sided: the text after the colon is the operating system's own failure message for the symlinked folder, which the row does not pin
   assert.match(lineOf(held.out, "usage-error: ") ?? "", /^usage-error: the reading was not recorded: \S/, ran("and the reading's failure is printed", held));
   assert.equal(existsSync(join(elsewhere, "readings.jsonl")), false, "nothing written through the symlink");
+
+  // a symlinked readings file is refused too: nothing is appended to what it points at
+  const f = world("w430-b2-file", "spec");
+  const outside = join(scratchHome("b2-outside"), "target.txt");
+  writeFileSync(outside, "kept\n");
+  mkdirSync(join(f.home, ".bisellium-evidence", "usage"), { recursive: true });
+  symlinkSync(outside, join(f.home, ".bisellium-evidence", "usage", "readings.jsonl"));
+  const linked = next(f, [OPUS, "--perform", "--expect", "branch"]);
+  assert.equal(linked.first, `next: ${OPUS} branch performed`, ran("a symlinked readings file: the rung is still performed", linked));
+  assert.equal(readFileSync(outside, "utf8"), "kept\n", ran("nothing appended through the readings file's symlink", linked));
+  // one-sided: the text after the colon is the platform's or the helper's own refusal, which the row does not pin
+  assert.match(lineOf(linked.out, "usage-error: ") ?? "", /^usage-error: the reading was not recorded: \S/, ran("and the refusal is printed", linked));
 });
 
 test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading intervals its rungs close; next --perform prints it and done asks its checkpoint row to carry it", { timeout: 600_000 }, async () => {
@@ -191,7 +225,7 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   const w = world("w430-b3", "spec");
   claudeFile(w.home, NOW_ISO, { week: 85 });
   codexLogs(w.home, new Date(NOW_ISO));
-  write(join(w.home, ".bisellium-evidence", "usage", "readings.jsonl"), JSON.stringify({ at: "2026-10-02T10:00:00.000Z", label: "before", codex_week_used: 55, claude_week_used: 80 }) + "\n");
+  write(join(w.home, ".bisellium-evidence", "usage", "readings.jsonl"), JSON.stringify({ at: "2026-10-02T10:00:00.000Z", label: "before", codex_week_used: 55, codex_resets: null, codex_from: null, claude_5h_used: null, claude_week_used: 80, claude_seen: null }) + "\n");
   const o = next(w, [OPUS, "--perform", "--expect", "branch"]);
   assert.equal(o.first, `next: ${OPUS} branch performed`, ran("the rung is performed", o));
   assert.equal(lineOf(o.out, "cost: "), "cost: Claude week +5%, Codex week +6% over 0.0 h", ran("its cost: the interval its reading closes", o));
@@ -220,7 +254,21 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   const home = scratchHome("b3-home");
   write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
   const row = (text: string): void => write(join(repo, HISTORY), `<table>\n${text}\n</table>\n`);
+  // a line that lacks a field of the line shape, or holds one of the wrong type, is skipped and counted for nobody
+  const good = lines.map((l) => JSON.stringify(l));
+  const foreign: unknown[] = [
+    { at: at(20), label: "x", opus: "W-1", step: "x" },
+    { ...r(21, "W-1", 1, 1), claude_week_used: "90" },
+    { ...r(22, "W-1", 1, 1), codex_week_used: Number.NaN },
+    { ...r(23, "W-1", 1, 1), opus: 7 },
+    { ...r(24, "W-1", 1, 1), label: null },
+    { ...r(25, "W-1", 1, 1), context_tokens: "9" },
+    [r(26, "W-1", 1, 1)],
+  ];
+  write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), [...good, ...foreign.map((l) => JSON.stringify(l))].join("\n") + "\n");
   row("<tr><td>W-1 shipped</td><td>Cycle about 240 min</td></tr>");
+  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /add "Claude week \+6%, Codex week \+3% over 4\.0 h" beside its hours/, "foreign and wrong-type lines naming W-1 are skipped, never counted");
+  write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), good.join("\n") + "\n");
   assert.equal(historyRowRefusal(repo, "W-1", home), `the checkpoint row naming W-1 carries no cost: add "Claude week +6%, Codex week +3% over 4.0 h" beside its hours (W-430: its plan cost from the usage readings), then re-run`, "a row without the cost: refused, naming the phrase");
   row("<tr><td>W-1 shipped</td><td>Cycle about 240 min; Claude week +6%, Codex week +3% over 4.0 h</td></tr>");
   assert.equal(historyRowRefusal(repo, "W-1", home), undefined, "the row carries it: done may commit");
@@ -288,8 +336,8 @@ test("W-430-b5 behaviour 5: tick and next --all print the Codex burn the rest of
   assert.equal(acted.find((l) => l.startsWith("codex: ")), LINE, `tick: the same line: ${acted.join(" | ")}`);
   assert.equal((await capture(["--studio", studio, "--dry-run"], scratchHome("b5-none"))).find((l) => l.startsWith("codex: ")), "codex: unread (no session log holds a week rate_limits)", "no session log: unread");
   const past = scratchHome("b5-past");
-  codexLog(past, "2026/10/28", "rollout-p.jsonl", [tokenCount("2026-10-20T01:00:00.000Z", week(97, 1790000000))], now, 60_000);
-  assert.equal((await capture(["--studio", studio, "--dry-run"], past)).find((l) => l.startsWith("codex: ")), "codex: the week read at 2026-10-20T01:00:00.000Z reset at 2026-09-21T14:13:20Z; no reading since", "the week has reset since the last reading");
+  codexLog(past, "2026/10/28", "rollout-p.jsonl", [tokenCount("2026-10-20T01:00:00.000Z", week(97, 1792540800))], now, 60_000);
+  assert.equal((await capture(["--studio", studio, "--dry-run"], past)).find((l) => l.startsWith("codex: ")), "codex: the week read at 2026-10-20T01:00:00.000Z reset at 2026-10-21T00:00:00Z; no reading since", "the week has reset since the last reading");
 
   // next --all, on the real clock: the same line before the open count
   const w = world("w430-b5", "greenlight");
