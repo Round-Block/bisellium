@@ -250,7 +250,7 @@ test("W-077 behaviour 6: the Officina shows current health without stamps and na
 
   // (a) W-408's Patron ruling: current health carries no snapshot age or generated-at stamp.
   await expect(page.locator(".officina__as-of"), "no as-of lines remain").toHaveCount(0);
-  await expect(officina).not.toContainText(/as of|generated at|ago\b/i);
+  await expect(officina).not.toContainText(/as of|generated at|ago(?=[^\p{L}\p{M}\p{N}_]|$)/iu);
 
   // (b) the empty aerarium is named, and nothing is drawn as a card.
   const burn = page.locator(".panel--budget");

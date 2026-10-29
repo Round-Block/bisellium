@@ -38,7 +38,7 @@ const panelOf = (html: string, heading: string): string => {
 
 if (runs(1)) test("W-077 behaviour 1: current health has no as-of or generated-at stamp", () => {
   const html = render();
-  assert.doesNotMatch(text(html), /\bas of\b|generated at|ago\b/i);
+  assert.doesNotMatch(text(html), /(?<![\p{L}\p{M}\p{N}_])as(?=[^\p{L}\p{M}\p{N}_]|$) of(?=[^\p{L}\p{M}\p{N}_]|$)|generated at|ago(?=[^\p{L}\p{M}\p{N}_]|$)/iu);
   assert.equal((html.match(/class="officina__health-row /g) ?? []).length, 2, "the current health still has two one-line rows");
 });
 
@@ -62,9 +62,9 @@ if (runs(4)) test("W-077 behaviour 4: aerarium absence and failure are never dre
 
 if (runs(5)) test("W-077 behaviour 5: health speaks plain language behind two collapsed disclosures", () => {
   const health = panelOf(render(), "Health");
-  const details = [...health.matchAll(/<details\b([^>]*)>[\s\S]*?<\/details>/g)];
+  const details = [...health.matchAll(/<details(?=[^\p{L}\p{M}\p{N}_]|$)([^>]*)>[\s\S]*?<\/details>/gu)];
   assert.equal(details.length, 2);
-  for (const row of details) assert.doesNotMatch(row[1] ?? "", /\bopen\b/);
+  for (const row of details) assert.doesNotMatch(row[1] ?? "", /(?<![\p{L}\p{M}\p{N}_])open(?=[^\p{L}\p{M}\p{N}_]|$)/u);
   const plain = text(health);
   assert.ok(plain.includes("Lex status") && plain.includes("Process health"));
   assert.ok(plain.includes("This check found 1 blocking problem.") && plain.includes("3 warnings; they do not stop work."));

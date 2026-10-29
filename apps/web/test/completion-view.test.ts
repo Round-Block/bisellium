@@ -23,7 +23,7 @@ test("W-153-b6 behaviour 6: the completion reader remains while W-408 installs t
   const html = render({ meter: { rows: [], overall: 81 }, estimate: { line: "Estimated finish" } });
   assert.ok(!text(html).includes("Completion"), "completion no longer creates a fifth Officina panel");
   assert.deepEqual(
-    [...html.matchAll(/<h2\b[^>]*class="[^"]*\bofficina__panel-heading\b[^"]*"[^>]*>([\s\S]*?)<\/h2>/g)].map((match) => text(match[1] ?? "")),
+    [...html.matchAll(/<h2(?=[^\p{L}\p{M}\p{N}_]|$)[^>]*class="[^"]*(?<![\p{L}\p{M}\p{N}_])officina__panel-heading(?=[^\p{L}\p{M}\p{N}_]|$)[^"]*"[^>]*>([\s\S]*?)<\/h2>/gu)].map((match) => text(match[1] ?? "")),
     ["Work in flight", "Budget", "Health"],
   );
 });

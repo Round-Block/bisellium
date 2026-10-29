@@ -18,7 +18,8 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   check(6, "burn: approaching uses high/Orange from 80 percent", burnMeasure(160, 200)?.state === "approaching" && burnMeasure(160, 200)?.severity === "high", JSON.stringify(burnMeasure(160, 200)));
   check(6, "burn: exactly at allowance is full high/Orange but not over", burnMeasure(200, 200)?.fraction === 1 && burnMeasure(200, 200)?.over === false && burnMeasure(200, 200)?.state === "spent" && burnMeasure(200, 200)?.severity === "high");
   check(6, "burn: past allowance is full blocking/Red and names exact overage", burnMeasure(250, 200)?.fraction === 1 && burnMeasure(250, 200)?.over === true && burnMeasure(250, 200)?.overBy === 50 && burnMeasure(250, 200)?.state === "over" && burnMeasure(250, 200)?.severity === "blocking");
-  for (const [spent, allowance] of [[-10, 200], [10, 0], [null, 200], [10, "200"], [Number.NaN, 200]] as const) {
+  check(6, "burn: negative spend is unavailable", burnMeasure(-10, 200) === undefined);
+  for (const [spent, allowance] of [[10, 0], [null, 200], [10, "200"], [Number.NaN, 200]] as const) {
     check(6, `burn: malformed ${String(spent)} / ${String(allowance)} is unavailable`, burnMeasure(spent, allowance) === undefined);
   }
 }
