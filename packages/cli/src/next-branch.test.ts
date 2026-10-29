@@ -10,6 +10,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseFrontMatter } from "@bisellium/adapter-native";
 import { parseVerdictLog } from "@bisellium/commands/verdict.js";
+import { webBuild } from "@bisellium/commands/web-build.js";
 import { sourceTreeHash } from "@bisellium/shim";
 import { BRANCH, BRIEF_REL, BUDGET, Json, NOW_ISO, OPUS, Out, PROC_ENV, SR, SR_MODEL, T, WT_BRIEF, WT_STUDIO_REL, World, addReview, amend, architectOrder, branchExists, briefPath, briefText, calls, commit, deadPid, direct, editRecord, excludesHeld, expectHeld, expectStep, failingGit, fakeProc, ghCalls, git, gitCalls, handoffAt, landed, liveChild, markerPath, mergedList, mutating, next, put, putBrief, putMarker, putOutput, ran, recordOf, review, reviewHeld, reviewerOrder, scenario, scratch, sign, snap, sourceTree, specHeld, specLog, specNext, srWorld, stagedPaths, stepsDir, tickOf, ticketed, tipOf, touchHandoff, verb, w206World, walk, world, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
@@ -1367,6 +1368,26 @@ test("W-461-b1 behaviour 1: a red is recorded only at a commit whose web bundle 
   assert.equal(c.status, 0, ran("a red at a commit that builds is recorded", c));
   assert.match(readFileSync(w461RedLog(w), "utf8"), /^not ok 1 - W-900-b1 fixture behaviour 1$/m, "the recorded red is the row's assertion failure");
   assert.equal(existsSync(join(w.wt, ...W461_BUNDLE)), true, "the build left its bundle");
+});
+
+test("W-461-b1 a symlinked dist parent is refused without removing anything", { timeout: 600_000 }, () => {
+  // the prior bundle path's parent is a link: the cleanup must not follow it to remove another index.html
+  const cases: [string, (root: string, outside: string) => string, (root: string, outside: string) => string][] = [
+    ["dist -> . (the tracked apps/web/index.html)", () => ".", (root) => join(root, "apps", "web", "index.html")],
+    ["dist -> an outside directory", (_root, outside) => outside, (_root, outside) => join(outside, "index.html")],
+  ];
+  for (const [label, linkTo, target] of cases) {
+    const root = scratch("w461-link");
+    const outside = scratch("w461-out");
+    put(root, "apps/web/package.json", `${JSON.stringify({ name: "@bisellium/web", private: true, type: "module", scripts: { build: "node build.mjs" } })}\n`);
+    put(root, "apps/web/index.html", "<!doctype html>\ntracked\n");
+    put(outside, "index.html", "<!doctype html>\noutside\n");
+    symlinkSync(linkTo(root, outside), join(root, "apps", "web", "dist"));
+    const r = webBuild(root);
+    assert.equal(existsSync(target(root, outside)), true, `${label}: the file behind the link is still there`);
+    assert.equal(r.carried && !r.ok, true, `${label}: webBuild refuses (ok: false)`);
+    assert.equal(r.carried && !r.ok ? r.kind : "", "cleanup", `${label}: the refusal is the cleanup's`);
+  }
 });
 
 /** A prototype series over the fixture's web workspace: test b1, then one implementation per behaviour, each editing src/main.mjs as `mains` says. */
