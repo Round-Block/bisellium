@@ -206,3 +206,49 @@ Classes in more than one opus, 2026-10-10..2026-10-24:
 - class tests×ruled-case-uncovered seen in 8 opera: W-178, W-292, W-322, W-335, W-336, W-337, W-350, W-376
 - class tests×security-boundary-cases-uncovered seen in 2 opera: W-310, W-369
 - class workflow×files-owned-boundary-exceeded seen in 2 opera: W-339, W-340
+
+### 2026-10-29
+
+| Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
+|---|---|---|---|---|
+| W-407 | 2653 | 30 | 3 | S1 3 |
+| W-454 | 268 | 49 | 1 | S1 1 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-407 | review | 1 | failed | - | tests×tests-that-agree-with-the-bug S1 |
+| W-407 | review | 2 | passed | 43 |  |
+| W-407 | review | 3 | passed | 115 |  |
+| W-407 | spec | 17 | passed | 279 |  |
+| W-407 | spec | 18 | passed | 3 |  |
+| W-407 | spec | 19 | passed | 2 |  |
+| W-407 | spec | 20 | passed | 50 |  |
+| W-450 | review | 1 | failed | - | tests×ruled-case-uncovered S1 |
+| W-450 | review | 2 | failed | 81 | tests×ruled-case-uncovered S1 |
+| W-450 | review | 3 | passed | 68 |  |
+| W-450 | spec | 1 | passed | - |  |
+| W-450 | spec | 2 | passed | 6 |  |
+| W-450 | spec | 3 | passed | 131 |  |
+| W-450 | spec | 4 | passed | 10 |  |
+| W-454 | review | 1 | failed | - | tests×ruled-case-uncovered S1 |
+| W-454 | review | 2 | passed | 123 |  |
+| W-454 | spec | 1 | passed | - |  |
+| W-454 | spec | 2 | passed | 46 |  |
+
+- LOOP W-450 review: class tests×ruled-case-uncovered, rounds 1-2 (minutes since previous round: r1 -, r2 81)
+
+Classes in more than one opus, 2026-10-15..2026-10-29:
+- class review×evidence-backfilled-or-absent seen in 12 opera: W-178, W-179, W-312, W-340, W-341, W-360, W-361, W-366, W-406, W-415, W-417, W-425
+- class review×fail-open-on-malformed-records-patched-per-site seen in 7 opera: W-275, W-326, W-337, W-338, W-348, W-403, W-404
+- class security×symlink-parent-write-escape seen in 4 opera: W-259, W-274, W-418, W-423
+- class spec×fix-opens-new-surface seen in 3 opera: W-310, W-322, W-362
+- class spec×input-domain-missing-or-unenforceable seen in 24 opera: W-179, W-274, W-292, W-299, W-305, W-306, W-310, W-312, W-316, W-334, W-337, W-338, W-339, W-340, W-348, W-358, W-362, W-369, W-370, W-376, W-377, W-381, W-403, W-433
+- class spec×input-without-named-rejector seen in 5 opera: W-288, W-310, W-328, W-416, W-418
+- class spec×promise-unattainable-under-accepted-domain seen in 21 opera: W-241, W-264, W-268, W-274, W-293, W-299, W-302, W-310, W-312, W-326, W-339, W-341, W-348, W-355, W-369, W-377, W-379, W-398, W-407, W-417, W-425
+- class spec×prose-contradiction-under-revision seen in 2 opera: W-241, W-274
+- class tests×one-sided-bound-assertion seen in 10 opera: W-310, W-317, W-328, W-330, W-345, W-360, W-369, W-377, W-381, W-392
+- class tests×ruled-case-uncovered seen in 12 opera: W-178, W-292, W-322, W-335, W-336, W-337, W-350, W-376, W-404, W-415, W-450, W-454
+- class tests×security-boundary-cases-uncovered seen in 3 opera: W-310, W-369, W-379
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-339, W-340

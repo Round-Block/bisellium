@@ -48,23 +48,22 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-000. W-454 — screenshot set follows the nav table; blocks W-451's review, lands first
-00. W-450 — certify re-attests a served Playwright red (TAP reporter). Then W-445, W-443, W-446
+00. W-445, W-443, W-446
 00a. W-452 — collegium names the owning lead; kind ui retired (D-128); then the re-tag
 0. W-430 — usage in the records (fix round 1); W-455 — symlink cause fix: the containment helper refuses a symlinked final file (high; Patron greenlit 10-29). Then W-444 — reply length Stop hook
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
+0b. W-458 — done finishes a merged rung; W-457 — next names a builder for an untouched owned file; W-459 — daily retro enforced (high, 10-29)
 1. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (high; moved up, Patron 10-29); then W-456 (test-pool research, ops)
-2. W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
-2a. W-431, W-432 — verb dead ends: unchanged re-sign, carried open finding
-3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
-3b. W-261 — woken orchestration (D-126 1: the overrun study's first cause)
-3c. W-434 — dispatch prompts as project artifacts, scrubbed (D-126 2)
-4. W-414 — cause fix for repeat class tests×ruled-case-uncovered (D-076 D high; W-404's review r1; greenlit 10-25)
-5. W-383 — cause fix for repeat class tests×security-boundary-cases-uncovered (D-076 D high)
-6. W-393 — cause fix for repeat class spec×input-domain-missing-or-unenforceable (D-076 D high)
-7. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
-8. W-394 — cause fix for repeat class review×evidence-backfilled-or-absent (D-076 D high)
-9. W-395 — cause fix for repeat class spec×promise-unattainable-under-accepted-domain (D-076 D high)
+2. W-414 — cause fix for tests×ruled-case-uncovered (D-076 D high; 12 opera; ops lead 10-29, D-133)
+3. W-394 — cause fix for review×evidence-backfilled-or-absent (D-076 D high)
+4. W-395 — cause fix for spec×promise-unattainable-under-accepted-domain (D-076 D high)
+4a. W-460 — cause fix for tests×tests-that-agree-with-the-bug (D-076 D high)
+5. W-393 — cause fix for spec×input-domain-missing-or-unenforceable (D-076 D high)
+6. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
+7. W-383 — cause fix for tests×security-boundary-cases-uncovered (D-076 D high)
+8. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high) `next.ts`
+8a. W-431, W-432 — verb dead ends; W-429 — petitio length limits; W-261 — woken orchestration (D-126 1); W-434 — dispatch prompts as artifacts (D-126 2)
+9. W-254 — delete talk and tick's daily branch: the dailies fail every run (W-066 stays halted; ops lex change is the Patron's)
 10. W-349 — flaky row W-279-b3 failed twice in the merge queue: print its capture, then fix the cause (D-039 high)
 11. W-399 — a record verb refuses a write whose sella is not its ticket's actor (high)
 13. W-364 — the CLI half first: verify and ci --opus refuse outside a `bisellium run` session (D-039 high; carries W-290; Defaults to the Patron before branch)
@@ -96,4 +95,4 @@ UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at st
 1a. W-451 — Home: gates passed a0d5d440; data W-439, W-440. Then W-453 (D-128 D).
 2. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E); then W-300 — the drawer shows `next`'s read-only step, actor, round and health. W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
-Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-254 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
+Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
