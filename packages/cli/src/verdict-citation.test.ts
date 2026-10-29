@@ -1352,3 +1352,98 @@ test("W-445-b1 behaviour 1: brief admission reads each quoted claim with the evi
   assert.deepEqual((m["evidenceClaims"] as (t: string) => unknown[])("no claims here\n"), [], "a brief with no claim");
 });
 
+test("W-445-b2 behaviour 2: an architect spec signature is refused when a quoted claim's cited evidence file does not hold the claim", () => {
+  const dir = studio();
+  const manifest = join(dir, "bisellium.yml");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace("collegia:\n", "collegia:\n  - { id: design, name: Design, magister: drafter }\n"));
+  const ev = join(dir, "ev");
+  const ev2 = join(dir, "ev2");
+  for (const d of [ev, ev2, join(ev, "fix1")]) mkdirSync(d, { recursive: true });
+  writeFileSync(join(ev, "k1.out"), "TAP version 13\nnot ok 1 - the rule uses the edge\n");
+  writeFileSync(join(ev, "k1-fix.out"), "TAP version 13\nnot ok 1 - the rule is offset beyond the edge\n");
+  writeFileSync(join(ev, "fix1", "k.out"), "the rule is offset beyond the edge\n");
+  writeFileSync(join(ev, "only.out"), "x\n");
+  writeFileSync(join(ev2, "only.out"), "x\n");
+  const CLAIM = "the rule is offset beyond the edge";
+  const brief = (claimLine: string, roots = `\`${ev}/\``): string => ["# W-300 fixture brief", `Evidence in ${roots}.`, claimLine, ""].join("\n");
+  const log = join(dir, "ci", "W-300-spec-1.log");
+  let n = 0;
+  const sign = (text: string, sella = "drafter"): { exitCode: number; stderr: string; written: boolean } => {
+    writeFileSync(join(dir, "briefs", "W-300.md"), text);
+    const input = join(dir, `input-${++n}.md`);
+    writeFileSync(input, findings("advisory — fine"));
+    const r = capture(() => runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }));
+    const written = existsSync(log);
+    if (written) rmSync(log);
+    return { exitCode: r.result.exitCode, stderr: r.stderr, written };
+  };
+  const refused = (name: string, text: string, stderr: string, sella = "drafter"): void => {
+    const r = sign(text, sella);
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.equal(r.stderr, stderr, `${name}: stderr`);
+  };
+  const admitted = (name: string, text: string, sella = "drafter"): void => {
+    const r = sign(text, sella);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, true, `${name}: the log is written`);
+  };
+  const E = "W-300: evidence citation: brief:3 cites";
+  const notHeld = (cite: string, file: string, claim = CLAIM): string => `${E} \`${cite}\` for "${claim}", and ${file} does not hold it: cite the evidence that does, or correct the claim\n`;
+
+  // the W-442 spec r4 shape: a bare citation resolving under the evidence root to a file that still holds the old message
+  refused("a bare citation whose file does not hold the claim", brief(`K1 fails at "${CLAIM}" (\`k1.out\`, from \`kill.sh\`).`), notHeld("k1.out", join(ev, "k1.out")));
+  admitted("a bare citation whose file holds the claim", brief(`K1 fails at "${CLAIM}" (\`k1-fix.out\`, from \`kill.sh\`).`));
+  refused("a relative citation under the root", brief(`At "${CLAIM} again" (\`fix1/k.out\`).`), notHeld("fix1/k.out", join(ev, "fix1", "k.out"), `${CLAIM} again`));
+  admitted("a relative citation under the root that holds it", brief(`At "${CLAIM}" (\`fix1/k.out\`).`));
+  refused("an absolute citation", brief(`At "${CLAIM}" (\`${ev}/k1.out\`).`), notHeld(`${ev}/k1.out`, join(ev, "k1.out")));
+  admitted("an absolute citation that holds it", brief(`At "${CLAIM}" (\`${ev}/k1-fix.out\`).`));
+  refused(
+    "a cited line that does not hold it",
+    brief(`At "${CLAIM}" (\`k1-fix.out:1\`).`),
+    `${E} \`k1-fix.out:1\` for "${CLAIM}", and line 1 of ${join(ev, "k1-fix.out")} does not hold it: cite the evidence that does, or correct the claim\n`,
+  );
+  admitted("a cited line that holds it", brief(`At "${CLAIM}" (\`k1-fix.out:2\`).`));
+  refused("a curly-quoted claim", brief(`At \u201c${CLAIM}\u201d (\`k1.out\`).`), notHeld("k1.out", join(ev, "k1.out")));
+  refused(
+    "a bare citation under two roots",
+    brief(`At "x" (\`only.out\`).`, `\`${ev}/\` and \`${ev2}/\``),
+    `${E} \`only.out\` for "x", and it names a file under 2 evidence roots (${ev}/, ${ev2}/): cite it by its absolute path\n`,
+  );
+  refused("an absolute citation of no file", brief(`At "x" (\`${ev}/none.out\`).`), `${E} \`${ev}/none.out\` for "x", and ${ev}/none.out is not a readable regular file\n`);
+  refused("an absolute citation of a directory", brief(`At "x" (\`${ev}/fix1\`).`), `${E} \`${ev}/fix1\` for "x", and ${ev}/fix1 is not a readable regular file\n`);
+  refused("pieces out of order", brief('At "beyond the edge <a> the rule" (`k1-fix.out`).'), notHeld("k1-fix.out", join(ev, "k1-fix.out"), "beyond the edge <a> the rule"));
+  admitted("a placeholder and an ellipsis stand for any text", brief('At "the <word> is offset \u2026 edge" (`k1-fix.out`) and "the rule ..." (`k1-fix.out`).'));
+  admitted("whitespace runs are squeezed", brief('At "the rule  is\toffset" (`k1-fix.out`).'));
+  // W-445 r3: fail closed: a recognised citation that names no single readable file is refused
+  const noFile = (cite: string, roots = `${ev}/`): string =>
+    `${E} \`${cite}\` for "${CLAIM}", and it names no regular file under the evidence roots (${roots}): cite it by its absolute path, or correct the name or the root\n`;
+  refused("a relative citation under no root", brief(`At "${CLAIM}" (\`k1-fixx.out\`).`), noFile("k1-fixx.out"));
+  refused("a typo in the declared root", brief(`At "${CLAIM}" (\`k1-fix.out\`).`, `\`${ev}x/\``), noFile("k1-fix.out", `${ev}x/`));
+  refused(
+    "a relative citation with no root declared",
+    brief(`At "${CLAIM}" (\`k1-fix.out\`).`, "no folder"),
+    `${E} \`k1-fix.out\` for "${CLAIM}", and it names no regular file under the brief declares no evidence root (a backticked absolute or ~/ folder ending in /): cite it by its absolute path, or correct the name or the root\n`,
+  );
+  refused(
+    "an output citation that is not a readable path",
+    brief(`At "${CLAIM}" (\`k1 fix.out\`).`),
+    `${E} \`k1 fix.out\` for "${CLAIM}", and it is not a path the check reads (absolute, ~/, or relative segments of word characters, ".", "+" and "-"): cite the evidence file by such a path\n`,
+  );
+  const home = process.env["HOME"];
+  process.env["HOME"] = "relative-home";
+  try {
+    refused(
+      "a ~/ root that does not expand to an absolute path",
+      brief(`At "${CLAIM}" (\`${ev}/k1-fix.out\`).`, `\`~/ev/\` and \`${ev}/\``),
+      "W-300: evidence citation: evidence root `~/ev/` does not expand to an absolute path\n",
+    );
+  } finally {
+    if (home === undefined) delete process.env["HOME"];
+    else process.env["HOME"] = home;
+  }
+  admitted("a source or symbol citation is not an evidence claim", brief(`At "${CLAIM}" (\`packages/x.ts\`) and "x" (\`writeGates\`).`));
+  admitted("a directory citation is not checked", brief(`At "${CLAIM}" (\`${ev}/fix1/\`).`));
+  admitted("a fenced claim is not read", ["# W-300 fixture brief", `Evidence in \`${ev}/\`.`, "```", `"${CLAIM}" (\`k1.out\`)`, "```", ""].join("\n"));
+  admitted("another seat's spec verdict is not judged", brief(`K1 fails at "${CLAIM}" (\`k1.out\`).`), "qa-lead");
+});
