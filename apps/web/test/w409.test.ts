@@ -106,3 +106,29 @@ test("W-409-b2 behaviour 2: Inbox question totals stay distinct from Board membe
   assert.match(inboxScreen, /onNeedsYouCountRef\.current\?\.\(needsYouTotal\(d\)\)/, "Inbox refreshes the same Inbox-question total");
   assert.match(served, /W-409-b2 Inbox question totals stay distinct from Board membership at 1280, 640 and 390/, "the served row pins every ruled viewport");
 });
+
+test("W-409-b3 behaviour 3: cards distinguish greenlight, Inbox decisions and an unlinked human gate", () => {
+  const inbox: InboxResponse = {
+    opera: [{ id: "W-1", title: "Long", collegium: "design", sella: "producer", traditio: undefined }, { id: "W-2", title: "Gate", collegium: "design", sella: "builder", traditio: undefined }],
+    petitiones: [
+      { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
+      { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
+    ],
+  };
+  const title = `A long title ${"kept ".repeat(40)}`;
+  const model = boardModel(officina, [opus("W-1", "backlog", {}, title), opus("W-2", "building", { patron: { status: "pending" } }), opus("W-3", "done")], inbox);
+  const cards = model.columns.flatMap((column) => column.cards.map((card) => ({ column: column.id, card })));
+  const w1Copies = cards.filter(({ card }) => card.id === "W-1");
+  assert.deepEqual(w1Copies.map(({ column }) => column), ["needs_you", "planned"], "the waiting opus exists in Needs you and its lifecycle phase");
+  assert.deepEqual(w1Copies.map(({ card }) => card.asks), [[{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 2 }], [{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 2 }]], "both copies carry distinct structured ask kinds");
+  assert.deepEqual(cards.find(({ column, card }) => column === "needs_you" && card.id === "W-2")?.card.asks, [{ kind: "human_gate", count: 1 }], "an unlinked pending human gate is not invented as Inbox");
+  assert.deepEqual(cards.find(({ card }) => card.id === "W-3")?.card.asks, [], "an opus with no ask carries no Needs-you mark data");
+
+  const css = read("src/components/w025.css");
+  const view = read("src/screens/BoardView.tsx");
+  const served = read("tests-serve/w409.spec.ts");
+  assert.match(view, /board__card-asks[\s\S]*Greenlight[\s\S]*Inbox decision[\s\S]*Human gate/, "cards render the three ask kinds as compact visible words");
+  assert.match(view, /title=\{card\.title\}/, "the complete long title stays in its native title affordance");
+  assert.match(css, /\.board__card-asks\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s, "ask-kind marks stay on one contained card line");
+  assert.match(served, /W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390/, "the served row pins every ruled viewport");
+});

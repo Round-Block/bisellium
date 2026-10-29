@@ -83,3 +83,47 @@ test("W-409-b2 Inbox question totals stay distinct from Board membership at 1280
     }
   }
 });
+
+test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", async ({ page }) => {
+  served = await startServed("w409-b3");
+  const longTitle = `A greenlight request whose deliberately long title remains readable from its native affordance ${"across widths ".repeat(20)}`;
+  const opera = [
+    { ...makeOpus("W-1", "backlog"), title: longTitle },
+    makeOpus("W-2", "building", { patron: { status: "pending" } }),
+    makeOpus("W-3", "done"),
+  ];
+  const inbox = {
+    opera: [{ id: "W-1", title: longTitle, collegium: "design", sella: "producer" }, { id: "W-2", title: "W-2 title", collegium: "design", sella: "builder" }],
+    petitiones: [
+      { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
+      { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
+      { id: "P-orphan", opus: "W-404", from: "reviewer", subject: "No Board entry", body: "No Board entry" },
+    ],
+  };
+  await page.route("**/api/officina", (route) => route.fulfill({ json: officina }));
+  await page.route("**/api/opera", (route) => route.fulfill({ json: opera }));
+  await page.route("**/api/inbox", (route) => route.fulfill({ json: inbox }));
+
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${served.baseURL}/?w409=b3-${width}#/board`);
+    const needsW1 = page.locator('.board__column[data-column-id="needs_you"] [data-card-id="W-1"]');
+    const phaseW1 = page.locator('.board__column[data-column-id="planned"] [data-card-id="W-1"]');
+    for (const card of [needsW1, phaseW1]) {
+      await expect(card.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions are distinct on both copies`).toHaveText(["Greenlight", "2 Inbox decisions"]);
+      await expect(card.locator(".board__card-title"), `${width}: complete long title remains available`).toHaveAttribute("title", longTitle);
+      const geometry = await card.evaluate((node) => {
+        const mark = node.querySelector<HTMLElement>(".board__card-asks")!;
+        const box = node.getBoundingClientRect();
+        const markBox = mark.getBoundingClientRect();
+        return { cardHeight: box.height, markLeft: markBox.left, markRight: markBox.right, left: box.left, right: box.right };
+      });
+      expect(geometry.cardHeight, `${width}: marked card stays within the ruled 108px maximum`).toBeLessThanOrEqual(108.5);
+      expect(geometry.markLeft, `${width}: ask mark starts inside its card`).toBeGreaterThanOrEqual(geometry.left - 0.5);
+      expect(geometry.markRight, `${width}: ask mark ends inside its card`).toBeLessThanOrEqual(geometry.right + 0.5);
+    }
+    await expect(page.locator('.board__column[data-column-id="needs_you"] [data-card-id="W-2"] .board__card-ask'), `${width}: unlinked human wait is not called Inbox`).toHaveText("Human gate");
+    await expect(page.locator('[data-card-id="W-404"]'), `${width}: orphan decision has no Board mark or card`).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width}: marks add no page-level horizontal clipping`).toBeLessThanOrEqual(0);
+  }
+});
