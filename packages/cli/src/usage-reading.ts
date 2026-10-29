@@ -169,7 +169,7 @@ export function readingLine(r: Reading): string {
  *  helper (which checks no final component), the file opened O_NOFOLLOW so a symlinked `readings.jsonl` is refused at the
  *  open, with no check-then-use gap, and a non-regular file refused before the write, the write repeated until the whole line is out or a write makes no progress; the error message when it cannot,
  *  never a throw. */
-export function appendReading(home: string, r: Reading, write: (fd: number, data: Buffer) => number = writeSync): string | undefined {
+export function appendReading(home: string, r: Reading, write: (fd: number, data: Buffer) => number = (f, d) => writeSync(f, d)): string | undefined {
   try {
     const dir = ensureRealDirectory(home, EVIDENCE, USAGE);
     const fd = openSync(join(dir, READINGS), constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o666);
