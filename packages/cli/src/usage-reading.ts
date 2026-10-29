@@ -9,7 +9,7 @@
  * CONTEXT_WIND_DOWN context tokens; `tick` and `next --all` print the Codex burn the rest of the week needs. See
  * studio/briefs/W-430.md.
  */
-import { appendFileSync, readdirSync, statSync } from "node:fs";
+import { closeSync, constants, fstatSync, openSync, readdirSync, statSync, writeSync } from "node:fs";
 import { join } from "node:path";
 import { instant } from "@bisellium/schema";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
@@ -81,15 +81,17 @@ function claudeReading(home: string): Pick<Reading, "claude_5h_used" | "claude_w
   };
 }
 
-/** The week window of one `rate_limits` (its primary or secondary whose window is a week), or undefined. */
-function weekWindow(rl: unknown): { used: number; resets: number } | undefined {
-  if (!isDict(rl)) return undefined;
+/** The week window of one `rate_limits` (its primary or secondary whose window is a week), or undefined. `resets_at` is an
+ *  integer Unix timestamp in seconds from the line's `seen` time to WEEK_MINUTES after it, else the window is not read. */
+function weekWindow(rl: unknown, seen: Date | undefined): { used: number; resets: number } | undefined {
+  if (!isDict(rl) || seen === undefined) return undefined;
   for (const k of ["primary", "secondary"]) {
     const w = rl[k];
     if (!isDict(w) || w["window_minutes"] !== WEEK_MINUTES) continue;
     const used = num(w["used_percent"]);
     const resets = num(w["resets_at"]);
-    if (used !== null && resets !== null) return { used, resets };
+    if (used === null || resets === null || !Number.isInteger(resets)) continue;
+    if (resets * 1000 >= seen.getTime() && resets * 1000 <= seen.getTime() + WEEK_MINUTES * 60_000) return { used, resets };
   }
   return undefined;
 }
@@ -128,9 +130,9 @@ function codexReading(home: string): Pick<Reading, "codex_week_used" | "codex_re
         continue;
       }
       const payload = isDict(line) && isDict(line["payload"]) ? line["payload"] : undefined;
-      const week = weekWindow(payload?.["rate_limits"]);
-      if (week === undefined) continue;
       const seen = instant(isDict(line) ? line["timestamp"] : undefined);
+      const week = weekWindow(payload?.["rate_limits"], seen);
+      if (week === undefined) continue;
       return { codex_week_used: week.used, codex_resets: week.resets, codex_from: f.rel.split("/").pop() ?? f.rel, codex_seen: seen ? seen.toISOString() : null };
     }
   }
@@ -163,19 +165,39 @@ export function readingLine(r: Reading): string {
   return `usage: ${claude}; ${codex}`;
 }
 
-/** Appends the reading to `<home>/.bisellium-evidence/usage/readings.jsonl` through the shared containment helper; the
- *  error message when it cannot, never a throw. */
+/** Appends the reading to `<home>/.bisellium-evidence/usage/readings.jsonl`: the folders through the shared containment
+ *  helper (which checks no final component), the file opened O_NOFOLLOW so a symlinked `readings.jsonl` is refused at the
+ *  open, with no check-then-use gap, and a non-regular file refused before the write; the error message when it cannot,
+ *  never a throw. */
 export function appendReading(home: string, r: Reading): string | undefined {
   try {
     const dir = ensureRealDirectory(home, EVIDENCE, USAGE);
-    appendFileSync(join(dir, READINGS), `${JSON.stringify(r)}\n`);
+    const fd = openSync(join(dir, READINGS), constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o666);
+    try {
+      if (!fstatSync(fd).isFile()) throw new Error(`${READINGS} is not a regular file`);
+      writeSync(fd, `${JSON.stringify(r)}\n`);
+    } finally {
+      closeSync(fd);
+    }
     return undefined;
   } catch (e) {
     return (e as Error).message.split("\n")[0];
   }
 }
 
-/** The readings file's lines in file order, each a reading with an `at`; a line that does not parse is skipped. */
+/** True when `v` is a reading line: an ISO `at`, a string `label`, and each plan field of the line shape present as a finite
+ *  number or null (strings for `codex_from` and the seen times); `opus`, `step`, `codex_seen` and `context_tokens`, which the
+ *  script's older lines lack, are checked when present. */
+function isReading(v: unknown): v is Reading {
+  if (!isDict(v) || typeof v["at"] !== "string" || instant(v["at"]) === undefined || typeof v["label"] !== "string") return false;
+  const numOrNull = (k: string): boolean => v[k] === null || num(v[k]) !== null;
+  const strOrNull = (k: string): boolean => v[k] === null || typeof v[k] === "string";
+  const required = ["codex_week_used", "codex_resets", "claude_5h_used", "claude_week_used"].every(numOrNull) && ["codex_from", "claude_seen"].every(strOrNull);
+  const optional = (["opus", "step"].every((k) => v[k] === undefined || typeof v[k] === "string")) && (v["codex_seen"] === undefined || strOrNull("codex_seen")) && (v["context_tokens"] === undefined || numOrNull("context_tokens"));
+  return required && optional;
+}
+
+/** The readings file's lines in file order, each a reading by `isReading`; a line that does not parse or is not one is skipped. */
 export function readReadings(home: string): Reading[] | { error: string } {
   const file = readContainedRegularFile(join(home, EVIDENCE), `${USAGE}/${READINGS}`, USAGE, READINGS_MAX);
   if ("error" in file) return file.code === "ENOENT" ? [] : { error: file.error.split("\n")[0] ?? file.error };
@@ -184,7 +206,7 @@ export function readReadings(home: string): Reading[] | { error: string } {
     if (line.trim() === "") continue;
     try {
       const v = JSON.parse(line) as unknown;
-      if (isDict(v) && instant(v["at"]) !== undefined) out.push(v as unknown as Reading);
+      if (isReading(v)) out.push(v);
     } catch {
       /* a torn or foreign line is not a reading */
     }

@@ -259,7 +259,7 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   const foreign: unknown[] = [
     { at: at(20), label: "x", opus: "W-1", step: "x" },
     { ...r(21, "W-1", 1, 1), claude_week_used: "90" },
-    { ...r(22, "W-1", 1, 1), codex_week_used: Number.NaN },
+    { ...r(22, "W-1", 1, 1), codex_resets: "soon" },
     { ...r(23, "W-1", 1, 1), opus: 7 },
     { ...r(24, "W-1", 1, 1), label: null },
     { ...r(25, "W-1", 1, 1), context_tokens: "9" },
