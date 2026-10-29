@@ -18,6 +18,7 @@ import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
 import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { reviewNotice } from "./review-notice.js";
+import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 
 /** The fewest passing checks a merge needs; only checks in bucket `pass` count. */
 export const MIN_CHECKS = 5;
@@ -672,6 +673,45 @@ function writeBinding(repo: string, branch: string, oid: string): string | undef
     return thrown(e);
   }
 }
+/** W-462: the head the queue binding was written for, read through the shared containment helper (a regular file of at
+ *  most 4096 bytes, no symlinked level) and held to the one form `writeBinding` writes, one commit id and a newline:
+ *  `absent`, `bound`, or why it cannot be read (unreadable, symlinked, over-bound or malformed). */
+export function boundHead(repo: string, branch: string): { kind: "absent" } | { kind: "bound"; oid: string } | { kind: "error"; reason: string } {
+  const read = readBinding(repo, branch);
+  if (read.kind === "error") return read;
+  if (read.kind === "absent") return { kind: "absent" };
+  const common = gitCommonDir(repo);
+  if ("error" in common) return { kind: "error", reason: common.error };
+  const file = readContainedRegularFile(common.path, join("bisellium", "queue", encodeURIComponent(branch)), "bisellium", 4096);
+  if ("error" in file) return { kind: "error", reason: clean(file.error) };
+  const text = file.bytes.toString("utf8");
+  const oid = text.endsWith("\n") ? text.slice(0, -1) : "";
+  if (!wellFormedOid(oid)) return { kind: "error", reason: "it does not hold one commit id and a newline" };
+  return { kind: "bound", oid };
+}
+/**
+ * W-462: a queue-mode PR head pushed outside the pr rung (the Patron's leased push of a rewrite, at the local tip) is
+ * screened as the pr rung screens a head it pushes (W-418: the notice, and the code owners' review request), and only
+ * then bound for the queue, so a failure anywhere before the write leaves the old binding and `next` stays at rebind.
+ * A master that no longer enforces the queue rebinds nothing (merge's direct-mode hold reads the binding). Pushes nothing.
+ */
+export function rebindPr(ctx: Ctx, pr: Pr): StepResult {
+  const { repo, wt, id } = ctx;
+  const branch = `opus/${id}`;
+  const again = `bisellium next ${id} --perform --expect pr`;
+  const head = readRef(wt, "HEAD");
+  if (head.kind !== "tip" || head.oid !== pr.headRefOid) return held(`refusing: ${wt} is not at PR #${pr.number}'s head ${pr.headRefOid.slice(0, 12)}; nothing rebound`);
+  const slug = repoSlug(repo);
+  if (!slug.ok) return held(slug.reason);
+  if (readMergeQueue(repo, slug.slug) !== "merge-queue") return held(`master does not enforce the merge queue now; nothing rebound or requested: rerun bisellium next ${id}`);
+  const fetched = fetchTrunk(repo);
+  if (!fetched.ok) return held(fetched.reason, ...(fetched.after ?? []));
+  const notice = reviewNotice({ cwd: wt, slug: slug.slug, pr: pr.number, base: TRUNK_REF, head: "HEAD", resume: again });
+  if (!notice.ok) return { ok: false, lines: notice.lines };
+  const wrote = writeBinding(repo, branch, head.oid);
+  if (wrote !== undefined) return held(`PR #${pr.number} was screened, but the queue binding could not be written (${wrote}); nothing is merged until it is: run ${again}`, ...notice.lines);
+  return { ok: true, lines: [`rebound: PR #${pr.number} ${head.oid.slice(0, 12)}`, ...notice.lines] };
+}
 /** W-199, W-423: removes the binding `readBinding` found, its directory proved real again first (`requireRealDirectory`). */
 function unbind(path: string): string | undefined {
   try {
@@ -790,6 +830,13 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
     // a head pushed for the queue (no rebase) is merged only through the queue
     if (readBinding(ctx.repo, ctx.head).kind !== "absent")
       return { ok: false, lines: [`mode: ${mode}`, `why: PR #${pr.number} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${ctx.head} onto master, which changes the SOURCE tree and needs its gates (bisellium ci --opus) and review again`] };
+  }
+  if (mode === "merge-queue") {
+    // W-462: the queue arms only the head the binding names; a head pushed outside the pr rung is rebound (and its review
+    // requested again) first, and a binding that cannot be read is never taken for the PR head
+    const bound = boundHead(ctx.repo, ctx.head);
+    if (bound.kind === "error" || (bound.kind === "bound" && bound.oid !== pr.headRefOid))
+      return { ok: false, lines: [`mode: ${mode}`, `why: ${bound.kind === "error" ? `the queue binding of ${ctx.head} cannot be read (${bound.reason})` : `the queue binding of ${ctx.head} names ${bound.oid.slice(0, 12)}, not PR #${pr.number}'s head ${pr.headRefOid.slice(0, 12)}`}; nothing was enqueued: rerun bisellium next ${ctx.id}`] };
   }
   const done = await gate(ctx, pr, mode);
   return { ok: done.ok, lines: [`mode: ${mode}`, ...done.lines] };
