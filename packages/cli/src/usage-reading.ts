@@ -167,15 +167,20 @@ export function readingLine(r: Reading): string {
 
 /** Appends the reading to `<home>/.bisellium-evidence/usage/readings.jsonl`: the folders through the shared containment
  *  helper (which checks no final component), the file opened O_NOFOLLOW so a symlinked `readings.jsonl` is refused at the
- *  open, with no check-then-use gap, and a non-regular file refused before the write; the error message when it cannot,
+ *  open, with no check-then-use gap, and a non-regular file refused before the write, the write repeated until the whole line is out or a write makes no progress; the error message when it cannot,
  *  never a throw. */
-export function appendReading(home: string, r: Reading): string | undefined {
+export function appendReading(home: string, r: Reading, write: (fd: number, data: Buffer) => number = writeSync): string | undefined {
   try {
     const dir = ensureRealDirectory(home, EVIDENCE, USAGE);
     const fd = openSync(join(dir, READINGS), constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o666);
     try {
       if (!fstatSync(fd).isFile()) throw new Error(`${READINGS} is not a regular file`);
-      writeSync(fd, `${JSON.stringify(r)}\n`);
+      const line = Buffer.from(`${JSON.stringify(r)}\n`);
+      for (let done = 0; done < line.length; ) {
+        const n = write(fd, line.subarray(done));
+        if (!(n > 0)) throw new Error(`${READINGS} write stopped after ${done} of ${line.length} bytes`);
+        done += n;
+      }
     } finally {
       closeSync(fd);
     }
