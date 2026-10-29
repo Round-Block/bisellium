@@ -114,6 +114,26 @@ on the trunk or the main checkout), `--track`, the
 dispatch gate (no `--budget`, or a stale or absent handover on a resumed
 order), `--expect`, a running, dead or invalid step marker, and an exception.
 
+**Evidence claims (W-445, D-076 D).** Not `check`, `ready` or `next`: the
+design magister's spec verdict (the signer's, as W-306's ledger) refuses a
+brief whose quoted claim its cited evidence does not hold, fail-closed. A claim
+is quoted text (`"…"` or `“…”`, on one real line, not glued to a letter, mark,
+digit or `_` before it) followed by a parenthesis opening with a backticked
+evidence citation, `` "<claim>" (`<file>`, …) ``: an absolute or `~/` path, or
+a path ending in `.out` or `.log` (a `:<n>` suffix aside); a parenthesis opening
+with anything else (a source file, a symbol) holds no claim. The brief's
+evidence roots are its backticked absolute or `~/` paths ending in `/`; a `~/`
+root that does not expand to an absolute path is refused. A citation ending in
+`/` is not checked. Every other citation names one readable regular file of at
+most 4 MB, or is refused: an absolute or `~/` path read as written, a relative
+one (segments of word characters, `.`, `+` and `-`) under exactly one root, so
+a name under no root or several, and any other form, are refused. `<file>:<n>`
+reads line n only. The file holds the claim when the claim's pieces between its
+gaps (an `<angle placeholder>`, `…` or `...`) occur in it in order, whitespace
+runs squeezed. The check reads text, not meaning: a claim in any other form, a
+parenthesis's later citations, and whether the claim is true of what the brief
+says, beyond the quoted text being there, stay the spec review's.
+
 **Whole-diff promises (W-303, D-070 C).** Where `brief_behaviour_limit` is
 declared, `readBriefAdmission` also refuses a line that promises the whole diff
 is the Files owned or one folder, because the verbs write the officina's
