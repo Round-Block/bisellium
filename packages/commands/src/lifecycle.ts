@@ -43,6 +43,7 @@ import {
 import { ensureRealDirectory } from "./ids.js";
 import { claimPending, recordTicket, releaseClaim, requireTicket, ticketsProblem } from "./ticket.js";
 import { countedFailures, readBuildReviewConfig, readBuildRounds, readSourceExcludes, type BuildReviewRound } from "./verdict.js";
+import { webBuild, webBuildFailure } from "./web-build.js";
 import {
   emitEvent,
   mintDispatchSella,
@@ -1118,6 +1119,22 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     return { exitCode: 2 };
   }
 
+  // W-461: certify's replay builds the web bundle at the commit this red records on; a commit that does not build is refused here
+  if (optIn.optedIn) {
+    const at = (repository as { root: string }).root;
+    const built = webBuild(at);
+    if (built.carried && !built.ok) {
+      let head = "HEAD";
+      try {
+        head = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: at, encoding: "utf8", timeout: GIT_TIMEOUT_MS }).trim();
+      } catch {
+        /* the name only */
+      }
+      console.error(`red: ${webBuildFailure(behaviour, built)} at ${head}: certify's replay builds the web bundle at this commit and would refuse this red — nothing recorded`);
+      console.error(built.tail);
+      return { exitCode: 1 };
+    }
+  }
   for (const [i, argv] of prerequisites.entries()) {
     console.error(`red: prerequisite behaviour ${i + 1}: ${argv.join(" ")}`);
     const ran = await runCapture(argv, execCwd);

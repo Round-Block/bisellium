@@ -964,6 +964,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#1", disposition: "outside", why: "reads the user-named --from findings file" },
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#2", disposition: "outside", why: "reads the findings from stdin (fd 0)" },
   { key: "packages/commands/src/verdict.ts:runVerdict:writeFileSync#1", disposition: "contained", why: "ci/<opus>-<phase>-<round>.log in a real ci/ checked by ensureRealDirectory, exclusive create" },
+  { key: "packages/commands/src/web-build.ts:webBuild:rmSync#1", disposition: "outside", why: "W-461: removes the ignored web bundle file apps/web/dist/index.html at the checkout root the caller checked, before certify's build; a fixed path, never the officina" },
   { key: "packages/commands/src/writes.ts:appendPatronTimeline:appendFileSync#1", disposition: "contained", why: "timeline/patron.jsonl in a real timeline/ checked by ensureRealDirectory" },
   { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#1", disposition: "contained", why: "acta/<date>-<slug>.md in a real acta/ checked by ensureRealDirectory before any write" },
   { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#2", disposition: "contained", why: "restores the petitio bytes just read through readContainedRegularFile; editOpusFrontMatter checked its directory" },
@@ -1413,6 +1414,7 @@ const W423_LIMIT = {
   READ: "an open with O_RDONLY | O_NOFOLLOW: it writes nothing",
   ROOT: "a fixed-name file directly in the officina root (health.json, bisellium.yml, PAUSED, models.json): no directory level below the anchor for the helper to prove",
   INIT: "init creates the officina from nothing; follow-on: refuse a symlinked root component before the first write",
+  WEB: "removes the ignored web bundle file (apps/web/dist/index.html) at the checkout root before certify's build (W-461): never the officina or the Git common directory",
 } as const;
 const WRITE_LIMITS: readonly (readonly [key: string, limit: keyof typeof W423_LIMIT])[] = [
   ["packages/cli/src/branch.ts:rebaseOntoTrunk:rmSync#1", "TEMP"],
@@ -1455,6 +1457,7 @@ const WRITE_LIMITS: readonly (readonly [key: string, limit: keyof typeof W423_LI
   ["packages/commands/src/pause.ts:runResume:rmSync#1", "ROOT"],
   ["packages/commands/src/probe.ts:probeBattery:writeFileSync#1", "ROOT"],
   ["packages/commands/src/probe.ts:probeBattery:renameSync#1", "ROOT"],
+  ["packages/commands/src/web-build.ts:webBuild:rmSync#1", "WEB"],
   ["packages/cli/src/branch.ts:rebaseOntoTrunk:mkdtempSync#1", "TEMP"],
   ["packages/commands/src/builder-run.ts:runBuilderCommand:mkdtempSync#1", "TEMP"],
   ["packages/commands/src/ci.ts:defaultInstallDeps:mkdtempSync#1", "TEMP"],
