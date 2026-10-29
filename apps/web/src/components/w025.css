@@ -1840,12 +1840,19 @@
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
+  flex-shrink: 0;
   overflow: hidden;
   overflow-wrap: anywhere;
 }
 
+.board__card:has(.board__card-asks) .board__card-title {
+  max-height: 54px;
+  -webkit-line-clamp: 3;
+}
+
 .board__card-asks {
   display: block;
+  min-height: 14px;
   min-width: 0;
   flex-shrink: 0;
   font-family: var(--font-mono);
@@ -1863,6 +1870,8 @@
 
 .board__card-meta {
   display: flex;
+  min-height: 14px;
+  flex-shrink: 0;
   gap: var(--sp-2);
   font-family: var(--font-mono);
   font-size: 12px;
