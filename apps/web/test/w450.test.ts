@@ -102,5 +102,12 @@ test("W-450-b1 behaviour 1: a served row's failure prints the not-ok title certi
     ["ok 1 - a"],
     "a test unexpected on record but passing on a replay retry is flaky, and prints ok",
   );
+  // every character the host's line grammar cannot carry inside a title comes out as one space, so the line is re-attestable
+  for (const [name, ch] of [["LF", "\n"], ["CR", "\r"], ["NEL U+0085", "\u0085"], ["LS U+2028", "\u2028"], ["PS U+2029", "\u2029"], ["VT", "\v"], ["FF", "\f"], ["FS", "\x1c"], ["GS", "\x1d"], ["RS", "\x1e"]] as const) {
+    const printed = reporter.tapLines([fake(["a" + ch + "b"], "unexpected")]).slice(2);
+    assert.deepEqual(printed, ["not ok 1 - a b"], `a title holding ${name} prints as one line the host reads`);
+    assert.deepEqual(HOST_TITLE.exec(printed[0] ?? "")?.[1], "a b", `the host's pattern reads the title holding ${name}`);
+  }
+  assert.deepEqual(reporter.tapLines([fake(["a\\b#c"], "unexpected")]).slice(2), ["not ok 1 - a\\\\b\\#c"], "backslash and hash are escaped");
   assert.throws(() => new reporter.default().onEnd({ status: "passed" }), "TapReporter.onEnd throws when the root suite is absent");
 });

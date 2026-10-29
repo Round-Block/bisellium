@@ -21,7 +21,7 @@ export function tapTitle(test: TestCase): string {
   return strings
     .filter((part) => part !== "")
     .join(" › ")
-    .replace(/[\r\n]+/g, " ")
+    .replace(/[\r\n\v\f\x1c-\x1e\x85\u2028\u2029]+/g, " ")
     .replace(/\\/g, "\\\\")
     .replace(/#/g, "\\#");
 }
