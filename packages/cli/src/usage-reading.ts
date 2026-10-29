@@ -9,7 +9,7 @@
  * CONTEXT_WIND_DOWN context tokens; `tick` and `next --all` print the Codex burn the rest of the week needs. See
  * studio/briefs/W-430.md.
  */
-import { closeSync, constants, fstatSync, ftruncateSync, openSync, readdirSync, statSync, writeSync } from "node:fs";
+import { closeSync, constants, fstatSync, openSync, readdirSync, statSync, writeSync } from "node:fs";
 import { join } from "node:path";
 import { instant } from "@bisellium/schema";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
@@ -167,7 +167,7 @@ export function readingLine(r: Reading): string {
 
 /** Appends the reading to `<home>/.bisellium-evidence/usage/readings.jsonl`: the folders through the shared containment
  *  helper (which checks no final component), the file opened O_NOFOLLOW so a symlinked `readings.jsonl` is refused at the
- *  open, with no check-then-use gap, and a non-regular file refused before the write, the write repeated until the whole line is out or a write makes no progress; the error message when it cannot,
+ *  open, with no check-then-use gap, and a non-regular file refused before the write, the line written by one O_APPEND write, a newline before it, never retried or truncated back; the error message when it cannot,
  *  never a throw. */
 export function appendReading(home: string, r: Reading, write: (fd: number, data: Buffer) => number = (f, d) => writeSync(f, d)): string | undefined {
   try {
@@ -176,17 +176,11 @@ export function appendReading(home: string, r: Reading, write: (fd: number, data
     try {
       const st = fstatSync(fd);
       if (!st.isFile()) throw new Error(`${READINGS} is not a regular file`);
-      const line = Buffer.from(`${JSON.stringify(r)}\n`);
-      try {
-        for (let done = 0; done < line.length; ) {
-          const n = write(fd, line.subarray(done));
-          if (!(n > 0)) throw new Error(`${READINGS} write stopped after ${done} of ${line.length} bytes`);
-          done += n;
-        }
-      } catch (e) {
-        ftruncateSync(fd, st.size); // a failed append leaves the file as it was
-        throw e;
-      }
+      // one write, opened O_APPEND: a leading newline ends any torn tail an earlier failed append left, and nothing is
+      // retried or truncated back, so a failed append never touches a line another verb appended meanwhile (D-085)
+      const line = Buffer.from(`\n${JSON.stringify(r)}\n`);
+      const n = write(fd, line);
+      if (n !== line.length) throw new Error(`${READINGS} write stopped after ${n} of ${line.length} bytes; the torn part is not a reading`);
     } finally {
       closeSync(fd);
     }
