@@ -136,7 +136,7 @@ test("W-345-b6 behaviour 6: Inbox offers DIRECTION's verbs and records Defer as 
   assert.match(withoutSelection, /Recorded decline answer for P-2; the petition is resolved\./, "confirmation renders without a selected petition");
   const inbox = read("src/screens/Inbox.tsx");
   assert.match(inbox, /setFocusIndex\(\(index\) => reconcileFocusIndex\(index, petitiones\.length\)\);/, "a refreshed list reconciles selection after removal");
-  assert.match(inbox, /onNeedsYouCountRef\.current\?\.\(d\.petitiones\.length\);/, "a successful refresh reports the remaining needs-you count to the shell through the stable callback's current listener");
+  assert.match(inbox, /onNeedsYouCountRef\.current\?\.\(needsYouTotal\(d\)\);/, "a successful refresh reports the remaining distinct-Inbox-question count through the stable callback's current listener");
   const app = read("src/App.tsx");
   assert.match(app, /<Inbox onStatus=\{setStatus\} onNeedsYouCount=\{setNeedsYouCount\} \/>/, "the shell badge follows the Inbox's refreshed needs-you count");
   assert.match(inbox, /const reportedStatus = confirmation !== undefined[\s\S]*?status\.state === "ready"[\s\S]*?text: confirmation/, "the existing shell live region receives the recorded effect");

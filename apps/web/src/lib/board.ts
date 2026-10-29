@@ -64,10 +64,10 @@ export interface BoardModel {
   unplaced: string[];
 }
 
-/** W-409 behaviour-2 red-stage seam. The next implementation commit replaces
- * this sentinel with the unique-opus total shared by Board and shell. */
-export function needsYouTotal(_inbox: Pick<InboxResponse, "opera" | "petitiones">): number {
-  return -1;
+/** D-135: the Inbox badge counts open questions only. Linked questions share
+ * one opus key; every unlinked question keeps its own petitio key. */
+export function needsYouTotal(inbox: Pick<InboxResponse, "opera" | "petitiones">): number {
+  return new Set(inbox.petitiones.map((petitio) => petitio.opus === undefined ? `petitio:${petitio.id}` : `opus:${petitio.opus}`)).size;
 }
 
 export function humanGateIds(o: Pick<OfficinaResponse, "probationes">): Set<string> {
@@ -118,7 +118,9 @@ export function boardModel(
   const human = humanGateIds(o);
   const inboxOpera = new Set(inbox.opera.map((entry) => entry.id));
   const petitionCount = new Map<string, number>();
-  for (const petitio of inbox.petitiones) petitionCount.set(petitio.opus, (petitionCount.get(petitio.opus) ?? 0) + 1);
+  for (const petitio of inbox.petitiones) {
+    if (petitio.opus !== undefined) petitionCount.set(petitio.opus, (petitionCount.get(petitio.opus) ?? 0) + 1);
+  }
 
   // Unique phases, in the lifecycle's own declared order, backlog excluded.
   const phases: string[] = [];
