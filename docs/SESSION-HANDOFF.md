@@ -48,11 +48,12 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
+000. W-461 — every commit builds before ready, then W-408's #859; then W-462 (high, Patron 10-29)
 00. W-445, W-443, W-446
 00a. W-452 — collegium names the owning lead; kind ui retired (D-128); then the re-tag
-0. W-430 — usage in the records (fix round 1); W-455 — symlink cause fix: the containment helper refuses a symlinked final file (high; Patron greenlit 10-29). Then W-444 — reply length Stop hook
+0. W-430 — usage in the records (fix round 4); W-455 — symlink cause fix: the containment helper refuses a symlinked final file (high, 10-29). Then W-444 — reply length Stop hook
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
-0b. W-458 — done finishes a merged rung; W-457 — next names a builder for an untouched owned file; W-459 — daily retro enforced (high, 10-29)
+0b. W-458 — done finishes a merged rung; W-457 — builder for an untouched owned file; W-459 — daily retro enforced (high)
 1. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (high; moved up, Patron 10-29); then W-456 (test-pool research, ops)
 2. W-414 — cause fix for tests×ruled-case-uncovered (D-076 D high; 12 opera; ops lead 10-29, D-133)
 3. W-394 — cause fix for review×evidence-backfilled-or-absent (D-076 D high)
