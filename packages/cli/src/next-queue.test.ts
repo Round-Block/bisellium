@@ -1117,3 +1117,102 @@ test("W-462-b2 behaviour 2: the rewrite perform builds every commit and replays 
     ran("a worktree that cannot be put back holds the rewrite", g),
   );
 });
+
+/** how many times a `next --perform` reads master's rules before the step's own read, when the binding is neither absent nor the PR head */
+const W462_DERIVE_READS = 3;
+test("W-462-b3 behaviour 3: after the Patron's leased push the rung rebinds the head and requests review again, then merge requeues it", { timeout: 600_000 }, () => {
+  const { w, reviewed } = w462World("w462-b3");
+  const tree = w462Tree(w, reviewed);
+  const head = w462Commit(w, `${reviewed}~1`, `feat(${OPUS}): the implementation (rewritten)`, tree);
+  w462Move(w, head);
+  const p = performPr(w);
+  const [line] = w462Patron(p);
+  assert.ok(line !== undefined, ran("the Patron is asked", p));
+
+  // the Patron runs the printed command; its lease is on the reviewed head
+  const pushedNow = spawnSync("sh", ["-c", line.slice("patron: ".length)], { encoding: "utf8", env: SETUP_ENV });
+  assert.deepEqual([pushedNow.status, w462Origin(w)], [0, head], `the Patron's command pushes the new head over the reviewed one\n${pushedNow.stderr}`);
+  const notice = w418Notice(w, PR_NUMBER);
+  rmSync(notice, { force: true });
+  const rebindScenario = (edit: SlotValue, rules: SlotValue = { stdout: QUEUE_RULES }): void =>
+    scenario(w, { rules, list: openList(w, { state: "OPEN", oid: head }), view: { stdout: { title: W418_TITLE } }, edit });
+  const binding = (): string | undefined => w418Read(bindingPath(w));
+  rebindScenario({ exit: 1, stderr: "HTTP 502: bad gateway\n" });
+
+  // the rung rebinds before merge
+  const o = next(w, [OPUS]);
+  expectStep(o, "pr", "named", "a head pushed outside the rung is rebound before merge");
+  assert.equal(o.kv.get("rebind"), `${w462Short(reviewed)} -> ${w462Short(head)}`, ran("the rebind names the old and the pushed head", o));
+
+  // a review request that fails leaves the old binding, so the rung stays at rebind
+  const failed = performPr(w);
+  assert.deepEqual(
+    [failed.status, w462Why(failed), outLines(failed).includes(`run: bisellium next ${OPUS} --perform --expect pr`), binding()],
+    [1, `why: PR #${PR_NUMBER} touches code-owned paths, but the review request failed (HTTP 502: bad gateway)`, true, `${reviewed}\n`],
+    ran("a failed review request leaves the old binding", failed),
+  );
+  expectStep(next(w, [OPUS]), "pr", "named", "after a failed review request the rung is still the rebind");
+
+  rmSync(w.log, { force: true });
+  rmSync(notice, { force: true });
+  rebindScenario({ stdout: "" });
+  const r = performPr(w);
+  const W462_ONE = `PR #${PR_NUMBER} needs your review: ${W418_TITLE} (code-owned: docs/ADOPTION.md)`;
+  assert.deepEqual(outLines(r).slice(1, 5), [`rebound: PR #${PR_NUMBER} ${w462Short(head)}`, "code-owned: docs/ADOPTION.md", `notice: ${W462_ONE}`, "review-requested: patron"], ran("rebound, the notice left and the review requested again", r));
+  assert.deepEqual([r.status, mutating(w), w418Edits(w), w418Read(notice)], [0, ["git fetch master:master"], [["pr", "edit", String(PR_NUMBER), "-R", SLUG, "--add-reviewer", "patron"]], `${W462_ONE}\n`], ran("one review request, no push", r));
+  assert.equal(binding(), `${head}\n`, "the queue binding holds the pushed head");
+
+  // merge requeues the head that was checked
+  expectStep(next(w, [OPUS]), "merge", "named", "then merge, which arms the queue on the pushed head");
+
+  // in queue mode a binding that is not one commit id and a newline is never taken for the PR head: next holds
+  const forms: [string, () => void, string][] = [
+    ["malformed", () => writeFileSync(bindingPath(w), "not a commit id\n"), "it does not hold one commit id and a newline"],
+    ["over-bound", () => writeFileSync(bindingPath(w), `${head}\n${"x".repeat(5000)}`), "target exceeds 4096 bytes"],
+    [
+      "symlinked",
+      () => {
+        const real = join(scratch("w462-b3-link"), "binding");
+        writeFileSync(real, `${head}\n`);
+        rmSync(bindingPath(w), { force: true });
+        symlinkSync(real, bindingPath(w));
+      },
+      "path reaches its target through a symlink",
+    ],
+  ];
+  for (const [form, make, reason] of forms) {
+    make();
+    const h = next(w, [OPUS]);
+    assert.deepEqual([h.first, w462Why(h)], [`next: ${OPUS} merge held`, `why: PR #${PR_NUMBER} is OPEN on the local tip, but the queue binding of ${BRANCH} cannot be read (${reason}); it names the head pushed for the merge queue, so nothing is merged or rebound: inspect it by hand`], ran(`a ${form} queue binding holds`, h));
+    rmSync(bindingPath(w), { force: true });
+  }
+
+  // a direct-mode caller with a stale binding is not rebound: merge, whose direct-mode hold reads the binding (W-199-b2)
+  writeFileSync(bindingPath(w), `${reviewed}\n`);
+  rmSync(w.log, { force: true });
+  rebindScenario({ stdout: "" }, { stdout: [] });
+  const dn = next(w, [OPUS]);
+  expectStep(dn, "merge", "named", "a direct-mode caller is not rebound");
+  const dm = performMerge(w);
+  assert.deepEqual([dm.status, mutating(w), w418Edits(w), binding()], [1, [], [], `${reviewed}\n`], ran("a direct-mode merge holds the stale binding and writes nothing", dm));
+
+  // master's merge mode read differently by the derivation and the perform: neither writes past the queue
+  // (the derivation reads the rules W462_DERIVE_READS times in a perform before the step's own read)
+  const flip = (first: Json[], then: Json[]): SlotValue => ({ replies: [...Array.from({ length: W462_DERIVE_READS }, () => ({ stdout: first })), { stdout: then }] });
+  rmSync(w.log, { force: true });
+  rebindScenario({ stdout: "" }, flip([], QUEUE_RULES));
+  const qm = performMerge(w);
+  assert.deepEqual(
+    [qm.status, w462Why(qm), mutating(w), binding()],
+    [1, `why: the queue binding of ${BRANCH} names ${w462Short(reviewed)}, not PR #${PR_NUMBER}'s head ${w462Short(head)}; nothing was enqueued: rerun bisellium next ${OPUS}`, [], `${reviewed}\n`],
+    ran("a queue-mode merge never arms a head its binding does not name", qm),
+  );
+  rmSync(w.log, { force: true });
+  rebindScenario({ stdout: "" }, flip(QUEUE_RULES, []));
+  const dr = performPr(w);
+  assert.deepEqual(
+    [dr.status, w462Why(dr), mutating(w), w418Edits(w), binding()],
+    [1, `why: master does not enforce the merge queue now; nothing rebound or requested: rerun bisellium next ${OPUS}`, [], [], `${reviewed}\n`],
+    ran("a rebind in direct mode writes and requests nothing", dr),
+  );
+});
