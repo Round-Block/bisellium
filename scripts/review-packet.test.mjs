@@ -1139,3 +1139,18 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
     /missing none; unexpected home-1280\.png, home-390\.png/,
   );
 });
+
+test("W-454-b2 behaviour 2: a UI build packet attaches at most 32 MiB of screenshots in all, and refuses one byte more before the packet exists", () => {
+  const routes = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"];
+  const twoMiB = (_name, size) => 2 * 1024 * 1024 - size;
+  const at = w454World(routes, { pad: twoMiB });
+  const r = w454Packet(at.w);
+  assert.equal(r.status, 0, `sixteen 2 MiB shots, exactly 32 MiB, build: ${r.err}`);
+  assert.equal(r.built.images.length, 16, "all sixteen are attached");
+  const over = w454World(routes, { pad: (name, size) => twoMiB(name, size) + (name === "a8-390.png" ? 1 : 0) });
+  w454Refuses(
+    "one byte over 32 MiB",
+    over.w,
+    /^UI review screenshots total 33554433 bytes, over the 33554432 one review attaches$/,
+  );
+});
