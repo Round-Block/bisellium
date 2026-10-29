@@ -1,0 +1,26 @@
+# opus: W-407
+# phase: spec
+# round: 20
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18596-c777-7271-940b-a57866645bbc
+# session_reason: ui-lead input for the palette amendment runs in its own fresh session
+# outcome: passed
+# at: 2026-10-29T03:46:06.750Z
+# tree: tree:d1a950fd513ef4e840ac3f62b2a806f3cdeff571
+# dispatch_prompt: ci/W-407-ui-prompt-20.md
+# design_digest: sha256:92252e1a85a0bb2f4ba23964d9cf08d3d4ce5319b90512b885788f196cc12980
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":20,"actor":"ui-lead","studio":".worktrees/W-407/studio","head":"0cfbf95dd4b1c141fdf85e36ed24800f27134157","brief":"03c711321353676c50430d3f27694203afa97c20","at":"2026-10-29T03:46:06.051Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Purple headings, the cyan opus id and link, and the pink Evidence label preserve W-451’s roles and keep the captured Inbox calm.
+The specified amber triangle and red failure square also match Home’s warning/failure roles, although neither notice appears in the supplied captures and the 390 capture shows only the list.
+Recomputed contrast meets 4.5:1 for the specified text roles and 3:1 for the changed marks on both backgrounds; selected-row contrast remains the Patron-accepted 1.21:1, and disabled controls retain their existing dimming.
+The amendment adds notice shapes and their spacing alongside colour changes, without changing pane layout, typography, copy or decision behaviour; different fixture content and phone capture heights prevent a strict pixel-only comparison.
+The cited Patron approval authorizes the palette changes, while other defaults remain unchanged; round 19’s two advisories are not re-judged.
+Verdict: passed
