@@ -48,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: one Engineering, two UI (Patron 10-27), each taking its queue's top. Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-000. W-461 — every commit builds before ready, then W-408's #859; then W-462 (high, Patron 10-29)
+000. W-461 — each commit builds before ready; then W-462; then #859 (W-408) via W-462 (high, 10-29)
 00. W-445, W-443, W-446
 00a. W-452 — collegium names the owning lead; kind ui retired (D-128); then the re-tag
 0. W-430 — usage in the records (fix round 4); W-455 — symlink cause fix: the containment helper refuses a symlinked final file (high, 10-29). Then W-444 — reply length Stop hook
