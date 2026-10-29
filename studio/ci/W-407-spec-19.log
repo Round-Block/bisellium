@@ -1,0 +1,20 @@
+# opus: W-407
+# phase: spec
+# round: 19
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: ad5a7a0086929f38f
+# session_reason: the recorded ui-spec-reviewer session belongs to an earlier orchestrator session and cannot be resumed from this one; round 19 ran in a fresh Claude Opus 5.5 session given the earlier verdicts
+# outcome: passed
+# at: 2026-10-29T02:56:10.351Z
+# tree: tree:d1a950fd513ef4e840ac3f62b2a806f3cdeff571
+# brief: briefs/W-407.md blob:03c711321353676c50430d3f27694203afa97c20
+# ticket: {"opus":"W-407","step":"spec","action":"verdict-spec","round":19,"actor":"spec-reviewer","studio":".worktrees/W-407/studio","head":"2f0c0403ad5a8afe1a84b0244264ac7d39a1bc10","brief":"03c711321353676c50430d3f27694203afa97c20","at":"2026-10-29T02:56:06.501Z"}
+
+## Findings
+1. advisory — brief:157 The mapping row at brief:36 names the failed-first-load notice (`.inbox__empty`, ink-3 today) as a read-failure consumer, and the palette diff gives that path the failure class too. But b6's served proof covers only an interval-read failure with retained data, and the palette-role promise (brief:100) leaves other state combinations unclassified. So the empty-pane copy turning ink-2 with the `--bad` square is policy-only: no served check covers it, and it depends on the failure rule sitting after `.inbox__empty` in w025.css. Replacement text to add before "Simultaneous focus/visibility events issue one read.": "Served b6 also fails the first load at 1280 and 390 and asserts that `.inbox__empty.inbox__notice--failure` computes copy `rgb(198, 201, 216)` and an 8px `rgb(255, 85, 85)` `::before` square, with no `--bad` text." [severity: S4] [class: tests×ruled-case-uncovered] — check: none: a served W-407-b6 assertion for the first-load read-failure notice colour and square at 1280 and 390
+2. advisory — brief:23 The Patron's "screens are good" ruling is quoted with a date, but the citation names only the architect's proposal, diff and shots. None of those files records the ruling. The words appear only in the agent-written r17 revise prompt and the signatures, so the provenance trail ends at an agent's restatement. Replacement text: "The Patron approved the W-451-aligned Inbox palette captures on 2026-10-29: **“screens are good”** (ruling relayed to the UI architect in `/home/edckt/.bisellium-evidence/W-407-spec/r17/revise-prompt.md`; the captures approved were `/home/edckt/.bisellium-evidence/W-407-spec/palette/proposal.md`, `palette.diff`, `shots/`)." [severity: S4] [class: spec×stale-citation-residue] — check: none: a brief-admission rule that a dated Patron quote cites a record containing that quote
+
+## Verdict
+The revision-h palette amendment adds no new reader of records: its one new input is the internal `noticeIsFailure` flag, built from existing status state. The exact fourteen-row mapping matches the Patron-approved proposal and diff. The contrast figures I spot-checked hold (`--bad` on `--surface` is 4.53:1). CSS cascade order keeps row focus wash-only and lets the failure class override the empty-pane colour. Every test file that flips is already owned. Only two advisory nits remain.
+VERDICT: PASS
