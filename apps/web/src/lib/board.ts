@@ -64,6 +64,12 @@ export interface BoardModel {
   unplaced: string[];
 }
 
+/** W-409 behaviour-2 red-stage seam. The next implementation commit replaces
+ * this sentinel with the unique-opus total shared by Board and shell. */
+export function needsYouTotal(_inbox: Pick<InboxResponse, "opera" | "petitiones">): number {
+  return -1;
+}
+
 export function humanGateIds(o: Pick<OfficinaResponse, "probationes">): Set<string> {
   return new Set(o.probationes.filter((p) => p.kind === "human").map((p) => p.id));
 }

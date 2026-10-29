@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import type { InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
-import { boardModel } from "../src/lib/board.js";
+import { boardModel, needsYouTotal } from "../src/lib/board.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const read = (path: string): string => readFileSync(resolve(HERE, "..", path), "utf8");
@@ -67,4 +67,42 @@ test("W-409-b1 behaviour 1: every Patron ask adds membership without replacing t
   assert.match(store, /phase === "backlog"/, "the existing Inbox route recognises lifecycle backlog as a greenlight ask");
   assert.match(board, /boardModel\(officina, opera, inbox\)/, "the Board joins the existing Inbox response instead of adding a data source");
   assert.match(served, /W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390/, "the served row pins every ruled viewport");
+});
+
+test("W-409-b2 behaviour 2: Inbox question totals stay distinct from Board membership", () => {
+  const linked = [
+    { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
+    { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
+  ];
+  const unlinked = [
+    { id: "P-3", from: "reviewer", subject: "Third", body: "Third" },
+    { id: "P-4", from: "qa-lead", subject: "Fourth", body: "Fourth" },
+  ];
+  const inbox: InboxResponse = {
+    opera: [
+      { id: "W-1", title: "Greenlight", collegium: "design", sella: "producer", traditio: undefined },
+      { id: "W-2", title: "Human gate", collegium: "design", sella: "builder", traditio: undefined },
+    ],
+    petitiones: [...linked, ...unlinked],
+  };
+  assert.equal(needsYouTotal({ opera: [], petitiones: unlinked }), 2, "two unlinked open petitiones count two");
+  assert.equal(needsYouTotal({ opera: [], petitiones: [] }), 0, "no open Inbox questions count zero");
+  assert.equal(needsYouTotal({ opera: inbox.opera, petitiones: [] }), 0, "Board-only greenlight and human-gate asks add nothing to the Inbox badge");
+  assert.equal(needsYouTotal({ opera: [], petitiones: linked }), 1, "two linked open questions on one opus count one");
+  assert.equal(needsYouTotal({ opera: [], petitiones: [{ id: "P-orphan", opus: "W-404", from: "producer", subject: "Orphan", body: "Orphan" }] }), 1, "a linked open question without a Board entry still counts in the Inbox badge");
+  assert.equal(needsYouTotal(inbox), 3, "one linked opus plus two unlinked questions count three");
+
+  const opera = [opus("W-1", "backlog"), opus("W-2", "building", { patron: { status: "pending" } }), opus("W-3", "done")];
+  const model = boardModel(officina, opera, inbox);
+  assert.equal(model.columns.find((column) => column.id === "needs_you")?.cards.length, 2, "the Needs-you column head total is unique opus membership");
+  assert.equal(model.columns.find((column) => column.id === "planned")?.cards.length, 1, "the Planned total is not inflated by attention membership");
+  assert.equal(model.columns.find((column) => column.id === "in_progress")?.cards.length, 1, "the human-gate opus stays in progress without entering the Inbox badge");
+  assert.equal(model.columns.find((column) => column.id === "done")?.cards.length, 1, "an opus with no ask counts only in Done");
+
+  const app = read("src/App.tsx");
+  const inboxScreen = read("src/screens/Inbox.tsx");
+  const served = read("tests-serve/w409.spec.ts");
+  assert.match(app, /setNeedsYouCount\(needsYouTotal\(r\)\)/, "the shell count uses the shared Inbox-question total");
+  assert.match(inboxScreen, /onNeedsYouCountRef\.current\?\.\(needsYouTotal\(d\)\)/, "Inbox refreshes the same Inbox-question total");
+  assert.match(served, /W-409-b2 Inbox question totals stay distinct from Board membership at 1280, 640 and 390/, "the served row pins every ruled viewport");
 });

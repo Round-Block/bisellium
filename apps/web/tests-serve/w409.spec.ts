@@ -52,3 +52,34 @@ test("W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390", as
     await expect(page.locator('[data-card-id="W-404"]'), `${width}: an orphan ask makes no ghost Board card`).toHaveCount(0);
   }
 });
+
+test("W-409-b2 Inbox question totals stay distinct from Board membership at 1280, 640 and 390", async ({ page }) => {
+  served = await startServed("w409-b2");
+  const opera = [makeOpus("W-1", "backlog"), makeOpus("W-2", "building", { patron: { status: "pending" } }), makeOpus("W-3", "done")];
+  const inbox = {
+    opera: [{ id: "W-1", title: "W-1 title", collegium: "design", sella: "producer" }, { id: "W-2", title: "W-2 title", collegium: "design", sella: "builder" }],
+    petitiones: [
+      { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
+      { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
+    ],
+  };
+  await page.route("**/api/officina", (route) => route.fulfill({ json: officina }));
+  await page.route("**/api/opera", (route) => route.fulfill({ json: opera }));
+  await page.route("**/api/inbox", (route) => route.fulfill({ json: inbox }));
+
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${served.baseURL}/?w409=b2-${width}#/board`);
+    await expect(page.locator('.board__column[data-column-id="needs_you"] .board__column-count'), `${width}: Board membership keeps greenlight and human-gate asks`).toHaveText("2");
+    await expect(page.locator('.board__column[data-column-id="planned"] .board__column-count'), `${width}: Planned counts W-1 once`).toHaveText("1");
+    await expect(page.locator('.board__column[data-column-id="in_progress"] .board__column-count'), `${width}: in progress counts W-2 once`).toHaveText("1");
+    await expect(page.locator('.board__column[data-column-id="done"] .board__column-count'), `${width}: Done counts the no-ask opus once`).toHaveText("1");
+    if (width === 1280) {
+      await expect(page.locator('.sidebar__badge'), `${width}: expanded Inbox badge counts two linked questions as one opus`).toHaveText("1");
+    } else {
+      await page.getByRole("button", { name: "Expand sidebar" }).click();
+      await expect(page.locator('.sidebar__badge'), `${width}: overlay Inbox badge counts questions, not Board-only asks`).toHaveText("1");
+      await page.keyboard.press("Escape");
+    }
+  }
+});
