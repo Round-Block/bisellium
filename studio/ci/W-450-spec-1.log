@@ -1,0 +1,27 @@
+# opus: W-450
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T06:59:17.909Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-450.md blob:9d7ac89e19075a39a1444956d333abaa8c731062
+# ticket: {"opus":"W-450","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"5ea1d5a2eedefcb9f4328689ca968658899d8b69","brief":"9d7ac89e19075a39a1444956d333abaa8c731062","at":"2026-10-29T06:59:17.072Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-450-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the refusal is run-builder-host.mjs:717 ("its recorded log has no not-ok title to re-attest"), reached only when the queue's rebase moved the tree a red log claims, so the host identifies the pre-change commit by the log's bytes and re-attests by its not-ok titles; certify printed it at both PR #835 merge-group runs — check: certify-835-run1.log, certify-835-run2.log, brief:15
+2. advisory — the filed design is kept: a TAP reporter beside list in the served config; a host-side reader of list lines was rejected because it changes what certify runs (W-323: old runner judges it, split first) and list lines carry duration, position and a retry suffix that differ between record and replay — check: brief:19, brief:21
+3. advisory — the title is read from the final outcome, so a red recorded with no retries and replayed in the replay cell (CI=1, retries 2) prints one identical line; W-442's own served red rebuilt on the prototype is accepted by classifyReplay both ways and re-attested — check: served-demo.out, kills.out (K2), brief:45
+4. advisory — this opus's own merge needs nothing new: no file under scripts/ changes, nothing code-owned is touched, and its red is a Node TAP red master's runner already re-attests after a rebase — check: prototype.diff, red-b1-master.out, brief:21
+5. advisory — the red fails by assertion on master 70642cd7 at the title assertion after the run checks pass, the host classifier accepts it, the row passes on stage 1, and six kills are guarded — check: red-b1-master.out, red-accept.out, proto-b1-stage1.out, kills.out
+6. advisory — the Codex test check lists one flip, W-110 behaviour 8 "(a) the reporter is list", named in Acceptance (Unnamed: None); its must-stay-green rows pass on stage 1: the whole served suite (116 passed, 1 skipped), w350, nav-source, ci-scope and next W-179-b1 — check: fixture-census.md, w110-stage1-unflipped.out, w110-stage1.out, served-suite-stage1.out, census-w350-proto.out
+7. advisory — unchanged code is stated as limits, not promised (D-076 E): the host runner, classifyReplay, the replay cell, ci-certify, Playwright's outcome and titlePath; the dev config and killedPin keep the gap and are out of scope — check: brief:53, brief:55, brief:56
+8. advisory — a first served round ran before the stage's bundle was linked into the workspace and failed on "apps/web/dist is not built"; it is kept in r0/ and proves nothing; the reruns are clean — check: r0/, served-auth-master.out, brief:3
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`), brief revision 1 at `studio/briefs/W-450.md`, prototyped over master 70642cd7.
