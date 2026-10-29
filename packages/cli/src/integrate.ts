@@ -233,7 +233,7 @@ export function readRef(repo: string, ref: string): TipRead {
   return { kind: "error", reason: `cannot read ${ref}: ${why(r)}` };
 }
 /** The opus branch on origin, read now (`ls-remote`): exit 2 is the one "no such ref" answer. */
-function remoteTip(repo: string, id: string): TipRead {
+export function remoteTip(repo: string, id: string): TipRead {
   const ref = `refs/heads/opus/${id}`;
   const r = git(repo, ["ls-remote", "--exit-code", "origin", ref]);
   if (r.error === undefined && r.status === 2) return { kind: "absent" };
