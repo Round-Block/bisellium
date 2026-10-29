@@ -181,6 +181,7 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
   symlinkSync(elsewhere, join(s.home, ".bisellium-evidence", "usage"));
   const held = next(s, [OPUS, "--perform", "--expect", "branch"]);
   assert.equal(held.first, `next: ${OPUS} branch performed`, ran("a symlinked usage folder: the rung is still performed", held));
+  // one-sided: the text after the colon is the operating system's own failure message for the symlinked folder, which the row does not pin
   assert.match(lineOf(held.out, "usage-error: ") ?? "", /^usage-error: the reading was not recorded: \S/, ran("and the reading's failure is printed", held));
   assert.equal(existsSync(join(elsewhere, "readings.jsonl")), false, "nothing written through the symlink");
 });
@@ -232,7 +233,7 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   row("<tr><td>W-3 shipped</td><td>Cycle about 30 min</td></tr>");
   assert.equal(historyRowRefusal(repo, "W-3", home), undefined, "no reading names W-3: no cost is asked");
   row("<tr><td>W-2 shipped</td></tr>");
-  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /adds no history row naming W-1; add it, then re-run$/, "no row names it: W-214's refusal, unchanged");
+  assert.equal(historyRowRefusal(repo, "W-1", home), "the checkpoint rides the done commit, and docs/design/dossier/progress-body.html adds no history row naming W-1; add it, then re-run", "no row names it: W-214's refusal, unchanged");
 });
 
 test("W-430-b4 behaviour 4: past 300000 context tokens on a fresh status line a dispatch order waits, telling the session to let running work finish and refresh the handoff; a rung the verb performs still runs", { timeout: 600_000 }, () => {
