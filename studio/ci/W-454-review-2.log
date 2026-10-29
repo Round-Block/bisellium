@@ -1,0 +1,21 @@
+# opus: W-454
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18678-923e-7fe1-bd7d-fa87c99f91cc
+# outcome: passed
+# at: 2026-10-29T09:12:13.243Z
+# tree: tree:5e7004edfff149d2d90d3ff548e137be40090aa8
+# brief: briefs/W-454.md blob:e4dacff4b106be8adc46aa8b98759a124e3c5925
+# ticket: {"opus":"W-454","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-454/studio","head":"b651c248068b2c142f33233bf25543640b9197a4","brief":"e4dacff4b106be8adc46aa8b98759a124e3c5925","at":"2026-10-29T09:11:14.065Z"}
+
+## Findings
+1. advisory — scripts/review-packet.mjs:157 [severity: S2] The fix changes the label grammar to admit empty labels and rewrites W-454-b1 accordingly, reversing the nonempty replacement text adopted from the passed spec-review wording advisory; reconcile the stale brief wording instead of changing the adopted behavior. [class: spec×review-fix-reopens-on-wording] — check: scripts/review-packet.test.mjs W-454-b1 empty-label case
+
+## Earlier findings
+- ci/W-454-review-1.log #2: closed — scripts/review-packet.mjs:186 now removes only Git’s line terminator through `gitLine`, and scripts/review-packet.test.mjs:1092 pins a worktree path ending in a space through successful ordered attachments.
+
+## Verdict
+The standing blocker is closed; the label change is advisory only.
+VERDICT: PASS
