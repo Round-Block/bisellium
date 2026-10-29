@@ -14,7 +14,7 @@ Packet (<PACKET>): <ID>.diff (the opus change against master), facts.txt and ui.
 UI evidence:
 <UI>
 
-For a `kind: ui` opus the eight files above are attached to this turn in that exact order. Inspect every desktop and phone image, applying the named judgment to it and comparing responsive hierarchy across the pair for each screen. For every other kind the slot says not applicable. If the opus is UI, include a nonblank `## UI input disposition` section after Findings, stating how the authoritative ui-lead input and the attached images affected the verdict.
+For a `kind: ui` opus the files above are attached to this turn in that exact order. Inspect every desktop and phone image, applying the named judgment to it and comparing responsive hierarchy across the pair for each screen. For every other kind the slot says not applicable. If the opus is UI, include a nonblank `## UI input disposition` section after Findings, stating how the authoritative ui-lead input and the attached images affected the verdict.
 
 Look hardest at:
 <FOCUS>

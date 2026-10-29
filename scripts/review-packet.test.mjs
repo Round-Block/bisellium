@@ -357,6 +357,10 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
     const w = world();
     const record = join(w.studio, "opera/W-1.md");
     writeFileSync(record, readFileSync(record, "utf8").replace("kind: opus", "kind: ui"));
+    const nav = ["inbox", "board", "seats", "officina"].map(
+      (r) => `  { route: "${r}", href: "#/${r}", label: "${r}" },`,
+    );
+    put(w.repo, "apps/web/src/lib/nav.ts", `export const NAV_ENTRIES = [\n${nav.join("\n")}\n] as const;\n`);
     w.git("add", "-A");
     w.git("commit", "-q", "-m", `W-340 ${tag} base`);
     w.git("checkout", "-q", "-b", `opus-${tag}`);
@@ -413,7 +417,7 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
   const summary = r.built.files.get("ui.txt");
   assert.match(
     summary,
-    /^Attached UI screenshots in codex -i order \(eight files, each at most 4194304 bytes\):$/m,
+    /^Attached UI screenshots in codex -i order \(8 files, each at most 4194304 bytes\):$/m,
     "the packet states the count and per-file bound",
   );
   assert.deepEqual(
@@ -975,7 +979,15 @@ function w454Shots(studio, routes, pad = () => 0) {
 }
 const w454Packet = (w, round = 1) => {
   try {
-    const built = buildPacket({ phase: "build", opus: "W-1", round, sella: "qa-lead", studio: w.studio, repo: w.repo, packets: w.packets });
+    const built = buildPacket({
+      phase: "build",
+      opus: "W-1",
+      round,
+      sella: "qa-lead",
+      studio: w.studio,
+      repo: w.repo,
+      packets: w.packets,
+    });
     return { status: 0, built, err: "" };
   } catch (error) {
     return { status: 2, err: error.message };
@@ -1005,8 +1017,16 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
     /^Attached UI screenshots in codex -i order \(12 files, each at most 4194304 bytes\):$/m,
     "the packet names the count it attaches",
   );
-  assert.match(ui, /^1\. home-1280\.png — desktop 1280x900 — judge the attention row \(Needs you first, /m, "Home's stated desktop judgment");
-  assert.match(ui, /^7\. home-390\.png — phone 390x900 — judge Needs you first, card stacking order, /m, "Home's stated phone judgment");
+  assert.match(
+    ui,
+    /^1\. home-1280\.png — desktop 1280x900 — judge the attention row \(Needs you first, /m,
+    "Home's stated desktop judgment",
+  );
+  assert.match(
+    ui,
+    /^7\. home-390\.png — phone 390x900 — judge Needs you first, card stacking order, /m,
+    "Home's stated phone judgment",
+  );
   assert.match(
     ui,
     /^2\. inbox-1280\.png — desktop 1280x900 — judge navigation, selected work, detail hierarchy, reason input and the four record actions\.$/m,
@@ -1025,7 +1045,11 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
   const proto = w454World(["inbox", "constructor"]);
   const p = w454Packet(proto.w);
   assert.equal(p.status, 0, `a route named like an object key builds: ${p.err}`);
-  assert.match(p.built.files.get("ui.txt"), /^2\. constructor-1280\.png — desktop 1280x900 — judge the default for /m, "an object key is no stated judgment");
+  assert.match(
+    p.built.files.get("ui.txt"),
+    /^2\. constructor-1280\.png — desktop 1280x900 — judge the default for /m,
+    "an object key is no stated judgment",
+  );
 
   // a later build round's prompt names the count it attaches
   w.put(w.studio, "ci/W-1-review-1.log", sessioned("W-1", "review", 1, "qa-lead", "W-454-later"));
@@ -1033,7 +1057,11 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
   w.git("commit", "-q", "-m", "W-454 review 1");
   const later = w454Packet(w, 2);
   assert.equal(later.status, 0, `the later round builds: ${later.err}`);
-  assert.match(later.built.files.get("prompt.md"), /it names the 12 current desktop and phone screenshots attached to this turn/, "the later prompt names the count");
+  assert.match(
+    later.built.files.get("prompt.md"),
+    /it names the 12 current desktop and phone screenshots attached to this turn/,
+    "the later prompt names the count",
+  );
 
   // a hand-run packet (`--studio <worktree>/studio --repo .`, next's order) reads the table of the tree holding the studio
   const main = w454World(["inbox"]);
@@ -1043,7 +1071,15 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
   const linkedShots = w454Shots(join(linked, "studio"), ["home", "inbox"]);
   let hand;
   try {
-    hand = buildPacket({ phase: "build", opus: "W-1", round: 1, sella: "qa-lead", studio: join(linked, "studio"), repo: main.w.repo, packets: main.w.packets });
+    hand = buildPacket({
+      phase: "build",
+      opus: "W-1",
+      round: 1,
+      sella: "qa-lead",
+      studio: join(linked, "studio"),
+      repo: main.w.repo,
+      packets: main.w.packets,
+    });
   } catch (error) {
     assert.fail(`the linked worktree's table builds: ${error.message}`);
   }
@@ -1056,14 +1092,42 @@ test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the revie
   // the table is read fail closed, before any shot
   const missing = w454World(["inbox"], { navText: null });
   w454Refuses("no navigation table file", missing.w, /^apps\/web\/src\/lib\/nav\.ts: /);
-  w454Refuses("no NAV_ENTRIES", w454World(["inbox"], { navText: "export const ROUTES = [] as const;\n" }).w, /apps\/web\/src\/lib\/nav\.ts: no NAV_ENTRIES table/);
-  w454Refuses("an empty table", w454World(["inbox"], { navText: "export const NAV_ENTRIES = [\n] as const;\n" }).w, /NAV_ENTRIES has no entry/);
+  w454Refuses(
+    "no NAV_ENTRIES",
+    w454World(["inbox"], { navText: "export const ROUTES = [] as const;\n" }).w,
+    /apps\/web\/src\/lib\/nav\.ts: no NAV_ENTRIES table/,
+  );
+  w454Refuses(
+    "an empty table",
+    w454World(["inbox"], { navText: "export const NAV_ENTRIES = [\n] as const;\n" }).w,
+    /NAV_ENTRIES has no entry/,
+  );
   const line = /NAV_ENTRIES line .* is not a \{ route, href, label \} entry/;
-  w454Refuses("an extra key", w454World(["inbox"], { navText: navTable(["inbox"]).replace(' },', ", disabled: true },") }).w, line);
-  w454Refuses("an empty label", w454World(["inbox"], { navText: navTable(["inbox"]).replace('label: "INBOX"', 'label: ""') }).w, line);
-  w454Refuses("an href off its route", w454World(["inbox"], { navText: navTable(["inbox"]).replace("#/inbox", "#/board") }).w, line);
-  w454Refuses("a route too long for a shot name", w454World(["inbox"], { navText: navTable(["inbox", "a".repeat(18)]) }).w, line);
-  w454Refuses("a repeated route", w454World(["inbox"], { navText: navTable(["inbox", "inbox"]) }).w, /NAV_ENTRIES repeats the route inbox/);
+  w454Refuses(
+    "an extra key",
+    w454World(["inbox"], { navText: navTable(["inbox"]).replace(" },", ", disabled: true },") }).w,
+    line,
+  );
+  w454Refuses(
+    "an empty label",
+    w454World(["inbox"], { navText: navTable(["inbox"]).replace('label: "INBOX"', 'label: ""') }).w,
+    line,
+  );
+  w454Refuses(
+    "an href off its route",
+    w454World(["inbox"], { navText: navTable(["inbox"]).replace("#/inbox", "#/board") }).w,
+    line,
+  );
+  w454Refuses(
+    "a route too long for a shot name",
+    w454World(["inbox"], { navText: navTable(["inbox", "a".repeat(18)]) }).w,
+    line,
+  );
+  w454Refuses(
+    "a repeated route",
+    w454World(["inbox"], { navText: navTable(["inbox", "inbox"]) }).w,
+    /NAV_ENTRIES repeats the route inbox/,
+  );
   w454Refuses(
     "a table screen with no shots",
     w454World(["inbox", "board"], { navText: navTable(["home", "inbox", "board"]) }).w,

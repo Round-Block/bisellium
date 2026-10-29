@@ -507,7 +507,7 @@ document the opus is no longer built against — survived untouched.
 
 Build review has no cap: `bisellium next` names a fix and the next round for as long as the censor fails; the old
 round-ruling records are not read (D-061 §4). A round is a strictly parsed `ci/<id>-review-<n>.log` whose outcome
-agrees with its standing findings (converted blockers are advisory). Before review, a UI packet admits exactly eight bounded served screenshots: Inbox, Board, Seats and Officina at 1280×900, then the same order at 390×900. The packet's
+agrees with its standing findings (converted blockers are advisory). Before review, a UI packet admits exactly the served screens of the reviewed tree's navigation table (W-454), each at 1280×900, then the same order at 390×900. The packet's
 `ui.txt` names that fixed attachment order and what the censor judges in each; other kinds receive an explicit
 not-applicable line. A missing, unreadable, symlinked, over-limit, misnamed or dimensionally wrong shot refuses packet
 construction. `next --perform --expect review` passes those paths to Codex as ordered `-i` arguments, passes the
