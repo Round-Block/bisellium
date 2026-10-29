@@ -3,10 +3,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import * as React from "react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (fileName: string): string => readFileSync(resolve(ROOT, fileName), "utf8");
 const readOptional = (fileName: string): string => existsSync(resolve(ROOT, fileName)) ? read(fileName) : "";
+
+(globalThis as { React?: unknown }).React = React;
 
 test("W-407-b1 behaviour 1: Inbox follows Outlook split and mobile layouts", () => {
   const view = read("apps/web/src/screens/InboxView.tsx");
@@ -126,6 +131,32 @@ test("W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptiv
   assert.match(inbox, /findIndex\(\(petitio\) => petitio\.id === currentId\)[\s\S]*retainedIndex >= 0/, "refresh reconciles selection by petitio id");
   assert.match(inbox, /const keepDetached = intent === null && refreshIntentRef\.current === null[\s\S]*setDetachedPetition\(keepDetached \? currentPetition : null\)/, "an ordinary settle cannot detach an answered decision while its explicit reconciliation is queued");
   assert.match(view, /<section className="inbox__list-pane"[\s\S]*notice !== undefined && <p className="screen-notice">\{notice\}<\/p>[\s\S]*inbox__queue/, "a background read failure is visible above the list in every layout");
-  assert.match(view, /if \(petitiones\.length === 0\)[\s\S]*Nothing waiting on you/, "an empty ordinary refresh replaces a retained reading while its draft remains state-owned");
+  assert.match(view, /Nothing waiting on you/, "an empty Inbox keeps the ruled line in its list pane");
   assert.match(view, /This petitio no longer needs a decision\./, "a removed selected decision explains why its controls are disabled");
+});
+
+test("W-407-b6 behaviour 6: an empty ordinary refresh retains the withdrawn decision", async () => {
+  const { InboxView } = await import("../src/screens/InboxView.js");
+  const html = renderToStaticMarkup(createElement(InboxView, {
+    petitiones: [],
+    opera: [],
+    focusIndex: 0,
+    reason: "sole draft",
+    detachedPetition: {
+      id: "P-03",
+      opus: "W-407",
+      from: "builder-a",
+      subject: "Decision P-03",
+      body: "Ask for P-03.",
+    },
+    decisionUnavailable: true,
+    onReasonChange: () => undefined,
+    onFocusChange: () => undefined,
+    onSubmit: () => undefined,
+  }));
+  assert.match(html, /Nothing waiting on you/, "the empty queue remains visible in the list pane");
+  assert.match(html, /Decision P-03/, "the retained subject remains visible");
+  assert.match(html, /This petitio no longer needs a decision\./, "the retained decision explains its withdrawal");
+  assert.match(html, /value="sole draft"/, "the petition-keyed draft remains visible");
+  assert.equal((html.match(/class="inbox__btn-action" disabled/g) ?? []).length, 4, "every retained-decision action is disabled");
 });

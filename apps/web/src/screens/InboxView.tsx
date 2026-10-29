@@ -52,7 +52,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
     focusedItemRef.current?.scrollIntoView({ block: "nearest" });
   }, [focusRequest, focusedPetition?.id]);
 
-  if (petitiones.length === 0) {
+  if (petitiones.length === 0 && detachedPetition === null) {
     return (
       <div className="inbox inbox--empty">
         <h1 className="inbox__title">Inbox</h1>
@@ -84,7 +84,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
         <section className="inbox__list-pane" aria-label="Needs your decision">
           {notice !== undefined && <p className="screen-notice">{notice}</p>}
           <div className="inbox__queue" role="listbox" aria-label="Needs your decision">
-            {petitiones.map((petitio, index) => {
+            {petitiones.length === 0 ? <p className="inbox__empty">Nothing waiting on you</p> : petitiones.map((petitio, index) => {
               const hasFocus = index === focusIndex;
               const unread = !readPetitionIds.has(petitio.id);
               const notified = datePresentation(petitio.opened);

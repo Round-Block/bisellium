@@ -403,8 +403,11 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     response = [];
     await page.clock.fastForward(30_000);
     await expect.poll(() => reads).toBe(7);
-    await expect(page.locator(".inbox__empty")).toHaveText("Nothing waiting on you");
-    await expect(page.locator(".inbox__expanded-subject, .inbox__withdrawn")).toHaveCount(0);
+    await expect(page.locator(".inbox__list-pane .inbox__empty")).toHaveText("Nothing waiting on you");
+    await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-03");
+    await expect(page.locator(".inbox__withdrawn")).toHaveText("This petitio no longer needs a decision.");
+    await expect(ratio).toHaveValue("sole draft");
+    for (const name of ["approve", "defer", "decline", "delegate"]) await expect(page.getByRole("button", { name: new RegExp(name, "i") })).toBeDisabled();
     response = [{ id: "P-03", opus: "W-407", from: "builder-a", opened: Date.UTC(2026, 9, 17, 10, 30), subject: "Decision P-03", body: "Ask for P-03." }];
     await page.clock.fastForward(30_000);
     await expect.poll(() => reads).toBe(8);
