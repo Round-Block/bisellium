@@ -5,14 +5,17 @@
  * line are certify's own (`scripts/host-cells.mjs`: WEB_BUILD, WEB_BUNDLE, prepFailure), imported, never copied, so
  * the two cannot drift; the condition is certify's too: the checkout carries `apps/web/package.json`.
  *
+ * Before any removal every component from the root to the bundle must be a real directory (a symlinked parent refuses
+ * as `cleanup`, so nothing behind a link is removed) and the bundle itself a regular file or absent (a directory there is rmSync's own refusal, EISDIR; a link or special file refuses here).
  * It builds in place, at a clean HEAD: the caller has checked the tree. The prior bundle file is removed first, so a
  * stale one from an earlier build never stands in for this commit's. It never throws: a workspace that cannot be
  * inspected, a prior bundle path that cannot be removed (a directory, a permission) and any subprocess failure are each
  * `ok: false`, so `red` refuses and the perform holds instead of exiting through an exception.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, rmSync, statSync } from "node:fs";
+import { existsSync, lstatSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { existingRealDirectory } from "./ids.js";
 import { WEB_BUILD, WEB_BUNDLE, prepFailure } from "../../../scripts/host-cells.mjs";
 
 /** certify's own bound on one replay preparation build */
@@ -49,7 +52,11 @@ export function webBuild(root: string): WebBuild {
   }
   const bundle = join(root, ...WEB_BUNDLE);
   try {
-    rmSync(bundle, { force: true });
+    // every component from the root to the bundle is a real directory, and the bundle a regular file, or nothing is removed
+    const dir = existingRealDirectory(root, ...WEB_BUNDLE.slice(0, -1));
+    const leaf = dir === undefined ? undefined : lstatSync(join(dir, WEB_BUNDLE[WEB_BUNDLE.length - 1]!), { throwIfNoEntry: false });
+    if (leaf !== undefined && !leaf.isFile() && !leaf.isDirectory()) return failed("cleanup", null, "", "not a regular file");
+    if (leaf !== undefined) rmSync(bundle, { force: true });
   } catch (e) {
     return failed("cleanup", null, "", why(e));
   }
