@@ -1,0 +1,42 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-409-b2\s --import tsx apps/web/test/w409.test.ts
+# exit: 1
+# at: 2026-10-29T15:48:00.317Z
+# sella: builder.W-409
+# tree: tree:ec2a7bf40785e5501c5fa2b801cbbe1b56978d40
+# ticket: {"opus":"W-409","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-409/studio","head":"ae8739045efeb5094855aee7bf94880b16708325","brief":"55464fe434802edb1d3df1ead0694bd271b819a1","at":"2026-10-29T15:47:51.476Z"}
+
+TAP version 13
+# Subtest: W-409-b2 behaviour 2: Inbox question totals stay distinct from Board membership
+not ok 1 - W-409-b2 behaviour 2: Inbox question totals stay distinct from Board membership
+  ---
+  duration_ms: 2.448954
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-409/apps/web/test/w409.test.ts:1:3321'
+  failureType: 'testCodeFailure'
+  error: |-
+    two unlinked open petitiones count two
+    
+    -1 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: -1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-409/apps/web/test/w409.test.ts:88:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8.912707
