@@ -232,19 +232,29 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
   const torn = appendReading(tornHome, reading, (fd, data) => (writeSync(fd, data.subarray(0, 1)), 0));
   assert.match(torn ?? "", /\S/, "a write that stops short: the failure is returned for the usage-error line");
   assert.deepEqual(readReadings(tornHome), [], "and no torn line is a reading");
+  // D-085: one O_APPEND write per reading, never retried and never truncated back, so no failed append touches another's line
   const stalled = scratchHome("b2-stalled");
-  let calls = 0;
-  const failed = appendReading(stalled, reading, (fd, data) => (calls++ === 0 ? half(fd, data) : 0));
-  assert.match(failed ?? "", /\S/, "a write that makes no progress after a part: the failure is returned");
-  assert.deepEqual(readReadings(stalled), [], "and the part written is not a reading");
   const stalledFile = join(stalled, ".bisellium-evidence", "usage", "readings.jsonl");
-  assert.equal(readFileSync(stalledFile, "utf8"), "", "and the file is as it was before the failed append");
-  assert.equal(appendReading(stalled, reading), undefined, "a normal append after the failure succeeds");
-  assert.deepEqual(readReadings(stalled), [reading], "and is exactly one good reading");
-  assert.equal(readFileSync(stalledFile, "utf8"), `${JSON.stringify(reading)}\n`, "the file is the pre-failure bytes plus that line");
+  const other = takeReading(w.home, new Date(NOW_ISO), "other", { opus: "W-901", step: "branch" });
+  let calls = 0;
+  const failed = appendReading(stalled, reading, (fd, data) => {
+    calls++;
+    if (calls > 1) return 0;
+    const n = half(fd, data);
+    assert.equal(appendReading(stalled, other), undefined, "another verb appends while this append stalls");
+    return n;
+  });
+  assert.match(failed ?? "", /\S/, "a write that stops after a part: the failure is returned");
+  assert.deepEqual(readReadings(stalled), [other], "the concurrent reading survives the stalled append, and the torn part is not a reading");
+  assert.equal(calls, 1, "a write that stops short is not retried: one write per reading");
+  assert.equal(appendReading(stalled, reading), undefined, "a normal append after a torn tail succeeds");
+  assert.deepEqual(readReadings(stalled), [other, reading], "and starts on a fresh line: both good readings, in order");
+  const fresh = scratchHome("b2-fresh");
+  assert.equal(appendReading(fresh, reading), undefined, "an append to no file creates it");
+  assert.equal(readFileSync(join(fresh, ".bisellium-evidence", "usage", "readings.jsonl"), "utf8"), `\n${JSON.stringify(reading)}\n`, "one write: a newline, the reading's line, a newline");
   const slow = scratchHome("b2-slow");
-  assert.equal(appendReading(slow, reading, (fd, data) => writeSync(fd, data.subarray(0, 7))), undefined, "a write that takes several calls completes the line");
-  assert.deepEqual(readReadings(slow), [reading], "and the whole line is the reading");
+  assert.match(appendReading(slow, reading, (fd, data) => writeSync(fd, data.subarray(0, 7))) ?? "", /\S/, "a write that would take several calls is a failure, not continued");
+  assert.deepEqual(readReadings(slow), [], "and its part is not a reading");
 });
 
 test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading intervals its rungs close; next --perform prints it and done asks its checkpoint row to carry it", { timeout: 600_000 }, async () => {
