@@ -1,0 +1,19 @@
+# opus: W-430
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18655-0973-7601-8862-b84b77584955
+# outcome: passed
+# at: 2026-10-29T06:31:10.894Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-430.md blob:3da9650a1a5b2617e2fe44f27b5149bf1cbb19ec
+# ticket: {"opus":"W-430","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"70642cd7f747fb015c280f7536523f54598102e3","brief":"3da9650a1a5b2617e2fe44f27b5149bf1cbb19ec","at":"2026-10-29T06:31:07.130Z"}
+
+## Findings
+1. advisory — brief:88 [severity: S3] The row admits any finite numeric `resets_at`, while `readingLine` and `codexBurnLine` interpret it as epoch seconds without validation; an unlikely wrong-unit value can therefore produce a false burn or throw outside `Date`’s range. Replace the valid-domain clause with: “`resets_at` is an integer Unix timestamp in seconds between the parsed line timestamp and 10080 minutes after it; `weekWindow` rejects every other reset.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w430.test.ts
+
+## Verdict
+The signed brief is feasible and adequately bounds its readers, with one advisory reset-domain correction for the builder.
+
+VERDICT: PASS
