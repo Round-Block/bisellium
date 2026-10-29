@@ -6,6 +6,19 @@ let served: ServedInstance | undefined;
 test.afterEach(async () => { await served?.close(); served = undefined; });
 const FIXED_NOW = "2026-10-27T10:30:00.000Z";
 
+function contrast(foreground: string, background: string): number {
+  const channels = (value: string): number[] => (value.match(/\d+(?:\.\d+)?/g) ?? []).slice(0, 3).map(Number);
+  const luminance = (value: string): number => {
+    const [red = 0, green = 0, blue = 0] = channels(value).map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  };
+  const [lighter, darker] = [luminance(foreground), luminance(background)].sort((first, second) => second - first);
+  return (lighter! + 0.05) / (darker! + 0.05);
+}
+
 async function openInbox(page: Page, width: number, tag: string, demo = true): Promise<void> {
   served = await startServed(tag, { now: FIXED_NOW });
   await page.setViewportSize({ width, height: 900 });
@@ -152,6 +165,33 @@ test("W-407-b2 reading strips Markdown syntax, separates evidence, and rows stay
   const unavailable = page.locator(".inbox__evidence-unavailable");
   await expect(unavailable).toHaveCount(8);
   await expect(unavailable.first()).toContainText("#evidence — Not available in this console");
+
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.reload();
+    const items = page.locator(".inbox__item");
+    await expect(items.nth(2)).toHaveCSS("border-left-color", "rgb(158, 164, 196)");
+    await expect(items.locator(".inbox__date").first()).toHaveCSS("color", "rgb(158, 164, 196)");
+    await expect(page.locator(".inbox__title")).toHaveCSS("color", "rgb(189, 147, 249)");
+    await items.nth(1).click();
+    await expect(page.locator(".inbox__meta span").first()).toHaveCSS("color", "rgb(139, 233, 253)");
+    await expect(page.locator(".inbox__expanded-subject")).toHaveCSS("color", "rgb(189, 147, 249)");
+    await expect(page.locator(".inbox__evidence-label")).toHaveCSS("color", "rgb(255, 121, 198)");
+    await expect(page.locator(".inbox__evidence a").first()).toHaveCSS("color", "rgb(139, 233, 253)");
+    await expect(page.locator(".inbox__evidence-unavailable").first()).toHaveCSS("color", "rgb(198, 201, 216)");
+    await expect(page.locator(".inbox__evidence-unavailable code").first()).toHaveCSS("color", "rgb(248, 248, 242)");
+    await expect(page.locator(".inbox__btn-action").first()).toHaveCSS("border-top-color", "rgb(158, 164, 196)");
+    const ratio = page.locator(".inbox__input-ratio");
+    await ratio.focus();
+    await expect(ratio).toHaveCSS("outline-color", "rgb(248, 248, 242)");
+    if (width === 390) await expect(page.locator(".inbox__mobile-title")).toHaveCSS("color", "rgb(189, 147, 249)");
+    for (const [colour, floor] of [["rgb(158, 164, 196)", 3], ["rgb(248, 248, 242)", 3], ["rgb(139, 233, 253)", 4.5], ["rgb(255, 121, 198)", 4.5], ["rgb(189, 147, 249)", 4.5], ["rgb(198, 201, 216)", 4.5], ["rgb(255, 184, 108)", 3]] as const) {
+      expect(contrast(colour, "rgb(40, 42, 54)"), `${width}: ${colour} reaches its surface contrast floor`).toBeGreaterThanOrEqual(floor);
+      expect(contrast(colour, "rgb(52, 55, 70)"), `${width}: ${colour} reaches its wash contrast floor`).toBeGreaterThanOrEqual(floor);
+    }
+    expect(contrast("rgb(52, 55, 70)", "rgb(40, 42, 54)"), `${width}: wash-only selection remains the accepted 1.21:1 limit`).toBeCloseTo(1.21, 2);
+    expect(contrast("rgb(52, 55, 70)", "rgb(40, 42, 54)")).toBeLessThan(3);
+  }
 });
 
 test("W-407-b3 roving selection reveals nearest, reconciles answers, and phone Back or Escape restores focus", async ({ page }) => {
@@ -357,6 +397,15 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
 
     await expect(page.locator(".inbox__list-pane .screen-notice")).toHaveText("Could not load the inbox.");
     await expect(page.locator(".inbox__reading-pane .screen-notice")).toHaveText("Could not load the inbox.");
+    for (const notice of [page.locator(".inbox__list-pane .screen-notice"), page.locator(".inbox__reading-pane .screen-notice")]) {
+      await expect(notice).toHaveClass(/inbox__notice--failure/);
+      await expect(notice).toHaveCSS("color", "rgb(198, 201, 216)");
+      expect(await notice.evaluate((node) => getComputedStyle(node, "::before").backgroundColor)).toBe("rgb(255, 85, 85)");
+      expect(await notice.evaluate((node) => getComputedStyle(node, "::before").width)).toBe("8px");
+      expect(contrast(await notice.evaluate((node) => getComputedStyle(node, "::before").backgroundColor), "rgb(40, 42, 54)"), `${width}: the bad square clears the surface mark floor`).toBeGreaterThanOrEqual(3);
+      expect(contrast(await notice.evaluate((node) => getComputedStyle(node, "::before").backgroundColor), "rgb(52, 55, 70)"), `${width}: the bad square clears the wash mark floor`).toBeGreaterThanOrEqual(3);
+      await expect(notice).not.toContainText("--bad");
+    }
     await expect(items).toHaveCount(14);
     await expect(items.nth(6)).toHaveAttribute("aria-selected", "true");
     await expect(page.locator(".inbox__expanded-subject")).toHaveText(selectedSubject ?? "");
@@ -380,7 +429,11 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     await expect(items.filter({ hasText: "Newly arrived decision" })).toHaveClass(/inbox__item--unread/);
     await expect(page.locator('.inbox__item[aria-selected="true"]')).toHaveCount(0);
     await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-09");
-    await expect(page.locator(".inbox__withdrawn")).toHaveText("This petitio no longer needs a decision.");
+    const withdrawn = page.locator(".inbox__withdrawn");
+    await expect(withdrawn).toHaveText("This petitio no longer needs a decision.");
+    await expect(withdrawn).toHaveCSS("color", "rgb(255, 184, 108)");
+    expect(await withdrawn.evaluate((node) => getComputedStyle(node, "::before").borderBottomColor)).toBe("rgb(255, 184, 108)");
+    expect(await withdrawn.evaluate((node) => getComputedStyle(node, "::before").borderBottomWidth)).toBe("9px");
     await expect(ratio).toHaveValue("half-typed ratio");
     await expect(ratio).toBeFocused();
     for (const name of ["approve", "defer", "decline"]) await expect(page.getByRole("button", { name: new RegExp(name, "i") })).toBeDisabled();
@@ -413,6 +466,18 @@ test("W-407-b6 refresh failure and removed selection preserve the decision in pr
     await expect.poll(() => reads).toBe(8);
     await expect(page.locator(".inbox__expanded-subject")).toHaveText("Decision P-03");
     await expect(ratio).toHaveValue("sole draft");
+
+    failNext = true;
+    await page.reload();
+    await expect.poll(() => reads).toBe(9);
+    const emptyFailure = page.locator(".inbox__empty.inbox__notice--failure");
+    await expect(emptyFailure).toHaveText("Could not load the inbox.");
+    await expect(emptyFailure).toHaveCSS("color", "rgb(198, 201, 216)");
+    expect(await emptyFailure.evaluate((node) => getComputedStyle(node, "::before").backgroundColor)).toBe("rgb(255, 85, 85)");
+    expect(await emptyFailure.evaluate((node) => getComputedStyle(node, "::before").width)).toBe("8px");
+    expect(contrast(await emptyFailure.evaluate((node) => getComputedStyle(node, "::before").backgroundColor), "rgb(40, 42, 54)"), `${width}: first-load bad square clears the surface mark floor`).toBeGreaterThanOrEqual(3);
+    expect(contrast(await emptyFailure.evaluate((node) => getComputedStyle(node, "::before").backgroundColor), "rgb(52, 55, 70)"), `${width}: first-load bad square clears the wash mark floor`).toBeGreaterThanOrEqual(3);
+    await expect(emptyFailure).not.toContainText("--bad");
 
     await served!.close(); served = undefined;
   }

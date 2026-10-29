@@ -14,6 +14,7 @@ export interface InboxViewProps {
   error?: string | null;
   confirmation?: string;
   notice?: string;
+  noticeIsFailure?: boolean;
   busy?: boolean;
   readPetitionIds?: ReadonlySet<string>;
   /** A selected decision removed by an ordinary refresh, retained until the Patron chooses another row. */
@@ -38,6 +39,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
   const {
     petitiones, focusIndex, expandedId = null, focusRequest = 0,
     reason, error, confirmation, notice, busy = false, readPetitionIds = new Set<string>(),
+    noticeIsFailure = false,
     detachedPetition = null, decisionUnavailable = false,
     onReasonChange, onFocusChange, onExpandChange = () => undefined, onReturnToList = () => undefined, onSubmit,
     onRead = () => undefined,
@@ -57,7 +59,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
       <div className="inbox inbox--empty">
         <h1 className="inbox__title">Inbox</h1>
         {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
-        <p className="inbox__empty">{notice ?? "Nothing waiting on you"}</p>
+        <p className={["inbox__empty", noticeIsFailure && "inbox__notice--failure"].filter(Boolean).join(" ")}>{notice ?? "Nothing waiting on you"}</p>
       </div>
     );
   }
@@ -82,7 +84,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
           <h1 className="inbox__mobile-title">Inbox</h1>
         </div>
         <section className="inbox__list-pane" aria-label="Needs your decision">
-          {notice !== undefined && <p className="screen-notice">{notice}</p>}
+          {notice !== undefined && <p className={["screen-notice", noticeIsFailure && "inbox__notice--failure"].filter(Boolean).join(" ")}>{notice}</p>}
           <div className="inbox__queue" role="listbox" aria-label="Needs your decision">
             {petitiones.length === 0 ? <p className="inbox__empty">Nothing waiting on you</p> : petitiones.map((petitio, index) => {
               const hasFocus = index === focusIndex;
@@ -155,7 +157,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                     placeholder="Reason for this decision"
                   />
                   <div className="inbox__decision-panel">
-                    {notice !== undefined && <p className="screen-notice">{notice}</p>}
+                    {notice !== undefined && <p className={["screen-notice", noticeIsFailure && "inbox__notice--failure"].filter(Boolean).join(" ")}>{notice}</p>}
                     {decisionUnavailable && <p className="inbox__withdrawn">This petitio no longer needs a decision.</p>}
                     {error && <p className="inbox__error">{error}</p>}
                     <div className="inbox__action-group">

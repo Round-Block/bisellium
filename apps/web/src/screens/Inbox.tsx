@@ -253,6 +253,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       error={error}
       confirmation={confirmation}
       notice={status.state === "loading" || status.state === "pending" || (status.state === "error" && outcome === undefined) ? status.text : undefined}
+      noticeIsFailure={status.state === "error" && outcome === undefined}
       busy={sending}
       readPetitionIds={readPetitionIds}
       detachedPetition={detachedPetition}

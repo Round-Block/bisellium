@@ -163,6 +163,10 @@ test("W-366-b2 behaviour 2: each accent has one non-status selector role", () =>
       ".board-drawer__banner-link => accent-cyan",
       ".board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
       ".inbox__evidence a => accent-cyan",
+      ".inbox__evidence-label => accent-pink",
+      ".inbox__expanded-subject => accent-purple",
+      ".inbox__meta span:first-child => accent-cyan",
+      ".inbox__mobile-title => accent-purple",
       ".officina__title, .officina__panel-heading, .inbox__title, .inbox__detail-subject, .seats__heading, .seats__card-heading, .board__title, .board-drawer__title, .board-drawer__section-head => accent-purple",
       ".officina__row--link => accent-cyan",
     ].sort(),
@@ -237,14 +241,15 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   const badConsumers = badTokenConsumers();
   assert.deepEqual(
     badConsumers.map(({ source, selector }) => `${source}: ${selector}`),
-    ["components/w025.css: .gate-ladder__mark--bad-diagonal"],
-    "only the diagonal failed-gate selector consumes --bad",
+    ["components/w025.css: .gate-ladder__mark--bad-diagonal", "components/w025.css: .inbox__notice--failure::before"],
+    "only shaped failed-gate and Inbox failure marks consume --bad",
   );
   for (const { source, selector, declarations } of badConsumers) {
     assert.doesNotMatch(declarations, /(?:^|;)\s*color\s*:/i, `${source}: ${selector} never sets text colour from --bad`);
   }
   assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /background\s*:\s*var\(--bad\)/, "the failed gate keeps its bad fill");
   assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /clip-path\s*:/, "the failed gate keeps its diagonal shape cue");
+  assert.match(cssRule(".inbox__notice--failure::before"), /width\s*:\s*8px[\s\S]*height\s*:\s*8px[\s\S]*background\s*:\s*var\(--bad\)/, "the Inbox failure keeps its eight-pixel bad square");
   assert.match(cssRule(".seats__confirm-error"), /color\s*:\s*var\(--ink\)/, "confirmation error copy uses the highest-contrast text token");
   assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--ink\)/, "a blocked card keeps its non-colour left-rule cue without consuming bad");
   assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--accent-cyan\)/, "drawer evidence links and their visited state use the cyan link accent");
