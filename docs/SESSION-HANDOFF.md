@@ -53,6 +53,7 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 00a. W-452 — collegium names the owning lead; kind ui retired (D-128); then the re-tag
 0. W-430 — usage in the records (signed r1, review next). Then W-444 — reply length Stop hook
 0a. W-436 — hard rule (Patron 10-28): every open item lives in a record (petitio, opus, Queue), never memory or chat; enforced by a Stop hook and the handoff check (high)
+1. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (high; moved up, Patron 10-29)
 2. W-429 — petitio length limits (subject ≤ 70 characters, ask ≤ 200 words; check refuses longer).
 2a. W-431, W-432 — verb dead ends: unchanged re-sign, carried open finding
 3. W-405 — pr refuses a kind: ui opus until the Patron's screen approval is recorded (high; greenlit 10-25) `next.ts`
@@ -66,7 +67,6 @@ Engineering, one ranked list (D-111; `next.ts` items one at a time):
 9. W-395 — cause fix for repeat class spec×promise-unattainable-under-accepted-domain (D-076 D high)
 10. W-349 — flaky row W-279-b3 failed twice in the merge queue: print its capture, then fix the cause (D-039 high)
 11. W-399 — a record verb refuses a write whose sella is not its ticket's actor (high)
-12. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (high)
 13. W-364 — the CLI half first: verify and ci --opus refuse outside a `bisellium run` session (D-039 high; carries W-290; Defaults to the Patron before branch)
 14. W-242 — the hook-set code cuts W-310 left at spec (no .claude/ change)
 15. W-372 — a dispatched agent waits for its long background perform (D-106 D)
