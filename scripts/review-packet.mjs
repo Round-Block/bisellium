@@ -34,31 +34,47 @@ const FLAGS = ["--phase", "--opus", "--round", "--sella", "--studio", "--repo", 
 const MAX_BYTES = 4 * 1024 * 1024;
 const SLOTS = ["ID", "ROUND", "PREVIOUS", "PACKET", "UI", "STUDIO"];
 const HANDOFF_REL = "docs/SESSION-HANDOFF.md";
-const UI_REVIEW_SHOTS = [
-  [
-    "inbox-1280.png",
-    1280,
-    "desktop",
-    "navigation, selected work, detail hierarchy, reason input and the four record actions",
-  ],
-  ["board-1280.png", 1280, "desktop", "column hierarchy, card density, gate marks, status and horizontal composition"],
-  ["seats-1280.png", 1280, "desktop", "seat grouping, model controls, labels, density and pending-change affordances"],
-  [
-    "officina-1280.png",
-    1280,
-    "desktop",
-    "completion, posture, pending-action and integrity panels, provenance and scan order",
-  ],
-  [
-    "inbox-390.png",
-    390,
-    "phone",
-    "responsive navigation, queue legibility, selection and absence of clipped or unreachable controls",
-  ],
-  ["board-390.png", 390, "phone", "responsive columns, card identity, overflow cues and reachable status information"],
-  ["seats-390.png", 390, "phone", "responsive grouping, control labels, touch spacing and horizontal overflow"],
-  ["officina-390.png", 390, "phone", "panel order, dense values, wrapping, provenance and vertical scanning"],
+/** W-454: the console's one navigation table (W-110), read in the reviewed tree as text and never run. */
+const NAV_REL = "apps/web/src/lib/nav.ts";
+const NAV_MAX_BYTES = 64 * 1024;
+/** W-454: the most image bytes one review attaches, W-340's eight 4 MiB shots; the count no longer bounds it. */
+const UI_REVIEW_TOTAL_BYTES = 32 * 1024 * 1024;
+/** W-454: the review viewports in codex -i order: every served screen at desktop, then every one at phone (W-340). */
+const UI_REVIEW_VIEWPORTS = [
+  [1280, "desktop"],
+  [390, "phone"],
 ];
+/** W-454: what the censor judges on each served screen, by route and viewport (W-340's text; Home's added). */
+const UI_REVIEW_JUDGMENTS = {
+  home: {
+    desktop:
+      "the attention row (Needs you first, its Stuck and Health column), card grouping, equal row heights, links into the other screens and density",
+    phone:
+      "Needs you first, card stacking order, wrapping, touch spacing and absence of clipped or unreachable controls",
+  },
+  inbox: {
+    desktop: "navigation, selected work, detail hierarchy, reason input and the four record actions",
+    phone: "responsive navigation, queue legibility, selection and absence of clipped or unreachable controls",
+  },
+  board: {
+    desktop: "column hierarchy, card density, gate marks, status and horizontal composition",
+    phone: "responsive columns, card identity, overflow cues and reachable status information",
+  },
+  seats: {
+    desktop: "seat grouping, model controls, labels, density and pending-change affordances",
+    phone: "responsive grouping, control labels, touch spacing and horizontal overflow",
+  },
+  officina: {
+    desktop: "completion, posture, pending-action and integrity panels, provenance and scan order",
+    phone: "panel order, dense values, wrapping, provenance and vertical scanning",
+  },
+};
+/** W-454: the judgment a served screen with no stated text gets; it says so, so the censor knows it is the default. */
+const UI_REVIEW_DEFAULT = {
+  desktop: "the default for a screen with no stated judgment: hierarchy, labels, density, status and scan order",
+  phone:
+    "the default for a screen with no stated judgment: responsive order, wrapping, touch spacing and absence of clipped or unreachable controls",
+};
 const USAGE = `usage: node --import tsx scripts/review-packet.mjs ${FLAGS.map((f) => `${f} <${f.slice(2)}>`).join(" ")}`;
 
 /** Thrown for every refusal; `main` prints it and exits 2 with nothing written. */
@@ -124,7 +140,34 @@ function runGit(cwd, args, okCodes = [0]) {
   return r.stdout;
 }
 
-/** The fixed ordered image attachments and the text that identifies what the reviewer judges in each one. */
+/**
+ * W-454: the served screens in rail order, the routes of `NAV_ENTRIES` in `<tree>/apps/web/src/lib/nav.ts`.
+ * The table is read as text, never run: each line between `export const NAV_ENTRIES = [` and `] as const;` is one
+ * `{ route: "<r>", href: "#/<r>", label: "<label>" },` entry, `<r>` at most 17 characters so `<r>-1280.png` is a shot
+ * name; no table, any other line, no entry or a repeated route refuses.
+ */
+function navRoutes(tree) {
+  const file = readContainedRegularFile(tree, NAV_REL, "apps", NAV_MAX_BYTES);
+  if ("error" in file) refuse(`${NAV_REL}: ${file.error}`);
+  const table = /^export const NAV_ENTRIES = \[\n([\s\S]*?)^\] as const;$/m.exec(file.bytes.toString("utf8"));
+  if (table === null) refuse(`${NAV_REL}: no NAV_ENTRIES table`);
+  const routes = [];
+  for (const line of table[1].split("\n").filter((l) => l.trim() !== "")) {
+    const entry =
+      /^ {2}\{ route: "([a-z][a-z0-9-]{0,16})", href: "#\/([a-z][a-z0-9-]{0,16})", label: "[^"\\]*" \},$/.exec(line);
+    if (entry === null || entry[1] !== entry[2])
+      refuse(`${NAV_REL}: NAV_ENTRIES line ${JSON.stringify(line)} is not a { route, href, label } entry`);
+    if (routes.includes(entry[1])) refuse(`${NAV_REL}: NAV_ENTRIES repeats the route ${entry[1]}`);
+    routes.push(entry[1]);
+  }
+  if (routes.length === 0) refuse(`${NAV_REL}: NAV_ENTRIES has no entry`);
+  return routes;
+}
+
+/**
+ * The ordered image attachments and the text that identifies what the reviewer judges in each one: every served
+ * screen of the work tree holding `studio` (its navigation table, `navRoutes`) at 1280, then at 390 (W-454).
+ */
 function uiFact(studio, opus) {
   const record = readContainedRegularFile(studio, `opera/${opus}.md`, "opera");
   if ("error" in record) refuse(`opera/${opus}.md: ${record.error}`);
@@ -140,20 +183,30 @@ function uiFact(studio, opus) {
     refuse(`opera/${opus}.md: kind ${JSON.stringify(data.kind)} is not a native opus kind`);
   if (data.kind !== "ui")
     return { text: `UI evidence: not applicable (kind ${JSON.stringify(data.kind)}).\n`, images: [] };
+  const routes = navRoutes(gitLine(runGit(studio, ["rev-parse", "--show-toplevel"])));
+  const order = UI_REVIEW_VIEWPORTS.flatMap(([width, viewport]) =>
+    routes.map((route) => [`${route}-${width}.png`, width, viewport, route]),
+  );
   const served = readServedShots(studio, opus);
   if ("problems" in served) refuse(served.problems.join("; "));
   const byName = new Map(served.shots.map((shot) => [shot.name, shot]));
-  const expected = new Set(UI_REVIEW_SHOTS.map(([name]) => name));
-  const absent = UI_REVIEW_SHOTS.map(([name]) => name).filter((name) => !byName.has(name));
+  const expected = new Set(order.map(([name]) => name));
+  const absent = order.map(([name]) => name).filter((name) => !byName.has(name));
   const extra = served.shots.map(({ name }) => name).filter((name) => !expected.has(name));
   if (absent.length > 0 || extra.length > 0)
     refuse(
-      `UI review screenshots must be exactly ${UI_REVIEW_SHOTS.map(([name]) => name).join(", ")}; missing ${absent.join(", ") || "none"}; unexpected ${extra.join(", ") || "none"}`,
+      `UI review screenshots must be exactly ${order.map(([name]) => name).join(", ")} (${NAV_REL}'s routes at 1280 and 390); missing ${absent.join(", ") || "none"}; unexpected ${extra.join(", ") || "none"}`,
     );
+  const total = order.reduce((sum, [name]) => sum + byName.get(name).bytes.length, 0);
+  if (total > UI_REVIEW_TOTAL_BYTES)
+    refuse(`UI review screenshots total ${total} bytes, over the ${UI_REVIEW_TOTAL_BYTES} one review attaches`);
   const images = [];
-  const lines = ["Attached UI screenshots in codex -i order (eight files, each at most 4194304 bytes):"];
-  for (const [name, width, viewport, judgment] of UI_REVIEW_SHOTS) {
+  const lines = [`Attached UI screenshots in codex -i order (${order.length} files, each at most 4194304 bytes):`];
+  for (const [name, width, viewport, route] of order) {
     const shot = byName.get(name);
+    const judgment = Object.hasOwn(UI_REVIEW_JUDGMENTS, route)
+      ? UI_REVIEW_JUDGMENTS[route][viewport]
+      : UI_REVIEW_DEFAULT[viewport];
     if (shot.width !== width || shot.height !== 900)
       refuse(`UI review screenshot ${name} must be ${width}x900, got ${shot.width}x${shot.height}`);
     const path = join(studio, "ci", "shots", opus, name);
@@ -294,8 +347,13 @@ const nextFact = (id, studio) =>
  * path for a studio in the main checkout, and the main checkout's copy for one in a linked worktree.
  */
 function mainStudio(studio) {
-  const top = runGit(studio, ["rev-parse", "--show-toplevel"]).trim();
+  const top = gitLine(runGit(studio, ["rev-parse", "--show-toplevel"]));
   return join(mainTree(studio), relative(realpathSync(top), realpathSync(studio)));
+}
+
+/** One path line git printed: only its one line terminator goes, since a directory may begin or end in a space. */
+function gitLine(out) {
+  return out.replace(/\r?\n$/, "");
 }
 
 /** The repository's main work tree: the first entry `git worktree list` gives, from `dir`. */
@@ -412,7 +470,7 @@ export function buildPacket(args) {
         PACKET: packet,
         UI:
           phase === "build" && images.length > 0
-            ? `Read \`${packet}/ui.txt\`; it names the eight current desktop and phone screenshots attached to this turn, in attachment order, and states what to judge in each. Inspect every image. Include a nonblank \`## UI input disposition\` section after Findings, stating how the authoritative ui-lead input and the attached images affected the verdict.`
+            ? `Read \`${packet}/ui.txt\`; it names the ${images.length} current desktop and phone screenshots attached to this turn, in attachment order, and states what to judge in each. Inspect every image. Include a nonblank \`## UI input disposition\` section after Findings, stating how the authoritative ui-lead input and the attached images affected the verdict.`
             : "",
         STUDIO: promptStudio,
       }),

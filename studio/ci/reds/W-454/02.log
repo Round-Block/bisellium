@@ -1,0 +1,44 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-454-b2\s --import tsx scripts/review-packet.test.mjs
+# exit: 1
+# at: 2026-10-29T06:28:02.771Z
+# sella: builder.W-454
+# tree: tree:d07f6d0507bbdac1cfb65190fd7fe10f0bdb4fa1
+# ticket: {"opus":"W-454","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-454/studio","head":"22cadbab7446512038718619665013e45280dbd3","brief":"e4dacff4b106be8adc46aa8b98759a124e3c5925","at":"2026-10-29T06:28:01.580Z"}
+
+TAP version 13
+# Subtest: W-454-b2 behaviour 2: a UI build packet attaches at most 32 MiB of screenshots in all, and refuses one byte more before the packet exists
+not ok 1 - W-454-b2 behaviour 2: a UI build packet attaches at most 32 MiB of screenshots in all, and refuses one byte more before the packet exists
+  ---
+  duration_ms: 1042.93733
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-454/scripts/review-packet.test.mjs:1143:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    one byte over 32 MiB: refused
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    w454Refuses (file:///home/edckt/agents/bisellium/.worktrees/W-454/scripts/review-packet.test.mjs:999:10)
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-454/scripts/review-packet.test.mjs:1151:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1065.666845

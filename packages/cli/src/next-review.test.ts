@@ -299,6 +299,10 @@ function uiReviewWorld(tag: string): World {
   put(w.studio, "ci/dispatch.md", uiPrompt);
   put(w.studio, `ci/${OPUS}-spec-2.log`, readFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-2.log`), "utf8"));
   commit(w.repo, `studio(${OPUS}): ui-lead input on the trunk`);
+  const nav = ["inbox", "board", "seats", "officina"].map((r) => `  { route: "${r}", href: "#/${r}", label: "${r}" },`);
+  put(w.wt, "apps/web/src/lib/nav.ts", `export const NAV_ENTRIES = [\n${nav.join("\n")}\n] as const;\n`);
+  commit(w.wt, `feat(${OPUS}): the navigation table`);
+  writeReceipt(w, "current");
   const shots = join(w.wtStudio, "ci", "shots", OPUS);
   mkdirSync(shots, { recursive: true });
   const lines = [`shots: ${W340_IMAGES.length} ci/shots/${OPUS}`];
@@ -323,7 +327,7 @@ const packetDir = (w: World, n: number): string => join(w.repo, ".bisellium", "r
 const laterPrompt = (w: World, round: number, ui = false): string => {
   const packet = packetDir(w, round);
   const uiText = ui
-    ? `Read \`${packet}/ui.txt\`; it names the eight current desktop and phone screenshots attached to this turn, in attachment order, and states what to judge in each. Inspect every image. Include a nonblank \`## UI input disposition\` section after Findings, stating how the authoritative ui-lead input and the attached images affected the verdict.`
+    ? `Read \`${packet}/ui.txt\`; it names the ${W340_IMAGES.length} current desktop and phone screenshots attached to this turn, in attachment order, and states what to judge in each. Inspect every image. Include a nonblank \`## UI input disposition\` section after Findings, stating how the authoritative ui-lead input and the attached images affected the verdict.`
     : "";
   return LATER_TEMPLATE.replace("<ROUND>", String(round))
     .replace("<ID>", OPUS)

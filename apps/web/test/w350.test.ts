@@ -370,3 +370,22 @@ test("W-350-b2 behaviour 2: baseline bootstrap skips only an empty set, rejects 
   assert.match(rendering, /baselineSetState\(dirname\(path\)\)/, "rendering-identity comparison uses the same all-or-none baseline gate");
   assert.match(BASELINE_BOOTSTRAP_REASON, /follow-up opus/, "the skip reason names the follow-up ownership boundary");
 });
+
+test("W-454-b3 behaviour 3: the screenshot baseline list is every navigation route at 1280 then 390, then the rendering identity", async () => {
+  const baselines = (await import("../tests-serve/baseline-set.js")) as unknown as {
+    BASELINE_FILES: readonly string[];
+    baselineFiles?: (entries: readonly { route: string }[]) => string[];
+  };
+  const { NAV_ENTRIES } = await import("../src/lib/nav.js");
+  assert.equal(typeof baselines.baselineFiles, "function", "the baseline list is derived, not a second table");
+  assert.deepEqual(
+    baselines.baselineFiles!([{ route: "home" }, { route: "inbox" }]),
+    ["home-1280.png", "inbox-1280.png", "home-390.png", "inbox-390.png", "rendering-environment.json"],
+    "a rail entry adds its desktop and phone baselines, desktop first",
+  );
+  assert.deepEqual(
+    [...baselines.BASELINE_FILES],
+    [...[1280, 390].flatMap((width) => NAV_ENTRIES.map(({ route }) => `${route}-${width}.png`)), "rendering-environment.json"],
+    "the committed list is the live navigation table's",
+  );
+});

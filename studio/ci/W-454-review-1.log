@@ -1,0 +1,19 @@
+# opus: W-454
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18678-923e-7fe1-bd7d-fa87c99f91cc
+# outcome: failed
+# at: 2026-10-29T07:08:49.550Z
+# tree: tree:e4ee422cbbc07061edbc9ead13ea6b5691f8a45b
+# brief: briefs/W-454.md blob:e4dacff4b106be8adc46aa8b98759a124e3c5925
+# ticket: {"opus":"W-454","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-454/studio","head":"bd29880970046bba89e437e6d9436ebf2cc28acb","brief":"e4dacff4b106be8adc46aa8b98759a124e3c5925","at":"2026-10-29T07:08:41.843Z"}
+
+## Findings
+1. advisory — scripts/review-packet.mjs:157 [severity: S2] The `+` requires a nonempty label, so `label: ""` is refused even though brief:41 still admits labels free of `"` and `\`, and brief:77 adds no nonempty requirement; the W-454-b1 test codifies the refusal adopted from the passed spec review’s wording advisory. [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/review-packet.test.mjs W-454-b1 empty-label case
+2. blocking — scripts/review-packet.mjs:186 [severity: S1] Calling `.trim()` on `git rev-parse --show-toplevel` removes a legitimate trailing space from a worktree path, causing the navigation-table read to reject a directory expressly admitted by brief:74. [class: tests×ruled-case-uncovered] — check: scripts/review-packet.test.mjs W-454-b1 worktree path ending in a space
+
+## Verdict
+The adopted label constraint is advisory, but the untested rejection of a valid worktree path blocks this round.
+VERDICT: FAIL

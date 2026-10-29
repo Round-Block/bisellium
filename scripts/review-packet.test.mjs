@@ -357,6 +357,10 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
     const w = world();
     const record = join(w.studio, "opera/W-1.md");
     writeFileSync(record, readFileSync(record, "utf8").replace("kind: opus", "kind: ui"));
+    const nav = ["inbox", "board", "seats", "officina"].map(
+      (r) => `  { route: "${r}", href: "#/${r}", label: "${r}" },`,
+    );
+    put(w.repo, "apps/web/src/lib/nav.ts", `export const NAV_ENTRIES = [\n${nav.join("\n")}\n] as const;\n`);
     w.git("add", "-A");
     w.git("commit", "-q", "-m", `W-340 ${tag} base`);
     w.git("checkout", "-q", "-b", `opus-${tag}`);
@@ -413,7 +417,7 @@ test("W-340-b1 behaviour 1: a UI build packet carries the bounded desktop and ph
   const summary = r.built.files.get("ui.txt");
   assert.match(
     summary,
-    /^Attached UI screenshots in codex -i order \(eight files, each at most 4194304 bytes\):$/m,
+    /^Attached UI screenshots in codex -i order \(8 files, each at most 4194304 bytes\):$/m,
     "the packet states the count and per-file bound",
   );
   assert.deepEqual(
@@ -940,5 +944,245 @@ test("W-322-b3 behaviour 3: a build packet's facts list the ruled cases no pin o
     w.read(4, "facts.txt"),
     /^== ruled cases with no pinning assertion in the diff\n.*\nno base: no refs\/heads\/master or refs\/remotes\/origin\/master$/m,
     "no master ref is stated in the block",
+  );
+});
+
+// W-454: the UI screenshot set is the reviewed tree's navigation table (apps/web/src/lib/nav.ts) at 1280, then at 390.
+const navTable = (routes) =>
+  `export const NAV_ENTRIES = [\n${routes.map((r) => `  { route: "${r}", href: "#/${r}", label: "${r.toUpperCase()}" },`).join("\n")}\n] as const;\n`;
+/** A kind: ui W-1 whose reviewed tree carries `navText` and whose served shots are `routes` at 1280 then 390, each `pad` bytes over its PNG. */
+function w454World(routes, { navText = navTable(routes), pad = () => 0 } = {}) {
+  const w = world();
+  const record = join(w.studio, "opera/W-1.md");
+  writeFileSync(record, readFileSync(record, "utf8").replace("kind: opus", "kind: ui"));
+  if (navText !== null) put(w.repo, "apps/web/src/lib/nav.ts", navText);
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "W-454 base");
+  w.git("checkout", "-q", "-b", "opus-W-454");
+  return { w, ...w454Shots(w.studio, routes, pad) };
+}
+/** W-1's served shots in `studio`: `routes` at 1280 then 390, each `pad(name, size)` bytes over its PNG, and their manifest. */
+function w454Shots(studio, routes, pad = () => 0) {
+  const dir = join(studio, "ci/shots/W-1");
+  mkdirSync(dir, { recursive: true });
+  const names = [1280, 390].flatMap((width) => routes.map((route) => `${route}-${width}.png`));
+  const lines = [`shots: ${names.length} ci/shots/W-1`];
+  for (const name of names) {
+    const width = Number(/-(\d+)\.png$/.exec(name)[1]);
+    const first = png(width, 900);
+    const bytes = Buffer.concat([first, Buffer.alloc(pad(name, first.length))]);
+    writeFileSync(join(dir, name), bytes);
+    lines.push(`shot: ${name} ${width}x900 ${bytes.length}`);
+  }
+  writeFileSync(join(dir, "manifest.txt"), `${lines.join("\n")}\n`);
+  return { dir, names };
+}
+const w454Packet = (w, round = 1) => {
+  try {
+    const built = buildPacket({
+      phase: "build",
+      opus: "W-1",
+      round,
+      sella: "qa-lead",
+      studio: w.studio,
+      repo: w.repo,
+      packets: w.packets,
+    });
+    return { status: 0, built, err: "" };
+  } catch (error) {
+    return { status: 2, err: error.message };
+  }
+};
+const w454Refuses = (label, w, reason) => {
+  const before = tree(w.packets);
+  const r = w454Packet(w);
+  assert.equal(r.status, 2, `${label}: refused\n${r.err}`);
+  assert.match(r.err, reason, `${label}: stated reason`);
+  assert.deepEqual(tree(w.packets), before, `${label}: no partial packet`);
+};
+
+test("W-454-b1 behaviour 1: a UI build packet attaches every screen of the reviewed tree's navigation table at 1280 then 390, each with its stated judgment or the stated default", () => {
+  const routes = ["home", "inbox", "board", "seats", "officina", "atlas"];
+  const { w, dir, names } = w454World(routes);
+  const r = w454Packet(w);
+  assert.equal(r.status, 0, `the navigation table's twelve screenshots build: ${r.err}`);
+  assert.deepEqual(
+    r.built.images.map((path) => relative(dir, path)),
+    names,
+    "the attachments are the table's routes in rail order at 1280, then at 390",
+  );
+  const ui = r.built.files.get("ui.txt");
+  assert.match(
+    ui,
+    /^Attached UI screenshots in codex -i order \(12 files, each at most 4194304 bytes\):$/m,
+    "the packet names the count it attaches",
+  );
+  assert.match(
+    ui,
+    /^1\. home-1280\.png — desktop 1280x900 — judge the attention row \(Needs you first, /m,
+    "Home's stated desktop judgment",
+  );
+  assert.match(
+    ui,
+    /^7\. home-390\.png — phone 390x900 — judge Needs you first, card stacking order, /m,
+    "Home's stated phone judgment",
+  );
+  assert.match(
+    ui,
+    /^2\. inbox-1280\.png — desktop 1280x900 — judge navigation, selected work, detail hierarchy, reason input and the four record actions\.$/m,
+    "W-340's Inbox judgment is kept",
+  );
+  assert.match(
+    ui,
+    /^6\. atlas-1280\.png — desktop 1280x900 — judge the default for a screen with no stated judgment: hierarchy, /m,
+    "a screen with no stated judgment gets the stated desktop default",
+  );
+  assert.match(
+    ui,
+    /^12\. atlas-390\.png — phone 390x900 — judge the default for a screen with no stated judgment: responsive order, /m,
+    "a screen with no stated judgment gets the stated phone default",
+  );
+  const proto = w454World(["inbox", "constructor"]);
+  const p = w454Packet(proto.w);
+  assert.equal(p.status, 0, `a route named like an object key builds: ${p.err}`);
+  assert.match(
+    p.built.files.get("ui.txt"),
+    /^2\. constructor-1280\.png — desktop 1280x900 — judge the default for /m,
+    "an object key is no stated judgment",
+  );
+
+  // a later build round's prompt names the count it attaches
+  w.put(w.studio, "ci/W-1-review-1.log", sessioned("W-1", "review", 1, "qa-lead", "W-454-later"));
+  w.git("add", "-A");
+  w.git("commit", "-q", "-m", "W-454 review 1");
+  const later = w454Packet(w, 2);
+  assert.equal(later.status, 0, `the later round builds: ${later.err}`);
+  assert.match(
+    later.built.files.get("prompt.md"),
+    /it names the 12 current desktop and phone screenshots attached to this turn/,
+    "the later prompt names the count",
+  );
+
+  // a hand-run packet (`--studio <worktree>/studio --repo .`, next's order) reads the table of the tree holding the studio
+  const main = w454World(["inbox"]);
+  const linked = join(main.w.repo, ".worktrees/W-1");
+  main.w.git("worktree", "add", "-q", "-b", "opus/W-1", linked);
+  put(linked, "apps/web/src/lib/nav.ts", navTable(["home", "inbox"]));
+  const linkedShots = w454Shots(join(linked, "studio"), ["home", "inbox"]);
+  let hand;
+  try {
+    hand = buildPacket({
+      phase: "build",
+      opus: "W-1",
+      round: 1,
+      sella: "qa-lead",
+      studio: join(linked, "studio"),
+      repo: main.w.repo,
+      packets: main.w.packets,
+    });
+  } catch (error) {
+    assert.fail(`the linked worktree's table builds: ${error.message}`);
+  }
+  assert.deepEqual(
+    hand.images.map((path) => relative(linkedShots.dir, path)),
+    ["home-1280.png", "inbox-1280.png", "home-390.png", "inbox-390.png"],
+    "a hand-run packet attaches the linked worktree's screens, not the main checkout's",
+  );
+
+  // a worktree whose path ends in a space is a legitimate directory: git's one trailing newline is all that is stripped
+  const spaced = w454World(["inbox"]);
+  const spacedTree = join(spaced.w.repo, ".worktrees/W-1 ");
+  spaced.w.git("worktree", "add", "-q", "-b", "opus/W-1-spaced", spacedTree);
+  put(spacedTree, "apps/web/src/lib/nav.ts", navTable(["home", "inbox"]));
+  const spacedShots = w454Shots(join(spacedTree, "studio"), ["home", "inbox"]);
+  let spacedBuilt;
+  try {
+    spacedBuilt = buildPacket({
+      phase: "build",
+      opus: "W-1",
+      round: 1,
+      sella: "qa-lead",
+      studio: join(spacedTree, "studio"),
+      repo: spaced.w.repo,
+      packets: spaced.w.packets,
+    });
+  } catch (error) {
+    assert.fail(`a worktree path ending in a space builds its packet: ${error.message}`);
+  }
+  assert.deepEqual(
+    spacedBuilt.images.map((path) => relative(spacedShots.dir, path)),
+    ["home-1280.png", "inbox-1280.png", "home-390.png", "inbox-390.png"],
+    "the spaced worktree's table is the one read",
+  );
+
+  // the table is read fail closed, before any shot
+  const missing = w454World(["inbox"], { navText: null });
+  w454Refuses("no navigation table file", missing.w, /^apps\/web\/src\/lib\/nav\.ts: /);
+  w454Refuses(
+    "no NAV_ENTRIES",
+    w454World(["inbox"], { navText: "export const ROUTES = [] as const;\n" }).w,
+    /apps\/web\/src\/lib\/nav\.ts: no NAV_ENTRIES table/,
+  );
+  w454Refuses(
+    "an empty table",
+    w454World(["inbox"], { navText: "export const NAV_ENTRIES = [\n] as const;\n" }).w,
+    /NAV_ENTRIES has no entry/,
+  );
+  const line = /NAV_ENTRIES line .* is not a \{ route, href, label \} entry/;
+  w454Refuses(
+    "an extra key",
+    w454World(["inbox"], { navText: navTable(["inbox"]).replace(" },", ", disabled: true },") }).w,
+    line,
+  );
+  // the label grammar is any run free of `"` and `\`, the empty run included
+  const emptyLabel = w454World(["inbox", "board"], {
+    navText: navTable(["inbox", "board"]).replace('label: "INBOX"', 'label: ""'),
+  });
+  const emptyLabelPacket = w454Packet(emptyLabel.w);
+  assert.equal(emptyLabelPacket.status, 0, `an empty label is admitted: ${emptyLabelPacket.err}`);
+  assert.deepEqual(
+    emptyLabelPacket.built.images.map((path) => relative(emptyLabel.dir, path)),
+    ["inbox-1280.png", "board-1280.png", "inbox-390.png", "board-390.png"],
+    "the routes attach in table order",
+  );
+  w454Refuses(
+    "an href off its route",
+    w454World(["inbox"], { navText: navTable(["inbox"]).replace("#/inbox", "#/board") }).w,
+    line,
+  );
+  w454Refuses(
+    "a route too long for a shot name",
+    w454World(["inbox"], { navText: navTable(["inbox", "a".repeat(18)]) }).w,
+    line,
+  );
+  w454Refuses(
+    "a repeated route",
+    w454World(["inbox"], { navText: navTable(["inbox", "inbox"]) }).w,
+    /NAV_ENTRIES repeats the route inbox/,
+  );
+  w454Refuses(
+    "a table screen with no shots",
+    w454World(["inbox", "board"], { navText: navTable(["home", "inbox", "board"]) }).w,
+    /UI review screenshots must be exactly home-1280\.png, .*missing home-1280\.png, home-390\.png; unexpected none/,
+  );
+  w454Refuses(
+    "a shot of no table screen",
+    w454World(["home", "inbox"], { navText: navTable(["inbox"]) }).w,
+    /missing none; unexpected home-1280\.png, home-390\.png/,
+  );
+});
+
+test("W-454-b2 behaviour 2: a UI build packet attaches at most 32 MiB of screenshots in all, and refuses one byte more before the packet exists", () => {
+  const routes = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"];
+  const twoMiB = (_name, size) => 2 * 1024 * 1024 - size;
+  const at = w454World(routes, { pad: twoMiB });
+  const r = w454Packet(at.w);
+  assert.equal(r.status, 0, `sixteen 2 MiB shots, exactly 32 MiB, build: ${r.err}`);
+  assert.equal(r.built.images.length, 16, "all sixteen are attached");
+  const over = w454World(routes, { pad: (name, size) => twoMiB(name, size) + (name === "a8-390.png" ? 1 : 0) });
+  w454Refuses(
+    "one byte over 32 MiB",
+    over.w,
+    /^UI review screenshots total 33554433 bytes, over the 33554432 one review attaches$/,
   );
 });

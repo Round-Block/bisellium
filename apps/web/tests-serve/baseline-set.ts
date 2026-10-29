@@ -1,20 +1,20 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { NAV_ENTRIES } from "../src/lib/nav.js";
 
 export const BASELINE_BOOTSTRAP_REASON =
   "W-350 bootstrap: no screenshot baseline set is committed; a follow-up opus owns the reviewed runner artifact";
 
-export const BASELINE_FILES = [
-  "inbox-1280.png",
-  "board-1280.png",
-  "seats-1280.png",
-  "officina-1280.png",
-  "inbox-390.png",
-  "board-390.png",
-  "seats-390.png",
-  "officina-390.png",
-  "rendering-environment.json",
-] as const;
+/** W-454: the baseline widths, desktop then phone: screenshots.spec.ts's `VIEWPORTS` (W-350). */
+export const BASELINE_WIDTHS = [1280, 390] as const;
+
+/** W-454: one baseline per route at each width, desktop first, then the rendering identity. */
+export function baselineFiles(entries: readonly { route: string }[]): string[] {
+  return [...BASELINE_WIDTHS.flatMap((width) => entries.map(({ route }) => `${route}-${width}.png`)), "rendering-environment.json"];
+}
+
+/** W-454: the committed baseline set is the live navigation table's, so a new rail entry needs no second edit. */
+export const BASELINE_FILES: readonly string[] = baselineFiles(NAV_ENTRIES);
 
 export interface BaselineSource {
   eventName: "workflow_dispatch";

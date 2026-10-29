@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-454-b3\s --import tsx apps/web/test/w350.test.ts
+# exit: 1
+# at: 2026-10-29T06:28:48.174Z
+# sella: builder.W-454
+# tree: tree:14fe3b8a72274ff21be3947e96f7bfd2d2d38247
+# ticket: {"opus":"W-454","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-454/studio","head":"33ff00119d54356663c9337aad0a9dd38e11b2dc","brief":"e4dacff4b106be8adc46aa8b98759a124e3c5925","at":"2026-10-29T06:28:46.822Z"}
+
+TAP version 13
+# Subtest: W-454-b3 behaviour 3: the screenshot baseline list is every navigation route at 1280 then 390, then the rendering identity
+not ok 1 - W-454-b3 behaviour 3: the screenshot baseline list is every navigation route at 1280 then 390, then the rendering identity
+  ---
+  duration_ms: 12.103584
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-454/apps/web/test/w350.test.ts:1:15953'
+  failureType: 'testCodeFailure'
+  error: |-
+    the baseline list is derived, not a second table
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-454/apps/web/test/w350.test.ts:380:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 709.700522

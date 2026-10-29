@@ -1,0 +1,27 @@
+# opus: W-454
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T05:39:27.412Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-454.md blob:e4dacff4b106be8adc46aa8b98759a124e3c5925
+# ticket: {"opus":"W-454","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"e7fd20a92abd4c09b60a54ebe899e48bb73f5f98","brief":"e4dacff4b106be8adc46aa8b98759a124e3c5925","at":"2026-10-29T05:39:26.855Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-454-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the table is read from the work tree holding the packet's studio (git show-toplevel), not from --repo: next's hand-run build order passes --repo . (the main checkout) with --studio .worktrees/<id>/studio, so a --repo read would give master's table and refuse a branch that adds a screen; the perform passes repo = studio's tree, so both paths read the branch's table — check: scripts/review-packet.test.mjs (W-454-b1, the linked-worktree hand-run case), brief:43
+2. advisory — the default judgment over a refusal (Defaults 1): a refusal would make every new screen a second edit in this script before its review could run; the default states that it is the default, and W-451's Home has stated text, so W-451's review gets screen-specific judgments for all ten shots — check: brief:18, brief:55, w451-set.out
+3. advisory — the count no longer bounds bytes: W-340's 32 MiB total was implied by eight 4 MiB shots; it is now an explicit refusal at 33554432; codex exec --help (codex-cli 0.153.4) states no count or size limit for -i, and vendor request limits stay a stated limit (D-076 E), not a guarantee; readServedShots' per-shot 4 MiB and 64-entry caps are unchanged reused code, named as limits — check: brief:57, brief:63, scripts/review-packet.test.mjs (W-454-b2)
+4. advisory — each red fails by assertion on master 916e2ae7 with the final rows (b1 at "the navigation table's twelve screenshots build", b2 at "sixteen 2 MiB shots, exactly 32 MiB, build", b3 at "the baseline list is derived, not a second table") and on its stage (b2 on stage 1 at "one byte over 32 MiB: refused", b3 on stage 2); the host replay classifier accepts all five; b1 passes at stage 1 and b2 at stage 2 — check: red-b1-master.out, red-b2-master.out, red-b3-master.out, red-b2-stage1.out, red-b3-stage2.out, red-accept.out, proto-b1-stage1.out, proto-b2-stage2.out
+5. advisory — must-stay-green on the prototype: review-packet.test.mjs 14 of 14, next-review.test.ts 36 of 36, w350.test.ts 4 of 4, containment.test.ts and doc-cap.test.ts whole; unedited, exactly the eleven named rows fail (W-340-b1; W-340-b2, W-274-b1, the seven W-377 rows and W-416-b2 on the missing table) — check: review-packet-proto.out, next-review-proto.out, w350-proto.out, containment-proto.out, doc-cap-proto.out, review-packet-unedited-proto.out, next-review-unedited-proto.out
+6. advisory — the Codex test check lists eleven flips, every one named, Unnamed: None; its must-stay-green rows (the non-UI W-215, W-314, W-322, W-274-b2, W-292, W-309, W-315, W-316, W-353 packet rows, W-350-b2, W-288-b3, the containment census rows) pass in the full prototype runs; screenshots.spec.ts's baseline test is a served Playwright row not run here: with no baseline committed it takes its bootstrap skip, and BASELINE_FILES on master's table equals the old eight plus the identity — check: fixture-census.md, w350-proto.out
+7. advisory — W-451 compatibility: W-451's branch (a0d5d440) table parses under the grammar to home, inbox, board, seats, officina, exactly its ten served shots, 503663 bytes; W-454 edits none of W-451's files (walk.spec.ts, capture-state.ts, screenshots.spec.ts, nav.ts), which stay out of scope — check: w451-set.sh, w451-set.out, brief:115
+8. advisory — the brief passes admission and the ledger covers the four promise lines and every Input domain row; lint, format (after the kept format-write.sh) and typecheck pass on the touched files; studio/prompts/build-review.md and docs/ADOPTION.md are code-owned, so the Patron merges (Defaults 3) — check: admission.out, promise-ledger.md, lint-proto.out, format-proto.out, typecheck-proto.out
+
+## Verdict
+
+passed — signed by the architect seat (`claude-opus-5-5`; ops opus, ops-lead's signature under D-129 A routed to architect until W-452), brief revision 1 at `studio/briefs/W-454.md`, master 916e2ae7.
