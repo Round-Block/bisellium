@@ -9,7 +9,7 @@
  * CONTEXT_WIND_DOWN context tokens; `tick` and `next --all` print the Codex burn the rest of the week needs. See
  * studio/briefs/W-430.md.
  */
-import { closeSync, constants, fstatSync, openSync, readdirSync, statSync, writeSync } from "node:fs";
+import { closeSync, constants, fstatSync, ftruncateSync, openSync, readdirSync, statSync, writeSync } from "node:fs";
 import { join } from "node:path";
 import { instant } from "@bisellium/schema";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
@@ -174,12 +174,18 @@ export function appendReading(home: string, r: Reading, write: (fd: number, data
     const dir = ensureRealDirectory(home, EVIDENCE, USAGE);
     const fd = openSync(join(dir, READINGS), constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o666);
     try {
-      if (!fstatSync(fd).isFile()) throw new Error(`${READINGS} is not a regular file`);
+      const st = fstatSync(fd);
+      if (!st.isFile()) throw new Error(`${READINGS} is not a regular file`);
       const line = Buffer.from(`${JSON.stringify(r)}\n`);
-      for (let done = 0; done < line.length; ) {
-        const n = write(fd, line.subarray(done));
-        if (!(n > 0)) throw new Error(`${READINGS} write stopped after ${done} of ${line.length} bytes`);
-        done += n;
+      try {
+        for (let done = 0; done < line.length; ) {
+          const n = write(fd, line.subarray(done));
+          if (!(n > 0)) throw new Error(`${READINGS} write stopped after ${done} of ${line.length} bytes`);
+          done += n;
+        }
+      } catch (e) {
+        ftruncateSync(fd, st.size); // a failed append leaves the file as it was
+        throw e;
       }
     } finally {
       closeSync(fd);
