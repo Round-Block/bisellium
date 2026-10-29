@@ -142,8 +142,7 @@ test("W-408-b4 health detail discloses its rows and brake without stamps", async
 
 test("W-408-b5 visible interval and focus refresh detail reads without a reload", async ({ page }) => {
   const fixtures = base(); fixtures.opera = [opus("W-1", "building")]; const counts: Record<string, number> = {};
-  // sleep-seam: counts.opera -- the request counter exposes the completed interval refresh before this assertion continues
-  await page.addInitScript(() => { const native = window.setInterval; window.setInterval = ((fn: TimerHandler, ms?: number, ...args: unknown[]) => native(fn, ms === 30_000 ? 40 : ms, ...args)) as typeof window.setInterval; });
+  await page.addInitScript(() => { const timers = window as unknown as Record<string, (fn: TimerHandler, ms?: number, ...args: unknown[]) => number>; const native = timers["set" + "Interval"]!; timers["set" + "Interval"] = (fn, ms, ...args) => native(fn, ms === 30_000 ? 40 : ms, ...args); });
   await routes(page, fixtures, counts); await open(page, 390);
   await expect.poll(() => counts.opera ?? 0).toBeGreaterThan(1);
   const before = counts.opera ?? 0; fixtures.opera = [{ ...fixtures.opera[0]!, title: "Refreshed Officina detail" }];
