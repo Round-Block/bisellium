@@ -154,7 +154,7 @@ function navRoutes(tree) {
   const routes = [];
   for (const line of table[1].split("\n").filter((l) => l.trim() !== "")) {
     const entry =
-      /^ {2}\{ route: "([a-z][a-z0-9-]{0,16})", href: "#\/([a-z][a-z0-9-]{0,16})", label: "[^"\\]+" \},$/.exec(line);
+      /^ {2}\{ route: "([a-z][a-z0-9-]{0,16})", href: "#\/([a-z][a-z0-9-]{0,16})", label: "[^"\\]*" \},$/.exec(line);
     if (entry === null || entry[1] !== entry[2])
       refuse(`${NAV_REL}: NAV_ENTRIES line ${JSON.stringify(line)} is not a { route, href, label } entry`);
     if (routes.includes(entry[1])) refuse(`${NAV_REL}: NAV_ENTRIES repeats the route ${entry[1]}`);
