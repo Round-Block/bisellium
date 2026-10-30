@@ -1,0 +1,28 @@
+# opus: W-468
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T16:26:39.266Z
+# tree: tree:17fbdb5e1fe2d6108fe321115274c85e78c98f11
+# brief: briefs/W-468.md blob:3effb8b2b26c5ca861dd3617b0362921f855b69f
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-468/studio","head":"64c1664c037adfece01274b50d6f677042eac39c","brief":"3effb8b2b26c5ca861dd3617b0362921f855b69f","at":"2026-10-30T16:26:29.963Z"}
+
+# W-468 spec signature, round 6 (architect, claude-opus-5-5): revision 4, the build-review class ruled
+
+Brief: studio/briefs/W-468.md revision 4 on opus/W-468 (64c1664c), revision 3's design prototyped over master a07c1424 (prototype.mbox sha256 0b0ffff09bc01e5f5cb04adc2f9e45092cdb4042b15f0785fa6fac4855302539); revision 4 prototyped over 64c1664c (r6/prototype-r6.diff sha256 e73c78d95d58087936996771be22be32b16a4cfddb043d3b8ef1cb7939a91fd6); evidence in /home/edckt/.bisellium-evidence/W-468-spec/ and its r6/ (revision 4 written by r6/edit-brief-r6.py; the ledger by r6/ledger-r6.py).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-468-spec/r6/promise-ledger.md
+
+Build review rounds 1 and 2 (ci/W-468-review-1.log #1, ci/W-468-review-2.log #1) failed on one class, review×fail-open-on-malformed-records-patched-per-site: `staleCitedReds` read a cited red's `# at:` first with the permissive `instant`, then with a pattern of its own that took any fraction of 1-9 digits. The ruling closes the class, not the instance: an exact `# at:` is the studio's one exact UTC profile, `utcTimestampProblem` (opus-model.ts:73 `UTC_PROFILE`, anchored, a fraction of exactly three digits or none, fields in range; opus-model.ts:132 a real Gregorian day, not year 0000), the profile `red`'s `--now` is admitted by and `ladder.ticket` reads red logs by; `red` writes `now.toISOString()` (lifecycle.ts:1183), inside it. `exactInstant` becomes `utcTimestampProblem(v) === undefined ? instant(v)?.getTime() : undefined`, ladder-ticket.ts:52's shape, so no reader keeps a pattern of its own for a later round to find a variant in. Every other form is stale; the no-fraction form, which `red` never writes, is exact by the shared profile, a stated limit (brief:60).
+
+Checked: the form table (r6/probe-forms.out) shows the round-2 parser taking one-, two-, four- and nine-digit fractions and year 0000, and the ruled reading taking only the writer's form and the no-fraction form; on the r6 prototype row b1 passes with the twelve outside-profile forms stale and the no-fraction form fresh (r6/b1-proto.out), and the typecheck passes (r6/typecheck.out); four one-hunk kills of `exactInstant` fail row b1 at the assertion they guard (r6/kills.out): K19 the round-2 parser at the one-digit fraction, K20 the round-1 parser at the date-only form, K21 the writer's three-digit form only at the no-fraction form, K22 the shape read by Date.parse at hour 24. The change stays inside next.ts (its existing opus-model.js import) and next-branch.test.ts; no code-owned file; the brief's line count is unchanged, so revision 3's ledger lines and kills hold.
+
+## Findings
+1. advisory — the exact `# at:` domain is the shared `utcTimestampProblem` profile, so its no-fraction form counts as exact though `red` never writes it, and a later change to the profile moves this reader with it; stated as a limit at brief:60 — check: opus-model.ts:73 (master)
+2. advisory — the class's cause fix (records checked once at load) stays W-185; this ruling closes the instance class at the one reader W-468 owns, by reusing the existing profile rather than a pattern of its own — check: next.ts:1453 (r6)
+3. advisory — a fix round's re-red for a kind: ui opus whose `spec:` names a custom brief is cut, not handled; filed as W-475 under D-061 §4 — check: next.ts:1456 (prototype)
+
+## Verdict
+passed — revision 4 rules the build-review class once: an exact `# at:` is the studio's exact UTC profile (`YYYY-MM-DDTHH:MM:SS.sssZ`, what `red` writes, or `YYYY-MM-DDTHH:MM:SSZ`, on a real day), read through `utcTimestampProblem`; every other form orders the red again, pinned by twelve stale forms and the fresh no-fraction form in row W-468-b1 and guarded by four kills.

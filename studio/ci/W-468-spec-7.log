@@ -1,0 +1,21 @@
+# opus: W-468
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18ca4-2601-7542-acf6-faac16d42315
+# outcome: failed
+# at: 2026-10-30T16:30:40.409Z
+# tree: tree:17fbdb5e1fe2d6108fe321115274c85e78c98f11
+# brief: briefs/W-468.md blob:3effb8b2b26c5ca861dd3617b0362921f855b69f
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":".worktrees/W-468/studio","head":"64c1664c037adfece01274b50d6f677042eac39c","brief":"3effb8b2b26c5ca861dd3617b0362921f855b69f","at":"2026-10-30T16:30:39.066Z"}
+
+## Findings
+1. blocking — brief:73 The promised padding rejection is not implemented: `parseLogHeader(...).trim()` removes trailing whitespace before `exactInstant`, so an accidentally padded `# at: 2026-10-02T12:10:00.000Z ` is treated as fresh by `bisellium next`, skipping the required re-red. The prototype probes `utcTimestampProblem` directly, while W-468-b1 omits this case; validate the raw header value before normalization and pin it. [severity: S1] [design: keeps] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/next-branch.test.ts W-468-b1: a trailing-space-padded `# at:` is stale
+
+## Earlier findings
+- ci/W-468-spec-4.log #1: reversed — brief:109 states the custom-spec-pointer UI re-red is out of scope and filed as W-475.
+
+## Verdict
+The revised exact-time profile still fails open for a promised malformed form at the actual reader boundary.
+VERDICT: FAIL
