@@ -1,6 +1,6 @@
 /**
  * packages/cli/src/guard.ts — W-310 (with W-290): the guard `bisellium hook-event guard` runs for
- * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit) and SubagentStop hooks. Deny-only and
+ * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit), SubagentStop and Stop hooks. Deny-only and
  * fail-open: it returns a refusal or nothing, never an allow, and hooks.ts lets the call run on any
  * error, unknown event or unreadable input. The main thread is a hook input without `agent_id`
  * (Claude Code sets it only inside a subagent, D-073 B).
@@ -13,6 +13,9 @@
  * W-418: at a main-thread PreToolUse whose input names a cwd, the guard first takes the review notices a PR perform or
  * `review-request` left under that checkout's Git common directory (review-notice.ts) and refuses the call once with
  * their text, so the session pushes them to the Patron; taking a notice removes it.
+ *
+ * W-444: at a main-thread Stop the guard judges the session's final reply (`last_assistant_message`) by the rules in
+ * STOP_RULES and sends it back once with their refusals joined; W-436 adds its rule to that table.
  */
 import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
@@ -447,6 +450,44 @@ export function ownLiveWork(input: Dict): string[] {
   });
 }
 
+/** W-444: what a Stop rule is handed besides the reply: the hook input, the home whose usage readings it may read, and
+ *  the clock. */
+export interface StopContext {
+  input: Dict;
+  home: string;
+  now: Date;
+}
+/** One rule a main-thread final reply is judged by: a refusal line, or undefined when the reply keeps it. */
+export type StopRule = (reply: string, ctx: StopContext) => string | undefined;
+
+/** The most words a reply to the Patron holds (Patron 2026-10-28: each asked point in one or two lines). */
+export const REPLY_WORDS = 200;
+/** A reply's words: its whitespace-separated runs that hold a letter or a digit, code blocks included (a bare `-`, `|`
+ *  or fence is not a word). */
+export function replyWords(reply: string): number {
+  return reply.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+}
+const replyLength: StopRule = (reply) => {
+  const n = replyWords(reply);
+  return n > REPLY_WORDS
+    ? `refused: this reply is ${n} words, over ${REPLY_WORDS} (W-444): reply again in at most ${REPLY_WORDS} words, code blocks counted, each asked point in one or two lines`
+    : undefined;
+};
+
+/** The rules a main-thread final reply is judged by, in order; each refusal is one line. W-436 adds its rule here. */
+export const STOP_RULES: readonly StopRule[] = [replyLength];
+
+/** Stop (W-444): the refusals of `rules` for the main thread's final reply, one line each, joined; undefined for a
+ *  subagent (`agent_id`), a continuation a Stop hook caused (`stop_hook_active`, so a reply is sent back once) or a Stop
+ *  with no reply text. */
+export function stopRefusal(input: Dict, home: string = homedir(), now: Date = new Date(), rules: readonly StopRule[] = STOP_RULES): string | undefined {
+  if (str(input["agent_id"]) !== undefined || input["stop_hook_active"] === true) return undefined;
+  const reply = input["last_assistant_message"];
+  if (typeof reply !== "string" || reply.trim() === "") return undefined;
+  const why = rules.flatMap((rule) => rule(reply, { input, home, now }) ?? []);
+  return why.length > 0 ? why.join("\n") : undefined;
+}
+
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */
 export function guardRefusal(input: Dict): string | undefined {
   const event = input["hook_event_name"];
@@ -458,6 +499,7 @@ export function guardRefusal(input: Dict): string | undefined {
       ? `refused: your report is in but your own background work still runs (${ids.join(", ")}): stop each with TaskStop, then finish (W-310)`
       : undefined;
   }
+  if (event === "Stop") return stopRefusal(input);
   if (event !== "PreToolUse") return undefined;
   // W-418: a notice a PR perform left for the Patron is handed to the main thread once, before anything else is judged;
   // an input with no cwd (the hooks-check probe) reads none

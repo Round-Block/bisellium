@@ -331,7 +331,8 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
 }
 
 /** `hook-event guard` (W-310): the refusal on stderr and exit 2, which Claude Code shows the model and
- *  turns into a refused tool call (PreToolUse) or a subagent kept running (SubagentStop); exit 0 otherwise.
+ *  turns into a refused tool call (PreToolUse), a subagent kept running (SubagentStop) or a main-thread reply sent
+ *  back (Stop, W-444); exit 0 otherwise.
  *  Deny-only and fail-open: a throw lands in runHookEvent's catch, which exits 0. */
 function handleGuard(payload: Record<string, unknown>): HooksResult {
   const why = guardRefusal(payload);
