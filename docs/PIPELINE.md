@@ -15,6 +15,7 @@ Contract: `docs/ADOPTION.md`; where they disagree, the contract wins.
 ```bash
 npm run bisellium -- run --sella <sella> --studio <dir> [--repo <dir>] -- <cmd…>
 npm run bisellium -- run --reclaim --studio <dir>
+npm run bisellium -- run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>
 npm run bisellium -- verify <opus-id> --studio <dir> --repo <dir> [--allow-dirty]
 ```
 
@@ -31,6 +32,18 @@ removes worktrees whose directory is gone or whose branch is fully merged
 and clean, so that directory's growth is bounded; anything still in use
 (unmerged branch, uncommitted changes, or not registered with `git worktree
 list`) is left alone and reported as kept.
+
+`run --scratch <dir>` (W-474) is for the stage, replay, kill and gate scripts
+an architect or a seat keeps beside its evidence: it runs `<cmd…>` in a copy
+of `--repo` (default: the repo the current directory is in) at `--base`
+(default `HEAD`), made as `<dir>/scratch.XXXXXX` by `git clone --shared`, so
+the copy holds a working tree and borrows the repository's objects, and with
+a `node_modules` of links to the repository's (workspace links resolve inside
+the copy). The copy is deleted when the command ends, when it fails, and on
+SIGINT, SIGTERM or SIGHUP; the exit status is the command's. Before copying,
+a `<dir>` holding 3 GiB or more (every regular file under it, links not
+followed) refuses with exit 2 and makes nothing. It takes no sella and writes
+no receipt.
 
 `verify` runs every `kind: automated` probatio's `command` against `--repo`
 (defaulting to the studio's parent repo) and writes each one's

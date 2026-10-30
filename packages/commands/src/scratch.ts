@@ -1,10 +1,11 @@
 /**
  * `bisellium run --scratch <dir>` (W-474): run a command in a throwaway copy of the repository at one commit, made under
  * `<dir>` (one opus's evidence folder), that shares the repository's git objects instead of copying them, and is
- * deleted when the command ends, on a failure and on SIGINT, SIGTERM or SIGHUP too. No sella, no officina, no receipt: the copy is scratch, not a seat's work.
+ * deleted when the command ends, on a failure and on SIGINT, SIGTERM or SIGHUP too. A folder at or over
+ * `SCRATCH_CAP_BYTES` refuses the next copy. No sella, no officina, no receipt: the copy is scratch, not a seat's work.
  *
  * Exit codes: the command's own (128+signal when it was killed by one, or when this run was) · 2 a refusal (bad flags,
- * not a directory, not a repository, no such commit) before any copy is made · 1 the copy could not be made or
+ * not a directory, not a repository, no such commit, the cap) before any copy is made · 1 the copy could not be made or
  * removed.
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -12,6 +13,8 @@ import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readlinkSyn
 import { constants as osConstants } from "node:os";
 import { join, resolve } from "node:path";
 
+/** 3 GiB: the most one opus's evidence folder holds before the next copy is refused. */
+export const SCRATCH_CAP_BYTES = 3 * 1024 ** 3;
 /** The copy's name under the folder: `scratch.` and mkdtemp's six characters, the form prune-scratch.sh removes. */
 export const SCRATCH_PREFIX = "scratch.";
 const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
@@ -29,6 +32,23 @@ function git(cwd: string, args: string[]): { status: number; out: string; err: s
   const r = spawnSync("git", args, { cwd, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
   return { status: r.error ? -1 : (r.status ?? -1), out: (r.stdout ?? "").trim(), err: (r.stderr ?? r.error?.message ?? "").trim() };
 }
+
+/** The bytes `dir` holds: the size of every regular file under it, symlinks never followed; stops counting past `stop`. */
+export function folderBytes(dir: string, stop = Infinity): number {
+  let total = 0;
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      if (total >= stop) return;
+      const p = join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.isFile()) total += lstatSync(p).size;
+    }
+  };
+  walk(dir);
+  return total;
+}
+
+const gb = (n: number): string => (n / 1024 ** 3).toFixed(2);
 
 /**
  * The copy's node_modules: a directory of links to the repository's. An entry that is itself a link (a workspace
@@ -70,6 +90,11 @@ export async function runScratch(a: ScratchArgs): Promise<number> {
   const commit = git(repo, ["rev-parse", "--verify", "--quiet", "--end-of-options", `${base}^{commit}`]);
   if (commit.status !== 0 || commit.out === "") {
     say(`${base} is not a commit in ${repo}`);
+    return 2;
+  }
+  const held = folderBytes(dir, SCRATCH_CAP_BYTES);
+  if (held >= SCRATCH_CAP_BYTES) {
+    say(`${dir} holds ${gb(held)} GiB, at or over the ${gb(SCRATCH_CAP_BYTES)} GiB cap of one opus's folder; no copy is made`);
     return 2;
   }
 
