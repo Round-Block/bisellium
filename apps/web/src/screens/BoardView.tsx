@@ -39,6 +39,23 @@ function cardClassName(card: CardRow): string {
   return ["board__card", state].filter(Boolean).join(" ");
 }
 
+function AskKinds({ card }: { card: CardRow }): JSX.Element | null {
+  if ((card.asks?.length ?? 0) === 0) return null;
+  return (
+    <span className="board__card-asks" aria-label="Waiting on you">
+      {card.asks?.map((ask) => (
+        <span key={ask.kind} className="board__card-ask">
+          {ask.kind === "greenlight"
+            ? "Greenlight"
+            : ask.kind === "inbox"
+              ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
+              : "Human gate"}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Card({
   card,
   columnId,
@@ -64,24 +81,33 @@ function Card({
     >
       <GateLadder gates={card.gates} />
       <span className="board__card-title" title={card.title}>{card.title}</span>
-      {(card.asks?.length ?? 0) > 0 && (
-        <span className="board__card-asks" aria-label="Needs you">
-          {card.asks?.map((ask) => (
-            <span key={ask.kind} className="board__card-ask">
-              {ask.kind === "greenlight"
-                ? "Greenlight"
-                : ask.kind === "inbox"
-                  ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
-                  : "Human gate"}
-            </span>
-          ))}
-        </span>
-      )}
+      <AskKinds card={card} />
       <span className="board__card-meta">
         {card.sella && <span className="board__card-sella">{card.sella}</span>}
         <span className="board__card-state">{card.state}</span>
       </span>
     </div>
+  );
+}
+
+function WaitingStrip({ waiting }: { waiting: CardRow[] }): JSX.Element {
+  return (
+    <aside className={["board__waiting", waiting.length === 0 && "board__waiting--empty"].filter(Boolean).join(" ")} aria-label="Waiting on you">
+      <div className="board__waiting-label">
+        <span>Waiting on you</span>
+        <strong>{waiting.length}</strong>
+      </div>
+      {waiting.length === 0
+        ? <p className="board__waiting-empty">Nothing waiting on you</p>
+        : <div className="board__waiting-items">
+          {waiting.map((card) => (
+            <div key={card.id} className="board__waiting-item" data-waiting-id={card.id}>
+              <span className="board__waiting-title" title={card.title}>{card.title}</span>
+              <AskKinds card={card} />
+            </div>
+          ))}
+        </div>}
+    </aside>
   );
 }
 
@@ -147,6 +173,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
       </div>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
+      <WaitingStrip waiting={model.waiting} />
       <div className="board__strip">
         {model.columns.map((column) => (
           <button key={column.id} type="button" className="board__strip-item" onClick={() => scrollColumnIntoView(column.id)}>
