@@ -1,0 +1,59 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-472-b4\s --import tsx packages/cli/src/w472.test.ts
+# exit: 1
+# at: 2026-10-30T16:20:25.154Z
+# sella: builder.W-472
+# tree: tree:3cbcc45fe48c540d8ee25c6f829de1e13355d6e7
+# ticket: {"opus":"W-472","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-472/studio","head":"4fcc2eb888a652556100a173f449e2db43933ab9","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-30T16:20:23.924Z"}
+
+TAP version 13
+# Subtest: W-472-b4 behaviour 4: check advises on a long title of a record that is not done, never blocking
+not ok 1 - W-472-b4 behaviour 4: check advises on a long title of a record that is not done, never blocking
+  ---
+  duration_ms: 36.424499
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:11:3415'
+  failureType: 'testCodeFailure'
+  error: |-
+    check advises on the long titles of records not done, and only those
+    + actual - expected
+    
+    + []
+    - [
+    -   [
+    -     'opera/W-1.md',
+    -     'advise'
+    -   ],
+    -   [
+    -     'opera/W-4.md',
+    -     'advise'
+    -   ]
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'opera/W-1.md'
+      1: 'advise'
+    1:
+      0: 'opera/W-4.md'
+      1: 'advise'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:218:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 50.245915
