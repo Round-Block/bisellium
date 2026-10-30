@@ -240,4 +240,12 @@ test("W-474-b3 behaviour 3: run --scratch refuses the next copy when the folder 
   git(root, "update-ref", "refs/heads/--odd-base", "HEAD");
   const dashedBase = cli(REPO, ["--scratch", folder, "--repo", root, "--base", "--odd-base", ...cmd]);
   assert.ok(dashedBase.status === 0 && existsSync(marker), "a base whose text begins with dashes is recognised");
+  rmSync(marker);
+
+  const bare = tmp("bare");
+  const bareRepo = fixtureRepo();
+  renameSync(bareRepo.root, join(bare, "--"));
+  git(join(bare, "--"), "update-ref", "refs/heads/--", "HEAD");
+  const dashesOnly = cli(bare, ["--scratch", "--", "--repo", "--", "--base", "--", "--", ...cmd.slice(1)]);
+  assert.ok(dashesOnly.status === 0 && existsSync(marker), 'a folder, repository and base that are exactly "--" are recognised');
 });
