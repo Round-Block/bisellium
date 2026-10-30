@@ -7,7 +7,7 @@
  */
 import assert from "node:assert/strict";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -102,6 +102,15 @@ test("W-474-b1 behaviour 1: run --scratch runs the command in a copy at the base
   const r3 = cli(REPO, ["--scratch", folder, "--repo", root, "--", join(folder, "no-such-command")]);
   assert.equal(r3.status, 127, "a command that cannot start exits 127");
   assert.deepEqual(readdirSync(folder), [], "the copy is gone when the command cannot start");
+
+  const linked = fixtureRepo();
+  const target = join(tmp("modules"), "node_modules");
+  renameSync(join(linked.root, "node_modules"), target);
+  symlinkSync(target, join(linked.root, "node_modules"));
+  const out4 = join(tmp("out"), "facts.json");
+  const r4 = cli(REPO, ["--scratch", folder, "--repo", linked.root, "--", process.execPath, "-e", FACTS, out4, "0"]);
+  const f4 = facts(out4);
+  assert.ok(r4.status === 0 && f4 !== undefined && f4.dep === "" && f4.pkg === "", "a symlinked top-level node_modules is not linked");
 });
 
 /** A run whose command prints `<its pid> <its cwd>` and then blocks reading stdin; `trap` makes it ignore SIGTERM. */
