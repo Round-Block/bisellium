@@ -5,7 +5,7 @@
  * affordance (scroll a column into view) rather than app state, so it lives
  * here rather than being threaded up through Board.tsx.
  */
-import type { JSX } from "react";
+import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type { BoardModel, CardRow } from "../lib/board.js";
 import { GateLadder } from "../components/GateLadder.js";
 import { Colophon } from "../components/Colophon.js";
@@ -91,22 +91,51 @@ function Card({
 }
 
 function WaitingStrip({ waiting }: { waiting: CardRow[] }): JSX.Element {
+  const itemsRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const updateScrollCue = useCallback(() => {
+    const items = itemsRef.current;
+    setCanScrollRight(items !== null && items.scrollLeft + items.clientWidth < items.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updateScrollCue();
+    const items = itemsRef.current;
+    if (!items) return;
+    const observer = new ResizeObserver(updateScrollCue);
+    observer.observe(items);
+    window.addEventListener("resize", updateScrollCue);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScrollCue);
+    };
+  }, [updateScrollCue, waiting.length]);
+
+  const showMore = (): void => {
+    const items = itemsRef.current;
+    if (!items) return;
+    items.scrollBy({ left: items.clientWidth * 0.9, behavior: "auto" });
+  };
+
   return (
-    <aside className={["board__waiting", waiting.length === 0 && "board__waiting--empty"].filter(Boolean).join(" ")} aria-label="Waiting on you">
+    <aside className={`board__waiting${waiting.length === 0 ? " board__waiting--empty" : ""}`} aria-label="Waiting on you">
       <div className="board__waiting-label">
         <span>Waiting on you</span>
         <strong>{waiting.length}</strong>
       </div>
-      {waiting.length === 0
-        ? <p className="board__waiting-empty">Nothing waiting on you</p>
-        : <div className="board__waiting-items">
+      {waiting.length > 0 && <div className="board__waiting-rail">
+        <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
           {waiting.map((card) => (
-            <div key={card.id} className="board__waiting-item" data-waiting-id={card.id}>
-              <span className="board__waiting-title" title={card.title}>{card.title}</span>
-              <AskKinds card={card} />
-            </div>
+              <div key={card.id} className="board__waiting-item" data-waiting-id={card.id}>
+                <span className="board__waiting-title" title={card.title}>{card.title}</span>
+                <AskKinds card={card} />
+              </div>
           ))}
-        </div>}
+        </div>
+        {canScrollRight && <button type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick={showMore}>
+          <span aria-hidden="true">›</span>
+        </button>}
+      </div>}
     </aside>
   );
 }

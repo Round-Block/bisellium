@@ -1978,6 +1978,142 @@
   overflow-wrap: anywhere;
 }
 
+.board__waiting {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  box-sizing: border-box;
+  height: 96px;
+  gap: var(--sp-2);
+  margin: var(--sp-3) var(--sp-6) 0;
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+
+.board__waiting-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: fit-content;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.board__waiting-label span {
+  white-space: nowrap;
+}
+
+.board__waiting-label strong {
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 20px;
+}
+
+.board__waiting.board__waiting--empty {
+  grid-template-columns: 1fr;
+  height: 20px;
+  gap: 0;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.board__waiting--empty .board__waiting-label {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+  width: auto;
+}
+
+.board__waiting--empty .board__waiting-label strong {
+  font-size: 15px;
+  line-height: 18px;
+}
+
+.board__waiting-rail {
+  position: relative;
+  min-width: 0;
+}
+
+.board__waiting-items {
+  display: flex;
+  gap: var(--sp-2);
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scroll-padding-inline: 2px;
+}
+
+.board__waiting-item {
+  flex: 0 0 calc((100% - (3 * var(--sp-2))) / 4);
+  box-sizing: border-box;
+  width: 100%;
+  height: 66px;
+  min-width: 0;
+  padding: 3px var(--sp-2);
+  border-left: 2px solid var(--amber);
+  background: var(--wash);
+}
+
+.board__waiting-more {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: #080b0d;
+  color: #fff;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 45%);
+  font: 24px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.board__waiting-more:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+.board__waiting-more span {
+  transform: translateY(-1px);
+}
+
+.board__waiting-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.board__waiting-item .board__card-asks {
+  display: flex;
+  flex-wrap: wrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.board__waiting-item .board__card-ask {
+  white-space: nowrap;
+}
+
+.board__card-ask:not(:last-child)::after {
+  content: ",\00a0";
+}
+
 .board__liveness {
   flex-shrink: 0;
   margin-left: auto;
@@ -2047,13 +2183,6 @@
   min-height: 0;
 }
 
-.board__column--pinned {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--surface);
-}
-
 .board__column-head {
   display: flex;
   align-items: baseline;
@@ -2112,6 +2241,7 @@
 
 .board__card--amber {
   border-left-color: var(--amber);
+  background: var(--wash);
 }
 
 .board__card--bad {
@@ -2151,10 +2281,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.board__card-ask + .board__card-ask::before {
-  content: ", ";
 }
 
 .board__card-meta {
@@ -2338,12 +2464,18 @@
   padding: 4px 0;
 }
 
-/* Narrow: <=899px — the needs-you column unpins; above Board's phone
-   boundary the drawer leaves the rail visible. */
+/* Narrow: <=899px — above Board's phone boundary the drawer leaves the rail
+   visible. */
 @media (max-width: 899px) {
-  .board__column--pinned {
-    position: static;
-    left: auto;
+  .board__waiting-label {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 4px;
+    width: auto;
+  }
+
+  .board__waiting-item {
+    flex-basis: calc((100% - var(--sp-2)) / 2);
   }
 
   .board-workspace:has(.board-drawer) {
@@ -2362,6 +2494,33 @@
   .board__liveness {
     flex: 1 0 100%;
     margin-left: 0;
+  }
+
+  .board__waiting {
+    grid-template-columns: 1fr;
+    margin: var(--sp-2) var(--sp-4) 0;
+    padding: 4px 0;
+    gap: 2px;
+  }
+
+  .board__waiting-label {
+    flex-direction: row;
+    align-items: baseline;
+    width: auto;
+  }
+
+  .board__waiting-label strong {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  .board__waiting-item {
+    padding: 1px 6px;
+  }
+
+  .board__waiting-title {
+    font-size: 11px;
+    line-height: 14px;
   }
 
   .board__strip {
