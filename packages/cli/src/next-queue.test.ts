@@ -1107,6 +1107,22 @@ test("W-462-b2 behaviour 2: the rewrite perform builds every commit and replays 
   back("after an untracked write");
   pristine("after an untracked write");
 
+  // (e2) a build that writes a tracked path and then fails: held at the build, the change undone, the branch restored
+  const [failTracked] = sideEffect("writes a tracked path, then fails", 'writeFileSync(new URL("../../docs/ADOPTION.md", import.meta.url), "changed by a failing build\\n");\nprocess.exit(1);\n');
+  const e2 = performPr(w);
+  const e2Why = w462Why(e2) ?? "";
+  assert.deepEqual([e2.status, e2Why.startsWith(`why: commit ${w462Short(failTracked)} does not build: web bundle build exited 1;`), e2Why.includes("docs/ADOPTION.md"), w462Patron(e2), w462Origin(w)], [1, true, true, [], reviewed], ran("a failing build that writes a tracked path holds the rewrite", e2));
+  back("after a failing build's tracked write");
+  pristine("after a failing build's tracked write");
+
+  // (f2) a build that leaves an untracked path and then fails: likewise
+  const [failUntracked] = sideEffect("leaves an untracked path, then fails", 'writeFileSync(new URL("./stray.txt", import.meta.url), "left by a failing build\\n");\nprocess.exit(1);\n');
+  const f2 = performPr(w);
+  const f2Why = w462Why(f2) ?? "";
+  assert.deepEqual([f2.status, f2Why.startsWith(`why: commit ${w462Short(failUntracked)} does not build: web bundle build exited 1;`), f2Why.includes("apps/web/stray.txt"), w462Patron(f2), w462Origin(w)], [1, true, true, [], reviewed], ran("a failing build that leaves an untracked path holds the rewrite", f2));
+  back("after a failing build's untracked write");
+  pristine("after a failing build's untracked write");
+
   // (g) every check passes, but the worktree cannot be put back on the branch: no Patron command
   const [, lostHead] = sideEffect("loses the branch", `import { execFileSync } from "node:child_process";\nexecFileSync("git", ["update-ref", "-d", "refs/heads/${BRANCH}"]);\n`);
   const g = performPr(w);
