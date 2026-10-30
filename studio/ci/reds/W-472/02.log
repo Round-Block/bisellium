@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-472-b2\s --import tsx packages/cli/src/w472.test.ts
+# exit: 1
+# at: 2026-10-30T16:20:04.591Z
+# sella: builder.W-472
+# tree: tree:99b88998717c14cbf508fcb9e15a0851be577a43
+# ticket: {"opus":"W-472","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-472/studio","head":"dbe905bcaddda5b12f16a8c8560f3bfb9a0eba89","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-30T16:20:03.358Z"}
+
+TAP version 13
+# Subtest: W-472-b2 behaviour 2: new --description writes the long text below the front matter, and the served API carries it
+not ok 1 - W-472-b2 behaviour 2: new --description writes the long text below the front matter, and the served API carries it
+  ---
+  duration_ms: 4.704709
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:10:3318'
+  failureType: 'testCodeFailure'
+  error: |-
+    --description is accepted: exit 2 flag --description not allowed for "new"
+    usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:139:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11.858492
