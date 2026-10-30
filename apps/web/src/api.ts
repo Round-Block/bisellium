@@ -234,9 +234,27 @@ export async function postWrite(path: string, body: unknown): Promise<WriteResul
 
 // ── W-024 fetchers ───────────────────────────────────────────────────
 
-/** GET /api/inbox. Non-200 rejects with the numeric status. */
-export function fetchInbox(): Promise<InboxResponse> {
-  return getJSON("/api/inbox");
+/** GET /api/inbox. Non-200 rejects with the numeric status.
+ *  Every call issues a fresh GET, so a refresh after a write, an answer or a
+ *  live frame never reuses a stale response. The request is remembered as the
+ *  mount read: only the shell's mount reads (`{ shared: true }`) join it while
+ *  it is in flight and for a bounded 50ms after it settles. */
+let inboxInFlight: { promise: Promise<InboxResponse>; settledAt?: number } | undefined;
+const INBOX_SHARE_WINDOW_MS = 50;
+
+export function fetchInbox(opts?: { shared?: boolean }): Promise<InboxResponse> {
+  if (opts?.shared === true && inboxInFlight !== undefined) {
+    const { settledAt } = inboxInFlight;
+    if (settledAt === undefined || Date.now() - settledAt <= INBOX_SHARE_WINDOW_MS) return inboxInFlight.promise;
+  }
+  const promise = getJSON<InboxResponse>("/api/inbox");
+  const entry: { promise: Promise<InboxResponse>; settledAt?: number } = { promise };
+  inboxInFlight = entry;
+  const settle = (): void => {
+    entry.settledAt = Date.now();
+  };
+  void promise.then(settle, settle);
+  return promise;
 }
 
 /** POST /api/answer, via postWrite (W-067) — see WriteResult. */

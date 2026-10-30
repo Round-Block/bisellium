@@ -39,7 +39,7 @@ interface PendingCloseRestoration {
   scrollLeft: number | undefined;
 }
 
-export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void } = {}): JSX.Element {
+export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: ScreenStatus) => void; onWaitingCount?: (count: number) => void } = {}): JSX.Element {
   const [officina, setOfficina] = useState<OfficinaResponse | typeof EMPTY_OFFICINA>(EMPTY_OFFICINA);
   const [opera, setOpera] = useState<OpusEntry[]>([]);
   const [inbox, setInbox] = useState<Pick<InboxResponse, "opera" | "petitiones">>({ opera: [], petitiones: [] });
@@ -79,6 +79,9 @@ export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
   useEffect(() => {
     modelRef.current = model;
   }, [model]);
+  useEffect(() => {
+    if (everLoaded) onWaitingCount?.(model.waiting.length);
+  }, [everLoaded, model.waiting.length, onWaitingCount]);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 612px)");
     const update = (): void => setBoardTrackCollapsed(query.matches);
@@ -300,7 +303,9 @@ export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     const sel = selected;
     if (!sel) return;
     const column = model.columns.find((c) => c.id === sel.columnId);
-    const stillThere = column?.cards.some((c) => c.id === sel.id) ?? false;
+    const stillThere = sel.columnId === "unplaced"
+      ? model.unplaced.includes(sel.id) && model.waiting.some((card) => card.id === sel.id)
+      : column?.cards.some((c) => c.id === sel.id) ?? false;
     if (stillThere) return;
     pendingCloseRestorationRef.current = { selection: sel, fallback: true, scrollLeft: scrollSnapshotRef.current };
     setSelected(undefined);
@@ -313,25 +318,19 @@ export function Board({ onStatus }: { onStatus?: (status: ScreenStatus) => void 
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".board-drawer__close")?.focus());
   }, [selected]);
 
-  // ---- Phone: initial visible column is needs_you (non-empty) else
-  // in_progress — once, after the first real model lands. ------------------
+  // ---- Phone: the pinned waiting strip carries attention membership, so
+  // lifecycle navigation always starts at its first declared phase. --------
   const didInitialScroll = useRef(false);
   useEffect(() => {
     if (didInitialScroll.current) return;
-    // NOT `model.columns.length === 0`: boardModel ALWAYS emits the
-    // needs_you column (board.ts), so that guard never holds and this
-    // effect was being consumed on the pre-data render, before any phase
-    // column exists in the DOM. `everLoaded` is the real "no data yet"
-    // signal — officina and opera land from independently-resolving
-    // fetches, so officina alone (e.g. `lifecycle.id !== ""`) can go true on
-    // a render where opera is still `[]` (needs_you reads as empty by
-    // accident, not because it is), which is the same class of bug one
-    // level up: `everLoaded` only flips after BOTH have actually committed.
+    // `everLoaded` is the real "no data yet" signal: the three reads resolve
+    // independently, so the lifecycle alone is not enough to choose a DOM
+    // column deterministically.
     if (!everLoaded) return;
     didInitialScroll.current = true;
     if (typeof window === "undefined" || !window.matchMedia?.("(max-width: 612px)").matches) return;
-    const needsYou = model.columns.find((c) => c.id === "needs_you");
-    const targetId = needsYou && needsYou.cards.length > 0 ? needsYou.id : "in_progress";
+    const targetId = model.columns[0]?.id;
+    if (targetId === undefined) return;
     requestAnimationFrame(() => {
       document.querySelector<HTMLElement>(`.board__columns [data-column-id="${targetId}"]`)?.scrollIntoView({ inline: "start", block: "nearest" });
     });

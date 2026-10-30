@@ -1,0 +1,35 @@
+# opus: W-463
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18bec-a756-72d2-a8fb-fde1c0c97c95
+# session_reason: each ui-lead input runs in a fresh read-only Codex gpt-6-astra session with its kept dispatch prompt (ci/W-463-ui-prompt-6.md); round 3's session 01a18b71-9977-7022-83c3-fd4ac3080418 judged the round-1 signature, round 6 judged the round-4 signature (ci/W-463-spec-4.log) and its own round-3 findings
+# outcome: passed
+# at: 2026-10-30T08:34:33.744Z
+# tree: tree:a7db4a64c63b6393698930e889555d26c7b66361
+# dispatch_prompt: ci/W-463-ui-prompt-6.md
+# design_digest: sha256:1445e6ce5ab335e9e91f600120b49f05cbf8d529d34110ac7d7adc9a1c0c47ce
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"72275b0c1bdc1d8a0282fe4f4ad15f117fe22dfe","brief":"6ab2a4ce92574660f9232101b47e859dbfc1ec76","at":"2026-10-30T08:34:25.907Z"}
+
+## Earlier findings
+
+- ci/W-463-spec-3.log #1: closed — Strip asks now wrap between complete kinds, retaining question counts, trailing commas and flush continuation lines; title truncation remains separate — check: [w463.spec.ts b2](/home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/tests-serve/w463.spec.ts), [combined 390 capture](/home/edckt/.bisellium-evidence/W-463-spec/shots/board-combined-390-closed.png).
+- ci/W-463-spec-3.log #2: closed — Brief:51 and the prototype make the mounted Board authoritative, invalidate obsolete shell snapshots and refresh Inbox through an independent read — check: [App.tsx](/home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/App.tsx:85), [Board.tsx](/home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/screens/Board.tsx).
+
+## Findings
+
+1. advisory — brief:49 — The wrapping promise overstates lifecycle-card behaviour: the many-ask captures at 1280 and 640 still truncate “Human gate” on the first lifecycle card. This retains W-409’s existing presentation, and the strip supplies the complete information. Scope the complete-wrapping guarantee to strip entries; do not imply an additional card-layout change beyond the approved screens — check: [many 640 capture](/home/edckt/.bisellium-evidence/W-463-spec/shots/board-many-640-closed.png), [lifecycle ask CSS](/home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/components/w025.css:2013).
+
+2. advisory — brief:49 — Carry both adopted round-5 focus corrections into the build: fully reveal focused entries clear of the chevron and move focus to the last entry when the focused chevron disappears. The supplied prototype still overlays entries and removes the button without transferring focus — check: [BoardView.tsx](/home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/screens/BoardView.tsx:138), [w463.spec.ts b2](/home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/tests-serve/w463.spec.ts).
+
+3. advisory — brief:65 — The many-entry 1280 collapsed capture shows twelve waits and four entries but no chevron. The capture script waits for counts and fonts without checking the overflow control, so this leaves an evidence gap rather than establishing a persistent defect. Assert chevron visibility in this shell state before recapturing — check: [collapsed capture](/home/edckt/.bisellium-evidence/W-463-spec/shots/board-many-1280-collapsed.png), [capture-shots.mts](/home/edckt/.bisellium-evidence/W-463-spec/capture-shots.mts:54).
+
+## Recommendation
+
+The strip, distinct count and neutral highlights make waiting asks prominent at 1280, 640 and 390 while preserving useful lifecycle space.
+Zero collapses cleanly; one and many retain the reference height, and horizontal overflow prevents growing membership from consuming the Board.
+The chevron communicates additional entries in the expanded desktop and narrow captures, with the collapsed-state evidence gap and adopted focus corrections noted above.
+The additional visible default is Planned as the phone’s initial lifecycle column, including at zero; the brief now explicitly records this approved-screen change.
+W-406’s cue/liveness and W-415’s shell behaviour remain intact, and I found no additional palette or layout redesign beyond the approved presentation.
+Verdict: passed

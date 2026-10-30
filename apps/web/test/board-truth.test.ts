@@ -95,8 +95,8 @@ if (runs(1)) {
     // (c)
     assert.deepEqual(
       model.columns.map((c) => c.id),
-      ["needs_you", "planned", "in_progress", "verifying", "awaiting_review", "done", "halted"],
-      "1(c): the column ids are the seven phases plus needs_you, no backlog column",
+      ["planned", "in_progress", "verifying", "awaiting_review", "done", "halted"],
+      "1(c): the column ids are lifecycle phases only, no backlog or attention column",
     );
     const planned = model.columns.find((c) => c.id === "planned");
     assert.ok(planned, "1(c): a Planned column exists");
@@ -134,7 +134,7 @@ if (runs(1)) {
     );
     assert.deepEqual(bare.unplaced, ["W-2", "W-3"], "1(e): with no planned phase the backlog ids are unplaced");
     const gated = board.boardModel(standard, [opus("W-6", "backlog", { probationes: { approve: { status: "pending" } } })]);
-    assert.deepEqual(cardIds(gated, "needs_you"), ["W-6"], "1(e): a backlog opus with a pending human gate is in needs_you");
+    assert.deepEqual(gated.waiting.map(({ id }) => id), ["W-6"], "1(e): a backlog opus with a pending human gate is in waiting membership");
     assert.deepEqual(cardIds(gated, "planned"), ["W-6"], "1(e): and in Planned");
   });
 }

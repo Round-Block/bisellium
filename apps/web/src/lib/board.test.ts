@@ -13,7 +13,6 @@ import {
   gateRow,
   humanGateIds,
   liveLabel,
-  NEEDS_YOU_COLUMN,
   reconcileReason,
   reconcileTargets,
   type BoardModel,
@@ -63,17 +62,17 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
 // Behaviour 1 — columns, membership and heads, from the served lifecycle.
 // ===========================================================================
 
-// needs_you first, then one column per declared phase in lifecycle order,
-// excluding backlog.
+// One column per declared lifecycle phase, excluding backlog; attention is
+// separate strip membership.
 {
   const o: LifecycleFixture = { lifecycle: STANDARD_LIFECYCLE, probationes: [] };
   const model = boardModel(o, []);
   const ids = model.columns.map((c) => c.id);
-  check(1, "boardModel: needs_you first", ids[0] === NEEDS_YOU_COLUMN, JSON.stringify(ids));
+  check(1, "boardModel: the strip leads, so the first column is the first served phase", ids[0] === "planned" && model.waiting.length === 0, JSON.stringify(ids));
   check(
     1,
     "boardModel: one column per declared phase in lifecycle order, backlog excluded",
-    JSON.stringify(ids) === JSON.stringify([NEEDS_YOU_COLUMN, "planned", "in_progress", "verifying", "awaiting_review", "done", "halted"]),
+    JSON.stringify(ids) === JSON.stringify(["planned", "in_progress", "verifying", "awaiting_review", "done", "halted"]),
     JSON.stringify(ids),
   );
   check(1, "boardModel: no extra backlog column", !ids.includes("backlog"));
@@ -103,7 +102,7 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
 // Every column returned even when every one is empty.
 {
   const model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes: [] }, []);
-  check(1, "boardModel: returns every column when all are empty", model.columns.length === 7, String(model.columns.length));
+  check(1, "boardModel: returns every lifecycle column when all are empty", model.columns.length === 6, String(model.columns.length));
   check(1, "boardModel: every column starts with zero cards", model.columns.every((c) => c.cards.length === 0));
 }
 
@@ -131,7 +130,7 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
 // in unplaced, no throw.
 {
   const opera = [opus({ id: "W-9", state: "mystery-state" })];
-  let model: BoardModel = { columns: [], unplaced: [] };
+  let model: BoardModel = { columns: [], waiting: [], unplaced: [] };
   let threw = false;
   try {
     model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes: [] }, opera);
@@ -143,34 +142,32 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
   check(1, "boardModel: an unmapped-state opus lands in no column", !model.columns.some((c) => c.cards.some((card) => card.id === "W-9")));
 }
 
-// An opus with a pending human gate appears in needs_you AND its phase
-// column, needsYou:true on both.
+// An opus with a pending human gate appears once in strip membership and once
+// in its lifecycle phase model.
 {
   const probationes: OfficinaResponse["probationes"] = [{ id: "review-gate", kind: "human" }];
   const opera = [opus({ id: "W-5", state: "review", probationes: { "review-gate": { status: "pending" } } })];
   const model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes }, opera);
-  const needsYou = model.columns.find((c) => c.id === NEEDS_YOU_COLUMN);
   const awaitingReview = model.columns.find((c) => c.id === "awaiting_review");
-  const inNeedsYou = needsYou?.cards.find((c) => c.id === "W-5");
+  const inNeedsYou = model.waiting.find((c) => c.id === "W-5");
   const inPhase = awaitingReview?.cards.find((c) => c.id === "W-5");
-  check(1, "boardModel: a needs-you opus appears in needs_you", inNeedsYou !== undefined, JSON.stringify(needsYou));
-  check(1, "boardModel: a needs-you opus ALSO appears in its phase column", inPhase !== undefined, JSON.stringify(awaitingReview));
-  check(1, "boardModel: needsYou is true on the needs_you copy", inNeedsYou?.needsYou === true);
-  check(1, "boardModel: needsYou is true on the phase-column copy too", inPhase?.needsYou === true);
+  check(1, "boardModel: a waiting opus appears in strip membership", inNeedsYou !== undefined, JSON.stringify(model.waiting));
+  check(1, "boardModel: a waiting opus remains in its phase column", inPhase !== undefined, JSON.stringify(awaitingReview));
+  check(1, "boardModel: needsYou is true on the strip entry", inNeedsYou?.needsYou === true);
+  check(1, "boardModel: needsYou is true on the sole lifecycle card", inPhase?.needsYou === true);
 }
 
-// needs_you carries membership:true; pinned only on needs_you.
+// No lifecycle column becomes attention membership or pinned.
 {
   const model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes: [] }, []);
-  const needsYou = model.columns.find((c) => c.id === NEEDS_YOU_COLUMN);
-  check(1, "boardModel: needs_you carries membership:true", needsYou?.membership === true);
-  check(1, "boardModel: pinned is true only on needs_you", model.columns.every((c) => (c.id === NEEDS_YOU_COLUMN ? c.pinned === true : c.pinned === false)));
+  check(1, "boardModel: every lifecycle column carries membership:false", model.columns.every((c) => c.membership === false));
+  check(1, "boardModel: no lifecycle column is pinned", model.columns.every((c) => c.pinned === false));
 }
 
 // The model exposes NO total: exact key-set assertion.
 {
   const model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes: [] }, [opus({ id: "W-1", state: "backlog" })]);
-  check(1, "boardModel: Object.keys(model) is exactly [columns, unplaced]", JSON.stringify(Object.keys(model).sort()) === JSON.stringify(["columns", "unplaced"]), JSON.stringify(Object.keys(model)));
+  check(1, "boardModel: Object.keys(model) is exactly [columns, waiting, unplaced]", JSON.stringify(Object.keys(model).sort()) === JSON.stringify(["columns", "unplaced", "waiting"]), JSON.stringify(Object.keys(model)));
   const planned = model.columns.find((c) => c.id === "planned");
   check(1, "boardModel: Planned's own keys are exactly its declared set", planned !== undefined && JSON.stringify(Object.keys(planned).sort()) === JSON.stringify(["atCap", "cards", "id", "membership", "name", "pinned"].sort()), JSON.stringify(planned));
   const done = model.columns.find((c) => c.id === "done");

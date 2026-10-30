@@ -1,0 +1,62 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-463-b1\s --import tsx apps/web/test/w463.test.ts
+# exit: 1
+# at: 2026-10-30T08:52:37.605Z
+# sella: ui-architect
+# tree: tree:d9f08bed042c5e8b39d81278bcb960f562de101a
+# ticket: {"opus":"W-463","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-463/studio","head":"d63181105119e9cf7c5ccae6bdbd62dd18c88881","brief":"6ab2a4ce92574660f9232101b47e859dbfc1ec76","at":"2026-10-30T08:52:37.512Z"}
+
+TAP version 13
+# Subtest: W-463-b1 behaviour 1: variant C replaces the membership column with one waiting strip model
+not ok 1 - W-463-b1 behaviour 1: variant C replaces the membership column with one waiting strip model
+  ---
+  duration_ms: 7.28678
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-463/apps/web/test/w463.test.ts:1:997'
+  failureType: 'testCodeFailure'
+  error: |-
+    Needs-you is no longer a lifecycle column
+    + actual - expected
+    
+      [
+    +   'needs_you',
+        'planned',
+        'in_progress',
+        'verifying',
+        'awaiting_review',
+        'done',
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'planned'
+    1: 'in_progress'
+    2: 'verifying'
+    3: 'awaiting_review'
+    4: 'done'
+    5: 'halted'
+  actual:
+    0: 'needs_you'
+    1: 'planned'
+    2: 'in_progress'
+    3: 'verifying'
+    4: 'awaiting_review'
+    5: 'done'
+    6: 'halted'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-463/apps/web/test/w463.test.ts:50:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1919.978603

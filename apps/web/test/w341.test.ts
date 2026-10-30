@@ -63,7 +63,7 @@ const SERVED: Record<string, string[]> = {
 const render = (component: unknown, props: Record<string, unknown>): string => renderToStaticMarkup(createElement(component as ComponentType<Record<string, unknown>>, props));
 const count = (html: string, needle: string): number => html.split(needle).length - 1;
 const wired = (screen: string): void =>
-  assert.match(read("src/App.tsx"), new RegExp(`<${screen} onStatus=\\{setStatus\\}(?: onNeedsYouCount=\\{setNeedsYouCount\\})? />`), `the shell hands ${screen} its status setter`);
+  assert.match(read("src/App.tsx"), new RegExp(`<${screen} onStatus=\\{setStatus\\}(?: on(?:NeedsYou|Waiting)Count=\\{set(?:NeedsYou|BoardWaiting)Count\\})? />`), `the shell hands ${screen} its status setter`);
 
 test("W-341-b1 behaviour 1: one states matrix, one status by fixed precedence, one polite live region in the shell", async () => {
   const m = await matrix();
@@ -152,8 +152,8 @@ test("W-341-b3 behaviour 3: Seats shows and reports loading, empty, error, refus
 test("W-341-b4 behaviour 4: the Board shows and reports loading, empty, error, stale and live", async () => {
   await matrix();
   const view = (await load("src/screens/BoardView.tsx"))["BoardView"];
-  const base = { studio: "s", model: { columns: [] }, focusedByColumn: {}, onSelectCard: () => undefined };
-  assert.match(render(view, { ...base, notice: "Could not load the board." }), /<\/div><p class="screen-notice board__notice">Could not load the board.<\/p><div class="board__strip">/, "the notice sits under the header");
+  const base = { studio: "s", model: { columns: [], waiting: [] }, focusedByColumn: {}, onSelectCard: () => undefined };
+  assert.match(render(view, { ...base, notice: "Could not load the board." }), /<\/div><p class="screen-notice board__notice">Could not load the board.<\/p><aside class="board__waiting board__waiting--empty"/, "the notice sits under the header and before the collapsed zero waiting strip");
   assert.equal(count(render(view, base), "screen-notice"), 0, "no notice at rest");
   wired("Board");
   const source = read("src/screens/Board.tsx");

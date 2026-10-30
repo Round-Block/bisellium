@@ -1,0 +1,31 @@
+# opus: W-463
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18b71-9977-7022-83c3-fd4ac3080418
+# outcome: revise
+# at: 2026-10-30T06:19:52.912Z
+# tree: tree:e2ee843c4d74c1080f648723dcbdfa815c01add1
+# dispatch_prompt: ci/W-463-ui-prompt-3.md
+# design_digest: sha256:1945db87e18ac36d338e6ba34b726c86710c0e46417f834be983e51c13ef3976
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"857f56924c9c3448128ce2bcf0aec81b44ca5264","brief":"9c87a4e84784f13aa181e3001aec1c8658cfb19e","at":"2026-10-30T06:19:50.416Z"}
+
+## Findings
+
+1. blocking — brief:46 — No earlier W-463 findings of mine appear in the supplied record. The inherited agent-written single-line ask rule loses information in the narrower strip: at 390, the sample label is cut off after “Inbox decision, Human”; the many-ask capture also truncates combined asks at 1280 expanded. D-138 requires those distinctions, and the removed Needs-you column previously exposed them — replace with: “Strip ask labels wrap at ask-kind boundaries and display every kind and question count completely. Title truncation remains separate.” — check: `apps/web/tests-serve/w463.spec.ts` b2 and `apps/web/tests-serve/w409.spec.ts` b3, asserting rendered text bounds for combined asks, against `board-sample-390-closed.png` and `board-many-1280-expanded.png`.
+
+2. blocking — brief:48 — The captured counts agree, but the prototype permits a late shell snapshot to overwrite the live Board count, leaving badge and strip different until another update. It also makes the existing Inbox badge refresh depend on successful Officina and opera reads, so a Board-read failure can suppress otherwise available Inbox information — replace with: “While Board is mounted, its live model exclusively supplies the Board badge; ignore obsolete shell snapshots. Refresh the Inbox badge independently of Board reads.” — check: `apps/web/src/App.tsx` and `apps/web/tests-serve/w463.spec.ts` b3 with delayed shell responses and a failed Board read alongside a successful Inbox read.
+
+3. advisory — brief:19 — At 640 and 390, the closed toggle’s accessible name remains “Expand sidebar”; its child dot does not convey the Board count when the button receives focus. Round-2 advisory 3 remains relevant, but D-119 explicitly rules the toggle’s name — replace with: “Preserve the ruled toggle name and associate an accessible description stating ‘Board, N waiting on you’ whenever its dot appears; expose the full number behind ‘9+’.” — check: `apps/web/src/components/Sidebar.tsx` and `apps/web/tests-serve/w463.spec.ts` b3, checking the toggle’s accessible description.
+
+4. advisory — brief:21 — To the Patron: the approved many-ask capture at 390 has a roughly 270px waiting strip, with the first lifecycle card starting around 510px down the 900px screen. Twelve entries still leave useful lifecycle space, but unrestricted grid growth progressively consumes it. The agent-written two-track rule does not settle that height tradeoff; this remains the separately raised Patron choice — replace with: “Retain the approved twelve-entry composition unless the Patron chooses a bounded, independently scrolling item area; document and capture that choice after making every ask label readable.” — check: `/home/edckt/.bisellium-evidence/W-463-spec/shots/board-many-390-closed.png` and the corresponding larger-cardinality served capture.
+
+## Recommendation
+
+The strip, stacked aligned count and neutral highlights establish clear attention hierarchy across all twelve captures; the zero state is compact and lifecycle columns remain visible.
+The sample’s Board 2 / Inbox 1 and many-ask Board 12 / Inbox 5 correctly express distinct waiting-opus and question membership, but complete ask wording and reliable badge agreement need correction.
+Gate ladders, owners and lifecycle states remain on the original cards; replacing their attention-column copies is sensible once the strip preserves every ask distinction.
+The prototype also changes the empty phone Board’s initial column from In progress to Planned; that is visible in the approved revision-3 screens and should be acknowledged explicitly.
+W-406’s scroll cue and liveness presentation, W-415’s shell interactions and the deferred W-427 palette remain intact; these corrections require no new overall design.
+Verdict: revise

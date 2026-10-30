@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseRoute } from "./lib/route.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
@@ -6,9 +6,9 @@ import { Inbox } from "./screens/Inbox.js";
 import { Seats } from "./screens/Seats.js";
 import { Board } from "./screens/Board.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
-import { fetchInbox, hasToken, setUnauthorizedListener } from "./api.js";
+import { fetchInbox, fetchOfficina, fetchOpera, hasToken, setUnauthorizedListener } from "./api.js";
 import { READY, type ScreenStatus } from "./lib/screenState.js";
-import { needsYouTotal } from "./lib/board.js";
+import { boardModel, needsYouTotal } from "./lib/board.js";
 
 function currentHash(): string {
   return typeof window === "undefined" ? "" : window.location.hash;
@@ -40,6 +40,7 @@ function initialWideSidebar(): boolean {
 export function App() {
   const [hash, setHash] = useState(currentHash());
   const [needsYouCount, setNeedsYouCount] = useState(0);
+  const [boardWaitingCount, setBoardWaitingCount] = useState(0);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
@@ -82,15 +83,61 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (route === "inbox") return;
     if (location.search.includes("demo")) {
       setNeedsYouCount(3);
       return;
     }
-    fetchInbox()
-      .then((r) => setNeedsYouCount(needsYouTotal(r)))
+    let active = true;
+    fetchInbox({ shared: true })
+      .then((inbox) => {
+        if (active && route !== "inbox") setNeedsYouCount(needsYouTotal(inbox));
+      })
       .catch(() => undefined);
+    return () => { active = false; };
   }, [route]);
+
+  // The Inbox total the shell's last Board read already carries. A
+  // needsYouCount that equals it came from that same response (the Inbox
+  // screen's mount read), so it never reissues the read.
+  const shellReadTotal = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (location.search.includes("demo")) {
+      setBoardWaitingCount(2);
+      return;
+    }
+    // While Board is mounted its reconciled model is authoritative. An
+    // off-screen shell snapshot is cancelled on navigation, so it cannot
+    // overwrite a newer count reported through onWaitingCount.
+    if (route === "board") return;
+    shellReadTotal.current = null;
+    let active = true;
+    const inboxRead = fetchInbox({ shared: true });
+    inboxRead
+      .then((inbox) => { if (active) shellReadTotal.current = needsYouTotal(inbox); })
+      .catch(() => undefined);
+    Promise.all([fetchOfficina(), fetchOpera(), inboxRead])
+      .then(([officina, opera, inbox]) => {
+        if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [route]);
+
+  // A count that differs from the last read (an answer or a live frame moved
+  // it) refreshes the Board count from a fresh read.
+  useEffect(() => {
+    if (location.search.includes("demo") || route === "board") return;
+    if (shellReadTotal.current === null || shellReadTotal.current === needsYouCount) return;
+    shellReadTotal.current = needsYouCount;
+    let active = true;
+    Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true })])
+      .then(([officina, opera, inbox]) => {
+        if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [route, needsYouCount]);
 
   return (
     <div className={[
@@ -102,6 +149,7 @@ export function App() {
       <Sidebar
         route={route}
         needsYouCount={needsYouCount}
+        boardWaitingCount={boardWaitingCount}
         collapsed={wideSidebar ? sidebarCollapsed : !overlayOpen}
         overlay={!wideSidebar}
         overlayOpen={overlayOpen}
@@ -114,7 +162,7 @@ export function App() {
       />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
-        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
+        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} onWaitingCount={setBoardWaitingCount} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
       </main>
       <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
         {status.text}

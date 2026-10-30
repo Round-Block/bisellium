@@ -263,6 +263,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
       const head = page.locator(`.board__column[data-column-id="${col.id}"] .board__column-count`);
       await expect(head).toHaveText(String(col.cards.length));
     }
+    await expect(page.locator(".board__waiting-label strong")).toHaveText(String(expected.waiting.length));
 
     await page.goto(`${served.baseURL}/#/inbox`);
     expect(counter.count()).toBe(0);
@@ -503,7 +504,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await served?.close();
   });
 
-  test("1280px: 288px columns, sticky needs-you, non-waiting 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
+  test("1280px: 288px lifecycle columns below the waiting strip, task-ID cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
     served = await startServed("board-1280");
     const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -513,18 +514,15 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const columnBox = await column.boundingBox();
     expect(columnBox?.width).toBeCloseTo(288, 0);
 
-    const needsYou = page.locator('.board__column[data-column-id="needs_you"]');
-    const position = await needsYou.evaluate((el) => getComputedStyle(el).position);
-    expect(position).toBe("sticky");
-    const beforeScroll = await needsYou.boundingBox();
-    await page.locator(".board__columns").evaluate((el) => (el.scrollLeft = 500));
-    const afterScroll = await needsYou.boundingBox();
-    expect(afterScroll?.x).toBeCloseTo(beforeScroll?.x ?? 0, 0);
+    await expect(page.locator('.board__column[data-column-id="needs_you"]')).toHaveCount(0);
+    const waitingBox = await page.locator(".board__waiting").boundingBox();
+    const columnsBox = await page.locator(".board__columns").boundingBox();
+    expect((waitingBox?.y ?? Number.POSITIVE_INFINITY) + (waitingBox?.height ?? 0)).toBeLessThanOrEqual((columnsBox?.y ?? 0) + 1);
 
-    // Waiting cards gain the W-409 ask-kind line; the non-waiting Done card retains the original compact geometry.
+    // D-143 puts a task-ID line on every card, including the non-waiting Done card.
     const card = page.locator('.board__column[data-column-id="done"] .board__card').first();
     const cardBox = await card.boundingBox();
-    expect(cardBox?.height).toBeCloseTo(64, 0);
+    expect(cardBox?.height).toBeCloseTo(72, 0);
     const cardShadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
     expect(cardShadow === "none" || cardShadow === "").toBe(true);
 
@@ -595,7 +593,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     expect(counter.count()).toBe(0);
   });
 
-  test("800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible", async ({ page }) => {
+  test("800px: lifecycle columns stay 288px below the waiting strip and the drawer leaves the rail visible", async ({ page }) => {
     served = await startServed("board-800");
     const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 800, height: 900 });
@@ -604,8 +602,8 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const columnBox = await page.locator(".board__column").first().boundingBox();
     expect(columnBox?.width).toBeCloseTo(288, 0);
 
-    const position = await page.locator('.board__column[data-column-id="needs_you"]').evaluate((el) => getComputedStyle(el).position);
-    expect(position).not.toBe("sticky");
+    await expect(page.locator('.board__column[data-column-id="needs_you"]')).toHaveCount(0);
+    await expect(page.locator(".board__waiting")).toBeVisible();
 
     await page.locator('.board__card[data-card-id="W-002"]').click();
     await expect(page.locator(".board-drawer")).toBeVisible();
@@ -616,7 +614,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     expect(counter.count()).toBe(0);
   });
 
-  test("390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling", async ({ page }) => {
+  test("390x844: one lifecycle column visible, both strips remain visible, and the full-width close control is reachable without scrolling", async ({ page }) => {
     served = await startServed("board-phone");
     const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 390, height: 844 });
@@ -657,13 +655,12 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await expect(page.locator(".board__column").last()).toBeInViewport();
     expect(lastName?.length).toBeGreaterThan(0);
 
-    // needs-you is non-empty on this fixture: W-004's human "patron" gate
-    // is pending and W-007 awaits greenlight. W-003's own pending gate is
-    // "qa", kind agent, not human; initial visible column is needs_you.
+    // Waiting membership is pinned above the scroller; lifecycle navigation
+    // therefore starts at the first declared phase regardless of membership.
     await page.reload();
     await expect(page.locator(".board")).toBeVisible();
-    const needsYouColumn = page.locator('.board__column[data-column-id="needs_you"]');
-    await expect(needsYouColumn).toBeInViewport();
+    await expect(page.locator(".board__waiting-item")).toHaveCount(2);
+    await expect(page.locator('.board__column[data-column-id="planned"]')).toBeInViewport();
 
     await page.locator('.board__card').first().click();
     const drawerBox = await page.locator(".board-drawer").boundingBox();
@@ -677,13 +674,12 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     expect(counter.count()).toBe(0);
   });
 
-  test("390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column", async ({ page }) => {
+  test("390x844, empty waiting membership: the zero strip precedes the first lifecycle column", async ({ page }) => {
     served = await startServed("board-phone-empty-needsyou");
     const counter = await installWriteCounter(page);
     // Resolve all three ruled ask sources: W-004's human gate, A-1's linked
     // Inbox decision and W-007's greenlight request. Then needs_you is empty
-    // — *Composition*'s other half: "An empty attention column is never the
-    // first thing the Patron sees" (censor round 1, B2).
+    // — the strip remains as a compact zero label, without an empty phrase.
     const patronGatePath = join(served.studioDir, "opera", "W-004.md");
     writeFileSync(patronGatePath, readFileSync(patronGatePath, "utf8").replace("patron: { status: pending }", "patron: { status: passed }"), "utf8");
     const decisionPath = join(served.studioDir, "petitiones", "A-1.md");
@@ -694,11 +690,34 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await page.setViewportSize({ width: 390, height: 844 });
     await openBoard(page, served);
 
-    await expect(page.locator('.board__column[data-column-id="needs_you"] .board__card')).toHaveCount(0);
-    const needsYouColumn = page.locator('.board__column[data-column-id="needs_you"]');
-    const inProgressColumn = page.locator('.board__column[data-column-id="in_progress"]');
-    await expect(inProgressColumn).toBeInViewport();
-    await expect(needsYouColumn).not.toBeInViewport();
+    const waiting = page.locator(".board__waiting");
+    await expect(waiting).toBeVisible();
+    await expect(waiting.locator(".board__waiting-label span")).toHaveText("Waiting on you");
+    await expect(waiting.locator(".board__waiting-label strong")).toHaveText("0");
+    await expect(waiting.locator(".board__waiting-items, .board__waiting-item")).toHaveCount(0);
+    expect(await waiting.evaluate((node) => node.textContent?.replace(/\s/g, ""))).toBe("Waitingonyou0");
+    await expect(page.locator('a[href="#/board"] .sidebar__badge--board, .sidebar__toggle .sidebar__badge--toggle')).toHaveCount(0);
+    await expect(page.locator('.board__column[data-column-id="planned"]')).toBeInViewport();
+    const geometry = await page.evaluate(() => {
+      const waitingLabel = document.querySelector<HTMLElement>(".board__waiting-label")!;
+      const range = document.createRange();
+      range.selectNodeContents(waitingLabel.querySelector("span")!);
+      const name = range.getBoundingClientRect();
+      const count = waitingLabel.querySelector("strong")!.getBoundingClientRect();
+      const phaseStrip = document.querySelector<HTMLElement>(".board__strip")!;
+      const columns = document.querySelector<HTMLElement>(".board__columns")!;
+      return {
+        phaseBottom: phaseStrip.getBoundingClientRect().bottom,
+        columnsTop: columns.getBoundingClientRect().top,
+        lineDelta: Math.abs((count.top + count.bottom) / 2 - (name.top + name.bottom) / 2),
+        gap: count.left - name.right,
+      };
+    });
+    expect(geometry.columnsTop).toBeLessThanOrEqual(geometry.phaseBottom + 0.5);
+    // The empty count sits inline just right of the label at every width.
+    expect(geometry.lineDelta).toBeLessThanOrEqual(4);
+    expect(geometry.gap).toBeGreaterThanOrEqual(-0.5);
+    expect(geometry.gap).toBeLessThanOrEqual(24);
 
     await page.goto(`${served.baseURL}/#/inbox`);
     expect(counter.count()).toBe(0);
@@ -711,7 +730,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     await served?.close();
   });
 
-  test("a 300-character mixed title clamps to four lines while a short card remains 64px", async ({ page }) => {
+  test("a 300-character mixed title clamps to two lines while a short task-ID card remains 72px", async ({ page }) => {
     served = await startServed("w087-title-bounds");
     const prose = "Several ordinary words must wrap before this unbroken token ";
     const title = prose + "x".repeat(300 - prose.length);
@@ -736,10 +755,10 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         scrollHeight: el.scrollHeight,
       };
     });
-    expect(titleMetrics.clamp).toBe("4");
+    expect(titleMetrics.clamp).toBe("2");
     expect(titleMetrics.overflow).toBe("hidden");
     expect(titleMetrics.overflowWrap).toBe("anywhere");
-    expect(titleMetrics.clientHeight).toBe(72);
+    expect(titleMetrics.clientHeight).toBe(36);
     expect(titleMetrics.scrollHeight).toBeGreaterThan(titleMetrics.clientHeight);
 
     const containment = await card.evaluate((el) => {
@@ -758,7 +777,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         metaInside: !!meta && meta.height > 0 && meta.top >= box.top && meta.bottom <= box.bottom,
       };
     });
-    expect(containment.height).toBe(108);
+    expect(containment.height).toBe(90);
     expect(containment.height).toBeLessThanOrEqual(108);
     expect(containment.minHeight).toBe("64px");
     expect(containment.maxHeight).toBe("108px");
@@ -768,7 +787,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     expect(containment.metaInside).toBe(true);
 
     const shortCard = page.locator('.board__card[data-card-id="W-005"]');
-    expect((await shortCard.boundingBox())?.height).toBe(64);
+    expect((await shortCard.boundingBox())?.height).toBe(72);
   });
 });
 
@@ -1109,9 +1128,7 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
       expect(geometry?.sameBoard).toBe(true);
 
       if (row.viewport === 1440) {
-        const needsYou = page.locator('.board__column[data-column-id="needs_you"]');
-        await expect(needsYou).toBeVisible();
-        expect(await needsYou.evaluate((el) => getComputedStyle(el).position)).toBe("sticky");
+        await expect(page.locator(".board__waiting")).toBeVisible();
         for (const terminal of ["done", "halted"]) {
           const terminalColumn = page.locator(`.board__column[data-column-id="${terminal}"]`);
           await columns.evaluate((el, id) => {
@@ -1120,13 +1137,13 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
           }, terminal);
           await expect(terminalColumn).toBeVisible();
           const boxes = await page.evaluate((id) => {
-            const pinned = document.querySelector('.board__column[data-column-id="needs_you"]')?.getBoundingClientRect();
             const terminalBox = document.querySelector(`.board__column[data-column-id="${id}"]`)?.getBoundingClientRect();
             const drawer = document.querySelector(".board-drawer")?.getBoundingClientRect();
-            return pinned && terminalBox && drawer ? { pinnedRight: pinned.right, terminalLeft: terminalBox.left, terminalRight: terminalBox.right, drawerLeft: drawer.left } : null;
+            const board = document.querySelector(".board")?.getBoundingClientRect();
+            return board && terminalBox && drawer ? { boardLeft: board.left, terminalLeft: terminalBox.left, terminalRight: terminalBox.right, drawerLeft: drawer.left } : null;
           }, terminal);
           expect(boxes).not.toBeNull();
-          expect((boxes?.terminalLeft ?? 0) + 1).toBeGreaterThanOrEqual(boxes?.pinnedRight ?? Number.POSITIVE_INFINITY);
+          expect((boxes?.terminalLeft ?? 0) + 1).toBeGreaterThanOrEqual(boxes?.boardLeft ?? Number.POSITIVE_INFINITY);
           expect(boxes?.terminalRight ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((boxes?.drawerLeft ?? 0) + 1);
         }
       }

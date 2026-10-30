@@ -5,7 +5,7 @@
  * affordance (scroll a column into view) rather than app state, so it lives
  * here rather than being threaded up through Board.tsx.
  */
-import type { JSX } from "react";
+import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type { BoardModel, CardRow } from "../lib/board.js";
 import { GateLadder } from "../components/GateLadder.js";
 import { Colophon } from "../components/Colophon.js";
@@ -39,6 +39,27 @@ function cardClassName(card: CardRow): string {
   return ["board__card", state].filter(Boolean).join(" ");
 }
 
+function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
+  return ask.kind === "greenlight"
+    ? "Greenlight"
+    : ask.kind === "inbox"
+      ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
+      : "Human gate";
+}
+
+function AskKinds({ card }: { card: CardRow }): JSX.Element | null {
+  if ((card.asks?.length ?? 0) === 0) return null;
+  return (
+    <span className="board__card-asks" aria-label="Waiting on you">
+      {card.asks?.map((ask) => (
+        <span key={ask.kind} className="board__card-ask">
+          {askKindLabel(ask)}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Card({
   card,
   columnId,
@@ -63,20 +84,9 @@ function Card({
       onClick={() => onSelect(card.id, columnId)}
     >
       <GateLadder gates={card.gates} />
+      <span className="board__card-id">{card.id}</span>
       <span className="board__card-title" title={card.title}>{card.title}</span>
-      {(card.asks?.length ?? 0) > 0 && (
-        <span className="board__card-asks" aria-label="Needs you">
-          {card.asks?.map((ask) => (
-            <span key={ask.kind} className="board__card-ask">
-              {ask.kind === "greenlight"
-                ? "Greenlight"
-                : ask.kind === "inbox"
-                  ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
-                  : "Human gate"}
-            </span>
-          ))}
-        </span>
-      )}
+      <AskKinds card={card} />
       <span className="board__card-meta">
         {card.sella && <span className="board__card-sella">{card.sella}</span>}
         <span className="board__card-state">{card.state}</span>
@@ -121,6 +131,92 @@ function Column({
   );
 }
 
+function WaitingStrip({ waiting, columns, onSelectCard }: {
+  waiting: CardRow[];
+  columns: BoardModel["columns"];
+  onSelectCard: (id: string, columnId: string) => void;
+}): JSX.Element {
+  const itemsRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const updateScrollCue = useCallback(() => {
+    const items = itemsRef.current;
+    setCanScrollRight(items !== null && items.scrollLeft + items.clientWidth < items.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updateScrollCue();
+    const items = itemsRef.current;
+    if (!items) return;
+    const observer = new ResizeObserver(updateScrollCue);
+    observer.observe(items);
+    window.addEventListener("resize", updateScrollCue);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScrollCue);
+    };
+  }, [updateScrollCue, waiting.length]);
+
+  const showMore = (): void => {
+    const items = itemsRef.current;
+    if (!items) return;
+    const moreButton = moreRef.current;
+    const distance = items.clientWidth * 0.9;
+    const reachesEnd = items.scrollLeft + items.clientWidth + distance >= items.scrollWidth - 1;
+    items.scrollBy({ left: distance, behavior: "auto" });
+    if (reachesEnd && document.activeElement === moreButton) {
+      requestAnimationFrame(() => items.querySelector<HTMLButtonElement>(".board__waiting-item:last-child")?.focus());
+    }
+  };
+
+  const revealFocusedWaitingItem = (item: HTMLButtonElement): void => {
+    const items = itemsRef.current;
+    const chevron = items?.parentElement?.querySelector<HTMLElement>(".board__waiting-more");
+    if (!items || !chevron) return;
+    const itemRight = item.getBoundingClientRect().right;
+    const chevronLeft = chevron.getBoundingClientRect().left;
+    if (itemRight > chevronLeft) {
+      items.scrollBy({ left: itemRight - chevronLeft + 2, behavior: "auto" });
+      updateScrollCue();
+    }
+  };
+
+  return (
+    <aside className={`board__waiting${waiting.length === 0 ? " board__waiting--empty" : ""}`} aria-label="Waiting on you">
+      <div className="board__waiting-label">
+        <span>Waiting on you</span>
+        <strong>{waiting.length}</strong>
+      </div>
+      {waiting.length > 0 && <div className={`board__waiting-rail${canScrollRight ? " board__waiting-rail--more" : ""}`}>
+        <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
+          {waiting.map((card) => {
+            const columnId = columns.find((column) => column.cards.some(({ id }) => id === card.id))?.id;
+            const asks = card.asks?.map(askKindLabel).join(", ") ?? "Waiting on you";
+            return (
+              <button
+                key={card.id}
+                type="button"
+                className="board__waiting-item"
+                data-waiting-id={card.id}
+                aria-label={`Open ${card.id} ${card.title}: ${asks}`}
+                onClick={() => onSelectCard(card.id, columnId ?? "unplaced")}
+                onFocus={(event) => revealFocusedWaitingItem(event.currentTarget)}
+              >
+                <span className="board__waiting-id">{card.id}</span>
+                {" "}
+                <span className="board__waiting-title" title={card.title}>{card.title}</span>
+              </button>
+            );
+          })}
+        </div>
+        {canScrollRight && <button ref={moreRef} type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick={showMore}>
+          <span aria-hidden="true">›</span>
+        </button>}
+      </div>}
+    </aside>
+  );
+}
+
 /** Not a `useRef`: `BoardView` is called as a plain function by the static-
  *  markup tests (behaviour 5/6's own house convention, matching Sidebar/
  *  SeatsView), which never runs inside React's real render pass and so has
@@ -147,6 +243,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
       </div>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
+      <WaitingStrip waiting={model.waiting} columns={model.columns} onSelectCard={onSelectCard} />
       <div className="board__strip">
         {model.columns.map((column) => (
           <button key={column.id} type="button" className="board__strip-item" onClick={() => scrollColumnIntoView(column.id)}>

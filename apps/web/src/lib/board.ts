@@ -6,7 +6,6 @@
 import type { BranchRecordsStatus, EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
 import type { Gate, GateStatus } from "./gateLadder.js";
 
-export const NEEDS_YOU_COLUMN = "needs_you";
 /** Board policy, not the lifecycle's: the `backlog` phase is not a column. Its
  *  opera are cards in Planned, after the greenlit ones (W-129, D-034). Everything
  *  else about the column set comes from the served lifecycle. */
@@ -46,19 +45,22 @@ export interface CardRow {
 export interface BoardColumn {
   id: string;
   name: string;
-  /** Pinned only on the needs-you column, and only at >=900px. */
+  /** Reserved for a phase-column presentation rule. W-463's waiting
+   * membership is rendered above the columns, so no waiting column is pinned. */
   pinned: boolean;
   cards: CardRow[];
   /** Present on the in-progress column only. */
   cap?: number;
   atCap: boolean;
-  /** True on needs_you: its count is an ATTENTION MEMBERSHIP, never summed
-   *  into an officina total (ruling 16). */
+  /** Phase columns are lifecycle membership, never attention membership. */
   membership: boolean;
 }
 
 export interface BoardModel {
   columns: BoardColumn[];
+  /** D-138: one entry per waiting opus, rendered in the pinned strip. The
+   * lifecycle card remains the sole card instance in `columns`. */
+  waiting: CardRow[];
   /** Opera whose state maps to no declared phase: counted and named, never
    *  dropped into the first column and never thrown on. */
   unplaced: string[];
@@ -131,7 +133,6 @@ export function boardModel(
   const stateToPhase = new Map(o.lifecycle.states.map((s) => [s.id, s.phase] as const));
 
   const columns = new Map<string, BoardColumn>();
-  columns.set(NEEDS_YOU_COLUMN, { id: NEEDS_YOU_COLUMN, name: "Needs you", pinned: true, cards: [], atCap: false, membership: true });
   for (const phase of phases) {
     const col: BoardColumn = { id: phase, name: humanizePhase(phase), pinned: false, cards: [], atCap: false, membership: false };
     if (phase === "in_progress" && o.wip_limit !== undefined) col.cap = o.wip_limit;
@@ -139,6 +140,7 @@ export function boardModel(
   }
 
   const unplaced: string[] = [];
+  const waiting: CardRow[] = [];
   const backlog: CardRow[] = [];
   for (const opus of opera) {
     const phase = stateToPhase.get(opus.state);
@@ -155,10 +157,7 @@ export function boardModel(
     ];
     card.needsYou = (card.asks?.length ?? 0) > 0;
 
-    if (card.needsYou) {
-      const needsYouColumn = columns.get(NEEDS_YOU_COLUMN);
-      if (needsYouColumn) needsYouColumn.cards.push({ ...card });
-    }
+    if (card.needsYou) waiting.push({ ...card });
 
     if (phase === BACKLOG_PHASE) {
       backlog.push(card);
@@ -183,7 +182,7 @@ export function boardModel(
     if (col.cap !== undefined) col.atCap = col.cards.length >= col.cap;
   }
 
-  return { columns: [...columns.values()], unplaced };
+  return { columns: [...columns.values()], waiting, unplaced };
 }
 
 /** W-129: one plain sentence when serve could not read every branch record, else `undefined`. Never a reason code and

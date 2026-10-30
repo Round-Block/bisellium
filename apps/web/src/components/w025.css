@@ -103,6 +103,7 @@
 }
 
 .sidebar__toggle {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,6 +121,18 @@
 .sidebar__toggle:focus-visible {
   outline: 2px solid var(--verdigris);
   outline-offset: 2px;
+}
+
+.sidebar__toggle-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .sidebar__icon { width: 20px; height: 20px; flex: 0 0 20px; }
@@ -178,7 +191,8 @@
   font-weight: 700;
 }
 
-.shell--sidebar-collapsed .sidebar__link[href="#/inbox"] {
+.shell--sidebar-collapsed .sidebar__link[href="#/inbox"],
+.shell--sidebar-collapsed .sidebar__link[href="#/board"] {
   position: relative;
 }
 
@@ -197,6 +211,22 @@
   background: var(--surface);
   font-size: 11px;
   line-height: 14px;
+}
+
+/* The toggle's accessible name is pinned by D-119 and carries no count, so the
+ * drawn digit is generated content and the real text stays clipped: a visible
+ * text node would be a label-content-name mismatch. */
+.sidebar__badge--toggle::after {
+  content: attr(data-count);
+}
+
+.sidebar__badge-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .sidebar__bottom {
@@ -1987,6 +2017,157 @@
   white-space: nowrap;
 }
 
+.board__waiting {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  box-sizing: border-box;
+  height: 96px;
+  gap: var(--sp-2);
+  margin: var(--sp-3) var(--sp-6) 0;
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+
+.board__waiting-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: fit-content;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.board__waiting-label span {
+  white-space: nowrap;
+}
+
+.board__waiting-label strong {
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 20px;
+}
+
+.board__waiting.board__waiting--empty {
+  grid-template-columns: 1fr;
+  height: 20px;
+  gap: 0;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.board__waiting--empty .board__waiting-label {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+  width: auto;
+}
+
+.board__waiting--empty .board__waiting-label strong {
+  font-size: 15px;
+  line-height: 18px;
+}
+
+.board__waiting-rail {
+  position: relative;
+  min-width: 0;
+}
+
+.board__waiting-items {
+  display: flex;
+  gap: var(--sp-2);
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scroll-padding-inline: 2px;
+}
+
+.board__waiting-rail--more .board__waiting-items {
+  scroll-padding-inline-end: 44px;
+}
+
+.board__waiting-item {
+  appearance: none;
+  flex: 0 0 calc((100% - (3 * var(--sp-2))) / 4);
+  box-sizing: border-box;
+  width: 100%;
+  height: 66px;
+  min-width: 0;
+  padding: 3px var(--sp-2);
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 2px solid var(--amber);
+  background: var(--wash);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.board__waiting-item:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+.board__waiting-more {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 6px var(--shadow-drawer);
+  font: 24px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.board__waiting-more:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+.board__waiting-more span {
+  transform: translateY(-1px);
+}
+
+.board__waiting-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.board__waiting-id,
+.board__card-id {
+  display: block;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ink-2);
+}
+
+.board__card-ask:not(:last-child)::after {
+  content: ",\00a0";
+}
+
 .board__strip {
   display: none;
 }
@@ -2047,13 +2228,6 @@
   min-height: 0;
 }
 
-.board__column--pinned {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--surface);
-}
-
 .board__column-head {
   display: flex;
   align-items: baseline;
@@ -2112,6 +2286,7 @@
 
 .board__card--amber {
   border-left-color: var(--amber);
+  background: var(--wash);
 }
 
 .board__card--bad {
@@ -2127,16 +2302,11 @@
   font-size: 13px;
   line-height: 18px;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   flex-shrink: 0;
   overflow: hidden;
   overflow-wrap: anywhere;
-}
-
-.board__card:has(.board__card-asks) .board__card-title {
-  max-height: 54px;
-  -webkit-line-clamp: 3;
 }
 
 .board__card-asks {
@@ -2151,10 +2321,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.board__card-ask + .board__card-ask::before {
-  content: ", ";
 }
 
 .board__card-meta {
@@ -2338,12 +2504,18 @@
   padding: 4px 0;
 }
 
-/* Narrow: <=899px — the needs-you column unpins; above Board's phone
-   boundary the drawer leaves the rail visible. */
+/* Narrow: <=899px — above Board's phone boundary the drawer leaves the rail
+   visible. */
 @media (max-width: 899px) {
-  .board__column--pinned {
-    position: static;
-    left: auto;
+  .board__waiting-label {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 4px;
+    width: auto;
+  }
+
+  .board__waiting-item {
+    flex-basis: calc((100% - var(--sp-2)) / 2);
   }
 
   .board-workspace:has(.board-drawer) {
@@ -2362,6 +2534,33 @@
   .board__liveness {
     flex: 1 0 100%;
     margin-left: 0;
+  }
+
+  .board__waiting {
+    grid-template-columns: 1fr;
+    margin: var(--sp-2) var(--sp-4) 0;
+    padding: 4px 0;
+    gap: 2px;
+  }
+
+  .board__waiting-label {
+    flex-direction: row;
+    align-items: baseline;
+    width: auto;
+  }
+
+  .board__waiting-label strong {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  .board__waiting-item {
+    padding: 1px 6px;
+  }
+
+  .board__waiting-title {
+    font-size: 11px;
+    line-height: 14px;
   }
 
   .board__strip {

@@ -1,0 +1,23 @@
+# opus: W-463
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: ad2718e35b05c3574
+# session_reason: fresh reviewer: the earlier session ae52e21776b37d567 belonged to a previous orchestrator session and cannot be resumed
+# outcome: passed
+# at: 2026-10-30T10:54:45.624Z
+# tree: tree:bcb248d512d8c31dab2468ec3327be63c1d7fad5
+# brief: briefs/W-463.md blob:8882c777aa55e4f3615b895c178edd26409a1215
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-463/studio","head":"8c6db8600e49ed9f3c09bffe94cd9af942305e64","brief":"8882c777aa55e4f3615b895c178edd26409a1215","at":"2026-10-30T10:54:32.211Z"}
+
+## Findings
+1. advisory — brief:46 [severity: S3] The sharing is not limited to the "mount cohort". The prototype's `fetchInbox()` returns `inboxInFlight` to every caller, both while the request is in flight and for 50ms after it settles. That includes Board's live `fetchBoardOnly` (its 30ms `REFETCH_DEBOUNCE_MS` is under the 50ms grace) and `fullReconcile`, and Inbox's intent/pending re-run, which `refreshInbox` issues from `.finally`, always inside the grace. So when a live frame or a post-answer refresh lands while a request issued before the change is still in flight, or within 50ms after it settles, the caller gets the pre-change response. Inbox can keep an answered petitio until the next 30s/focus tick. Board has no periodic reason, so its strip and its authoritative badge stay stale until the next frame. brief:75 and brief:114 promise only that visibility refreshes stay fresh, which leaves this unstated. Replacement: "`fetchInbox()` shares only the shell's mount reads (App's badge and Board snapshot), which join an in-flight request; Board's `fetchBoardOnly`/`fullReconcile` and any refresh issued after a write or live frame always issue a new `GET /api/inbox`", or else add to the brief:52 limit: "a live-frame or post-answer refresh arriving while an earlier request is in flight or within its 50ms grace reuses that earlier response". [class: spec×promise-unattainable-under-accepted-domain] — check: none: a W-463-b3 served row on `#/board` that holds a first `/api/inbox` open, emits a second inbox-changing frame and asserts the strip shows the second response
+
+2. advisory — brief:106 [severity: S4] Keeping W-407-b6 at exactly one mount request rests on App's Board-snapshot effect, which re-runs when `needsYouCount` changes after the Inbox screen settles. That re-run must reach `fetchInbox()` within the 50ms real-time grace. W-407-b6 proves the one-request count only under `page.clock.install`, where the 50ms `setTimeout` never fires during mount. W-463-b3's served sharing row uses `petitiones: []`, so `needsYouCount` never changes and the re-run is never exercised. On a real clock a slow render issues a second request (harmless, but the "exactly one" at brief:75 and brief:106 is then timing-dependent). Replacement: "On `#/inbox` one `GET /api/inbox` serves the mount when the needs-you re-render completes within 50ms; on a real clock a slower re-render may issue one more read", or drop `needsYouCount` from the snapshot effect's dependencies on `#/inbox`. [class: tests×ruled-case-uncovered] — check: none: a W-463-b3 served row without `page.clock`, with non-empty petitiones, asserting the stated `#/inbox` request count
+
+## Earlier findings
+
+## Verdict
+The r7 delta's api.ts dedupe has a named reader row, a rejecting assertion and evidence that W-407-b6 is kept. Both new findings are advisory S3/S4 timing limits with replacement text: none is S1, a security gap or missing evidence, and round 5 left no blocker.
+VERDICT: PASS

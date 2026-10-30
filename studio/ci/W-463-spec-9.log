@@ -1,0 +1,37 @@
+# opus: W-463
+# phase: spec
+# round: 9
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18c77-2af6-7402-b886-0629a66a31ee
+# session_reason: round 6's ui-lead session was a one-shot read-only Codex run; round 9 judged the api.ts widening (spec r7, review r8) in a fresh read-only Astra session with the kept dispatch prompt
+# outcome: passed
+# at: 2026-10-30T11:05:43.163Z
+# tree: tree:bcb248d512d8c31dab2468ec3327be63c1d7fad5
+# dispatch_prompt: ci/W-463-ui-prompt-9.md
+# design_digest: sha256:168b73b968bd461ed6cad393d8e40f80bab240905403d91491492226f9a3ff5c
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":9,"actor":"ui-lead","studio":".worktrees/W-463/studio","head":"9d5363cd1c50373a035ec367c7aa1e756155b401","brief":"8882c777aa55e4f3615b895c178edd26409a1215","at":"2026-10-30T11:05:29.176Z"}
+
+## Earlier findings
+
+## Findings
+
+1. advisory — brief:46 — The supplied prototype still shares pre-change responses beyond mount, so its captures cannot establish post-answer freshness. The adopted round-8 correction addresses this visible risk — replace with: “Only shell mount reads join an in-flight Inbox request. Post-answer and live-frame refreshes fetch fresh data, including shell snapshots triggered by changed Inbox membership. Verify that answered questions disappear and that remaining asks determine Board membership.” — check: extend W-463-b3 at 1280 and 390 with a held pre-answer response and a subsequent fresh response; retain W-407-b6.
+
+2. advisory — brief:106 — The exact one-read statement exceeds the real-clock evidence; a late render can issue another read under the prototype’s 50ms grace — replace with: “W-407-b6 establishes the recorded controlled-clock request count. Establish the real-clock count with non-empty Inbox data; an additional read must not change visible membership.” — check: W-463-b3 without an installed clock, `studio/ci/W-463-spec-8.log`.
+
+3. advisory — brief:19 — DIRECTION’s agent-written “Circles exist only on avatars” rule makes no sense for the approved overflow control: the round chevron communicates horizontal continuation clearly. Applying it would undo the Patron’s dated choice — replace with: “Retain the Patron-approved round dark overflow chevron; the general radius restriction does not govern this control.” — check: `docs/design/DIRECTION.md:142`, `board-overflow-1280-expanded.png`, `board-overflow-390-closed.png`.
+
+4. advisory — brief:49 — Round-6 advisory #1 still holds: the agent-written complete-wrapping promise exceeds the captures; lifecycle cards truncate “Human gate” at 1280 and 640 — replace with: “Preserve the approved lifecycle-card layout and scope complete ask-kind wrapping to strip entries.” — check: `studio/briefs/W-463.md:49`, `/home/edckt/.bisellium-evidence/W-463-spec/shots/board-many-640-closed.png`.
+
+5. advisory — brief:49 — Round-6 advisory #2 still holds: both focus corrections remain necessary. The build attempts them, but its recorded 390 test fails chevron clearance; the supplied prototype lacks them — replace with: “Fully reveal focused entries clear of the chevron and move focus to the last waiting entry when the focused chevron disappears.” — check: `apps/web/tests-serve/w463.spec.ts` b2, `studio/ci/W-463-served-e2e-38970776.log:26`.
+
+6. advisory — brief:65 — Round-6 advisory #3 still holds: the collapsed 1280 capture lacks its overflow chevron. Added build assertions do not replace the missing capture evidence — replace with: “Assert chevron visibility in the populated, overflowing collapsed 1280 shell before recapturing.” — check: `/home/edckt/.bisellium-evidence/W-463-spec/shots/board-many-1280-collapsed.png`, `apps/web/tests-serve/w463.spec.ts` b2.
+
+## Recommendation
+
+With the adopted mount-only sharing rule, the widening introduces no intended change to the Inbox list, Inbox badge, Board strip or count at 1280 or 390; the supplied prototype alone does not prove that freshness contract.
+After answering a petitio, fresh data must remove the answered question and recompute membership; Board membership legitimately remains when another question, greenlight or human gate still requires attention.
+The revision chooses no additional layout, colour or default beyond the Patron-approved screens, including Planned as the initial phone phase.
+The earlier advisories remain build obligations; the API correction requires no new visual design.
+Verdict: passed

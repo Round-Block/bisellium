@@ -1,0 +1,35 @@
+# opus: W-463
+# phase: spec
+# round: 12
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18cd7-ee92-7263-89c1-5ee6e7802fb8
+# session_reason: a fresh ui-lead session: the D-143 amendment is a new input round
+# outcome: passed
+# at: 2026-10-30T12:49:14.584Z
+# tree: tree:797d80ce9fc68f268b2ce5779eaabf024db85b88
+# dispatch_prompt: ci/W-463-ui-prompt-12.md
+# design_digest: sha256:97519b55008187039915d8feae98c171af25f464641003edc662cb90b731d04d
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":12,"actor":"ui-lead","studio":".worktrees/W-463/studio","head":"2caba8772c4f4927dde38c0ec7d4beec0c992592","brief":"1299c885c85b86125769b781675cb5b03930465d","at":"2026-10-30T12:49:05.224Z"}
+
+## Findings
+
+1. advisory — brief:52 — Round-9 advisories #1 and #2 still apply: D-143 does not establish post-answer freshness or the single-request claim with nonempty Inbox data. The recorded visibility-refresh pass does not settle either question — replace with: “After an answer, fresh data removes resolved questions and recomputes waiting membership. Verify the mount request count with nonempty Inbox data and an uncontrolled clock.” — check: `apps/web/tests-serve/w463.spec.ts` b3; `apps/web/tests-serve/w407.spec.ts` b6.
+
+2. advisory — brief:19 — Round-9 advisory #3 still applies: DIRECTION’s agent-written “Circles exist only on avatars” restriction makes no sense for the clearly recognisable, Patron-approved overflow chevron — replace with: “Retain the approved round dark chevron; the general radius restriction does not govern this control.” — check: `docs/design/DIRECTION.md:142`; `mock-strip2/strip2-1280.png`; `mock-strip2/strip2-390.png`.
+
+3. advisory — brief:50 — Round-9 advisory #4 is superseded: D-143 explicitly removes strip asks and permits card asks to truncate. Advisory #5 still applies: the supplied prototype neither guarantees focused entries clear the chevron nor transfers focus when the focused chevron disappears — replace with: “Fully reveal focused entries clear of the chevron; when the focused chevron disappears, move focus to the last waiting entry.” — check: `apps/web/src/screens/BoardView.tsx`; `apps/web/tests-serve/w463.spec.ts` b2, asserting clearance and the final focus destination.
+
+4. advisory — brief:108 — Round-9 advisory #6 remains an evidence gap: the overflowing collapsed-1280 capture lacks its chevron. All fifteen captures in `/home/edckt/.bisellium-evidence/W-463-spec/shots/` predate D-143: the four `board-sample-*`, four `board-none-*`, four `board-many-*`, two `board-overflow-*` and `board-combined-390-closed.png`; none demonstrates the amendment — replace with: “Capture the amended Board at 1280 expanded and collapsed, 640 and 390; assert overflow-control visibility before capturing overflowing states.” — check: `capture-shots.mts`; `apps/web/tests-serve/w463.spec.ts` b2.
+
+5. advisory — brief:102 — Round 11’s seat-line concern is justified. The ruling mocks visibly spill the long card’s seat line below its background; the amended two-line title makes the stack fit exactly within 108px, but the current waiting-card assertions would still accept bottom overflow — replace with: “At 1280, 640 and 390, the long-title waiting card retains its complete seat/state line inside the card; assert `.board__card-meta.bottom <= card.bottom + 0.5`.” — check: `apps/web/tests-serve/w409.spec.ts` W-409-b3.
+
+6. advisory — brief:54 — To the Patron: removing strip asks improves title recognition, but complete ask discovery is now uneven. Accessible names retain every kind and count; lifecycle cards expose an ellipsized summary. The reused drawer shows human-gate details and conditionally a linked question, but does not provide a complete greenlight/Inbox/gate summary for every combination. This is a consequence of the ruled presentation, not grounds to overturn D-143 — replace with: “Drawer activation preserves access to existing details; it does not guarantee complete visible ask disclosure. Complete ask-kind summaries remain in strip accessible names; fuller visible explanation belongs to W-410.” — check: `apps/web/src/screens/BoardDrawer.tsx`; `apps/web/src/lib/board.ts` `drawerDetail`; W-463-b4.
+
+## Recommendation
+
+The amended ID-over-title hierarchy, bounded strip wrapping, two-line lifecycle titles and single ellipsized card ask line faithfully implement D-143 and remain sensibly legible within the specified boxes.
+The 1280 and 390 mocks establish the intended hierarchy but still show the earlier tall-card clipping; revised source and recorded served checks support the corrected geometry at 1280, 640 and 390, without supplying current visual confirmation.
+Pin the seat-line containment assertion, and retain the earlier freshness, focus and capture advisories without promoting them to blockers.
+The amendment introduces no additional palette or navigation default: the existing strip, count placement, neutral wash and initial Planned phase remain, while the added ID explains the taller short card.
+Verdict: passed
