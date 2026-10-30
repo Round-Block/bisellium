@@ -1,0 +1,21 @@
+# opus: W-446
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18a76-0706-7561-af77-d561e764f527
+# outcome: passed
+# at: 2026-10-30T01:42:09.877Z
+# tree: tree:e0c43a0d4b86c412cbc5a0ab55797bcbc3a4b7a9
+# brief: briefs/W-446.md blob:ca24f6777af9e5e63cd8abcf9d96e474468d5e03
+# ticket: {"opus":"W-446","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"be5f81086d89d8f485627acb86cfe0b2beba3eef","brief":"ca24f6777af9e5e63cd8abcf9d96e474468d5e03","at":"2026-10-30T01:42:09.085Z"}
+
+## Findings
+1. advisory — brief:45 [severity: S2] A 30-frame hold cannot guarantee the losing interleaving on every host: if Playwright delivers the click after those frames, the released event repaints the thumb first; three red runs establish only the observed host. Replace brief:45 with: “Promise forced: `W-446-b1` delays the cue’s first `scroll` update after the helper sets `scrollLeft` to 0 for 30 animation frames; on the recorded host this produced the losing interleaving in all three red runs, while the waiting sequence passed all three stage runs. Exercised by the hold and coverage assertions; unpinned by a kill and shown by the recorded repetitions — limit: if Playwright does not deliver the red sequence’s click within those 30 frames, the released event can repaint the thumb first and the old sequence can pass; the fixture models a late event, not a slow renderer.” Replace brief:95 with: “**A new check holds the redraw for 30 animation frames on purpose**; on the recorded host the old way failed all three runs and the fix passed all three, while a click delayed beyond that hold can let the old way pass. Agree?” [class: spec×promise-unattainable-under-accepted-domain] — check: none: a finite frame delay cannot prove it outlasts every host round trip
+2. advisory — brief:43 [severity: S2] The promise says both track and thumb presses hit-test the track, but `W-406-b1`’s drag must hit-test the thumb. Replace brief:43 with: “Promise press: a `W-406-b1` or `W-446-b1` track or thumb press from the left terminal is made only once the columns read `scrollLeft` 0 and the painted thumb stands within 1 px of the track’s left edge, so each track press hit-tests uncovered track and each thumb press hit-tests the thumb where the row presumes it, however late the cue’s repaint up to the poll’s 5 s; a later repaint is refused at the painted-thumb precondition.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: wording only
+3. advisory — brief:63 [severity: S4] The new row invokes the reused `startServed` harness over `examples/sample-studio`, but the Input domain omits that reused-call boundary. Replace brief:63 with: “| 3. The reused served-harness lifecycle: `startServed("w446-board-1280")` and its returned `ServedInstance.close()` | `startServed` resolves with a ready instance after copying `examples/sample-studio`, obtaining the port and token, and receiving HTTP 200; cleanup completes | `startServed`, `waitForReady`, or the awaited Playwright test/`afterEach` rejects on copy, spawn, early-exit, readiness, navigation, or cleanup failure, failing `web-e2e` |” followed by the current reused-gates row renumbered 4. [class: spec×input-domain-missing-or-unenforceable] — check: none: brief input review should require each newly invoked reused harness boundary
+
+## Verdict
+The design is feasible; the remaining issues are advisory boundary and promise corrections.
+
+VERDICT: PASS

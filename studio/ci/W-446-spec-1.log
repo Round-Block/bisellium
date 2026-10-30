@@ -1,0 +1,30 @@
+# opus: W-446
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T01:38:44.920Z
+# tree: tree:e0c43a0d4b86c412cbc5a0ab55797bcbc3a4b7a9
+# brief: briefs/W-446.md blob:ca24f6777af9e5e63cd8abcf9d96e474468d5e03
+# ticket: {"opus":"W-446","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"be5f81086d89d8f485627acb86cfe0b2beba3eef","brief":"ca24f6777af9e5e63cd8abcf9d96e474468d5e03","at":"2026-10-30T01:38:40.954Z"}
+
+# W-446 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-446.md revision 1, prototyped over master be5f8108 (series 94f61acb, series.mbox sha256 e83549d135ee6e0736e3c5a047bd19c2dbbd5462ac6457d908edc788c73dcffa); evidence in /home/edckt/.bisellium-evidence/W-446-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-446-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — captured: w406.spec.ts and w442.spec.ts run together 30 times on master fail W-406-b1 3 times, each at "1280: track press jumps to its centred proportional offset" with Received 1089.9951491632307, the value W-442's build recorded; the instrumented probe caught the failing press hitting the thumb still painted at the right terminal (offset 515.37px) with scrollLeft already 0 — check: capture.out, probe.out:16, /home/edckt/.bisellium-evidence/W-442-build/accept/served.out
+2. advisory — the cause is the row, not the Board: it waited only for scrollLeft to read 0, while Board.tsx moves the thumb from the scroll event the browser fires with its next frame, and at 1280 the right-terminal thumb (49% of the track) covers the press point; W-406's own domain is a press on uncovered track; the fix waits for the painted thumb, no retry or longer timeout, and no Board.tsx change (W-409's and W-451's file) — check: Board.tsx:119, Board.tsx:167 (master); W-406.md:81 (master); board-cue.ts:21 (stage 1)
+3. advisory — W-446-b1 forces the losing interleaving by a fixture that holds the cue's scroll update for 30 animation frames (no timer); it fails three runs of three on master's sequence at the same assertion and value, accepted at assertion level, passes three of three on stage 1, and two mutations of board-cue.ts fail it again — check: red-accept.out, proto-b1-stage1.out, kills.out
+4. advisory — every Promise line and Input domain row is unpinned by a kill and scoped: the change is served test code only, and a ledger kill must mutate a source file outside the tests and prove the failure by Node TAP, which a Playwright row does not print; the served kills of board-cue.ts are kept as evidence instead — check: kills.out, promise-ledger.md
+5. advisory — W-446-b1 depends on the sample studio's 1280 geometry (the thumb wider than a quarter of the track); a Board change that narrows it fails the row at "1280: the right-terminal thumb covers the track press point" rather than passing silently — check: w446.spec.ts:59 (stage 1)
+6. advisory — a first fixture that delayed the update by setTimeout needed a sleep-waiver past W-121's cap of 18 and failed tests.test.ts's W-121 behaviour 5, a must-stay-green row the Codex test check did not list; the frame-counted fixture needs no waiver and the file passes whole — check: r0/census-tests-proto.out, census-tests-proto.out
+7. advisory — no flipped row (the Codex test check lists none and nothing unnamed); stage 1 passes w406, w442 and w446 whole, the paired files 20 paired runs of 20, the W-406 policy rows, lint, format, typecheck and both officina checks; admission and master's ledger validator pass — check: fixture-census.md, stage1-served.out, capture-stage1.out, gates-proto.out, series-builds.out, admission.out, ledger-probe.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-446.md` (spec round 1), prototyped over master be5f8108; one behaviour, one shared served-test step, one new served row and two call sites in W-406-b1, no flipped row, no code-owned path, no file of an opus in flight.
