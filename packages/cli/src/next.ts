@@ -1778,8 +1778,20 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
       "If red refuses, finish the earlier behaviour it names; never re-record a red at the tip.",
       "A red recorded on the wrong tree is re-recorded with --cwd in a detached worktree at the commit it belongs on, after the branch's last rebase, and its log committed at the tip; never rewrite history.",
     ];
+    // W-468: a fix round's red is recorded again at a restage commit on the branch, so certify's replay finds its tree
+    const fixRed = (k: number): string =>
+      [
+        `dispatch ${sella} (phase fix, the cited red recorded again, W-468), in .worktrees/${id}, for behaviour ${k}:`,
+        "1. unless it is committed already, fix the behaviour's test so its row fails at the assertion the brief declares, and commit it;",
+        "2. commit a restage: the behaviour's implementation removed, its fixed test and every other behaviour's code kept;",
+        `3. from .worktrees/${id}: bisellium next ${id} (the ticket binds this HEAD), then bisellium red ${id} --behaviour ${k} --sella ${sella} --studio ${studioRel} -- <the brief's Genuine red command>; it replaces ci/reds/${id}/${pad(k)}.log;`,
+        "4. commit the red log alone (studio files only), then git revert the restage, so the tip's source is the fixed tree again;",
+        `then bisellium next ${id}: the next cited red, or the fix check (D-086 D). A red run with --cwd is still bound to this worktree's HEAD, where its log is written, and certify replays only a commit on opus/${id}; never rewrite history.`,
+      ].join("\n");
     command =
-      o.behaviour === undefined
+      o.phase === "fix" && o.behaviour !== undefined
+        ? fixRed(o.behaviour.from)
+        : o.behaviour === undefined
         ? [`${head}, to resolve: ${why}`, ...closing].join("\n")
         : [
             `${head}, from behaviour ${o.behaviour.from} through ${o.behaviour.through}, for each in turn:`,
