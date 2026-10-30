@@ -1557,3 +1557,85 @@ test("W-468-b2 behaviour 2: the fix round's red order names the restage, the tic
   assert.match(order, /certify replays only a commit on opus\/W-900; never rewrite history\./, ran("certify and history", o));
   assert.doesNotMatch(order, /from behaviour 2 through 2/, ran("not the phase 1 order", o));
 });
+
+/** W-468-b3: round 1's log pinned by `ticket` (a `# ticket:` line) in place of its `# brief:` line, or by neither, committed. */
+function w468Pin(w: World, ticket: string | undefined): void {
+  const log = join(w.wtStudio, "ci", `${OPUS}-review-1.log`);
+  const text = readFileSync(log, "utf8");
+  assert.match(text, /^# brief: briefs\/W-900\.md blob:[0-9a-f]{40}$/m, "round 1 carries a # brief: pin to replace");
+  const bare = text.replace(/^# brief: .*\n/m, "");
+  writeFileSync(log, ticket === undefined ? bare : bare.replace(/^(# tree: .*)$/m, `$1\n# ticket: ${ticket}`));
+  commit(w.wt, `test(${OPUS}): round 1 pinned by ${ticket === undefined ? "nothing" : "its ticket"}`);
+}
+/** A canonical verdict-build ticket line for round 1 naming `brief`, as `ticketLine` writes it. */
+const w468Ticket = (brief: string): string =>
+  JSON.stringify({ opus: OPUS, step: "review", action: "verdict-build", round: 1, actor: "censor", studio: WT_STUDIO_REL, head: "0".repeat(40), brief, at: T.review1 });
+const w468Blob = (w: World): string => {
+  const bytes = readFileSync(WT_BRIEF(w));
+  return createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+};
+/**
+ * W-468-b3: the record made kind: ui with a custom `spec:` (briefs/custom.md: other bytes than briefs/W-900.md, or with `same`
+ * its bytes), a ui-lead seat
+ * and its UI input recorded through `next` and `verdict`, so the spec gate passes and the build rung is reached.
+ */
+function w468Custom(w: World, same = false): void {
+  writeFileSync(join(w.wtStudio, "briefs", "custom.md"), `${readFileSync(WT_BRIEF(w), "utf8")}${same ? "" : "\nA custom brief.\n"}`);
+  editRecord(w, "wt", (doc) => {
+    doc.setIn(["kind"], "ui");
+    doc.setIn(["spec"], "briefs/custom.md");
+  });
+  const yml = join(w.wtStudio, "bisellium.yml");
+  writeFileSync(yml, readFileSync(yml, "utf8").replace(/^(  - \{ id: architect,.*)$/m, "$1\n  - { id: ui-lead, collegium: design, kind: agent, model: gpt-6-astra, harness: codex }"));
+  expectStep(next(w, [OPUS, ...BUDGET]), "spec", "named", "a kind: ui record asks its UI input first");
+  put(w.wtStudio, `ci/${OPUS}-ui-prompt-2.md`, "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n");
+  const from = join(w.root, "w468-ui-input.md");
+  writeFileSync(from, ["## Findings", "No findings", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "## Recommendation", "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: passed", ""].join("\n"));
+  const ui = direct(w, w.wt, ["verdict", OPUS, "--round", "2", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--from", from, "--dispatch-prompt", `ci/${OPUS}-ui-prompt-2.md`, "--studio", w.wtStudio, "--now", T.spec]);
+  assert.equal(ui.status, 0, ran("the UI input is recorded", ui));
+}
+function w468NoReRed(o: Out, row: string): void {
+  expectStep(o, "build", "named", row);
+  assert.equal(o.kv.get("phase"), "fix", ran(`${row}: phase fix`, o));
+  assert.equal(lastLine(o), "ticket: none", ran(`${row}: no red ticket`, o));
+}
+
+test("W-468-b3 behaviour 3: only a failed round of the current brief orders its cited red again", { timeout: 1_800_000 }, () => {
+  // W-206-b3 with a cited red: round 2 fails citing 01.log against the brief then; the brief is amended and re-signed, so the
+  // round's # brief: pin is not the current one: review, as W-206-b3 orders, never a red ticket for the current brief
+  const old = w206World("w468-b3-old", "review", "failed");
+  addReview(old, "failed", 2, T.review2, `1. ${w468Blocker("studio/ci/reds/W-900/01.log:3")}`);
+  amend(old);
+  assert.equal(wtSpec(old, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(old, 4, SR, "passed", SR_MODEL).status, 0, "review 4");
+  expectStep(next(old, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the amendment is committed");
+  handoffAt(old, "wt", "2026-10-02T09:30:00.000Z");
+  const o1 = next(old, [OPUS, ...BUDGET]);
+  expectStep(o1, "review", "named", "a round of an older brief citing a red: review, not a re-red");
+  assert.equal(o1.kv.has("re-red"), false, ran("a round of an older brief: no re-red line", o1));
+
+  // a round with no # brief: (a kind: ui build round) is read by its one ticket's brief blob
+  const tk = w468World("w468-b3-ticket", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Pin(tk, w468Ticket(w468Blob(tk)));
+  w468ReRed(next(tk, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", "a round pinned by its ticket's brief: the cited red is ordered again");
+
+  const other = w468World("w468-b3-other", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Pin(other, w468Ticket("f".repeat(40)));
+  w468NoReRed(next(other, [OPUS, ...BUDGET]), "a ticket of another brief: no re-red");
+
+  const bare = w468World("w468-b3-bare", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Pin(bare, undefined);
+  w468NoReRed(next(bare, [OPUS, ...BUDGET]), "no brief identity: no re-red");
+
+  // a kind: ui record whose spec: is a custom brief: the ticket hashes briefs/W-900.md, not the brief the round judged, so the
+  // fallback does not hold and the existing review path follows (the custom pointer's re-red is W-475)
+  const custom = w468World("w468-b3-custom", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Custom(custom);
+  w468Pin(custom, w468Ticket(w468Blob(custom)));
+  w468NoReRed(next(custom, [OPUS, ...BUDGET]), "a custom spec pointer: no re-red");
+  // the same with briefs/custom.md a byte-identical copy: the fallback is the default path's only, whatever bytes it names
+  const copy = w468World("w468-b3-copy", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Custom(copy, true);
+  w468Pin(copy, w468Ticket(w468Blob(copy)));
+  w468NoReRed(next(copy, [OPUS, ...BUDGET]), "a custom spec pointer to the same bytes: no re-red");
+});
