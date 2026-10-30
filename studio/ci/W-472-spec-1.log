@@ -1,0 +1,28 @@
+# opus: W-472
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T15:38:41.600Z
+# tree: tree:3a11d18041586e74df86d8ccc6e49d2079fd559e
+# brief: briefs/W-472.md blob:7a018683bafe1756ad45b85938f95f226193f729
+# ticket: {"opus":"W-472","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"049a9e989fd18b0ff053cb6787e8643184e553ed","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-30T15:38:33.127Z"}
+
+# W-472 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-472.md revision 1, prototyped over master 049a9e98 (series c02eba02, prototype.mbox sha256 455d3198c658ffb4d9f823346500f87334dfc605c6a113b56d817fe617c06c61); evidence in /home/edckt/.bisellium-evidence/W-472-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-472-spec/promise-ledger.md
+
+Design: the description is the record's body, which ADOPTION already names the description and which the served API (`/api/opera`, `/api/opus/<id>`) and the Board drawer already carry in full, so no field, no vocabulary and no screen change; `new --description` writes it. The cap is 8 words (a whitespace-separated token holding a letter or number), refused by every writer that files or retitles an opus (`new`, `newItem`, `retro --opus`'s triage pre-check, `amend --title`) before any write; `check` advises `opus.title.words` on a record not done and never blocks. Existing records are advised, not migrated: a mechanical cut fails for 116 of the 439 long titles and is meaningless for others, and retitling a signed or ui opus makes `brief.stale` and its UI input stale. ADOPTION (code-owned) states the cap without adding a line (it is at its doc.cap of 1032).
+
+Checked: the four reds fail by assertion on their red commits and on master's source and are accepted by the replay classifier (red-accept.out); each row passes at its stage and every later stage (reds.out); seventeen source kills fail their row at the assertion they guard (kills.out), K17 being the served store keeping the closing LF (caught at the served body); lint, format and typecheck of the touched files, the rows and every existing test file over the touched code pass on stage 4, and both officina checks pass, the real one with 258 new advisories and no block, the sample with none (gates-proto.out); every series commit typechecks and builds the web bundle (series-builds.out); admission returns no problem (admission.out); master's promise-ledger validator returns no problem (ledger-probe.out). The Codex test check (fixture-census.md) lists no flip and nothing unnamed; every must-stay-green row it names passes on stage 4, its file run whole (gates-proto.out, gates-census.out). The source diff touches only the files in Files owned; docs/ADOPTION.md is the one code-owned path, so the Patron merges.
+
+## Findings
+1. advisory — no existing title is shortened: 258 open records carry the `opus.title.words` advisory until they are done or retitled by `amend --title`; a judged one-off retitle is proposed to the Patron as a follow-up (Defaults 3) — check: check.ts:685 (prototype)
+2. advisory — `amend` gains no `--description`, so a retitled old record keeps its long title only in `amendments` (`superseded:`), not in the body the drawer shows — check: lifecycle.ts:1664 (prototype)
+3. advisory — `docs/ADOPTION.md` is code-owned and changes (the cap and the `new` synopsis): the Patron merges; the paragraph is appended to an existing line to stay at its doc.cap of 1032 lines — check: ADOPTION.md:379 (prototype)
+
+## Verdict
+passed — a title is at most 8 words, refused by every writer that files or retitles an opus; the long text is the record's body, written by `new --description` and already served and shown by the Board drawer; old records stay valid and are advised by `check`, with no screen change and no migration.

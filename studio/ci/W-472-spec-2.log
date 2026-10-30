@@ -1,0 +1,19 @@
+# opus: W-472
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18d77-0af4-7483-a332-e0a7dc01847b
+# outcome: passed
+# at: 2026-10-30T15:42:44.388Z
+# tree: tree:3a11d18041586e74df86d8ccc6e49d2079fd559e
+# brief: briefs/W-472.md blob:7a018683bafe1756ad45b85938f95f226193f729
+# ticket: {"opus":"W-472","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"049a9e989fd18b0ff053cb6787e8643184e553ed","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-30T15:42:35.673Z"}
+
+## Findings
+1. advisory — brief:80 The row makes an active long title out-of-domain, but `titleWordsProblem` only advises and does not fail closed. Replace brief:80 with: `| An opus record's title and state on disk, read by check | a title titleProblem accepts and a declared lifecycle state; a title over 8 words is accepted legacy/manual input, advised unless state is done | checkStudio: opus.keys.type, opus.state and validateStudioNativeModel/titleProblem block malformed titles or states; titleWordsProblem adds only the specified advisory; pinned by W-472-b4 "check advises on the long titles of records not done, and only those" |`. [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/w472.test.ts (W-472-b4)
+2. advisory — brief:46 `descriptionProblem` accepts an unpaired UTF-16 surrogate, but Node’s UTF-8 writer replaces it with U+FFFD, so accepted in-process input cannot satisfy the verbatim promise. Replace brief:46 with: `descriptionProblem(value: string): string | undefined` also returns `description contains unpaired surrogate U+<hex>` for an unpaired UTF-16 surrogate. [severity: S3] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w472.test.ts (an unpaired surrogate is refused before writing)
+
+## Verdict
+The brief is feasible with two advisory boundary corrections and has no blocking finding.
+VERDICT: PASS
