@@ -3,7 +3,7 @@
  * over the slowest measured suite run. node:test TAP; selected by
  * `--test-name-pattern=W-142-b1`.
  *
- * W-466 adds a row on the tests gate's log (`--test-name-pattern='^W-466-b1\s'`).
+ * W-466 adds two rows on the tests gate's log (`--test-name-pattern='^W-466-b1\s'`, `'^W-466-b2\s'`).
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -194,3 +194,10 @@ test("W-466-b1 behaviour 1: a failing tests gate's log ends with the suite's fai
   }
 });
 
+test("W-466-b2 behaviour 2: no-vendor.test.mjs's row-3 fixture reports on its own piped stderr, asserted there, and none of it reaches the suite's stderr", () => {
+  const r = spawnSync(process.execPath, [join(SCRIPTS, "no-vendor.test.mjs"), "9"], { encoding: "utf8", timeout: 120_000 });
+  assert.equal(r.status, 0, "behaviour 9 passes");
+  assert.doesNotMatch(r.stderr, /row3-violation|vendor-spend violation/, "none of the row 3 sentinel report reaches the stderr of behaviour 9");
+  const report = "vendor-sentinel: 1 vendor-spend violation(s) detected:\n  row3-violation\n";
+  assert.ok(r.stdout.split("\n").includes(`PASS  [9] row 3 (W-466): A's own stderr, piped, is exactly its sentinel report of the violation ${JSON.stringify(report)}`), "behaviour 9 asserts the row 3 report on its own pipe, exactly");
+});
