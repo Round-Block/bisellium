@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { evidenceClaims, evidenceRoots, inputDomainRows, killedPin, ruledCases, type RuledCase } from "./brief-admission.js";
+import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
@@ -716,7 +716,8 @@ function holdsClaim(text: string, claim: string): boolean {
  * citation is a problem. A declared root whose `~/` does not expand to an absolute path is a problem of its own, once.
  * ponytail: whether the claim is true of what the brief says, beyond the quoted text being present, stays the spec review's.
  */
-export function evidenceClaimProblems(brief: string): string[] {
+/** W-445: the brief's evidence roots, `~/` expanded; a root that does not expand to an absolute path is a problem. */
+function citationRoots(brief: string): { roots: { named: string; abs: string }[]; problems: string[] } {
   const problems: string[] = [];
   const roots: { named: string; abs: string }[] = [];
   for (const named of evidenceRoots(brief)) {
@@ -724,33 +725,40 @@ export function evidenceClaimProblems(brief: string): string[] {
     if (abs === "") problems.push(`evidence root \`${named}\` does not expand to an absolute path`);
     else roots.push({ named, abs });
   }
+  return { roots, problems };
+}
+
+/** W-445 (shared with W-443): the one file an evidence citation's path names, or why it names none: an absolute or `~/` path
+ *  as written; a relative one (`RELATIVE_CITE`) under the one root where it names a regular file; any other path is none. */
+function citedFile(path: string, roots: readonly { named: string; abs: string }[]): { file: string } | { why: string } {
+  if (path.startsWith("/") || path.startsWith("~/")) return { file: path };
+  if (!RELATIVE_CITE.test(path))
+    return { why: 'it is not a path the check reads (absolute, ~/, or relative segments of word characters, ".", "+" and "-"): cite the evidence file by such a path' };
+  const hits = roots.filter((r) => {
+    try {
+      return statSync(join(r.abs, path)).isFile();
+    } catch {
+      return false;
+    }
+  });
+  if (hits.length === 1) return { file: join(hits[0]!.abs, path) };
   const where = roots.length === 0 ? "the brief declares no evidence root (a backticked absolute or ~/ folder ending in /)" : `the evidence roots (${roots.map((r) => r.named).join(", ")})`;
+  return hits.length === 0
+    ? { why: `it names no regular file under ${where}: cite it by its absolute path, or correct the name or the root` }
+    : { why: `it names a file under ${hits.length} evidence roots (${hits.map((h) => h.named).join(", ")}): cite it by its absolute path` };
+}
+
+export function evidenceClaimProblems(brief: string): string[] {
+  const { roots, problems } = citationRoots(brief);
   for (const c of evidenceClaims(brief)) {
     if (c.path.endsWith("/")) continue;
     const head = `brief:${c.line} cites \`${c.cite}\` for "${c.claim}"`;
-    let file: string;
-    if (c.path.startsWith("/") || c.path.startsWith("~/")) file = c.path;
-    else if (RELATIVE_CITE.test(c.path)) {
-      const hits = roots.filter((r) => {
-        try {
-          return statSync(join(r.abs, c.path)).isFile();
-        } catch {
-          return false;
-        }
-      });
-      if (hits.length !== 1) {
-        problems.push(
-          hits.length === 0
-            ? `${head}, and it names no regular file under ${where}: cite it by its absolute path, or correct the name or the root`
-            : `${head}, and it names a file under ${hits.length} evidence roots (${hits.map((h) => h.named).join(", ")}): cite it by its absolute path`,
-        );
-        continue;
-      }
-      file = join(hits[0]!.abs, c.path);
-    } else {
-      problems.push(`${head}, and it is not a path the check reads (absolute, ~/, or relative segments of word characters, ".", "+" and "-"): cite the evidence file by such a path`);
+    const cited = citedFile(c.path, roots);
+    if ("why" in cited) {
+      problems.push(`${head}, and ${cited.why}`);
       continue;
     }
+    const file = cited.file;
     const read = evidenceText(file, LOG_MAX_BYTES);
     if ("error" in read) {
       problems.push(`${head}, and ${file} ${read.error}`);
@@ -764,6 +772,61 @@ export function evidenceClaimProblems(brief: string): string[] {
           ? `${head}, and ${file} does not hold it: cite the evidence that does, or correct the claim`
           : `${head}, and line ${c.at} of ${file} does not hold it: cite the evidence that does, or correct the claim`,
       );
+  }
+  return problems;
+}
+
+/** W-443: the command an evidence file records it ran: its header, the leading lines opening `# ` (as `bisellium red` heads a
+ *  red's log), holding one `# command: <words>` line; none is undefined, two or more an error. */
+function recordedCommand(text: string): string | undefined | { error: string } {
+  const header: string[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    if (!line.startsWith("# ")) break;
+    header.push(line);
+  }
+  const named = header.filter((l) => l.startsWith("# command: "));
+  if (named.length > 1) return { error: `records ${named.length} "# command:" lines; one only` };
+  return named[0]?.slice("# command: ".length);
+}
+
+/**
+ * W-443 (D-076 D): why a prototyped brief's written genuine red commands are not the commands their red evidence ran. On a
+ * brief that names a prototype (`ruledCases`), for each numbered behaviour k: its written red command must read as words
+ * (`redCommand`, the replay's own reader: a shell passes them unchanged), and the evidence its genuine red cites
+ * (`redEvidence`), each resolved as a quoted claim's citation is (`citedFile`), must include a file whose header records its
+ * command (`recordedCommand`), and every file recording one must record those words, space-joined, exactly; a citation that
+ * names no readable file is a problem of its own, and stands for the missing record. ponytail: the
+ * working directory, the environment and whether the header was written by the run it heads are not compared.
+ */
+export function redReplayProblems(brief: string, id: string): string[] {
+  if (!ruledCases(brief).prototype) return [];
+  const { roots } = citationRoots(brief);
+  const problems: string[] = [];
+  for (let k = 1; k <= countBehaviours(brief); k++) {
+    const words = redCommand(brief, id, k);
+    if ("error" in words) {
+      problems.push(`behaviour ${k}'s genuine red command cannot be copied as written (${words.error}): write it as words a shell passes unchanged, single-quoting any other`);
+      continue;
+    }
+    const written = words.join(" ");
+    let recorded = 0;
+    const before = problems.length;
+    for (const path of redEvidence(brief, k)) {
+      const head = `behaviour ${k}'s genuine red cites \`${path}\``;
+      const cited = citedFile(path, roots);
+      const read = "why" in cited ? undefined : evidenceText(cited.file, LOG_MAX_BYTES);
+      const ran = read === undefined || "error" in read ? undefined : recordedCommand(read.text);
+      if ("why" in cited) problems.push(`${head}, and ${cited.why}`);
+      else if (read === undefined || "error" in read) problems.push(`${head}, and ${cited.file} ${read?.error ?? "is not a readable regular file"}`);
+      else if (typeof ran === "object") problems.push(`${head}, and ${cited.file} ${ran.error}`);
+      else if (ran !== undefined) {
+        recorded++;
+        if (ran !== written)
+          problems.push(`behaviour ${k}'s genuine red command is \`${written}\`, and ${cited.file} records \`${ran}\`: write the command the evidence ran, or run the red again with the written command`);
+      }
+    }
+    if (recorded === 0 && problems.length === before)
+      problems.push(`behaviour ${k}'s genuine red cites no evidence recording the command it ran: cite its red output, headed "# command: <the command>" as \`bisellium red\` records it`);
   }
   return problems;
 }
@@ -1080,6 +1143,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
         ...promiseLedgerProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), briefRel).map((p) => `promise ledger: ${p}`),
         // W-445: a quoted claim's cited evidence holds it
         ...evidenceClaimProblems(read.bytes.toString("utf8")).map((p) => `evidence citation: ${p}`),
+        // W-443: a prototyped brief's written genuine red command is the one its red evidence ran
+        ...redReplayProblems(read.bytes.toString("utf8"), opusId).map((p) => `red command: ${p}`),
       ];
       if (problems.length > 0) {
         console.error(problems.map((p) => `${opusId}: ${p}`).join("\n"));
