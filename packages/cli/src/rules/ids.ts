@@ -102,6 +102,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "opus.sella.collegium",
   "opus.state",
   "opus.title",
+  "opus.title.words",
   "opus.tokens",
   "opus.untracked",
   "opus.ui.design",

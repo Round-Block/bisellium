@@ -376,7 +376,7 @@ logical line: C0/C1 controls, line/paragraph separators and the format/bidi
 controls enumerated by the implementation contract are forbidden. Everything
 after the front-matter delimiter is the description, may be empty, and is
 preserved byte-for-byte by metadata writers. There are no duplicate
-`summary:` or `description:` fields.
+`summary:` or `description:` fields. A title is at most 8 words (W-472): a word is a whitespace-separated token holding a letter or a number of any script, so a lone dash or bracket is not one. `new`, `retro --opus` and `amend --title` refuse a longer title before any write; the long text goes in the description, which `new --description <text>` writes verbatim below the front matter (nonblank, no control but TAB and LF, one closing LF added when absent). `check` advises `opus.title.words` on a record that is not `done` whose title is longer, so records filed before the cap stay valid.
 
 An `arc` is an ordinary `kind: arc` opus. A non-arc record may carry
 `arc: W-n`; the target must exist locally and have kind `arc`. An arc cannot

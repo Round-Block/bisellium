@@ -38,7 +38,7 @@ import { checkBriefStale } from "./rules/brief-stale.js";
 import { checkLadderTicket } from "./rules/ladder-ticket.js";
 import { checkHookGuard } from "./rules/hook-guard.js";
 import { diagnosticLabel } from "./reporting.js";
-import { effectiveProbationes, readContainedRegularFile, readRecordedFile, reviewFailedAtCertifiedTree, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
+import { effectiveProbationes, readContainedRegularFile, readRecordedFile, reviewFailedAtCertifiedTree, titleWordsProblem, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
 import type { OpusModelProblem } from "@bisellium/commands/opus-model.js";
 import { DEFAULT_OPEN_LESSONS } from "@bisellium/commands/context.js";
 
@@ -678,6 +678,11 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     }
 
     checkTraditio(where, d["traditio"], state, ACTIVE.has(state));
+
+    // W-472: writers refuse a title over the word cap; a record filed before it is advised until it is done (a done
+    // record's title is history), never blocked
+    const longTitle = state === "done" ? undefined : titleWordsProblem(d["title"]);
+    if (longTitle) add("opus.title.words", "advise", where, `${longTitle} (W-472): shorten it with bisellium amend --title`);
 
     if (state === "halted") {
       for (const k of ["reason", "resume_when"]) if (!str(d[k])) add("halted.exit", "block", where, `halted item missing "${k}"`);
