@@ -5,7 +5,9 @@
  * by tests and wired into main.ts separately. `bisellium run --reclaim`
  * (or `--reclaim --repo <dir>` outside a studio) removes worktrees whose
  * branch is merged or whose directory is gone, so growth under
- * `<repo>/.bisellium/worktrees/` is bounded.
+ * `<repo>/.bisellium/worktrees/` is bounded. `bisellium run --scratch <dir>`
+ * (W-474, `./scratch.js`) runs a command in a copy under `<dir>` that shares
+ * the repository's git objects and is deleted when the command ends.
  *
  * Exit codes: 0/whatever the child exits with (128+signal if it was killed
  * by a signal) · 2 usage error (bad flags, missing "--", empty command,
@@ -20,6 +22,7 @@ import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
 import { pauseWarning } from "./pause.js";
 import { runBuilderCommand } from "./builder-run.js";
+import { runScratch } from "./scratch.js";
 
 export interface RunOptions {
   /** Pinned clock, for reproducible sessionIds/receipts in tests. */
@@ -36,7 +39,8 @@ const GIT_TIMEOUT_MS = 30_000;
 
 const USAGE =
   "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>\n" +
-  "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]";
+  "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
+  "       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>";
 
 /** `studio` slug for GIT_AUTHOR_EMAIL / BISELLIUM_STUDIO — same shape as adapter-native's projectId default. */
 function studioSlug(name: string): string {
@@ -88,11 +92,20 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   let keep = false;
   let reclaim = false;
   let opus: string | undefined;
+  let scratch: string | undefined;
+  const given: string[] = [];
   let sepIndex = -1;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
     if (a === "--") { sepIndex = i; break; }
+    given.push(a);
+    if (a === "--scratch") {
+      const r = takeValue(args, ++i, "--scratch");
+      if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
+      scratch = r.value;
+      continue;
+    }
     if (a === "--opus") {
       const r = takeValue(args, ++i, "--opus");
       if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
@@ -129,6 +142,13 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
     if (a === "--reclaim") { reclaim = true; continue; }
     console.error(`bisellium run: unknown flag "${a}"\n${USAGE}`);
     return { exitCode: 2 };
+  }
+
+  if (scratch !== undefined) {
+    const other = given.filter((f) => !["--scratch", "--repo", "--base"].includes(f));
+    if (other.length > 0) { console.error(`bisellium run --scratch: ${other[0]} does not go with --scratch\n${USAGE}`); return { exitCode: 2 }; }
+    if (sepIndex === -1 || args.length === sepIndex + 1) { console.error(`bisellium run --scratch: a command after "--" is required\n${USAGE}`); return { exitCode: 2 }; }
+    return { exitCode: await runScratch({ dir: scratch, cmd: args.slice(sepIndex + 1), ...(repoFlag === undefined ? {} : { repo: repoFlag }), ...(base === undefined ? {} : { base }) }) };
   }
 
   const studioRoot = resolve(studio);
