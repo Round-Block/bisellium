@@ -45,7 +45,8 @@ export interface CardRow {
 export interface BoardColumn {
   id: string;
   name: string;
-  /** Reserved for phase-column presentation; waiting membership is a strip. */
+  /** Reserved for a phase-column presentation rule. W-463's waiting
+   * membership is rendered above the columns, so no waiting column is pinned. */
   pinned: boolean;
   cards: CardRow[];
   /** Present on the in-progress column only. */
@@ -57,7 +58,8 @@ export interface BoardColumn {
 
 export interface BoardModel {
   columns: BoardColumn[];
-  /** D-138: one entry per waiting opus; its lifecycle card remains in columns. */
+  /** D-138: one entry per waiting opus, rendered in the pinned strip. The
+   * lifecycle card remains the sole card instance in `columns`. */
   waiting: CardRow[];
   /** Opera whose state maps to no declared phase: counted and named, never
    *  dropped into the first column and never thrown on. */

@@ -6,9 +6,9 @@ import { Inbox } from "./screens/Inbox.js";
 import { Seats } from "./screens/Seats.js";
 import { Board } from "./screens/Board.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
-import { fetchInbox, hasToken, setUnauthorizedListener } from "./api.js";
+import { fetchInbox, fetchOfficina, fetchOpera, hasToken, setUnauthorizedListener } from "./api.js";
 import { READY, type ScreenStatus } from "./lib/screenState.js";
-import { needsYouTotal } from "./lib/board.js";
+import { boardModel, needsYouTotal } from "./lib/board.js";
 
 function currentHash(): string {
   return typeof window === "undefined" ? "" : window.location.hash;
@@ -40,6 +40,7 @@ function initialWideSidebar(): boolean {
 export function App() {
   const [hash, setHash] = useState(currentHash());
   const [needsYouCount, setNeedsYouCount] = useState(0);
+  const [boardWaitingCount, setBoardWaitingCount] = useState(0);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
@@ -82,15 +83,36 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (route === "inbox") return;
     if (location.search.includes("demo")) {
       setNeedsYouCount(3);
       return;
     }
+    let active = true;
     fetchInbox()
-      .then((r) => setNeedsYouCount(needsYouTotal(r)))
+      .then((inbox) => {
+        if (active && route !== "inbox") setNeedsYouCount(needsYouTotal(inbox));
+      })
       .catch(() => undefined);
+    return () => { active = false; };
   }, [route]);
+
+  useEffect(() => {
+    if (location.search.includes("demo")) {
+      setBoardWaitingCount(2);
+      return;
+    }
+    // While Board is mounted its reconciled model is authoritative. An
+    // off-screen shell snapshot is cancelled on navigation, so it cannot
+    // overwrite a newer count reported through onWaitingCount.
+    if (route === "board") return;
+    let active = true;
+    Promise.all([fetchOfficina(), fetchOpera(), fetchInbox()])
+      .then(([officina, opera, inbox]) => {
+        if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [route, needsYouCount]);
 
   return (
     <div className={[
@@ -102,6 +124,7 @@ export function App() {
       <Sidebar
         route={route}
         needsYouCount={needsYouCount}
+        boardWaitingCount={boardWaitingCount}
         collapsed={wideSidebar ? sidebarCollapsed : !overlayOpen}
         overlay={!wideSidebar}
         overlayOpen={overlayOpen}
@@ -114,7 +137,7 @@ export function App() {
       />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
-        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
+        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} onWaitingCount={setBoardWaitingCount} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
       </main>
       <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
         {status.text}

@@ -158,7 +158,7 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
 
   // (b) Board: the seven literal column ids (board policy, not data) and the served card-id set.
   await page.locator('.sidebar__link[href="#/board"]').click();
-  const columns = ["awaiting_review", "done", "halted", "in_progress", "needs_you", "planned", "verifying"];
+  const columns = ["awaiting_review", "done", "halted", "in_progress", "planned", "verifying"];
   await expect
     .poll(() => page.locator("[data-column-id]").evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute("data-column-id")))].sort()), "board column ids")
     .toEqual(columns);

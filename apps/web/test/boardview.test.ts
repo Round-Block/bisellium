@@ -44,7 +44,7 @@ function column(overrides: Partial<BoardModel["columns"][number]> = {}): BoardMo
 function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   return {
     studio: "epoch0",
-    model: { columns: [], unplaced: [] },
+    model: { columns: [], waiting: [], unplaced: [] },
     focusedByColumn: {},
     onSelectCard: () => undefined,
     ...overrides,
@@ -59,10 +59,10 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 {
   const model: BoardModel = {
     columns: [
-      column({ id: "needs_you", name: "Needs you", pinned: true, membership: true, cards: [] }),
       column({ id: "planned", name: "Planned", cards: [card({ id: "W-1" }), card({ id: "W-2" })] }),
       column({ id: "in_progress", name: "In progress", cards: [card({ id: "W-3" })], cap: 2 }),
     ],
+    waiting: [],
     unplaced: [],
   };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
@@ -75,9 +75,9 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
     return m ? Number(m[1]) : undefined;
   };
   const headPos = (name: string): number => html.indexOf(`<span class="board__column-name">${name}</span>`);
-  const positions = ["Needs you", "Planned", "In progress"].map(headPos);
-  check(5, "BoardView: every column head present, in order", positions.every((p) => p >= 0) && positions[1]! > positions[0]! && positions[2]! > positions[1]!, JSON.stringify(positions));
-  check(5, 'BoardView: Needs you count is "0"', headCount("Needs you") === 0, String(headCount("Needs you")));
+  const positions = ["Planned", "In progress"].map(headPos);
+  check(5, "BoardView: every lifecycle column head present, in order", positions.every((p) => p >= 0) && positions[1]! > positions[0]!, JSON.stringify(positions));
+  check(5, 'BoardView: an empty waiting membership renders only label and "0"', html.includes("board__waiting") && html.includes("Waiting on you") && html.includes("<strong>0</strong>") && !html.includes("board__waiting-items"), html);
   check(5, 'BoardView: Planned count is "2"', headCount("Planned") === 2, String(headCount("Planned")));
   check(5, 'BoardView: In progress count is "1"', headCount("In progress") === 1, String(headCount("In progress")));
 }
@@ -86,7 +86,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 // the sella, title occupies at most two lines' worth of markup (no third
 // text row).
 {
-  const model: BoardModel = { columns: [column({ cards: [card({ id: "W-1", title: "a train build", sella: "builder-a", state: "building" })] })], unplaced: [] };
+  const model: BoardModel = { columns: [column({ cards: [card({ id: "W-1", title: "a train build", sella: "builder-a", state: "building" })] })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
   check(5, "BoardView: card title present", html.includes("a train build"));
   check(5, "BoardView: card sella present", html.includes("builder-a"));
@@ -107,6 +107,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
         cards: [card({ id: "W-1", needsYou: true, blocked: false }), card({ id: "W-2", needsYou: false, blocked: true }), card({ id: "W-3", needsYou: true, blocked: true }), card({ id: "W-4", needsYou: false, blocked: false })],
       }),
     ],
+    waiting: [],
     unplaced: [],
   };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
@@ -122,22 +123,22 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 
 // W-129: the backlog footer is gone (backlog opera are cards in Planned), so no count is rendered.
 {
-  const html = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", name: "Planned", cards: [card({ id: "W-9", state: "backlog" })] })], unplaced: [] } })));
+  const html = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", name: "Planned", cards: [card({ id: "W-9", state: "backlog" })] })], waiting: [], unplaced: [] } })));
   check(5, "BoardView: Planned renders no backlog footer or count", !html.includes("backlogged") && !html.includes("board__backlog-footer"), html);
   check(5, "BoardView: a backlog card shows its native state", html.includes(">backlog<"), html);
 }
 
 // Empty officina renders every column plus the colophon.
 {
-  const model: BoardModel = { columns: [column({ id: "needs_you", name: "Needs you" }), column({ id: "planned", name: "Planned" }), column({ id: "done", name: "Done" })], unplaced: [] };
+  const model: BoardModel = { columns: [column({ id: "planned", name: "Planned" }), column({ id: "done", name: "Done" })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model, studio: "epoch0" })));
-  check(5, "BoardView: an empty officina still renders every column", html.includes("Needs you") && html.includes("Planned") && html.includes("Done"), html);
+  check(5, "BoardView: an empty officina renders the zero strip and every lifecycle column", html.includes("<strong>0</strong>") && html.includes("Planned") && html.includes("Done"), html);
   check(5, "BoardView: an empty officina still renders the colophon", html.includes("epoch0") && /<footer/.test(html), html);
 }
 
 // No forbidden visual patterns.
 {
-  const model: BoardModel = { columns: [column({ cards: [card()] })], unplaced: [] };
+  const model: BoardModel = { columns: [column({ cards: [card()] })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
   check(5, "BoardView: no border-radius: 999px anywhere", !html.includes("999px"), html);
   check(5, "BoardView: no box-shadow anywhere (flat layer)", !html.includes("box-shadow"), html);
@@ -148,7 +149,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 // The project selector: disabled, exactly one option = officina.studio, the
 // unavailability reason is TEXT, never a title attribute.
 {
-  const html = renderToStaticMarkup(BoardView(baseProps({ studio: "epoch0", model: { columns: [], unplaced: [] } })));
+  const html = renderToStaticMarkup(BoardView(baseProps({ studio: "epoch0", model: { columns: [], waiting: [], unplaced: [] } })));
   const selectMatch = /<select[^>]*class="board__project-select"[^>]*>([\s\S]*?)<\/select>/.exec(html);
   check(5, "BoardView: the project select is present", !!selectMatch, html);
   check(5, "BoardView: the project select is disabled", /<select[^>]*disabled/.test(html), html);
@@ -165,6 +166,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
       column({ id: "planned", cards: [card({ id: "W-1" }), card({ id: "W-2" })] }),
       column({ id: "in_progress", cards: [card({ id: "W-3" })] }),
     ],
+    waiting: [],
     unplaced: [],
   };
   const html = renderToStaticMarkup(BoardView(baseProps({ model, focusedByColumn: { planned: "W-1", in_progress: "W-3" } })));
@@ -176,7 +178,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 
 // Hostile strings stay literal.
 {
-  const model: BoardModel = { columns: [column({ cards: [card({ id: "W-1", title: HOSTILE, sella: HOSTILE })] })], unplaced: [] };
+  const model: BoardModel = { columns: [column({ cards: [card({ id: "W-1", title: HOSTILE, sella: HOSTILE })] })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
   check(5, "BoardView: hostile title/sella — no <img tag reaches the markup", !html.includes("<img"), html);
   check(5, "BoardView: hostile title/sella — escaped text is present", html.includes("&lt;img"), html);
@@ -185,7 +187,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 // (a) Ladder byte-identity + the import that proves reuse.
 {
   const standalone = renderToStaticMarkup(GateLadder({ gates: SAMPLE_GATES }));
-  const model: BoardModel = { columns: [column({ cards: [card({ gates: SAMPLE_GATES })] })], unplaced: [] };
+  const model: BoardModel = { columns: [column({ cards: [card({ gates: SAMPLE_GATES })] })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
   check(5, "BoardView: a card's ladder markup equals GateLadder's own output for the same gates", html.includes(standalone), `${standalone}\n---\n${html}`);
   const boardViewSrc = readFileSync(join(SRC, "screens", "BoardView.tsx"), "utf8");

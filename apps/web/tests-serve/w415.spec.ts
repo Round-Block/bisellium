@@ -64,11 +64,11 @@ test("W-415-b1 D-120 puts the Inbox count in one collapsed-rail notification dot
   await signIn(page, 1280, "w415-icons");
   for (const route of ROUTES) {
     await page.goto(`${served!.baseURL}/?demo#/${route}`);
-    await expect(page.locator(".sidebar__badge"), `${route}: expanded Inbox keeps its current inline count`).toHaveText("3");
-    await expect(page.locator(".sidebar__badge")).not.toHaveClass(/sidebar__badge--dot/);
+    await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), `${route}: expanded Inbox keeps its current inline count`).toHaveText("3");
+    await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).not.toHaveClass(/sidebar__badge--dot/);
     await page.locator(".sidebar__toggle").click();
     const links = page.locator(".sidebar__link"); await expect(links).toHaveCount(4); await expect(links.locator(".sidebar__icon")).toHaveCount(4);
-    for (const label of ["Inbox 3", "Board", "Seats", "Officina"]) await expect(page.getByRole("link", { name: label })).toBeVisible();
+    for (const label of ["Inbox 3", "Board 2", "Seats", "Officina"]) await expect(page.getByRole("link", { name: label })).toBeVisible();
     await expect(page.locator(`.sidebar__link[href="#/${route}"]`), `${route}: current icon is marked`).toHaveAttribute("aria-current", "page");
     await expect(page.locator('.sidebar__link[href="#/inbox"]'), "collapsed Inbox has a native tooltip").toHaveAttribute("title", "Inbox");
     const inbox = page.locator('.sidebar__link[href="#/inbox"]');
@@ -88,21 +88,21 @@ test("W-415-b1 D-120 puts the Inbox count in one collapsed-rail notification dot
 
   await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones: [] }) }));
   await page.goto(`${served!.baseURL}/#/seats`);
-  await expect(page.locator(".sidebar__badge"), "zero Inbox count removes the expanded count").toHaveCount(0);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "zero Inbox count removes the expanded count").toHaveCount(0);
   await page.locator(".sidebar__toggle").click();
-  await expect(page.locator(".sidebar__badge--dot"), "zero Inbox count removes the collapsed notification dot").toHaveCount(0);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot'), "zero Inbox count removes the collapsed notification dot").toHaveCount(0);
   await page.locator(".sidebar__toggle").click();
   await page.unroute("**/api/inbox");
 
   const petitiones = Array.from({ length: 123 }, (_, index) => ({ id: `P-${index}`, opus: `W-${index}`, from: "builder", subject: "Alert", body: "Alert" }));
   await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) }));
   await page.goto(`${served!.baseURL}/#/officina`);
-  await expect(page.locator(".sidebar__badge"), "expanded Inbox keeps its full uncapped count").toHaveText("123");
-  await expect(page.locator(".sidebar__badge")).not.toHaveClass(/sidebar__badge--dot/);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "expanded Inbox keeps its full uncapped count").toHaveText("123");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).not.toHaveClass(/sidebar__badge--dot/);
   await page.locator(".sidebar__toggle").click();
-  await expect(page.locator(".sidebar__badge--dot"), "collapsed dot caps only its visible count").toHaveText("9+");
-  await expect(page.locator(".sidebar__badge--dot"), "capped dot retains the full count for assistive technology").toHaveAccessibleName("Inbox, 123 needs you");
-  expect(await page.locator(".sidebar__badge--dot").evaluate((node) => node.scrollWidth <= node.clientWidth), "9+ fits inside the dot without clipping").toBe(true);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot'), "collapsed dot caps only its visible count").toHaveText("9+");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot'), "capped dot retains the full count for assistive technology").toHaveAccessibleName("Inbox, 123 needs you");
+  expect(await page.locator('a[href="#/inbox"] .sidebar__badge--dot').evaluate((node) => node.scrollWidth <= node.clientWidth), "9+ fits inside the dot without clipping").toBe(true);
 });
 
 test("W-415-b2 every screen stays inside 1280 and a 640 CSS-pixel zoom viewport", async ({ page }) => {

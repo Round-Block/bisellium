@@ -45,7 +45,7 @@ test("W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390", as
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w409=b1-${width}#/board`);
-    await expect(page.locator('.board__column[data-column-id="needs_you"] [data-card-id]'), `${width}: the three ask sources form membership`).toHaveCount(3);
+    await expect(page.locator(".board__waiting-item"), `${width}: the three ask sources form strip membership`).toHaveCount(3);
     for (const [column, id] of [["planned", "W-1"], ["in_progress", "W-3"], ["verifying", "W-4"], ["awaiting_review", "W-5"], ["done", "W-6"], ["halted", "W-7"]] as const) {
       await expect(page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`), `${width}: ${id} remains in ${column}`).toHaveCount(1);
     }
@@ -70,15 +70,15 @@ test("W-409-b2 Inbox question totals stay distinct from Board membership at 1280
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w409=b2-${width}#/board`);
-    await expect(page.locator('.board__column[data-column-id="needs_you"] .board__column-count'), `${width}: Board membership keeps greenlight and human-gate asks`).toHaveText("2");
+    await expect(page.locator(".board__waiting-label strong"), `${width}: Board membership keeps greenlight and human-gate asks`).toHaveText("2");
     await expect(page.locator('.board__column[data-column-id="planned"] .board__column-count'), `${width}: Planned counts W-1 once`).toHaveText("1");
     await expect(page.locator('.board__column[data-column-id="in_progress"] .board__column-count'), `${width}: in progress counts W-2 once`).toHaveText("1");
     await expect(page.locator('.board__column[data-column-id="done"] .board__column-count'), `${width}: Done counts the no-ask opus once`).toHaveText("1");
     if (width === 1280) {
-      await expect(page.locator('.sidebar__badge'), `${width}: expanded Inbox badge counts two linked questions as one opus`).toHaveText("1");
+      await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), `${width}: expanded Inbox badge counts two linked questions as one opus`).toHaveText("1");
     } else {
       await page.getByRole("button", { name: "Expand sidebar" }).click();
-      await expect(page.locator('.sidebar__badge'), `${width}: overlay Inbox badge counts questions, not Board-only asks`).toHaveText("1");
+      await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), `${width}: overlay Inbox badge counts questions, not Board-only asks`).toHaveText("1");
       await page.keyboard.press("Escape");
     }
   }
@@ -116,7 +116,7 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w409=b3-${width}#/board`);
-    const needsW1 = page.locator('.board__column[data-column-id="needs_you"] [data-card-id="W-1"]');
+    const waitingW1 = page.locator('[data-waiting-id="W-1"]');
     const phaseW1 = page.locator('.board__column[data-column-id="planned"] [data-card-id="W-1"]');
     for (const { id, column, asks, label } of [
       { id: "W-1", column: "planned", asks: ["Greenlight", "2 Inbox decisions"], label: "greenlight and Inbox decisions" },
@@ -125,15 +125,28 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
       { id: "W-4", column: "planned", asks: ["Greenlight", "Inbox decision", "Human gate"], label: "greenlight, Inbox decision and a pending human gate" },
     ]) {
       const copies = [
-        page.locator(`.board__column[data-column-id="needs_you"] [data-card-id="${id}"]`),
+        page.locator(`[data-waiting-id="${id}"]`),
         page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`),
       ];
       for (const card of copies) {
-        await expect(card.locator(".board__card-ask"), `${width}: ${label} remain distinct on both card copies`).toHaveText(asks);
+        await expect(card.locator(".board__card-ask"), `${width}: ${label} remain distinct in strip and lifecycle`).toHaveText(asks);
       }
     }
-    for (const card of [needsW1, phaseW1]) {
-      await expect(card.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions are distinct on both copies`).toHaveText(["Greenlight", "2 Inbox decisions"]);
+    await expect(waitingW1.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions remain in the strip`).toHaveText(["Greenlight", "2 Inbox decisions"]);
+    for (const id of ["W-1", "W-2", "W-3", "W-4"]) {
+      const fits = await page.locator(`[data-waiting-id="${id}"]`).evaluate((item) => {
+        const itemBox = item.getBoundingClientRect();
+        return [...item.querySelectorAll<HTMLElement>(".board__card-ask")].every((ask) => {
+          const box = ask.getBoundingClientRect();
+          return getComputedStyle(ask).whiteSpace === "nowrap" && box.left >= itemBox.left - 0.5 && box.right <= itemBox.right + 0.5;
+        });
+      });
+      expect(fits, `${width}: ${id} wraps between ask kinds without clipping a kind or count`).toBe(true);
+    }
+    await expect(waitingW1.locator(".board__waiting-title"), `${width}: complete long strip title remains available`).toHaveAttribute("title", longTitle);
+    expect(await waitingW1.locator(".board__waiting-title").evaluate((node) => node.scrollWidth > node.clientWidth), `${width}: long strip title is visibly ellipsized`).toBe(true);
+    for (const card of [phaseW1]) {
+      await expect(card.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions remain on the lifecycle card`).toHaveText(["Greenlight", "2 Inbox decisions"]);
       await expect(card.locator(".board__card-title"), `${width}: complete long title remains available`).toHaveAttribute("title", longTitle);
       const geometry = await card.evaluate((node) => {
         const title = node.querySelector<HTMLElement>(".board__card-title")!;
@@ -160,7 +173,7 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
           right: box.right,
         };
       });
-      expect(geometry.titleClamp, `${width}: waiting title reserves three whole lines with a visible ellipsis on both copies`).toBe(3);
+      expect(geometry.titleClamp, `${width}: waiting lifecycle title reserves three whole lines with a visible ellipsis`).toBe(3);
       expect(geometry.titleHeight / geometry.titleLineHeight, `${width}: waiting title is not squeezed below its whole-line clamp`).toBeCloseTo(3, 2);
       expect(geometry.titleTruncated, `${width}: the deliberately long waiting title is visibly clamped`).toBe(true);
       expect(geometry.markHeight / geometry.markLineHeight, `${width}: ask kinds retain one complete line box`).toBeCloseTo(1, 2);

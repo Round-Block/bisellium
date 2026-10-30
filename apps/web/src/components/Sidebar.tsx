@@ -9,6 +9,7 @@ import { NAV_ENTRIES, needsYouVisible } from "../lib/nav.js";
 export interface SidebarProps {
   route: string;
   needsYouCount: number;
+  boardWaitingCount?: number;
   collapsed?: boolean;
   overlay?: boolean;
   overlayOpen?: boolean;
@@ -29,8 +30,12 @@ function SidebarIcon({ name }: { name: IconName }) {
   return <svg className="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export function Sidebar({ route, needsYouCount, collapsed = false, overlay = false, overlayOpen = false, onToggle = () => undefined, onNavigate = () => undefined }: SidebarProps) {
+export function Sidebar({ route, needsYouCount, boardWaitingCount = 0, collapsed = false, overlay = false, overlayOpen = false, onToggle = () => undefined, onNavigate = () => undefined }: SidebarProps) {
   const visibleInboxCount = collapsed && needsYouCount > 9 ? "9+" : needsYouCount;
+  const visibleBoardCount = collapsed && boardWaitingCount > 9 ? "9+" : boardWaitingCount;
+  const toggleBoardDescriptionId = overlay && collapsed && needsYouVisible(boardWaitingCount)
+    ? "sidebar-toggle-board-waiting"
+    : undefined;
   const afterRender = (action: () => void) => window.requestAnimationFrame(action);
   const toggle = (event: ReactMouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
@@ -59,23 +64,29 @@ export function Sidebar({ route, needsYouCount, collapsed = false, overlay = fal
         type="button"
         className="sidebar__toggle"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-describedby={toggleBoardDescriptionId}
         aria-expanded={!collapsed}
         aria-controls="sidebar-links"
         onClick={toggle}
       >
         <SidebarIcon name="panel" />
+        {overlay && collapsed && needsYouVisible(boardWaitingCount) && <span className="sidebar__badge sidebar__badge--dot sidebar__badge--toggle" role="img" aria-label={`Board, ${boardWaitingCount} waiting on you`}>{visibleBoardCount}</span>}
+        {toggleBoardDescriptionId !== undefined && <span id={toggleBoardDescriptionId} className="sidebar__toggle-description">Board, {boardWaitingCount} waiting on you</span>}
       </button>
       <div id="sidebar-links" className="sidebar__links">
       {NAV_ENTRIES.map((e) => {
         const active = route === e.route;
         const classes = ["sidebar__link", active && "sidebar__link--active"].filter(Boolean).join(" ");
         const inboxCountLabel = e.route === "inbox" && needsYouVisible(needsYouCount) ? `Inbox ${needsYouCount}` : undefined;
+        const boardCountLabel = e.route === "board" && needsYouVisible(boardWaitingCount) ? `Board ${boardWaitingCount}` : undefined;
         return (
-          <a key={e.route} className={classes} href={e.href} title={collapsed ? e.label : undefined} aria-label={inboxCountLabel ?? (collapsed ? e.label : undefined)} aria-current={active ? "page" : undefined} onClick={dismiss}>
+          <a key={e.route} className={classes} href={e.href} title={collapsed ? e.label : undefined} aria-label={inboxCountLabel ?? boardCountLabel ?? (collapsed ? e.label : undefined)} aria-current={active ? "page" : undefined} onClick={dismiss}>
             <SidebarIcon name={e.route as Exclude<IconName, "panel">} />
             <span className="sidebar__link-text">{e.label}</span>
             {e.route === "inbox" && needsYouVisible(needsYouCount) && " "}
             {e.route === "inbox" && needsYouVisible(needsYouCount) && <span className={["sidebar__badge", collapsed && "sidebar__badge--dot"].filter(Boolean).join(" ")} role="img" aria-label={`Inbox, ${needsYouCount} needs you`}>{visibleInboxCount}</span>}
+            {e.route === "board" && needsYouVisible(boardWaitingCount) && " "}
+            {e.route === "board" && needsYouVisible(boardWaitingCount) && <span className={["sidebar__badge", "sidebar__badge--board", collapsed && "sidebar__badge--dot"].filter(Boolean).join(" ")} role="img" aria-label={`Board, ${boardWaitingCount} waiting on you`}>{visibleBoardCount}</span>}
           </a>
         );
       })}
