@@ -148,7 +148,7 @@ test("W-409-b3 behaviour 3: cards distinguish greenlight, Inbox decisions and an
   const css = read("src/components/w025.css");
   const view = read("src/screens/BoardView.tsx");
   const served = read("tests-serve/w409.spec.ts");
-  assert.match(view, /board__card-asks[\s\S]*Greenlight[\s\S]*Inbox decision[\s\S]*Human gate/, "cards render the three ask kinds as compact visible words");
+  assert.match(view, /askKindLabel[\s\S]*Greenlight[\s\S]*Inbox decision[\s\S]*Human gate[\s\S]*board__card-asks/, "cards and strip share the three compact ask words");
   assert.match(view, /title=\{card\.title\}/, "the complete long title stays in its native title affordance");
   assert.match(css, /\.board__card-asks\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s, "ask-kind marks stay on one contained card line");
   assert.match(served, /W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390/, "the served row pins every ruled viewport");

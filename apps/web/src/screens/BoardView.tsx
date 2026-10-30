@@ -39,17 +39,21 @@ function cardClassName(card: CardRow): string {
   return ["board__card", state].filter(Boolean).join(" ");
 }
 
+function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
+  return ask.kind === "greenlight"
+    ? "Greenlight"
+    : ask.kind === "inbox"
+      ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
+      : "Human gate";
+}
+
 function AskKinds({ card }: { card: CardRow }): JSX.Element | null {
   if ((card.asks?.length ?? 0) === 0) return null;
   return (
     <span className="board__card-asks" aria-label="Waiting on you">
       {card.asks?.map((ask) => (
         <span key={ask.kind} className="board__card-ask">
-          {ask.kind === "greenlight"
-            ? "Greenlight"
-            : ask.kind === "inbox"
-              ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
-              : "Human gate"}
+          {askKindLabel(ask)}
         </span>
       ))}
     </span>
@@ -90,56 +94,6 @@ function Card({
   );
 }
 
-function WaitingStrip({ waiting }: { waiting: CardRow[] }): JSX.Element {
-  const itemsRef = useRef<HTMLDivElement>(null);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const updateScrollCue = useCallback(() => {
-    const items = itemsRef.current;
-    setCanScrollRight(items !== null && items.scrollLeft + items.clientWidth < items.scrollWidth - 1);
-  }, []);
-
-  useEffect(() => {
-    updateScrollCue();
-    const items = itemsRef.current;
-    if (!items) return;
-    const observer = new ResizeObserver(updateScrollCue);
-    observer.observe(items);
-    window.addEventListener("resize", updateScrollCue);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updateScrollCue);
-    };
-  }, [updateScrollCue, waiting.length]);
-
-  const showMore = (): void => {
-    const items = itemsRef.current;
-    if (!items) return;
-    items.scrollBy({ left: items.clientWidth * 0.9, behavior: "auto" });
-  };
-
-  return (
-    <aside className={`board__waiting${waiting.length === 0 ? " board__waiting--empty" : ""}`} aria-label="Waiting on you">
-      <div className="board__waiting-label">
-        <span>Waiting on you</span>
-        <strong>{waiting.length}</strong>
-      </div>
-      {waiting.length > 0 && <div className="board__waiting-rail">
-        <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
-          {waiting.map((card) => (
-              <div key={card.id} className="board__waiting-item" data-waiting-id={card.id}>
-                <span className="board__waiting-title" title={card.title}>{card.title}</span>
-                <AskKinds card={card} />
-              </div>
-          ))}
-        </div>
-        {canScrollRight && <button type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick={showMore}>
-          <span aria-hidden="true">›</span>
-        </button>}
-      </div>}
-    </aside>
-  );
-}
-
 function Column({
   column,
   selectedId,
@@ -176,6 +130,71 @@ function Column({
   );
 }
 
+function WaitingStrip({ waiting, columns, onSelectCard }: {
+  waiting: CardRow[];
+  columns: BoardModel["columns"];
+  onSelectCard: (id: string, columnId: string) => void;
+}): JSX.Element {
+  const itemsRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const updateScrollCue = useCallback(() => {
+    const items = itemsRef.current;
+    setCanScrollRight(items !== null && items.scrollLeft + items.clientWidth < items.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updateScrollCue();
+    const items = itemsRef.current;
+    if (!items) return;
+    const observer = new ResizeObserver(updateScrollCue);
+    observer.observe(items);
+    window.addEventListener("resize", updateScrollCue);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScrollCue);
+    };
+  }, [updateScrollCue, waiting.length]);
+
+  const showMore = (): void => {
+    const items = itemsRef.current;
+    if (!items) return;
+    items.scrollBy({ left: items.clientWidth * 0.9, behavior: "auto" });
+  };
+
+  return (
+    <aside className={`board__waiting${waiting.length === 0 ? " board__waiting--empty" : ""}`} aria-label="Waiting on you">
+      <div className="board__waiting-label">
+        <span>Waiting on you</span>
+        <strong>{waiting.length}</strong>
+      </div>
+      {waiting.length > 0 && <div className="board__waiting-rail">
+        <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
+          {waiting.map((card) => {
+            const columnId = columns.find((column) => column.cards.some(({ id }) => id === card.id))?.id;
+            const asks = card.asks?.map(askKindLabel).join(", ") ?? "Waiting on you";
+            return (
+              <button
+                key={card.id}
+                type="button"
+                className="board__waiting-item"
+                data-waiting-id={card.id}
+                aria-label={`Open ${card.id} ${card.title}: ${asks}`}
+                onClick={() => onSelectCard(card.id, columnId ?? "unplaced")}
+              >
+                <span className="board__waiting-title" title={card.title}>{card.title}</span>
+                <AskKinds card={card} />
+              </button>
+            );
+          })}
+        </div>
+        {canScrollRight && <button type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick={showMore}>
+          <span aria-hidden="true">›</span>
+        </button>}
+      </div>}
+    </aside>
+  );
+}
+
 /** Not a `useRef`: `BoardView` is called as a plain function by the static-
  *  markup tests (behaviour 5/6's own house convention, matching Sidebar/
  *  SeatsView), which never runs inside React's real render pass and so has
@@ -202,7 +221,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
       </div>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
-      <WaitingStrip waiting={model.waiting} />
+      <WaitingStrip waiting={model.waiting} columns={model.columns} onSelectCard={onSelectCard} />
       <div className="board__strip">
         {model.columns.map((column) => (
           <button key={column.id} type="button" className="board__strip-item" onClick={() => scrollColumnIntoView(column.id)}>

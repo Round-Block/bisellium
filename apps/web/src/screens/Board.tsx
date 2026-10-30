@@ -303,7 +303,9 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
     const sel = selected;
     if (!sel) return;
     const column = model.columns.find((c) => c.id === sel.columnId);
-    const stillThere = column?.cards.some((c) => c.id === sel.id) ?? false;
+    const stillThere = sel.columnId === "unplaced"
+      ? model.unplaced.includes(sel.id) && model.waiting.some((card) => card.id === sel.id)
+      : column?.cards.some((c) => c.id === sel.id) ?? false;
     if (stillThere) return;
     pendingCloseRestorationRef.current = { selection: sel, fallback: true, scrollLeft: scrollSnapshotRef.current };
     setSelected(undefined);

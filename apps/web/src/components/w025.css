@@ -2073,14 +2073,27 @@
 }
 
 .board__waiting-item {
+  appearance: none;
   flex: 0 0 calc((100% - (3 * var(--sp-2))) / 4);
   box-sizing: border-box;
   width: 100%;
   height: 66px;
   min-width: 0;
   padding: 3px var(--sp-2);
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
   border-left: 2px solid var(--amber);
   background: var(--wash);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.board__waiting-item:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
 }
 
 .board__waiting-more {
@@ -2137,14 +2150,6 @@
   content: ",\00a0";
 }
 
-.board__liveness {
-  flex-shrink: 0;
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-3);
-  white-space: nowrap;
-}
 .board__strip {
   display: none;
 }

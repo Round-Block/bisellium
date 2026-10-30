@@ -120,10 +120,10 @@ test("W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handle
   const served = read("tests-serve/w463.spec.ts");
 
   assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*aria-label=\{`Open \$\{card\.id\} \$\{card\.title\}: \$\{asks\}`\}[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced"\)\}/, "a waiting entry is a named button wired to the shared card selection callback");
+  assert.match(served, /unplaced waiting entry opens the existing drawer/, "an unplaced strip entry has an explicit drawer outcome");
   assert.match(view, /<Card[\s\S]*onSelect=\{onSelectCard\}/, "lifecycle cards retain the same selection callback");
   assert.match(board, /sel\.columnId === "unplaced"[\s\S]*model\.unplaced\.includes\(sel\.id\)[\s\S]*model\.waiting\.some/, "an unplaced waiting selection stays open in the existing drawer");
   assert.match(css, /\.board__waiting-item:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--verdigris\);[^}]*outline-offset:\s*2px;/s, "waiting entry keyboard focus is visibly outlined");
   assert.match(served, /\[1280, 390\]/, "drawer reuse is served at desktop and phone widths");
   assert.match(served, /keyboard of \["Enter", "Space"\]/, "native button activation is pinned for Enter and Space");
-  assert.match(served, /unplaced waiting entry opens the existing drawer/, "an unplaced strip entry has an explicit drawer outcome");
 });
