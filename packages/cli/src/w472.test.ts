@@ -155,6 +155,8 @@ test("W-472-b2 behaviour 2: new --description writes the long text below the fro
     ["text\rmore", "carriage return", "description contains forbidden control U+000D"],
     ["text\u0000more", "NUL", "description contains forbidden control U+0000"],
     ["text\u0085more", "C1 control", "description contains forbidden control U+0085"],
+    ["text\ud800more", "isolated high surrogate", "description contains an unpaired surrogate U+D800"],
+    ["text\udc00more", "isolated low surrogate", "description contains an unpaired surrogate U+DC00"],
   ] as const) {
     const refused = quiet(() => runNew(newArgs(root, "refused description", "--description", bad)));
     assert.equal(refused.code, 1, `the ${why} description is refused: exit ${refused.code}`);
