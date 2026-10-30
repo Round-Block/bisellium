@@ -235,4 +235,9 @@ test("W-474-b3 behaviour 3: run --scratch refuses the next copy when the folder 
   renameSync(odd.root, oddRoot);
   const dashedRepo = cli(parent, ["--scratch", folder, "--repo", "--repo-dir", ...cmd]);
   assert.ok(dashedRepo.status === 0 && existsSync(marker), "a repository whose path begins with dashes is recognised");
+  rmSync(marker);
+
+  git(root, "update-ref", "refs/heads/--odd-base", "HEAD");
+  const dashedBase = cli(REPO, ["--scratch", folder, "--repo", root, "--base", "--odd-base", ...cmd]);
+  assert.ok(dashedBase.status === 0 && existsSync(marker), "a base whose text begins with dashes is recognised");
 });
