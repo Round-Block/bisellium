@@ -1447,3 +1447,39 @@ test("W-445-b2 behaviour 2: an architect spec signature is refused when a quoted
   admitted("a fenced claim is not read", ["# W-300 fixture brief", `Evidence in \`${ev}/\`.`, "```", `"${CLAIM}" (\`k1.out\`)`, "```", ""].join("\n"));
   admitted("another seat's spec verdict is not judged", brief(`K1 fails at "${CLAIM}" (\`k1.out\`).`), "qa-lead");
 });
+
+// W-443 (D-076 D): behaviour k's written red command, read with the replay's own reader, and the evidence its genuine red cites
+const RED_BRIEF = [
+  "# W-300 fixture brief", // 1
+  "Evidence in `/ev/root/`.", // 2
+  "## Behaviours to test", // 3
+  "1. **The first.** It reads `k0.out` before its red.", // 4
+  "   **Genuine red:** `bisellium red W-300 --behaviour 1 --sella builder --studio studio -- node --test-name-pattern='^W-300-b1\\s' --import tsx x.test.ts`, fails (`red-b1.out`), accepted (`/ev/root/accept.log:3`, `red-b1.out`), from `reds.sh`, in `/ev/dir/`.", // 5
+  "   It passes on its stage (`stage-b1.out`).", // 6
+  "```", // 7
+  "   `fenced.out`", // 8
+  "```", // 9
+  "   <!-- `commented.out` -->", // 10
+  "2. **The second.** It cites `before.out` and no red output.", // 11
+  "   **Genuine red:** `bisellium red W-300 --behaviour 2 --sella builder --studio studio -- npx playwright test --grep W-300-b2\\s`.", // 12
+  '3. **The third.** **Genuine red:** `bisellium red W-300 --behaviour 3 --sella builder --studio studio -- node --test-name-pattern="^W-300-b3" x.test.ts` (`b3.out`).', // 13
+  "## Out of scope", // 14
+  "`after.out`", // 15
+  "",
+].join("\n");
+
+test("W-443-b1 behaviour 1: brief admission reads each behaviour's written red command as the replay reads it, and the evidence its genuine red cites", () => {
+  const m = admissionModule as unknown as Record<string, unknown>;
+  assert.equal(typeof m["redEvidence"], "function", "brief-admission exports redEvidence");
+  assert.equal(typeof m["redCommand"], "function", "brief-admission exports redCommand");
+  const evidence = m["redEvidence"] as (t: string, k: number) => string[];
+  const command = m["redCommand"] as (t: string, id: string, k: number) => string[] | { error: string };
+  assert.deepEqual(evidence(RED_BRIEF, 1), ["red-b1.out", "/ev/root/accept.log", "stage-b1.out"], "behaviour 1's genuine red cites, in brief order, each once");
+  assert.deepEqual(evidence(RED_BRIEF, 2), [], "a red citing no output cites nothing");
+  assert.deepEqual(evidence(RED_BRIEF, 3), ["b3.out"], "a red on its item line");
+  assert.deepEqual(evidence(RED_BRIEF, 4), [], "no behaviour 4");
+  assert.deepEqual(evidence("no behaviours\n", 1), [], "a brief with no behaviours");
+  assert.deepEqual(command(RED_BRIEF, "W-300", 1), ["node", "--test-name-pattern=^W-300-b1\\s", "--import", "tsx", "x.test.ts"], "the written command's words, single quotes taken literally");
+  assert.deepEqual(command(RED_BRIEF, "W-300", 2), { error: 'the red command holds "\\\\" outside single quotes' }, "an unquoted backslash is no word a shell passes unchanged");
+  assert.deepEqual(command(RED_BRIEF, "W-300", 3), { error: 'the red command holds "\\"" outside single quotes' }, "a double quote is no word a shell passes unchanged");
+});
