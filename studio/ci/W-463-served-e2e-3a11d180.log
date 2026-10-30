@@ -1,0 +1,204 @@
+certifies: tree:3a11d18041586e74df86d8ccc6e49d2079fd559e
+command: node scripts/served-e2e.mjs
+exit code: 0
+
+  ✓   77 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 board empty at 390: shown, announced and axe-clean (3.6s)
+  ✓   78 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 board error at 390: shown, announced and axe-clean (3.7s)
+  ✓   79 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 board stale at 390: shown, announced and axe-clean (4.1s)
+  ✓   80 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 board live at 390: shown, announced and axe-clean (4.0s)
+  ✓   81 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 seats loading at 390: shown, announced and axe-clean (4.3s)
+  ✓   86 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 officina loading at 390: shown, announced and axe-clean (3.5s)
+  ✓   82 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 seats empty at 390: shown, announced and axe-clean (4.7s)
+  ✓   83 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 seats error at 390: shown, announced and axe-clean (4.3s)
+  ✓   87 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 officina empty at 390: shown, announced and axe-clean (3.3s)
+  ✓   90 [chromium] › tests-serve/states.spec.ts:238:3 › W-341 inbox write error at 1280 (1.7s)
+  ✓   89 [chromium] › tests-serve/states.spec.ts:221:1 › W-341 the live region is one node across a state change, so the change is announced (1.9s)
+  ✓   84 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 seats refused at 390: shown, announced and axe-clean (4.7s)
+  ✓   85 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 seats pending at 390: shown, announced and axe-clean (4.9s)
+  ✓   91 [chromium] › tests-serve/states.spec.ts:238:3 › W-341 inbox write error at 390 (1.8s)
+  ✓   88 [chromium] › tests-serve/states.spec.ts:207:5 › W-341 officina error at 390: shown, announced and axe-clean (3.0s)
+  ✓   92 [chromium] › tests-serve/states.spec.ts:252:3 › W-341 seats write error at 1280 (2.8s)
+  ✓   93 [chromium] › tests-serve/states.spec.ts:252:3 › W-341 seats write error at 390 (2.8s)
+  ✓  100 [chromium] › tests-serve/w407.spec.ts:301:1 › W-407-b4 keys 1/2/3 keep approve, defer and decline answer bodies while delegate stays honest (2.3s)
+  ✓   97 [chromium] › tests-serve/w407.spec.ts:65:1 › W-407-b1 Outlook split keeps independent panes wide and replaces list with detail below 840px (3.1s)
+  ✓   96 [chromium] › tests-serve/w406.spec.ts:173:1 › W-406-b3 W-408 removes the non-actionable Officina fasti at 1280 and 390 (3.8s)
+  ✓  103 [chromium] › tests-serve/w408.spec.ts:41:1 › W-408-b1 detail frame and sole scrollbar hold at 1280, 640 and 390 (2.6s)
+  ✓   95 [chromium] › tests-serve/w406.spec.ts:128:1 › W-406-b2 Board header preserves live and stale refresh time above one footer at 1280 and 390 (4.4s)
+  ✓  101 [chromium] › tests-serve/w407.spec.ts:329:1 › W-407-b5 secondary groups are non-interactive labels and empty Inbox has no generated stamp (3.6s)
+  ✓   98 [chromium] › tests-serve/w407.spec.ts:117:1 › W-407-b2 reading strips Markdown syntax, separates evidence, and rows stay neutral and divided (4.4s)
+  ✓   94 [chromium] › tests-serve/w406.spec.ts:22:1 › W-406-b1 Board exposes one draggable horizontal-scroll cue at 1280 and 390 (5.3s)
+  ✓  105 [chromium] › tests-serve/w408.spec.ts:81:1 › W-408-b3 Budget pies normal, approaching, spent and over allowance retain palette, shapes, numerals, overage and posture at every width (2.9s)
+  ✓  107 [chromium] › tests-serve/w408.spec.ts:143:1 › W-408-b5 visible interval and focus refresh detail reads without a reload (2.2s)
+  ✓  104 [chromium] › tests-serve/w408.spec.ts:58:1 › W-408-b2 empty and populated detailed work-in-flight groups render each active opus once (3.8s)
+  ✓  108 [chromium] › tests-serve/w409.spec.ts:30:1 › W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390 (2.5s)
+  ✓  109 [chromium] › tests-serve/w409.spec.ts:56:1 › W-409-b2 Inbox question totals stay distinct from Board membership at 1280, 640 and 390 (2.7s)
+  ✓  106 [chromium] › tests-serve/w408.spec.ts:118:1 › W-408-b4 health detail discloses its rows and brake without stamps (4.0s)
+  ✓  110 [chromium] › tests-serve/w409.spec.ts:87:1 › W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390 (3.3s)
+  ✓  114 [chromium] › tests-serve/w415.spec.ts:142:1 › W-415-b2 Seats confirm bar spans the 640px zoom viewport (3.0s)
+  ✓  115 [chromium] › tests-serve/w415.spec.ts:154:1 › W-415-b2 narrow content remains contained and D-116 Board boundaries remain intact (2.7s)
+  ✓  102 [chromium] › tests-serve/w407.spec.ts:345:1 › W-407-b6 refresh failure and removed selection preserve the decision in progress (8.0s)
+  ✓  117 [chromium] › tests-serve/w415.spec.ts:181:1 › W-415-b3 the 959px overlay is click-only, focused, dismissible and non-scrolling (2.6s)
+  ✓  116 [chromium] › tests-serve/w415.spec.ts:165:1 › W-415-b3 the closed 390px shell retains its approved 48px top row (3.3s)
+  ✓  112 [chromium] › tests-serve/w415.spec.ts:63:1 › W-415-b1 D-120 puts the Inbox count in one collapsed-rail notification dot (4.7s)
+  ✓  113 [chromium] › tests-serve/w415.spec.ts:108:1 › W-415-b2 every screen stays inside 1280 and a 640 CSS-pixel zoom viewport (4.5s)
+  ✓  119 [chromium] › tests-serve/w442.spec.ts:12:1 › W-442-b1 retired: Officina omits the fasti today rule at 1280 and 390 (3.6s)
+  ✓  120 [chromium] › tests-serve/w446.spec.ts:28:1 › W-446-b1 a Board track press after a scroll to the left terminal jumps to its centred offset when the cue repaints late (3.0s)
+  ✓   99 [chromium] › tests-serve/w407.spec.ts:197:1 › W-407-b3 roving selection reveals nearest, reconciles answers, and phone Back or Escape restores focus (10.3s)
+  ✓  121 [chromium] › tests-serve/w463.spec.ts:54:1 › W-463-b1 variant C keeps one lifecycle card and one strip membership at 1280, 640 and 390 (2.6s)
+  ✓  127 [chromium] › tests-serve/walk.spec.ts:222:1 › W-077 behaviour 6: the Officina shows current health without stamps and names an empty aerarium (2.2s)
+  ✓  118 [chromium] › tests-serve/w415.spec.ts:204:1 › W-415-b4 the wide preference persists while the narrow overlay never overwrites it (5.1s)
+  ✓  123 [chromium] › tests-serve/w463.spec.ts:386:1 › W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390 (3.3s)
+  ✓  128 [chromium] › tests-serve/walk.spec.ts:287:1 › W-077 behaviour 7: a failed read never shows demo data (2.0s)
+  ✓  124 [chromium] › tests-serve/w463.spec.ts:426:1 › W-463-b3 Board badge counts waiting opera while Inbox badge stays question-only (3.8s)
+  ✓  111 [chromium] › tests-serve/w415.spec.ts:33:1 › W-415-b1 every screen collapses to D-119's icon rail at 1280 and 960 (8.3s)
+  ✓  130 [chromium] › tests-serve/walk.spec.ts:315:1 › W-077 behaviour 6 round 2: the one-line lex summary is keyboard-openable and reveals a tight detail list (2.1s)
+  ✓  129 [chromium] › tests-serve/walk.spec.ts:339:1 › W-077 behaviour 3 round 2: a hostile, multiline or huge due name renders as escaped text and does not break the layout (2.1s)
+  ✓  125 [chromium] › tests-serve/walk.spec.ts:59:1 › W-110 behaviour 2: the rail reaches every screen it lists, says which one is current, and survives Back, Forward and a reload (5.0s)
+  ✓  126 [chromium] › tests-serve/walk.spec.ts:127:1 › W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen (5.1s)
+  ✓  122 [chromium] › tests-serve/w463.spec.ts:95:1 › W-463-b2 the horizontal strip, responsive count and highlighted cards fit at 1280, 640 and 390 (6.7s)
+
+  1 skipped
+  129 passed (47.0s)
+
+TAP version 13
+1..130
+ok 1 - chromium › answer.spec.ts › the answer button, end to end (W-067 acceptance) › W-024's Inbox answer button writes through the served console
+ok 2 - chromium › auth.spec.ts › token delivery, mounted (W-067 behaviour 2) › prompts for a token when sessionStorage is empty
+ok 3 - chromium › auth.spec.ts › token delivery, mounted (W-067 behaviour 2) › the entered token is used on the next write and survives a reload without re-prompting
+ok 4 - chromium › auth.spec.ts › token delivery, mounted (W-067 behaviour 2) › a wrong token in sessionStorage produces a 401 that reopens the prompt, and the replacement then succeeds
+ok 5 - chromium › auth.spec.ts › token delivery, mounted (W-067 behaviour 2) › the built dist carries no copy of the live write-auth token
+ok 6 - chromium › board.spec.ts › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › renders every column, each count equal to the spec's own computation from GET /api/opera and /api/inbox
+ok 7 - chromium › board.spec.ts › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › live case: an SSE-delivered greenlight moves the card, no reload, within two poll intervals
+ok 8 - chromium › board.spec.ts › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › negative: with /api/live blocked after the initial connection, the card's state never changes and no further /api/opera requests are issued
+ok 9 - chromium › board.spec.ts › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload
+ok 10 - chromium › board.spec.ts › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening
+ok 11 - chromium › board.spec.ts › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › coalescing: a poll delivering several frames issues exactly one /api/opera request
+ok 12 - chromium › board.spec.ts › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays mounted beside the drawer
+ok 13 - chromium › board.spec.ts › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › ArrowRight/ArrowLeft move to the nearest card in the next/previous non-empty column
+ok 14 - chromium › board.spec.ts › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › removal: the drawer closes and focus lands on a remaining card in that column, or the column head — never document.body
+ok 15 - chromium › board.spec.ts › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px lifecycle columns below the waiting strip, task-ID cards, 8px gaps, drawer shadow, card no-shadow, focus indicator
+ok 16 - chromium › board.spec.ts › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: lifecycle columns stay 288px below the waiting strip and the drawer leaves the rail visible
+ok 17 - chromium › board.spec.ts › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one lifecycle column visible, both strips remain visible, and the full-width close control is reachable without scrolling
+ok 18 - chromium › board.spec.ts › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844, empty waiting membership: the zero strip precedes the first lifecycle column
+ok 19 - chromium › board.spec.ts › W-087 behaviour 1: bounded titles retain their native full-title affordance › a 300-character mixed title clamps to two lines while a short task-ID card remains 72px
+ok 20 - chromium › board.spec.ts › W-087 behaviour 2: the served drawer carries a bounded opus body › the collection and drawer cap a long literal body, mark truncation, refuse linked bodies and expose an honest empty state
+ok 21 - chromium › board.spec.ts › W-087 behaviour 2: the served drawer carries a bounded opus body › an exact 64 KiB body is retained whole without a truncation marker
+ok 22 - chromium › board.spec.ts › W-087 behaviour 2: the served drawer carries a bounded opus body › a UTF-8 character split by the 64 KiB cap is dropped before the exact marker
+ok 23 - chromium › board.spec.ts › W-087 behaviour 2: the served drawer carries a bounded opus body › authored spaces, tabs, blank lines and trailing spaces survive the response and pre-wrap drawer
+ok 24 - chromium › board.spec.ts › W-087 behaviour 3: every generated Board time has the viewer-local shape › four timestamp fields localize without touching ISO-like authored content or raw ordering
+ok 25 - chromium › board.spec.ts › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the keyboard-focused close ring remains visible while live resize toggles Board inert at 613/612
+ok 26 - chromium › board.spec.ts › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold
+ok 27 - chromium › capture-state.spec.ts › W-360-b1 the capture clock fixes browser-owned dates at the ruled instant
+ok 28 - chromium › capture-state.spec.ts › W-360-b2 a mounted Board does not settle while its served cards are still loading
+ok 29 - chromium › capture-state.spec.ts › W-360-b2 Board waits for its inbox read at both capture widths
+ok 30 - chromium › capture-state.spec.ts › W-360-b2 Seats waits for its models read at both capture widths
+ok 31 - chromium › inbox.spec.ts › W-345-b1 typing shortcut characters in the reason keeps the petition and sends nothing
+ok 32 - chromium › inbox.spec.ts › W-345-b2 two same-turn answers issue one request
+ok 33 - chromium › inbox.spec.ts › W-345-b3 moving between petitions never carries one reason into another
+ok 34 - chromium › inbox.spec.ts › W-345-b4 a failed first read shows the empty failure state
+ok 35 - chromium › inbox.spec.ts › W-345-b5 Outlook mobile opens full-screen controls and returns to its selected row at 390px
+ok 36 - chromium › inbox.spec.ts › W-345-b6 Defer sends ask-back verdict text and success names the open record
+ok 37 - chromium › layout.spec.ts › computed layout (W-065 behaviour 15) › 1280px: the rail is 220px, link text visible
+ok 38 - chromium › layout.spec.ts › computed layout (W-065 behaviour 15) › 800px: D-119 uses a closed 48px top row and click-open overlay
+ok 39 - chromium › layout.spec.ts › computed layout (W-065 behaviour 15) › 500px: the shell is a closed top row until its toggle opens the overlay
+ok 40 - chromium › layout.spec.ts › computed layout (W-065 behaviour 15) › a focused model select has a visible focus indicator
+ok 41 - chromium › layout.spec.ts › computed layout (W-065 behaviour 15) › W-360-b3 390px Seats keeps every select inside the viewport
+ok 42 - chromium › layout.spec.ts › computed layout (W-065 behaviour 15) › with the confirm bar open, the last roster row does not sit under it
+ok 43 - chromium › layout.spec.ts › shell geometry with the token prompt open (W-075 behaviour 1) › the prompt does not displace the sidebar or main columns
+ok 44 - chromium › screenshots.spec.ts › the live screens match their fixed desktop and phone initial-view baselines # SKIP
+ok 45 - chromium › screenshots.spec.ts › W-360-b2 baseline Board waits for inbox at both capture widths
+ok 46 - chromium › screenshots.spec.ts › W-360-b2 baseline Seats waits for models at both capture widths
+ok 47 - chromium › seats.spec.ts › the decree surface, end to end (W-065 behaviour 14) › draft-and-confirm: only Confirm ever writes, exactly once
+ok 48 - chromium › seats.spec.ts › the decree surface, end to end (W-065 behaviour 14) › Confirm clicked three times overlapping still issues exactly 1 request; Enter submits identically
+ok 49 - chromium › seats.spec.ts › the decree surface, end to end (W-065 behaviour 14) › Enter from the confirm bar submits identically to a click
+ok 50 - chromium › seats.spec.ts › the decree surface, end to end (W-065 behaviour 14) › a real stale draft: the manifest changes under the console, Confirm reports the conflict and keeps the draft
+ok 51 - chromium › seats.spec.ts › the decree surface, end to end (W-065 behaviour 14) › a transport error re-opens the token prompt, draft retained
+ok 52 - chromium › seats.spec.ts › the decree surface, end to end (W-065 behaviour 14) › editing while a request is pending issues no second request
+ok 53 - chromium › states.spec.ts › W-341 inbox loading at 1280: shown, announced and axe-clean
+ok 54 - chromium › states.spec.ts › W-341 inbox empty at 1280: shown, announced and axe-clean
+ok 55 - chromium › states.spec.ts › W-341 inbox error at 1280: shown, announced and axe-clean
+ok 56 - chromium › states.spec.ts › W-341 inbox refused at 1280: shown, announced and axe-clean
+ok 57 - chromium › states.spec.ts › W-341 inbox pending at 1280: shown, announced and axe-clean
+ok 58 - chromium › states.spec.ts › W-341 board loading at 1280: shown, announced and axe-clean
+ok 59 - chromium › states.spec.ts › W-341 board empty at 1280: shown, announced and axe-clean
+ok 60 - chromium › states.spec.ts › W-341 board error at 1280: shown, announced and axe-clean
+ok 61 - chromium › states.spec.ts › W-341 board stale at 1280: shown, announced and axe-clean
+ok 62 - chromium › states.spec.ts › W-341 board live at 1280: shown, announced and axe-clean
+ok 63 - chromium › states.spec.ts › W-341 seats loading at 1280: shown, announced and axe-clean
+ok 64 - chromium › states.spec.ts › W-341 seats empty at 1280: shown, announced and axe-clean
+ok 65 - chromium › states.spec.ts › W-341 seats error at 1280: shown, announced and axe-clean
+ok 66 - chromium › states.spec.ts › W-341 seats refused at 1280: shown, announced and axe-clean
+ok 67 - chromium › states.spec.ts › W-341 seats pending at 1280: shown, announced and axe-clean
+ok 68 - chromium › states.spec.ts › W-341 officina loading at 1280: shown, announced and axe-clean
+ok 69 - chromium › states.spec.ts › W-341 officina empty at 1280: shown, announced and axe-clean
+ok 70 - chromium › states.spec.ts › W-341 officina error at 1280: shown, announced and axe-clean
+ok 71 - chromium › states.spec.ts › W-341 inbox loading at 390: shown, announced and axe-clean
+ok 72 - chromium › states.spec.ts › W-341 inbox empty at 390: shown, announced and axe-clean
+ok 73 - chromium › states.spec.ts › W-341 inbox error at 390: shown, announced and axe-clean
+ok 74 - chromium › states.spec.ts › W-341 inbox refused at 390: shown, announced and axe-clean
+ok 75 - chromium › states.spec.ts › W-341 inbox pending at 390: shown, announced and axe-clean
+ok 76 - chromium › states.spec.ts › W-341 board loading at 390: shown, announced and axe-clean
+ok 77 - chromium › states.spec.ts › W-341 board empty at 390: shown, announced and axe-clean
+ok 78 - chromium › states.spec.ts › W-341 board error at 390: shown, announced and axe-clean
+ok 79 - chromium › states.spec.ts › W-341 board stale at 390: shown, announced and axe-clean
+ok 80 - chromium › states.spec.ts › W-341 board live at 390: shown, announced and axe-clean
+ok 81 - chromium › states.spec.ts › W-341 seats loading at 390: shown, announced and axe-clean
+ok 82 - chromium › states.spec.ts › W-341 seats empty at 390: shown, announced and axe-clean
+ok 83 - chromium › states.spec.ts › W-341 seats error at 390: shown, announced and axe-clean
+ok 84 - chromium › states.spec.ts › W-341 seats refused at 390: shown, announced and axe-clean
+ok 85 - chromium › states.spec.ts › W-341 seats pending at 390: shown, announced and axe-clean
+ok 86 - chromium › states.spec.ts › W-341 officina loading at 390: shown, announced and axe-clean
+ok 87 - chromium › states.spec.ts › W-341 officina empty at 390: shown, announced and axe-clean
+ok 88 - chromium › states.spec.ts › W-341 officina error at 390: shown, announced and axe-clean
+ok 89 - chromium › states.spec.ts › W-341 the live region is one node across a state change, so the change is announced
+ok 90 - chromium › states.spec.ts › W-341 inbox write error at 1280
+ok 91 - chromium › states.spec.ts › W-341 inbox write error at 390
+ok 92 - chromium › states.spec.ts › W-341 seats write error at 1280
+ok 93 - chromium › states.spec.ts › W-341 seats write error at 390
+ok 94 - chromium › w406.spec.ts › W-406-b1 Board exposes one draggable horizontal-scroll cue at 1280 and 390
+ok 95 - chromium › w406.spec.ts › W-406-b2 Board header preserves live and stale refresh time above one footer at 1280 and 390
+ok 96 - chromium › w406.spec.ts › W-406-b3 W-408 removes the non-actionable Officina fasti at 1280 and 390
+ok 97 - chromium › w407.spec.ts › W-407-b1 Outlook split keeps independent panes wide and replaces list with detail below 840px
+ok 98 - chromium › w407.spec.ts › W-407-b2 reading strips Markdown syntax, separates evidence, and rows stay neutral and divided
+ok 99 - chromium › w407.spec.ts › W-407-b3 roving selection reveals nearest, reconciles answers, and phone Back or Escape restores focus
+ok 100 - chromium › w407.spec.ts › W-407-b4 keys 1/2/3 keep approve, defer and decline answer bodies while delegate stays honest
+ok 101 - chromium › w407.spec.ts › W-407-b5 secondary groups are non-interactive labels and empty Inbox has no generated stamp
+ok 102 - chromium › w407.spec.ts › W-407-b6 refresh failure and removed selection preserve the decision in progress
+ok 103 - chromium › w408.spec.ts › W-408-b1 detail frame and sole scrollbar hold at 1280, 640 and 390
+ok 104 - chromium › w408.spec.ts › W-408-b2 empty and populated detailed work-in-flight groups render each active opus once
+ok 105 - chromium › w408.spec.ts › W-408-b3 Budget pies normal, approaching, spent and over allowance retain palette, shapes, numerals, overage and posture at every width
+ok 106 - chromium › w408.spec.ts › W-408-b4 health detail discloses its rows and brake without stamps
+ok 107 - chromium › w408.spec.ts › W-408-b5 visible interval and focus refresh detail reads without a reload
+ok 108 - chromium › w409.spec.ts › W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390
+ok 109 - chromium › w409.spec.ts › W-409-b2 Inbox question totals stay distinct from Board membership at 1280, 640 and 390
+ok 110 - chromium › w409.spec.ts › W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390
+ok 111 - chromium › w415.spec.ts › W-415-b1 every screen collapses to D-119's icon rail at 1280 and 960
+ok 112 - chromium › w415.spec.ts › W-415-b1 D-120 puts the Inbox count in one collapsed-rail notification dot
+ok 113 - chromium › w415.spec.ts › W-415-b2 every screen stays inside 1280 and a 640 CSS-pixel zoom viewport
+ok 114 - chromium › w415.spec.ts › W-415-b2 Seats confirm bar spans the 640px zoom viewport
+ok 115 - chromium › w415.spec.ts › W-415-b2 narrow content remains contained and D-116 Board boundaries remain intact
+ok 116 - chromium › w415.spec.ts › W-415-b3 the closed 390px shell retains its approved 48px top row
+ok 117 - chromium › w415.spec.ts › W-415-b3 the 959px overlay is click-only, focused, dismissible and non-scrolling
+ok 118 - chromium › w415.spec.ts › W-415-b4 the wide preference persists while the narrow overlay never overwrites it
+ok 119 - chromium › w442.spec.ts › W-442-b1 retired: Officina omits the fasti today rule at 1280 and 390
+ok 120 - chromium › w446.spec.ts › W-446-b1 a Board track press after a scroll to the left terminal jumps to its centred offset when the cue repaints late
+ok 121 - chromium › w463.spec.ts › W-463-b1 variant C keeps one lifecycle card and one strip membership at 1280, 640 and 390
+ok 122 - chromium › w463.spec.ts › W-463-b2 the horizontal strip, responsive count and highlighted cards fit at 1280, 640 and 390
+ok 123 - chromium › w463.spec.ts › W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390
+ok 124 - chromium › w463.spec.ts › W-463-b3 Board badge counts waiting opera while Inbox badge stays question-only
+ok 125 - chromium › walk.spec.ts › W-110 behaviour 2: the rail reaches every screen it lists, says which one is current, and survives Back, Forward and a reload
+ok 126 - chromium › walk.spec.ts › W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen
+ok 127 - chromium › walk.spec.ts › W-077 behaviour 6: the Officina shows current health without stamps and names an empty aerarium
+ok 128 - chromium › walk.spec.ts › W-077 behaviour 7: a failed read never shows demo data
+ok 129 - chromium › walk.spec.ts › W-077 behaviour 6 round 2: the one-line lex summary is keyboard-openable and reveals a tight detail list
+ok 130 - chromium › walk.spec.ts › W-077 behaviour 3 round 2: a hostile, multiline or huge due name renders as escaped text and does not break the layout
+shots: 8 ci/shots/W-463
+shot: board-1280.png 1280x900 55802
+shot: board-390.png 390x900 33408
+shot: inbox-1280.png 1280x900 56165
+shot: inbox-390.png 390x900 17186
+shot: officina-1280.png 1280x900 71959
+shot: officina-390.png 390x900 45266
+shot: seats-1280.png 1280x900 71342
+shot: seats-390.png 390x900 42781
+
