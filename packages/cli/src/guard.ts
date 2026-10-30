@@ -491,7 +491,7 @@ export function readingParts(r: Reading): string {
 const PARTS: [RegExp, (r: Reading) => number | null][] = [
   [/(?<![\p{L}\p{M}\p{N}])Claude week (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.claude_week_used)],
   [/(?<![\p{L}\p{M}\p{N}])5h (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.claude_5h_used)],
-  [/(?<![\p{L}\p{M}\p{N}])Codex week (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.codex_week_used)],
+  [/(?<![\p{L}\p{M}\p{N}])Codex week (\d+(?:\.\d+)?|\?)?%/u, (r) => pct(r.codex_week_used)],
   [/(?<![\p{L}\p{M}\p{N}])context (\d+|\?)k(?![\p{L}\p{M}\p{N}])/u, contextK],
 ];
 /** A reply carries a reading when one of its lines holds all four parts, each with the reading's value (a value the

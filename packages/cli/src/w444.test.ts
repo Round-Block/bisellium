@@ -105,6 +105,12 @@ test("W-444-b2 behaviour 2: a main-thread reply without the latest usage reading
   assert.equal((await stop(h, main(`${words(20)}\nClaude week 19%, 5h 16%\nCodex week 39% | context 208k of 300k`))).code, 2, "the four parts on one line");
   const lacks = home([reading(60_000, { cw: 19, c5: null, xw: 39 })]);
   assert.equal((await stop(lacks, main(`${words(20)}\nClaude week 19%, 5h ?% | Codex week 39% | context 0k of 300k`))).code, 0, "a value the reading lacks is not compared");
+  const bare = home([reading(60_000, { cw: null, c5: null, xw: null, ctx: null })]);
+  assert.equal((await stop(bare, main(`${words(20)}\nClaude week ?%, 5h ?% | Codex week % (resets ?) | context 0k of 300k`))).code, 0, "the script's own line for a reading with no value: passes");
+  const noCodex = home([reading(60_000, { cw: 19, c5: 16, xw: null, ctx: 208732 })]);
+  assert.equal((await stop(noCodex, main(`${words(20)}\nClaude week 19%, 5h 16% | Codex week % (resets ?) | context 208k of 300k`))).code, 0, "a null Codex week prints empty and is not compared");
+  assert.equal((await stop(noCodex, main(`${words(20)}\nClaude week 19%, 5h 15% | Codex week % (resets ?) | context 208k of 300k`))).code, 2, "a null Codex week does not excuse another value off");
+  assert.equal((await stop(h, main(`${words(20)}\nClaude week 19%, 5h 16% | Codex week % | context 208k of 300k`))).code, 2, "an empty Codex week against a known value: refused");
   const old = home([reading(31 * 60_000, LATEST)]);
   const stale = await stop(old, main(`${words(20)}\n${LINE}`));
   assert.equal(stale.code, 2, "a reading 31 minutes old: refused");
