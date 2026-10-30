@@ -174,7 +174,10 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
     if (!items || !chevron) return;
     const itemRight = item.getBoundingClientRect().right;
     const chevronLeft = chevron.getBoundingClientRect().left;
-    if (itemRight > chevronLeft) items.scrollBy({ left: itemRight - chevronLeft + 2, behavior: "auto" });
+    if (itemRight > chevronLeft) {
+      items.scrollBy({ left: itemRight - chevronLeft + 2, behavior: "auto" });
+      updateScrollCue();
+    }
   };
 
   return (
