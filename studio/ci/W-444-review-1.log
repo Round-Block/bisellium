@@ -1,0 +1,19 @@
+# opus: W-444
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18c86-6c80-75d0-b566-330bd73270d3
+# outcome: failed
+# at: 2026-10-30T11:18:25.688Z
+# tree: tree:08010032290134b86dc24ededee766e035af3669
+# brief: briefs/W-444.md blob:c041ea9b37235d8b262220f491f341f6b69f1b59
+# ticket: {"opus":"W-444","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-444/studio","head":"eeeca99709df0983dd6a8cb24497a3d5c3e1676b","brief":"c041ea9b37235d8b262220f491f341f6b69f1b59","at":"2026-10-30T11:16:20.306Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:494 [severity: S1] The Codex part requires a number or `?` even when `codex_week_used` is null. The unchanged `usage-reading.sh` then prints `Codex week %`, so its fresh output is refused despite brief:66 promising that the script’s line passes and missing values are not compared. [class: tests×ruled-case-uncovered] — check: packages/cli/src/w444.test.ts W-444-b2 with a null Codex reading and the script-shaped `Codex week %` line
+
+## Verdict
+A valid unavailable-Codex reading breaks the required usage-line behavior.
+
+VERDICT: FAIL
