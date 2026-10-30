@@ -1,0 +1,26 @@
+# opus: W-462
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T23:26:42.402Z
+# tree: tree:2e501aefd5daadd7897e97de747b9558af3f2b61
+# brief: briefs/W-462.md blob:73765174afbf01990c5177ee30bd026a219833ee
+# ticket: {"opus":"W-462","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"66b4daf3d24e8566439f7a9b6a33f475082530a8","brief":"73765174afbf01990c5177ee30bd026a219833ee","at":"2026-10-29T23:26:41.651Z"}
+
+# W-462 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-462.md revision 1, prototyped over master 38433fd0 (W-461 merged; series series.mbox, its sha256 on the brief's Prototype line); evidence in /home/edckt/.bisellium-evidence/W-462-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-462-spec/promise-ledger.md
+
+Checked on the prototype: each red fails by assertion on its red commit (row b1 on master's source, b2 on stage 1, b3 on stage 2) and is accepted by the host classifier (red-accept.out); each row passes on its stage and on stage 3, and the three together (proto-w462-file.out); 11 kills, all guarded (kills.out); every series commit builds the web bundle and typechecks on its own (series-builds.out); lint, format and the typecheck pass on stage 3 (gates-proto.out); the neighbouring rows pass unchanged (census-*-proto.out, census-next-files-proto.out, census-next-queue-file-proto.out); admission returns no problem (admission.out); master's ledger validator returns no problem (ledger-probe.out). The dry run on opus/W-408 passes read-only: 33 commits build, 5 reds replay, origin unchanged (dry408/dry-run-w408.out). The Codex test check's first pass on the draft (fixture-census-draft.md) listed three flips: W-124 behaviour 1 (next-ladder.test.ts) and W-124 behaviour 3 (next.test.ts), an OPEN PR on a synthetic head this clone does not hold, and W-199-b2 (next-queue.test.ts), an unreadable binding at merge; the brief now reads the first as `unknown` and the second as merge's, both the plain behaviour as before, and Acceptance names all three. Its rerun on this revision (fixture-census.md) lists no flip and nothing unnamed; its 58 must-stay-green rows pass on stage 3 (census-next-queue-file-proto.out, census-next-files-proto.out, census-extra.out, census-*-proto.out). No certify-runner file changes (D-129 B: the runner's switch to red-claims.mjs is split out); no file is code-owned; no overlap with W-445's Files owned.
+
+## Findings
+1. advisory — the step's red-to-commit mapping is a copy of certify's inline one until the runner imports red-claims.mjs, a change split out to land first (D-129 B), so the two can drift until then; the follow-up is to be filed, and the refactor is prototyped with certify's W-134 rows green on it — check: red-claims.mjs:23 (stage 3), run-builder-host.mjs:686-731 (master), runner-refactor/census-run-w134-with-runner-refactor.out
+2. advisory — the builds and replays run in place in the opus worktree with the caller's environment and modules, not in certify's fresh clone and confined cell, and a perform killed mid-check leaves the worktree detached; stated as limits on Promise builds, replays and restored — check: rewrite.ts:72-134 (stage 3)
+3. advisory — the leased push to origin was not probed from this session (the brief forbids a push, and the 10-29 dispatch was refused as Git Destructive), so the push is the Patron's action in Defaults; the probe covers the lease on scratch repositories and the reads of origin only — check: probe-lease.out:1-17, harness-refusal-transcript.txt:36
+
+## Verdict
+passed — a reviewed PR head rewritten with its tree kept is named a rewrite of the pr rung, checked commit by commit with W-461's build and red by red as certify replays it, never pushed by an agent, offered to the Patron as one push leased on the reviewed head, then rebound and its review requested again before merge requeues it; certify is unchanged.

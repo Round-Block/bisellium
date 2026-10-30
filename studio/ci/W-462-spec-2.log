@@ -1,0 +1,20 @@
+# opus: W-462
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a189fc-e8c4-7ab1-b23f-a6c79e9e5070
+# outcome: failed
+# at: 2026-10-29T23:31:07.463Z
+# tree: tree:2e501aefd5daadd7897e97de747b9558af3f2b61
+# brief: briefs/W-462.md blob:73765174afbf01990c5177ee30bd026a219833ee
+# ticket: {"opus":"W-462","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"66b4daf3d24e8566439f7a9b6a33f475082530a8","brief":"73765174afbf01990c5177ee30bd026a219833ee","at":"2026-10-29T23:31:06.583Z"}
+
+## Findings
+1. blocking — brief:91 [severity: S1] [design: changes] `rebindPr` writes N to the queue binding before `reviewNotice`; a transient title, CODEOWNERS-screen, notice, or `gh pr edit` failure makes the real `next` caller hold once, but its next run sees binding=N and advances to merge without retrying the required review, while W-462-b3 covers success only. Replace brief:91 with: “`rebindPr` runs `fetchTrunk`, `repoSlug` and `reviewNotice` first; only `notice.ok` may write binding N; any earlier failure leaves the old binding unchanged so `next` remains at rebind, and a binding-write failure holds before merge.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-queue.test.ts W-462-b3 reviewNotice failure cases
+2. blocking — brief:90 [severity: S1] [design: changes] `boundHead` errors are sent to `merge`, while differing or malformed bytes derive `rebind` without reading merge mode: an unreadable queue-mode binding can bypass re-review, and removing the queue while a stale unequal binding exists makes a direct-mode caller perform rebind writes instead of the existing direct-mode hold; existing rows cover only unreadable direct mode and an equal valid binding. Replace brief:90 with: “The derivation first reads merge mode: direct mode leaves binding interpretation to existing `mergeGate` (absent proceeds; present or error holds); merge-queue mode accepts an absent binding or exactly one well-formed OID, derives rebind only for a differing OID, and `deriveNext` holds on unreadable, malformed, symlinked or over-bound content.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-queue.test.ts W-462-b3 plus W-199-b2
+3. blocking — brief:65 [severity: S1] [design: changes] A plausible build or recorded-red command can leave a tracked or untracked path; because `checkSeries` reuses that worktree and ignores the final checkout result, later replays can observe contaminated state and `next --perform` can print the Patron command while the worktree is dirty or detached, which W-462-b2 does not test. Replace brief:65 with: “Promise restored: each build and replay is isolated, or its filesystem delta is rejected and cleaned; `performRewrite` emits no `patron:` line unless checkout back to `opus/<id>` at N succeeds and the original clean state is confirmed, and an uncleanable or unrestorable checkout holds with that limit stated.” [class: mechanism×replay-environment-not-pristine] — check: packages/cli/src/next-queue.test.ts W-462-b2 tracked-write, untracked-write and restore-failure cases
+
+## Verdict
+The signed brief has three design-changing S1 fail-closed gaps in rebind retry, binding interpretation, and in-place replay restoration.
+VERDICT: FAIL

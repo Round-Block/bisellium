@@ -1,0 +1,25 @@
+# opus: W-462
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a189fc-e8c4-7ab1-b23f-a6c79e9e5070
+# outcome: failed
+# at: 2026-10-30T00:53:25.884Z
+# tree: tree:e0c43a0d4b86c412cbc5a0ab55797bcbc3a4b7a9
+# brief: briefs/W-462.md blob:8201e4dc4dd3910331fbf7b7151a9d0a03806eb7
+# ticket: {"opus":"W-462","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"691be60a89f84e1e05674407ffcb72e8c4a7ce88","brief":"8201e4dc4dd3910331fbf7b7151a9d0a03806eb7","at":"2026-10-30T00:50:38.832Z"}
+
+## Findings
+1. blocking — brief:57 [severity: S1] [design: keeps] Both `webBuild` failure branches return before the residue cleaner; a plausible build that writes a tracked or untracked file and then exits non-zero makes `next --perform` hold while leaving the worktree dirty or detached, and W-462-b2 tests only successful side-effecting builds. Replace brief:57 with: “After either `webBuild` success or refusal, `checkSeries` runs the residue check and cleanup before returning; final restoration must end on branch N with no tracked or untracked residue, otherwise it holds and names the manual repair.” Reached through ci/W-462-spec-2.log #3’s class. [class: mechanism×replay-environment-not-pristine] — check: packages/cli/test/rewrite.test.ts W-462-b2 failing-build-with-residue case
+2. advisory — brief:93 [severity: S2] A rejection does not always leave the branch as it was: behavior 2 deliberately permits a candidate command to delete the branch, after which restoration holds for manual repair. Replace brief:93 with: “Rejection pushes nothing and leaves commits and origin unchanged; it restores the branch and worktree when possible, otherwise holds without a patron line and names the manual repair.” Reached through ci/W-462-spec-2.log #3’s restoration class. [class: mechanism×replay-environment-not-pristine] — check: packages/cli/test/rewrite.test.ts W-462-b2 branch-deletion case
+
+## Earlier findings
+- ci/W-462-spec-2.log #1: closed — r2/prototype.diff orders `reviewNotice` before `writeBinding`, and W-462-b3 covers review refusal and retry.
+- ci/W-462-spec-2.log #2: closed — r2/prototype.diff adds strict binding parsing plus mode-aware derivation, rebind, and merge-gate guards.
+- ci/W-462-spec-2.log #3: open — r2/proto/rewrite.ts:136-139 and :176-179 return on `webBuild` refusal before `left` can detect and clean residue.
+
+## Verdict
+The review-order and mode-boundary blockers are closed, but failed builds can still bypass residue cleanup, leaving the restoration blocker open.
+
+VERDICT: FAIL

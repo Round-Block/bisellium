@@ -44,10 +44,11 @@ import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
 import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs";
-import { clean, cleanup, dirtyHold, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { boundHead, clean, cleanup, dirtyHold, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readMergeQueue, rebindPr, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
 import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
 import { runVerdict } from "./verdict.js";
+import { performRewrite, rewriteOf } from "./rewrite.js";
 import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
@@ -1009,7 +1010,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "certify" | "commit-opus" | "land" | "replay" | "fix-check";
+  act?: "verify" | "certify" | "commit-opus" | "land" | "replay" | "fix-check" | "rewrite" | "rebind";
   /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
   ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
@@ -1313,9 +1314,35 @@ export function deriveNext(f: Facts): Derived {
     // W-377: a kind: ui opus's pr, and the merge of a PR open on its tip, wait for the Patron's ruling on the branch's screens
     const waits = p.kind === "settled" || p.kind === "behind" ? undefined : uiRulingWait(f, b, cur);
     if (waits !== undefined) return { ...hold(p.kind === "open" ? "merge" : "pr", waits), uncut: true };
+    // W-462: a queue-mode head pushed outside the pr rung (the Patron's leased push of a rewrite) is rebound, its review
+    // requested again (W-418), before merge requeues it. The binding is read first; master's merge mode only when the binding
+    // is not absent and not the PR head. In direct mode the binding is merge's, as before (absent proceeds, any other holds,
+    // W-199-b2); in queue mode an absent or equal binding is merge, a differing one rebind, any other form a hold.
+    const bound = p.kind === "open" ? boundHead(f.repo, `opus/${id}`) : undefined;
+    if (p.kind === "open" && bound !== undefined && bound.kind !== "absent" && !(bound.kind === "bound" && bound.oid === p.pr.headRefOid) && readMergeQueue(f.repo, p.pr.repo) === "merge-queue") {
+      if (bound.kind === "error") return hold("merge", `PR #${p.pr.number} is OPEN on the local tip, but the queue binding of opus/${id} cannot be read (${bound.reason}); it names the head pushed for the merge queue, so nothing is merged or rebound: inspect it by hand`);
+      return {
+        ...named("pr", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}, pushed outside the pr rung: the queue binding names ${bound.oid.slice(0, 12)}`, `bisellium next ${id} --perform --expect pr`, [["rebind", `${bound.oid.slice(0, 12)} -> ${p.pr.headRefOid.slice(0, 12)}`]], p.pr),
+        act: "rebind",
+      };
+    }
     if (p.kind === "open") return { ...named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind !== "settled") {
+      // W-462: an OPEN PR whose reviewed head is not an ancestor of the local tip, the tree kept, is a rewrite: the perform
+      // builds every commit and replays every red, and the push is the Patron's. Read before the handover, which a rewrite
+      // keeps (the tree is the reviewed one); a source change is a rebase the review rung has re-reviewed, pushed as before
+      if (p.kind === "open-stale" && f.tip !== undefined) {
+        const rw = rewriteOf(f.repo, f.excludes, p.pr.headRefOid, f.tip);
+        const was = `PR #${p.pr.number}'s reviewed head ${p.pr.headRefOid.slice(0, 12)}`;
+        if (rw.kind === "error") return hold("pr", rw.reason);
+        if (rw.kind === "recorded") return hold("pr", `opus/${id} ${f.tip.slice(0, 12)} rewrites ${was} and changes its tree outside the source: a rewrite keeps the reviewed tree (W-462); commit the record after the Patron's push`);
+        if (rw.kind === "rewrite")
+          return {
+            ...named("pr", "producer", `opus/${id} ${f.tip.slice(0, 12)} rewrites ${was} with its tree kept: the perform builds every commit and replays every red, then asks the Patron for the one leased push`, `bisellium next ${id} --perform --expect pr`, [["rewrite", `PR #${p.pr.number} ${p.pr.headRefOid.slice(0, 12)} -> opus/${id} ${f.tip.slice(0, 12)}, tree ${rw.tree.slice(0, 12)}`]], p.pr),
+            act: "rewrite",
+          };
+      }
       // W-275: the PR carries the record, so a handover older than the newest red or review log, or malformed, is refreshed first
       const t = b["traditio"];
       const at = t === undefined ? undefined : handoverAt(t);
@@ -3217,7 +3244,12 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
             result = performOpusSpecCommit(f);
             break;
           case "pr":
-            result = openPr(ctx, d2.pr, a.title, a.bodyFile);
+            result =
+              d2.act === "rebind" && d2.pr !== undefined
+                ? rebindPr(ctx, d2.pr)
+                : d2.act === "rewrite" && d2.pr !== undefined
+                ? performRewrite({ repo, wt: f.wt.dir, id, studioRel: f.studioRel, excludes: f.excludes, pr: d2.pr, behaviours: countBehaviours(f.branch?.read(briefRel(id)) ?? f.trunk?.read(briefRel(id)) ?? "") })
+                : openPr(ctx, d2.pr, a.title, a.bodyFile);
             break;
           case "merge":
             result = d2.pr === undefined ? heldResult("no identified PR to merge") : await mergeGate(ctx, d2.pr);
