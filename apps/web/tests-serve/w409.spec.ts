@@ -124,27 +124,20 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
       { id: "W-3", column: "planned", asks: ["Greenlight", "Human gate"], label: "greenlight and a pending human gate" },
       { id: "W-4", column: "planned", asks: ["Greenlight", "Inbox decision", "Human gate"], label: "greenlight, Inbox decision and a pending human gate" },
     ]) {
-      const copies = [
-        page.locator(`[data-waiting-id="${id}"]`),
-        page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`),
-      ];
-      for (const card of copies) {
-        await expect(card.locator(".board__card-ask"), `${width}: ${label} remain distinct in strip and lifecycle`).toHaveText(asks);
-      }
-    }
-    await expect(waitingW1.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions remain in the strip`).toHaveText(["Greenlight", "2 Inbox decisions"]);
-    for (const id of ["W-1", "W-2", "W-3", "W-4"]) {
-      const fits = await page.locator(`[data-waiting-id="${id}"]`).evaluate((item) => {
-        const itemBox = item.getBoundingClientRect();
-        return [...item.querySelectorAll<HTMLElement>(".board__card-ask")].every((ask) => {
-          const box = ask.getBoundingClientRect();
-          return getComputedStyle(ask).whiteSpace === "nowrap" && box.left >= itemBox.left - 0.5 && box.right <= itemBox.right + 0.5;
-        });
-      });
-      expect(fits, `${width}: ${id} wraps between ask kinds without clipping a kind or count`).toBe(true);
+      const stripEntry = page.locator(`[data-waiting-id="${id}"]`);
+      const lifecycle = page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`);
+      await expect(stripEntry.locator(".board__waiting-id"), `${width}: ${id} is visible atop its strip title`).toHaveText(id);
+      await expect(stripEntry.locator(".board__card-ask"), `${width}: strip omits ${label} ask copy`).toHaveCount(0);
+      await expect(lifecycle.locator(".board__card-ask"), `${width}: ${label} remain on the lifecycle card`).toHaveText(asks);
+      await expect(lifecycle.locator(".board__card-id"), `${width}: lifecycle card shows ${id}`).toHaveText(id);
     }
     await expect(waitingW1.locator(".board__waiting-title"), `${width}: complete long strip title remains available`).toHaveAttribute("title", longTitle);
-    expect(await waitingW1.locator(".board__waiting-title").evaluate((node) => node.scrollWidth > node.clientWidth), `${width}: long strip title is visibly ellipsized`).toBe(true);
+    const stripTitle = await waitingW1.locator(".board__waiting-title").evaluate((node) => ({
+      clamp: Number.parseInt(getComputedStyle(node).webkitLineClamp, 10),
+      truncated: node.scrollHeight > node.clientHeight,
+    }));
+    expect(stripTitle.clamp, `${width}: strip title is bounded inside its fixed entry`).toBe(3);
+    expect(stripTitle.truncated, `${width}: long strip title wraps and ellipsizes`).toBe(true);
     for (const card of [phaseW1]) {
       await expect(card.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions remain on the lifecycle card`).toHaveText(["Greenlight", "2 Inbox decisions"]);
       await expect(card.locator(".board__card-title"), `${width}: complete long title remains available`).toHaveAttribute("title", longTitle);
@@ -173,8 +166,8 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
           right: box.right,
         };
       });
-      expect(geometry.titleClamp, `${width}: waiting lifecycle title reserves three whole lines with a visible ellipsis`).toBe(3);
-      expect(geometry.titleHeight / geometry.titleLineHeight, `${width}: waiting title is not squeezed below its whole-line clamp`).toBeCloseTo(3, 2);
+      expect(geometry.titleClamp, `${width}: waiting lifecycle title is capped at two lines`).toBe(2);
+      expect(geometry.titleHeight / geometry.titleLineHeight, `${width}: waiting title is not squeezed below its whole-line clamp`).toBeCloseTo(2, 2);
       expect(geometry.titleTruncated, `${width}: the deliberately long waiting title is visibly clamped`).toBe(true);
       expect(geometry.markHeight / geometry.markLineHeight, `${width}: ask kinds retain one complete line box`).toBeCloseTo(1, 2);
       expect(geometry.metaHeight / geometry.metaLineHeight, `${width}: owner and state retain one complete line box`).toBeCloseTo(1, 2);

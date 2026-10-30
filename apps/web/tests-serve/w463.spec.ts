@@ -76,10 +76,14 @@ test("W-463-b1 variant C keeps one lifecycle card and one strip membership at 12
     await page.goto(`${served.baseURL}/?w463=b1-${width}#/board`);
     await expect(page.locator(".board__waiting-item"), `${width}: the four ask sources form one strip membership each`).toHaveCount(4);
     await expect(page.locator('.board__column[data-column-id="needs_you"]'), `${width}: the W-409 membership column is replaced`).toHaveCount(0);
-    await expect(page.locator('[data-waiting-id="W-1"] .board__card-ask'), `${width}: the strip carries W-409's counted ask words`).toHaveText(["Greenlight", "2 Inbox decisions"]);
-    await expect(page.locator('[data-waiting-id="W-3"] .board__card-ask')).toHaveText(["Human gate"]);
-    await expect(page.locator('[data-waiting-id="W-4"] .board__card-ask')).toHaveText(["Inbox decision"]);
-    await expect(page.locator('[data-waiting-id="W-8"] .board__card-ask'), `${width}: an unplaced opus keeps its waiting entry`).toHaveText(["Human gate"]);
+    await expect(page.locator(".board__waiting-item .board__card-ask"), `${width}: strip entries omit visible ask words`).toHaveCount(0);
+    for (const id of ["W-1", "W-3", "W-4", "W-8"]) {
+      await expect(page.locator(`[data-waiting-id="${id}"] .board__waiting-id`), `${width}: ${id} is shown atop its strip entry`).toHaveText(id);
+    }
+    await expect(page.locator('[data-card-id="W-1"] .board__card-ask'), `${width}: the lifecycle card retains W-409's counted ask words`).toHaveText(["Greenlight", "2 Inbox decisions"]);
+    await expect(page.locator('[data-card-id="W-3"] .board__card-ask')).toHaveText(["Human gate"]);
+    await expect(page.locator('[data-card-id="W-4"] .board__card-ask')).toHaveText(["Inbox decision"]);
+    await expect(page.locator('[data-card-id="W-1"] .board__card-id'), `${width}: lifecycle card shows its task ID`).toHaveText("W-1");
     for (const [column, id] of [["planned", "W-1"], ["in_progress", "W-3"], ["verifying", "W-4"], ["awaiting_review", "W-5"], ["done", "W-6"], ["halted", "W-7"]] as const) {
       await expect(page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`), `${width}: ${id} remains once in ${column}`).toHaveCount(1);
     }
@@ -128,28 +132,11 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
         overflowX: getComputedStyle(items).overflowX,
         overflowY: getComputedStyle(items).overflowY,
         entryHeights: [...items.querySelectorAll<HTMLElement>(".board__waiting-item")].map((item) => item.getBoundingClientRect().height),
-        titleEllipsized: long.scrollWidth > long.clientWidth && getComputedStyle(long).textOverflow === "ellipsis",
+        titleClamp: Number.parseInt(getComputedStyle(long).webkitLineClamp, 10),
+        titleLines: long.clientHeight / Number.parseFloat(getComputedStyle(long).lineHeight),
+        titleEllipsized: long.scrollHeight > long.clientHeight,
         pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        combinedAsksFit: [...document.querySelectorAll<HTMLElement>('[data-waiting-id="W-1"] .board__card-ask')].every((ask) => {
-          const askBox = ask.getBoundingClientRect();
-          const itemBox = ask.closest<HTMLElement>(".board__waiting-item")!.getBoundingClientRect();
-          return getComputedStyle(ask).whiteSpace === "nowrap" && askBox.left >= itemBox.left - 0.5 && askBox.right <= itemBox.right + 0.5;
-        }),
-        separatorsEndPreviousAsk: [...document.querySelectorAll<HTMLElement>(".board__card-ask")].every((ask) => {
-          const before = getComputedStyle(ask, "::before").content;
-          const after = getComputedStyle(ask, "::after").content;
-          return !before.includes(",") && (ask === ask.parentElement?.lastElementChild || after.includes(","));
-        }),
-        continuationStartsWithAsk: [...document.querySelectorAll<HTMLElement>('[data-waiting-id="W-1"] .board__card-ask')]
-          .slice(1)
-          .some((ask, index, asks) => ask.getBoundingClientRect().top > (asks[index - 1] ?? ask.parentElement!.firstElementChild!).getBoundingClientRect().top + 0.5),
-        continuationUnindented: (() => {
-          const asks = [...document.querySelectorAll<HTMLElement>('[data-waiting-id="W-1"] .board__card-ask')];
-          const first = asks[0]?.getBoundingClientRect();
-          if (!first) return false;
-          return asks.filter((ask) => ask.getBoundingClientRect().top > first.top + 0.5)
-            .every((ask) => Math.abs(ask.getBoundingClientRect().left - first.left) <= 0.5);
-        })(),
+        stripAskCount: document.querySelectorAll('[data-waiting-id="W-1"] .board__card-ask').length,
       };
     });
     expect(geometry.stripBottom, `${width}: strip stays above the lifecycle columns`).toBeLessThanOrEqual(geometry.columnsTop + 0.5);
@@ -160,15 +147,47 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     expect(geometry.horizontalOverflow, `${width}: excess waiting entries overflow inside the strip`).toBe(true);
     expect(geometry.overflowX, `${width}: the waiting row scrolls left and right`).toBe("auto");
     expect(geometry.overflowY, `${width}: the waiting row never scrolls vertically`).toBe("hidden");
-    expect(geometry.entryHeights.every((height) => Math.abs(height - 66) <= 0.5), `${width}: every entry has reference height for one title plus three ask lines`).toBe(true);
-    expect(geometry.titleEllipsized, `${width}: long strip title ellipsizes on one line`).toBe(true);
-    expect(geometry.combinedAsksFit, `${width}: every combined ask wraps at a kind boundary and remains complete`).toBe(true);
-    expect(geometry.separatorsEndPreviousAsk, `${width}: no continuation line begins with a separator on strip or card copy`).toBe(true);
-    if (width === 390) {
-      expect(geometry.continuationStartsWithAsk, "390: the combined strip entry exercises a continuation line").toBe(true);
-      expect(geometry.continuationUnindented, "390: wrapped ask continuations start flush with the first ask").toBe(true);
-    }
-    await expect(page.locator('[data-waiting-id="W-1"] .board__card-ask'), `${width}: combined ask words and question count stay complete`).toHaveText(["Greenlight", "2 Inbox decisions", "Human gate"]);
+    expect(geometry.entryHeights.every((height) => Math.abs(height - 66) <= 0.5), `${width}: every entry has reference height for one ID line and a bounded title`).toBe(true);
+    expect(geometry.titleClamp, `${width}: strip title is capped within its fixed entry`).toBe(3);
+    expect(geometry.titleLines, `${width}: strip title uses no more than three lines`).toBeLessThanOrEqual(3.01);
+    expect(geometry.titleEllipsized, `${width}: long strip title wraps and then ellipsizes`).toBe(true);
+    expect(geometry.stripAskCount, `${width}: strip entries omit visible ask words`).toBe(0);
+    await expect(page.locator('[data-waiting-id="W-1"] .board__waiting-id'), `${width}: strip entry shows its task ID above the title`).toHaveText("W-1");
+    const lifecycleContent = await page.locator('[data-card-id="W-1"]').evaluate((card) => {
+      const id = card.querySelector<HTMLElement>(".board__card-id")!;
+      const title = card.querySelector<HTMLElement>(".board__card-title")!;
+      const asks = card.querySelector<HTMLElement>(".board__card-asks")!;
+      const meta = card.querySelector<HTMLElement>(".board__card-meta")!;
+      const cardBox = card.getBoundingClientRect();
+      const style = getComputedStyle(asks);
+      const metaBox = meta.getBoundingClientRect();
+      return {
+        id: id.textContent,
+        idAboveTitle: id.getBoundingClientRect().bottom <= title.getBoundingClientRect().top + 0.5,
+        titleClamp: Number.parseInt(getComputedStyle(title).webkitLineClamp, 10),
+        askOneLine: asks.getBoundingClientRect().height <= Number.parseFloat(style.lineHeight) + 0.5,
+        askContained: asks.getBoundingClientRect().right <= cardBox.right + 0.5,
+        askOverflow: style.overflow,
+        askEllipsis: style.textOverflow,
+        askWhiteSpace: style.whiteSpace,
+        metaText: (meta.textContent ?? "").trim(),
+        metaChildren: meta.children.length,
+        metaInside: metaBox.bottom <= cardBox.bottom + 0.5 && metaBox.top >= cardBox.top - 0.5 && [...meta.children].every((part) => {
+          const box = part.getBoundingClientRect();
+          return box.bottom <= cardBox.bottom + 0.5 && box.right <= cardBox.right + 0.5 && box.width > 0;
+        }),
+      };
+    });
+    expect(lifecycleContent.id, `${width}: lifecycle card shows its task ID`).toBe("W-1");
+    expect(lifecycleContent.idAboveTitle, `${width}: lifecycle task ID sits above the title`).toBe(true);
+    expect(lifecycleContent.titleClamp, `${width}: lifecycle card title is capped at two lines`).toBe(2);
+    expect(lifecycleContent.askOneLine, `${width}: lifecycle ask copy stays on one truncated line`).toBe(true);
+    expect(lifecycleContent.askContained).toBe(true);
+    expect(lifecycleContent.askOverflow).toBe("hidden");
+    expect(lifecycleContent.askEllipsis).toBe("ellipsis");
+    expect(lifecycleContent.askWhiteSpace).toBe("nowrap");
+    expect(lifecycleContent.metaChildren, `${width}: the long-title waiting card has a seat and status line`).toBeGreaterThan(0);
+    expect(lifecycleContent.metaInside, `${width}: the long-title waiting card keeps its complete seat and status line inside its bottom edge`).toBe(true);
     expect(geometry.pageOverflow, `${width}: strip creates no page-level overflow`).toBeLessThanOrEqual(0);
     await expect(strip).toBeVisible();
     await expect(columns).toBeVisible();

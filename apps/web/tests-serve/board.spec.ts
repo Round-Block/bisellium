@@ -504,7 +504,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await served?.close();
   });
 
-  test("1280px: 288px lifecycle columns below the waiting strip, non-waiting 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
+  test("1280px: 288px lifecycle columns below the waiting strip, task-ID cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
     served = await startServed("board-1280");
     const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -519,10 +519,10 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const columnsBox = await page.locator(".board__columns").boundingBox();
     expect((waitingBox?.y ?? Number.POSITIVE_INFINITY) + (waitingBox?.height ?? 0)).toBeLessThanOrEqual((columnsBox?.y ?? 0) + 1);
 
-    // Waiting cards gain the W-409 ask-kind line; the non-waiting Done card retains the original compact geometry.
+    // D-143 puts a task-ID line on every card, including the non-waiting Done card.
     const card = page.locator('.board__column[data-column-id="done"] .board__card').first();
     const cardBox = await card.boundingBox();
-    expect(cardBox?.height).toBeCloseTo(64, 0);
+    expect(cardBox?.height).toBeCloseTo(72, 0);
     const cardShadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
     expect(cardShadow === "none" || cardShadow === "").toBe(true);
 
@@ -730,7 +730,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     await served?.close();
   });
 
-  test("a 300-character mixed title clamps to four lines while a short card remains 64px", async ({ page }) => {
+  test("a 300-character mixed title clamps to two lines while a short task-ID card remains 72px", async ({ page }) => {
     served = await startServed("w087-title-bounds");
     const prose = "Several ordinary words must wrap before this unbroken token ";
     const title = prose + "x".repeat(300 - prose.length);
@@ -755,10 +755,10 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         scrollHeight: el.scrollHeight,
       };
     });
-    expect(titleMetrics.clamp).toBe("4");
+    expect(titleMetrics.clamp).toBe("2");
     expect(titleMetrics.overflow).toBe("hidden");
     expect(titleMetrics.overflowWrap).toBe("anywhere");
-    expect(titleMetrics.clientHeight).toBe(72);
+    expect(titleMetrics.clientHeight).toBe(36);
     expect(titleMetrics.scrollHeight).toBeGreaterThan(titleMetrics.clientHeight);
 
     const containment = await card.evaluate((el) => {
@@ -777,7 +777,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         metaInside: !!meta && meta.height > 0 && meta.top >= box.top && meta.bottom <= box.bottom,
       };
     });
-    expect(containment.height).toBe(108);
+    expect(containment.height).toBe(90);
     expect(containment.height).toBeLessThanOrEqual(108);
     expect(containment.minHeight).toBe("64px");
     expect(containment.maxHeight).toBe("108px");
@@ -787,7 +787,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     expect(containment.metaInside).toBe(true);
 
     const shortCard = page.locator('.board__card[data-card-id="W-005"]');
-    expect((await shortCard.boundingBox())?.height).toBe(64);
+    expect((await shortCard.boundingBox())?.height).toBe(72);
   });
 });
 
