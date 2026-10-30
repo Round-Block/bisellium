@@ -12,6 +12,8 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import { runHookEvent } from "./hooks.js";
+import { checkStudio } from "./check.js";
+import { initStudio } from "./init.js";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const dirs: string[] = [];
@@ -118,4 +120,30 @@ test("W-444-b2 behaviour 2: a main-thread reply without the latest usage reading
   assert.equal(both.err.split("\n").length, 2, "both rules' refusals, joined");
   const guard = (await import("./guard.js")) as Record<string, unknown>;
   assert.ok(Array.isArray(guard["STOP_RULES"]) && (guard["STOP_RULES"] as unknown[]).length === 2, "STOP_RULES holds the two reply rules");
+});
+
+/** A studio and a repo whose .claude/settings.json is `settings`; the hook.guard findings. */
+function hookGuard(settings: string): { message: string; level: string }[] {
+  const t = tmp();
+  const studio = join(t, "studio");
+  const now = new Date("2026-10-30T12:00:00Z");
+  assert.ok(initStudio(studio, { now }).root);
+  mkdirSync(join(t, ".claude"));
+  writeFileSync(join(t, ".claude", "settings.json"), settings);
+  return checkStudio(studio, now, { repo: t }).findings.filter((f) => f.rule === "hook.guard");
+}
+
+test("W-444-b3 behaviour 3: the repo wires the guard at Stop, and check blocks hook.guard when it is not wired", () => {
+  const text = readFileSync(join(REPO, ".claude", "settings.json"), "utf8");
+  const settings = JSON.parse(text) as { hooks: Record<string, { matcher?: string; hooks: { type: string; command: string; timeout: number }[] }[]> };
+  const unwired = structuredClone(settings);
+  delete unwired.hooks["Stop"];
+  const f = hookGuard(JSON.stringify(unwired));
+  assert.equal(f.length, 1, "no Stop group: one block");
+  assert.match(f[0]?.message ?? "", /the guard is not wired: Stop -> bisellium hook-event guard --studio studio \(type command, timeout 2\)/, "the block names the Stop group");
+  assert.deepEqual(hookGuard(text), [], "the repo's own settings wire the guard at Stop");
+  assert.deepEqual(settings.hooks["Stop"]?.flatMap((g) => g.hooks), [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }], "the Stop group runs the guard, timeout 2");
+  const slow = structuredClone(settings);
+  slow.hooks["Stop"]![0]!.hooks[0]!.timeout = 5;
+  assert.equal(hookGuard(JSON.stringify(slow)).length, 1, "a Stop hook timeout other than 2 blocks");
 });
