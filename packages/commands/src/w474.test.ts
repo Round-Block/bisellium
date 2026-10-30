@@ -223,6 +223,27 @@ test("W-474-b3 behaviour 3: run --scratch refuses the next copy when the folder 
   assert.ok(unknown.status === 2 && unknown.stderr.split("\n")[0] === "bisellium run --scratch: --no-such-flag does not go with --scratch", "an unknown flag refuses with exit 2 and the scratch reason first");
   assert.ok(!existsSync(marker) && readdirSync(folder).length === 0, "an unknown flag: nothing runs and no copy is made");
 
+  const other = tmp("folder");
+  const grammar: [string, string[], string][] = [
+    ["a repeated --scratch", ["--scratch", folder, "--scratch", other, "--repo", root, ...cmd], "bisellium run --scratch: --scratch is given more than once"],
+    ["a repeated --repo", ["--scratch", folder, "--repo", root, "--repo", root, ...cmd], "bisellium run --scratch: --repo is given more than once"],
+    ["a repeated --base", ["--scratch", folder, "--repo", root, "--base", "HEAD", "--base", "HEAD", ...cmd], "bisellium run --scratch: --base is given more than once"],
+    ["a positional", ["--scratch", folder, "stray", ...cmd], "bisellium run --scratch: stray does not go with --scratch"],
+    ["a flag missing its value", ["--scratch", folder, "--repo"], "bisellium run --scratch: --repo needs a value"],
+    ["the first wrong token", ["--scratch", folder, "--sella", "architect", "--scratch", other, ...cmd], "bisellium run --scratch: --sella does not go with --scratch"],
+    ["a terminal stray", ["--scratch", folder, "stray"], "bisellium run --scratch: stray does not go with --scratch"],
+    ["a terminal repeated --scratch", ["--scratch", folder, "--scratch"], "bisellium run --scratch: --scratch is given more than once"],
+  ];
+  for (const [what, args, first] of grammar) {
+    const r = cli(REPO, args);
+    assert.ok(r.status === 2 && r.stderr.split("\n")[0] === first, `${what} refuses with exit 2 and its reason first`);
+    assert.ok(!existsSync(marker) && readdirSync(folder).length === 0 && readdirSync(other).length === 0, `${what}: nothing runs and no copy is made`);
+  }
+  const reordered = cli(REPO, ["--repo", root, "--scratch", folder, ...cmd]);
+  assert.ok(reordered.status === 0 && existsSync(marker), "--repo before --scratch is recognised");
+  assert.deepEqual(readdirSync(folder), [], "and its copy is gone after");
+  rmSync(marker);
+
   const parent = tmp("parent");
   mkdirSync(join(parent, "--dashes"));
   const dashed = cli(parent, ["--scratch", "--dashes", "--repo", root, ...cmd]);
