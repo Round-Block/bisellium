@@ -1,0 +1,25 @@
+# opus: W-468
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T11:48:21.208Z
+# tree: tree:2d7e2bc0b121782fc61df13c4d7b8203322ba4db
+# brief: briefs/W-468.md blob:7455f82ccd2be8a7280e44681da30aee6aeefd64
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"9e8e2a6c3b458748377280af547b6f95ffef77d7","brief":"7455f82ccd2be8a7280e44681da30aee6aeefd64","at":"2026-10-30T11:48:20.591Z"}
+
+# W-468 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-468.md revision 1, prototyped over master 9e8e2a6c (series dd74105c, prototype.mbox sha256 dd725b4171187333204e93d2f42fd8df5202965265df0828758a8ce8d121654e); evidence in /home/edckt/.bisellium-evidence/W-468-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-468-spec/promise-ledger.md
+
+Checked: the two reds fail by assertion on their red commits and on master's source and are accepted by the replay classifier (red-accept.out); each row passes at its stage; twelve source kills fail their row at the assertion they guard (kills.out); lint, format, typecheck, the whole next test group, the ladder.ticket rule's tests and both officina checks pass on stage 2 (gates-proto.out); every series commit typechecks and builds the web bundle (series-builds.out); admission returns no problem (admission.out); the prototype's read-only next --all names W-451's re-red (dogfood.out). The Codex test check on this brief (fixture-census.md) lists no flip and nothing unnamed; its run on the first draft (fixture-census-draft1.md) listed five flips (rules/tests.test.ts:1187 and :1336, check.test.ts:661, :663 and :746), all from that draft's one-sided test patterns and ASCII token boundary; the prototype was corrected (two-sided asserts, a \p{L}\p{M}\p{N} boundary under u) and all five stay green on stage 2, so no row flips. Only packages/cli/src/next.ts and its test file change; no code-owned file, and certify (scripts/ci-certify.mjs, scripts/run-builder-host.mjs) is unchanged because the replaced red log is replayed at the restage commit it was recorded on: no split landing.
+
+## Findings
+1. advisory — a regression red a fix round adds for a new failure (W-461's kind) is not covered; it needs a second red log and certify reading it, a follow-up that lands certify first (Defaults 2) — check: run-builder-host.mjs:681 (master)
+2. advisory — the re-red is recorded at a restage (the behaviour's implementation removed at the tip, then reverted), not at the original red stage, because no commit on the branch carries the fixed test over the pre-behaviour source and certify replays only branch commits — check: next.ts:1784 (stage 2)
+
+## Verdict
+passed — a failed build review that cites the opus's red log now orders that red again, in phase fix, on its own red ticket, before the fix check; the red replaces its log at a restage commit that certify replays unchanged, which unblocks W-451.

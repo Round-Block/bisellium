@@ -1,0 +1,22 @@
+# opus: W-468
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18ca4-2601-7542-acf6-faac16d42315
+# outcome: failed
+# at: 2026-10-30T11:53:10.553Z
+# tree: tree:2d7e2bc0b121782fc61df13c4d7b8203322ba4db
+# brief: briefs/W-468.md blob:7455f82ccd2be8a7280e44681da30aee6aeefd64
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"9e8e2a6c3b458748377280af547b6f95ffef77d7","brief":"7455f82ccd2be8a7280e44681da30aee6aeefd64","at":"2026-10-30T11:53:09.971Z"}
+
+## Findings
+1. blocking — brief:44 The prototype combines a failed round’s blocker with the current brief’s behaviour count without requiring the round’s `# brief:` pin to match: after an ordinary brief revision that renumbers behaviours, `next` can issue a red ticket for the wrong current behaviour instead of ordering review, and `W-206-b3` tests the older-brief case only without a red citation. Replace brief:44 with: “Promise order: a failed round triggers a re-red only when its `# brief:` pin exactly equals the current branch brief pin; an absent or different pin follows the existing review path. Otherwise, a standing blocker citing this opus’s red log not recorded since the round orders that red again, in phase fix, on its own red ticket, before the fix check and any fix order.” Add an Input-domain row naming both pins, exact equality as their valid domain, and `deriveNext` as the rejector that bypasses `staleCitedReds` on absence or disagreement. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-branch.test.ts W-206-b3 with a cited red
+2. advisory — brief:21 `next` trusts the worktree filesystem copy of the red log while certify trusts committed branch history, but the promise does not state their disagreement for untracked, tracked-but-uncommitted or unreadable files. Replace brief:21’s final two sentences with: “At derivation time `next` trusts the worktree filesystem copy: untracked or tracked-but-uncommitted bytes are visible, and an unreadable copy is stale. Certify later trusts committed branch history, so the readers may disagree until the exact replacement bytes are committed; performed fix or review work refuses a dirty or stray-`ci/` worktree. Once committed, certify replays the named tree or, after rebase, the source-neutral commit that introduced those bytes.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: D-070 C reader-disagreement limit
+3. advisory — brief:68 The combined gate/round row names `reviewGate`, which rejects gate disagreement but does not read or reject an unreadable or malformed round log. Replace brief:68 with: “| The review gate and its round (`reviewGate`, `readBuildRounds`) | every build-review log satisfies `parseBuildReviewLog`, and the gate cites the newest round with matching status and censor | `readBuildRounds`: an unreadable or out-of-domain log holds; `reviewGate`: an absent, malformed or disagreeing gate holds; unpinned reused code is a stated limit (D-076 E) |”. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief input-row rejector accuracy
+4. advisory — brief:70 The Input domain omits readers and reused calls added by the two owned test rows. Replace brief:70 with: “| The W-468 test rows’ inputs: `next` and direct `red` results; pending-ticket JSON; the replaced red-log header; Git `HEAD`; and `commit`’s Git results | successful calls and the exact status, output, ticket, header and HEAD shapes asserted by behaviours 1 and 2 | `git`/`commit`, `readFileSync` and `JSON.parse` throw on invalid inputs; `assert.equal`, `assert.deepEqual`, `assert.match`, `assert.ok` and `assert.doesNotMatch` reject unexpected results and fail the row |” followed by the current reused-gates row verbatim. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief admission should require an Input-domain row for readers added in owned test files
+
+## Verdict
+The signed brief needs revision because an older pinned brief can route a cited red to the wrong current behaviour.
+
+VERDICT: FAIL
