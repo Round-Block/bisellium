@@ -68,6 +68,7 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
   const o: LifecycleFixture = { lifecycle: STANDARD_LIFECYCLE, probationes: [] };
   const model = boardModel(o, []);
   const ids = model.columns.map((c) => c.id);
+  check(1, "boardModel: the strip leads, so the first column is the first served phase", ids[0] === "planned" && model.waiting.length === 0, JSON.stringify(ids));
   check(
     1,
     "boardModel: one column per declared phase in lifecycle order, backlog excluded",
