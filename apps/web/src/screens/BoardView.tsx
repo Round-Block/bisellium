@@ -5,7 +5,7 @@
  * affordance (scroll a column into view) rather than app state, so it lives
  * here rather than being threaded up through Board.tsx.
  */
-import { useCallback, useEffect, useRef, useState, type JSX } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type JSX } from "react";
 import type { BoardModel, CardRow } from "../lib/board.js";
 import { GateLadder } from "../components/GateLadder.js";
 import { Colophon } from "../components/Colophon.js";
@@ -47,14 +47,17 @@ function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
       : "Human gate";
 }
 
-function AskKinds({ card }: { card: CardRow }): JSX.Element | null {
+function AskKinds({ card, spaced = false }: { card: CardRow; spaced?: boolean }): JSX.Element | null {
   if ((card.asks?.length ?? 0) === 0) return null;
   return (
     <span className="board__card-asks" aria-label="Waiting on you">
-      {card.asks?.map((ask) => (
-        <span key={ask.kind} className="board__card-ask">
-          {askKindLabel(ask)}
-        </span>
+      {card.asks?.map((ask, index) => (
+        <Fragment key={ask.kind}>
+          {spaced && index > 0 && " "}
+          <span className="board__card-ask">
+            {askKindLabel(ask)}
+          </span>
+        </Fragment>
       ))}
     </span>
   );
@@ -202,7 +205,8 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
                 onFocus={(event) => revealFocusedWaitingItem(event.currentTarget)}
               >
                 <span className="board__waiting-title" title={card.title}>{card.title}</span>
-                <AskKinds card={card} />
+                {" "}
+                <AskKinds card={card} spaced />
               </button>
             );
           })}

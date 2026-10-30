@@ -70,9 +70,9 @@ export function Sidebar({ route, needsYouCount, boardWaitingCount = 0, collapsed
         onClick={toggle}
       >
         <SidebarIcon name="panel" />
-        {overlay && collapsed && needsYouVisible(boardWaitingCount) && <span className="sidebar__badge sidebar__badge--dot sidebar__badge--toggle" role="img" aria-label={`Board, ${boardWaitingCount} waiting on you`}>{visibleBoardCount}</span>}
-        {toggleBoardDescriptionId !== undefined && <span id={toggleBoardDescriptionId} className="sidebar__toggle-description">Board, {boardWaitingCount} waiting on you</span>}
+        {overlay && collapsed && needsYouVisible(boardWaitingCount) && <span className="sidebar__badge sidebar__badge--dot sidebar__badge--toggle" aria-hidden="true" data-count={visibleBoardCount}><span className="sidebar__badge-text">{visibleBoardCount}</span></span>}
       </button>
+      {toggleBoardDescriptionId !== undefined && <span id={toggleBoardDescriptionId} className="sidebar__toggle-description" aria-hidden="true">Board, {boardWaitingCount} waiting on you</span>}
       <div id="sidebar-links" className="sidebar__links">
       {NAV_ENTRIES.map((e) => {
         const active = route === e.route;

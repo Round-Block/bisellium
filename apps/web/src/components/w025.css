@@ -213,6 +213,22 @@
   line-height: 14px;
 }
 
+/* The toggle's accessible name is pinned by D-119 and carries no count, so the
+ * drawn digit is generated content and the real text stays clipped: a visible
+ * text node would be a label-content-name mismatch. */
+.sidebar__badge--toggle::after {
+  content: attr(data-count);
+}
+
+.sidebar__badge-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .sidebar__bottom {
   margin-top: auto;
   padding: 8px 4px;
