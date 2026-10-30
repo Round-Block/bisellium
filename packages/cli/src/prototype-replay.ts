@@ -15,7 +15,7 @@ import { accessSync, constants, lstatSync, readdirSync, readFileSync, realpathSy
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
-import { behaviourItems } from "@bisellium/commands/brief-admission.js";
+import { redCommand } from "@bisellium/commands/brief-admission.js";
 import { countBehaviours } from "./rules/evidence.js";
 
 /** The cap on the series file: a prototype is a few source files, never a vendored tree. */
@@ -25,8 +25,6 @@ const ATTEMPT = /^prototype\s*:/i;
 const LINE = /^Prototype: ((?:\/|~\/)\S+) sha256:([0-9a-f]{64})$/;
 const FROM = /^From [0-9a-f]{40} Mon Sep 17 00:00:00 2001$/;
 const SUBJECT = /^Subject: (?:\[PATCH(?: [1-9][0-9]*\/[1-9][0-9]*)?\] )?(.*)$/;
-/** The characters a red command word may hold outside single quotes: no shell expansion, quoting or redirection. */
-const PLAIN = /^[A-Za-z0-9_./=:@%+,^-]$/;
 
 export interface Prototype {
   /** as the brief names it */
@@ -134,46 +132,6 @@ export function readSeries(text: string, id: string, n: number): Patch[] | { err
   }
   if (k !== n + 1) return { error: `the series covers behaviours 1 to ${k - 1}${tested ? ` and behaviour ${k}'s test` : ""}; the brief lists ${n}` };
   return patches;
-}
-
-/** The words of a red command: space-separated, single-quoted text taken literally, nothing else a shell would read. */
-export function commandWords(text: string): string[] | { error: string } {
-  const out: string[] = [];
-  let cur = "";
-  let word = false;
-  let quoted = false;
-  for (const ch of text) {
-    if (quoted) {
-      if (ch === "'") quoted = false;
-      else cur += ch;
-    } else if (ch === "'") {
-      quoted = true;
-      word = true;
-    } else if (ch === " ") {
-      if (word) out.push(cur);
-      cur = "";
-      word = false;
-    } else if (PLAIN.test(ch)) {
-      cur += ch;
-      word = true;
-    } else return { error: `the red command holds ${JSON.stringify(ch)} outside single quotes` };
-  }
-  if (quoted) return { error: "the red command has an unclosed single quote" };
-  if (word) out.push(cur);
-  if (out.length === 0 || out.some((w) => w === "" || /\s/.test(w))) return { error: "the red command has an empty word or one holding whitespace" };
-  return out;
-}
-
-/** Behaviour k's red command: the words after " -- " in its one code span that opens "bisellium red <id> --behaviour <k> ",
- *  read from admission's own items (`behaviourItems`: one parser of the behaviours section, W-140). */
-export function redCommand(brief: string, id: string, k: number): string[] | { error: string } {
-  const items = behaviourItems(brief);
-  const opening = `bisellium red ${id} --behaviour ${k} `;
-  const spans = (items[k - 1] ?? []).flatMap((l) => [...l.matchAll(/`([^`]+)`/g)].map((m) => m[1]!)).filter((s) => s.startsWith(opening));
-  if (spans.length !== 1) return { error: `behaviour ${k} names ${spans.length} red commands opening "${opening.trim()}", want one` };
-  const at = spans[0]!.indexOf(" -- ");
-  if (at === -1) return { error: `behaviour ${k}'s red command has no " -- " before its command` };
-  return commandWords(spans[0]!.slice(at + 4));
 }
 
 /** Whether the whole series applies in order at the worktree's HEAD (`git apply --check --index`, nothing written), or why not. */
