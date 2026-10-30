@@ -1558,6 +1558,21 @@ test("W-468-b2 behaviour 2: the fix round's red order names the restage, the tic
   assert.doesNotMatch(order, /from behaviour 2 through 2/, ran("not the phase 1 order", o));
 });
 
+test("W-468-b1 behaviour 1: a cited red whose # at: is not an exact time is ordered again", { timeout: 1_800_000 }, () => {
+  const w = w468World("w468-b1-inexact", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", "the cited red is ordered");
+  assert.equal(w468Red(w, 2, W468_LATER).status, 0, "a red recorded after the round");
+  const log = join(w.wtStudio, "ci", "reds", OPUS, "02.log");
+  const text = readFileSync(log, "utf8");
+  // each form parses as a time after the round (06:00) yet is not an exact timestamp: date-only, zone-less, offset
+  for (const at of ["2026-10-03", "2026-10-02T12:10:00", "2026-10-02T12:10:00+00:00", "2026-10-02T20:10:00+08:00"]) {
+    writeFileSync(log, text.replace(`# at: ${W468_LATER}`, `# at: ${at}`));
+    commit(w.wt, `studio(${OPUS}): red b2 at ${at}`);
+    handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
+    w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", `an inexact # at: ${at} is stale`);
+  }
+});
+
 /** W-468-b3: round 1's log pinned by `ticket` (a `# ticket:` line) in place of its `# brief:` line, or by neither, committed. */
 function w468Pin(w: World, ticket: string | undefined): void {
   const log = join(w.wtStudio, "ci", `${OPUS}-review-1.log`);
