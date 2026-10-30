@@ -522,7 +522,7 @@ test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard wh
   assert.equal(f[0]?.level, "block");
   assert.equal(f[0]?.where, ".claude/settings.json");
   assert.match(f[0]?.message ?? "", /SubagentStop/);
-  assert.equal(hookGuard(JSON.stringify({ hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }] }] } })).length, 4, "Bash only: Write, Edit, NotebookEdit and SubagentStop");
+  assert.equal(hookGuard(JSON.stringify({ hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }] }] } })).length, 5, "Bash only: Write, Edit, NotebookEdit, SubagentStop and Stop");
   assert.equal(hookGuard("{ not json").length, 1, "an unparseable settings file blocks");
   const narrowed = realSettings();
   (narrowed["hooks"] as Record<string, { matcher: string }[]>)["SubagentStop"]![0]!.matcher = "builder";
@@ -536,7 +536,7 @@ test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard wh
   assert.deepEqual(hookGuard(undefined), [], "no settings file: not judged");
   assert.deepEqual(hookGuard(readFileSync(SETTINGS_PATH, "utf8")), [], "the repo's own settings wire the guard");
   const real = realSettings()["hooks"] as Record<string, { matcher: string; hooks: { command: string }[] }[]>;
-  assert.deepEqual(Object.keys(real).sort(), ["PostToolUse", "PreToolUse", "SessionStart", "SubagentStop"], "W-242's settings side: no PreCompact or Stop; PostToolUse runs only W-369's sync");
+  assert.deepEqual(Object.keys(real).sort(), ["PostToolUse", "PreToolUse", "SessionStart", "Stop", "SubagentStop"], "W-242's settings side: no PreCompact; Stop runs only W-444's guard; PostToolUse runs only W-369's sync");
   assert.deepEqual(real["SessionStart"]?.flatMap((g) => g.hooks.map((h) => h.command)), ["bisellium context --studio studio", "bisellium hook-event sync --studio studio"]);
   const agent = (name: string): string => readFileSync(join(REPO, ".claude", "agents", `${name}.md`), "utf8");
   assert.match(agent("architect"), /Unchanged code gets a stated limit, not a guarantee/);

@@ -1,0 +1,19 @@
+# opus: W-444
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18c28-e0e2-7202-b1ba-da681eb7ec74
+# outcome: failed
+# at: 2026-10-30T09:38:05.280Z
+# tree: tree:45c992c9cc5ab5701317b907c98d5982dad9c9b9
+# brief: briefs/W-444.md blob:507363056f668c1e527b5d365dd70f86ab1502c8
+# ticket: {"opus":"W-444","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"93bdba68894d9e4f775a87c218c99a61883bfbe7","brief":"507363056f668c1e527b5d365dd70f86ab1502c8","at":"2026-10-30T09:38:00.504Z"}
+
+## Findings
+1. blocking — brief:83 [severity: S1] [design: changes] The new `replyUsage` maps every `readReadings` error to success; an accidental permission or file-type mistake therefore lets a real main-thread Stop with a short reply and no usage reading exit 0, while `W-444-b2` covers absence but no read error. Replace brief:83 with: `| 3. The readings file ~/.bisellium-evidence/usage/readings.jsonl | its last valid reading, taken within 30 minutes; absent or empty asks nothing; any other read error is out of domain | replyUsage (readReadings, STALE_MS): a read error returns a refusal naming the error and the usage-reading command; pinned by W-444-b2 "an unreadable readings file: refused" |`; also replace brief:66’s unreadable-file limit with `no readings file or an empty one asks nothing; an unreadable one is refused`, and brief:77’s corresponding clause with `an unreadable readings file is refused`. [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w444.test.ts W-444-b2 “an unreadable readings file: refused”
+
+## Verdict
+The added readings-file error path fails open on a plausible operational mistake and requires the design-changing correction above before build.
+
+VERDICT: FAIL

@@ -1,7 +1,7 @@
 /**
  * `checkHookGuard` (W-310) — `hook.guard`, block. With `--repo`, a repo whose `.claude/settings.json`
  * exists wires the guard (`guardWiring`: a PreToolUse group covering Bash, Write, Edit and NotebookEdit
- * and a SubagentStop group, each running `bisellium hook-event guard --studio studio`), so a settings
+ * a SubagentStop group and a Stop group (W-444), each running `bisellium hook-event guard --studio studio`), so a settings
  * edit cannot drop it unseen. A repo without the file is not judged; an unreadable or unparseable file
  * blocks once. Reads only the checked repo's settings file; never throws.
  */

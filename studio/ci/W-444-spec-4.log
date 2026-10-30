@@ -1,0 +1,22 @@
+# opus: W-444
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18c28-e0e2-7202-b1ba-da681eb7ec74
+# outcome: passed
+# at: 2026-10-30T10:24:48.887Z
+# tree: tree:45c992c9cc5ab5701317b907c98d5982dad9c9b9
+# brief: briefs/W-444.md blob:c041ea9b37235d8b262220f491f341f6b69f1b59
+# ticket: {"opus":"W-444","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"1ede8c8b781f51b5a1a1e8b0caa981f671622415","brief":"c041ea9b37235d8b262220f491f341f6b69f1b59","at":"2026-10-30T10:24:44.152Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-444-spec-2.log #1: closed — `replyUsage` now refuses every `readReadings` error; brief:60, brief:66, brief:77, and brief:83 agree, `W-444-b2` pins the unreadable-file case, and K10 proves restoring fail-open fails that pin.
+
+## Verdict
+The revision closes the prior fail-open path, and its changed promises are feasible within the stated limits.
+
+VERDICT: PASS
