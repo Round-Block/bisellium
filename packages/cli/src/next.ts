@@ -1214,6 +1214,19 @@ export function deriveNext(f: Facts): Derived {
     // W-381 (D-070 C, D-076 D): a failed round whose S1 blocker names a class seen before in another opus holds its fix
     const repeat = gate !== undefined && gate.status === "failed" && gate.evidence !== undefined ? repeatHold(f, gate.evidence, bs) : undefined;
     if (repeat !== undefined) return hold("build", repeat);
+    // W-468 (lex §9.0, §9.3): a failed round whose standing blocker cites a red log of this opus not recorded since that round
+    // is answered by recording the red again, one behaviour at a time on its own ticket, before the fix check (D-086 D) and
+    // before any fix order; once every cited red is recorded after the round's log, the ladder goes on as before
+    const citing = gate !== undefined && gate.status === "failed" ? read.rounds.find((r) => r.n === gate.round) : undefined;
+    const reRed = citing === undefined ? [] : staleCitedReds(id, citing, bs, n);
+    if (citing !== undefined && reRed.length > 0)
+      return dispatch(f, "reds", `review round ${citing.n} failed citing the red evidence of behaviour(s) ${reRed.join(", ")}, not recorded since ${citing.log}; the red is recorded again before the fix check (W-468)`, {
+        phase: "fix",
+        resume: true,
+        inputs: [briefRel(id), citing.log],
+        extra: [["re-red", reRed.map((k) => `ci/reds/${id}/${pad(k)}.log`).join(", ")], ...fixes],
+        behaviour: { from: reRed[0]!, through: reRed[0]! },
+      });
     // W-328 (D-086 B): a failed round's fix committed outside the source tree (its tree and brief unchanged) is re-reviewed,
     // never sent back to the builder; `redo` is a round failed at this tree and brief with no such fix. A read that fails holds
     const outside = failedNow ? fixedOutside(f, read.rounds.find((r) => r.n === gate?.round)) : 0;
@@ -1408,6 +1421,26 @@ function replayed(f: Facts, bs: Src, n: number): boolean {
   if (p === undefined || "error" in p) return false;
   for (let k = 1; k <= n; k++) if (parseLogHeader(bs.read(`ci/reds/${f.id}/${pad(k)}.log`) ?? "").get("sella") !== f.design) return false;
   return true;
+}
+
+/**
+ * W-468: the behaviours 1..n whose red log a standing blocker of the failed `round` cites as `ci/reds/<id>/<nn>.log` (any
+ * leading path; no letter, mark or number of any script, `_`, `.` or `-` before `ci`; no letter, mark, number, `_` or
+ * `-`, and no `.` and a letter, mark or number, after `.log`), and whose log on the branch is absent, not a usable red, or recorded (`# at:`) no later than the
+ * round's log: ascending, each once. Advisories, other opera's logs and numbers outside 1..n are not read.
+ */
+function staleCitedReds(id: string, round: BuildReviewRound, bs: Src, n: number): number[] {
+  const cite = new RegExp(`(?<![\\p{L}\\p{M}\\p{N}_.-])ci/reds/${esc(id)}/([0-9]{2})\\.log(?![\\p{L}\\p{M}\\p{N}_-]|\\.[\\p{L}\\p{M}\\p{N}])`, "gu");
+  const cited = new Set<number>();
+  for (const b of round.blockers) for (const m of b.text.matchAll(cite)) cited.add(Number(m[1]));
+  return [...cited]
+    .filter((k) => k >= 1 && k <= n)
+    .sort((a, b) => a - b)
+    .filter((k) => {
+      const text = bs.read(`ci/reds/${id}/${pad(k)}.log`);
+      const at = text === undefined ? undefined : instant(parseLogHeader(text).get("at") ?? "")?.getTime();
+      return text === undefined || !usableRed(text) || at === undefined || at <= round.at;
+    });
 }
 
 /** A red the reds rung counts: an integer, non-zero exit on a clean tree, not a module-load failure. */
