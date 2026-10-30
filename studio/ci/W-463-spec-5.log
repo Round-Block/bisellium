@@ -1,0 +1,23 @@
+# opus: W-463
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: ae52e21776b37d567
+# session_reason: the named reviewer session (a600d2bf06f111478) belonged to an earlier orchestrator session that ended; round 5 judged the round-4 signature (ci/W-463-spec-4.log, the Patron's 10-30 strip rulings) in a fresh Claude Opus 5.5 session with the kept prompt W-463-specreview/r5/prompt.md and its previous review ci/W-463-spec-2.log
+# outcome: passed
+# at: 2026-10-30T08:27:27.788Z
+# tree: tree:a7db4a64c63b6393698930e889555d26c7b66361
+# brief: briefs/W-463.md blob:6ab2a4ce92574660f9232101b47e859dbfc1ec76
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"72275b0c1bdc1d8a0282fe4f4ad15f117fe22dfe","brief":"6ab2a4ce92574660f9232101b47e859dbfc1ec76","at":"2026-10-30T08:27:21.288Z"}
+
+## Findings
+1. advisory — brief:49 [severity: S2] "Keyboard focus reaches and reveals every entry" promises more than the prototype guarantees. `.board__waiting-items` has `scroll-padding-inline: 2px`, and the 32px chevron is absolutely placed at `right: 6px` over the rail. Native focus scrolling therefore leaves the newly focused rightmost entry, and its focus ring, about 38px under the chevron while entries remain to the right. The served reveal check only asks whether the entry intersects the rail by 0.5px, and the 14-entry 390 row checks focus only, never reveal. Replacement: "Keyboard focus reaches every entry and scrolls it fully clear of the right chevron (`scroll-padding-inline-end` at least the chevron's width plus its inset while it shows)", with the served reveal check asserting `entry.right <= chevron.left` whenever the chevron is present, at 1280 and 390. [design: keeps] [class: tests×ruled-case-uncovered] — check: none: W-463-b2 served row asserting the focused entry's right edge clears the chevron's left edge at every Tab step
+
+2. advisory — brief:49 [severity: S2] The chevron "hides at the right end" by unmounting (`{canScrollRight && <button …>}`). A keyboard user who presses Enter or Space on it until the end has the focused control removed, and Chromium drops focus to `body`. No sentence states where focus goes then, and no row covers it. Replacement, appended to the limit: "when the chevron hides while focused, focus moves to the last waiting entry", or else add "focus after the chevron hides" to the unclassified list. [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: none: W-463-b2 served row that presses Enter on the chevron to the end and asserts the stated focus destination
+
+## Earlier findings
+
+## Verdict
+The change closes round 2's advisories: the shell reads are enumerated with a stated stale-count limit, the mounted Board is named as the trusted badge reader, the toggle has a full-count description, unplaced entries open the drawer, and horizontal scrolling replaces the unbounded strip height. The two new findings are advisory S2 focus items with replacement text, and none is S1, a security gap or missing evidence.
+VERDICT: PASS

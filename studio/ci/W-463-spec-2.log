@@ -1,0 +1,26 @@
+# opus: W-463
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a600d2bf06f111478
+# outcome: passed
+# at: 2026-10-30T06:12:42.635Z
+# tree: tree:e2ee843c4d74c1080f648723dcbdfa815c01add1
+# brief: briefs/W-463.md blob:9c87a4e84784f13aa181e3001aec1c8658cfb19e
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"857f56924c9c3448128ce2bcf0aec81b44ca5264","brief":"9c87a4e84784f13aa181e3001aec1c8658cfb19e","at":"2026-10-30T06:12:36.926Z"}
+
+## Findings
+1. advisory — brief:5 [severity: S2] The line says "no new record reader", but the prototype's `App.tsx` adds shell reads of `GET /api/officina` and `GET /api/opera` (before this, the shell read only `/api/inbox`, and never on `#/inbox`). It fetches all three on every route change, and on Inbox again whenever `needsYouCount` changes, to compute `boardModel(...).waiting.length`. The Input domain has no row for these reads. A rejected or malformed read is swallowed by `.catch(() => undefined)` and leaves the prior count, initially 0, which means no Board badge. Replacement: "Read enumeration: the shell (`App.tsx`) newly reads `GET /api/officina` and `GET /api/opera` beside `GET /api/inbox` to compute the Board badge; `fetchOfficina`/`fetchOpera`/`fetchInbox` rejection or a throw inside `boardModel` is caught and keeps the previous count (0 before any success); that stale or zero badge is a stated limit; the Board screen's own reads are unchanged." Also add the matching Input domain row. [design: keeps] [class: spec×input-without-named-rejector] — check: none: a W-463-b3 served row that fails `/api/opera` on a non-Board route and asserts the stated badge outcome
+
+2. advisory — brief:48 [severity: S2] (D-070 C) The Board badge has two readers of one truth: App's one-shot `Promise.all` snapshot on each route change, and `Board`'s live model through `onWaitingCount`. They disagree when a slow App snapshot lands after a live reconciliation on `#/board` and overwrites the newer count. They also disagree off-Board, where the badge refreshes only on navigation. The promise names neither reader and does not say which one it trusts. Replacement, added to the limit: "On `#/board` the Board screen's live model is the reader trusted for the badge; elsewhere the shell's snapshot from the last route change is shown; a shell snapshot resolving after a live Board update may briefly overwrite it, and off-Board live refresh is unclassified." [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: none: a source row asserting App does not set the Board count from its snapshot while `route === "board"`
+
+3. advisory — brief:19 [severity: S2] On the narrow closed shell the Board dot is a `role="img"` child of the toggle button, and the button's `aria-label` ("Expand sidebar") replaces that child in the computed name. A screen-reader user at 640/390 closed therefore hears no Board count, and the links that carry "Board N" are hidden until the overlay opens. "The accessible count stays full" (brief:48) holds only for the nav links. Replacement: "...the panel toggle carries that Board dot, and its accessible name becomes `Expand sidebar, Board N waiting on you` while the dot shows" (or state that the toggle dot is visual only). [design: keeps] [class: tests×ruled-case-uncovered] — check: none: W-463-b3 served `getByRole("button", { name: /Board 2 waiting/ })` at 390 closed
+
+4. advisory — brief:50 [severity: S3] A waiting opus with no lifecycle column still gets a strip button: its state maps to no declared phase, or it is a backlog opus with no `planned` phase, and either way it lands in `unplaced`. The button's `columnId !== undefined && onSelectCard(...)` makes it a silent no-op that still announces "Open …". Replacement, appended to the limit: "an opus in `unplaced` keeps its strip entry, but activation opens nothing." [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: none: a W-463-b1 model row with an unplaced waiting opus asserting the stated entry behaviour
+
+5. advisory — brief:21 [severity: S4] Sense (W-426): the rule "at 640 and 390 it uses two" tracks, with every waiting entry always listed, was written by an agent. On `board-many-390-closed.png`, 12 entries already take six rows before the first lifecycle card. Because larger cardinalities are unbounded (brief:63 limit), the strip can push the lifecycle off the first screen. The Patron's approved screens stop at 12, and Defaults 3 puts only the label placement to the Patron, not the height. Replacement: "At 390 the strip's item grid shows at most three rows and scrolls within itself beyond that; the label and count stay fixed." This is the Patron's call. [design: keeps] [class: tests×ruled-case-uncovered] — check: none: a served 390 row with more than 12 waiting opera asserting the first lifecycle column's top stays within the viewport
+
+## Verdict
+The input boundary and feasibility hold for the build. All five findings are advisory wording, limit or sense items with replacement text, and none is S1, a security gap or missing evidence.
+VERDICT: PASS

@@ -1,0 +1,26 @@
+# opus: W-463
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a18b08-5c0b-7293-a513-60d78e1c56a0
+# outcome: passed
+# at: 2026-10-30T06:09:35.707Z
+# tree: tree:e2ee843c4d74c1080f648723dcbdfa815c01add1
+# brief: briefs/W-463.md blob:9c87a4e84784f13aa181e3001aec1c8658cfb19e
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"857f56924c9c3448128ce2bcf0aec81b44ca5264","brief":"9c87a4e84784f13aa181e3001aec1c8658cfb19e","at":"2026-10-30T06:09:30.798Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-463-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The strip is always present; zero renders only `Waiting on you` with `0` on its own line below, and no Board empty-state copy or Board badge, at 1280, 640 and 390 — check: /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/tests-serve/w463.spec.ts, /home/edckt/.bisellium-evidence/W-463-spec/shots/board-none-1280-expanded.png, /home/edckt/.bisellium-evidence/W-463-spec/shots/board-none-640-closed.png, /home/edckt/.bisellium-evidence/W-463-spec/shots/board-none-390-closed.png
+2. advisory — Empty and populated counts sit below the label and align their right edge within 1px of the rendered label text at all three ruled widths, including the served two-digit count case — check: /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/components/w025.css, /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/tests-serve/w463.spec.ts, /home/edckt/.bisellium-evidence/W-463-spec/shots/board-many-1280-expanded.png
+3. advisory — Each populated strip entry is a native, visibly focusable button named with its opus and ask; pointer, Enter and Space open the same existing drawer path as the lifecycle card at 1280 and 390 — check: /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/screens/BoardView.tsx, /home/edckt/.bisellium-evidence/W-463-spec/w463-served-final.out
+4. advisory — Waiting cards and entries retain the existing amber edge and neutral wash with W-409's Greenlight, Inbox decision and Human gate words; W-427 owns the later cross-screen palette restyle — check: /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/test/w463.test.ts, /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/components/w025.css
+5. advisory — Board's badge counts distinct waiting opera while Inbox remains D-135 question-only; W-345-b6 now scopes its badge locator to the Inbox link, zero has no Board badge, and collapsed/closed dots cap visibly at 9+ while preserving full accessible counts — check: /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/App.tsx, /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/components/Sidebar.tsx, /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/tests-serve/inbox.spec.ts, /home/edckt/.bisellium-evidence/W-463-spec/inbox-served-final.out
+6. advisory — All four TAP reds are assertion failures with `not ok` titles, cumulative earlier rows stay green, all twelve unchanged captures were visually checked, the eight-commit mbox reapplies to tree `f076ee077a59e8e86455a58e4620ee91b7d9161b`, and every commit builds independently — check: /home/edckt/.bisellium-evidence/W-463-spec/reds-host.out, /home/edckt/.bisellium-evidence/W-463-spec/capture-shots.out, /home/edckt/.bisellium-evidence/W-463-spec/mbox-check.out, /home/edckt/.bisellium-evidence/W-463-spec/series-builds.txt
+
+## Verdict
+
+passed — signature round 1 rewritten by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-463.md`; the Patron's always-visible zero strip, stacked right-edge-aligned count, drawer-reuse and colour rulings plus the W-345-b6 locator migration are represented in prototype sha256 `e1323167581af4a0f68d7ea993ad3940f6a6376e632207c9938c2eae5e8bfc97`, and no record write, `next` or `verdict` was performed.
