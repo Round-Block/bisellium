@@ -6,7 +6,7 @@
  * folders under the OS tmp dir; nothing reads or writes the real repository, `studio/` or the evidence folders.
  */
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -101,4 +101,50 @@ test("W-474-b1 behaviour 1: run --scratch runs the command in a copy at the base
   const r3 = cli(REPO, ["--scratch", folder, "--repo", root, "--", join(folder, "no-such-command")]);
   assert.equal(r3.status, 127, "a command that cannot start exits 127");
   assert.deepEqual(readdirSync(folder), [], "the copy is gone when the command cannot start");
+});
+
+/** A run whose command prints `<its pid> <its cwd>` and then blocks reading stdin; `trap` makes it ignore SIGTERM. */
+function startBlocked(folder: string, root: string, trap: string): { p: ChildProcess; line: Promise<string | undefined>; exit: Promise<number | null> } {
+  const p = spawn(process.execPath, ["--import", TSX, MAIN, "run", "--scratch", folder, "--repo", root, "--", "sh", "-c", `${trap}echo "$$ $PWD"; read x`], { cwd: REPO, stdio: ["pipe", "pipe", "pipe"] });
+  const exit = new Promise<number | null>((res) => p.on("exit", (code) => res(code)));
+  const line = new Promise<string | undefined>((res) => {
+    let buf = "";
+    p.stdout!.on("data", (d: Buffer) => {
+      buf += d.toString("utf8");
+      const i = buf.indexOf("\n");
+      if (i >= 0) res(buf.slice(0, i));
+    });
+    p.on("exit", () => res(undefined));
+  });
+  return { p, line, exit };
+}
+const alive = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+test("W-474-b2 behaviour 2: a run --scratch stopped by SIGINT, SIGTERM or SIGHUP stops its command, deletes the copy and exits 128 plus the signal", { timeout: 180_000 }, async () => {
+  const { root } = fixtureRepo();
+  const cases: [NodeJS.Signals, number, string][] = [
+    ["SIGTERM", 143, ""],
+    ["SIGINT", 130, ""],
+    ["SIGHUP", 129, ""],
+    ["SIGTERM", 143, 'trap "" TERM; '],
+  ];
+  for (const [sig, code, trap] of cases) {
+    const name = trap === "" ? sig : `${sig}, ignored by the command`;
+    const folder = tmp("folder");
+    const run = startBlocked(folder, root, trap);
+    const line = await run.line;
+    const [pid, cwd] = (line ?? "").split(" ");
+    assert.ok(line !== undefined && dirname(cwd ?? "") === folder && /^scratch\.[A-Za-z0-9]{6}$/.test(basename(cwd ?? "")), `${name}: the command starts in a copy under the folder`);
+    run.p.kill(sig);
+    assert.equal(await run.exit, code, `${name}: the run exits ${code}`);
+    assert.equal(alive(Number(pid)), false, `${name}: the command is stopped`);
+    assert.deepEqual(readdirSync(folder), [], `${name}: the copy is gone`);
+  }
 });
