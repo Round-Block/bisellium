@@ -1,0 +1,18 @@
+# opus: W-472
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18dc8-9e5a-7341-9d6e-121aef65ab62
+# outcome: failed
+# at: 2026-10-30T17:10:14.610Z
+# tree: tree:b86ded825df655046eaf0e31f944b56f061d8b38
+# brief: briefs/W-472.md blob:7a018683bafe1756ad45b85938f95f226193f729
+# ticket: {"opus":"W-472","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-472/studio","head":"8db78dbcc9f73b0a79c947b626705527cc8c11b1","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-30T17:08:15.758Z"}
+
+## Findings
+1. blocking — packages/commands/src/opus-model.ts:150 [severity: S1] `descriptionProblem` accepts an unpaired UTF-16 surrogate such as U+D800; Node encodes that accepted value as U+FFFD, so `new --description` neither writes it verbatim nor rejects it before writing, contrary to brief:58 and brief:78. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w472.test.ts W-472-b2 with isolated high- and low-surrogate descriptions refused before any write
+
+## Verdict
+The accepted description domain has a data-corrupting boundary defect, so the round fails.
+VERDICT: FAIL
