@@ -106,12 +106,15 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
 
 test("W-463-b3 behaviour 3: the Board badge reuses strip membership while Inbox keeps D-135", () => {
   const app = read("src/App.tsx");
+  const api = read("src/api.ts");
   const sidebar = read("src/components/Sidebar.tsx");
   const css = read("src/components/w025.css");
   const served = read("tests-serve/w463.spec.ts");
 
   assert.match(app, /if \(route === "board"\) return;[\s\S]*if \(active\) setBoardWaitingCount\(boardModel\(officina, opera, inbox\)\.waiting\.length\)/, "the mounted Board ignores obsolete shell snapshots and supplies its live badge count");
-  assert.match(app, /fetchInbox\(\)[\s\S]*active && route !== "inbox"[\s\S]*setNeedsYouCount\(needsYouTotal\(inbox\)\)/, "the Inbox badge refreshes independently of Officina and opera reads");
+  assert.match(app, /fetchInbox\(\{ shared: true \}\)[\s\S]*active && route !== "inbox"[\s\S]*setNeedsYouCount\(needsYouTotal\(inbox\)\)/, "the Inbox badge refreshes independently of Officina and opera reads");
+  assert.match(api, /let inboxInFlight: \{ promise: Promise<InboxResponse>; settledAt\?: number \} \| undefined;[\s\S]*INBOX_SHARE_WINDOW_MS = 50;[\s\S]*opts\?\.shared === true && inboxInFlight !== undefined[\s\S]*return inboxInFlight\.promise;[\s\S]*getJSON<InboxResponse>\("\/api\/inbox"\)/, "only the shell's mount reads join an in-flight Inbox request; every other caller issues a fresh GET");
+  assert.doesNotMatch(app.replace(/fetchInbox\(\{ shared: true \}\)/g, ""), /fetchInbox\(/, "the shell reads Inbox only through the shared mount read");
   assert.match(sidebar, /e\.route === "board"[\s\S]*Board, \$\{boardWaitingCount\} waiting on you/, "the Board link owns a labelled nonzero badge");
   assert.match(sidebar, /collapsed && boardWaitingCount > 9 \? "9\+" : boardWaitingCount/, "the collapsed Board dot caps only its visible count");
   assert.match(sidebar, /overlay && collapsed[\s\S]*sidebar__badge--toggle/, "the closed narrow shell keeps the chosen mock's Board alert on its toggle");

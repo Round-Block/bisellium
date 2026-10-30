@@ -88,7 +88,7 @@ export function App() {
       return;
     }
     let active = true;
-    fetchInbox()
+    fetchInbox({ shared: true })
       .then((inbox) => {
         if (active && route !== "inbox") setNeedsYouCount(needsYouTotal(inbox));
       })
@@ -106,7 +106,7 @@ export function App() {
     // overwrite a newer count reported through onWaitingCount.
     if (route === "board") return;
     let active = true;
-    Promise.all([fetchOfficina(), fetchOpera(), fetchInbox()])
+    Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true })])
       .then(([officina, opera, inbox]) => {
         if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
       })

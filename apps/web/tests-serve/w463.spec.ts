@@ -437,6 +437,7 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
   const shellGate = new Promise<void>((resolve) => { releaseShell = resolve; });
   let officinaCalls = 0;
   let operaCalls = 0;
+  let inboxCalls = 0;
   let staleOfficinaSettled = false;
   let staleOperaSettled = false;
   await page.route("**/api/officina", async (route) => {
@@ -451,11 +452,15 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
     await route.fulfill({ json: call === 1 ? staleOpera : liveOpera });
     if (call === 1) staleOperaSettled = true;
   });
-  await page.route("**/api/inbox", (route) => route.fulfill({ json: { opera: [], petitiones: [] } }));
+  await page.route("**/api/inbox", (route) => {
+    inboxCalls += 1;
+    return route.fulfill({ json: { opera: [], petitiones: [] } });
+  });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${served.baseURL}/?w463=b3-stale-shell#/inbox`);
   await expect.poll(() => officinaCalls).toBeGreaterThanOrEqual(1);
   await expect.poll(() => operaCalls).toBeGreaterThanOrEqual(1);
+  await expect.poll(() => inboxCalls, { message: "the Inbox screen, Inbox badge and Board snapshot share one in-flight Inbox read" }).toBe(1);
   await page.goto(`${served.baseURL}/?w463=b3-live-board#/board`);
   await expect(page.locator(".board__waiting-label strong"), "the mounted Board reports its live model").toHaveText("2");
   await expect(page.locator('a[href="#/board"] .sidebar__badge--board')).toHaveText("2");
