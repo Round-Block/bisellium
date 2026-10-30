@@ -93,7 +93,8 @@ function parseScratch(args: string[]): ScratchArgs | { error: string } | undefin
   for (let i = 0; i < flags.length; i++) {
     const a = flags[i]!;
     if (a !== "--scratch" && a !== "--repo" && a !== "--base") return { error: `${a} does not go with --scratch` };
-    const r = takeValue(flags, ++i, a);
+    // the folder is any path text, so one that begins with "--" is a folder; only a missing value is refused
+    const r = a === "--scratch" && flags[i + 1] !== undefined ? { value: flags[++i]! } : takeValue(flags, ++i, a);
     if ("error" in r) return { error: r.error.split("\n")[0]! };
     if (a === "--scratch") dir = r.value;
     else if (a === "--repo") repo = r.value;
