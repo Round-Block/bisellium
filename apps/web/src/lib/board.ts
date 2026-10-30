@@ -151,7 +151,7 @@ export function boardModel(
     card.asks = [
       ...(greenlightAsk ? [{ kind: "greenlight" as const, count: 1 }] : []),
       ...(linkedDecisions > 0 ? [{ kind: "inbox" as const, count: linkedDecisions }] : []),
-      ...(humanGateAsk && linkedDecisions === 0 ? [{ kind: "human_gate" as const, count: 1 }] : []),
+      ...(humanGateAsk ? [{ kind: "human_gate" as const, count: 1 }] : []),
     ];
     card.needsYou = (card.asks?.length ?? 0) > 0;
 
