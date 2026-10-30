@@ -60,3 +60,39 @@ test("W-463-b1 behaviour 1: variant C replaces the membership column with one wa
   assert.deepEqual(model.unplaced, ["W-8"], "an unplaced waiting opus keeps its strip entry outside lifecycle columns");
   assert.equal(boardModel(officina, [opus("W-8", "done")], { opera: [], petitiones: [] }).waiting.length, 0, "an opus with no ask leaves the strip empty");
 });
+
+test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legible at the ruled widths", () => {
+  const view = read("src/screens/BoardView.tsx");
+  const css = read("src/components/w025.css");
+  const served = read("tests-serve/w463.spec.ts");
+
+  assert.doesNotMatch(view, /Nothing waiting on you/, "the Board owns no empty-state phrase");
+  assert.match(view, /board__waiting--empty[\s\S]*<strong>\{waiting\.length\}<\/strong>[\s\S]*waiting\.length > 0 && <div className="board__waiting-rail">/, "the mounted empty strip collapses to its label and zero count");
+  assert.match(view, /<WaitingStrip waiting=\{model\.waiting\}[\s\S]*<div className="board__strip">/, "the waiting strip always precedes phase navigation");
+  assert.match(view, /Greenlight[\s\S]*Inbox decision[\s\S]*Human gate/, "strip and cards share W-409's ask words");
+  assert.match(css, /\.board__waiting\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*112px minmax\(0, 1fr\);[^}]*flex-shrink:\s*0;/s, "the strip is pinned above the flexible columns");
+  assert.match(css, /\.board__waiting\s*\{[^}]*box-sizing:\s*border-box;[^}]*height:\s*96px;/s, "populated strips keep the reference whole-strip height");
+  assert.match(css, /\.board__waiting\.board__waiting--empty\s*\{[^}]*height:\s*20px;[^}]*padding:\s*0;[^}]*border-top:\s*0;[^}]*border-bottom:\s*0;/s, "the zero strip collapses to one label line without an entry row");
+  assert.match(css, /\.board__waiting-label\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*align-items:\s*flex-end;[^}]*width:\s*fit-content;[^}]*\}[\s\S]*?\.board__waiting-label span\s*\{[^}]*white-space:\s*nowrap;/s, "count sits below the label and shares its right edge");
+  assert.match(css, /@media \(max-width:\s*899px\)[\s\S]*?\.board__waiting-label\s*\{[^}]*flex-direction:\s*row;[^}]*align-items:\s*baseline;[^}]*gap:\s*4px;/s, "640 and 390 put the count just right of the label");
+  assert.match(css, /\.board__waiting-item\s*\{[^}]*border-left:\s*2px solid var\(--amber\);[^}]*background:\s*var\(--wash\);/s, "strip entries use an amber rule and neutral highlight");
+  assert.match(css, /\.board__waiting-title\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s, "long strip titles use one-line ellipsis");
+  assert.match(css, /\.board__waiting-item \.board__card-asks\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap;[^}]*overflow:\s*visible;[^}]*white-space:\s*normal;/s, "strip ask labels wrap without sharing the title ellipsis");
+  assert.match(css, /\.board__waiting-item \.board__card-ask\s*\{[^}]*white-space:\s*nowrap;/s, "strip asks wrap only at ask-kind boundaries");
+  assert.match(css, /\.board__card-ask:not\(:last-child\)::after\s*\{[^}]*content:\s*",\\00a0";[^}]*\}/s, "ask separators end the previous kind without indenting a continuation line");
+  assert.match(css, /\.board__card--amber\s*\{[^}]*border-left-color:\s*var\(--amber\);[^}]*background:\s*var\(--wash\);/s, "waiting lifecycle cards are highlighted in place without an accent state");
+  assert.match(css, /\.board__waiting-items\s*\{[^}]*display:\s*flex;[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;/s, "every width uses one independently scrolling horizontal waiting row");
+  assert.match(css, /\.board__waiting-item\s*\{[^}]*flex:\s*0 0 calc\(\(100% - \(3 \* var\(--sp-2\)\)\) \/ 4\);/s, "desktop exposes four entries before horizontal overflow");
+  assert.match(css, /\.board__waiting-item\s*\{[^}]*height:\s*66px;/s, "entries fill the reference row with one title and three ask lines");
+  assert.match(css, /@media \(max-width:\s*899px\)[\s\S]*?\.board__waiting-item\s*\{[^}]*flex-basis:\s*calc\(\(100% - var\(--sp-2\)\) \/ 2\);/s, "640 and 390 expose two entries before horizontal overflow");
+  assert.match(view, /canScrollRight && <button type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick=\{showMore\}/, "overflow owns a named native right-arrow button");
+  assert.match(view, /scrollBy\(\{ left: items\.clientWidth \* 0\.9, behavior: "auto" \}\)/, "the right arrow advances by about one visible width");
+  assert.match(css, /\.board__waiting-more\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;[^}]*border-radius:\s*50%;[^}]*background:\s*#080b0d;[^}]*color:\s*#fff;/s, "the overflow arrow follows the round dark chevron reference");
+  assert.match(served, /\[1280, 640, 390\]/, "the served row covers desktop, zoom and phone widths");
+  assert.match(served, /strip stays above the lifecycle columns/, "the served row pins strip geometry");
+  assert.match(served, /empty strip contains only its inline label and zero/, "the served row pins the ruled empty strip at every width");
+  assert.match(served, /1280: populated count sits below the label[\s\S]*populated count sits just right of the label/, "the served row pins stacked desktop and inline narrow counts");
+  assert.match(served, /no continuation line begins with a separator on strip or card copy/, "the served row pins separator placement after wrapping");
+  assert.match(served, /every waiting entry stays in one horizontal row[\s\S]*horizontal waiting row opens at its first entry[\s\S]*overflow arrow appears while entries continue right[\s\S]*right arrow advances the waiting row[\s\S]*right arrow hides at the end[\s\S]*keyboard focus reaches horizontal entry/, "the served row pins one horizontal row, initial scroll, its arrow cue and keyboard reachability");
+  assert.match(served, /many-entry strip keeps the reference whole-strip height[\s\S]*empty strip collapses to exactly its label line[\s\S]*one-entry strip keeps the reference whole-strip height/, "the served row pins collapsed zero and reference-height populated strips");
+});
