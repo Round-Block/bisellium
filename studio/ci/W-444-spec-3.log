@@ -1,0 +1,27 @@
+# opus: W-444
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T10:23:01.766Z
+# tree: tree:45c992c9cc5ab5701317b907c98d5982dad9c9b9
+# brief: briefs/W-444.md blob:c041ea9b37235d8b262220f491f341f6b69f1b59
+# ticket: {"opus":"W-444","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"1ede8c8b781f51b5a1a1e8b0caa981f671622415","brief":"c041ea9b37235d8b262220f491f341f6b69f1b59","at":"2026-10-30T10:23:01.010Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-444-spec/r3/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2's S1 is closed as the reviewer wrote it: `replyUsage` now refuses every `readReadings` `{ error }` (anything but absence, which `readReadings` maps to no reading, or an empty file), naming the error and the usage-reading command; brief:60, brief:66, brief:77 and brief:83 take the reviewer's text; `W-444-b2` gains "an unreadable readings file: refused" and "the unreadable refusal names the error and the usage-reading command" (a directory in the file's place, so the row asserts the hook's own refusal text and no raw permission error), and kill K10 (the round-2 fail-open restored) fails that pin — check: r3/kills.out, r3/proto-b2-stage2.out, W-444-b2
+2. advisory — the closure is fail-closed by design, so while the readings file stays unreadable every main-thread reply is sent back once (the continuation is not judged, so no loop); what counts as unreadable is `readReadings`'s and `readContainedRegularFile`'s, reused unchanged (a symlink on the path, a file over 16 MiB); only the file-type case is pinned, the permission, symlink and over-size cases reach the same branch unpinned: stated limits, and Defaults 1 tells the Patron — check: brief Promise usage, Input domain row 3, Defaults 1
+3. advisory — the rest of revision 1 stands unchanged: the seam (`STOP_RULES`, rules take `(reply, ctx)`), main thread told by Stop and no `agent_id`, a reply sent back at most once, one Stop group in the code-owned settings so the Patron merges, two named flips (W-310-b5, instructions.test.ts `settings.hook-keys`); the Codex test check rerun on revision 2 names no other flip — check: r3/fixture-census-r3.md, brief Acceptance
+4. advisory — three reds, one at a time, each accepted at assertion level on the commit before its behaviour and each row green at its stage and later; ten one-hunk kills of guard.ts, each proved by master's killedPin; lint, format, typecheck, both officina checks, the touched and must-stay-green files whole, and the admission pass on the revised prototype (series sha256 on the brief's Prototype line) — check: r3/red-accept.out, r3/genuine-reds.out, r3/kills.out, r3/gates-run.log, r3/green-summary.out, r3/admission.out
+
+## Earlier findings
+
+- ci/W-444-spec-2.log #1: closed — the unreadable readings file is refused (brief:83, W-444-b2 "an unreadable readings file: refused", kill K10 in r3/kills.out)
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-444.md` (spec round 3), prototyped over master 72275b0c; round 2's S1 closed by refusing an unreadable readings file, one new pin and one new kill; three behaviours in guard.ts and one new test file, two named flips, one code-owned path (`.claude/settings.json`), so the Patron merges.
