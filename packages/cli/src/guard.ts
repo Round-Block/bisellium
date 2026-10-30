@@ -20,7 +20,9 @@
 import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { instant } from "@bisellium/schema";
 import { takeNotices } from "./review-notice.js";
+import { CONTEXT_WIND_DOWN, readReadings, STALE_MS, type Reading } from "./usage-reading.js";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -474,8 +476,54 @@ const replyLength: StopRule = (reply) => {
     : undefined;
 };
 
+const pct = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+/** A reading's context in thousands of tokens, as `usage-reading.sh` prints it, or null when the reading has none. */
+const contextK = (r: Reading): number | null => {
+  const t = pct(r.context_tokens);
+  return t === null ? null : Math.floor(t / 1000);
+};
+/** A reading's four parts as a reply carries them, in the shape `usage-reading.sh` prints: a value it lacks is `?`. */
+export function readingParts(r: Reading): string {
+  const v = (n: number | null): string => (n === null ? "?" : String(n));
+  return `Claude week ${v(pct(r.claude_week_used))}%, 5h ${v(pct(r.claude_5h_used))}% | Codex week ${v(pct(r.codex_week_used))}% | context ${v(contextK(r))}k of ${CONTEXT_WIND_DOWN / 1000}k`;
+}
+/** Each part is bounded by a set of letters, marks and digits (not an ASCII `\b`), so `15h 3%` or `contexts` is no part. */
+const PARTS: [RegExp, (r: Reading) => number | null][] = [
+  [/(?<![\p{L}\p{M}\p{N}])Claude week (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.claude_week_used)],
+  [/(?<![\p{L}\p{M}\p{N}])5h (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.claude_5h_used)],
+  [/(?<![\p{L}\p{M}\p{N}])Codex week (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.codex_week_used)],
+  [/(?<![\p{L}\p{M}\p{N}])context (\d+|\?)k(?![\p{L}\p{M}\p{N}])/u, contextK],
+];
+/** A reply carries a reading when one of its lines holds all four parts, each with the reading's value (a value the
+ *  reading lacks is not compared). */
+export function carriesReading(reply: string, r: Reading): boolean {
+  return reply.split("\n").some((line) =>
+    PARTS.every(([re, value]) => {
+      const m = re.exec(line);
+      const want = value(r);
+      return m !== null && (want === null || Number(m[1]) === want);
+    }),
+  );
+}
+const SCRIPT = "~/.bisellium-evidence/usage/usage-reading.sh <label>";
+/** The reply carries the latest usage reading (the readings file's last), taken within STALE_MS of the Stop. No readings
+ *  file or no reading in it asks nothing; any other read error is refused, naming the error. */
+const replyUsage: StopRule = (reply, { home, now }) => {
+  const readings = readReadings(home);
+  if ("error" in readings)
+    return `refused: the usage readings file ~/.bisellium-evidence/usage/readings.jsonl cannot be read (W-444): ${readings.error}; fix it, then run ${SCRIPT} and carry its line`;
+  const latest = readings[readings.length - 1];
+  if (latest === undefined) return undefined;
+  const at = instant(latest.at);
+  if (at === undefined || !(Math.abs(now.getTime() - at.getTime()) <= STALE_MS))
+    return `refused: this reply carries no usage reading taken in the last 30 minutes (W-444): the latest is from ${latest.at}; run ${SCRIPT} and carry its line`;
+  return carriesReading(reply, latest)
+    ? undefined
+    : `refused: this reply carries no line with the latest usage reading (W-444): carry "${readingParts(latest)}" (the reading at ${latest.at}), or run ${SCRIPT} and carry its line`;
+};
+
 /** The rules a main-thread final reply is judged by, in order; each refusal is one line. W-436 adds its rule here. */
-export const STOP_RULES: readonly StopRule[] = [replyLength];
+export const STOP_RULES: readonly StopRule[] = [replyLength, replyUsage];
 
 /** Stop (W-444): the refusals of `rules` for the main thread's final reply, one line each, joined; undefined for a
  *  subagent (`agent_id`), a continuation a Stop hook caused (`stop_hook_active`, so a reply is sent back once) or a Stop
