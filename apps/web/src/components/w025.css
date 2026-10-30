@@ -2113,9 +2113,9 @@
   transform: translateY(-50%);
   border: 1px solid var(--rule);
   border-radius: 50%;
-  background: #080b0d;
-  color: #fff;
-  box-shadow: 0 1px 6px rgb(0 0 0 / 45%);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 6px var(--shadow-drawer);
   font: 24px/1 var(--font-body);
   cursor: pointer;
 }

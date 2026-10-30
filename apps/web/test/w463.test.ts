@@ -90,7 +90,7 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   assert.match(view, /canScrollRight && <button ref=\{moreRef\} type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick=\{showMore\}/, "overflow owns a named native right-arrow button");
   assert.match(view, /const distance = items\.clientWidth \* 0\.9;[\s\S]*items\.scrollBy\(\{ left: distance, behavior: "auto" \}\)/, "the right arrow advances by about one visible width");
   assert.match(view, /reachesEnd && document\.activeElement === moreButton[\s\S]*requestAnimationFrame[\s\S]*board__waiting-item:last-child/, "removing a focused chevron returns focus to the last waiting entry");
-  assert.match(css, /\.board__waiting-more\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;[^}]*border-radius:\s*50%;[^}]*background:\s*#080b0d;[^}]*color:\s*#fff;/s, "the overflow arrow follows the round dark chevron reference");
+  assert.match(css, /\.board__waiting-more\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;[^}]*border-radius:\s*50%;[^}]*background:\s*var\(--surface\);[^}]*color:\s*var\(--ink\);/s, "the overflow arrow follows the round dark chevron reference");
   assert.match(served, /\[1280, 640, 390\]/, "the served row covers desktop, zoom and phone widths");
   assert.match(served, /strip stays above the lifecycle columns/, "the served row pins strip geometry");
   assert.match(served, /empty strip contains only its inline label and zero/, "the served row pins the ruled empty strip at every width");
