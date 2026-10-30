@@ -1,0 +1,25 @@
+# opus: W-463
+# phase: spec
+# round: 10
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a18b08-5c0b-7293-a513-60d78e1c56a0
+# outcome: passed
+# at: 2026-10-30T12:40:12.425Z
+# tree: tree:797d80ce9fc68f268b2ce5779eaabf024db85b88
+# brief: briefs/W-463.md blob:1299c885c85b86125769b781675cb5b03930465d
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":10,"actor":"architect","studio":".worktrees/W-463/studio","head":"dd37faa0080c6f9d6dfd1b0e1d0868f6c7cc0a12","brief":"1299c885c85b86125769b781675cb5b03930465d","at":"2026-10-30T12:40:05.243Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-463-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — D-143 narrows D-138's visible ask words to lifecycle cards: each fixed-height strip button now shows a mono task ID over a wrapping three-line-bounded title with no ask line, while every lifecycle card shows its mono ID over an at-most-two-line title and retains one ellipsized ask line — check: /home/edckt/agents/bisellium/studio/decisions/D-143.md, /home/edckt/.bisellium-evidence/W-463-build/mock-strip2/strip2-1280.png, /home/edckt/.bisellium-evidence/W-463-build/mock-strip2/strip2-390.png, /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/tests-serve/w463.spec.ts
+2. advisory — The flipped W-463-b1 served presentation and W-463-b2 policy/served geometry pass at 1280, 640 and 390; migrated W-409-b3, W-064 task-ID/empty-phone geometry and W-087 two-line-title rows also pass, while W-407-b6 remains kept — check: /home/edckt/.bisellium-evidence/W-463-spec/w463-served-final.out, /home/edckt/.bisellium-evidence/W-463-spec/w409-served-final.out, /home/edckt/.bisellium-evidence/W-463-spec/board-served-final.out, /home/edckt/.bisellium-evidence/W-463-spec/w407-b6-final.out
+3. advisory — Strip buttons keep the complete opus ID, title and ask-kind summary in their accessible name despite hiding ask copy visually, retain visible focus, and reuse the existing drawer callback for placed and unplaced opera — check: /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/screens/BoardView.tsx, /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/tests-serve/w463.spec.ts
+4. advisory — Board badge authority, the question-only Inbox badge and the single shared mount-cohort `/api/inbox` read are unchanged by D-143; the kept W-407 visibility refresh still issues a later fresh request — check: /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/App.tsx, /home/edckt/agents/bisellium/.worktrees/W-463-spec/apps/web/src/api.ts, /home/edckt/.bisellium-evidence/W-463-spec/w407-b6-final.out
+5. advisory — All four newly replayed TAP reds are headed command evidence and fail by titled assertions, every cumulative green passes, every one of the eight prototype commits builds independently, and the mailbox reapplies to the prototype tree — check: /home/edckt/.bisellium-evidence/W-463-spec/genuine-red-b1.out, /home/edckt/.bisellium-evidence/W-463-spec/genuine-red-b2.out, /home/edckt/.bisellium-evidence/W-463-spec/genuine-red-b3.out, /home/edckt/.bisellium-evidence/W-463-spec/genuine-red-b4.out, /home/edckt/.bisellium-evidence/W-463-spec/reds-host.out, /home/edckt/.bisellium-evidence/W-463-spec/series-builds.txt, /home/edckt/.bisellium-evidence/W-463-spec/mbox-check.out
+
+## Verdict
+
+passed — D-143 revision signed by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `/home/edckt/agents/bisellium/.worktrees/W-463-spec/studio/briefs/W-463.md` sha256 `462aa75441dc90d725506d79b6f54e752d61009373cb4ea771e81b5be67cc0d8`; prototype sha256 `135a1f526023264fcfdff74f330e2772b98a6351b141493d8d80e0a842c3153e`; no remaining contradiction and no record write, `next` or `verdict` was performed.

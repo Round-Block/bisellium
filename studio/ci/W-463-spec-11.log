@@ -1,0 +1,21 @@
+# opus: W-463
+# phase: spec
+# round: 11
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a7e921c015db731a4
+# session_reason: the named reviewer session belongs to an earlier orchestrator session and cannot be resumed (W-470)
+# outcome: passed
+# at: 2026-10-30T12:44:02.349Z
+# tree: tree:797d80ce9fc68f268b2ce5779eaabf024db85b88
+# brief: briefs/W-463.md blob:1299c885c85b86125769b781675cb5b03930465d
+# ticket: {"opus":"W-463","step":"spec","action":"verdict-spec","round":11,"actor":"spec-reviewer","studio":".worktrees/W-463/studio","head":"dd37faa0080c6f9d6dfd1b0e1d0868f6c7cc0a12","brief":"1299c885c85b86125769b781675cb5b03930465d","at":"2026-10-30T12:44:01.403Z"}
+
+## Findings
+1. advisory — brief:102 [severity: S4] D-143 records that its mock clipped a tall waiting card's seat line, and the two-line card-title cap is the fix. In the prototype that fix has zero slack: the long-title waiting card sums to exactly the 108px `max-height` (4+4 padding, 6 ladder, 14 ID, 36 title, 14 ask, 14 meta and 4×4 gaps). The flipped W-409-b3 served row checks only that the meta line keeps one line box and that the card is ≤108.5px. Both hold even when the meta line overflows the card's bottom edge (children are `flex-shrink: 0`), so the exact defect the Patron saw would pass. Replacement: append to brief:102 "W-409-b3's served geometry also asserts the waiting lifecycle card's `.board__card-meta` bottom is within 0.5px of the card's bottom edge or above it, at 1280, 640 and 390". [class: tests×ruled-case-uncovered] — check: none: a W-409-b3 served assertion `meta.bottom <= card.bottom + 0.5` on the long-title waiting card
+
+## Earlier findings
+
+## Verdict
+The D-143 delta stays inside the Patron's ruling and fits the fixed boxes it promises. The strip entry is 66px: 6px padding, a 14px ID and three 14px title lines. The card holds ID, two-line title and one nowrap ellipsized ask line, and b4's accessible name keeps the full ask summary. Round 8 left no blocker, and the one new finding is an S4 test boundary.
+VERDICT: PASS
