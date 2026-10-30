@@ -1267,7 +1267,11 @@ test("W-326-b3 behaviour 3: after a replay the gates are the producer's; a build
   writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes:", '  - { id: tests, name: Tests, kind: automated, command: "node -e 0" }\nsource_excludes:'));
   commit(k.repo, "studio: an automated gate");
   const ks = stageSeries(k, k.repo);
-  put(k.repo, BRIEF_REL, w326Brief([`Prototype: ${ks.line}`]));
+  // W-443: the signer's spec verdict compares each genuine red's command with the one its cited evidence records
+  const kEvidence = join(dirname(k.repo), "w443-evidence");
+  mkdirSync(kEvidence, { recursive: true });
+  for (const b of [1, 2]) writeFileSync(join(kEvidence, `red-b${b}.out`), `# command: node --test-reporter=tap --test-name-pattern=^W-900-b${b}\\s w326.test.mjs\n\nTAP version 13\n`);
+  put(k.repo, BRIEF_REL, w326Brief([`Prototype: ${ks.line}`]).replace(/(\^W-900-b([12])\\s' w326\.test\.mjs`)/g, (span: string, _all: string, b: string) => `${span} (\`${join(kEvidence, `red-b${b}.out`)}\`)`));
   sign(k, 1);
   review(k, 2, "failed", { body: `## Findings\n${KEEPS}\n` });
   landed(k);

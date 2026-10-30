@@ -1483,3 +1483,84 @@ test("W-443-b1 behaviour 1: brief admission reads each behaviour's written red c
   assert.deepEqual(command(RED_BRIEF, "W-300", 2), { error: 'the red command holds "\\\\" outside single quotes' }, "an unquoted backslash is no word a shell passes unchanged");
   assert.deepEqual(command(RED_BRIEF, "W-300", 3), { error: 'the red command holds "\\"" outside single quotes' }, "a double quote is no word a shell passes unchanged");
 });
+
+test("W-443-b2 behaviour 2: an architect spec signature is refused when a prototyped brief's written genuine red command is not the command its red evidence ran", () => {
+  const dir = studio();
+  const manifest = join(dir, "bisellium.yml");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace("collegia:\n", "collegia:\n  - { id: design, name: Design, magister: drafter }\n"));
+  const ev = join(dir, "ev");
+  mkdirSync(ev, { recursive: true });
+  const RAN = "node --test-name-pattern=^W-300-b1\\s x.test.ts";
+  const headed = (command: string): string => `# behaviour: 1\n# command: ${command}\n# exit: 1\n\nTAP version 13\nnot ok 1 - W-300-b1\n`;
+  writeFileSync(join(ev, "red.out"), headed(RAN));
+  writeFileSync(join(ev, "stage.out"), headed(RAN).replace("not ok", "ok"));
+  writeFileSync(join(ev, "stub.out"), headed("sh stub-run.sh"));
+  writeFileSync(join(ev, "plain.out"), "TAP version 13\nnot ok 1 - W-300-b1\n");
+  writeFileSync(join(ev, "below.out"), `TAP version 13\n# command: ${RAN}\n`);
+  writeFileSync(join(ev, "twice.out"), `# command: ${RAN}\n# command: ${RAN}\n\nnot ok 1\n`);
+  const PROTO = `Prototype: /home/fixture/proto.mbox sha256:${"0".repeat(64)}`;
+  const red = (k: number, command: string, cites: string): string =>
+    `   **Genuine red:** \`bisellium red W-300 --behaviour ${k} --sella builder --studio studio -- ${command}\`, fails at its assertion (${cites}).`;
+  const brief = (command: string, cites = "`red.out`", o: { proto?: boolean; more?: string[] } = {}): string =>
+    ["# W-300 fixture brief", `Evidence in \`${ev}/\`.`, ...(o.proto === false ? [] : [PROTO]), "## Behaviours to test", "1. **One.** The row.", red(1, command, cites), ...(o.more ?? []), ""].join("\n");
+  const WRITTEN = "node --test-name-pattern='^W-300-b1\\s' x.test.ts";
+  const log = join(dir, "ci", "W-300-spec-1.log");
+  let n = 0;
+  const sign = (text: string, sella = "drafter"): { exitCode: number; stderr: string; written: boolean } => {
+    writeFileSync(join(dir, "briefs", "W-300.md"), text);
+    const input = join(dir, `input-${++n}.md`);
+    writeFileSync(input, findings("advisory — fine"));
+    const r = capture(() => runVerdict(["W-300", "--round", "1", "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", input, "--studio", dir], { now: NOW }));
+    const written = existsSync(log);
+    if (written) rmSync(log);
+    return { exitCode: r.result.exitCode, stderr: r.stderr, written };
+  };
+  const refused = (name: string, text: string, stderr: string, sella = "drafter"): void => {
+    const r = sign(text, sella);
+    assert.equal(r.exitCode, 2, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, false, `${name}: no log is written`);
+    assert.equal(r.stderr, stderr, `${name}: stderr`);
+  };
+  const admitted = (name: string, text: string, sella = "drafter"): void => {
+    const r = sign(text, sella);
+    assert.equal(r.exitCode, 0, `${name}: exit (stderr ${JSON.stringify(r.stderr)})`);
+    assert.equal(r.written, true, `${name}: the log is written`);
+  };
+  const R = "W-300: red command: behaviour";
+  const uncopyable = (why: string, k = 1): string => `${R} ${k}'s genuine red command cannot be copied as written (${why}): write it as words a shell passes unchanged, single-quoting any other\n`;
+  const differs = (written: string, file: string, ran: string, k = 1): string =>
+    `${R} ${k}'s genuine red command is \`${written}\`, and ${file} records \`${ran}\`: write the command the evidence ran, or run the red again with the written command\n`;
+  const unrecorded = (k = 1): string => `${R} ${k}'s genuine red cites no evidence recording the command it ran: cite its red output, headed "# command: <the command>" as \`bisellium red\` records it\n`;
+
+  // W-442 spec r2: the copied command's unquoted backslash is consumed by the shell, so it selects no test
+  refused("an unquoted backslash", brief(RAN), uncopyable('the red command holds "\\\\" outside single quotes'));
+  admitted("the written command is the one its evidence ran", brief(WRITTEN, "`red.out`, `stage.out`, accepted `plain.out`"));
+  refused("a double-quoted word", brief(RAN.replace("^W-300-b1\\s", '"^W-300-b1\\s"')), uncopyable('the red command holds "\\"" outside single quotes'));
+  refused("a command that differs from the one its evidence ran", brief(WRITTEN.replace("\\s'", "'")), differs("node --test-name-pattern=^W-300-b1 x.test.ts", join(ev, "red.out"), RAN));
+  // W-360 spec r5: the cited output was a stub's run, not the written command's
+  refused("a stub's evidence", brief(WRITTEN, "`stub.out`"), differs(RAN, join(ev, "stub.out"), "sh stub-run.sh"));
+  refused("every recorded command is checked", brief(WRITTEN, "`red.out`, `stub.out`"), differs(RAN, join(ev, "stub.out"), "sh stub-run.sh"));
+  refused("a red citing no evidence that records its command", brief(WRITTEN, "`plain.out`"), unrecorded());
+  refused("a # command: line below the header is not read", brief(WRITTEN, "`below.out`"), unrecorded());
+  refused("a red citing nothing", brief(WRITTEN, "none"), unrecorded());
+  refused("two command lines", brief(WRITTEN, "`twice.out`"), `${R} 1's genuine red cites \`twice.out\`, and ${join(ev, "twice.out")} records 2 "# command:" lines; one only\n`);
+  refused(
+    "a cited red output under no root",
+    brief(WRITTEN, "`red.out`, `none.out`"),
+    `${R} 1's genuine red cites \`none.out\`, and it names no regular file under the evidence roots (${ev}/): cite it by its absolute path, or correct the name or the root\n`,
+  );
+  refused("an absolute citation of no file", brief(WRITTEN, `\`red.out\`, \`${ev}/none.log\``), `${R} 1's genuine red cites \`${ev}/none.log\`, and ${ev}/none.log is not a readable regular file\n`);
+  admitted("an absolute citation with a line", brief(WRITTEN, `\`${ev}/red.out:2\``));
+  refused(
+    "the second behaviour is read too",
+    brief(WRITTEN, "`red.out`", { more: ["2. **Two.** The row.", red(2, "npx playwright test --grep W-300-b2\\s", "`red.out`")] }),
+    uncopyable('the red command holds "\\\\" outside single quotes', 2),
+  );
+  refused(
+    "a genuine red with no command",
+    ["# W-300 fixture brief", `Evidence in \`${ev}/\`.`, PROTO, "## Behaviours to test", "1. **One.** **Genuine red:** the row fails (`red.out`).", ""].join("\n"),
+    uncopyable('behaviour 1 names 0 red commands opening "bisellium red W-300 --behaviour 1", want one'),
+  );
+  admitted("no Prototype line is not judged", brief(RAN, "`plain.out`", { proto: false }));
+  admitted("another seat's spec verdict is not judged", brief(RAN), "qa-lead");
+});
