@@ -7,7 +7,7 @@
  */
 import assert from "node:assert/strict";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,6 +16,7 @@ import { after, test } from "node:test";
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MAIN = join(REPO, "packages", "cli", "src", "main.ts");
 const TSX = import.meta.resolve("tsx");
+const CAP = 3 * 1024 ** 3;
 const dirs: string[] = [];
 const tmp = (tag: string): string => {
   const d = realpathSync(mkdtempSync(join(tmpdir(), `w474-${tag}-`)));
@@ -146,5 +147,67 @@ test("W-474-b2 behaviour 2: a run --scratch stopped by SIGINT, SIGTERM or SIGHUP
     assert.equal(await run.exit, code, `${name}: the run exits ${code}`);
     assert.equal(alive(Number(pid)), false, `${name}: the command is stopped`);
     assert.deepEqual(readdirSync(folder), [], `${name}: the copy is gone`);
+  }
+});
+
+const refusal = (m: string): string => `bisellium run --scratch: ${m}\n`;
+const sparse = (file: string, size: number): void => {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, "");
+  truncateSync(file, size);
+};
+
+test("W-474-b3 behaviour 3: run --scratch refuses the next copy when the folder holds 3 GiB or more, and on a bad folder, repository, base or flag, before any copy is made", () => {
+  const { root } = fixtureRepo();
+  const marker = join(tmp("out"), "ran");
+  const cmd = ["--", "sh", "-c", `echo ran > ${marker}`];
+
+  const full = tmp("folder");
+  sparse(join(full, "big"), CAP);
+  const r1 = cli(REPO, ["--scratch", full, "--repo", root, ...cmd]);
+  assert.equal(r1.stderr, refusal(`${full} holds 3.00 GiB, at or over the 3.00 GiB cap of one opus's folder; no copy is made`), "a folder at the cap refuses the copy, naming the cap");
+  assert.equal(r1.status, 2, "the refusal exits 2");
+  assert.ok(!existsSync(marker) && JSON.stringify(readdirSync(full)) === JSON.stringify(["big"]), "at the cap nothing runs and no copy is made");
+
+  const deep = tmp("folder");
+  sparse(join(deep, "r2", "big"), CAP + 1);
+  const r2 = cli(REPO, ["--scratch", deep, "--repo", root, ...cmd]);
+  assert.equal(r2.stderr, refusal(`${deep} holds 3.00 GiB, at or over the 3.00 GiB cap of one opus's folder; no copy is made`), "a file in a subfolder counts toward the cap");
+
+  truncateSync(join(full, "big"), CAP - 1);
+  const r3 = cli(REPO, ["--scratch", full, "--repo", root, ...cmd]);
+  assert.ok(r3.status === 0 && existsSync(marker), "a folder one byte under the cap copies and runs");
+  assert.deepEqual(readdirSync(full), ["big"], "and its copy is gone after");
+  rmSync(marker);
+
+  const linked = tmp("folder");
+  const elsewhere = join(tmp("elsewhere"), "big");
+  sparse(elsewhere, CAP);
+  symlinkSync(elsewhere, join(linked, "big"));
+  const r4 = cli(REPO, ["--scratch", linked, "--repo", root, ...cmd]);
+  assert.ok(r4.status === 0 && existsSync(marker), "a link to a large file is not counted");
+  rmSync(marker);
+
+  const folder = tmp("folder");
+  const notGit = tmp("plain");
+  const refusals: [string, string[], string][] = [
+    ["a folder that does not exist", ["--scratch", join(folder, "missing"), "--repo", root, ...cmd], refusal(`${join(folder, "missing")} is not a directory`)],
+    ["a repository that is not one", ["--scratch", folder, "--repo", notGit, ...cmd], refusal(`${notGit} is not inside a git repository`)],
+    ["a base that is not a commit", ["--scratch", folder, "--repo", root, "--base", "no-such-ref", ...cmd], refusal(`no-such-ref is not a commit in ${root}`)],
+  ];
+  for (const [what, args, stderr] of refusals) {
+    const r = cli(REPO, args);
+    assert.ok(r.status === 2 && r.stderr === stderr, `${what} refuses with exit 2`);
+    assert.ok(!existsSync(marker) && readdirSync(folder).length === 0, `${what}: nothing runs and no copy is made`);
+  }
+  const flags: [string, string[], string][] = [
+    ["--sella", ["--scratch", folder, "--sella", "architect", ...cmd], "bisellium run --scratch: --sella does not go with --scratch"],
+    ["--keep", ["--scratch", folder, "--keep", ...cmd], "bisellium run --scratch: --keep does not go with --scratch"],
+    ["no command", ["--scratch", folder, "--repo", root, "--"], 'bisellium run --scratch: a command after "--" is required'],
+  ];
+  for (const [what, args, first] of flags) {
+    const r = cli(REPO, args);
+    assert.ok(r.status === 2 && r.stderr.split("\n")[0] === first, `${what} refuses with exit 2 and its reason first`);
+    assert.ok(!existsSync(marker) && readdirSync(folder).length === 0, `${what}: nothing runs and no copy is made`);
   }
 });
