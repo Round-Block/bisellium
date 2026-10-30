@@ -57,7 +57,7 @@ const gb = (n: number): string => (n / 1024 ** 3).toFixed(2);
  */
 function linkModules(repo: string, copy: string): void {
   const from = join(repo, "node_modules");
-  if (!existsSync(from) || !statSync(from).isDirectory()) return;
+  if (!existsSync(from) || !lstatSync(from).isDirectory()) return; // lstat: a symlinked node_modules is not linked
   const into = join(copy, "node_modules");
   const link = (src: string, dst: string): void => {
     if (lstatSync(src).isSymbolicLink()) symlinkSync(readlinkSync(src), dst);
