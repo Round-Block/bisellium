@@ -1,0 +1,35 @@
+# opus: W-462
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T00:50:17.026Z
+# tree: tree:e0c43a0d4b86c412cbc5a0ab55797bcbc3a4b7a9
+# brief: briefs/W-462.md blob:8201e4dc4dd3910331fbf7b7151a9d0a03806eb7
+# ticket: {"opus":"W-462","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"691be60a89f84e1e05674407ffcb72e8c4a7ce88","brief":"8201e4dc4dd3910331fbf7b7151a9d0a03806eb7","at":"2026-10-30T00:50:16.148Z"}
+
+# W-462 spec signature, round 3 (architect, claude-opus-5-5): revision 2
+
+Brief: studio/briefs/W-462.md revision 2, prototyped over master 66b4daf3 (series r2/series.mbox, its sha256 on the brief's Prototype line); evidence in /home/edckt/.bisellium-evidence/W-462-spec/r2/ (revision 1's stays in /home/edckt/.bisellium-evidence/W-462-spec/).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-462-spec/r2/promise-ledger.md
+
+Revision 2 answers the spec review's round-2 verdict (/home/edckt/.bisellium-evidence/W-462-specreview/r2/verdict.md), each finding adopted with the reviewer's replacement text or a stronger one, closed by new cases in the row whose genuine red covers it, and killed case by case:
+
+1. brief:91 (rebindPr wrote the binding before reviewNotice) -> brief:63 and Promise rebind (brief:79): rebindPr reads the merge mode, fetches the trunk and screens the head first; only a passing notice lets it write the binding; every earlier failure leaves the old binding and `next` at rebind; a write failure holds and merge's queue-mode guard refuses the stale binding. Row W-462-b3 "a failed review request leaves the old binding" and "after a failed review request the rung is still the rebind"; kill K17 (revision 1's order) fails it.
+2. brief:90 (binding read without merge mode) -> brief:61, brief:65 and Promise binding (brief:81): the derivation reads the binding, then, when neither absent nor the PR head, the merge mode: direct leaves it to merge's existing direct-mode hold (W-199-b2 green unchanged), queue holds on unreadable, symlinked, over-bound or malformed content and rebinds only a differing well-formed oid; merge (queue) and the rebind (direct) read the mode again, so a mode read differently by derivation and perform writes nothing past the queue. Row W-462-b3 malformed, over-bound and symlinked bindings, direct-mode caller, both mode flips; kills K18 to K23 (K18, K19 revision 1's derivation) fail them.
+3. brief:65 (in-place replays could leave a dirty or detached worktree and still print the Patron's command) -> brief:57 and Promise restored (brief:77): a clean start (tracked and untracked), residue after every build and replay refused and cleaned, and no patron line unless the worktree is confirmed back on opus/<id> at N and clean. Row W-462-b2 untracked-before, tracked-write, untracked-write and restore-failure cases; kills K12 to K16 fail them.
+
+The sibling paths to each finding's input are listed at the head of the promise ledger.
+
+Checked on the prototype: each red fails by assertion on its red commit (b1 on master's source, b2 on stage 1, b3 on stage 2) and is accepted by the host classifier (r2/red-accept.out); each row passes on its stage and on stage 3, and the three together (r2/proto-w462-file.out); 23 kills, all guarded (r2/kills.out); every series commit builds the web bundle and typechecks on its own (r2/series-builds.out); lint, format and the typecheck pass on stage 3 (r2/gates-proto.out); next-queue.test.ts whole (28 of 28), the other next row files (r2/census-next-files-1-proto.out, r2/census-next-files-2-proto.out) and every other must-stay-green row the Codex test check lists pass on stage 3 (r2/census-*-proto.out); admission returns no problem (r2/admission.out); master's ledger validator returns no problem (r2/ledger-probe.out). The dry run on opus/W-408 passes read-only with the residue and restore checks: 33 commits build, 5 reds replay, no residue, the scratch worktree back on its branch clean, origin unchanged, and the W-408 worktree clean (r2/dry408/dry-run-w408.out). The Codex test check on this revision (r2/fixture-census.md) lists no flip and nothing unnamed. No certify-runner file changes; no file is code-owned; no overlap with W-445's Files owned.
+
+## Findings
+1. advisory — the step's red-to-commit mapping is a copy of certify's inline one until the runner imports red-claims.mjs, a change split out to land first (D-129 B), so the two can drift until then; the follow-up is to be filed — check: scripts/red-claims.mjs (stage 3), scripts/run-builder-host.mjs:686-731 (master), ../runner-refactor/census-run-w134-with-runner-refactor.out
+2. advisory — builds and replays still run in place with the caller's modules; ignored paths are neither compared nor cleaned, so an ignored file one step writes can reach a later step, and a perform killed mid-check leaves the worktree detached; stated on Promise restored, certify's fresh clone stays the last word — check: packages/cli/src/rewrite.ts:60-120 (stage 3)
+3. advisory — the merge-mode flip rows reach the perform's own mode read by the count of rules reads before it (W462_DERIVE_READS = 3); a change to how often a perform derives changes the row, which then fails loudly, never the guard — check: packages/cli/src/next-queue.test.ts:1122 (stage 3)
+4. advisory — the leased push to origin was not probed from this session (revision 1's probe covers the lease on scratch repositories and origin reads only), so the push is the Patron's action in Defaults — check: ../probe-lease.out:1-17, ../harness-refusal-transcript.txt:36
+
+## Verdict
+passed — revision 2 closes the three round-2 findings by behaviour: the rebind requests review before it moves the binding, the binding is read only with master's merge mode and re-read by both performs, and the in-place checks start clean, refuse and clean any residue, and ask the Patron only from a worktree confirmed back on the branch at the tip.
