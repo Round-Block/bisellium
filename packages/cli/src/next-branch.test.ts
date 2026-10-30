@@ -1564,13 +1564,29 @@ test("W-468-b1 behaviour 1: a cited red whose # at: is not an exact time is orde
   assert.equal(w468Red(w, 2, W468_LATER).status, 0, "a red recorded after the round");
   const log = join(w.wtStudio, "ci", "reds", OPUS, "02.log");
   const text = readFileSync(log, "utf8");
-  // each form parses as a time after the round (06:00) yet is not an exact timestamp: date-only, zone-less, offset
-  for (const at of ["2026-10-03", "2026-10-02T12:10:00", "2026-10-02T12:10:00+00:00", "2026-10-02T20:10:00+08:00"]) {
+  // each form reads as a time after the round (06:00) yet is outside the exact UTC profile: date-only, zone-less, offset, a
+  // fraction of one, two, four or nine digits, a lowercase z, hour 24, a leap second, a day past the month's end
+  for (const at of ["2026-10-03", "2026-10-02T12:10:00", "2026-10-02T12:10:00+00:00", "2026-10-02T20:10:00+08:00", "2026-10-02T12:10:00.1Z", "2026-10-02T12:10:00.12Z", "2026-10-02T12:10:00.1234Z", "2026-10-02T12:10:00.123456789Z", "2026-10-02T12:10:00.000z", "2026-10-02T24:00:00.000Z", "2026-12-31T23:59:60.000Z", "2026-11-31T12:10:00.000Z"]) {
     writeFileSync(log, text.replace(`# at: ${W468_LATER}`, `# at: ${at}`));
     commit(w.wt, `studio(${OPUS}): red b2 at ${at}`);
     handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
     w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", `an inexact # at: ${at} is stale`);
   }
+  // a padded value is not exact either: the raw header value is read, not its trimmed form
+  for (const [label, pad] of [["a trailing-space-padded", " "], ["a trailing-tab-padded", "\t"]] as const) {
+    writeFileSync(log, text.replace(`# at: ${W468_LATER}`, `# at: ${W468_LATER}${pad}`));
+    commit(w.wt, `studio(${OPUS}): red b2 with ${label} at`);
+    handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
+    w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", `${label} # at: is stale`);
+  }
+  // the profile's no-fraction form is exact: recorded after the round, no re-red; the fix order follows (no source change
+  // since the round, so the round's own tree)
+  writeFileSync(log, text.replace(`# at: ${W468_LATER}`, "# at: 2026-10-02T12:10:00Z"));
+  commit(w.wt, `studio(${OPUS}): red b2 at the no-fraction form`);
+  handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
+  const fresh = next(w, [OPUS, ...BUDGET]);
+  expectStep(fresh, "build", "named", "the profile's no-fraction form is fresh");
+  assert.equal(lastLine(fresh), "ticket: none", ran("the profile's no-fraction form is fresh: no red ticket", fresh));
 });
 
 /** W-468-b3: round 1's log pinned by `ticket` (a `# ticket:` line) in place of its `# brief:` line, or by neither, committed. */
