@@ -1,0 +1,22 @@
+# opus: W-468
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18d59-f150-7be1-b802-233993e2c707
+# outcome: failed
+# at: 2026-10-30T17:31:34.506Z
+# tree: tree:64fd7a2833d9af7d913b5be007e40f9c1f1b9da0
+# brief: briefs/W-468.md blob:3effb8b2b26c5ca861dd3617b0362921f855b69f
+# ticket: {"opus":"W-468","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-468/studio","head":"86bc49473eb3de6e29a1a8e2b382bd5d9c0a8d24","brief":"3effb8b2b26c5ca861dd3617b0362921f855b69f","at":"2026-10-30T17:30:34.011Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:1455 Reached by ci/W-468-review-2.log #1’s class: `rawHeaderAt` uses `:\s*`, which consumes arbitrary leading padding, so an accidentally padded value such as `# at:  2026-10-02T12:10:00.000Z` is normalized and treated as fresh although brief:73 requires padded forms to be stale. [severity: S1] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/next-branch.test.ts W-468-b1 cases for leading-space- and leading-tab-padded `# at:` values
+
+## Earlier findings
+- ci/W-468-review-2.log #1: closed — packages/cli/src/next.ts:1469 now delegates fractional precision and timestamp validity to `utcTimestampProblem`, and W-468-b1 covers the one-, two-, four-, and nine-digit fractional forms
+
+## Verdict
+The fractional-time defect is fixed, but the new raw-value reader still fails open for leading padding.
+
+VERDICT: FAIL
