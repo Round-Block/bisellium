@@ -23,6 +23,8 @@ import { classifyReplay } from "../../../scripts/replay-accept.mjs";
 import { redClaimer } from "../../../scripts/red-claims.mjs";
 import { clean, dirtyHold, git, quoted, remoteTip, type Pr, type StepResult } from "./integrate.js";
 
+/** next.ts's marker (W-377): `say` prints a line that opens with it whole; every other line is cut at 1000 characters, and a long worktree path would cut the Patron's one command short of its push */
+const UNCUT = "\u0001";
 const short = (oid: string): string => oid.slice(0, 12);
 const held = (why: string, ...more: string[]): StepResult => ({ ok: false, lines: [`why: ${why}`, ...more] });
 
@@ -244,7 +246,7 @@ export function performRewrite(o: RewriteInput): StepResult {
     lines: [
       `rewrite: ${branch} ${short(head)} keeps PR #${pr.number}'s reviewed tree ${short(r.tree)} over a new history (${series.built} commit(s) build, ${series.replayed} red(s) replay)`,
       `why: the push replaces PR #${pr.number}'s reviewed history with ${short(head)}; only the Patron runs it, once, leased on ${short(reviewed)}`,
-      `patron: ${patronPush(wt, id, reviewed, head)}`,
+      `${UNCUT}patron: ${patronPush(wt, id, reviewed, head)}`,
     ],
   };
 }
