@@ -12,7 +12,8 @@
  * re-identification. Builds and replays run in place in the opus worktree, which must start clean (no tracked change, no
  * untracked path), each commit checked out detached; a build or replay that leaves a tracked change or an untracked path
  * fails the check and is cleaned, and the Patron is asked only once the worktree is confirmed back on opus/<id> at N and
- * clean. Then it holds with the Patron's command: `git push
+ * clean. Rejection pushes nothing and leaves commits and origin unchanged; it restores the branch and worktree when
+ * possible, otherwise holds without a patron line and names the manual repair. Then it holds with the Patron's command: `git push
  * --force-with-lease=refs/heads/opus/<id>:<R> origin <N>:refs/heads/opus/<id>`, which refuses if origin moved off R.
  */
 import { sourceTreeHash } from "@bisellium/shim";
@@ -83,10 +84,29 @@ export type Series = { ok: true; built: number; replayed: number } | { ok: false
  * Every commit of `base..head` builds, and every recorded red at `head` replays, as certify builds and replays them, in
  * the worktree `wt`, which starts clean. A build or replay that leaves a tracked change or an untracked path fails the
  * check, and the worktree is cleaned (reset, untracked paths removed; ignored paths are kept). Whatever the checks find,
- * the worktree is put back on `branch` at `head`, and the result is `ok` only when it is confirmed there and clean.
+ * and on every return path (a build or replay that succeeds, is refused, or leaves residue), the residue is cleaned and
+ * the worktree put back on `branch` at `head`, and the result is `ok` only when it is confirmed there and clean.
+ * Rejection pushes nothing and leaves commits and origin unchanged; it restores the branch and worktree when possible,
+ * otherwise holds without a patron line and names the manual repair.
  */
 export function checkSeries(s: SeriesInput): Series {
-  const found = inPlace(s);
+  const entered = { before: [] as string[] };
+  let found: Series;
+  try {
+    found = inPlace(s, entered);
+  } catch (e) {
+    found = { ok: false, why: `the checks failed unexpectedly: ${clean((e as Error).message, 300)}` };
+  }
+  // whichever way the checks returned, a path the last build or replay left is cleaned before the worktree is put back
+  const left = changed(s.wt);
+  const stray = "error" in left ? left : { paths: left.paths.filter((p) => !entered.before.includes(p)) };
+  if ("error" in stray || stray.paths.length > 0) {
+    const reset = git(s.wt, ["reset", "-q", "--hard"]);
+    const swept = git(s.wt, ["clean", "-fdq"]);
+    const after = changed(s.wt);
+    const cleaned = reset.status === 0 && swept.status === 0 && !("error" in after) && after.paths.length === 0;
+    found = { ok: false, why: `${found.ok ? "the checks" : found.why}; the worktree was left changed (${named(stray)}), ${cleaned ? "cleaned" : "and it could not be cleaned"}` };
+  }
   const back = git(s.wt, ["checkout", "-q", "--no-guess", s.branch]);
   const on = git(s.wt, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
   const at = git(s.wt, ["rev-parse", "HEAD"]).stdout.trim();
@@ -104,7 +124,7 @@ export function checkSeries(s: SeriesInput): Series {
   if (off === undefined) return found;
   return { ok: false, why: `${found.ok ? "" : `${found.why}; and `}the worktree ${s.wt} could not be put back on ${s.branch} at ${short(s.head)} clean (${off}): put it back by hand, then rerun` };
 }
-function inPlace(s: SeriesInput): Series {
+function inPlace(s: SeriesInput, entered: { before: string[] }): Series {
   /**
    * after a build or a replay: undefined when the worktree holds no path it did not hold just after the checkout (`before`:
    * an ignored output of an earlier commit's build can be untracked at this one); else what it left, after cleaning it
@@ -125,7 +145,9 @@ function inPlace(s: SeriesInput): Series {
   /** checks out `c` detached: the paths the worktree holds then, or why it cannot */
   const at = (c: string): { paths: string[] } | { error: string } => {
     if (git(s.wt, ["checkout", "-q", "--detach", c]).status !== 0) return { error: `cannot check out ${short(c)} in ${s.wt}` };
-    return changed(s.wt);
+    const here = changed(s.wt);
+    if (!("error" in here)) entered.before = here.paths;
+    return here;
   };
   for (const c of commits) {
     const moved = at(c);
