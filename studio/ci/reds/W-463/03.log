@@ -1,0 +1,163 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-463-b3\s --import tsx apps/web/test/w463.test.ts
+# exit: 1
+# at: 2026-10-30T08:52:49.289Z
+# sella: ui-architect
+# tree: tree:b4ca61f69d4b05b2623d7460eb3adc911f74121b
+# ticket: {"opus":"W-463","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-463/studio","head":"70565d7ce9da556c382770de1f6dea11b07e892c","brief":"6ab2a4ce92574660f9232101b47e859dbfc1ec76","at":"2026-10-30T08:52:49.198Z"}
+
+TAP version 13
+# Subtest: W-463-b3 behaviour 3: the Board badge reuses strip membership while Inbox keeps D-135
+not ok 1 - W-463-b3 behaviour 3: the Board badge reuses strip membership while Inbox keeps D-135
+  ---
+  duration_ms: 4.958198
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-463/apps/web/test/w463.test.ts:1:8719'
+  failureType: 'testCodeFailure'
+  error: 'the mounted Board ignores obsolete shell snapshots and supplies its live badge count'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { useEffect, useState } from "react";
+    import { parseRoute } from "./lib/route.js";
+    import { Sidebar } from "./components/Sidebar.js";
+    import { Officina } from "./screens/Officina.js";
+    import { Inbox } from "./screens/Inbox.js";
+    import { Seats } from "./screens/Seats.js";
+    import { Board } from "./screens/Board.js";
+    import { TokenPrompt } from "./components/TokenPrompt.js";
+    import { fetchInbox, hasToken, setUnauthorizedListener } from "./api.js";
+    import { READY, type ScreenStatus } from "./lib/screenState.js";
+    import { needsYouTotal } from "./lib/board.js";
+    
+    function currentHash(): string {
+      return typeof window === "undefined" ? "" : window.location.hash;
+    }
+    
+    export const SIDEBAR_STORAGE_KEY = "bisellium.sidebar";
+    
+    function initialSidebarCollapsed(): boolean {
+      if (typeof window === "undefined") return false;
+      try {
+        return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "collapsed";
+      } catch {
+        return false;
+      }
+    }
+    
+    function persistSidebarCollapsed(collapsed: boolean): void {
+      try {
+        window.localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "collapsed" : "expanded");
+      } catch {
+        // Storage can be denied or unavailable; the in-memory expanded fallback remains usable.
+      }
+    }
+    
+    function initialWideSidebar(): boolean {
+      return typeof window === "undefined" || window.matchMedia("(min-width: 960px)").matches;
+    }
+    
+    export function App() {
+      const [hash, setHash] = useState(currentHash());
+      const [needsYouCount, setNeedsYouCount] = useState(0);
+      const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
+      const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
+      const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
+      const [overlayOpen, setOverlayOpen] = useState(false);
+      // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
+      // remounted by a screen's own layout changes and announces every state change.
+      const [status, setStatus] = useState<ScreenStatus>(READY);
+      const route = parseRoute(hash);
+    
+      // Only the user's toggle at >=960px writes the preference (brief:21): never a mount, a reload or the narrow overlay.
+      const toggleWideSidebar = () => {
+        const next = !sidebarCollapsed;
+        setSidebarCollapsed(next);
+        persistSidebarCollapsed(next);
+      };
+    
+      useEffect(() => {
+        // The one 401 path every write shares: raised from wherever the write
+        // was issued (Inbox today, W-065's Seats and W-064's Board tomorrow),
+        // with no code of their own.
+        setUnauthorizedListener(() => setTokenPromptOpen(true));
+        return () => setUnauthorizedListener(undefined);
+      }, []);
+    
+      useEffect(() => {
+        const onHashChange = () => setHash(currentHash());
+        window.addEventListener("hashchange", onHashChange);
+        return () => window.removeEventListener("hashchange", onHashChange);
+      }, []);
+    
+      useEffect(() => {
+        const query = window.matchMedia("(min-width: 960px)");
+        const onChange = (event: MediaQueryListEvent) => {
+          setWideSidebar(event.matches);
+          setOverlayOpen(false);
+        };
+        setWideSidebar(query.matches);
+        query.addEventListener("change", onChange);
+        return () => query.removeEventListener("change", onChange);
+      }, []);
+    
+      useEffect(() => {
+        if (route === "inbox") return;
+        if (location.search.includes("demo")) {
+          setNeedsYouCount(3);
+          return;
+        }
+        fetchInbox()
+          .then((r) => setNeedsYouCount(needsYouTotal(r)))
+          .catch(() => undefined);
+      }, [route]);
+    
+      return (
+        <div className={[
+          "shell",
+          wideSidebar && sidebarCollapsed && "shell--sidebar-collapsed",
+          !wideSidebar && overlayOpen && "shell--overlay-open",
+        ].filter(Boolean).join(" ")}>
+          {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
+          <Sidebar
+            route={route}
+            needsYouCount={needsYouCount}
+            collapsed={wideSidebar ? sidebarCollapsed : !overlayOpen}
+            overlay={!wideSidebar}
+            overlayOpen={overlayOpen}
+            onToggle={() => wideSidebar
+              ? toggleWideSidebar()
+              : setOverlayOpen((value) => !value)}
+            onNavigate={() => {
+              if (!wideSidebar) setOverlayOpen(false);
+            }}
+          />
+          {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
+          <main className="shell__main" tabIndex={0}>
+            {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
+          </main>
+          <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
+            {status.text}
+          </div>
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-463/apps/web/test/w463.test.ts:106:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22.661586
