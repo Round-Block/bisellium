@@ -1439,9 +1439,14 @@ function staleCitedReds(id: string, round: BuildReviewRound, bs: Src, n: number)
     .sort((a, b) => a - b)
     .filter((k) => {
       const text = bs.read(`ci/reds/${id}/${pad(k)}.log`);
-      const at = text === undefined ? undefined : instant(parseLogHeader(text).get("at") ?? "")?.getTime();
+      const at = text === undefined ? undefined : exactInstant(parseLogHeader(text).get("at") ?? "");
       return text === undefined || !usableRed(text) || at === undefined || at <= round.at;
     });
+}
+
+/** An exact recorded time (`YYYY-MM-DDTHH:MM:SS[.f]Z`) as epoch ms; a date-only, zone-less or offset form, or anything else, is undefined. */
+function exactInstant(v: string): number | undefined {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(v) ? instant(v)?.getTime() : undefined;
 }
 
 /**
