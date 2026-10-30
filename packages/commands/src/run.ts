@@ -80,35 +80,36 @@ function takeValue(args: string[], i: number, flag: string): { value: string } |
   return { value: v };
 }
 
-const SCRATCH_FLAGS = ["--scratch", "--repo", "--base"];
+/** The scratch-mode grammar (W-474): each flag that may stand in a scratch run, once, with the next token as its value. */
+const SCRATCH_FLAGS = { "--scratch": "dir", "--repo": "repo", "--base": "base" } as const;
+type ScratchFlag = keyof typeof SCRATCH_FLAGS;
+const isScratchFlag = (a: string): a is ScratchFlag => Object.hasOwn(SCRATCH_FLAGS, a);
 
-/** The scratch-mode argument parse (W-474), the one input boundary every `--scratch` run passes. `--scratch`, `--repo`
- *  and `--base` each take the next token verbatim, whatever it is ("--" included), so the command separator is the
- *  first "--" met where a flag is expected; every other flag before it is refused as not going with `--scratch`, and a
- *  flag with no token after it needs a value. Undefined when `--scratch` is not among the flags (not a scratch run). */
+/** The scratch-mode argument parse (W-474), one pass over one table. A scratch run is one whose flag positions before
+ *  the first "--" hold `--scratch`; there each token is, in this order: "--" (the end of the flags), else refused when
+ *  it is not in the table (`does not go with --scratch`), when it was seen already (`is given more than once`) or when
+ *  no token follows it (`needs a value`); else the next token is its value, verbatim. Then a command after "--" is
+ *  required. Undefined when not a scratch run. */
 function parseScratch(args: string[]): ScratchArgs | { error: string } | undefined {
   let isScratch = false;
   for (let i = 0; i < args.length && args[i] !== "--"; i++) {
     if (args[i] === "--scratch") { isScratch = true; break; }
-    if (SCRATCH_FLAGS.includes(args[i]!)) i++;
+    if (isScratchFlag(args[i]!)) i++;
   }
   if (!isScratch) return undefined;
-  let dir: string | undefined;
-  let repo: string | undefined;
-  let base: string | undefined;
-  let cut = -1;
-  for (let i = 0; i < args.length; i++) {
+  const seen: Partial<Record<ScratchFlag, string>> = {};
+  let i = 0;
+  for (; i < args.length && args[i] !== "--"; i += 2) {
     const a = args[i]!;
-    if (a === "--") { cut = i; break; }
-    if (!SCRATCH_FLAGS.includes(a)) return { error: `${a} does not go with --scratch` };
-    const value = args[++i];
+    if (!isScratchFlag(a)) return { error: `${a} does not go with --scratch` };
+    if (seen[a] !== undefined) return { error: `${a} is given more than once` };
+    const value = args[i + 1];
     if (value === undefined) return { error: `${a} needs a value` };
-    if (a === "--scratch") dir = value;
-    else if (a === "--repo") repo = value;
-    else base = value;
+    seen[a] = value;
   }
-  if (cut === -1 || args.length === cut + 1) return { error: 'a command after "--" is required' };
-  return { dir: dir!, cmd: args.slice(cut + 1), ...(repo === undefined ? {} : { repo }), ...(base === undefined ? {} : { base }) };
+  if (i >= args.length - 1) return { error: 'a command after "--" is required' };
+  const { "--scratch": dir, "--repo": repo, "--base": base } = seen;
+  return { dir: dir!, cmd: args.slice(i + 1), ...(repo === undefined ? {} : { repo }), ...(base === undefined ? {} : { base }) };
 }
 
 export async function runCommand(args: string[], opts: RunOptions = {}): Promise<RunResult> {
