@@ -206,3 +206,25 @@ test("W-472-b3 behaviour 3: amend --title refuses a title over 8 words, writing 
   assert.equal(ok.code, 0, `amend writes an 8-word title: ${ok.err}`);
   assert.match(readFileSync(path, "utf8"), /^title: "short task titles — keep the Board \( cards readable"$/m, "the 8-word title is amended");
 });
+
+test("W-472-b4 behaviour 4: check advises on a long title of a record that is not done, never blocking", () => {
+  const root = officina();
+  opus(root, "W-1", NINE, "backlog");
+  opus(root, "W-2", NINE, "done", "start: 2026-10-01T00:00:00.000Z\nend: 2026-10-02T00:00:00.000Z\n");
+  opus(root, "W-3", EIGHT, "backlog");
+  opus(root, "W-4", `${NINE} and three more`, "greenlit");
+  const result = checkStudio(root, NOW);
+  const words = result.findings.filter((f) => f.rule === "opus.title.words");
+  assert.deepEqual(
+    words.map((f) => [f.where, f.level]),
+    [
+      ["opera/W-1.md", "advise"],
+      ["opera/W-4.md", "advise"],
+    ],
+    "check advises on the long titles of records not done, and only those",
+  );
+  assert.equal(words[0]!.message, "title has 9 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title", "the advisory names the count, the cap and the way out");
+  assert.equal(words[1]!.message, "title has 12 words, at most 8; put the rest in the description (W-472): shorten it with bisellium amend --title", "the advisory counts every word");
+  assert.equal(result.findings.some((f) => f.where === "opera/W-2.md" && f.rule.startsWith("opus.title")), false, "a done record's long title is history: no finding");
+  assert.equal(result.findings.some((f) => f.rule === "opus.title"), false, "a long title is not an opus.title block");
+});
