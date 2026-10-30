@@ -90,13 +90,22 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
   const opera = [
     { ...makeOpus("W-1", "backlog"), title: longTitle },
     makeOpus("W-2", "building", { patron: { status: "pending" } }),
-    makeOpus("W-3", "done"),
+    makeOpus("W-3", "backlog", { patron: { status: "pending" } }),
+    makeOpus("W-4", "backlog", { patron: { status: "pending" } }),
+    makeOpus("W-5", "done"),
   ];
   const inbox = {
-    opera: [{ id: "W-1", title: longTitle, collegium: "design", sella: "producer" }, { id: "W-2", title: "W-2 title", collegium: "design", sella: "builder" }],
+    opera: [
+      { id: "W-1", title: longTitle, collegium: "design", sella: "producer" },
+      { id: "W-2", title: "W-2 title", collegium: "design", sella: "builder" },
+      { id: "W-3", title: "W-3 title", collegium: "design", sella: "builder" },
+      { id: "W-4", title: "W-4 title", collegium: "design", sella: "builder" },
+    ],
     petitiones: [
       { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
       { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
+      { id: "P-3", opus: "W-2", from: "producer", subject: "Gate decision", body: "Gate decision" },
+      { id: "P-4", opus: "W-4", from: "producer", subject: "Every decision", body: "Every decision" },
       { id: "P-orphan", opus: "W-404", from: "reviewer", subject: "No Board entry", body: "No Board entry" },
     ],
   };
@@ -109,6 +118,20 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
     await page.goto(`${served.baseURL}/?w409=b3-${width}#/board`);
     const needsW1 = page.locator('.board__column[data-column-id="needs_you"] [data-card-id="W-1"]');
     const phaseW1 = page.locator('.board__column[data-column-id="planned"] [data-card-id="W-1"]');
+    for (const { id, column, asks, label } of [
+      { id: "W-1", column: "planned", asks: ["Greenlight", "2 Inbox decisions"], label: "greenlight and Inbox decisions" },
+      { id: "W-2", column: "in_progress", asks: ["Inbox decision", "Human gate"], label: "a pending human gate and Inbox decision" },
+      { id: "W-3", column: "planned", asks: ["Greenlight", "Human gate"], label: "greenlight and a pending human gate" },
+      { id: "W-4", column: "planned", asks: ["Greenlight", "Inbox decision", "Human gate"], label: "greenlight, Inbox decision and a pending human gate" },
+    ]) {
+      const copies = [
+        page.locator(`.board__column[data-column-id="needs_you"] [data-card-id="${id}"]`),
+        page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`),
+      ];
+      for (const card of copies) {
+        await expect(card.locator(".board__card-ask"), `${width}: ${label} remain distinct on both card copies`).toHaveText(asks);
+      }
+    }
     for (const card of [needsW1, phaseW1]) {
       await expect(card.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions are distinct on both copies`).toHaveText(["Greenlight", "2 Inbox decisions"]);
       await expect(card.locator(".board__card-title"), `${width}: complete long title remains available`).toHaveAttribute("title", longTitle);
@@ -146,7 +169,6 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
       expect(geometry.markLeft, `${width}: ask mark starts inside its card`).toBeGreaterThanOrEqual(geometry.left - 0.5);
       expect(geometry.markRight, `${width}: ask mark ends inside its card`).toBeLessThanOrEqual(geometry.right + 0.5);
     }
-    await expect(page.locator('.board__column[data-column-id="needs_you"] [data-card-id="W-2"] .board__card-ask'), `${width}: unlinked human wait is not called Inbox`).toHaveText("Human gate");
     await expect(page.locator('[data-card-id="W-404"]'), `${width}: orphan decision has no Board mark or card`).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width}: marks add no page-level horizontal clipping`).toBeLessThanOrEqual(0);
   }

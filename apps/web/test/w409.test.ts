@@ -109,20 +109,40 @@ test("W-409-b2 behaviour 2: Inbox question totals stay distinct from Board membe
 
 test("W-409-b3 behaviour 3: cards distinguish greenlight, Inbox decisions and an unlinked human gate", () => {
   const inbox: InboxResponse = {
-    opera: [{ id: "W-1", title: "Long", collegium: "design", sella: "producer", traditio: undefined }, { id: "W-2", title: "Gate", collegium: "design", sella: "builder", traditio: undefined }],
+    opera: [
+      { id: "W-1", title: "Long", collegium: "design", sella: "producer", traditio: undefined },
+      { id: "W-2", title: "Gate and decision", collegium: "design", sella: "builder", traditio: undefined },
+      { id: "W-3", title: "Greenlight and gate", collegium: "design", sella: "builder", traditio: undefined },
+      { id: "W-4", title: "Every ask", collegium: "design", sella: "builder", traditio: undefined },
+    ],
     petitiones: [
       { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
       { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
+      { id: "P-3", opus: "W-2", from: "producer", subject: "Gate decision", body: "Gate decision" },
+      { id: "P-4", opus: "W-4", from: "producer", subject: "Every decision", body: "Every decision" },
     ],
   };
   const title = `A long title ${"kept ".repeat(40)}`;
-  const model = boardModel(officina, [opus("W-1", "backlog", {}, title), opus("W-2", "building", { patron: { status: "pending" } }), opus("W-3", "done")], inbox);
+  const model = boardModel(officina, [
+    opus("W-1", "backlog", {}, title),
+    opus("W-2", "building", { patron: { status: "pending" } }),
+    opus("W-3", "backlog", { patron: { status: "pending" } }),
+    opus("W-4", "backlog", { patron: { status: "pending" } }),
+    opus("W-5", "done"),
+  ], inbox);
   const cards = model.columns.flatMap((column) => column.cards.map((card) => ({ column: column.id, card })));
-  const w1Copies = cards.filter(({ card }) => card.id === "W-1");
-  assert.deepEqual(w1Copies.map(({ column }) => column), ["needs_you", "planned"], "the waiting opus exists in Needs you and its lifecycle phase");
-  assert.deepEqual(w1Copies.map(({ card }) => card.asks), [[{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 2 }], [{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 2 }]], "both copies carry distinct structured ask kinds");
-  assert.deepEqual(cards.find(({ column, card }) => column === "needs_you" && card.id === "W-2")?.card.asks, [{ kind: "human_gate", count: 1 }], "an unlinked pending human gate is not invented as Inbox");
-  assert.deepEqual(cards.find(({ card }) => card.id === "W-3")?.card.asks, [], "an opus with no ask carries no Needs-you mark data");
+  const combinations = [
+    { id: "W-1", asks: [{ kind: "greenlight" as const, count: 1 }, { kind: "inbox" as const, count: 2 }], label: "greenlight and Inbox decisions" },
+    { id: "W-2", asks: [{ kind: "inbox" as const, count: 1 }, { kind: "human_gate" as const, count: 1 }], label: "a pending human gate and Inbox decision" },
+    { id: "W-3", asks: [{ kind: "greenlight" as const, count: 1 }, { kind: "human_gate" as const, count: 1 }], label: "greenlight and a pending human gate" },
+    { id: "W-4", asks: [{ kind: "greenlight" as const, count: 1 }, { kind: "inbox" as const, count: 1 }, { kind: "human_gate" as const, count: 1 }], label: "greenlight, Inbox decision and a pending human gate" },
+  ];
+  for (const { id, asks, label } of combinations) {
+    const copies = cards.filter(({ card }) => card.id === id);
+    assert.equal(copies.length, 2, `${label} keep the opus in Needs you and its lifecycle phase`);
+    assert.deepEqual(copies.map(({ card }) => card.asks), [asks, asks], `${label} remain distinct on both card copies`);
+  }
+  assert.deepEqual(cards.find(({ card }) => card.id === "W-5")?.card.asks, [], "an opus with no ask carries no Needs-you mark data");
 
   const css = read("src/components/w025.css");
   const view = read("src/screens/BoardView.tsx");
