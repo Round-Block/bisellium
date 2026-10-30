@@ -18,6 +18,7 @@ import {
 } from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 import { useVisibleRefresh } from "../lib/useVisibleRefresh.js";
+import { needsYouTotal } from "../lib/board.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
 
@@ -107,7 +108,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       setDetachedPetition(keepDetached ? currentPetition : null);
       setExpandedId(detailWasOpen ? (keepDetached ? currentPetition.id : (d.petitiones[nextIndex]?.id ?? null)) : null);
       if (intent?.reveal && d.petitiones.length > 0) setFocusRequest((request) => request + 1);
-      onNeedsYouCountRef.current?.(d.petitiones.length);
+      onNeedsYouCountRef.current?.(needsYouTotal(d));
       hasSuccessfulLoadRef.current = true;
       setLoaded(true);
       setReadFailed(false);

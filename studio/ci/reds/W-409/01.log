@@ -1,0 +1,51 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-409-b1\s --import tsx apps/web/test/w409.test.ts
+# exit: 1
+# at: 2026-10-29T15:47:39.995Z
+# sella: builder.W-409
+# tree: tree:2f415d4baa0d009809199b1915a062fab59e7d87
+# ticket: {"opus":"W-409","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-409/studio","head":"8a5ced29944bcd818134e55775cba3fe8151f6f2","brief":"55464fe434802edb1d3df1ead0694bd271b819a1","at":"2026-10-29T15:47:33.968Z"}
+
+TAP version 13
+# Subtest: W-409-b1 behaviour 1: every Patron ask adds membership without replacing the opus lifecycle phase
+not ok 1 - W-409-b1 behaviour 1: every Patron ask adds membership without replacing the opus lifecycle phase
+  ---
+  duration_ms: 4.159613
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-409/apps/web/test/w409.test.ts:1:1112'
+  failureType: 'testCodeFailure'
+  error: |-
+    greenlight, linked Inbox and human-gate asks each create one Needs-you membership
+    + actual - expected
+    
+      [
+    -   'W-1',
+    -   'W-3',
+        'W-4'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'W-1'
+    1: 'W-3'
+    2: 'W-4'
+  actual:
+    0: 'W-4'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-409/apps/web/test/w409.test.ts:55:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 552.386692

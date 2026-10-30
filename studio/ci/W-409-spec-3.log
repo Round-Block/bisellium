@@ -1,0 +1,26 @@
+# opus: W-409
+# phase: spec
+# round: 3
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a187ba-4788-76a3-87b2-499df130c3e1
+# outcome: passed
+# at: 2026-10-29T15:07:49.723Z
+# tree: tree:7c9a238f6fedb2dfad5c70bd81995405a5f1ef60
+# brief: briefs/W-409.md blob:1facf4d802ec62b5aa280eddda51ed3605e3de4b
+# ticket: {"opus":"W-409","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"9eb8d0ef1821106ceb4b4649ea04b3b8e079285e","brief":"1facf4d802ec62b5aa280eddda51ed3605e3de4b","at":"2026-10-29T15:07:47.724Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-409-spec/d135/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — D-135 is adopted: the shared shell and Inbox-refresh counter ignores Board-only greenlight and human-gate membership, deduplicates linked questions by opus, and counts each unlinked question by petitio id — check: studio/briefs/W-409.md, apps/web/src/lib/board.ts, apps/web/src/App.tsx, apps/web/src/screens/Inbox.tsx, d135/b2-b2.out
+2. advisory — Round-2 blocker 1 is adopted with the required assertion: the b2 red reports `not ok 1` and fails at `two unlinked open petitiones count two`; independent kills reject both unlinked merging and linked over-counting — check: d135/b2-red-b2.out, d135/kill-unlinked.out, d135/kill-linked.out
+3. advisory — Board Needs-you membership and ask-kind rendering remain unchanged by the D-135 badge ruling; the served row keeps two Board members while the badge is one in its controlled fixture at 1280, 640 and 390 — check: d135/w409-served-final.out, shots/board-many-390-closed.png
+4. advisory — Round-2 advisory 2 is answered by D-135; advisory 3 is adopted as a stated limit, with backlog-only `inbox.opera` leaving the status ready while `InboxView` remains question-empty — check: studio/briefs/W-409.md, d135/final-w341-b2-status.out
+5. advisory — Every named existing census migration passes at its owning implementation commit, including W-345 policy and served rows, the Board count oracle, the 390px empty-Needs-you fixture and the non-waiting 64px geometry oracle — check: d135/affected-rows.out, d135/b2-w345-policy.out, d135/b2-inbox-defer.out, d135/b1-board-count.out, d135/b1-board-empty-needs-you.out, d135/b3-board-geometry.out
+6. advisory — All six commits build independently, all three assertion reds replay with cumulative greens, the focused gates and served rows pass, the mbox reapplies, admission and ledger checks return no problems, and the 12 refreshed final-prototype captures were inspected — check: series-builds.txt, d135/reds-host.out, d135/gates-proto.out, d135/mbox-check.out, d135/admission.out, d135/ledger-check.out, d135/capture-shots.out
+
+## Verdict
+
+passed — signature round 3 prepared by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `studio/briefs/W-409.md`; D-135 and the round-2 review are adopted in the six-commit prototype with sha256 `00adabf45a55a7e4151b1b82fda3949ea8ab841c0c6f028cecaac8c955c1dbf5`, and no record write, `next` or `verdict` was performed.

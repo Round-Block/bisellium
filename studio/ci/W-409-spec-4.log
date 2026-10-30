@@ -1,0 +1,23 @@
+# opus: W-409
+# phase: spec
+# round: 4
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: aeaaebde28cbad559
+# session_reason: round 2's reviewer session (a47a1c5f5c7801ad0) belonged to an earlier orchestrator session that ended; round 4 judged the D-135 revision (ci/W-409-spec-3.log) in a fresh Claude Opus 5.5 session with the kept prompt W-409-specreview/r4/prompt.md and its previous review ci/W-409-spec-2.log
+# outcome: failed
+# at: 2026-10-29T15:11:56.293Z
+# tree: tree:7c9a238f6fedb2dfad5c70bd81995405a5f1ef60
+# brief: briefs/W-409.md blob:1facf4d802ec62b5aa280eddda51ed3605e3de4b
+# ticket: {"opus":"W-409","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"9eb8d0ef1821106ceb4b4649ea04b3b8e079285e","brief":"1facf4d802ec62b5aa280eddda51ed3605e3de4b","at":"2026-10-29T15:11:51.943Z"}
+
+## Findings
+1. blocking — brief:99 [severity: S1] The claim "Captures from the final D-135 prototype" is false evidence. `capture-shots.mts` serves `proto-repo/apps/web/dist` through `startServed`, and that bundle is `index-B9qJlN9f.js`, built at 21:09:59. That is before the D-135 commits; `series-builds.txt` and `w409-served-final.out` build `index-CY_pCz6r.js`. Its counter is still the round-1 rule, `new Set([...e.opera.map(e=>e.id),...e.petitiones.map(e=>e.opus)]).size`. So the 22:11 PNGs show the badge D-135 overruled: "Inbox 12" on board-many-1280-expanded.png, where D-135 gives 5 (W-506..509 and W-500), and "Inbox 2" on board-sample-1280-expanded.png, where D-135 gives 1. These are the screens the Patron approves. Replacement text: "Captures from the final D-135 prototype (bundle rebuilt at 2ebb2b8d before capture; the capture log names the bundle hash `index-CY_pCz6r.js`) cover sample data, no waiting opera and many asks at 1280 expanded/collapsed, 640 and 390. The shell badge reads `1` for the sample and `5` for many asks, and the inspected geometry retains the W-406 cue and W-415 shell." [design: keeps] [class: evidence×stale-artifact-cited-as-current] — check: none: capture-shots.mts runs `npm run -s build` in the same tree and prints the served bundle hash, matched against series-builds.txt's final hash
+2. advisory — brief:94 [severity: S2] "the sample shell badge remains `2` for the two linked Inbox-question opuses (A-1/W-004 and A-2/W-007)" is wrong. A-2 is `state: awaiting_reply` (examples/sample-studio/petitiones/A-2.md), and `needsYou()` (apps/server/src/store.ts:440) keeps only `needs_you`. The sample badge is therefore `1` today (`petitiones.length`) and `1` under D-135. The `2` repeats the stale capture in finding 1. Replacement text: "The known visual flip is W-350 `the live screens match their fixed desktop and phone initial-view baselines`. Under D-135 the sample shell badge stays `1` (only A-1/W-004 is an open `needs_you` question; A-2 is `awaiting_reply` and is not served), while the Board gains W-007 membership and ask-kind lines. W-409 neither edits nor recaptures committed baselines; its review PNGs stay under `/home/edckt/.bisellium-evidence/W-409-spec/shots/`." [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/tests-serve/screenshots.spec.ts W-350 baseline row
+
+## Earlier findings
+- ci/W-409-spec-2.log #1: closed — prototype.mbox:520 `needsYouTotal` now keys an absent `opus` as `petitio:<id>` and a linked one as `opus:<opus>`. W-409-b2 asserts "two unlinked open petitiones count two" (prototype.mbox:392), and d135/kill-unlinked.out fails it. Brief lines 49 and 69 state the limit and the domain row. A YAML `opus: null` is still rejected upstream by check.ts:740 (`str(null)` is undefined, so it blocks), so the limit holds.
+
+## Verdict
+The round-2 blocker is closed and D-135 is implemented correctly in source and in the served rows. The review captures, however, were taken from a stale pre-D-135 bundle and show the overruled badge (12 and 2 instead of 5 and 1), so brief line 99's evidence is false. Rebuilding and recapturing fixes it without changing the design.
+VERDICT: FAIL

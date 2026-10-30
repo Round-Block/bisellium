@@ -8,6 +8,7 @@ import { Board } from "./screens/Board.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
 import { fetchInbox, hasToken, setUnauthorizedListener } from "./api.js";
 import { READY, type ScreenStatus } from "./lib/screenState.js";
+import { needsYouTotal } from "./lib/board.js";
 
 function currentHash(): string {
   return typeof window === "undefined" ? "" : window.location.hash;
@@ -87,7 +88,7 @@ export function App() {
       return;
     }
     fetchInbox()
-      .then((r) => setNeedsYouCount(r.petitiones.length))
+      .then((r) => setNeedsYouCount(needsYouTotal(r)))
       .catch(() => undefined);
   }, [route]);
 

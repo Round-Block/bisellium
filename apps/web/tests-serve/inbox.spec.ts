@@ -188,7 +188,7 @@ test("W-345-b6 Defer sends ask-back verdict text and success names the open reco
   try {
     await signIn(page, served.baseURL, served.token);
     const badge = page.locator(".sidebar__badge");
-    await expect(badge).toHaveText("2");
+    await expect(badge).toHaveText("1");
     const buttons = page.locator(".inbox__btn-action");
     await expect(buttons).toHaveCount(4);
     await expect(page.getByRole("button", { name: "delegate" })).toBeDisabled();

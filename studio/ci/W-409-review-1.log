@@ -1,0 +1,22 @@
+# opus: W-409
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18a3a-49de-7111-b6af-868d3b61a2eb
+# outcome: failed
+# at: 2026-10-30T00:35:41.167Z
+# tree: tree:98db4baf84a1e6f8a4dbeda41a541e55fccff05e
+# ui_input: ci/W-409-spec-7.log
+# design_digest: sha256:e0eb488cef5c64e2da5e08cc97157418f8a546eb9427b7a7a003105e7fcd1383
+# ticket: {"opus":"W-409","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-409/studio","head":"b00c590e4d50f529c47ecb4e64639501f9c7ece9","brief":"55464fe434802edb1d3df1ead0694bd271b819a1","at":"2026-10-30T00:33:57.031Z"}
+
+## Findings
+1. blocking — apps/web/src/lib/board.ts:154 A pending human gate is suppressed whenever the same opus has a linked Inbox decision, so both card copies report only the Inbox ask despite combinations being explicitly recognized at brief:65. [severity: S1] [class: tests×tests-that-agree-with-the-bug] — check: apps/web/test/w409.test.ts W-409-b3 and apps/web/tests-serve/w409.spec.ts W-409-b3: combine a pending human gate with a linked decision and assert both labels on both copies
+
+## UI input disposition
+The authoritative ui-lead input passed the revised title clamp, and all eight attached desktop/phone captures confirm sound responsive hierarchy, legibility, containment, overflow cues, and scan order. They expose no visual blocker, but do not exercise the combined human-gate and Inbox-decision case above.
+
+## Verdict
+The responsive presentation and required evidence are otherwise sound, but an accepted ask-kind combination is misclassified, so this round fails.
+VERDICT: FAIL
