@@ -1,0 +1,58 @@
+# behaviour: 1
+# command: npx playwright test --config=apps/web/playwright.serve.config.ts --grep W-446-b1\s
+# exit: 1
+# at: 2026-10-30T01:42:50.001Z
+# sella: architect
+# tree: tree:ba5dfdd4b8819370d17f58f3ae6df0d34d94029e
+# ticket: {"opus":"W-446","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-446/studio","head":"a3bac52fd1c23a9329866fa037d2bacb9660399b","brief":"ca24f6777af9e5e63cd8abcf9d96e474468d5e03","at":"2026-10-30T01:42:49.937Z"}
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.39 kB │ gzip:  0.26 kB
+dist/assets/IBMPlexMono-Regular-DMJ8VG8y.woff2       14.70 kB
+dist/assets/InstrumentSans-Medium-BbzFLZTg.woff2     30.09 kB
+dist/assets/BricolageGrotesque-Bold-DLoelf7F.woff2   41.34 kB
+dist/assets/index-1amO6Sd_.css                       33.12 kB │ gzip:  6.33 kB
+dist/assets/index-CTjhvOq6.js                       278.97 kB │ gzip: 86.82 kB
+
+✓ built in 182ms
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › apps/web/tests-serve/w446.spec.ts:28:1 › W-446-b1 a Board track press after a scroll to the left terminal jumps to its centred offset when the cue repaints late (6.2s)
+
+
+  1) [chromium] › apps/web/tests-serve/w446.spec.ts:28:1 › W-446-b1 a Board track press after a scroll to the left terminal jumps to its centred offset when the cue repaints late 
+
+    Error: 1280: track press jumps to its centred proportional offset
+
+    1280: track press jumps to its centred proportional offset
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1
+    Received:    1089.9951491632307
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      80 |   const availableTrack = track!.width - terminalThumb!.width;
+      81 |   const expectedTrackScroll = Math.min(maxScroll, Math.max(0, (trackPressX - track!.x - terminalThumb!.width / 2) * maxScroll / availableTrack));
+    > 82 |   await expect.poll(async () => Math.abs(await columns.evaluate((node) => (node as HTMLElement).scrollLeft) - expectedTrackScroll), "1280: track press jumps to its centred proportional offset").toBeLessThanOrEqual(1);
+         |                                                                                                                                                                                                   ^
+      83 |   expect(await page.evaluate(() => (window as unknown as { w446Held?: number }).w446Held), "1280: the fixture held the cue's scroll update once").toBe(1);
+      84 | });
+      85 |
+        at /home/edckt/agents/bisellium/.worktrees/W-446/apps/web/tests-serve/w446.spec.ts:82:195
+
+    Error Context: apps/web/test-results/w446-W-446-b1-a-Board-trac-2c1bb--when-the-cue-repaints-late-chromium/error-context.md
+
+  1 failed
+    [chromium] › apps/web/tests-serve/w446.spec.ts:28:1 › W-446-b1 a Board track press after a scroll to the left terminal jumps to its centred offset when the cue repaints late 
+
+TAP version 13
+1..1
+not ok 1 - chromium › w446.spec.ts › W-446-b1 a Board track press after a scroll to the left terminal jumps to its centred offset when the cue repaints late
