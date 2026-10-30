@@ -33,6 +33,7 @@ async function installFixture(page: Page, fixture: Fixture): Promise<void> {
   await page.route("**/api/officina", (route) => route.fulfill({ json: officina }));
   await page.route("**/api/opera", (route) => route.fulfill({ json: fixture.opera }));
   await page.route("**/api/inbox", (route) => route.fulfill({ json: fixture.inbox }));
+  await page.route("**/api/events?item=*", (route) => route.fulfill({ json: [] }));
 }
 
 async function waitingLabelGeometry(page: Page): Promise<{ belowDelta: number; rightDelta: number; inlineGap: number; verticalOverlap: number }> {
@@ -302,6 +303,46 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     }
     many.opera = manyOpera;
     many.inbox = manyInbox;
+  }
+});
+
+test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390", async ({ page }) => {
+  served = await startServed("w463-b4");
+  const fixture: Fixture = {
+    opera: [makeOpus("W-1", "backlog"), makeOpus("W-2", "done"), makeOpus("W-8", "unknown", { patron: { status: "pending" } })],
+    inbox: { opera: [], petitiones: [] },
+  };
+  await installFixture(page, fixture);
+
+  for (const width of [1280, 390] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${served.baseURL}/?w463=b4-${width}#/board`);
+    const entry = page.getByRole("button", { name: "Open W-1 W-1 title: Greenlight" });
+    const lifecycle = page.locator('[data-card-id="W-1"]');
+    await expect(entry, `${width}: accessible name carries the opus and ask`).toBeVisible();
+    await expect(lifecycle, `${width}: the same opus retains its lifecycle card`).toHaveCount(1);
+
+    await entry.focus();
+    await expect(entry).toBeFocused();
+    const focus = await entry.evaluate((node) => ({ style: getComputedStyle(node).outlineStyle, width: getComputedStyle(node).outlineWidth }));
+    expect(focus.style, `${width}: focus ring is visible`).not.toBe("none");
+    expect(focus.width).toBe("2px");
+    await entry.click();
+    await expect(page.getByRole("dialog", { name: "W-1 title" }), `${width}: pointer opens the existing Board drawer`).toBeVisible();
+    await page.getByRole("button", { name: "close" }).click();
+
+    for (const keyboard of ["Enter", "Space"]) {
+      await entry.focus();
+      await entry.press(keyboard);
+      await expect(page.getByRole("dialog", { name: "W-1 title" }), `${width}: ${keyboard} activates the native button`).toBeVisible();
+      await page.getByRole("button", { name: "close" }).click();
+    }
+
+    const unplaced = page.getByRole("button", { name: "Open W-8 W-8 title: Human gate" });
+    await expect(page.locator('[data-card-id="W-8"]'), `${width}: unplaced has no lifecycle card`).toHaveCount(0);
+    await unplaced.click();
+    await expect(page.getByRole("dialog", { name: "W-8 title" }), `${width}: unplaced waiting entry opens the existing drawer`).toBeVisible();
+    await page.getByRole("button", { name: "close" }).click();
   }
 });
 
