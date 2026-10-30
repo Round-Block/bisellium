@@ -1,0 +1,44 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-443-b1\s --import tsx packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-30T01:20:04.190Z
+# sella: architect
+# tree: tree:50b0ff692b2394bcaeb75fc1a656e2f1245d8049
+# ticket: {"opus":"W-443","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-443/studio","head":"fe46afc91d73b66c3fe6846da36fd6487a646cf7","brief":"ad6ee59d218f77f6785f86a2ac9f56dd0714d4a2","at":"2026-10-30T01:20:04.071Z"}
+
+TAP version 13
+# Subtest: W-443-b1 behaviour 1: brief admission reads each behaviour's written red command as the replay reads it, and the evidence its genuine red cites
+not ok 1 - W-443-b1 behaviour 1: brief admission reads each behaviour's written red command as the replay reads it, and the evidence its genuine red cites
+  ---
+  duration_ms: 10.260501
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-443/packages/cli/src/verdict-citation.test.ts:89:1781'
+  failureType: 'testCodeFailure'
+  error: |-
+    brief-admission exports redEvidence
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-443/packages/cli/src/verdict-citation.test.ts:1473:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1624.336116

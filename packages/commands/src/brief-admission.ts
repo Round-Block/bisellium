@@ -707,3 +707,67 @@ export function evidenceRoots(briefText: string): string[] {
     for (const [, span] of line.matchAll(/`([^`\r\n]+)`/g)) if (/^(?:\/|~\/)\S*\/$/.test(span!)) roots.add(span!);
   return [...roots];
 }
+
+/** W-443: moved unchanged from `packages/cli/src/prototype-replay.ts` (W-326), so the spec verdict reads a red command with
+ *  the replay's own reader. */
+/** The characters a red command word may hold outside single quotes: no shell expansion, quoting or redirection. */
+const PLAIN = /^[A-Za-z0-9_./=:@%+,^-]$/;
+
+/** The words of a red command: space-separated, single-quoted text taken literally, nothing else a shell would read. */
+export function commandWords(text: string): string[] | { error: string } {
+  const out: string[] = [];
+  let cur = "";
+  let word = false;
+  let quoted = false;
+  for (const ch of text) {
+    if (quoted) {
+      if (ch === "'") quoted = false;
+      else cur += ch;
+    } else if (ch === "'") {
+      quoted = true;
+      word = true;
+    } else if (ch === " ") {
+      if (word) out.push(cur);
+      cur = "";
+      word = false;
+    } else if (PLAIN.test(ch)) {
+      cur += ch;
+      word = true;
+    } else return { error: `the red command holds ${JSON.stringify(ch)} outside single quotes` };
+  }
+  if (quoted) return { error: "the red command has an unclosed single quote" };
+  if (word) out.push(cur);
+  if (out.length === 0 || out.some((w) => w === "" || /\s/.test(w))) return { error: "the red command has an empty word or one holding whitespace" };
+  return out;
+}
+
+/** Behaviour k's red command: the words after " -- " in its one code span that opens "bisellium red <id> --behaviour <k> ",
+ *  read from admission's own items (`behaviourItems`: one parser of the behaviours section, W-140). */
+export function redCommand(brief: string, id: string, k: number): string[] | { error: string } {
+  const items = behaviourItems(brief);
+  const opening = `bisellium red ${id} --behaviour ${k} `;
+  const spans = (items[k - 1] ?? []).flatMap((l) => [...l.matchAll(/`([^`]+)`/g)].map((m) => m[1]!)).filter((s) => s.startsWith(opening));
+  if (spans.length !== 1) return { error: `behaviour ${k} names ${spans.length} red commands opening "${opening.trim()}", want one` };
+  const at = spans[0]!.indexOf(" -- ");
+  if (at === -1) return { error: `behaviour ${k}'s red command has no " -- " before its command` };
+  return commandWords(spans[0]!.slice(at + 4));
+}
+
+/** W-443 (D-076 D): the evidence behaviour k's genuine red cites: every backticked span on the item's real lines (`behaviourItems`),
+ *  from the line holding its `**Genuine red:**` marker to the item's end, that is an evidence citation (`EVIDENCE_CITE`, a
+ *  `:<n>` suffix split off) and not a directory (ending in `/`), each once, in brief order. The red command's own span
+ *  (opening `bisellium red `) is none. Text only: no marker, or no item k, is none. */
+export function redEvidence(briefText: string, k: number): string[] {
+  const lines = behaviourItems(briefText)[k - 1] ?? [];
+  const from = lines.findIndex((l) => /(?<!`)\*\*Genuine red:\*\*/.test(l));
+  const cited = new Set<string>();
+  if (from === -1) return [];
+  for (const line of lines.slice(from))
+    for (const [, span] of line.matchAll(/`([^`\r\n]+)`/g)) {
+      if (span!.startsWith("bisellium red ")) continue;
+      const at = CITE_AT.exec(span!);
+      const path = at ? at[1]! : span!;
+      if (EVIDENCE_CITE.test(path) && !path.endsWith("/")) cited.add(path);
+    }
+  return [...cited];
+}

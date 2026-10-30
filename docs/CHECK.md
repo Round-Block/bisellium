@@ -134,6 +134,18 @@ runs squeezed. The check reads text, not meaning: a claim in any other form, a
 parenthesis's later citations, and whether the claim is true of what the brief
 says, beyond the quoted text being there, stay the spec review's.
 
+**Red commands (W-443, D-076 D).** Where the brief names a prototype, the
+same signer's spec verdict refuses a brief whose written genuine red command is
+not the command its red evidence ran, so a copied command reproduces the red.
+Each behaviour's command (after ` -- ` in its `bisellium red <id> --behaviour
+<k>` span) must read as words a shell passes unchanged: plain characters, or
+text in single quotes. The evidence its genuine red cites (from the marker to
+the item's end: backticked absolute or `~/` paths, or names ending in `.out` or
+`.log`, resolved as a quoted claim's citation is) must hold a file whose header
+(its leading `# ` lines, as `bisellium red` writes) has one `# command:` line,
+and every such line must be those words, space-joined. The working directory
+and environment are not compared.
+
 **Whole-diff promises (W-303, D-070 C).** Where `brief_behaviour_limit` is
 declared, `readBriefAdmission` also refuses a line that promises the whole diff
 is the Files owned or one folder, because the verbs write the officina's

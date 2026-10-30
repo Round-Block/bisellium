@@ -1,0 +1,18 @@
+# opus: W-443
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18b6f-1fa3-7d41-bc67-71cdf84e958f
+# outcome: passed
+# at: 2026-10-30T06:13:11.969Z
+# tree: tree:e602399f24ab121dbfb73771e1259922a630692e
+# brief: briefs/W-443.md blob:ad6ee59d218f77f6785f86a2ac9f56dd0714d4a2
+# ticket: {"opus":"W-443","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-443/studio","head":"08cc8ed2066fac68043524f07dae0117923ae586","brief":"ad6ee59d218f77f6785f86a2ac9f56dd0714d4a2","at":"2026-10-30T06:11:15.608Z"}
+
+## Findings
+No findings
+
+## Verdict
+Both behaviours match the signed brief, the source diff stays within Files owned, and both recorded reds fail by assertion at their red commits. Gate evidence certifies the reviewed source tree.
+VERDICT: PASS
