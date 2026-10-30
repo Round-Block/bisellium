@@ -1044,6 +1044,16 @@ test("W-462-b1 behaviour 1: a PR head the opus branch rewrites with its tree kep
   commit(w.wt, `studio(${OPUS}): a note after the rewrite`);
   const d = next(w, [OPUS]);
   assert.deepEqual([d.first, w462Why(d)], [`next: ${OPUS} pr held`, `why: ${BRANCH} ${w462Short(tipOf(w))} rewrites PR #${PR_NUMBER}'s reviewed head ${w462Short(reviewed)} and changes its tree outside the source: a rewrite keeps the reviewed tree (W-462); commit the record after the Patron's push`], ran("a changed record tree is held", d));
+
+  // (e) a long worktree path: the Patron's one command is printed whole, never cut at the output bound
+  const long = w462World(`w462-b1-${"long-".repeat(48)}`);
+  const longTree = w462Tree(long.w, long.reviewed);
+  const longHead = w462Commit(long.w, `${long.reviewed}~1`, `feat(${OPUS}): the implementation (rewritten)`, longTree);
+  w462Move(long.w, longHead);
+  const e = performPr(long.w);
+  const plain = `patron: git -C ${long.w.wt} push --force-with-lease=refs/heads/${BRANCH}:${long.reviewed} origin ${longHead}:refs/heads/${BRANCH}`;
+  assert.ok(plain.length > 1000, `the fixture's command is over the output bound (${plain.length})`);
+  assert.deepEqual(w462Patron(e), [plain], ran("a long worktree path leaves the Patron's command whole", e));
 });
 
 test("W-462-b2 behaviour 2: the rewrite perform builds every commit and replays every red as certify does before it asks the Patron", { timeout: 600_000 }, () => {
