@@ -131,3 +131,62 @@ test("W-472-b1 behaviour 1: every writer that files an opus refuses a title over
   const short = quiet(() => runRetro(["--opus", "W-1", "--from", triage("add the x row"), "--studio", r, "--now", "2026-10-06T14:00:00Z"]));
   assert.equal(short.code, 0, `retro files a short fix title: ${short.err}`);
 });
+
+test("W-472-b2 behaviour 2: new --description writes the long text below the front matter, and the served API carries it", async () => {
+  const root = officina();
+  const text = "The long text: a title is at most 8 words (Patron 10-30).\n\nIt moves here, and the Board drawer shows it.";
+  const filed = quiet(() => runNew(newArgs(root, "short task titles", "--description", text)));
+  assert.equal(filed.code, 0, `--description is accepted: exit ${filed.code} ${filed.err}`);
+  const id = filed.out.trim();
+  const bytes = readFileSync(join(root, "opera", `${id}.md`), "utf8");
+  assert.equal(bytes.slice(bytes.indexOf("\n---\n") + 5), `${text}\n`, "the description is the record body, verbatim, with one closing LF");
+  assert.equal(bytes.slice(0, bytes.indexOf("\n---\n")).includes("description"), false, "no description: field in the front matter");
+  const checked = checkStudio(root, NOW).findings.filter((f) => f.where === `opera/${id}.md`);
+  assert.deepEqual(checked, [], "the record passes check");
+
+  const kept = quiet(() => runNew(newArgs(root, "ends with a newline", "--description", "one line\n")));
+  assert.equal(kept.code, 0, "a description ending in LF is accepted");
+  const keptBytes = readFileSync(join(root, "opera", `${kept.out.trim()}.md`), "utf8");
+  assert.equal(keptBytes.slice(keptBytes.indexOf("\n---\n") + 5), "one line\n", "a closing LF is not doubled");
+
+  const before = snapshot(root);
+  for (const [bad, why, message] of [
+    ["   \n ", "blank", "description must be nonblank; omit --description for none"],
+    ["text\rmore", "carriage return", "description contains forbidden control U+000D"],
+    ["text\u0000more", "NUL", "description contains forbidden control U+0000"],
+    ["text\u0085more", "C1 control", "description contains forbidden control U+0085"],
+  ] as const) {
+    const refused = quiet(() => runNew(newArgs(root, "refused description", "--description", bad)));
+    assert.equal(refused.code, 1, `the ${why} description is refused: exit ${refused.code}`);
+    assert.equal(refused.err, `--description: ${message}`, `the ${why} description names the flag and the fault`);
+  }
+  assert.equal(snapshot(root), before, "a refused description writes nothing");
+
+  // the served API: a copy of the sample officina, a record filed with a description, GET /api/opera
+  const served = join(mkdtempSync(join(tmpdir(), "w472-serve-")), "studio");
+  dirs.push(dirname(served));
+  cpSync(join(REPO, "examples", "sample-studio"), served, { recursive: true });
+  const added = quiet(() => runNew(["--kind", "task", "--collegium", "engineering", "--title", "served description", "--description", text, served]));
+  assert.equal(added.code, 0, `the sample officina takes a described record: ${added.err}`);
+  const lines: string[] = [];
+  const log0 = console.log;
+  console.log = (...a: unknown[]) => void lines.push(a.join(" "));
+  const env0 = process.env["NODE_ENV"];
+  process.env["NODE_ENV"] = "test";
+  let started: Awaited<ReturnType<typeof runServe>>;
+  try {
+    started = await runServe(["--studio", served, "--port", "0", "--once"], { now: NOW });
+  } finally {
+    console.log = log0;
+  }
+  try {
+    const port = Number(/listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(lines.join("\n"))?.[1]);
+    const opera = (await (await fetch(`http://127.0.0.1:${port}/api/opera`)).json()) as { id: string; body: string }[];
+    // the store drops the closing LF as file framing (apps/server/src/store.ts readOpusBody), so the body is the text itself
+    assert.equal(opera.find((o) => o.id === added.out.trim())?.body, text, "GET /api/opera carries the description as the record's body");
+  } finally {
+    await started.close?.();
+    if (env0 === undefined) delete process.env["NODE_ENV"];
+    else process.env["NODE_ENV"] = env0;
+  }
+});
