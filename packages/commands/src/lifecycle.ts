@@ -33,6 +33,7 @@ import {
   parseVerdictHeader,
   readContainedRegularFile,
   titleProblem,
+  titleWordsProblem,
   utcTimestampProblem,
   validateNativeRecord,
   validateRecordReferences,
@@ -1659,7 +1660,8 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
 
   // check.ts:432 requires a non-empty title — refused here at the source
   // rather than leaving it to a later opus.keys finding.
-  const amendTitleProblem = titleFlag === undefined ? undefined : titleProblem(titleFlag);
+  // W-472: and a title of more than TITLE_MAX_WORDS words, before the record is read.
+  const amendTitleProblem = titleFlag === undefined ? undefined : (titleProblem(titleFlag) ?? titleWordsProblem(titleFlag));
   if (amendTitleProblem) {
     console.error(`amend: --title ${amendTitleProblem}`);
     return { exitCode: 2 };
