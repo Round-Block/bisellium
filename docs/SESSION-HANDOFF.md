@@ -28,6 +28,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 - A publish refused for a newer live version is a version conflict, not a permission refusal: read the live page, merge, publish. Status republish: Read all of the saved live page first (until W-283). Done reads certify's certificate from its check run (W-370, W-396); a merge commit without one falls back to the artifact host, named once if refused (never a wildcard or a settings edit, D-106 C).
 - Merge: the ladder-runner enqueues with `--max-polls 2`; the orchestrator waits on isInMergeQueue until W-372. Codex UI builders get `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 lands (D-106 D).
 - Never ff master by hand in the main checkout (read-only packages/ breaks it half-way); the performs' guard sync moves it (no tracked edits, no colliding untracked files).
+- docs/SESSION-HANDOFF.md is not in source_excludes: a handoff edit moves the source tree a ui opus's master verify certifies. Land handoff edits before a ui verify starts, never between verify and done.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and the daily retro.
 - Records dates are UTC; the Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the first opus after W-292.
@@ -48,7 +49,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight, outside the ranking: W-408 — master verify failed, being diagnosed (see current-state); W-446 — done after W-408 lands.
+In flight, outside the ranking: W-408 — verified at a7db4a64 and ruled (D-141), but a docs/SESSION-HANDOFF.md edit moved master's source tree, so done needs a re-verify and a new ruling (see current-state); W-446 — done after W-408.
 1. W-444 — reply length Stop hook: a reply over 200 words or without the usage reading is refused (Patron 10-30)
 2. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-30: clean code first) `next.ts`
 3. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
