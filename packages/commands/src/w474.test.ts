@@ -210,4 +210,7 @@ test("W-474-b3 behaviour 3: run --scratch refuses the next copy when the folder 
     assert.ok(r.status === 2 && r.stderr.split("\n")[0] === first, `${what} refuses with exit 2 and its reason first`);
     assert.ok(!existsSync(marker) && readdirSync(folder).length === 0, `${what}: nothing runs and no copy is made`);
   }
+  const unknown = cli(REPO, ["--scratch", folder, "--no-such-flag", ...cmd]);
+  assert.ok(unknown.status === 2 && unknown.stderr.split("\n")[0] === "bisellium run --scratch: --no-such-flag does not go with --scratch", "an unknown flag refuses with exit 2 and the scratch reason first");
+  assert.ok(!existsSync(marker) && readdirSync(folder).length === 0, "an unknown flag: nothing runs and no copy is made");
 });
