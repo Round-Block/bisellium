@@ -144,6 +144,19 @@ export function titleWordsProblem(value: unknown): string | undefined {
   return words > TITLE_MAX_WORDS ? `title has ${words} words, at most ${TITLE_MAX_WORDS}; put the rest in the description` : undefined;
 }
 
+/** W-472: why a `new --description` value cannot be a record's description, or undefined: it must hold a non-space
+ *  character, and no C0 or C1 control (DEL included) other than TAB and LF. Its bytes are written verbatim below the
+ *  front matter. */
+export function descriptionProblem(value: string): string | undefined {
+  if (value.trim() === "") return "description must be nonblank; omit --description for none";
+  for (const char of value) {
+    const cp = char.codePointAt(0)!;
+    if ((cp <= 0x1f && cp !== 0x09 && cp !== 0x0a) || (cp >= 0x7f && cp <= 0x9f))
+      return `description contains forbidden control U+${cp.toString(16).toUpperCase().padStart(4, "0")}`;
+  }
+  return undefined;
+}
+
 function leap(year: number): boolean {
   return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 }

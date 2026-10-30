@@ -9,7 +9,7 @@
 export const USAGE =
   "usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n" +
   "       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n" +
-  "       bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]\n" +
+  "       bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--description <text>] [--brief] [dir]\n" +
   "       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]\n" +
   "       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]\n" +

@@ -397,7 +397,7 @@ Legacy absence is valid and is never reconstructed from mtime or event logs.
 Creation accepts hierarchy fields directly:
 
 ```bash
-npm run bisellium -- new --kind <kind> --collegium <id> --title <title> [--arc <W-id>] [--parent <W-id>] [--spec <path>] [--brief] [studio]
+npm run bisellium -- new --kind <kind> --collegium <id> --title <title> [--arc <W-id>] [--parent <W-id>] [--spec <path>] [--description <text>] [--brief] [studio]
 ```
 
 Every W-096 reference read—opus, arc/parent, brief, UI log and decision—is a
