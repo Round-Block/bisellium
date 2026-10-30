@@ -1,0 +1,19 @@
+# opus: W-466
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18b0d-4d6d-7660-97f7-ef6922f03faf
+# outcome: passed
+# at: 2026-10-30T04:26:31.140Z
+# tree: tree:2cdb64e940f943ee2feb64f0e9d93d1bddd69e0e
+# brief: briefs/W-466.md blob:3aecd2c5f07e550c78aa3b1dc7cc752aed34d04d
+# ticket: {"opus":"W-466","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-466/studio","head":"13f6cf06d2a2f11c4067ee95e43668e6ef34de14","brief":"3aecd2c5f07e550c78aa3b1dc7cc752aed34d04d","at":"2026-10-30T04:24:25.953Z"}
+
+## Findings
+1. advisory — docs/PIPELINE.md:128 “however loud” overstates the guarantee: a captured stderr stream exceeding `runWatched`’s 64 MiB cap triggers `ENOBUFS` and can kill the gate before W-466’s blocks are emitted. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/pipeline/test/gate-timeout.test.ts
+2. advisory — packages/pipeline/test/gate-timeout.test.ts:125 The fixture emits one small, newline-terminated stdout write, so row b1 does not pin the declared handling of lines or multibyte characters split across chunks; the implementation handles these correctly, making this incomplete regression coverage only. [severity: S4] [class: tests×ruled-case-uncovered] — check: packages/pipeline/test/gate-timeout.test.ts
+
+## Verdict
+Both numbered behaviours are implemented correctly, the reds fail by assertion, and the source diff stays within Files owned. The advisory boundary wording and coverage gap do not fail the round.
+VERDICT: PASS

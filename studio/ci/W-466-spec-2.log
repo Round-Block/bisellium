@@ -1,0 +1,20 @@
+# opus: W-466
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18af6-ec61-7410-bcff-9b3fdca9be0f
+# outcome: passed
+# at: 2026-10-30T04:04:24.565Z
+# tree: tree:43fa7314619f74aa4c1ff85426a5342df5456d90
+# brief: briefs/W-466.md blob:3aecd2c5f07e550c78aa3b1dc7cc752aed34d04d
+# ticket: {"opus":"W-466","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"42282f9655a596c6dccb22b4a0d243fa4d3a3d6f","brief":"3aecd2c5f07e550c78aa3b1dc7cc752aed34d04d","at":"2026-10-30T04:04:19.860Z"}
+
+## Findings
+1. advisory — brief:60 [severity: S2] The promise says “however loud” the suite’s stderr, but unchanged `runWatched` kills a gate with `ENOBUFS` once either captured stream passes 64 MiB, before W-466’s blocks are guaranteed. Replace brief:60 with “- Unchanged code the promises lean on is a stated limit, not a guarantee (D-076 E): `localPipeline`, its `tail` and `redact`, `runWatched` (whose existing 64 MiB cap per captured stream kills the gate with `ENOBUFS` before W-466’s blocks are guaranteed), `verify`’s `printLogTail`, `ci.ts`’s `TEST_READS`, `scripts/no-vendor.mjs`’s `runOnce`, `scripts/ci-scope.mjs` and `scripts/record-reads.mjs`.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/pipeline/test/gate-timeout.test.ts
+2. advisory — brief:110 [severity: S2] The fixture does not keep the report to itself: brief:46 specifies that `check` re-emits the exact report in a `PASS` line on suite stdout. Replace brief:110 with “3. **The row-3 fixture’s fake vendor-spend report no longer leaks as raw stderr; it is piped and re-emitted only inside a `PASS` check detail on stdout**, so it is identified as fixture evidence rather than a real alarm. Agree?” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/pipeline/test/gate-timeout.test.ts
+3. advisory — brief:73 [severity: S4] The Input domain omits the readers added by the two `gate-timeout.test.ts` rows, although their file and subprocess failures do fail closed. Replace brief:73 with “| The W-466 test rows’ inputs: copied `test-reads.mjs`, `record-reads.mjs` and `ci-scope.mjs`; generated `studio/x.md` and `lines.json`; the `localPipeline.run` result and log; and the direct `node scripts/test-reads.mjs` and `node scripts/no-vendor.test.mjs 9` results | readable fixture files, `lines.json` as a JSON string array, and the statuses/stdout/stderr/log shapes specified by behaviours 1 and 2 | `copyFileSync`, `readFileSync` and `JSON.parse` throw on invalid files; `assert.equal`, `assert.ok`, `assert.deepEqual`, `assert.match` and `assert.doesNotMatch` reject every unexpected result and fail the row |” followed by the current reused-gates row verbatim. [class: spec×input-domain-missing-or-unenforceable] — check: none: brief admission should require an Input-domain row for readers added in owned test files
+
+## Verdict
+The brief is feasible with these advisory boundary and wording corrections, so it passes.
+VERDICT: PASS

@@ -1,0 +1,25 @@
+# opus: W-466
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T03:59:15.697Z
+# tree: tree:43fa7314619f74aa4c1ff85426a5342df5456d90
+# brief: briefs/W-466.md blob:3aecd2c5f07e550c78aa3b1dc7cc752aed34d04d
+# ticket: {"opus":"W-466","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"42282f9655a596c6dccb22b4a0d243fa4d3a3d6f","brief":"3aecd2c5f07e550c78aa3b1dc7cc752aed34d04d","at":"2026-10-30T03:59:08.146Z"}
+
+# W-466 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-466.md revision 1, prototyped over master 42282f96 (series 3ef9f344, prototype.mbox sha256 b4be2150e840134bbc5e4e395ec46be22b155f27e159f29a6a8ce91746b503f5); evidence in /home/edckt/.bisellium-evidence/W-466-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-466-spec/promise-ledger.md
+
+Checked: the two reds fail by assertion on their red commits and on master's source and are accepted by the replay classifier (red-accept.out); each row passes at its stage; eleven source kills fail their row at the assertion they guard (kills.out); lint, format, typecheck, the neighbouring test files whole and both officina checks (0 blocking) pass on stage 2 (gates-proto.out); every series commit builds the web bundle and typechecks (series-builds.out); admission returns no problem (admission.out); W-445's evidence-claim check returns no problem (dogfood.out). The Codex test check (fixture-census.md) lists no flipped row and nothing unnamed. No Files owned path is code-owned; scripts/ci-certify.mjs is not touched, and certify does not run scripts/test-reads.mjs, so no split landing. The cause (c) was not reproduced (repro/next-1.exit: the next-* group passed 191 of 191) and is stated as a limit and a Default, not guessed.
+
+## Findings
+1. advisory — the intermittent failure's cause is not fixed; the brief states it as a limit and Defaults item 2, to be fixed in a follow-up once a failing log names the test — check: repro/next-1.exit:3
+2. advisory — only node scripts/test-reads.mjs prints the failing-lines blocks; a bare verify or certify's mint running plain npm test keeps today's 200-line log, stated on Promise blocks — check: test-reads.mjs:97 (stage 2)
+
+## Verdict
+passed — a failing tests gate under ci --opus now ends its log with the suite's failing lines and last stdout lines, inside the 200-line tail, and the no-vendor row-3 fixture's sentinel report is piped and asserted instead of leaking; the cause of the intermittent failure is honestly left to a follow-up.

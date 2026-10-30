@@ -2,11 +2,15 @@
  * W-142 behaviour 1: the gate timeout is one exported constant with headroom
  * over the slowest measured suite run. node:test TAP; selected by
  * `--test-name-pattern=W-142-b1`.
+ *
+ * W-466 adds two rows on the tests gate's log (`--test-name-pattern='^W-466-b1\s'`, `'^W-466-b2\s'`).
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import * as pipeline from "../src/index.js";
 
@@ -113,4 +117,87 @@ test("W-313-b1 behaviour 1: a watched run prints its start, a progress line each
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// W-466 (studio/briefs/W-466.md): the tests gate runs `node scripts/test-reads.mjs`, whose log keeps the last 200 lines of
+// stdout then stderr. The fixture suite prints its failing row on stdout, then 400 lines on stderr, as the real suite does.
+const SCRIPTS = fileURLToPath(new URL("../../../scripts/", import.meta.url));
+const W466_SUITE = `const fs = require("node:fs");
+fs.readFileSync(__dirname + "/studio/x.md");
+const lines = JSON.parse(fs.readFileSync(__dirname + "/lines.json", "utf8"));
+fs.writeSync(1, lines.map((l) => l + "\\n").join(""));
+fs.writeSync(2, Array.from({ length: 400 }, (_, i) => "stderr noise " + (i + 1) + "\\n").join(""));
+process.exitCode = Number(process.argv[2]);
+`;
+
+/** A scratch checkout holding scripts/test-reads.mjs and the two scripts it runs, `studio/x.md`, and a package.json whose
+ *  `test` and `test:record` read it, print `lines` on stdout and 400 lines on stderr, and exit `code` (W-335's shape). */
+function w466Checkout(lines: string[], code: number): string {
+  const dir = mkdtempSync(join(tmpdir(), "w466-"));
+  mkdirSync(join(dir, "scripts"));
+  for (const name of ["test-reads.mjs", "record-reads.mjs", "ci-scope.mjs"]) copyFileSync(join(SCRIPTS, name), join(dir, "scripts", name));
+  mkdirSync(join(dir, "studio"));
+  writeFileSync(join(dir, "studio", "x.md"), "x\n");
+  writeFileSync(join(dir, "w466.test.cjs"), W466_SUITE);
+  writeFileSync(join(dir, "lines.json"), JSON.stringify(lines));
+  const test = `node w466.test.cjs ${code}`;
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "w466", private: true, scripts: { test, "test:record": test } }));
+  return dir;
+}
+
+/** npm's update notice is its own stderr, printed on some runs and not others. */
+const QUIET_NPM = { npm_config_update_notifier: "false" };
+
+async function w466Gate(dir: string): Promise<{ status: string | undefined; log: string }> {
+  const logDir = join(dir, "studio", "ci");
+  const gates = await pipeline.localPipeline.run({ opus: { id: "W-466" } as never, repo: dir, commands: { tests: "node scripts/test-reads.mjs" }, commandEnv: { tests: QUIET_NPM }, treeHash: "0123456789abcdef0123456789abcdef01234567", logDir, now: new Date("2026-10-30T00:00:00Z"), studioDir: join(dir, "studio") });
+  return { status: gates.tests?.status, log: readFileSync(join(dir, "studio", gates.tests?.evidence ?? "missing"), "utf8") };
+}
+
+test("W-466-b1 behaviour 1: a failing tests gate's log ends with the suite's failing lines and its last stdout lines, however loud its stderr", async () => {
+  const dirs: string[] = [];
+  try {
+    const passing = Array.from({ length: 300 }, (_, i) => `ok ${i + 1} - passing row ${i + 1}`);
+    const failingLines = ["not ok 301 - W-466 fixture: the failing row", "FAIL  house harness row          detail", "  \u2716 spec reporter row (1.2ms)", "\u2139 fail 1", "# fail 1"];
+    const notFailing = ["  ---", "  error: 'boom'", "  ...", "# fail 0", "\u2139 fail 0", "  ok 302 - an indented ok", "xnot ok 1 - a glued word", "PASS  house harness row", "FAILED is a word"];
+    const lines = ["TAP version 13", ...passing, failingLines[0]!, ...notFailing.slice(0, 3), ...failingLines.slice(1), ...notFailing.slice(3)];
+    const one = w466Checkout(lines, 1);
+    dirs.push(one);
+    const gate = await w466Gate(one);
+    assert.equal(gate.status, "failed", "the failing suite fails the gate");
+    assert.ok(gate.log.includes("\nnot ok 301 - W-466 fixture: the failing row\n"), "the gate log names the failing row");
+    const expected = [`--- npm test failed (exit 1): its last 5 of 5 failing lines on stdout ---`, ...failingLines, "--- npm test: its last 50 lines of stdout ---", ...lines.slice(-50)];
+    assert.deepEqual(gate.log.trimEnd().split("\n").slice(-expected.length), expected, "the log ends with the failing lines in order and the last 50 stdout lines");
+    assert.ok(gate.log.lastIndexOf("\nstderr noise 400\n") < gate.log.lastIndexOf(`\n${expected[0]}\n`), "the blocks follow the suite stderr");
+
+    // more failing lines than the block keeps: the last 50, and the header counts them all
+    const many = Array.from({ length: 120 }, (_, i) => `not ok ${i + 1} - row ${i + 1}`);
+    const two = w466Checkout(["TAP version 13", ...many, "# fail 120"], 1);
+    dirs.push(two);
+    const capped = await w466Gate(two);
+    assert.equal(capped.status, "failed");
+    assert.ok(capped.log.includes(`\n--- npm test failed (exit 1): its last 50 of 121 failing lines on stdout ---\n${[...many.slice(-49), "# fail 120"].join("\n")}\n--- npm test: its last 50 lines of stdout ---\n`), "the last 50 failing lines, counted out of all 121");
+    assert.ok(!capped.log.includes("not ok 71 - row 71\n"), "an earlier failing line is not kept");
+
+    // a passing suite: stdout passes through whole, and stderr ends with the guard, as before
+    const three = w466Checkout(lines, 0);
+    dirs.push(three);
+    const env: NodeJS.ProcessEnv = { ...process.env, ...QUIET_NPM };
+    for (const key of ["NODE_OPTIONS", "BISELLIUM_RECORD_READS", "BISELLIUM_RECORD_ROOT", "BISELLIUM_RECORD_OWNER"]) delete env[key];
+    const green = spawnSync(process.execPath, [join(three, "scripts", "test-reads.mjs")], { cwd: three, env, encoding: "utf8" });
+    assert.equal(green.status, 0, "a passing suite passes");
+    assert.equal(green.stdout.slice(green.stdout.indexOf("TAP version 13\n")), `${lines.join("\n")}\n`, "its stdout passes through whole");
+    assert.doesNotMatch(green.stderr, /--- npm test/, "a passing suite repeats nothing");
+    assert.match(green.stderr.split("\n").slice(-3).join("\n"), /^test-reads: node scripts\/ci-scope\.mjs --check-reads \S+\nrecord_reads=ok\n$/, "its stderr ends with the guard, as before");
+  } finally {
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("W-466-b2 behaviour 2: no-vendor.test.mjs's row-3 fixture reports on its own piped stderr, asserted there, and none of it reaches the suite's stderr", () => {
+  const r = spawnSync(process.execPath, [join(SCRIPTS, "no-vendor.test.mjs"), "9"], { encoding: "utf8", timeout: 120_000 });
+  assert.equal(r.status, 0, "behaviour 9 passes");
+  assert.doesNotMatch(r.stderr, /row3-violation|vendor-spend violation/, "none of the row 3 sentinel report reaches the stderr of behaviour 9");
+  const report = "vendor-sentinel: 1 vendor-spend violation(s) detected:\n  row3-violation\n";
+  assert.ok(r.stdout.split("\n").includes(`PASS  [9] row 3 (W-466): A's own stderr, piped, is exactly its sentinel report of the violation ${JSON.stringify(report)}`), "behaviour 9 asserts the row 3 report on its own pipe, exactly");
 });

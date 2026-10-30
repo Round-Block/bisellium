@@ -121,7 +121,11 @@ the terminal. A waived gate, or a gate whose command differs from the step,
 keeps its step in the loop. For this officina the handed-over steps are
 `npm run -s typecheck`, `npm run -s lint` and `npm test`. A failing gate
 prints its log to stderr after its `failed` line, cut to its last 200 lines
-when longer. Exit codes: 0 every step passed (with `--opus`, `verify`'s own
+when longer. Where `package.json` declares `test:record`, `npm test` runs as
+`node scripts/test-reads.mjs`, which ends a failed run's stderr with the
+suite's last 50 failing lines on stdout (`not ok`, `FAIL`, `✖`, a non-zero
+`# fail` or `ℹ fail`) and its last 50 stdout lines (W-466), so the tests
+gate's log names the failing test however loud the suite's stderr. Exit codes: 0 every step passed (with `--opus`, `verify`'s own
 exit code instead), 1 a step or `--ref`'s install failed, 2 usage error, no
 git repo for `--ref`, or a ref that cannot be checked out; with `--opus`, the
 plan's refusal code before any step.
