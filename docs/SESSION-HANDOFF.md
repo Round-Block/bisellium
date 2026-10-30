@@ -48,9 +48,9 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-1. W-446 — flaky W-406-b1: queued (#886); then done
+1. W-408 — verify failed; see current-state
 2. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
-3. W-443 — merged (#885); then done
+3. W-446 — done after W-408
 4. W-452 — collegium names the owning lead; kind ui retired (D-128), then re-tag
 5. W-455 — symlink cause fix: the containment helper refuses a symlinked final file (high, 10-29). Then W-444 — reply length Stop hook
 6. W-465 — drain before handover; no new task past 250k (high, 10-30); W-436 — open items live in records, not memory or chat (high, 10-28)
