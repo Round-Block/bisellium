@@ -35,7 +35,7 @@ import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
-import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
+import { actionFacts, parseTicketLine, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
@@ -1216,9 +1216,10 @@ export function deriveNext(f: Facts): Derived {
     if (repeat !== undefined) return hold("build", repeat);
     // W-468 (lex §9.0, §9.3): a failed round whose standing blocker cites a red log of this opus not recorded since that round
     // is answered by recording the red again, one behaviour at a time on its own ticket, before the fix check (D-086 D) and
-    // before any fix order; once every cited red is recorded after the round's log, the ladder goes on as before
+    // before any fix order; once every cited red is recorded after the round's log, the ladder goes on as before. Only a round
+    // of the current brief is read (`ofBrief`): a round of another brief, or of none known, follows the review path as before
     const citing = gate !== undefined && gate.status === "failed" ? read.rounds.find((r) => r.n === gate.round) : undefined;
-    const reRed = citing === undefined ? [] : staleCitedReds(id, citing, bs, n);
+    const reRed = citing === undefined || !ofBrief(citing, pin, specRel, bs, id) ? [] : staleCitedReds(id, citing, bs, n);
     if (citing !== undefined && reRed.length > 0)
       return dispatch(f, "reds", `review round ${citing.n} failed citing the red evidence of behaviour(s) ${reRed.join(", ")}, not recorded since ${citing.log}; the red is recorded again before the fix check (W-468)`, {
         phase: "fix",
@@ -1441,6 +1442,24 @@ function staleCitedReds(id: string, round: BuildReviewRound, bs: Src, n: number)
       const at = text === undefined ? undefined : instant(parseLogHeader(text).get("at") ?? "")?.getTime();
       return text === undefined || !usableRed(text) || at === undefined || at <= round.at;
     });
+}
+
+/**
+ * W-468: the failed `round` was recorded against the current brief, so its behaviour numbers are this brief's: its `# brief:`
+ * pin equals `pin` (the current `spec:` pin) exactly; or, when it carries none (a kind: ui build round), the record's `spec:`
+ * is exactly briefs/<id>.md (the brief a ticket hashes) and the round's log has exactly one `# ticket:` line that
+ * `parseTicketLine` accepts and whose `brief` is that pin's blob. Anything else (a custom spec pointer, W-475; no pin, an
+ * unreadable log or brief, no, two or a malformed ticket, a disagreeing pin or blob) is not.
+ */
+function ofBrief(round: BuildReviewRound, pin: string | undefined, specRel: string | undefined, bs: Src, id: string): boolean {
+  if (round.brief !== undefined) return pin !== undefined && round.brief === pin;
+  if (specRel !== briefRel(id) || pin === undefined) return false;
+  const text = bs.read(round.log);
+  if (text === undefined) return false;
+  const p = parseVerdictLog(text, id, round.log);
+  const lines = "error" in p ? [] : (p.headers.get("ticket") ?? []);
+  const t = lines.length === 1 ? parseTicketLine(lines[0]!) : undefined;
+  return t !== undefined && !("error" in t) && pin === `${specRel} blob:${t.brief}`;
 }
 
 /** A red the reds rung counts: an integer, non-zero exit on a clean tree, not a module-load failure. */
