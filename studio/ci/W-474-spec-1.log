@@ -1,0 +1,25 @@
+# opus: W-474
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T13:28:50.760Z
+# tree: tree:d9bf30b88d9549f3ce9d689c7ce705caf6220b61
+# brief: briefs/W-474.md blob:40bf605fb04ef44b39b2692b273244c456001dd6
+# ticket: {"opus":"W-474","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"20861cb129509f621d67edac89610e85bf0979f2","brief":"40bf605fb04ef44b39b2692b273244c456001dd6","at":"2026-10-30T13:28:49.270Z"}
+
+# W-474 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-474.md revision 1, prototyped over master 20861cb1 (series d195a947, prototype.mbox sha256 440e0f1132118768e8088d842210134aa2d4aaf6802497e9c35ba47b43ba0abb); evidence in /home/edckt/.bisellium-evidence/W-474-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-474-spec/promise-ledger.md
+
+Checked: the copy-site census (copy-sites.out) finds no copy in the repository's code that outlives its run and finds the kept UI-seat scripts' --no-hardlinks clones as the cause; a --shared copy measures 63 MB against 141 MB. The three reds fail by assertion on their red commits and on master's source and are accepted by the replay classifier (red-accept.out); each row passes at its stage and every later one; eighteen source kills fail their row at the assertion they guard (kills.out); lint, format, typecheck, the neighbouring test files whole and both officina checks (0 blocking) pass on stage 3 (gates-proto.out); every series commit builds the web bundle and typechecks (series-builds.out); admission returns no problem (admission.out). The two flipped rows (usage.test.ts's usage count, containment.test.ts's inventory D and W-423-b5) are edited in behaviour 1's commit and named in Acceptance. No Files owned path is code-owned. Every script of this spec works in the scratch worktree in place; the rows' copies live under the OS tmp dir and are removed.
+
+## Findings
+1. advisory — the kept scripts outside the repository cannot be held to run --scratch by a check rule; the brief states it as a limit and Defaults item 2, with ui-run.sh and prune-scratch.sh as the backstop — check: copy-sites.out:43
+2. advisory — a SIGKILL of the run itself leaves its scratch.XXXXXX copy; it still counts toward the cap and is the form the backstop prunes remove, stated on Promise trap — check: scratch.ts:115 (stage 3)
+
+## Verdict
+passed — run --scratch gives the kept scripts one helper that makes a copy borrowing the repository's objects, deletes it when its command ends, fails or is signalled, and refuses at a 3 GiB folder; what cannot be enforced outside the repository is stated, not promised.

@@ -1,0 +1,27 @@
+# opus: W-474
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T16:22:16.739Z
+# tree: tree:daff69192718955f457cdb4bf176c5a616e2e01a
+# brief: briefs/W-474.md blob:9beeb9a2e510cad4b7cd0a4cc381fb8aca816ef5
+# ticket: {"opus":"W-474","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-474/studio","head":"3c02d1f936a08ff5e70a750b2fb8ed792f8d48f1","brief":"9beeb9a2e510cad4b7cd0a4cc381fb8aca816ef5","at":"2026-10-30T16:22:10.052Z"}
+
+# W-474 spec signature, round 3 (architect, claude-opus-5-5): revision 2
+
+Brief: studio/briefs/W-474.md revision 2, revision 1's series over master 20861cb1 unchanged; revision 2 prototyped over the opus branch at 3c02d1f9 in /home/edckt/.bisellium-evidence/W-474-spec/r3/ (parser-proto.py over run.ts, test-cases.py over w474.test.ts).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-474-spec/r3/promise-ledger.md
+
+Ruling: the build-review class interface×validation-order-masks-errors (ci/W-474-review-1.log #1, ci/W-474-review-2.log #1) is closed at its class, not its instance. The brief now writes the whole scratch-mode grammar (--scratch <dir> exactly once, --repo <v> and --base <v> at most once each, values the next token verbatim, bare "--" included, then "--" and a non-empty command) and the refusal for every other form in one stated order: left to right, a token not in the table ("does not go with --scratch": unknown flags, seat flags, --flag=value and positionals alike), then one already seen ("is given more than once"), then one with no value ("needs a value"); then no command. The parse is one pass over one table of three flags and a seen-set, so no flag is matched outside the table. What stays outside scratch mode (a --scratch=<dir> token, a --scratch the walk takes as a value) is stated as a limit: it gets run's own exit-2 refusal, no copy.
+
+Checked: row W-474-b3 with the six new cases fails on the branch head at "a repeated --scratch refuses with exit 2 and its reason first" (r3/b3-head.out) and passes on the prototype (r3/b3-proto.out); kill K19 (the seen-set check removed) fails the row at that assertion (r3/kill-K19.out); on the prototype the typecheck, lint and format of the two touched files, w474.test.ts whole and run.test.ts whole pass (r3/gates.out). Revision 1's evidence for behaviours 1 and 2, the cap and the other refusals is unchanged.
+
+## Findings
+1. advisory — a --scratch=<dir> token, or a --scratch that stands where the walk takes it as another scratch flag's value, is not a scratch run and gets run's generic refusal, not the scratch reason; stated as a limit on Promise refusals and the flags row, and W-476 owns the class's cause fix — check: briefs/W-474.md "The flags beside `--scratch`"
+2. advisory — --studio, --opus, --no-worktree, --reclaim and the --flag=value form refuse by the same table test but are not pinned one by one; K19 and the --sella, --keep, unknown-flag and positional cases guard the table test — check: r3/kill-K19.out
+
+## Verdict
+passed — the scratch parse is held to a written grammar with one refusal order, every repeated, unknown, valueless or positional form is refused with its own message before any copy, and the forms outside scratch mode are stated as limits, not promised.

@@ -1,0 +1,21 @@
+# opus: W-474
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18d3f-490e-72e2-b701-b8366d1aceb2
+# outcome: passed
+# at: 2026-10-30T17:18:08.802Z
+# tree: tree:482b208ed2ec646914b4079bb97095bb9655f071
+# brief: briefs/W-474.md blob:9beeb9a2e510cad4b7cd0a4cc381fb8aca816ef5
+# ticket: {"opus":"W-474","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-474/studio","head":"595e719f0f2bd1c9a269152564aaf9b1d5f263c5","brief":"9beeb9a2e510cad4b7cd0a4cc381fb8aca816ef5","at":"2026-10-30T17:17:36.435Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-474-review-2.log #1: closed — packages/commands/src/run.ts:105 now rejects every repeated scratch-mode flag through a seen-set, with the repeated `--scratch` case pinned at packages/commands/src/w474.test.ts:228
+
+## Verdict
+The round-2 blocker is closed and the round-3 change introduces no blocking defect.
+VERDICT: PASS

@@ -5,7 +5,9 @@
  * by tests and wired into main.ts separately. `bisellium run --reclaim`
  * (or `--reclaim --repo <dir>` outside a studio) removes worktrees whose
  * branch is merged or whose directory is gone, so growth under
- * `<repo>/.bisellium/worktrees/` is bounded.
+ * `<repo>/.bisellium/worktrees/` is bounded. `bisellium run --scratch <dir>`
+ * (W-474, `./scratch.js`) runs a command in a copy under `<dir>` that shares
+ * the repository's git objects and is deleted when the command ends.
  *
  * Exit codes: 0/whatever the child exits with (128+signal if it was killed
  * by a signal) · 2 usage error (bad flags, missing "--", empty command,
@@ -20,6 +22,7 @@ import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
 import { pauseWarning } from "./pause.js";
 import { runBuilderCommand } from "./builder-run.js";
+import { runScratch, type ScratchArgs } from "./scratch.js";
 
 export interface RunOptions {
   /** Pinned clock, for reproducible sessionIds/receipts in tests. */
@@ -36,7 +39,8 @@ const GIT_TIMEOUT_MS = 30_000;
 
 const USAGE =
   "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>\n" +
-  "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]";
+  "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
+  "       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>";
 
 /** `studio` slug for GIT_AUTHOR_EMAIL / BISELLIUM_STUDIO — same shape as adapter-native's projectId default. */
 function studioSlug(name: string): string {
@@ -76,8 +80,46 @@ function takeValue(args: string[], i: number, flag: string): { value: string } |
   return { value: v };
 }
 
+/** The scratch-mode grammar (W-474): each flag that may stand in a scratch run, once, with the next token as its value. */
+const SCRATCH_FLAGS = { "--scratch": "dir", "--repo": "repo", "--base": "base" } as const;
+type ScratchFlag = keyof typeof SCRATCH_FLAGS;
+const isScratchFlag = (a: string): a is ScratchFlag => Object.hasOwn(SCRATCH_FLAGS, a);
+
+/** The scratch-mode argument parse (W-474), one pass over one table. A scratch run is one whose flag positions before
+ *  the first "--" hold `--scratch`; there each token is, in this order: "--" (the end of the flags), else refused when
+ *  it is not in the table (`does not go with --scratch`), when it was seen already (`is given more than once`) or when
+ *  no token follows it (`needs a value`); else the next token is its value, verbatim. Then a command after "--" is
+ *  required. Undefined when not a scratch run. */
+function parseScratch(args: string[]): ScratchArgs | { error: string } | undefined {
+  let isScratch = false;
+  for (let i = 0; i < args.length && args[i] !== "--"; i++) {
+    if (args[i] === "--scratch") { isScratch = true; break; }
+    if (isScratchFlag(args[i]!)) i++;
+  }
+  if (!isScratch) return undefined;
+  const seen: Partial<Record<ScratchFlag, string>> = {};
+  let i = 0;
+  for (; i < args.length && args[i] !== "--"; i += 2) {
+    const a = args[i]!;
+    if (!isScratchFlag(a)) return { error: `${a} does not go with --scratch` };
+    if (seen[a] !== undefined) return { error: `${a} is given more than once` };
+    const value = args[i + 1];
+    if (value === undefined) return { error: `${a} needs a value` };
+    seen[a] = value;
+  }
+  if (i >= args.length - 1) return { error: 'a command after "--" is required' };
+  const { "--scratch": dir, "--repo": repo, "--base": base } = seen;
+  return { dir: dir!, cmd: args.slice(i + 1), ...(repo === undefined ? {} : { repo }), ...(base === undefined ? {} : { base }) };
+}
+
 export async function runCommand(args: string[], opts: RunOptions = {}): Promise<RunResult> {
   const now = opts.now ?? new Date();
+
+  const scratchRun = parseScratch(args);
+  if (scratchRun !== undefined) {
+    if ("error" in scratchRun) { console.error(`bisellium run --scratch: ${scratchRun.error}\n${USAGE}`); return { exitCode: 2 }; }
+    return { exitCode: await runScratch(scratchRun) };
+  }
 
   let sella: string | undefined;
   let studio = ".";

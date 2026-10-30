@@ -951,6 +951,11 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/probe.ts:probeBattery:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json) and its .tmp sibling, atomic rename" },
   { key: "packages/commands/src/probe.ts:probeBattery:renameSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json) and its .tmp sibling, atomic rename" },
   { key: "packages/commands/src/probe.ts:readModelsRecord:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json)" },
+  { key: "packages/commands/src/scratch.ts:link:symlinkSync#1", disposition: "outside", why: "W-474: links the copy's node_modules entries to the repository's, inside the scratch copy run --scratch made by mkdtemp under the caller's folder; never an officina" },
+  { key: "packages/commands/src/scratch.ts:link:symlinkSync#2", disposition: "outside", why: "W-474: links the copy's node_modules entries to the repository's, inside the scratch copy run --scratch made by mkdtemp under the caller's folder; never an officina" },
+  { key: "packages/commands/src/scratch.ts:linkModules:mkdirSync#1", disposition: "outside", why: "W-474: the copy's node_modules directory (and a scope folder in it), inside the scratch copy run --scratch made by mkdtemp under the caller's folder; never an officina" },
+  { key: "packages/commands/src/scratch.ts:linkModules:mkdirSync#2", disposition: "outside", why: "W-474: the copy's node_modules directory (and a scope folder in it), inside the scratch copy run --scratch made by mkdtemp under the caller's folder; never an officina" },
+  { key: "packages/commands/src/scratch.ts:remove:rmSync#1", disposition: "outside", why: "W-474: removes the scratch copy run --scratch made by mkdtemp under the caller's folder, and nothing else; never an officina" },
   { key: "packages/commands/src/talk.ts:writeSession:openSync#1", disposition: "contained", why: "sessions/<sella>.json in a real sessions/ made by ensureRealDirectory, opened with O_NOFOLLOW; talk refuses a symlinked sessions/ or session file before the turn is spent" },
   { key: "packages/commands/src/talk.ts:writeSession:writeFileSync#1", disposition: "contained", why: "sessions/<sella>.json in a real sessions/ made by ensureRealDirectory, opened with O_NOFOLLOW; talk refuses a symlinked sessions/ or session file before the turn is spent" },
   { key: "packages/commands/src/talk.ts:appendTimeline:appendFileSync#1", disposition: "contained", why: "timeline/<sella>.jsonl in a real timeline/ checked by ensureRealDirectory" },
@@ -1415,6 +1420,7 @@ const W423_LIMIT = {
   READ: "an open with O_RDONLY | O_NOFOLLOW: it writes nothing",
   ROOT: "a fixed-name file directly in the officina root (health.json, bisellium.yml, PAUSED, models.json): no directory level below the anchor for the helper to prove",
   INIT: "init creates the officina from nothing; follow-on: refuse a symlinked root component before the first write",
+  SCRATCH: "W-474: run --scratch writes only inside the copy it made by mkdtemp in the folder its caller names (an evidence folder), and removes that copy: never the officina or the Git common directory",
 } as const;
 const WRITE_LIMITS: readonly (readonly [key: string, limit: keyof typeof W423_LIMIT])[] = [
   ["packages/cli/src/branch.ts:rebaseOntoTrunk:rmSync#1", "TEMP"],
@@ -1460,6 +1466,12 @@ const WRITE_LIMITS: readonly (readonly [key: string, limit: keyof typeof W423_LI
   ["packages/cli/src/branch.ts:rebaseOntoTrunk:mkdtempSync#1", "TEMP"],
   ["packages/commands/src/builder-run.ts:runBuilderCommand:mkdtempSync#1", "TEMP"],
   ["packages/commands/src/ci.ts:defaultInstallDeps:mkdtempSync#1", "TEMP"],
+  ["packages/commands/src/scratch.ts:link:symlinkSync#1", "SCRATCH"],
+  ["packages/commands/src/scratch.ts:link:symlinkSync#2", "SCRATCH"],
+  ["packages/commands/src/scratch.ts:linkModules:mkdirSync#1", "SCRATCH"],
+  ["packages/commands/src/scratch.ts:linkModules:mkdirSync#2", "SCRATCH"],
+  ["packages/commands/src/scratch.ts:runScratch:mkdtempSync#1", "SCRATCH"],
+  ["packages/commands/src/scratch.ts:remove:rmSync#1", "SCRATCH"],
 ];
 
 /** The governed direct fs calls whose function is in neither class (a computed member included): out of the rule's domain. */

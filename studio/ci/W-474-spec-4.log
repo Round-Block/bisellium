@@ -1,0 +1,21 @@
+# opus: W-474
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18d23-d49e-79d0-b6e4-dc22bb67d770
+# outcome: passed
+# at: 2026-10-30T16:26:13.258Z
+# tree: tree:daff69192718955f457cdb4bf176c5a616e2e01a
+# brief: briefs/W-474.md blob:9beeb9a2e510cad4b7cd0a4cc381fb8aca816ef5
+# ticket: {"opus":"W-474","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-474/studio","head":"3c02d1f936a08ff5e70a750b2fb8ed792f8d48f1","brief":"9beeb9a2e510cad4b7cd0a4cc381fb8aca816ef5","at":"2026-10-30T16:26:05.827Z"}
+
+## Findings
+1. advisory — brief:50 The prototype makes two left-to-right walks—mode detection, then validation/parsing—not the promised one pass. Replace with `parsed by parseScratch in two left-to-right walks over one table and one seen-set: the first recognises scratch mode; the second validates and builds ScratchArgs; no flag is matched outside the table`. [severity: S4] [class: spec×review-fix-reopens-on-wording] — check: none: align brief:50 with parser-proto.py
+2. advisory — brief:105 The revised row does not pin flags “in any order” or the promised precedence when an unknown or repeated flag is also valueless. Append `It also succeeds with --repo <root> before --scratch <folder>; a terminal stray reports does not go with --scratch, and a terminal repeated --scratch reports is given more than once, both before the missing-value check.` [severity: S4] [class: tests×ruled-case-uncovered] — check: packages/commands/src/w474.test.ts W-474-b3
+
+## Earlier findings
+
+## Verdict
+The revision closes the two build-review defects; the remaining discrepancies are advisory wording and test-boundary gaps.
+VERDICT: PASS

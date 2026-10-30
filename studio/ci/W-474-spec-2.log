@@ -1,0 +1,22 @@
+# opus: W-474
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18d23-d49e-79d0-b6e4-dc22bb67d770
+# outcome: passed
+# at: 2026-10-30T14:13:10.008Z
+# tree: tree:6ad2d271e6e24be3bf03b1601e9dfd5e599a5326
+# brief: briefs/W-474.md blob:40bf605fb04ef44b39b2692b273244c456001dd6
+# ticket: {"opus":"W-474","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"bf9cb43e183c2b74a73d6c6fae9793e0e480afb5","brief":"40bf605fb04ef44b39b2692b273244c456001dd6","at":"2026-10-30T14:13:05.284Z"}
+
+## Findings
+1. advisory — brief:86 [severity: S4] The Input domain omits the added `git clone --shared --no-checkout` and `git checkout --detach` subprocess boundaries, although both fail closed. Replace brief:86 with the existing gates row followed by `| git clone --shared --no-checkout | exits 0 and creates the requested copy | runScratch: non-zero status reports failure, removes the copy and resolves 1 |` and `| git checkout --detach | exits 0 at the resolved commit | runScratch: non-zero status reports failure, removes the copy and resolves 1 |`. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: require one Input-domain row per added subprocess call
+2. advisory — brief:85 [severity: S4] `linkModules` is not the rejecting function: it throws, while `runScratch` catches the failure, removes the copy and resolves 1. Replace the row’s final cell with `runScratch: an exception from linkModules is caught, the copy is removed and the run resolves 1`. [class: spec×input-without-named-rejector] — check: none: validate that each Input-domain rejector actually performs the refusal
+3. advisory — brief:58 [severity: S2] The accepted domain permits any symlink, but preserving target text guarantees an inside-copy workspace link only for a relative target that resolves within the same checkout layout; an absolute workspace target remains in the source repository. Add to the limit: `workspace links are guaranteed inside the copy only when their stored relative target resolves inside the checkout when recreated at the same node_modules path; absolute or differently based targets are preserved but are not promised inside`. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/commands/src/w474.test.ts: add an absolute workspace-link case
+4. advisory — brief:60 [severity: S2] The unconditional deletion and exit-status promise contradicts brief:52’s admitted removal failure; a command can accidentally leave an unsearchable directory that cannot be removed. Replace the first sentence with `Promise delete: after the command passes, fails or cannot start, the run attempts to remove the copy; when removal succeeds it returns the command’s status (or 127 for a start failure), and when removal fails it reports the failure, returns 1 and may leave the copy`. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/commands/src/w474.test.ts: add a removal-failure case
+5. advisory — brief:62 [severity: S2] Signal cleanup has the same unattainable deletion guarantee, and the prototype ignores `remove()`’s result before exiting 128 plus the signal. Replace the promise with `Promise trap: on SIGINT, SIGTERM or SIGHUP the run stops its command, attempts to remove the copy and exits 128 plus the signal; if removal fails it reports the failure and the copy may remain, while the signal exit status takes precedence`. [class: spec×promise-unattainable-under-accepted-domain] — check: packages/commands/src/w474.test.ts: add a signal-time removal-failure case
+
+## Verdict
+The design is feasible and fail-closed on the reviewed paths, with advisory input-boundary and promise-limit corrections for the build.
+VERDICT: PASS
