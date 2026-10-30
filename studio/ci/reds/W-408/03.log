@@ -1,0 +1,52 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-408-b3\s --import tsx apps/web/test/w408.test.ts
+# exit: 1
+# at: 2026-10-29T06:31:18.415Z
+# sella: ui-architect
+# tree: tree:870c067676f70fc90702daa4d25788abbeba7fc4
+# ticket: {"opus":"W-408","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-408/studio","head":"9bd9bcf413385a0f41e6db7533d1967afa8aebf0","brief":"613e38aa2c7c4af298b6b60f75bcfeada451cc7e","at":"2026-10-29T06:31:18.366Z"}
+
+TAP version 13
+# Subtest: W-408-b3 behaviour 3: Budget pairs an accessible pie with numerals and posture
+not ok 1 - W-408-b3 behaviour 3: Budget pairs an accessible pie with numerals and posture
+  ---
+  duration_ms: 2.959044
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-408/apps/web/test/w408.test.ts:1:4605'
+  failureType: 'testCodeFailure'
+  error: 'the approaching threshold is one Patron-changeable constant'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    /**
+     * apps/web/src/lib/burn.ts — pure fraction/colour math behind BurnBar.
+     */
+    export type BurnColor = "ink" | "amber";
+    
+    export function burnFraction(spent: number, allowance: number): number {
+      if (!allowance || allowance <= 0) return spent > 0 ? 1 : 0;
+      return Math.min(1, Math.max(0, spent / allowance));
+    }
+    
+    export function burnColor(spent: number, allowance: number): BurnColor {
+      return spent >= allowance ? "amber" : "ink";
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-408/apps/web/test/w408.test.ts:61:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12.484566

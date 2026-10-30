@@ -23,8 +23,15 @@ function fmt(n: number): string {
 }
 
 export function formatPosture(entry: AerariumEntry): FormattedPosture {
+  const spent = entry.burn.tokens;
+  const allowance = entry.allowance.tokens;
+  const valid = Number.isFinite(spent) && spent >= 0 && Number.isFinite(allowance) && allowance > 0;
+  let reason = `For ${entry.period}: no valid burn figure is available.`;
+  if (valid && spent > allowance) reason = `For ${entry.period}: the token allowance is exceeded by ${fmt(spent - allowance)} tokens.`;
+  else if (valid && spent === allowance) reason = `For ${entry.period}: the token allowance is fully spent.`;
+  else if (valid) reason = `For ${entry.period}: ${Math.round((spent / allowance) * 100)}% of the token allowance has been spent.`;
   return {
     word: entry.posture,
-    reason: `${fmt(entry.burn.tokens)} / ${fmt(entry.allowance.tokens)} tokens this ${entry.period}`,
+    reason,
   };
 }

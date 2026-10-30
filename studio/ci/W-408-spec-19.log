@@ -1,0 +1,25 @@
+# opus: W-408
+# phase: spec
+# round: 19
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18713-6b81-7fa2-a212-5c64a1648b34
+# session_reason: round 16's ui-lead session was a one-shot read-only Codex run; round 19 judged revision k in a fresh read-only Astra session with the kept dispatch prompt
+# outcome: passed
+# at: 2026-10-29T09:54:18.482Z
+# tree: tree:10cde09879c2fabaed8952fc3f0b86edd78b82cb
+# dispatch_prompt: ci/W-408-ui-prompt-19.md
+# design_digest: sha256:70b879c381666d0e5621f34b780aa0cb6af6594cf2df84b2624c0f4d699d02f3
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":19,"actor":"ui-lead","studio":".worktrees/W-408/studio","head":"1c3bd413c19f530409e9eda143408182c2ebd979","brief":"4912f95774d80135881aca9dfd95eed5218bc5c5","at":"2026-10-29T09:54:17.603Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+The captures preserve the screens passed in round 16: Work in flight, Budget and Health remain legible at 1280, 640 and 390, with clear mover labels and complete numerals.
+Budget distinguishes exactly spent from over through Orange/diamond versus Red/square, explicit overage and readable text; Health also retains meaning without colour.
+No agent-written rule harms these captures or fixes an additional Patron choice beyond the named Defaults.
+Revision k changes only the predecessor status-test contract; the unchanged prototype preserves the Board, Inbox, sidebar and zoom-reflow boundaries.
+Verdict: passed

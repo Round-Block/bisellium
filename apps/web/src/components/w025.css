@@ -35,6 +35,27 @@
   overflow-y: auto;
 }
 
+/* W-408 keeps the shell's one vertical scroll state and allocates its track
+ * even before the document grows. No nested Officina scroller is added. */
+.shell__main:has(> .officina) {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-3) var(--surface);
+}
+
+.shell__main:has(> .officina)::-webkit-scrollbar {
+  width: 10px;
+}
+
+.shell__main:has(> .officina)::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.shell__main:has(> .officina)::-webkit-scrollbar-thumb {
+  background: var(--ink-3);
+}
+
 /* W-341: the shell's one live region. Visually hidden and out of the grid's flow, so it changes no pixel of any
  * screen; screen readers still announce every status the active screen reports. */
 .shell__status {
@@ -362,77 +383,99 @@
   background: var(--ink);
 }
 
-/* ── Burn bar ─────────────────────────────────────────────────────── */
+/* ── Budget pie ───────────────────────────────────────────────────── */
 
-.burn-bar {
-  display: flex;
+.budget-meter {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  min-width: 0;
 }
 
-.burn-bar__numerals {
+.budget-meter__pie {
+  width: 64px;
+  height: 64px;
+  box-sizing: border-box;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: conic-gradient(var(--budget-state-color) 0 var(--budget-fraction), var(--rule) var(--budget-fraction) 1turn);
+}
+
+.budget-meter--normal { --budget-state-color: var(--ink-3); }
+.budget-meter--approaching,
+.budget-meter--spent { --budget-state-color: var(--severity-high); }
+.budget-meter--over { --budget-state-color: var(--severity-blocking); }
+
+.budget-meter__reading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.budget-meter__line {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.budget-meter__numerals {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 18px;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
-.burn-bar__rail {
-  position: relative;
-  flex: 1;
-  height: 4px;
-  background: var(--rule);
+.budget-meter__separator {
+  color: var(--ink-3);
 }
 
-.burn-bar__fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
+.budget-meter__over {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ink-2);
+  text-align: right;
 }
 
-.burn-bar__fill--ink {
-  background: var(--ink);
+.budget-meter--over .budget-meter__spent {
+  font-weight: 700;
 }
 
-.burn-bar__fill--amber {
-  background: var(--amber);
+.budget-meter__unavailable {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 18px;
 }
 
 /* ── Officina ─────────────────────────────────────────────────────── */
 
 .officina {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 24px;
 }
 
 .officina__header {
-  grid-column: 1 / -1;
+  margin-bottom: 16px;
 }
 
-.panel--status-wide {
-  grid-column: 1 / -1;
-}
-
-.panel--completion {
-  grid-column: 1 / -1;
-}
-
-.panel--engine {
-  grid-column: span 6;
-}
-
-.panel--integrity {
-  grid-column: span 6;
-}
-
-@media (max-width: 899px) {
-  .panel--engine,
-  .panel--integrity {
-    grid-column: 1 / -1;
-  }
+.officina__lede {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .officina__title {
@@ -452,40 +495,8 @@
   padding: 24px 0 32px;
 }
 
-.officina__panel--attention .officina__row {
-  border-left: 2px solid var(--amber);
-  padding-left: 8px;
-}
-
-/* Metric grids */
-.officina__grid-3col {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 899px) {
-  .officina__grid-3col {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Metric cards */
-.officina__metric-card {
-  border-top: 1px solid var(--rule);
-  padding: 12px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-
-.officina__metric-value-mono {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
+.officina__panel:last-child {
+  border-bottom: 1px solid var(--rule);
 }
 
 .officina__panel-header {
@@ -508,11 +519,6 @@
   line-height: 18px;
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
-}
-
-.officina__count--amber {
-  color: var(--amber);
-  font-weight: 700;
 }
 
 .officina__label {
@@ -544,6 +550,71 @@
   color: var(--ink-3);
 }
 
+.officina__unit {
+  margin: -4px 0 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+}
+
+.officina__work-groups {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+}
+
+.officina__work-group {
+  min-width: 0;
+  padding: 10px 0 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.officina__work-group:last-child { border-bottom: 0; }
+
+.officina__work-group h3 {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.officina__work-group h3 span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.officina__row.officina__work-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: start;
+  padding: 7px 0;
+}
+
+.officina__work-row > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.officina__work-row > .officina__value-mono {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.officina__work-note {
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .officina__table {
   display: flex;
   flex-direction: column;
@@ -556,6 +627,7 @@
   gap: 12px;
   min-height: 32px;
   padding: 0 8px;
+  border-bottom: 1px solid var(--rule);
 }
 
 /* A name comes from a file: a long one wraps inside its row, it never widens the page. */
@@ -582,11 +654,6 @@
   background: var(--wash);
 }
 
-/* Zebra striping */
-.officina__table--zebra .officina__row:nth-child(even) {
-  background: var(--wash);
-}
-
 .officina__collegium-name {
   font-family: var(--font-body);
   font-size: 12px;
@@ -595,17 +662,54 @@
   color: var(--ink-3);
 }
 
-.officina__posture-row {
+.officina__budget-rows {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
 }
 
-.officina__pie {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.officina__budget-row {
+  display: grid;
+  grid-template-columns: minmax(104px, 0.35fr) minmax(220px, 0.8fr) minmax(220px, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.officina__budget-row:last-child {
+  border-bottom: 0;
+}
+
+/* At zoom-width, keep the complete numeric text equivalent on its own ruled
+ * line instead of asking two million-token values to share the meter column. */
+@media (width <= 700px) {
+  .officina__budget-row {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .officina__collegium-name {
+    grid-column: 1 / -1;
+  }
+
+  .budget-meter {
+    display: contents;
+  }
+
+  .budget-meter__pie {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .officina__posture-text {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .budget-meter__reading {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
 }
 
 .officina__posture-text {
@@ -624,9 +728,194 @@
 
 .officina__posture-reason {
   font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.severity-cue {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  flex: 0 0 8px;
+  outline: 1px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.severity-cue--blocking {
+  background: var(--severity-blocking);
+}
+
+.severity-cue--high {
+  background: var(--severity-high);
+  transform: rotate(45deg) scale(0.8);
+}
+
+.severity-cue--normal {
+  border: 1px solid var(--ink-2);
+  border-radius: 50%;
+  background: var(--transparent);
+  outline: 0;
+}
+
+.severity-cue--low {
+  background: var(--severity-low);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  outline: 0;
+  filter: drop-shadow(1px 0 0 var(--ink)) drop-shadow(-1px 0 0 var(--ink));
+}
+
+.officina__brake-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.officina__brake-state {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.officina__brake-state strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.officina__brake-explanation {
+  display: block !important;
+  margin: 6px 0 !important;
+  color: var(--ink-2);
+}
+
+.officina__brake {
+  min-width: 104px;
+  min-height: 36px;
+  border: 1px solid var(--verdigris);
+  border-radius: 2px;
+  padding: 0 12px;
+  background: var(--verdigris);
+  color: var(--surface);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.officina__brake:hover {
+  background: var(--verdigris);
+}
+
+.officina__brake:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+.officina__brake:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.officina__write-error {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.officina__health-rows {
+  border-top: 1px solid var(--rule);
+}
+
+.officina__health-row {
+  border-bottom: 1px solid var(--rule);
+}
+
+.officina__health-row > summary {
+  display: grid;
+  grid-template-columns: 16px minmax(120px, 0.4fr) minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 4px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+  cursor: pointer;
+  list-style: none;
+}
+
+.officina__health-row > summary::-webkit-details-marker {
+  display: none;
+}
+
+.officina__health-row > summary::before {
+  content: "\25B8";
+  color: var(--ink-2);
+}
+
+.officina__health-row[open] > summary::before {
+  content: "\25BE";
+}
+
+.officina__health-row > summary > span:first-child {
+  font-weight: 400;
+}
+
+.officina__health-row > summary > span:last-child {
+  color: var(--ink-2);
+}
+
+.officina__severity-summary,
+.officina__severity-summary > span,
+.officina__severity-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.officina__severity-summary {
+  flex-wrap: wrap;
+  column-gap: 16px;
+}
+
+.officina__health-detail {
+  padding: 4px 4px 14px 24px;
+}
+
+.officina__health-detail > p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0;
+}
+
+.officina__health-detail > .officina__health-copy {
+  display: block;
+  color: var(--ink-2);
+}
+
+.officina__process-row > .officina__value-mono {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.officina__last-tick {
+  margin: 4px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.officina__last-tick span {
+  font-family: var(--font-mono);
+  font-size: 11px;
 }
 
 /* ── Inbox ────────────────────────────────────────────────────────── */
@@ -2155,7 +2444,8 @@
   display: block;
 }
 
-.panel--integrity > p.officina__label {
+.panel--lex > p.officina__label,
+.panel--process > p.officina__label {
   margin: 0; /* the panel's own 12px gap spaces it */
 }
 
@@ -2195,80 +2485,16 @@ details.officina__row > summary {
   margin: 0 0 8px;
 }
 
-/* W-153: the Completion panel — overall %, the estimate line, one row per milestone. */
-.officina__completion-overall {
-  font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 20px;
-  color: var(--ink);
-  margin: 4px 0;
-}
-
-.officina__completion-estimate {
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--ink-2);
-  margin: 8px 0;
-}
-
-.officina__bar {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--rule);
-  overflow: hidden;
-}
-
-.officina__bar-fill {
-  height: 100%;
-  background: var(--ok);
-}
-
-.officina__completion-row {
-  display: grid;
-  grid-template-columns: 48px 1fr auto 64px;
-  gap: 4px 12px;
-  align-items: baseline;
-  padding: 6px 0;
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--ink);
-}
-
-.officina__completion-row > .officina__bar {
-  grid-column: 1 / -1;
-}
-
-.officina__completion-id,
-.officina__completion-points,
-.officina__completion-pct {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
-.officina__completion-pct {
-  text-align: right;
-}
-
 /* D-118: preserve Officina's information and hierarchy on the approved phone
  * canvas while allowing its inner tracks, labels and counts to wrap. */
 @media (max-width: 599px) {
   .officina {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-
-  .officina > .fasti-strip {
-    grid-column: 1 / -1;
-    min-width: 0;
+    padding: 24px 16px;
   }
 
   .officina__header,
   .officina__panel,
   .officina__table,
-  .officina__completion-rows,
-  .officina__completion-row,
   details.officina__row,
   details.officina__row > summary {
     min-width: 0;
@@ -2279,8 +2505,6 @@ details.officina__row > summary {
   }
 
   .officina__panel-heading,
-  .officina__completion-estimate,
-  .officina__completion-title,
   .officina__row > *,
   details.officina__row > summary > * {
     min-width: 0;
@@ -2301,9 +2525,30 @@ details.officina__row > summary {
     text-align: right;
   }
 
-  .officina__completion-row {
-    grid-template-columns: 40px minmax(0, 1fr) auto 48px;
-    gap: 4px 8px;
+  .officina__health-row > summary {
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .officina__health-row > summary > span:last-child {
+    grid-column: 2;
+  }
+
+  .officina__row.officina__work-row {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .officina__work-note {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .officina__brake-row {
+    align-items: flex-start;
+  }
+
+  .officina__brake {
+    flex: 0 0 auto;
   }
 }
 

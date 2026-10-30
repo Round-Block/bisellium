@@ -265,6 +265,15 @@ export function fetchActa(days?: number): Promise<ActaEntry[]> {
   return getJSON(`/api/acta${days !== undefined ? `?days=${days}` : ""}`);
 }
 
+/** The Officina's one manual brake uses the same authenticated write path as every other console write. */
+export function submitPause(): Promise<WriteResult> {
+  return postWrite("/api/pause", {});
+}
+
+export function submitResume(): Promise<WriteResult> {
+  return postWrite("/api/resume", {});
+}
+
 export function fetchOpera(filters?: { state?: string; collegium?: string }): Promise<OpusEntry[]> {
   const params = new URLSearchParams();
   if (filters?.state) params.set("state", filters.state);

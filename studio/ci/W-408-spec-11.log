@@ -1,0 +1,23 @@
+# opus: W-408
+# phase: spec
+# round: 11
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17e0a-523c-7911-bdfd-fa0491f0b6ce
+# outcome: passed
+# at: 2026-10-29T05:35:17.365Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-408.md blob:25e47b49306ed28c172bb044771891897a075ef1
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":11,"actor":"architect","studio":"studio","head":"e7fd20a92abd4c09b60a54ebe899e48bb73f5f98","brief":"25e47b49306ed28c172bb044771891897a075ef1","at":"2026-10-29T05:35:14.069Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-408-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ci/W-408-spec-10.log #1 is closed: Files owned now includes `apps/web/test/w406.test.ts` and `apps/web/tests-serve/w442.spec.ts`; W-406-b3 requires the approved fasti-absence row, W-442-b1 is retired to fasti absence at 1280/390, and both policy and served rows pass — check: W-408-b1 policy and `gates-proto-i.out`
+2. advisory — ci/W-408-spec-10.log #2 is closed: Files owned includes only `screenshots.spec.ts`'s Officina readiness branch, which now waits for Work in flight, four Budget rows and two Health disclosures while requiring no fasti; baselines, machinery and other routes are unchanged, and the suite reaches its expected baseline skip after readiness — check: `apps/web/tests-serve/screenshots.spec.ts` and `gates-proto-i.out`
+3. advisory — ci/W-408-spec-10.log #3 is closed: Acceptance names W-077 truth row 1, served W-077 row 3 round 2 and the retired non-CI smoke fasti row; the truth/walk gates and revised smoke row pass — check: W-077 truth/served rows, `apps/web/tests/smoke.spec.ts`, and `officina-ci-census-i.out`
+
+## Verdict
+
+passed — revision i repairs every rebased predecessor test contract identified by round 10, finds no further CI-run positive assertion for removed Officina markup, preserves the approved visible design without recapture, and reproduces the staged tree from prototype sha256 `213b61cff2298d8e5a7629ec5a71fe5ebca6fe34c947398b3f963b2fc40b85ac`

@@ -1,0 +1,24 @@
+# opus: W-408
+# phase: spec
+# round: 14
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17e0a-523c-7911-bdfd-fa0491f0b6ce
+# outcome: passed
+# at: 2026-10-29T06:25:55.541Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-408.md blob:613e38aa2c7c4af298b6b60f75bcfeada451cc7e
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":14,"actor":"architect","studio":".worktrees/W-408/studio","head":"0e07c3e6f0389efd7c946fe70490d3e1486ab0f8","brief":"613e38aa2c7c4af298b6b60f75bcfeada451cc7e","at":"2026-10-29T06:25:52.358Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-408-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ci/W-408-spec-10.log #1 is closed: Files owned now includes `apps/web/test/w406.test.ts` and `apps/web/tests-serve/w442.spec.ts`; W-406-b3 requires the approved fasti-absence row, W-442-b1 is retired to fasti absence at 1280/390, and both policy and served rows pass — check: W-408-b1 policy and `gates-proto-i.out`
+2. advisory — ci/W-408-spec-10.log #2 is closed: Files owned includes only `screenshots.spec.ts`'s Officina readiness branch, which now waits for Work in flight, four Budget rows and two Health disclosures while requiring no fasti; baselines, machinery and other routes are unchanged, and the suite reaches its expected baseline skip after readiness — check: `apps/web/tests-serve/screenshots.spec.ts` and `gates-proto-i.out`
+3. advisory — ci/W-408-spec-10.log #3 is closed: Acceptance names W-077 truth row 1, served W-077 row 3 round 2 and the retired non-CI smoke fasti row; the truth/walk gates and revised smoke row pass — check: W-077 truth/served rows, `apps/web/tests/smoke.spec.ts`, and `officina-ci-census-i.out`
+4. advisory — revision j changes only the Red order line's wording for brief admission; the sequence is kept on a Red sequence line — check: studio/briefs/W-408.md lines 7-8
+
+## Verdict
+
+passed — revision j changes only brief-admission wording while preserving revision i's repaired predecessor test contracts, approved visible design, and prototype sha256 `213b61cff2298d8e5a7629ec5a71fe5ebca6fe34c947398b3f963b2fc40b85ac`

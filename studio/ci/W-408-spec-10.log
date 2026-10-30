@@ -1,0 +1,23 @@
+# opus: W-408
+# phase: spec
+# round: 10
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a7e0e2e2a2c300edd
+# session_reason: the round-7 reviewer session cannot be resumed from a new orchestrator session; round 10 ran fresh
+# outcome: failed
+# at: 2026-10-29T05:27:19.197Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-408.md blob:a46c5399dc744af8ec3e59865ccad30f30400fde
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":"studio","head":"e7fd20a92abd4c09b60a54ebe899e48bb73f5f98","brief":"a46c5399dc744af8ec3e59865ccad30f30400fde","at":"2026-10-29T05:27:15.960Z"}
+
+## Findings
+1. blocking — brief:39 [severity: S1] The rebase leaves two CI-run predecessor rows unowned, and the prototype breaks both. First, `apps/web/test/w406.test.ts:82` (W-406-b3) runs in CI's `test:policy` and requires `tests-serve/w406.spec.ts` to contain "W-406-b3 Officina today rule clears the last day letter at 1280 and 390" and "today rule and weekday letter do not overlap". The prototype renames that served row to "W-406-b3 W-408 removes the non-actionable Officina fasti…", so the policy assertion fails. Second, `apps/web/tests-serve/w442.spec.ts:23` came in with W-442 (c1555070), merged after the round-7 base. It runs in CI's `test:serve` and expects exactly one `.fasti-strip__today-rule` on `/officina`, but the prototype's Officina renders no fasti. Neither file is in Files owned, the mbox does not touch them, and gates-proto.sh never runs them. So the promise "Only these code-owned paths may change" and the brief:106 promise "All served rows pass" cannot both hold: the mistake is the rebase onto W-442, the caller is CI's required web job, and the result is a red merge or an edit to an unowned file. Codex's fixture-census.md lists both rows and the gates miss them. Replacement: add a Files owned line "- `apps/web/test/w406.test.ts`, `apps/web/tests-serve/w442.spec.ts`: flip W-406-b3's policy to the fasti-absence served row and retire W-442-b1's fasti today-rule row (fasti is removed)", name both flips in brief:113, and add `node --import tsx apps/web/test/w406.test.ts` plus `tests-serve/w442.spec.ts` to the prototype gates. [design: changes] [class: spec×rebase-unowned-predecessor-flip] — check: none: an admission rule that runs every CI policy/serve file that names Officina against the prototype tree before signature
+
+2. blocking — brief:49 [severity: S1] "`screenshots.spec.ts` and its baselines remain untouched" cannot hold. Its readiness step for Officina (`apps/web/tests-serve/screenshots.spec.ts:107-111`) asserts `.panel--completion` "No milestone records", four `.officina__collegium-name`, two `.officina__as-of`, one `.fasti-strip__tick--filled` and `.panel--engine` containing W-002. The prototype's Officina renders none of those. The step runs inside the capture loop before the baseline-absent `test.skip` at :160, so it fails in CI's `test:serve` even with no committed baselines. Replacement for brief:49's last sentence: "`screenshots.spec.ts` changes only its Officina readiness branch (lines 107-111) to the three-section Budget/Health detail; its baselines, capture machinery and other routes remain untouched." Then add `apps/web/tests-serve/screenshots.spec.ts` (readiness branch only) to Files owned, narrow brief:124 to "screenshot machinery other than that readiness branch", and add the spec to the prototype gates. [design: changes] [class: spec×rebase-unowned-predecessor-flip] — check: none: the same admission rule (run every served spec under the serve config against the prototype)
+
+3. advisory — brief:113 [severity: S4] Codex's census names three flips the brief leaves out: W-077 truth row 1 (`officina-truth.test.ts:91`, as-of stamp removed), served W-077 behaviour 3 round 2 (`walk.spec.ts:350`, due rows move into Process health) and `tests/smoke.spec.ts:60` (fasti strip; not run by CI). The first two are in owned files and already pass in gates-proto-h. Replacement: append "W-077 truth row 1 and served row 3 round 2 flip to no as-of stamp and due rows inside Process health; `tests/smoke.spec.ts` fasti row is retired." [class: spec×unnamed-predecessor-flip] — check: none: a census-vs-Acceptance cross-check at admission
+
+## Verdict
+failed — The rebase is otherwise clean: the mbox replays to the expected tree, the reds were accepted, the W-407 rows stay green, and the api.ts wording now correctly says "add". But the rebased prototype fails three CI-run rows the brief neither owns nor gates: the W-406-b3 policy row, the W-442-b1 served row and the screenshots readiness branch. The fix changes Files owned.
+VERDICT: FAIL

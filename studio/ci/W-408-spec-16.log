@@ -1,0 +1,26 @@
+# opus: W-408
+# phase: spec
+# round: 16
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a18658-4277-71f1-b0a7-36c867124bc1
+# session_reason: round 13's ui-lead session was a one-shot read-only Codex run from an earlier orchestrator session; round 16 judged revision j in a fresh read-only Astra session with the kept dispatch prompt
+# outcome: passed
+# at: 2026-10-29T06:30:04.199Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# dispatch_prompt: ci/W-408-ui-prompt-16.md
+# design_digest: sha256:2a1793100b4210b327736c985e718a7fe2b499047ce073149fe51b9bbc757a87
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":16,"actor":"ui-lead","studio":".worktrees/W-408/studio","head":"f920f76db987893b378d66b6d869393d8e0e30db","brief":"613e38aa2c7c4af298b6b60f75bcfeada451cc7e","at":"2026-10-29T06:30:03.259Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+The captures preserve the screens passed in round 13: work, Budget and Health remain legible at 1280, 640 and 390, with clear mover labels and complete numerals.
+Budget correctly distinguishes normal, approaching, fully spent and over; shapes, numeric fractions and explicit overage preserve meaning without colour.
+Health disclosures retain readable severity cues and the “Stop new work” control.
+I found no agent-written rule that harms these screens or fixes an additional Patron choice beyond the named Defaults.
+Revision j changes admission wording only; the prototype hash is unchanged, preserving the Board, Inbox, sidebar and zoom-reflow boundaries.
+Verdict: passed

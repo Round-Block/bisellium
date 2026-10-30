@@ -11,12 +11,13 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   if (!ok) failed++;
 }
 
-// ---- Behaviour 10: the three data panels are present --------------------
+// ---- Behaviour 10: W-408's Officina-detail sections are present ----------
 {
   const sections = officinaSections();
-  check(10, "officina layout: has postureAndBurn panel", sections.includes("postureAndBurn"), sections.join(","));
-  check(10, "officina layout: has processHealth panel", sections.includes("processHealth"), sections.join(","));
-  check(10, "officina layout: has lexStatus panel", sections.includes("lexStatus"), sections.join(","));
+  check(10, "officina layout: has workInFlight panel", sections.includes("workInFlight"), sections.join(","));
+  check(10, "officina layout: has budget panel", sections.includes("budget"), sections.join(","));
+  check(10, "officina layout: has health panel", sections.includes("health"), sections.join(","));
+  check(10, "officina layout: follows the Patron's detail-page order", sections.join(",") === "workInFlight,budget,health", sections.join(","));
 }
 
 process.exit(failed ? 1 : 0);

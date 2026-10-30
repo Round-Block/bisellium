@@ -79,11 +79,10 @@ test("W-406-b2 behaviour 2: Board keeps liveness in its header and ends with one
   assert.match(boardRows, /four timestamp fields/, "the Board timestamp row retains the visible refresh time");
 });
 
-test("W-406-b3 behaviour 3: the Officina today rule clears its weekday glyph at desktop and phone widths", () => {
-  const css = read("apps/web/src/components/w025.css");
+test("W-406-b3 behaviour 3: W-408 removes the non-actionable Officina fasti", () => {
   const served = read("apps/web/tests-serve/w406.spec.ts");
 
-  assert.match(css, /\.fasti-strip__today-rule\s*\{[^}]*right:\s*-2px;/s, "the today rule is offset beyond the trailing edge");
-  assert.match(served, /W-406-b3 Officina today rule clears the last day letter at 1280 and 390/, "the served row names both ruled widths");
-  assert.match(served, /today rule and weekday letter do not overlap/, "the served row compares the marker and glyph boxes");
+  assert.match(served, /W-406-b3 W-408 removes the non-actionable Officina fasti at 1280 and 390/, "the served row names both ruled widths and the approved removal");
+  assert.match(served, /no second timeline mechanism remains/, "the served row requires fasti absence");
+  assert.match(served, /detail ledger keeps its three ruled sections/, "the served row retains the Officina detail frame");
 });

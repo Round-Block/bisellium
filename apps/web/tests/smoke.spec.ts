@@ -56,11 +56,12 @@ test("keyboard navigation (j/k) moves focus on inbox items", async ({ page }) =>
   await expect(rows.nth(1)).toHaveAttribute("data-focused", "false");
 });
 
-// behaviour 4: Officina screen loads and shows the fasti strip.
-test("officina screen loads and shows fasti strip", async ({ page }) => {
+// behaviour 4: Officina screen loads its approved detail sections without the retired fasti strip.
+test("officina screen loads three-section detail without fasti strip", async ({ page }) => {
   await page.goto("/?demo=1#/officina");
   await expect(page.getByRole("heading", { name: "Officina" })).toBeVisible();
-  await expect(page.locator(".fasti-strip")).toBeVisible();
+  await expect(page.locator(".officina__panel-heading")).toHaveText(["Work in flight", "Budget", "Health"]);
+  await expect(page.locator(".fasti-strip")).toHaveCount(0);
 });
 
 // behaviour 5: hash changes reflect in the displayed screen (no full reload).

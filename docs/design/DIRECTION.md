@@ -107,10 +107,12 @@ lighter wash, never by a lighter-on-darker card sandwich.
   headings; Yellow `#F1FA8C` (`--accent-yellow`) is a constant Board project-name
   text accent. Text selection is an editing affordance, not an application
   state. Every accent has one role: an accent never marks a state.
-- **Amber `#FFB86C` (Dracula Orange)** — waiting on a human, and nothing else,
-  ever. Budget: one amber region per screen plus the nav count. Rendered as a
-  **2px left rule** on the row plus the age numeral in amber. Never a pill,
-  never a background, never on a duration that is not yours.
+- **Amber `#FFB86C` (Dracula Orange)** — waiting on a human in workflow
+  surfaces. The same Dracula Orange is also the centrally defined
+  `--severity-high` cue for the Inbox and Health severity standard (the Patron,
+  2026-10-28); it is not a generic duration or decoration. Waiting is rendered
+  as a **2px left rule** on the row plus the age numeral in amber. Never a pill
+  or a background.
 - **ok `#50FA7B` (Dracula Green) / bad `#FF5555` (Dracula Red)** — inside a
   gate mark at 6px, and `bad` also as a blocked card's 2px left rule (the
   Patron, 2026-10-25); a gate mark is always paired with a **shape** difference
@@ -123,9 +125,11 @@ lighter wash, never by a lighter-on-darker card sandwich.
   `tokens.css` by a test, including the Inbox count in amber on both the
   selected and hovered `rule` navigation fills, and the console's axe scan runs
   with colour contrast on.
-- The only status colours are `ok`, `amber` and `bad`, with their existing
-  meanings and shape cues. Ceiling: **at most three status colours visible at
-  once**. Accents do not count toward that status ceiling.
+- Gate status retains `ok`, `amber` and `bad`. Inbox and Health severity instead
+  share `--severity-blocking`, `--severity-high` and `--severity-low`, always
+  paired with distinct shapes and ordinary text; the exact tokens live once in
+  `tokens.css` (the Patron, 2026-10-28). Accents do not mark either kind of
+  state.
 - **Identity boundary.** Verdigris remains the sole product identity colour.
   Yellow is a constant project-name text accent, identical for every project
   and condition. Projects remain named, never colour-coded; project dots and
@@ -239,15 +243,37 @@ draft. No celebration graphic. (Patron rulings, 2026-10-27 and 2026-10-28;
 supersede the agent-written single-column/no-preview, amber-row, relative-age,
 focus-ring and colophon text from 5e5efd88.)
 
-**Officina** — the fasti strip, then four panels stacked between hairlines, no
-boxes: decreta pending, posture and burn, lex status, process health. Burn is two
-mono numerals and a 4px rule filled to the spent fraction — ink under allowance;
-past it the rule runs full width and the spent numeral goes to weight 700 (amber
-stays for what waits on a human, the Patron, 2026-10-25). No donut, no gauge, no
-sparkline. Posture is the word itself at 17px Bricolage 600 (`closeout`) with
-its reason beneath at 13px: a posture is a
-sentence someone can argue with, not a coloured chip. The pause brake is the one
-place a verdigris fill button is allowed.
+**Officina — Patron rulings, 2026-10-28.** Officina is an operational detail
+page, not the console landing page. It has three sections stacked between
+hairlines with no boxes: Work in flight, Budget and Health; the fasti and
+cross-screen summaries are absent.
+
+- Work in flight is grouped by lifecycle phase (Review, Building, Blocked), so
+  its subtitle says so. Each work row retains the concise who-moves-next label
+  supplied by its pending gate.
+- The section formerly called “Posture and spend” is **Budget**, and its unit
+  line names budgets by collegium.
+- Budget uses one pie per collegium for spent versus allowance, superseding the
+  agent-written “No donut, no gauge” Officina line. Budget pies reuse the shared
+  severity palette (the Patron, 2026-10-28): ordinary under-allowance is the
+  uncoloured normal state with a hollow circle, approaching and exactly spent
+  are high Orange with a diamond, and over allowance is blocking Red with a square and `+N over`. The
+  spent slice is that palette colour and the remainder is the muted track. No
+  white pie is permitted. Visible mono spent/allowance numerals are the pie's
+  text equivalent and keep the fraction available without colour or geometry;
+  exactly spent and over allowance therefore differ by colour, shape and the
+  overage label. The 17px Bricolage 600 posture word and its 13px factual reason
+  sit beside the pie.
+- Health shares W-427's severity standard: blocking is Red `#FF5555`, advisory
+  maps to high and uses Orange `#FFB86C`, normal is uncoloured, and due is low
+  Comment `#6272A4`. Square, diamond, hollow-circle and triangle cues,
+  respectively, carry the same distinctions without colour. The three severity
+  tokens are defined once for Health and Inbox to consume.
+- The verdigris brake says **Stop new work** or **Resume new work** and explains,
+  “New pieces of work do not start; work already running carries on.” It remains
+  the one verdigris fill.
+- Existing labels such as `daily` and `traditio` remain unchanged (the Patron,
+  2026-10-28); W-438 owns their plain-English replacements.
 
 **Board** — phase columns at 288px; cards grow from 64px to 108px: gate ladder,
 title clamped at four lines (13/18) with its complete source in a native title

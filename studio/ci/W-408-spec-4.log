@@ -1,0 +1,24 @@
+# opus: W-408
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17e0a-523c-7911-bdfd-fa0491f0b6ce
+# outcome: passed
+# at: 2026-10-28T03:23:45.394Z
+# tree: tree:77ac00b4f130c68b4b5b3cd88ad10bd6c363f10c
+# brief: briefs/W-408.md blob:a381991e2a2a24c9ccd4ac5ae135c11f53b23e48
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"f3d972d7bff91755bdab2cc3e13515e31d4929c9","brief":"a381991e2a2a24c9ccd4ac5ae135c11f53b23e48","at":"2026-10-28T03:23:15.709Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-408-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Budget now applies the shared semantic severity vocabulary exactly: below the changeable 80% threshold is the uncoloured normal state with neutral ink and a hollow circle, approaching and exactly spent are Orange with a diamond, and over allowance is Red with a square and exact `+N over`; every pie retains visible mono numerals and a muted remainder rather than a white sector — check: W-408-b3 policy, unit, token and served rows; `kill-b3-r14f.out`, `kill-b3-threshold-r14f.out`, `kill-b3-shape-r14f.out` and all populated captures
+2. advisory — Exactly spent and over allowance are visibly and textually distinct: QA at 100% is Orange/diamond with no overage, while production at 130% is Red/square with `+150,000 over`; the distinction remains available without colour — check: W-408-b3 served assertions at 1280, 640 and 390, `kill-b3-over-r14f.out`, and the populated and Health-open captures
+3. advisory — The 2026-10-28 revision-f rulings are recorded in DIRECTION §6, the threshold is a one-constant Patron-changeable Default, and `daily`, `traditio` and other specialist labels remain unchanged for W-438 — check: `docs/design/DIRECTION.md`, brief Defaults/Out of scope, W-408-b4 served Health-open rows and `kill-b4-shape-r14f.out`
+4. advisory — Revision f was rebuilt from 706d61d6 as five ordered red/feature pairs: every base and ordered red fails by assertion, cumulative greens pass, the ten-commit mailbox replays to the staged tree, and the freshly rerun W-408, W-406, W-415, state/walk, type, admission and contrast checks pass; every fresh PNG was inspected — check: `reds-host-revision-f-r14.out`, `gates-proto-f.out`, `prototype.mbox`, `promise-ledger.md` and `shots/`
+
+## Verdict
+
+passed — revision f specifies and prototypes Officina Budget pies with shared normal/high/blocking palette states, non-colour shape cues, a distinct exact-spend versus overage treatment, and the W-438 jargon boundary; prototype sha256 `86c100adf365750b953acda5427a6f5696ae231c0edfd5dede7101174a5f4972`

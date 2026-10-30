@@ -1,0 +1,24 @@
+# opus: W-408
+# phase: spec
+# round: 9
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a17e0a-523c-7911-bdfd-fa0491f0b6ce
+# outcome: passed
+# at: 2026-10-29T05:23:44.475Z
+# tree: tree:43a16b97b386e15cdd67469aa3e3c8e76a1a7d16
+# brief: briefs/W-408.md blob:a46c5399dc744af8ec3e59865ccad30f30400fde
+# ticket: {"opus":"W-408","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":"studio","head":"916e2ae7fe673e34eec06ccbc07546801920ede3","brief":"a46c5399dc744af8ec3e59865ccad30f30400fde","at":"2026-10-29T05:23:41.060Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-408-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The ten approved patches rebase onto 916e2ae7 with one manual conflict, the `apps/web/package.json` focused-policy sequence; the resolution retains both W-408 before W-407 and every pre-existing W-415/W-406/W-360/W-350/W-341 row, so it changes neither visible design nor a W-407 promise — check: `prototype.mbox`, `stage-commits-r16h.txt`, `mbox-check-h.out`, W-407 policy output in `gates-proto-h.out`, and `apps/web/package.json`
+2. advisory — W-407's merged helper, epoch date field, Inbox reads, styles, token policy and served states survive the overlapping-file rebase; Officina continues to import and call the helper without owning a timer/listener, and all six W-407 policy and six served behaviours remain green — check: brief lines 25–49 and 112–114, `gates-proto-h.out`, and W-408-b5 in `reds-host-revision-h.out`
+3. advisory — Revision h preserves revision g's signed design while moving the evidence base to 916e2ae7: all five base and ordered reds fail by assertion, cumulative greens pass, the focused web typecheck and W-408/W-407/W-415/states/walk/W-406 gates pass, admission is empty, and one-hunk ledger kills fail their named assertions — check: `reds-host-revision-h.out`, `gates-proto-h.out`, `admission.mts`, `promise-ledger.md`, and `kill-*-r16h.out`
+4. advisory — All ten fresh captures were inspected at 1280 expanded/collapsed, 640 and 390 with populated, empty and Health-open states; they retain the Patron-approved copy, palette and layout, including complete separated Budget numerals and the reachable Health brake — check: `shots/officina-1280-open-data.png`, `shots/officina-1280-collapsed-data.png`, `shots/officina-1280-open-empty.png`, `shots/officina-1280-open-data-health-open.png`, and the corresponding `officina-640-*` and `officina-390-*` PNGs
+
+## Verdict
+
+passed — revision h rebases the signed W-408 prototype onto 916e2ae7 without redesign, preserves W-407's merged behaviour, and reproduces the staged tree from prototype sha256 `224c8a5191f71bbe32a6c0ff4dc99097948819c5b39a3458c0ff34fbbbcabc1d`

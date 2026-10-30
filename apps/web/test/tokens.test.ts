@@ -14,6 +14,8 @@ const css = readFileSync(resolve(HERE, "..", "src", "tokens.css"), "utf8");
 const direction = readFileSync(resolve(HERE, "..", "..", "..", "docs", "design", "DIRECTION.md"), "utf8");
 const componentCss = readFileSync(resolve(HERE, "..", "src", "components", "w025.css"), "utf8");
 const officinaSource = readFileSync(resolve(HERE, "..", "src", "screens", "Officina.tsx"), "utf8");
+const burnBarSource = readFileSync(resolve(HERE, "..", "src", "components", "BurnBar.tsx"), "utf8");
+const burnSource = readFileSync(resolve(HERE, "..", "src", "lib", "burn.ts"), "utf8");
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -134,9 +136,9 @@ test("W-366-b1 behaviour 1: Dracula accents are exact and meet computed contrast
   assert.match(direction, /Pink `#FF79C6` \(`--accent-pink`\)/, "DIRECTION section 3 names Dracula Pink and its text-selection token");
   assert.match(direction, /Purple `#BD93F9` \(`--accent-purple`\)/, "DIRECTION section 3 names Dracula Purple and its heading token");
   assert.match(direction, /Yellow `#F1FA8C` \(`--accent-yellow`\)/, "DIRECTION section 3 names Dracula Yellow and its project-name token");
-  assert.match(direction, /only status colours[^.]*ok[^.]*amber[^.]*bad[^.]*shape cues/i, "DIRECTION section 3 reserves status meaning and shape cues to ok, amber and bad");
+  assert.match(direction, /severity instead\s+share `--severity-blocking`, `--severity-high` and `--severity-low`, always\s+paired with distinct shapes/i, "DIRECTION section 3 names the shared severity tokens and shape cues");
   assert.match(direction, /accent never marks a state/i, "DIRECTION section 3 forbids accents from conveying state");
-  assert.match(direction, /at\s+most\s+three\s+status\s+colours\s+visible\s+at\s+once/i, "DIRECTION section 3's three-colour ceiling names status colours only");
+  assert.match(direction, /exact tokens live once in\s+`tokens\.css`/i, "DIRECTION makes the severity vocabulary reusable rather than copied");
   assert.match(direction, /Verdigris remains the sole product identity colour\.\s+Yellow is a constant project-name text accent, identical for every project\s+and condition\. Projects remain named, never colour-coded; project dots and\s+colour hashing remain excluded\./, "DIRECTION section 3 keeps project identity with verdigris and makes yellow constant");
 });
 
@@ -288,10 +290,26 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   assert.match(cssRule(".seats__row select option"), /background\s*:\s*var\(--surface\)/, "seat options declare the dark surface");
   assert.match(cssRule(".board__project-select option"), /background\s*:\s*var\(--surface\)/, "Board project options declare the dark surface");
 
-  assert.doesNotMatch(officinaSource, /var\(--bad\)/, "the Officina budget graphic never consumes bad");
-  assert.match(officinaSource, /function pieColor\(spent: number, allowance: number\)[\s\S]*?return spent >= allowance \? "var\(--amber\)" : "var\(--ink\)";/, "budget burn is ink under allowance and amber at or over allowance");
-  assert.match(officinaSource, /const color = pieColor\(spent, allowance\);/, "the budget graphic takes its colour from the allowance boundary");
-  assert.match(officinaSource, /const \{ word, reason \} = formatPosture\(entry\);[\s\S]*?officina__posture-word">\{word}[\s\S]*?officina__posture-reason">\{reason}/, "the adjacent posture word and numeric burn/allowance reason are the non-colour budget cue");
+  assert.match(root, /--severity-blocking\s*:\s*var\(--bad\)[^]*--severity-high\s*:\s*var\(--amber\)[^]*--severity-low\s*:\s*#6272a4/s, "the shared W-408/W-427 severity tokens are declared once");
+  const severity = { blocking: token("bad"), high: token("amber"), low: token("severity-low") };
+  for (const background of ["surface", "wash"] as const) {
+    for (const level of ["blocking", "high"] as const) {
+      const ratio = contrast(severity[level], token(background));
+      assert.ok(ratio >= 3, `${level} on ${background} component contrast ${ratio.toFixed(4)} is at least 3:1`);
+    }
+    const lowRatio = contrast(severity.low, token(background));
+    if (background === "surface") assert.ok(lowRatio >= 3, `low on surface component contrast ${lowRatio.toFixed(4)} is at least 3:1`);
+    else assert.ok(lowRatio < 3, `the exact Comment low on wash is recorded at ${lowRatio.toFixed(4)}, so its ink outline and triangle are required`);
+  }
+  assert.match(componentCss, /\.severity-cue\s*{[^}]*outline:\s*1px solid var\(--ink\)/s, "severity fills gain an ink boundary on both surfaces");
+  assert.match(componentCss, /\.severity-cue--low\s*{[^}]*clip-path:[^}]*filter:\s*drop-shadow/s, "low keeps a triangle and ink edge where Comment alone is below 3:1");
+  assert.match(burnSource, /severity:\s*state === "over" \? "blocking" : state === "normal" \? "normal" : "high"/, "Budget classifies with the shared semantic severity names rather than copied colours");
+  assert.match(burnBarSource, /budget-meter__pie[\s\S]*budget-meter__spent[\s\S]*budget-meter__allowance/, "Budget is one pie plus its visible spent and allowance numerals");
+  assert.match(componentCss, /\.budget-meter__pie\s*{[^}]*conic-gradient\(var\(--budget-state-color\)[^}]*var\(--rule\)/s, "the Budget pie uses a shared severity colour and muted remaining sector");
+  assert.match(componentCss, /budget-meter--normal[^}]*ink-3[^]*budget-meter--approaching[^}]*budget-meter--spent[^}]*severity-high[^]*budget-meter--over[^}]*severity-blocking/s, "Budget consumes normal neutral ink, central Orange and central Red");
+  assert.match(burnBarSource, /severity-cue severity-cue--\$\{measure\.severity\}[^]*budget-meter__numerals/, "Budget pairs its palette state with the shared shape cue beside numerals");
+  assert.match(componentCss, /\.budget-meter--over \.budget-meter__spent\s*{[^}]*font-weight:\s*700/s, "past allowance retains the spent numeral's weight cue");
+  assert.match(officinaSource, /const \{ word, reason \} = formatPosture\(entry\);[\s\S]*?<BurnBar[\s\S]*?officina__posture-word">\{word}[\s\S]*?officina__posture-reason">\{reason}/, "the pie, posture word and factual reason remain adjacent");
 });
 
 const NAMED = new Set(
