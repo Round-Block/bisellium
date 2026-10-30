@@ -1,0 +1,23 @@
+# opus: W-463
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18c9e-e741-7770-bc4f-3e84b3c64fca
+# outcome: failed
+# at: 2026-10-30T11:45:22.544Z
+# tree: tree:797d80ce9fc68f268b2ce5779eaabf024db85b88
+# ui_input: ci/W-463-spec-9.log
+# design_digest: sha256:168b73b968bd461ed6cad393d8e40f80bab240905403d91491492226f9a3ff5c
+# ticket: {"opus":"W-463","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-463/studio","head":"6e7ca75d8cb5fcba5234349a1d9dc7ae87076db9","brief":"8882c777aa55e4f3615b895c178edd26409a1215","at":"2026-10-30T11:43:04.245Z"}
+
+## Findings
+1. blocking — apps/web/src/components/w025.css:2328 [severity: S2] Lifecycle-card asks remain overflow-hidden and single-line, so combined Greenlight, Inbox decision and Human gate copy truncates instead of wrapping complete kinds at 1280/640 as required by brief:68. — check: apps/web/tests-serve/w463.spec.ts [class: tests×ruled-case-uncovered]
+2. advisory — apps/web/tests-serve/w463.spec.ts:455 [severity: S3] The single-request assertion serves an empty Inbox, so it never exercises the `needsYouCount` re-render that reruns the shell snapshot; the exact one-request promise for nonempty Inbox data at brief:75 remains unproven. — check: none: add a real-clock W-463-b3 case with nonempty petitiones and assert one mount-cohort `/api/inbox` request [class: tests×ruled-case-uncovered]
+
+## UI input disposition
+The round-9 ui-lead input explicitly identified lifecycle-card truncation and requested that completeness be scoped to strip entries, but the final brief still includes lifecycle cards in the accepted domain, so that input supports the blocker. All eight desktop/phone images were compared: their navigation, hierarchy, waiting strip, badge, controls, overflow cues and responsive scan order are coherent, but none exercises a three-kind lifecycle card and therefore none closes the defect.
+
+## Verdict
+The implementation does not meet the declared combined-ask behavior, so this round fails.
+VERDICT: FAIL
