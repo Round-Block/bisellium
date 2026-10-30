@@ -31,7 +31,7 @@ import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
-import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, uiReviewSuperseded, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, uiReviewSuperseded, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -1439,14 +1439,34 @@ function staleCitedReds(id: string, round: BuildReviewRound, bs: Src, n: number)
     .sort((a, b) => a - b)
     .filter((k) => {
       const text = bs.read(`ci/reds/${id}/${pad(k)}.log`);
-      const at = text === undefined ? undefined : exactInstant(parseLogHeader(text).get("at") ?? "");
+      const at = text === undefined ? undefined : exactInstant(rawHeaderAt(text));
       return text === undefined || !usableRed(text) || at === undefined || at <= round.at;
     });
 }
 
-/** An exact recorded time (`YYYY-MM-DDTHH:MM:SS[.f]Z`) as epoch ms; a date-only, zone-less or offset form, or anything else, is undefined. */
-function exactInstant(v: string): number | undefined {
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(v) ? instant(v)?.getTime() : undefined;
+/**
+ * A red log's `# at:` value as written: the header grammar of `parseLogHeader` (the leading `# key: value` lines, the last `at`
+ * wins) with the value kept raw, so a trailing space or tab the reader's `.trim()` would hide is still there; undefined when
+ * the log has no `at` line. Only the whitespace after the colon, the header's delimiter, is dropped.
+ */
+function rawHeaderAt(text: string): string | undefined {
+  let at: string | undefined;
+  for (const line of text.split(/\r?\n/)) {
+    const m = /^#\s*([A-Za-z_]+):\s*(.*)$/.exec(line);
+    if (!m) break;
+    if (m[1]!.toLowerCase() === "at") at = m[2] ?? "";
+  }
+  return at;
+}
+
+/**
+ * An exact recorded time as epoch ms: the studio's one exact UTC profile (`utcTimestampProblem`: `YYYY-MM-DDTHH:MM:SSZ` or
+ * `YYYY-MM-DDTHH:MM:SS.sssZ`, fields in range, a real Gregorian day, not year 0000), the profile `red`'s `--now` is checked
+ * against and `ladder.ticket` reads; `red` writes `toISOString()`, inside it. The value is read raw, before any trimming;
+ * every other form, padding and an absent value included, is undefined (stale).
+ */
+function exactInstant(v: string | undefined): number | undefined {
+  return v !== undefined && utcTimestampProblem(v) === undefined ? instant(v)?.getTime() : undefined;
 }
 
 /**
