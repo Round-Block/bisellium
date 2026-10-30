@@ -80,25 +80,32 @@ function takeValue(args: string[], i: number, flag: string): { value: string } |
   return { value: v };
 }
 
-/** The scratch-mode argument parse (W-474), the one input boundary every `--scratch` run passes: when `--scratch` is
- *  among the flags before "--", only `--scratch`, `--repo` and `--base` are accepted and every other flag is refused
- *  as not going with it, whatever else the generic parse would say; undefined when the run is not a scratch run. */
+const SCRATCH_FLAGS = ["--scratch", "--repo", "--base"];
+
+/** The scratch-mode argument parse (W-474), the one input boundary every `--scratch` run passes. `--scratch`, `--repo`
+ *  and `--base` each take the next token verbatim, whatever it is ("--" included), so the command separator is the
+ *  first "--" met where a flag is expected; every other flag before it is refused as not going with `--scratch`, and a
+ *  flag with no token after it needs a value. Undefined when `--scratch` is not among the flags (not a scratch run). */
 function parseScratch(args: string[]): ScratchArgs | { error: string } | undefined {
-  const cut = args.indexOf("--");
-  const flags = cut === -1 ? args : args.slice(0, cut);
-  if (!flags.includes("--scratch")) return undefined;
+  let isScratch = false;
+  for (let i = 0; i < args.length && args[i] !== "--"; i++) {
+    if (args[i] === "--scratch") { isScratch = true; break; }
+    if (SCRATCH_FLAGS.includes(args[i]!)) i++;
+  }
+  if (!isScratch) return undefined;
   let dir: string | undefined;
   let repo: string | undefined;
   let base: string | undefined;
-  for (let i = 0; i < flags.length; i++) {
-    const a = flags[i]!;
-    if (a !== "--scratch" && a !== "--repo" && a !== "--base") return { error: `${a} does not go with --scratch` };
-    // the folder, repository and base are any text, so one that begins with "--" is a value; only a missing value is refused
-    const r = flags[i + 1] !== undefined ? { value: flags[++i]! } : takeValue(flags, ++i, a);
-    if ("error" in r) return { error: r.error.split("\n")[0]! };
-    if (a === "--scratch") dir = r.value;
-    else if (a === "--repo") repo = r.value;
-    else base = r.value;
+  let cut = -1;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]!;
+    if (a === "--") { cut = i; break; }
+    if (!SCRATCH_FLAGS.includes(a)) return { error: `${a} does not go with --scratch` };
+    const value = args[++i];
+    if (value === undefined) return { error: `${a} needs a value` };
+    if (a === "--scratch") dir = value;
+    else if (a === "--repo") repo = value;
+    else base = value;
   }
   if (cut === -1 || args.length === cut + 1) return { error: 'a command after "--" is required' };
   return { dir: dir!, cmd: args.slice(cut + 1), ...(repo === undefined ? {} : { repo }), ...(base === undefined ? {} : { base }) };
