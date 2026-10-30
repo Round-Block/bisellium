@@ -228,4 +228,11 @@ test("W-474-b3 behaviour 3: run --scratch refuses the next copy when the folder 
   const dashed = cli(parent, ["--scratch", "--dashes", "--repo", root, ...cmd]);
   assert.ok(dashed.status === 0 && existsSync(marker), "a folder whose name begins with dashes is recognised");
   assert.deepEqual(readdirSync(join(parent, "--dashes")), [], "and its copy is gone after");
+  rmSync(marker);
+
+  const odd = fixtureRepo();
+  const oddRoot = join(parent, "--repo-dir");
+  renameSync(odd.root, oddRoot);
+  const dashedRepo = cli(parent, ["--scratch", folder, "--repo", "--repo-dir", ...cmd]);
+  assert.ok(dashedRepo.status === 0 && existsSync(marker), "a repository whose path begins with dashes is recognised");
 });
