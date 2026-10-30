@@ -544,7 +544,13 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
   await page.goto(`${served.baseURL}/?w463=b3-real-clock#/inbox`);
   await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "the nonempty Inbox renders its count").toHaveText("1");
   await expect(page.locator('a[href="#/board"] .sidebar__badge--board'), "the shell Board snapshot lands").toHaveText("1");
-  await page.waitForTimeout(400);
+  // Seam: a routed round trip queued behind the mount's reads. Any read the
+  // count change reissued was issued before it, so the counts below are final.
+  await page.route("**/api/health", (route) => route.fulfill({ json: {} }));
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    await fetch("/api/health");
+  });
   expect(realClockInboxCalls, "a nonempty real-clock #/inbox mount issues exactly one /api/inbox request").toBe(1);
   expect(realClockShellReads, "the count change reissues neither shell Board read: one Officina and one opera request").toBe(2);
 });
