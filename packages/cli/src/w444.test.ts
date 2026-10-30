@@ -89,3 +89,33 @@ test("W-444-b1 behaviour 1: a main-thread reply over 200 words is sent back once
   assert.equal((await stop(h, sub)).code, 0, "a subagent's final message is not judged");
   assert.equal((await stop(h, main(undefined))).code, 0, "no reply text: not judged");
 });
+
+test("W-444-b2 behaviour 2: a main-thread reply without the latest usage reading, taken in the last 30 minutes, is sent back with that reading's line", async () => {
+  const h = home([reading(20 * 60_000, { cw: 18, c5: 12, xw: 38, ctx: 150000 }), "", reading(60_000, LATEST)]);
+  const none = await stop(h, main(words(20)));
+  assert.equal(none.code, 2, "no usage reading: refused");
+  assert.ok(none.err.includes(`carry "${LINE}"`), `the refusal names the latest reading's line: ${none.err}`);
+  assert.equal((await stop(h, main(`${words(20)}\n${LINE}`))).code, 0, "the latest reading's line: passes");
+  const script = "Fri 30 Oct 16:45 | Claude week 19% (resets Fri 6 Nov 12:00), 5h 16% (resets Fri 30 Oct 18:00) | Codex week 39% (resets Mon 2 Nov 13:59) | context 208k of 300k | machine load 3.27 (24 cores), cpu 14%, mem 4.9 GB used / 10.7 GB free, swap 1.4 GB";
+  assert.equal((await stop(h, main(`${words(20)}\n${script}`))).code, 0, "the script's own printed line: passes");
+  assert.equal((await stop(h, main(`${words(20)}\nClaude week 18%, 5h 12% | Codex week 38% | context 150k of 300k`))).code, 2, "an older reading's values: refused");
+  assert.equal((await stop(h, main(`${words(20)}\nClaude week 19%, 5h 16% | Codex week 39% | context 207k of 300k`))).code, 2, "one value off: refused");
+  assert.equal((await stop(h, main(`${words(20)}\nClaude week 19%, 5h 16%\nCodex week 39% | context 208k of 300k`))).code, 2, "the four parts on one line");
+  const lacks = home([reading(60_000, { cw: 19, c5: null, xw: 39 })]);
+  assert.equal((await stop(lacks, main(`${words(20)}\nClaude week 19%, 5h ?% | Codex week 39% | context 0k of 300k`))).code, 0, "a value the reading lacks is not compared");
+  const old = home([reading(31 * 60_000, LATEST)]);
+  const stale = await stop(old, main(`${words(20)}\n${LINE}`));
+  assert.equal(stale.code, 2, "a reading 31 minutes old: refused");
+  assert.match(stale.err, /no usage reading taken in the last 30 minutes \(W-444\)/, "the stale refusal says so");
+  assert.equal((await stop(home(undefined), main(words(20)))).code, 0, "no readings file: the reading is not asked");
+  const unreadable = tmp();
+  mkdirSync(join(unreadable, ".bisellium-evidence", "usage", "readings.jsonl"), { recursive: true });
+  const bad = await stop(unreadable, main(`${words(20)}\n${LINE}`));
+  assert.equal(bad.code, 2, "an unreadable readings file: refused");
+  assert.match(bad.err, /the usage readings file \S+ cannot be read \(W-444\): target is not a regular file; .*usage-reading\.sh/, "the unreadable refusal names the error and the usage-reading command");
+  const both = await stop(h, main(words(201)));
+  assert.equal(both.code, 2, "over the limit and without the reading: refused");
+  assert.equal(both.err.split("\n").length, 2, "both rules' refusals, joined");
+  const guard = (await import("./guard.js")) as Record<string, unknown>;
+  assert.ok(Array.isArray(guard["STOP_RULES"]) && (guard["STOP_RULES"] as unknown[]).length === 2, "STOP_RULES holds the two reply rules");
+});
