@@ -1,0 +1,20 @@
+# opus: W-474
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18d3f-490e-72e2-b701-b8366d1aceb2
+# outcome: failed
+# at: 2026-10-30T14:42:30.848Z
+# tree: tree:011f607bb7933c405447a7efa35d7c3fad7c31b9
+# brief: briefs/W-474.md blob:40bf605fb04ef44b39b2692b273244c456001dd6
+# ticket: {"opus":"W-474","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-474/studio","head":"32f9e9952a8ddf9ad196378bdba498020379af37","brief":"40bf605fb04ef44b39b2692b273244c456001dd6","at":"2026-10-30T14:42:26.445Z"}
+
+## Findings
+1. blocking — packages/commands/src/run.ts:143 An unknown flag in scratch mode is rejected before scratch dispatch with the generic `bisellium run: unknown flag` message, instead of the required scratch-specific `<flag> does not go with --scratch` refusal (brief:81). [severity: S1] [class: interface×validation-order-masks-errors] — check: packages/commands/src/w474.test.ts: add a W-474-b3 unknown-flag case
+2. blocking — packages/commands/src/run.ts:104 The shared `takeValue` rejects any scratch-directory text beginning with `--`, so an existing directory with such a name cannot enter `runScratch` despite the accepted “any path text” domain (brief:80). [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/commands/src/w474.test.ts: add a W-474-b3 directory-name-leading-with-dashes case
+3. blocking — packages/commands/src/scratch.ts:60 `statSync` follows a symlinked top-level `node_modules`, after which `linkModules` enumerates its target and creates links; the declared domain requires a symlinked `node_modules` not to be linked (brief:85). [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/commands/src/w474.test.ts: add a W-474-b1 top-level-node_modules-symlink case
+
+## Verdict
+The recorded rows and reds are genuine, but the implementation disagrees with three inputs explicitly admitted or ruled by the brief.
+VERDICT: FAIL
