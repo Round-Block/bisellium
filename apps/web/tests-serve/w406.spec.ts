@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { startServed, type ServedInstance } from "./harness.js";
+import { scrollBoardToLeftTerminal } from "./board-cue.js";
 
 let served: ServedInstance | undefined;
 
@@ -76,11 +77,9 @@ test("W-406-b1 Board exposes one draggable horizontal-scroll cue at 1280 and 390
     expect(thumbPixel.equals(trackPixel), `${width}: rendered thumb and track pixels are visibly distinct`).toBe(false);
 
     await columns.evaluate((node) => {
-      const element = node as HTMLElement;
-      element.style.scrollSnapType = "none";
-      element.scrollLeft = 0;
+      (node as HTMLElement).style.scrollSnapType = "none";
     });
-    await expect.poll(() => columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: drag starts at the left terminal`).toBe(0);
+    await scrollBoardToLeftTerminal(columns, cue, thumb, `${width}: drag`);
     const [dragTrack, dragThumb] = await Promise.all([cue.boundingBox(), thumb.boundingBox()]);
     expect(dragTrack, `${width}: drag track has a rendered box`).toBeTruthy();
     expect(dragThumb, `${width}: drag thumb has a rendered box`).toBeTruthy();
@@ -117,8 +116,7 @@ test("W-406-b1 Board exposes one draggable horizontal-scroll cue at 1280 and 390
     expect(terminalBox, `${width}: the terminal phase has a box`).toBeTruthy();
     expect(terminalBox!.x + terminalBox!.width, `${width}: terminal phase right edge is reachable inside the scroll container`).toBeLessThanOrEqual(containerBox!.x + containerBox!.width + 1);
 
-    await columns.evaluate((node) => { (node as HTMLElement).scrollLeft = 0; });
-    await expect.poll(() => columns.evaluate((node) => (node as HTMLElement).scrollLeft), `${width}: track press starts at the left terminal`).toBe(0);
+    await scrollBoardToLeftTerminal(columns, cue, thumb, `${width}: track press`);
     await page.mouse.click(trackPressX, dragY);
     const expectedTrackScroll = Math.min(maxScroll, Math.max(0, (trackPressX - dragTrack!.x - dragThumb!.width / 2) * maxScroll / availableTrack));
     await expect.poll(async () => Math.abs(await columns.evaluate((node) => (node as HTMLElement).scrollLeft) - expectedTrackScroll), `${width}: track press jumps to its centred proportional offset`).toBeLessThanOrEqual(1);
