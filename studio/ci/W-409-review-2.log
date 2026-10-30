@@ -1,0 +1,25 @@
+# opus: W-409
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18a3a-49de-7111-b6af-868d3b61a2eb
+# outcome: passed
+# at: 2026-10-30T03:07:18.835Z
+# tree: tree:31a63fdb7964e9118e9a6b4c480885ba65a23162
+# ui_input: ci/W-409-spec-7.log
+# design_digest: sha256:e0eb488cef5c64e2da5e08cc97157418f8a546eb9427b7a7a003105e7fcd1383
+# ticket: {"opus":"W-409","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-409/studio","head":"5fccdf578d6560dd99bbf5b132c7acee193965d2","brief":"55464fe434802edb1d3df1ead0694bd271b819a1","at":"2026-10-30T03:06:14.520Z"}
+
+## Findings
+No findings
+
+## UI input disposition
+The authoritative ui-lead pass remains applicable. All eight current images were inspected; the Board now shows “Inbox decision, Human gate” clearly and contained at both 1280 and 390, while the Inbox, Seats, and Officina pairs preserve their responsive hierarchy, controls, overflow handling, and scan order.
+
+## Earlier findings
+- ci/W-409-review-1.log #1: closed — apps/web/src/lib/board.ts:154 now preserves `human_gate` alongside linked Inbox decisions, and the policy and served W-409-b3 rows cover every ask-kind combination on both card copies at 1280, 640, and 390.
+
+## Verdict
+The round-two delta closes the prior blocker without introducing a new defect.
+VERDICT: PASS
