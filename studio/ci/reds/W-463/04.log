@@ -1,0 +1,263 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-463-b4\s --import tsx apps/web/test/w463.test.ts
+# exit: 1
+# at: 2026-10-30T08:52:55.003Z
+# sella: ui-architect
+# tree: tree:a27805fa451d5b951d81bf2c56018ed9b019b40b
+# ticket: {"opus":"W-463","step":"reds","action":"red","round":4,"actor":"producer","studio":".worktrees/W-463/studio","head":"afe429da83f116b98463249adad1b1802bbadba0","brief":"6ab2a4ce92574660f9232101b47e859dbfc1ec76","at":"2026-10-30T08:52:54.902Z"}
+
+TAP version 13
+# Subtest: W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handler
+not ok 1 - W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handler
+  ---
+  duration_ms: 8.088264
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-463/apps/web/test/w463.test.ts:1:10266'
+  failureType: 'testCodeFailure'
+  error: 'a waiting entry is a named button wired to the shared card selection callback'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    /**
+     * apps/web/src/screens/BoardView.tsx — W-064: the Board's presentational
+     * half. Props in, markup out — `Board.tsx` holds fetch, SSE, selection and
+     * keyboard state. The phone column-name strip is a self-contained DOM
+     * affordance (scroll a column into view) rather than app state, so it lives
+     * here rather than being threaded up through Board.tsx.
+     */
+    import { useCallback, useEffect, useRef, useState, type JSX } from "react";
+    import type { BoardModel, CardRow } from "../lib/board.js";
+    import { GateLadder } from "../components/GateLadder.js";
+    import { Colophon } from "../components/Colophon.js";
+    
+    export interface BoardViewProps {
+      studio: string;
+      model: BoardModel;
+      /** True only while the drawer reduces this mounted Board to a zero-width
+       *  track; removes its concealed controls from sequential focus. */
+      inert?: boolean;
+      selectedId?: string;
+      /** Roving tabindex: exactly one card per column carries tabIndex 0. */
+      focusedByColumn: Record<string, string | undefined>;
+      onSelectCard: (id: string, columnId: string) => void;
+      /** Connection state and last successful refresh, already formatted by
+       *  `lib/board.ts`'s `liveLabel`; this belongs to the header, not a footer. */
+      liveness?: string;
+      /** W-129: one plain sentence when serve could not read every branch record (`branchNote`). */
+      branchNote?: string;
+      generatedAt?: string;
+      /** W-341: the screen's visible status line in a loading, empty or error state; absent at rest. */
+      notice?: string;
+    }
+    
+    const UNAVAILABLE_REASON = "one officina per serve process; no project registry exists to detect or add one";
+    
+    function cardClassName(card: CardRow): string {
+      // Ruling: on a card that is both blocked and needs-you, only "bad" shows
+      // (DIRECTION §3: at most one amber region, and a failure outranks a wait).
+      const state = card.blocked ? "board__card--bad" : card.needsYou ? "board__card--amber" : "";
+      return ["board__card", state].filter(Boolean).join(" ");
+    }
+    
+    function AskKinds({ card }: { card: CardRow }): JSX.Element | null {
+      if ((card.asks?.length ?? 0) === 0) return null;
+      return (
+        <span className="board__card-asks" aria-label="Waiting on you">
+          {card.asks?.map((ask) => (
+            <span key={ask.kind} className="board__card-ask">
+              {ask.kind === "greenlight"
+                ? "Greenlight"
+                : ask.kind === "inbox"
+                  ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
+                  : "Human gate"}
+            </span>
+          ))}
+        </span>
+      );
+    }
+    
+    function Card({
+      card,
+      columnId,
+      selected,
+      focused,
+      onSelect,
+    }: {
+      card: CardRow;
+      columnId: string;
+      selected: boolean;
+      focused: boolean;
+      onSelect: (id: string, columnId: string) => void;
+    }): JSX.Element {
+      return (
+        <div
+          className={cardClassName(card)}
+          role="option"
+          aria-selected={selected}
+          tabIndex={focused ? 0 : -1}
+          data-column-id={columnId}
+          data-card-id={card.id}
+          onClick={() => onSelect(card.id, columnId)}
+        >
+          <GateLadder gates={card.gates} />
+          <span className="board__card-title" title={card.title}>{card.title}</span>
+          <AskKinds card={card} />
+          <span className="board__card-meta">
+            {card.sella && <span className="board__card-sella">{card.sella}</span>}
+            <span className="board__card-state">{card.state}</span>
+          </span>
+        </div>
+      );
+    }
+    
+    function WaitingStrip({ waiting }: { waiting: CardRow[] }): JSX.Element {
+      const itemsRef = useRef<HTMLDivElement>(null);
+      const [canScrollRight, setCanScrollRight] = useState(false);
+      const updateScrollCue = useCallback(() => {
+        const items = itemsRef.current;
+        setCanScrollRight(items !== null && items.scrollLeft + items.clientWidth < items.scrollWidth - 1);
+      }, []);
+    
+      useEffect(() => {
+        updateScrollCue();
+        const items = itemsRef.current;
+        if (!items) return;
+        const observer = new ResizeObserver(updateScrollCue);
+        observer.observe(items);
+        window.addEventListener("resize", updateScrollCue);
+        return () => {
+          observer.disconnect();
+          window.removeEventListener("resize", updateScrollCue);
+        };
+      }, [updateScrollCue, waiting.length]);
+    
+      const showMore = (): void => {
+        const items = itemsRef.current;
+        if (!items) return;
+        items.scrollBy({ left: items.clientWidth * 0.9, behavior: "auto" });
+      };
+    
+      return (
+        <aside className={`board__waiting${waiting.length === 0 ? " board__waiting--empty" : ""}`} aria-label="Waiting on you">
+          <div className="board__waiting-label">
+            <span>Waiting on you</span>
+            <strong>{waiting.length}</strong>
+          </div>
+          {waiting.length > 0 && <div className="board__waiting-rail">
+            <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
+              {waiting.map((card) => (
+                  <div key={card.id} className="board__waiting-item" data-waiting-id={card.id}>
+                    <span className="board__waiting-title" title={card.title}>{card.title}</span>
+                    <AskKinds card={card} />
+                  </div>
+              ))}
+            </div>
+            {canScrollRight && <button type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick={showMore}>
+              <span aria-hidden="true">›</span>
+            </button>}
+          </div>}
+        </aside>
+      );
+    }
+    
+    function Column({
+      column,
+      selectedId,
+      focusedByColumn,
+      onSelectCard,
+    }: {
+      column: BoardModel["columns"][number];
+      selectedId?: string;
+      focusedByColumn: Record<string, string | undefined>;
+      onSelectCard: (id: string, columnId: string) => void;
+    }): JSX.Element {
+      const focusedId = focusedByColumn[column.id] ?? column.cards[0]?.id;
+      const classes = ["board__column", column.pinned && "board__column--pinned"].filter(Boolean).join(" ");
+      return (
+        <div className={classes} data-column-id={column.id}>
+          <div className="board__column-head" tabIndex={-1}>
+            <span className="board__column-name">{column.name}</span>
+            <span className="board__column-count">{column.cards.length}</span>
+          </div>
+          {column.cap !== undefined && (
+            <div className="board__wip-rule">
+              <div
+                className={["board__wip-fill", column.atCap && "board__wip-fill--amber"].filter(Boolean).join(" ")}
+                style={{ width: `${Math.min(100, (column.cards.length / Math.max(1, column.cap)) * 100)}%` }}
+              />
+            </div>
+          )}
+          <div className="board__column-cards" role="listbox" aria-label={column.name}>
+            {column.cards.map((card) => (
+              <Card key={card.id} card={card} columnId={column.id} selected={card.id === selectedId} focused={card.id === focusedId} onSelect={onSelectCard} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    /** Not a `useRef`: `BoardView` is called as a plain function by the static-
+     *  markup tests (behaviour 5/6's own house convention, matching Sidebar/
+     *  SeatsView), which never runs inside React's real render pass and so has
+     *  no hook dispatcher. A plain DOM query is equivalent here and only ever
+     *  runs from a real click in a real browser (mounted, behaviour 9). */
+    function scrollColumnIntoView(columnId: string): void {
+      if (typeof document === "undefined") return;
+      const el = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${columnId}"]`);
+      el?.scrollIntoView({ inline: "start", block: "nearest" });
+    }
+    
+    export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, branchNote, generatedAt, notice }: BoardViewProps): JSX.Element {
+      return (
+        <div className="board" inert={inert || undefined}>
+          <div className="board__header">
+            <h1 className="board__title">Board</h1>
+            <div className="board__project-select-wrap">
+              <select className="board__project-select" disabled aria-label="project" value={studio} onChange={() => undefined}>
+                <option value={studio}>{studio}</option>
+              </select>
+              <span className="board__project-select-reason">{UNAVAILABLE_REASON}</span>
+            </div>
+            {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
+          </div>
+          {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
+          {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
+          <WaitingStrip waiting={model.waiting} />
+          <div className="board__strip">
+            {model.columns.map((column) => (
+              <button key={column.id} type="button" className="board__strip-item" onClick={() => scrollColumnIntoView(column.id)}>
+                {column.name} <span className="board__strip-count">{column.cards.length}</span>
+              </button>
+            ))}
+          </div>
+          <div className="board__columns">
+            {model.columns.map((column) => (
+              <Column key={column.id} column={column} selectedId={selectedId} focusedByColumn={focusedByColumn} onSelectCard={onSelectCard} />
+            ))}
+          </div>
+          <div className="board__scroll-cue" aria-hidden="true">
+            <div className="board__scroll-cue-thumb" />
+          </div>
+          <Colophon studioPath={studio} generatedAt={generatedAt} />
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-463/apps/web/test/w463.test.ts:122:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 26.703102
