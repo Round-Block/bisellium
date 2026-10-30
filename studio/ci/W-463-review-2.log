@@ -1,0 +1,25 @@
+# opus: W-463
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18c9e-e741-7770-bc4f-3e84b3c64fca
+# outcome: passed
+# at: 2026-10-30T14:10:49.649Z
+# tree: tree:a4e8a7b00da8d0a7b10074bd5ea3c20ac03cc29c
+# ui_input: ci/W-463-spec-12.log
+# design_digest: sha256:97519b55008187039915d8feae98c171af25f464641003edc662cb90b731d04d
+# ticket: {"opus":"W-463","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-463/studio","head":"4f138c81030d2a5152eb874878b7653f8ae08194","brief":"1299c885c85b86125769b781675cb5b03930465d","at":"2026-10-30T14:09:19.611Z"}
+
+## Findings
+1. advisory — apps/web/tests-serve/w463.spec.ts:426 [severity: S3] The delta proves the nonempty real-clock mount cohort but still has no post-answer case showing that changed Inbox data recomputes Board waiting membership; the path claimed at apps/web/src/App.tsx:127 and brief:52 therefore lacks regression evidence. [class: tests×ruled-case-uncovered] — check: apps/web/tests-serve/w463.spec.ts
+
+## UI input disposition
+The authoritative ui-lead input confirms that D-143 supersedes the earlier wrapping requirement and judges the amended hierarchy legible. All eight images were inspected: the Board pairs show IDs above bounded titles, no visible strip asks, card-only ask lines, contained metadata and coherent horizontal navigation; the other screen pairs retain their established responsive hierarchy without a visible regression.
+
+## Earlier findings
+- ci/W-463-review-1.log #1: closed — D-143 and amended brief:68 now expressly require the lifecycle ask line to truncate with nowrap and ellipsis, which apps/web/src/components/w025.css:2321 implements and the changed served rows check at every ruled width.
+
+## Verdict
+The prior blocker is closed, and the remaining regression-evidence gap is advisory.
+VERDICT: PASS
