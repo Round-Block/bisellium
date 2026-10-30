@@ -125,6 +125,25 @@ export function titleProblem(value: unknown): string | undefined {
   return undefined;
 }
 
+/** W-472: the most words an opus title may carry; the long text belongs in the record's description (its body). */
+export const TITLE_MAX_WORDS = 8;
+
+/** W-472: the words of a title: its whitespace-separated tokens (`\s`, Unicode) that hold a letter or a number of any
+ *  script (`\p{L}`, `\p{N}`), so a lone dash, bracket or other mark is not a word. */
+export function titleWordCount(title: string): number {
+  return title
+    .trim()
+    .split(/\s+/u)
+    .filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
+}
+
+/** W-472: why a title is too long for a writer to file, or undefined. A non-string is `titleProblem`'s, not this. */
+export function titleWordsProblem(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const words = titleWordCount(value);
+  return words > TITLE_MAX_WORDS ? `title has ${words} words, at most ${TITLE_MAX_WORDS}; put the rest in the description` : undefined;
+}
+
 function leap(year: number): boolean {
   return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 }

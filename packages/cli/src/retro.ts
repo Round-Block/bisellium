@@ -21,7 +21,7 @@ import { WF, instant } from "@bisellium/schema";
 import { createNextRecord, ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
-import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
+import { readContainedRegularFile, titleProblem, titleWordsProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
 import { LOG_MAX_BYTES, parseVerdictLog, readUiSpecPairing, type RecordedFinding } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
@@ -924,7 +924,7 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     if (typeof e.fix === "string") {
       if (classifyAddressedTarget(root, e.fix).kind === "unresolvable") throw new Error(`triage: fix "${e.fix}" of "${e.cls}" names no opus, rule id or decision`);
     } else {
-      const problem = titleProblem(e.fix.title);
+      const problem = titleProblem(e.fix.title) ?? titleWordsProblem(e.fix.title);
       if (problem !== undefined) throw new Error(`triage: fix of "${e.cls}": ${problem}`);
       if (!(manifest.collegia ?? []).some((c) => c.id === (e.fix as { collegium: string }).collegium)) throw new Error(`triage: fix of "${e.cls}" names undeclared collegium "${e.fix.collegium}"`);
     }

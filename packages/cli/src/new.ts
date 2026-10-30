@@ -20,6 +20,7 @@ import {
   loadNativeRecords,
   readContainedRegularFile,
   titleProblem,
+  titleWordsProblem,
   validateNativeRecord,
   validateRecordReferences,
 } from "@bisellium/commands/opus-model.js";
@@ -84,6 +85,8 @@ export function newItem(dir: string, opts: NewOptions): NewResult {
     if (!isNativeOpusKind(opts.kind)) return { ok: false, message: `kind ${JSON.stringify(opts.kind)} is not a native opus kind` };
     const badTitle = titleProblem(opts.title);
     if (badTitle) return { ok: false, message: badTitle };
+    const longTitle = titleWordsProblem(opts.title);
+    if (longTitle) return { ok: false, message: `opus.title.words: ${longTitle}` };
     const loaded = loadNativeRecords(root);
     if (loaded.problems.length) return { ok: false, message: loaded.problems[0]!.problem.message };
     const proposed = { id: "W-0", title: opts.title, kind: opts.kind, collegium: opts.collegium, state: "backlog", arc: opts.arc, parent: opts.parent };
@@ -222,6 +225,11 @@ export function runNew(args: string[]): { exitCode: number } {
     const badTitle = titleProblem(title);
     if (badTitle) {
       console.error(badTitle);
+      return { exitCode: 1 };
+    }
+    const longTitle = titleWordsProblem(title);
+    if (longTitle) {
+      console.error(`opus.title.words: ${longTitle}`);
       return { exitCode: 1 };
     }
     const loaded = loadNativeRecords(root);
