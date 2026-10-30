@@ -1046,7 +1046,17 @@ test("W-462-b1 behaviour 1: a PR head the opus branch rewrites with its tree kep
   assert.deepEqual([d.first, w462Why(d)], [`next: ${OPUS} pr held`, `why: ${BRANCH} ${w462Short(tipOf(w))} rewrites PR #${PR_NUMBER}'s reviewed head ${w462Short(reviewed)} and changes its tree outside the source: a rewrite keeps the reviewed tree (W-462); commit the record after the Patron's push`], ran("a changed record tree is held", d));
 
   // (e) a long worktree path: the Patron's one command is printed whole, never cut at the output bound
-  const long = w462World(`w462-b1-${"long-".repeat(48)}`);
+  const tmp = process.env["TMPDIR"];
+  const deep = join(scratch("w462-b1-deep"), ...["a", "b", "c", "d"].map((c) => c.repeat(200)));
+  mkdirSync(deep, { recursive: true });
+  process.env["TMPDIR"] = deep;
+  let long: ReturnType<typeof w462World>;
+  try {
+    long = w462World("w462-b1-long");
+  } finally {
+    if (tmp === undefined) delete process.env["TMPDIR"];
+    else process.env["TMPDIR"] = tmp;
+  }
   const longTree = w462Tree(long.w, long.reviewed);
   const longHead = w462Commit(long.w, `${long.reviewed}~1`, `feat(${OPUS}): the implementation (rewritten)`, longTree);
   w462Move(long.w, longHead);
