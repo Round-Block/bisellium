@@ -50,7 +50,7 @@ Order by cycle minutes saved, D-039 highs first; a high filed since starts after
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
 1. W-462 — re-push rewritten heads; then #859 (W-408)
 2. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
-3. W-443, W-446
+3. W-466 (show the failing test); W-443, W-446
 4. W-452 — collegium names the owning lead; kind ui retired (D-128), then re-tag
 5. W-455 — symlink cause fix: the containment helper refuses a symlinked final file (high, 10-29). Then W-444 — reply length Stop hook
 6. W-465 — drain before handover; no new task past 250k (high, 10-30); W-436 — open items live in records, not memory or chat (high, 10-28)
