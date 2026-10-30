@@ -96,3 +96,19 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   assert.match(served, /every waiting entry stays in one horizontal row[\s\S]*horizontal waiting row opens at its first entry[\s\S]*overflow arrow appears while entries continue right[\s\S]*right arrow advances the waiting row[\s\S]*right arrow hides at the end[\s\S]*keyboard focus reaches horizontal entry/, "the served row pins one horizontal row, initial scroll, its arrow cue and keyboard reachability");
   assert.match(served, /many-entry strip keeps the reference whole-strip height[\s\S]*empty strip collapses to exactly its label line[\s\S]*one-entry strip keeps the reference whole-strip height/, "the served row pins collapsed zero and reference-height populated strips");
 });
+
+test("W-463-b3 behaviour 3: the Board badge reuses strip membership while Inbox keeps D-135", () => {
+  const app = read("src/App.tsx");
+  const sidebar = read("src/components/Sidebar.tsx");
+  const css = read("src/components/w025.css");
+  const served = read("tests-serve/w463.spec.ts");
+
+  assert.match(app, /if \(route === "board"\) return;[\s\S]*if \(active\) setBoardWaitingCount\(boardModel\(officina, opera, inbox\)\.waiting\.length\)/, "the mounted Board ignores obsolete shell snapshots and supplies its live badge count");
+  assert.match(app, /fetchInbox\(\)[\s\S]*active && route !== "inbox"[\s\S]*setNeedsYouCount\(needsYouTotal\(inbox\)\)/, "the Inbox badge refreshes independently of Officina and opera reads");
+  assert.match(sidebar, /e\.route === "board"[\s\S]*Board, \$\{boardWaitingCount\} waiting on you/, "the Board link owns a labelled nonzero badge");
+  assert.match(sidebar, /collapsed && boardWaitingCount > 9 \? "9\+" : boardWaitingCount/, "the collapsed Board dot caps only its visible count");
+  assert.match(sidebar, /overlay && collapsed[\s\S]*sidebar__badge--toggle/, "the closed narrow shell keeps the chosen mock's Board alert on its toggle");
+  assert.match(sidebar, /aria-describedby=\{toggleBoardDescriptionId\}[\s\S]*Board, \{boardWaitingCount\} waiting on you/, "the ruled toggle name gains a full-count waiting description");
+  assert.match(css, /\.shell--sidebar-collapsed \.sidebar__link\[href="#\/board"\]/, "the collapsed Board icon anchors its dot");
+  assert.match(served, /Inbox badge stays question-only/, "served geometry distinguishes both navigation totals");
+});

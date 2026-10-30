@@ -304,3 +304,95 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     many.inbox = manyInbox;
   }
 });
+
+test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question-only", async ({ page }) => {
+  served = await startServed("w463-b3");
+  const fixture: Fixture = {
+    opera: [makeOpus("W-1", "backlog"), makeOpus("W-2", "building", { patron: { status: "pending" } }), makeOpus("W-3", "done")],
+    inbox: {
+      opera: [{ id: "W-1", title: "W-1 title", collegium: "design", sella: "builder" }, { id: "W-2", title: "W-2 title", collegium: "design", sella: "builder" }],
+      petitiones: [
+        { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
+        { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
+      ],
+    },
+  };
+  await installFixture(page, fixture);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${served.baseURL}/?w463=b3-wide#/board`);
+  await expect(page.locator('a[href="#/board"] .sidebar__badge--board'), "expanded Board badge counts each waiting opus once").toHaveText("2");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "Inbox badge stays question-only and once per linked opus").toHaveText("1");
+  await page.getByRole("button", { name: "Collapse sidebar" }).click();
+  await expect(page.locator('a[href="#/board"] .sidebar__badge--dot')).toHaveText("2");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot')).toHaveText("1");
+
+  for (const width of [640, 390] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.reload();
+    const toggle = page.getByRole("button", { name: "Expand sidebar" });
+    await expect(page.locator(".sidebar__toggle .sidebar__badge--toggle"), `${width}: closed overlay keeps the mock's Board alert visible`).toHaveText("2");
+    await expect(toggle, `${width}: D-119 toggle name is unchanged`).toHaveAccessibleName("Expand sidebar");
+    await expect(toggle, `${width}: closed toggle describes the full Board wait`).toHaveAccessibleDescription("Board, 2 waiting on you");
+    await toggle.click();
+    await expect(page.locator(".sidebar__toggle .sidebar__badge--toggle"), `${width}: open overlay has no duplicate Board alert`).toHaveCount(0);
+    await expect(page.locator('a[href="#/board"] .sidebar__badge--board')).toHaveText("2");
+    await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("1");
+    await page.keyboard.press("Escape");
+  }
+
+  fixture.opera = Array.from({ length: 12 }, (_, index) => makeOpus(`W-${20 + index}`, "backlog"));
+  fixture.inbox = { opera: [], petitiones: [] };
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.reload();
+  const cappedToggle = page.getByRole("button", { name: "Expand sidebar" });
+  await expect(page.locator(".sidebar__toggle .sidebar__badge--toggle"), "closed dot caps only its visible copy").toHaveText("9+");
+  await expect(cappedToggle, "the description exposes the full number behind 9+").toHaveAccessibleDescription("Board, 12 waiting on you");
+
+  await page.unroute("**/api/officina");
+  await page.unroute("**/api/opera");
+  await page.unroute("**/api/inbox");
+  const liveOpera = [makeOpus("W-1", "backlog"), makeOpus("W-2", "backlog")];
+  const staleOpera = [makeOpus("W-9", "backlog")];
+  let releaseShell!: () => void;
+  const shellGate = new Promise<void>((resolve) => { releaseShell = resolve; });
+  let officinaCalls = 0;
+  let operaCalls = 0;
+  let staleOfficinaSettled = false;
+  let staleOperaSettled = false;
+  await page.route("**/api/officina", async (route) => {
+    const call = ++officinaCalls;
+    if (call === 1) await shellGate;
+    await route.fulfill({ json: officina });
+    if (call === 1) staleOfficinaSettled = true;
+  });
+  await page.route("**/api/opera", async (route) => {
+    const call = ++operaCalls;
+    if (call === 1) await shellGate;
+    await route.fulfill({ json: call === 1 ? staleOpera : liveOpera });
+    if (call === 1) staleOperaSettled = true;
+  });
+  await page.route("**/api/inbox", (route) => route.fulfill({ json: { opera: [], petitiones: [] } }));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${served.baseURL}/?w463=b3-stale-shell#/inbox`);
+  await expect.poll(() => officinaCalls).toBeGreaterThanOrEqual(1);
+  await expect.poll(() => operaCalls).toBeGreaterThanOrEqual(1);
+  await page.goto(`${served.baseURL}/?w463=b3-live-board#/board`);
+  await expect(page.locator(".board__waiting-label strong"), "the mounted Board reports its live model").toHaveText("2");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge--board')).toHaveText("2");
+  releaseShell();
+  await expect.poll(() => staleOfficinaSettled && staleOperaSettled).toBe(true);
+  await expect(page.locator('a[href="#/board"] .sidebar__badge--board'), "an obsolete shell snapshot cannot overwrite the mounted Board").toHaveText("2");
+
+  await page.unroute("**/api/officina");
+  await page.unroute("**/api/opera");
+  await page.unroute("**/api/inbox");
+  await page.route("**/api/officina", (route) => route.fulfill({ status: 500, json: { error: "officina unavailable" } }));
+  await page.route("**/api/opera", (route) => route.fulfill({ status: 500, json: { error: "opera unavailable" } }));
+  await page.route("**/api/inbox", (route) => route.fulfill({ json: {
+    opera: [{ id: "W-1", title: "W-1 title", collegium: "design", sella: "builder" }],
+    petitiones: [{ id: "P-1", opus: "W-1", from: "producer", subject: "Choose", body: "Choose" }],
+  } }));
+  await page.goto(`${served.baseURL}/?w463=b3-independent-inbox#/board`);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "Inbox refresh survives failed Officina and opera reads").toHaveText("1");
+});
