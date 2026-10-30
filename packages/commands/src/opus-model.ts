@@ -151,6 +151,7 @@ export function descriptionProblem(value: string): string | undefined {
   if (value.trim() === "") return "description must be nonblank; omit --description for none";
   for (const char of value) {
     const cp = char.codePointAt(0)!;
+    if (cp >= 0xd800 && cp <= 0xdfff) return `description contains an unpaired surrogate U+${cp.toString(16).toUpperCase().padStart(4, "0")}`;
     if ((cp <= 0x1f && cp !== 0x09 && cp !== 0x0a) || (cp >= 0x7f && cp <= 0x9f))
       return `description contains forbidden control U+${cp.toString(16).toUpperCase().padStart(4, "0")}`;
   }
