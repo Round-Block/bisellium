@@ -1,9 +1,9 @@
 /**
  * `bisellium run --scratch <dir>` (W-474): run a command in a throwaway copy of the repository at one commit, made under
  * `<dir>` (one opus's evidence folder), that shares the repository's git objects instead of copying them, and is
- * deleted when the command ends, and on a failure. No sella, no officina, no receipt: the copy is scratch, not a seat's work.
+ * deleted when the command ends, on a failure and on SIGINT, SIGTERM or SIGHUP too. No sella, no officina, no receipt: the copy is scratch, not a seat's work.
  *
- * Exit codes: the command's own (128+signal when it was killed by one) · 2 a refusal (bad flags,
+ * Exit codes: the command's own (128+signal when it was killed by one, or when this run was) · 2 a refusal (bad flags,
  * not a directory, not a repository, no such commit) before any copy is made · 1 the copy could not be made or
  * removed.
  */
@@ -14,7 +14,9 @@ import { join, resolve } from "node:path";
 
 /** The copy's name under the folder: `scratch.` and mkdtemp's six characters, the form prune-scratch.sh removes. */
 export const SCRATCH_PREFIX = "scratch.";
+const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
 const GIT_TIMEOUT_MS = 120_000;
+const STOP_GRACE_MS = 5_000;
 
 export interface ScratchArgs {
   dir: string;
@@ -84,6 +86,22 @@ export async function runScratch(a: ScratchArgs): Promise<number> {
     }
     return removed;
   };
+  // the trap: a signal stops the command, waits for it, removes the copy and exits 128+signal
+  const handlers = SIGNALS.map((sig) => {
+    const h = (): void => {
+      const code = 128 + (osConstants.signals[sig] ?? 0);
+      const done = (): void => {
+        remove();
+        process.exit(code);
+      };
+      if (child === undefined || child.exitCode !== null || child.signalCode !== null) return done();
+      child.once("exit", done);
+      child.kill(sig);
+      setTimeout(() => child?.kill("SIGKILL"), STOP_GRACE_MS).unref();
+    };
+    process.on(sig, h);
+    return [sig, h] as const;
+  });
   const status = await (async (): Promise<number> => {
     const cloned = git(dir, ["clone", "-q", "--shared", "--no-checkout", "--", repo, copy]);
     if (cloned.status !== 0) {
@@ -108,5 +126,6 @@ export async function runScratch(a: ScratchArgs): Promise<number> {
     say(`the copy could not be made: ${(e as Error).message}`);
     return 1;
   });
+  for (const [sig, h] of handlers) process.off(sig, h);
   return remove() ? status : 1;
 }
