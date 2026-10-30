@@ -1,0 +1,21 @@
+# opus: W-445
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18840-d654-7121-97d8-a51078218aeb
+# outcome: passed
+# at: 2026-10-29T23:26:42.215Z
+# tree: tree:2e501aefd5daadd7897e97de747b9558af3f2b61
+# brief: briefs/W-445.md blob:562e9f7bf60846eaeb64fdb6efd1443a3a98f2e9
+# ticket: {"opus":"W-445","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"66b4daf3d24e8566439f7a9b6a33f475082530a8","brief":"562e9f7bf60846eaeb64fdb6efd1443a3a98f2e9","at":"2026-10-29T23:26:41.450Z"}
+
+## Findings
+1. advisory — brief:45 The diagnostic list omits `evidenceText`’s actual `is not an absolute or ~/ path` result for a direct `~/x.out` citation when `HOME` is relative; `W-445-b2` exercises that home failure only through a root. Replace brief:45 with: `**verdict --phase spec**, by the signer: after the promise ledger, runVerdict prefixes unchanged promiseLedgerProblems text with <id>: promise ledger: and every evidenceClaimProblems text with <id>: evidence citation:; evidence problems cover invalid roots, zero or multiple relative matches, unsupported paths, evidenceText errors (including is not an absolute or ~/ path and is not a readable regular file), and unheld files or lines. Any problem exits 2 and writes no log.` [severity: S4] [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/verdict-citation.test.ts W-445-b2
+
+## Earlier findings
+- ci/W-445-spec-2.log #1: closed — revision 2 refuses zero or multiple relative matches and unsupported citations, reports failed `~/` root expansion, and `W-445-b2` pins the former fail-open cases.
+
+## Verdict
+The prior fail-open blocker is closed; the remaining diagnostic wording mismatch is advisory.
+VERDICT: PASS

@@ -1,0 +1,18 @@
+# opus: W-445
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18840-d654-7121-97d8-a51078218aeb
+# outcome: failed
+# at: 2026-10-29T15:27:34.844Z
+# tree: tree:7c9a238f6fedb2dfad5c70bd81995405a5f1ef60
+# brief: briefs/W-445.md blob:1e09e364d6c0e38935b1d2e01b3aa8f4c3a60989
+# ticket: {"opus":"W-445","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"9eb8d0ef1821106ceb4b4649ea04b3b8e079285e","brief":"1e09e364d6c0e38935b1d2e01b3aa8f4c3a60989","at":"2026-10-29T15:27:34.055Z"}
+
+## Findings
+1. blocking — brief:68 A plausible typo in a declared evidence root or relative citation produces zero matches, and failed `~/` expansion is filtered out; the architect’s real `runVerdict` caller then records a passing signature without checking the recognized claim, while `W-445-b2` explicitly admits rather than catches this path. Replace brief:68 with: `| A recognized claim's cited path, the declared roots used to resolve it, and the home directory used for \`~/\` | a trailing-slash directory citation is explicitly unchecked; otherwise an absolute or \`~/\` path names a readable regular file of at most 4 MB, or a \`RELATIVE_CITE\` path resolves under exactly one declared root; every other form is invalid | \`evidenceClaimProblems\`: failed or non-absolute home expansion, an unsupported non-directory path, zero or multiple relative matches, an unreadable file, or an unheld claim is one problem; \`runVerdict\` exits 2 and writes no log |` [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/verdict-citation.test.ts W-445-b2
+
+## Verdict
+The unresolved-relative path is an ordinary fail-open configuration mistake and requires a design-changing correction before build.
+VERDICT: FAIL

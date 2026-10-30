@@ -1,0 +1,25 @@
+# opus: W-445
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T15:21:21.107Z
+# tree: tree:7c9a238f6fedb2dfad5c70bd81995405a5f1ef60
+# brief: briefs/W-445.md blob:1e09e364d6c0e38935b1d2e01b3aa8f4c3a60989
+# ticket: {"opus":"W-445","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"9eb8d0ef1821106ceb4b4649ea04b3b8e079285e","brief":"1e09e364d6c0e38935b1d2e01b3aa8f4c3a60989","at":"2026-10-29T15:21:14.588Z"}
+
+# W-445 spec signature, round 1 (architect, claude-opus-5-5)
+
+Brief: studio/briefs/W-445.md, prototyped over master a57bdf11; evidence in /home/edckt/.bisellium-evidence/W-445-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-445-spec/promise-ledger.md
+
+Checked: the two reds fail by assertion on their red commits and on master's source, and are accepted by classifyReplay (red-accept.out); each row passes at its stage (proto-b1-stage1.out, proto-b2-stage2.out, proto-b1-stage2.out); 9 kills, every line guarded (kills.out); lint, format and typecheck on stage 2, the neighbouring test files whole and both officina checks with no blocking finding (gates-proto.out, census-*-proto.out); every series commit builds the web bundle and typechecks (series-builds.out); the check over the 228 briefs on master refuses none and refuses W-442's signed round-3 brief at brief:78 while admitting round 5's (census.out), and refuses neither brief in flight (census-inflight.out); the check on this brief itself returns no problem (dogfood.out); admission returns no problem (admission.out); master's ledger validator returns no problem (ledger-probe.out). The Codex test check (fixture-census.md) lists no flipped row and nothing unnamed; every must-stay-green row it lists (verdict-citation.test.ts's spec-verdict rows W-306 to W-381 and W-348-b3, verdict.test.ts b1 to b8, verdict-findings.test.ts W-275-b1, containment.test.ts W-163-b6 and W-423-b5, rules/tests.test.ts W-121 b5, W-178-b4, W-376-b1 and W-392-b1, doc-cap.test.ts W-288-b3, docs.test.ts) passes on stage 2 in its whole file (gates-proto.out, census-doc-cap-proto.out). No Files owned path is W-461's or W-409's, and none is code-owned.
+
+## Findings
+1. advisory — only a quoted claim in the form "<claim>" followed by a parenthesis opening with the backticked citation is read; W-361's and W-366's shapes (meaning) and W-408's (no citation) are not caught, stated on Promise refuse — check: brief-admission.ts:683 (stage 2)
+2. advisory — a stale bare citation whose name resolves under no declared evidence root is not read, since it may be a repository path; stated on Promise resolve — check: verdict.ts:736 (stage 2)
+
+## Verdict
+passed — the signer's spec verdict now refuses a brief whose quoted claim is not in the evidence file its parenthesis cites, read through admission's own realLines and the kill reader's evidenceText; over every brief on master it refuses none, and it refuses W-442's round-3 brief at the line spec review r4 found.

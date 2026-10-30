@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { inputDomainRows, killedPin, ruledCases, type RuledCase } from "./brief-admission.js";
+import { evidenceClaims, evidenceRoots, inputDomainRows, killedPin, ruledCases, type RuledCase } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
@@ -682,6 +682,92 @@ function killProblem(c: RuledCase, entries: readonly { text: string; briefs: Set
   return first;
 }
 
+/** W-445: an absolute or ~/ path as written, home expanded, or "" when it is neither (os.homedir() can throw). */
+function expandHome(named: string): string {
+  try {
+    const path = named.startsWith("~/") ? join(homedir(), named.slice(2)) : named;
+    return isAbsolute(path) ? path : "";
+  } catch {
+    return ""; // ponytail: os.homedir() throws only with no HOME and no passwd entry
+  }
+}
+/** W-445: a relative citation read under a root: slash-separated segments of word characters, `.`, `+` and `-`, none `.` or `..`. */
+const RELATIVE_CITE = /^(?!.*(?:^|\/)\.{1,2}(?:\/|$))[\w.+-]+(?:\/[\w.+-]+)*$/;
+const squeeze = (text: string): string => text.replace(/\s+/g, " ").trim();
+/** W-445: whether `text` holds `claim`: the claim's pieces between its gaps (an `<angle-bracketed placeholder>`, `…` or
+ *  `...`, each standing for any text), squeezed, occur in `text`, squeezed, in order and without overlap. */
+function holdsClaim(text: string, claim: string): boolean {
+  const hay = squeeze(text);
+  let from = 0;
+  for (const piece of claim.split(/<[^<>]*>|…|\.\.\./).map(squeeze).filter((p) => p !== "")) {
+    const at = hay.indexOf(piece, from);
+    if (at === -1) return false;
+    from = at + piece.length;
+  }
+  return true;
+}
+
+/**
+ * W-445 (D-076 D): why a signed brief's quoted claims are not held by the evidence they cite, fail-closed. For each claim
+ * `evidenceClaims` reads, a citation ending in `/` (a directory) is not checked; every other citation must name one
+ * readable regular file of at most `LOG_MAX_BYTES` that holds the claim (`holdsClaim`; for `<path>:<n>`, its line n), or it
+ * is one problem: an absolute or `~/` path is read by `evidenceText`; a relative path (`RELATIVE_CITE`) is read under the one
+ * of the brief's `evidenceRoots` where it names a regular file, and under none or several it is a problem; any other
+ * citation is a problem. A declared root whose `~/` does not expand to an absolute path is a problem of its own, once.
+ * ponytail: whether the claim is true of what the brief says, beyond the quoted text being present, stays the spec review's.
+ */
+export function evidenceClaimProblems(brief: string): string[] {
+  const problems: string[] = [];
+  const roots: { named: string; abs: string }[] = [];
+  for (const named of evidenceRoots(brief)) {
+    const abs = expandHome(named);
+    if (abs === "") problems.push(`evidence root \`${named}\` does not expand to an absolute path`);
+    else roots.push({ named, abs });
+  }
+  const where = roots.length === 0 ? "the brief declares no evidence root (a backticked absolute or ~/ folder ending in /)" : `the evidence roots (${roots.map((r) => r.named).join(", ")})`;
+  for (const c of evidenceClaims(brief)) {
+    if (c.path.endsWith("/")) continue;
+    const head = `brief:${c.line} cites \`${c.cite}\` for "${c.claim}"`;
+    let file: string;
+    if (c.path.startsWith("/") || c.path.startsWith("~/")) file = c.path;
+    else if (RELATIVE_CITE.test(c.path)) {
+      const hits = roots.filter((r) => {
+        try {
+          return statSync(join(r.abs, c.path)).isFile();
+        } catch {
+          return false;
+        }
+      });
+      if (hits.length !== 1) {
+        problems.push(
+          hits.length === 0
+            ? `${head}, and it names no regular file under ${where}: cite it by its absolute path, or correct the name or the root`
+            : `${head}, and it names a file under ${hits.length} evidence roots (${hits.map((h) => h.named).join(", ")}): cite it by its absolute path`,
+        );
+        continue;
+      }
+      file = join(hits[0]!.abs, c.path);
+    } else {
+      problems.push(`${head}, and it is not a path the check reads (absolute, ~/, or relative segments of word characters, ".", "+" and "-"): cite the evidence file by such a path`);
+      continue;
+    }
+    const read = evidenceText(file, LOG_MAX_BYTES);
+    if ("error" in read) {
+      problems.push(`${head}, and ${file} ${read.error}`);
+      continue;
+    }
+    const lines = read.text.split(/\r?\n/);
+    const text = c.at === undefined ? read.text : (lines[c.at - 1] ?? "");
+    if (!holdsClaim(text, c.claim))
+      problems.push(
+        c.at === undefined
+          ? `${head}, and ${file} does not hold it: cite the evidence that does, or correct the claim`
+          : `${head}, and line ${c.at} of ${file} does not hold it: cite the evidence that does, or correct the claim`,
+      );
+  }
+  return problems;
+}
+
 /** W-215: why a sessioned verdict cannot be recorded, or undefined. `text` is the whole log to be written. W-433: the ui-lead's
  *  UI spec input (`uiInput`) may also be `revise`, judged as `failed` is: it needs a standing blocking finding. */
 function sessionedProblem(text: string, id: string, rel: string, outcome: string, recorded: string, previous: Parsed | undefined, previousLog: string | undefined, uiInput: boolean): string | undefined {
@@ -990,9 +1076,13 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
     const signer = uiPair.pairing?.signer ?? design.magister;
     if (sella === signer) {
-      const problems = promiseLedgerProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), briefRel);
+      const problems = [
+        ...promiseLedgerProblems(read.bytes.toString("utf8"), transcript.toString("utf8"), briefRel).map((p) => `promise ledger: ${p}`),
+        // W-445: a quoted claim's cited evidence holds it
+        ...evidenceClaimProblems(read.bytes.toString("utf8")).map((p) => `evidence citation: ${p}`),
+      ];
       if (problems.length > 0) {
-        console.error(problems.map((p) => `${opusId}: promise ledger: ${p}`).join("\n"));
+        console.error(problems.map((p) => `${opusId}: ${p}`).join("\n"));
         return { exitCode: 2 };
       }
     }

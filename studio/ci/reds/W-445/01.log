@@ -1,0 +1,44 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-445-b1\s --import tsx packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-29T23:27:17.249Z
+# sella: architect
+# tree: tree:5ba248450b71aafa92ee536920a594e9334d0dbe
+# ticket: {"opus":"W-445","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-445/studio","head":"2c929bf6564f50467ac6bc50687f914c29713168","brief":"562e9f7bf60846eaeb64fdb6efd1443a3a98f2e9","at":"2026-10-29T23:27:17.213Z"}
+
+TAP version 13
+# Subtest: W-445-b1 behaviour 1: brief admission reads each quoted claim with the evidence citation its parenthesis opens with, and the brief's evidence roots
+not ok 1 - W-445-b1 behaviour 1: brief admission reads each quoted claim with the evidence citation its parenthesis opens with, and the brief's evidence roots
+  ---
+  duration_ms: 4.393648
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-445/packages/cli/src/verdict-citation.test.ts:81:960'
+  failureType: 'testCodeFailure'
+  error: |-
+    brief-admission exports evidenceClaims
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-445/packages/cli/src/verdict-citation.test.ts:1337:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 462.345592

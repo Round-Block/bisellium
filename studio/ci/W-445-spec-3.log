@@ -1,0 +1,29 @@
+# opus: W-445
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-29T16:03:39.664Z
+# tree: tree:2e501aefd5daadd7897e97de747b9558af3f2b61
+# brief: briefs/W-445.md blob:562e9f7bf60846eaeb64fdb6efd1443a3a98f2e9
+# ticket: {"opus":"W-445","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"38433fd010e91d94d9bbb9ee7967d6facc2928a3","brief":"562e9f7bf60846eaeb64fdb6efd1443a3a98f2e9","at":"2026-10-29T16:03:38.869Z"}
+
+# W-445 spec signature, round 3 (architect, claude-opus-5-5): revision 2
+
+Brief: studio/briefs/W-445.md revision 2, prototyped over master 9eb8d0ef (series d836b44c, series.mbox sha256 d33e2691b8e424f7af270ad69185c01e069df33dcfa10affabdcea6a73a4d866); evidence in /home/edckt/.bisellium-evidence/W-445-spec/; revision 1 kept in /home/edckt/.bisellium-evidence/W-445-spec/r1/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-445-spec/promise-ledger.md
+
+## Rebuttal
+None: the one finding of ci/W-445-spec-2.log is adopted.
+- #1 (S1, brief:68, fail-open on a relative citation under no root and a dropped ~/ root): adopted with the reviewer's row (now brief:70). evidenceClaimProblems fails closed: a relative citation under no root or several, a citation that is no readable path, an unreadable file and a ~/ root that does not expand to an absolute path are each one problem; only a directory citation is unchecked. Applied to every parenthesis that refuses 21 claims in 13 of master's 226 briefs, none stale (symbols, source and test files, error codes, line references: census-strict.out), so a claim is recognised only when its parenthesis opens with an evidence citation (absolute, ~/, or a name ending in .out or .log); with that, master's 25 such claims are all held and nothing is refused, W-442's round-3 brief is still refused at brief:78 and round 5's admitted (census.out), and neither brief in flight is refused (census-inflight.out). New pins in W-445-b2: "a relative citation under no root", "a typo in the declared root", "a ~/ root that does not expand to an absolute path", "an output citation that is not a readable path", plus a relative citation with no root declared; all five are signed by revision 1's source and refused by revision 2's (r1-cases.out, r3-cases.out), and row b2 fails on revision 1's source at the first (r1-stage-b2.out). Kills K9 and K10 put revision 1's two fail-open paths back and K11 and K12 drop the new refusal and the narrowed form; each fails its row at its pin (kills.out: twelve, all guarded).
+
+Checked again on revision 2: the two reds fail by assertion on their red commits and on master's source and are accepted (red-accept.out); each row passes at its stage; lint, format, typecheck, the neighbouring test files whole and both officina checks pass on stage 2 (gates-proto.out); every series commit builds the web bundle and typechecks (series-builds.out); the check on this brief returns no problem (dogfood.out); admission returns no problem (admission.out); master's ledger validator returns no problem (ledger-probe.out). The Codex test check rerun on revision 2 (fixture-census.md) lists no flipped row and nothing unnamed; every must-stay-green row it lists is in verdict-citation.test.ts, verdict.test.ts, verdict-findings.test.ts, containment.test.ts, rules/tests.test.ts, rules/doc-cap.test.ts or docs.test.ts, each passing whole on stage 2 (gates-proto.out). No Files owned path is W-461's or W-409's, and none is code-owned.
+
+## Findings
+1. advisory — a claim is recognised only when its parenthesis opens with an absolute or ~/ path or a name ending in .out or .log; a relative evidence file of another name (.md, .txt, .patch) is not recognised unless cited by its absolute path, stated on Promise claims — check: brief-admission.ts:687 (stage 2)
+2. advisory — W-361's and W-366's shapes (meaning) and W-408's (no citation) are not caught; "holds" is quoted-text presence, stated on Promise refuse — check: verdict.ts:761 (stage 2)
+
+## Verdict
+passed — the signer's spec verdict refuses a brief whose quoted claim is not in the evidence file it cites, and now fails closed when a recognised citation names no single readable file or a root does not expand; over master's briefs it refuses none, and it refuses W-442's round-3 brief at the line spec review r4 found.
