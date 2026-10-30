@@ -1,0 +1,26 @@
+# opus: W-443
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T01:14:40.598Z
+# tree: tree:e0c43a0d4b86c412cbc5a0ab55797bcbc3a4b7a9
+# brief: briefs/W-443.md blob:ad6ee59d218f77f6785f86a2ac9f56dd0714d4a2
+# ticket: {"opus":"W-443","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"be5f81086d89d8f485627acb86cfe0b2beba3eef","brief":"ad6ee59d218f77f6785f86a2ac9f56dd0714d4a2","at":"2026-10-30T01:14:25.920Z"}
+
+# W-443 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-443.md revision 1, prototyped over master 6559330c (series bdc54bd2, series.mbox sha256 263d2698077b07c13065b52cf7953006df8cf0cdcf5a41a721128fc04a888e0b); evidence in /home/edckt/.bisellium-evidence/W-443-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-443-spec/promise-ledger.md
+
+Checked: both reds fail by assertion on their red commits and on master's source and are accepted by the replay classifier (red-accept.out); each row passes at its stage; every red and stage output is headed by the argv its written command passed (run-red.sh); lint, format, typecheck, the neighbouring test files whole and both officina checks pass on stage 2 (gates-proto.out); every series commit builds the web bundle and typechecks (series-builds.out); fifteen kills each fail their row at the pin they guard (kills.out); the one flipped row, W-326-b3, passes with its fixture change (w326-b3-stage2.out); W-442's round-2 brief is refused at its uncopyable command (sources.out); this brief passes both the new check and W-445's (dogfood.out) and the full admission (admission.out). No Files owned path is W-462's or W-409's, and none is code-owned.
+
+## Findings
+1. advisory — every one of master's 48 prototyped briefs is refused if signed again unchanged, because no red output before this opus records its command; W-462 and W-409, signed and branched, need headed outputs only if they are signed again — check: census.out:1
+2. advisory — W-360 spec r5's stub outputs were cited outside its genuine reds and are not read; that brief is refused only for its unheaded outputs, stated on Promise reads — check: sources.out:3
+3. advisory — the header is trusted as written: a `# command:` line typed after the run is not told apart from one the run wrote, stated on Promise ran — check: verdict.ts:781 (stage 2)
+
+## Verdict
+passed — the signer's spec verdict refuses a prototyped brief whose written genuine red command a shell would not pass unchanged, or whose cited red evidence does not record that exact command, so a copied command reproduces the red; it catches W-442's round-2 command at signature instead of at review.

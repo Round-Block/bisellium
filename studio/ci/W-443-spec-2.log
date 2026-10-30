@@ -1,0 +1,19 @@
+# opus: W-443
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18a60-053f-75b2-a7e4-b040c314d44b
+# outcome: passed
+# at: 2026-10-30T01:19:10.859Z
+# tree: tree:e0c43a0d4b86c412cbc5a0ab55797bcbc3a4b7a9
+# brief: briefs/W-443.md blob:ad6ee59d218f77f6785f86a2ac9f56dd0714d4a2
+# ticket: {"opus":"W-443","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"be5f81086d89d8f485627acb86cfe0b2beba3eef","brief":"ad6ee59d218f77f6785f86a2ac9f56dd0714d4a2","at":"2026-10-30T01:19:08.961Z"}
+
+## Findings
+1. advisory — brief:51 [severity: S2] `PLAIN` accepts a leading `NAME=value`, which a shell treats as an environment assignment rather than an argv word, so the promise exceeds the unchanged reader’s guarantee. Replace brief:51 with: “Promise copy: on a prototyped brief, the signer's spec signature is refused, exit 2 and no log, when `redCommand` rejects the written command, including a backslash, double quote, `$`, operator or control character outside single quotes, or no command. Pinned by `W-443-b2` as listed — limit: a reserved word or leading `NAME=value` is a plain word to the unchanged replay reader, so direct-shell equivalence is not guaranteed for those forms.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: add a W-443-b2 assertion documenting acceptance of a leading `NAME=value` word
+2. advisory — brief:63 [severity: S2] “heads its red outputs” promises every red output has a header, but W-443-b2 deliberately admits unheaded `plain.out` when another cited file records the matching command. Replace brief:63 with: “- A brief signed after this merges with a prototype must cite, for each behaviour, at least one evidence file headed with its matching command; other cited evidence files may record no command. Master's 48 prototyped briefs are refused if signed again unchanged (`census.out`).” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/verdict-citation.test.ts
+
+## Verdict
+The input boundary fails closed and both behaviours are feasible; the two overbroad promises require advisory wording limits only.
+VERDICT: PASS
