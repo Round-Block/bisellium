@@ -361,6 +361,26 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     many.opera = manyOpera;
     many.inbox = manyInbox;
   }
+
+  const combined: Fixture = {
+    opera: [makeOpus("W-1", "backlog", { patron: { status: "pending" } })],
+    inbox: {
+      opera: [{ id: "W-1", title: "W-1 title", collegium: "design", sella: "builder" }],
+      petitiones: [{ id: "P-1", opus: "W-1", from: "producer", subject: "Choose", body: "Choose" }],
+    },
+  };
+  await page.unroute("**/api/officina");
+  await page.unroute("**/api/opera");
+  await page.unroute("**/api/inbox");
+  await installFixture(page, combined);
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${served.baseURL}/?w463=b2-combined-${width}#/board`);
+    await expect(
+      page.getByRole("button", { name: "Open W-1 W-1 title: Greenlight, Inbox decision, Human gate" }),
+      `${width}: the strip entry's accessible name carries every combined ask kind`,
+    ).toHaveAttribute("data-waiting-id", "W-1");
+  }
 });
 
 test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390", async ({ page }) => {
@@ -498,4 +518,5 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
   } }));
   await page.goto(`${served.baseURL}/?w463=b3-independent-inbox#/board`);
   await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "Inbox refresh survives failed Officina and opera reads").toHaveText("1");
+
 });
