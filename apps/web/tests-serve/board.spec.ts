@@ -709,13 +709,15 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
       return {
         phaseBottom: phaseStrip.getBoundingClientRect().bottom,
         columnsTop: columns.getBoundingClientRect().top,
-        belowDelta: count.top - name.bottom,
-        rightDelta: Math.abs(name.right - count.right),
+        lineDelta: Math.abs((count.top + count.bottom) / 2 - (name.top + name.bottom) / 2),
+        gap: count.left - name.right,
       };
     });
     expect(geometry.columnsTop).toBeLessThanOrEqual(geometry.phaseBottom + 0.5);
-    expect(geometry.belowDelta).toBeGreaterThanOrEqual(-0.5);
-    expect(geometry.rightDelta).toBeLessThanOrEqual(1);
+    // The empty count sits inline just right of the label at every width.
+    expect(geometry.lineDelta).toBeLessThanOrEqual(4);
+    expect(geometry.gap).toBeGreaterThanOrEqual(-0.5);
+    expect(geometry.gap).toBeLessThanOrEqual(24);
 
     await page.goto(`${served.baseURL}/#/inbox`);
     expect(counter.count()).toBe(0);
