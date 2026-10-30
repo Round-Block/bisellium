@@ -653,8 +653,10 @@ if (runs(9) && requireBuilt(9)) {
       ].join("\n"),
     );
 
+    // W-466: A's stderr is piped and asserted below, never inherited: its sentinel report is this row's fixture, and
+    // inherited it reached the outer suite's stderr on every run, green too.
     const aChild = spawn(process.execPath, [aScript], {
-      stdio: ["pipe", "pipe", "inherit"],
+      stdio: ["pipe", "pipe", "pipe"],
       timeout: 30_000,
       killSignal: "SIGKILL",
     });
@@ -664,6 +666,11 @@ if (runs(9) && requireBuilt(9)) {
       aChild.on("exit", (code, signal) => resolve({ code, signal }));
     });
     let aOut = "";
+    let aErr = "";
+    aChild.stderr.on("data", (d) => {
+      aErr += d;
+    });
+    const aErrEnd = new Promise((resolve) => aChild.stderr.on("close", resolve));
     const hold = new Promise((resolve) => {
       aChild.stdout.on("data", (d) => {
         aOut += d;
@@ -686,6 +693,7 @@ if (runs(9) && requireBuilt(9)) {
       aChild.stdin.end(); // never leave A blocked, whatever happened above
     }
     const aEnd = await aExit;
+    await aErrEnd; // "exit" can come before the pipe is drained
     const aResult = existsSync(aResultPath) ? JSON.parse(readFileSync(aResultPath, "utf8")) : { log: [] };
     check(
       9,
@@ -700,6 +708,12 @@ if (runs(9) && requireBuilt(9)) {
       aEnd.signal ? `A was killed after the deadline (${aEnd.signal})` : `${probe}; exit=${aEnd.code}`,
     );
     check(9, "row 3: the lock is gone once A has exited", !existsSync(lockPath), lockPath);
+    check(
+      9,
+      "row 3 (W-466): A's own stderr, piped, is exactly its sentinel report of the violation",
+      aErr === "vendor-sentinel: 1 vendor-spend violation(s) detected:\n  row3-violation\n",
+      JSON.stringify(aErr),
+    );
   }
 
   // Row 4: a lock left behind by a crashed run refuses the next run; the
