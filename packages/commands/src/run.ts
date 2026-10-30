@@ -22,7 +22,7 @@ import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
 import { pauseWarning } from "./pause.js";
 import { runBuilderCommand } from "./builder-run.js";
-import { runScratch } from "./scratch.js";
+import { runScratch, type ScratchArgs } from "./scratch.js";
 
 export interface RunOptions {
   /** Pinned clock, for reproducible sessionIds/receipts in tests. */
@@ -80,8 +80,37 @@ function takeValue(args: string[], i: number, flag: string): { value: string } |
   return { value: v };
 }
 
+/** The scratch-mode argument parse (W-474), the one input boundary every `--scratch` run passes: when `--scratch` is
+ *  among the flags before "--", only `--scratch`, `--repo` and `--base` are accepted and every other flag is refused
+ *  as not going with it, whatever else the generic parse would say; undefined when the run is not a scratch run. */
+function parseScratch(args: string[]): ScratchArgs | { error: string } | undefined {
+  const cut = args.indexOf("--");
+  const flags = cut === -1 ? args : args.slice(0, cut);
+  if (!flags.includes("--scratch")) return undefined;
+  let dir: string | undefined;
+  let repo: string | undefined;
+  let base: string | undefined;
+  for (let i = 0; i < flags.length; i++) {
+    const a = flags[i]!;
+    if (a !== "--scratch" && a !== "--repo" && a !== "--base") return { error: `${a} does not go with --scratch` };
+    const r = takeValue(flags, ++i, a);
+    if ("error" in r) return { error: r.error.split("\n")[0]! };
+    if (a === "--scratch") dir = r.value;
+    else if (a === "--repo") repo = r.value;
+    else base = r.value;
+  }
+  if (cut === -1 || args.length === cut + 1) return { error: 'a command after "--" is required' };
+  return { dir: dir!, cmd: args.slice(cut + 1), ...(repo === undefined ? {} : { repo }), ...(base === undefined ? {} : { base }) };
+}
+
 export async function runCommand(args: string[], opts: RunOptions = {}): Promise<RunResult> {
   const now = opts.now ?? new Date();
+
+  const scratchRun = parseScratch(args);
+  if (scratchRun !== undefined) {
+    if ("error" in scratchRun) { console.error(`bisellium run --scratch: ${scratchRun.error}\n${USAGE}`); return { exitCode: 2 }; }
+    return { exitCode: await runScratch(scratchRun) };
+  }
 
   let sella: string | undefined;
   let studio = ".";
@@ -92,20 +121,11 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   let keep = false;
   let reclaim = false;
   let opus: string | undefined;
-  let scratch: string | undefined;
-  const given: string[] = [];
   let sepIndex = -1;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
     if (a === "--") { sepIndex = i; break; }
-    given.push(a);
-    if (a === "--scratch") {
-      const r = takeValue(args, ++i, "--scratch");
-      if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
-      scratch = r.value;
-      continue;
-    }
     if (a === "--opus") {
       const r = takeValue(args, ++i, "--opus");
       if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
@@ -142,13 +162,6 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
     if (a === "--reclaim") { reclaim = true; continue; }
     console.error(`bisellium run: unknown flag "${a}"\n${USAGE}`);
     return { exitCode: 2 };
-  }
-
-  if (scratch !== undefined) {
-    const other = given.filter((f) => !["--scratch", "--repo", "--base"].includes(f));
-    if (other.length > 0) { console.error(`bisellium run --scratch: ${other[0]} does not go with --scratch\n${USAGE}`); return { exitCode: 2 }; }
-    if (sepIndex === -1 || args.length === sepIndex + 1) { console.error(`bisellium run --scratch: a command after "--" is required\n${USAGE}`); return { exitCode: 2 }; }
-    return { exitCode: await runScratch({ dir: scratch, cmd: args.slice(sepIndex + 1), ...(repoFlag === undefined ? {} : { repo: repoFlag }), ...(base === undefined ? {} : { base }) }) };
   }
 
   const studioRoot = resolve(studio);
