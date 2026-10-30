@@ -175,6 +175,12 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     const items = page.locator(".board__waiting-items");
     const more = page.getByRole("button", { name: "Show more waiting asks" });
     await expect(more, `${width}: overflow arrow appears while entries continue right`).toBeVisible();
+    if (width === 1280) {
+      await page.getByRole("button", { name: "Collapse sidebar" }).click();
+      expect(await items.evaluate((node) => node.scrollWidth > node.clientWidth), "1280 collapsed shell: waiting entries still overflow their rail").toBe(true);
+      await expect(more, "1280 collapsed shell: overflow keeps the waiting chevron visible").toBeVisible();
+      await page.getByRole("button", { name: "Expand sidebar" }).click();
+    }
 
     const resetWaitingRow = async (): Promise<void> => {
       await items.evaluate((node) => {
@@ -198,6 +204,18 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     if (width === 1280 || width === 390) {
       await expectAdvance("Enter");
       await expectAdvance("Space");
+      for (const key of ["Enter", "Space"] as const) {
+        await resetWaitingRow();
+        for (let press = 0; press < 10; press += 1) {
+          await more.focus();
+          await more.press(key);
+          const atEnd = await items.evaluate((node) => node.scrollLeft + node.clientWidth >= node.scrollWidth - 1);
+          await expect(more, `${width}: ${key} updates the right arrow after every advance`).toHaveCount(atEnd ? 0 : 1);
+          if (atEnd) break;
+        }
+        await expect(more, `${width}: ${key} hides the right arrow at the end`).toHaveCount(0);
+        await expect(page.locator(".board__waiting-item").last(), `${width}: ${key} transfers focus from the removed arrow to the last waiting entry`).toBeFocused();
+      }
     }
     await items.evaluate((node) => {
       node.scrollLeft = node.scrollWidth;
@@ -225,6 +243,13 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
         return entry.right > rail.left + 0.5 && entry.left < rail.right - 0.5;
       });
       expect(visible, `${width}: focused entry ${index + 1} scrolls into view`).toBe(true);
+      if (width === 1280 || width === 390) {
+        const clearsChevron = await rowEntries.nth(index).evaluate((item) => {
+          const chevron = document.querySelector<HTMLElement>(".board__waiting-more");
+          return chevron === null || item.getBoundingClientRect().right <= chevron.getBoundingClientRect().left;
+        });
+        expect(clearsChevron, `${width}: focused entry ${index + 1} stays clear of the visible chevron`).toBe(true);
+      }
       if (index < 5) await page.keyboard.press("Tab");
     }
 
@@ -269,6 +294,19 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     await expect(page.locator(".board__waiting-item"), `${width}: one ask has one fixed-height entry`).toHaveCount(1);
     expect(await page.locator(".board__waiting").evaluate((node) => node.getBoundingClientRect().height), `${width}: one-entry strip keeps the reference whole-strip height`).toBeCloseTo(96, 0);
     await expect(page.getByRole("button", { name: "Show more waiting asks" }), `${width}: no arrow appears without horizontal overflow`).toHaveCount(0);
+
+    if (width === 1280) {
+      many.opera = Array.from({ length: 12 }, (_, index) => makeOpus(`W-${20 + index}`, "backlog"));
+      many.inbox = { opera: [], petitiones: [] };
+      await page.goto(`${served.baseURL}/?w463=b2-collapsed-many-${width}#/board`);
+      await page.evaluate(() => localStorage.setItem("bisellium.sidebar", "collapsed"));
+      await page.reload();
+      await expect(page.locator(".board__waiting-item"), "1280 collapsed shell: twelve waiting entries remain in the strip").toHaveCount(12);
+      const collapsedItems = page.locator(".board__waiting-items");
+      expect(await collapsedItems.evaluate((node) => node.scrollWidth > node.clientWidth), "1280 collapsed shell: twelve waiting entries overflow their rail").toBe(true);
+      await expect(page.getByRole("button", { name: "Show more waiting asks" }), "1280 collapsed shell: twelve waiting entries keep the chevron visible").toBeVisible();
+      await page.evaluate(() => localStorage.setItem("bisellium.sidebar", "expanded"));
+    }
 
     if (width === 390) {
       many.opera = Array.from({ length: 14 }, (_, index) => makeOpus(`W-${20 + index}`, "backlog"));

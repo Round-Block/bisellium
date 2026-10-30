@@ -2072,6 +2072,10 @@
   scroll-padding-inline: 2px;
 }
 
+.board__waiting-rail--more .board__waiting-items {
+  scroll-padding-inline-end: 44px;
+}
+
 .board__waiting-item {
   appearance: none;
   flex: 0 0 calc((100% - (3 * var(--sp-2))) / 4);

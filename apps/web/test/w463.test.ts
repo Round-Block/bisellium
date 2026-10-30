@@ -67,7 +67,7 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   const served = read("tests-serve/w463.spec.ts");
 
   assert.doesNotMatch(view, /Nothing waiting on you/, "the Board owns no empty-state phrase");
-  assert.match(view, /board__waiting--empty[\s\S]*<strong>\{waiting\.length\}<\/strong>[\s\S]*waiting\.length > 0 && <div className="board__waiting-rail">/, "the mounted empty strip collapses to its label and zero count");
+  assert.match(view, /board__waiting--empty[\s\S]*<strong>\{waiting\.length\}<\/strong>[\s\S]*waiting\.length > 0 && <div className=\{`board__waiting-rail\$\{canScrollRight/, "the mounted empty strip collapses to its label and zero count");
   assert.match(view, /<WaitingStrip waiting=\{model\.waiting\}[\s\S]*<div className="board__strip">/, "the waiting strip always precedes phase navigation");
   assert.match(view, /Greenlight[\s\S]*Inbox decision[\s\S]*Human gate/, "strip and cards share W-409's ask words");
   assert.match(css, /\.board__waiting\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*112px minmax\(0, 1fr\);[^}]*flex-shrink:\s*0;/s, "the strip is pinned above the flexible columns");
@@ -85,8 +85,11 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   assert.match(css, /\.board__waiting-item\s*\{[^}]*flex:\s*0 0 calc\(\(100% - \(3 \* var\(--sp-2\)\)\) \/ 4\);/s, "desktop exposes four entries before horizontal overflow");
   assert.match(css, /\.board__waiting-item\s*\{[^}]*height:\s*66px;/s, "entries fill the reference row with one title and three ask lines");
   assert.match(css, /@media \(max-width:\s*899px\)[\s\S]*?\.board__waiting-item\s*\{[^}]*flex-basis:\s*calc\(\(100% - var\(--sp-2\)\) \/ 2\);/s, "640 and 390 expose two entries before horizontal overflow");
-  assert.match(view, /canScrollRight && <button type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick=\{showMore\}/, "overflow owns a named native right-arrow button");
-  assert.match(view, /scrollBy\(\{ left: items\.clientWidth \* 0\.9, behavior: "auto" \}\)/, "the right arrow advances by about one visible width");
+  assert.match(css, /\.board__waiting-rail--more \.board__waiting-items\s*\{[^}]*scroll-padding-inline-end:\s*44px;/s, "a visible chevron reserves its overlay width when focused entries scroll");
+  assert.match(view, /revealFocusedWaitingItem[\s\S]*itemRight > chevronLeft[\s\S]*items\.scrollBy\(\{ left: itemRight - chevronLeft \+ 2, behavior: "auto" \}\)/, "keyboard focus reveals each entry clear of the visible chevron");
+  assert.match(view, /canScrollRight && <button ref=\{moreRef\} type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick=\{showMore\}/, "overflow owns a named native right-arrow button");
+  assert.match(view, /const distance = items\.clientWidth \* 0\.9;[\s\S]*items\.scrollBy\(\{ left: distance, behavior: "auto" \}\)/, "the right arrow advances by about one visible width");
+  assert.match(view, /reachesEnd && document\.activeElement === moreButton[\s\S]*requestAnimationFrame[\s\S]*board__waiting-item:last-child/, "removing a focused chevron returns focus to the last waiting entry");
   assert.match(css, /\.board__waiting-more\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;[^}]*border-radius:\s*50%;[^}]*background:\s*#080b0d;[^}]*color:\s*#fff;/s, "the overflow arrow follows the round dark chevron reference");
   assert.match(served, /\[1280, 640, 390\]/, "the served row covers desktop, zoom and phone widths");
   assert.match(served, /strip stays above the lifecycle columns/, "the served row pins strip geometry");
@@ -94,6 +97,10 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   assert.match(served, /1280: populated count sits below the label[\s\S]*populated count sits just right of the label/, "the served row pins stacked desktop and inline narrow counts");
   assert.match(served, /no continuation line begins with a separator on strip or card copy/, "the served row pins separator placement after wrapping");
   assert.match(served, /every waiting entry stays in one horizontal row[\s\S]*horizontal waiting row opens at its first entry[\s\S]*overflow arrow appears while entries continue right[\s\S]*right arrow advances the waiting row[\s\S]*right arrow hides at the end[\s\S]*keyboard focus reaches horizontal entry/, "the served row pins one horizontal row, initial scroll, its arrow cue and keyboard reachability");
+  assert.match(served, /focused entry \$\{index \+ 1\} stays clear of the visible chevron/, "the served row pins chevron-clear keyboard focus");
+  assert.match(served, /transfers focus from the removed arrow to the last waiting entry/, "the served row pins chevron-end focus transfer");
+  assert.match(served, /1280 collapsed shell: waiting entries still overflow their rail[\s\S]*1280 collapsed shell: overflow keeps the waiting chevron visible/, "the served row pins collapsed desktop chevron visibility under overflow");
+  assert.match(served, /twelve waiting entries remain in the strip[\s\S]*twelve waiting entries overflow their rail[\s\S]*twelve waiting entries keep the chevron visible/, "the served row covers the twelve-entry collapsed desktop shell");
   assert.match(served, /many-entry strip keeps the reference whole-strip height[\s\S]*empty strip collapses to exactly its label line[\s\S]*one-entry strip keeps the reference whole-strip height/, "the served row pins collapsed zero and reference-height populated strips");
 });
 

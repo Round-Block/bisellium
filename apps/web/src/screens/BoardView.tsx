@@ -136,6 +136,7 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
   onSelectCard: (id: string, columnId: string) => void;
 }): JSX.Element {
   const itemsRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const updateScrollCue = useCallback(() => {
     const items = itemsRef.current;
@@ -158,7 +159,22 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
   const showMore = (): void => {
     const items = itemsRef.current;
     if (!items) return;
-    items.scrollBy({ left: items.clientWidth * 0.9, behavior: "auto" });
+    const moreButton = moreRef.current;
+    const distance = items.clientWidth * 0.9;
+    const reachesEnd = items.scrollLeft + items.clientWidth + distance >= items.scrollWidth - 1;
+    items.scrollBy({ left: distance, behavior: "auto" });
+    if (reachesEnd && document.activeElement === moreButton) {
+      requestAnimationFrame(() => items.querySelector<HTMLButtonElement>(".board__waiting-item:last-child")?.focus());
+    }
+  };
+
+  const revealFocusedWaitingItem = (item: HTMLButtonElement): void => {
+    const items = itemsRef.current;
+    const chevron = items?.parentElement?.querySelector<HTMLElement>(".board__waiting-more");
+    if (!items || !chevron) return;
+    const itemRight = item.getBoundingClientRect().right;
+    const chevronLeft = chevron.getBoundingClientRect().left;
+    if (itemRight > chevronLeft) items.scrollBy({ left: itemRight - chevronLeft + 2, behavior: "auto" });
   };
 
   return (
@@ -167,7 +183,7 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
         <span>Waiting on you</span>
         <strong>{waiting.length}</strong>
       </div>
-      {waiting.length > 0 && <div className="board__waiting-rail">
+      {waiting.length > 0 && <div className={`board__waiting-rail${canScrollRight ? " board__waiting-rail--more" : ""}`}>
         <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
           {waiting.map((card) => {
             const columnId = columns.find((column) => column.cards.some(({ id }) => id === card.id))?.id;
@@ -180,6 +196,7 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
                 data-waiting-id={card.id}
                 aria-label={`Open ${card.id} ${card.title}: ${asks}`}
                 onClick={() => onSelectCard(card.id, columnId ?? "unplaced")}
+                onFocus={(event) => revealFocusedWaitingItem(event.currentTarget)}
               >
                 <span className="board__waiting-title" title={card.title}>{card.title}</span>
                 <AskKinds card={card} />
@@ -187,7 +204,7 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
             );
           })}
         </div>
-        {canScrollRight && <button type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick={showMore}>
+        {canScrollRight && <button ref={moreRef} type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick={showMore}>
           <span aria-hidden="true">›</span>
         </button>}
       </div>}
