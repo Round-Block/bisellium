@@ -49,11 +49,11 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight, outside the ranking: W-446 — its done step is next (W-408 landed #901 after a re-verify and D-142). E2 W-444 at spec r3, UI1 W-463 needs a brief widening (api.ts), UI2 W-451 review r1 failed on one red (see current-state).
-1. W-444 — reply length Stop hook: a reply over 200 words or without the usage reading is refused (Patron 10-30)
-2. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-30: clean code first) `next.ts`
-3. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
-4. W-468 — a fix round records its red: next issues a red ticket in phase fix (Fable audit, high)
+In flight, unranked: E1 W-468 spec (r2 failed S1; architect revises); E2 W-444 PR #904 (code-owned, Patron merges); UI1 W-463 build review r1 failed, re-spec D-143; UI2 W-451 blocked on W-468 (fix-round red) (see current-state).
+1. W-468 — a fix round records its red: next issues a red ticket in phase fix (Fable audit, high; the Patron moved it to #1 on 10-30 to unblock W-451)
+2. W-473 — a red's recorded failing assertion equals the brief's declared one (D-076 D high: tests×assertion-satisfied-by-the-wrong-cause, W-451)
+3. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-30: clean code first) `next.ts`
+4. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
 5. W-469 — a spec-stage stale handover needs no hand step: next records the handoff, the guard sync moves master (Fable audit)
 6. W-470 — a verdict whose named session is an earlier orchestrator's records a fresh one without a hand --session-reason (Fable audit)
 7. W-471 — a failing gate's log keeps its real failure: nested ci fixture output hid W-408's 10-30 tests failure
@@ -83,15 +83,16 @@ In flight, outside the ranking: W-446 — its done step is next (W-408 landed #9
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
 1. W-463 — Board asks stand out: spec r4 (Patron 10-30: labels wrap; the 390 strip scrolls)
-2. W-410
-3. W-411
-4. W-412
-5. W-413
-6. W-451 — Home: gates passed a0d5d440; data W-439, W-440
-7. W-467 (Officina on Home's palette)
-8. W-453 (D-128 D)
-9. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-10. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+2. W-472 — short task titles (at most 8 words), the long text in a description the Board drawer shows (Patron 10-30)
+3. W-410
+4. W-411
+5. W-412
+6. W-413
+7. W-451 — Home: gates passed a0d5d440; data W-439, W-440
+8. W-467 (Officina on Home's palette)
+9. W-453 (D-128 D)
+10. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
+11. W-300 — the drawer shows `next`'s read-only step, actor, round and health
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
