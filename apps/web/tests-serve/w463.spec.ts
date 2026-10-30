@@ -519,4 +519,32 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
   await page.goto(`${served.baseURL}/?w463=b3-independent-inbox#/board`);
   await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "Inbox refresh survives failed Officina and opera reads").toHaveText("1");
 
+  // Nonempty Inbox data on the real clock: the count change the screen reports
+  // never reissues the shell's mount read, so the cohort stays one request.
+  await page.unroute("**/api/officina");
+  await page.unroute("**/api/opera");
+  await page.unroute("**/api/inbox");
+  let realClockInboxCalls = 0;
+  let realClockShellReads = 0;
+  await page.route("**/api/officina", (route) => {
+    realClockShellReads += 1;
+    return route.fulfill({ json: officina });
+  });
+  await page.route("**/api/opera", (route) => {
+    realClockShellReads += 1;
+    return route.fulfill({ json: [makeOpus("W-1", "backlog")] });
+  });
+  await page.route("**/api/inbox", (route) => {
+    realClockInboxCalls += 1;
+    return route.fulfill({ json: {
+      opera: [{ id: "W-1", title: "W-1 title", collegium: "design", sella: "builder" }],
+      petitiones: [{ id: "P-1", opus: "W-1", from: "producer", subject: "Choose", body: "Choose" }],
+    } });
+  });
+  await page.goto(`${served.baseURL}/?w463=b3-real-clock#/inbox`);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "the nonempty Inbox renders its count").toHaveText("1");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge--board'), "the shell Board snapshot lands").toHaveText("1");
+  await page.waitForTimeout(400);
+  expect(realClockInboxCalls, "a nonempty real-clock #/inbox mount issues exactly one /api/inbox request").toBe(1);
+  expect(realClockShellReads, "the count change reissues neither shell Board read: one Officina and one opera request").toBe(2);
 });

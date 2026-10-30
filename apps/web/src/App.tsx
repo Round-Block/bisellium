@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseRoute } from "./lib/route.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
@@ -96,6 +96,11 @@ export function App() {
     return () => { active = false; };
   }, [route]);
 
+  // The Inbox total the shell's last Board read already carries. A
+  // needsYouCount that equals it came from that same response (the Inbox
+  // screen's mount read), so it never reissues the read.
+  const shellReadTotal = useRef<number | null>(null);
+
   useEffect(() => {
     if (location.search.includes("demo")) {
       setBoardWaitingCount(2);
@@ -105,6 +110,26 @@ export function App() {
     // off-screen shell snapshot is cancelled on navigation, so it cannot
     // overwrite a newer count reported through onWaitingCount.
     if (route === "board") return;
+    shellReadTotal.current = null;
+    let active = true;
+    const inboxRead = fetchInbox({ shared: true });
+    inboxRead
+      .then((inbox) => { if (active) shellReadTotal.current = needsYouTotal(inbox); })
+      .catch(() => undefined);
+    Promise.all([fetchOfficina(), fetchOpera(), inboxRead])
+      .then(([officina, opera, inbox]) => {
+        if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [route]);
+
+  // A count that differs from the last read (an answer or a live frame moved
+  // it) refreshes the Board count from a fresh read.
+  useEffect(() => {
+    if (location.search.includes("demo") || route === "board") return;
+    if (shellReadTotal.current === null || shellReadTotal.current === needsYouCount) return;
+    shellReadTotal.current = needsYouCount;
     let active = true;
     Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true })])
       .then(([officina, opera, inbox]) => {
