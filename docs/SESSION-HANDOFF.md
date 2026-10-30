@@ -49,7 +49,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight, outside the ranking: W-408 — verified at a7db4a64 and ruled (D-141), but a docs/SESSION-HANDOFF.md edit moved master's source tree, so done needs a re-verify and a new ruling (see current-state); W-446 — done after W-408.
+In flight, outside the ranking: W-446 — its done step is next (W-408 landed #901 after a re-verify and D-142). E2 W-444 at spec r3, UI1 W-463 needs a brief widening (api.ts), UI2 W-451 review r1 failed on one red (see current-state).
 1. W-444 — reply length Stop hook: a reply over 200 words or without the usage reading is refused (Patron 10-30)
 2. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-30: clean code first) `next.ts`
 3. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
