@@ -49,7 +49,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight, unranked: E1 W-468 r5 signed (remainder W-475), gates running; E2 W-474 r1 failed, fix next; UI1 W-463 PR #911 queued (D-144); UI2 W-451 blocked on W-468.
+In flight, unranked: E1 W-468 and E2 W-474 r2 failed, class loop to the architect (D-085); UI1 W-463 merged, done waits on a Patron ruling; W-472 branch next.
 1. W-468 — a fix round records its red: next issues a red ticket in phase fix (Fable audit, high; Patron 10-30: unblocks W-451)
 2. W-474 — scratch copies stop filling the disk (high, Patron 10-30)
 3. W-473 — a red's recorded failing assertion equals the brief's declared one (D-076 D high, W-451); 4. W-476 — cause fix for interface×validation-order-masks-errors (D-076 D high; W-474 r1, W-379)
