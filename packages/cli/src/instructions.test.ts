@@ -211,8 +211,8 @@ withTempCopy(join(repo, "studio"), (dir) => {
       const obj = parsed as Record<string, unknown>;
       const hooks = obj["hooks"] as Record<string, unknown> | undefined;
       const keys = hooks ? Object.keys(hooks).sort() : [];
-      // W-310: W-242's settings side (no PreCompact or Stop) and the guard at SubagentStop; W-369: PostToolUse runs the sync.
-      const wantKeys = ["PostToolUse", "PreToolUse", "SessionStart", "SubagentStop"].sort();
+      // W-310: W-242's settings side (no PreCompact) and the guard at SubagentStop; W-369: PostToolUse runs the sync; W-444: the guard at Stop.
+      const wantKeys = ["PostToolUse", "PreToolUse", "SessionStart", "Stop", "SubagentStop"].sort();
       report("settings.hook-keys", JSON.stringify(keys) === JSON.stringify(wantKeys), JSON.stringify(keys));
 
       const allCommands: string[] = [];

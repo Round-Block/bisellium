@@ -582,8 +582,8 @@ export const GUARD_COMMAND = "bisellium hook-event guard --studio studio";
 const GUARDED_TOOLS = ["Bash", "Write", "Edit", "NotebookEdit"];
 
 /** What the settings lack for the guard: a PreToolUse group whose matcher covers each of
- *  `GUARDED_TOOLS` and a SubagentStop group whose matcher is `*`, each holding a hook of type
- *  `command`, timeout 2, running `GUARD_COMMAND`. [] when wired. */
+ *  `GUARDED_TOOLS`, a SubagentStop group whose matcher is `*` and a Stop group (W-444; Stop takes no
+ *  matcher), each holding a hook of type `command`, timeout 2, running `GUARD_COMMAND`. [] when wired. */
 export function guardWiring(settings: unknown): string[] {
   const hooks = isDict(settings) && isDict(settings["hooks"]) ? settings["hooks"] : {};
   const groups = (event: string): Dict[] => (Array.isArray(hooks[event]) ? (hooks[event] as unknown[]).filter(isDict) : []);
@@ -597,5 +597,6 @@ export function guardWiring(settings: unknown): string[] {
   for (const tool of GUARDED_TOOLS)
     if (!groups("PreToolUse").some((g) => runs(g) && covers(g, tool))) missing.push(`PreToolUse ${tool} -> ${GUARD_COMMAND} (type command, timeout 2)`);
   if (!groups("SubagentStop").some((g) => runs(g) && g["matcher"] === "*")) missing.push(`SubagentStop * -> ${GUARD_COMMAND} (type command, timeout 2)`);
+  if (!groups("Stop").some(runs)) missing.push(`Stop -> ${GUARD_COMMAND} (type command, timeout 2)`);
   return missing;
 }
