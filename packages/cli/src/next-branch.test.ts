@@ -1543,3 +1543,17 @@ test("W-468-b1 behaviour 1: a failed round citing this opus's red orders that re
   assert.equal(o4.kv.get("phase"), "fix", ran("no recognised citation: phase fix", o4));
   assert.equal(lastLine(o4), "ticket: none", ran("no recognised citation: no red ticket", o4));
 });
+
+test("W-468-b2 behaviour 2: the fix round's red order names the restage, the ticket's HEAD, the replaced log and the revert", { timeout: 1_800_000 }, () => {
+  const w = w468World("w468-b2", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  const o = next(w, [OPUS, ...BUDGET]);
+  w468ReRed(o, 2, "ci/reds/W-900/02.log", "the cited red is ordered again");
+  const order = o.kv.get("command") ?? "";
+  assert.match(order, /dispatch builder\.W-900 \(phase fix, the cited red recorded again, W-468\), in \.worktrees\/W-900, for behaviour 2:/, ran("the fix round's red order, for the cited behaviour", o));
+  assert.match(order, /fix the behaviour's test so its row fails at the assertion the brief declares, and commit it/, ran("the test is fixed first", o));
+  assert.match(order, /commit a restage: the behaviour's implementation removed, its fixed test and every other behaviour's code kept/, ran("the restage", o));
+  assert.match(order, /from \.worktrees\/W-900: bisellium next W-900 \(the ticket binds this HEAD\), then bisellium red W-900 --behaviour 2 --sella builder\.W-900 --studio studio -- <the brief's Genuine red command>; it replaces ci\/reds\/W-900\/02\.log/, ran("next, then red, replacing 02.log", o));
+  assert.match(order, /commit the red log alone \(studio files only\), then git revert the restage/, ran("the log alone, then the revert", o));
+  assert.match(order, /certify replays only a commit on opus\/W-900; never rewrite history\./, ran("certify and history", o));
+  assert.doesNotMatch(order, /from behaviour 2 through 2/, ran("not the phase 1 order", o));
+});
