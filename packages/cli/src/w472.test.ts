@@ -190,3 +190,19 @@ test("W-472-b2 behaviour 2: new --description writes the long text below the fro
     else process.env["NODE_ENV"] = env0;
   }
 });
+
+test("W-472-b3 behaviour 3: amend --title refuses a title over 8 words, writing nothing", () => {
+  const root = officina();
+  opus(root, "W-1", "a short title", "backlog");
+  const path = join(root, "opera", "W-1.md");
+  const before = snapshot(root);
+  const amend = (title: string): Ran =>
+    quiet(() => runAmend(["W-1", "--title", title, "--reason", "W-472 row", "--sella", "eng-lead", "--studio", root], { now: NOW }));
+  const long = amend(NINE);
+  assert.equal(long.code, 2, `amend refuses a 9-word title: exit ${long.code} ${long.out} ${long.err}`);
+  assert.match(long.err, /^amend: --title title has 9 words, at most 8; put the rest in the description$/m, "amend names the cap");
+  assert.equal(snapshot(root), before, "amend writes nothing for a 9-word title");
+  const ok = amend(EIGHT);
+  assert.equal(ok.code, 0, `amend writes an 8-word title: ${ok.err}`);
+  assert.match(readFileSync(path, "utf8"), /^title: "short task titles — keep the Board \( cards readable"$/m, "the 8-word title is amended");
+});
