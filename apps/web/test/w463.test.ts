@@ -69,23 +69,23 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   assert.doesNotMatch(view, /Nothing waiting on you/, "the Board owns no empty-state phrase");
   assert.match(view, /board__waiting--empty[\s\S]*<strong>\{waiting\.length\}<\/strong>[\s\S]*waiting\.length > 0 && <div className=\{`board__waiting-rail\$\{canScrollRight/, "the mounted empty strip collapses to its label and zero count");
   assert.match(view, /<WaitingStrip waiting=\{model\.waiting\}[\s\S]*<div className="board__strip">/, "the waiting strip always precedes phase navigation");
-  assert.match(view, /function Card[\s\S]*board__card-id[\s\S]*board__card-title[\s\S]*<AskKinds card=\{card\}/, "every lifecycle card puts its task ID above its title and keeps W-409's ask words");
-  assert.match(view, /className="board__waiting-item"[\s\S]*board__waiting-id[^]*board__waiting-title[^]*<\/button>/, "strip entries put the task ID above the title");
-  assert.doesNotMatch(view, /board__waiting-title[^]*<AskKinds card=\{card\}/, "strip entries render no ask-kind line");
+  assert.match(view, /function WaitingFacts[\s\S]*board__waiting-head[\s\S]*OWNER[\s\S]*NEXT[\s\S]*ASK/, "one waiting-card component carries the W-410 handoff rail on both surfaces");
+  assert.match(view, /card\.needsYou \? <WaitingFacts card=\{card\}/, "waiting lifecycle cards replace the old card copy with the same five facts");
+  assert.match(view, /className="board__waiting-item"[\s\S]*<WaitingFacts card=\{card\} compact \/>[\s\S]*<\/button>/, "strip entries reuse the five-fact component");
   assert.match(css, /\.board__waiting\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*112px minmax\(0, 1fr\);[^}]*flex-shrink:\s*0;/s, "the strip is pinned above the flexible columns");
-  assert.match(css, /\.board__waiting\s*\{[^}]*box-sizing:\s*border-box;[^}]*height:\s*96px;/s, "populated strips keep the reference whole-strip height");
+  assert.match(css, /\.board__waiting\s*\{[^}]*box-sizing:\s*border-box;[^}]*height:\s*119px;/s, "populated strips make room for the readable W-410 entries");
   assert.match(css, /\.board__waiting\.board__waiting--empty\s*\{[^}]*height:\s*20px;[^}]*padding:\s*0;[^}]*border-top:\s*0;[^}]*border-bottom:\s*0;/s, "the zero strip collapses to one label line without an entry row");
   assert.match(css, /\.board__waiting-label\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*align-items:\s*flex-end;[^}]*width:\s*fit-content;[^}]*\}[\s\S]*?\.board__waiting-label span\s*\{[^}]*white-space:\s*nowrap;/s, "count sits below the label and shares its right edge");
   assert.match(css, /@media \(max-width:\s*899px\)[\s\S]*?\.board__waiting-label\s*\{[^}]*flex-direction:\s*row;[^}]*align-items:\s*baseline;[^}]*gap:\s*4px;/s, "640 and 390 put the count just right of the label");
   assert.match(css, /\.board__waiting-item\s*\{[^}]*border-left:\s*2px solid var\(--amber\);[^}]*background:\s*var\(--wash\);/s, "strip entries use an amber rule and neutral highlight");
-  assert.match(css, /\.board__waiting-title\s*\{[^}]*display:\s*-webkit-box;[^}]*overflow:\s*hidden;[^}]*-webkit-line-clamp:\s*3;/s, "strip titles wrap within the fixed entry height and then ellipsize");
+  assert.match(css, /\.board__waiting-title\s*\{[^}]*display:\s*-webkit-box;[^}]*overflow:\s*hidden;[^}]*-webkit-line-clamp:\s*1;/s, "strip titles yield vertical room to the handoff facts and then ellipsize");
   assert.match(css, /\.board__card-title\s*\{[^}]*-webkit-line-clamp:\s*2;/s, "lifecycle card titles are capped at two lines");
   assert.match(css, /\.board__card-asks\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s, "lifecycle ask words stay on one truncated line");
   assert.match(css, /\.board__card--amber\s*\{[^}]*border-left-color:\s*var\(--amber\);[^}]*background:\s*var\(--wash\);/s, "waiting lifecycle cards are highlighted in place without an accent state");
   assert.match(css, /\.board__waiting-items\s*\{[^}]*display:\s*flex;[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;/s, "every width uses one independently scrolling horizontal waiting row");
-  assert.match(css, /\.board__waiting-item\s*\{[^}]*flex:\s*0 0 calc\(\(100% - \(3 \* var\(--sp-2\)\)\) \/ 4\);/s, "desktop exposes four entries before horizontal overflow");
-  assert.match(css, /\.board__waiting-item\s*\{[^}]*height:\s*66px;/s, "entries keep the reference box for one ID line and a bounded wrapping title");
-  assert.match(css, /@media \(max-width:\s*899px\)[\s\S]*?\.board__waiting-item\s*\{[^}]*flex-basis:\s*calc\(\(100% - var\(--sp-2\)\) \/ 2\);/s, "640 and 390 expose two entries before horizontal overflow");
+  assert.match(css, /\.board__waiting-item\s*\{[^}]*flex:\s*0 0 296px;[^}]*width:\s*296px;/s, "every width gives the complete action a readable scrolling entry");
+  assert.match(css, /\.board__waiting-item\s*\{[^}]*height:\s*89px;/s, "entries stay within 1.30 plus tolerance of W-463's 66px master height");
+  assert.match(css, /\.board__card--waiting\s*\{[^}]*height:\s*145px;[^}]*max-height:\s*145px;/s, "waiting lifecycle cards stay within 1.30 plus tolerance of the 108px master maximum");
   assert.match(css, /\.board__waiting-rail--more \.board__waiting-items\s*\{[^}]*scroll-padding-inline-end:\s*44px;/s, "a visible chevron reserves its overlay width when focused entries scroll");
   assert.match(view, /revealFocusedWaitingItem[\s\S]*itemRight > chevronLeft[\s\S]*items\.scrollBy\(\{ left: itemRight - chevronLeft \+ 2, behavior: "auto" \}\)/, "keyboard focus reveals each entry clear of the visible chevron");
   assert.match(view, /canScrollRight && <button ref=\{moreRef\} type="button" className="board__waiting-more" aria-label="Show more waiting asks" onClick=\{showMore\}/, "overflow owns a named native right-arrow button");
@@ -96,15 +96,15 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   assert.match(served, /strip stays above the lifecycle columns/, "the served row pins strip geometry");
   assert.match(served, /empty strip contains only its inline label and zero/, "the served row pins the ruled empty strip at every width");
   assert.match(served, /1280: populated count sits below the label[\s\S]*populated count sits just right of the label/, "the served row pins stacked desktop and inline narrow counts");
-  assert.match(served, /strip entries omit visible ask words/, "the served row pins D-143's strip content");
-  assert.match(served, /lifecycle ask copy stays on one truncated line/, "the served row pins D-143's card ask line");
-  assert.match(served, /waiting card keeps its complete seat and status line inside its bottom edge/, "the served row pins the long-title card's seat and status line");
+  assert.match(served, /strip entries show the selected five-fact handoff rail/, "the served row migrates D-143's strip content to W-410");
+  assert.match(served, /lifecycle waiting card shows the selected five-fact handoff rail/, "the served row migrates the lifecycle content to W-410");
+  assert.match(served, /waiting card keeps OWNER, NEXT and ASK inside its bottom edge/, "the served row pins the taller long-title card's facts");
   assert.match(served, /every waiting entry stays in one horizontal row[\s\S]*horizontal waiting row opens at its first entry[\s\S]*overflow arrow appears while entries continue right[\s\S]*right arrow advances the waiting row[\s\S]*right arrow hides at the end[\s\S]*keyboard focus reaches horizontal entry/, "the served row pins one horizontal row, initial scroll, its arrow cue and keyboard reachability");
   assert.match(served, /focused entry \$\{index \+ 1\} stays clear of the visible chevron/, "the served row pins chevron-clear keyboard focus");
   assert.match(served, /transfers focus from the removed arrow to the last waiting entry/, "the served row pins chevron-end focus transfer");
   assert.match(served, /1280 collapsed shell: waiting entries still overflow their rail[\s\S]*1280 collapsed shell: overflow keeps the waiting chevron visible/, "the served row pins collapsed desktop chevron visibility under overflow");
   assert.match(served, /twelve waiting entries remain in the strip[\s\S]*twelve waiting entries overflow their rail[\s\S]*twelve waiting entries keep the chevron visible/, "the served row covers the twelve-entry collapsed desktop shell");
-  assert.match(served, /many-entry strip keeps the reference whole-strip height[\s\S]*empty strip collapses to exactly its label line[\s\S]*one-entry strip keeps the reference whole-strip height/, "the served row pins collapsed zero and reference-height populated strips");
+  assert.match(served, /many-entry strip keeps the W-410 whole-strip height[\s\S]*empty strip collapses to exactly its label line[\s\S]*one-entry strip keeps the W-410 whole-strip height/, "the served row pins collapsed zero and W-410-height populated strips");
 });
 
 test("W-463-b3 behaviour 3: the Board badge reuses strip membership while Inbox keeps D-135", () => {
@@ -132,7 +132,7 @@ test("W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handle
   const css = read("src/components/w025.css");
   const served = read("tests-serve/w463.spec.ts");
 
-  assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*aria-label=\{`Open \$\{card\.id\} \$\{card\.title\}: \$\{asks\}`\}[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced"\)\}/, "a waiting entry is a named button wired to the shared card selection callback");
+  assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*aria-label=\{`Open \$\{card\.id\} \$\{card\.title\}: owner \$\{owner\}; ask \$\{asks\}; next \$\{next\}; waiting \$\{age\}`\}[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced"\)\}/, "a five-fact waiting entry remains a named button wired to the shared card selection callback");
   assert.match(served, /unplaced waiting entry opens the existing drawer/, "an unplaced strip entry has an explicit drawer outcome");
   assert.match(view, /<Card[\s\S]*onSelect=\{onSelectCard\}/, "lifecycle cards retain the same selection callback");
   assert.match(board, /sel\.columnId === "unplaced"[\s\S]*model\.unplaced\.includes\(sel\.id\)[\s\S]*model\.waiting\.some/, "an unplaced waiting selection stays open in the existing drawer");

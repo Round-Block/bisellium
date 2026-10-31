@@ -76,13 +76,13 @@ test("W-463-b1 variant C keeps one lifecycle card and one strip membership at 12
     await page.goto(`${served.baseURL}/?w463=b1-${width}#/board`);
     await expect(page.locator(".board__waiting-item"), `${width}: the four ask sources form one strip membership each`).toHaveCount(4);
     await expect(page.locator('.board__column[data-column-id="needs_you"]'), `${width}: the W-409 membership column is replaced`).toHaveCount(0);
-    await expect(page.locator(".board__waiting-item .board__card-ask"), `${width}: strip entries omit visible ask words`).toHaveCount(0);
+    await expect(page.locator(".board__waiting-item .board__waiting-ask-value"), `${width}: strip entries show the selected five-fact handoff rail`).toHaveText(["Greenlight, 2 Inbox decisions", "Human gate", "Inbox decision", "Human gate"]);
     for (const id of ["W-1", "W-3", "W-4", "W-8"]) {
       await expect(page.locator(`[data-waiting-id="${id}"] .board__waiting-id`), `${width}: ${id} is shown atop its strip entry`).toHaveText(id);
     }
-    await expect(page.locator('[data-card-id="W-1"] .board__card-ask'), `${width}: the lifecycle card retains W-409's counted ask words`).toHaveText(["Greenlight", "2 Inbox decisions"]);
-    await expect(page.locator('[data-card-id="W-3"] .board__card-ask')).toHaveText(["Human gate"]);
-    await expect(page.locator('[data-card-id="W-4"] .board__card-ask')).toHaveText(["Inbox decision"]);
+    await expect(page.locator('[data-card-id="W-1"] .board__waiting-ask-value'), `${width}: the lifecycle waiting card shows the selected five-fact handoff rail`).toHaveText("Greenlight, 2 Inbox decisions");
+    await expect(page.locator('[data-card-id="W-3"] .board__waiting-ask-value')).toHaveText("Human gate");
+    await expect(page.locator('[data-card-id="W-4"] .board__waiting-ask-value')).toHaveText("Inbox decision");
     await expect(page.locator('[data-card-id="W-1"] .board__card-id'), `${width}: lifecycle card shows its task ID`).toHaveText("W-1");
     for (const [column, id] of [["planned", "W-1"], ["in_progress", "W-3"], ["verifying", "W-4"], ["awaiting_review", "W-5"], ["done", "W-6"], ["halted", "W-7"]] as const) {
       await expect(page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`), `${width}: ${id} remains once in ${column}`).toHaveCount(1);
@@ -136,28 +136,28 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
         titleLines: long.clientHeight / Number.parseFloat(getComputedStyle(long).lineHeight),
         titleEllipsized: long.scrollHeight > long.clientHeight,
         pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        stripAskCount: document.querySelectorAll('[data-waiting-id="W-1"] .board__card-ask').length,
+        stripAskCount: document.querySelectorAll('[data-waiting-id="W-1"] .board__waiting-ask-value').length,
       };
     });
     expect(geometry.stripBottom, `${width}: strip stays above the lifecycle columns`).toBeLessThanOrEqual(geometry.columnsTop + 0.5);
-    expect(geometry.stripHeight, `${width}: many-entry strip keeps the reference whole-strip height`).toBeCloseTo(96, 0);
+    expect(geometry.stripHeight, `${width}: many-entry strip keeps the W-410 whole-strip height`).toBeCloseTo(119, 0);
     expect(geometry.columnsHeight, `${width}: strip leaves useful lifecycle space`).toBeGreaterThan(260);
     expect(geometry.rowTops, `${width}: every waiting entry stays in one horizontal row`).toBe(1);
     expect(geometry.initialScrollLeft, `${width}: the horizontal waiting row opens at its first entry`).toBe(0);
     expect(geometry.horizontalOverflow, `${width}: excess waiting entries overflow inside the strip`).toBe(true);
     expect(geometry.overflowX, `${width}: the waiting row scrolls left and right`).toBe("auto");
     expect(geometry.overflowY, `${width}: the waiting row never scrolls vertically`).toBe("hidden");
-    expect(geometry.entryHeights.every((height) => Math.abs(height - 66) <= 0.5), `${width}: every entry has reference height for one ID line and a bounded title`).toBe(true);
-    expect(geometry.titleClamp, `${width}: strip title is capped within its fixed entry`).toBe(3);
-    expect(geometry.titleLines, `${width}: strip title uses no more than three lines`).toBeLessThanOrEqual(3.01);
+    expect(geometry.entryHeights.every((height) => Math.abs(height - 89) <= 0.5), `${width}: every entry stays within the 1.30±0.05 ratio against W-463's 66px master height`).toBe(true);
+    expect(geometry.titleClamp, `${width}: strip title is capped within its fixed entry`).toBe(1);
+    expect(geometry.titleLines, `${width}: strip title uses no more than one line`).toBeLessThanOrEqual(1.01);
     expect(geometry.titleEllipsized, `${width}: long strip title wraps and then ellipsizes`).toBe(true);
-    expect(geometry.stripAskCount, `${width}: strip entries omit visible ask words`).toBe(0);
+    expect(geometry.stripAskCount, `${width}: strip entries keep visible W-409 ask words`).toBe(1);
     await expect(page.locator('[data-waiting-id="W-1"] .board__waiting-id'), `${width}: strip entry shows its task ID above the title`).toHaveText("W-1");
     const lifecycleContent = await page.locator('[data-card-id="W-1"]').evaluate((card) => {
       const id = card.querySelector<HTMLElement>(".board__card-id")!;
       const title = card.querySelector<HTMLElement>(".board__card-title")!;
-      const asks = card.querySelector<HTMLElement>(".board__card-asks")!;
-      const meta = card.querySelector<HTMLElement>(".board__card-meta")!;
+      const asks = card.querySelector<HTMLElement>(".board__waiting-ask-value")!;
+      const meta = card.querySelector<HTMLElement>(".board__waiting-handoff")!;
       const cardBox = card.getBoundingClientRect();
       const style = getComputedStyle(asks);
       const metaBox = meta.getBoundingClientRect();
@@ -167,10 +167,11 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
         titleClamp: Number.parseInt(getComputedStyle(title).webkitLineClamp, 10),
         askOneLine: asks.getBoundingClientRect().height <= Number.parseFloat(style.lineHeight) + 0.5,
         askContained: asks.getBoundingClientRect().right <= cardBox.right + 0.5,
+        askClipped: asks.scrollWidth > asks.clientWidth + 0.5,
         askOverflow: style.overflow,
         askEllipsis: style.textOverflow,
         askWhiteSpace: style.whiteSpace,
-        metaText: (meta.textContent ?? "").trim(),
+        metaText: (meta.textContent ?? "").replace(/\s/g, ""),
         metaChildren: meta.children.length,
         metaInside: metaBox.bottom <= cardBox.bottom + 0.5 && metaBox.top >= cardBox.top - 0.5 && [...meta.children].every((part) => {
           const box = part.getBoundingClientRect();
@@ -181,13 +182,15 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     expect(lifecycleContent.id, `${width}: lifecycle card shows its task ID`).toBe("W-1");
     expect(lifecycleContent.idAboveTitle, `${width}: lifecycle task ID sits above the title`).toBe(true);
     expect(lifecycleContent.titleClamp, `${width}: lifecycle card title is capped at two lines`).toBe(2);
-    expect(lifecycleContent.askOneLine, `${width}: lifecycle ask copy stays on one truncated line`).toBe(true);
+    expect(lifecycleContent.askOneLine, `${width}: lifecycle ask copy stays on one readable line`).toBe(true);
     expect(lifecycleContent.askContained).toBe(true);
-    expect(lifecycleContent.askOverflow).toBe("hidden");
-    expect(lifecycleContent.askEllipsis).toBe("ellipsis");
+    expect(lifecycleContent.askClipped, `${width}: lifecycle ask copy shows every active kind`).toBe(false);
+    expect(lifecycleContent.askOverflow).toBe("visible");
+    expect(lifecycleContent.askEllipsis).toBe("clip");
     expect(lifecycleContent.askWhiteSpace).toBe("nowrap");
-    expect(lifecycleContent.metaChildren, `${width}: the long-title waiting card has a seat and status line`).toBeGreaterThan(0);
-    expect(lifecycleContent.metaInside, `${width}: the long-title waiting card keeps its complete seat and status line inside its bottom edge`).toBe(true);
+    expect(lifecycleContent.metaText, `${width}: the waiting handoff names owner and next actor`).toContain("OWNERbuilder→NEXTUnassigned");
+    expect(lifecycleContent.metaChildren, `${width}: the long-title waiting card has owner, arrow and next actor`).toBe(3);
+    expect(lifecycleContent.metaInside, `${width}: the long-title waiting card keeps OWNER, NEXT and ASK inside its bottom edge`).toBe(true);
     expect(geometry.pageOverflow, `${width}: strip creates no page-level overflow`).toBeLessThanOrEqual(0);
     await expect(strip).toBeVisible();
     await expect(columns).toBeVisible();
@@ -311,7 +314,7 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     many.opera = [makeOpus("W-9", "backlog")];
     await page.goto(`${served.baseURL}/?w463=b2-one-${width}#/board`);
     await expect(page.locator(".board__waiting-item"), `${width}: one ask has one fixed-height entry`).toHaveCount(1);
-    expect(await page.locator(".board__waiting").evaluate((node) => node.getBoundingClientRect().height), `${width}: one-entry strip keeps the reference whole-strip height`).toBeCloseTo(96, 0);
+    expect(await page.locator(".board__waiting").evaluate((node) => node.getBoundingClientRect().height), `${width}: one-entry strip keeps the W-410 whole-strip height`).toBeCloseTo(119, 0);
     await expect(page.getByRole("button", { name: "Show more waiting asks" }), `${width}: no arrow appears without horizontal overflow`).toHaveCount(0);
 
     if (width === 1280) {
@@ -377,7 +380,7 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w463=b2-combined-${width}#/board`);
     await expect(
-      page.getByRole("button", { name: "Open W-1 W-1 title: Greenlight, Inbox decision, Human gate" }),
+      page.getByRole("button", { name: "Open W-1 W-1 title: owner builder; ask Greenlight, Inbox decision, Human gate; next Unassigned; waiting —" }),
       `${width}: the strip entry's accessible name carries every combined ask kind`,
     ).toHaveAttribute("data-waiting-id", "W-1");
   }
@@ -394,7 +397,7 @@ test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390",
   for (const width of [1280, 390] as const) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w463=b4-${width}#/board`);
-    const entry = page.getByRole("button", { name: "Open W-1 W-1 title: Greenlight" });
+    const entry = page.getByRole("button", { name: "Open W-1 W-1 title: owner builder; ask Greenlight; next Unassigned; waiting —" });
     const lifecycle = page.locator('[data-card-id="W-1"]');
     await expect(entry, `${width}: accessible name carries the opus and ask`).toBeVisible();
     await expect(lifecycle, `${width}: the same opus retains its lifecycle card`).toHaveCount(1);
@@ -415,7 +418,7 @@ test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390",
       await page.getByRole("button", { name: "close" }).click();
     }
 
-    const unplaced = page.getByRole("button", { name: "Open W-8 W-8 title: Human gate" });
+    const unplaced = page.getByRole("button", { name: "Open W-8 W-8 title: owner builder; ask Human gate; next Unassigned; waiting —" });
     await expect(page.locator('[data-card-id="W-8"]'), `${width}: unplaced has no lifecycle card`).toHaveCount(0);
     await unplaced.click();
     await expect(page.getByRole("dialog", { name: "W-8 title" }), `${width}: unplaced waiting entry opens the existing drawer`).toBeVisible();
