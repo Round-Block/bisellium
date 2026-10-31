@@ -1,0 +1,26 @@
+# opus: W-382
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T11:24:47.423Z
+# tree: tree:457d9c2f6b6bb704c725f41ea5014418665da10f
+# brief: briefs/W-382.md blob:32db957234063c20468efc00c542a8c37a20c9ab
+# ticket: {"opus":"W-382","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"f6fe3068bd87192051c67172dcdbd330cdf5e55d","brief":"32db957234063c20468efc00c542a8c37a20c9ab","at":"2026-10-31T11:24:42.337Z"}
+
+# W-382 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-382.md revision 1, prototyped over master 7aa60f53 (series spec-scratch/W-382 3dd93b54, prototype.mbox sha256 6de07de7c450a6c7f8d233310b46ade2fc2cb583c1c540b8711d9b5b1170097c, eight patches); evidence in /home/edckt/.bisellium-evidence/W-382-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-382-spec/promise-ledger.md
+
+Checked: the four reds fail by assertion on their red commits and on master's source, are accepted by the replay classifier, and each green passes (red-logs.out, red-accept.out, reds-master.out); 21 one-hunk source kills fail their row at the assertion they guard by the verdict's pin reader (kills.out); typecheck, lint of the touched files, format:check, both officina checks and the touched packages' test files pass at the tip (gates-proto.out); the Codex test check lists no flip and nothing unnamed, and its must-stay-green rows pass (fixture-census.md, census-green.out, containment-proto.out); the series reads and applies at master as the reds perform reads it (series-read.out); admission returns no problem (admission.out); the ledger passes the writer (ledger-check.out). next.ts is not touched, so nothing overlaps W-468 (PR #926, still open). No Files owned path is code-owned.
+
+## Findings
+1. advisory — the served UI paths are a fixed judgment (apps, the fixture officina, the root package files); a master move in packages/ that changes served data is not seen and is stated as a limit, with the served suite on master still required — check: brief:55, Defaults 1
+2. advisory — only served-e2e logs written after the merge name a served UI, so rulings already given (W-463's D-144, D-146) never carry; W-463 needs one more ruling at its served tree, stated in Out of scope and Defaults 2 — check: brief:57, treeof.out
+3. advisory — done records nothing new: check recomputes the carry from the ruling and the two committed logs, and done prints one carry line the done perform relays — check: brief:21, kills.out
+
+## Verdict
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-382.md`, prototype `prototype.mbox` (eight patches) over master 7aa60f53; four behaviours, 3 points, no code-owned path, no next.ts edit.

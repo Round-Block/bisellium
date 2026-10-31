@@ -1,0 +1,18 @@
+# opus: W-382
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a191b4-e972-7710-a0a4-584eaccd3390
+# outcome: passed
+# at: 2026-10-31T11:29:22.470Z
+# tree: tree:457d9c2f6b6bb704c725f41ea5014418665da10f
+# brief: briefs/W-382.md blob:32db957234063c20468efc00c542a8c37a20c9ab
+# ticket: {"opus":"W-382","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"f6fe3068bd87192051c67172dcdbd330cdf5e55d","brief":"32db957234063c20468efc00c542a8c37a20c9ab","at":"2026-10-31T11:29:18.592Z"}
+
+## Findings
+No findings
+
+## Verdict
+The input boundaries fail closed, and all four behaviours and promises are feasible within the stated limits.
+VERDICT: PASS
