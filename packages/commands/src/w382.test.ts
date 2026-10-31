@@ -331,3 +331,42 @@ test("W-382-b3 behaviour 3: a ruling on the branch tree counts at done when the 
     assert.equal(read(o.root), undefined, `${name}: uiRulingCarry names none`);
   }
 });
+
+test("W-382-b4 behaviour 4: done on a carried ruling marks the opus done and prints the ruling, both trees and the served UI", () => {
+  /** A repository whose officina `studio/` holds the fixture, its record's served run at the repository's SOURCE tree. */
+  const doneRepo = (tag: string, current: boolean): { repo: string; studio: string; tree: string } => {
+    const repo = fixtureRepo(tag);
+    const studio = join(repo, "studio");
+    const tree = `tree:${shimSourceTree(repo)}`;
+    if (current) uiOfficina(tag, { root: studio, served: tree, branch: null, ruling: [`certifies: ${tree}`, "at: 2026-10-31T11:30:00.000Z"] });
+    else uiOfficina(tag, { root: studio, served: tree });
+    commitAll(repo, "officina");
+    return { repo, studio, tree };
+  };
+  const done = (studio: string): { code: number; out: string[]; err: string[] } => {
+    const out: string[] = [];
+    const err: string[] = [];
+    const [log, error] = [console.log, console.error];
+    console.log = (...a: unknown[]) => void out.push(a.map(String).join(" "));
+    console.error = (...a: unknown[]) => void err.push(a.map(String).join(" "));
+    try {
+      return { code: runDone([ID, "--studio", studio, "--now", "2026-10-31T12:00:00.000Z"]).exitCode, out, err };
+    } finally {
+      console.log = log;
+      console.error = error;
+    }
+  };
+  const carried = doneRepo("b4-carried", false);
+  const r = done(carried.studio);
+  assert.deepEqual({ code: r.code, err: r.err }, { code: 0, err: [] }, "done passes on a ruling carried from the branch tree");
+  assert.equal(model.loadNativeRecords(carried.studio).records.get(ID)?.state, "done", "the record is done");
+  assert.deepEqual(r.out, [`${ID}: done`, `${ID}: ui ruling D-901 carried from ${TREE_B} to ${carried.tree}: served UI ${UI_A} unchanged`], "done prints the carried ruling after its done line");
+  const direct = doneRepo("b4-direct", true);
+  const d = done(direct.studio);
+  assert.deepEqual({ code: d.code, out: d.out, err: d.err }, { code: 0, out: [`${ID}: done`], err: [] }, "done on a ruling at the served tree prints no carry line");
+});
+
+/** The repository's SOURCE tree as `done` computes it: `studio/` and `.bisellium/` excluded. */
+function shimSourceTree(repo: string): string {
+  return shim.sourceTreeHash(repo, ["studio", ".bisellium"]);
+}
