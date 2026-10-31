@@ -1439,24 +1439,32 @@ function staleCitedReds(id: string, round: BuildReviewRound, bs: Src, n: number)
     .sort((a, b) => a - b)
     .filter((k) => {
       const text = bs.read(`ci/reds/${id}/${pad(k)}.log`);
-      const at = text === undefined ? undefined : exactInstant(rawHeaderAt(text));
+      const at = text === undefined ? undefined : exactRedAt(text);
       return text === undefined || !usableRed(text) || at === undefined || at <= round.at;
     });
 }
 
 /**
- * A red log's `# at:` value as written: the header grammar of `parseLogHeader` (the leading `# key: value` lines, the last `at`
- * wins) with the value kept raw, so a trailing space or tab the reader's `.trim()` would hide is still there; undefined when
- * the log has no `at` line. Only the whitespace after the colon, the header's delimiter, is dropped.
+ * W-468: a red log's exact recorded time, read by LINE: the header block of `parseLogHeader` (the log split at `\n`, its
+ * leading `# key: value` lines by the same pattern, each tested without one trailing CR) must hold exactly one `at` line (any
+ * key case), and that line, with its bytes as written (a CR before the LF kept) and its LF present, must be `# at: ` and then
+ * an `exactInstant` value, nothing after it: the line `red` writes. Any other line form (padding before or after the value, a
+ * tab or no space after the colon, a padded `#`, another key case, a CRLF ending, a missing LF at the end of the file, a second
+ * `at` line) is undefined (stale).
  */
-function rawHeaderAt(text: string): string | undefined {
-  let at: string | undefined;
-  for (const line of text.split(/\r?\n/)) {
-    const m = /^#\s*([A-Za-z_]+):\s*(.*)$/.exec(line);
+function exactRedAt(text: string): number | undefined {
+  const parts = text.split("\n");
+  const at: number[] = [];
+  for (const [i, raw] of parts.entries()) {
+    const m = /^#\s*([A-Za-z_]+):\s*(.*)$/.exec(raw.endsWith("\r") ? raw.slice(0, -1) : raw);
     if (!m) break;
-    if (m[1]!.toLowerCase() === "at") at = m[2] ?? "";
+    if (m[1]!.toLowerCase() === "at") at.push(i);
   }
-  return at;
+  if (at.length !== 1) return undefined;
+  // the last segment of the split did not end in an LF: its line is not the line `red` writes
+  const i = at[0]!;
+  const line = parts[i]!;
+  return i < parts.length - 1 && line.startsWith("# at: ") ? exactInstant(line.slice("# at: ".length)) : undefined;
 }
 
 /**
