@@ -771,3 +771,59 @@ export function redEvidence(briefText: string, k: number): string[] {
     }
   return [...cited];
 }
+
+/** W-473 (D-076 D): behaviour k's declared failing assertions: every pin (`PIN`, W-322's ``pinned by `<row>` "<assertion>"``)
+ *  on the item's real lines (`behaviourItems`) from the line holding its `**Genuine red:**` marker to the item's end, in
+ *  brief order. Text only: no marker, or no item k, is none. One is the declaration `runRed` compares a red against. */
+export function declaredReds(briefText: string, k: number): Pin[] {
+  const lines = behaviourItems(briefText)[k - 1] ?? [];
+  const from = lines.findIndex((l) => /(?<!`)\*\*Genuine red:\*\*/.test(l));
+  if (from === -1) return [];
+  return lines.slice(from).flatMap((l) => [...l.matchAll(PIN)].map((m) => ({ row: m[1]!, assertion: m[2]! })));
+}
+
+/** W-473: whether a red command's output fails at `pin`, read as a kill's output proves a pin (`provesPin`, W-381): the
+ *  row's subtest closes `not ok`, with a diagnostic block whose `error:` message is the assertion text or opens with it and
+ *  `: `, and whose `code:` is `'ERR_ASSERTION'`. Unlike `killedPin`, no `TAP version 13` first line is asked, since a red's
+ *  output is stdout and stderr in arrival order. Any other form (the spec reporter, Playwright) fails at nothing. */
+export function redFailsAt(output: string, pin: Pin): boolean {
+  return provesPin(output.split(/\r?\n/), pin);
+}
+
+/** W-473: the first diagnostic `error:` message in a red's output (a quoted `'<text>'` with `''` read as one quote, the first
+ *  line of an `error: |-` block, else the value as printed), for a refusal to name what the red did fail at; none is undefined. */
+export function firstFailure(output: string): string | undefined {
+  const lines = output.split(/\r?\n/);
+  const at = lines.findIndex((l) => /^ *error: /.test(l));
+  if (at === -1) return undefined;
+  const value = lines[at]!.replace(/^ *error: /, "");
+  return value === "|-" ? lines[at + 1]?.trim() : /^'.*'$/.test(value) ? value.slice(1, -1).replaceAll("''", "'") : value;
+}
+
+/** A red command word that runs Playwright: `playwright`, or a path ending `/playwright`. */
+const PLAYWRIGHT_WORD = /(?:^|\/)playwright$/;
+
+/** W-473: whether a red command's words open with a closed Playwright-launch form: a `PLAYWRIGHT_WORD` executable, `npx`
+ *  then a `PLAYWRIGHT_WORD`, or `node` then a path ending `/node_modules/@playwright/test/cli.js`. A matching later
+ *  argument never counts. */
+function launchesPlaywright(words: string[]): boolean {
+  const [first, second] = words;
+  if (first === undefined) return false;
+  if (PLAYWRIGHT_WORD.test(first)) return true;
+  if (first === "npx") return second !== undefined && PLAYWRIGHT_WORD.test(second);
+  return first === "node" && second !== undefined && second.endsWith("/node_modules/@playwright/test/cli.js");
+}
+
+/** W-473: `ready`'s requirement on a new opus: each numbered behaviour's genuine red declares exactly one failing assertion
+ *  (`declaredReds`). A red whose command (`redCommand`) opens with a Playwright launch (`launchesPlaywright`) and declares
+ *  none is exempt: a pin is proved by Node's TAP output only. One problem per behaviour, in order. */
+export function declaredRedProblems(briefText: string, id: string): string[] {
+  return behaviourItems(briefText).flatMap((_, i) => {
+    const k = i + 1;
+    const pins = declaredReds(briefText, k);
+    if (pins.length === 1) return [];
+    const words = redCommand(briefText, id, k);
+    if (pins.length === 0 && Array.isArray(words) && launchesPlaywright(words)) return [];
+    return [`behaviour ${k}'s genuine red declares ${pins.length} failing assertions; declare one after its marker: pinned by \`<row>\` "<assertion>" (W-473)`];
+  });
+}

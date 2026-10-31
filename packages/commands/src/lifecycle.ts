@@ -23,7 +23,7 @@ import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisell
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
-import { admissionLimit, readBriefAdmission, readBriefLimit, readRedOrder } from "./brief-admission.js";
+import { admissionLimit, declaredRedProblems, declaredReds, firstFailure, readBriefAdmission, readBriefLimit, readRedOrder, redFailsAt } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentGates } from "./builder-run.js";
 import {
@@ -326,6 +326,12 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     const orderProblem = pastReady ? undefined : "error" in order ? order.error : order.declared ? undefined : 'declares no red order; add the line "Red order: one at a time"';
     if (orderProblem !== undefined) {
       console.error(`${opusId}: brief.admission: ${specRel} ${orderProblem}`);
+      return { exitCode: 1 };
+    }
+    // W-473: a new opus declares each genuine red's failing assertion; an opus past ready is grandfathered, as above
+    const undeclared = pastReady ? [] : declaredRedProblems(containedSpec.bytes.toString("utf8"), opusId);
+    if (undeclared.length > 0) {
+      console.error(undeclared.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
       return { exitCode: 1 };
     }
   }
@@ -932,8 +938,8 @@ function prerequisitePassed(run: { exitCode: number; output: string }): boolean 
 
 /** W-166: does this opus's brief opt in to the one-at-a-time red order? No contract when the record is absent
  *  or names no `spec`; otherwise the record and its brief are contained regular files and the brief's line
- *  (`readRedOrder`) decides. */
-function redOrderOptIn(root: string, opusId: string): { optedIn: boolean } | { error: string } {
+ *  (`readRedOrder`) decides. W-473: the brief's text rides along, for its declared failing assertions. */
+function redOrderOptIn(root: string, opusId: string): { optedIn: boolean; brief?: string } | { error: string } {
   // the id already passed `safeRedsDir`; `readContainedRegularFile` contains the path (concatenated, not a template, so inventory B gains no key)
   const recordRel = "opera/" + opusId + ".md";
   const record = readContainedRegularFile(root, recordRel, "opera");
@@ -947,9 +953,10 @@ function redOrderOptIn(root: string, opusId: string): { optedIn: boolean } | { e
   if (spec === undefined) return { optedIn: false };
   const brief = typeof spec === "string" ? readContainedRegularFile(root, spec, "briefs") : { error: "spec must be a string" };
   if ("error" in brief) return { error: `red: ${opusId}: no safe spec at ${String(spec)} — ${brief.error}` };
-  const order = readRedOrder(brief.bytes.toString("utf8"));
+  const text = brief.bytes.toString("utf8");
+  const order = readRedOrder(text);
   if ("error" in order) return { error: `red: ${opusId}: ${spec}: ${order.error}` };
-  return { optedIn: order.declared };
+  return { optedIn: order.declared, brief: text };
 }
 
 /** Behaviours 1..n-1's recorded commands, each split on whitespace as the host replay does; every log must be
@@ -1087,6 +1094,13 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     console.error(optIn.error);
     return { exitCode: 2 };
   }
+  // W-473: the failing assertion behaviour k's genuine red declares, read before any command runs; a brief with none
+  // (one signed before W-473, an opus with no record or spec) records as before
+  const declared = optIn.brief === undefined ? [] : declaredReds(optIn.brief, behaviour);
+  if (declared.length > 1) {
+    console.error(`red: ${opusId}: behaviour ${behaviour}'s genuine red declares ${declared.length} failing assertions; one, or none — nothing run`);
+    return { exitCode: 2 };
+  }
   let prerequisites: string[][] = [];
   if (optIn.optedIn) {
     const refuse = (why: string): WriteResult => {
@@ -1154,6 +1168,14 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
 
   if (cmdExit === 0) {
     console.error(`red: command exited 0 — that command passed, nothing recorded`);
+    return { exitCode: 1 };
+  }
+
+  // W-473: a declared red is recorded only when its output fails at the declared assertion, not at another cause
+  const pin = declared[0];
+  if (pin !== undefined && !redFailsAt(output, pin)) {
+    const got = firstFailure(output);
+    console.error(`red: behaviour ${behaviour} did not fail at its declared assertion, pinned by \`${pin.row}\` "${pin.assertion}"; its first failure is ${got === undefined ? "no assertion" : JSON.stringify(got)} — nothing recorded`);
     return { exitCode: 1 };
   }
 

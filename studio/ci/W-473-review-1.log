@@ -1,0 +1,18 @@
+# opus: W-473
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19176-855a-7da0-941a-ad70aca7a356
+# outcome: passed
+# at: 2026-10-31T10:18:34.623Z
+# tree: tree:96dea419dce76d14ecb204f5716bc5589a1d7606
+# brief: briefs/W-473.md blob:2093c1575f8727c0442207f5cc8141192ff4a9e9
+# ticket: {"opus":"W-473","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-473/studio","head":"86ec0a775f84bbb99931436765a3b56e0ca5c27f","brief":"2093c1575f8727c0442207f5cc8141192ff4a9e9","at":"2026-10-31T10:17:05.114Z"}
+
+## Findings
+1. advisory — packages/cli/src/red-order.test.ts:580 [severity: S4] The closed launch grammar admits a direct `playwright` executable, but W-473-b2 covers only the `npx` and Node-CLI forms; removing the direct-executable branch would leave the row green. [class: tests×ruled-case-uncovered] — check: packages/cli/src/red-order.test.ts
+
+## Verdict
+The declared behaviours, source scope, gates, and assertion-failing reds otherwise match the brief; the remaining coverage gap is advisory only.
+VERDICT: PASS

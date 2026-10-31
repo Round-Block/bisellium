@@ -1,0 +1,18 @@
+# opus: W-473
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1907c-ab12-7eb1-90e7-44f76b1e0372
+# outcome: passed
+# at: 2026-10-31T09:55:55.786Z
+# tree: tree:96dea419dce76d14ecb204f5716bc5589a1d7606
+# brief: briefs/W-473.md blob:2093c1575f8727c0442207f5cc8141192ff4a9e9
+# ticket: {"opus":"W-473","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-473/studio","head":"f570d230cd095ada6a62ec3d11d273777da07f88","brief":"2093c1575f8727c0442207f5cc8141192ff4a9e9","at":"2026-10-31T09:55:55.225Z"}
+
+## Findings
+1. advisory — brief:82 The closed grammar admits a direct `PLAYWRIGHT_WORD` executable, but W-473-b2 exercises only the `npx` and Node-CLI positive forms, so removing `launchesPlaywright`’s first branch would not fail the row. Replace brief:82’s admission clause with: “it admits one declared assertion and, declaring none, a direct `playwright` executable, an `npx playwright` red, and a `node ./node_modules/@playwright/test/cli.js` red.” [severity: S4] [class: tests×ruled-case-uncovered] — check: packages/cli/src/red-order.test.ts
+
+## Verdict
+The citation wording fix is sound; the direct-launch coverage gap remains advisory.
+VERDICT: PASS

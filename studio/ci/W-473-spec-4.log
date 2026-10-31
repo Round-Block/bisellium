@@ -1,0 +1,21 @@
+# opus: W-473
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1907c-ab12-7eb1-90e7-44f76b1e0372
+# outcome: passed
+# at: 2026-10-31T05:53:06.021Z
+# tree: tree:e325c04a872cab9c03d838b4e2ff6afeef69800d
+# brief: briefs/W-473.md blob:0288f3b1ae1a820a40fe359ee39b1de30a1b1f18
+# ticket: {"opus":"W-473","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"236e362d5c7618ac1263e6e15b804ea3e60ec66e","brief":"0288f3b1ae1a820a40fe359ee39b1de30a1b1f18","at":"2026-10-31T05:53:01.194Z"}
+
+## Findings
+1. advisory — brief:82 The closed grammar admits a direct `PLAYWRIGHT_WORD` executable, but W-473-b2 exercises only the `npx` and Node-CLI positive forms, so removing `launchesPlaywright`’s first branch would not fail the row. Replace brief:82’s admission clause with: “it admits one declared assertion and, declaring none, a direct `playwright` executable, an `npx playwright` red, and a `node ./node_modules/@playwright/test/cli.js` red.” [severity: S4] [class: tests×ruled-case-uncovered] — check: packages/cli/src/red-order.test.ts
+
+## Earlier findings
+- ci/W-473-spec-2.log #1: closed — brief:54 confines exemption to launch-head forms; W-473-b2 asserts “an incidental playwright argument does not exempt a red,” and kill K12 restores the any-word exemption and fails.
+
+## Verdict
+The former fail-open route is closed; the remaining direct-launch coverage gap is advisory.
+VERDICT: PASS

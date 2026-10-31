@@ -1,0 +1,18 @@
+# opus: W-473
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1907c-ab12-7eb1-90e7-44f76b1e0372
+# outcome: failed
+# at: 2026-10-31T05:47:08.484Z
+# tree: tree:e325c04a872cab9c03d838b4e2ff6afeef69800d
+# brief: briefs/W-473.md blob:6366c873a2cfe0fbd0096b130428b99d41888975
+# ticket: {"opus":"W-473","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"236e362d5c7618ac1263e6e15b804ea3e60ec66e","brief":"6366c873a2cfe0fbd0096b130428b99d41888975","at":"2026-10-31T05:47:04.807Z"}
+
+## Findings
+1. blocking — brief:54 The prototype exempts any command containing a word matched by `PLAYWRIGHT_WORD`; a normal Node red such as `node --test --test-name-pattern playwright a.test.mjs` therefore passes `ready` without a pin, after which `runRed` can record a wrong-cause failure. Replace brief:54 with: “`declaredRedProblems(briefText: string, id: string): string[]`: per behaviour with other than one pin, unless it declares none and `redCommand` starts with a closed Playwright-launch form: a `PLAYWRIGHT_WORD` executable, `npx` followed by a `PLAYWRIGHT_WORD`, or `node` followed by a path ending `/node_modules/@playwright/test/cli.js`; a matching later argument never exempts the brief.” [severity: S1] [design: changes] [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/red-order.test.ts
+
+## Verdict
+The Playwright exemption fails open on an incidental argument, so the ready boundary cannot guarantee the declared-red rule as written.
+VERDICT: FAIL
