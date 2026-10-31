@@ -252,3 +252,113 @@ Classes in more than one opus, 2026-10-15..2026-10-29:
 - class tests×ruled-case-uncovered seen in 12 opera: W-178, W-292, W-322, W-335, W-336, W-337, W-350, W-376, W-404, W-415, W-450, W-454
 - class tests×security-boundary-cases-uncovered seen in 3 opera: W-310, W-369, W-379
 - class workflow×files-owned-boundary-exceeded seen in 2 opera: W-339, W-340
+
+### 2026-10-30
+
+| Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
+|---|---|---|---|---|
+| W-408 | 3461 | 1075 | 2 | S1 2, untagged 1 |
+| W-409 | 977 | 39 | 3 | S1 3 |
+| W-443 | 366 | 34 | 0 |  |
+| W-444 | 210 | 40 | 2 | S1 2 |
+| W-445 | 572 | 49 | 1 | S1 1 |
+| W-446 | 543 | None | 0 |  |
+| W-462 | 260 | 30 | 3 | S1 5 |
+| W-466 | 80 | 45 | 0 |  |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-409 | review | 1 | failed | - | tests×tests-that-agree-with-the-bug S1 |
+| W-409 | review | 2 | passed | 152 |  |
+| W-443 | review | 1 | passed | - |  |
+| W-443 | spec | 1 | passed | - |  |
+| W-443 | spec | 2 | passed | 5 |  |
+| W-444 | review | 1 | failed | - | tests×ruled-case-uncovered S1 |
+| W-444 | review | 2 | passed | 34 |  |
+| W-444 | spec | 1 | passed | - |  |
+| W-444 | spec | 2 | failed | 25 | review×fail-open-on-malformed-records-patched-per-site S1 |
+| W-444 | spec | 3 | passed | 45 |  |
+| W-444 | spec | 4 | passed | 2 |  |
+| W-446 | review | 1 | passed | - |  |
+| W-446 | spec | 1 | passed | - |  |
+| W-446 | spec | 2 | passed | 3 |  |
+| W-462 | review | 1 | failed | - | spec×promise-unattainable-under-accepted-domain S1 |
+| W-462 | review | 2 | passed | 91 |  |
+| W-462 | spec | 3 | passed | 79 |  |
+| W-462 | spec | 4 | failed | 3 | mechanism×replay-environment-not-pristine S1 |
+| W-463 | review | 1 | failed | - | tests×ruled-case-uncovered S2 |
+| W-463 | review | 2 | passed | 145 |  |
+| W-463 | spec | 1 | passed | - |  |
+| W-463 | spec | 2 | passed | 3 |  |
+| W-463 | spec | 3 | passed | 7 | untagged untagged, untagged untagged |
+| W-463 | spec | 4 | passed | 125 |  |
+| W-463 | spec | 5 | passed | 3 |  |
+| W-463 | spec | 6 | passed | 7 |  |
+| W-463 | spec | 7 | passed | 136 |  |
+| W-463 | spec | 8 | passed | 4 |  |
+| W-463 | spec | 9 | passed | 11 |  |
+| W-463 | spec | 10 | passed | 94 |  |
+| W-463 | spec | 11 | passed | 4 |  |
+| W-463 | spec | 12 | passed | 5 |  |
+| W-466 | review | 1 | passed | - |  |
+| W-466 | spec | 1 | passed | - |  |
+| W-466 | spec | 2 | passed | 5 |  |
+| W-474 | review | 1 | failed | - | interface×validation-order-masks-errors S1, tests×ruled-case-uncovered S1, tests×ruled-case-uncovered S1 |
+| W-474 | review | 2 | failed | 75 | interface×validation-order-masks-errors S1 |
+| W-474 | review | 3 | passed | 80 |  |
+| W-474 | spec | 1 | passed | - |  |
+| W-474 | spec | 2 | passed | 44 |  |
+| W-474 | spec | 3 | passed | 129 |  |
+| W-474 | spec | 4 | passed | 4 |  |
+
+- LOOP W-474 review: class interface×validation-order-masks-errors, rounds 1-2 (minutes since previous round: r1 -, r2 75)
+
+Classes in more than one opus, 2026-10-16..2026-10-30:
+- class interface×validation-order-masks-errors seen in 2 opera: W-379, W-474
+- class mechanism×replay-environment-not-pristine seen in 2 opera: W-360, W-462
+- class review×evidence-backfilled-or-absent seen in 13 opera: W-178, W-179, W-312, W-340, W-341, W-360, W-361, W-366, W-406, W-415, W-417, W-425, W-430
+- class review×fail-open-on-malformed-records-patched-per-site seen in 9 opera: W-275, W-326, W-337, W-338, W-348, W-403, W-404, W-430, W-444
+- class security×symlink-parent-write-escape seen in 6 opera: W-259, W-274, W-418, W-423, W-430, W-461
+- class spec×fix-opens-new-surface seen in 3 opera: W-310, W-322, W-362
+- class spec×input-domain-missing-or-unenforceable seen in 28 opera: W-179, W-274, W-292, W-299, W-305, W-306, W-310, W-312, W-316, W-334, W-337, W-338, W-339, W-340, W-348, W-358, W-362, W-369, W-370, W-376, W-377, W-381, W-403, W-409, W-430, W-433, W-445, W-461
+- class spec×input-without-named-rejector seen in 5 opera: W-288, W-310, W-328, W-416, W-418
+- class spec×promise-unattainable-under-accepted-domain seen in 22 opera: W-241, W-264, W-268, W-274, W-293, W-299, W-302, W-310, W-312, W-326, W-339, W-341, W-348, W-355, W-369, W-377, W-379, W-398, W-407, W-417, W-425, W-462
+- class spec×prose-contradiction-under-revision seen in 2 opera: W-241, W-274
+- class tests×one-sided-bound-assertion seen in 10 opera: W-310, W-317, W-328, W-330, W-345, W-360, W-369, W-377, W-381, W-392
+- class tests×ruled-case-uncovered seen in 15 opera: W-178, W-292, W-322, W-335, W-336, W-337, W-350, W-376, W-404, W-415, W-444, W-450, W-454, W-463, W-474
+- class tests×security-boundary-cases-uncovered seen in 3 opera: W-310, W-369, W-379
+- class tests×tests-that-agree-with-the-bug seen in 2 opera: W-407, W-409
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-339, W-340
+
+### 2026-10-31
+
+| Opus | Cycle min | PR wait min | Failed rounds | Blockers by severity |
+|---|---|---|---|---|
+| none done | | | | |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| none | | | | | |
+
+- no loop
+
+Classes in more than one opus, 2026-10-17..2026-10-31:
+- class interface×validation-order-masks-errors seen in 2 opera: W-379, W-474
+- class mechanism×replay-environment-not-pristine seen in 2 opera: W-360, W-462
+- class review×evidence-backfilled-or-absent seen in 13 opera: W-178, W-179, W-312, W-340, W-341, W-360, W-361, W-366, W-406, W-415, W-417, W-425, W-430
+- class review×fail-open-on-malformed-records-patched-per-site seen in 9 opera: W-275, W-326, W-337, W-338, W-348, W-403, W-404, W-430, W-444
+- class security×symlink-parent-write-escape seen in 6 opera: W-259, W-274, W-418, W-423, W-430, W-461
+- class spec×fix-opens-new-surface seen in 3 opera: W-310, W-322, W-362
+- class spec×input-domain-missing-or-unenforceable seen in 28 opera: W-179, W-274, W-292, W-299, W-305, W-306, W-310, W-312, W-316, W-334, W-337, W-338, W-339, W-340, W-348, W-358, W-362, W-369, W-370, W-376, W-377, W-381, W-403, W-409, W-430, W-433, W-445, W-461
+- class spec×input-without-named-rejector seen in 5 opera: W-288, W-310, W-328, W-416, W-418
+- class spec×promise-unattainable-under-accepted-domain seen in 19 opera: W-241, W-268, W-274, W-299, W-310, W-312, W-326, W-339, W-341, W-348, W-355, W-369, W-377, W-379, W-398, W-407, W-417, W-425, W-462
+- class spec×prose-contradiction-under-revision seen in 2 opera: W-241, W-274
+- class tests×one-sided-bound-assertion seen in 10 opera: W-310, W-317, W-328, W-330, W-345, W-360, W-369, W-377, W-381, W-392
+- class tests×ruled-case-uncovered seen in 15 opera: W-178, W-292, W-322, W-335, W-336, W-337, W-350, W-376, W-404, W-415, W-444, W-450, W-454, W-463, W-474
+- class tests×security-boundary-cases-uncovered seen in 3 opera: W-310, W-369, W-379
+- class tests×tests-that-agree-with-the-bug seen in 2 opera: W-407, W-409
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-339, W-340

@@ -62,6 +62,12 @@ the architect — and closes the last one.
 Owns the finding classes (D-070, replacing the retrospectio): every finding
 in a spec or build verdict names its class, and a class seen before is fixed
 at its cause in the fix round or by a filed high opus (W-297 enforces it).
+
+Runs the daily retro (D-147): once a day, `retro-daily/retro.py` appends the
+day's section to `studio/acta/improvements.md`, and with the clerk the
+qa-lead names, for each class seen in more than one opus, the collegium that
+owns its cause fix.
+
 The lessons already filed stay as history (check: lesson.evidence).
 
 A class recorded as formally accepted names the `decisions/D-nnn.md` that
@@ -78,3 +84,5 @@ accepts it, with its `kill_when`.
 | 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
 | 2026-10-04 | Severity rule: blocking = wrong behaviour, a security gap, or missing/false required evidence; an incomplete regression row on a correct fix is advisory and costs no round | Patron |
 | 2026-10-16 | §7: reviewer class tags replace the retrospectio and its usage section (D-070) | Patron |
+| 2026-10-31 | §7: the qa-lead runs the daily retro and, with the clerk, assigns each recurring class to the collegium owning its cause fix (D-147) | Patron |
+</content>
