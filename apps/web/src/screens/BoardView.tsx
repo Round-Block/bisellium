@@ -6,7 +6,7 @@
  * here rather than being threaded up through Board.tsx.
  */
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import type { BoardModel, CardRow } from "../lib/board.js";
+import { formatWaitingAge, type BoardModel, type CardRow } from "../lib/board.js";
 import { GateLadder } from "../components/GateLadder.js";
 import { Colophon } from "../components/Colophon.js";
 
@@ -36,7 +36,7 @@ function cardClassName(card: CardRow): string {
   // Ruling: on a card that is both blocked and needs-you, only "bad" shows
   // (DIRECTION §3: at most one amber region, and a failure outranks a wait).
   const state = card.blocked ? "board__card--bad" : card.needsYou ? "board__card--amber" : "";
-  return ["board__card", state].filter(Boolean).join(" ");
+  return ["board__card", card.needsYou && "board__card--waiting", state].filter(Boolean).join(" ");
 }
 
 function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
@@ -47,16 +47,32 @@ function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
       : "Human gate";
 }
 
-function AskKinds({ card }: { card: CardRow }): JSX.Element | null {
-  if ((card.asks?.length ?? 0) === 0) return null;
+function WaitingFacts({ card, compact = false }: { card: CardRow; compact?: boolean }): JSX.Element {
+  const asks = card.asks?.map(askKindLabel).join(", ") ?? "Waiting on you";
+  const owner = card.sella || "Unassigned";
   return (
-    <span className="board__card-asks" aria-label="Waiting on you">
-      {card.asks?.map((ask) => (
-        <span key={ask.kind} className="board__card-ask">
-          {askKindLabel(ask)}
+    <>
+      <span className="board__waiting-head">
+        <span className={compact ? "board__waiting-id" : "board__card-id"}>{card.id}</span>
+        <span className="board__waiting-age">{formatWaitingAge(card.waitingSince, Date.now())}</span>
+      </span>
+      <span className={compact ? "board__waiting-title" : "board__card-title"} title={card.title}>{card.title}</span>
+      <span className="board__waiting-handoff">
+        <span className="board__waiting-owner">
+          <small>OWNER</small>
+          <b className="board__waiting-owner-value">{owner}</b>
         </span>
-      ))}
-    </span>
+        <span className="board__waiting-arrow" aria-hidden="true">→</span>
+        <span className="board__waiting-next">
+          <small>NEXT</small>
+          <b className="board__waiting-next-value">{card.nextActor ?? "Unassigned"}</b>
+        </span>
+      </span>
+      <span className="board__waiting-ask">
+        <small>ASK</small>
+        <span className="board__waiting-ask-value">{asks}</span>
+      </span>
+    </>
   );
 }
 
@@ -84,13 +100,14 @@ function Card({
       onClick={() => onSelect(card.id, columnId)}
     >
       <GateLadder gates={card.gates} />
-      <span className="board__card-id">{card.id}</span>
-      <span className="board__card-title" title={card.title}>{card.title}</span>
-      <AskKinds card={card} />
-      <span className="board__card-meta">
-        {card.sella && <span className="board__card-sella">{card.sella}</span>}
-        <span className="board__card-state">{card.state}</span>
-      </span>
+      {card.needsYou ? <WaitingFacts card={card} /> : <>
+        <span className="board__card-id">{card.id}</span>
+        <span className="board__card-title" title={card.title}>{card.title}</span>
+        <span className="board__card-meta">
+          {card.sella && <span className="board__card-sella">{card.sella}</span>}
+          <span className="board__card-state">{card.state}</span>
+        </span>
+      </>}
     </div>
   );
 }
@@ -191,20 +208,16 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
         <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
           {waiting.map((card) => {
             const columnId = columns.find((column) => column.cards.some(({ id }) => id === card.id))?.id;
-            const asks = card.asks?.map(askKindLabel).join(", ") ?? "Waiting on you";
             return (
               <button
                 key={card.id}
                 type="button"
                 className="board__waiting-item"
                 data-waiting-id={card.id}
-                aria-label={`Open ${card.id} ${card.title}: ${asks}`}
                 onClick={() => onSelectCard(card.id, columnId ?? "unplaced")}
                 onFocus={(event) => revealFocusedWaitingItem(event.currentTarget)}
               >
-                <span className="board__waiting-id">{card.id}</span>
-                {" "}
-                <span className="board__waiting-title" title={card.title}>{card.title}</span>
+                <WaitingFacts card={card} compact />
               </button>
             );
           })}

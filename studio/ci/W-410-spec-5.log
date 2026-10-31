@@ -1,0 +1,20 @@
+# opus: W-410
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a87057aac0db3ae94
+# session_reason: the named session a8bbc887512c75ef6 belonged to an earlier orchestrator session and is not resumable; a fresh reviewer ran round 5
+# outcome: passed
+# at: 2026-10-31T13:27:08.788Z
+# tree: tree:049d063766126b23b5913bcf77f6aa4b936709a9
+# brief: briefs/W-410.md blob:1783ed26aacf34eb5d38e6ece334615412c904dd
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"a4aa44e8d36e198b64324b01984d6c282d89915c","brief":"1783ed26aacf34eb5d38e6ece334615412c904dd","at":"2026-10-31T13:27:05.329Z"}
+
+## Findings
+1. advisory — brief:128 Default 4 says the heights fall "within 1.30±0.05 of master", but 89/66 is 1.348 and 145/108 is 1.343. Both sit at the top edge of the tolerance the served b3 row enforces (`HEIGHT_RATIO + HEIGHT_RATIO_TOLERANCE` = 1.35), so the Patron's "about 1.3x" is now really 1.35x, and a 1px change to the strip default fails b3. Default 4 does go to the Patron, but it does not show the real ratio. Replacement: "4. Use 89px strip cards and 145px lifecycle waiting cards (1.35x and 1.34x master, the top of the 1.30±0.05 tolerance, raised from 86px/140px to fit 11px/12px type). The resulting populated strip is 119px. …" [severity: S4] [class: ui×agent-default-unstated] — check: apps/web/tests-serve/w410.spec.ts (W-410-b3 ratio bounds)
+2. advisory — brief:21 The sentence puts "contributes no reason or waiting banner" in the context of a waiting card. But the reader change (`pendingHuman` now needs a recorded `pending` result) applies to every drawer through `drawerDetail`. So a drawer for a non-waiting opus with a declared, unrecorded human gate also loses its old "Waiting on you … no question was asked." banner. That is consistent with W-409 membership, but the scope is unstated. Replacement: "...; in every drawer, a declared gate with no recorded result contributes no reason or waiting banner (the banner and the reasons use `cardRow`'s recorded-`pending` reader)." [severity: S2] [class: interface×two-readers-disagree] — check: apps/web/test/w410.test.ts (W-410-b4 unrecorded-gate assertion; add a no-card drawerDetail call)
+
+## Verdict
+The revision closes the round-3 ui-lead blockers and all three round-2 advisories with real evidence: the brief hash matches the signature, the mbox matches, the reds and kills are accepted, 41 served rows pass, and the 1280/390 captures show readable 11/12px type, unclipped asks and a body-free `Why it waits`. Only advisories remain.
+VERDICT: PASS

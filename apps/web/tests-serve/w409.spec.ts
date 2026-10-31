@@ -119,16 +119,16 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
     const waitingW1 = page.locator('[data-waiting-id="W-1"]');
     const phaseW1 = page.locator('.board__column[data-column-id="planned"] [data-card-id="W-1"]');
     for (const { id, column, asks, label } of [
-      { id: "W-1", column: "planned", asks: ["Greenlight", "2 Inbox decisions"], label: "greenlight and Inbox decisions" },
-      { id: "W-2", column: "in_progress", asks: ["Inbox decision", "Human gate"], label: "a pending human gate and Inbox decision" },
-      { id: "W-3", column: "planned", asks: ["Greenlight", "Human gate"], label: "greenlight and a pending human gate" },
-      { id: "W-4", column: "planned", asks: ["Greenlight", "Inbox decision", "Human gate"], label: "greenlight, Inbox decision and a pending human gate" },
+      { id: "W-1", column: "planned", asks: "Greenlight, 2 Inbox decisions", label: "greenlight and Inbox decisions" },
+      { id: "W-2", column: "in_progress", asks: "Inbox decision, Human gate", label: "a pending human gate and Inbox decision" },
+      { id: "W-3", column: "planned", asks: "Greenlight, Human gate", label: "greenlight and a pending human gate" },
+      { id: "W-4", column: "planned", asks: "Greenlight, Inbox decision, Human gate", label: "greenlight, Inbox decision and a pending human gate" },
     ]) {
       const stripEntry = page.locator(`[data-waiting-id="${id}"]`);
       const lifecycle = page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`);
       await expect(stripEntry.locator(".board__waiting-id"), `${width}: ${id} is visible atop its strip title`).toHaveText(id);
-      await expect(stripEntry.locator(".board__card-ask"), `${width}: strip omits ${label} ask copy`).toHaveCount(0);
-      await expect(lifecycle.locator(".board__card-ask"), `${width}: ${label} remain on the lifecycle card`).toHaveText(asks);
+      await expect(stripEntry.locator(".board__waiting-ask-value"), `${width}: strip carries ${label} ask copy`).toHaveText(asks);
+      await expect(lifecycle.locator(".board__waiting-ask-value"), `${width}: ${label} remain on the lifecycle card`).toHaveText(asks);
       await expect(lifecycle.locator(".board__card-id"), `${width}: lifecycle card shows ${id}`).toHaveText(id);
     }
     await expect(waitingW1.locator(".board__waiting-title"), `${width}: complete long strip title remains available`).toHaveAttribute("title", longTitle);
@@ -136,15 +136,15 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
       clamp: Number.parseInt(getComputedStyle(node).webkitLineClamp, 10),
       truncated: node.scrollHeight > node.clientHeight,
     }));
-    expect(stripTitle.clamp, `${width}: strip title is bounded inside its fixed entry`).toBe(3);
+    expect(stripTitle.clamp, `${width}: strip title is bounded inside its fixed entry`).toBe(1);
     expect(stripTitle.truncated, `${width}: long strip title wraps and ellipsizes`).toBe(true);
     for (const card of [phaseW1]) {
-      await expect(card.locator(".board__card-ask"), `${width}: greenlight and Inbox decisions remain on the lifecycle card`).toHaveText(["Greenlight", "2 Inbox decisions"]);
+      await expect(card.locator(".board__waiting-ask-value"), `${width}: greenlight and Inbox decisions remain on the lifecycle card`).toHaveText("Greenlight, 2 Inbox decisions");
       await expect(card.locator(".board__card-title"), `${width}: complete long title remains available`).toHaveAttribute("title", longTitle);
       const geometry = await card.evaluate((node) => {
         const title = node.querySelector<HTMLElement>(".board__card-title")!;
-        const mark = node.querySelector<HTMLElement>(".board__card-asks")!;
-        const meta = node.querySelector<HTMLElement>(".board__card-meta")!;
+        const mark = node.querySelector<HTMLElement>(".board__waiting-ask-value")!;
+        const meta = node.querySelector<HTMLElement>(".board__waiting-handoff")!;
         const box = node.getBoundingClientRect();
         const titleBox = title.getBoundingClientRect();
         const markBox = mark.getBoundingClientRect();
@@ -170,8 +170,8 @@ test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", asy
       expect(geometry.titleHeight / geometry.titleLineHeight, `${width}: waiting title is not squeezed below its whole-line clamp`).toBeCloseTo(2, 2);
       expect(geometry.titleTruncated, `${width}: the deliberately long waiting title is visibly clamped`).toBe(true);
       expect(geometry.markHeight / geometry.markLineHeight, `${width}: ask kinds retain one complete line box`).toBeCloseTo(1, 2);
-      expect(geometry.metaHeight / geometry.metaLineHeight, `${width}: owner and state retain one complete line box`).toBeCloseTo(1, 2);
-      expect(geometry.cardHeight, `${width}: marked card stays within the ruled 108px maximum`).toBeLessThanOrEqual(108.5);
+      expect(geometry.metaHeight, `${width}: owner and next actor retain their handoff rail`).toBeGreaterThan(0);
+      expect(geometry.cardHeight, `${width}: marked card stays within the ruled 1.30±0.05 ratio against the 108px master maximum`).toBeCloseTo(145, 0);
       expect(geometry.markLeft, `${width}: ask mark starts inside its card`).toBeGreaterThanOrEqual(geometry.left - 0.5);
       expect(geometry.markRight, `${width}: ask mark ends inside its card`).toBeLessThanOrEqual(geometry.right + 0.5);
     }

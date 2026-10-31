@@ -1,0 +1,20 @@
+# opus: W-410
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a8bbc887512c75ef6
+# outcome: passed
+# at: 2026-10-31T11:10:32.131Z
+# tree: tree:457d9c2f6b6bb704c725f41ea5014418665da10f
+# brief: briefs/W-410.md blob:19dcbaa5d343e8c318b1a8da593bcf905bcb8da5
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"f6fe3068bd87192051c67172dcdbd330cdf5e55d","brief":"19dcbaa5d343e8c318b1a8da593bcf905bcb8da5","at":"2026-10-31T11:10:31.575Z"}
+
+## Findings
+1. advisory — brief:49 [severity: S2] Two code paths read "pending human gate" differently, and the brief names neither. `boardModel` (via `cardRow`) counts a human gate as pending only when a result with status `pending` is recorded. `drawerDetail`'s `gates` treats a declared human gate with no recorded result as `pending`, and the new reasons loop filters on that. So in examples/sample-studio (`patron`, kind human), a backlog opus whose rail ASK says only `Greenlight` gets a drawer that lists "Patron call is pending." under `Why it waits`, a gate that is not an active ask. The b4 row only uses a recorded `pending` result, so it does not catch this. Replacement for brief:49: "...displays authored body, petition, pending-gate and handoff reasons in source order, where a pending gate is a declared human gate whose recorded result status is `pending` (the same reader as `cardRow`'s membership; a declared gate with no result is not a reason), then recorded gate evidence links; ..." The build should filter on `opus.probationes[g.id]?.status === "pending"` and add a b4 assertion for a greenlight-only card with an unrecorded human gate. [design: keeps] [class: interface×two-readers-disagree] — check: none: a W-410-b4 assertion that a backlog card with a declared, unrecorded human gate has no "is pending." reason
+2. advisory — brief:130 [severity: S4] Sense (agent-written Default 6, which does go to the Patron). `Why it waits` repeats the whole authored `opus.body` as its first item, and the same drawer already shows that body under `From the officina record`. Bodies can run to 64 KiB. On board-drawer-390.png the petition subject also repeats the `Waiting on you` banner just above it. A long body would push Evidence and the gate ladder off the phone screen. Replacement: "In the drawer, show the question, pending-gate and handoff reasons in that order (the body stays in its existing record section), then recorded evidence links. Say when either list is empty." [class: ui×duplicated-content] — check: none: a served row asserting the drawer renders the opus body once
+3. advisory — brief:67 [severity: S4] The rejecting function named in this row is a test assertion, but the runtime reader that fails closed is `recordedNextActor()` in `apps/web/src/lib/board.ts`, which returns `Unassigned` for absent, blank or `none`. Replacement for the cell: "`recordedNextActor()` returns `Unassigned` for any non-string, blank or `none` value; `assert.equal()` in W-410-b1 pins it". Do the same at brief:68: "`instantMs()` returns undefined for a non-finite number or unparseable string, and `formatWaitingAge()` then shows `—`". [class: interface×rejecting-function-unnamed] — check: apps/web/test/w410.test.ts
+
+## Verdict
+The input boundary is covered and every promise can be met as written. The only feasibility gap is the drawer's pending-gate reader, which is advisory and keeps the design.
+VERDICT: PASS

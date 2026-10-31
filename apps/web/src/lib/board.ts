@@ -39,7 +39,41 @@ export interface CardRow {
   /** Why this opus belongs to the attention-membership column. Kept as
    * structured data so presentation never has to infer an ask from copy. */
   asks?: { kind: "greenlight" | "inbox" | "human_gate"; count: number }[];
+  /** Display-only handoff facts for W-410. `nextActor` comes from the
+   * record's blocker; an absent/`none` blocker is stated, never guessed. */
+  nextActor?: string;
+  /** Oldest parseable instant among this card's active ask sources. */
+  waitingSince?: number;
   blocked: boolean;
+}
+
+function recordValue(record: unknown, key: string): unknown {
+  return typeof record === "object" && record !== null ? (record as Record<string, unknown>)[key] : undefined;
+}
+
+function instantMs(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== "string") return undefined;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function recordedNextActor(traditio: unknown): string {
+  const blocker = recordValue(traditio, "blocked_on");
+  return typeof blocker === "string" && blocker.trim().length > 0 && blocker.trim().toLowerCase() !== "none"
+    ? blocker.trim()
+    : "Unassigned";
+}
+
+/** Compact age for the handoff rail. The chosen units deliberately avoid a
+ * fourth minute form: fresh waits stay exact in seconds, then settle to whole
+ * hours and days. Unknown record time is shown, never inferred. */
+export function formatWaitingAge(since: number | undefined, now: number): string {
+  if (since === undefined || !Number.isFinite(since) || !Number.isFinite(now)) return "—";
+  const elapsed = Math.max(0, now - since);
+  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 1000)}s`;
+  if (elapsed < 86_400_000) return `${Math.floor(elapsed / 3_600_000)}h`;
+  return `${Math.floor(elapsed / 86_400_000)}d`;
 }
 
 export interface BoardColumn {
@@ -120,8 +154,12 @@ export function boardModel(
   const human = humanGateIds(o);
   const inboxOpera = new Set(inbox.opera.map((entry) => entry.id));
   const petitionCount = new Map<string, number>();
+  const petitionOpened = new Map<string, number[]>();
   for (const petitio of inbox.petitiones) {
-    if (petitio.opus !== undefined) petitionCount.set(petitio.opus, (petitionCount.get(petitio.opus) ?? 0) + 1);
+    if (petitio.opus === undefined) continue;
+    petitionCount.set(petitio.opus, (petitionCount.get(petitio.opus) ?? 0) + 1);
+    const opened = instantMs(petitio.opened);
+    if (opened !== undefined) petitionOpened.set(petitio.opus, [...(petitionOpened.get(petitio.opus) ?? []), opened]);
   }
 
   // Unique phases, in the lifecycle's own declared order, backlog excluded.
@@ -156,6 +194,21 @@ export function boardModel(
       ...(humanGateAsk ? [{ kind: "human_gate" as const, count: 1 }] : []),
     ];
     card.needsYou = (card.asks?.length ?? 0) > 0;
+    card.nextActor = recordedNextActor(opus.traditio);
+
+    const askInstants: number[] = [];
+    const traditioAt = instantMs(recordValue(opus.traditio, "at"));
+    if (greenlightAsk && traditioAt !== undefined) askInstants.push(traditioAt);
+    if (linkedDecisions > 0) askInstants.push(...(petitionOpened.get(opus.id) ?? []));
+    if (humanGateAsk) {
+      const gateInstants = Object.entries(opus.probationes)
+        .filter(([id, result]) => human.has(id) && result.status === "pending")
+        .map(([, result]) => instantMs(result.at))
+        .filter((value): value is number => value !== undefined);
+      if (gateInstants.length > 0) askInstants.push(...gateInstants);
+      else if (traditioAt !== undefined) askInstants.push(traditioAt);
+    }
+    card.waitingSince = askInstants.length > 0 ? Math.min(...askInstants) : undefined;
 
     if (card.needsYou) waiting.push({ ...card });
 
@@ -302,6 +355,12 @@ export interface DrawerDetail {
   /** Set only when a human gate is pending. `petitio` is joined from
    *  /api/inbox on `opus`; absent when no petitio names this opus. */
   waitingOn?: { gate: string; name: string; petitio?: { id: string; from: string; subject: string } };
+  /** W-410 display only: why the selected waiting card is waiting. W-412 owns
+   *  revision binding and stale-verdict refusal; these strings make neither
+   *  claim. Present only for a card in the existing Needs-you membership. */
+  waitingReasons?: string[];
+  /** W-410 display only: evidence links already recorded on gates. */
+  waitingEvidence?: { label: string; href: string }[];
   record: { label: string; value: string }[];
   /** Event-derived and possibly incomplete — rendered beside the front
    *  matter's own `tokens` total, with both sources named (ruling 14). */
@@ -347,6 +406,7 @@ export function drawerDetail(
   o: Pick<OfficinaResponse, "probationes">,
   inbox: Pick<InboxResponse, "petitiones">,
   events: EventRow[],
+  card?: CardRow,
 ): DrawerDetail {
   const human = humanGateIds(o);
   const gates = o.probationes.map((g) => {
@@ -362,7 +422,7 @@ export function drawerDetail(
     };
   });
 
-  const pendingHuman = gates.find((g) => g.human && g.status === "pending");
+  const pendingHuman = gates.find((g) => g.human && opus.probationes[g.id]?.status === "pending");
   let waitingOn: DrawerDetail["waitingOn"];
   if (pendingHuman) {
     const petitio = inbox.petitiones.find((p) => p.opus === opus.id);
@@ -371,6 +431,24 @@ export function drawerDetail(
       name: pendingHuman.name,
       petitio: petitio ? { id: petitio.id, from: petitio.from, subject: petitio.subject } : undefined,
     };
+  }
+
+  let waitingReasons: string[] | undefined;
+  let waitingEvidence: DrawerDetail["waitingEvidence"];
+  if (card?.needsYou) {
+    const reasons: string[] = [];
+    for (const petitio of inbox.petitiones.filter((item) => item.opus === opus.id)) {
+      const subject = typeof petitio.subject === "string" ? petitio.subject.trim() : "";
+      const body = typeof petitio.body === "string" ? petitio.body.trim() : "";
+      if (subject.length > 0 && body.length > 0) reasons.push(`${subject}: ${body}`);
+      else if (subject.length > 0 || body.length > 0) reasons.push(subject || body);
+    }
+    for (const gate of gates.filter((item) => item.human && opus.probationes[item.id]?.status === "pending")) reasons.push(`${gate.name} is pending.`);
+    const nextValue = recordValue(opus.traditio, "next");
+    const next = typeof nextValue === "string" ? nextValue.trim() : "";
+    if (next) reasons.push(next);
+    waitingReasons = [...new Set(reasons)];
+    waitingEvidence = gates.flatMap((gate) => gate.evidence ? [{ label: gate.name, href: gate.evidence }] : []);
   }
 
   const record: { label: string; value: string }[] = [];
@@ -398,6 +476,8 @@ export function drawerDetail(
     body: opus.body,
     gates,
     waitingOn,
+    waitingReasons,
+    waitingEvidence,
     record,
     tokensBySella: [...bySella.entries()].map(([sella, tokens]) => ({ sella, tokens })),
     tokensDeclared: opus.tokens,

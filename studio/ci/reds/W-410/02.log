@@ -1,0 +1,44 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-410-b2\s --import tsx apps/web/test/w410.test.ts
+# exit: 1
+# at: 2026-10-31T14:01:42.902Z
+# sella: builder.W-410
+# tree: tree:80d8e221759ebdf6cd48d57030519b47fcb8cfa3
+# ticket: {"opus":"W-410","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-410/studio","head":"30d913288790b9dcb3bc7cf14ac70d68f162916c","brief":"9b484c10a66d63caa7f1cae51a189b056e5b4613","at":"2026-10-31T14:01:38.520Z"}
+
+TAP version 13
+# Subtest: W-410-b2 behaviour 2: waiting age is one compact mono numeral with explicit unknown
+not ok 1 - W-410-b2 behaviour 2: waiting age is one compact mono numeral with explicit unknown
+  ---
+  duration_ms: 3.711731
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-410/apps/web/test/w410.test.ts:1:3635'
+  failureType: 'testCodeFailure'
+  error: |-
+    the Board exports one waiting-age formatter
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-410/apps/web/test/w410.test.ts:80:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12.774891

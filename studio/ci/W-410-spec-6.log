@@ -1,0 +1,34 @@
+# opus: W-410
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19225-8ae0-7d92-83d6-fc057bc5f9ba
+# session_reason: the ui-lead input runs in a fresh read-only Codex session each round, as round 3 did; round 6 reassessed round 3's findings from its kept log
+# outcome: passed
+# at: 2026-10-31T13:31:42.065Z
+# tree: tree:049d063766126b23b5913bcf77f6aa4b936709a9
+# dispatch_prompt: ci/W-410-ui-prompt-6.md
+# design_digest: sha256:46ff1321b4947553a8a00fb51a6a3e1850081702c8dee70bab7b351388081f4d
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"c349fe0aa2053b72bf339e45b9549786a9e47064","brief":"1783ed26aacf34eb5d38e6ece334615412c904dd","at":"2026-10-31T13:31:39.892Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+- ci/W-410-spec-3.log #1: closed — Revised captures at 1280, 640 and 390 show readable 11px captions and 12px values, with distinct mono identifiers and ages.
+- ci/W-410-spec-3.log #2: closed — Revised sample captures at 1280, 640 and 390 show “Greenlight, Inbox decision, Human gate” fully visible and clear of the chevron, including both desktop sidebar variants.
+- ci/W-410-spec-3.log #3: closed — Revised drawer captures at 1280 and 390 show question, gate and handoff reasons without the opus body; the body appears only under “From the officina record.”
+
+## Recommendation
+
+Round-3 finding 1 is resolved: the 11px captions and 12px values are readable across the revised captures, with mono identifiers and ages remaining distinct.
+Round-3 finding 2 is resolved: “Greenlight, Inbox decision, Human gate” is fully visible at 1280, 640 and 390, including both desktop sidebar variants, clear of the chevron.
+Round-3 finding 3 is resolved: the drawer shows question, gate and handoff reasons; the opus body appears only under “From the officina record.”
+The 89px strip and 145px lifecycle cards remain scannable at 390: the many-item capture shows three complete lifecycle cards and part of a fourth.
+Variant C and approximately 1.3× height are the Patron’s choices; the exact dimensions are agent-written defaults that make sense on these screens, despite sitting near the test tolerance’s upper edge.
+Removing “Waiting on you” from a non-waiting drawer with a declared but unrecorded human gate is correct: declaration alone establishes no current request, and the gate remains available in the gate ladder.
+The reviewer’s suggested scope clarification is useful, but the resulting UI needs no correction.
+Verdict: passed

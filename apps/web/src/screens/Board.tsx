@@ -417,7 +417,10 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
     // Reads current state entirely through refs.
   }, []);
 
-  const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? []) : undefined;
+  const selectedCard = selected
+    ? model.waiting.find((card) => card.id === selected.id) ?? model.columns.flatMap((column) => column.cards).find((card) => card.id === selected.id)
+    : undefined;
+  const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? [], selectedCard) : undefined;
   const generatedAt = formatBoardTimestamp(new Date().toISOString());
   const status = screenStatus("board", { loaded: everLoaded, empty: opera.length === 0, failed: readFailed || undefined, live: everLoaded ? connected : undefined });
   useEffect(() => onStatus?.(status), [status.state, status.text]);

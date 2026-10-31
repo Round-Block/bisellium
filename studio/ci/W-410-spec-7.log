@@ -1,0 +1,24 @@
+# opus: W-410
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19069-af52-7e23-9f72-3aa7d9d37ec8
+# outcome: passed
+# at: 2026-10-31T13:58:28.661Z
+# tree: tree:80d8e221759ebdf6cd48d57030519b47fcb8cfa3
+# brief: briefs/W-410.md blob:9b484c10a66d63caa7f1cae51a189b056e5b4613
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-410/studio","head":"f2c66820cc03c3f464d3115598ad29037cf384cb","brief":"9b484c10a66d63caa7f1cae51a189b056e5b4613","at":"2026-10-31T13:58:23.608Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-410-spec/promise-ledger.md
+Fixture census: fixture-census.md, 13 flips named in Acceptance
+
+## Findings
+
+1. advisory — Behaviour 2's Genuine-red pin quotes its preserved TAP output's first failing assertion, `the Board exports one waiting-age formatter`, and a separate one-hunk mutation kill fails at that same pin; its command, row title and design contract are unchanged — check: /home/edckt/.bisellium-evidence/W-410-spec/b2-red-b2.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/kill-redpin-b2.patch, /home/edckt/.bisellium-evidence/W-410-spec/kill-redpin-b2.out
+2. advisory — Behaviour 3's Genuine-red pin quotes its preserved Node TAP output's first failing assertion, `one shared handoff rail labels owner, next actor and action`, and a separate one-hunk mutation kill fails at that same pin; its command, row title and selected handoff-rail design are unchanged — check: /home/edckt/.bisellium-evidence/W-410-spec/b3-red-b3.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/kill-redpin-b3.patch, /home/edckt/.bisellium-evidence/W-410-spec/kill-redpin-b3.out
+3. advisory — No design, Promise, Input-domain row, prototype reference, Acceptance entry or Patron Default changed; the branch diff contains only the two Genuine-red lines — check: /home/edckt/agents/bisellium/.worktrees/W-410/studio/briefs/W-410.md
+
+## Verdict
+
+passed — revision: b2 and b3 red pins match their declared first failures; design unchanged — signed by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `/home/edckt/agents/bisellium/.worktrees/W-410/studio/briefs/W-410.md` sha256 `8e18d17e6a6095474f70ce3313d106ae6f6839fe7605d6292863ef62651117e0`; prototype sha256 `b69ef99f4dcb62aa9e0aed35dc1912f460cba6ec87d6c0ed24fb5440ab189248`.

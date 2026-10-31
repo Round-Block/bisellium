@@ -1,0 +1,27 @@
+# opus: W-410
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19069-af52-7e23-9f72-3aa7d9d37ec8
+# outcome: passed
+# at: 2026-10-31T13:23:48.973Z
+# tree: tree:049d063766126b23b5913bcf77f6aa4b936709a9
+# brief: briefs/W-410.md blob:1783ed26aacf34eb5d38e6ece334615412c904dd
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"a4aa44e8d36e198b64324b01984d6c282d89915c","brief":"1783ed26aacf34eb5d38e6ece334615412c904dd","at":"2026-10-31T13:23:44.399Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-410-spec/promise-ledger.md
+Fixture census: fixture-census.md, 13 flips named in Acceptance
+
+## Findings
+
+1. advisory — Variant C now uses 89px strip entries and 145px lifecycle waiting cards, respectively 1.348x and 1.343x their 66px/108px master heights; captions are 11px sans, values are 12px sans, and identifiers/age remain mono at every ruled width — check: /home/edckt/agents/bisellium/.worktrees/W-410-spec/apps/web/tests-serve/w410.spec.ts, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-sample-1280-expanded.png, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-sample-390-expanded.png
+2. advisory — Every active W-409 ask kind is readable on both waiting surfaces at 1280, 640 and 390; fixed 296px entries scroll behind a dedicated 44px end-cap whose viewport stops before the chevron — check: /home/edckt/agents/bisellium/.worktrees/W-410-spec/apps/web/src/components/w025.css, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-sample-640-expanded.png, /home/edckt/.bisellium-evidence/W-410-spec/kill-ask-visible.out, /home/edckt/.bisellium-evidence/W-410-spec/kill-rail-clearance.out
+3. advisory — Why it waits contains only petition question, recorded-pending human-gate and handoff reasons before evidence; the opus body appears once in its record section, an unrecorded declared gate invents neither reason nor banner, and empty lists state their absence — check: /home/edckt/agents/bisellium/.worktrees/W-410-spec/apps/web/test/w410.test.ts, /home/edckt/agents/bisellium/.worktrees/W-410-spec/apps/web/tests-serve/w410.spec.ts, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-drawer-1280.png, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-drawer-390.png
+4. advisory — The brief names recordedNextActor(), instantMs() and formatWaitingAge() as the rejecting readers for unknown actors and invalid waiting instants; mutations of actor derivation, age formatting, recorded-pending filtering and body-once display are killed — check: /home/edckt/agents/bisellium/.worktrees/W-410-spec/studio/briefs/W-410.md, /home/edckt/.bisellium-evidence/W-410-spec/kills.out
+5. advisory — All four Genuine reds are real titled TAP assertion failures with recorder-compatible command headers, cumulative and final greens pass, and all eight prototype commits independently build — check: /home/edckt/.bisellium-evidence/W-410-spec/b1-red-b1.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/b2-red-b2.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/b3-red-b3.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/b4-red-b4.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/replay-rows.out, /home/edckt/.bisellium-evidence/W-410-spec/series-builds.txt
+6. advisory — The 13 Acceptance flips are unchanged by this design-keeping revision; all 41 focused served rows and all 16 census must-keeps pass, and the refreshed mailbox reapplies to the same final tree — check: /home/edckt/.bisellium-evidence/W-410-spec/fixture-census.md, /home/edckt/.bisellium-evidence/W-410-spec/gates-proto.out, /home/edckt/.bisellium-evidence/W-410-spec/census-check.out, /home/edckt/.bisellium-evidence/W-410-spec/mbox-check.out
+
+## Verdict
+
+passed — the round-2 W-410 UI specification keeps the Patron-selected handoff rail and closes all three UI-lead blockers plus the three round-2 advisories; signed by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `/home/edckt/agents/bisellium/.worktrees/W-410-spec/studio/briefs/W-410.md` sha256 `55cd92a9e618c39d9a53a4b76853d77c52a89748c48f3a59abec42c04ad59c82`; prototype sha256 `b69ef99f4dcb62aa9e0aed35dc1912f460cba6ec87d6c0ed24fb5440ab189248`; no remaining design contradiction.

@@ -1,0 +1,24 @@
+# opus: W-410
+# phase: spec
+# round: 10
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19069-af52-7e23-9f72-3aa7d9d37ec8
+# outcome: passed
+# at: 2026-10-31T15:48:30.502Z
+# tree: dirty:5908fe9d63036bb9ec454dd11bf83a25651c6de2
+# brief: briefs/W-410.md blob:d89e77e383a0a8941694782c9bf95af65bc25e89
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":10,"actor":"architect","studio":".worktrees/W-410/studio","head":"90fb01158066d0b8d70e6286cdb2a3a6d5440a85","brief":"d89e77e383a0a8941694782c9bf95af65bc25e89","at":"2026-10-31T15:48:24.132Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-410-spec/promise-ledger.md
+Fixture census: fixture-census.md, 13 flips named in Acceptance
+
+## Findings
+
+1. advisory — Files owned now includes `apps/web/test/board-truth.test.ts`, `apps/web/test/tokens.test.ts` and `packages/cli/src/containment.test.ts` for the Acceptance-named W-129 behaviour 2, W-366-b2 and W-163-b6 fixture migrations diagnosed by the behaviour-4 gates — check: /home/edckt/.bisellium-evidence/W-410-build/diag-b4-gates.md, /home/edckt/agents/bisellium/.worktrees/W-410/studio/briefs/W-410.md
+2. advisory — The census comparison found and Files owned now includes the remaining omitted flip file, `apps/web/tests-serve/screenshots.spec.ts`, for W-350's Board pixel row; baseline PNG approval remains excluded — check: /home/edckt/.bisellium-evidence/W-410-spec/fixture-census.md, /home/edckt/agents/bisellium/.worktrees/W-410/studio/briefs/W-410.md
+3. advisory — The ownership boundary rises from twelve to sixteen code-owned paths; no design, Promise, Input-domain row, prototype, red pin, Acceptance outcome or Patron Default changed — check: /home/edckt/agents/bisellium/.worktrees/W-410/studio/briefs/W-410.md
+
+## Verdict
+
+passed — revision: Files owned adds the test files of census-named flips; design unchanged — signed by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `/home/edckt/agents/bisellium/.worktrees/W-410/studio/briefs/W-410.md` sha256 `98075f49b53633cceb5ae45d3faa1b2c27baa2ed27b4dff82d0093fc015f47ac`; prototype sha256 `b69ef99f4dcb62aa9e0aed35dc1912f460cba6ec87d6c0ed24fb5440ab189248`.

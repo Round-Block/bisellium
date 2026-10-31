@@ -1,0 +1,27 @@
+# opus: W-410
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19069-af52-7e23-9f72-3aa7d9d37ec8
+# outcome: passed
+# at: 2026-10-31T11:07:46.133Z
+# tree: tree:457d9c2f6b6bb704c725f41ea5014418665da10f
+# brief: briefs/W-410.md blob:19dcbaa5d343e8c318b1a8da593bcf905bcb8da5
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"f6fe3068bd87192051c67172dcdbd330cdf5e55d","brief":"19dcbaa5d343e8c318b1a8da593bcf905bcb8da5","at":"2026-10-31T11:07:45.576Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-410-spec/promise-ledger.md
+Fixture census: fixture-census.md, 13 flips named in Acceptance
+
+## Findings
+
+1. advisory — The selected variant C renders one shared five-fact handoff rail in the pinned strip and lifecycle waiting cards; 86px and 140px are within 1.30±0.05 of the 66px and 108px master heights at 1280, 640 and 390, with no caption/value overlap — check: /home/edckt/agents/bisellium/.worktrees/W-410-spec/apps/web/tests-serve/w410.spec.ts, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-sample-1280-expanded.png, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-sample-390-expanded.png
+2. advisory — The existing W-409/W-463 membership, once-per-opus count, Board badge, Inbox distinction, zero state, highlight and chevron remain; exact predecessor content and liveness rows were migrated and all 41 focused served rows pass — check: /home/edckt/.bisellium-evidence/W-410-spec/gates-proto.out
+3. advisory — Waiting age uses the oldest parseable active-ask instant and compact seconds/hours/days with explicit unknown; NEXT uses recorded blocked_on and states Unassigned instead of guessing — check: /home/edckt/agents/bisellium/.worktrees/W-410-spec/apps/web/test/w410.test.ts, /home/edckt/.bisellium-evidence/W-410-spec/kills.out
+4. advisory — The existing drawer now displays ordered reasons and recorded gate-evidence links, while the brief expressly leaves reviewed-revision binding, decision-record identity and stale-verdict refusal to W-412 — check: /home/edckt/agents/bisellium/.worktrees/W-410-spec/apps/web/src/screens/BoardDrawer.tsx, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-drawer-1280.png, /home/edckt/.bisellium-evidence/W-410-spec/shots/board-drawer-390.png
+5. advisory — All four selected Node rows fail by titled ERR_ASSERTION on their red commits, cumulative/final greens pass, all eight prototype commits build independently and the mailbox reapplies to the same final tree; the four full `bisellium red` recorder attempts were also made, but the greenlit opus has no builder ticket yet and each recorder correctly refused before running the row — check: /home/edckt/.bisellium-evidence/W-410-spec/replay-rows.out, /home/edckt/.bisellium-evidence/W-410-spec/b1-red-b1.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/b2-red-b2.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/b3-red-b3.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/b4-red-b4.cmd.out, /home/edckt/.bisellium-evidence/W-410-spec/red-cli-b1.out, /home/edckt/.bisellium-evidence/W-410-spec/red-cli-b2.out, /home/edckt/.bisellium-evidence/W-410-spec/red-cli-b3.out, /home/edckt/.bisellium-evidence/W-410-spec/red-cli-b4.out, /home/edckt/.bisellium-evidence/W-410-spec/series-builds.txt, /home/edckt/.bisellium-evidence/W-410-spec/mbox-check.out
+6. advisory — The fixture census names all 13 presentation and inventory flips in Acceptance; its must-keep accessibility rows exposed an overriding strip-button name, so the button now takes its name directly from the visible five-fact rail and all 16 census-served rows pass — check: /home/edckt/.bisellium-evidence/W-410-spec/fixture-census.md, /home/edckt/.bisellium-evidence/W-410-spec/census-check.out
+
+## Verdict
+
+passed — variant C with the Patron-ruled 1.3x vertical room is signed by the UI architect, Codex `gpt-5.6-sol` under D-091 A, for `/home/edckt/agents/bisellium/.worktrees/W-410-spec/studio/briefs/W-410.md` sha256 `a5e95fa52cc42a1bc94f51566a413034b655c21667fb09c7e5cc77d1ff0a5523`; prototype sha256 `f43c2e81bec30a55d2b5245fb71fb89ab4a99913cdade060acf82f68944e372e`; no remaining design contradiction.

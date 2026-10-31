@@ -148,8 +148,8 @@ test("W-409-b3 behaviour 3: cards distinguish greenlight, Inbox decisions and an
   const css = read("src/components/w025.css");
   const view = read("src/screens/BoardView.tsx");
   const served = read("tests-serve/w409.spec.ts");
-  assert.match(view, /function Card[\s\S]*board__card-id[\s\S]*board__card-title[\s\S]*<AskKinds card=\{card\}/, "lifecycle cards alone show the three compact ask words below task ID and title");
-  assert.doesNotMatch(view, /board__waiting-title[^]*<AskKinds card=\{card\}/, "strip entries do not render ask words");
+  assert.match(view, /function WaitingFacts[\s\S]*board__waiting-ask-value/, "waiting cards keep the three W-409 ask words in W-410's shared handoff rail");
+  assert.match(view, /<WaitingFacts card=\{card\} compact \/>/, "strip entries now render the same ask words as lifecycle waiting cards");
   assert.match(view, /title=\{card\.title\}/, "the complete long title stays in its native title affordance");
   assert.match(css, /\.board__card-asks\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s, "ask-kind marks stay on one contained card line");
   assert.match(css, /\.board__card-title\s*\{[^}]*-webkit-line-clamp:\s*2;/s, "lifecycle card titles stop at two lines");

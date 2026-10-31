@@ -1,0 +1,23 @@
+# opus: W-410
+# phase: spec
+# round: 11
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: ac987eaf63ea00cbc
+# session_reason: round-8 reviewer session a87057aac0db3ae94 was an earlier orchestrator's subagent and cannot be resumed from this session
+# outcome: passed
+# at: 2026-10-31T15:53:35.731Z
+# tree: dirty:5908fe9d63036bb9ec454dd11bf83a25651c6de2
+# brief: briefs/W-410.md blob:d89e77e383a0a8941694782c9bf95af65bc25e89
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":11,"actor":"spec-reviewer","studio":".worktrees/W-410/studio","head":"7af4772ee4246e58092f98648a35d110ebfab5aa","brief":"d89e77e383a0a8941694782c9bf95af65bc25e89","at":"2026-10-31T15:53:27.074Z"}
+
+## Findings
+1. advisory — brief:72 [severity: S4] The Fixed paths row still says "recognises the twelve Files owned", but the changed brief:35 now says sixteen. This is the same stale count in a sibling place, reached through the class of this round's change. Replacement: "| Fixed paths | recognises the sixteen Files owned, `studio/briefs/W-410.md` and `/home/edckt/.bisellium-evidence/W-410-spec/`; ... (rest unchanged)". [class: spec×stale-count] — check: none: an admission rule that compares the Files owned bullet count with each "the <n> Files owned" or "<n> code-owned paths" phrase in the brief
+2. advisory — brief:119 [severity: S4] The Size line still counts "five exact predecessor-row migrations". Files owned now lists nine migrated predecessor files (w409 x2, w463 x2, board.spec, board-truth, tokens, containment, screenshots). Same class as #1. Replacement: "Size: four behaviours; five source files, two focused W-410 row files and nine exact predecessor-row migrations: 4 points." [class: spec×stale-count] — check: none: the same count-consistency admission rule
+3. advisory — brief:33 [severity: S4] "migrate the flipped W-350 Board pixel row" does not say which edit to screenshots.spec.ts is allowed. A Board pixel change can only be absorbed by new PNGs (excluded at brief:35 and brief:100) or by a mask, threshold or skip, which is comparator policy that brief:116 excludes. No `screenshots.spec.ts-snapshots/` exists in the worktree, so the row's pixel step skips and only its `expectLoadedState` Board readiness locators run. So the only change consistent with brief:100 is to those locators, and only if a W-410 surface they name changes. As worded, the entry does not contradict brief:100, but it invites a weakening edit. Replacement: "- `apps/web/tests-serve/screenshots.spec.ts`: only `expectLoadedState`'s Board readiness locators may change, and only where a W-410 waiting-card surface they name changes; no mask, threshold, skip, viewport, baseline path or PNG change (W-350's pixel flip waits for Patron baseline approval)." [class: spec×unbounded-ownership] — check: none: a source assertion that toHaveScreenshot in screenshots.spec.ts carries no `mask` or `maxDiffPixel*` option
+
+## Earlier findings
+
+## Verdict
+The change since round 8 touches only Files owned and its count, with no other change of meaning. The new count of sixteen is correct. Every census-named flip file is now owned (W-129 board-truth, W-366 tokens, W-163 containment, W-350 screenshots, plus the existing W-409, W-463 and board.spec files). Adding screenshots.spec.ts does not contradict brief:100. The three advisories are stale counts at brief:72 and brief:119 and an under-bounded screenshots.spec.ts entry.
+VERDICT: PASS

@@ -805,6 +805,11 @@ const APPROVED_HELPERS = new Set([
 // times the server already sent it.
 const PINNED_C: PinnedSite[] = [
   {
+    key: "apps/web/src/lib/board.ts:instantMs:new Date#1",
+    disposition: "listed",
+    why: "browser bundle: parses a display-only active-ask instant for the Board waiting-age rail; it shares no code with the server, so it cannot import the schema parser (W-410)",
+  },
+  {
     key: "apps/web/src/lib/board.ts:formatBoardTimestamp:new Date#1",
     disposition: "listed",
     why: "browser bundle: formats a timestamp the server already sent; it shares no code with the server, so it cannot import the schema parser. Follow-on: none (default 5)",
