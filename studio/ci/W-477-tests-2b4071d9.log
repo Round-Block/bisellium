@@ -1,0 +1,204 @@
+certifies: tree:2b4071d9a2bc850837f4b496b0ff91344ca51f76
+command: node scripts/test-reads.mjs
+exit code: 1
+
+✖ W-163-b6 behaviour 6: the census lists every raw date parse and raw file access, and a new one fails the build (5.498742ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   "inventory D: pinned list length matches the scan's own count",
+  +   'inventory D: every raw file access is pinned, none missing',
+  +   'inventory D: scan order matches the pinned order exactly'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (/home/edckt/agents/bisellium/.********.test.ts:1215:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+unknown sella "nobody" — not declared in /********.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium run --scratch <dir> [--repo <dir>] [--base <ref>] -- <cmd…>
+bisellium verify: gate tests: start 2026-10-31T07:32:50.220Z
+bisellium verify: gate tests: end 2026-10-31T07:32:50.222Z after 0m00s, exited 0
+warning: Git ref-wide allocation unavailable; using local records only
+bisellium verify: gate tests: start 2026-10-31T07:32:51.070Z
+bisellium verify: gate tests: end 2026-10-31T07:32:51.074Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-31T07:32:51.074Z
+bisellium verify: gate lint: end 2026-10-31T07:32:51.075Z after 0m00s, exited 1
+--- ci/W-001-lint-5d70f0f6.log: log tail, at most 200 lines ---
+certifies: tree:********
+command: false
+exit code: 1
+
+
+bisellium verify: gate tests: start 2026-10-31T07:32:51.139Z
+bisellium verify: gate tests: end 2026-10-31T07:32:51.140Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-31T07:32:51.141Z
+bisellium verify: gate lint: end 2026-10-31T07:32:51.142Z after 0m00s, exited 1
+--- ci/W-001-lint-5d70f0f6.log: log tail, at most 200 lines ---
+certifies: tree:********
+command: false
+exit code: 1
+
+
+bisellium verify: gate tests: start 2026-10-31T07:32:51.169Z
+bisellium verify: gate tests: end 2026-10-31T07:32:51.170Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-31T07:32:51.170Z
+bisellium verify: gate lint: end 2026-10-31T07:32:51.171Z after 0m00s, exited 1
+--- ci/W-001-lint-5d70f0f6.log: log tail, at most 200 lines ---
+certifies: tree:********
+command: false
+exit code: 1
+
+
+bisellium verify: gate lint: start 2026-10-31T07:32:51.202Z
+bisellium verify: gate lint: end 2026-10-31T07:32:51.203Z after 0m00s, exited 1
+--- ci/W-002-lint-5d70f0f6.log: log tail, at most 200 lines ---
+certifies: tree:********
+command: false
+exit code: 1
+
+
+working tree is dirty; commit or pass --allow-dirty
+bisellium verify: gate tests: start 2026-10-31T07:32:51.243Z
+bisellium verify: gate tests: end 2026-10-31T07:32:51.245Z after 0m00s, exited 0
+bisellium verify: gate lint: start 2026-10-31T07:32:51.245Z
+bisellium verify: gate lint: end 2026-10-31T07:32:51.247Z after 0m00s, exited 1
+--- ci/W-001-lint-5d70f0f6.log: log tail, at most 200 lines ---
+certifies: dirty:********
+command: false
+exit code: 1
+
+
+--stage "review" does not match opus state "building"
+unknown sella "nobody" — not declared in bisellium.yml
+emit: invalid JSON: Unexpected token 'o', "not json" is not valid JSON
+emit: event needs a non-empty string "name"
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+unknown opus: W-999
+resolved without --opus — nothing records what work this becomes
+--ask-back requires petitio "A-1" to be needs_you (currently awaiting_reply)
+resolved without --opus — nothing records what work this becomes
+unknown opus: W-999
+W-007 is not in backlog (state: greenlit)
+unknown flag "--burn-anything"
+usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+period "2026-39" must match YYYY-Www (e.g. 2026-W39)
+unknown collegium "no-such" — not declared in bisellium.yml
+sella "builder-1" is retired — dispatch "builder" instead
+sella "builder-1" is retired — dispatch "builder" instead
+sella "builder-1" is retired — dispatch "builder" instead
+sella "builder-1" is retired — dispatch "builder" instead
+sella "builder-1" is retired — dispatch "builder" instead
+handoff: --sella "builder.W-200" disagrees with the opus "W-002"
+emit --usage: --sella "builder.W-200" disagrees with the opus "W-002"
+PASS  source set is non-empty                                                159
+PASS  inventory A: pinned list length matches the scan's own count           pinned=22 scan=22
+PASS  inventory A: every safeItemPath call site is pinned, none missing      
+PASS  inventory A: scan order matches the pinned order exactly               {"scanA":["packages/cli/src/next.ts:runNext:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1","packages/cli/src/retro.ts:readOpus:opera#1","packages/cli/src/retro.ts:draftOpusRetro:acta#1","packages/cli/src/retro.ts:draftOpusRetro:opera#1","packages/commands/src/lifecycle.ts:runReady:opera#1","packages/commands/src/lifecycle.ts:runDone:opera#1","packages/commands/src/lifecycle.ts:runReview:opera#1","packages/commands/src/lifecycle.ts:runHalt:opera#1","packages/commands/src/lifecycle.ts:runHalt:decisions#1","packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1","packages/commands/src/lifecycle.ts:runWaive:opera#1","packages/commands/src/lifecycle.ts:runAmend:opera#1","packages/commands/src/verdict.ts:readSequence:ci#1","packages/commands/src/verdict.ts:runVerdict:opera#1","packages/commands/src/verify.ts:runVerify:opera#1","packages/commands/src/writes.ts:runHandoff:opera#1","packages/commands/src/writes.ts:runEmit:opera#1","packages/commands/src/writes.ts:runAnswer:petitiones#1","packages/commands/src/writes.ts:runAnswer:opera#1","packages/commands/src/writes.ts:runGreenlight:opera#1"],"PINNED_A":["packages/cli/src/next.ts:runNext:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1","packages/cli/src/retro.ts:readOpus:opera#1","packages/cli/src/retro.ts:draftOpusRetro:acta#1","packages/cli/src/retro.ts:draftOpusRetro:opera#1","packages/commands/src/lifecycle.ts:runReady:opera#1","packages/commands/src/lifecycle.ts:runDone:opera#1","packages/commands/src/lifecycle.ts:runReview:opera#1","packages/commands/src/lifecycle.ts:runHalt:opera#1","packages/commands/src/lifecycle.ts:runHalt:decisions#1","packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1","packages/commands/src/lifecycle.ts:runWaive:opera#1","packages/commands/src/lifecycle.ts:runAmend:opera#1","packages/commands/src/verdict.ts:readSequence:ci#1","packages/commands/src/verdict.ts:runVerdict:opera#1","packages/commands/src/verify.ts:runVerify:opera#1","packages/commands/src/writes.ts:runHandoff:opera#1","packages/commands/src/writes.ts:runEmit:opera#1","packages/commands/src/writes.ts:runAnswer:petitiones#1","packages/commands/src/writes.ts:runAnswer:opera#1","packages/commands/src/writes.ts:runGreenlight:opera#1"]}
+PASS  inventory B: pinned list length matches the scan's own count           pinned=53 scan=53
+PASS  inventory B: every raw id-to-path join is pinned, none missing         
+PASS  inventory B: scan order matches the pinned order exactly               {"scanB":["apps/server/src/store.ts:opus#1","apps/web/tests-serve/answer.spec.ts:<module>#1","apps/web/tests-serve/board.spec.ts:setOpusState#1","apps/web/tests-serve/board.spec.ts:setOpusTitle#1","apps/web/tests-serve/board.spec.ts:setOpusBody#1","apps/web/tests-serve/board.spec.ts:setTraditioNext#1","apps/web/tests-serve/walk.spec.ts:<module>#1","packages/cli/src/branch.ts:readOpusRecord#1","packages/cli/src/branch.ts:readOpusRecord#2","packages/cli/src/branch.ts:readOpusRecord#3","packages/cli/src/branch.ts:mergeOpusBranch#1","packages/cli/src/branch.ts:runBranch#1","packages/cli/src/branch.ts:runMerge#1","packages/cli/src/close.ts:closeChecks#1","packages/cli/src/init.ts:initStudio#1","packages/cli/src/new.ts:runNew#1","packages/cli/src/new.ts:runNew#2","packages/cli/src/next.ts:recordRel#1","packages/cli/src/next.ts:briefRel#1","packages/cli/src/next.ts:readFixCheck#1","packages/cli/src/next.ts:dispatch#1","packages/cli/src/next.ts:fixCheckSteps#1","packages/cli/src/prune.ts:pruneStaleOpusBranches#1","packages/cli/src/prune.ts:pruneCiLogs#1","packages/cli/src/retro.ts:draftRetro#1","packages/cli/src/retro.ts:draftRetro#2","packages/cli/src/retro.ts:draftRetro#3","packages/cli/src/tick.ts:writeDailyActum#1","********.ts:readRecord#1","********.ts:attachReceipt#1","********.ts:runBuilderCommand#1","********.ts:admitCurrentGates#1","********.ts:admitCurrentRunReceipt#1","********.ts:admitCurrentRunReceipt#2","packages/commands/src/context.ts:buildContextFor#1","packages/commands/src/ids.ts:createNextRecord#1","packages/commands/src/lifecycle.ts:unsafeOpusProblem#1","packages/commands/src/lifecycle.ts:runReady#1","packages/commands/src/lifecycle.ts:runHalt#1","packages/commands/src/lifecycle.ts:patronDecisionProblem#1","packages/commands/src/lifecycle.ts:runWaive#1","********.ts:currentDesign#1","********.ts:ruling#1","packages/commands/src/talk.ts:writeActum#1","packages/commands/src/talk.ts:writeActum#2","packages/commands/src/verdict.ts:runVerdict#1","packages/commands/src/verify.ts:runVerify#1","packages/commands/src/writes.ts:safeItemPath#1","packages/commands/src/writes.ts:recordOwnerRefusal#1","packages/commands/src/writes.ts:runAnswer#1","packages/commands/src/writes.ts:runAnswer#2","packages/commands/src/writes.ts:runAnswer#3","packages/commands/src/writes.ts:runGreenlight#1"],"pinnedBKeys":["apps/server/src/store.ts:opus#1","apps/web/tests-serve/answer.spec.ts:<module>#1","apps/web/tests-serve/board.spec.ts:setOpusState#1","apps/web/tests-serve/board.spec.ts:setOpusTitle#1","apps/web/tests-serve/board.spec.ts:setOpusBody#1","apps/web/tests-serve/board.spec.ts:setTraditioNext#1","apps/web/tests-serve/walk.spec.ts:<module>#1","packages/cli/src/branch.ts:readOpusRecord#1","packages/cli/src/branch.ts:readOpusRecord#2","packages/cli/src/branch.ts:readOpusRecord#3","packages/cli/src/branch.ts:mergeOpusBranch#1","packages/cli/src/branch.ts:runBranch#1","packages/cli/src/branch.ts:runMerge#1","packages/cli/src/close.ts:closeChecks#1","packages/cli/src/init.ts:initStudio#1","packages/cli/src/new.ts:runNew#1","packages/cli/src/new.ts:runNew#2","packages/cli/src/next.ts:recordRel#1","packages/cli/src/next.ts:briefRel#1","packages/cli/src/next.ts:readFixCheck#1","packages/cli/src/next.ts:dispatch#1","packages/cli/src/next.ts:fixCheckSteps#1","packages/cli/src/prune.ts:pruneStaleOpusBranches#1","packages/cli/src/prune.ts:pruneCiLogs#1","packages/cli/src/retro.ts:draftRetro#1","packages/cli/src/retro.ts:draftRetro#2","packages/cli/src/retro.ts:draftRetro#3","packages/cli/src/tick.ts:writeDailyActum#1","********.ts:readRecord#1","********.ts:attachReceipt#1","********.ts:runBuilderCommand#1","********.ts:admitCurrentGates#1","********.ts:admitCurrentRunReceipt#1","********.ts:admitCurrentRunReceipt#2","packages/commands/src/context.ts:buildContextFor#1","packages/commands/src/ids.ts:createNextRecord#1","packages/commands/src/lifecycle.ts:unsafeOpusProblem#1","packages/commands/src/lifecycle.ts:runReady#1","packages/commands/src/lifecycle.ts:runHalt#1","packages/commands/src/lifecycle.ts:patronDecisionProblem#1","packages/commands/src/lifecycle.ts:runWaive#1","********.ts:currentDesign#1","********.ts:ruling#1","packages/commands/src/talk.ts:writeActum#1","packages/commands/src/talk.ts:writeActum#2","packages/commands/src/verdict.ts:runVerdict#1","packages/commands/src/verify.ts:runVerify#1","packages/commands/src/writes.ts:safeItemPath#1","packages/commands/src/writes.ts:recordOwnerRefusal#1","packages/commands/src/writes.ts:runAnswer#1","packages/commands/src/writes.ts:runAnswer#2","packages/commands/src/writes.ts:runAnswer#3","packages/commands/src/writes.ts:runGreenlight#1"]}
+PASS  inventory B: every pinned disposition is a recognized value            ["guarded","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","bypass","derived","derived","derived","guarded","guarded","guarded","guarded","guarded","derived","guarded","derived","derived","derived","bypass","guarded","guarded","guarded","guarded","guarded","guarded","derived","derived","guarded","guarded","guarded","guarded","guarded","guarded","guarded","derived","derived","guarded","guarded","helper","bypass-via-verify","guarded","derived","derived","guarded"]
+PASS  source set C/D is non-empty                                            186
+PASS  inventory C: pinned list length matches the scan's own count           pinned=4 scan=4
+PASS  inventory C: every raw date parse is pinned, none missing              
+PASS  inventory C: scan order matches the pinned order exactly               
+PASS  inventory C: pinned keys are unique                                    
+PASS  inventory C: every pinned disposition comes from the table             
+FAIL  inventory D: pinned list length matches the scan's own count           pinned=317 scan=319
+FAIL  inventory D: every raw file access is pinned, none missing             a raw date parse or raw file access changed — see studio/briefs/W-163.md; fix it through the approved helper, or pin it here with a disposition and a reason — added: ["scripts/installed-inventory.mjs:startFolders:readFileSync#1","scripts/installed-inventory.mjs:visit:readFileSync#1"] removed: []
+FAIL  inventory D: scan order matches the pinned order exactly               
+PASS  inventory D: pinned keys are unique                                    
+PASS  inventory D: every pinned disposition comes from the table             
+PASS  every helper pin is inside an approved helper                          
+PASS  every contained pin's function calls a containment helper              
+PASS  every why is non-empty                                                 
+PASS  no out-of-domain fs binding                                            {"unexpected":[],"stale":[]}
+PASS  every pinned escape has a why                                          
+--- npm test failed (exit 1): its last 4 of 4 failing lines on stdout ---
+✖ W-163-b6 behaviour 6: the census lists every raw date parse and raw file access, and a new one fails the build (5.498742ms)
+ℹ fail 1
+✖ failing tests:
+✖ W-163-b6 behaviour 6: the census lists every raw date parse and raw file access, and a new one fails the build (5.498742ms)
+--- npm test: its last 50 lines of stdout ---
+✔ W-163-b6 round 4: the scan refuses the date-prototype-constructor-new form (0.018752ms)
+✔ W-163-b6 round 4: the scan refuses the date-global-prototype form (0.019304ms)
+✔ W-163-b6 round 4: the scan refuses the date-other-member form (0.018834ms)
+✔ W-163-b6 round 4: the scan refuses the date-now-uncalled form (0.018772ms)
+✔ W-163-b6 round 5: the scan refuses the computed-member form (0.018777ms)
+✔ W-163-b6 round 5: the scan refuses the global-computed-member form (0.018144ms)
+✔ W-163-b6 round 3: a direct call stays the one followed form (0.079773ms)
+✔ W-163-b6 round 2: ordinary Date and fs uses stay out of the scan (0.040444ms)
+✔ W-163-b6 round 2: the bright line's two raw reads left the pins and the session write is a contained pin (0.260644ms)
+✔ W-423-b5 behaviour 5: every governed direct fs call is classified, and every write calls the shared containment helper, is the helper's own, or is a stated limit; a new one fails (117.847706ms)
+✔ W-425-b1 behaviour 1: a stream class constructed on a path is a direct fs site, a WriteStream a write, and any other use of one fails (111.252894ms)
+✔ W-425-b2 behaviour 2: a read called with a literal write flag is a write, and a read flag, an encoding or no options stays a read (111.884164ms)
+✔ W-425-b3 behaviour 3: a read whose options the rule cannot read is judged a write, failing closed (105.218707ms)
+✔ W-425-b4 fix 1: an inherited or non-plain options property counts as a write (110.576635ms)
+✔ W-425-b5 fix 1: a malformed fixture is rejected, not scanned (202.169312ms)
+ℹ tests 71
+ℹ suites 0
+ℹ pass 70
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 910.203283
+
+✖ failing tests:
+
+test at packages/cli/src/containment.test.ts:1:92658
+✖ W-163-b6 behaviour 6: the census lists every raw date parse and raw file access, and a new one fails the build (5.498742ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   "inventory D: pinned list length matches the scan's own count",
+  +   'inventory D: every raw file access is pinned, none missing',
+  +   'inventory D: scan order matches the pinned order exactly'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (/home/edckt/agents/bisellium/.********.test.ts:1215:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+

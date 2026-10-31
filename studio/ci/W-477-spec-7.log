@@ -1,0 +1,28 @@
+# opus: W-477
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T07:44:27.693Z
+# tree: tree:2b4071d9a2bc850837f4b496b0ff91344ca51f76
+# brief: briefs/W-477.md blob:e3867ec049ebbf41b841f5857df8a171b7128567
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-477/studio","head":"33dd86580ff49b58d2ebed6e82a0d7a5e45fd640","brief":"e3867ec049ebbf41b841f5857df8a171b7128567","at":"2026-10-31T07:44:21.912Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-477-spec/r4/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 4 answers fix round 2's one full-suite failure (`bisellium ci --opus W-477`, tree 2b4071d9, ci/W-477-tests-2b4071d9.log line 139): row W-163-b6 behaviour 6, the W-163 census in packages/cli/src/containment.test.ts, saw scripts/installed-inventory.mjs's two raw readFileSync calls (startFolders, visit) unpinned; revision 4 pins both in inventory D with disposition outside, in scan order, and adds the census file to Files owned with its documented reason — check: brief:3, brief:47, brief:59, brief:105
+2. advisory — pinned, not routed: readContainedRegularFile is the officina's contained reader (an officina root and an expected directory inside it); these reads are the checkout's root package.json and installed package.json files, or a test's OS-temp install, never an officina, and the module runs under plain node with no tsx; W-163 pins the rest of scripts/ outside the same way; the census itself is reused unchanged, a stated limit (D-076 E) — check: brief:59, brief:67
+3. advisory — the row fails by assertion on the opus branch head 33dd8658 with the same added list the ci log records and passes on r4/fix.mbox, accepted by the replay classifier; seven kills K20 to K26 each fail it at the census line they guard; containment.test.ts passes whole (71 of 71), source-map-js.test.mjs whole (5 of 5), and lint, format:check and typecheck pass at the fix tip — check: reds-r4.out, red-fix4.log, green-fix4.log, kills-r4.out, gates-r4.out
+4. advisory — the Codex test check on revision 4 lists one flip, W-163-b6 behaviour 6, named in Acceptance, and no unnamed flip; every must-stay-green row it lists, including the three new ones (W-163-b6 round 2, W-423-b5, W-221-b2 behaviour 25), passes on the fix tip; revision 1's census files were kept byte-identical (rerun output moved to r4/) — check: fixture-census.md, census-green-r4.out, brief:108
+5. advisory — this revision's ledger passes the writer and the full admission admits the brief; the Prototype line still names the original replay series, r4/fix.mbox applies over the opus branch 33dd8658 (one commit, two added lines), and no code-owned path is touched — check: ledger-check.out, admission.out, series-r4.out
+
+## Rebuttal
+
+Changes note, fix round 2's full suite (`ci/W-477-tests-2b4071d9.log`, row W-163-b6 behaviour 6, `inventory D: every raw file access is pinned, none missing — added: ["scripts/installed-inventory.mjs:startFolders:readFileSync#1","scripts/installed-inventory.mjs:visit:readFileSync#1"]`): accepted and closed. Revision 2 added `scripts/installed-inventory.mjs`, a new `scripts/*.mjs` file in the W-163 census's source set, and neither revision 2's nor revision 3's Acceptance named the census row, and their gates ran only the W-477 test file, never the full suite. Revision 4 pins both reads in `PINNED_D` as `outside` with a why each, names the row and every census flip in Acceptance, adds `packages/cli/src/containment.test.ts` to Files owned, runs `containment.test.ts` whole in its gates, and ran the Codex test check on this revision before signing.
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 4 at `studio/briefs/W-477.md` in the opus worktree, fix prototype `r4/fix.mbox` over the opus branch 33dd8658; two behaviours, 1 point, no code-owned path.

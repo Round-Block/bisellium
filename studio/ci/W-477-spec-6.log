@@ -1,0 +1,21 @@
+# opus: W-477
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19047-b103-77a1-b084-10f5c03b8aa4
+# outcome: passed
+# at: 2026-10-31T07:21:38.816Z
+# tree: tree:05c00da7679842a89dcc2f36b7d17386f72e360c
+# brief: briefs/W-477.md blob:27e8cddead926cd296ba74f53c9acc99608b27e5
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-477/studio","head":"e60b8a5523fa565d102ffb892a784170436f64ad","brief":"27e8cddead926cd296ba74f53c9acc99608b27e5","at":"2026-10-31T07:21:35.574Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-477-spec-4.log #1: closed — revision 3 reads both npm workspace forms, refuses every other value and invalid root manifest, and `ws-object-r3.out` plus `ws-string-r3.out` reject the stale real-install cases.
+
+## Verdict
+Revision 3 closes the sole blocker with a fail-closed workspace reader and direct regression evidence.
+VERDICT: PASS

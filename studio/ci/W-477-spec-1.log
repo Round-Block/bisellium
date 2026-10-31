@@ -1,0 +1,24 @@
+# opus: W-477
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T04:46:02.099Z
+# tree: tree:e325c04a872cab9c03d838b4e2ff6afeef69800d
+# brief: briefs/W-477.md blob:a768f689094aa03594ce24c12e4345b0a1fbc769
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"236e362d5c7618ac1263e6e15b804ea3e60ec66e","brief":"a768f689094aa03594ce24c12e4345b0a1fbc769","at":"2026-10-31T04:45:58.439Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-477-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the fix is one global npm override, `"overrides": { "minimatch": "^11.0.1" }`, and the lock npm install then writes: minimatch 10.2.6 to 11.0.3 and minimatch 11's own new dev dependency @isaacs/nonrecursive-glob-match 1.0.3; a global entry, not one nested per lint tool, so a dependent added later cannot bring 10.x back — check: prototype-deps.diff, apply.out, brief:19
+2. advisory — on the prototype `npm ci` is clean, `npm ls minimatch --all` shows 11.0.3 only, `npm run -s audit` finds 0 vulnerabilities, and lint, format:check and typecheck pass; eslint's output and its config-glob decisions are the same on minimatch 10.2.6 and 11.0.3, a stated limit (D-076 E), not a promise — check: gates-proto.out, baseline.out, eslint-globs-master.out, eslint-globs-proto.out
+3. advisory — behaviour 1's red fails by assertion on master's lock (`node_modules/minimatch is 10.2.6`) and passes from behaviour 1's commit; the row gives its expected exit on 21 of 21 edited locks and package files, and four one-hunk kills of package.json and package-lock.json each fail it at the assertion they guard — check: red-b1.log, red-accept.out, reds.out, cases.out, kills.out
+4. advisory — behaviour 2 (scope added 2026-10-31): row W-430-b5 fails on master since 2026-10-30T21:00Z because its Codex line's time is fixed while its reset follows the real clock; the row now takes the line's time an hour back on the same clock, no assertion changes, and w430.test.ts passes whole; other dates are argued, not run — check: red-b2-master.log, red-b2.log, green-b2.log, gates-proto.out
+5. advisory — this brief's own ledger passes the writer and the full admission admits it; the Codex test check lists no flip and its must-stay-green rows pass on the tip; no code-owned path is touched — check: ledger-check.out, admission.out, fixture-census.md, census-green.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-477.md`, prototype `prototype.mbox` (three patches) over master b8d2d370; two behaviours, 1 point, no code-owned path.

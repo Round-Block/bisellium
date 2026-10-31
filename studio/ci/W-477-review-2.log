@@ -1,0 +1,23 @@
+# opus: W-477
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19059-b214-7562-b9cd-937091c7148b
+# outcome: failed
+# at: 2026-10-31T05:49:33.920Z
+# tree: tree:05c00da7679842a89dcc2f36b7d17386f72e360c
+# brief: briefs/W-477.md blob:a768f689094aa03594ce24c12e4345b0a1fbc769
+# ticket: {"opus":"W-477","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-477/studio","head":"8ccf5d4cf0834f98692078ae9a0f6398ea1c7868","brief":"a768f689094aa03594ce24c12e4345b0a1fbc769","at":"2026-10-31T05:48:20.697Z"}
+
+## Findings
+1. blocking — scripts/source-map-js.test.mjs:89 [severity: S1] Reached through round 1’s class: the guard enumerates only minimatch paths present in the lock, so an extra stale `node_modules/eslint/node_modules/minimatch@10.2.6` absent from the lock is never inspected; ESLint prefers that nested copy while the inventory row passes, leaving brief:83’s no-10.x installed inventory unproved. [class: mechanism×replay-environment-not-pristine] — check: scripts/source-map-js.test.mjs: add an extra installed nested minimatch absent from `packages` and require rejection
+2. blocking — studio/ci/W-477-tests-299865cc.log:5 [severity: S1] The delta rewrites the round-one certificate with a later rerun while retaining its old tree identity and evidence path, backfilling the artifact cited by the previous verdict instead of preserving produced evidence; this contradicts brief:82’s requirement to fix failures at their cause, never by rerun. [class: review×evidence-backfilled-or-absent] — check: none: certificate production must refuse to overwrite an existing tree-named evidence log
+3. advisory — scripts/source-map-js.test.mjs:116 [severity: S4] The fix adds new regression rows but no fix red under `studio/ci/reds/W-477/` demonstrates either row failing against the round-one stale installation. [class: spec×genuine-red-replayability-deferred-to-mint] — check: studio/ci/reds/W-477/
+
+## Earlier findings
+- ci/W-477-review-1.log #1: closed — scripts/source-map-js.test.mjs:149 now checks the round-one top-level stale-install case, and the new tree’s tests certificate passes that row with the installed top-level minimatch matching the 11.0.3 lock
+
+## Verdict
+The original stale top-level installation is fixed, but the one-sided inventory guard and backfilled historical certificate still block acceptance.
+VERDICT: FAIL

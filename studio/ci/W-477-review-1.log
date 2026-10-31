@@ -1,0 +1,18 @@
+# opus: W-477
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19059-b214-7562-b9cd-937091c7148b
+# outcome: failed
+# at: 2026-10-31T05:08:31.785Z
+# tree: tree:299865cc76b853d46f9dc5377c7d499bc7955a7a
+# brief: briefs/W-477.md blob:a768f689094aa03594ce24c12e4345b0a1fbc769
+# ticket: {"opus":"W-477","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-477/studio","head":"b6526933496649956ae30b2981b47ae2761c58d0","brief":"a768f689094aa03594ce24c12e4345b0a1fbc769","at":"2026-10-31T05:05:58.135Z"}
+
+## Findings
+1. blocking — studio/ci/W-477-tests-299865cc.log:2 [severity: S1] The current-tree certificates were minted with minimatch 10.2.6 from `node_modules` created before the lock changed to 11.0.3, so the certified full suite did not exercise the dependency being shipped. The clean prototype’s selected checks do not satisfy the required current-branch `npm ci`, full-suite certification, and 11-only inventory at brief:82 and brief:83. [class: mechanism×replay-environment-not-pristine] — check: none: certify dependency-changing opuses after a fresh `npm ci` and assert the installed dependency inventory matches the lock
+
+## Verdict
+The source changes and genuine reds are sound, but the stale installed dependency makes the required gate evidence false.
+VERDICT: FAIL

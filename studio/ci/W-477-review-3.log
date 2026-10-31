@@ -1,0 +1,22 @@
+# opus: W-477
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19059-b214-7562-b9cd-937091c7148b
+# outcome: passed
+# at: 2026-10-31T08:15:58.417Z
+# tree: tree:9dddc19dcf6cb5603e61ea993c120ca8dc529f6e
+# brief: briefs/W-477.md blob:e3867ec049ebbf41b841f5857df8a171b7128567
+# ticket: {"opus":"W-477","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-477/studio","head":"3286fe43aaceaee7a276469c99d4308e18824584","brief":"e3867ec049ebbf41b841f5857df8a171b7128567","at":"2026-10-31T08:14:39.549Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-477-review-2.log #1: closed — scripts/installed-inventory.mjs:85 now walks root and workspace installs recursively, while lines 124–133 compare the union of installed and locked keys; scripts/source-map-js.test.mjs:124 directly pins rejection of an extra nested 10.2.6 copy absent from the lock
+- ci/W-477-review-2.log #2: closed — studio/ci/W-477-tests-299865cc.log:5 is restored to the original round-one artifact, while the final rerun is preserved separately under tree-specific certificate `W-477-tests-9dddc19d.log`
+
+## Verdict
+The installed-inventory walk, regression evidence, historical certificate restoration, census pins, and final certified gates close both blockers.
+VERDICT: PASS
