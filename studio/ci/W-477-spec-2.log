@@ -1,0 +1,21 @@
+# opus: W-477
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19047-b103-77a1-b084-10f5c03b8aa4
+# outcome: passed
+# at: 2026-10-31T04:49:37.035Z
+# tree: tree:e325c04a872cab9c03d838b4e2ff6afeef69800d
+# brief: briefs/W-477.md blob:a768f689094aa03594ce24c12e4345b0a1fbc769
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"236e362d5c7618ac1263e6e15b804ea3e60ec66e","brief":"a768f689094aa03594ce24c12e4345b0a1fbc769","at":"2026-10-31T04:49:33.653Z"}
+
+## Findings
+1. advisory — brief:53 The limit collapses separate fixture and child clock samples into “the fixture’s clock read”; a clock discontinuity can let the row pass without preserving the promised approximately 101-hour reset-to-line relationship. Replace brief:53 with: `- Behaviour 2 leans on weekWindow and next --all unchanged (D-076 E). W-430-b5 separately samples Date.now() for the reset and seen values, new Date() for file mtime, and the child samples real time again; ordinary continuous samples put the reset about 101 h after seen and 99.9/100.0 h after the child clock. A discontinuity between samples is a limit: the row may fail, or may pass without preserving the approximate 101 h relationship; other dates are argued from this arithmetic, not run. Other rows that fix a date beside a real clock are not searched here.` [severity: S3] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w430.test.ts W-430-b5
+2. advisory — brief:57 The Input domain omits the real-clock readers added to W-430-b5, although their ordinary invalid forms fail closed and clock disagreement is limited above. Replace brief:57 with: `A rejection fails closed: the row fails, npm test exits 1, and the gates job fails in a merge group. W-430-b5’s real-clock inputs are finite Date-representable reset, seen, mtime and child samples; toISOString or utimesSync throws on an invalid sample, and the callback’s assert.match rejects output outside its 99.9/100.0 h domain; a discontinuity that still passes is the stated brief:53 limit.` [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w430.test.ts W-430-b5
+3. advisory — brief:62 The newly added package.json reader fails closed, but its cell names only the process exit rather than the functions rejecting unreadable, unparsable, or semantically invalid input. Replace brief:62 with: `| 2. The root package.json’s overrides, as W-477-b1 reads it | parseable JSON whose top-level overrides object holds minimatch as the string ^11.0.1, with other override keys allowed | readFileSync rejects an absent or unreadable file, JSON.parse rejects unparseable JSON, and assert.ok in W-477-b1 rejects an absent, nested, wrongly typed or differently ranged minimatch override; each failure makes the Node test exit 1 |` [severity: S4] [class: spec×input-without-named-rejector] — check: scripts/source-map-js.test.mjs
+4. advisory — brief:63 The reused audit and lint rows correctly use their command exits as boundaries but omit the actual local and Actions rejectors. Replace brief:63–64 with: `| 3. npm run -s audit, local and in gates (W-236) | exits 0: no moderate, high or critical advisory, registry reached | runStep, or runVerify when handed off, converts non-zero to a refused bisellium ci run; the GitHub Actions runner fails the unguarded gates step and required job |` and `| 4. npm run -s lint on minimatch 11 | exits 0, with the measured output stated at brief:23 | runStep, or runVerify when handed off, converts non-zero to refusal; the GitHub Actions runner fails the unguarded gates step and required job |`. [severity: S4] [class: spec×input-without-named-rejector] — check: packages/commands/src/ci.ts:141
+
+## Verdict
+All findings are advisory boundary or stated-limit corrections; no S1, security, or required-evidence blocker remains.
+VERDICT: PASS
