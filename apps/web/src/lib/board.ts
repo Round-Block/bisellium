@@ -39,7 +39,30 @@ export interface CardRow {
   /** Why this opus belongs to the attention-membership column. Kept as
    * structured data so presentation never has to infer an ask from copy. */
   asks?: { kind: "greenlight" | "inbox" | "human_gate"; count: number }[];
+  /** Display-only handoff facts for W-410. `nextActor` comes from the
+   * record's blocker; an absent/`none` blocker is stated, never guessed. */
+  nextActor?: string;
+  /** Oldest parseable instant among this card's active ask sources. */
+  waitingSince?: number;
   blocked: boolean;
+}
+
+function recordValue(record: unknown, key: string): unknown {
+  return typeof record === "object" && record !== null ? (record as Record<string, unknown>)[key] : undefined;
+}
+
+function instantMs(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value !== "string") return undefined;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function recordedNextActor(traditio: unknown): string {
+  const blocker = recordValue(traditio, "blocked_on");
+  return typeof blocker === "string" && blocker.trim().length > 0 && blocker.trim().toLowerCase() !== "none"
+    ? blocker.trim()
+    : "Unassigned";
 }
 
 export interface BoardColumn {
@@ -120,8 +143,12 @@ export function boardModel(
   const human = humanGateIds(o);
   const inboxOpera = new Set(inbox.opera.map((entry) => entry.id));
   const petitionCount = new Map<string, number>();
+  const petitionOpened = new Map<string, number[]>();
   for (const petitio of inbox.petitiones) {
-    if (petitio.opus !== undefined) petitionCount.set(petitio.opus, (petitionCount.get(petitio.opus) ?? 0) + 1);
+    if (petitio.opus === undefined) continue;
+    petitionCount.set(petitio.opus, (petitionCount.get(petitio.opus) ?? 0) + 1);
+    const opened = instantMs(petitio.opened);
+    if (opened !== undefined) petitionOpened.set(petitio.opus, [...(petitionOpened.get(petitio.opus) ?? []), opened]);
   }
 
   // Unique phases, in the lifecycle's own declared order, backlog excluded.
@@ -156,6 +183,21 @@ export function boardModel(
       ...(humanGateAsk ? [{ kind: "human_gate" as const, count: 1 }] : []),
     ];
     card.needsYou = (card.asks?.length ?? 0) > 0;
+    card.nextActor = recordedNextActor(opus.traditio);
+
+    const askInstants: number[] = [];
+    const traditioAt = instantMs(recordValue(opus.traditio, "at"));
+    if (greenlightAsk && traditioAt !== undefined) askInstants.push(traditioAt);
+    if (linkedDecisions > 0) askInstants.push(...(petitionOpened.get(opus.id) ?? []));
+    if (humanGateAsk) {
+      const gateInstants = Object.entries(opus.probationes)
+        .filter(([id, result]) => human.has(id) && result.status === "pending")
+        .map(([, result]) => instantMs(result.at))
+        .filter((value): value is number => value !== undefined);
+      if (gateInstants.length > 0) askInstants.push(...gateInstants);
+      else if (traditioAt !== undefined) askInstants.push(traditioAt);
+    }
+    card.waitingSince = askInstants.length > 0 ? Math.min(...askInstants) : undefined;
 
     if (card.needsYou) waiting.push({ ...card });
 
