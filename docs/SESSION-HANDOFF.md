@@ -50,7 +50,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after the one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight, unranked: E1 W-468 spec review r9; E2 W-474 merged, done next; UI1 W-463 re-verify, ruling, done; W-472 rebase, review r2.
+In flight, unranked: W-477 first (minimatch forced to 11; Patron 10-31; the audit fails every PR's gates); E1 W-468 fix round 3; E2 W-474 done PR #920; UI1 W-463 re-verify; W-472 PR #921.
 1. W-468 — a fix round records its red: next issues a red ticket in phase fix (Fable audit, high; Patron 10-30: unblocks W-451)
 2. W-473 — a red's recorded failing assertion equals the brief's declared one (D-076 D high, W-451); 3. W-476 — cause fix for interface×validation-order-masks-errors (D-076 D high; W-474 r1, W-379)
 4. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-30: clean code first) `next.ts`
