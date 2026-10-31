@@ -1,0 +1,18 @@
+# opus: W-459
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1924a-fa54-7693-b8e4-3ca9341568ac
+# outcome: failed
+# at: 2026-10-31T14:11:30.285Z
+# tree: tree:f0624b9753f0d6d26069d7bf7e40d0ff7d25c8e8
+# brief: briefs/W-459.md blob:2e9a33bc23b8d20c6807b72b9006652969a7882f
+# ticket: {"opus":"W-459","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-459/studio","head":"46682d46393b5e7fd2a49bf7d7d2362292ee2e3d","brief":"2e9a33bc23b8d20c6807b72b9006652969a7882f","at":"2026-10-31T14:09:08.422Z"}
+
+## Findings
+1. blocking — packages/cli/src/retro.ts:1164 [severity: S1] `ROUND_LOG` silently rejects round numbers longer than 15 digits, although brief:82 admits every positive integer without a leading zero. A valid log such as `W-10-review-1000000000000000.log` is therefore omitted from the daily retro and recurrence evidence — check: packages/cli/src/retro-daily.test.ts W-459-b1 [class: review×shared-log-grammar-rejects-valid-records]
+
+## Verdict
+The round-log reader does not implement its declared input domain and can silently omit valid evidence.
+VERDICT: FAIL

@@ -1,0 +1,28 @@
+# opus: W-459
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T13:42:10.750Z
+# tree: tree:049d063766126b23b5913bcf77f6aa4b936709a9
+# brief: briefs/W-459.md blob:2e9a33bc23b8d20c6807b72b9006652969a7882f
+# ticket: {"opus":"W-459","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"181298e2c713c8499d4b59fa5e62132e3ddd4fb0","brief":"2e9a33bc23b8d20c6807b72b9006652969a7882f","at":"2026-10-31T13:42:06.360Z"}
+
+# W-459 spec signature, round 3 (architect, claude-opus-5-5): revision 2
+
+Brief: studio/briefs/W-459.md revision 2, prototyped over master a4aa44e8 (which holds W-468's #926 and W-473's declared reds; series spec-scratch/W-459, prototype.mbox sha256 42695702372d430c30b9fa6a3385003d9c5a8cf72b112f8d7db44d87439653a4, six patches); evidence in /home/edckt/.bisellium-evidence/W-459-spec/ (revision 1's edits kept beside as *.r1.*). Answers spec review round 2 (studio/ci/W-459-spec-2.log): both blocking findings taken; advisories 3, 4 and 5 adopted as written, 6 answered by fixing the arithmetic instead of fencing the domain.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-459-spec/promise-ledger.md
+
+Checked: the window's lower bound is day−13 (`(DAILY_WINDOW_DAYS - 1)`), and row W-459-b1 pins the boundary with W-15 done on day−13 counted and W-16 done on day−14 not (`gate×W-8 seen in 2 opera: W-15, W-18`); `dailyDir` refuses an absent `ci/` or `opera/` and a symlinked, non-directory or unreadable `ci/`, `opera/` or `lessons/` with exit 2 before the append, and reads an absent `lessons/` as no lesson; every fixture officina holds `ci/` and `opera/`, so each older refusal is refused for its own reason; `previousUtcDay` steps back through `setUTCDate`; twenty-seven one-hunk kills are all guarded (kills.out: K21 restores revision 1's 15-day bound, K22 narrows to 13, K23-K26 the directory domain, K27 `Date.UTC`); each red fails by assertion at the assertion its behaviour declares and each green does not, by master's W-473 reader (declared.out, declaredRedProblems []), and is accepted by the replay classifier (red-accept.out); lint, format:check, typecheck and the touched test files pass at the tip (gates-proto.out); the Codex test check was rerun on revision 2 (fixture-census.md) and its rows pass at the tip (census-green.out); the real studio's check and probe (real-check.out, real-probe.out: the window prints as 2026-10-18..2026-10-31); admission and the ledger pass (admission.out, ledger-check.out). No code-owned path.
+
+## Findings
+1. advisory — round 2's blocker 1 is fixed as written: the window is the 14 calendar days from day−13 through day, inclusive, in brief and prototype, and W-459-b1 pins the boundary (day−13 counted, day−14 not); revision 1's 15-day bound is kill K21 — check: brief:17, brief:84, kill-K21.out, real-probe.out
+2. advisory — round 2's blocker 2 (design-changing) is fixed: `dailyDir` enumerates `ci/`, `opera/` and `lessons/` through `existingRealDirectory` and refuses an absent `ci/` or `opera/`, or any of the three that is a symlink, not a directory or unreadable, with exit 2 before the append; an absent `lessons/` reads as no lesson (every recurring class owed); Input domain rows 2 to 4 name each domain and `dailyDir`; the Read enumeration keeps its `none: <reason>` form, since admission's READS_FORM refuses the reviewer's replacement line as written — check: brief:5, brief:79, brief:80, brief:81, kills.out
+3. advisory — advisories 3, 4 and 5 adopted as written: the fail-closed sentence is reader-specific, the loops are those whose chain touches the day, and a gate log's `<tree>` is 8 to 40 lowercase hex with every other name a limit — check: brief:74, brief:17, brief:83
+4. advisory — advisory 6 answered by fixing the arithmetic, not fencing the domain: `previousUtcDay` steps back through `setUTCDate`, so years 0000 to 0099 are not remapped (pinned in W-459-b2, kill K27), with no edit to check's `main`; an instant on 0000-01-01 is a stated limit — check: brief:86, kill-K27.out
+5. advisory — each genuine red now declares its failing assertion after its marker (W-473), and on master's reader each red fails at it and each green does not; the series is restaged over master a4aa44e8 and the Codex test check rerun lists two flips, both named — check: declared.out, red-accept.out, fixture-census.md, census-green.out, gates-proto.out
+
+## Verdict
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-459.md`, prototype `prototype.mbox` (six patches) over master a4aa44e8; three behaviours, 3 points, no code-owned path.

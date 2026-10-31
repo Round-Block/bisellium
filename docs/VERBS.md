@@ -157,10 +157,10 @@ spec gate.
 ```bash
 npm run bisellium -- retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]
+npm run bisellium -- retro --daily [--studio <dir>] [--now <iso>]
 ```
 
-`--opus` and `--cascade` exclude each other; `--opus` requires `--from`. The
-`--cascade` form is described first, the `--opus` form (W-137, D-039) after it.
+`--opus`, `--cascade` and `--daily` exclude each other; `--opus` requires `--from`. `--cascade` is described first, then `--opus` (W-137, D-039); `--daily` (W-459, D-076 F) appends the previous UTC day's retro under `## Daily retro` in `acta/improvements.md`, once a day.
 
 Validates every `reviewFindings[].evidence` first (non-empty, no dead
 relative href — the same contract `lesson.evidence` blocks) and writes

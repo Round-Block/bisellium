@@ -1431,3 +1431,45 @@ test("W-384-b1 behaviour 1: the done land counts a records PR as landed when the
   assert.equal(branchExists(kept, chore), true, "the records head stays");
   assert.equal(originHas(kept, chore), true, "the remote records head stays");
 });
+
+// ---------------------------------------------------------------------------
+// W-459 behaviour 3: next holds a new start while the previous UTC day's daily retro is owed, never an opus in flight
+// ---------------------------------------------------------------------------
+/** The previous UTC day by the real clock, which the daily hold reads (a run across UTC midnight is a stated limit). */
+const previousDay = (): string => {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 1)).toISOString().slice(0, 10);
+};
+function setTracker(w: World, days: string[]): void {
+  put(w.studio, "acta/improvements.md", `---\nauthor: producer\nkind: daily\ntitle: "Improvements tracker"\nat: 2026-10-17T00:00:00Z\n---\n# Improvements tracker\n\n## Daily retro\n${days.map((d) => `\n### ${d}\n\n- fixture entry\n`).join("")}`);
+  commit(w.repo, "test: daily tracker");
+  git(w.repo, ["push", "-q", "origin", "master"]);
+}
+test("W-459-b3 behaviour 3: next holds a new start at branch while the previous UTC day's retro is owed, and never an opus in flight", { timeout: 1_800_000 }, () => {
+  const w = world("w459-b3", "done");
+  addSpecced(w);
+  expectOther(next(w, [OTHER]), "branch", "named", "with no tracker a new start is named as today");
+
+  setTracker(w, ["2026-10-01"]);
+  const held = next(w, [OTHER]);
+  expectOther(held, "branch", "held", "a new start holds at branch while the previous UTC day has no entry");
+  assert.match(held.out, new RegExp(`daily retro owed: acta/improvements\\.md has no entry for ${previousDay()}; qa-lead runs bisellium retro --daily --studio `), ran("the hold names the day, the qa magister (D-147) and the verb", held));
+  expectStep(next(w, [OPUS]), "checkpoint", "complete", "a done opus is not held by the daily retro");
+
+  setTracker(w, ["2026-10-01", previousDay()]);
+  expectOther(next(w, [OTHER]), "branch", "named", "once the previous day's entry is filed the new start is named");
+
+  const flight = world("w459-b3-flight", "ready");
+  expectStep(next(flight, [OPUS, "--budget", "100000"]), "reds", "named", "an opus in flight names its reds");
+  setTracker(flight, ["2026-10-01"]);
+  expectStep(next(flight, [OPUS, "--budget", "100000"]), "reds", "named", "an opus in flight (its branch exists) is not held while the daily retro is owed");
+
+  const bad = world("w459-b3-bad", "done");
+  addSpecced(bad);
+  put(bad.studio, "acta/improvements.md/inner.md", "a directory where the tracker should be\n");
+  commit(bad.repo, "test: tracker is a directory");
+  git(bad.repo, ["push", "-q", "origin", "master"]);
+  const badNew = next(bad, [OTHER]);
+  expectOther(badNew, "branch", "held", "a tracker that cannot be read holds a new start");
+  assert.match(badNew.out, /the daily retro tracker cannot be read: acta\/improvements\.md: /, ran("and names the tracker", badNew));
+});

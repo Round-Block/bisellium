@@ -12,13 +12,13 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { closeSync, constants, existsSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { closeSync, constants, existsSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync, writeSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
-import { createNextRecord, ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
+import { createNextRecord, ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
 import { readContainedRegularFile, titleProblem, titleWordsProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
@@ -1149,19 +1149,301 @@ function opusState(root: string, id: string): string | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// W-459: `bisellium retro --daily`, the daily retro (D-076 F; D-147 makes it the qa-lead's). It replaces the kept
+// retro.py: one `### <day>` section appended under `## Daily retro` in `acta/improvements.md`, read from the verdict
+// logs, the gate logs (`ci/<id>-(tests|lint|types)-<tree>.log`) and the opus records and lessons. `dailyRetroOwed` is
+// the one reader of whether a day's entry exists; `check` (`retro.daily.missing`) and `next` (the branch hold) call it.
+// ---------------------------------------------------------------------------
+
+export const DAILY_TRACKER = "acta/improvements.md";
+const DAILY_HEADING = "## Daily retro";
+/** the recurrence window: the 14 calendar days from day−13 through day, inclusive */
+const DAILY_WINDOW_DAYS = 14;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const DAY_ENTRY = /^### (\d{4}-\d{2}-\d{2})\s*$/;
+/** The one grammar of a round number in a `ci/` log name: a positive integer, no leading zero, of any length. Read as a
+ *  `bigint` and ordered by `byRound`, so a number past `Number.MAX_SAFE_INTEGER` keeps every digit. */
+const ROUND_NUMBER = "[1-9]\\d*";
+const byRound = (a: bigint, b: bigint): number => (a < b ? -1 : a > b ? 1 : 0);
+const ROUND_LOG = new RegExp(`^(W-\\d+)-(spec|review)-(${ROUND_NUMBER})\\.log$`);
+const GATE_LOG = /^(W-\d+)-(tests|lint|types)-([0-9a-f]{8,40})\.log$/;
+const FAILING_ROW = /^(?:✖|not ok \d+ -) (W-\d+-b\d+)(?![\p{L}\p{M}\p{N}])/u;
+/** an `addressed_by` opus in one of these states is not a greenlit cause fix */
+const NOT_A_FIX = new Set(["backlog", "halted", "unknown"]);
+
+/** The UTC day before `now`, as YYYY-MM-DD. Stepped back through `setUTCDate`, never `Date.UTC`, which remaps years 0-99. */
+export function previousUtcDay(now: Date): string {
+  const d = new Date(now.getTime());
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The tracker and the days its `## Daily retro` section holds a `### YYYY-MM-DD` entry for; undefined when the officina keeps none. */
+function readTracker(root: string): { text: string; absolute: string; days: Set<string>; lastSection: string | undefined } | undefined | Refusal {
+  const file = readContainedRegularFile(root, DAILY_TRACKER, "acta");
+  if ("error" in file) return file.code === "ENOENT" ? undefined : { error: `${DAILY_TRACKER}: ${file.error}` };
+  const text = file.bytes.toString("utf8");
+  const days = new Set<string>();
+  let section: string | undefined;
+  for (const line of text.split("\n")) {
+    if (line.startsWith("## ")) section = line.trimEnd();
+    else if (section === DAILY_HEADING) {
+      const m = DAY_ENTRY.exec(line);
+      if (m !== null) days.add(m[1]!);
+    }
+  }
+  return { text, absolute: file.absolute, days, lastSection: section };
+}
+
+/** The day whose daily retro is owed at `now`: the previous UTC day, when the officina keeps a tracker with no entry for it. */
+export function dailyRetroOwed(root: string, now: Date): { owed: string | undefined } | Refusal {
+  const tracker = readTracker(root);
+  if (isRefusal(tracker)) return tracker;
+  const day = previousUtcDay(now);
+  return { owed: tracker !== undefined && !tracker.days.has(day) ? day : undefined };
+}
+
+type DailyRound = { opus: string; phase: "spec" | "review"; n: bigint; at: number; day: string; brief: string; failed: boolean; blockers: { cls: string; sev: string }[] };
+type GateFailure = { opus: string; log: string; classes: string[]; rows: string[] };
+
+const dayOf = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
+const minutes = (a: number, b: number): number => Math.round((b - a) / 60_000);
+
+/** A record directory the daily retro enumerates, its names sorted. `ci/` and `opera/` are required: absent, the retro
+ *  would be drafted from nothing, so it is refused. `lessons/` absent is no lesson, so every recurring class reads as owed.
+ *  A symlink, a non-directory or an unreadable directory is refused (`existingRealDirectory`), before any append. */
+function dailyDir(root: string, dir: "ci" | "opera" | "lessons"): string[] | Refusal {
+  try {
+    const abs = existingRealDirectory(root, dir);
+    if (abs === undefined) return dir === "lessons" ? [] : { error: `${dir}/: no directory; the daily retro reads its records` };
+    return readdirSync(abs).sort();
+  } catch (e) {
+    return { error: `${dir}/: ${(e as Error).message.split("\n")[0]}` };
+  }
+}
+
+/** Every spec and review round with a usable `# at:` (a log with none is a legacy log, not read), as retro.py read them. */
+function dailyRounds(root: string, names: string[]): DailyRound[] | Refusal {
+  const out: DailyRound[] = [];
+  for (const name of names) {
+    const m = ROUND_LOG.exec(name);
+    if (m === null) continue;
+    const file = readContainedRegularFile(root, `ci/${name}`, "ci", LOG_MAX_BYTES);
+    if ("error" in file) return { error: `ci/${name}: ${file.error}` };
+    const text = file.bytes.toString("utf8");
+    const h = headerBlock(text);
+    const at = instant(h.get("at"))?.getTime();
+    if (at === undefined) continue;
+    const blockers = text
+      .split("\n")
+      .filter((l) => /^\d+\. blocking /.test(l))
+      .map((l) => ({ cls: /\[class: ([^\]]+)\]/.exec(l)?.[1] ?? "untagged", sev: /\[severity: (S[1-4])\]/.exec(l)?.[1] ?? "untagged" }));
+    out.push({ opus: m[1]!, phase: m[2] as DailyRound["phase"], n: BigInt(m[3]!), at, day: dayOf(at), brief: h.get("brief") ?? "", failed: /^(failed|FAIL|VERDICT: FAIL)/.test(h.get("outcome") ?? ""), blockers });
+  }
+  return out;
+}
+
+/** A gate log's failure, classed by the owning opus of each failing row it names (`gate×W-163`), or by its gate when it names none. */
+function gateFailure(root: string, name: string): GateFailure | undefined | Refusal {
+  const m = GATE_LOG.exec(name)!;
+  const file = readContainedRegularFile(root, `ci/${name}`, "ci", LOG_MAX_BYTES);
+  if ("error" in file) return { error: `ci/${name}: ${file.error}` };
+  const lines = file.bytes.toString("utf8").split("\n");
+  const exit = lines.slice(0, 5).map((l) => /^exit code: (\d+)$/.exec(l)?.[1]).find((v) => v !== undefined);
+  if (exit === undefined) return { error: `ci/${name}: a gate log carries an "exit code: <n>" line in its head` };
+  if (exit === "0") return undefined;
+  const rows = [...new Set(lines.map((l) => FAILING_ROW.exec(l.trimStart())?.[1]).filter((r): r is string => r !== undefined))].sort();
+  const owners = [...new Set(rows.map((r) => /^W-\d+/.exec(r)![0]))].sort();
+  return { opus: m[1]!, log: `ci/${name}`, classes: owners.length > 0 ? owners.map((o) => `gate×${o}`) : [`gate×${m[2]!}`], rows };
+}
+
+/** Failed-round loops of one opus and phase (retro.py's rule): adjacent rounds sharing a class under one brief, or three failed in a row. */
+function roundLoops(rs: DailyRound[]): { cls: string; chain: DailyRound[] }[] {
+  const out: { cls: string; chain: DailyRound[] }[] = [];
+  let run: DailyRound[] = [];
+  const close = (): void => {
+    const chains = new Map<string, DailyRound[]>();
+    for (let i = 1; i < run.length; i++) {
+      const [a, b] = [run[i - 1]!, run[i]!];
+      if (a.brief !== b.brief) continue;
+      const shared = new Set(a.blockers.map((x) => x.cls).filter((c) => b.blockers.some((y) => y.cls === c)));
+      for (const c of [...shared].sort()) {
+        const chain = chains.get(c) ?? [];
+        for (const r of [a, b]) if (!chain.includes(r)) chain.push(r);
+        chains.set(c, chain);
+      }
+    }
+    for (const [cls, chain] of chains) out.push({ cls, chain });
+    if (run.length >= 3 && ![...chains.values()].some((c) => c.length === run.length)) out.push({ cls: "any class", chain: run });
+  };
+  for (const r of rs) {
+    if (r.failed && (run.length === 0 || r.n === run[run.length - 1]!.n + 1n)) {
+      run.push(r);
+      continue;
+    }
+    close();
+    run = r.failed ? [r] : [];
+  }
+  close();
+  return out;
+}
+
+/** Whether a class has a cause fix: a lesson of it whose `addressed_by` names a greenlit-or-later opus, a decision or a rule. */
+function causeFixes(root: string): Map<string, string> | Refusal {
+  const names = dailyDir(root, "lessons");
+  if (isRefusal(names)) return names;
+  const fixes = new Map<string, string>();
+  for (const name of names) {
+    if (!name.endsWith(".md")) continue;
+    const file = readContainedRegularFile(root, `lessons/${name}`, "lessons");
+    if ("error" in file) return { error: `lessons/${name}: ${file.error}` };
+    const data = FRONT(file, `lessons/${name}`);
+    if (isRefusal(data)) return data;
+    const cls = data["class"];
+    const target = data["addressed_by"];
+    if (typeof cls !== "string" || typeof target !== "string" || target === "" || fixes.has(cls)) continue;
+    const t = classifyAddressedTarget(root, target);
+    if (t.kind === "decision" || t.kind === "rule" || (t.kind === "opus" && !NOT_A_FIX.has(t.state ?? "unknown"))) fixes.set(cls, t.kind === "opus" ? `${target} (${t.state})` : target);
+  }
+  return fixes;
+}
+
+/** The daily retro of `day`: the section `retro --daily` appends, or the first record outside its domain. */
+export function draftDailyRetro(root: string, day: string): { section: string } | Refusal {
+  const names = dailyDir(root, "ci");
+  if (isRefusal(names)) return names;
+  const operaNames = dailyDir(root, "opera");
+  if (isRefusal(operaNames)) return operaNames;
+  const rounds = dailyRounds(root, names);
+  if (isRefusal(rounds)) return rounds;
+  const start = instant(`${day}T00:00:00Z`)?.getTime();
+  if (!ISO_DAY.test(day) || start === undefined) return { error: `${day}: a day is YYYY-MM-DD` };
+  const lo = dayOf(start - (DAILY_WINDOW_DAYS - 1) * 86_400_000);
+
+  // opera done in the window, by their record's `end`
+  const doneIn = new Map<string, number>();
+  for (const name of operaNames) {
+    const id = /^(W-[0-9]+)\.md$/.exec(name)?.[1];
+    if (id === undefined) continue;
+    const rec = readOpus(root, id);
+    if (isRefusal(rec)) return rec;
+    const end = rec["state"] === "done" ? instant(rec["end"])?.getTime() : undefined;
+    if (end !== undefined && dayOf(end) >= lo && dayOf(end) <= day) doneIn.set(id, end);
+  }
+
+  // gate failures of those opera
+  const gates: GateFailure[] = [];
+  for (const name of names) {
+    const id = GATE_LOG.exec(name)?.[1];
+    if (id === undefined || !doneIn.has(id)) continue;
+    const g = gateFailure(root, name);
+    if (isRefusal(g)) return g;
+    if (g !== undefined) gates.push(g);
+  }
+
+  const out: string[] = ["", `### ${day}`, "", "| Opus | Cycle min | Failed rounds | Blockers by severity |", "|---|---|---|---|"];
+  const doneToday = [...doneIn].filter(([, end]) => dayOf(end) === day).sort(([a], [b]) => (a < b ? -1 : 1));
+  for (const [id, end] of doneToday) {
+    const mine = rounds.filter((r) => r.opus === id);
+    const first = mine.find((r) => r.phase === "spec" && r.n === 1n);
+    const failed = mine.filter((r) => r.failed);
+    const sev = new Map<string, number>(["S1", "S2", "S3", "S4", "untagged"].map((k) => [k, 0]));
+    for (const r of failed) for (const b of r.blockers) sev.set(b.sev, sev.get(b.sev)! + 1);
+    const bySev = [...sev].filter(([, v]) => v > 0).map(([k, v]) => `${k} ${v}`).join(", ");
+    out.push(`| ${id} | ${first === undefined ? "-" : minutes(first.at, end)} | ${failed.length} | ${bySev} |`);
+  }
+  if (doneToday.length === 0) out.push("| none done | | | |");
+
+  // the day's rounds, with minutes since the previous round of the same opus and phase, and the loops whose chain touches
+  // the day (a chain may include adjacent failed rounds from another day)
+  out.push("", "#### Review and spec rounds", "", "| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |", "|---|---|---|---|---|---|");
+  const loops: string[] = [];
+  const seqs = new Map<string, DailyRound[]>();
+  for (const r of rounds) seqs.set(`${r.opus} ${r.phase}`, [...(seqs.get(`${r.opus} ${r.phase}`) ?? []), r]);
+  const seqKeys = [...seqs.keys()].sort();
+  let any = false;
+  for (const key of seqKeys) {
+    const rs = seqs.get(key)!.sort((a, b) => byRound(a.n, b.n));
+    const since = (i: number): string => (i === 0 ? "-" : String(minutes(rs[i - 1]!.at, rs[i]!.at)));
+    rs.forEach((r, i) => {
+      if (r.day !== day) return;
+      any = true;
+      out.push(`| ${r.opus} | ${r.phase} | ${r.n} | ${r.failed ? "failed" : "passed"} | ${since(i)} | ${r.blockers.map((b) => `${b.cls} ${b.sev}`).join(", ")} |`);
+    });
+    for (const l of roundLoops(rs))
+      if (l.chain.some((r) => r.day === day))
+        loops.push(`- LOOP ${key}: ${l.cls === "any class" ? "any class" : `class ${l.cls}`}, rounds ${l.chain[0]!.n}-${l.chain[l.chain.length - 1]!.n} (minutes since previous round: ${l.chain.map((r) => `r${r.n} ${since(rs.indexOf(r))}`).join(", ")})`);
+  }
+  if (!any) out.push("| none | | | | | |");
+  out.push("", ...(loops.length > 0 ? loops : ["- no loop"]));
+
+  // the gate failures of the day's done opera, each classed by its rows' owning opus
+  out.push("", "#### Gate failures", "", "| Opus | Log | Class | Failing rows |", "|---|---|---|---|");
+  const todays = gates.filter((g) => doneToday.some(([id]) => id === g.opus));
+  for (const g of todays) out.push(`| ${g.opus} | ${g.log} | ${g.classes.join(", ")} | ${g.rows.join(", ")} |`);
+  if (todays.length === 0) out.push("| none | | | |");
+
+  // classes across opera in the window: verdict blockers by their round's day, gate failures by their opus's end
+  const seen = new Map<string, Set<string>>();
+  const see = (cls: string, opus: string): void => void seen.set(cls, (seen.get(cls) ?? new Set()).add(opus));
+  for (const r of rounds) if (r.day >= lo && r.day <= day) for (const b of r.blockers) if (b.cls !== "untagged") see(b.cls, r.opus);
+  for (const g of gates) for (const c of g.classes) see(c, g.opus);
+  const recurring = [...seen].filter(([, v]) => v.size > 1).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  out.push("", `Classes in more than one opus, ${lo}..${day}:`, ...(recurring.length > 0 ? recurring.map(([c, v]) => `- class ${c} seen in ${v.size} opera: ${[...v].sort().join(", ")}`) : ["- none"]));
+
+  // owed: a recurring class with no greenlit cause-fix opus (nor a decision or rule) named by a lesson of it
+  const fixes = causeFixes(root);
+  if (isRefusal(fixes)) return fixes;
+  const owed = recurring.filter(([c]) => !fixes.has(c));
+  out.push("", "#### Owed cause fixes", "", ...(owed.length > 0 ? owed.map(([c, v]) => `- OWED class ${c} (${[...v].sort().join(", ")}): no lesson of it names a greenlit cause-fix opus in addressed_by`) : ["- none owed"]));
+  return { section: out.join("\n") + "\n" };
+}
+
+/** `retro --daily`: appends the previous UTC day's section to the tracker, once; refused with no tracker, a second entry, or a tracker whose last section is not the daily retro. */
+function runDailyRetro(root: string, now: Date): { exitCode: number } {
+  const tracker = readTracker(root);
+  if (isRefusal(tracker)) return (console.error(tracker.error), { exitCode: 2 });
+  if (tracker === undefined) return (console.error(`${DAILY_TRACKER}: no tracker; the daily retro appends to it`), { exitCode: 2 });
+  if (tracker.lastSection !== DAILY_HEADING) return (console.error(`${DAILY_TRACKER}: its last "## " section is not "${DAILY_HEADING}"; the daily retro appends under it`), { exitCode: 2 });
+  const day = previousUtcDay(now);
+  if (tracker.days.has(day)) return (console.error(`${DAILY_TRACKER} already holds the daily retro of ${day}`), { exitCode: 2 });
+  const drafted = draftDailyRetro(root, day);
+  if (isRefusal(drafted)) return (console.error(drafted.error), { exitCode: 2 });
+  try {
+    // the tracker's folder is proved a real directory again just before the append (W-423); O_NOFOLLOW refuses a symlinked last component
+    requireRealDirectory(dirname(tracker.absolute));
+    const fd = openSync(tracker.absolute, constants.O_WRONLY | constants.O_APPEND | constants.O_NOFOLLOW);
+    try {
+      writeSync(fd, (tracker.text.endsWith("\n") ? "" : "\n") + drafted.section);
+    } finally {
+      closeSync(fd);
+    }
+  } catch (e) {
+    console.error(`${DAILY_TRACKER}: the append failed: ${(e as Error).message.split("\n")[0]}`);
+    return { exitCode: 1 };
+  }
+  console.log(drafted.section);
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
 // Seam S1 — runRetro: self-parsing `bisellium retro`
 // ---------------------------------------------------------------------------
 
 const RETRO_USAGE =
   "usage: bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]\n" +
-  "       bisellium retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]";
+  "       bisellium retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium retro --daily [--studio <dir>] [--now <iso>]";
 
 const EMPTY_INPUT: RetroInput = { verifierIssues: 0, reviewFindings: [], agents: [], tests: 0, fixRounds: 0, mutationsCaught: 0 };
 
 export function runRetro(args: string[], opts: { now?: Date } = {}): { exitCode: number } {
   const values = new Map<string, string>();
+  let daily = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
+    if (a === "--daily") { daily = true; continue; }
     if (!a.startsWith("--")) { console.error(`unexpected argument "${a}"\n${RETRO_USAGE}`); return { exitCode: 2 }; }
     const eq = a.indexOf("=");
     const k = eq === -1 ? a : a.slice(0, eq);
@@ -1172,11 +1454,12 @@ export function runRetro(args: string[], opts: { now?: Date } = {}): { exitCode:
     values.set(k, v);
   }
 
+  if (daily && ["--cascade", "--opus", "--from"].some((k) => values.has(k))) { console.error(`--daily excludes --cascade, --opus and --from\n${RETRO_USAGE}`); return { exitCode: 2 }; }
   const opusId = values.get("--opus");
   if (opusId !== undefined && (values.has("--cascade") || !values.has("--from"))) { console.error(`--opus excludes --cascade and requires --from\n${RETRO_USAGE}`); return { exitCode: 2 }; }
   const cascadeRaw = values.get("--cascade");
   const cascade = cascadeRaw !== undefined ? Number(cascadeRaw) : NaN;
-  if (opusId === undefined && (!cascadeRaw || !Number.isFinite(cascade))) { console.error(RETRO_USAGE); return { exitCode: 2 }; }
+  if (!daily && opusId === undefined && (!cascadeRaw || !Number.isFinite(cascade))) { console.error(RETRO_USAGE); return { exitCode: 2 }; }
 
   const studio = resolve(values.get("--studio") ?? ".");
   if (!existsSync(join(studio, "bisellium.yml"))) { console.error(`${studio}: not a studio`); return { exitCode: 2 }; }
@@ -1187,6 +1470,8 @@ export function runRetro(args: string[], opts: { now?: Date } = {}): { exitCode:
     if (!parsed) { console.error("--now must be an ISO date"); return { exitCode: 2 }; }
     now = parsed;
   }
+
+  if (daily) return runDailyRetro(studio, now);
 
   if (opusId !== undefined) {
     try {

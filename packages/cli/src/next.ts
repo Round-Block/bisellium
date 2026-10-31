@@ -49,7 +49,7 @@ import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
 import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
 import { runVerdict } from "./verdict.js";
 import { performRewrite, rewriteOf } from "./rewrite.js";
-import { owedRetros } from "./retro.js";
+import { DAILY_TRACKER, dailyRetroOwed, owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
@@ -528,6 +528,8 @@ export interface Facts {
   pr(): PrClass;
   /** the retros owed (D-039 §1), or why the `retro` setting cannot be read; the one reader is `owedRetros` */
   owed(): { owed: string[] } | { error: string };
+  /** W-459: the previous UTC day (real clock) when the daily retro tracker holds no entry for it, or why the tracker cannot be read */
+  daily(): { owed: string | undefined } | { error: string };
   /** newest `# at:` among the opus's reds and review logs, in ms */
   evidenceAt(): number;
   /** W-206: why the worktree's ci/ cannot be listed (absent is no problem) */
@@ -868,6 +870,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio, id) : undefined)),
     pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
     owed: memo(() => owedRetros(studioAbs)),
+    daily: memo(() => dailyRetroOwed(studioAbs, new Date())),
     wtCiProblem: memo(() => {
       try {
         readdirSync(join(wt.studio, "ci"));
@@ -1532,11 +1535,18 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
   return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id)], signer: reviewer.design });
 }
 
-/** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. */
+/** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read; W-459: or the daily retro of the
+ *  previous UTC day is owed, or its tracker cannot be read. Asked only at the branch rung, so an opus in flight is never held. */
 function retroHold(f: Facts): string | undefined {
   const owed = f.owed();
   if ("error" in owed) return `the retro setting cannot be read: ${owed.error}`;
-  return owed.owed.length > 0 ? `retro owed: ${owed.owed.join(", ")}; file them before a new opus starts` : undefined;
+  if (owed.owed.length > 0) return `retro owed: ${owed.owed.join(", ")}; file them before a new opus starts`;
+  const daily = f.daily();
+  if ("error" in daily) return `the daily retro tracker cannot be read: ${daily.error}`;
+  if (daily.owed === undefined) return undefined;
+  // D-147: the daily retro is the qa collegium's magister's to run
+  const qa = (f.manifest.collegia ?? []).find((c) => c.id === "qa")?.magister;
+  return `daily retro owed: ${DAILY_TRACKER} has no entry for ${daily.owed}; ${qa === undefined || qa === "" ? "run" : `${qa} runs`} bisellium retro --daily --studio ${f.studioRel} before a new opus starts`;
 }
 
 /** After done: the retro, then the checkpoint, complete once the trunk record is done (W-299: no handoff edit is asked; the done perform carries the history row, W-214). */
