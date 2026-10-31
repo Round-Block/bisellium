@@ -327,6 +327,12 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
       console.error(`${opusId}: brief.admission: ${specRel} ${orderProblem}`);
       return { exitCode: 1 };
     }
+    // W-473: a new opus declares each genuine red's failing assertion; an opus past ready is grandfathered, as above
+    const undeclared = pastReady ? [] : declaredRedProblems(containedSpec.bytes.toString("utf8"), opusId);
+    if (undeclared.length > 0) {
+      console.error(undeclared.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
+      return { exitCode: 1 };
+    }
   }
 
   // W-233: in a studio that requires step tickets, the last check before the write
