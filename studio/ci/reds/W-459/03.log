@@ -1,0 +1,56 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-459-b3\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-10-31T13:43:59.550Z
+# sella: architect
+# tree: tree:1e4c806af2445fc5c8b46e42b8e6404a61c6aea1
+# ticket: {"opus":"W-459","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-459/studio","head":"cc099ba01652fd01b38e0d981146f6c00e785b92","brief":"2e9a33bc23b8d20c6807b72b9006652969a7882f","at":"2026-10-31T13:43:59.505Z"}
+
+TAP version 13
+# Subtest: W-459-b3 behaviour 3: next holds a new start at branch while the previous UTC day's retro is owed, and never an opus in flight
+not ok 1 - W-459-b3 behaviour 3: next holds a new start at branch while the previous UTC day's retro is owed, and never an opus in flight
+  ---
+  duration_ms: 3685.193898
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-459/packages/cli/src/next-done.test.ts:51:129'
+  failureType: 'testCodeFailure'
+  error: |-
+    a new start holds at branch while the previous UTC day has no entry
+    --- exit 0
+    --- stdout
+    next: W-901 branch named
+    actor: producer
+    why: refs/heads/opus/W-901 does not exist
+    command: bisellium next W-901 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-901 branch named'
+    - 'next: W-901 branch held'
+                          ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-901 branch held'
+  actual: 'next: W-901 branch named'
+  operator: 'strictEqual'
+  stack: |-
+    expectOther (/home/edckt/agents/bisellium/.worktrees/W-459/packages/cli/src/next-done.test.ts:761:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-459/packages/cli/src/next-done.test.ts:1455:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3732.63785
