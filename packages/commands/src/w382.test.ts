@@ -289,3 +289,45 @@ test("W-382-b2 behaviour 2: a clean verify's served-e2e log names the served UI 
   const dirtyGate = (model.loadNativeRecords(studio).records.get(ID) as { probationes: Record<string, { evidence: string; certifies: string }> }).probationes["served-e2e"]!;
   assert.deepEqual(header(dirtyGate.evidence), [`certifies: ${dirtyGate.certifies}`, "command: true", "exit code: 0"], "a dirty run's served-e2e log names no served UI");
 });
+
+test("W-382-b3 behaviour 3: a ruling on the branch tree counts at done when the ruled run's log and the current run's log name the same served UI, and only then", () => {
+  const NONE = "no Patron ruling matches the current served tree and design digest at a sufficiently recent time";
+  const carried = uiOfficina("b3-carried");
+  assert.deepEqual(rulingProblems(carried.root), [], "a ruling on the branch tree carries when both served-e2e logs name the same served UI");
+  const carry = (model as Record<string, unknown>)["uiRulingCarry"];
+  assert.equal(typeof carry, "function", "uiRulingCarry is exported by opus-model");
+  const read = (root: string): unknown => (carry as (root: string, record: unknown, id: string) => unknown)(root, model.loadNativeRecords(root).records.get(ID), ID);
+  assert.deepEqual(read(carried.root), { ruling: "D-901", from: TREE_B, to: TREE_M, servedUi: UI_A }, "uiRulingCarry names the ruling, both trees and the served UI");
+  assert.deepEqual(rulingProblems(uiOfficina("b3-check", { state: "done" }).root, "check"), [], "check keeps a done record whose ruling carried");
+  const direct = uiOfficina("b3-direct", { served: TREE_B, current: servedLog(TREE_B, [`served-ui: ${UI_A}`, "served-at: 2026-10-31T09:30:00.000Z"]), branch: null, ruling: [`certifies: ${TREE_B}`, "at: 2026-10-31T11:30:00.000Z"] });
+  assert.deepEqual(rulingProblems(direct.root), [], "a ruling at the served tree is current, as before");
+  assert.equal(read(direct.root), undefined, "a current ruling carries nothing");
+  const both = uiOfficina("b3-both");
+  const d901 = readFileSync(join(both.root, "decisions", "D-901.md"), "utf8");
+  put(both.root, "decisions/D-902.md", d901.replace('"D-901"', '"D-902"').replace(`"${TREE_B}"`, `"${TREE_M}"`).replace('"2026-10-31T09:45:00.000Z"', '"2026-10-31T11:30:00.000Z"'));
+  put(both.root, `opera/${ID}.md`, readFileSync(join(both.root, "opera", `${ID}.md`), "utf8").replace("ui_rulings: [D-901]", "ui_rulings: [D-901, D-902]"));
+  assert.deepEqual(rulingProblems(both.root), [], "a ruling current at the served tree beside a carried one passes");
+  assert.equal(read(both.root), undefined, "beside a ruling current at the served tree, uiRulingCarry names none");
+  const refused: [string, Parameters<typeof uiOfficina>[1]][] = [
+    ["the served UI differs", { branch: servedLog(TREE_B, [`served-ui: ${UI_B}`, "served-at: 2026-10-31T09:30:00.000Z"]) }],
+    ["the ruled tree has no served-e2e log", { branch: null }],
+    ["the ruled run's log names no served UI", { branch: servedLog(TREE_B, ["served-at: 2026-10-31T09:30:00.000Z"]) }],
+    ["the current run's log names no served UI", { current: servedLog(TREE_M, ["served-at: 2026-10-31T11:00:00.000Z"]) }],
+    ["the ruled run's log names its served UI only in the output", { branch: servedLog(TREE_B, ["served-at: 2026-10-31T09:30:00.000Z"], `served-ui: ${UI_A}`) }],
+    ["the current run's log names its served UI only in the output", { current: servedLog(TREE_M, ["served-at: 2026-10-31T11:00:00.000Z"], `served-ui: ${UI_A}`) }],
+    ["the ruled run's log names its served UI twice", { branch: servedLog(TREE_B, [`served-ui: ${UI_A}`, `served-ui: ${UI_A}`, "served-at: 2026-10-31T09:30:00.000Z"]) }],
+    ["the ruled run failed", { branch: servedLog(TREE_B, [`served-ui: ${UI_A}`, "served-at: 2026-10-31T09:30:00.000Z"]).replace("exit code: 0", "exit code: 1") }],
+    ["the ruled run's log is another command's", { branch: servedLog(TREE_B, [`served-ui: ${UI_A}`, "served-at: 2026-10-31T09:30:00.000Z"]).replace("node scripts/served-e2e.mjs", "true") }],
+    ["the ruled log certifies another tree with the same first eight digits", { branch: servedLog(`tree:${"b".repeat(8)}${"d".repeat(32)}`, [`served-ui: ${UI_A}`, "served-at: 2026-10-31T09:30:00.000Z"]) }],
+    ["the ruled run's served-at is not a UTC time", { branch: servedLog(TREE_B, [`served-ui: ${UI_A}`, "served-at: 2026-10-31 09:30"]) }],
+    ["the ruled run's served UI is not a sha256 hash", { branch: servedLog(TREE_B, ["served-ui: sha256:abc", "served-at: 2026-10-31T09:30:00.000Z"]), current: servedLog(TREE_M, ["served-ui: sha256:abc", "served-at: 2026-10-31T11:00:00.000Z"]) }],
+    ["the ruling is dated before the ruled capture", { ruling: ["at: 2026-10-31T09:29:59.000Z"] }],
+    ["the ruling is dated before the ui-lead input", { ruling: ["at: 2026-10-31T07:59:59.000Z"], branch: servedLog(TREE_B, [`served-ui: ${UI_A}`, "served-at: 2026-10-31T07:00:00.000Z"]) }],
+    ["the ruling binds another design digest", { ruling: [`design_digest: sha256:${"e".repeat(64)}`] }],
+  ];
+  for (const [name, opts] of refused) {
+    const o = uiOfficina(`b3-${refused.findIndex(([n]) => n === name)}`, opts);
+    assert.deepEqual(rulingProblems(o.root), [NONE], `${name}: the ruling does not carry`);
+    assert.equal(read(o.root), undefined, `${name}: uiRulingCarry names none`);
+  }
+});
