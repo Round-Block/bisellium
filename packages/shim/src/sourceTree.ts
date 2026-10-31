@@ -57,6 +57,23 @@ export function sourceTreeHash(repo: string, excludeDirs: string[], ref = "HEAD"
 }
 
 /**
+ * W-382: the paths the served screens are built from and captured against: the web app and its server (`apps/`), the
+ * fixture officina every served spec copies (`examples/sample-studio/`) and the root package files that pin the
+ * bundle's dependencies. `examples/` is outside the SOURCE tree, so a fixture change moves this hash and not `tree:`.
+ */
+export const SERVED_UI_PATHS: readonly string[] = ["apps", "examples/sample-studio", "package.json", "package-lock.json"];
+
+/**
+ * W-382: `sha256:` over the lines of `git ls-tree -r --full-tree <ref> -- <SERVED_UI_PATHS>` (mode, type, blob sha,
+ * path, path-sorted, as git prints them): the served UI at a commit. Any change under those paths moves it, and no
+ * change elsewhere does. Throws when git cannot read `ref`.
+ */
+export function servedUiHash(repo: string, ref = "HEAD"): string {
+  const out = execFileSync("git", ["ls-tree", "-r", "--full-tree", ref, "--", ...SERVED_UI_PATHS], { cwd: repo, encoding: "utf8", timeout: TIMEOUT_MS });
+  return `sha256:${createHash("sha256").update(out).digest("hex")}`;
+}
+
+/**
  * True when `git status --porcelain` in `repo` reports a change OUTSIDE
  * every path in `excludeDirs` (repo-root-relative). A rename/copy line's
  * "old -> new" is split into both paths — either one being outside an
