@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-472-b1\s --import tsx packages/cli/src/w472.test.ts
+# exit: 1
+# at: 2026-10-30T16:19:39.769Z
+# sella: builder.W-472
+# tree: tree:08a64a7166ea11faedb39c10ae9da7ea3c4fd2c3
+# ticket: {"opus":"W-472","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-472/studio","head":"1bcbcd44ad80f82641482cdccac5054c6762b8a8","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-30T16:19:35.712Z"}
+
+TAP version 13
+# Subtest: W-472-b1 behaviour 1: every writer that files an opus refuses a title over 8 words
+not ok 1 - W-472-b1 behaviour 1: every writer that files an opus refuses a title over 8 words
+  ---
+  duration_ms: 19.896998
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:10:398'
+  failureType: 'testCodeFailure'
+  error: |-
+    new refuses a 9-word title: exit 0 W-001 warning: Git ref-wide allocation unavailable; using local records only
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:98:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 516.640386

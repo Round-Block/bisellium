@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-472-b3\s --import tsx packages/cli/src/w472.test.ts
+# exit: 1
+# at: 2026-10-30T16:20:17.672Z
+# sella: builder.W-472
+# tree: tree:c3df807d793d3edce933cc8d709c4bba1111f0dc
+# ticket: {"opus":"W-472","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-472/studio","head":"a291681f183d8ddfa1b06eaaa64aeff9ad5fd26e","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-30T16:20:16.463Z"}
+
+TAP version 13
+# Subtest: W-472-b3 behaviour 3: amend --title refuses a title over 8 words, writing nothing
+not ok 1 - W-472-b3 behaviour 3: amend --title refuses a title over 8 words, writing nothing
+  ---
+  duration_ms: 24.490237
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:11:2484'
+  failureType: 'testCodeFailure'
+  error: |-
+    amend refuses a 9-word title: exit 0 W-1: amended title 
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-472/packages/cli/src/w472.test.ts:202:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 32.916644

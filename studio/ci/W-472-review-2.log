@@ -1,0 +1,21 @@
+# opus: W-472
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18dc8-9e5a-7341-9d6e-121aef65ab62
+# outcome: passed
+# at: 2026-10-31T04:01:02.642Z
+# tree: tree:a06d6f65dccbdb2f304e4a1a18b9cbc6a427c607
+# brief: briefs/W-472.md blob:7a018683bafe1756ad45b85938f95f226193f729
+# ticket: {"opus":"W-472","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-472/studio","head":"1215067553d3512e61c5dd56bf6f9db71aa0d5f7","brief":"7a018683bafe1756ad45b85938f95f226193f729","at":"2026-10-31T04:00:25.127Z"}
+
+## Findings
+1. advisory — packages/cli/src/w472.test.ts:158 [severity: S3] The fix adds high- and low-surrogate regression cases, but the delta contains no recorded assertion-failure log showing either case failing against the round-1 source, leaving test-first evidence incomplete. [class: review×evidence-backfilled-or-absent] — check: none: record the new W-472-b2 surrogate cases failing against 8db78dbcc9f73b0a79c947b626705527cc8c11b1
+
+## Earlier findings
+- ci/W-472-review-1.log #1: closed — packages/commands/src/opus-model.ts:154 now rejects unpaired surrogates, while packages/cli/src/w472.test.ts:158 pins both isolated high- and low-surrogate refusals before the shared no-write assertion
+
+## Verdict
+The prior blocker is closed; only advisory regression-evidence work remains.
+VERDICT: PASS

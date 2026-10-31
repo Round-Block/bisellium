@@ -16,10 +16,12 @@ import type { Manifest } from "@bisellium/adapter-native";
 import { SOURCE_DIFF_LINE } from "@bisellium/commands/brief-admission.js";
 import { createNextRecord, ensureRealDirectory } from "@bisellium/commands/ids.js";
 import {
+  descriptionProblem,
   isNativeOpusKind,
   loadNativeRecords,
   readContainedRegularFile,
   titleProblem,
+  titleWordsProblem,
   validateNativeRecord,
   validateRecordReferences,
 } from "@bisellium/commands/opus-model.js";
@@ -84,6 +86,8 @@ export function newItem(dir: string, opts: NewOptions): NewResult {
     if (!isNativeOpusKind(opts.kind)) return { ok: false, message: `kind ${JSON.stringify(opts.kind)} is not a native opus kind` };
     const badTitle = titleProblem(opts.title);
     if (badTitle) return { ok: false, message: badTitle };
+    const longTitle = titleWordsProblem(opts.title);
+    if (longTitle) return { ok: false, message: `opus.title.words: ${longTitle}` };
     const loaded = loadNativeRecords(root);
     if (loaded.problems.length) return { ok: false, message: loaded.problems[0]!.problem.message };
     const proposed = { id: "W-0", title: opts.title, kind: opts.kind, collegium: opts.collegium, state: "backlog", arc: opts.arc, parent: opts.parent };
@@ -115,7 +119,7 @@ ${opts.arc === undefined ? "" : `arc: ${JSON.stringify(opts.arc)}\n`}${opts.pare
 // ---------------------------------------------------------------------------
 
 const NEW_USAGE =
-  "usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]";
+  "usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--description <text>] [--brief] [dir]";
 
 const BRIEF_SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 
@@ -146,7 +150,7 @@ function parseNewArgs(args: string[]): { values: Map<string, string>; brief: boo
   const values = new Map<string, string>();
   let brief = false;
   const positionals: string[] = [];
-  const valuedFlags = new Set(["--kind", "--collegium", "--title", "--arc", "--parent", "--spec"]);
+  const valuedFlags = new Set(["--kind", "--collegium", "--title", "--arc", "--parent", "--spec", "--description"]);
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
@@ -224,6 +228,19 @@ export function runNew(args: string[]): { exitCode: number } {
       console.error(badTitle);
       return { exitCode: 1 };
     }
+    const longTitle = titleWordsProblem(title);
+    if (longTitle) {
+      console.error(`opus.title.words: ${longTitle}`);
+      return { exitCode: 1 };
+    }
+    // W-472: the description is the record's body, below the front matter, written verbatim with one closing LF.
+    const description = values.get("--description");
+    const badDescription = description === undefined ? undefined : descriptionProblem(description);
+    if (badDescription) {
+      console.error(`--description: ${badDescription}`);
+      return { exitCode: 1 };
+    }
+    const body = description === undefined ? "" : description.endsWith("\n") ? description : `${description}\n`;
     const loaded = loadNativeRecords(root);
     if (loaded.problems.length) {
       console.error(loaded.problems[0]!.problem.message);
@@ -267,7 +284,7 @@ collegium: ${JSON.stringify(collegium)}
 state: backlog${specValue !== undefined ? `\nspec: ${JSON.stringify(specValue)}` : ""}
 ${values.get("--arc") === undefined ? "" : `arc: ${JSON.stringify(values.get("--arc"))}\n`}${values.get("--parent") === undefined ? "" : `parent: ${JSON.stringify(values.get("--parent"))}\n`}probationes: {}
 ---
-`;
+${body}`;
       waitAtIdsTestBarrier(id);
       return front;
     });
