@@ -593,12 +593,7 @@ export interface OpusReviewRounds {
   sessions: "none" | "kept" | `replaced ${number}`;
 }
 
-/** The one grammar of a round number in a `ci/` log name: a positive integer, no leading zero, of any length. Read as a
- *  `bigint` and ordered by `byRound`, so a number past `Number.MAX_SAFE_INTEGER` keeps every digit. */
-const ROUND_NUMBER = "[1-9]\\d*";
-const byRound = (a: bigint, b: bigint): number => (a < b ? -1 : a > b ? 1 : 0);
-
-type RoundLog = { opus: string; phase: "spec" | "review" | "handoff"; n: bigint; outcome: string; session: boolean; reason: boolean; text: string };
+type RoundLog = { opus: string; phase: "spec" | "review" | "handoff"; n: number; outcome: string; session: boolean; reason: boolean; text: string };
 
 /** `.1f` as Python prints it (the baseline's), which rounds an exact tie to even where `toFixed` rounds it up. */
 const oneDecimal = (x: number): string => {
@@ -655,7 +650,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
   const logs: RoundLog[] = [];
   const tabled = new Set<string>();
   for (const name of names) {
-    const m = new RegExp(`^(W-\\d+)-(spec|review|handoff)-(${ROUND_NUMBER})\\.log$`).exec(name);
+    const m = /^(W-\d+)-(spec|review|handoff)-(\d{1,15})\.log$/.exec(name);
     if (m === null) continue;
     const file = readContainedRegularFile(root, `ci/${name}`, "ci", LOG_MAX_BYTES);
     if ("error" in file) return { error: `ci/${name}: ${file.error}` };
@@ -672,7 +667,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
       if (isRefusal(signer)) return signer;
       if (signer.design !== undefined && h.get("sella") === signer.design) continue;
     }
-    logs.push({ opus: m[1]!, phase, n: BigInt(m[3]!), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
+    logs.push({ opus: m[1]!, phase, n: Number(m[3]), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
   }
   const after = new Set(logs.filter((l) => l.session).map((l) => `${l.opus} ${l.phase}`));
   const opus = new Map<string, OpusReviewRounds>();
@@ -705,7 +700,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
   const runs = (id: string): number[] => {
     const out: number[] = [];
     let open = 0;
-    for (const l of logs.filter((x) => x.opus === id && x.phase === "handoff").sort((a, b) => byRound(a.n, b.n))) {
+    for (const l of logs.filter((x) => x.opus === id && x.phase === "handoff").sort((a, b) => a.n - b.n)) {
       open++;
       if (l.outcome === "passed") (out.push(open), (open = 0));
     }
@@ -1166,6 +1161,10 @@ const DAILY_HEADING = "## Daily retro";
 const DAILY_WINDOW_DAYS = 14;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_ENTRY = /^### (\d{4}-\d{2}-\d{2})\s*$/;
+/** The one grammar of a round number in a `ci/` log name: a positive integer, no leading zero, of any length. Read as a
+ *  `bigint` and ordered by `byRound`, so a number past `Number.MAX_SAFE_INTEGER` keeps every digit. */
+const ROUND_NUMBER = "[1-9]\\d*";
+const byRound = (a: bigint, b: bigint): number => (a < b ? -1 : a > b ? 1 : 0);
 const ROUND_LOG = new RegExp(`^(W-\\d+)-(spec|review)-(${ROUND_NUMBER})\\.log$`);
 const GATE_LOG = /^(W-\d+)-(tests|lint|types)-([0-9a-f]{8,40})\.log$/;
 const FAILING_ROW = /^(?:✖|not ok \d+ -) (W-\d+-b\d+)(?![\p{L}\p{M}\p{N}])/u;
