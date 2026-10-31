@@ -114,3 +114,41 @@ test("W-410-b3 behaviour 3: variant C handoff rails have the Patron-ruled vertic
   assert.match(served, /strip entry stays clear of the chevron/, "served geometry keeps the essential facts clear of the overflow control");
   assert.match(served, /scroll viewport ends before the chevron/, "served geometry pins the dedicated chevron end-cap");
 });
+
+test("W-410-b4 behaviour 4: the drawer displays waiting reasons and evidence without binding semantics", () => {
+  const entry = opus("W-1", "backlog", {
+    body: "The Patron must choose the board rail.",
+    probationes: { patron: { status: "pending", evidence: { href: "studio/ci/reviews/W-1.md", certifies: "abc123" } } },
+    traditio: { next: "Await Patron selection.", blocked_on: "patron", at: "2026-10-31T00:00:00Z" },
+  });
+  const inbox: Pick<InboxResponse, "opera" | "petitiones"> = {
+    opera: [],
+    petitiones: [{ id: "P-1", opus: "W-1", from: "architect", subject: "Choose the rail", body: "Compare the reviewed variants." }],
+  };
+  const card = board.boardModel(officina, [entry], inbox).waiting[0];
+  const detail = (board.drawerDetail as unknown as (...args: unknown[]) => Record<string, unknown>)(entry, officina, inbox, [], card);
+  assert.deepEqual(detail["waitingReasons"], [
+    "Choose the rail: Compare the reviewed variants.",
+    "Patron call is pending.",
+    "Await Patron selection.",
+  ], "the drawer collects question, recorded-pending gate and handoff reasons without repeating the record body");
+  assert.equal(detail["body"], "The Patron must choose the board rail.", "the opus body remains in its existing record field");
+  assert.deepEqual(detail["waitingEvidence"], [{ label: "Patron call", href: "studio/ci/reviews/W-1.md" }], "the drawer displays recorded gate evidence without deciding whether it is current");
+
+  const unrecorded = opus("W-2", "backlog", {
+    body: "This body belongs only to the record section.",
+    traditio: { blocked_on: "patron", at: "2026-10-31T00:00:00Z" },
+  });
+  const unrecordedCard = board.boardModel(officina, [unrecorded], { opera: [], petitiones: [] }).waiting[0];
+  const unrecordedDetail = (board.drawerDetail as unknown as (...args: unknown[]) => Record<string, unknown>)(unrecorded, officina, { petitiones: [] }, [], unrecordedCard);
+  assert.deepEqual(unrecordedDetail["waitingReasons"], [], "a declared human gate with no recorded result contributes no waiting reason");
+  assert.equal(unrecordedDetail["waitingOn"], undefined, "an unrecorded human gate does not invent a waiting banner");
+
+  const drawer = read("src/screens/BoardDrawer.tsx");
+  const served = read("tests-serve/w410.spec.ts");
+  assert.match(drawer, />Why it waits</, "the drawer names the reason section plainly");
+  assert.match(drawer, />Evidence</, "the drawer names the evidence section plainly");
+  assert.match(drawer, /No waiting reason recorded\./, "a waiting item without a recorded reason gets an honest display state");
+  assert.match(drawer, /No evidence recorded\./, "a waiting item without evidence gets an honest display state");
+  assert.match(served, /drawer shows reasons and evidence at 1280, 640 and 390/, "served rows pin the display at every ruled width");
+});

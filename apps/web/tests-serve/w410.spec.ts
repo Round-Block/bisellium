@@ -37,8 +37,8 @@ const makeOpus = (
 
 const longTitle = `A waiting title long enough to exercise the selected handoff rail ${"without colliding with its facts ".repeat(8)}`;
 const opera = [
-  makeOpus("W-1", "backlog", longTitle, { patron: { status: "pending", at: "2026-10-31T08:00:00Z" } }),
-  makeOpus("W-2", "backlog", "Second greenlight"),
+  makeOpus("W-1", "backlog", longTitle, { patron: { status: "pending", at: "2026-10-31T08:00:00Z", evidence: { href: "studio/ci/reviews/W-1.md" } } }),
+  makeOpus("W-2", "backlog", "Second greenlight", {}, { sella: "builder", stage: "backlog", blocked_on: "patron", at: "2026-10-31T06:00:00Z" }),
   makeOpus("W-3", "building", "Human sign-off", { patron: { status: "pending", at: "2026-10-31T09:00:00Z" } }),
   makeOpus("W-4", "verifying", "Unknown next actor", { patron: { status: "pending" } }, { sella: "qa-lead", stage: "verifying", next: "sign off", blocked_on: "none", at: "not-a-time" }),
   makeOpus("W-5", "greenlit"), makeOpus("W-6", "building"), makeOpus("W-7", "building"), makeOpus("W-8", "verifying"),
@@ -125,5 +125,41 @@ test("W-410-b3 selected handoff rail is about 1.3x taller and legible at 1280, 6
     await expect(page.locator('[data-waiting-id="W-4"] .board__waiting-next-value'), `${width}: unknown next actor is explicit`).toHaveText("Unassigned");
     await expect(card.locator(".board__card-title"), `${width}: complete long title remains available`).toHaveAttribute("title", longTitle);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width}: no page overflow`).toBeLessThanOrEqual(0);
+  }
+});
+test("W-410-b4 drawer shows reasons and evidence at 1280, 640 and 390", async ({ page }) => {
+  served = await startServed("w410-b4");
+  await page.clock.setFixedTime(NOW);
+  await installFixture(page);
+
+  for (const width of [1280, 640, 390] as const) {
+    await openBoard(page, width);
+    await page.locator('[data-waiting-id="W-1"]').click();
+    const drawer = page.getByRole("dialog", { name: longTitle });
+    await expect(drawer, `${width}: the existing drawer opens`).toBeVisible();
+    await expect(drawer.getByRole("heading", { name: "Why it waits" }), `${width}: reasons are named`).toBeVisible();
+    await expect(drawer.locator(".board-drawer__reason"), `${width}: question, recorded-pending gate and handoff reasons are displayed`).toContainText(["Choose: Choose the reviewed design", "Patron call is pending.", "move"]);
+    await expect(drawer.locator(".board-drawer__reason", { hasText: "W-1 reason" }), `${width}: the opus body is not repeated as a waiting reason`).toHaveCount(0);
+    await expect(drawer.getByText("W-1 reason", { exact: true }), `${width}: the opus body appears once in its record section`).toHaveCount(1);
+    await expect(drawer.getByRole("heading", { name: "Evidence" }), `${width}: evidence is named`).toBeVisible();
+    await expect(drawer.locator('.board-drawer__waiting-evidence[href="studio/ci/reviews/W-1.md"]'), `${width}: recorded evidence is a visible link`).toHaveText("Patron call");
+    const geometry = await drawer.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const reason = node.querySelector<HTMLElement>(".board-drawer__reasons")!.getBoundingClientRect();
+      const evidence = node.querySelector<HTMLElement>(".board-drawer__waiting-evidence-list")!.getBoundingClientRect();
+      return { reasonInside: reason.left >= box.left && reason.right <= box.right, evidenceInside: evidence.left >= box.left && evidence.right <= box.right };
+    });
+    expect(geometry.reasonInside, `${width}: reasons stay inside the drawer`).toBe(true);
+    expect(geometry.evidenceInside, `${width}: evidence stays inside the drawer`).toBe(true);
+    await page.getByRole("button", { name: "close" }).click();
+
+    await page.locator('[data-waiting-id="W-2"]').click();
+    const unrecordedDrawer = page.getByRole("dialog", { name: "Second greenlight" });
+    await expect(unrecordedDrawer.locator(".board-drawer__reason"), `${width}: an unrecorded human gate gives no waiting reason`).toHaveCount(0);
+    await expect(unrecordedDrawer.getByText("Patron call is pending.", { exact: true }), `${width}: the drawer does not invent a pending human gate`).toHaveCount(0);
+    await expect(unrecordedDrawer.getByText("No waiting reason recorded.", { exact: true }), `${width}: an empty reason list is stated`).toBeVisible();
+    await expect(unrecordedDrawer.getByText("No evidence recorded.", { exact: true }), `${width}: an empty evidence list is stated`).toBeVisible();
+    await expect(unrecordedDrawer.getByText("W-2 reason", { exact: true }), `${width}: the unrecorded card body remains only in its record section`).toHaveCount(1);
+    await page.getByRole("button", { name: "close" }).click();
   }
 });
