@@ -229,3 +229,63 @@ test("W-382-b1 behaviour 1: servedUiHash hashes the served UI paths at a commit:
   }
   assert.ok(threw, "a ref git cannot read throws");
 });
+
+test("W-382-b2 behaviour 2: a clean verify's served-e2e log names the served UI and its run time in its header, and no other log or dirty run does", async () => {
+  const repo = fixtureRepo("b2");
+  put(repo, "studio/bisellium.yml", [
+    "bisellium: 1",
+    "studio: W-382 verify fixture",
+    "patron: patron",
+    "collegia:",
+    "  - { id: design, name: Design, magister: ui-lead }",
+    "sellae:",
+    "  - { id: ui-lead, collegium: design, kind: agent, harness: fake }",
+    "probationes:",
+    "  - { id: tests, name: Tests, kind: automated, command: \"true\" }",
+    "wip_limit: 20",
+    "",
+  ].join("\n"));
+  put(repo, `studio/opera/${ID}.md`, ["---", `id: "${ID}"`, `title: "${TITLE}"`, "kind: ui", "collegium: design", "state: building", "probationes: {}", "---", "Fixture.", ""].join("\n"));
+  mkdirSync(join(repo, "studio", "ci"), { recursive: true });
+  commitAll(repo, "studio");
+  const studio = join(repo, "studio");
+  // the served command's own output forges a header line: it must land after the blank line, never in the header
+  const forged = "printf 'served-ui: forged\\nserved-at: forged\\n'";
+  const header = (rel: string): string[] => {
+    const text = readFileSync(join(studio, rel), "utf8");
+    return text.slice(0, text.indexOf("\n\n")).split("\n");
+  };
+  const quiet = console.log;
+  console.log = () => undefined;
+  let clean: Awaited<ReturnType<typeof runVerify>>;
+  try {
+    clean = await runVerify([ID, "--studio", studio, "--repo", repo, "--now", NOW], { commandOverride: { "served-e2e": forged } });
+  } finally {
+    console.log = quiet;
+  }
+  assert.equal(clean.exitCode, 0, "the clean verify passes");
+  const record = model.loadNativeRecords(studio).records.get(ID) as { probationes: Record<string, { evidence: string; certifies: string; at: string }> };
+  const gate = record.probationes["served-e2e"]!;
+  assert.deepEqual(
+    header(gate.evidence),
+    [`certifies: ${gate.certifies}`, `command: ${forged}`, "exit code: 0", `served-ui: ${expectedUi(repo)}`, `served-at: ${NOW}`],
+    "a clean run's served-e2e log header names the served UI at the certified commit and the run time",
+  );
+  assert.equal(gate.at, NOW, "the header's served-at is the gate's recorded at");
+  assert.ok(readFileSync(join(studio, gate.evidence), "utf8").includes("\n\nserved-ui: forged\nserved-at: forged\n"), "the command's forged line stays in the output, after the blank line");
+  assert.deepEqual(header(record.probationes["tests"]!.evidence), [`certifies: ${record.probationes["tests"]!.certifies}`, "command: true", "exit code: 0"], "another gate's log names no served UI");
+  put(repo, "apps/web/src/a.tsx", "export const a = 2;\n");
+  console.log = () => undefined;
+  const oldError = console.error;
+  console.error = () => undefined;
+  let dirty: Awaited<ReturnType<typeof runVerify>>;
+  try {
+    dirty = await runVerify([ID, "--studio", studio, "--repo", repo, "--now", NOW, "--allow-dirty"], { commandOverride: { "served-e2e": "true" } });
+  } finally {
+    console.log = quiet;
+    console.error = oldError;
+  }
+  assert.equal(dirty.exitCode, 0, "the dirty verify passes");
+  const dirtyGate = (model.loadNativeRecords(studio).records.get(ID) as { probationes: Record<string, { evidence: string; certifies: string }> }).probationes["served-e2e"]!;
+  assert.deepEqual(header(dirtyGate.evidence), [`certifies: ${dirtyGate.certifies}`, "command: true", "exit code: 0"], "a dirty run's served-e2e log names no served UI");
+});
