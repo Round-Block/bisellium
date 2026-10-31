@@ -42,6 +42,9 @@ export interface PipelineRunOpts {
   /** Extra environment per probatio id, merged over the filtered env for that
    *  command only. A gate that is not named here sees exactly today's env. */
   commandEnv?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /** W-382: extra header lines per probatio id, written after the exit code line and before the blank line that opens
+   *  the command's output, so the command cannot forge them. A line that is not one `key: value` line is dropped. */
+  commandHeaders?: Readonly<Record<string, readonly string[]>>;
 }
 
 export interface MergePipeline {
@@ -235,7 +238,8 @@ export const localPipeline: MergePipeline = {
       // tree it certifies. `command` and the command's own output ARE
       // untrusted (they can echo secrets back), so those are redacted;
       // the header line is not.
-      const log = `certifies: ${certifies}\ncommand: ${redact(command)}\n${statusLine}\n\n${redact(tail(output, LOG_TAIL_LINES))}\n`;
+      const headers = (opts.commandHeaders?.[probatioId] ?? []).filter((line) => /^[a-z][a-z-]*: [\x21-\x7e]+$/.test(line));
+      const log = `certifies: ${certifies}\ncommand: ${redact(command)}\n${statusLine}\n${headers.map((line) => `${line}\n`).join("")}\n${redact(tail(output, LOG_TAIL_LINES))}\n`;
 
       const logPath = join(opts.logDir, `${opts.opus.id}-${probatioId}-${tree8}.log`);
       writeFileSync(logPath, log);
