@@ -13,6 +13,7 @@ export const USAGE =
   "       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]\n" +
   "       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium retro --daily [--studio <dir>] [--now <iso>]\n" +
   "       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]\n" +
   "       bisellium query <question> [dir] [--now <iso>] [--from-index]\n" +
   "       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n" +
