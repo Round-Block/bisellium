@@ -1,0 +1,50 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-410-b4\s --import tsx apps/web/test/w410.test.ts
+# exit: 1
+# at: 2026-10-31T14:10:34.159Z
+# sella: builder.W-410
+# tree: tree:5908fe9d63036bb9ec454dd11bf83a25651c6de2
+# ticket: {"opus":"W-410","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-410/studio","head":"fa1688d48737922d7edacd56091dd1669ea87748","brief":"9b484c10a66d63caa7f1cae51a189b056e5b4613","at":"2026-10-31T14:10:29.918Z"}
+
+TAP version 13
+# Subtest: W-410-b4 behaviour 4: the drawer displays waiting reasons and evidence without binding semantics
+not ok 1 - W-410-b4 behaviour 4: the drawer displays waiting reasons and evidence without binding semantics
+  ---
+  duration_ms: 16.652851
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-410/apps/web/test/w410.test.ts:1:7633'
+  failureType: 'testCodeFailure'
+  error: |-
+    the drawer collects question, recorded-pending gate and handoff reasons without repeating the record body
+    + actual - expected
+    
+    + undefined
+    - [
+    -   'Choose the rail: Compare the reviewed variants.',
+    -   'Patron call is pending.',
+    -   'Await Patron selection.'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'Choose the rail: Compare the reviewed variants.'
+    1: 'Patron call is pending.'
+    2: 'Await Patron selection.'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-410/apps/web/test/w410.test.ts:130:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 24.615512
