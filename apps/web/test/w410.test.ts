@@ -87,3 +87,30 @@ test("W-410-b2 behaviour 2: waiting age is one compact mono numeral with explici
   assert.equal(render(undefined, now), "—", "a missing or invalid wait start is stated as unknown");
   assert.equal(render(Number.NaN, now), "—", "a non-finite wait start is stated as unknown");
 });
+
+test("W-410-b3 behaviour 3: variant C handoff rails have the Patron-ruled vertical room", () => {
+  const view = read("src/screens/BoardView.tsx");
+  const css = read("src/components/w025.css");
+  const served = read("tests-serve/w410.spec.ts");
+  assert.match(view, /function WaitingFacts[\s\S]*OWNER[\s\S]*NEXT[\s\S]*ASK/, "one shared handoff rail labels owner, next actor and action");
+  assert.match(view, /formatWaitingAge\(card\.waitingSince, Date\.now\(\)\)/, "the rail renders the shared compact age numeral");
+  assert.match(view, /function Card[\s\S]*<WaitingFacts card=\{card\}/, "lifecycle waiting cards use the shared five-fact rail");
+  assert.match(view, /className="board__waiting-item"[\s\S]*<WaitingFacts card=\{card\} compact/, "strip entries use the same five-fact rail");
+  assert.match(view, /card\.needsYou && "board__card--waiting"/, "waiting height is keyed from membership even when a failed gate owns the edge colour");
+  assert.match(css, /\.board__waiting\s*\{[^}]*height:\s*119px;/s, "the populated strip grows only enough to hold the readable entries");
+  assert.match(css, /\.board__waiting-item\s*\{[^}]*flex:\s*0 0 296px;[^}]*height:\s*89px;/s, "strip entries keep every ask kind readable at about 1.3 times the master 66px height");
+  assert.match(css, /\.board__card--waiting\s*\{[^}]*height:\s*145px;[^}]*max-height:\s*145px;/s, "waiting lifecycle cards are about 1.3 times the master 108px long-card height");
+  assert.match(css, /\.board__waiting-owner small,[\s\S]*font-family:\s*var\(--font-body\);[\s\S]*font-size:\s*11px;/, "OWNER, NEXT and ASK captions use readable sans type");
+  assert.match(css, /\.board__waiting-owner b,[\s\S]*font-family:\s*var\(--font-body\);[\s\S]*font-size:\s*12px;/, "handoff values use readable sans type");
+  assert.match(css, /\.board__waiting-ask-value\s*\{[^}]*overflow:\s*visible;[^}]*text-overflow:\s*clip;/s, "the action asked is not ellipsized");
+  assert.match(css, /\.board__waiting-rail--more\s*\{[^}]*padding-right:\s*44px;/s, "the scrolling rail reserves a chevron end-cap outside entry content");
+  assert.match(css, /\.board__waiting-title\s*\{[^}]*-webkit-line-clamp:\s*1;/s, "compact strip titles stay to one line above the fixed rail");
+  assert.match(css, /\.board__card-title\s*\{[^}]*-webkit-line-clamp:\s*2;/s, "lifecycle titles retain the Patron-ruled two-line cap");
+  assert.match(served, /MASTER_STRIP_CARD_HEIGHT = 66[\s\S]*MASTER_LIFECYCLE_WAITING_HEIGHT = 108[\s\S]*HEIGHT_RATIO_TOLERANCE = 0\.05/, "served geometry names master heights and the stated ratio tolerance");
+  assert.match(served, /for \(const width of \[1280, 640, 390\]/, "served geometry covers desktop, zoom and phone widths");
+  assert.match(served, /captions are at least 11px readable sans text/, "served geometry pins the caption typography");
+  assert.match(served, /values are at least 12px readable sans text/, "served geometry pins the value typography");
+  assert.match(served, /every active ask kind is visibly readable/, "served geometry refuses a clipped action");
+  assert.match(served, /strip entry stays clear of the chevron/, "served geometry keeps the essential facts clear of the overflow control");
+  assert.match(served, /scroll viewport ends before the chevron/, "served geometry pins the dedicated chevron end-cap");
+});
