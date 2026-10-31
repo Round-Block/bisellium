@@ -235,8 +235,8 @@ test("W-459-b1 fix 1: a round number of any length is read, exactly; zero and a 
   has("| W-30 | review | 1000000000000000 | passed | - |  |", "a 16-digit round is read");
   has("| W-30 | review | 9007199254740993 | failed | 180 | tests×loop S1 |", "a round past MAX_SAFE_INTEGER keeps its digits");
   has("| W-30 | review | 9007199254740994 | failed | 30 | tests×loop S1 |", "and its neighbour stays distinct");
-  assert.ok(lines.some((l) => l.startsWith("- LOOP W-30 review: class tests×loop, rounds 9007199254740993-9007199254740994 ")), `adjacent huge rounds chain exactly:\n${lines.join("\n")}`);
-  assert.ok(!lines.some((l) => l.startsWith("| W-31 |")), "zero and a leading zero are not rounds");
+  has("- LOOP W-30 review: class tests×loop, rounds 9007199254740993-9007199254740994 (minutes since previous round: r9007199254740993 180, r9007199254740994 30)", "adjacent huge rounds chain exactly");
+  assert.deepEqual(lines.filter((l) => l.includes("W-31")), [], "zero and a leading zero are not rounds");
 });
 
 test("W-459-b2 behaviour 2: check warns retro.daily.missing while the tracker has no entry for the previous UTC day, and blocks a tracker it cannot read", () => {
