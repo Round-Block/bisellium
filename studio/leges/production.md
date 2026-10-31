@@ -224,9 +224,9 @@ names each step and writes the step ticket the next record write consumes
    round also fixes its cause (a check rule, brief-admission rule, prompt
    template or hook in the same opus) or files a greenlit high opus for the
    class (D-076 D); wording classes recur as advisories. Once a day the
-   producer runs `~/.bisellium-evidence/retro-daily/retro.py` and updates
+   qa-lead runs (D-147) `~/.bisellium-evidence/retro-daily/retro.py` and updates
    `studio/acta/improvements.md`. W-297 makes
-   `verdict` and `next` enforce it; until then the producer checks a failing
+   `verdict` and `next` enforce it; until then the qa-lead checks a failing
    verdict's classes with `~/.bisellium-evidence/lesson-census/census.py`.
    After done, `npm run -s bisellium -- tick --studio studio`.
 
@@ -337,3 +337,5 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-10-20 | §9 steps 0 and 3, §10: the reds and code are replayed from the architect's signed prototype by a reds perform; a builder only where the replay cannot run, for required fixes and for fix rounds (W-326) | Patron |
 | 2026-10-21 | §9 steps 0-2, §10: `kind: ui` uses the D-091 pair—Codex Sol signs with Astra's input, Claude Opus reviews; engineering and build review stay unchanged (W-348) | Patron |
 | 2026-10-22 | §8: the UI architect and the UI builder run Codex with its network sandbox lifted to run served browser rows; reviewers stay read-only (D-105) | Patron |
+| 2026-10-31 | §9 step 7: the daily retro is the qa-lead's, classes assigned to the owning collegium with the clerk (D-147) | Patron |
+</content>

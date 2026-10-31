@@ -7,6 +7,9 @@ Magister: `ops-lead` · Adopted: 2026-10-10 (D-055) · Amended: see §9
 Own the pipeline's wall-clock time and reliability: CI and the merge
 queue, receipts and verify, flakes, and the host runners. Ops fixes a
 slow or flaky step at its cause. No check is cut to save time (D-054 §1).
+Ops also owns security (D-148): dependency advisories, code-scanning and
+GitHub Advanced Security alert triage, the sandbox and secrets; it files
+each fix opus, high under D-039.
 
 ## 2. Decides alone
 
@@ -61,3 +64,4 @@ The magister's daily acta is the heartbeat.
 |---|---|---|
 | 2026-10-10 | Adopted (D-055, W-208) | Patron |
 | 2026-10-20 | §2: ops-lead owns the per-opus prompt templates; `process.prompt_templates` blocks when one or this clause is missing (W-241 part 1) | Patron |
+| 2026-10-31 | §1: Ops owns security: advisories, alert triage, sandbox, secrets (D-148) | Patron |
