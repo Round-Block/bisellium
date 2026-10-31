@@ -1,0 +1,24 @@
+# opus: W-459
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T11:36:10.310Z
+# tree: tree:457d9c2f6b6bb704c725f41ea5014418665da10f
+# brief: briefs/W-459.md blob:5f39a52d16732b9390dbda797007e7b276818f71
+# ticket: {"opus":"W-459","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"f6fe3068bd87192051c67172dcdbd330cdf5e55d","brief":"5f39a52d16732b9390dbda797007e7b276818f71","at":"2026-10-31T11:36:04.946Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-459-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the verb extends `runRetro` beside `--cascade` and `--opus` and reads only the officina (verdict logs, gate logs, opus records, lessons), never git or GitHub; drafted over the real studio for 2026-10-31 it lists W-477's census failure as `gate×W-163` (row W-163-b6), the failure the retro could not see — check: real-probe.out, brief:19, brief:21
+2. advisory — the check rule is `retro.daily.missing` at advise, block only for an unreadable tracker: a block on a missing entry would fail every in-flight opus's own `check -- studio` at each UTC midnight (its branch carries an older tracker); the refusal of new work is `next`'s branch-rung hold, which an opus with a branch never reaches — check: brief:25, brief:27, real-check.out, green-b3.log
+3. advisory — each red fails by assertion on its own red commit, one at a time, and is accepted by the replay classifier; twenty one-hunk kills of retro.ts, rules/process.ts and next.ts each fail their row at the assertion they guard — check: red-logs.out, red-accept.out, kills.out
+4. advisory — the Codex test check found three flips the first draft did not name (W-163-b6's raw Date.parse and append open, W-423-b5's governed write, usage.test.ts's line count); the day is now read through `instant`, the append's function calls `requireRealDirectory` and is pinned, and the count moves 45 to 46, each in Files owned; those rows and every must-stay-green row it lists pass on the tip, cut over master dd2930f4 after W-468's #926 merged — check: fixture-census.md, census-green.out, gates-proto.out, brief:49, brief:50
+5. advisory — this brief's ledger passes the writer and the full admission admits it; lint, format:check and typecheck pass; no code-owned path is touched (studio/bisellium.yml is not: the tracker's presence switches the rule on) — check: ledger-check.out, admission.out, gates-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-459.md`, prototype `prototype.mbox` (six patches) over master dd2930f4; three behaviours, 3 points, no code-owned path.

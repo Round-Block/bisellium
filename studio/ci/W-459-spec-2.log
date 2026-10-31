@@ -1,0 +1,23 @@
+# opus: W-459
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a191bf-5c95-73c0-8b63-001509046c20
+# outcome: failed
+# at: 2026-10-31T13:23:45.795Z
+# tree: tree:049d063766126b23b5913bcf77f6aa4b936709a9
+# brief: briefs/W-459.md blob:5f39a52d16732b9390dbda797007e7b276818f71
+# ticket: {"opus":"W-459","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a4aa44e8d36e198b64324b01984d6c282d89915c","brief":"5f39a52d16732b9390dbda797007e7b276818f71","at":"2026-10-31T13:23:41.283Z"}
+
+## Findings
+1. blocking — brief:17 The prototype subtracts 14 days and compares both endpoints inclusively, so the qa-lead’s retro counts 15 calendar days and can wrongly mark a class from day−14 as recurring and owed; W-459-b1 has no boundary case. Replace “the 14 days ending that day” with “the 14 calendar days from day−13 through day, inclusive,” retaining that promised behaviour in the implementation. [severity: S1] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/retro-daily.test.ts W-459-b1
+2. blocking — brief:5 The new `ciNames`, `draftDailyRetro`, and `causeFixes` readers enumerate `ci/`, `opera/`, and `lessons/`, but no Input-domain row covers those directory inputs; accidentally absent `ci/` or `opera/` is accepted as empty, so the qa-lead can append an incomplete retro with exit 0 and thereby clear `check` and `next`, which no existing row catches. Replace with: “Read enumeration: `ciNames` enumerates `ci/`, `draftDailyRetro` enumerates `opera/`, and `causeFixes` enumerates `lessons/`; the Input domain names each directory’s valid absent/present/readable domain and the function that refuses an invalid directory before append, then names the selected files’ domains.” [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/retro-daily.test.ts W-459-b1
+3. advisory — brief:74 Verdict, gate, opus, and lesson refusals are read only by `retro --daily`; they cannot make `check` block or `next` hold. Replace with: “A tracker refusal makes `retro --daily` exit 2 without writing, makes `check` block, and holds a new start in `next`; a verdict, gate, opus, or lesson refusal makes only `retro --daily` exit 2 without writing.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: brief.input.reader-specific-refusal
+4. advisory — brief:17 `roundLoops` examines every round of an opus and phase, then emits a chain when any member falls on the requested day, so the reported chain may include adjacent rounds from another day rather than only “loops among” that day’s rounds. Replace “the loops among them” with “loops whose chain touches that day; a chain may include adjacent failed rounds from another day.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/retro-daily.test.ts W-459-b1
+5. advisory — brief:80 The gate-log filename domain does not define `<tree>`, while `gateFailure` is reached only for names containing 8–40 lowercase hexadecimal characters and silently ignores every other gate-like name. Replace the record name with “`ci/<id>-(tests|lint|types)-<tree>.log`, where `<tree>` is 8–40 lowercase hexadecimal characters; every other filename is not a gate log, a limit.” [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/retro-daily.test.ts W-459-b1
+6. advisory — brief:83 “An instant” includes years 0000–0099, but `previousUtcDay` passes those years through `Date.UTC`, which remaps them into 1900–1999; an unlikely explicit `--now 0050-…` therefore asks for the wrong day. Replace the valid domain with “an instant in years 0100–9999; `main` and `runRetro` reject other `--now` values before `previousUtcDay`.” [severity: S3] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/retro-daily.test.ts W-459-b1
+
+## Verdict
+The signed brief has two blocking fail-closed and feasibility gaps, including one design-changing input-boundary correction requiring another review.
+VERDICT: FAIL
