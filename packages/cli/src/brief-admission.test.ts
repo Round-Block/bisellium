@@ -111,7 +111,7 @@ function brief(s: BriefSpec = {}): string {
   out.push(...(s.before ?? []));
   reds.forEach((k, i) => {
     out.push(`${i + 1}. Behaviour ${i + 1} refuses a thing.`);
-    for (let j = 0; j < k; j++) out.push(`   ${RED} row ${i + 1}.${j + 1} fails on its assertion.`);
+    for (let j = 0; j < k; j++) out.push(`   ${RED} row ${i + 1}.${j + 1} fails on its assertion, pinned by \`row ${i + 1}.${j + 1}\` "its assertion".`);
     out.push(...(s.after?.[i + 1] ?? []));
   });
   if (s.fenced) out.push("```", ...s.fenced, "```");

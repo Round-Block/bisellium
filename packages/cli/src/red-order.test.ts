@@ -350,7 +350,7 @@ const NO_RED_ORDER = `declares no red order; add the line "${LINE}"`;
 const NO_FAMILY = 'declares no decree family; add one line "Decree family: <slug>"';
 
 /** A copy of the sample officina (with `brief_behaviour_limit: 6` unless `limit` is false), a greenlit W-900 and an admitted brief whose Intent carries `lines`. */
-function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean; state?: string; extra?: string } = {}): { dir: string; stderr: string[]; exitCode: number; opus: { before: string; after: string }; eventsSame: boolean } {
+function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean; state?: string; extra?: string; behaviours?: string[] } = {}): { dir: string; stderr: string[]; exitCode: number; opus: { before: string; after: string }; eventsSame: boolean } {
   const dir = scratch("b5-ready");
   cpSync(SAMPLE, dir, { recursive: true, dereference: true });
   const yml = join(dir, "bisellium.yml");
@@ -384,8 +384,7 @@ function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean; s
     "",
     "## Behaviours to test",
     "",
-    "1. Behaviour 1 refuses a thing.",
-    "   **Genuine red:** row 1.1 fails on its assertion.",
+    ...(o.behaviours ?? ["1. Behaviour 1 refuses a thing.", "   **Genuine red:** row 1.1 fails on its assertion, pinned by `row 1.1` \"its assertion\"."]),
     "",
     "## Acceptance",
     "",
@@ -560,4 +559,32 @@ test("W-473-b1 behaviour 1: a red is recorded only when its output fails at the 
   assert.equal(two.stderr.trim(), `red: ${ID}: behaviour 3's genuine red declares 2 failing assertions; one, or none — nothing run`, "the two-assertion refusal");
   assert.equal(existsSync(fx.marker), false, "with two declared assertions the command never runs");
   assert.equal(existsSync(logOf(fx.studio, ID, 3)), false, "and no log is written");
+});
+
+const W473_NONE = `brief.admission: briefs/${ID}.md behaviour 1's genuine red declares 0 failing assertions; declare one after its marker: pinned by \`<row>\` "<assertion>" (W-473)`;
+const W473_RED = (cmd: string): string => `bisellium red ${ID} --behaviour 1 --sella builder --studio studio -- ${cmd}`;
+
+test("W-473-b2 behaviour 2: ready asks a new opus to declare each genuine red's failing assertion", () => {
+  const none = readyFixture([LINE], { behaviours: ["1. Behaviour 1 refuses a thing.", `   **Genuine red:** \`${W473_RED("node --test-reporter=tap a.test.mjs")}\` fails on its assertion.`] });
+  assert.equal(none.exitCode, 1, `ready refuses a genuine red that declares no failing assertion: stderr ${JSON.stringify(none.stderr)}`);
+  assert.deepEqual(none.stderr, [`${ID}: ${W473_NONE}`], "the one refusal line");
+  assert.equal(none.opus.after, none.opus.before, "the record is byte-identical");
+  assert.ok(none.eventsSame, "no event log appeared");
+  const before = readyFixture([LINE], { behaviours: ['1. Behaviour 1, pinned by `row 1.1` "its assertion" before the marker.', "   **Genuine red:** row 1.1 fails on its assertion."] });
+  assert.deepEqual(before.stderr, [`${ID}: ${W473_NONE}`], "a pin before the marker declares nothing");
+  const two = readyFixture([LINE], { behaviours: ["1. Behaviour 1 refuses a thing.", '   **Genuine red:** pinned by `row 1.1` "its assertion" and pinned by `row 1.1` "another".'] });
+  assert.deepEqual(two.stderr, [`${ID}: ${W473_NONE.replace("declares 0", "declares 2")}`], "two declared assertions are refused");
+  const one = readyFixture([LINE], { behaviours: ["1. Behaviour 1 refuses a thing.", `   **Genuine red:** \`${W473_RED("node --test-reporter=tap a.test.mjs")}\` fails,`, '   pinned by `row 1.1` "its assertion".'] });
+  assert.equal(one.exitCode, 0, `one declared assertion on the item's next line is admitted: stderr ${JSON.stringify(one.stderr)}`);
+  assert.equal(readFront<{ state: string }>(join(one.dir, `opera/${ID}.md`)).data.state, "building", "building");
+  const pw = readyFixture([LINE], { behaviours: ["1. Behaviour 1 refuses a thing.", `   **Genuine red:** \`${W473_RED("npx playwright test --grep 'W-900-b1\\s'")}\` fails.`] });
+  assert.equal(pw.exitCode, 0, `a Playwright red that declares none is admitted: stderr ${JSON.stringify(pw.stderr)}`);
+  const incidental = readyFixture([LINE], { behaviours: ["1. Behaviour 1 refuses a thing.", `   **Genuine red:** \`${W473_RED("node --test --test-name-pattern playwright a.test.mjs")}\` fails.`] });
+  assert.deepEqual(incidental.stderr, [`${ID}: ${W473_NONE}`], "an incidental playwright argument does not exempt a red");
+  const cli = readyFixture([LINE], { behaviours: ["1. Behaviour 1 refuses a thing.", `   **Genuine red:** \`${W473_RED("node ./node_modules/@playwright/test/cli.js test")}\` fails.`] });
+  assert.equal(cli.exitCode, 0, `node launching the Playwright cli that declares none is admitted: stderr ${JSON.stringify(cli.stderr)}`);
+  const past = readyFixture([], { state: "halted", extra: "start: 2026-10-01T12:00:00.000Z\nbuilder_runtime: isolated\n", behaviours: ["1. Behaviour 1 refuses a thing.", "   **Genuine red:** row 1.1 fails on its assertion."] });
+  assert.equal(past.exitCode, 0, `an opus past ready resumes with no declared assertion: stderr ${JSON.stringify(past.stderr)}`);
+  const open = readyFixture([], { limit: false, behaviours: ["1. Behaviour 1 refuses a thing.", "   **Genuine red:** row 1.1 fails on its assertion."] });
+  assert.equal(open.exitCode, 0, `an officina with no limit asks nothing: stderr ${JSON.stringify(open.stderr)}`);
 });
