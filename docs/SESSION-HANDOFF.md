@@ -50,49 +50,48 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight: E1 W-468 review r4; E2 W-473 gates; W-472 PR #921; UI1 W-463 verify.
-1. W-468 — a fix round records its red (high)
-2. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-31) `next.ts`
-3. W-459 — daily retro enforced, automated: reads failing gate logs too (Patron 10-31); 4. W-363 — spec review as one next perform (Patron 10-31) `next.ts`; 5. W-482 — a fix round as one next perform: fills, dispatches the builder brief (Patron 10-31); 6. W-484 — doc rules: byte cap, rule ids, links; 7. W-485 — ADOPTION.md as a lean contract; 8. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
-9. W-473 — a red's recorded failing assertion equals the brief's declared one (D-076 D high); 10. W-476 — cause fix for interface×validation-order-masks-errors (D-076 D high)
-11. W-469 — a spec-stage stale handover needs no hand step: next records the handoff, guard sync moves master
-12. W-470 — a verdict whose named session is an earlier orchestrator's records a fresh one without a hand --session-reason
-13. W-471 — a failing gate's log keeps its real failure: nested ci fixture output hid W-408's 10-30 failure; 14. W-478 — idle-lane check; 15. W-479 — outside-advisory filing path; 16. W-480 — next builds a fix round before review; 17. W-481 — spec signature carries the fixture census (Patron 10-31); 18. W-483 — handoff into source_excludes, W-211-b1 pin (Patron 10-31)
-19. W-452 — collegium names owning lead; kind ui retired (D-128), re-tag
-20. W-455 — symlink cause fix: the containment helper refuses a symlinked final file (10-29)
-21. W-465 — drain before handover; no new task past 250k (10-30)
-22. W-436 — open items live in records, not memory or chat (10-28)
-23. W-458 — done finishes a merged rung; 24. W-457 — builder for an untouched owned file
-25. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (10-29)
-26. W-456 — test-pool research, ops
-27. W-414 — cause fix for tests×ruled-case-uncovered (D-076 D high)
-28. W-394 — cause fix for review×evidence-backfilled-or-absent (D-076 D high)
-29. W-395 — cause fix for spec×promise-unattainable-under-accepted-domain (D-076 D high)
-30. W-460 — cause fix for tests×tests-that-agree-with-the-bug (D-076 D high)
-31. W-464 — for mechanism×replay-environment-not-pristine
-32. W-393 — cause fix for spec×input-domain-missing-or-unenforceable (D-076 D high)
-33. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
-34. W-383 — security-boundary test fix; 35. W-405 — pr refuses kind: ui until screen approval `next.ts`; 36. W-431 — verb dead ends; 37. W-432 — verb dead ends; 38. W-429 — petitio length limits
-39. W-261 — woken orchestration; 40. W-434 — dispatch prompts as artifacts; 41. W-254 — delete talk and tick daily branch; 42. W-349 — flaky row W-279-b3; 43. W-399 — record verb sella check
-44. W-364 — verify refuses outside bisellium run (W-290); 45. W-242 — hook-set code; 46. W-372 — agent waits on background perform; 47. W-400 — CLAUDE.md, AGENTS.md code-owned; 48. W-401 — sessions receipt provider
-49. W-245 — provider-agnostic closing step; 50. W-227 — cleanup with removed-worktree metadata `next.ts`; 51. W-283 — Status page served; 52. W-374 — next --all in-flight only `next.ts`; 53. W-375 — context serves lex without §9, §12
-54. W-380 — prune old evidence; 55. W-331 — next.ts split `next.ts`; 56. W-183 — heavy-job slots `next.ts`; 57. W-169 — lane claims `next.ts`
-58. W-332 — step tickets `next.ts`; 59. W-308 — opus timeline `next.ts`; 60. W-304 — seats read live, console MVP; 61. W-298 — petitio verb; 62. W-280 — Inbox newItem fail-open
-63. W-301 — console writes via auto-merge PR
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-472, W-468 merged, done owed; W-473 #928 queued; W-382, W-459, W-410 specs.
+1. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-31) `next.ts`
+2. W-459 — daily retro enforced, automated: reads failing gate logs too (Patron 10-31); 3. W-363 — spec review as one next perform (Patron 10-31) `next.ts`; 4. W-482 — a fix round as one next perform: fills, dispatches the builder brief (Patron 10-31); 5. W-484 — doc rules: byte cap, rule ids, links; 6. W-485 — ADOPTION.md as a lean contract; 7. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
+8. W-473 — a red's recorded failing assertion equals the brief's declared one (D-076 D high); 9. W-476 — cause fix for interface×validation-order-masks-errors (D-076 D high)
+10. W-469 — a spec-stage stale handover needs no hand step: next records the handoff, guard sync moves master
+11. W-470 — a verdict whose named session is an earlier orchestrator's records a fresh one without a hand --session-reason
+12. W-471 — a failing gate's log keeps its real failure: nested ci fixture output hid W-408's 10-30 failure; 13. W-478 — idle-lane check; 14. W-479 — outside-advisory filing path; 15. W-480 — next builds a fix round before review; 16. W-481 — spec signature carries the fixture census (Patron 10-31); 17. W-483 — handoff into source_excludes, W-211-b1 pin (Patron 10-31)
+18. W-452 — collegium names owning lead; kind ui retired (D-128), re-tag
+19. W-455 — symlink cause fix: the containment helper refuses a symlinked final file (10-29)
+20. W-465 — drain before handover; no new task past 250k (10-30)
+21. W-436 — open items live in records, not memory or chat (10-28)
+22. W-458 — done finishes a merged rung; 23. W-457 — builder for an untouched owned file
+24. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (10-29)
+25. W-456 — test-pool research, ops
+26. W-414 — cause fix for tests×ruled-case-uncovered (D-076 D high)
+27. W-394 — cause fix for review×evidence-backfilled-or-absent (D-076 D high)
+28. W-395 — cause fix for spec×promise-unattainable-under-accepted-domain (D-076 D high)
+29. W-460 — cause fix for tests×tests-that-agree-with-the-bug (D-076 D high)
+30. W-464 — for mechanism×replay-environment-not-pristine
+31. W-393 — cause fix for spec×input-domain-missing-or-unenforceable (D-076 D high)
+32. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
+33. W-383 — security-boundary test fix; 34. W-405 — pr refuses kind: ui until screen approval `next.ts`; 35. W-431 — verb dead ends; 36. W-432 — verb dead ends; 37. W-429 — petitio length limits
+38. W-261 — woken orchestration; 39. W-434 — dispatch prompts as artifacts; 40. W-254 — delete talk and tick daily branch; 41. W-349 — flaky row W-279-b3; 42. W-399 — record verb sella check
+43. W-364 — verify refuses outside bisellium run (W-290); 44. W-242 — hook-set code; 45. W-372 — agent waits on background perform; 46. W-400 — CLAUDE.md, AGENTS.md code-owned; 47. W-401 — sessions receipt provider
+48. W-245 — provider-agnostic closing step; 49. W-227 — cleanup with removed-worktree metadata `next.ts`; 50. W-283 — Status page served; 51. W-374 — next --all in-flight only `next.ts`; 52. W-375 — context serves lex without §9, §12
+53. W-380 — prune old evidence; 54. W-331 — next.ts split `next.ts`; 55. W-183 — heavy-job slots `next.ts`; 56. W-169 — lane claims `next.ts`
+57. W-332 — step tickets `next.ts`; 58. W-308 — opus timeline `next.ts`; 59. W-304 — seats read live, console MVP; 60. W-298 — petitio verb; 61. W-280 — Inbox newItem fail-open
+62. W-301 — console writes via auto-merge PR
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
 1. W-463 — Board asks stand out (merged #911; done waits on a master verify and ruling)
-2. W-472 — short task titles (at most 8 words), the long text in a description the Board drawer shows (Patron 10-30)
-3. W-410
-4. W-411
-5. W-412
-6. W-413
-7. W-451 — Home: gates passed a0d5d440; data W-439, W-440
-8. W-467 (Officina on Home's palette)
-9. W-453 (D-128 D)
-10. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-11. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+2. W-410
+3. W-411
+4. W-412
+5. W-413
+6. W-451 — Home: gates passed a0d5d440; data W-439, W-440
+7. W-467 (Officina on Home's palette)
+8. W-453 (D-128 D)
+9. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
+10. W-300 — the drawer shows `next`'s read-only step, actor, round and health
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
+
