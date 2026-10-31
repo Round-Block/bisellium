@@ -1,0 +1,20 @@
+# opus: W-477
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19047-b103-77a1-b084-10f5c03b8aa4
+# outcome: failed
+# at: 2026-10-31T07:12:16.602Z
+# tree: tree:05c00da7679842a89dcc2f36b7d17386f72e360c
+# brief: briefs/W-477.md blob:fa7629b25955456ff173a32b1feee414589d7c5c
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-477/studio","head":"e60b8a5523fa565d102ffb892a784170436f64ad","brief":"fa7629b25955456ff173a32b1feee414589d7c5c","at":"2026-10-31T07:12:12.715Z"}
+
+## Findings
+1. blocking — brief:76 `startFolders` silently converts any non-array `workspaces` value to `[]`; a plausible root `package.json` typo such as `"workspaces": "packages/*"` makes the real W-477 row skip `packages/cli/node_modules`, pass with an extra stale minimatch 10.2.6 absent from the lock, and no existing fixture catches it because every fixture supplies an array. Replace brief:76 with: `| 5. The installed node_modules and root package.json workspaces, as installedInventoryProblems reads them for minimatch | package.json is readable and workspaces is absent or an array whose entries are <dir>/* or plain-folder strings; the walk covers root and every named workspace node_modules, nested packages and scopes, and each minimatch found matches a lock entry at the same plain version at or above 11.0.1 while every lock entry is installed; symlinks, bundled copies and run-time resolution remain the stated limits | installedInventoryProblems refuses an unreadable root manifest, a non-array workspaces value, an unsupported pattern, and every extra, missing, unreadable, differing or below-floor copy; pinned by the existing W-477-b1 cases plus "a non-array workspaces value is refused" using a stale workspace minimatch |`. [severity: S1] [design: changes] [class: mechanism×replay-environment-not-pristine] — check: scripts/source-map-js.test.mjs W-477-b1 fix 2 non-array workspaces case
+
+## Earlier findings
+
+## Verdict
+Revision 2 closes the reported nested-copy case, but its workspace reader still fails open on a plausible configuration mistake.
+VERDICT: FAIL

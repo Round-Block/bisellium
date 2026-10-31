@@ -378,8 +378,10 @@ test("W-430-b5 behaviour 5: tick and next --all print the Codex burn the rest of
 
   // next --all, on the real clock: the same line before the open count
   const w = world("w430-b5", "greenlight");
+  // W-477: the reading is an hour old on the same clock as its reset, so the week window holds on any date
   const resets = Math.floor(Date.now() / 1000) + 100 * 3600;
-  codexLog(w.home, "2026/10/28", "rollout-a.jsonl", [tokenCount("2026-10-28T01:00:00.000Z", week(61, resets))], new Date(), 60_000);
+  const seen = new Date(Date.now() - 3_600_000).toISOString();
+  codexLog(w.home, "2026/10/28", "rollout-a.jsonl", [tokenCount(seen, week(61, resets))], new Date(), 60_000);
   const all = next(w, ["--all"], { clock: false });
   const lines = all.out.trimEnd().split("\n");
   assert.equal(all.status, 0, ran("next --all exits 0", all));
