@@ -1,0 +1,26 @@
+# opus: W-473
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T05:43:52.846Z
+# tree: tree:e325c04a872cab9c03d838b4e2ff6afeef69800d
+# brief: briefs/W-473.md blob:6366c873a2cfe0fbd0096b130428b99d41888975
+# ticket: {"opus":"W-473","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"236e362d5c7618ac1263e6e15b804ea3e60ec66e","brief":"6366c873a2cfe0fbd0096b130428b99d41888975","at":"2026-10-31T05:43:48.018Z"}
+
+# W-473 spec signature, round 1 (architect, claude-opus-5-5): revision 1
+
+Brief: studio/briefs/W-473.md revision 1, prototyped over master 236e362d (series spec-scratch/W-473 4a60ba7f, prototype.mbox sha256 5dfa7459e5c5f46dbd5131c3c8fe0fe28da13df5e394ec1ad5baaa9624669593, four patches); evidence in /home/edckt/.bisellium-evidence/W-473-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-473-spec/promise-ledger.md
+
+Checked: both reds fail by assertion on their red commits (row b1 over master's code, row b2 over behaviour 1), are accepted by the replay classifier and fail at the assertion the brief declares for them by the prototype's own reader, and each green does not (red-accept.out, declared.out); eleven one-hunk source kills fail their row at the assertion they guard by the verdict's pin reader (kills.out); typecheck, lint (0 errors), format:check and the touched test files whole pass at the tip (gates-proto.out); the Codex test check's must-stay-green rows pass (census-green.out); the series reads and applies at master as the reds perform reads it (series-read.out); admission and the prototype's own ready requirement return no problem on this brief (admission.out); the ledger passes the writer (ledger-check.out). next.ts is not touched, so nothing overlaps W-468. No Files owned path is code-owned.
+
+## Findings
+1. advisory — the comparison sits in the red verb only, the one place every red is made; certify's replay and the pr rung keep classifyReplay and do not compare again, stated as a limit — check: brief:32, gates-proto.out
+2. advisory — ready asks new briefs for the pin, W-166's grandfathering keeps opera past ready on their briefs, and the check rule brief.admission is unchanged, so active briefs stay admitted; flipped fixtures (W-166-b5 and 17 brief-admission rows) are fixed by one fixture line each and named in Acceptance — check: proto-brief-admission-unfixed.out, proto-red-order.out, fixture-census.md
+3. advisory — Playwright reds are exempt when they declare none, and a message with an empty detail after its colon cannot match W-381's unchanged reader; both stated as limits — check: brief:74, kills.out
+
+## Verdict
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-473.md`, prototype `prototype.mbox` (four patches) over master 236e362d; two behaviours, 2 points, no code-owned path, no next.ts edit.
