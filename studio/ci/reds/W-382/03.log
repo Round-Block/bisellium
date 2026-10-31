@@ -1,0 +1,47 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-382-b3\s --import tsx packages/commands/src/w382.test.ts
+# exit: 1
+# at: 2026-10-31T13:30:56.353Z
+# sella: builder.W-382
+# tree: tree:0f2d03c1fc2101f320c01462a4189a93c96868dc
+# ticket: {"opus":"W-382","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-382/studio","head":"06b48b0b4dbf4069a7b5229ab475103ff5ef2265","brief":"ce53b532ad1f9b5308c257088aefef285267ac1f","at":"2026-10-31T13:30:55.417Z"}
+
+TAP version 13
+# Subtest: W-382-b3 behaviour 3: a ruling on the branch tree counts at done when the ruled run's log and the current run's log name the same served UI, and only then
+not ok 1 - W-382-b3 behaviour 3: a ruling on the branch tree counts at done when the ruled run's log and the current run's log name the same served UI, and only then
+  ---
+  duration_ms: 25.464724
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-382/packages/commands/src/w382.test.ts:6:3526'
+  failureType: 'testCodeFailure'
+  error: |-
+    a ruling on the branch tree carries when both served-e2e logs name the same served UI
+    + actual - expected
+    
+    + [
+    +   'no Patron ruling matches the current served tree and design digest at a sufficiently recent time'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'no Patron ruling matches the current served tree and design digest at a sufficiently recent time'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-382/packages/commands/src/w382.test.ts:296:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 39.255057

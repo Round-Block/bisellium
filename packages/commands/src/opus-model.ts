@@ -732,7 +732,7 @@ export function inspectUiDesignInput(root: string, record: NativeRecord, id: str
   };
 }
 
-function validateServed(root: string, record: NativeRecord): { at?: string; tree?: string; problems: string[] } {
+function validateServed(root: string, record: NativeRecord): { at?: string; tree?: string; evidence?: string; problems: string[] } {
   const gates = typeof record.probationes === "object" && record.probationes !== null && !Array.isArray(record.probationes) ? (record.probationes as Record<string, unknown>) : {};
   const value = gates["served-e2e"];
   if (typeof value !== "object" || value === null || Array.isArray(value)) return { problems: ["served-e2e has no recorded result"] };
@@ -756,7 +756,7 @@ function validateServed(root: string, record: NativeRecord): { at?: string; tree
     }
   }
   if (typeof record.id === "string") problems.push(...shotManifestProblems(root, record.id)); // a non-string id is the record validator's finding
-  return { at, tree: certifies, problems };
+  return { at, tree: certifies, evidence, problems };
 }
 
 /** A message tail that names why a containment read failed, never carrying a path: the helper's own
@@ -890,6 +890,10 @@ interface RulingResult {
   valid: boolean;
   current: boolean;
   problem?: string;
+  /** W-382: a valid ruling's certifies, design_digest and at */
+  certifies?: string;
+  digest?: string;
+  at?: string;
 }
 
 function ruling(root: string, record: NativeRecord, decisionId: string, digest: string, inputAt?: string, servedAt?: string, servedTree?: string): RulingResult {
@@ -917,7 +921,65 @@ function ruling(root: string, record: NativeRecord, decisionId: string, digest: 
     values.certifies === servedTree &&
     values.design_digest === digest &&
     instant(values.at) >= Math.max(instant(inputAt), instant(servedAt));
-  return { valid: true, current };
+  return { valid: true, current, certifies: values.certifies, digest: values.design_digest, at: values.at };
+}
+
+const SERVED_UI = /^sha256:[0-9a-f]{64}$/;
+
+/** W-382: a served-e2e log's header block (the lines before its first blank line) as keys to values, or undefined when
+ *  it is unreadable, names a key twice, or is not the reserved command's passing run certifying `tree`. */
+function servedHeader(root: string, rel: string, tree: string): Map<string, string> | undefined {
+  const log = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
+  if ("error" in log) return undefined;
+  const lines = log.bytes.toString("utf8").split("\n");
+  const end = lines.indexOf("");
+  const header = new Map<string, string>();
+  for (const line of lines.slice(0, end === -1 ? lines.length : end)) {
+    const at = line.indexOf(": ");
+    if (at < 1 || header.has(line.slice(0, at))) return undefined;
+    header.set(line.slice(0, at), line.slice(at + 2));
+  }
+  if (lines[0] !== `certifies: ${tree}` || header.get("command") !== "node scripts/served-e2e.mjs" || header.get("exit code") !== "0") return undefined;
+  return header;
+}
+
+/**
+ * W-382: whether a valid Patron ruling `r` on another tree carries to the current served run (`served`, at `tree`): the
+ * ruled tree's own served-e2e log `ci/<id>-served-e2e-<tree8>.log` is that tree's passing run, its `served-ui` hash
+ * equals the current run's log's, the ruling's design digest is `digest`, and the ruling is dated at or after that ruled
+ * capture's `served-at` and the ui-lead input `inputAt`. The two logs and the ruling are the whole evidence; nothing is
+ * written. Returns the carried hash, or undefined.
+ */
+function carries(root: string, id: string, r: RulingResult, digest: string, inputAt: string | undefined, served: { tree?: string; evidence?: string }): string | undefined {
+  if (!r.valid || r.current || r.certifies === undefined || r.at === undefined || inputAt === undefined) return undefined;
+  if (served.tree === undefined || served.evidence === undefined || r.certifies === served.tree || r.digest !== digest) return undefined;
+  const now = servedHeader(root, served.evidence, served.tree);
+  const then = servedHeader(root, `ci/${id}-served-e2e-${r.certifies.slice("tree:".length, "tree:".length + 8)}.log`, r.certifies);
+  const ui = now?.get("served-ui");
+  const ruledAt = then?.get("served-at");
+  if (ui === undefined || !SERVED_UI.test(ui) || then?.get("served-ui") !== ui || ruledAt === undefined || utcTimestampProblem(ruledAt)) return undefined;
+  return instant(r.at) >= Math.max(instant(inputAt), instant(ruledAt)) ? ui : undefined;
+}
+
+/**
+ * W-382: the Patron ruling that carries to a kind: ui opus's current served run from the tree it was given on, or
+ * undefined when one is current already or none carries (see `carries`). `done` prints it; `validateUiPolicy` counts it
+ * as current.
+ */
+export function uiRulingCarry(root: string, record: NativeRecord, id: string): { ruling: string; from: string; to: string; servedUi: string } | undefined {
+  if (record.kind !== "ui") return undefined;
+  const design = currentDesign(root, record, id);
+  if (!design.digest) return undefined;
+  const input = authoritativeUiInput(root, record, design.digest);
+  const served = validateServed(root, record);
+  const refs = Array.isArray(record.ui_rulings) ? record.ui_rulings.filter((ref): ref is string => typeof ref === "string") : [];
+  const results = refs.map((ref) => ({ ref, r: ruling(root, record, ref, design.digest!, input.input?.at, served.at, served.tree) }));
+  if (results.some(({ r }) => r.current)) return undefined;
+  for (const { ref, r } of results) {
+    const ui = carries(root, id, r, design.digest, input.input?.at, served);
+    if (ui !== undefined) return { ruling: ref, from: r.certifies!, to: served.tree!, servedUi: ui };
+  }
+  return undefined;
 }
 
 export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
@@ -986,7 +1048,8 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
       if (!result.valid) addPolicyProblem("opus.ui.rulings", result.problem!);
       else {
         valid++;
-        if (result.current) current = true;
+        // W-382: a ruling on another tree whose served UI the current run's log names unchanged counts as current
+        if (result.current || (served.problems.length === 0 && carries(root, context.id, result, design.digest, input.input?.at, served) !== undefined)) current = true;
       }
     }
   } else {

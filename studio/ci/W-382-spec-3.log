@@ -1,0 +1,25 @@
+# opus: W-382
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T13:27:03.303Z
+# tree: tree:457d9c2f6b6bb704c725f41ea5014418665da10f
+# brief: briefs/W-382.md blob:ce53b532ad1f9b5308c257088aefef285267ac1f
+# ticket: {"opus":"W-382","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-382/studio","head":"6d73e68dd257c936f9f63bbc86733f0bb9ae6eba","brief":"ce53b532ad1f9b5308c257088aefef285267ac1f","at":"2026-10-31T13:26:58.898Z"}
+
+# W-382 spec signature, round 3 (architect, claude-opus-5-5): revision 2
+
+Brief: studio/briefs/W-382.md revision 2 on opus/W-382 (over 6fe83be7), prototyped over master 7aa60f53 (prototype.mbox sha256 6de07de7c450a6c7f8d233310b46ade2fc2cb583c1c540b8711d9b5b1170097c, eight patches, unchanged); evidence in /home/edckt/.bisellium-evidence/W-382-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-382-spec/promise-ledger.md
+
+Checked: revision 2 changes only each Genuine red's text, from `fails at "<assertion>"` to `fails at its declared assertion, pinned by `W-382-b<k>` "<assertion>"`, and the Status line; no promise, row, behaviour, Files owned or prototype changes. With master's code (W-473 merged), declaredRedProblems is empty, each red log fails at its declared pin by redFailsAt and each green log does not (declared.out); the full admission returns no problem (admission-r2.out). Round 1's checks stand for the unchanged design and series (red-accept.out, kills.out, gates-proto.out, fixture-census.md, census-green.out, series-read.out, ledger-check.out).
+
+## Findings
+1. advisory — each declared assertion is the first failing assertion its red log records, so runRed on the replayed series records each red as it did before W-473 — check: declared.out
+2. advisory — the declared pins sit on the Genuine red line itself, after the marker, so a pin earlier in the item declares nothing and none was moved — check: brief:90, brief:94, brief:98, brief:102
+
+## Verdict
+passed — revision: declared failing assertions per W-473; design unchanged. Signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-382.md`, prototype `prototype.mbox` unchanged.

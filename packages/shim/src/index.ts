@@ -6,7 +6,7 @@ export { gitWorktreeProvider, treehouseProvider, selectProvider, reclaimWorktree
 export type { Receipt } from "./receipts.js";
 export { makeSessionId, receiptPath, writeReceiptStart, writeReceiptEnd } from "./receipts.js";
 export { redact, filterEnv } from "./redact.js";
-export { sourceTreeHash, isDirtyOutside } from "./sourceTree.js";
+export { sourceTreeHash, isDirtyOutside, servedUiHash, SERVED_UI_PATHS } from "./sourceTree.js";
 export type { HarnessProfile, HarnessStartOpts, HarnessResumeOpts, Turn, TurnUsage, ListedModel } from "./harness/index.js";
 export {
   USAGE_LIMIT_EXIT_CODE,
