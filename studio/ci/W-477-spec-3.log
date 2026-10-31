@@ -1,0 +1,24 @@
+# opus: W-477
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T07:05:05.272Z
+# tree: tree:05c00da7679842a89dcc2f36b7d17386f72e360c
+# brief: briefs/W-477.md blob:fa7629b25955456ff173a32b1feee414589d7c5c
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-477/studio","head":"e60b8a5523fa565d102ffb892a784170436f64ad","brief":"fa7629b25955456ff173a32b1feee414589d7c5c","at":"2026-10-31T07:04:59.221Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-477-spec/r2/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 answers mechanism×replay-environment-not-pristine (review 1 #1, review 2 #1): the installed inventory row proves is every minimatch found by walking node_modules and each workspace's node_modules (nested, scoped, by folder name or package.json name), each matched to a lock entry at its version and at 11.0.1 or above, extras, missing, differing and unreadable copies refused; every other form (symlinks, bundled copies, other workspace patterns, run-time resolution) is a stated limit — check: brief:29, brief:76, installed-inventory.mjs
+2. advisory — review 2's case reproduced on the real install: an extra node_modules/eslint/node_modules/minimatch at 10.2.6 passes round 1's guard and fails the walk; the fix red fails by assertion on round 1's guard and passes on the walk, accepted by the replay classifier — check: stale-r1.out, stale-r2.out, red-fix2.log, green-fix2.log, reds-r2.out
+3. advisory — nine one-line kills of scripts/installed-inventory.mjs each fail the rows at the assertion they guard; lint, format:check, typecheck and the test file pass at the fix tip — check: kills-r2.out, gates-r2.out
+4. advisory — the certificate (review 2 #2): the fix round restores studio/ci/W-477-tests-299865cc.log byte for byte from b6526933 and writes gate logs only under new tree names; the producer's missing refusal to overwrite a tree-named log is a stated limit, its cause fix W-394 (review×evidence-backfilled-or-absent); the fix red (review 2 #3) is the kept test commit and its output, not a second behaviour-1 entry under ci/reds — check: brief:31, brief:63
+5. advisory — this revision's ledger passes the writer and the full admission admits it; spec round 2's advisory on behaviour 2's limit is taken in its wording; no code-owned path is touched — check: ledger-check.out, admission.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-477.md` in the opus worktree, fix prototype `r2/fix.mbox` over the opus branch fca7939d; two behaviours, 1 point, no code-owned path.

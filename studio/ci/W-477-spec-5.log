@@ -1,0 +1,28 @@
+# opus: W-477
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T07:19:06.493Z
+# tree: tree:05c00da7679842a89dcc2f36b7d17386f72e360c
+# brief: briefs/W-477.md blob:27e8cddead926cd296ba74f53c9acc99608b27e5
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-477/studio","head":"e60b8a5523fa565d102ffb892a784170436f64ad","brief":"27e8cddead926cd296ba74f53c9acc99608b27e5","at":"2026-10-31T07:18:59.756Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-477-spec/r3/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 answers spec round 4 #1 (mechanism×replay-environment-not-pristine): the root package.json's workspaces is read as npm's own getPatterns reads it (absent as none, an array, or an object's packages array); any other value, a root package.json that is not a JSON object and a pattern of another form are each a problem line, never read as no workspaces — check: brief:27, brief:29, brief:76, installed-inventory.mjs:24
+2. advisory — review 4's case on the real install: an extra packages/cli/node_modules/minimatch at 10.2.6 with workspaces rewritten as the object form or the string "packages/*" passes revision 2's walk and fails revision 3's (the object form names the extra copy, the string names the refused value); the fix red fails by assertion at "the object workspaces form is walked" on revision 2's walk and passes on revision 3's, accepted by the replay classifier — check: ws-object-r2.out, ws-string-r2.out, ws-object-r3.out, ws-string-r3.out, red-fix3.log, green-fix3.log, reds-r3.out
+3. advisory — fifteen one-line kills of scripts/installed-inventory.mjs (revision 2's nine and six on the workspaces read, K14 to K19) each fail the rows at the assertion they guard; lint, format:check, typecheck and the test file pass at the fix tip — check: kills-r3.out, gates-r3.out
+4. advisory — npm's own reading of workspaces is matched to @npmcli/map-workspaces getPatterns as read from its source, not run against npm; a negation, a ./ prefix or a deeper glob npm would read is refused, not walked; both are stated limits — check: brief:29
+5. advisory — this revision's ledger passes the writer and the full admission admits it; the Prototype line still names the original replay series, and r3/fix.mbox replaces r2/fix.mbox over the opus branch e60b8a55; no code-owned path is touched — check: ledger-check.out, admission.out, series-r3.out
+
+## Rebuttal
+
+Spec round 4 #1 (`ci/W-477-spec-4.log`, blocking: `startFolders` turns any non-array `workspaces` into `[]`): accepted and closed. The reviewer's example, `"workspaces": "packages/*"`, already fails `npm ci` (npm's `getPatterns` throws EWORKSPACESCONFIG), but npm also reads `{ "packages": [...] }`, which revision 2 read as no workspaces: a real fail-open. Revision 3 reads exactly npm's two forms and refuses every other value with `package.json workspaces <json> is not an array or an object with a packages array`, refuses a root manifest that does not parse to a JSON object as `package.json is unreadable`, and stops the walk there. Row 5 now states the root manifest and `workspaces` domain the reviewer proposed and pins it by five new cases (no workspaces, the object form, five other values, three unreadable manifests, a `packages/**` pattern), each with its kill (K14 to K19), and the reviewer's own case on the real install now fails (`ws-string-r3.out`), as does the object form with a stale workspace copy (`ws-object-r3.out`).
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-477.md` in the opus worktree, fix prototype `r3/fix.mbox` over the opus branch e60b8a55; two behaviours, 1 point, no code-owned path.
