@@ -34,6 +34,7 @@ import {
   readContainedRegularFile,
   titleProblem,
   titleWordsProblem,
+  uiRulingCarry,
   utcTimestampProblem,
   validateNativeRecord,
   validateRecordReferences,
@@ -458,6 +459,8 @@ export function runDone(args: string[], opts: RunDoneOptions = {}): WriteResult 
     console.error(`${opusId}: opus.ui.e2e: ${sourceProblem}`);
     return { exitCode: 1 };
   }
+  // W-382: read before the write, on the record the policy above just passed
+  const carried = uiRulingCarry(root, front as NativeRecord, opusId);
 
   const recorded = front.probationes ?? {};
   const missing: string[] = [];
@@ -574,6 +577,8 @@ export function runDone(args: string[], opts: RunDoneOptions = {}): WriteResult 
 
   const trace = honoured.length ? ` (waived: ${honoured.map((h) => `${h.id} by ${h.decision}`).join(", ")})` : "";
   console.log(`${opusId}: done${trace}`);
+  // W-382: a Patron ruling carried from the tree it was given on is named, with the served UI both runs' logs name
+  if (carried !== undefined) console.log(`${opusId}: ui ruling ${carried.ruling} carried from ${carried.from} to ${carried.to}: served UI ${carried.servedUi} unchanged`);
   return { exitCode: 0 };
 }
 
