@@ -58,7 +58,7 @@ const tracker = (root: string, days: string[], tail = ""): void => put(root, "ac
 function opus(root: string, id: string, state: string, end?: string): void {
   put(root, `opera/${id}.md`, `---\nid: "${id}"\ntitle: "fixture ${id}"\nkind: "opus"\ncollegium: "qa"\nstate: ${state}\nprobationes: {}\n${end === undefined ? "" : `end: ${end}\n`}---\n`);
 }
-function round(root: string, id: string, phase: "spec" | "review", n: number, at: string | undefined, outcome: string, blockers: string[] = [], brief = "aaa"): void {
+function round(root: string, id: string, phase: "spec" | "review", n: number | string, at: string | undefined, outcome: string, blockers: string[] = [], brief = "aaa"): void {
   const head = [`# opus: ${id}`, `# outcome: ${outcome}`, ...(at === undefined ? [] : [`# at: ${at}`]), `# brief: briefs/${id}.md blob:${brief}`].join("\n");
   const body = blockers.length === 0 ? "No findings" : blockers.map((b, i) => `${i + 1}. blocking — fixture ${b}`).join("\n");
   put(root, `ci/${id}-${phase}-${n}.log`, `${head}\n\n## Findings\n${body}\n`);
@@ -217,6 +217,26 @@ test("W-459-b1 behaviour 1: retro --daily appends the previous UTC day's retro, 
   const bareRun = daily(noLessons);
   assert.equal(bareRun.status, 0, `an officina with no lessons/ is read as no lesson: ${shown(bareRun)}`);
   assert.ok(bareRun.out.includes("- OWED class tests×loop (W-10, W-12)"), `so every recurring class is owed: ${shown(bareRun)}`);
+});
+
+test("W-459-b1 fix 1: a round number of any length is read, exactly; zero and a leading zero are not rounds", () => {
+  const root = officina("b1-long");
+  tracker(root, ["2026-10-29"]);
+  opus(root, "W-30", "done", `${DAY}T12:00:00Z`);
+  const long = ["1000000000000000", "9007199254740993", "9007199254740994"];
+  round(root, "W-30", "review", long[0]!, `${DAY}T07:00:00Z`, "passed");
+  round(root, "W-30", "review", long[1]!, `${DAY}T10:00:00Z`, "failed", ["[class: tests×loop] [severity: S1]"]);
+  round(root, "W-30", "review", long[2]!, `${DAY}T10:30:00Z`, "failed", ["[class: tests×loop] [severity: S1]"]);
+  for (const bad of ["0", "01", "0000000000000000001"]) round(root, "W-31", "review", bad, `${DAY}T09:00:00Z`, "failed", ["[class: tests×loop] [severity: S1]"]);
+  const r = daily(root);
+  assert.equal(r.status, 0, `retro --daily exits 0: ${shown(r)}`);
+  const lines = readFileSync(join(root, "acta/improvements.md"), "utf8").split("\n");
+  const has = (line: string, label: string): void => assert.ok(lines.includes(line), `${label}: ${JSON.stringify(line)} in\n${lines.join("\n")}`);
+  has("| W-30 | review | 1000000000000000 | passed | - |  |", "a 16-digit round is read");
+  has("| W-30 | review | 9007199254740993 | failed | 180 | tests×loop S1 |", "a round past MAX_SAFE_INTEGER keeps its digits");
+  has("| W-30 | review | 9007199254740994 | failed | 30 | tests×loop S1 |", "and its neighbour stays distinct");
+  assert.ok(lines.some((l) => l.startsWith("- LOOP W-30 review: class tests×loop, rounds 9007199254740993-9007199254740994 ")), `adjacent huge rounds chain exactly:\n${lines.join("\n")}`);
+  assert.ok(!lines.some((l) => l.startsWith("| W-31 |")), "zero and a leading zero are not rounds");
 });
 
 test("W-459-b2 behaviour 2: check warns retro.daily.missing while the tracker has no entry for the previous UTC day, and blocks a tracker it cannot read", () => {
