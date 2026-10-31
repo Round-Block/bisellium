@@ -9,8 +9,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
+import { checkStudio, type Finding } from "./check.js";
 import { initStudio } from "./init.js";
-import { runRetro } from "./retro.js";
+import { previousUtcDay, runRetro } from "./retro.js";
 
 const NOW = new Date("2026-10-31T09:00:00Z");
 const DAY = "2026-10-30";
@@ -216,4 +217,36 @@ test("W-459-b1 behaviour 1: retro --daily appends the previous UTC day's retro, 
   const bareRun = daily(noLessons);
   assert.equal(bareRun.status, 0, `an officina with no lessons/ is read as no lesson: ${shown(bareRun)}`);
   assert.ok(bareRun.out.includes("- OWED class tests×loop (W-10, W-12)"), `so every recurring class is owed: ${shown(bareRun)}`);
+});
+
+test("W-459-b2 behaviour 2: check warns retro.daily.missing while the tracker has no entry for the previous UTC day, and blocks a tracker it cannot read", () => {
+  const root = officina("b2");
+  const missing = (r: string, now = NOW): Finding[] => checkStudio(r, now).findings.filter((f) => f.rule === "retro.daily.missing");
+  tracker(root, ["2026-10-29"]);
+  const warned = missing(root);
+  assert.equal(warned.length, 1, `one finding while the previous UTC day has no entry: ${JSON.stringify(warned)}`);
+  assert.equal(warned[0]!.level, "advise", "the finding is an advisory, so no in-flight branch's gates fail on the clock");
+  assert.equal(warned[0]!.where, "acta/improvements.md", "it names the tracker");
+  assert.match(warned[0]!.message, /^no daily retro for 2026-10-30: bisellium retro --daily$/, `it names the day and the verb: ${warned[0]!.message}`);
+  assert.deepEqual(missing(root, new Date("2026-10-30T23:59:59Z")), [], "the day before, the previous UTC day (10-29) has its entry");
+  assert.equal(missing(root, new Date("2026-10-31T00:00:00Z")).length, 1, "at UTC midnight the day just ended is owed");
+
+  tracker(root, ["2026-10-29", "2026-10-30"]);
+  assert.deepEqual(missing(root), [], "an entry for the previous UTC day clears it");
+  tracker(root, ["2026-10-29"], "\n## Notes\n\n### 2026-10-30\n");
+  assert.equal(missing(root).length, 1, "an entry outside the daily retro section is not one");
+  tracker(root, ["2026-10-29"], "\n#### 2026-10-30\n- ### 2026-10-30\n");
+  assert.equal(missing(root).length, 1, "a heading of another level or a list line is not an entry");
+
+  const none = officina("b2-none");
+  assert.deepEqual(missing(none), [], "an officina with no tracker is not asked for one");
+
+  const dir = officina("b2-dir");
+  mkdirSync(join(dir, "acta/improvements.md"), { recursive: true });
+  const blocked = missing(dir);
+  assert.equal(blocked.length, 1, `a tracker that is not a regular file is one finding: ${JSON.stringify(blocked)}`);
+  assert.equal(blocked[0]!.level, "block", "and it blocks: unreadable is never no entry owed");
+  assert.match(blocked[0]!.message, /^acta\/improvements\.md: .+$/, `it names the tracker: ${blocked[0]!.message}`);
+  // the clock's domain: years 0000-0099 are stepped back as written, never remapped to 1900-1999
+  assert.equal(previousUtcDay(new Date("0050-03-01T09:00:00Z")), "0050-02-28", "a year below 100 is not remapped");
 });
