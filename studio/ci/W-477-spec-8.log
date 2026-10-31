@@ -1,0 +1,20 @@
+# opus: W-477
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19047-b103-77a1-b084-10f5c03b8aa4
+# outcome: passed
+# at: 2026-10-31T07:46:35.757Z
+# tree: tree:2b4071d9a2bc850837f4b496b0ff91344ca51f76
+# brief: briefs/W-477.md blob:e3867ec049ebbf41b841f5857df8a171b7128567
+# ticket: {"opus":"W-477","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-477/studio","head":"33dd86580ff49b58d2ebed6e82a0d7a5e45fd640","brief":"e3867ec049ebbf41b841f5857df8a171b7128567","at":"2026-10-31T07:46:32.119Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+Revision 4 correctly classifies and pins both raw reads, names the previously missed census row, and supplies direct red/green and mutation evidence.
+VERDICT: PASS
