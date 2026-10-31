@@ -1,0 +1,28 @@
+# opus: W-468
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T17:41:17.000Z
+# tree: tree:64fd7a2833d9af7d913b5be007e40f9c1f1b9da0
+# brief: briefs/W-468.md blob:b03b512c61d991c8a9ca3785267b40076179628f
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":8,"actor":"architect","studio":".worktrees/W-468/studio","head":"9fbe2135f89eaf41944e6510856b7989c7d272b0","brief":"b03b512c61d991c8a9ca3785267b40076179628f","at":"2026-10-30T17:41:13.432Z"}
+
+# W-468 spec signature, round 8 (architect, claude-opus-5-5): revision 5, the build-review class ruled at the line
+
+Brief: studio/briefs/W-468.md revision 5 on opus/W-468 (9fbe2135), revision 3's design prototyped over master a07c1424 (prototype.mbox sha256 0b0ffff09bc01e5f5cb04adc2f9e45092cdb4042b15f0785fa6fac4855302539); revision 5 prototyped over 9fbe2135 (r8/prototype-r8.diff sha256 a80635b580d2a70e838b7daa98937537e84527ada4126bc933d4b8e0e5e6b5ce); evidence in /home/edckt/.bisellium-evidence/W-468-spec/ and its r6/ and r8/ (revision 5 written by r8/edit-brief-r8.py; the ledger by r8/ledger-r8.py).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-468-spec/r8/promise-ledger.md
+
+Build review rounds 1-3 (ci/W-468-review-1.log #1, ci/W-468-review-2.log #1, ci/W-468-review-3.log #1) and spec review round 7 (ci/W-468-spec-7.log #1) failed on one class, review×fail-open-on-malformed-records-patched-per-site; the last two each found a value judged after a header normalisation (`parseLogHeader`'s `.trim()`, then `rawHeaderAt`'s `:\s*`). The ruling closes the class at the line, not the value: an exact `# at:` is the one `at` line of the header block (parseLogHeader's own block pattern, tested without one trailing CR), byte-exactly `# at: ` with one space, a value in the studio's exact UTC profile (`utcTimestampProblem`, as revision 4 ruled) and the line's end: the line `red` writes (lifecycle.ts:1183, LF-ended). Every other line form is stale: a CRLF ending, any space or tab before or after the value, a tab, two spaces or no space after the colon, a space before or after `#`, `# AT:`, a second `at` line, an `at` line only below the header. One reader, `exactRedAt`, lives in next.ts and replaces `rawHeaderAt`; `parseLogHeader` (rules/evidence.ts) stays unchanged and unowned, since it trims every value for its other callers (seven in next.ts, brief-stale, the opus.red_* rules) and changing it is the class's cause fix, W-185.
+
+Checked: on the r8 prototype (r8/apply-r8.py over 9fbe2135) row b1 passes with the twelve line forms stale, the writer's line and the no-fraction form fresh (r8/b1-proto.out), and the typecheck passes (r8/typecheck.out); six one-hunk kills of `exactRedAt` fail row b1 at the assertion they guard (r8/kills.out): K23 the round-3 reader at the leading space, K24 a CRLF dropped, K25 the last at line wins, K26 the value trimmed, K27 a loose prefix at the tab after the colon, K28 the whole log read at the line below the header. The change stays inside next.ts and next-branch.test.ts; no code-owned file; the brief's line count is unchanged, so the earlier ledger lines and kills hold.
+
+## Findings
+1. advisory — `exactRedAt` is a second header reader beside the unchanged `parseLogHeader`: it copies that function's block pattern, so the two agree today, but a later change to `parseLogHeader`'s grammar does not move it; stated as a limit at brief:60, the cause fix is W-185 — check: evidence.ts:112 (master)
+2. advisory — the exact value domain is still the shared `utcTimestampProblem` profile, so its no-fraction form counts as exact though `red` never writes it; stated as a limit at brief:60 — check: opus-model.ts:73 (master)
+3. advisory — a header line forged inside a `# command:` argument carrying a newline is a header line to both readers, as before; stated as a limit at brief:60 — check: lifecycle.ts:1181 (master)
+
+## Verdict
+passed — revision 5 rules the `# at:` LINE once: exactly one `at` line in the header block, byte-exactly `# at: `, a profile value and an LF end, the line `red` writes; every other line form orders the red again, pinned by twelve line forms in row W-468-b1 and guarded by six kills, read by one line reader in next.ts with its drift from `parseLogHeader` a stated limit.
