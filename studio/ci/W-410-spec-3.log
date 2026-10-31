@@ -1,0 +1,29 @@
+# opus: W-410
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a191a8-0bbd-7aa3-b51f-6cdf1a8ac7c1
+# outcome: revise
+# at: 2026-10-31T11:13:58.275Z
+# tree: tree:457d9c2f6b6bb704c725f41ea5014418665da10f
+# dispatch_prompt: ci/W-410-ui-prompt-3.md
+# design_digest: sha256:8c0edfe46e8c48b5fddda2d6e398b8e276926d4a2f1e0093b95f18d72749ef3f
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"f6fe3068bd87192051c67172dcdbd330cdf5e55d","brief":"19dcbaa5d343e8c318b1a8da593bcf905bcb8da5","at":"2026-10-31T11:13:56.404Z"}
+
+## Findings
+
+1. blocking — brief:47 — The agent-written typography default makes OWNER/NEXT/ASK captions 8px and their values 10px. Across the captures, these essential facts are harder to read than surrounding Board content despite the extra height — replace with: Keep captions above values; use readable sans captions of at least 11px and values of at least 12px, retaining mono for identifiers and age. Rebalance spacing within the selected height ratio — check: `apps/web/src/components/w025.css`, `apps/web/tests-serve/w410.spec.ts` b3.
+
+2. blocking — brief:129 — Agent-written Default 5 permits truncating the action the Patron needs. W-500’s strip hides “Human gate” at expanded 1280, 640 and 390; the complete accessible name does not make it visible at a glance — replace with: Keep every active ask kind visibly readable on both surfaces. Give strip entries sufficient horizontal room within the scrolling rail, keeping essential values clear of the chevron; titles may remain clamped — check: `apps/web/tests-serve/w410.spec.ts` b3, `shots/board-sample-390-expanded.png`.
+
+3. blocking — brief:130 — Agent-written Default 6 repeats the opus body under “Why it waits” and “From the officina record,” visibly duplicating content at 1280 and consuming scarce drawer space at 390 — replace with: Show question, recorded unresolved human-gate and handoff reasons only, followed by evidence links. Keep the opus body solely in its record section. A declared gate without a recorded result contributes no waiting reason. State when either list is empty — check: `apps/web/test/w410.test.ts` b4; `apps/web/tests-serve/w410.spec.ts` b4 should verify one body occurrence.
+
+## Recommendation
+
+This is my first input on W-410; I have no earlier findings to reassess.
+The Patron’s selected handoff rail and taller cards make sense: 86px/140px remains scannable, with three complete lifecycle cards visible in the 390px many-item capture.
+IDs and mono ages read clearly, but the five-fact glance fails on tiny handoff text and clipped strip actions.
+Keep `Unassigned` and `—`: they communicate absent actor and age data without inventing a person or elapsed time.
+The architect can correct these typography, width and drawer-content defaults within the selected design.
+Verdict: revise
