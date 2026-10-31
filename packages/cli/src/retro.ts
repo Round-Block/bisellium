@@ -593,7 +593,12 @@ export interface OpusReviewRounds {
   sessions: "none" | "kept" | `replaced ${number}`;
 }
 
-type RoundLog = { opus: string; phase: "spec" | "review" | "handoff"; n: number; outcome: string; session: boolean; reason: boolean; text: string };
+/** The one grammar of a round number in a `ci/` log name: a positive integer, no leading zero, of any length. Read as a
+ *  `bigint` and ordered by `byRound`, so a number past `Number.MAX_SAFE_INTEGER` keeps every digit. */
+const ROUND_NUMBER = "[1-9]\\d*";
+const byRound = (a: bigint, b: bigint): number => (a < b ? -1 : a > b ? 1 : 0);
+
+type RoundLog = { opus: string; phase: "spec" | "review" | "handoff"; n: bigint; outcome: string; session: boolean; reason: boolean; text: string };
 
 /** `.1f` as Python prints it (the baseline's), which rounds an exact tie to even where `toFixed` rounds it up. */
 const oneDecimal = (x: number): string => {
@@ -650,7 +655,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
   const logs: RoundLog[] = [];
   const tabled = new Set<string>();
   for (const name of names) {
-    const m = /^(W-\d+)-(spec|review|handoff)-(\d{1,15})\.log$/.exec(name);
+    const m = new RegExp(`^(W-\\d+)-(spec|review|handoff)-(${ROUND_NUMBER})\\.log$`).exec(name);
     if (m === null) continue;
     const file = readContainedRegularFile(root, `ci/${name}`, "ci", LOG_MAX_BYTES);
     if ("error" in file) return { error: `ci/${name}: ${file.error}` };
@@ -667,7 +672,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
       if (isRefusal(signer)) return signer;
       if (signer.design !== undefined && h.get("sella") === signer.design) continue;
     }
-    logs.push({ opus: m[1]!, phase, n: Number(m[3]), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
+    logs.push({ opus: m[1]!, phase, n: BigInt(m[3]!), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
   }
   const after = new Set(logs.filter((l) => l.session).map((l) => `${l.opus} ${l.phase}`));
   const opus = new Map<string, OpusReviewRounds>();
@@ -700,7 +705,7 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
   const runs = (id: string): number[] => {
     const out: number[] = [];
     let open = 0;
-    for (const l of logs.filter((x) => x.opus === id && x.phase === "handoff").sort((a, b) => a.n - b.n)) {
+    for (const l of logs.filter((x) => x.opus === id && x.phase === "handoff").sort((a, b) => byRound(a.n, b.n))) {
       open++;
       if (l.outcome === "passed") (out.push(open), (open = 0));
     }
@@ -1161,7 +1166,7 @@ const DAILY_HEADING = "## Daily retro";
 const DAILY_WINDOW_DAYS = 14;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_ENTRY = /^### (\d{4}-\d{2}-\d{2})\s*$/;
-const ROUND_LOG = /^(W-\d+)-(spec|review)-([1-9]\d{0,14})\.log$/;
+const ROUND_LOG = new RegExp(`^(W-\\d+)-(spec|review)-(${ROUND_NUMBER})\\.log$`);
 const GATE_LOG = /^(W-\d+)-(tests|lint|types)-([0-9a-f]{8,40})\.log$/;
 const FAILING_ROW = /^(?:✖|not ok \d+ -) (W-\d+-b\d+)(?![\p{L}\p{M}\p{N}])/u;
 /** an `addressed_by` opus in one of these states is not a greenlit cause fix */
@@ -1200,7 +1205,7 @@ export function dailyRetroOwed(root: string, now: Date): { owed: string | undefi
   return { owed: tracker !== undefined && !tracker.days.has(day) ? day : undefined };
 }
 
-type DailyRound = { opus: string; phase: "spec" | "review"; n: number; at: number; day: string; brief: string; failed: boolean; blockers: { cls: string; sev: string }[] };
+type DailyRound = { opus: string; phase: "spec" | "review"; n: bigint; at: number; day: string; brief: string; failed: boolean; blockers: { cls: string; sev: string }[] };
 type GateFailure = { opus: string; log: string; classes: string[]; rows: string[] };
 
 const dayOf = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
@@ -1235,7 +1240,7 @@ function dailyRounds(root: string, names: string[]): DailyRound[] | Refusal {
       .split("\n")
       .filter((l) => /^\d+\. blocking /.test(l))
       .map((l) => ({ cls: /\[class: ([^\]]+)\]/.exec(l)?.[1] ?? "untagged", sev: /\[severity: (S[1-4])\]/.exec(l)?.[1] ?? "untagged" }));
-    out.push({ opus: m[1]!, phase: m[2] as DailyRound["phase"], n: Number(m[3]), at, day: dayOf(at), brief: h.get("brief") ?? "", failed: /^(failed|FAIL|VERDICT: FAIL)/.test(h.get("outcome") ?? ""), blockers });
+    out.push({ opus: m[1]!, phase: m[2] as DailyRound["phase"], n: BigInt(m[3]!), at, day: dayOf(at), brief: h.get("brief") ?? "", failed: /^(failed|FAIL|VERDICT: FAIL)/.test(h.get("outcome") ?? ""), blockers });
   }
   return out;
 }
@@ -1274,7 +1279,7 @@ function roundLoops(rs: DailyRound[]): { cls: string; chain: DailyRound[] }[] {
     if (run.length >= 3 && ![...chains.values()].some((c) => c.length === run.length)) out.push({ cls: "any class", chain: run });
   };
   for (const r of rs) {
-    if (r.failed && (run.length === 0 || r.n === run[run.length - 1]!.n + 1)) {
+    if (r.failed && (run.length === 0 || r.n === run[run.length - 1]!.n + 1n)) {
       run.push(r);
       continue;
     }
@@ -1342,7 +1347,7 @@ export function draftDailyRetro(root: string, day: string): { section: string } 
   const doneToday = [...doneIn].filter(([, end]) => dayOf(end) === day).sort(([a], [b]) => (a < b ? -1 : 1));
   for (const [id, end] of doneToday) {
     const mine = rounds.filter((r) => r.opus === id);
-    const first = mine.find((r) => r.phase === "spec" && r.n === 1);
+    const first = mine.find((r) => r.phase === "spec" && r.n === 1n);
     const failed = mine.filter((r) => r.failed);
     const sev = new Map<string, number>(["S1", "S2", "S3", "S4", "untagged"].map((k) => [k, 0]));
     for (const r of failed) for (const b of r.blockers) sev.set(b.sev, sev.get(b.sev)! + 1);
@@ -1360,7 +1365,7 @@ export function draftDailyRetro(root: string, day: string): { section: string } 
   const seqKeys = [...seqs.keys()].sort();
   let any = false;
   for (const key of seqKeys) {
-    const rs = seqs.get(key)!.sort((a, b) => a.n - b.n);
+    const rs = seqs.get(key)!.sort((a, b) => byRound(a.n, b.n));
     const since = (i: number): string => (i === 0 ? "-" : String(minutes(rs[i - 1]!.at, rs[i]!.at)));
     rs.forEach((r, i) => {
       if (r.day !== day) return;
