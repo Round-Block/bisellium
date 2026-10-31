@@ -83,9 +83,34 @@ test("W-477-b1 behaviour 1: package-lock.json carries no minimatch below 11.0.1,
 // at the lockfile's resolved version and at 11.0.1 or above, so a node_modules left from before the lock moved fails.
 const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
 
-// STUB (red): reads nothing yet; the next commit reads the installed inventory.
-function installedMinimatchProblems(_root, _packages) {
-  return [];
+// Offline: the lockfile's `packages` keys are the paths; each is read at <root>/<key>/package.json.
+function installedMinimatchProblems(root, packages) {
+  const problems = [];
+  for (const [path, entry] of Object.entries(packages)) {
+    const file = join(root, path, "package.json");
+    if (!existsSync(file)) {
+      problems.push(`${path} is not installed (the lock has ${entry?.version})`);
+      continue;
+    }
+    let installed;
+    try {
+      installed = JSON.parse(readFileSync(file, "utf8"))?.version;
+    } catch {
+      problems.push(`${path} has an unreadable package.json`);
+      continue;
+    }
+    if (installed !== entry?.version) {
+      problems.push(`${path} is installed at ${JSON.stringify(installed)} but the lock has ${entry?.version}`);
+      continue;
+    }
+    const parts =
+      typeof installed === "string" && /^\d+\.\d+\.\d+$/.test(installed) ? installed.split(".").map(Number) : null;
+    const at = parts ? parts.findIndex((n, i) => n !== MINIMATCH_FLOOR[i]) : -1;
+    if (!parts || (at !== -1 && (parts[at] ?? 0) < (MINIMATCH_FLOOR[at] ?? 0))) {
+      problems.push(`${path} is installed at ${installed}, below 11.0.1`);
+    }
+  }
+  return problems;
 }
 
 test("W-477-b1 fix 1: a stale installed minimatch beside an 11 lock is refused", () => {
@@ -97,7 +122,10 @@ test("W-477-b1 fix 1: a stale installed minimatch beside an 11 lock is refused",
       "node_modules/gone/node_modules/minimatch": { version: "11.0.3" },
     };
     mkdirSync(join(root, "node_modules/minimatch"), { recursive: true });
-    writeFileSync(join(root, "node_modules/minimatch/package.json"), JSON.stringify({ name: "minimatch", version: "10.2.6" }));
+    writeFileSync(
+      join(root, "node_modules/minimatch/package.json"),
+      JSON.stringify({ name: "minimatch", version: "10.2.6" }),
+    );
     mkdirSync(join(root, "node_modules/eslint/node_modules/minimatch"), { recursive: true });
     writeFileSync(
       join(root, "node_modules/eslint/node_modules/minimatch/package.json"),
