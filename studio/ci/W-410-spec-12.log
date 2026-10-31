@@ -1,0 +1,26 @@
+# opus: W-410
+# phase: spec
+# round: 12
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19225-8ae0-7d92-83d6-fc057bc5f9ba
+# outcome: passed
+# at: 2026-10-31T15:56:53.470Z
+# tree: dirty:5908fe9d63036bb9ec454dd11bf83a25651c6de2
+# dispatch_prompt: ci/W-410-ui-prompt-12.md
+# design_digest: sha256:785386f451ca873fd24a2040b30154781513bec9a55e734fd7a932c64acb9d5a
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":12,"actor":"ui-lead","studio":".worktrees/W-410/studio","head":"fadab89ff7bdea6a91429130be04b57113e337eb","brief":"d89e77e383a0a8941694782c9bf95af65bc25e89","at":"2026-10-31T15:56:48.072Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Round 9 had no findings; round-3 blockers #1, #2 and #3 remain closed: readable type, complete visible ask kinds and no repeated drawer body.
+The brief changes only Files owned and its count; variant C, sizes, all six Defaults and drawer content remain unchanged from round 9.
+The captures still support the Patron-selected design, and the agent-written dimensions remain legible and scannable at 390.
+Owning `apps/web/tests-serve/screenshots.spec.ts` introduces no UI defect; its existing exclusions preserve comparator policy and Patron baseline approval.
+I support round 11’s clarification: limit edits to affected Board readiness locators, with no mask, threshold, skip, viewport, baseline-path or PNG changes.
+The W-350 Board pixel difference still requires Patron baseline approval; this verdict does not approve new baselines.
+Verdict: passed
