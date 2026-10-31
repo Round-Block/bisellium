@@ -1,0 +1,22 @@
+# opus: W-468
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a18ca4-2601-7542-acf6-faac16d42315
+# outcome: failed
+# at: 2026-10-30T14:11:26.063Z
+# tree: tree:6ad2d271e6e24be3bf03b1601e9dfd5e599a5326
+# brief: briefs/W-468.md blob:ffcff7b15ebfc41cf73c002e5fb7f6a47dc12f30
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"bf9cb43e183c2b74a73d6c6fae9793e0e480afb5","brief":"ffcff7b15ebfc41cf73c002e5fb7f6a47dc12f30","at":"2026-10-30T14:11:22.026Z"}
+
+## Findings
+1. blocking — brief:19 Reached by ci/W-468-spec-2.log #1’s class: for a `kind: ui` opus created with the supported `ready --spec briefs/custom.md` while `briefs/<id>.md` also exists, the review judges the custom brief but the ticket and `ofBrief` hash the default brief; real caller `next` can therefore re-red a behaviour numbered by the wrong brief, and W-468-b3 tests only the default path. Replace brief:19 with: “**Which round: only one of the current brief.** A present `# brief:` must exactly equal the current `spec:` pin. With no `# brief:`, the ticket fallback is current only when `opera/<id>.md#spec` is exactly `briefs/<id>.md` and its one canonical ticket’s `brief` equals that pin’s blob; a custom spec pointer, absent identity or any disagreement follows the existing review path.” Apply that same default-path condition to `ofBrief` at brief:42, Promise order at brief:48, the limit at brief:61 and the valid domain at brief:71. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-branch.test.ts W-468-b3 with a kind: ui record whose `spec:` is a non-default brief
+
+## Earlier findings
+- ci/W-468-spec-2.log #1: closed — brief:19, brief:48 and /home/edckt/.bisellium-evidence/W-468-spec/proto/next.ts:1453 now reject the stated older `# brief:` pin, pinned by brief:91’s W-468-b3 case; the new finding is the ticket-fallback sibling reached by that class
+
+## Verdict
+The earlier mismatch is fixed, but the new ticket fallback still misidentifies a valid custom UI brief as current.
+
+VERDICT: FAIL

@@ -1462,3 +1462,229 @@ test("W-461-b2 behaviour 2: the reds perform builds each implementation commit a
   expectStep(r, "reds", "performed", "a series that builds at every commit is performed");
   assert.equal(existsSync(join(g.wt, ...W461_BUNDLE)), true, "the last build left its bundle");
 });
+
+// ---------------------------------------------------------------------------
+// W-468: a fix round records its red. A failed build round whose standing blocker cites this opus's red log is answered by
+// recording that red again on its own ticket, before the fix check (D-086 D)
+// ---------------------------------------------------------------------------
+const W468_LATER = "2026-10-02T12:10:00.000Z";
+const w468Blocker = (cite: string): string => `blocking — ${cite} [severity: S1] the red stops at an earlier assertion than the declared one at brief:1 [class: tests×assertion-satisfied-by-the-wrong-cause] — check: none: fixture`;
+/** A build world (two behaviours, reds at 03:00) whose round 1 failed at 06:00 with `body`, a fresh handover, tickets required. */
+function w468World(tag: string, body: string): World {
+  const w = world(tag, "build");
+  addReview(w, "failed", 1, T.review1, body);
+  handoffAt(w, "wt", T.handoffFresh);
+  ticketed(w);
+  return w;
+}
+/** The fix round's test commit: a source change after the failed round (the cited row now fails at its declared assertion). */
+function w468TestFix(w: World): void {
+  appendFileSync(join(w.wt, "source.txt"), `the cited row fixed ${Date.now()}\n`);
+  commit(w.wt, `test(${OPUS}): the cited row fails at its declared assertion`);
+}
+/** The red verb run directly on the pending ticket, as the builder runs it; its command fails by exit 1. */
+const w468Red = (w: World, k: number, at: string): Out =>
+  direct(w, w.wt, ["red", OPUS, "--behaviour", String(k), "--sella", "builder.W-900", "--studio", w.wtStudio, "--repo", w.wt, "--now", at, "--", process.execPath, "-e", "process.exit(1)"]);
+function w468ReRed(o: Out, k: number, cited: string, row: string): void {
+  expectStep(o, "reds", "named", row);
+  assert.equal(o.status, 0, ran(`${row}: exit 0`, o));
+  assert.equal(o.kv.get("actor"), "builder", ran(`${row}: the builder's order`, o));
+  assert.equal(o.kv.get("phase"), "fix", ran(`${row}: phase fix`, o));
+  assert.equal(o.kv.get("re-red"), cited, ran(`${row}: the cited reds`, o));
+  assert.equal(lastLine(o), `ticket: red round ${k}`, ran(`${row}: the red ticket names the behaviour`, o));
+}
+
+test("W-468-b1 behaviour 1: a failed round citing this opus's red orders that red again on its own ticket, before the fix check", { timeout: 1_800_000 }, () => {
+  const w = w468World("w468-b1", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  const o1 = next(w, [OPUS, ...BUDGET]);
+  w468ReRed(o1, 2, "ci/reds/W-900/02.log", "the cited red is ordered again");
+  assert.equal(o1.kv.get("why"), `review round 1 failed citing the red evidence of behaviour(s) 2, not recorded since ci/${OPUS}-review-1.log; the red is recorded again before the fix check (W-468)`, ran("why", o1));
+  assert.equal(o1.kv.get("inputs"), `briefs/${OPUS}.md, ci/${OPUS}-review-1.log, opera/${OPUS}.md#traditio`, ran("the brief and the failed round are inputs", o1));
+  assert.deepEqual({ ...ticketOf(w), at: undefined, brief: undefined }, { opus: OPUS, step: "reds", action: "red", round: 2, actor: "builder", studio: WT_STUDIO_REL, head: git(w.wt, ["rev-parse", "HEAD"]), brief: undefined, at: undefined });
+  // the test fix commits: the red still comes first, its ticket bound to the new HEAD
+  w468TestFix(w);
+  const o2 = next(w, [OPUS, ...BUDGET]);
+  w468ReRed(o2, 2, "ci/reds/W-900/02.log", "after the test fix the red comes before the fix check");
+  assert.equal(ticketOf(w)["head"], git(w.wt, ["rev-parse", "HEAD"]), "the ticket is bound to the fixed HEAD");
+  // the red verb takes that ticket and replaces 02.log
+  const red = w468Red(w, 2, W468_LATER);
+  assert.equal(red.status, 0, ran("the red verb records the red on its ticket", red));
+  const header = headerOf(join(w.wtStudio, "ci", "reds", OPUS, "02.log"));
+  assert.ok(header.includes(`# at: ${W468_LATER}`), `02.log is replaced by the new red: ${header.join(" | ")}`);
+  assert.match(header.find((l) => l.startsWith("# ticket: ")) ?? "", /"action":"red","round":2,/, "the new red carries its red round 2 ticket");
+  commit(w.wt, `studio(${OPUS}): red b2 again`);
+  // recorded after the round: the fix check follows, as before W-468
+  const o3 = next(w, [OPUS, ...BUDGET]);
+  expectStep(o3, "review", "named", "a red recorded after the round lets the fix check follow");
+  assert.equal(o3.kv.get("why"), "review round 1 failed at an older tree and no fix check of its findings is recorded at this tree (D-086 D)", ran("the fix check", o3));
+
+  // two cited forms, lowest first: a backticked path and a ./ path ending a sentence; a red recorded before the round
+  // (here at 03:00, the round at 06:00) is still stale
+  const two = w468World("w468-b1-two", `1. ${w468Blocker("`studio/ci/reds/W-900/02.log:5`")}\n2. ${w468Blocker("see ./ci/reds/W-900/01.log.")}`);
+  w468ReRed(next(two, [OPUS, ...BUDGET]), 1, "ci/reds/W-900/01.log, ci/reds/W-900/02.log", "two cited reds: behaviour 1 first");
+  assert.equal(w468Red(two, 1, T.reds).status, 0, "a red recorded at 03:00");
+  commit(two.wt, `studio(${OPUS}): red b1 at 03:00`);
+  w468ReRed(next(two, [OPUS, ...BUDGET]), 1, "ci/reds/W-900/01.log, ci/reds/W-900/02.log", "a red not after the round is still stale");
+  assert.equal(w468Red(two, 1, W468_LATER).status, 0, "red 1 again, after the round");
+  commit(two.wt, `studio(${OPUS}): red b1 again`);
+  handoffAt(two, "wt", "2026-10-02T12:20:00.000Z");
+  w468ReRed(next(two, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", "then behaviour 2");
+
+  // forms not read: another opus's log, a number outside 1..n, a glued prefix, a longer name, a .log. suffix, and an advisory
+  const none = w468World(
+    "w468-b1-none",
+    [
+      `1. ${w468Blocker("ci/reds/W-901/02.log, ci/reds/W-900/07.log, ci/reds/W-900/00.log, xci/reds/W-900/02.log, ci/reds/W-900/02.logs and ci/reds/W-900/01.log.bak")}`,
+      "2. advisory — studio/ci/reds/W-900/02.log:3 the red could say more [severity: S3] — check: none: fixture",
+    ].join("\n"),
+  );
+  const o4 = next(none, [OPUS, ...BUDGET]);
+  expectStep(o4, "build", "named", "no recognised citation: the fix order, as before W-468");
+  assert.equal(o4.kv.get("phase"), "fix", ran("no recognised citation: phase fix", o4));
+  assert.equal(lastLine(o4), "ticket: none", ran("no recognised citation: no red ticket", o4));
+});
+
+test("W-468-b2 behaviour 2: the fix round's red order names the restage, the ticket's HEAD, the replaced log and the revert", { timeout: 1_800_000 }, () => {
+  const w = w468World("w468-b2", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  const o = next(w, [OPUS, ...BUDGET]);
+  w468ReRed(o, 2, "ci/reds/W-900/02.log", "the cited red is ordered again");
+  const order = o.kv.get("command") ?? "";
+  assert.match(order, /dispatch builder\.W-900 \(phase fix, the cited red recorded again, W-468\), in \.worktrees\/W-900, for behaviour 2:/, ran("the fix round's red order, for the cited behaviour", o));
+  assert.match(order, /fix the behaviour's test so its row fails at the assertion the brief declares, and commit it/, ran("the test is fixed first", o));
+  assert.match(order, /commit a restage: the behaviour's implementation removed, its fixed test and every other behaviour's code kept/, ran("the restage", o));
+  assert.match(order, /from \.worktrees\/W-900: bisellium next W-900 \(the ticket binds this HEAD\), then bisellium red W-900 --behaviour 2 --sella builder\.W-900 --studio studio -- <the brief's Genuine red command>; it replaces ci\/reds\/W-900\/02\.log/, ran("next, then red, replacing 02.log", o));
+  assert.match(order, /commit the red log alone \(studio files only\), then git revert the restage/, ran("the log alone, then the revert", o));
+  assert.match(order, /certify replays only a commit on opus\/W-900; never rewrite history\./, ran("certify and history", o));
+  assert.doesNotMatch(order, /from behaviour 2 through 2/, ran("not the phase 1 order", o));
+});
+
+test("W-468-b1 behaviour 1: a cited red whose # at: is not an exact time is ordered again", { timeout: 1_800_000 }, () => {
+  const w = w468World("w468-b1-inexact", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", "the cited red is ordered");
+  assert.equal(w468Red(w, 2, W468_LATER).status, 0, "a red recorded after the round");
+  const log = join(w.wtStudio, "ci", "reds", OPUS, "02.log");
+  const text = readFileSync(log, "utf8");
+  // each form reads as a time after the round (06:00) yet is outside the exact UTC profile: date-only, zone-less, offset, a
+  // fraction of one, two, four or nine digits, a lowercase z, hour 24, a leap second, a day past the month's end
+  for (const at of ["2026-10-03", "2026-10-02T12:10:00", "2026-10-02T12:10:00+00:00", "2026-10-02T20:10:00+08:00", "2026-10-02T12:10:00.1Z", "2026-10-02T12:10:00.12Z", "2026-10-02T12:10:00.1234Z", "2026-10-02T12:10:00.123456789Z", "2026-10-02T12:10:00.000z", "2026-10-02T24:00:00.000Z", "2026-12-31T23:59:60.000Z", "2026-11-31T12:10:00.000Z"]) {
+    writeFileSync(log, text.replace(`# at: ${W468_LATER}`, `# at: ${at}`));
+    commit(w.wt, `studio(${OPUS}): red b2 at ${at}`);
+    handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
+    w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", `an inexact # at: ${at} is stale`);
+  }
+  // the # at: LINE is ruled, not its value: only the line red writes (`# at: ` and the profile value, LF) counts; every other
+  // line form is stale, a second at line and one below the header (the log's output) included
+  const line = `# at: ${W468_LATER}\n`;
+  for (const [label, form, tail] of [
+    ["a value with a leading space", `# at:  ${W468_LATER}\n`, ""],
+    ["a value with a leading tab", `# at: \t${W468_LATER}\n`, ""],
+    ["a tab after the colon", `# at:\t${W468_LATER}\n`, ""],
+    ["no space after the colon", `# at:${W468_LATER}\n`, ""],
+    ["a trailing-space-padded", `# at: ${W468_LATER} \n`, ""],
+    ["a trailing-tab-padded", `# at: ${W468_LATER}\t\n`, ""],
+    ["a space-indented", ` # at: ${W468_LATER}\n`, ""],
+    ["a padded-#", `#  at: ${W468_LATER}\n`, ""],
+    ["an uppercase-key", `# AT: ${W468_LATER}\n`, ""],
+    ["a CRLF-ended", `# at: ${W468_LATER}\r\n`, ""],
+    ["a doubled", `${line}${line}`, ""],
+    ["a below-the-header", "", `\n${line}`],
+    ["a final", "FINAL", ""],
+  ] as const) {
+    // "a final": the canonical line is the last segment of the file, its LF missing: the line red writes is LF-ended
+    const body = form === "FINAL" ? `${text.slice(0, text.indexOf("\n\n")).replace(line, "")}\n${line.slice(0, -1)}` : text.replace(line, form);
+    writeFileSync(log, `${body}${tail}`);
+    commit(w.wt, `studio(${OPUS}): red b2 with ${label} at line`);
+    handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
+    w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", form === "FINAL" ? "a final # at: line without LF is stale" : `${label} # at: line is stale`);
+  }
+  // the profile's no-fraction form is exact: recorded after the round, no re-red; the fix order follows (no source change
+  // since the round, so the round's own tree)
+  writeFileSync(log, text.replace(`# at: ${W468_LATER}`, "# at: 2026-10-02T12:10:00Z"));
+  commit(w.wt, `studio(${OPUS}): red b2 at the no-fraction form`);
+  handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
+  const fresh = next(w, [OPUS, ...BUDGET]);
+  expectStep(fresh, "build", "named", "the profile's no-fraction form is fresh");
+  assert.equal(lastLine(fresh), "ticket: none", ran("the profile's no-fraction form is fresh: no red ticket", fresh));
+});
+
+/** W-468-b3: round 1's log pinned by `ticket` (a `# ticket:` line) in place of its `# brief:` line, or by neither, committed. */
+function w468Pin(w: World, ticket: string | undefined): void {
+  const log = join(w.wtStudio, "ci", `${OPUS}-review-1.log`);
+  const text = readFileSync(log, "utf8");
+  assert.match(text, /^# brief: briefs\/W-900\.md blob:[0-9a-f]{40}$/m, "round 1 carries a # brief: pin to replace");
+  const bare = text.replace(/^# brief: .*\n/m, "");
+  writeFileSync(log, ticket === undefined ? bare : bare.replace(/^(# tree: .*)$/m, `$1\n# ticket: ${ticket}`));
+  commit(w.wt, `test(${OPUS}): round 1 pinned by ${ticket === undefined ? "nothing" : "its ticket"}`);
+}
+/** A canonical verdict-build ticket line for round 1 naming `brief`, as `ticketLine` writes it. */
+const w468Ticket = (brief: string): string =>
+  JSON.stringify({ opus: OPUS, step: "review", action: "verdict-build", round: 1, actor: "censor", studio: WT_STUDIO_REL, head: "0".repeat(40), brief, at: T.review1 });
+const w468Blob = (w: World): string => {
+  const bytes = readFileSync(WT_BRIEF(w));
+  return createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+};
+/**
+ * W-468-b3: the record made kind: ui with a custom `spec:` (briefs/custom.md: other bytes than briefs/W-900.md, or with `same`
+ * its bytes), a ui-lead seat
+ * and its UI input recorded through `next` and `verdict`, so the spec gate passes and the build rung is reached.
+ */
+function w468Custom(w: World, same = false): void {
+  writeFileSync(join(w.wtStudio, "briefs", "custom.md"), `${readFileSync(WT_BRIEF(w), "utf8")}${same ? "" : "\nA custom brief.\n"}`);
+  editRecord(w, "wt", (doc) => {
+    doc.setIn(["kind"], "ui");
+    doc.setIn(["spec"], "briefs/custom.md");
+  });
+  const yml = join(w.wtStudio, "bisellium.yml");
+  writeFileSync(yml, readFileSync(yml, "utf8").replace(/^(  - \{ id: architect,.*)$/m, "$1\n  - { id: ui-lead, collegium: design, kind: agent, model: gpt-6-astra, harness: codex }"));
+  expectStep(next(w, [OPUS, ...BUDGET]), "spec", "named", "a kind: ui record asks its UI input first");
+  put(w.wtStudio, `ci/${OPUS}-ui-prompt-2.md`, "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n");
+  const from = join(w.root, "w468-ui-input.md");
+  writeFileSync(from, ["## Findings", "No findings", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "## Recommendation", "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: passed", ""].join("\n"));
+  const ui = direct(w, w.wt, ["verdict", OPUS, "--round", "2", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--from", from, "--dispatch-prompt", `ci/${OPUS}-ui-prompt-2.md`, "--studio", w.wtStudio, "--now", T.spec]);
+  assert.equal(ui.status, 0, ran("the UI input is recorded", ui));
+}
+function w468NoReRed(o: Out, row: string): void {
+  expectStep(o, "build", "named", row);
+  assert.equal(o.kv.get("phase"), "fix", ran(`${row}: phase fix`, o));
+  assert.equal(lastLine(o), "ticket: none", ran(`${row}: no red ticket`, o));
+}
+
+test("W-468-b3 behaviour 3: only a failed round of the current brief orders its cited red again", { timeout: 1_800_000 }, () => {
+  // W-206-b3 with a cited red: round 2 fails citing 01.log against the brief then; the brief is amended and re-signed, so the
+  // round's # brief: pin is not the current one: review, as W-206-b3 orders, never a red ticket for the current brief
+  const old = w206World("w468-b3-old", "review", "failed");
+  addReview(old, "failed", 2, T.review2, `1. ${w468Blocker("studio/ci/reds/W-900/01.log:3")}`);
+  amend(old);
+  assert.equal(wtSpec(old, 3, "architect", "passed").status, 0, "signature 3");
+  assert.equal(wtSpec(old, 4, SR, "passed", SR_MODEL).status, 0, "review 4");
+  expectStep(next(old, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the amendment is committed");
+  handoffAt(old, "wt", "2026-10-02T09:30:00.000Z");
+  const o1 = next(old, [OPUS, ...BUDGET]);
+  expectStep(o1, "review", "named", "a round of an older brief citing a red: review, not a re-red");
+  assert.equal(o1.kv.has("re-red"), false, ran("a round of an older brief: no re-red line", o1));
+
+  // a round with no # brief: (a kind: ui build round) is read by its one ticket's brief blob
+  const tk = w468World("w468-b3-ticket", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Pin(tk, w468Ticket(w468Blob(tk)));
+  w468ReRed(next(tk, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", "a round pinned by its ticket's brief: the cited red is ordered again");
+
+  const other = w468World("w468-b3-other", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Pin(other, w468Ticket("f".repeat(40)));
+  w468NoReRed(next(other, [OPUS, ...BUDGET]), "a ticket of another brief: no re-red");
+
+  const bare = w468World("w468-b3-bare", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Pin(bare, undefined);
+  w468NoReRed(next(bare, [OPUS, ...BUDGET]), "no brief identity: no re-red");
+
+  // a kind: ui record whose spec: is a custom brief: the ticket hashes briefs/W-900.md, not the brief the round judged, so the
+  // fallback does not hold and the existing review path follows (the custom pointer's re-red is W-475)
+  const custom = w468World("w468-b3-custom", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Custom(custom);
+  w468Pin(custom, w468Ticket(w468Blob(custom)));
+  w468NoReRed(next(custom, [OPUS, ...BUDGET]), "a custom spec pointer: no re-red");
+  // the same with briefs/custom.md a byte-identical copy: the fallback is the default path's only, whatever bytes it names
+  const copy = w468World("w468-b3-copy", `1. ${w468Blocker("studio/ci/reds/W-900/02.log:17")}`);
+  w468Custom(copy, true);
+  w468Pin(copy, w468Ticket(w468Blob(copy)));
+  w468NoReRed(next(copy, [OPUS, ...BUDGET]), "a custom spec pointer to the same bytes: no re-red");
+});

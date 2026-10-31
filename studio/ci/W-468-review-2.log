@@ -1,0 +1,22 @@
+# opus: W-468
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18d59-f150-7be1-b802-233993e2c707
+# outcome: failed
+# at: 2026-10-30T16:02:22.323Z
+# tree: tree:17fbdb5e1fe2d6108fe321115274c85e78c98f11
+# brief: briefs/W-468.md blob:d19b25830a351b724fdcaaf78277b0bd9cb43655
+# ticket: {"opus":"W-468","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-468/studio","head":"a7307c809eb6699186c782516e67cbc4bf683afb","brief":"d19b25830a351b724fdcaaf78277b0bd9cb43655","at":"2026-10-30T16:01:24.966Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:1449 Reached by ci/W-468-review-1.log #1’s class: `exactInstant` accepts fractional forms such as `2026-10-02T12:10:00.1Z` and `.1234Z`, although `red`’s exact UTC profile permits only no fraction or exactly three digits; such a malformed log can still be treated as fresh instead of stale, contrary to brief:73. [severity: S1] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/next-branch.test.ts W-468-b1 cases for one-digit and four-digit fractional `# at:` values
+
+## Earlier findings
+- ci/W-468-review-1.log #1: open — packages/cli/src/next.ts:1449 still accepts timestamp forms outside the exact UTC profile and can treat them as recorded after the failed round
+
+## Verdict
+The fix rejects the original examples but still fails open for sibling malformed timestamps.
+
+VERDICT: FAIL

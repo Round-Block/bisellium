@@ -31,11 +31,11 @@ import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
-import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, uiReviewSuperseded, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, uiReviewSuperseded, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
-import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
+import { actionFacts, parseTicketLine, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
@@ -1214,6 +1214,20 @@ export function deriveNext(f: Facts): Derived {
     // W-381 (D-070 C, D-076 D): a failed round whose S1 blocker names a class seen before in another opus holds its fix
     const repeat = gate !== undefined && gate.status === "failed" && gate.evidence !== undefined ? repeatHold(f, gate.evidence, bs) : undefined;
     if (repeat !== undefined) return hold("build", repeat);
+    // W-468 (lex §9.0, §9.3): a failed round whose standing blocker cites a red log of this opus not recorded since that round
+    // is answered by recording the red again, one behaviour at a time on its own ticket, before the fix check (D-086 D) and
+    // before any fix order; once every cited red is recorded after the round's log, the ladder goes on as before. Only a round
+    // of the current brief is read (`ofBrief`): a round of another brief, or of none known, follows the review path as before
+    const citing = gate !== undefined && gate.status === "failed" ? read.rounds.find((r) => r.n === gate.round) : undefined;
+    const reRed = citing === undefined || !ofBrief(citing, pin, specRel, bs, id) ? [] : staleCitedReds(id, citing, bs, n);
+    if (citing !== undefined && reRed.length > 0)
+      return dispatch(f, "reds", `review round ${citing.n} failed citing the red evidence of behaviour(s) ${reRed.join(", ")}, not recorded since ${citing.log}; the red is recorded again before the fix check (W-468)`, {
+        phase: "fix",
+        resume: true,
+        inputs: [briefRel(id), citing.log],
+        extra: [["re-red", reRed.map((k) => `ci/reds/${id}/${pad(k)}.log`).join(", ")], ...fixes],
+        behaviour: { from: reRed[0]!, through: reRed[0]! },
+      });
     // W-328 (D-086 B): a failed round's fix committed outside the source tree (its tree and brief unchanged) is re-reviewed,
     // never sent back to the builder; `redo` is a round failed at this tree and brief with no such fix. A read that fails holds
     const outside = failedNow ? fixedOutside(f, read.rounds.find((r) => r.n === gate?.round)) : 0;
@@ -1408,6 +1422,77 @@ function replayed(f: Facts, bs: Src, n: number): boolean {
   if (p === undefined || "error" in p) return false;
   for (let k = 1; k <= n; k++) if (parseLogHeader(bs.read(`ci/reds/${f.id}/${pad(k)}.log`) ?? "").get("sella") !== f.design) return false;
   return true;
+}
+
+/**
+ * W-468: the behaviours 1..n whose red log a standing blocker of the failed `round` cites as `ci/reds/<id>/<nn>.log` (any
+ * leading path; no letter, mark or number of any script, `_`, `.` or `-` before `ci`; no letter, mark, number, `_` or
+ * `-`, and no `.` and a letter, mark or number, after `.log`), and whose log on the branch is absent, not a usable red, or recorded (`# at:`) no later than the
+ * round's log: ascending, each once. Advisories, other opera's logs and numbers outside 1..n are not read.
+ */
+function staleCitedReds(id: string, round: BuildReviewRound, bs: Src, n: number): number[] {
+  const cite = new RegExp(`(?<![\\p{L}\\p{M}\\p{N}_.-])ci/reds/${esc(id)}/([0-9]{2})\\.log(?![\\p{L}\\p{M}\\p{N}_-]|\\.[\\p{L}\\p{M}\\p{N}])`, "gu");
+  const cited = new Set<number>();
+  for (const b of round.blockers) for (const m of b.text.matchAll(cite)) cited.add(Number(m[1]));
+  return [...cited]
+    .filter((k) => k >= 1 && k <= n)
+    .sort((a, b) => a - b)
+    .filter((k) => {
+      const text = bs.read(`ci/reds/${id}/${pad(k)}.log`);
+      const at = text === undefined ? undefined : exactRedAt(text);
+      return text === undefined || !usableRed(text) || at === undefined || at <= round.at;
+    });
+}
+
+/**
+ * W-468: a red log's exact recorded time, read by LINE: the header block of `parseLogHeader` (the log split at `\n`, its
+ * leading `# key: value` lines by the same pattern, each tested without one trailing CR) must hold exactly one `at` line (any
+ * key case), and that line, with its bytes as written (a CR before the LF kept) and its LF present, must be `# at: ` and then
+ * an `exactInstant` value, nothing after it: the line `red` writes. Any other line form (padding before or after the value, a
+ * tab or no space after the colon, a padded `#`, another key case, a CRLF ending, a missing LF at the end of the file, a second
+ * `at` line) is undefined (stale).
+ */
+function exactRedAt(text: string): number | undefined {
+  const parts = text.split("\n");
+  const at: number[] = [];
+  for (const [i, raw] of parts.entries()) {
+    const m = /^#\s*([A-Za-z_]+):\s*(.*)$/.exec(raw.endsWith("\r") ? raw.slice(0, -1) : raw);
+    if (!m) break;
+    if (m[1]!.toLowerCase() === "at") at.push(i);
+  }
+  if (at.length !== 1) return undefined;
+  // the last segment of the split did not end in an LF: its line is not the line `red` writes
+  const i = at[0]!;
+  const line = parts[i]!;
+  return i < parts.length - 1 && line.startsWith("# at: ") ? exactInstant(line.slice("# at: ".length)) : undefined;
+}
+
+/**
+ * An exact recorded time as epoch ms: the studio's one exact UTC profile (`utcTimestampProblem`: `YYYY-MM-DDTHH:MM:SSZ` or
+ * `YYYY-MM-DDTHH:MM:SS.sssZ`, fields in range, a real Gregorian day, not year 0000), the profile `red`'s `--now` is checked
+ * against and `ladder.ticket` reads; `red` writes `toISOString()`, inside it. The value is read raw, before any trimming;
+ * every other form, padding and an absent value included, is undefined (stale).
+ */
+function exactInstant(v: string | undefined): number | undefined {
+  return v !== undefined && utcTimestampProblem(v) === undefined ? instant(v)?.getTime() : undefined;
+}
+
+/**
+ * W-468: the failed `round` was recorded against the current brief, so its behaviour numbers are this brief's: its `# brief:`
+ * pin equals `pin` (the current `spec:` pin) exactly; or, when it carries none (a kind: ui build round), the record's `spec:`
+ * is exactly briefs/<id>.md (the brief a ticket hashes) and the round's log has exactly one `# ticket:` line that
+ * `parseTicketLine` accepts and whose `brief` is that pin's blob. Anything else (a custom spec pointer, W-475; no pin, an
+ * unreadable log or brief, no, two or a malformed ticket, a disagreeing pin or blob) is not.
+ */
+function ofBrief(round: BuildReviewRound, pin: string | undefined, specRel: string | undefined, bs: Src, id: string): boolean {
+  if (round.brief !== undefined) return pin !== undefined && round.brief === pin;
+  if (specRel !== briefRel(id) || pin === undefined) return false;
+  const text = bs.read(round.log);
+  if (text === undefined) return false;
+  const p = parseVerdictLog(text, id, round.log);
+  const lines = "error" in p ? [] : (p.headers.get("ticket") ?? []);
+  const t = lines.length === 1 ? parseTicketLine(lines[0]!) : undefined;
+  return t !== undefined && !("error" in t) && pin === `${specRel} blob:${t.brief}`;
 }
 
 /** A red the reds rung counts: an integer, non-zero exit on a clean tree, not a module-load failure. */
@@ -1745,8 +1830,20 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
       "If red refuses, finish the earlier behaviour it names; never re-record a red at the tip.",
       "A red recorded on the wrong tree is re-recorded with --cwd in a detached worktree at the commit it belongs on, after the branch's last rebase, and its log committed at the tip; never rewrite history.",
     ];
+    // W-468: a fix round's red is recorded again at a restage commit on the branch, so certify's replay finds its tree
+    const fixRed = (k: number): string =>
+      [
+        `dispatch ${sella} (phase fix, the cited red recorded again, W-468), in .worktrees/${id}, for behaviour ${k}:`,
+        "1. unless it is committed already, fix the behaviour's test so its row fails at the assertion the brief declares, and commit it;",
+        "2. commit a restage: the behaviour's implementation removed, its fixed test and every other behaviour's code kept;",
+        `3. from .worktrees/${id}: bisellium next ${id} (the ticket binds this HEAD), then bisellium red ${id} --behaviour ${k} --sella ${sella} --studio ${studioRel} -- <the brief's Genuine red command>; it replaces ci/reds/${id}/${pad(k)}.log;`,
+        "4. commit the red log alone (studio files only), then git revert the restage, so the tip's source is the fixed tree again;",
+        `then bisellium next ${id}: the next cited red, or the fix check (D-086 D). A red run with --cwd is still bound to this worktree's HEAD, where its log is written, and certify replays only a commit on opus/${id}; never rewrite history.`,
+      ].join("\n");
     command =
-      o.behaviour === undefined
+      o.phase === "fix" && o.behaviour !== undefined
+        ? fixRed(o.behaviour.from)
+        : o.behaviour === undefined
         ? [`${head}, to resolve: ${why}`, ...closing].join("\n")
         : [
             `${head}, from behaviour ${o.behaviour.from} through ${o.behaviour.through}, for each in turn:`,

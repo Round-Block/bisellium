@@ -1,0 +1,19 @@
+# opus: W-468
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a18d59-f150-7be1-b802-233993e2c707
+# outcome: failed
+# at: 2026-10-30T15:09:55.914Z
+# tree: tree:79df0bb7211f626f831be427c4ce49c8e47dadb7
+# brief: briefs/W-468.md blob:d19b25830a351b724fdcaaf78277b0bd9cb43655
+# ticket: {"opus":"W-468","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-468/studio","head":"b7005920b015cd9ae36a966f576597bcb45aba01","brief":"d19b25830a351b724fdcaaf78277b0bd9cb43655","at":"2026-10-30T15:07:19.542Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:1442 `staleCitedReds` uses the permissive `instant` parser, so a cited log with an inexact timestamp such as `# at: 2026-10-03` can be treated as recorded after an October 2 round instead of stale; the Input domain requires any log without an exact `# at:` to be ordered again (brief:73). — check: packages/cli/src/next-branch.test.ts W-468-b1 case covering date-only, zone-less, and offset `# at:` values [severity: S1] [class: review×fail-open-on-malformed-records-patched-per-site]
+
+## Verdict
+The re-red path fails closed incorrectly for malformed timestamp evidence inside the brief’s stated domain.
+
+VERDICT: FAIL

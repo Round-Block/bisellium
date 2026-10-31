@@ -1,0 +1,28 @@
+# opus: W-468
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T14:45:36.721Z
+# tree: tree:6ad2d271e6e24be3bf03b1601e9dfd5e599a5326
+# brief: briefs/W-468.md blob:d19b25830a351b724fdcaaf78277b0bd9cb43655
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"a07c14247fad9adabf2961b7aafecfb32bdfd614","brief":"d19b25830a351b724fdcaaf78277b0bd9cb43655","at":"2026-10-30T14:45:31.074Z"}
+
+# W-468 spec signature, round 5 (architect, claude-opus-5-5): revision 3, the D-061 §4 cut
+
+Brief: studio/briefs/W-468.md revision 3, prototyped over master a07c1424 (series 2928c5b7, prototype.mbox sha256 0b0ffff09bc01e5f5cb04adc2f9e45092cdb4042b15f0785fa6fac4855302539); evidence in /home/edckt/.bisellium-evidence/W-468-spec/ (revision 3 written by edit-brief-r5.py from brief-r3.md; the ledger by ledger-r5.py).
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-468-spec/promise-ledger.md
+
+Spec review round 4 (ci/W-468-spec-4.log) was the second review, so D-061 §4 ends review: the remainder is filed as W-475 and this revision cuts the brief to what passed. Its blocker (a kind: ui opus whose `spec:` names a custom brief while briefs/<id>.md exists: the ticket and `ofBrief` hashed the default brief, so `next` could re-red a behaviour numbered by the wrong brief) is not handled but cut: the reviewer's replacement text is adopted at brief:19, and the same default-path condition at `ofBrief` (brief:42, now `ofBrief(round, pin, specRel, bs, id)`), Promise order (brief:48), the limit (brief:61) and the valid domain (brief:71). The ticket fallback holds only when `opera/<id>.md#spec` is exactly briefs/<id>.md and the ticket's `brief` is that pin's blob; a custom pointer follows the existing review path, a stated limit and an Out of scope line naming W-475. W-451's `spec:` is briefs/W-451.md, so it keeps the fallback. Row W-468-b3 gains the reviewer's check: a kind: ui record (ui-lead seat, UI input recorded through `next` and `verdict`) whose `spec:` is briefs/custom.md takes the review path, with other bytes and with a byte-identical copy. Nothing else in the design changed.
+
+Checked: the three reds fail by assertion on their red commits and on master's source and are accepted by the replay classifier (red-accept.out); row b3's red is at "a round of an older brief citing a red: review, not a re-red" (red-b3.out, red-b3.log); each row passes at its stage and every later stage; eighteen source kills fail their row at the assertion they guard (kills.out), K17 being round 3's `ofBrief` body (the round-4 blocker, caught at "a custom spec pointer: no re-red") and K18 the spec-pointer refusal dropped (caught at "a custom spec pointer to the same bytes: no re-red"); lint, format, typecheck, the whole next test group (197 pass), the ladder.ticket, rules/tests, check and containment tests and both officina checks pass on stage 3 (gates-proto.out); every series commit typechecks and builds the web bundle (series-builds.out); admission returns no problem (admission.out); master's promise-ledger validator returns no problem (ledger-probe.out); the prototype's read-only next --all still names W-451's re-red (dogfood.out). The Codex test check rerun on this revision (fixture-census.md) lists no flip and nothing unnamed; every must-stay-green row it names is in the files the gates ran whole. Only packages/cli/src/next.ts and its test file change; no code-owned file.
+
+## Findings
+1. advisory — a fix round's re-red for a kind: ui opus whose `spec:` names a custom brief is cut, not handled: its round is not read and the review path follows; filed as W-475 under D-061 §4 — check: next.ts:1456 (prototype)
+2. advisory — a regression red a fix round adds for a new failure (W-461's kind) is not covered; it needs a second red log and certify reading it, a follow-up that lands certify first (Defaults 2) — check: run-builder-host.mjs:681 (master)
+3. advisory — a kind: ui round recorded without step tickets carries neither a `# brief:` pin nor a ticket, so its cited red is not ordered again and the review path follows; writing the pin into ui build rounds is verdict's change, out of scope — check: verdict.ts:1109 (master)
+
+## Verdict
+passed — cut to what passed review: a failed build review of the current brief that cites the opus's red log orders that red again, in phase fix, on its own red ticket, before the fix check; a round of another brief, or a ui round whose `spec:` is a custom brief (W-475), follows the review path; the red replaces its log at a restage commit that certify replays unchanged, which unblocks W-451.

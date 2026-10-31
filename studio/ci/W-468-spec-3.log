@@ -1,0 +1,27 @@
+# opus: W-468
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-30T13:20:41.815Z
+# tree: tree:d9bf30b88d9549f3ce9d689c7ce705caf6220b61
+# brief: briefs/W-468.md blob:ffcff7b15ebfc41cf73c002e5fb7f6a47dc12f30
+# ticket: {"opus":"W-468","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"20861cb129509f621d67edac89610e85bf0979f2","brief":"ffcff7b15ebfc41cf73c002e5fb7f6a47dc12f30","at":"2026-10-30T13:20:40.783Z"}
+
+# W-468 spec signature, round 3 (architect, claude-opus-5-5): revision 2
+
+Brief: studio/briefs/W-468.md revision 2, prototyped over master 5685e99c (series fdc445cf, prototype.mbox sha256 4c7ccd34e996470e21bb6c1b8ddcf1f9b8b8b136cc00f812bdf13a1bef7c64da); evidence in /home/edckt/.bisellium-evidence/W-468-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-468-spec/promise-ledger.md
+
+Revision 2 closes spec review round 2 (ci/W-468-spec-2.log). The blocker (brief:44, a failed round of an older brief could order a red for the wrong current behaviour): a round is read only when it is of the current brief (`ofBrief`): its `# brief:` pin equals the branch pin exactly, or, with no `# brief:`, its one `# ticket:` line's `brief` equals the branch brief's blob; anything else follows the review path. The reviewer's text made an absent pin follow the review path; verdict writes no `# brief:` into a kind: ui build round, and W-451 (a ui opus) has none, its ticket naming its branch brief's blob, so the ticket is read for that case or W-468 would not unblock W-451. Pinned by the new row W-468-b3, W-206-b3 with a cited red and the mismatched pin, plus the ticket cases. The three advisories' replacement text is adopted (Intent's reader disagreement; the review-gate row; the test-inputs row, extended to row b3's inputs and marked unpinned as admission requires).
+
+Checked: the three reds fail by assertion on their red commits and on master's source and are accepted by the replay classifier (red-accept.out); each row passes at its stage and every later stage; sixteen source kills fail their row at the assertion they guard (kills.out); lint, format, typecheck, the whole next test group, the ladder.ticket rule's tests and both officina checks pass on stage 3 (gates-proto.out); every series commit typechecks and builds the web bundle (series-builds.out); admission returns no problem (admission.out); master's promise-ledger validator returns no problem (ledger-probe.out); the prototype's read-only next --all names W-451's re-red (dogfood.out). The Codex test check on this brief (fixture-census.md) lists no flip and nothing unnamed; every must-stay-green row it names in the touched files passes on stage 3, W-206-b3 among them. Only packages/cli/src/next.ts and its test file change; no code-owned file.
+
+## Findings
+1. advisory — a regression red a fix round adds for a new failure (W-461's kind) is not covered; it needs a second red log and certify reading it, a follow-up that lands certify first (Defaults 2) — check: run-builder-host.mjs:681 (master)
+2. advisory — a kind: ui round recorded without step tickets carries neither a `# brief:` pin nor a ticket, so its cited red is not ordered again and the review path follows; writing the pin into ui build rounds is verdict's change, out of scope — check: verdict.ts:1109 (master)
+
+## Verdict
+passed — a failed build review of the current brief that cites the opus's red log now orders that red again, in phase fix, on its own red ticket, before the fix check; a round of another brief follows the review path; the red replaces its log at a restage commit that certify replays unchanged, which unblocks W-451.
