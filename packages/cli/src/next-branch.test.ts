@@ -1572,12 +1572,30 @@ test("W-468-b1 behaviour 1: a cited red whose # at: is not an exact time is orde
     handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
     w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", `an inexact # at: ${at} is stale`);
   }
-  // a padded value is not exact either: the raw header value is read, not its trimmed form
-  for (const [label, pad] of [["a trailing-space-padded", " "], ["a trailing-tab-padded", "\t"]] as const) {
-    writeFileSync(log, text.replace(`# at: ${W468_LATER}`, `# at: ${W468_LATER}${pad}`));
-    commit(w.wt, `studio(${OPUS}): red b2 with ${label} at`);
+  // the # at: LINE is ruled, not its value: only the line red writes (`# at: ` and the profile value, LF) counts; every other
+  // line form is stale, a second at line and one below the header (the log's output) included
+  const line = `# at: ${W468_LATER}\n`;
+  for (const [label, form, tail] of [
+    ["a value with a leading space", `# at:  ${W468_LATER}\n`, ""],
+    ["a value with a leading tab", `# at: \t${W468_LATER}\n`, ""],
+    ["a tab after the colon", `# at:\t${W468_LATER}\n`, ""],
+    ["no space after the colon", `# at:${W468_LATER}\n`, ""],
+    ["a trailing-space-padded", `# at: ${W468_LATER} \n`, ""],
+    ["a trailing-tab-padded", `# at: ${W468_LATER}\t\n`, ""],
+    ["a space-indented", ` # at: ${W468_LATER}\n`, ""],
+    ["a padded-#", `#  at: ${W468_LATER}\n`, ""],
+    ["an uppercase-key", `# AT: ${W468_LATER}\n`, ""],
+    ["a CRLF-ended", `# at: ${W468_LATER}\r\n`, ""],
+    ["a doubled", `${line}${line}`, ""],
+    ["a below-the-header", "", `\n${line}`],
+    ["a final", "FINAL", ""],
+  ] as const) {
+    // "a final": the canonical line is the last segment of the file, its LF missing: the line red writes is LF-ended
+    const body = form === "FINAL" ? `${text.slice(0, text.indexOf("\n\n")).replace(line, "")}\n${line.slice(0, -1)}` : text.replace(line, form);
+    writeFileSync(log, `${body}${tail}`);
+    commit(w.wt, `studio(${OPUS}): red b2 with ${label} at line`);
     handoffAt(w, "wt", "2026-10-04T00:00:00.000Z");
-    w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", `${label} # at: is stale`);
+    w468ReRed(next(w, [OPUS, ...BUDGET]), 2, "ci/reds/W-900/02.log", form === "FINAL" ? "a final # at: line without LF is stale" : `${label} # at: line is stale`);
   }
   // the profile's no-fraction form is exact: recorded after the round, no re-red; the fix order follows (no source change
   // since the round, so the round's own tree)
