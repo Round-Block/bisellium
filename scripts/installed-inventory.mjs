@@ -1,5 +1,5 @@
 /**
- * scripts/installed-inventory.mjs — W-477 (studio/briefs/W-477.md, revision 2): the installed copies of one package
+ * scripts/installed-inventory.mjs — W-477 (studio/briefs/W-477.md, revisions 2 and 3): the installed copies of one package
  * against the lockfile, offline. The lockfile is not the install: a node_modules left from before the lock moved, or an
  * extra copy npm ci would not write, is what eslint loads. `installedInventoryProblems` walks the install and names
  * every difference; scripts/source-map-js.test.mjs runs it for minimatch on the real tree and on fixtures.
@@ -19,17 +19,38 @@ export function lockedCopies(packages, name) {
   return out;
 }
 
+/** The `workspaces` patterns of a root package.json, read as npm reads them: absent is none, an array is its patterns,
+ *  an object's `packages` array is its patterns; any other value is `undefined`, a problem, never read as none. */
+function workspacePatterns(manifest) {
+  const declared = manifest.workspaces;
+  if (declared === undefined) return [];
+  if (Array.isArray(declared)) return declared;
+  if (Array.isArray(declared?.packages)) return declared.packages;
+  return undefined;
+}
+
 /** The node_modules folders the walk starts at: `<root>/node_modules` and `<root>/<ws>/node_modules` for each folder a
- *  `workspaces` pattern of `<root>/package.json` names. A pattern is `<dir>/*` or a plain folder; any other is a problem. */
+ *  `workspaces` pattern of `<root>/package.json` names. A pattern is `<dir>/*` or a plain folder; any other is a problem,
+ *  as is a root package.json that is not a JSON object and a `workspaces` value npm would not read. */
 function startFolders(root, problems) {
   const starts = ["node_modules"];
-  let workspaces = [];
+  let manifest;
   try {
-    workspaces = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))?.workspaces ?? [];
+    manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   } catch {
-    problems.push("package.json is unreadable");
+    manifest = undefined;
   }
-  if (!Array.isArray(workspaces)) workspaces = [];
+  if (typeof manifest !== "object" || manifest === null || Array.isArray(manifest)) {
+    problems.push("package.json is unreadable");
+    return starts;
+  }
+  const workspaces = workspacePatterns(manifest);
+  if (workspaces === undefined) {
+    problems.push(
+      `package.json workspaces ${JSON.stringify(manifest.workspaces)} is not an array or an object with a packages array`,
+    );
+    return starts;
+  }
   for (const pattern of workspaces) {
     if (typeof pattern === "string" && /^[\w.-]+\/\*$/.test(pattern)) {
       const dir = pattern.slice(0, -2);
