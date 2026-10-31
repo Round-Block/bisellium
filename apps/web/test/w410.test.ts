@@ -75,3 +75,15 @@ test("W-410-b1 behaviour 1: one waiting model carries the handoff facts without 
   assert.deepEqual(model.columns.flatMap(({ cards }) => cards.map(({ id }) => id)), ["W-2", "W-1", "W-3", "W-4", "W-5", "W-6", "W-7"], "every lifecycle phase keeps exactly one placed card");
 });
 
+test("W-410-b2 behaviour 2: waiting age is one compact mono numeral with explicit unknown", () => {
+  const format = (board as Record<string, unknown>)["formatWaitingAge"];
+  assert.equal(typeof format, "function", "the Board exports one waiting-age formatter");
+  const render = format as (since: number | undefined, now: number) => string;
+  const now = at("2026-10-31T12:00:00Z");
+  assert.equal(render(now - 42_000, now), "42s", "a sub-hour wait is shown in seconds");
+  assert.equal(render(now - 4 * 3_600_000 - 59_000, now), "4h", "an hours-old wait is shown in whole hours");
+  assert.equal(render(now - 3 * 86_400_000 - 23 * 3_600_000, now), "3d", "a days-old wait is shown in whole days");
+  assert.equal(render(now + 10_000, now), "0s", "clock skew never produces a negative age");
+  assert.equal(render(undefined, now), "—", "a missing or invalid wait start is stated as unknown");
+  assert.equal(render(Number.NaN, now), "—", "a non-finite wait start is stated as unknown");
+});
