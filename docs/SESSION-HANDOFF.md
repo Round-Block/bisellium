@@ -17,23 +17,24 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 3. Roles. A dispatched `ladder-runner` runs every record write (`next --perform`, `verdict`, `review`, `red`, `ready`, `done`, `branch`, `merge`) verbatim, never main thread. Engineering: Sonnet builders (background), Opus 5.5 architect, Codex `gpt-5.6-sol` review (D-066 C, D-072). `kind: ui`: Codex Sol drafts and signs, Opus 5.5 reviews spec, Codex `gpt-5.6-terra` builds, a fresh Sol session reviews build (D-091 A, D-099). `clerk` edits text only.
 4. Known traps until filed:
 - Standing (W-323 pattern): a change to certify's host runner is judged by the old runner at its own merge, so split it out, land it first. The mint runs from the opus worktree with `--studio studio --repo .`.
-- `next` holds a signature or red on a stale handover: `bisellium handoff --opus <id> --sella producer --next … --studio <worktree>/studio`, commit the record. Every record write, the builder's `red` needs a `next` before it at the same head (tell the builder; its brief forbids `next`). Sign findings as `n. advisory — … — check: …` or `No findings`.
-- A ui opus's master `verify` runs from a writable worktree on a `verify/<id>-<date>` branch at master (the main checkout is EROFS for app paths), its logs landed by a records PR; done needs a Patron ruling on master's tree (D-116 for W-406) until W-382. `verify` refuses a dirty tree. Heavy-job slots: 3 on trial (Patron 10-29); no master move during a verify.
+- `next` holds a signature or red on a stale handover: `bisellium handoff --opus <id> --sella producer --next … --studio <worktree>/studio`, commit the record. Every record write, the builder's `red` needs a `next` before it at the same head (its brief forbids `next`). Sign findings as `n. advisory — … — check: …` or `No findings`.
+- A ui opus's master `verify` runs from a writable worktree on a `verify/<id>-<date>` branch at master (the main checkout is EROFS for app paths), its logs landed by a records PR; done needs a Patron ruling on master's tree (D-116 for W-406) until W-382. `verify` refuses a dirty tree. Heavy-job slots: 3 on trial; no master move during a verify.
 - docs/SESSION-HANDOFF.md is not in source_excludes until W-483: a handoff edit moves a ui verify's tree; land it before the verify starts.
 - A new opus record lands in the same PR as its Queue line. Prompts with backticks go in a kept file, never an unquoted heredoc.
-- Records PRs: run `check -- studio --repo .` before pushing (a new opus needs a milestone; a greenlit one its Queue line); push with `git push origin HEAD:<branch>` (read-only config lock); after `gh pr merge --auto` confirm isInMergeQueue; a queued branch cannot be pushed: dequeue first. Push-notify the Patron at every wait (W-418 covers PR reviews only). The clerk has Read and Write only.
+- Records PRs: `check -- studio --repo .` before pushing (new opus: milestone; greenlit: Queue line); push with `git push origin HEAD:<branch>` (config lock); after `--auto` confirm isInMergeQueue; a queued branch cannot be pushed: dequeue first. Push-notify the Patron at every wait.
 - An agent session cannot pull a merged `.claude/` change (read-only mount; restore what a failed pull applied): the Patron runs `git -C ~/agents/bisellium pull --ff-only origin master` (W-239). Code-owner review gates PRs on `.github/`, `.claude/`, `studio/leges/`, `studio/decisions/`, `studio/bisellium.yml`, `studio/prompts/`, `docs/ADOPTION.md`, `scripts/ci-certify.mjs`; a push dismisses approval; re-request review (`gh pr edit <n> --add-reviewer edckt`).
-- A build verdict's `## Earlier findings` may name only the previous round's findings; spec review is capped at two rounds (D-061 §4). A subagent refused on a kept record script by the auto-mode classifier stops, reports; no retry via another agent. A Ruling cannot pair with an Earlier-findings line: the same session reissues its verdict.
-- `--expect pr --body-file` takes a file under the repo or `$TMPDIR`. `--expect spec` is two performs. Evidence copies of kept scripts carry the `next` calls; `scripts/` lacks them. Uncommitted tracked edits in main checkout block the spec and merge performs' fast-forward: `git stash push -m <tag> -- <paths>`, rerun, `git stash apply <sha>`, drop by tag.
+- A build verdict's `## Earlier findings` may name only the previous round's findings; spec review is capped at two rounds (D-061 §4). A Ruling cannot pair with an Earlier-findings line: the same session reissues its verdict. A fresh reviewer or ui-lead session needs `--session-reason`; a ui-lead verdict after a revise needs `## Earlier findings` lines (W-410-spec/ui-input-6-reissue.sh, run by a ladder-runner: the guard reads script text). A subagent refused on a kept record script stops, reports; no retry via another agent.
+- `--expect pr --body-file` takes a file under the repo or `$TMPDIR`. `--expect spec` is two performs. Evidence script copies carry the `next` calls; `scripts/` lacks them. Tracked edits in main block the spec and merge performs: `git stash push -m <tag> -- <paths>`, rerun, `git stash apply <sha>`, drop by tag.
 - A merge perform printing `QUEUE_TIMEOUT` with the PR still queued reruns with `--poll-ms 20000 --max-polls 150`. A queued PR shows no auto-merge request: check `isInMergeQueue` (gh api graphql). Records PRs use `--auto` without `--squash`.
 - A publish refused for a newer live version is a version conflict: read the live page, merge, publish. Status republish: read the whole saved live page (until W-283). Done reads certify's certificate from its check run (W-370, W-396); with none, falls back to the artifact host, named once if refused (no wildcard or settings edit, D-106 C).
-- Merge: the ladder-runner enqueues with `--max-polls 2`; orchestrator waits on isInMergeQueue until W-372. Codex UI builders get `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 lands (D-106 D).
+- Merge: the ladder-runner enqueues with `--max-polls 2`; orchestrator waits on isInMergeQueue until W-372. A Codex UI builder gets `-c 'sandbox_workspace_write.writable_roots=["<evidence dir>"]'` until W-371 (D-106 D), yet cannot write the main .git (tickets) or the worktree's git metadata: it edits only and writes a manifest; a ladder-runner commits, takes `next`, records each red (W-410-build/phase-run.sh).
 - Never ff master by hand in the main checkout (read-only packages/ breaks it half-way); performs' guard sync moves it (no tracked edits or colliding untracked files).
 - A UI ruling counts only if dated after served-e2e capture (W-382); a master move voids both. `worktree add -b` needs `--no-track`. A subagent stays in turn while its background run goes.
+- A brief signed before W-473 (#928) needs each Genuine red's declared assertion (`pinned by \`<row>\` "<assertion>"`), a re-sign and one review before ready; ready does not yet check the pin equals the red's first failure or the ledger kill (W-410 slipped both; file a follow-up).
 5. Standing until their opus lands:
 - D-085 F rides the fix census and daily retro.
 - Records dates are UTC; Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the opus after W-292.
-6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
+6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (evidence paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
 7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 8. Until W-333's `studio/queue.yml` lands (D-077 B), lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (D-109).
 
@@ -50,44 +51,27 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-472, W-468 merged, done owed; W-473 #928 queued; W-382, W-459, W-410 specs.
-1. W-382 — done accepts the branch's UI ruling when master moved under the queue (Patron 10-31) `next.ts`
-2. W-459 — daily retro enforced, automated: reads failing gate logs too (Patron 10-31); 3. W-363 — spec review as one next perform (Patron 10-31) `next.ts`; 4. W-482 — a fix round as one next perform: fills, dispatches the builder brief (Patron 10-31); 5. W-484 — doc rules: byte cap, rule ids, links; 6. W-485 — ADOPTION.md as a lean contract; 7. W-333 — the queue as a record, `studio/queue.yml`: one opus per entry, numbered from 1 (D-136, high) `next.ts`
-8. W-473 — a red's recorded failing assertion equals the brief's declared one (D-076 D high); 9. W-476 — cause fix for interface×validation-order-masks-errors (D-076 D high)
-10. W-469 — a spec-stage stale handover needs no hand step: next records the handoff, guard sync moves master
-11. W-470 — a verdict whose named session is an earlier orchestrator's records a fresh one without a hand --session-reason
-12. W-471 — a failing gate's log keeps its real failure: nested ci fixture output hid W-408's 10-30 failure; 13. W-478 — idle-lane check; 14. W-479 — outside-advisory filing path; 15. W-480 — next builds a fix round before review; 16. W-481 — spec signature carries the fixture census (Patron 10-31); 17. W-483 — handoff into source_excludes, W-211-b1 pin (Patron 10-31)
-18. W-452 — collegium names owning lead; kind ui retired (D-128), re-tag
-19. W-455 — symlink cause fix: the containment helper refuses a symlinked final file (10-29)
-20. W-465 — drain before handover; no new task past 250k (10-30)
-21. W-436 — open items live in records, not memory or chat (10-28)
-22. W-458 — done finishes a merged rung; 23. W-457 — builder for an untouched owned file
-24. W-371 — one provider-neutral sandbox row per seat, composed by `bisellium run`; Codex first (10-29)
-25. W-456 — test-pool research, ops
-26. W-414 — cause fix for tests×ruled-case-uncovered (D-076 D high)
-27. W-394 — cause fix for review×evidence-backfilled-or-absent (D-076 D high)
-28. W-395 — cause fix for spec×promise-unattainable-under-accepted-domain (D-076 D high)
-29. W-460 — cause fix for tests×tests-that-agree-with-the-bug (D-076 D high)
-30. W-464 — for mechanism×replay-environment-not-pristine
-31. W-393 — cause fix for spec×input-domain-missing-or-unenforceable (D-076 D high)
-32. W-185 — records checked once, at load: cause fix for review×fail-open-on-malformed-records-patched-per-site (D-076 D high) `next.ts`
-33. W-383 — security-boundary test fix; 34. W-405 — pr refuses kind: ui until screen approval `next.ts`; 35. W-431 — verb dead ends; 36. W-432 — verb dead ends; 37. W-429 — petitio length limits
-38. W-261 — woken orchestration; 39. W-434 — dispatch prompts as artifacts; 40. W-254 — delete talk and tick daily branch; 41. W-349 — flaky row W-279-b3; 42. W-399 — record verb sella check
-43. W-364 — verify refuses outside bisellium run (W-290); 44. W-242 — hook-set code; 45. W-372 — agent waits on background perform; 46. W-400 — CLAUDE.md, AGENTS.md code-owned; 47. W-401 — sessions receipt provider
-48. W-245 — provider-agnostic closing step; 49. W-227 — cleanup with removed-worktree metadata `next.ts`; 50. W-283 — Status page served; 51. W-374 — next --all in-flight only `next.ts`; 52. W-375 — context serves lex without §9, §12
-53. W-380 — prune old evidence; 54. W-331 — next.ts split `next.ts`; 55. W-183 — heavy-job slots `next.ts`; 56. W-169 — lane claims `next.ts`
-57. W-332 — step tickets `next.ts`; 58. W-308 — opus timeline `next.ts`; 59. W-304 — seats read live, console MVP; 60. W-298 — petitio verb; 61. W-280 — Inbox newItem fail-open
-62. W-301 — console writes via auto-merge PR
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-472, W-468, W-473 (red-pin check) done (#931-#933); W-382 (done carries the UI ruling) built, gates pass, build review next; W-459 (daily retro enforced) review r1 failed (one S1, log-round grammar), fix round next; W-410 (Board handoff rails) four reds recorded, behaviour 4 built uncommitted, W-366-b2 and W-129 gate failures to decide.
+1. W-382 — done accepts the branch's UI ruling when master moved under the queue `next.ts`
+2. W-459 — daily retro enforced, automated: reads failing gate logs too; 3. W-363 — spec review as one next perform `next.ts`; 4. W-482 — a fix round as one next perform; 5. W-484 — doc rules: byte cap, rule ids, links; 6. W-485 — ADOPTION.md as a lean contract; 7. W-333 — the queue as a record, `studio/queue.yml` (high) `next.ts`
+8. W-476 — cause fix, validation-order-masks-errors (high); 9. W-469 — a spec-stage stale handover needs no hand step; 10. W-470 — a fresh session needs no hand --session-reason
+11. W-471 — a failing gate's log keeps its real failure; 12. W-478 — idle-lane check; 13. W-479 — outside-advisory filing path; 14. W-480 — next builds a fix round before review; 15. W-481 — spec signature carries the fixture census; 16. W-483 — handoff into source_excludes
+17. W-452 — collegium names owning lead; kind ui retired, re-tag; 18. W-455 — the containment helper refuses a symlinked final file; 19. W-465 — drain before handover; no new task past 250k; 20. W-436 — open items live in records, not memory or chat
+21. W-458 — done finishes a merged rung; 22. W-457 — builder for an untouched owned file; 23. W-371 — one provider-neutral sandbox row per seat, Codex first; 24. W-456 — test-pool research, ops
+25. W-414 — cause fix, ruled-case-uncovered (high); 26. W-394 — cause fix, evidence-backfilled-or-absent (high); 27. W-395 — cause fix, promise-unattainable (high)
+28. W-460 — cause fix, tests-that-agree-with-the-bug (high); 29. W-464 — replay-environment-not-pristine; 30. W-393 — cause fix, input-domain-missing (high)
+31. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`
+32. W-383 — security-boundary test fix; 33. W-405 — pr refuses kind: ui until screen approval `next.ts`; 34. W-431 — verb dead ends; 35. W-432 — verb dead ends; 36. W-429 — petitio length limits
+37. W-261 — woken orchestration; 38. W-434 — dispatch prompts as artifacts; 39. W-254 — delete talk and tick daily branch; 40. W-349 — flaky row W-279-b3; 41. W-399 — record verb sella check
+42. W-364 — verify refuses outside bisellium run (W-290); 43. W-242 — hook-set code; 44. W-372 — agent waits on background perform; 45. W-400 — CLAUDE.md, AGENTS.md code-owned; 46. W-401 — sessions receipt provider
+47. W-245 — provider-agnostic closing step; 48. W-227 — cleanup with removed-worktree metadata `next.ts`; 49. W-283 — Status page served; 50. W-374 — next --all in-flight only `next.ts`; 51. W-375 — context serves lex without §9, §12
+52. W-380 — prune old evidence; 53. W-331 — next.ts split `next.ts`; 54. W-183 — heavy-job slots `next.ts`; 55. W-169 — lane claims `next.ts`
+56. W-332 — step tickets `next.ts`; 57. W-308 — opus timeline `next.ts`; 58. W-304 — seats read live, console MVP; 59. W-298 — petitio verb; 60. W-280 — Inbox newItem fail-open; 61. W-301 — console writes via auto-merge PR
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
 1. W-463 — Board asks stand out (merged #911; done waits on a master verify and ruling)
-2. W-410
-3. W-411
-4. W-412
-5. W-413
-6. W-451 — Home: gates passed a0d5d440; data W-439, W-440
-7. W-467 (Officina on Home's palette)
-8. W-453 (D-128 D)
+2. W-410 — Board handoff rails (building; Patron yes on screens 10-31)
+3. W-411; 4. W-412; 5. W-413; 6. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 7. W-467 (Officina on Home's palette); 8. W-453 (D-128 D)
 9. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
 10. W-300 — the drawer shows `next`'s read-only step, actor, round and health
 
