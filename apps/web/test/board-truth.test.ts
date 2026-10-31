@@ -162,7 +162,12 @@ if (runs(2)) {
       const rest = plannedHtml.slice(at + 1);
       const end = rest.indexOf("data-card-id=");
       const cardHtml = rest.slice(0, end === -1 ? undefined : end);
-      assert.ok(cardHtml.includes('board__card-state">backlog<'), `2(b): ${id} shows its native state backlog`);
+      assert.ok(cardHtml.includes(`board__card-id">${id}<`), `2(b): ${id} keeps its opus id in the waiting rail`);
+      assert.ok(cardHtml.includes('board__waiting-owner-value">builder<'), `2(b): ${id} names its owner in the waiting rail`);
+      assert.ok(cardHtml.includes('board__waiting-ask-value">Greenlight<'), `2(b): ${id} names its greenlight ask in the waiting rail`);
+      assert.ok(cardHtml.includes('board__waiting-next-value">Unassigned<'), `2(b): ${id} gives its fallback next actor in the waiting rail`);
+      assert.ok(cardHtml.includes('board__waiting-age">—<'), `2(b): ${id} gives its unknown waiting age in the waiting rail`);
+      assert.ok(!cardHtml.includes('board__card-state">backlog<'), `2(b): ${id} has no lifecycle-state footer while waiting`);
     }
 
     // (c)

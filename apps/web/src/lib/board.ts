@@ -355,6 +355,12 @@ export interface DrawerDetail {
   /** Set only when a human gate is pending. `petitio` is joined from
    *  /api/inbox on `opus`; absent when no petitio names this opus. */
   waitingOn?: { gate: string; name: string; petitio?: { id: string; from: string; subject: string } };
+  /** W-410 display only: why the selected waiting card is waiting. W-412 owns
+   *  revision binding and stale-verdict refusal; these strings make neither
+   *  claim. Present only for a card in the existing Needs-you membership. */
+  waitingReasons?: string[];
+  /** W-410 display only: evidence links already recorded on gates. */
+  waitingEvidence?: { label: string; href: string }[];
   record: { label: string; value: string }[];
   /** Event-derived and possibly incomplete — rendered beside the front
    *  matter's own `tokens` total, with both sources named (ruling 14). */
@@ -400,6 +406,7 @@ export function drawerDetail(
   o: Pick<OfficinaResponse, "probationes">,
   inbox: Pick<InboxResponse, "petitiones">,
   events: EventRow[],
+  card?: CardRow,
 ): DrawerDetail {
   const human = humanGateIds(o);
   const gates = o.probationes.map((g) => {
@@ -415,7 +422,7 @@ export function drawerDetail(
     };
   });
 
-  const pendingHuman = gates.find((g) => g.human && g.status === "pending");
+  const pendingHuman = gates.find((g) => g.human && opus.probationes[g.id]?.status === "pending");
   let waitingOn: DrawerDetail["waitingOn"];
   if (pendingHuman) {
     const petitio = inbox.petitiones.find((p) => p.opus === opus.id);
@@ -424,6 +431,24 @@ export function drawerDetail(
       name: pendingHuman.name,
       petitio: petitio ? { id: petitio.id, from: petitio.from, subject: petitio.subject } : undefined,
     };
+  }
+
+  let waitingReasons: string[] | undefined;
+  let waitingEvidence: DrawerDetail["waitingEvidence"];
+  if (card?.needsYou) {
+    const reasons: string[] = [];
+    for (const petitio of inbox.petitiones.filter((item) => item.opus === opus.id)) {
+      const subject = typeof petitio.subject === "string" ? petitio.subject.trim() : "";
+      const body = typeof petitio.body === "string" ? petitio.body.trim() : "";
+      if (subject.length > 0 && body.length > 0) reasons.push(`${subject}: ${body}`);
+      else if (subject.length > 0 || body.length > 0) reasons.push(subject || body);
+    }
+    for (const gate of gates.filter((item) => item.human && opus.probationes[item.id]?.status === "pending")) reasons.push(`${gate.name} is pending.`);
+    const nextValue = recordValue(opus.traditio, "next");
+    const next = typeof nextValue === "string" ? nextValue.trim() : "";
+    if (next) reasons.push(next);
+    waitingReasons = [...new Set(reasons)];
+    waitingEvidence = gates.flatMap((gate) => gate.evidence ? [{ label: gate.name, href: gate.evidence }] : []);
   }
 
   const record: { label: string; value: string }[] = [];
@@ -451,6 +476,8 @@ export function drawerDetail(
     body: opus.body,
     gates,
     waitingOn,
+    waitingReasons,
+    waitingEvidence,
     record,
     tokensBySella: [...bySella.entries()].map(([sella, tokens]) => ({ sella, tokens })),
     tokensDeclared: opus.tokens,

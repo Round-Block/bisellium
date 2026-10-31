@@ -132,7 +132,7 @@ test("W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handle
   const css = read("src/components/w025.css");
   const served = read("tests-serve/w463.spec.ts");
 
-  assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*aria-label=\{`Open \$\{card\.id\} \$\{card\.title\}: owner \$\{owner\}; ask \$\{asks\}; next \$\{next\}; waiting \$\{age\}`\}[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced"\)\}/, "a five-fact waiting entry remains a named button wired to the shared card selection callback");
+  assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced"\)\}[\s\S]*<WaitingFacts card=\{card\} compact \/>/, "a waiting entry takes its accessible name from the visible five-fact rail and remains wired to the shared card selection callback");
   assert.match(served, /unplaced waiting entry opens the existing drawer/, "an unplaced strip entry has an explicit drawer outcome");
   assert.match(view, /<Card[\s\S]*onSelect=\{onSelectCard\}/, "lifecycle cards retain the same selection callback");
   assert.match(board, /sel\.columnId === "unplaced"[\s\S]*model\.unplaced\.includes\(sel\.id\)[\s\S]*model\.waiting\.some/, "an unplaced waiting selection stays open in the existing drawer");

@@ -208,17 +208,12 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
         <div ref={itemsRef} className="board__waiting-items" onScroll={updateScrollCue}>
           {waiting.map((card) => {
             const columnId = columns.find((column) => column.cards.some(({ id }) => id === card.id))?.id;
-            const asks = card.asks?.map(askKindLabel).join(", ") ?? "Waiting on you";
-            const owner = card.sella || "Unassigned";
-            const next = card.nextActor ?? "Unassigned";
-            const age = formatWaitingAge(card.waitingSince, Date.now());
             return (
               <button
                 key={card.id}
                 type="button"
                 className="board__waiting-item"
                 data-waiting-id={card.id}
-                aria-label={`Open ${card.id} ${card.title}: owner ${owner}; ask ${asks}; next ${next}; waiting ${age}`}
                 onClick={() => onSelectCard(card.id, columnId ?? "unplaced")}
                 onFocus={(event) => revealFocusedWaitingItem(event.currentTarget)}
               >

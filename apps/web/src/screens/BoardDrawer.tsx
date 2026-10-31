@@ -46,6 +46,26 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
         </div>
       )}
 
+      {detail.waitingReasons !== undefined && (
+        <section className="board-drawer__reasons">
+          <h3 className="board-drawer__section-head">Why it waits</h3>
+          {detail.waitingReasons.length > 0 ? (
+            <ul className="board-drawer__reason-list">
+              {detail.waitingReasons.map((reason, index) => <li key={index} className="board-drawer__reason">{reason}</li>)}
+            </ul>
+          ) : <p className="board-drawer__waiting-empty">No waiting reason recorded.</p>}
+        </section>
+      )}
+
+      {detail.waitingEvidence !== undefined && (
+        <section className="board-drawer__waiting-evidence-list">
+          <h3 className="board-drawer__section-head">Evidence</h3>
+          {detail.waitingEvidence.length > 0 ? detail.waitingEvidence.map((evidence) => (
+            <a key={`${evidence.label}:${evidence.href}`} className="board-drawer__waiting-evidence" href={evidence.href}>{evidence.label}</a>
+          )) : <p className="board-drawer__waiting-empty">No evidence recorded.</p>}
+        </section>
+      )}
+
       <div className="board-drawer__gates">
         <h3 className="board-drawer__section-head">Gate ladder</h3>
         {detail.gates.map((g) => (

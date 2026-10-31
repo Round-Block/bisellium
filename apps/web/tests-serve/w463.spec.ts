@@ -380,7 +380,7 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w463=b2-combined-${width}#/board`);
     await expect(
-      page.getByRole("button", { name: "Open W-1 W-1 title: owner builder; ask Greenlight, Inbox decision, Human gate; next Unassigned; waiting —" }),
+      page.getByRole("button", { name: "W-1 — W-1 title OWNER builder NEXT Unassigned ASK Greenlight, Inbox decision, Human gate" }),
       `${width}: the strip entry's accessible name carries every combined ask kind`,
     ).toHaveAttribute("data-waiting-id", "W-1");
   }
@@ -397,7 +397,7 @@ test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390",
   for (const width of [1280, 390] as const) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w463=b4-${width}#/board`);
-    const entry = page.getByRole("button", { name: "Open W-1 W-1 title: owner builder; ask Greenlight; next Unassigned; waiting —" });
+    const entry = page.getByRole("button", { name: "W-1 — W-1 title OWNER builder NEXT Unassigned ASK Greenlight" });
     const lifecycle = page.locator('[data-card-id="W-1"]');
     await expect(entry, `${width}: accessible name carries the opus and ask`).toBeVisible();
     await expect(lifecycle, `${width}: the same opus retains its lifecycle card`).toHaveCount(1);
@@ -418,7 +418,7 @@ test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390",
       await page.getByRole("button", { name: "close" }).click();
     }
 
-    const unplaced = page.getByRole("button", { name: "Open W-8 W-8 title: owner builder; ask Human gate; next Unassigned; waiting —" });
+    const unplaced = page.getByRole("button", { name: "W-8 — W-8 title OWNER builder NEXT Unassigned ASK Human gate" });
     await expect(page.locator('[data-card-id="W-8"]'), `${width}: unplaced has no lifecycle card`).toHaveCount(0);
     await unplaced.click();
     await expect(page.getByRole("dialog", { name: "W-8 title" }), `${width}: unplaced waiting entry opens the existing drawer`).toBeVisible();

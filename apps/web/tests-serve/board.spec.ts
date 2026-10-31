@@ -279,7 +279,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     // greenlight, then `greenlit`.
     const w007 = page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]');
     await expect(w007).toBeVisible();
-    await expect(w007.locator(".board__card-state")).toHaveText("backlog");
+    await expect(w007.locator(".board__waiting-ask-value")).toHaveText("Greenlight");
 
     const result = runGreenlight(["W-007", "--studio", served.studioDir]);
     expect(result.exitCode).toBe(0);
@@ -325,8 +325,8 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     // whose next tick simply hasn't fired yet at 2s.
     // sleep-waiver: no-observable -- an absence window: no event marks two poll intervals having passed without the card appearing
     await page.waitForTimeout(11_000);
-    // The card is already in Planned (backlog opera are cards, W-129); what never happens is its state moving.
-    await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"] .board__card-state')).toHaveText("backlog");
+    // The card is already in Planned (backlog opera are cards, W-129); what never happens is its Greenlight wait clearing.
+    await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"] .board__waiting-ask-value')).toHaveText("Greenlight");
     expect(opusRequests).toBe(before);
 
     await page.unroute("**/api/live");
