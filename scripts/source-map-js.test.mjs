@@ -8,7 +8,8 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -76,4 +77,51 @@ test("W-477-b1 behaviour 1: package-lock.json carries no minimatch below 11.0.1,
   }
   const forced = pkg.overrides?.minimatch;
   assert.ok(forced === "^11.0.1", `package.json overrides minimatch to ^11.0.1: it has ${JSON.stringify(forced)}`);
+});
+
+// W-477-b1 fix 1: the lockfile is not the install. Every minimatch the lockfile names must also be installed,
+// at the lockfile's resolved version and at 11.0.1 or above, so a node_modules left from before the lock moved fails.
+const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
+
+// STUB (red): reads nothing yet; the next commit reads the installed inventory.
+function installedMinimatchProblems(_root, _packages) {
+  return [];
+}
+
+test("W-477-b1 fix 1: a stale installed minimatch beside an 11 lock is refused", () => {
+  const root = mkdtempSync(join(tmpdir(), "w477-install-"));
+  try {
+    const packages = {
+      "node_modules/minimatch": { version: "11.0.3" },
+      "node_modules/eslint/node_modules/minimatch": { version: "11.0.3" },
+      "node_modules/gone/node_modules/minimatch": { version: "11.0.3" },
+    };
+    mkdirSync(join(root, "node_modules/minimatch"), { recursive: true });
+    writeFileSync(join(root, "node_modules/minimatch/package.json"), JSON.stringify({ name: "minimatch", version: "10.2.6" }));
+    mkdirSync(join(root, "node_modules/eslint/node_modules/minimatch"), { recursive: true });
+    writeFileSync(
+      join(root, "node_modules/eslint/node_modules/minimatch/package.json"),
+      JSON.stringify({ name: "minimatch", version: "11.0.3" }),
+    );
+    const problems = installedMinimatchProblems(root, packages);
+    assert.ok(
+      problems.some((p) => p.includes("node_modules/minimatch") && p.includes("10.2.6")),
+      `a stale installed 10.2.6 is named: ${JSON.stringify(problems)}`,
+    );
+    assert.ok(
+      problems.some((p) => p.includes("gone/node_modules/minimatch") && p.includes("not installed")),
+      `a lock entry with no installed copy is named: ${JSON.stringify(problems)}`,
+    );
+    assert.ok(!problems.some((p) => p.includes("eslint/node_modules/minimatch")), "a matching installed copy passes");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("W-477-b1 fix 1: the installed minimatch inventory matches the lockfile at 11.0.1 or above", () => {
+  const packages = Object.fromEntries(
+    Object.entries(lock.packages ?? {}).filter(([path]) => /(^|\/)node_modules\/minimatch$/.test(path)),
+  );
+  const problems = installedMinimatchProblems(REPO, packages);
+  assert.deepEqual(problems, [], `installed minimatch differs from the lock (run npm ci): ${problems.join("; ")}`);
 });
