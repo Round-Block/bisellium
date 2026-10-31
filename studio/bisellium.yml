@@ -66,7 +66,6 @@ doc_caps:
 # W-209: the dossier's HTML pages are checkpoint records; a new page joins this list in a records PR.
 source_excludes:
   - examples/
-  - docs/SESSION-HANDOFF.md
   - docs/design/dossier/bisellium-architecture.html
   - docs/design/dossier/bisellium-direction.html
   - docs/design/dossier/bisellium-dossier.html
