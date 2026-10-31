@@ -1,0 +1,18 @@
+# opus: W-410
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a87057aac0db3ae94
+# outcome: passed
+# at: 2026-10-31T13:59:40.990Z
+# tree: tree:80d8e221759ebdf6cd48d57030519b47fcb8cfa3
+# brief: briefs/W-410.md blob:9b484c10a66d63caa7f1cae51a189b056e5b4613
+# ticket: {"opus":"W-410","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-410/studio","head":"f2c66820cc03c3f464d3115598ad29037cf384cb","brief":"9b484c10a66d63caa7f1cae51a189b056e5b4613","at":"2026-10-31T13:59:36.628Z"}
+
+## Findings
+No findings
+
+## Verdict
+The change since round 5 is only the two Genuine-red pins at brief:83 and brief:87. Each now quotes the first failing assertion in its preserved TAP output (b2-red-b2.cmd.out: "the Board exports one waiting-age formatter"; b3-red-b3.cmd.out: "one shared handoff rail labels owner, next actor and action"). The paired kills kill-redpin-b2/b3 fail at the same messages. The brief's sha256 8e18d17e… matches the spec-7 signature, and no design, promise, Input-domain row or Default changed, so the round-5 advisories (brief:128 ratio edge, brief:21 banner scope) still stand as written for the build.
+VERDICT: PASS
