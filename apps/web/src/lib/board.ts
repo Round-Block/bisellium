@@ -65,6 +65,17 @@ function recordedNextActor(traditio: unknown): string {
     : "Unassigned";
 }
 
+/** Compact age for the handoff rail. The chosen units deliberately avoid a
+ * fourth minute form: fresh waits stay exact in seconds, then settle to whole
+ * hours and days. Unknown record time is shown, never inferred. */
+export function formatWaitingAge(since: number | undefined, now: number): string {
+  if (since === undefined || !Number.isFinite(since) || !Number.isFinite(now)) return "—";
+  const elapsed = Math.max(0, now - since);
+  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 1000)}s`;
+  if (elapsed < 86_400_000) return `${Math.floor(elapsed / 3_600_000)}h`;
+  return `${Math.floor(elapsed / 86_400_000)}d`;
+}
+
 export interface BoardColumn {
   id: string;
   name: string;
