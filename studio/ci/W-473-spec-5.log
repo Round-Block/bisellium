@@ -1,0 +1,24 @@
+# opus: W-473
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-31T09:49:01.347Z
+# tree: tree:96dea419dce76d14ecb204f5716bc5589a1d7606
+# brief: briefs/W-473.md blob:2093c1575f8727c0442207f5cc8141192ff4a9e9
+# ticket: {"opus":"W-473","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-473/studio","head":"77c048d1afb3e2afddc90542866577691ef998a4","brief":"2093c1575f8727c0442207f5cc8141192ff4a9e9","at":"2026-10-31T09:48:38.681Z"}
+
+# W-473 spec signature, round 5 (architect, claude-opus-5-5): revision 3, wording only
+
+Brief: studio/briefs/W-473.md revision 3 on opus/W-473 (77c048d1), a one-line wording change over revision 2 as signed in round 3 and passed by spec review round 4 (ci/W-473-spec-4.log); evidence in /home/edckt/.bisellium-evidence/W-473-spec/.
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-473-spec/promise-ledger.md
+
+Revision 3 changes only behaviour 1's text at brief:78: the two sentences describing the W-900 fixture's behaviours 2 and 3 now read "W-900's behaviour 2, ..." and "W-900's behaviour 3, ...", so the check rule brief.behaviour_citation (rules/evidence.ts checkBehaviourCitations) no longer reads them as this brief citing a Behaviour 3 it does not declare. No design, row, red, code, test or prototype changes; the brief's line count is unchanged, so the ledger lines and the kills hold. `npm run -s check -- studio --repo .` on the opus branch: PASS, 0 blocking.
+
+## Findings
+1. advisory — the wording change only renames the fixture's behaviours in prose; the reds, rows and Input domain are as round 3 signed and round 4 passed — check: brief:78, ci/W-473-spec-4.log
+
+## Verdict
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-473.md` on opus/W-473; wording only, two behaviours, no code-owned path.
