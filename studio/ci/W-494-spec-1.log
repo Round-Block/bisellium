@@ -1,0 +1,24 @@
+# opus: W-494
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T12:57:17.314Z
+# tree: tree:a47beb79918962048279baae4a1d9dd8ee68b309
+# brief: briefs/W-494.md blob:54e07c38a883c86474aae44a12154ab1ae3afba6
+# ticket: {"opus":"W-494","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"046c6f96977200226ec4af3781136cc898534d50","brief":"54e07c38a883c86474aae44a12154ab1ae3afba6","at":"2026-11-01T12:57:09.751Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-494-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the probe of the real harness settles how the guard learns a subagent's live runs: Claude Code's hook schemas give `background_tasks` only to Stop and SubagentStop, so at PreToolUse the guard reads the agent's own transcript (start by `toolUseResult.backgroundTaskId`, end by a task notification or a TaskStop result), with no state file and no settings change; the session-path form is read from this session's files, not from a live PreToolUse input, a stated limit — check: probe/hook-input-probe.out, brief:17, brief:29
+2. advisory — "the one tracked run" of the opus record is read as the one background run the guard counts per agent, not a `next --track` marker; a stop that hands nothing back may end with one own run live, a hand-back with any own run live is still sent back with W-310's text, and the reading is put to the Patron as Defaults 2 — check: brief:21, brief:31, red-b2.log, green-b2.log
+3. advisory — the Codex test check found an unnamed flip, W-163-b6's inventory D (two new transcript reads); the series now pins both in containment.test.ts and the brief names them; W-310-b4 keeps its assertions, its fixture gaining a hand-back line in the row b2 commit, and passes on every commit — check: fixture-census.md, gates-proto.out, brief:41
+4. advisory — four reds, each accepted by the replay classifier and failing at its declared assertion by master's W-473 reader, and thirteen kills each guarded — check: red-accept.out, declared.out, kills.out
+5. advisory — code-owned paths are touched (`.claude/agents/` and `studio/prompts/`), so the Patron merges; the guard reaches sessions only after the Patron updates the installed `bisellium` — check: brief:3, brief:29
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-494.md`: four behaviours, prototype `prototype.mbox` over master 046c6f96; code-owned paths touched, the Patron merges.
