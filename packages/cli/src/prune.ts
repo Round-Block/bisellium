@@ -325,11 +325,45 @@ function opusDone(studio: string, ids: string[]): boolean {
   return seen > 0;
 }
 
+/** The PR states of every branch asked for, from one `gh pr list --state all` over the repository's PRs. */
+export function ghPrStates(repo: string): PrLookup {
+  return (branches) => {
+    const r = spawnSync("gh", ["pr", "list", "--state", "all", "--limit", "5000", "--json", "headRefName,state"], { cwd: repo, encoding: "utf8", timeout: 120_000, maxBuffer: 64 * 1024 * 1024 });
+    if (r.error !== undefined || r.status !== 0) return { error: `gh pr list failed: ${(r.error?.message ?? r.stderr ?? "").trim()}` };
+    let list: unknown;
+    try {
+      list = JSON.parse(r.stdout);
+    } catch {
+      return { error: "gh pr list did not return JSON" };
+    }
+    if (!Array.isArray(list)) return { error: "gh pr list did not return an array" };
+    const rank: Record<PrState, number> = { NONE: 0, CLOSED: 1, MERGED: 2, OPEN: 3 };
+    const states = new Map<string, PrState>(branches.map((b) => [b, "NONE"]));
+    for (const p of list as { headRefName?: unknown; state?: unknown }[]) {
+      const b = p.headRefName;
+      const s = p.state;
+      if (typeof b !== "string" || (s !== "OPEN" && s !== "MERGED" && s !== "CLOSED")) return { error: "gh pr list returned a malformed PR" };
+      const was = states.get(b);
+      if (was !== undefined && rank[s] > rank[was]) states.set(b, s);
+    }
+    return states;
+  };
+}
+
+/** One line per removed worktree (and, with `kept`, per kept one), as prune and the done perform print them. */
+export function sweepLines(s: SweepResult, kept: boolean): string[] {
+  return [
+    ...s.removed.map((w) => `worktree removed: ${w.path} (${w.reason})${w.saved === undefined ? "" : `; uncommitted changes saved to ${w.saved}`}${w.adminLeft ? "; its admin directory is held busy, a later prune retries" : ""}`),
+    ...(kept ? s.kept.map((w) => `worktree kept: ${w.path} (${w.reason})`) : []),
+    ...(s.adminLeft > 0 ? [`worktree admin directories left: ${s.adminLeft} (held busy; a later prune retries)`] : []),
+  ];
+}
+
 const PRUNE_USAGE = "usage: bisellium prune --studio <dir> [--repo <dir>]";
 
 const PRUNE_FLAGS = new Set(["--studio", "--repo"]);
 
-export function runPrune(args: string[]): { exitCode: number } {
+export function runPrune(args: string[], deps: { prs?: PrLookup; nowMs?: number } = {}): { exitCode: number } {
   const values = new Map<string, string>();
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
@@ -354,17 +388,19 @@ export function runPrune(args: string[]): { exitCode: number } {
   }
 
   const worktreeResult = reclaimWorktrees(repo);
+  const sweep = sweepWorktrees(repo, studio, { prs: deps.prs ?? ghPrStates(repo), nowMs: deps.nowMs ?? Date.now() });
   const branchResult = pruneStaleOpusBranches(repo, studio);
   const logResult = pruneCiLogs(studio);
 
   if (worktreeResult.removed.length > 0) {
     for (const w of worktreeResult.removed) console.log(`worktree removed: ${w.path} (${w.reason})`);
   }
+  for (const line of sweepLines(sweep, false)) console.log(line);
   if (branchResult.removed.length > 0) {
     for (const b of branchResult.removed) console.log(`branch removed: ${b.branch} (${b.reason})`);
   }
   for (const name of logResult.removed) console.log(`ci log removed: ${name}`);
-  if (worktreeResult.removed.length === 0 && branchResult.removed.length === 0 && logResult.removed.length === 0) {
+  if (worktreeResult.removed.length === 0 && sweep.removed.length === 0 && sweep.adminLeft === 0 && branchResult.removed.length === 0 && logResult.removed.length === 0) {
     console.log("nothing to prune");
   }
 
