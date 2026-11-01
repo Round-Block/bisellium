@@ -12,7 +12,12 @@ collegia:
   - { id: ops, name: Ops, magister: ops-lead, lex: leges/ops.md }
 sellae:
   - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5-5 }
-  - { id: architect, collegium: design, kind: agent, model: claude-opus-5-5 }
+  # W-452 (D-129 C): production's spec signer; the orchestrator never signs specs for the ladder it runs.
+  - { id: ladder-lead, collegium: production, kind: agent, model: claude-opus-5-5 }
+  # W-452 (D-150 C): the engineering spec signer, moved out of design; still the design magister for opera started before spec_seats.since.
+  - { id: architect, collegium: engineering, kind: agent, model: claude-opus-5-5 }
+  # W-452 (D-150 C): the design lead, signer of the design collegium's specs; the kind: ui pair below keeps the UI lane until its slice.
+  - { id: design-lead, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }
   # D-091 A: the UI lane's spec signer; the design magister stays the engineering signer.
   - { id: ui-architect, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }
   - { id: ui-lead, collegium: design, kind: agent, model: gpt-6-astra, harness: codex }
@@ -55,6 +60,16 @@ spec_reviewer: spec-reviewer
 # W-348 (D-091 D): atomic override for kind: ui; both keys or neither.
 ui_spec_signer: ui-architect
 ui_spec_reviewer: ui-spec-reviewer
+# W-452 (D-150 C, D-129 A): each collegium's spec signer and reviewer, for opera whose first spec log is at or after since
+# (D-150 B: an opus in flight keeps the keys above). A kind: ui opus keeps the UI pair.
+spec_seats:
+  since: 2026-11-01T18:00:00.000Z
+  collegia:
+    engineering: { signer: architect, reviewer: spec-reviewer }
+    ops: { signer: ops-lead, reviewer: spec-reviewer }
+    qa: { signer: qa-lead, reviewer: spec-reviewer }
+    production: { signer: ladder-lead, reviewer: spec-reviewer }
+    design: { signer: design-lead, reviewer: ui-spec-reviewer }
 # W-127 (briefs/W-127.md): brief admission — one decree family per brief, at most
 # this many numbered behaviours, one genuine red each; `ready` and `check` enforce it.
 brief_behaviour_limit: 6
