@@ -22,10 +22,10 @@ test("W-411-b2 behaviour 2: phone phase navigation names the phase in view", () 
   assert.match(served, /phase navigation reaches and names every ruled-width phase/, "the served row pins all ruled widths");
 });
 
-test.skip("W-411-b3 behaviour 3: item detail keeps its close path in view", () => {
-  assert.match(css, /\.board-drawer__header\s*\{[^}]*position:\s*sticky[^}]*top:\s*0/s, "the detail header stays at the drawer top");
-  assert.match(css, /\.board-drawer__header\s*\{[^}]*background:\s*var\(--surface\)/s, "scrolled detail cannot show through its sticky header");
-  assert.match(drawer, /board-drawer__close/, "the sticky header owns the existing close control");
+test("W-411-b3 behaviour 3: item detail keeps its close path in view", () => {
+  assert.match(css, /\.board-drawer__close\s*\{[^}]*position:\s*fixed[^}]*background:\s*var\(--surface\)/s, "the Close control stays pinned at every ruled width");
+  assert.doesNotMatch(css, /\.board-drawer__header\s*\{[^}]*position:\s*sticky/s, "the complete detail header scrolls with its content");
+  assert.match(drawer, /board-drawer__close/, "the existing close control remains in the drawer");
   assert.match(served, /item detail remains readable and closable at 1280, 640 and 390/, "the served row pins all ruled widths");
 });
 

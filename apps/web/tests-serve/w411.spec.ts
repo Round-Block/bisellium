@@ -133,7 +133,7 @@ test("W-411-b2 phase navigation reaches and names every ruled-width phase", asyn
   }
 });
 
-test.skip("W-411-b3 item detail remains readable and closable at 1280, 640 and 390", async ({ page }) => {
+test("W-411-b3 item detail remains readable and closable at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w411-b3");
   await installFixture(page);
   for (const width of WIDTHS) {
@@ -142,26 +142,45 @@ test.skip("W-411-b3 item detail remains readable and closable at 1280, 640 and 3
     const drawer = page.locator(".board-drawer");
     const header = drawer.locator(".board-drawer__header");
     const close = drawer.locator(".board-drawer__close");
+    const title = drawer.locator(".board-drawer__title");
+    await expect(header).toBeVisible();
     await expect(close).toBeVisible();
+    await expect(title).toContainText("A long selected title");
+    expect(await title.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return style.overflow === "visible" && style.textOverflow !== "ellipsis" && style.webkitLineClamp === "none";
+    }), `${width}: the complete long title is not truncated`).toBe(true);
+    await expect(drawer.locator(".board-drawer__toolbar")).toHaveCount(0);
     await drawer.evaluate((node) => { node.scrollTop = node.scrollHeight; });
     await expect(drawer.locator(".board-drawer__record")).toBeVisible();
-    await expect(close).toBeVisible();
     const geometry = await drawer.evaluate((node) => {
       const box = node.getBoundingClientRect();
       const head = node.querySelector<HTMLElement>(".board-drawer__header")!.getBoundingClientRect();
       const closeBox = node.querySelector<HTMLElement>(".board-drawer__close")!.getBoundingClientRect();
       return {
-        headerAtTop: Math.abs(head.top - box.top) <= 1,
+        headerScrolledAway: head.bottom <= box.top + 1,
         closeInside: closeBox.top >= box.top && closeBox.bottom <= box.bottom && closeBox.left >= box.left && closeBox.right <= box.right,
         closeTarget: closeBox.width >= 44 && closeBox.height >= 44,
         noHorizontalOverflow: node.scrollWidth <= node.clientWidth,
       };
     });
-    expect(geometry.headerAtTop, `${width}: the detail header remains at the top after scrolling`).toBe(true);
-    expect(geometry.closeInside, `${width}: close remains inside the drawer`).toBe(true);
-    expect(geometry.closeTarget, `${width}: close retains its 44px target`).toBe(true);
+    expect(geometry.headerScrolledAway, `${width}: the title and metadata scroll away with the detail`).toBe(true);
     expect(geometry.noHorizontalOverflow, `${width}: detail has no horizontal overflow`).toBe(true);
+    await expect(close).toBeVisible();
+    expect(geometry.closeInside, `${width}: the pinned Close control remains inside the drawer`).toBe(true);
+    expect(geometry.closeTarget, `${width}: Close retains its 44px target`).toBe(true);
+    expect(await close.evaluate((node) => getComputedStyle(node).backgroundColor), `${width}: Close has an opaque surface backing`).toBe(await cssColour(page, "--surface"));
+    await close.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    const focus = await close.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { style: style.outlineStyle, width: Number.parseFloat(style.outlineWidth) };
+    });
+    expect(focus.style, `${width}: keyboard focus on Close is visible`).not.toBe("none");
+    expect(focus.width, `${width}: keyboard focus on Close has a drawn width`).toBeGreaterThanOrEqual(2);
     await close.click();
+    await expect(drawer, `${width}: pointer Close remains clickable at the bottom`).toBeHidden();
   }
 });
 
