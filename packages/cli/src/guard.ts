@@ -495,6 +495,25 @@ export function liveBackgroundRuns(transcript: string): string[] {
   return started.filter((id) => !ended.has(id));
 }
 
+/** W-494: true when the last tool call in a subagent's transcript is SubagentHandback, so this stop follows its report.
+ *  A reused agent's transcript holds earlier hand-backs; only the last tool call counts. A line that is not JSON is
+ *  skipped. */
+export function handsBack(transcript: string): boolean {
+  let last: string | undefined;
+  for (const line of transcript.split("\n")) {
+    if (!line.includes('"tool_use"')) continue;
+    let rec: unknown;
+    try {
+      rec = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const content = isDict(rec) && rec["type"] === "assistant" && isDict(rec["message"]) ? rec["message"]["content"] : undefined;
+    for (const c of Array.isArray(content) ? content : []) if (isDict(c) && c["type"] === "tool_use" && str(c["name"]) !== undefined) last = str(c["name"]);
+  }
+  return last === "SubagentHandback";
+}
+
 /** W-494: the calling subagent's live background runs, read from its own transcript; [] for the main thread or a
  *  transcript that cannot be read (fail-open). */
 export function callerLiveRuns(input: Dict): string[] {
@@ -601,8 +620,17 @@ export function guardRefusal(input: Dict): string | undefined {
   if (event === "SubagentStop") {
     if (input["stop_hook_active"] === true) return undefined;
     const ids = ownLiveWork(input);
-    return ids.length
-      ? `refused: your report is in but your own background work still runs (${ids.join(", ")}): stop each with TaskStop, then finish (W-310)`
+    if (ids.length === 0) return undefined;
+    let back = false;
+    try {
+      back = handsBack(readFileSync(str(input["agent_transcript_path"]) ?? "", "utf8"));
+    } catch {
+      back = false;
+    }
+    if (back) return `refused: your report is in but your own background work still runs (${ids.join(", ")}): stop each with TaskStop, then finish (W-310)`;
+    // W-494: a turn that hands nothing back may end while the agent's one run is live; the run's notice wakes it
+    return ids.length > 1
+      ? `refused: ${ids.length} of your own background runs still run (${ids.join(", ")}) (W-494): stop all but one with TaskStop; a turn may end while one run is live, and its notice wakes you`
       : undefined;
   }
   if (event === "Stop") return stopRefusal(input);
