@@ -328,3 +328,78 @@ test("W-489-b1 behaviour 1: the done perform's sweep removes every worktree that
     rmSync(fx.root, { recursive: true, force: true });
   }
 });
+
+test("W-489-b2 behaviour 2: prune's sweep removes a worktree whose opus is done, whose PR is merged or closed, or (clean) whose commit is in origin/master, and keeps the rest", () => {
+  const fx = w489Repo();
+  try {
+    const { repo, studio } = fx;
+    writeOpus(studio, "W-7", "done");
+    writeOpus(studio, "W-8", "building");
+    const a = w489Wt(repo, "W-7-a", "spec-scratch/W-7");
+    writeFileSync(join(a, "a.txt"), "a, W-7's leftover\n");
+    w489Wt(repo, "W-8-spec", "spec-scratch/W-8");
+    const dirty8 = w489Wt(repo, "W-8-dirty", "stage/W-8");
+    writeFileSync(join(dirty8, "a.txt"), "W-8 in progress\n");
+    const recA = w489Wt(repo, "records-a", "chore/records-a");
+    w489Commit(recA, "records a");
+    const recB = w489Wt(repo, "records-b", "chore/records-b");
+    writeFileSync(join(recB, "draft.md"), "a records draft\n");
+    w489Wt(repo, "records-c", "chore/records-c");
+    w489Wt(repo, "fresh", "chore/fresh", { young: true });
+    const work = w489Wt(repo, "W-8-work", "opus/W-8");
+    w489Commit(work, "W-8 work");
+    w489Wt(repo, "verify-W-9", undefined);
+    const both = w489Wt(repo, "W-7-into-W-8", "merge/W-7-W-8");
+    w489Commit(both, "W-7 into W-8");
+    const fake = w489Prs({
+      "spec-scratch/W-7": "NONE",
+      "spec-scratch/W-8": "NONE",
+      "stage/W-8": "NONE",
+      "chore/records-a": "MERGED",
+      "chore/records-b": "CLOSED",
+      "chore/records-c": "OPEN",
+      "opus/W-8": "NONE",
+      "merge/W-7-W-8": "NONE",
+    });
+
+    const s = w489Sweep(repo, studio, { prs: fake.prs, nowMs: Date.now() });
+    assert.deepEqual(
+      w489Brief(s.removed),
+      [
+        ["W-7-a", "opus W-7 done"],
+        ["W-8-spec", "its commit is in origin/master"],
+        ["records-a", "its PR is merged"],
+        ["records-b", "its PR is closed"],
+        ["verify-W-9", "its commit is in origin/master"],
+      ],
+      "a worktree of a done opus, one whose PR ended, and a clean one whose commit is in origin/master are removed",
+    );
+    assert.deepEqual(
+      w489Brief(s.kept),
+      [
+        ["W-7-into-W-8", "not in origin/master, and neither its opus nor its PR has ended"],
+        ["W-8-dirty", "uncommitted changes, and neither its opus nor its PR has ended"],
+        ["W-8-work", "not in origin/master, and neither its opus nor its PR has ended"],
+        ["fresh", "younger than an hour"],
+        ["records-c", "its PR is open"],
+      ],
+      "a dirty worktree at master, unmerged work, an open PR, a young worktree and one carrying an opus not done are kept",
+    );
+    for (const name of ["W-7-a", "records-b"]) {
+      const saved = s.removed.find((e) => basename(e.path) === name)?.saved ?? "";
+      assert.match(basename(saved), new RegExp(`^${name}-.+\\.patch$`), `${name}: its uncommitted changes are saved first`);
+    }
+    assert.ok(readFileSync(s.removed.find((e) => basename(e.path) === "records-b")!.saved!, "utf8").includes("+a records draft"), "the content of an untracked file is in the patch");
+    assert.equal(existsSync(dirty8), true, "the dirty worktree at master stays (a fresh branch at master only looks merged)");
+    assert.equal(spawnSync("git", ["rev-parse", "--verify", "-q", "refs/heads/chore/records-a"], { cwd: repo }).status, 0, "the branch of a removed worktree is never deleted");
+
+    // a PR lookup that fails keeps every worktree on a branch
+    const b = w489Wt(repo, "W-7-b", "scratch/W-7-b");
+    const failed = w489Sweep(repo, studio, { prs: () => ({ error: "gh is offline" }), nowMs: Date.now() });
+    assert.deepEqual(failed.removed, [], "nothing on a branch is removed while PR states cannot be read");
+    assert.ok(failed.kept.some((e) => e.path === b && e.reason === "its PR cannot be read: gh is offline"), "the kept reason names the lookup error");
+    assert.equal(existsSync(b), true, "the worktree stays");
+  } finally {
+    rmSync(fx.root, { recursive: true, force: true });
+  }
+});
