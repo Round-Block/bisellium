@@ -1,0 +1,22 @@
+# opus: W-452
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19533-1a9d-7711-b343-72813cc00f45
+# outcome: passed
+# at: 2026-11-01T04:22:01.365Z
+# tree: tree:d8032714451c2c07ebd184b9799da882c7f026d4
+# brief: briefs/W-452.md blob:6a238ebfdf08e36d16da0d32dfba5647ac0e1afb
+# ticket: {"opus":"W-452","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"533357e548a8a7f9a72ae8ec2d967565932b20fd","brief":"6a238ebfdf08e36d16da0d32dfba5647ac0e1afb","at":"2026-11-01T04:22:00.864Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-452-spec-2.log #1: closed — every spec verdict path now invokes `readSpecSeats`, including the UI-lead path; W452-b3 and K27 show malformed settings refuse without writing.
+- ci/W-452-spec-2.log #2: closed — `seat` now requires the signer to belong to the keyed collegium while allowing a reviewer from another collegium; W452-b1 and K26 show a wrong-collegium signer is refused.
+
+## Verdict
+Both round-2 blockers and their dependent promises are substantively closed.
+VERDICT: PASS

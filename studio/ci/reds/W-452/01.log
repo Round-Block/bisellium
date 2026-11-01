@@ -1,0 +1,62 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-452-b1\s --import tsx packages/cli/src/spec-seats.test.ts
+# exit: 1
+# at: 2026-11-01T04:23:54.018Z
+# sella: builder.W-452
+# tree: tree:b43699c588cb4e3c7a1c10b8968527922bf8fe51
+# ticket: {"opus":"W-452","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-452/studio","head":"15b123168899bb431f6faf58cbaef20b6dc0a91b","brief":"6a238ebfdf08e36d16da0d32dfba5647ac0e1afb","at":"2026-11-01T04:23:50.548Z"}
+
+TAP version 13
+# Subtest: W-452-b1 behaviour 1: with spec_seats, an opus's spec is signed and reviewed by its collegium's seats, and every other form of the setting holds
+not ok 1 - W-452-b1 behaviour 1: with spec_seats, an opus's spec is signed and reviewed by its collegium's seats, and every other form of the setting holds
+  ---
+  duration_ms: 4.03139
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/spec-seats.test.ts:1:2598'
+  failureType: 'testCodeFailure'
+  error: |-
+    an ops opus is signed by ops-lead and reviewed by spec-reviewer
+    + actual - expected
+    
+      {
+        reviewer: {
+    +     design: 'architect',
+    -     design: 'ops-lead',
+          model: 'gpt-5.6-sol',
+          sella: 'spec-reviewer'
+        },
+    +   signer: 'architect'
+    -   signer: 'ops-lead'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    signer: 'ops-lead'
+    reviewer:
+      sella: 'spec-reviewer'
+      model: 'gpt-5.6-sol'
+      design: 'ops-lead'
+  actual:
+    signer: 'architect'
+    reviewer:
+      sella: 'spec-reviewer'
+      model: 'gpt-5.6-sol'
+      design: 'architect'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/spec-seats.test.ts:86:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 45.763517

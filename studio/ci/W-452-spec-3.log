@@ -1,0 +1,27 @@
+# opus: W-452
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T04:18:19.516Z
+# tree: tree:d8032714451c2c07ebd184b9799da882c7f026d4
+# brief: briefs/W-452.md blob:6a238ebfdf08e36d16da0d32dfba5647ac0e1afb
+# ticket: {"opus":"W-452","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"533357e548a8a7f9a72ae8ec2d967565932b20fd","brief":"6a238ebfdf08e36d16da0d32dfba5647ac0e1afb","at":"2026-11-01T04:18:15.425Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-452-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — every `verdict --phase spec` path now reads `readSpecSeats` right after `plain` is set, so the ui-lead's UI input on a `kind: ui` opus is refused (exit 2, nothing written) under a malformed `spec_seats`, as `next` holds; row W-452-b3 records the input under a readable setting and refuses it once `since` is malformed, and kill K27 (the read moved back to the plain spec path) fails that assertion — check: brief:19, brief:33, packages/cli/src/spec-seats.test.ts W-452-b3, kill-K27.out
+2. advisory — a signer must be a declared live agent seat of the collegium its row is keyed by, while the reviewer may belong elsewhere (the fixture's `spec-reviewer` is a qa seat reviewing ops); `qa-lead` as the ops signer is refused with its cause named, and kill K26 (the check dropped) fails that assertion; the real studio's five signers are each in their own collegium (`real-probe.out`) — check: brief:29, brief:80, packages/cli/src/spec-seats.test.ts W-452-b1, kill-K26.out
+3. advisory — re-prototyped over master 533357e5 by the kept scripts: each red fails by assertion on its red commit, is accepted by the replay classifier and fails at its declared assertion; twenty-seven kills are guarded; lint, format:check, typecheck, the listed files and both officina checks pass; the Codex test check lists no flip and the same must-stay-green rows, which pass at the tip; the admission admits the brief and the writer accepts the ledger; `studio/bisellium.yml` is code-owned, so the Patron merges — check: red-accept.out, declared.out, kills.out, gates-proto.out, fixture-census.md, census-green.out, admission.out, ledger-check.out
+
+## Earlier findings
+
+- r2 finding 1 (S1, brief:19, the ui-lead input path skipped `readSpecSeats`): closed by adopting the reviewer's sentence into The setting and Promise seats-verdict, moving the verdict's read before every spec path's checks, row W-452-b3's UI-input assertions and kill K27.
+- r2 finding 2 (S1, brief:80, the signer's collegium not checked): closed by adopting the reviewer's sentence into behaviour 1 and The setting, the `seat` collegium check for the signer, row W-452-b1's "a signer from another collegium" and kill K26.
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-452.md`, prototype `prototype.mbox` (nine patches) over master 533357e5; four behaviours, 3 points, one code-owned path.

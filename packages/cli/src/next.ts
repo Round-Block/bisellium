@@ -35,6 +35,7 @@ import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { readSpecSeats } from "@bisellium/commands/spec-seats.js";
 import { actionFacts, parseTicketLine, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
@@ -223,11 +224,21 @@ const declared = (list: unknown, id: string): Dict[] => (Array.isArray(list) ? l
  * The trunk record's state says whether the gate still applies: `greenlit` yes, a PAST_READY state passed it at `ready`.
  * W-424: past ready, a kind: ui opus's signer is the seat its record says signed at ready (`signedAtReady`), so a spec signed
  * before the UI pair (D-091) or while D-098 A had removed it is not ordered again; callers pass the trunk's probationes.
+ * W-452 (D-150 C, D-129 A): with `bisellium.yml#spec_seats`, an opus started under it is signed and reviewed by its collegium's
+ * seats (`readSpecSeats`, which verdict reads too); `logs` is the checkout that owns the spec evidence, where its logs are.
  */
-export function readSpecReviewer(manifest: Manifest, rec: Dict): { signer: string; reviewer: SpecReviewer | undefined } | { error: string } {
+export function readSpecReviewer(manifest: Manifest, rec: Dict, logs?: { id: string; src: Src | undefined }): { signer: string; reviewer: SpecReviewer | undefined } | { error: string } {
   const m: unknown = manifest;
   // a studio with no readable manifest object declares no setting: today's ladder
   if (!isDict(m)) return { signer: "architect", reviewer: undefined };
+  const seats = readSpecSeats(m, logs?.id ?? str(rec["id"]) ?? "", rec, logs?.src);
+  if ("error" in seats) return seats;
+  if (seats.route === "collegium") {
+    const state = str(rec["state"]);
+    if (state !== undefined && PAST_READY.has(state)) return { signer: seats.signer, reviewer: undefined };
+    if (state !== "greenlit") return { error: `bisellium.yml#spec_seats: the trunk record's state ${state ?? "(absent)"} is outside the gate's domain` };
+    return { signer: seats.signer, reviewer: { sella: seats.reviewer.sella, model: seats.reviewer.model, design: seats.signer } };
+  }
   // W-355: the design collegium the spec verdict reads (readDesignMagister): no row (the architect) or exactly one with a nonblank
   // magister; every other form refuses before either pair is returned, as the ordered verdict would refuse the signature
   const designDomain = readDesignMagister(m);
@@ -812,7 +823,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   // the one signer every later reader (red attribution, signedAfter, commits) uses is the spec rung's own selection
   // W-433: the ui-lead's input is judged against the spec owner's record (the one ownerUi and the verdict writer read), never the trunk's
   const ownerRecord = "error" in specOwner ? undefined : specOwner.record;
-  const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"], probationes: trunkRecord?.["probationes"] });
+  const pairing = "error" in specOwner ? undefined : readSpecReviewer(specOwner.manifest, { ...specOwner.record, state: trunkRecord?.["state"], probationes: trunkRecord?.["probationes"] }, { id, src: tip === undefined ? fsSrc(studioAbs) : branch });
   const design = pairing !== undefined && !("error" in pairing) ? pairing.signer : defaultDesign;
   const remoteTracking = refExists(repo, `refs/remotes/origin/opus/${id}`);
   const choreRef = `refs/heads/chore/done-${id}`;
@@ -1047,7 +1058,7 @@ export function deriveNext(f: Facts): Derived {
   const owner = f.specOwner;
   if ("error" in owner) return hold("spec", owner.error);
   const ownerUi = owner.record["kind"] === "ui";
-  const gate = readSpecReviewer(owner.manifest, { ...owner.record, state: f.trunkRecord?.["state"], probationes: f.trunkRecord?.["probationes"] });
+  const gate = readSpecReviewer(owner.manifest, { ...owner.record, state: f.trunkRecord?.["state"], probationes: f.trunkRecord?.["probationes"] }, { id, src: f.tip === undefined ? f.work : f.branch });
   if ("error" in gate) return hold("spec", gate.error);
   const signer = gate.signer;
   // W-305 (D-075 D): the fast lane. A brief that `readBriefForm` reads as light (one behaviour, one to three Files owned, no

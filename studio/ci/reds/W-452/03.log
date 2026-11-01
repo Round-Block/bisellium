@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-452-b3\s --import tsx packages/cli/src/spec-seats.test.ts
+# exit: 1
+# at: 2026-11-01T04:24:17.638Z
+# sella: builder.W-452
+# tree: tree:6c33d23f1a3a0d8e97a71376a5af61472dad384e
+# ticket: {"opus":"W-452","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-452/studio","head":"e4ae8ff48b98c8963ec0469d2fe0dcefd6007cea","brief":"6a238ebfdf08e36d16da0d32dfba5647ac0e1afb","at":"2026-11-01T04:24:16.712Z"}
+
+TAP version 13
+# Subtest: W-452-b3 behaviour 3: verdict --phase spec owes the promise ledger from the seat its collegium names, as next names it
+not ok 1 - W-452-b3 behaviour 3: verdict --phase spec owes the promise ledger from the seat its collegium names, as next names it
+  ---
+  duration_ms: 21.91789
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/spec-seats.test.ts:12:522'
+  failureType: 'testCodeFailure'
+  error: |-
+    ops-lead's signature of an ops opus without a ledger is refused
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/spec-seats.test.ts:328:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29.479114

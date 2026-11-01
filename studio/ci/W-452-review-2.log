@@ -1,0 +1,21 @@
+# opus: W-452
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1957e-65ca-7cb1-91ac-14d1bd5af305
+# outcome: passed
+# at: 2026-11-01T10:15:20.235Z
+# tree: tree:be6a1c38ff88dd1cc77952d183636891c703bca1
+# brief: briefs/W-452.md blob:6a238ebfdf08e36d16da0d32dfba5647ac0e1afb
+# ticket: {"opus":"W-452","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-452/studio","head":"81cad778892484af654307b0fca49ba0dbd57a63","brief":"6a238ebfdf08e36d16da0d32dfba5647ac0e1afb","at":"2026-11-01T10:15:05.022Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-452-review-1.log #1: closed — studio/bisellium.yml:66 now matches manifest-introducing commit `f738037d` at `2026-11-01T04:24:32Z`
+
+## Verdict
+The corrected boundary closes the prior signer-routing defect without introducing another substantive change.
+VERDICT: PASS
