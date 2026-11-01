@@ -411,6 +411,74 @@ test("W-489-b5 behaviour 5: a dirty worktree holding a nested repository in a re
   }
 });
 
+test("W-489-b6 behaviour 6: a filesystem shape the sweep cannot probe never aborts it: a gitlink replaced by a regular file is saved and removed, an unreadable gitlink path keeps its worktree, and a sweep that throws leaves prune exiting 0", () => {
+  const fx = w489Repo();
+  const here = process.cwd();
+  let locked: string | undefined;
+  try {
+    const { repo, studio, root } = fx;
+    const subSrc = join(root, "subsrc");
+    git(["init", "-q", "-b", "master", subSrc], root);
+    writeFileSync(join(subSrc, "s.txt"), "s\n");
+    git(["add", "s.txt"], subSrc);
+    git([...W489_ID, "commit", "-q", "-m", "sub init"], subSrc);
+    git([...W489_ID, "-c", "protocol.file.allow=always", "submodule", "add", "-q", subSrc, "vendor"], repo);
+    git([...W489_ID, "commit", "-q", "-m", "add submodule"], repo);
+    git(["push", "-q", "origin", "master"], repo);
+    git(["fetch", "-q", "origin"], repo);
+    const tc = w489Wt(repo, "W-7-typechange", "w7-typechange");
+    rmSync(join(tc, "vendor"), { recursive: true, force: true });
+    writeFileSync(join(tc, "vendor"), "vendor is now a file\n");
+    const un = w489Wt(repo, "W-7-unreadable", "w7-unreadable");
+    writeFileSync(join(un, "note.txt"), "note\n");
+    locked = join(un, "vendor");
+    chmodSync(locked, 0o000);
+    const fake = w489Prs({ "w7-typechange": "NONE", "w7-unreadable": "NONE" });
+
+    let s: W489Sweep | undefined;
+    let thrown: string | undefined;
+    try {
+      s = w489Sweep(repo, studio, { opus: "W-7", prs: fake.prs, nowMs: Date.now() });
+    } catch (e) {
+      thrown = (e as Error).message;
+    }
+    assert.equal(thrown, undefined, "a gitlink replaced by a regular file does not abort the sweep");
+    const removed = new Map((s?.removed ?? []).map((e) => [basename(e.path), e]));
+    const kept = new Map((s?.kept ?? []).map((e) => [basename(e.path), e.reason]));
+    assert.equal(removed.has("W-7-typechange"), true, "the worktree whose gitlink is now a regular file is removed");
+    assert.match(readFileSync(removed.get("W-7-typechange")?.saved ?? join(root, "none"), { encoding: "utf8", flag: "a+" }), /vendor is now a file/, "its patch holds the regular file's content");
+    assert.match(kept.get("W-7-unreadable") ?? "", /submodule vendor cannot be probed/, "an unreadable gitlink path keeps its worktree, naming the path");
+    assert.equal(existsSync(join(un, "note.txt")), true, "the kept worktree's untracked file is still on disk");
+    chmodSync(locked, 0o755);
+    locked = undefined;
+
+    w489Wt(repo, "W-7-later", "w7-later");
+    const gone = mkdtempSync(join(root, "gone-"));
+    process.chdir(gone);
+    rmSync(gone, { recursive: true, force: true });
+    const orig = console.log;
+    let out = "";
+    let code: number | undefined;
+    let pruneThrown: string | undefined;
+    console.log = (...parts: unknown[]) => void (out += parts.join(" ") + "\n");
+    try {
+      code = (runPrune as (args: string[], deps: unknown) => { exitCode: number })(["--studio", studio, "--repo", repo], { prs: fake.prs, nowMs: Date.now() }).exitCode;
+    } catch (e) {
+      pruneThrown = (e as Error).message;
+    } finally {
+      console.log = orig;
+      process.chdir(here);
+    }
+    assert.deepEqual([pruneThrown, code], [undefined, 0], "a sweep that throws leaves prune exiting 0");
+    assert.match(out, /^worktree sweep failed: /m, "prune prints the sweep's failure");
+    assert.equal(existsSync(join(repo, ".worktrees", "W-7-later")), true, "no worktree is removed by a sweep that failed");
+  } finally {
+    if (locked !== undefined) chmodSync(locked, 0o755);
+    process.chdir(here);
+    rmSync(fx.root, { recursive: true, force: true });
+  }
+});
+
 test("W-489-b2 behaviour 2: prune's sweep removes a worktree whose opus is done, whose PR is merged or closed, or (clean) whose commit is in origin/master, and keeps the rest", () => {
   const fx = w489Repo();
   try {
