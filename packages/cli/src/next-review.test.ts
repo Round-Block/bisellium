@@ -1397,6 +1397,53 @@ test("W-328-b1 behaviour 1: a failed round's fix committed outside the source tr
   expectStep(uo, "build", "held", "a log not committed: held");
   assert.equal(uo.kv.get("why"), `ci/${OPUS}-review-1.log is not committed on opus/${OPUS} (commit it), so the commits after it cannot be counted (D-086 B)`, ran("a log not committed: why", uo));
 });
+// ---------------------------------------------------------------------------
+// W-491: a failed round's fix that changes only the officina's manifest is a fix (D-086 B): the re-review is ordered.
+// ---------------------------------------------------------------------------
+/** W-491: a line appended to the worktree's manifest, committed with any other paths named, as a fix commit on the opus branch. */
+function manifestFix(w: World, line: string, also: Record<string, string> = {}): void {
+  const path = join(w.wt, MANIFEST_REL);
+  writeFileSync(path, `${readFileSync(path, "utf8")}${line}\n`);
+  for (const [rel, text] of Object.entries(also)) put(w.wt, rel, text);
+  commit(w.wt, `fix(${OPUS}): the manifest (${line})`);
+}
+
+test("W-491-b1 behaviour 1: a commit after a failed round's log that changes the officina's manifest is a fix, and the re-review is ordered; bookkeeping still is not", { timeout: 1_800_000 }, () => {
+  const w = w167("w491-b1", [F]);
+  buildFix(n167(w), "no fix yet: build, phase fix");
+  // bookkeeping is not a fix: the opus record, an officina file, a file named like the manifest elsewhere in the officina
+  handoffAt(w, "wt", "2026-10-02T09:30:00.000Z");
+  buildFix(n167(w), "an opus-record commit: build, phase fix");
+  put(w.wtStudio, "ci/notes.log", "a log\n");
+  commit(w.wt, `studio(${OPUS}): a log`);
+  buildFix(n167(w), "a ci-log commit: build, phase fix");
+  put(w.wtStudio, "briefs/bisellium.yml", "not the manifest\n");
+  commit(w.wt, `studio(${OPUS}): a file named like the manifest`);
+  buildFix(n167(w), "a file named like the manifest under the officina: build, phase fix");
+  // a manifest-only fix: the re-review, the censor's order
+  manifestFix(w, "# W-491: the round's S1 fix");
+  const o = n167(w);
+  reviewNamed(o, 2, "a manifest-only fix: review round 2");
+  assert.equal(o.kv.get("role"), "censor", ran("a manifest-only fix: the censor's order", o));
+  assert.equal(o.kv.get("why"), OUTSIDE(1), ran("a manifest-only fix: why", o));
+  // a second manifest commit is counted too
+  manifestFix(w, "# W-491: a second fix");
+  assert.equal(n167(w).kv.get("why"), OUTSIDE(2), "two manifest fixes: both counted");
+  // the manifest beside bookkeeping in one commit is a fix
+  const b = w167("w491-b1-beside", [F]);
+  manifestFix(b, "# W-491: the fix beside a log", { [`studio/ci/${OPUS}-notes.log`]: "a log\n" });
+  const bo = n167(b);
+  reviewNamed(bo, 2, "the manifest beside a log: review round 2");
+  assert.equal(bo.kv.get("why"), OUTSIDE(1), ran("the manifest beside a log: why", bo));
+  // master's manifest commit merged in is not the opus's fix
+  const m = w167("w491-b1-merge", [F]);
+  const main = join(m.repo, MANIFEST_REL);
+  writeFileSync(main, `${readFileSync(main, "utf8")}# W-491: master's line\n`);
+  git(m.repo, ["add", MANIFEST_REL]);
+  git(m.repo, ["commit", "-q", "-m", "chore: master's manifest line"]);
+  git(m.wt, ["merge", "-q", "--no-ff", "--no-edit", "master"]);
+  buildFix(n167(m), "a merge of master's manifest commit: build, phase fix");
+});
 
 /** W-360's fix check, round 1 (`.bisellium/reviews/W-360/fix-1/check.json`): three open paths, none in W-360's Files owned. */
 const W360_OPEN = [
