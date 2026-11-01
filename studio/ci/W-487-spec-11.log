@@ -1,0 +1,23 @@
+# opus: W-487
+# phase: spec
+# round: 11
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 342f5b51-f3fe-4d2c-8369-d272574e46f2
+# session_reason: reviewer session not resumable: claude -p in the sandbox does not persist sessions; first verdict refused for shape
+# outcome: passed
+# at: 2026-11-01T08:29:34.456Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-487.md blob:17b1c32725ab791a6a7e63f889e227f9aa1f0534
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":11,"actor":"spec-reviewer","studio":".worktrees/W-487/studio","head":"149eebd876b02415495db7c4a551d87c02de2f71","brief":"17b1c32725ab791a6a7e63f889e227f9aa1f0534","at":"2026-11-01T08:29:31.056Z"}
+
+Claude week 47%, 5h 23% | Codex week 75% | context 124k of 300k
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+The round-10 delta only adds an "as pinned by" marker to each of the four Genuine red lines at brief:78, 80, 82 and 84, and every marker checks out. Each quoted test name matches the `test(...)` title in prototype.mbox (lines 39, 338, 1208, 1548) and the subtest line in its b1–b4 red log. Each quoted message matches that test's assertion message in the mbox (lines 56, 342, 1214, 1554) and the failing assertion text in its red log. The worktree brief carries the delta exactly. Brief admission reports no problems. Round 8 had no blockers to answer, so Earlier findings is left empty.
+VERDICT: PASS

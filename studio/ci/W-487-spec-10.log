@@ -1,0 +1,24 @@
+# opus: W-487
+# phase: spec
+# round: 10
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1956b-41f9-7240-bd0c-d8ebf0f83f7c
+# outcome: passed
+# at: 2026-11-01T08:21:36.853Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-487.md blob:17b1c32725ab791a6a7e63f889e227f9aa1f0534
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":10,"actor":"architect","studio":".worktrees/W-487/studio","head":"149eebd876b02415495db7c4a551d87c02de2f71","brief":"17b1c32725ab791a6a7e63f889e227f9aa1f0534","at":"2026-11-01T08:21:30.425Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-487-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — behaviour 1's Genuine red now declares its exact failing row and assertion — check: studio/briefs/W-487.md:78
+2. advisory — behaviour 2's Genuine red now declares its exact failing row and assertion — check: studio/briefs/W-487.md:80
+3. advisory — behaviour 3's Genuine red now declares its exact failing row and assertion — check: studio/briefs/W-487.md:82
+4. advisory — behaviour 4's Genuine red now declares its exact failing row and assertion — check: studio/briefs/W-487.md:84
+
+## Verdict
+
+passed — signature round 10 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-487.md`; the four Genuine red lines now declare their pinned row and assertion (W-473); the mbox sha256 is unchanged, `a5585d130994dfc61b8adec7040b4b06f7a24f9323fe9da4f8493e39c217ce69`, and no record write, `next` or `verdict` was performed.
