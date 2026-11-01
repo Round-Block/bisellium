@@ -14,10 +14,11 @@ test("W-411-b1 behaviour 1: the Board header contains product facts, not impleme
   assert.match(served, /header omits implementation prose at 1280, 640 and 390/, "the served row pins all ruled widths");
 });
 
-test.skip("W-411-b2 behaviour 2: phone phase navigation names the phase in view", () => {
+test("W-411-b2 behaviour 2: phone phase navigation names the phase in view", () => {
   assert.match(view, /function PhaseNavigation/, "one component owns the phone phase strip");
   assert.match(view, /aria-current=\{column\.id === currentColumnId \? "true" : undefined\}/, "the visible phase is exposed on its strip button");
   assert.match(view, /addEventListener\("scroll", updateCurrentColumn/, "swipe and programmatic phase moves update the strip");
+  assert.match(css, /\.board__strip-item\[aria-current="true"\]\s*\{[^}]*border-color:\s*var\(--ink\)[^}]*background:\s*var\(--rule\)/s, "the current phone phase has a visible neutral state");
   assert.match(served, /phase navigation reaches and names every ruled-width phase/, "the served row pins all ruled widths");
 });
 

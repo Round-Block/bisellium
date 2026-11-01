@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { startServed, type ServedInstance } from "./harness.js";
 
 const WIDTHS = [1280, 640, 390] as const;
@@ -60,6 +60,24 @@ async function openBoard(page: Page, width: number, row: string): Promise<void> 
   await expect(page.locator(".board__column")).toHaveCount(6);
 }
 
+async function cssColour(page: Page, token: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("span");
+    probe.style.color = `var(${name})`;
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  }, token);
+}
+
+async function cardColours(locator: Locator): Promise<{ background: string; border: string }> {
+  return locator.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { background: style.backgroundColor, border: style.borderTopColor };
+  });
+}
+
 test("W-411-b1 header omits implementation prose at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w411-b1");
   await installFixture(page);
@@ -75,7 +93,7 @@ test("W-411-b1 header omits implementation prose at 1280, 640 and 390", async ({
   }
 });
 
-test.skip("W-411-b2 phase navigation reaches and names every ruled-width phase", async ({ page }) => {
+test("W-411-b2 phase navigation reaches and names every ruled-width phase", async ({ page }) => {
   served = await startServed("w411-b2");
   await installFixture(page);
   for (const width of WIDTHS) {
@@ -84,13 +102,29 @@ test.skip("W-411-b2 phase navigation reaches and names every ruled-width phase",
     const columns = page.locator(".board__columns");
     if (width === 390) {
       await expect(strip).toBeVisible();
-      await expect(strip.locator('[aria-current="true"]')).toHaveText(/Planned/);
+      const rule = await cssColour(page, "--rule");
+      const ink = await cssColour(page, "--ink");
+      const surface = await cssColour(page, "--surface");
+      const initial = strip.getByRole("button", { name: /Planned/ });
+      const initialSibling = strip.getByRole("button", { name: /In progress/ });
+      await expect(initial).toHaveText(/Planned/);
+      expect(await cardColours(initial), "390: current phase uses the neutral ink/rule treatment").toEqual({ background: rule, border: ink });
+      expect((await cardColours(initialSibling)).background, "390: an unselected phase keeps the surface fill").toBe(surface);
       const target = strip.getByRole("button", { name: /Awaiting review/ });
       await target.click();
       await expect(target).toHaveAttribute("aria-current", "true");
+      expect(await cardColours(target), "390: tap moves the visible current treatment").toEqual({ background: rule, border: ink });
+      expect((await cardColours(initial)).background, "390: the prior phase loses the current fill").toBe(surface);
       await expect(page.locator('.board__column[data-column-id="awaiting_review"]')).toBeInViewport();
       await columns.evaluate((node) => node.querySelector<HTMLElement>('[data-column-id="done"]')?.scrollIntoView({ inline: "start", block: "nearest" }));
-      await expect(strip.getByRole("button", { name: /Done/ })).toHaveAttribute("aria-current", "true");
+      const done = strip.getByRole("button", { name: /Done/ });
+      await expect(done).toHaveAttribute("aria-current", "true");
+      expect(await cardColours(done), "390: direct track scrolling moves the visible current treatment").toEqual({ background: rule, border: ink });
+      await page.locator('[data-waiting-id="W-1"]').click();
+      await page.locator(".board-drawer__close").click();
+      await expect(page.locator(".board-drawer")).toBeHidden();
+      await expect(done, "390: return restores the phase named by the sole lifecycle track").toHaveAttribute("aria-current", "true");
+      expect(await cardColours(done), "390: restored current styling follows the restored track").toEqual({ background: rule, border: ink });
     } else {
       await expect(strip).toBeHidden();
       expect(await columns.evaluate((node) => node.scrollWidth > node.clientWidth), `${width}: phases remain locally scrollable`).toBe(true);
