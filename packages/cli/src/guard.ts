@@ -452,6 +452,64 @@ export function ownLiveWork(input: Dict): string[] {
   });
 }
 
+/** W-494: the stopping or calling subagent's own transcript. A PreToolUse input names the session's transcript
+ *  (`transcript_path`) and the agent (`agent_id`); Claude Code keeps a subagent's transcript at
+ *  `<session transcript without .jsonl>/subagents/agent-<agent_id>.jsonl` (`probe/hook-input-probe.out`). The rule
+ *  recognises that path and a `transcript_path` that already names `agent-<agent_id>.jsonl`; any other input is not
+ *  judged. */
+export function agentTranscriptPath(input: Dict): string | undefined {
+  const id = str(input["agent_id"]);
+  const session = str(input["transcript_path"]);
+  if (id === undefined || session === undefined || !/^[A-Za-z0-9_-]+$/.test(id)) return undefined;
+  const own = `agent-${id}.jsonl`;
+  if (basename(session) === own) return session;
+  if (!session.endsWith(".jsonl")) return undefined;
+  return join(dirname(session), basename(session, ".jsonl"), "subagents", own);
+}
+
+/** W-494: the background Bash runs a transcript shows started and not yet ended, in start order. Started: a record whose
+ *  `toolUseResult.backgroundTaskId` names the task. Ended: a `task-notification` attachment whose prompt names it in
+ *  `<task-id>…</task-id>` (any status), or a TaskStop result (`toolUseResult.task_id` with a message opening
+ *  `Successfully stopped task`). A line that is not JSON is skipped. */
+export function liveBackgroundRuns(transcript: string): string[] {
+  const started: string[] = [];
+  const ended = new Set<string>();
+  for (const line of transcript.split("\n")) {
+    if (!/backgroundTaskId|task-notification|Successfully stopped task/.test(line)) continue;
+    let rec: unknown;
+    try {
+      rec = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!isDict(rec)) continue;
+    const result = isDict(rec["toolUseResult"]) ? rec["toolUseResult"] : {};
+    const bg = str(result["backgroundTaskId"]);
+    if (bg !== undefined && !started.includes(bg)) started.push(bg);
+    const stopped = str(result["task_id"]);
+    if (stopped !== undefined && str(result["message"])?.startsWith("Successfully stopped task")) ended.add(stopped);
+    const att = isDict(rec["attachment"]) ? rec["attachment"] : {};
+    const prompt = att["commandMode"] === "task-notification" ? str(att["prompt"]) : undefined;
+    for (const m of prompt?.matchAll(/<task-id>([^<]+)<\/task-id>/g) ?? []) if (m[1] !== undefined) ended.add(m[1]);
+  }
+  return started.filter((id) => !ended.has(id));
+}
+
+/** W-494: the calling subagent's live background runs, read from its own transcript; [] for the main thread or a
+ *  transcript that cannot be read (fail-open). */
+export function callerLiveRuns(input: Dict): string[] {
+  const path = agentTranscriptPath(input);
+  if (path === undefined) return [];
+  try {
+    return liveBackgroundRuns(readFileSync(path, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+/** The foreground wait a refusal names: the run writes its exit file last, and the wait polls it under the call cap. */
+export const EXIT_FILE_POLL = "timeout 540 bash -c 'until [ -f X.exit ]; do sleep 10; done'";
+
 /** W-444: what a Stop rule is handed besides the reply: the hook input, the home whose usage readings it may read, and
  *  the clock. */
 export interface StopContext {
@@ -567,6 +625,11 @@ export function guardRefusal(input: Dict): string | undefined {
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
     if (args["run_in_background"] === true && unboundedLoop(command))
       return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
+    if (args["run_in_background"] === true && !main) {
+      const live = callerLiveRuns(input);
+      if (live.length > 0)
+        return `refused: your background run ${live.join(", ")} is still live, and an agent keeps one background run at a time (W-494): wait for it in the foreground (write an exit file last, \`cmd > X.log 2>&1; echo $? > X.exit\`, and poll it with \`${EXIT_FILE_POLL}\`), or stop it with TaskStop, then start the next`;
+    }
     return undefined;
   }
   if (tool === "Write" || tool === "Edit" || tool === "NotebookEdit") {
