@@ -39,7 +39,7 @@ const opera = [
 ];
 const inbox = {
   opera: opera.slice(0, 6).map(({ id, title, collegium, sella, traditio }) => ({ id, title, collegium, sella, traditio })),
-  petitiones: [{ id: "P-1", opus: "W-1", from: "producer", subject: "Choose the path", body: "Please decide", opened: "2026-10-31T00:00:00Z" }],
+  petitiones: [],
 };
 
 async function installFixture(page: Page): Promise<void> {
