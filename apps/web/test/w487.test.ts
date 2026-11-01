@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import * as React from "react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { boardModel } from "../src/lib/board.js";
+import type { AttentionRow } from "../src/lib/board.js";
+import { InboxView } from "../src/screens/InboxView.js";
 import type { InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
+
+(globalThis as { React?: unknown }).React = React;
 
 const officina: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit"> = {
   lifecycle: {
@@ -43,4 +52,42 @@ test("W-487-b1 behaviour 1: one attention collection combines every ask once per
   assert.equal(attention[2]?.boardEntry, false, "a linked question without a Board entry remains attention without inventing a Board card");
   assert.equal(attention[3]?.petitio?.id, "P-solo", "an unlinked question remains its own replyable attention item");
   assert.equal(new Set(attention.map((item) => item.attentionKey)).size, attention.length, "the collection has no duplicate attention keys");
+});
+
+test("W-487-b2 behaviour 2: Inbox distinguishes replyable questions from Board-owned routes", () => {
+  const inbox = readFileSync(resolve("apps/web/src/screens/Inbox.tsx"), "utf8");
+  const view = readFileSync(resolve("apps/web/src/screens/InboxView.tsx"), "utf8");
+
+  assert.match(inbox, /attentionCollection\(officina, opera, d\)/, "Inbox refresh consumes the shared attention collection instead of petition rows");
+  assert.match(inbox, /Promise\.all\(\[fetchOfficina\(\), fetchOpera\(\), fetchInbox\(\)\]\)/, "Inbox reconciles the collection from the same three reads as Board");
+  assert.match(view, /item\.destination === "board"[\s\S]*Opens Board drawer/, "a Board-owned Inbox row names its route instead of imitating a replyable question");
+  assert.match(view, /item\.destination === "inbox"[\s\S]*inbox__action-bar/, "an Inbox decision keeps the existing reply controls");
+  assert.match(view, /Open Board actions/, "a combined question exposes its additional Board-owned route without duplicating the row");
+
+  const boardItem = (id: string, title: string, waitingSince?: number): AttentionRow => ({
+    attentionKey: `opus:${id}`,
+    destination: "board",
+    boardEntry: true,
+    id,
+    title,
+    sella: "assigned-opus-owner",
+    state: "building",
+    gates: [],
+    needsYou: true,
+    asks: [{ kind: "human_gate", count: 1 }],
+    nextActor: "patron",
+    waitingSince,
+    blocked: false,
+  });
+  const html = renderToStaticMarkup(createElement(InboxView, {
+    items: [boardItem("W-known", "Known Board ask", Date.UTC(2026, 9, 27)), boardItem("W-absent", "Undated Board ask")],
+    focusIndex: 0,
+    reason: "",
+    onReasonChange: () => undefined,
+    onFocusChange: () => undefined,
+    onSubmit: () => undefined,
+  }));
+  assert.match(html, /inbox__sella">Board<\/span><span class="inbox__date">27 Oct<\/span>[\s\S]*inbox__subject">Known Board ask/, "a Board-owned row shows Board and its known waiting date");
+  assert.match(html, /inbox__sella">Board<\/span><span class="inbox__date">–<\/span>[\s\S]*inbox__subject">Undated Board ask/, "a Board-owned row shows an en dash when its waiting date is absent");
+  assert.doesNotMatch(html, />assigned-opus-owner</, "a Board-owned row never misidentifies the assigned opus owner as its asker");
 });
