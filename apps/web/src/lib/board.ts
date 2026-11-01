@@ -56,6 +56,8 @@ export interface AttentionRow extends CardRow {
   boardEntry: boolean;
   /** The next question to answer for this combined item, in served order. */
   petitio?: InboxResponse["petitiones"][number];
+  /** Every input decision combined into this row. */
+  petitionIds?: string[];
 }
 
 function recordValue(record: unknown, key: string): unknown {
@@ -217,10 +219,12 @@ export function attentionCollection(
 ): AttentionRow[] {
   const cards = classifiedCards(o, opera, inbox);
   const firstPetition = new Map<string, InboxResponse["petitiones"][number]>();
+  const petitionIds = new Map<string, string[]>();
   const missingCounts = new Map<string, number>();
   for (const petitio of inbox.petitiones) {
     if (petitio.opus === undefined) continue;
     if (!firstPetition.has(petitio.opus)) firstPetition.set(petitio.opus, petitio);
+    petitionIds.set(petitio.opus, [...(petitionIds.get(petitio.opus) ?? []), petitio.id]);
     if (!cards.has(petitio.opus)) missingCounts.set(petitio.opus, (missingCounts.get(petitio.opus) ?? 0) + 1);
   }
 
@@ -234,6 +238,7 @@ export function attentionCollection(
       attentionKey: `opus:${opus.id}`,
       destination: petitio === undefined ? "board" : "inbox",
       boardEntry: true,
+      petitionIds: petitionIds.get(opus.id) ?? [],
       ...(petitio === undefined ? {} : { petitio }),
     });
   }
@@ -249,6 +254,7 @@ export function attentionCollection(
       destination: "inbox",
       boardEntry: false,
       petitio,
+      petitionIds: petitio.opus === undefined ? [petitio.id] : petitionIds.get(petitio.opus) ?? [petitio.id],
       id: petitio.opus ?? petitio.id,
       title: petitio.subject,
       sella: petitio.from,

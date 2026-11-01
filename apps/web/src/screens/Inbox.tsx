@@ -123,7 +123,8 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
       const currentPetition = detachedPetitionRef.current ?? currentItem?.petitio;
       const currentKey = currentItem?.attentionKey;
       const retainedIndex = currentKey === undefined ? -1 : nextAttention.findIndex((item) => item.attentionKey === currentKey);
-      const keepDetached = intent === null && refreshIntentRef.current === null && currentPetition !== undefined && retainedIndex < 0;
+      const keepDetached = intent === null && refreshIntentRef.current === null && currentPetition !== undefined
+        && !nextAttention.some((item) => item.petitionIds?.includes(currentPetition.id) ?? item.petitio?.id === currentPetition.id);
       const nextIndex = retainedIndex >= 0
         ? retainedIndex
         : reconcileFocusIndex(intent?.preferredIndex ?? currentIndex, nextAttention.length);
