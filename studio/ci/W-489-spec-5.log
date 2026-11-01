@@ -1,0 +1,24 @@
+# opus: W-489
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T09:33:29.461Z
+# tree: tree:4576fc0f5ca72643c088ada01c0a4ed150287fe7
+# brief: briefs/W-489.md blob:c1cc43ee6a87c323dd33166b93e5eb46b6ebb9f3
+# ticket: {"opus":"W-489","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-489/studio","head":"5952d2cd2f35850812563973470e3be9a9da5822","brief":"c1cc43ee6a87c323dd33166b93e5eb46b6ebb9f3","at":"2026-11-01T09:33:26.098Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-489-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — revision 3 closes build review round 3 (class `spec×promise-unattainable-under-accepted-domain`): the gitlink probe reads `ENOENT` and `ENOTDIR` as no nested repository (a gitlink path that is now a regular file or a symlink to one holds nothing nested, and its file goes into the patch) and keeps the worktree on any other probe error, naming the path and code — check: brief:68, brief:97, red-b6.log, green-b6.log
+2. advisory — the sweep's path is audited so round 4 is not a fourth loop: every git call returns a status, the age stat, patch spawn, directory and write are caught, the check after a failed removal reads only ENOENT as gone; what still throws (a deleted current directory, a lookup that throws) throws before any worktree is judged and is caught by the done perform and, new in behaviour 6, by prune, which prints `worktree sweep failed` and exits 0; unchanged prune code and git's buffer limit are stated limits — check: brief:61, r3/prune-test-green.out, r3/typecheck-cli.out
+3. advisory — behaviour 6 is a required build fix with one genuine red over opus/W-489 c562cf57, accepted by the replay classifier and failing at its declared assertion by the branch's W-473 reader, green with the prototype fix and prune.test.ts whole — check: r3/red-accept-b6.out, r3/declared-b6.out, r3/prototype-b6.mbox
+4. advisory — Input domain row 5 adopts ci/W-489-spec-4.log #1's replacement verbatim, with its pins and the structured-record forms the admission asks for appended (the code and its row exist: 4086738d, W-489-b4); the done-sweep promise opens with spec-4 #2's replacement verbatim — check: brief:69, brief:27, ci/W-489-spec-4.log
+5. advisory — the revision-3 ledger passes the writer, the full admission admits the brief, and the Codex test check rerun on revision 3 lists the same two named flips and no unnamed one (containment.test.ts was not run on the behaviour-6 prototype; the build runs it) — check: r3/ledger-check.out, r3/admission.out, fixture-census.md
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-489.md`: six behaviours, behaviour 6 (probe errors and a throwing sweep never abort) a required build fix, prototype `r3/prototype-b6.mbox` over opus/W-489 c562cf57; no code-owned path.

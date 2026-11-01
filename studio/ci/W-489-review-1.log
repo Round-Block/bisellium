@@ -1,0 +1,19 @@
+# opus: W-489
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1960b-a50b-70c2-a42a-b5da6e0bef64
+# outcome: failed
+# at: 2026-11-01T07:40:50.194Z
+# tree: tree:8577f46f1f137fe7bc758afe7bf03a24697c00d9
+# brief: briefs/W-489.md blob:a8b438870c08b6088058433364316dedc19a2ebb
+# ticket: {"opus":"W-489","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-489/studio","head":"c0e5ab246b549ddb7538f74d90b94cdb28fc166a","brief":"a8b438870c08b6088058433364316dedc19a2ebb","at":"2026-11-01T07:38:26.580Z"}
+
+## Findings
+1. blocking — packages/cli/src/prune.ts:209 An initialized submodule with modified or untracked contents makes the outer worktree dirty, but the outer `git add -A` and cached diff save only its gitlink—often an empty patch—before line 288 force-removes the checkout. This admitted dirty-state input is not a stated limit, so its contents are lost despite the preservation promise (brief:67). [severity: S1] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/prune.test.ts (W-489-b1 submodule-dirty patch round-trip)
+
+## Verdict
+The sweep can destroy admitted uncommitted content without preserving it in the saved patch.
+
+VERDICT: FAIL

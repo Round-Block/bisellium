@@ -1,0 +1,23 @@
+# opus: W-489
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19598-442c-7c30-b199-0232d584e209
+# outcome: failed
+# at: 2026-11-01T08:27:37.233Z
+# tree: tree:9b5232eb05b73af3e830b6f631a45af5003ad055
+# brief: briefs/W-489.md blob:45beb027fe6fce70cc13c387795015038408a12c
+# ticket: {"opus":"W-489","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-489/studio","head":"0d7a62685a7db8916c52eef036495362c1b99012","brief":"45beb027fe6fce70cc13c387795015038408a12c","at":"2026-11-01T08:27:35.979Z"}
+
+## Findings
+1. blocking — brief:68 [severity: S1] A malformed or unreadable remote-tracking ref makes `git show-ref` exit 128/-1, but `unpushedBranches` treats every nonzero exit as `NONE`; the real done caller can therefore remove an old worktree whose branch may be pushed and have an open PR, while W-489-b4/K22 tests only present versus absent refs. Replace brief:68 with: “| 5. PR state and remote-ref evidence, as `PrLookup`, `ghPrStates`, and `unpushedBranches` read them | `PrLookup` answers `OPEN`, `MERGED`, `CLOSED`, or `NONE`; `ghPrStates` accepts its stated JSON domain; `unpushedBranches` accepts `git show-ref` exit 0 as present/unread and exit 1 as absent/`NONE` | `sweepWorktrees` keeps errors, unread states, and open PRs; `ghPrStates` rejects command or JSON failures; `unpushedBranches` returns `{ error }` for every `show-ref` result other than 0 or 1, so the sweep keeps the branch candidate |”. [design: keeps] [class: spec×input-without-named-rejector] — check: packages/cli/src/next-done.test.ts (W-489-b4: `show-ref` exit 128 keeps the worktree)
+2. advisory — brief:27 [severity: S2] The touched promise retains ci/W-489-spec-2.log #2’s defect: a successful perform may report a thrown sweep or keep a candidate after read, patch-save, or removal failure, so it still cannot guarantee removing every otherwise eligible worktree. Replace its opening with: “Promise done-sweep: after a successful done perform, the best-effort sweep attempts every eligible worktree; it removes each candidate whose required reads, nested-repository check, patch save, and removal complete, keeps candidates for the stated guards or failures, and reports each removal or keep.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: the promise must preserve the specified non-fatal sweep and per-worktree failure limits
+
+## Earlier findings
+- ci/W-489-spec-2.log #1: open — brief:68 remains unchanged: it still covers only generic `PrLookup`/`ghPrStates`, while `unpushedBranches` still treats every nonzero `git show-ref` exit as `NONE`; the delta adds neither the exit-128 refusal nor its W-489-b4 test.
+
+## Verdict
+The nested-repository change is otherwise feasible, but the earlier fail-open blocker remains open.
+
+VERDICT: FAIL

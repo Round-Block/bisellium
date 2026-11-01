@@ -625,6 +625,7 @@ const PINNED_B: PinnedB[] = [
     disposition: "guarded",
     why: "W-131: the opus id is captured by /^([A-Za-z]+-\\d+)-…/ from a ci/ directory entry and goes only to readContainedRegularFile, which refuses symlinks and escapes before the state read; the deleted ci/<name> is checked by the same helper before unlinkSync",
   },
+  { key: "packages/cli/src/prune.ts:opusDone#1", disposition: "guarded", why: "W-489: the id is a /[A-Z]+-\\d+/ token of a worktree's name or branch and goes only to readContainedRegularFile, which refuses symlinks and escapes before the state read" },
   { key: "packages/cli/src/retro.ts:draftRetro#1", disposition: "derived", why: "L-### from createNextRecord" },
   { key: "packages/cli/src/retro.ts:draftRetro#2", disposition: "derived", why: "P-### from createNextRecord" },
   {
@@ -901,6 +902,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/prototype-replay.ts:loadSeries:readFileSync#1", disposition: "outside", why: "reads the architect's prototype series the signed brief names by absolute or ~/ path, a host evidence file outside any officina, after statSync proves it a regular file under the cap" },
   { key: "packages/cli/src/prototype-replay.ts:writeAttempt:writeFileSync#1", disposition: "outside", why: "writes the replay's attempt marker under <repo>/.bisellium/prototype-replay/, whose real directories ensureRealDirectory proves first, exclusive create; never an officina" },
   { key: "packages/cli/src/prune.ts:pruneCiLogs:unlinkSync#1", disposition: "contained", why: "the log was just read through readContainedRegularFile, which refuses a symlink and an escape; its absolute path is what is unlinked" },
+  { key: "packages/cli/src/prune.ts:saveWorktreeDiff:writeFileSync#1", disposition: "outside", why: "W-489: writes a removed worktree's patch under <repo>/.bisellium/worktree-diffs/, whose real directories ensureRealDirectory proves first, exclusive create; never an officina" },
   { key: "packages/cli/src/retro.ts:draftRetro:writeFileSync#1", disposition: "contained", why: "acta/<date>-retro-<n>.md in a real acta/ checked by ensureRealDirectory before the write" },
   { key: "packages/cli/src/retro.ts:readRetroSetting:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
   { key: "packages/cli/src/retro.ts:claim:openSync#1", disposition: "contained", why: "a write-capable probe open of opera/<fix>.md or .bisellium/events.jsonl, after requireRealDirectory on its parent; O_NOFOLLOW refuses a symlinked last component, and the bytes go through editOpusFrontMatter and emitEvent" },

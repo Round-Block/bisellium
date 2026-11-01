@@ -1,0 +1,24 @@
+# opus: W-489
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T05:28:25.843Z
+# tree: tree:3003f18ad01310d73cf7a6491d280e9de13b5418
+# brief: briefs/W-489.md blob:a8b438870c08b6088058433364316dedc19a2ebb
+# ticket: {"opus":"W-489","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"de5565d185409254e8c303438db51dc8993ccb36","brief":"a8b438870c08b6088058433364316dedc19a2ebb","at":"2026-11-01T05:28:19.858Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-489-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — one sweep (`sweepWorktrees` in prune.ts) serves both places: with an opus id the done perform removes every worktree carrying that id; without one `bisellium prune` removes a worktree whose opus is done, whose PR is merged or closed, or (clean only) whose commit is in origin/master; the 11-01 lessons are guards: never younger than an hour by the gitdir file's mtime, never an open or unread PR, a dirty one only when its opus or PR ended and after its patch is saved, a busy admin directory counted and left for a later run — check: brief:15-25, red-logs.out, kills.out
+2. advisory — the done perform reads no GitHub: its open-PR guard is git-only (a branch on origin is kept for prune, which asks gh), and it uses the real clock, never --now; tests inject the PR lookup and never run gh — check: brief:21, brief:27, green-b4.log, kill-K22.out
+3. advisory — each red fails by assertion on its own red commit, one at a time, accepted by the replay classifier and failing at its declared assertion by master's W-473 reader; twenty-two one-hunk kills of prune.ts and next.ts each fail their row at the assertion they guard — check: red-accept.out, declared.out, kills.out
+4. advisory — the Codex test check lists two flips, the inventory B and D pins in containment.test.ts, both named in Files owned, and no unnamed flip; every must-stay-green row it lists passes on the tip, cut over master de5565d1 — check: fixture-census.md, census-green.out, gates-proto.out
+5. advisory — this brief's ledger passes the writer and the full admission admits it; lint, format:check and typecheck pass; no code-owned path is touched; tick calling prune is left out of scope as a Default for the Patron — check: ledger-check.out, admission.out, gates-proto.out, brief:102
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-489.md`, prototype `prototype.mbox` (eight patches) over master de5565d1; four behaviours, 3 points, no code-owned path.

@@ -1,0 +1,22 @@
+# opus: W-489
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1960b-a50b-70c2-a42a-b5da6e0bef64
+# outcome: failed
+# at: 2026-11-01T09:21:23.578Z
+# tree: tree:4576fc0f5ca72643c088ada01c0a4ed150287fe7
+# brief: briefs/W-489.md blob:45beb027fe6fce70cc13c387795015038408a12c
+# ticket: {"opus":"W-489","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-489/studio","head":"c562cf577c88bd6948d7f47a125b09a4e63f30c4","brief":"45beb027fe6fce70cc13c387795015038408a12c","at":"2026-11-01T09:20:14.937Z"}
+
+## Findings
+1. blocking — packages/cli/src/prune.ts:218 Reached from ci/W-489-review-2.log #1’s class: a tracked gitlink ordinarily replaced by a regular file is a dirty tracked change, but probing `<file>/.git` with uncaught `lstatSync` throws `ENOTDIR`; `prune` therefore aborts instead of saving the file or keeping the worktree and exiting 0, contrary to brief:60 and brief:67. [severity: S1] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/prune.test.ts (W-489-b5 gitlink-to-regular-file round-trip)
+
+## Earlier findings
+- ci/W-489-review-2.log #1: closed — packages/cli/src/prune.ts:220 detects untracked embedded repositories from NUL-delimited status before `git add`, and packages/cli/src/prune.test.ts:361 pins both `.git` directory and gitfile forms remaining on disk.
+
+## Verdict
+The embedded-repository case is fixed, but the new guard aborts on an ordinary tracked type change instead of preserving or keeping the worktree.
+
+VERDICT: FAIL
