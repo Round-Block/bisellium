@@ -1,0 +1,23 @@
+# opus: W-494
+# phase: spec
+# round: 6
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T15:01:03.918Z
+# tree: tree:7c3788e18c3192dc6b1033e85d13dd72c1e2d10d
+# brief: briefs/W-494.md blob:3eaedee3690e2c0c769d434fdc972dded6138cbb
+# ticket: {"opus":"W-494","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-494/studio","head":"78165441d1eb5aeb8e2efaa64128681ea69fc060","brief":"3eaedee3690e2c0c769d434fdc972dded6138cbb","at":"2026-11-01T15:00:56.799Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-494-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — revision 3 corrects revision 2's cap: Claude Code's Bash tool caps a foreground call at 120 seconds by default (120000 ms, `BASH_DEFAULT_TIMEOUT_MS` unset) and moves a longer call to the background, so revision 2's `timeout 170` poll was itself a stacked waiter; the poll is `timeout 100 …` in `EXIT_FILE_POLL`, both refusals, the three agents and the two briefs; a poll under the default was chosen over the tool's `timeout` parameter, which the command text cannot carry — check: probe/bash-timeout-probe.out, brief:25, brief:3
+2. advisory — row b1 pins the poll's seconds under 120 instead of one value, and kill K14 (the poll back at 170) is guarded; row b3's allowed exit-file poll reads `timeout 100` (K11 guarded) — check: kills.out, green-b1.log, rows.b1.txt
+3. advisory — patch 8 also corrects the old 10-minute cap that `builder.md` and `builder-brief.md` stated (thresholds now ~2 minutes); row b4 pins that no guidance text claims a 10-minute cap and kill K15 is guarded — check: brief:44, brief:45, brief:37, kills.out
+4. advisory — the series is re-staged over master 7a1f9c47; four reds accepted and failing at their declared assertions, fifteen kills guarded, the gates pass at the tip and guard.test.ts leaves no `unlisted:` read; revision 2's evidence is kept in r2/; the Codex fixture census was not rerun (no row or fixture outside W-494's own rows changes) — check: red-accept.out, declared.out, gates-proto.out, reads-check.out, r3-delta-over-opus-branch.diff
+
+## Verdict
+
+passed — signed by the ops-lead seat (`claude-opus-5-5`, spec_seats, D-150 C), brief revision 3 at `studio/briefs/W-494.md`, drafted and prototyped by the architect: four behaviours, prototype `prototype.mbox` over master 7a1f9c47; code-owned paths touched, the Patron merges.
