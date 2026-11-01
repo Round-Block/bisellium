@@ -94,12 +94,13 @@ test("W-345-b5 Outlook mobile opens full-screen controls and returns to its sele
   const served = await startServed("w345-b5");
   const petitiones = Array.from({ length: 14 }, (_, index) => ({
     id: `P-${String(index + 1).padStart(2, "0")}`,
-    opus: "W-345",
+    opus: `W-345-${index + 1}`,
     from: "ui-lead",
     subject: `Phone decision ${index + 1}`,
     body: `Evidence for decision ${index + 1}`,
   }));
   await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) }));
+  await page.route("**/api/opera", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await signIn(page, served.baseURL, served.token);
@@ -162,7 +163,7 @@ test("W-345-b5 Outlook mobile opens full-screen controls and returns to its sele
     await page.getByRole("button", { name: "Back to Inbox" }).click();
     await expect(list).toBeVisible();
     await expect(last).toBeFocused();
-    expect((await last.boundingBox())!.height).toBeCloseTo(68, 0);
+    expect((await last.boundingBox())!.height).toBeCloseTo(88, 0);
   } finally {
     await served.close();
   }
@@ -176,7 +177,7 @@ test("W-345-b6 Defer sends ask-back verdict text and success names the open reco
     { id: "P-2", opus: "W-345", from: "ui-lead", subject: "Second", body: "Second evidence" },
   ];
   await page.route("**/api/inbox", (route) => {
-    const petitiones = answered ? all.slice(0, 1) : all;
+    const petitiones = answered ? all.slice(1) : all;
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) });
   });
   let answerBody: unknown;
@@ -188,22 +189,23 @@ test("W-345-b6 Defer sends ask-back verdict text and success names the open reco
   try {
     await signIn(page, served.baseURL, served.token);
     const badge = page.locator('a[href="#/inbox"] .sidebar__badge');
-    await expect(badge).toHaveText("1");
+    await expect(badge).toHaveText("3");
+    await page.locator(".inbox__row", { hasText: "First" }).click();
     const buttons = page.locator(".inbox__btn-action");
     await expect(buttons).toHaveCount(4);
     await expect(page.getByRole("button", { name: "delegate" })).toBeDisabled();
     await expect(page.getByText("Ratio decidendi", { exact: true })).toBeVisible();
-    await page.locator(".inbox__row").nth(1).click();
+    await expect(page.locator(".inbox__subject", { hasText: "First" })).toBeVisible();
     await page.locator(".inbox__input-ratio").fill("Could you test ‘理由’?");
     await page.getByRole("button", { name: /defer/i }).click();
-    expect(answerBody).toEqual({ petitio: "P-2", reply: "defer: Could you test ‘理由’?", askBack: true });
-    await expect(page.locator(".inbox__row")).toHaveCount(1);
-    await expect(badge).toHaveText("1");
-    await expect(page.locator(".inbox__subject").first()).toHaveText("First");
+    expect(answerBody).toEqual({ petitio: "P-1", reply: "defer: Could you test ‘理由’?", askBack: true });
+    await expect(page.locator(".inbox__row")).toHaveCount(3);
+    await expect(badge).toHaveText("3");
+    await expect(page.locator(".inbox__subject", { hasText: "Second" })).toBeVisible();
     await expect(page.locator(".inbox__input-ratio")).toBeVisible();
     const confirmation = page.locator(".inbox__confirmation");
-    await expect(confirmation).toHaveText("Recorded defer answer for P-2; the petition remains open awaiting the asker's reply.");
-    await expect(page.locator('.shell__status[data-state="ready"]')).toHaveText("Recorded defer answer for P-2; the petition remains open awaiting the asker's reply.");
+    await expect(confirmation).toHaveText("Recorded defer answer for P-1; the petition remains open awaiting the asker's reply.");
+    await expect(page.locator('.shell__status[data-state="ready"]')).toHaveText("Recorded defer answer for P-1; the petition remains open awaiting the asker's reply.");
   } finally {
     await served.close();
   }

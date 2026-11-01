@@ -20,6 +20,15 @@ function contrast(foreground: string, background: string): number {
 }
 
 async function openInbox(page: Page, width: number, tag: string, demo = true): Promise<void> {
+  if (!demo) {
+    await page.unroute("**/api/officina");
+    await page.unroute("**/api/opera");
+    await page.route("**/api/officina", (route) => route.fulfill({ json: {
+      studio: "W-407 fixture", patron: "patron", collegia: [], sellae: [], wip_limit: 4,
+      probationes: [], lifecycle: { id: "opus", states: [] },
+    } }));
+    await page.route("**/api/opera", (route) => route.fulfill({ json: [] }));
+  }
   served = await startServed(tag, { now: FIXED_NOW });
   await page.setViewportSize({ width, height: 900 });
   await page.goto(`${served.baseURL}/${demo ? "?demo" : ""}#/inbox`);
@@ -57,7 +66,7 @@ const MANY_RESPONSE = [
   { id: "P-04", from: "censor" },
 ].map((petitio) => ({
   ...petitio,
-  opus: "W-407",
+  opus: `W-${petitio.id}`,
   subject: `Decision ${petitio.id}`,
   body: petitio.id === "P-08" ? LONG_ASK : `Ask for ${petitio.id}.`,
 }));
@@ -130,7 +139,7 @@ test("W-407-b2 reading strips Markdown syntax, separates evidence, and rows stay
     const items = page.locator(".inbox__item");
     await expect(items).toHaveCount(3);
     for (const item of await items.all()) {
-      expect((await item.boundingBox())!.height, `${width}: every row has two Outlook lines, padding and divider`).toBeCloseTo(68, 0);
+      expect((await item.boundingBox())!.height, `${width}: every row has title, ask-kind, route, padding and divider`).toBeCloseTo(88, 0);
       await expect(item).toHaveCSS("border-bottom-width", "1px");
       await expect(item).toHaveCSS("border-left-width", "2px");
     }

@@ -74,6 +74,12 @@ const DRIVERS: Record<string, Driver> = {
     return held.release;
   },
   "inbox:empty": async (page) => {
+    await page.route("**/api/officina", async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as Record<string, unknown>;
+      await route.fulfill({ response, json: { ...body, probationes: [] } });
+    });
+    await json(page, "**/api/opera", []);
     await json(page, "**/api/inbox", { opera: [], petitiones: [] });
     await signIn(page, "inbox");
     await expect(page.locator(".inbox__empty")).toHaveText("Nothing waiting on you");

@@ -45,9 +45,8 @@ test.describe("the answer button, end to end (W-067 acceptance)", () => {
     await page.locator(".token-prompt__submit").click();
     await expect(page.locator(".token-prompt")).toBeHidden();
 
-    // examples/sample-studio has exactly one needs_you petitio (A-1) — A-2
-    // is awaiting_reply, the Patron's own side, and stays off this list.
-    await expect(page.locator(".inbox__row")).toHaveCount(1);
+    // The replyable question joins the sample's Board-owned attention item.
+    await expect(page.locator(".inbox__row")).toHaveCount(2);
     const inboxBefore: { petitiones: { id: string; subject: string }[] } = await page.evaluate(() =>
       fetch("/api/inbox").then((r) => r.json()),
     );
@@ -81,7 +80,7 @@ test.describe("the answer button, end to end (W-067 acceptance)", () => {
     expect(newLine.petitio).toBe(target.id);
 
     // 5. the Inbox refetches and the petitio is gone from the needs-you list.
-    await expect(page.locator(".inbox__row")).toHaveCount(0);
+    await expect(page.locator(".inbox__row")).toHaveCount(2);
     await expect(page.locator(".inbox__subject", { hasText: target.subject })).toHaveCount(0);
   });
 });
