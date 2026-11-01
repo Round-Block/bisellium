@@ -849,3 +849,29 @@ test("W-494-b2 behaviour 2: at SubagentStop a turn that hands nothing back may e
   assert.equal((await guard(stop(reused, [shell("bci00001")]))).code, 0, "a reused agent's earlier hand-back does not count");
   assert.equal((await guard(stop(handed, [shell("bother001")]))).code, 0, "another thread's run is not the agent's");
 });
+
+test("W-494-b3 behaviour 3: a wait loop on pgrep -f is refused and steered to an exit-file poll, for any thread", async () => {
+  const refused = [
+    "timeout 540 bash -c 'until ! pgrep -f \"ci --opus W-1\"; do sleep 10; done'",
+    "while pgrep -f merge-452 >/dev/null; do sleep 5; done",
+    "until ! pgrep -af next >/dev/null; do sleep 5; done",
+    "~/.bisellium-evidence/wait-until.sh 30 '! pgrep --full ci'",
+    "timeout 60 sh -c \"while /usr/bin/pgrep -l -f x; do sleep 1; done\"",
+  ];
+  const first = await guard(bash(refused[0]!));
+  assert.equal(first.code, 2, "a foreground wait on pgrep -f is refused");
+  assert.match(first.err, /pgrep -f/);
+  assert.match(first.err, /until \[ -f X\.exit \]/, "the refusal names the exit-file poll");
+  for (const c of refused) {
+    assert.equal((await guard(bash(c))).code, 2, `main thread, foreground: ${c}`);
+    assert.equal((await guard(bash(c, RUNNER, true))).code, 2, `a subagent, background: ${c}`);
+  }
+  const allowed = [
+    "timeout 540 bash -c 'until [ -f /tmp/x.exit ]; do sleep 10; done'",
+    "pgrep -f node",
+    "until ! pgrep node; do sleep 5; done",
+    "pgrep -x -l npm; echo waiting until done",
+    "git commit -m 'wait until pgrep -f is gone'",
+  ];
+  for (const c of allowed) assert.equal((await guard(bash(c))).code, 0, `allowed: ${c}`);
+});
