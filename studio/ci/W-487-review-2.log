@@ -1,0 +1,27 @@
+# opus: W-487
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1966d-69a1-7663-b51e-056c5573f601
+# outcome: failed
+# at: 2026-11-01T13:36:59.341Z
+# tree: tree:05659db0fe94d3e7a369c41386cf1691518b8075
+# ui_input: ci/W-487-spec-12.log
+# design_digest: sha256:a7681271043b5f5fbdeef38bbee73f20513dee7402c6ac9b8f84503b6e72c041
+# ticket: {"opus":"W-487","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-487/studio","head":"b7151128ea5ec1e84b99bb1c5233900dbaf55c5b","brief":"17b1c32725ab791a6a7e63f889e227f9aa1f0534","at":"2026-11-01T13:36:54.042Z"}
+
+## Findings
+1. blocking — apps/web/tests-serve/w411.spec.ts:42 [severity: S1] The delta removes W-411’s only petition fixture even though brief:38 limits code changes to the declared owned paths and brief:105 explicitly excludes W-411 sibling Board scope; the certified green therefore relies on an undeclared test mutation. [class: workflow×files-owned-boundary-exceeded] — check: none: reject any non-studio changed path absent from the brief’s Files owned list
+
+## Earlier findings
+- ci/W-487-review-1.log #1: closed — reconciliation now tracks every petition id in a combined row, and the served mixed-row test removes only the drafted petition while asserting the retained draft and disabled withdrawn controls.
+- ci/W-487-review-1.log #2: closed — detached details now have no live fallback selection, suppressing both the unrelated Board action and its Enter-key route until a live row is selected.
+- ci/W-487-review-1.log #3: closed — App resets mounted-attention success per Inbox/Board route, clears the shared count on pre-success errors, and retains it after successful Inbox or Board reconciliation.
+
+## UI input disposition
+The authoritative ui-lead pass remains applicable. All eight desktop and phone images preserve the intended ask ownership, split-pane hierarchy, shared badge presentation, responsive Board overflow cues, and readable Seats/Officina scanning; they add no visual blocker, but cannot cure the undeclared W-411 fixture mutation.
+
+## Verdict
+The prior behavioral blockers are closed, but the round-two evidence changes a test path expressly outside the brief’s ownership boundary.
+VERDICT: FAIL
