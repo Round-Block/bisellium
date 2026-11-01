@@ -166,6 +166,22 @@ test("W-487-b2 Inbox labels Board routes without reply controls at 1280, 640 and
   }
 });
 
+test("W-487-b2 keeps a withdrawn mixed-row draft when its petition alone disappears", async ({ page }) => {
+  served = await startServed("w487-b2-withdrawn-mixed");
+  const data = fixture();
+  await install(page, data);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${served.baseURL}/?w487=b2-withdrawn-mixed#/inbox`);
+  await page.locator(".inbox__item", { hasText: "First decision" }).click();
+  await page.locator(".inbox__input-ratio").fill("mixed-row draft");
+  data.inbox.petitiones = data.inbox.petitiones.filter((petitio) => petitio.id !== "P-1");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.locator(".inbox__expanded-subject")).toHaveText("First decision");
+  await expect(page.locator(".inbox__input-ratio")).toHaveValue("mixed-row draft");
+  await expect(page.getByText("This petitio no longer needs a decision.")).toBeVisible();
+  await expect(page.locator(".inbox__btn-action:disabled")).toHaveCount(4);
+});
+
 test("W-487-b3 Inbox and Board items route to their owning action at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w487-b3");
   const data = fixture();
@@ -217,4 +233,21 @@ test("W-487-b4 Inbox and Board badges share zero and many totals at 1280, 640 an
     await expect(page.locator('a[href="#/inbox"] .sidebar__badge, a[href="#/board"] .sidebar__badge'), `${width}: zero hides both badges`).toHaveCount(0);
     data.inbox.petitiones = Array.from({ length: 12 }, (_, index) => ({ id: `P-${index + 1}`, from: "producer", subject: `Standalone ${index + 1}`, body: "Choose" }));
   }
+});
+
+test("W-487-b4 hides both badges when the mounted Inbox first load fails", async ({ page }) => {
+  served = await startServed("w487-b4-mounted-failure");
+  const data = fixture();
+  let failMountedLoad = false;
+  await page.route("**/api/officina", (route) => failMountedLoad ? route.fulfill({ status: 500 }) : route.fulfill({ json: officina }));
+  await page.route("**/api/opera", (route) => failMountedLoad ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.opera }));
+  await page.route("**/api/inbox", (route) => failMountedLoad ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.inbox }));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${served.baseURL}/?w487=b4-mounted-failure#/officina`);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("4");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge')).toHaveText("4");
+  failMountedLoad = true;
+  await page.evaluate(() => { window.location.hash = "#/inbox"; });
+  await expect(page.locator(".inbox__empty")).toBeVisible();
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge, a[href="#/board"] .sidebar__badge')).toHaveCount(0);
 });
