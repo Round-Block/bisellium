@@ -1,0 +1,42 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-489-b5\s --import tsx packages/cli/src/prune.test.ts
+# exit: 1
+# at: 2026-11-01T08:29:57.226Z
+# sella: builder.W-489
+# tree: tree:38c9657340f1372216397483c70509273cb17c28
+# ticket: {"opus":"W-489","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-489/studio","head":"f5d3eea1a69c4f299f5972aaba954be675c062aa","brief":"45beb027fe6fce70cc13c387795015038408a12c","at":"2026-11-01T08:29:50.389Z"}
+
+TAP version 13
+# Subtest: W-489-b5 behaviour 5: a dirty worktree holding a nested repository in a recognised form is kept by both sweeps, never saved as a gitlink and force-removed
+not ok 1 - W-489-b5 behaviour 5: a dirty worktree holding a nested repository in a recognised form is kept by both sweeps, never saved as a gitlink and force-removed
+  ---
+  duration_ms: 554.966301
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-489/packages/cli/src/prune.test.ts:12:8210'
+  failureType: 'testCodeFailure'
+  error: |-
+    the worktree holding an untracked embedded repository is kept
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-489/packages/cli/src/prune.test.ts:395:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 586.054274
