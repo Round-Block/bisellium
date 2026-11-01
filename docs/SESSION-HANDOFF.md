@@ -52,20 +52,20 @@ Order by cycle minutes saved, D-039 highs first; a high filed since starts after
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
 In flight (lane state: ~/.bisellium-evidence/current-state.md): W-382 done (#935, #936); W-459 done (#938, #939); W-410 merged (#937), ui done owes a master verify and a Patron ruling; W-463 the same.
-1. W-363 — spec review as one next perform `next.ts`; 2. W-482 — a fix round as one next perform; 3. W-484 — doc rules: byte cap, rule ids, links; 4. W-485 — ADOPTION.md as a lean contract; 5. W-333 — the queue as a record, `studio/queue.yml` (high) `next.ts`
-6. W-476 — cause fix, validation-order-masks-errors (high); 7. W-469 — a spec-stage stale handover needs no hand step; 8. W-470 — a fresh session needs no hand --session-reason
-9. W-471 — a failing gate's log keeps its real failure; 10. W-478 — idle-lane check; 11. W-479 — outside-advisory filing path; 12. W-480 — next builds a fix round before review; 13. W-481 — spec signature carries the fixture census; 14. W-483 — handoff into source_excludes
-15. W-452 — collegium names owning lead; kind ui retired, re-tag; 16. W-455 — the containment helper refuses a symlinked final file; 17. W-465 — drain before handover; no new task past 250k; 18. W-436 — open items live in records, not memory or chat
-19. W-458 — done finishes a merged rung; 20. W-457 — builder for an untouched owned file; 21. W-371 — one provider-neutral sandbox row per seat, Codex first; 22. W-456 — test-pool research, ops
-23. W-414 — cause fix, ruled-case-uncovered (high); 24. W-394 — cause fix, evidence-backfilled-or-absent (high); 25. W-395 — cause fix, promise-unattainable (high)
-26. W-460 — cause fix, tests-that-agree-with-the-bug (high); 27. W-464 — replay-environment-not-pristine; 28. W-393 — cause fix, input-domain-missing (high)
-29. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`
-30. W-383 — security-boundary test fix; 31. W-405 — pr refuses kind: ui until screen approval `next.ts`; 32. W-431 — verb dead ends; 33. W-432 — verb dead ends; 34. W-429 — petitio length limits
-35. W-261 — woken orchestration; 36. W-434 — dispatch prompts as artifacts; 37. W-254 — delete talk and tick daily branch; 38. W-349 — flaky row W-279-b3; 39. W-399 — record verb sella check
-40. W-364 — verify refuses outside bisellium run (W-290); 41. W-242 — hook-set code; 42. W-372 — agent waits on background perform; 43. W-400 — CLAUDE.md, AGENTS.md code-owned; 44. W-401 — sessions receipt provider
-45. W-245 — provider-agnostic closing step; 46. W-227 — cleanup with removed-worktree metadata `next.ts`; 47. W-283 — Status page served; 48. W-374 — next --all in-flight only `next.ts`; 49. W-375 — context serves lex without §9, §12
-50. W-380 — prune old evidence; 51. W-331 — next.ts split `next.ts`; 52. W-183 — heavy-job slots `next.ts`; 53. W-169 — lane claims `next.ts`
-54. W-332 — step tickets `next.ts`; 55. W-308 — opus timeline `next.ts`; 56. W-304 — seats read live, console MVP; 57. W-298 — petitio verb; 58. W-280 — Inbox newItem fail-open; 59. W-301 — console writes via auto-merge PR
+1. W-452 — seats per D-150 C: one design lead, engineering signs its own specs; kind ui retired, re-tag (high); 2. W-486 — the application schedules the daily retro (D-150 A); 3. W-363 — spec review as one next perform `next.ts`; 4. W-482 — a fix round as one next perform; 5. W-484 — doc rules: byte cap, rule ids, links
+6. W-485 — ADOPTION.md as a lean contract; 7. W-333 — the queue as a record, `studio/queue.yml` (high) `next.ts`; 8. W-476 — cause fix, validation-order-masks-errors (high)
+9. W-469 — a spec-stage stale handover needs no hand step; 10. W-470 — a fresh session needs no hand --session-reason; 11. W-471 — a failing gate's log keeps its real failure; 12. W-478 — idle-lane check; 13. W-479 — outside-advisory filing path; 14. W-480 — next builds a fix round before review
+15. W-481 — spec signature carries the fixture census; 16. W-483 — handoff into source_excludes; 17. W-455 — the containment helper refuses a symlinked final file; 18. W-465 — drain before handover; no new task past 250k
+19. W-436 — open items live in records, not memory or chat; 20. W-458 — done finishes a merged rung; 21. W-457 — builder for an untouched owned file; 22. W-371 — one provider-neutral sandbox row per seat, Codex first
+23. W-456 — test-pool research, ops; 24. W-414 — cause fix, ruled-case-uncovered (high); 25. W-394 — cause fix, evidence-backfilled-or-absent (high)
+26. W-395 — cause fix, promise-unattainable (high); 27. W-460 — cause fix, tests-that-agree-with-the-bug (high); 28. W-464 — replay-environment-not-pristine
+29. W-393 — cause fix, input-domain-missing (high)
+30. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`; 31. W-383 — security-boundary test fix; 32. W-405 — pr refuses kind: ui until screen approval `next.ts`; 33. W-431 — verb dead ends; 34. W-432 — verb dead ends
+35. W-429 — petitio length limits; 36. W-261 — woken orchestration; 37. W-434 — dispatch prompts as artifacts; 38. W-254 — delete talk and tick daily branch; 39. W-349 — flaky row W-279-b3
+40. W-399 — record verb sella check; 41. W-364 — verify refuses outside bisellium run (W-290); 42. W-242 — hook-set code; 43. W-372 — agent waits on background perform; 44. W-400 — CLAUDE.md, AGENTS.md code-owned
+45. W-401 — sessions receipt provider; 46. W-245 — provider-agnostic closing step; 47. W-227 — cleanup with removed-worktree metadata `next.ts`; 48. W-283 — Status page served; 49. W-374 — next --all in-flight only `next.ts`
+50. W-375 — context serves lex without §9, §12; 51. W-380 — prune old evidence; 52. W-331 — next.ts split `next.ts`; 53. W-183 — heavy-job slots `next.ts`
+54. W-169 — lane claims `next.ts`; 55. W-332 — step tickets `next.ts`; 56. W-308 — opus timeline `next.ts`; 57. W-304 — seats read live, console MVP; 58. W-298 — petitio verb; 59. W-280 — Inbox newItem fail-open; 60. W-301 — console writes via auto-merge PR
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
 1. W-463 — Board asks stand out (merged #911; done waits on a master verify and ruling)

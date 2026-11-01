@@ -1,6 +1,6 @@
 # Design Lex
 
-Magister: `architect` · UI spec signer: `ui-architect` (D-091 A) · Adopted: 2026-09-18 · Amended: see §9
+Magister: the design lead, Codex `gpt-5.6-sol`, who writes and signs UI specs and prototypes; Claude Opus 5.5 reviews the UI spec and the UI build, and Codex `gpt-5.6-terra` builds (D-150 C). Until W-452 lands, the old seat ids `architect` and `ui-architect` keep running. · Adopted: 2026-09-18 · Amended: see §9
 
 ## 1. Mandate
 
@@ -60,3 +60,4 @@ moves to `building`.
 | 2026-09-19 | Architecture doc kept current per cascade; module graph script-generated (check rule ships with W-023) | Patron |
 | 2026-10-14 | Definition of ready names the light brief form: four sections, never for security, sandbox, branch-protection or pipeline work (W-255, D-063 §4) | Patron |
 | 2026-10-21 | A `kind: ui` brief is drafted, prototyped and signed by `ui-architect` (Codex Sol), with the ui-lead's input; the design magister remains the signer for every other kind (D-091, W-348) | Patron |
+| 2026-11-01 | Header: one design lead (Codex Sol) writes and signs UI specs and prototypes, Opus 5.5 reviews the UI spec and build, Codex terra builds; engineering spec signing leaves design for engineering; seat changes are W-452, in-flight opera finish on the old seats (D-150 B, C) | Patron |
