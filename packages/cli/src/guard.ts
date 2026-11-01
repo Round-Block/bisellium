@@ -539,9 +539,9 @@ export function selfMatchingWait(command: string): boolean {
   return WAIT_LOOP.test(command) && PGREP_FULL.test(command);
 }
 
-/** The foreground wait a refusal names: the run writes its exit file last, and the wait polls it in chunks under the
- *  harness's ~180 s foreground limit (a longer foreground command is moved to the background, a second waiter). */
-export const EXIT_FILE_POLL = "timeout 170 bash -c 'until [ -f X.exit ]; do sleep 10; done'";
+/** The foreground wait a refusal names: the run writes its exit file last, and the wait polls it in calls under the Bash
+ *  tool's 120 s default foreground cap (a longer call is moved to the background, a second waiter). */
+export const EXIT_FILE_POLL = "timeout 100 bash -c 'until [ -f X.exit ]; do sleep 10; done'";
 
 /** W-444: what a Stop rule is handed besides the reply: the hook input, the home whose usage readings it may read, and
  *  the clock. */
@@ -666,13 +666,13 @@ export function guardRefusal(input: Dict): string | undefined {
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
     if (selfMatchingWait(command))
-      return `refused: \`pgrep -f\` matches this call's own command line, so a loop waiting on it never ends (W-494): have the run write an exit file last (\`cmd > X.log 2>&1; echo $? > X.exit\`) and poll that in the foreground in chunks under 3 minutes: \`${EXIT_FILE_POLL}\`, repeated`;
+      return `refused: \`pgrep -f\` matches this call's own command line, so a loop waiting on it never ends (W-494): have the run write an exit file last (\`cmd > X.log 2>&1; echo $? > X.exit\`) and poll that in the foreground in calls under the 120 s default Bash cap: \`${EXIT_FILE_POLL}\`, repeated`;
     if (args["run_in_background"] === true && unboundedLoop(command))
       return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
     if (args["run_in_background"] === true && !main) {
       const live = callerLiveRuns(input);
       if (live.length > 0)
-        return `refused: your background run ${live.join(", ")} is still live, and an agent keeps one background run at a time (W-494): wait for it in the foreground (write an exit file last, \`cmd > X.log 2>&1; echo $? > X.exit\`, and poll it in chunks under 3 minutes, \`${EXIT_FILE_POLL}\`, repeated), or stop it with TaskStop, then start the next`;
+        return `refused: your background run ${live.join(", ")} is still live, and an agent keeps one background run at a time (W-494): wait for it in the foreground (write an exit file last, \`cmd > X.log 2>&1; echo $? > X.exit\`, and poll it in calls under the 120 s default Bash cap, \`${EXIT_FILE_POLL}\`, repeated), or stop it with TaskStop, then start the next`;
     }
     return undefined;
   }
