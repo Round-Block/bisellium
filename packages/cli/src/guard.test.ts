@@ -818,6 +818,7 @@ test("W-494-b1 behaviour 1: a subagent's second background Bash call is refused 
   assert.doesNotMatch(r.err, /bdone0001/, "a run whose notification arrived is not named");
   assert.doesNotMatch(r.err, /bmain0001/, "the session's own runs are not the agent's");
   assert.match(r.err, /until \[ -f X\.exit \]/, "the refusal names the exit-file poll");
+  assert.match(r.err, /timeout 170 /, "the poll stays under the harness's 3-minute foreground limit");
   assert.match(r.err, /TaskStop/);
   assert.equal((await guard(bash(second, W494_RUNNER(agent), true))).code, 2, "a transcript_path naming the agent's own transcript is read too");
   assert.equal((await guard(bash(second, W494_RUNNER(session)))).code, 0, "a foreground call is not judged");
@@ -882,7 +883,7 @@ test("W-494-b4 behaviour 4: the agents and the briefs keep one background run at
   for (const rel of [".claude/agents/ladder-runner.md", ".claude/agents/builder.md", ".claude/agents/architect.md", "studio/prompts/builder-brief.md", "studio/prompts/spec-draft.md"]) {
     const t = text(rel);
     assert.match(t, /one background run at a time/, `${rel}: one background run at a time`);
-    assert.ok(t.includes("timeout 540 bash -c 'until [ -f X.exit ]; do sleep 10; done'"), `${rel}: the foreground exit-file poll`);
+    assert.ok(t.includes("timeout 170 bash -c 'until [ -f X.exit ]; do sleep 10; done'"), `${rel}: the foreground exit-file poll`);
     assert.ok(t.includes("never `pgrep -f`"), `${rel}: never pgrep -f`);
   }
 });

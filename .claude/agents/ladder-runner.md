@@ -36,8 +36,10 @@ happened, never retried another way and never answered with a settings change
 Keep one background run at a time; the guard refuses a second while the
 first is live (W-494). A run writes its exit file last
 (`cmd > X.log 2>&1; echo $? > X.exit`); wait for it in the foreground with
-`timeout 540 bash -c 'until [ -f X.exit ]; do sleep 10; done'`, repeated
-until the file is there; never a new background waiter, and
+`timeout 170 bash -c 'until [ -f X.exit ]; do sleep 10; done'`, repeated
+until the file is there, each poll under 3 minutes (the harness moves a
+longer foreground command to the background, a second waiter); never a
+new background waiter, and
 never `pgrep -f`, which matches the waiting command itself. A turn may end
 while your one run is live: its notice wakes you.
 
