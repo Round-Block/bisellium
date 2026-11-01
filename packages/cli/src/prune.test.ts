@@ -399,7 +399,7 @@ test("W-489-b5 behaviour 5: a dirty worktree holding a nested repository in a re
     assert.equal(kept.has("W-7-sub"), true, "the worktree holding a clean initialized submodule is kept");
     assert.equal(existsSync(join(sub, "vendor", "s.txt")), true, "the submodule's checkout is still on disk");
     assert.deepEqual(s.removed, [], "none of the three is removed");
-    assert.match(kept.get("W-7-emb") ?? "", /\bemb\b/, "each kept reason names its nested repository's path");
+    assert.match(kept.get("W-7-emb") ?? "", /untracked emb is a nested repository/, "each kept reason names its nested repository's path");
     assert.match(kept.get("W-7-gitfile") ?? "", /plain\/deep/, "each kept reason names its nested repository's path");
     assert.match(kept.get("W-7-sub") ?? "", /submodule.*vendor/, "each kept reason names its nested repository's path");
     assert.equal(existsSync(join(repo, ".bisellium", "worktree-diffs")), false, "no patch is saved for them");
