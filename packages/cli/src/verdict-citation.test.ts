@@ -1564,3 +1564,72 @@ test("W-443-b2 behaviour 2: an architect spec signature is refused when a protot
   admitted("no Prototype line is not judged", brief(RAN, "`plain.out`", { proto: false }));
   admitted("another seat's spec verdict is not judged", brief(RAN), "qa-lead");
 });
+
+// W-492 (D-076 D): a kill whose pinned failure read the source text it changed proves that text, not what the code does
+/** `tapFailing`'s output with an `actual:` value after its `name:` line: a `|-` block of the lines given, or the value as written. */
+const tapActual = (row: string, error: string, actual: readonly string[] | string): string =>
+  tapFailing(row, error).replace(
+    "  name: 'AssertionError'\n",
+    `  name: 'AssertionError'\n  expected:\n  actual: ${typeof actual === "string" ? actual : `|-\n${actual.map((l) => (l === "" ? "    " : `    ${l}`)).join("\n")}`}\n  operator: 'match'\n`,
+  );
+/** The file MUTATION changes, as a row that reads it prints it after the kill: line 5 is now `return 0;`. */
+const KILLED_SOURCE = ["export function f(): number {", "  const a = 1;", "", "  // the flag", "  return 0;", "}"];
+
+test("W-492-b1 behaviour 1: a kill whose pinned assertion failed on the source text the kill changed does not prove the pin, or the architect's spec signature is refused", () => {
+  const { refused, admitted, cite, setBrief } = specSigner(KILL_BRIEF);
+  const ROW_10 = `brief:10, the flag: packages/x.ts:5 parseFlag exits 2 — holds; ${KILL_10.token}`;
+  const row = (k: { token: string }): string => cite(KILL_COVERING.replace(ROW_10, ROW_10.replace(KILL_10.token, k.token)));
+  const textual = (output: string, line = "return 0;", at = 10): string =>
+    `W-300: promise ledger: brief:${at}'s kill \`${output}\` fails at a pinned assertion that read the source text the kill changed (its actual holds the added line "${line}"), so it proves that text, not what the code does: pin brief:${at} by an assertion on a call's result, rendered markup or a served page, or say unpinned (a stated limit, scoped in the ledger)\n`;
+
+  // W-487 review 1's path: the row matched the text of the source file, and the kill changed that text
+  const source = killFiles(MUTATION, tapActual("W-300-b1", "'row: exit 2'", KILLED_SOURCE));
+  refused("a kill whose actual is the source text it changed", row(source), textual(source.output));
+  for (const [name, actual] of [
+    ["a | block", `|\n${KILLED_SOURCE.map((l) => `    ${l}`).join("\n")}`],
+    ["a |+ block", `|+\n${KILLED_SOURCE.map((l) => `    ${l}`).join("\n")}`],
+    ["a quoted line", "'  return 0;'"],
+  ] as const) {
+    const k = killFiles(MUTATION, tapActual("W-300-b1", "'row: exit 2'", actual));
+    refused(`an actual as ${name}`, row(k), textual(k.output));
+  }
+  const crlf = killFiles(MUTATION.replaceAll("\n", "\r\n"), tapActual("W-300-b1", "'row: exit 2'", KILLED_SOURCE).replaceAll("\n", "\r\n"));
+  refused("a CRLF patch and output", row(crlf), textual(crlf.output));
+  const promise = killFiles(MUTATION, tapActual("W-300-b1", "'flag: exit 2'", KILLED_SOURCE));
+  refused("a Promise line's kill", cite(KILL_COVERING.replace(KILL_4.token, promise.token)), textual(promise.output, "return 0;", 4));
+  const quote = killFiles(MUTATION.replace("+  return 0;", "+  return f('it');"), tapActual("W-300-b1", "'row: exit 2'", "'  return f(''it'');'"));
+  refused("a doubled quote in a quoted actual", row(quote), textual(quote.output, "return f('it');"));
+
+  // what the code does: an actual that is not the changed line, whole
+  for (const [name, patch, actual] of [
+    ["a result", MUTATION, ["exit 0", "flag: f"]],
+    ["the changed line inside a longer line, as rendered markup holds it", MUTATION, ["<p>return 0;</p>"]],
+    ["only the removed line", MUTATION, ["  return 2;"]],
+    ["an added line with no letter or digit", MUTATION.replace("+  return 0;", "+  };"), ["};"]],
+    ["a quoted result", MUTATION, "'2'"],
+  ] as const) {
+    const k = killFiles(patch, tapActual("W-300-b1", "'row: exit 2'", actual));
+    admitted(`an actual holding ${name}`, row(k));
+  }
+  admitted("no actual key", row(killFiles(MUTATION, tapFailing("W-300-b1", "'row: exit 2'"))));
+  const expected = killFiles(MUTATION, tapActual("W-300-b1", "'row: exit 2'", ["exit 0"]).replace("  expected:\n", "  expected: |-\n    return 0;\n"));
+  admitted("the changed line in the expected value only", row(expected));
+  const beside = killFiles(MUTATION, tapActual("W-300-b1", "'row: exit 2'", ["exit 0"]));
+  admitted("a text kill beside a kill on what the code does", cite(KILL_COVERING.replace(ROW_10, `${ROW_10.replace(KILL_10.token, source.token)} and ${beside.token}`)));
+  setBrief(KILL_BRIEF.replace('"row: exit 2" |', '"row: exit 2" and pinned by `W-300-b3` "other: exit 3" |'));
+  const both = killFiles(MUTATION, `${tapActual("W-300-b1", "'row: exit 2'", KILLED_SOURCE)}${tapActual("W-300-b3", "'other: exit 3'", ["exit 0"]).replace("TAP version 13\n", "")}`);
+  admitted("one pin failing on the text and another on what the code does", row(both));
+  const two = killFiles(MUTATION, `${tapActual("W-300-b1", "'row: exit 2'", KILLED_SOURCE)}${tapActual("W-300-b3", "'other: exit 3'", KILLED_SOURCE).replace("TAP version 13\n", "")}`);
+  refused("both pins failing on the text", row(two), textual(two.output));
+  setBrief(KILL_BRIEF);
+
+  // the reader, on its own
+  const read = (admissionModule as unknown as { textKilledLine?: (output: string, pin: { row: string; assertion: string }, patch: string) => string | undefined }).textKilledLine;
+  assert.equal(typeof read, "function", "brief admission exports textKilledLine");
+  const pin = { row: "W-300-b1", assertion: "row: exit 2" };
+  const out = tapActual("W-300-b1", "'row: exit 2'", KILLED_SOURCE);
+  assert.equal(read!(out, pin, MUTATION), "return 0;", "the reader names the added line the actual holds");
+  assert.equal(read!(out.replace("TAP version 13\n", ""), pin, MUTATION), undefined, "no TAP version line: no line");
+  assert.equal(read!(out, { row: "W-300-b1", assertion: "other" }, MUTATION), undefined, "a pin the output does not prove: no line");
+  assert.equal(read!(out, pin, "+  return 0;\n"), undefined, "a patch with no hunk header: no line");
+});
