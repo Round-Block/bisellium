@@ -1,0 +1,19 @@
+# opus: W-491
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19663-68c7-7242-921f-83ba16908217
+# outcome: passed
+# at: 2026-11-01T09:17:50.382Z
+# tree: tree:6b40b67c73a0cf6c8fbaa4b28e89181a40a78643
+# brief: briefs/W-491.md blob:0f97b9c4bb17fb49d84efb824def97f38f596b18
+# ticket: {"opus":"W-491","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"1bda5b8489cf26f6f9e8a12efb3f4e19898b4c63","brief":"0f97b9c4bb17fb49d84efb824def97f38f596b18","at":"2026-11-01T09:17:47.094Z"}
+
+## Findings
+1. advisory — brief:54 The Input domain omits the changed `mergedTree` policy reader and added fixture readers. Replace brief:54 with: “`fixedOutside` rejects an unreadable round, uncommitted log, or failed Git log with a build hold; `mergedTree` accepts a defined repo-relative path list from `diffPaths(repo, merged, TRUNK)` and returns its existing refusal when that read is undefined; `manifestRel` accepts the in-repository `studioRel` produced by `gather`; added fixture manifest and Git/CLI reads fail the test through `readFileSync`, `git`, `commit`, or the row assertions.” [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.changed-reader-coverage
+2. advisory — brief:25 The next-step promise combines the committed branch-ref log with main-checkout and worktree manifest readers without stating how they can disagree, and settings edits can alter or hold an earlier rung before the count is used. Replace brief:25 with: “Promise fix: `fixedOutside` trusts only `refs/heads/opus/<id>`’s first-parent Git log and counts every post-log non-merge commit listing the exact `<studio>/bisellium.yml` path, alone or beside bookkeeping. `gather` reads the main-checkout manifest, while `readSpecReviewer` and `readWorktreeManifest` use the spec-owner or usable-worktree manifest; uncommitted, untracked, ignored, unreadable, or differing filesystem bytes can therefore hold or change an earlier rung without changing the branch-ref count. When those readers admit the committed edit, earlier rungs remain unchanged, `buildReviewDrift` finds no compared-key difference, and the tree and brief are unchanged, the next step is the censor’s next-round review and its why counts every such commit. Pinned by `W-491-b1`’s manifest-only review, censor, why, two-count, and beside-log review/why assertions — limit: paths are compared whole as Git lists them; a rename away is not counted under default rename detection; comments and keys both count; the row runs `studio/`, while another officina is unrun.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-review.test.ts W-491-b1 (worktree/ref divergence)
+
+## Verdict
+The design is feasible and fail-closed; both findings are advisory specification corrections for the builder to adopt.
+VERDICT: PASS
