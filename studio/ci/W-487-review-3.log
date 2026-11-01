@@ -1,0 +1,25 @@
+# opus: W-487
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1966d-69a1-7663-b51e-056c5573f601
+# outcome: passed
+# at: 2026-11-01T15:14:40.245Z
+# tree: tree:05659db0fe94d3e7a369c41386cf1691518b8075
+# ui_input: ci/W-487-spec-15.log
+# design_digest: sha256:797aff8a949df098a98851686af0055130600d4ac484532dec64a83184d82548
+# ticket: {"opus":"W-487","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-487/studio","head":"1f593be3101a42680bc56723e7e28041e17e24cd","brief":"e2cfaf0e42094667ffb8f63a045565fd81691144","at":"2026-11-01T15:14:05.599Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-487-review-2.log #1: closed — brief:34 now explicitly owns the `apps/web/tests-serve/w411.spec.ts` fixture migration, brief:38 counts twenty-nine owned paths, and brief:105 narrows the W-411 exclusion accordingly; spec rounds 13–15 passed the re-signed brief against the unchanged source tree.
+
+## UI input disposition
+The authoritative ui-lead pass remains applicable. All eight desktop and phone images retain legible ownership labels, coherent detail hierarchy, equal badges, usable Board overflow cues, accessible controls, and stable Seats/Officina scan order; the scope-only revision introduces no visual regression.
+
+## Verdict
+The ownership blocker is closed, and the re-signed brief, evidence, and responsive UI disclose no new blocking defect.
+VERDICT: PASS
