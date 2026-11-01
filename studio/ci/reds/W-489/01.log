@@ -1,0 +1,59 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-489-b1\s --import tsx packages/cli/src/prune.test.ts
+# exit: 1
+# at: 2026-11-01T05:37:03.839Z
+# sella: architect
+# tree: tree:0320ab2fad2daff2a058eb0054cde589491edf8b
+# ticket: {"opus":"W-489","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-489/studio","head":"94ca43515248d974bc5420050debf256ceb6997f","brief":"a8b438870c08b6088058433364316dedc19a2ebb","at":"2026-11-01T05:37:03.742Z"}
+
+TAP version 13
+# Subtest: W-489-b1 behaviour 1: the done perform's sweep removes every worktree that carries its opus id, past the guards, saving a dirty one's patch
+not ok 1 - W-489-b1 behaviour 1: the done perform's sweep removes every worktree that carries its opus id, past the guards, saving a dirty one's patch
+  ---
+  duration_ms: 309.028383
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-489/packages/cli/src/prune.test.ts:12:3270'
+  failureType: 'testCodeFailure'
+  error: |-
+    every old, unguarded worktree carrying W-7 is removed
+    + actual - expected
+    
+    + []
+    - [
+    -   [
+    -     'W-7-spec',
+    -     'opus W-7 done'
+    -   ],
+    -   [
+    -     'W-7-stage',
+    -     'opus W-7 done'
+    -   ]
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'W-7-spec'
+      1: 'opus W-7 done'
+    1:
+      0: 'W-7-stage'
+      1: 'opus W-7 done'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-489/packages/cli/src/prune.test.ts:288:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 488.440579
