@@ -1,0 +1,24 @@
+# opus: W-487
+# phase: spec
+# round: 15
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a195fb-94a1-7363-a8c1-c480f157353b
+# outcome: passed
+# at: 2026-11-01T15:08:58.610Z
+# tree: tree:05659db0fe94d3e7a369c41386cf1691518b8075
+# dispatch_prompt: ci/W-487-ui-prompt-15.md
+# design_digest: sha256:797aff8a949df098a98851686af0055130600d4ac484532dec64a83184d82548
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":15,"actor":"ui-lead","studio":".worktrees/W-487/studio","head":"ea12eea93a2bb88cb200f90de8a3270a1253b5c7","brief":"e2cfaf0e42094667ffb8f63a045565fd81691144","at":"2026-11-01T15:08:56.933Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Round 12 had no findings; the earlier reading-pane, ask-kind, Board asker/date, route-label and Intent findings all remain closed.
+My round-12 pass still holds: owning the W-411 fixture migration preserves those tests’ Board-drawer purpose under D-151 without changing a screen or UI rule.
+The screens still read right: ask kinds and destinations remain legible, Board-owned selections provide reading-pane context, mixed rows retain reply controls and Board actions, and both badges tally consistently.
+The agent-written unified collection remains sensible on the captures while preserving the Patron’s Outlook split and date presentation.
+Verdict: passed
