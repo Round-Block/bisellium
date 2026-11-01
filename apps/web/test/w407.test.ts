@@ -175,3 +175,23 @@ test("W-407-b6 behaviour 6: an empty ordinary refresh retains the withdrawn deci
   assert.match(html, /value="sole draft"/, "the petition-keyed draft remains visible");
   assert.equal((html.match(/class="inbox__btn-action" disabled/g) ?? []).length, 4, "every retained-decision action is disabled");
 });
+
+test("W-407-b6 behaviour 6: a detached petition does not inherit Board actions from a replacement item", async () => {
+  const { InboxView } = await import("../src/screens/InboxView.js");
+  const html = renderToStaticMarkup(createElement(InboxView, {
+    items: [{
+      id: "W-488", title: "Replacement mixed item", state: "building", collegium: "design", sella: "builder", tokens: 0,
+      probationes: {}, attentionKey: "opus:W-488", destination: "inbox", boardEntry: true,
+      asks: [{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 1 }],
+      petitio: { id: "P-488", opus: "W-488", from: "builder", subject: "Replacement decision", body: "Replacement ask." },
+    }],
+    focusIndex: 0,
+    reason: "retained draft",
+    detachedPetition: { id: "P-407", opus: "W-407", from: "builder-a", subject: "Withdrawn decision", body: "Withdrawn ask." },
+    decisionUnavailable: true,
+    onReasonChange: () => undefined,
+    onFocusChange: () => undefined,
+    onSubmit: () => undefined,
+  }));
+  assert.doesNotMatch(html, /Open Board actions/, "a detached petition exposes no replacement item's Board action");
+});
