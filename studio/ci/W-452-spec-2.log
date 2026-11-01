@@ -1,0 +1,19 @@
+# opus: W-452
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19533-1a9d-7711-b343-72813cc00f45
+# outcome: failed
+# at: 2026-11-01T03:46:18.234Z
+# tree: tree:3cf259852c633ef5abc9674d618f641fa18f1aae
+# brief: briefs/W-452.md blob:9ff9025f901664e3be248646e90a014b39a383d9
+# ticket: {"opus":"W-452","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"56f24a4b90092725a2f93cf2cef28e587ea0f5ce","brief":"9ff9025f901664e3be248646e90a014b39a383d9","at":"2026-11-01T03:46:15.513Z"}
+
+## Findings
+1. blocking — brief:19 The prototype calls `readSpecSeats` only inside `plain && phase === "spec"`; a plausible malformed `spec_seats.since` therefore lets `verdict --phase spec --sella ui-lead` write UI-input evidence while `next` holds, and no test covers this path. Replace the final sentence with: “Every `verdict --phase spec` path, including the UI-lead input path, invokes `readSpecSeats`; when it returns an error, `next` holds at spec and `verdict` exits 2 before writing.” [severity: S1] [design: keeps] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/spec-seats.test.ts W-452-b3
+2. blocking — brief:80 `seat` validates existence, liveness, kind and model but not the signer’s collegium; a plausible `ops.signer: qa-lead` typo makes `next` dispatch and `verdict` honor QA’s lead as the Ops signer, with no existing test or kill catching it. Add to behaviour 1: “A signer must be a declared live agent in the keyed collegium—the reviewer may belong elsewhere—and a signer from another collegium is refused with its cause named.” [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/spec-seats.test.ts W-452-b1
+
+## Verdict
+The brief has two blocking fail-closed/domain gaps, including one design-changing correction, so it is not ready to build.
+VERDICT: FAIL

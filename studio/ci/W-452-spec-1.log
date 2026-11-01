@@ -1,0 +1,24 @@
+# opus: W-452
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T03:41:31.578Z
+# tree: tree:3cf259852c633ef5abc9674d618f641fa18f1aae
+# brief: briefs/W-452.md blob:9ff9025f901664e3be248646e90a014b39a383d9
+# ticket: {"opus":"W-452","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"56f24a4b90092725a2f93cf2cef28e587ea0f5ce","brief":"9ff9025f901664e3be248646e90a014b39a383d9","at":"2026-11-01T03:41:25.736Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-452-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the full D-129 E and D-150 C scope is more than one brief, so this is the first slice: a `spec_seats` setting that `next` and `verdict` both read through one function names each collegium's spec signer and reviewer; the UI lane, `kind: ui`'s retirement, `amend --collegium`, filing and the lex text are named follow-ups in Out of scope — check: brief:17, brief:19
+2. advisory — D-150 B's carve-out is read from the evidence, not a list: any spec log dated before `since` keeps today's seats, so every open opus already specced (W-452 included) keeps `architect`, and the old manifest keys stay until the follow-up retires them — check: real-probe.out, brief:21
+3. advisory — the coordinator's mid-task scope addition (the Patron's delegation of UI screen rulings) is behaviour 4: a ruling `by:` the design lead the manifest names counts beside the Patron's, and every `by: patron` ruling, D-152 and D-153 among them, reads as before — check: brief:23, red-b4.log, green-b4.log
+4. advisory — each red fails by assertion on its own red commit, one at a time, accepted by the replay classifier and failing at its declared assertion; twenty-five one-hunk kills each fail their row at the assertion they guard — check: red-accept.out, declared.out, kills.out
+5. advisory — the Codex test check lists no flip; its must-stay-green rows pass at the tip, as do lint, format:check, typecheck and both officina checks; the full admission admits the brief and its ledger passes the writer; `studio/bisellium.yml` is code-owned, so the Patron merges — check: fixture-census.md, census-green.out, gates-proto.out, admission.out, ledger-check.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-452.md`, prototype `prototype.mbox` (nine patches) over master 2a4a3e74; four behaviours, 3 points, one code-owned path.
