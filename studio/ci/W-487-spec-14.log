@@ -1,0 +1,23 @@
+# opus: W-487
+# phase: spec
+# round: 14
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 4bc57d01-25b6-4d14-afd6-f29138d90cdc
+# session_reason: reviewer session not resumable: claude -p in the sandbox does not persist sessions
+# outcome: passed
+# at: 2026-11-01T15:06:53.991Z
+# tree: tree:05659db0fe94d3e7a369c41386cf1691518b8075
+# brief: briefs/W-487.md blob:e2cfaf0e42094667ffb8f63a045565fd81691144
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":14,"actor":"spec-reviewer","studio":".worktrees/W-487/studio","head":"3afe874a3805f8b10a42c7f38c77cc4d9a02889f","brief":"e2cfaf0e42094667ffb8f63a045565fd81691144","at":"2026-11-01T15:06:51.933Z"}
+
+Claude week 53%, 5h 20% | Codex week 79% | context 134k of 300k
+
+## Findings
+1. advisory — brief:3 The status line says "signature prepared, round 11", but the signature this round reviews is ci/W-487-spec-13.log. A reader matching the status to the signed log finds a stale round. Replacement text: "Status: **signature prepared, round 13** · design lead Codex (`gpt-5.6-sol`, D-150 C) · 2026-11-01 · base 533357e5". [severity: S4] [class: brief×stale-status-round] — check: none: an admission rule that compares the brief's Status round with its latest spec log
+
+## Earlier findings
+
+## Verdict
+The round-13 change is consistent: `apps/web/tests-serve/w411.spec.ts` is added as an owned path whose only change is the `petitiones: []` fixture, with no assertion changes, so W-411 b2/b3 still reach the existing Board drawer under D-151; the owned list counts to twenty-nine at brief:38 and brief:72; the W-411 out-of-scope line at brief:105 is narrowed to match; and the one new finding is a non-blocking wording nit.
+VERDICT: PASS
