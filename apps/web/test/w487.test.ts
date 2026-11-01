@@ -104,3 +104,17 @@ test("W-487-b3 behaviour 3: both surfaces route each attention item to its ownin
   assert.match(board, /initialSelectionId[\s\S]*openDrawer\(initialSelectionId, columnId \?\? "unplaced"\)/, "Board opens the requested existing drawer after its model reconciles");
   assert.match(inbox, /initialAttentionKey[\s\S]*setExpandedId\(initialAttentionKey\)/, "Board hands a replyable item back to its matching Inbox detail");
 });
+
+test("W-487-b4 behaviour 4: Inbox and Board badges report the same collection total", () => {
+  const app = readFileSync(resolve("apps/web/src/App.tsx"), "utf8");
+  const board = readFileSync(resolve("apps/web/src/screens/Board.tsx"), "utf8");
+  const inbox = readFileSync(resolve("apps/web/src/screens/Inbox.tsx"), "utf8");
+  const sidebar = readFileSync(resolve("apps/web/src/components/Sidebar.tsx"), "utf8");
+
+  assert.match(app, /const \[attentionCount, setAttentionCount\] = useState\(0\)/, "the shell owns one attention count rather than separate Inbox and Board totals");
+  assert.match(app, /attentionTotal\(attentionCollection\(officina, opera, inbox\)\)/, "the off-screen shell snapshot counts the shared collection directly");
+  assert.match(board, /onWaitingCount\?\.\(attentionTotal\(model\.waiting\)\)/, "Board reports the shared collection total");
+  assert.match(inbox, /onNeedsYouCountRef\.current\?\.\(attentionTotal\(nextAttention\)\)/, "Inbox reports the same shared collection total");
+  assert.match(sidebar, /e\.route === "inbox" && attentionVisible\(attentionCount\)[\s\S]*e\.route === "board" && attentionVisible\(attentionCount\)/, "both navigation badges consume the same prop and visibility rule");
+  assert.doesNotMatch(app, /needsYouCount|boardWaitingCount/, "the shell keeps no legacy parallel count state");
+});
