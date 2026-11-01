@@ -1,0 +1,20 @@
+# opus: W-483
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19538-0c09-76d3-afab-9513a52427b6
+# outcome: passed
+# at: 2026-11-01T03:49:41.889Z
+# tree: tree:5e0daac6770034cb70803505fe055e5ee8da923a
+# brief: briefs/W-483.md blob:57872e55baa46192346fcd5b7a16f4129949f885
+# ticket: {"opus":"W-483","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-483/studio","head":"ef8c625ecde8a455a9dfd01a9133e244a5b20d3d","brief":"57872e55baa46192346fcd5b7a16f4129949f885","at":"2026-11-01T03:48:40.943Z"}
+
+## Findings
+1. advisory — studio/briefs/W-483.md:27 The brief still claims the real manifest is pinned wherever the test file runs, although a filtered run can skip `W-211-b1`; the spec-review replacement was not adopted. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/ci-scope.test.mjs:241
+2. advisory — studio/briefs/W-483.md:29 The identity promise still generalizes beyond the tracked fixture paths and incorrectly calls `sourceTreeHash`, `servedUiHash`, and `isDirtyOutside` “two functions”; the spec-review boundary correction remains unapplied. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/ci-scope.test.mjs:253
+3. advisory — studio/briefs/W-483.md:59 The Input domain still omits the changed `recordOnly` callable and the temporary repository’s Git/setup boundary, despite the passed spec review requiring both. [severity: S3] [class: spec×input-without-named-rejector] — check: none: brief admission should require an Input-domain row for each changed callable and fixture boundary
+
+## Verdict
+The implementation, owned-file scope, recorded red, and automated gates satisfy the behaviour; the remaining defects are advisory specification corrections.
+VERDICT: PASS
