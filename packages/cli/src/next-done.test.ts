@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { sourceTreeHash } from "@bisellium/shim";
@@ -1472,4 +1472,46 @@ test("W-459-b3 behaviour 3: next holds a new start at branch while the previous 
   const badNew = next(bad, [OTHER]);
   expectOther(badNew, "branch", "held", "a tracker that cannot be read holds a new start");
   assert.match(badNew.out, /the daily retro tracker cannot be read: acta\/improvements\.md: /, ran("and names the tracker", badNew));
+});
+
+// ---------------------------------------------------------------------------
+// W-489 behaviour 4: the done perform removes the opus's own worktrees (studio/briefs/W-489.md)
+// ---------------------------------------------------------------------------
+test("W-489-b4 behaviour 4: the done perform removes the worktrees that carry its opus id and prints each one removed or kept", { timeout: 1_800_000 }, () => {
+  const w = world("w489-b4", "cleanup", { patron: true });
+  scenario(w, { list: mergedList(w) });
+  appendFileSync(join(w.repo, ".git", "info", "exclude"), ".worktrees/\n");
+  const repo = realpathSync(w.repo);
+  /** `.worktrees/<name>` on a new branch or detached at master, its gitdir file two hours old unless young. */
+  const add = (name: string, branch: string | undefined, young = false): string => {
+    const path = join(repo, ".worktrees", name);
+    git(w.repo, ["worktree", "add", "-q", ...(branch === undefined ? ["--detach"] : ["-b", branch]), path, "master"]);
+    if (!young) {
+      const t = new Date(Date.now() - 2 * 3_600_000);
+      utimesSync(join(git(path, ["rev-parse", "--absolute-git-dir"]), "gitdir"), t, t);
+    }
+    return path;
+  };
+  const spec = add(`${OPUS}-spec`, `spec-scratch/${OPUS}`);
+  writeFileSync(join(spec, "notes.txt"), "the architect's notes\n");
+  const verify = add(`verify-${OPUS}`, undefined);
+  const other = add("W-9001-spec", "spec-scratch/W-9001");
+  const fresh = add(`${OPUS}-fresh`, undefined, true);
+  const pushed = add(`${OPUS}-pushed`, `stage/${OPUS}`);
+  git(pushed, ["push", "-q", "origin", `stage/${OPUS}`]);
+
+  const o = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectStep(o, "done", "performed", "the done perform commits the record");
+  assert.equal(branchExists(w, `chore/done-${OPUS}`), true, ran("the chore branch holds the done commit", o));
+  const lines = outLines(o).filter((l) => l.startsWith("worktree "));
+  const diffs = join(repo, ".bisellium", "worktree-diffs");
+  assert.equal(lines.length, 4, ran("four worktree lines", o));
+  const specLine = lines.find((l) => l.startsWith(`worktree removed: ${spec} `)) ?? "";
+  assert.ok(specLine.startsWith(`worktree removed: ${spec} (opus ${OPUS} done); uncommitted changes saved to ${diffs}/${OPUS}-spec-`), ran("the dirty scratch worktree is removed and its patch saved", o));
+  assert.ok(lines.includes(`worktree removed: ${verify} (opus ${OPUS} done)`), ran("the verify worktree is removed", o));
+  assert.deepEqual(lines.filter((l) => l.startsWith("worktree kept: ")).sort(), [`worktree kept: ${fresh} (younger than an hour)`, `worktree kept: ${pushed} (its PR state was not read)`], ran("a young worktree and one whose branch is on origin are kept", o));
+  assert.equal(existsSync(spec) || existsSync(verify), false, "the removed worktrees are gone");
+  assert.ok(readFileSync(specLine.slice(specLine.indexOf(diffs)), "utf8").includes("+the architect's notes"), "the patch holds the untracked file");
+  assert.equal(existsSync(other) && existsSync(fresh) && existsSync(pushed), true, "the W-9001 worktree, the young one and the pushed one stay");
+  assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD is back on master");
 });
