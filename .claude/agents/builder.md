@@ -38,5 +38,13 @@ never a background watcher or wait loop (retro-32's phantom "running
 task" class). No exit file and a log stale for 5 minutes means dead:
 report it.
 
+Keep one background run at a time; the guard refuses a second while the
+first is live (W-494). A run writes its exit file last
+(`cmd > X.log 2>&1; echo $? > X.exit`); wait for it in the foreground with
+`timeout 540 bash -c 'until [ -f X.exit ]; do sleep 10; done'`, repeated
+until the file is there; never a new background waiter, and
+never `pgrep -f`, which matches the waiting command itself. A turn may end
+while your one run is live: its notice wakes you.
+
 Before you hand back, stop your own background work (TaskStop); the
 SubagentStop guard sends you back while it still runs (W-310).
