@@ -49,7 +49,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-491 merged (#958), W-489 in merge queue (#959); E1 W-452 PR #961 waits on the Patron; W-492 filed (#957).
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-491 done (#962), W-489 merged (#959, done PR #965); E1 W-452 PR #961 and U2 W-411 PR #963 wait on the Patron; U1 W-487 fix round; W-492 filed (#957).
 1. W-452 — seats per D-150 C: one design lead, engineering signs its own specs; kind ui retired, re-tag; design-lead UI rulings count (D-150 C) (high)
 2. W-492 — cause fix, tests×one-sided-bound-assertion recurs after W-334, W-376, W-392 (W-487 review r1; D-076 D) (high); 3. W-490 — handoff traps checked against open opera, capped (Patron 11-01)
 4. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
