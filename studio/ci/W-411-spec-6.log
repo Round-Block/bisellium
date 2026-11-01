@@ -1,0 +1,33 @@
+# opus: W-411
+# phase: spec
+# round: 6
+# sella: ui-lead
+# session: 01a195f8-d531-7410-9775-1fc278904113
+# outcome: revise
+# at: 2026-11-01T07:46:06.003Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# dispatch_prompt: ci/W-411-ui-prompt-6.md
+# design_digest: sha256:4554ca2a450c58624758afe7c5ed18ec670bebca35db1dada8c8073d285f7097
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"43efe4af77a4d97551c9c73a9045208077bbd222","at":"2026-11-01T07:45:58.286Z"}
+
+## Findings
+
+1. blocking — brief:48,122 — The agent-written 390-only restriction leaves the visible Close control outside the drawer viewport after long scrolling at 1280 and 640. Escape serves keyboard users, but pointer users must retrace the detail to exit; the revised b3 test explicitly scrolls back to the top before clicking Close. — replace with: At 1280, 640 and 390, keep only the existing opaque 44px Close control pinned inside the drawer, with its focus indicator visible. Let the complete title, metadata and detail scroll in their existing order. — check: `apps/web/tests-serve/w411.spec.ts`, b3: Close remains contained and clickable after bottom scrolling at every ruled width, without first resetting scroll.
+
+2. advisory — brief:84 — The assertion citation describes the superseded sticky header. — replace with: Cite “the phone Close control stays pinned” as the recorded red assertion. — check: `/home/edckt/.bisellium-evidence/W-411-spec/b3-red-recorded.log` and `apps/web/test/w411.test.ts`.
+
+3. advisory — brief:40 — The final sentence duplicates the current-phase styling requirement already stated in the paragraph. — replace with: Delete the final sentence beginning “Keep `aria-current` derived”; retain the preceding paragraph unchanged. — check: `studio/briefs/W-411.md:40`.
+
+## Earlier findings
+
+- ci/W-411-spec-3.log #1: closed — brief:40,121 require visible current styling; `phase-many-390.png`, `phase-none-390.png` and `phase-sample-390.png` clearly distinguish Done with an ink border and neutral fill; b2 checks tap, track scrolling and restoration.
+- ci/W-411-spec-3.log #2: closed — brief:25,86 and the prototype use selected `--rule` with `--ink-2` labels; `board-many-390-selected.png` and `board-sample-390-selected.png` visibly distinguish selection from waiting cards; b4 checks both card types and label contrast.
+- ci/W-411-spec-3.log #3: closed — brief:82,122 pin only Close at 390; both `drawer-*-390-bottom.png` captures show detail scrolling beneath the retained opaque control, without the long header remaining pinned; b3 checks the target and focus indicator.
+
+## Recommendation
+
+All three round-3 findings are closed in their original scope.
+Pin Close at 1280 and 640 too: viewport width does not remove the need for a visible pointer exit, and pinning only the control preserves reading space.
+The wider-width finding follows from the prototype and b3’s scroll-reset step; the supplied drawer captures cover 390.
+Adopt the spec reviewer’s advisories 1 and 3 as written; neither wording correction is itself a UI blocker.
+Verdict: revise

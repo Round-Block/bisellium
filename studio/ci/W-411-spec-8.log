@@ -1,0 +1,18 @@
+# opus: W-411
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a1ab1132ac49fdbe6
+# outcome: passed
+# at: 2026-11-01T08:08:58.059Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-411.md blob:478fc3873cbebdcb84b1a4b39c4190aa9d28e754
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"478fc3873cbebdcb84b1a4b39c4190aa9d28e754","at":"2026-11-01T08:08:51.697Z"}
+
+## Findings
+1. advisory — brief:100 The line says the captures include "bottom-scrolled detail at every ruled width". But `drawer-many-1280-expanded-bottom.png`, `drawer-many-640-bottom.png` and the other 1280 and 640 bottom captures still show the whole long title at the drawer top. Their detail barely overflows a 900px viewport, so no capture shows the newly pinned Close control over scrolled-away content at 1280 or 640. Only served b3 proves it: its 80-repeat body asserts `headerScrolledAway`, Close inside the drawer, 44px and clickable at the bottom at every width. The Patron's screens therefore do not show the state they ruled on. Replacement for brief:100: "Final captures cover sample data, no waiting opera and many waiting opera at 1280 expanded/collapsed, 640 and 390, plus top and bottom-scrolled detail at every ruled width, with the bottom captures using b3's long-body fixture so the title has scrolled away beneath the pinned Close control." [severity: S4] [class: ui×sense-on-screen] — check: none: capture-shots.mts should assert, for each `*-bottom.png`, that the drawer header's bottom lies above the drawer top before it saves the capture
+
+## Verdict
+Only the adoption and the ruling moved. Each change from round 5 traces to ui-lead round 6 finding 1, to my round-5 advisories 1 and 3 (adopted as written), or to the Patron's dated 2026-11-01 ruling in Default 3. Brief:84 now cites "the Close control stays pinned at every ruled width", which matches b3-red-recorded.log and w411.test.ts. The duplicated sentence in brief:40 is gone. The rest is the signature round, the new prototype hash, the replay tree and the capture list. The ui-lead's replacement text no longer says "neither truncate the title nor add a toolbar". Served b3 still asserts both, and "complete title" keeps the meaning, so nothing is lost. The prototype pins Close at every ruled width: the base rule is `position: fixed` at `top: 12px; right: 12px` with an opaque `--surface` backing, and below 899px it moves to `top: 60px` under the shell row. Its existing 2px focus outline is unchanged. Served b3 asserts, without resetting scroll, that the header has scrolled away, Close is contained in the drawer, is 44px, has an opaque backing and a visible focus outline, and closes the drawer on click at 1280, 640 and 390. Pinning one small control rather than the whole header keeps reading space, and it makes sense on the 390 and 1280 captures. b2, b4 and every input row are unchanged. Facts show `next` exit 0 and no admission problems. The mbox sha256 6f7e5a2a… matches and replays to tree b6697a19…, the four reds fail by ERR_ASSERTION, and all four served rows pass. The one finding is advisory.
+VERDICT: PASS

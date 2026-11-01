@@ -1,0 +1,19 @@
+# opus: W-411
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: af1f8690e12edcacf
+# outcome: passed
+# at: 2026-11-01T05:37:42.110Z
+# tree: tree:3003f18ad01310d73cf7a6491d280e9de13b5418
+# brief: briefs/W-411.md blob:70679999fee8b506e91ce93bc5323b22606101d4
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"de5565d185409254e8c303438db51dc8993ccb36","brief":"70679999fee8b506e91ce93bc5323b22606101d4","at":"2026-11-01T05:37:37.759Z"}
+
+## Findings
+1. advisory — brief:40 The phone phase strip shows `aria-current` to assistive technology only. The prototype adds no style for `.board__strip-item[aria-current="true"]`, so on the 390 captures every phase button looks the same. A sighted phone user still cannot see which phase is in view, which is the problem Intent (brief:15) names. This line was written by an agent, not ruled by the Patron. Default 2 (brief:121) offers the Patron "machine-readable" only and does not ask them about a visible cue. Replacement for brief:40: "`PhaseNavigation` remains a presentation child of `BoardView`. It observes `.board__columns`, computes the column whose left edge is nearest the track's left edge, and places `aria-current=\"true\"` on that phase button, which w025.css draws with an ink border and `--rule` fill and no accent colour (DIRECTION §3: an accent never marks a state). Its tap still calls the existing `scrollColumnIntoView`; its own horizontal offset changes only enough to keep the current phase name visible. It creates no second lifecycle state and no route state." Also add "and visible" after "machine-readable" in Default 2. [severity: S4] [class: ui×sense-on-screen] — check: none: a W-411-b2 served assertion that the `aria-current` strip button's computed border or background differs from its siblings
+2. advisory — brief:25 The selected lifecycle card gets `background: var(--wash)`. Every waiting card (`.board__card--amber`) already has that background. Opening from the waiting strip always selects a waiting card, so after close the "selected background" (brief:86) looks no different on that card. On a non-waiting card, selection looks like a waiting card without its amber rule. b4 checks only that a CSS rule exists, and its served fixture card W-5 is a waiting card, so nothing tests whether the change is visible. Replacement for brief:25: "`apps/web/src/components/w025.css`: remove the dead reason style, keep the detail header and Close control sticky, and give selected lifecycle cards a background distinct from both `--surface` and the waiting `--wash` (the Inbox's selected `--rule` fill, held to the W-341 contrast test), with DIRECTION's 120ms background transition and reduced-motion zeroing." In brief:86, after "selected background", add "that differs from the same card's unselected background". [severity: S2] [class: ui×sense-on-screen] — check: none: a W-411-b4 served assertion that W-5's computed background-color differs before and after it is selected
+
+## Verdict
+The input boundary is sound. No record reader is added. Every reader the opus changes is a DOM or scroll value pinned by served `expect()` rows, and evidence backs every promise: four ERR_ASSERTION reds, cumulative greens, eight commits that each build, the mbox reapplying to the same tree, and served rows passing at 1280, 640 and 390. Both findings are advisory sense findings about the screen, for the builder to adopt.
+VERDICT: PASS

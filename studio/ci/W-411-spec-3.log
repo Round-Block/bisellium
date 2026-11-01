@@ -1,0 +1,29 @@
+# opus: W-411
+# phase: spec
+# round: 3
+# sella: ui-lead
+# session: 01a195f8-d531-7410-9775-1fc278904113
+# outcome: revise
+# at: 2026-11-01T07:19:49.753Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# dispatch_prompt: ci/W-411-ui-prompt-3.md
+# design_digest: sha256:4c4d1f465b3abdb072593204323a398d74f40874ab765c3fd07093e1bd2967aa
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"70679999fee8b506e91ce93bc5323b22606101d4","at":"2026-11-01T07:19:43.368Z"}
+
+## Findings
+
+1. blocking — brief:40,121 — The agent-written requirement makes the current phase machine-readable only; every phase button looks identical in the 390px captures. — replace with: Keep `aria-current` derived from the sole lifecycle track and draw its button with an ink border and `--rule` fill, without accent colour. Add “and visible” after “machine-readable” in Default 2. — check: `apps/web/tests-serve/w411.spec.ts`, b2: current styling follows tap, track scrolling and restoration, and differs from sibling buttons.
+
+2. blocking — brief:25,86 — The agent-chosen selected `--wash` fill duplicates the waiting-card background, making selection invisible on precisely the cards the Patron opens from the waiting strip. — replace with: Selected lifecycle cards use `--rule`, distinct from both `--surface` and waiting `--wash`, with the existing 120ms transition and reduced-motion zeroing. Apply the W-341 contrast floor to selected-card content: OWNER/NEXT/ASK labels need `--ink-2`, since their current `--ink-3` achieves only 3.73:1 on `--rule`. Require selection to differ visibly from the same card before selection. — check: `apps/web/tests-serve/w411.spec.ts`, b4: compare waiting and ordinary cards before selection and after close; verify selected text reaches 4.5:1.
+
+3. blocking — brief:82,122 — The agent-written whole-header sticky rule makes an unusually long title a permanent obstruction. In `drawer-many-390.png`, the header occupies approximately 390px of the 852px drawer; pinning it sacrifices nearly half the reading area throughout detail scrolling. — replace with: At 390px, keep only the existing 44px Close control pinned, with an opaque backing and visible focus indicator. Let the complete title, metadata and remaining detail scroll in their existing order; neither truncate the title nor add a toolbar. — check: `apps/web/tests-serve/w411.spec.ts`, b3: the long-title header scrolls away while Close remains reachable and record content remains readable through the bottom.
+
+## Recommendation
+
+This is my first input on W-411; there are no earlier findings of mine to reassess.
+Adopt advisory 1 as written and advisory 2’s selected fill with its stated contrast requirement enforced on every selected-card label.
+Keep Default 1: the captured 390px header plainly identifies Board and Sample Studio after removing the implementation sentence; replacing the disabled selector with static text is unnecessary for this change.
+Revise Default 3 to pin only Close on the phone, because the long-title capture exposes a reading-space defect that the short sample conceals.
+Keep Default 4: retaining the last chosen item, restoring the exact opener and both horizontal offsets preserves the Patron’s place; persistence across routes or reloads would exceed that return contract.
+These are local brief and prototype corrections, not a new design.
+Verdict: revise

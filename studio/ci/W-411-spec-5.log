@@ -1,0 +1,21 @@
+# opus: W-411
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a1ab1132ac49fdbe6
+# session_reason: the round-2 reviewer session af1f8690e12edcacf ran in an earlier Claude Code session and cannot be resumed; fresh Opus reviewer
+# outcome: passed
+# at: 2026-11-01T07:41:43.151Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-411.md blob:43efe4af77a4d97551c9c73a9045208077bbd222
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"43efe4af77a4d97551c9c73a9045208077bbd222","at":"2026-11-01T07:41:37.589Z"}
+
+## Findings
+1. advisory — brief:84 Behaviour 3's genuine-red line still cites the assertion "the detail header stays at the drawer top". No such assertion exists in the revised w411.test.ts. Brief:82, brief:48 and b3-red-recorded.log (`error: 'the phone Close control stays pinned'`) all name the new one. The red, its command and its log are real, so only the citation is stale. Replacement for the end of brief:84: "as pinned by `W-411-b3 behaviour 3: item detail keeps its close path in view` \"the phone Close control stays pinned\"." [severity: S4] [class: brief×stale-pin-citation] — check: none: brief admission should refuse a `"<assertion>"` pin quote that does not occur in the named test file
+2. advisory — brief:48 The ui-lead's finding 3 was scoped to 390px. The revision dropped the whole-header sticky rule at every width, and b3 now asserts `headerScrolledAway` at 1280 and 640 too. On those widths a long drawer's only visible Close control now scrolls out of view. That matches the base, but it withdraws what rounds 1-2 promised for those widths. Default 3 (brief:122) mentions only 390, so the Patron is not told. Escape still closes, so this is a sense question, not a defect. Replacement for brief:48 after "remains reachable;": "at all three widths only the existing opaque 44px Close control stays pinned inside the drawer while the complete title, metadata and remaining detail scroll;". Alternatively keep 390-only and add to Default 3: "At 1280 and 640 the Close control scrolls with the header as it does today; Escape still closes." [severity: S4] [class: ui×sense-on-screen] — check: none: a W-411-b3 served assertion of Close's position after scroll at 1280 and 640, whichever way the Patron rules
+3. advisory — brief:40 The ui-lead's replacement was appended after round 2's advisory text, which already said the same thing. Brief:40 and brief:78 now each state the ink-border, `--rule`-fill, no-accent rule twice. Delete the final sentence of brief:40 ("Keep `aria-current` derived … without accent colour."). Brief:78's lead-in sentence can stay, since it is the behaviour's own statement. [severity: S4] [class: brief×duplicated-requirement] — check: none
+
+## Verdict
+All five inputs are adopted as written, and served assertions pin each one. b2: Close is opaque and pinned, and it keeps a visible ≥2px focus outline. b2 checks the current phase's computed `--ink` border and `--rule` fill against a `--surface` sibling after tap, direct track scroll and restoration after detail. b3 checks the long title for no ellipsis or clamp, no toolbar, the header scrolling away, reachable record content and no horizontal overflow. b4 checks `--rule` on the selected waiting card W-5, against its own earlier `--wash`. b4 also checks selection on the ordinary card W-11, against its earlier `--surface`, and 4.5:1 on all three OWNER/NEXT/ASK labels. The tokens give ink-2 5.56:1 and amber ask values 5.37:1 on `--rule`. That fill matches DIRECTION's "selected … `rule` fills" line and its rule that an accent never marks a state, and on the 390 captures the selected card and current phase both read clearly. Nothing else in the design changed except the narrowing at 1280 and 640 noted in finding 2. No reader is added. Facts show `next` exit 0 and no admission problems. The four ERR_ASSERTION reds were re-recorded, the mbox sha256 054ce817… matches, it replays to tree f84a0959…, and all four served rows pass. The three findings are advisory, for the builder to adopt.
+VERDICT: PASS
