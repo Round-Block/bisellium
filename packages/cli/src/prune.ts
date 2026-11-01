@@ -204,23 +204,29 @@ function heldByRef(root: string, commit: string | undefined): boolean {
   return r.status === 0 && r.stdout.trim() !== "";
 }
 
-/** The first submodule (a gitlink path) whose checkout has any change or whose state cannot be read, or undefined when none. The outer patch holds only a gitlink, so such a worktree must be kept. */
-function dirtySubmodule(path: string): string | undefined {
+/**
+ * The first nested repository a patch of the outer worktree cannot hold, named for the kept reason: an initialized
+ * submodule (a gitlink whose path holds a `.git` entry, clean or not), or an untracked entry `git status` ends with `/`
+ * (git's report of a directory holding a `.git` directory or gitfile, at any depth); undefined when none.
+ */
+function nestedRepository(path: string): string | undefined {
   const ls = git(["ls-files", "-s", "-z"], path);
-  if (ls.status !== 0) return "(unreadable index)";
+  if (ls.status !== 0) return "its index cannot be read";
   for (const entry of ls.stdout.split("\0")) {
     const m = /^160000 \S+ \d\t(.+)$/.exec(entry);
     if (m === null || m[1] === undefined) continue;
-    const st = git(["status", "--porcelain", "--ignore-submodules=none", "--", m[1]], path);
-    if (st.status !== 0 || st.stdout.trim() !== "") return m[1];
+    if (lstatSync(join(path, m[1], ".git"), { throwIfNoEntry: false }) !== undefined) return `submodule ${m[1]} is a nested repository a patch cannot hold`;
   }
+  const st = git(["status", "--porcelain", "-z", "--untracked-files=all"], path);
+  if (st.status !== 0) return "its untracked files cannot be read";
+  for (const entry of st.stdout.split("\0")) if (entry.startsWith("?? ") && entry.endsWith("/")) return `untracked ${entry.slice(3, -1)} is a nested repository a patch cannot hold`;
   return undefined;
 }
 
 /** The worktree's uncommitted changes, untracked files included, as one binary patch under `<repo>/.bisellium/worktree-diffs/`. */
 function saveWorktreeDiff(root: string, path: string, name: string, nowMs: number): { path: string } | { error: string } {
-  const dirtySub = dirtySubmodule(path);
-  if (dirtySub !== undefined) return { error: `submodule ${dirtySub} has changes a patch of the outer worktree cannot hold` };
+  const nested = nestedRepository(path);
+  if (nested !== undefined) return { error: nested };
   const add = git(["add", "-A"], path);
   if (add.status !== 0) return { error: `git add -A failed: ${add.stderr.trim()}` };
   const diff = spawnSync("git", ["diff", "--cached", "--binary", "HEAD"], { cwd: path, timeout: 120_000, maxBuffer: 256 * 1024 * 1024 });
