@@ -2450,17 +2450,19 @@
   padding: var(--sp-6) 56px var(--sp-4) var(--sp-6);
   border-bottom: 1px solid var(--rule);
   position: relative;
+  background: var(--surface);
   flex-shrink: 0;
 }
 
 .board-drawer__close {
-  position: absolute;
+  position: fixed;
   top: 12px;
   right: 12px;
   min-width: 44px;
   min-height: 44px;
-  border: none;
-  background: none;
+  z-index: 11;
+  border: 1px solid var(--rule);
+  background: var(--surface);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -2619,6 +2621,10 @@
 /* Narrow: <=899px — above Board's phone boundary the drawer leaves the rail
    visible. */
 @media (max-width: 899px) {
+  .board-drawer__close {
+    top: 60px;
+  }
+
   .board__waiting-label {
     flex-direction: row;
     align-items: baseline;
