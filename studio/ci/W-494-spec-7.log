@@ -1,0 +1,21 @@
+# opus: W-494
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19731-2082-7c21-85a1-94ae0f631b11
+# outcome: failed
+# at: 2026-11-01T15:04:40.770Z
+# tree: tree:7c3788e18c3192dc6b1033e85d13dd72c1e2d10d
+# brief: briefs/W-494.md blob:3eaedee3690e2c0c769d434fdc972dded6138cbb
+# ticket: {"opus":"W-494","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":".worktrees/W-494/studio","head":"3ba4c741547c019949770e848e9116124f681214","brief":"3eaedee3690e2c0c769d434fdc972dded6138cbb","at":"2026-11-01T15:04:40.140Z"}
+
+## Findings
+1. blocking — brief:37 [design: changes] The promise that none of the five guidance texts claims a 10-minute call cap is false: the changed `studio/prompts/builder-brief.md` says the timeout parameter is “10 minutes at most,” while b4’s phrase-only regex misses that equivalent cap. Replace “none claims a 10-minute call cap” here and at brief:87 with “none claims that 10 minutes is the default foreground-call cap.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/guard.test.ts W-494-b4
+
+## Earlier findings
+
+## Verdict
+Revision 3 introduces a false guidance promise that its recorded test does not detect.
+
+VERDICT: FAIL
