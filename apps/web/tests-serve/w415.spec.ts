@@ -60,23 +60,27 @@ test("W-415-b1 every screen collapses to D-119's icon rail at 1280 and 960", asy
   }
 });
 
-test("W-415-b1 D-120 puts the Inbox count in one collapsed-rail notification dot", async ({ page }) => {
+test("W-415-b1 D-120 puts the shared attention count on Inbox and Board", async ({ page }) => {
   await signIn(page, 1280, "w415-icons");
   for (const route of ROUTES) {
-    await page.goto(`${served!.baseURL}/?demo#/${route}`);
-    await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), `${route}: expanded Inbox keeps its current inline count`).toHaveText("3");
-    await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).not.toHaveClass(/sidebar__badge--dot/);
+    await page.goto(`${served!.baseURL}/#/${route}`);
+    await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), `${route}: expanded Inbox keeps the shared inline count`).toHaveText("2");
+    await expect(page.locator('a[href="#/board"] .sidebar__badge'), `${route}: expanded Board keeps the same shared inline count`).toHaveText("2");
+    await expect(page.locator('.sidebar__badge--dot')).toHaveCount(0);
     await page.locator(".sidebar__toggle").click();
     const links = page.locator(".sidebar__link"); await expect(links).toHaveCount(4); await expect(links.locator(".sidebar__icon")).toHaveCount(4);
-    for (const label of ["Inbox 3", "Board 2", "Seats", "Officina"]) await expect(page.getByRole("link", { name: label })).toBeVisible();
+    for (const label of ["Inbox 2", "Board 2", "Seats", "Officina"]) await expect(page.getByRole("link", { name: label })).toBeVisible();
     await expect(page.locator(`.sidebar__link[href="#/${route}"]`), `${route}: current icon is marked`).toHaveAttribute("aria-current", "page");
     await expect(page.locator('.sidebar__link[href="#/inbox"]'), "collapsed Inbox has a native tooltip").toHaveAttribute("title", "Inbox");
     const inbox = page.locator('.sidebar__link[href="#/inbox"]');
     const dot = inbox.locator(".sidebar__badge--dot");
-    await expect(dot, "D-120 nonzero count is the rail's notification dot").toHaveText("3");
-    await expect(dot, "D-120 dot keeps the full count in accessible text").toHaveAccessibleName("Inbox, 3 needs you");
+    await expect(dot, "D-120 nonzero count is the rail's notification dot").toHaveText("2");
+    await expect(dot, "D-120 dot keeps the full count in accessible text").toHaveAccessibleName("Inbox, 2 needs you");
     await expect(dot, "D-120 dot uses the 11px micro-count size").toHaveCSS("font-size", "11px");
     await expect(dot, "D-120 dot uses the 14px micro-count line-height").toHaveCSS("line-height", "14px");
+    const boardDot = page.locator('a[href="#/board"] .sidebar__badge--dot');
+    await expect(boardDot, "Board dot shows the same visible shared count").toHaveText("2");
+    await expect(boardDot, "Board dot keeps the same full count in accessible text").toHaveAccessibleName("Board, 2 waiting on you");
     const [railBox, linkBox, iconBox, dotBox] = await Promise.all([page.locator(".sidebar").boundingBox(), inbox.boundingBox(), inbox.locator(".sidebar__icon").boundingBox(), dot.boundingBox()]);
     expect(dotBox!.x + dotBox!.width / 2, `${route}: dot sits at the Inbox icon's right edge`).toBeGreaterThanOrEqual(iconBox!.x + iconBox!.width - 2);
     expect(dotBox!.y + dotBox!.height / 2, `${route}: dot sits at the Inbox icon's top edge`).toBeLessThanOrEqual(iconBox!.y + 2);
@@ -86,22 +90,28 @@ test("W-415-b1 D-120 puts the Inbox count in one collapsed-rail notification dot
     await page.locator(".sidebar__toggle").click();
   }
 
-  await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones: [] }) }));
-  await page.goto(`${served!.baseURL}/#/seats`);
-  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "zero Inbox count removes the expanded count").toHaveCount(0);
+  await page.route("**/api/opera", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+  await page.route("**/api/inbox*", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones: [] }) }));
+  await page.goto(`${served!.baseURL}/?zero#/seats`);
+  await expect(page.locator('.sidebar__badge'), "zero shared count removes both expanded counts").toHaveCount(0);
   await page.locator(".sidebar__toggle").click();
-  await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot'), "zero Inbox count removes the collapsed notification dot").toHaveCount(0);
+  await expect(page.locator('.sidebar__badge--dot'), "zero shared count removes both collapsed notification dots").toHaveCount(0);
   await page.locator(".sidebar__toggle").click();
-  await page.unroute("**/api/inbox");
+  await page.unroute("**/api/opera");
+  await page.unroute("**/api/inbox*");
 
   const petitiones = Array.from({ length: 123 }, (_, index) => ({ id: `P-${index}`, opus: `W-${index}`, from: "builder", subject: "Alert", body: "Alert" }));
-  await page.route("**/api/inbox", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) }));
-  await page.goto(`${served!.baseURL}/#/officina`);
-  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "expanded Inbox keeps its full uncapped count").toHaveText("123");
-  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).not.toHaveClass(/sidebar__badge--dot/);
+  await page.route("**/api/opera", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+  await page.route("**/api/inbox*", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opera: [], petitiones }) }));
+  await page.goto(`${served!.baseURL}/?many#/officina`);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "expanded badges keep the same full uncapped count").toHaveText("123");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge')).toHaveText("123");
+  await expect(page.locator('.sidebar__badge--dot')).toHaveCount(0);
   await page.locator(".sidebar__toggle").click();
   await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot'), "collapsed dot caps only its visible count").toHaveText("9+");
   await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot'), "capped dot retains the full count for assistive technology").toHaveAccessibleName("Inbox, 123 needs you");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge--dot')).toHaveText("9+");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge--dot')).toHaveAccessibleName("Board, 123 waiting on you");
   expect(await page.locator('a[href="#/inbox"] .sidebar__badge--dot').evaluate((node) => node.scrollWidth <= node.clientWidth), "9+ fits inside the dot without clipping").toBe(true);
 });
 

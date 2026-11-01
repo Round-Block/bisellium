@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { parseRoute } from "./lib/route.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
@@ -8,7 +8,7 @@ import { Board } from "./screens/Board.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
 import { fetchInbox, fetchOfficina, fetchOpera, hasToken, setUnauthorizedListener } from "./api.js";
 import { READY, type ScreenStatus } from "./lib/screenState.js";
-import { boardModel, needsYouTotal } from "./lib/board.js";
+import { attentionCollection, attentionTotal } from "./lib/board.js";
 
 function currentHash(): string {
   return typeof window === "undefined" ? "" : window.location.hash;
@@ -39,8 +39,9 @@ function initialWideSidebar(): boolean {
 
 export function App() {
   const [hash, setHash] = useState(currentHash());
-  const [needsYouCount, setNeedsYouCount] = useState(0);
-  const [boardWaitingCount, setBoardWaitingCount] = useState(0);
+  const [attentionCount, setAttentionCount] = useState(0);
+  const [pendingBoardOpus, setPendingBoardOpus] = useState<string | undefined>(undefined);
+  const [pendingInboxAttention, setPendingInboxAttention] = useState<string | undefined>(undefined);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
@@ -48,7 +49,20 @@ export function App() {
   // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
   // remounted by a screen's own layout changes and announces every state change.
   const [status, setStatus] = useState<ScreenStatus>(READY);
+  const hasMountedAttentionRef = useRef(false);
+  const onAttentionLoaded = useCallback(() => {
+    hasMountedAttentionRef.current = true;
+  }, []);
   const route = parseRoute(hash);
+
+  const openBoardAttention = (opusId: string): void => {
+    setPendingBoardOpus(opusId);
+    window.location.hash = "#/board";
+  };
+  const openInboxAttention = (attentionKey: string): void => {
+    setPendingInboxAttention(attentionKey);
+    window.location.hash = "#/inbox";
+  };
 
   // Only the user's toggle at >=960px writes the preference (brief:21): never a mount, a reload or the narrow overlay.
   const toggleWideSidebar = () => {
@@ -84,60 +98,26 @@ export function App() {
 
   useEffect(() => {
     if (location.search.includes("demo")) {
-      setNeedsYouCount(3);
+      setAttentionCount(3);
       return;
     }
-    let active = true;
-    fetchInbox({ shared: true })
-      .then((inbox) => {
-        if (active && route !== "inbox") setNeedsYouCount(needsYouTotal(inbox));
-      })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, [route]);
-
-  // The Inbox total the shell's last Board read already carries. A
-  // needsYouCount that equals it came from that same response (the Inbox
-  // screen's mount read), so it never reissues the read.
-  const shellReadTotal = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (location.search.includes("demo")) {
-      setBoardWaitingCount(2);
-      return;
-    }
-    // While Board is mounted its reconciled model is authoritative. An
-    // off-screen shell snapshot is cancelled on navigation, so it cannot
-    // overwrite a newer count reported through onWaitingCount.
-    if (route === "board") return;
-    shellReadTotal.current = null;
-    let active = true;
-    const inboxRead = fetchInbox({ shared: true });
-    inboxRead
-      .then((inbox) => { if (active) shellReadTotal.current = needsYouTotal(inbox); })
-      .catch(() => undefined);
-    Promise.all([fetchOfficina(), fetchOpera(), inboxRead])
-      .then(([officina, opera, inbox]) => {
-        if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
-      })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, [route]);
-
-  // A count that differs from the last read (an answer or a live frame moved
-  // it) refreshes the Board count from a fresh read.
-  useEffect(() => {
-    if (location.search.includes("demo") || route === "board") return;
-    if (shellReadTotal.current === null || shellReadTotal.current === needsYouCount) return;
-    shellReadTotal.current = needsYouCount;
+    if (route === "inbox" || route === "board") return;
     let active = true;
     Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true })])
       .then(([officina, opera, inbox]) => {
-        if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
+        if (active) setAttentionCount(attentionTotal(attentionCollection(officina, opera, inbox)));
       })
       .catch(() => undefined);
     return () => { active = false; };
-  }, [route, needsYouCount]);
+  }, [route]);
+
+  useEffect(() => {
+    if (route === "inbox" || route === "board") hasMountedAttentionRef.current = false;
+  }, [route]);
+
+  useEffect(() => {
+    if ((route === "inbox" || route === "board") && status.state === "error" && !hasMountedAttentionRef.current) setAttentionCount(0);
+  }, [route, status.state]);
 
   return (
     <div className={[
@@ -148,8 +128,7 @@ export function App() {
       {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
       <Sidebar
         route={route}
-        needsYouCount={needsYouCount}
-        boardWaitingCount={boardWaitingCount}
+        attentionCount={attentionCount}
         collapsed={wideSidebar ? sidebarCollapsed : !overlayOpen}
         overlay={!wideSidebar}
         overlayOpen={overlayOpen}
@@ -162,7 +141,25 @@ export function App() {
       />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
-        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} onWaitingCount={setBoardWaitingCount} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
+        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
+          <Board
+            onStatus={setStatus}
+            onWaitingCount={setAttentionCount}
+            onAttentionLoaded={onAttentionLoaded}
+            initialSelectionId={pendingBoardOpus}
+            onInitialSelectionConsumed={() => setPendingBoardOpus(undefined)}
+            onOpenInbox={openInboxAttention}
+          />
+        ) : (
+          <Inbox
+            onStatus={setStatus}
+            onNeedsYouCount={setAttentionCount}
+            onAttentionLoaded={onAttentionLoaded}
+            onOpenBoard={openBoardAttention}
+            initialAttentionKey={pendingInboxAttention}
+            onInitialAttentionConsumed={() => setPendingInboxAttention(undefined)}
+          />
+        )}
       </main>
       <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
         {status.text}

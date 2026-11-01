@@ -6,7 +6,7 @@
  * here rather than being threaded up through Board.tsx.
  */
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { formatWaitingAge, type BoardModel, type CardRow } from "../lib/board.js";
+import { formatWaitingAge, type AttentionRow, type BoardModel, type CardRow } from "../lib/board.js";
 import { GateLadder } from "../components/GateLadder.js";
 import { Colophon } from "../components/Colophon.js";
 
@@ -20,6 +20,7 @@ export interface BoardViewProps {
   /** Roving tabindex: exactly one card per column carries tabIndex 0. */
   focusedByColumn: Record<string, string | undefined>;
   onSelectCard: (id: string, columnId: string, origin: "card" | "waiting") => void;
+  onOpenInbox?: (attentionKey: string) => void;
   /** Connection state and last successful refresh, already formatted by
    *  `lib/board.ts`'s `liveLabel`; this belongs to the header, not a footer. */
   liveness?: string;
@@ -146,10 +147,11 @@ function Column({
   );
 }
 
-function WaitingStrip({ waiting, columns, onSelectCard }: {
-  waiting: CardRow[];
+function WaitingStrip({ waiting, columns, onSelectCard, onOpenInbox }: {
+  waiting: AttentionRow[];
   columns: BoardModel["columns"];
   onSelectCard: (id: string, columnId: string, origin: "card" | "waiting") => void;
+  onOpenInbox: (attentionKey: string) => void;
 }): JSX.Element {
   const itemsRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
@@ -208,11 +210,13 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
             const columnId = columns.find((column) => column.cards.some(({ id }) => id === card.id))?.id;
             return (
               <button
-                key={card.id}
+                key={card.attentionKey}
                 type="button"
                 className="board__waiting-item"
                 data-waiting-id={card.id}
-                onClick={() => onSelectCard(card.id, columnId ?? "unplaced", "waiting")}
+                onClick={() => card.destination === "inbox"
+                  ? onOpenInbox(card.attentionKey)
+                  : onSelectCard(card.id, columnId ?? "unplaced", "waiting")}
                 onFocus={(event) => revealFocusedWaitingItem(event.currentTarget)}
               >
                 <WaitingFacts card={card} compact />
@@ -294,7 +298,7 @@ function PhaseNavigation({ columns }: { columns: BoardModel["columns"] }): JSX.E
   );
 }
 
-export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, branchNote, generatedAt, notice }: BoardViewProps): JSX.Element {
+export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, onOpenInbox = () => undefined, liveness, branchNote, generatedAt, notice }: BoardViewProps): JSX.Element {
   return (
     <div className="board" inert={inert || undefined}>
       <div className="board__header">
@@ -308,7 +312,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
       </div>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
-      <WaitingStrip waiting={model.waiting} columns={model.columns} onSelectCard={onSelectCard} />
+      <WaitingStrip waiting={model.waiting} columns={model.columns} onSelectCard={onSelectCard} onOpenInbox={onOpenInbox} />
       <PhaseNavigation columns={model.columns} />
       <div className="board__columns">
         {model.columns.map((column) => (

@@ -51,15 +51,16 @@ test.describe("token delivery, mounted (W-067 behaviour 2)", () => {
     await page.locator(".token-prompt__submit").click();
     await expect(page.locator(".token-prompt")).toBeHidden();
 
-    // examples/sample-studio has exactly one needs_you petitio (A-1) — A-2
-    // is awaiting_reply, the Patron's own side, and stays off this list.
-    await expect(page.locator(".inbox__row")).toHaveCount(1);
+    // One replyable question joins the sample's Board-owned attention item.
+    await expect(page.locator(".inbox__row")).toHaveCount(2);
+    const answeredSubject = await page.locator(".inbox__subject").first().textContent();
     await approveFirstPetitio(page, "approve: token survives reload");
 
     // A successful write never re-opens the prompt, and the Inbox refetches
-    // (the answered petitio drops off the needs-you list).
+    // (the answered question drops out, while Board-owned attention remains).
     await expect(page.locator(".token-prompt")).toBeHidden();
-    await expect(page.locator(".inbox__row")).toHaveCount(0);
+    await expect(page.locator(".inbox__row")).toHaveCount(2);
+    await expect(page.locator(".inbox__subject", { hasText: answeredSubject ?? "" })).toHaveCount(0);
 
     await page.reload();
     await expect(page.locator(".token-prompt")).toBeHidden();
@@ -84,7 +85,7 @@ test.describe("token delivery, mounted (W-067 behaviour 2)", () => {
     // The reason typed before the 401 is untouched (no local Inbox handling
     // of "unauthorized") — the same click, now authorized, succeeds.
     await page.getByRole("button", { name: /approve/i }).click();
-    await expect(page.locator(".inbox__row")).toHaveCount(0);
+    await expect(page.locator(".inbox__row")).toHaveCount(2);
   });
 
   test("the built dist carries no copy of the live write-auth token", async () => {

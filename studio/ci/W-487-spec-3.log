@@ -1,0 +1,31 @@
+# opus: W-487
+# phase: spec
+# round: 3
+# sella: ui-lead
+# session: 01a195fb-94a1-7363-a8c1-c480f157353b
+# outcome: revise
+# at: 2026-11-01T07:23:04.437Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# dispatch_prompt: ci/W-487-ui-prompt-3.md
+# design_digest: sha256:a99d3905850a454b6a082c5306b20bdf335b743414fd662c16b7d918755a6fac
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"fd7c17e13769c5a7628b3ac0d420bdd71333260d","at":"2026-11-01T07:22:58.227Z"}
+
+## Findings
+
+1. blocking — brief:19 — The agent-written routing rule leaves a selected Board-owned row without reading-pane content; the prototype confirms this for keyboard selection and Board-only collections. — replace with: A pure Greenlight or Human gate row says `Opens Board drawer`; clicking it or pressing Enter opens the existing drawer. At 840px and wider, its selection fills the existing reading pane with opus id, title, ask kinds and one `Open Board drawer` control, without reply controls. — check: `apps/web/tests-serve/w487.spec.ts`, b2: Board-only initial selection and keyboard selection at 840 and 1280.
+
+2. blocking — brief:48 — The agent-written requirement to label every destination gives redundant `Reply in Inbox` text priority over essential ask kinds: `inbox-sample-1280.png` clips “Human gate”. — replace with: Every Inbox row shows its ask kinds in full at 1280, 640 and 390; the route label wraps or truncates first, and metadata must not clip vertically. Board-only rows state `Opens Board drawer`; question rows omit `Reply in Inbox`; combined rows retain `Open Board actions`. — check: `apps/web/tests-serve/w487.spec.ts`, b2: full visible ask-kind text, including all three kinds and multiple decisions, at all three widths.
+
+3. blocking — brief:48 — The agent-written exclusion of actor/date changes preserves a question-only date lookup that discards Board-owned `waitingSince`; its asker fallback can also misidentify the opus owner as the requester. The captured “Date unavailable” wording unnecessarily dominates the metadata line. — replace with: Board-owned rows show asker `Board` and their `waitingSince` using the shipped en-GB/UTC `27 Oct` format, or `–` when absent. Question rows retain their question asker and date. — check: `apps/web/test/w487.test.ts`, b2: rendered Board-owned rows with known and absent dates and an assigned opus owner.
+
+## Recommendation
+
+This is my first input on W-487; I have no earlier findings to carry forward.
+Adopt advisories 1, 2 and 3 as written: they restore selection context, readable ask kinds and truthful dates while preserving the Patron’s dated Outlook and date-format rulings.
+These findings concern agent-written choices; D-151’s content was decided by the design lead under delegation, not ruled by the Patron.
+Default 1 is right: keep one row per linked opus, show question multiplicity in the ask-kind text, and advance from the first served question after its answer; separate question rows would break the collection’s consistent unit.
+Default 2 is right: mixed rows remain replyable with a small `Open Board actions` control, while pure Board asks state their destination and open the drawer directly.
+Default 3 is sufficient with the three corrections: readable ask kinds, the Board destination label and content in the existing reading pane distinguish ownership without another panel, icon language or preview variant.
+Default 4 is right: both badges count the same collection, show full numbers expanded and `9+` collapsed, disappear at zero, and retain no separate question-only total.
+The architect can resolve these defects within the existing design before branching.
+Verdict: revise

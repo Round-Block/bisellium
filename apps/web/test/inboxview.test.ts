@@ -7,6 +7,7 @@
 import * as React from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { AttentionRow } from "../src/lib/board.js";
 import { InboxView, type InboxViewProps } from "../src/screens/InboxView.js";
 
 (globalThis as { React?: unknown }).React = React;
@@ -22,8 +23,7 @@ const check = (behaviour: number, name: string, ok: boolean, detail = "") => {
 
 function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
   return {
-    petitiones: [],
-    opera: [],
+    items: [],
     focusIndex: 0,
     expandedId: null,
     reason: "",
@@ -32,6 +32,22 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
     onExpandChange: () => undefined,
     onSubmit: () => undefined,
     ...overrides,
+  };
+}
+
+function question(id: string, opus: string, subject: string, body: string, from = "builder-a"): AttentionRow {
+  return {
+    attentionKey: `opus:${opus}`,
+    destination: "inbox",
+    boardEntry: false,
+    petitio: { id, opus, from, subject, body },
+    id: opus,
+    title: subject,
+    state: "question",
+    gates: [],
+    needsYou: true,
+    asks: [{ kind: "inbox", count: 1 }],
+    blocked: false,
   };
 }
 
@@ -47,8 +63,8 @@ const render = (props: InboxViewProps): string => renderToStaticMarkup(createEle
 // behaviour 4: a petitio row has subject at 13/18 and sella id in mono 12,
 // with neutral selection and a separate reading pane.
 {
-  const petitiones = [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask for a decision", body: "Full proposal content here." }];
-  const html = render(baseProps({ petitiones, expandedId: "P-1" }));
+  const items = [question("P-1", "W-024", "ask for a decision", "Full proposal content here.")];
+  const html = render(baseProps({ items, expandedId: "opus:W-024" }));
   check(4, "petitio row renders", html.includes("inbox__row"), html);
   check(4, "petitio row carries no amber attention class", !html.includes("inbox__item--attention") && !html.includes("inbox__row--attention"), html);
   check(4, "subject renders at 13/18", html.includes('class="inbox__subject"'), html);
@@ -63,29 +79,29 @@ const render = (props: InboxViewProps): string => renderToStaticMarkup(createEle
   // an empty string, not undefined, must still fall through to the
   // placeholder). Already correct — InboxView.tsx is not owned by W-076 —
   // so this is a regression-safety assertion, not a red: it holds today.
-  const emptyBodyPetitiones = [{ id: "P-2", opus: "W-024", from: "builder-a", subject: "ask", body: "" }];
-  const emptyBodyHtml = render(baseProps({ petitiones: emptyBodyPetitiones, focusIndex: 0, expandedId: "P-2" }));
+  const emptyBodyItems = [question("P-2", "W-024", "ask", "")];
+  const emptyBodyHtml = render(baseProps({ items: emptyBodyItems, focusIndex: 0, expandedId: "opus:W-024" }));
   check(4, "the placeholder still renders for body: \"\" (W-076)", emptyBodyHtml.includes("No content provided."), emptyBodyHtml);
 }
 
 // behaviour 10: rows have onClick for focus change
 {
-  const petitiones = [
-    { id: "P-1", opus: "W-024", from: "builder-a", subject: "first", body: "" },
-    { id: "P-2", opus: "W-025", from: "censor", subject: "second", body: "" },
+  const items = [
+    question("P-1", "W-024", "first", ""),
+    question("P-2", "W-025", "second", "", "censor"),
   ];
-  const html = render(baseProps({ petitiones, onFocusChange: () => undefined }));
+  const html = render(baseProps({ items, onFocusChange: () => undefined }));
   check(10, "rows are clickable (have onClick via native buttons)", (html.match(/<button[^>]*inbox__row/g) ?? []).length === 2, html);
 }
 
 // behaviour 8: detail pane shows verb buttons; disabled until a non-empty reason.
 {
-  const petitiones = [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask", body: "" }];
-  const noReason = render(baseProps({ petitiones, expandedId: "P-1", reason: "" }));
+  const items = [question("P-1", "W-024", "ask", "")];
+  const noReason = render(baseProps({ items, expandedId: "opus:W-024", reason: "" }));
   check(8, "expansion shows the four ruled verb buttons", (noReason.match(/class="inbox__btn-action"/g) ?? []).length === 4, noReason);
   check(8, "with no reason: all verb buttons disabled", (noReason.match(/class="inbox__btn-action" disabled/g) ?? []).length === 4, noReason);
 
-  const withReason = render(baseProps({ petitiones, expandedId: "P-1", reason: "looks good" }));
+  const withReason = render(baseProps({ items, expandedId: "opus:W-024", reason: "looks good" }));
   check(8, "with a reason: only delegate remains disabled", (withReason.match(/disabled/g) ?? []).length === 1, withReason);
   check(8, "approve, defer, decline and delegate are offered", ["approve", "defer", "decline", "delegate"].every((v) => withReason.includes(`>${v}<`)), withReason);
   check(8, "delegate has a visible associated explanation", /aria-describedby="delegate-unavailable-P-1"[^>]*>delegate<\/button><\/div><p id="delegate-unavailable-P-1" class="inbox__delegate-note">Delegation is not available yet<\/p>/.test(withReason), withReason);

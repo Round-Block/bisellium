@@ -1,0 +1,238 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-487-b4\s --import tsx apps/web/test/w487.test.ts
+# exit: 1
+# at: 2026-11-01T08:32:23.372Z
+# sella: ui-architect
+# tree: tree:56296ae0e9cbfe581b6b457cc7af9973b1be1ee3
+# ticket: {"opus":"W-487","step":"reds","action":"red","round":4,"actor":"producer","studio":".worktrees/W-487/studio","head":"5eb227a48f5bfe6db83abf9994c55704475b9903","brief":"17b1c32725ab791a6a7e63f889e227f9aa1f0534","at":"2026-11-01T08:32:23.277Z"}
+
+TAP version 13
+# Subtest: W-487-b4 behaviour 4: Inbox and Board badges report the same collection total
+not ok 1 - W-487-b4 behaviour 4: Inbox and Board badges report the same collection total
+  ---
+  duration_ms: 6.864106
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-487/apps/web/test/w487.test.ts:1:5844'
+  failureType: 'testCodeFailure'
+  error: 'the shell owns one attention count rather than separate Inbox and Board totals'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { useEffect, useRef, useState } from "react";
+    import { parseRoute } from "./lib/route.js";
+    import { Sidebar } from "./components/Sidebar.js";
+    import { Officina } from "./screens/Officina.js";
+    import { Inbox } from "./screens/Inbox.js";
+    import { Seats } from "./screens/Seats.js";
+    import { Board } from "./screens/Board.js";
+    import { TokenPrompt } from "./components/TokenPrompt.js";
+    import { fetchInbox, fetchOfficina, fetchOpera, hasToken, setUnauthorizedListener } from "./api.js";
+    import { READY, type ScreenStatus } from "./lib/screenState.js";
+    import { boardModel, needsYouTotal } from "./lib/board.js";
+    
+    function currentHash(): string {
+      return typeof window === "undefined" ? "" : window.location.hash;
+    }
+    
+    export const SIDEBAR_STORAGE_KEY = "bisellium.sidebar";
+    
+    function initialSidebarCollapsed(): boolean {
+      if (typeof window === "undefined") return false;
+      try {
+        return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "collapsed";
+      } catch {
+        return false;
+      }
+    }
+    
+    function persistSidebarCollapsed(collapsed: boolean): void {
+      try {
+        window.localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "collapsed" : "expanded");
+      } catch {
+        // Storage can be denied or unavailable; the in-memory expanded fallback remains usable.
+      }
+    }
+    
+    function initialWideSidebar(): boolean {
+      return typeof window === "undefined" || window.matchMedia("(min-width: 960px)").matches;
+    }
+    
+    export function App() {
+      const [hash, setHash] = useState(currentHash());
+      const [needsYouCount, setNeedsYouCount] = useState(0);
+      const [boardWaitingCount, setBoardWaitingCount] = useState(0);
+      const [pendingBoardOpus, setPendingBoardOpus] = useState<string | undefined>(undefined);
+      const [pendingInboxAttention, setPendingInboxAttention] = useState<string | undefined>(undefined);
+      const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
+      const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
+      const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
+      const [overlayOpen, setOverlayOpen] = useState(false);
+      // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
+      // remounted by a screen's own layout changes and announces every state change.
+      const [status, setStatus] = useState<ScreenStatus>(READY);
+      const route = parseRoute(hash);
+    
+      const openBoardAttention = (opusId: string): void => {
+        setPendingBoardOpus(opusId);
+        window.location.hash = "#/board";
+      };
+      const openInboxAttention = (attentionKey: string): void => {
+        setPendingInboxAttention(attentionKey);
+        window.location.hash = "#/inbox";
+      };
+    
+      // Only the user's toggle at >=960px writes the preference (brief:21): never a mount, a reload or the narrow overlay.
+      const toggleWideSidebar = () => {
+        const next = !sidebarCollapsed;
+        setSidebarCollapsed(next);
+        persistSidebarCollapsed(next);
+      };
+    
+      useEffect(() => {
+        // The one 401 path every write shares: raised from wherever the write
+        // was issued (Inbox today, W-065's Seats and W-064's Board tomorrow),
+        // with no code of their own.
+        setUnauthorizedListener(() => setTokenPromptOpen(true));
+        return () => setUnauthorizedListener(undefined);
+      }, []);
+    
+      useEffect(() => {
+        const onHashChange = () => setHash(currentHash());
+        window.addEventListener("hashchange", onHashChange);
+        return () => window.removeEventListener("hashchange", onHashChange);
+      }, []);
+    
+      useEffect(() => {
+        const query = window.matchMedia("(min-width: 960px)");
+        const onChange = (event: MediaQueryListEvent) => {
+          setWideSidebar(event.matches);
+          setOverlayOpen(false);
+        };
+        setWideSidebar(query.matches);
+        query.addEventListener("change", onChange);
+        return () => query.removeEventListener("change", onChange);
+      }, []);
+    
+      useEffect(() => {
+        if (location.search.includes("demo")) {
+          setNeedsYouCount(3);
+          return;
+        }
+        let active = true;
+        fetchInbox({ shared: true })
+          .then((inbox) => {
+            if (active && route !== "inbox") setNeedsYouCount(needsYouTotal(inbox));
+          })
+          .catch(() => undefined);
+        return () => { active = false; };
+      }, [route]);
+    
+      // The Inbox total the shell's last Board read already carries. A
+      // needsYouCount that equals it came from that same response (the Inbox
+      // screen's mount read), so it never reissues the read.
+      const shellReadTotal = useRef<number | null>(null);
+    
+      useEffect(() => {
+        if (location.search.includes("demo")) {
+          setBoardWaitingCount(2);
+          return;
+        }
+        // While Board is mounted its reconciled model is authoritative. An
+        // off-screen shell snapshot is cancelled on navigation, so it cannot
+        // overwrite a newer count reported through onWaitingCount.
+        if (route === "board") return;
+        shellReadTotal.current = null;
+        let active = true;
+        const inboxRead = fetchInbox({ shared: true });
+        inboxRead
+          .then((inbox) => { if (active) shellReadTotal.current = needsYouTotal(inbox); })
+          .catch(() => undefined);
+        Promise.all([fetchOfficina(), fetchOpera(), inboxRead])
+          .then(([officina, opera, inbox]) => {
+            if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
+          })
+          .catch(() => undefined);
+        return () => { active = false; };
+      }, [route]);
+    
+      // A count that differs from the last read (an answer or a live frame moved
+      // it) refreshes the Board count from a fresh read.
+      useEffect(() => {
+        if (location.search.includes("demo") || route === "board") return;
+        if (shellReadTotal.current === null || shellReadTotal.current === needsYouCount) return;
+        shellReadTotal.current = needsYouCount;
+        let active = true;
+        Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true })])
+          .then(([officina, opera, inbox]) => {
+            if (active) setBoardWaitingCount(boardModel(officina, opera, inbox).waiting.length);
+          })
+          .catch(() => undefined);
+        return () => { active = false; };
+      }, [route, needsYouCount]);
+    
+      return (
+        <div className={[
+          "shell",
+          wideSidebar && sidebarCollapsed && "shell--sidebar-collapsed",
+          !wideSidebar && overlayOpen && "shell--overlay-open",
+        ].filter(Boolean).join(" ")}>
+          {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
+          <Sidebar
+            route={route}
+            needsYouCount={needsYouCount}
+            boardWaitingCount={boardWaitingCount}
+            collapsed={wideSidebar ? sidebarCollapsed : !overlayOpen}
+            overlay={!wideSidebar}
+            overlayOpen={overlayOpen}
+            onToggle={() => wideSidebar
+              ? toggleWideSidebar()
+              : setOverlayOpen((value) => !value)}
+            onNavigate={() => {
+              if (!wideSidebar) setOverlayOpen(false);
+            }}
+          />
+          {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
+          <main className="shell__main" tabIndex={0}>
+            {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
+              <Board
+                onStatus={setStatus}
+                onWaitingCount={setBoardWaitingCount}
+                initialSelectionId={pendingBoardOpus}
+                onInitialSelectionConsumed={() => setPendingBoardOpus(undefined)}
+                onOpenInbox={openInboxAttention}
+              />
+            ) : (
+              <Inbox
+                onStatus={setStatus}
+                onNeedsYouCount={setNeedsYouCount}
+                onOpenBoard={openBoardAttention}
+                initialAttentionKey={pendingInboxAttention}
+                onInitialAttentionConsumed={() => setPendingInboxAttention(undefined)}
+              />
+            )}
+          </main>
+          <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
+            {status.text}
+          </div>
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-487/apps/web/test/w487.test.ts:114:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 34.946522

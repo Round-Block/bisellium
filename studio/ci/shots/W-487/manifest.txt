@@ -1,0 +1,9 @@
+shots: 8 ci/shots/W-487
+shot: board-1280.png 1280x900 65075
+shot: board-390.png 390x900 38484
+shot: inbox-1280.png 1280x900 63696
+shot: inbox-390.png 390x900 23914
+shot: officina-1280.png 1280x900 72048
+shot: officina-390.png 390x900 45288
+shot: seats-1280.png 1280x900 71383
+shot: seats-390.png 390x900 42780

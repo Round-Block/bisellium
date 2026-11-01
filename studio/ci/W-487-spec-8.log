@@ -1,0 +1,33 @@
+# opus: W-487
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a696a421351184108
+# outcome: passed
+# at: 2026-11-01T08:03:43.510Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-487.md blob:7a13b8533d63450e9950d9bbe783c5e68803a6f8
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"7a13b8533d63450e9950d9bbe783c5e68803a6f8","at":"2026-11-01T08:03:39.246Z"}
+
+## Findings
+1. advisory — brief:98 This comes from the same class as my round-5 finding 3, and this round's delta now reaches it. The new prototype changes `.inbox__item` from `grid-template-columns: minmax(0, 1fr) auto` to `max-content minmax(0, 1fr)`. Served W-407-b2 measures exactly that row (its 88px height and subject clipping). Yet `w407-served.out` (15:30) is from the round-4 head 08490bc9, and `w409-served.out` and `w463-served.out` (13:00) are older still. `reds-host.out` (15:29) and `fixture-migrations.out` (15:30) also predate the signed mbox (15:59). The current head's evidence covers only W-487 served, the four new reds and the focused Node rows in `gates-proto.out` (W-487, W-409, W-463, W-345). The risk is low. Question rows place no item in column 1 alone; their spanning items cross the flexible track, so they do not size the `max-content` track, and `height: 88px` is fixed. The claim therefore very likely holds, so this is stale evidence rather than false evidence. Replacement for brief:98's second sentence: "The predecessor W-407, W-409 and W-463 served files pass on the signed prototype head; the builder reruns them on the build head before `ready`." Rerun `w407.spec.ts` first. [severity: S4] [class: mechanism×red-certifies-wrong-tree] — check: none: the served-evidence census should compare each cited output's prototype head with the mbox head
+
+## Verdict
+The ui-lead's round-6 blocker (studio/ci/W-487-spec-6.log #1) is adopted as written. Brief:48 carries her replacement text verbatim, and the prototype drops the 112px `.inbox__route` cap. Board-owned rows switch to a `max-content` ask-kind column with the route taking the remainder.
+
+A new `expectBoardRowLabels` assertion pins that both labels fit in full (scrollWidth <= clientWidth):
+- in the 1280, 640 and 390 loop;
+- in the Board-only 840 and 1280 loop.
+
+The captures show `Opens Board drawer` in full at 840, 1280 and 390.
+
+Her advisory 2 is adopted verbatim at brief:19, restoring the three dropped Intent statements.
+
+Lines 3, 11, 32, 79 and 98 only follow from the adoption:
+- line 3 is the round number;
+- line 11 is the new mbox sha256 a5585d13…, which matches the file and reapplies to tree f1bd63f6;
+- lines 32, 79 and 98 add the label-fit pin at 1280, 840, 640 and 390.
+
+Nothing else moved. The delta touches only those seven lines, and the signed brief blob 7a13b853 matches the file. The prototype delta is two lines of w025.css plus the W-487 served spec. All 8 commits build, the four reds are new `ERR_ASSERTION` records, and W-487 served passes. The single finding is advisory.
+VERDICT: PASS

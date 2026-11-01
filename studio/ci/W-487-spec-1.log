@@ -1,0 +1,25 @@
+# opus: W-487
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1956b-41f9-7240-bd0c-d8ebf0f83f7c
+# outcome: passed
+# at: 2026-11-01T05:37:28.536Z
+# tree: tree:3003f18ad01310d73cf7a6491d280e9de13b5418
+# brief: briefs/W-487.md blob:fd7c17e13769c5a7628b3ac0d420bdd71333260d
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"de5565d185409254e8c303438db51dc8993ccb36","brief":"fd7c17e13769c5a7628b3ac0d420bdd71333260d","at":"2026-11-01T05:37:27.318Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-487-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — all 21 census entries are genuine D-151 expectation flips and are named in Acceptance with their migrated expectation; the focused Node and served rows pass on the rebuilt prototype — check: /home/edckt/.bisellium-evidence/W-487-spec/fixture-migrations.out
+2. advisory — Inbox presentational and reconciliation fixtures now consume `AttentionRow` identities, all three inputs and 88px metadata rows while preserving replies and detached drafts — check: apps/web/test/inboxview.test.ts, apps/web/test/w341.test.ts, apps/web/test/w407.test.ts, apps/web/tests-serve/inbox.spec.ts
+3. advisory — existing authentication, answer, empty-state and W-410 rows distinguish question removal from collection emptiness and mixed Inbox routing from the Board lifecycle drawer — check: apps/web/tests-serve/auth.spec.ts, apps/web/tests-serve/answer.spec.ts, apps/web/tests-serve/states.spec.ts, apps/web/tests-serve/w410.spec.ts
+4. advisory — W-415 now pins the same live count, zero visibility and `9+` cap on both Inbox and Board badges, including expanded and collapsed states — check: apps/web/test/w415.test.ts, apps/web/tests-serve/w415.spec.ts
+5. advisory — each behaviour now cites its own fresh red record, whose first line is the recorder-form `# command:` and whose TAP carries `not ok 1 - W-487-bN`; every one of the eight rebuilt commits independently builds the web bundle — check: /home/edckt/.bisellium-evidence/W-487-spec/b1-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b2-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b3-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b4-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/series-builds.txt
+
+## Verdict
+
+passed — signature round 3 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-487.md`; each Genuine red now cites its own accepted-format fresh record, the mbox sha256 is `6b86ad4af2ee14b820b65bb96d44ea9068838c0dd8db1d44d3c45a6a5cb4c62c`, and no record write, `next` or `verdict` was performed.

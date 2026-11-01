@@ -1,0 +1,28 @@
+# opus: W-487
+# phase: spec
+# round: 6
+# sella: ui-lead
+# session: 01a195fb-94a1-7363-a8c1-c480f157353b
+# outcome: revise
+# at: 2026-11-01T07:54:29.862Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# dispatch_prompt: ci/W-487-ui-prompt-6.md
+# design_digest: sha256:773c862f80a5f1abf9ec781efdf56f7d3960d0e8e7bbaadbae6a133d209f6832
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"cfaf7824c0b8b7f1a64b5a9685338d9de5baecfd","at":"2026-11-01T07:54:21.688Z"}
+
+## Findings
+
+1. blocking — brief:48 — The agent-written interpretation of “the route label truncates first” clips `Opens Board drawer` even when both fields fit. The fixed 112px cap unnecessarily obscures the destination in inbox-sample-1280.png and inbox-board-only-840.png. — replace with: “The route label yields to the ask kinds, truncating only when the ask kinds would otherwise not fit, and shows `Opens Board drawer` in full whenever both fit.” Remove the fixed `.inbox__route` cap. — check: w025.css; Board-owned Inbox rows at 1280, 840, 640 and 390.
+2. advisory — brief:19 — The revised Intent omits ownership and scope statements still retained elsewhere in the brief; restoring them makes the summary complete without changing the design. — replace with: Append “A row with an Inbox decision keeps its existing detail and answer controls in Inbox, and a combined row exposes a small `Open Board actions` control. The Board strip uses the same ownership: replyable questions open their Inbox detail, while Board-only asks reuse the lifecycle-card drawer. No public deep route, second count, endpoint, write shape or drawer is added.” — check: studio/briefs/W-487.md:19 against lines 48, 50, 106–107.
+
+## Earlier findings
+
+- ci/W-487-spec-3.log #1: closed — Brief:19 specifies the existing reading pane’s Board-owned content; inbox-board-only-1280.png and inbox-board-only-840.png show the opus id, title, ask kinds and one `Open Board drawer` control without reply controls.
+- ci/W-487-spec-3.log #2: closed — Brief:48 requires full ask kinds and removes `Reply in Inbox` from question rows; inbox-sample-1280.png, inbox-sample-640.png and inbox-sample-390.png show the complete combined ask kinds without that redundant label. The unnecessary clipping of the Board destination is the separate finding above.
+- ci/W-487-spec-3.log #3: closed — Brief:48 requires asker `Board` and the formatted `waitingSince` date or `–`; the Board-only captures show `Board` and `27 Oct`, while the sample Inbox captures show `Board` and `–` where the date is absent.
+
+## Recommendation
+
+Adopt both round-5 UI advisories as written: the first fixes destination legibility, and the second restores the Intent’s complete ownership and scope summary.
+All three round-3 blockers are closed; the remaining clipping comes from an agent-written implementation choice and can be corrected within the existing design while preserving the Patron’s split-pane and date rulings.
+Verdict: revise

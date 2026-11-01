@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { fetchInbox, submitAnswer, type InboxResponse } from "../api.js";
-import { InboxView } from "./InboxView.js";
+import { fetchInbox, fetchOfficina, fetchOpera, submitAnswer, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
+import { InboxView, liveSelectedAttentionItem } from "./InboxView.js";
 import {
   answerOptions,
   buildReply,
@@ -18,7 +18,7 @@ import {
 } from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 import { useVisibleRefresh } from "../lib/useVisibleRefresh.js";
-import { needsYouTotal } from "../lib/board.js";
+import { attentionCollection, attentionTotal, type AttentionRow } from "../lib/board.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
 
@@ -48,8 +48,25 @@ const DEV_DATA: InboxResponse = {
 
 const WRITE_FAILED = "Could not send the answer.";
 
-export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: ScreenStatus) => void; onNeedsYouCount?: (count: number) => void } = {}): JSX.Element {
+const DEV_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit"> = {
+  lifecycle: { id: "opus", states: [{ id: "greenlit", name: "Greenlit", phase: "planned" }] },
+  probationes: [],
+};
+const DEV_OPERA: OpusEntry[] = DEV_DATA.petitiones.map((petitio) => ({
+  id: petitio.opus!, title: petitio.subject, body: "", kind: "ui", collegium: "design", sella: petitio.from,
+  state: "greenlit", tokens: 0, probationes: {}, traditio: undefined,
+}));
+
+export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoard, initialAttentionKey, onInitialAttentionConsumed }: {
+  onStatus?: (status: ScreenStatus) => void;
+  onNeedsYouCount?: (count: number) => void;
+  onAttentionLoaded?: () => void;
+  onOpenBoard?: (opusId: string) => void;
+  initialAttentionKey?: string;
+  onInitialAttentionConsumed?: () => void;
+} = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
+  const [attention, setAttention] = useState<AttentionRow[]>([]);
   const [focusIndex, setFocusIndex] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState(0);
@@ -63,6 +80,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const [outcome, setOutcome] = useState<"refused" | "error" | undefined>(undefined);
+  const initialAttentionOpenedRef = useRef<string | undefined>(undefined);
   const [readPetitionIds, setReadPetitionIds] = useState<Set<string>>(() => {
     try { return decodeInboxReadSet(localStorage.getItem(INBOX_READ_STORAGE_KEY)); }
     catch { return new Set(); }
@@ -70,6 +88,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
 
   const demo = location.search.includes("demo");
   const dataRef = useRef(data);
+  const attentionRef = useRef(attention);
   const focusIndexRef = useRef(focusIndex);
   const expandedIdRef = useRef(expandedId);
   const detachedPetitionRef = useRef(detachedPetition);
@@ -77,12 +96,15 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
   const refreshingRef = useRef(false);
   const pendingRefreshRef = useRef(false);
   const onNeedsYouCountRef = useRef(onNeedsYouCount);
+  const onAttentionLoadedRef = useRef(onAttentionLoaded);
   const refreshIntentRef = useRef<{ preferredIndex: number; reopenDetail: boolean; reveal: boolean } | null>(null);
   dataRef.current = data;
+  attentionRef.current = attention;
   focusIndexRef.current = focusIndex;
   expandedIdRef.current = expandedId;
   detachedPetitionRef.current = detachedPetition;
   onNeedsYouCountRef.current = onNeedsYouCount;
+  onAttentionLoadedRef.current = onAttentionLoaded;
 
   const refreshInbox = useCallback((): void => {
     if (refreshingRef.current) {
@@ -92,38 +114,50 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
     refreshingRef.current = true;
     const intent = refreshIntentRef.current;
     refreshIntentRef.current = null;
-    const settle = (d: InboxResponse): void => {
-      const current = dataRef.current.petitiones;
+    const settle = (
+      officina: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">,
+      opera: OpusEntry[],
+      d: InboxResponse,
+    ): void => {
+      const nextAttention = attentionCollection(officina, opera, d);
+      const current = attentionRef.current;
       const currentIndex = focusIndexRef.current;
-      const currentPetition = detachedPetitionRef.current ?? current[currentIndex];
-      const currentId = currentPetition?.id;
-      const retainedIndex = currentId === undefined ? -1 : d.petitiones.findIndex((petitio) => petitio.id === currentId);
-      const keepDetached = intent === null && refreshIntentRef.current === null && currentPetition !== undefined && retainedIndex < 0;
+      const currentItem = current[currentIndex];
+      const currentPetition = detachedPetitionRef.current ?? currentItem?.petitio;
+      const currentKey = currentItem?.attentionKey;
+      const retainedIndex = currentKey === undefined ? -1 : nextAttention.findIndex((item) => item.attentionKey === currentKey);
+      const keepDetached = intent === null && refreshIntentRef.current === null && currentPetition !== undefined
+        && !nextAttention.some((item) => item.petitionIds?.includes(currentPetition.id) ?? item.petitio?.id === currentPetition.id);
       const nextIndex = retainedIndex >= 0
         ? retainedIndex
-        : reconcileFocusIndex(intent?.preferredIndex ?? currentIndex, d.petitiones.length);
+        : reconcileFocusIndex(intent?.preferredIndex ?? currentIndex, nextAttention.length);
       const detailWasOpen = intent?.reopenDetail ?? expandedIdRef.current !== null;
       setData(d);
+      setAttention(nextAttention);
       setFocusIndex(nextIndex);
       setDetachedPetition(keepDetached ? currentPetition : null);
-      setExpandedId(detailWasOpen ? (keepDetached ? currentPetition.id : (d.petitiones[nextIndex]?.id ?? null)) : null);
-      if (intent?.reveal && d.petitiones.length > 0) setFocusRequest((request) => request + 1);
-      onNeedsYouCountRef.current?.(needsYouTotal(d));
+      setExpandedId(detailWasOpen ? (keepDetached ? `detached:${currentPetition.id}` : (nextAttention[nextIndex]?.attentionKey ?? null)) : null);
+      if (intent?.reveal && nextAttention.length > 0) setFocusRequest((request) => request + 1);
+      onAttentionLoadedRef.current?.();
+      onNeedsYouCountRef.current?.(attentionTotal(nextAttention));
       hasSuccessfulLoadRef.current = true;
       setLoaded(true);
       setReadFailed(false);
     };
     if (demo) {
-      settle(DEV_DATA);
+      settle(DEV_OFFICINA, DEV_OPERA, DEV_DATA);
       refreshingRef.current = false;
       return;
     }
-    void fetchInbox()
-      .then((d) => {
-        settle(d);
+    void Promise.all([fetchOfficina(), fetchOpera(), fetchInbox()])
+      .then(([officina, opera, d]) => {
+        settle(officina, opera, d);
       })
       .catch(() => {
-        if (!hasSuccessfulLoadRef.current) setData(EMPTY);
+        if (!hasSuccessfulLoadRef.current) {
+          setData(EMPTY);
+          setAttention([]);
+        }
         setLoaded(true);
         setReadFailed(true);
       })
@@ -138,9 +172,24 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
 
   useVisibleRefresh(refreshInbox);
 
-  const petitiones = data.petitiones;
-  const focusedId = petitiones[focusIndex]?.id;
-  const decisionId = detachedPetition?.id ?? focusedId;
+  useEffect(() => {
+    if (initialAttentionKey === undefined || initialAttentionOpenedRef.current === initialAttentionKey) return;
+    const index = attention.findIndex((item) => item.attentionKey === initialAttentionKey);
+    if (index < 0) return;
+    initialAttentionOpenedRef.current = initialAttentionKey;
+    setFocusIndex(index);
+    setExpandedId(initialAttentionKey);
+    const petitio = attention[index]?.petitio;
+    if (petitio !== undefined) markRead(petitio.id);
+    onInitialAttentionConsumed?.();
+  }, [attention, initialAttentionKey, onInitialAttentionConsumed]);
+
+  const focusedItem = attention[focusIndex];
+  const focusedId = focusedItem?.attentionKey;
+  const focusedPetition = focusedItem?.petitio;
+  const selectedItem = attention.find((item) => item.attentionKey === expandedId) ?? focusedItem;
+  const liveSelectedItem = liveSelectedAttentionItem(selectedItem, detachedPetition);
+  const decisionId = detachedPetition?.id ?? focusedPetition?.id;
   const reason = reasonForPetition(reasons, decisionId);
   const decisionUnavailable = detachedPetition !== null;
 
@@ -162,12 +211,12 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
   }
 
   useEffect(() => {
-    if (!decisionUnavailable && focusedId !== undefined && window.matchMedia("(min-width: 840px)").matches) markRead(focusedId);
-  }, [focusedId, decisionUnavailable]);
+    if (!decisionUnavailable && focusedPetition !== undefined && window.matchMedia("(min-width: 840px)").matches) markRead(focusedPetition.id);
+  }, [focusedPetition?.id, decisionUnavailable]);
 
   useEffect(() => {
-    setFocusIndex((index) => reconcileFocusIndex(index, petitiones.length));
-  }, [petitiones.length]);
+    setFocusIndex((index) => reconcileFocusIndex(index, attention.length));
+  }, [attention.length]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
@@ -175,17 +224,22 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       if (e.key === "j" || e.key === "k") {
         setDetachedPetition(null);
         setFocusIndex((i) => {
-          const next = moveFocus(i, petitiones.length, e.key as "j" | "k");
-          if (expandedId !== null) setExpandedId(petitiones[next]?.id ?? null);
-          if (window.matchMedia("(min-width: 840px)").matches && petitiones[next] !== undefined) markRead(petitiones[next]!.id);
+          const next = moveFocus(i, attention.length, e.key as "j" | "k");
+          if (expandedId !== null) setExpandedId(attention[next]?.attentionKey ?? null);
+          const nextPetition = attention[next]?.petitio;
+          if (window.matchMedia("(min-width: 840px)").matches && nextPetition !== undefined) markRead(nextPetition.id);
           return next;
         });
         setFocusRequest((request) => request + 1);
         return;
       }
-      if (e.key === "Enter" && focusedId !== undefined) {
-        markRead(focusedId);
-        setExpandedId(focusedId);
+      if (e.key === "Enter" && focusedItem !== undefined && liveSelectedItem === focusedItem) {
+        if (focusedItem.destination === "board") {
+          onOpenBoard?.(focusedItem.id);
+          return;
+        }
+        if (focusedPetition !== undefined) markRead(focusedPetition.id);
+        setExpandedId(focusedItem.attentionKey);
         return;
       }
       if (e.key === "Escape") {
@@ -196,13 +250,13 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
         setFocusRequest((request) => request + 1);
         return;
       }
-      const decisionVisible = !decisionUnavailable && (window.matchMedia("(min-width: 840px)").matches || expandedId !== null);
-      const action = resolveVerbAction(e.key, decisionVisible ? (focusedId ?? null) : null, focusedId, reason);
+      const decisionVisible = !decisionUnavailable && focusedPetition !== undefined && (window.matchMedia("(min-width: 840px)").matches || expandedId !== null);
+      const action = resolveVerbAction(e.key, decisionVisible ? focusedPetition.id : null, focusedPetition?.id, reason);
       if (action) submit(action.petitioId, action.verb);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [petitiones, focusedId, expandedId, reason, decisionUnavailable]);
+  }, [attention, focusedItem, focusedPetition, liveSelectedItem, expandedId, reason, decisionUnavailable, onOpenBoard]);
 
   function submit(petitioId: string, verb: Verb): void {
     if (sendingRef.current) return;
@@ -235,7 +289,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
 
   const status = screenStatus("inbox", {
     loaded,
-    empty: data.petitiones.length === 0 && data.opera.length === 0,
+    empty: attention.length === 0,
     failed: outcome === "error" ? WRITE_FAILED : readFailed ? true : undefined,
     refused: outcome === "refused" ? (error ?? "") : undefined,
     pending: sending,
@@ -245,8 +299,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
 
   return (
     <InboxView
-      petitiones={data.petitiones}
-      opera={data.opera}
+      items={attention}
       focusIndex={focusIndex}
       expandedId={expandedId}
       focusRequest={focusRequest}
@@ -265,6 +318,7 @@ export function Inbox({ onStatus, onNeedsYouCount }: { onStatus?: (status: Scree
       onFocusChange={chooseIndex}
       onExpandChange={setExpandedId}
       onRead={markRead}
+      onOpenBoard={(opusId) => onOpenBoard?.(opusId)}
       onReturnToList={() => setFocusRequest((request) => request + 1)}
       onSubmit={submit}
     />

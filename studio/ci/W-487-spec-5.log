@@ -1,0 +1,34 @@
+# opus: W-487
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a696a421351184108
+# outcome: passed
+# at: 2026-11-01T07:46:38.908Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-487.md blob:cfaf7824c0b8b7f1a64b5a9685338d9de5baecfd
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"cfaf7824c0b8b7f1a64b5a9685338d9de5baecfd","at":"2026-11-01T07:46:34.772Z"}
+
+## Findings
+1. advisory — brief:48 This comes from the same class as my round-2 finding 2. The prototype caps `.inbox__route` at `max-width: 112px`, which is narrower than `Opens Board drawer` in 11px mono. The only destination label a Board-owned row has is therefore always cut to "Opens Board dra…": it is cut at 1280 (`inbox-sample-1280.png`) and at 840 (`inbox-board-only-840.png`) even though the ask kinds beside it are short. "Truncates first" was meant to apply only when the ask kinds need the room. Replacement for the brief:48 clause: "the route label yields to the ask kinds, truncating only when the ask kinds would otherwise not fit, and shows `Opens Board drawer` in full whenever both fit". In w025.css, drop the fixed 112px cap. [severity: S4] [class: ui×sense-on-screen] — check: none: a W-487-b2 served assertion that the Board-only row's `.inbox__route` scrollWidth <= clientWidth at 1280 and 840
+2. advisory — brief:19 The revision replaced the whole Intent paragraph, not only the sentence the ui-lead's finding 1 named. Three statements were dropped with it: replyable questions keep their Inbox detail; the Board strip routes questions to Inbox and Board-only asks to the drawer; and no deep route, second count, endpoint, write shape or drawer is added. brief:50 and Out of scope (brief:106-107) still carry all three, so nothing is lost in substance. Replacement: append to brief:19 "A row with an Inbox decision keeps its existing detail and answer controls in Inbox, and a combined row exposes a small `Open Board actions` control. The Board strip uses the same ownership: replyable questions open their Inbox detail, while Board-only asks reuse the lifecycle-card drawer. No public deep route, second count, endpoint, write shape or drawer is added." [severity: S4] [class: spec×prose-contradiction-under-revision] — check: none
+3. advisory — brief:98 `w409-served.out` and `w463-served.out` date from 13:00, which is before the round-4 prototype (mbox 15:28). They were run on the earlier head 0df08ccb, not on the signed head 08490bc9. The round-4 delta touches only `InboxView.tsx`, `w025.css` and the W-487 tests. The W-409 and W-463 served rows assert the Board, the strip and the badges, so the claim still holds in substance. The evidence is stale, not false. Replacement: none. The builder reruns `w409.spec.ts` and `w463.spec.ts` on the build head, and brief:98 can stay. [severity: S4] [class: mechanism×red-certifies-wrong-tree] — check: none: the served-evidence census should compare each cited output's prototype head with the mbox head
+
+## Verdict
+All three of the ui-lead's round-3 blockers (studio/ci/W-487-spec-3.log), which are also my three round-2 advisories, are adopted as written. Each is pinned by an assertion of the kind she asked for:
+- Board-only reading-pane content (opus id, title, ask kinds, one `Open Board drawer`, no action bar) is pinned in served b2 for initial, pointer and keyboard (j, Enter) selection at 840 and 1280.
+- Full ask-kind text is pinned in served b2 by a scrollWidth check and a vertical-containment check at 1280, 640 and 390. The check uses "Greenlight, 2 Inbox decisions, Human gate", and question rows have no `.inbox__route`.
+- The Board asker and dates are pinned in Node b2 by rendered markup. `Board` + `27 Oct` and `Board` + `–` appear, and the assigned owner never appears as asker.
+
+Nothing else changed in substance. The delta is Status, the mbox hash, the 840 width rows, Default 3 and Out of scope, all of which follow from the adoption. The prototype's source delta is limited to `InboxView.tsx` and `w025.css`. Board.ts, App, Sidebar and the routing code are unchanged.
+
+The evidence is fresh and true:
+- The signed brief blob is cfaf782.
+- The mbox sha256 matches, and it reapplies to tree b6627787.
+- All 8 commits build.
+- The four reds are new `ERR_ASSERTION` records.
+- W-487 and W-407 served pass on the new head.
+
+The three findings are advisory, for the builder.
+VERDICT: PASS

@@ -1,10 +1,10 @@
 import { useEffect, useRef, type JSX } from "react";
 import type { InboxResponse } from "../api.js";
+import type { AttentionRow, CardRow } from "../lib/board.js";
 import { askBlocks, canSubmit, datePresentation, evidenceLinks, type Verb } from "./inboxLogic.js";
 
 export interface InboxViewProps {
-  petitiones: InboxResponse["petitiones"];
-  opera: InboxResponse["opera"];
+  items: AttentionRow[];
   focusIndex: number;
   /** The item opened as the narrow full-screen detail; wide layouts always show the focused item. */
   expandedId?: string | null;
@@ -24,6 +24,7 @@ export interface InboxViewProps {
   onFocusChange: (index: number) => void;
   onExpandChange?: (id: string | null) => void;
   onRead?: (id: string) => void;
+  onOpenBoard?: (opusId: string) => void;
   onReturnToList?: () => void;
   onSubmit: (petitioId: string, verb: Verb) => void;
 }
@@ -35,26 +36,59 @@ const VERBS: { verb: Verb; key?: string }[] = [
   { verb: "delegate" },
 ];
 
+function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
+  return ask.kind === "greenlight"
+    ? "Greenlight"
+    : ask.kind === "inbox"
+      ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
+      : "Human gate";
+}
+
+function askKindText(item: AttentionRow): string {
+  return item.asks?.map(askKindLabel).join(", ") ?? "Waiting on you";
+}
+
+function attentionAsker(item: AttentionRow): string {
+  return item.petitio?.from ?? "Board";
+}
+
+function attentionDate(item: AttentionRow): string {
+  if (item.petitio !== undefined) return datePresentation(item.petitio.opened);
+  return item.waitingSince === undefined ? "–" : datePresentation(item.waitingSince);
+}
+
+/** A withdrawn detail owns the selection until the Patron chooses a live row. */
+export function liveSelectedAttentionItem(
+  selectedItem: AttentionRow | undefined,
+  detachedPetition: InboxResponse["petitiones"][number] | null,
+): AttentionRow | undefined {
+  return detachedPetition === null ? selectedItem : undefined;
+}
+
 export function InboxView(props: InboxViewProps): JSX.Element {
   const {
-    petitiones, focusIndex, expandedId = null, focusRequest = 0,
+    items, focusIndex, expandedId = null, focusRequest = 0,
     reason, error, confirmation, notice, busy = false, readPetitionIds = new Set<string>(),
     noticeIsFailure = false,
     detachedPetition = null, decisionUnavailable = false,
     onReasonChange, onFocusChange, onExpandChange = () => undefined, onReturnToList = () => undefined, onSubmit,
-    onRead = () => undefined,
+    onRead = () => undefined, onOpenBoard = () => undefined,
   } = props;
-  const focusedPetition = petitiones[focusIndex];
-  const selectedPetition = detachedPetition ?? petitiones.find((petitio) => petitio.id === expandedId) ?? focusedPetition;
+  const focusedItem = items[focusIndex];
+  const selectedItem = items.find((item) => item.attentionKey === expandedId) ?? focusedItem;
+  const liveSelectedItem = liveSelectedAttentionItem(selectedItem, detachedPetition);
+  const item = liveSelectedItem;
+  const focusedPetition = focusedItem?.petitio;
+  const selectedPetition = detachedPetition ?? selectedItem?.petitio;
   const focusedItemRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (focusRequest === 0) return;
     focusedItemRef.current?.focus({ preventScroll: true });
     focusedItemRef.current?.scrollIntoView({ block: "nearest" });
-  }, [focusRequest, focusedPetition?.id]);
+  }, [focusRequest, focusedItem?.attentionKey]);
 
-  if (petitiones.length === 0 && detachedPetition === null) {
+  if (items.length === 0 && detachedPetition === null) {
     return (
       <div className="inbox inbox--empty">
         <h1 className="inbox__title">Inbox</h1>
@@ -86,13 +120,15 @@ export function InboxView(props: InboxViewProps): JSX.Element {
         <section className="inbox__list-pane" aria-label="Needs your decision">
           {notice !== undefined && <p className={["screen-notice", noticeIsFailure && "inbox__notice--failure"].filter(Boolean).join(" ")}>{notice}</p>}
           <div className="inbox__queue" role="listbox" aria-label="Needs your decision">
-            {petitiones.length === 0 ? <p className="inbox__empty">Nothing waiting on you</p> : petitiones.map((petitio, index) => {
+            {items.length === 0 ? <p className="inbox__empty">Nothing waiting on you</p> : items.map((item, index) => {
               const hasFocus = index === focusIndex;
-              const unread = !readPetitionIds.has(petitio.id);
-              const notified = datePresentation(petitio.opened);
+              const petitio = item.petitio;
+              const unread = petitio !== undefined && !readPetitionIds.has(petitio.id);
+              const notified = attentionDate(item);
+              const asks = askKindText(item);
               return (
                 <button
-                  key={petitio.id}
+                  key={item.attentionKey}
                   type="button"
                   className={["inbox__item", "inbox__row", hasFocus && !decisionUnavailable && "inbox__item--focused", unread && "inbox__item--unread"].filter(Boolean).join(" ")}
                   data-focused={hasFocus && !decisionUnavailable}
@@ -101,13 +137,23 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   aria-selected={hasFocus && !decisionUnavailable}
                   tabIndex={hasFocus ? 0 : -1}
                   onFocus={() => onFocusChange(index)}
-                  onClick={() => { onFocusChange(index); onRead(petitio.id); onExpandChange(petitio.id); }}
+                  onClick={() => {
+                    onFocusChange(index);
+                    if (item.destination === "board") {
+                      onOpenBoard(item.id);
+                      return;
+                    }
+                    if (petitio !== undefined) onRead(petitio.id);
+                    onExpandChange(item.attentionKey);
+                  }}
                 >
                   <span className="inbox__row-meta">
-                    <span className="inbox__sella">{petitio.from}</span>
+                    <span className="inbox__sella">{attentionAsker(item)}</span>
                     <span className="inbox__date">{notified}</span>
                   </span>
-                  <span className="inbox__subject">{petitio.subject}</span>
+                  <span className="inbox__subject">{petitio?.subject ?? item.title}</span>
+                  <span className={["inbox__ask-kind", item.destination === "inbox" && "inbox__ask-kind--full"].filter(Boolean).join(" ")}>{asks}</span>
+                  {item.destination === "board" && <span className="inbox__route">Opens Board drawer</span>}
                 </button>
               );
             })}
@@ -119,12 +165,27 @@ export function InboxView(props: InboxViewProps): JSX.Element {
         </section>
 
         <section className="inbox__reading-pane" aria-label="Selected decision">
-          {selectedPetition && (
+          {liveSelectedItem?.destination === "board" && (
+            <div className="inbox__expansion inbox__expansion--board">
+              <div className="inbox__reading-scroll">
+                <div className="inbox__reading">
+                  <div className="inbox__meta"><span>{liveSelectedItem.id}</span><span>from Board</span><span>{attentionDate(liveSelectedItem)}</span></div>
+                  <h2 className="inbox__expanded-subject">{liveSelectedItem.title}</h2>
+                  <p className="inbox__board-asks">{askKindText(liveSelectedItem)}</p>
+                  <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(liveSelectedItem.id)}>Open Board drawer</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {selectedPetition && (detachedPetition !== null || (item && item.destination === "inbox")) && (
             <div className="inbox__expansion">
               <div className="inbox__reading-scroll">
                 <div className="inbox__reading">
                   <div className="inbox__meta"><span>{selectedPetition.opus}</span><span>from {selectedPetition.from}</span><span>{datePresentation(selectedPetition.opened)}</span></div>
                   <h2 className="inbox__expanded-subject">{selectedPetition.subject}</h2>
+                  {liveSelectedItem?.boardEntry && liveSelectedItem.asks?.some((ask) => ask.kind !== "inbox") && (
+                    <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(liveSelectedItem.id)}>Open Board actions</button>
+                  )}
                   <div className="inbox__ask">
                     {selectedPetition.body ? askBlocks(selectedPetition.body).map((block, index) => {
                       if (block.kind === "unordered") return <ul key={index}>{block.items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ul>;

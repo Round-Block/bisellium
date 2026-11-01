@@ -1,0 +1,26 @@
+# opus: W-487
+# phase: spec
+# round: 9
+# sella: ui-lead
+# session: 01a195fb-94a1-7363-a8c1-c480f157353b
+# outcome: passed
+# at: 2026-11-01T08:07:55.425Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# dispatch_prompt: ci/W-487-ui-prompt-9.md
+# design_digest: sha256:a2a1f1b9cd4ab61030770f0a33ea082e7485daa7b9edea8106e38917d4f37e4a
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":9,"actor":"ui-lead","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"7a13b8533d63450e9950d9bbe783c5e68803a6f8","at":"2026-11-01T08:07:49.672Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+- ci/W-487-spec-6.log #1: closed — Brief:48 adopts the replacement wording, and w025.css removes the fixed 112px cap. The Inbox captures at 1280, 840, 640 and 390 show `Opens Board drawer` in full alongside complete ask kinds; W-487-b2 adds explicit label-fit assertions.
+
+## Recommendation
+
+The screens now read right: Board-owned asks clearly name their destination, their wide reading pane provides useful context, and mixed rows retain the reply controls and small Board action.
+The earlier ask-kind and Board asker/date fixes remain intact, and the sample, many and zero captures show consistent badge counts.
+The agent-written unified collection makes sense on these screens while preserving the Patron’s Outlook split and date presentation.
+Verdict: passed

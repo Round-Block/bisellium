@@ -74,10 +74,10 @@ test("W-463-b1 variant C keeps one lifecycle card and one strip membership at 12
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w463=b1-${width}#/board`);
-    await expect(page.locator(".board__waiting-item"), `${width}: the four ask sources form one strip membership each`).toHaveCount(4);
+    await expect(page.locator(".board__waiting-item"), `${width}: the unified collection includes four Board-linked asks and the orphan question`).toHaveCount(5);
     await expect(page.locator('.board__column[data-column-id="needs_you"]'), `${width}: the W-409 membership column is replaced`).toHaveCount(0);
-    await expect(page.locator(".board__waiting-item .board__waiting-ask-value"), `${width}: strip entries show the selected five-fact handoff rail`).toHaveText(["Greenlight, 2 Inbox decisions", "Human gate", "Inbox decision", "Human gate"]);
-    for (const id of ["W-1", "W-3", "W-4", "W-8"]) {
+    await expect(page.locator(".board__waiting-item .board__waiting-ask-value"), `${width}: strip entries show the selected five-fact handoff rail`).toHaveText(["Greenlight, 2 Inbox decisions", "Human gate", "Inbox decision", "Human gate", "Inbox decision"]);
+    for (const id of ["W-1", "W-3", "W-4", "W-8", "W-404"]) {
       await expect(page.locator(`[data-waiting-id="${id}"] .board__waiting-id`), `${width}: ${id} is shown atop its strip entry`).toHaveText(id);
     }
     await expect(page.locator('[data-card-id="W-1"] .board__waiting-ask-value'), `${width}: the lifecycle waiting card shows the selected five-fact handoff rail`).toHaveText("Greenlight, 2 Inbox decisions");
@@ -87,7 +87,8 @@ test("W-463-b1 variant C keeps one lifecycle card and one strip membership at 12
     for (const [column, id] of [["planned", "W-1"], ["in_progress", "W-3"], ["verifying", "W-4"], ["awaiting_review", "W-5"], ["done", "W-6"], ["halted", "W-7"]] as const) {
       await expect(page.locator(`.board__column[data-column-id="${column}"] [data-card-id="${id}"]`), `${width}: ${id} remains once in ${column}`).toHaveCount(1);
     }
-    await expect(page.locator('[data-card-id="W-404"], [data-waiting-id="W-404"]'), `${width}: an orphan ask makes no ghost Board entry`).toHaveCount(0);
+    await expect(page.locator('[data-card-id="W-404"]'), `${width}: an orphan ask makes no ghost lifecycle card`).toHaveCount(0);
+    await expect(page.locator('[data-waiting-id="W-404"]'), `${width}: an orphan ask remains replyable from the strip`).toHaveCount(1);
     await expect(page.locator('[data-card-id="W-8"]'), `${width}: unplaced means no lifecycle card`).toHaveCount(0);
   }
 });
@@ -426,7 +427,7 @@ test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390",
   }
 });
 
-test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question-only", async ({ page }) => {
+test("W-463-b3 Inbox and Board badges share the collection total", async ({ page }) => {
   served = await startServed("w463-b3");
   const fixture: Fixture = {
     opera: [makeOpus("W-1", "backlog"), makeOpus("W-2", "building", { patron: { status: "pending" } }), makeOpus("W-3", "done")],
@@ -443,10 +444,10 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${served.baseURL}/?w463=b3-wide#/board`);
   await expect(page.locator('a[href="#/board"] .sidebar__badge--board'), "expanded Board badge counts each waiting opus once").toHaveText("2");
-  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "Inbox badge stays question-only and once per linked opus").toHaveText("1");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "Inbox badge matches the Board collection total").toHaveText("2");
   await page.getByRole("button", { name: "Collapse sidebar" }).click();
   await expect(page.locator('a[href="#/board"] .sidebar__badge--dot')).toHaveText("2");
-  await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot')).toHaveText("1");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge--dot')).toHaveText("2");
 
   for (const width of [640, 390] as const) {
     await page.setViewportSize({ width, height: 900 });
@@ -458,7 +459,7 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
     await toggle.click();
     await expect(page.locator(".sidebar__toggle .sidebar__badge--toggle"), `${width}: open overlay has no duplicate Board alert`).toHaveCount(0);
     await expect(page.locator('a[href="#/board"] .sidebar__badge--board')).toHaveText("2");
-    await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("1");
+    await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("2");
     await page.keyboard.press("Escape");
   }
 
@@ -520,7 +521,7 @@ test("W-463-b3 Board badge counts waiting opera while Inbox badge stays question
     petitiones: [{ id: "P-1", opus: "W-1", from: "producer", subject: "Choose", body: "Choose" }],
   } }));
   await page.goto(`${served.baseURL}/?w463=b3-independent-inbox#/board`);
-  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "Inbox refresh survives failed Officina and opera reads").toHaveText("1");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "the unified count fails closed when Officina and opera cannot reconcile").toHaveCount(0);
 
   // Nonempty Inbox data on the real clock: the count change the screen reports
   // never reissues the shell's mount read, so the cohort stays one request.

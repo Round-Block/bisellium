@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import * as React from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { AttentionRow } from "../src/lib/board.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (fileName: string): string => readFileSync(resolve(ROOT, fileName), "utf8");
@@ -34,13 +35,13 @@ test("W-407-b2 behaviour 2: selected reading, neutral divided rows, evidence and
   const inbox = read("apps/web/src/screens/Inbox.tsx");
   const css = read("apps/web/src/components/w025.css");
   const server = read("apps/server/src/store.ts");
-  assert.match(view, /detachedPetition \?\? petitiones\.find\(\(petitio\) => petitio\.id === expandedId\) \?\? focusedPetition/, "the reading pane follows the selected or refresh-detached petition");
+  assert.match(view, /const selectedItem = items\.find\(\(item\) => item\.attentionKey === expandedId\) \?\? focusedItem;[\s\S]*const selectedPetition = detachedPetition \?\? selectedItem\?\.petitio/, "the reading pane follows the selected attention item or refresh-detached petition");
   assert.match(view, /selectedPetition\.body \? askBlocks\(selectedPetition\.body\)/, "the ask uses the constrained safe-Markdown block renderer");
   assert.match(view, /block\.kind === "unordered"[\s\S]*<ul[\s\S]*block\.kind === "ordered"[\s\S]*<ol/, "bulleted and numbered Markdown lists render as semantic lists");
   assert.match(view, /link\.actionable[\s\S]*<a[\s\S]*inbox__evidence-unavailable[\s\S]*Not available in this console/, "only HTTP evidence is actionable");
   assert.match(css, /\.inbox__reading\s*\{[^}]*max-width:\s*72ch;/s, "reading content remains capped at a readable measure");
   assert.match(view, /inbox__row-meta[\s\S]*inbox__sella[\s\S]*inbox__date[\s\S]*inbox__subject/, "each row renders sella and notification date above its subject");
-  assert.match(css, /\.inbox__item\s*\{[^}]*grid-template-rows:\s*18px minmax\(0, 36px\);[^}]*height:\s*68px;[^}]*padding:\s*6px 12px 7px 14px;[^}]*border-bottom:\s*1px solid var\(--rule\)/s, "two-line rows have adequate padding and a hairline divider");
+  assert.match(css, /\.inbox__item\s*\{[^}]*grid-template-rows:\s*18px minmax\(0, 36px\) 16px;[^}]*height:\s*88px;[^}]*padding:\s*6px 12px 7px 14px;[^}]*border-bottom:\s*1px solid var\(--rule\)/s, "two-line rows reserve a third metadata line and keep a hairline divider");
   assert.match(css, /\.inbox__subject\s*\{[^}]*-webkit-line-clamp:\s*2;[^}]*overflow-wrap:\s*anywhere;/s, "arbitrary subjects wrap safely and stop after two lines");
   assert.match(css, /\.inbox__item--focused\s*\{[^}]*background:\s*var\(--wash\)/s, "selection uses a quiet tint");
   assert.match(css, /\.inbox__item:focus,[\s\S]*?\.inbox__item:focus-visible\s*\{[^}]*outline:\s*0;[^}]*box-shadow:\s*none/s, "keyboard focus adds no underline or box to the selected wash");
@@ -83,7 +84,7 @@ test("W-407-b3 behaviour 3: roving selection, read state and narrow detail retur
   const css = read("apps/web/src/components/w025.css");
   assert.match(view, /className=\{\["inbox__item", "inbox__row"[\s\S]*role="option"[\s\S]*aria-selected=\{hasFocus && !decisionUnavailable\}[\s\S]*tabIndex=\{hasFocus \? 0 : -1\}/, "rows use roving listbox semantics and no stale row claims selection");
   assert.match(inbox, /e\.key === "j" \|\| e\.key === "k"/, "j and k move");
-  assert.match(inbox, /e\.key === "Enter"[\s\S]*setExpandedId\(focusedId\)/, "Enter opens the selected narrow item");
+  assert.match(inbox, /e\.key === "Enter"[\s\S]*focusedItem\.destination === "board"[\s\S]*setExpandedId\(focusedItem\.attentionKey\)/, "Enter routes Board-owned asks and opens replyable narrow items");
   assert.match(inbox, /e\.key === "Escape"[\s\S]*target\.closest\("\.sidebar"\)[\s\S]*expandedId === null[\s\S]*setExpandedId\(null\)[\s\S]*setFocusRequest/, "Inbox Escape returns to the selected row without stealing sidebar Escape");
   assert.match(view, /scrollIntoView\(\{ block: "nearest" \}\)/, "selection reveal scrolls only as far as needed");
   assert.doesNotMatch(view, /behavior:\s*"smooth"|block:\s*"start"|inbox__position/, "selection has no smooth stable-offset reveal or position marker");
@@ -136,9 +137,10 @@ test("W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptiv
   assert.match(inbox, /const refreshInbox = useCallback\(\(\): void =>/, "Inbox passes one stable refresh callback");
   assert.match(inbox, /useVisibleRefresh\(refreshInbox\)/, "Inbox consumes the shared mechanism");
   assert.match(inbox, /if \(refreshingRef\.current\) \{[\s\S]*if \(refreshIntentRef\.current !== null\) pendingRefreshRef\.current = true;[\s\S]*return;/, "overlapping focus and visibility reads coalesce while an explicit answer refresh is queued");
-  assert.match(inbox, /if \(!hasSuccessfulLoadRef\.current\) setData\(EMPTY\);[\s\S]*setReadFailed\(true\)/, "only a failed first load replaces the response with the empty failure state");
+  assert.match(inbox, /if \(!hasSuccessfulLoadRef\.current\) \{[\s\S]*setData\(EMPTY\);[\s\S]*setAttention\(\[\]\);[\s\S]*\}[\s\S]*setReadFailed\(true\)/, "only a failed first load clears the response and unified collection");
+  assert.match(inbox, /Promise\.all\(\[fetchOfficina\(\), fetchOpera\(\), fetchInbox\(\)\]\)/, "refresh reads all three attention inputs together");
   assert.match(inbox, /noticeIsFailure=\{status\.state === "error" && outcome === undefined\}/, "only a failed read labels its notice as a failure");
-  assert.match(inbox, /findIndex\(\(petitio\) => petitio\.id === currentId\)[\s\S]*retainedIndex >= 0/, "refresh reconciles selection by petitio id");
+  assert.match(inbox, /findIndex\(\(item\) => item\.attentionKey === currentKey\)[\s\S]*retainedIndex >= 0/, "refresh reconciles selection by stable attention key");
   assert.match(inbox, /const keepDetached = intent === null && refreshIntentRef\.current === null[\s\S]*setDetachedPetition\(keepDetached \? currentPetition : null\)/, "an ordinary settle cannot detach an answered decision while its explicit reconciliation is queued");
   assert.match(view, /noticeIsFailure\?: boolean/, "the view accepts a semantic failure-notice flag");
   assert.match(view, /\["inbox__empty", noticeIsFailure && "inbox__notice--failure"\]/, "a failed first load keeps its empty notice semantically classified");
@@ -153,8 +155,7 @@ test("W-407-b6 behaviour 6: visible refresh is shared, current and non-disruptiv
 test("W-407-b6 behaviour 6: an empty ordinary refresh retains the withdrawn decision", async () => {
   const { InboxView } = await import("../src/screens/InboxView.js");
   const html = renderToStaticMarkup(createElement(InboxView, {
-    petitiones: [],
-    opera: [],
+    items: [],
     focusIndex: 0,
     reason: "sole draft",
     detachedPetition: {
@@ -174,4 +175,43 @@ test("W-407-b6 behaviour 6: an empty ordinary refresh retains the withdrawn deci
   assert.match(html, /This petitio no longer needs a decision\./, "the retained decision explains its withdrawal");
   assert.match(html, /value="sole draft"/, "the petition-keyed draft remains visible");
   assert.equal((html.match(/class="inbox__btn-action" disabled/g) ?? []).length, 4, "every retained-decision action is disabled");
+});
+
+test("W-407-b6 behaviour 6: a detached petition does not inherit Board actions from a replacement item", async () => {
+  const { InboxView } = await import("../src/screens/InboxView.js");
+  const html = renderToStaticMarkup(createElement(InboxView, {
+    items: [{
+      id: "W-488", title: "Replacement mixed item", state: "building", collegium: "design", sella: "builder", tokens: 0,
+      probationes: {}, attentionKey: "opus:W-488", destination: "inbox", boardEntry: true,
+      asks: [{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 1 }],
+      petitio: { id: "P-488", opus: "W-488", from: "builder", subject: "Replacement decision", body: "Replacement ask." },
+    }],
+    focusIndex: 0,
+    reason: "retained draft",
+    detachedPetition: { id: "P-407", opus: "W-407", from: "builder-a", subject: "Withdrawn decision", body: "Withdrawn ask." },
+    decisionUnavailable: true,
+    onReasonChange: () => undefined,
+    onFocusChange: () => undefined,
+    onSubmit: () => undefined,
+  }));
+  assert.doesNotMatch(html, /Open Board actions/, "a detached petition exposes no replacement item's Board action");
+});
+
+test("W-407-b6 behaviour 6: a withdrawn draft blocks the fallback Board drawer until its row is selected", async () => {
+  const inbox = read("apps/web/src/screens/Inbox.tsx");
+  const view = read("apps/web/src/screens/InboxView.tsx");
+
+  assert.match(view, /export function liveSelectedAttentionItem\([\s\S]*detachedPetition === null \? selectedItem : undefined/, "the detached-draft boundary removes the fallback live selection for every consumer");
+  assert.match(inbox, /const selectedItem = attention\.find\(\(item\) => item\.attentionKey === expandedId\) \?\? focusedItem;[\s\S]*const liveSelectedItem = liveSelectedAttentionItem\(selectedItem, detachedPetition\);[\s\S]*e\.key === "Enter" && focusedItem !== undefined && liveSelectedItem === focusedItem[\s\S]*focusedItem\.destination === "board"[\s\S]*onOpenBoard\?\.\(focusedItem\.id\)/, "Enter from a non-text target cannot open a fallback Board row while the withdrawn draft remains selected");
+  assert.match(view, /onClick=\{\(\) => \{[\s\S]*onFocusChange\(index\);[\s\S]*item\.destination === "board"[\s\S]*onOpenBoard\(item\.id\)/, "selecting the live Board row first retains its Board-drawer action");
+
+  const { liveSelectedAttentionItem } = await import("../src/screens/InboxView.js");
+  const fallbackBoardItem: AttentionRow = {
+    id: "W-488", title: "Replacement Board item", state: "building", sella: "builder",
+    gates: [], needsYou: true, asks: [{ kind: "human_gate", count: 1 }], blocked: false,
+    attentionKey: "opus:W-488", destination: "board", boardEntry: true,
+  };
+  const withdrawnDraft = { id: "P-407", opus: "W-407", from: "builder-a", subject: "Withdrawn decision", body: "Withdrawn ask." };
+  assert.equal(liveSelectedAttentionItem(fallbackBoardItem, withdrawnDraft), undefined, "the selected withdrawn draft rejects a fallback Board-owned row");
+  assert.equal(liveSelectedAttentionItem(fallbackBoardItem, null), fallbackBoardItem, "the Board-owned row becomes actionable only after the Patron selects it");
 });

@@ -63,7 +63,7 @@ const SERVED: Record<string, string[]> = {
 const render = (component: unknown, props: Record<string, unknown>): string => renderToStaticMarkup(createElement(component as ComponentType<Record<string, unknown>>, props));
 const count = (html: string, needle: string): number => html.split(needle).length - 1;
 const wired = (screen: string): void =>
-  assert.match(read("src/App.tsx"), new RegExp(`<${screen} onStatus=\\{setStatus\\}(?: on(?:NeedsYou|Waiting)Count=\\{set(?:NeedsYou|BoardWaiting)Count\\})? />`), `the shell hands ${screen} its status setter`);
+  assert.match(read("src/App.tsx"), new RegExp(`<${screen}[\\s\\S]*?onStatus=\\{setStatus\\}`), `the shell hands ${screen} its status setter`);
 
 test("W-341-b1 behaviour 1: one states matrix, one status by fixed precedence, one polite live region in the shell", async () => {
   const m = await matrix();
@@ -113,16 +113,17 @@ test("W-341-b1 behaviour 1: one states matrix, one status by fixed precedence, o
 test("W-341-b2 behaviour 2: the Inbox shows and reports loading, empty, error, refused and pending, and never invents petitions", async () => {
   await matrix();
   const view = (await load("src/screens/InboxView.tsx"))["InboxView"];
-  const base = { petitiones: [], opera: [], focusIndex: 0, reason: "", onReasonChange: () => undefined, onFocusChange: () => undefined, onSubmit: () => undefined };
+  const base = { items: [], focusIndex: 0, reason: "", onReasonChange: () => undefined, onFocusChange: () => undefined, onSubmit: () => undefined };
   assert.match(render(view, { ...base, notice: "Loading the inbox…" }), /<p class="inbox__empty">Loading the inbox…<\/p>/, "a notice replaces the empty copy while loading");
   assert.match(render(view, base), /<p class="inbox__empty">Nothing waiting on you<\/p>/, "the empty copy stands without a notice");
-  const one = { ...base, petitiones: [{ id: "A-1", opus: "W-1", from: "architect", subject: "s", body: "b" }] };
+  const one = { ...base, items: [{ attentionKey: "opus:W-1", destination: "inbox", boardEntry: false, petitio: { id: "A-1", opus: "W-1", from: "architect", subject: "s", body: "b" }, id: "W-1", title: "s", state: "question", gates: [], needsYou: true, asks: [{ kind: "inbox", count: 1 }], blocked: false }] };
   assert.match(render(view, { ...one, notice: "Sending your answer…" }), /<div class="inbox__decision-panel"><p class="screen-notice">Sending your answer…<\/p>/, "a pending notice sits in the decision panel");
   assert.equal(count(render(view, one), "screen-notice"), 0, "no notice at rest");
   wired("Inbox");
   const source = read("src/screens/Inbox.tsx");
   assert.doesNotMatch(source, /catch\(\(\) => setData\(DEV_DATA\)\)/, "a failed read never substitutes the demo petitions");
-  assert.match(source, /\.catch\(\(\) => \{\s*if \(!hasSuccessfulLoadRef\.current\) setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);/, "a failed first read is empty while a background failure retains the last truthful records");
+  assert.match(source, /\.catch\(\(\) => \{\s*if \(!hasSuccessfulLoadRef\.current\) \{\s*setData\(EMPTY\);\s*setAttention\(\[\]\);\s*\}\s*setLoaded\(true\);\s*setReadFailed\(true\);/, "a failed first read clears the unified collection while a background failure retains the last truthful records");
+  assert.match(source, /Promise\.all\(\[fetchOfficina\(\), fetchOpera\(\), fetchInbox\(\)\]\)/, "Inbox reconciles all three attention inputs in one read");
   assert.match(source, /screenStatus\("inbox", \{/, "the Inbox derives its one status from the matrix");
   assert.match(source, /pending: sending/, "an answer in flight is the pending state");
   assert.match(source, /useEffect\(\(\) => onStatus\?\.\(reportedStatus\), \[reportedStatus\.state, reportedStatus\.text\]\)/, "the Inbox reports each state or recorded-answer change");

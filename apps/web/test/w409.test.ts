@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import type { InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
-import { boardModel, needsYouTotal } from "../src/lib/board.js";
+import { attentionCollection, attentionTotal, boardModel } from "../src/lib/board.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const read = (path: string): string => readFileSync(resolve(HERE, "..", path), "utf8");
@@ -52,14 +52,14 @@ test("W-409-b1 behaviour 1: every Patron ask adds membership without replacing t
   const model = boardModel(officina, opera, inbox);
   const ids = (column: string): string[] => model.columns.find((entry) => entry.id === column)?.cards.map((card) => card.id) ?? [];
 
-  assert.deepEqual(model.waiting.map(({ id }) => id), ["W-1", "W-3", "W-4"], "greenlight, linked Inbox and human-gate asks each create one waiting-strip membership");
+  assert.deepEqual(model.waiting.map(({ id }) => id), ["W-1", "W-3", "W-4", "W-404"], "greenlight, linked Inbox, human-gate and orphan questions share the waiting strip collection");
   assert.deepEqual(ids("planned"), ["W-2", "W-1"], "the greenlight request remains in its ruled Planned lifecycle column");
   assert.deepEqual(ids("in_progress"), ["W-3"], "the Inbox decision remains in its in-progress lifecycle column");
   assert.deepEqual(ids("verifying"), ["W-4"], "the human-gate wait remains in its verifying lifecycle column");
   assert.deepEqual(ids("awaiting_review"), ["W-5"], "an opus without an ask remains in awaiting review");
   assert.deepEqual(ids("done"), ["W-6"], "done stays represented by its lifecycle phase");
   assert.deepEqual(ids("halted"), ["W-7"], "halted stays represented by its lifecycle phase");
-  assert.ok(!model.columns.some((column) => column.cards.some((card) => card.id === "W-404")) && !model.waiting.some((card) => card.id === "W-404"), "an ask without a Board opus creates no ghost entry");
+  assert.ok(!model.columns.some((column) => column.cards.some((card) => card.id === "W-404")) && model.waiting.some((card) => card.id === "W-404" && !card.boardEntry), "an ask without a Board opus creates attention but no ghost lifecycle card");
 
   const store = read("../server/src/store.ts");
   const board = read("src/screens/Board.tsx");
@@ -69,7 +69,7 @@ test("W-409-b1 behaviour 1: every Patron ask adds membership without replacing t
   assert.match(served, /W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390/, "the served row pins every ruled viewport");
 });
 
-test("W-409-b2 behaviour 2: Inbox question totals stay distinct from Board membership", () => {
+test("W-409-b2 behaviour 2: the unified attention total counts each opus once plus standalone questions", () => {
   const linked = [
     { id: "P-1", opus: "W-1", from: "producer", subject: "First", body: "First" },
     { id: "P-2", opus: "W-1", from: "architect", subject: "Second", body: "Second" },
@@ -85,26 +85,27 @@ test("W-409-b2 behaviour 2: Inbox question totals stay distinct from Board membe
     ],
     petitiones: [...linked, ...unlinked],
   };
-  assert.equal(needsYouTotal({ opera: [], petitiones: unlinked }), 2, "two unlinked open petitiones count two");
-  assert.equal(needsYouTotal({ opera: [], petitiones: [] }), 0, "no open Inbox questions count zero");
-  assert.equal(needsYouTotal({ opera: inbox.opera, petitiones: [] }), 0, "Board-only greenlight and human-gate asks add nothing to the Inbox badge");
-  assert.equal(needsYouTotal({ opera: [], petitiones: linked }), 1, "two linked open questions on one opus count one");
-  assert.equal(needsYouTotal({ opera: [], petitiones: [{ id: "P-orphan", opus: "W-404", from: "producer", subject: "Orphan", body: "Orphan" }] }), 1, "a linked open question without a Board entry still counts in the Inbox badge");
-  assert.equal(needsYouTotal(inbox), 3, "one linked opus plus two unlinked questions count three");
-
   const opera = [opus("W-1", "backlog"), opus("W-2", "building", { patron: { status: "pending" } }), opus("W-3", "done")];
+  const total = (ops: OpusEntry[], value: InboxResponse): number => attentionTotal(attentionCollection(officina, ops, value));
+  assert.equal(total([], { opera: [], petitiones: unlinked }), 2, "two unlinked open petitiones count two");
+  assert.equal(total([], { opera: [], petitiones: [] }), 0, "no asks count zero");
+  assert.equal(total(opera, { opera: inbox.opera, petitiones: [] }), 2, "Board-only greenlight and human-gate asks count in both badges");
+  assert.equal(total([opera[0]!], { opera: [], petitiones: linked }), 1, "two linked open questions combine with greenlight under one opus");
+  assert.equal(total([], { opera: [], petitiones: [{ id: "P-orphan", opus: "W-404", from: "producer", subject: "Orphan", body: "Orphan" }] }), 1, "a linked open question without a Board entry remains one attention item");
+  assert.equal(total(opera, inbox), 4, "two waiting opera plus two standalone questions count four");
+
   const model = boardModel(officina, opera, inbox);
-  assert.equal(model.waiting.length, 2, "the waiting-strip total is unique opus membership");
+  assert.equal(model.waiting.length, 4, "the waiting-strip total is the unified attention collection");
   assert.equal(model.columns.find((column) => column.id === "planned")?.cards.length, 1, "the Planned total is not inflated by attention membership");
-  assert.equal(model.columns.find((column) => column.id === "in_progress")?.cards.length, 1, "the human-gate opus stays in progress without entering the Inbox badge");
+  assert.equal(model.columns.find((column) => column.id === "in_progress")?.cards.length, 1, "the human-gate opus stays in progress while entering the shared attention count");
   assert.equal(model.columns.find((column) => column.id === "done")?.cards.length, 1, "an opus with no ask counts only in Done");
 
   const app = read("src/App.tsx");
   const inboxScreen = read("src/screens/Inbox.tsx");
   const served = read("tests-serve/w409.spec.ts");
-  assert.match(app, /setNeedsYouCount\(needsYouTotal\(inbox\)\)/, "the shell count uses the shared Inbox-question total");
-  assert.match(inboxScreen, /onNeedsYouCountRef\.current\?\.\(needsYouTotal\(d\)\)/, "Inbox refreshes the same Inbox-question total");
-  assert.match(served, /W-409-b2 Inbox question totals stay distinct from Board membership at 1280, 640 and 390/, "the served row pins every ruled viewport");
+  assert.match(app, /setAttentionCount\(attentionTotal\(attentionCollection\(officina, opera, inbox\)\)\)/, "the shell count uses the shared attention collection");
+  assert.match(inboxScreen, /onNeedsYouCountRef\.current\?\.\(attentionTotal\(nextAttention\)\)/, "Inbox refreshes the same attention total");
+  assert.match(served, /W-409-b2 unified attention totals match on Inbox and Board at 1280, 640 and 390/, "the served row pins every ruled viewport");
 });
 
 test("W-409-b3 behaviour 3: cards distinguish greenlight, Inbox decisions and an unlinked human gate", () => {
