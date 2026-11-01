@@ -1,0 +1,57 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-452-b4\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-11-01T04:24:23.766Z
+# sella: builder.W-452
+# tree: tree:ac517e370a2e9da0a5ebf2277441fb8ff04b0473
+# ticket: {"opus":"W-452","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-452/studio","head":"beb654c0af35fe5a314d8da1606160f1c7f0fd49","brief":"6a238ebfdf08e36d16da0d32dfba5647ac0e1afb","at":"2026-11-01T04:24:22.858Z"}
+
+TAP version 13
+# Subtest: W-452-b4 behaviour 4: a UI ruling by the design lead the manifest's spec_seats names counts beside the Patron's, and no other seat's does
+not ok 1 - W-452-b4 behaviour 4: a UI ruling by the design lead the manifest's spec_seats names counts beside the Patron's, and no other seat's does
+  ---
+  duration_ms: 3152.321186
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/next-review.test.ts:149:168'
+  failureType: 'testCodeFailure'
+  error: |-
+    a design-lead ruling counts once spec_seats names design-lead the design signer
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    actor: producer
+    why: D-960 is not a structured Patron UI ruling for this opus; it waits for one that binds certifies: tree:ea7b6d224eba65cf97f7a5acb18b5fb74082aea0, design_digest: sha256:27c7316f04a5d0d18e988085488757d10331e91cee5b57427a9025027044921f, at or after 2026-10-02T03:00:00.000Z: the clerk writes decisions/D-<n>.md (by: patron, provenance: stated, opus: W-900) in .worktrees/W-900/studio from the Patron's word on its ci/shots/W-900/, then bisellium amend W-900 --ui-ruling D-<n> --reason "<the Patron's word>" --studio .worktrees/W-900/studio, commit both on opus/W-900, then rerun
+    head: opus/W-900 630327f64dd5
+    health: no step recorded
+    ticket: none
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 pr held'
+    - 'next: W-900 pr named'
+                      ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 pr named'
+  actual: 'next: W-900 pr held'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/next-world.test.ts:807:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/next-review.test.ts:2168:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3209.64746
