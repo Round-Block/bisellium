@@ -784,3 +784,47 @@ test("W-418-b3 behaviour 3: the guard hands the main thread every review notice 
   assert.deepEqual(await guard(bash("ls", { cwd: repo })), { code: 2, err: `${once}1) PR #1234567890123 needs your review: a large number (code-owned: d)` }, "a 13-digit PR number's notice is handed");
   assert.deepEqual(left("1234567890123", "1234567890123456"), [false, true], "the large notice is taken; a 16-digit name stays");
 });
+
+/** W-494 (studio/briefs/W-494.md): a subagent's transcript records, in the shapes Claude Code 2.1.312 writes them
+ *  (`~/.bisellium-evidence/W-494-spec/probe/hook-input-probe.out`). */
+const w494Start = (id: string): string =>
+  JSON.stringify({ type: "user", message: { role: "user", content: [{ tool_use_id: `toolu_${id}`, type: "tool_result", content: `Command running in background with ID: ${id}.` }] }, toolUseResult: { stdout: "", stderr: "", interrupted: false, backgroundTaskId: id } });
+const w494Notice = (id: string): string =>
+  JSON.stringify({ type: "attachment", attachment: { type: "queued_command", prompt: `<task-notification>\n<task-id>${id}</task-id>\n<status>completed</status>\n</task-notification>`, commandMode: "task-notification" } });
+const w494Stopped = (id: string): string =>
+  JSON.stringify({ type: "user", toolUseResult: { message: `Successfully stopped task: ${id} (sleep 300)`, task_id: id, task_type: "local_bash", command: "sleep 300" } });
+const w494Tool = (name: string): string => JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "tool_use", id: `toolu_${name}`, name, input: {} }] } });
+/** A session transcript `session.jsonl` under a fresh directory and, under it, agent `r1`'s transcript holding `lines`. */
+function w494Session(lines: string[]): { session: string; agent: string } {
+  const t = tmp();
+  const session = join(t, "session.jsonl");
+  writeFileSync(session, `${w494Start("bmain0001")}\n`);
+  const agent = join(t, "session", "subagents", "agent-r1.jsonl");
+  mkdirSync(dirname(agent), { recursive: true });
+  writeFileSync(agent, `${lines.join("\n")}\n`);
+  return { session, agent };
+}
+const W494_RUNNER = (transcript: string): Record<string, unknown> => ({ agent_id: "r1", agent_type: "ladder-runner", transcript_path: transcript });
+
+test("W-494-b1 behaviour 1: a subagent's second background Bash call is refused while its first run is live", async () => {
+  const { session, agent } = w494Session(["not json", w494Start("bdone0001"), w494Notice("bdone0001"), w494Start("blive0001"), w494Tool("Bash")]);
+  const second = "npm run -s bisellium -- ci --opus W-1 --studio studio > ci.log 2>&1; echo $? > ci.exit";
+  const r = await guard(bash(second, W494_RUNNER(session), true));
+  assert.equal(r.code, 2, "a second background run while the first is live is refused");
+  assert.match(r.err, /blive0001/, "the refusal names the live run");
+  assert.doesNotMatch(r.err, /bdone0001/, "a run whose notification arrived is not named");
+  assert.doesNotMatch(r.err, /bmain0001/, "the session's own runs are not the agent's");
+  assert.match(r.err, /until \[ -f X\.exit \]/, "the refusal names the exit-file poll");
+  assert.match(r.err, /TaskStop/);
+  assert.equal((await guard(bash(second, W494_RUNNER(agent), true))).code, 2, "a transcript_path naming the agent's own transcript is read too");
+  assert.equal((await guard(bash(second, W494_RUNNER(session)))).code, 0, "a foreground call is not judged");
+  assert.equal((await guard(bash(second, { transcript_path: session }, true))).code, 0, "the main thread is not judged");
+  const ended = w494Session([w494Start("blive0001"), w494Notice("blive0001")]);
+  assert.equal((await guard(bash(second, W494_RUNNER(ended.session), true))).code, 0, "a run ended by its notification frees the slot");
+  const stopped = w494Session([w494Start("blive0001"), w494Stopped("blive0001")]);
+  assert.equal((await guard(bash(second, W494_RUNNER(stopped.session), true))).code, 0, "a run stopped with TaskStop frees the slot");
+  const none = w494Session([w494Tool("Bash")]);
+  assert.equal((await guard(bash(second, W494_RUNNER(none.session), true))).code, 0, "the first background run is allowed");
+  assert.equal((await guard(bash(second, W494_RUNNER(join(tmp(), "gone.jsonl")), true))).code, 0, "fail-open: no transcript");
+  assert.equal((await guard(bash(second, { ...W494_RUNNER(session), agent_id: "../r1" }, true))).code, 0, "an agent id that is no plain name is not judged");
+});
