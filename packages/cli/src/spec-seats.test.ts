@@ -227,3 +227,150 @@ test("W-452-b2 behaviour 2: an opus whose first spec log predates since keeps to
   assert.equal(ready.step, "ready", "after the branch, the branch's logs keep today's seats and the reviewed spec reaches ready");
   assert.deepEqual(ready.extra, [["attributed", "architect (signed ci/W-900-spec-1.log)"]], "ready is attributed to the architect");
 });
+
+// ---------------------------------------------------------------------------
+// W-452-b3: verdict --phase spec judges the seat next names as the signer: its signature owes the promise ledger.
+// ---------------------------------------------------------------------------
+const NOW = new Date("2026-11-02T00:00:00.000Z");
+const LEDGER_BRIEF = ["# W-300 fixture brief", "## Intent", "After this, `ready` refuses the brief and `next` orders the signer.", "Files owned: `packages/cli/src/next.ts`.", "`check` blocks it; `ready` again.", ""].join("\n");
+const COVERING = ["brief:3, ready, refuses: packages/x.ts:10 — holds", "brief:3, next, orders the signer: NX:20 — scoped", "brief:5, check and ready: CK:30 — holds"].join("\n");
+
+/** A temp officina: the five collegia's seats, spec_seats (or none) and opus W-300 of `collegium`, with a brief naming verbs. */
+function officina(collegium: string, seats = true): string {
+  const root = mkdtempSync(join(tmpdir(), "bisellium-w452-"));
+  roots.push(root);
+  const row = (s: Dict): string => `  - { ${Object.entries(s).map(([k, v]) => `${k}: ${String(v)}`).join(", ")} }`;
+  writeFileSync(
+    join(root, "bisellium.yml"),
+    [
+      "bisellium: 1",
+      "studio: W-452 seats",
+      "patron: patron",
+      "collegia:",
+      "  - { id: production, name: Production, magister: producer }",
+      "  - { id: design, name: Design, magister: architect }",
+      "  - { id: engineering, name: Engineering, magister: eng-lead }",
+      "  - { id: qa, name: QA, magister: qa-lead }",
+      "  - { id: ops, name: Ops, magister: ops-lead }",
+      "sellae:",
+      ...SELLAE.map(row),
+      "probationes:",
+      "  - { id: review, name: Review, kind: agent }",
+      "wip_limit: 10",
+      `spec_reviewer: ${SR}`,
+      ...(seats ? [SEATS_TEXT] : [""]),
+    ].join("\n"),
+  );
+  mkdirSync(join(root, "opera"));
+  writeFileSync(join(root, "opera", "W-300.md"), `---\nid: W-300\ntitle: W-300\nkind: feature\ncollegium: ${collegium}\nstate: greenlit\nspec: briefs/W-300.md\nprobationes: {}\n---\n`);
+  mkdirSync(join(root, "briefs"));
+  writeFileSync(join(root, "briefs", "W-300.md"), LEDGER_BRIEF);
+  writeFileSync(join(root, "ledger.md"), COVERING);
+  return root;
+}
+function sign(root: string, sella: string, body: string, round = 1): { exit: number; stderr: string; written: boolean } {
+  const from = join(root, `from-${sella}-${round}.md`);
+  writeFileSync(from, body);
+  let stderr = "";
+  const error = console.error;
+  console.error = (...args: unknown[]) => void (stderr += `${args.map(String).join(" ")}\n`);
+  const log = console.log;
+  console.log = () => {};
+  let exit: number;
+  try {
+    exit = runVerdict(["W-300", "--round", String(round), "--sella", sella, "--outcome", "passed", "--phase", "spec", "--from", from, "--studio", root], { now: NOW }).exitCode;
+  } finally {
+    [console.error, console.log] = [error, log];
+  }
+  const path = join(root, "ci", `W-300-spec-${round}.log`);
+  const written = existsSync(path);
+  if (written) rmSync(path);
+  return { exit, stderr, written };
+}
+const NO = "## Findings\nNo findings\n";
+const UI_PROMPT = "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n";
+const UI_INPUT = [
+  "## Findings",
+  "No findings",
+  "The navigation relationships remain legible across the complete narrow viewport arrangement.",
+  "## Recommendation",
+  "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.",
+  "Additional original observations cover focus movement responsive density and stable content grouping throughout.",
+  "Verdict: passed",
+  "",
+].join("\n");
+/** the ui-lead's UI spec input on the kind: ui opus W-301 (W-338), as verdict.test.ts's b8 records one */
+function uiInput(root: string): { exit: number; stderr: string; written: boolean } {
+  const from = join(root, "from-ui-lead.md");
+  writeFileSync(from, UI_INPUT);
+  let stderr = "";
+  const error = console.error;
+  console.error = (...args: unknown[]) => void (stderr += `${args.map(String).join(" ")}\n`);
+  const log = console.log;
+  console.log = () => {};
+  let exit: number;
+  try {
+    exit = runVerdict(["W-301", "--round", "1", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--dispatch-prompt", "ci/dispatch.md", "--from", from, "--studio", root], { now: NOW }).exitCode;
+  } finally {
+    [console.error, console.log] = [error, log];
+  }
+  const path = join(root, "ci", "W-301-spec-1.log");
+  const written = existsSync(path);
+  if (written) rmSync(path);
+  return { exit, stderr, written };
+}
+/** the stderr after an assertion message, or nothing: a message never ends in a bare colon */
+const said = (r: { stderr: string }): string => (r.stderr.trim() === "" ? "" : `: ${r.stderr.trim()}`);
+
+test("W-452-b3 behaviour 3: verdict --phase spec owes the promise ledger from the seat its collegium names, as next names it", () => {
+  const ops = officina("ops");
+  const missing = sign(ops, "ops-lead", NO);
+  assert.equal(missing.exit, 2, `ops-lead's signature of an ops opus without a ledger is refused${said(missing)}`);
+  assert.match(missing.stderr, /W-300: promise ledger: briefs\/W-300\.md names a CLI verb in code/, "the refusal names the promise ledger");
+  assert.equal(missing.written, false, "the refused signature writes no log");
+  const covered = sign(ops, "ops-lead", `Promise ledger: ${join(ops, "ledger.md")}\n\n${NO}`);
+  assert.equal(covered.exit, 0, `ops-lead's signature with a covering ledger is recorded${said(covered)}`);
+  assert.equal(covered.written, true, "the signature is written");
+  const architect = sign(ops, "architect", NO);
+  assert.equal(architect.exit, 0, `on an ops opus the architect is not the signer and owes no ledger${said(architect)}`);
+
+  const production = sign(officina("production"), "ladder-lead", NO);
+  assert.equal(production.exit, 2, "ladder-lead signs a production opus and owes the ledger");
+  const engineering = sign(officina("engineering"), "architect", NO);
+  assert.equal(engineering.exit, 2, "the architect signs an engineering opus and owes the ledger");
+
+  // D-150 B: a spec log from before since keeps today's signer, the design magister
+  const old = officina("ops");
+  mkdirSync(join(old, "ci"));
+  writeFileSync(join(old, "ci", "W-300-spec-1.log"), specLogText(1, "architect", BEFORE).replaceAll("W-900", "W-300"));
+  const oldArchitect = sign(old, "architect", NO, 2);
+  assert.equal(oldArchitect.exit, 2, `an opus started before since keeps the architect as its signer${said(oldArchitect)}`);
+  const oldOps = sign(old, "ops-lead", NO, 2);
+  assert.equal(oldOps.exit, 0, `and ops-lead is not its signer${said(oldOps)}`);
+
+  const today = sign(officina("ops", false), "ops-lead", NO);
+  assert.equal(today.exit, 0, "with no spec_seats ops-lead is not a signer (today's routing)");
+
+  const broken = officina("qa");
+  const refused = sign(broken, "qa-lead", NO);
+  assert.equal(refused.exit, 2, "a collegium spec_seats does not declare is refused");
+  assert.match(refused.stderr, /W-300: bisellium\.yml#spec_seats: collegia declares no seats for qa/, "the refusal names the setting");
+  assert.equal(refused.written, false, "and writes nothing");
+  assert.equal(readFileSync(join(broken, "briefs", "W-300.md"), "utf8"), LEDGER_BRIEF, "the brief is untouched");
+
+  // every spec verdict path reads spec_seats: the ui-lead's UI input on a kind: ui opus is refused, as next holds, when it is malformed
+  const ui = officina("design");
+  writeFileSync(join(ui, "opera", "W-301.md"), "---\nid: W-301\ntitle: W-301\nkind: ui\ncollegium: design\nstate: greenlit\nspec: briefs/W-301.md\nprobationes: {}\n---\n");
+  writeFileSync(join(ui, "briefs", "W-301.md"), "# UI brief\n\nBuild the settled interface.\n");
+  mkdirSync(join(ui, "ci"));
+  writeFileSync(join(ui, "ci", "dispatch.md"), UI_PROMPT);
+  const recordedInput = uiInput(ui);
+  assert.equal(recordedInput.exit, 0, `with a readable spec_seats the ui-lead's UI input is recorded${said(recordedInput)}`);
+  assert.equal(recordedInput.written, true, "the UI input is written");
+  const manifestPath = join(ui, "bisellium.yml");
+  writeFileSync(manifestPath, readFileSync(manifestPath, "utf8").replace(`  since: ${SINCE}`, "  since: soon"));
+  const heldInput = uiInput(ui);
+  assert.equal(heldInput.exit, 2, `the ui-lead's UI input with a malformed spec_seats is refused${said(heldInput)}`);
+  assert.match(heldInput.stderr, /W-301: bisellium\.yml#spec_seats: since must be an ISO instant/, "the UI input's refusal names the setting");
+  assert.equal(heldInput.written, false, "and writes no UI input");
+});
