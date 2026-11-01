@@ -1475,6 +1475,10 @@ function w468World(tag: string, body: string): World {
   addReview(w, "failed", 1, T.review1, body);
   handoffAt(w, "wt", T.handoffFresh);
   ticketed(w);
+  // W-491: the tickets setting rides in round 1's log commit, so it is the studio's configuration, never a fix after the round
+  const logAt = git(w.wt, ["log", "-1", "--format=%H", "--", `studio/ci/${OPUS}-review-1.log`]).trim();
+  git(w.wt, ["reset", "-q", "--soft", `${logAt}^`]);
+  git(w.wt, ["commit", "-q", "-m", `studio(${OPUS}): review round 1 failed, tickets required`]);
   return w;
 }
 /** The fix round's test commit: a source change after the failed round (the cited row now fails at its declared assertion). */

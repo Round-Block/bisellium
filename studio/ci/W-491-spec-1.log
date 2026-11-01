@@ -1,0 +1,24 @@
+# opus: W-491
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T09:13:58.079Z
+# tree: tree:6b40b67c73a0cf6c8fbaa4b28e89181a40a78643
+# brief: briefs/W-491.md blob:0f97b9c4bb17fb49d84efb824def97f38f596b18
+# ticket: {"opus":"W-491","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"1bda5b8489cf26f6f9e8a12efb3f4e19898b4c63","brief":"0f97b9c4bb17fb49d84efb824def97f38f596b18","at":"2026-11-01T09:13:53.781Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-491-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — fixedOutside counts a commit after the failed round's log that changes the exact path <studio>/bisellium.yml, alone or beside bookkeeping, as a fix; the opus record, ci logs, other officina files and master's merged commits still are not; the manifest path is one module-private helper, manifestRel, shared with mergedTree, whose W-259 refusal is unchanged — check: brief:25-29, red-logs.out, kills.out
+2. advisory — recordOnly and its seven other callers are unchanged and stated as limits; renames, buildReviewDrift's earlier hold and an officina other than studio/ are stated limits of the count — check: readers.out, brief:25, brief:49-50
+3. advisory — the red fails by assertion on its own red commit, accepted by the replay classifier and failing at its declared assertion by master's W-473 reader; nine one-hunk kills of next.ts each fail their row at the assertion they guard; the live case on opus/W-452 counts 0 on master and 1 (ccc2c52c) on the prototype — check: red-accept.out, declared.out, kills.out, landing.out
+4. advisory — the Codex test check lists one flip (W-328-b1, OUTSIDE), named; running the ladder's test files whole found two it missed, W-167-b1 (two trial assertions now expect review round 2) and W-468-b1 (its fixture's tickets commit folded into the round's log commit, no assertion changed), both named in Files owned; next-review, next-branch, next-ladder and next-spec pass whole at the tip — check: fixture-census.md, gates-proto.out, census-green.out
+5. advisory — this brief's ledger passes the writer and the full admission admits it; lint, format:check and typecheck pass; no code-owned path is touched — check: ledger-check.out, admission.out, gates-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-491.md`, prototype `prototype.mbox` (two patches) over master 1bda5b84; one behaviour, 1 point, no code-owned path.
