@@ -1,0 +1,18 @@
+# opus: W-491
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19679-e09d-76b2-b2da-613ab2a29d53
+# outcome: passed
+# at: 2026-11-01T09:41:08.973Z
+# tree: tree:639b999dc5d8b7c4e0b2fe67846615c8651770b7
+# brief: briefs/W-491.md blob:0f97b9c4bb17fb49d84efb824def97f38f596b18
+# ticket: {"opus":"W-491","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-491/studio","head":"74f76f29b06c03f4eaeb57ca9ba42acded3c6d0a","brief":"0f97b9c4bb17fb49d84efb824def97f38f596b18","at":"2026-11-01T09:38:50.366Z"}
+
+## Findings
+1. advisory — AGENTS.md:69 Commits dd3606aa and d550fce6 omit the required `Co-Authored-By:` trailer naming their sella. [severity: S4] [class: process×commit-trailer-missing] — check: none: commit.trailer
+
+## Verdict
+The behavior, declared regression flips, red, mutation evidence, and automated gates satisfy acceptance; the attribution issue is non-blocking.
+VERDICT: PASS
