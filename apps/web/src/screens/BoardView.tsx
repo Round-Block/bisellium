@@ -30,8 +30,6 @@ export interface BoardViewProps {
   notice?: string;
 }
 
-const UNAVAILABLE_REASON = "one officina per serve process; no project registry exists to detect or add one";
-
 function cardClassName(card: CardRow): string {
   // Ruling: on a card that is both blocked and needs-you, only "bad" shows
   // (DIRECTION §3: at most one amber region, and a failure outranks a wait).
@@ -250,7 +248,6 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
           <select className="board__project-select" disabled aria-label="project" value={studio} onChange={() => undefined}>
             <option value={studio}>{studio}</option>
           </select>
-          <span className="board__project-select-reason">{UNAVAILABLE_REASON}</span>
         </div>
         {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
       </div>

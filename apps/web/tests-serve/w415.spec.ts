@@ -158,8 +158,9 @@ test("W-415-b2 narrow content remains contained and D-116 Board boundaries remai
   await page.setViewportSize({ width: 640, height: 900 }); await page.goto(`${served!.baseURL}/?demo#/board`); await expect.poll(() => page.locator(".board__column").count()).toBeGreaterThan(1);
   const columns = await page.locator(".board__columns").evaluate((n) => ({ client: n.clientWidth, scroll: n.scrollWidth })); expect(columns.scroll, "Board phase strip remains its sole local scroller").toBeGreaterThan(columns.client);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), "Board has no page overflow").toBeLessThanOrEqual(0);
-  const [reason, liveness] = await Promise.all([page.locator(".board__project-select-reason").boundingBox(), page.locator(".board__liveness").boundingBox()]);
-  expect(liveness!.y, "640 Board liveness wraps below the project explanation").toBeGreaterThan(reason!.y);
+  await expect(page.locator(".board__project-select-reason"), "W-411 removes implementation prose from the Board header").toHaveCount(0);
+  const [project, liveness] = await Promise.all([page.locator(".board__project-select").boundingBox(), page.locator(".board__liveness").boundingBox()]);
+  expect(liveness!.y, "640 Board liveness keeps its own line below the project name").toBeGreaterThan(project!.y);
 });
 
 test("W-415-b3 the closed 390px shell retains its approved 48px top row", async ({ page }) => {

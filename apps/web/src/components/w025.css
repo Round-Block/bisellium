@@ -2001,13 +2001,6 @@
   background: var(--surface);
 }
 
-.board__project-select-reason {
-  min-width: 0;
-  font-size: 12px;
-  color: var(--ink-3);
-  overflow-wrap: anywhere;
-}
-
 .board__liveness {
   flex-shrink: 0;
   margin-left: auto;
