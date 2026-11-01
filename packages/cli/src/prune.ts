@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, lstatSync, readdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { readFront, readManifest } from "@bisellium/adapter-native";
+import { parseFrontMatter, readFront, readManifest } from "@bisellium/adapter-native";
 import { ensureRealDirectory } from "@bisellium/commands/ids.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { reclaimWorktrees } from "@bisellium/shim";
@@ -229,7 +229,6 @@ function saveWorktreeDiff(root: string, path: string, name: string, nowMs: numbe
  */
 export function sweepWorktrees(repo: string, studio: string, o: { opus?: string; prs: PrLookup; nowMs: number }): SweepResult {
   const out: SweepResult = { removed: [], kept: [], adminLeft: 0 };
-  if (o.opus === undefined) return out;
   let root: string;
   try {
     root = realpathSync(repo);
@@ -272,7 +271,7 @@ export function sweepWorktrees(repo: string, studio: string, o: { opus?: string;
       if (s === undefined || s === "OPEN") continue;
       pr = s;
     }
-    const reason: { remove: string } | { keep: string } = { remove: `opus ${o.opus} done` };
+    const reason = o.opus !== undefined ? { remove: `opus ${o.opus} done` } : endedReason(root, studio, c.ids, pr, c.dirty, c.w.head);
     if ("keep" in reason) {
       keep(c.w.path, reason.keep);
       continue;
@@ -295,6 +294,35 @@ export function sweepWorktrees(repo: string, studio: string, o: { opus?: string;
   git(["worktree", "prune"], root);
   out.adminLeft = git(["worktree", "prune", "--dry-run", "--verbose"], root).stderr.split("\n").filter((l) => l.startsWith("Removing ")).length;
   return out;
+}
+
+/** Prune's reason to remove a candidate, or to keep it. */
+function endedReason(root: string, studio: string, ids: string[], pr: PrState, dirty: boolean, head: string | undefined): { remove: string } | { keep: string } {
+  if (opusDone(studio, ids)) return { remove: `opus ${ids.join(", ")} done` };
+  if (pr === "MERGED" || pr === "CLOSED") return { remove: `its PR is ${pr.toLowerCase()}` };
+  if (dirty) return { keep: "uncommitted changes, and neither its opus nor its PR has ended" };
+  if (head !== undefined && git(["merge-base", "--is-ancestor", head, "refs/remotes/origin/master"], root).status === 0) return { remove: "its commit is in origin/master" };
+  return { keep: "not in origin/master, and neither its opus nor its PR has ended" };
+}
+
+/** True when at least one carried id names an opus record and every such record reads `state: done`. */
+function opusDone(studio: string, ids: string[]): boolean {
+  let seen = 0;
+  for (const id of ids) {
+    const file = readContainedRegularFile(studio, `opera/${id}.md`, "opera");
+    if ("error" in file) {
+      if (file.code === "ENOENT") continue;
+      return false;
+    }
+    try {
+      const data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), file.relative).data;
+      if (typeof data !== "object" || data === null || (data as Record<string, unknown>)["state"] !== "done") return false;
+    } catch {
+      return false;
+    }
+    seen++;
+  }
+  return seen > 0;
 }
 
 const PRUNE_USAGE = "usage: bisellium prune --studio <dir> [--repo <dir>]";

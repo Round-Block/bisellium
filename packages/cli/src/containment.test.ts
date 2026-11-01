@@ -625,6 +625,7 @@ const PINNED_B: PinnedB[] = [
     disposition: "guarded",
     why: "W-131: the opus id is captured by /^([A-Za-z]+-\\d+)-…/ from a ci/ directory entry and goes only to readContainedRegularFile, which refuses symlinks and escapes before the state read; the deleted ci/<name> is checked by the same helper before unlinkSync",
   },
+  { key: "packages/cli/src/prune.ts:opusDone#1", disposition: "guarded", why: "W-489: the id is a /[A-Z]+-\\d+/ token of a worktree's name or branch and goes only to readContainedRegularFile, which refuses symlinks and escapes before the state read" },
   { key: "packages/cli/src/retro.ts:draftRetro#1", disposition: "derived", why: "L-### from createNextRecord" },
   { key: "packages/cli/src/retro.ts:draftRetro#2", disposition: "derived", why: "P-### from createNextRecord" },
   {
