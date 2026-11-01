@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (path: string): string => readFileSync(resolve(ROOT, path), "utf8");
 
-test("W-415-b1 behaviour 1: D-119's icon rail carries D-120's sole Inbox notification dot", () => {
+test("W-415-b1 behaviour 1: D-119's icon rail carries D-120's shared attention dots", () => {
   const app = read("apps/web/src/App.tsx"), sidebar = read("apps/web/src/components/Sidebar.tsx"), css = read("apps/web/src/components/w025.css"), served = read("apps/web/tests-serve/w415.spec.ts");
   assert.match(app, /min-width: 960px/, "the shell owns D-119's wide boundary");
   assert.match(sidebar, /aria-label=\{collapsed \? "Expand sidebar" : "Collapse sidebar"\}/, "toggle has D-119's exact state names");
@@ -19,14 +19,15 @@ test("W-415-b1 behaviour 1: D-119's icon rail carries D-120's sole Inbox notific
   assert.match(sidebar, /<svg[\s\S]*stroke="currentColor"[\s\S]*strokeWidth="1\.5"/, "icons share one monochrome stroke style");
   assert.match(sidebar, /title=\{collapsed \? e\.label/, "collapsed links have tooltips");
   assert.match(sidebar, /aria-current=\{active \? "page"/, "current screen is marked");
-  assert.match(sidebar, /role="img" aria-label=\{`Inbox, \$\{needsYouCount\} needs you`\}/, "Inbox count is a labelled badge");
-  assert.match(sidebar, /collapsed && needsYouCount > 9 \? "9\+" : needsYouCount/, "D-120 caps only the visible collapsed dot at 9+");
+  assert.match(sidebar, /aria-label=\{`Inbox, \$\{attentionCount\} needs you`\}/, "Inbox count is a labelled shared-attention badge");
+  assert.match(sidebar, /aria-label=\{`Board, \$\{attentionCount\} waiting on you`\}/, "Board count is the same labelled shared-attention badge");
+  assert.match(sidebar, /collapsed && attentionCount > 9 \? "9\+" : attentionCount/, "D-120 caps only the visible collapsed dots at 9+");
   assert.match(sidebar, /collapsed && "sidebar__badge--dot"/, "only collapsed navigation receives the D-120 dot form");
   assert.match(css, /\.sidebar__badge--dot\s*\{[^}]*position:\s*absolute;[^}]*top:\s*1px;[^}]*right:\s*1px;[^}]*width:\s*16px;[^}]*height:\s*16px;/s, "the dot is bounded at the icon's top-right");
   assert.match(css, /\.sidebar__badge--dot\s*\{[^}]*font-size:\s*11px;[^}]*line-height:\s*14px;/s, "D-120 dot uses the ruled micro-count typography");
   assert.match(served, /toggle retains identical viewport coordinates/, "served rows pin the toggle's fixed position");
-  assert.match(served, /expanded Inbox keeps its full uncapped count/, "served evidence preserves D-120's expanded exception");
-  assert.match(served, /zero Inbox count removes the collapsed notification dot/, "served evidence pins the zero case");
+  assert.match(served, /expanded badges keep the same full uncapped count/, "served evidence preserves the expanded shared count");
+  assert.match(served, /zero shared count removes both collapsed notification dots/, "served evidence pins the shared zero case");
 });
 
 test("W-415-b2 behaviour 2: screens reflow without unnamed page overflow", () => {

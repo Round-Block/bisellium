@@ -18,7 +18,7 @@ import {
 } from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 import { useVisibleRefresh } from "../lib/useVisibleRefresh.js";
-import { attentionCollection, type AttentionRow } from "../lib/board.js";
+import { attentionCollection, attentionTotal, type AttentionRow } from "../lib/board.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
 
@@ -134,7 +134,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
       setDetachedPetition(keepDetached ? currentPetition : null);
       setExpandedId(detailWasOpen ? (keepDetached ? `detached:${currentPetition.id}` : (nextAttention[nextIndex]?.attentionKey ?? null)) : null);
       if (intent?.reveal && nextAttention.length > 0) setFocusRequest((request) => request + 1);
-      onNeedsYouCountRef.current?.(nextAttention.length);
+      onNeedsYouCountRef.current?.(attentionTotal(nextAttention));
       hasSuccessfulLoadRef.current = true;
       setLoaded(true);
       setReadFailed(false);

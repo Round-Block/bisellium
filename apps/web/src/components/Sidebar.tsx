@@ -8,14 +8,15 @@ import { NAV_ENTRIES, needsYouVisible } from "../lib/nav.js";
 
 export interface SidebarProps {
   route: string;
-  needsYouCount: number;
-  boardWaitingCount?: number;
+  attentionCount: number;
   collapsed?: boolean;
   overlay?: boolean;
   overlayOpen?: boolean;
   onToggle?: () => void;
   onNavigate?: () => void;
 }
+
+const attentionVisible = needsYouVisible;
 
 type IconName = "panel" | "inbox" | "board" | "seats" | "officina";
 
@@ -30,10 +31,9 @@ function SidebarIcon({ name }: { name: IconName }) {
   return <svg className="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export function Sidebar({ route, needsYouCount, boardWaitingCount = 0, collapsed = false, overlay = false, overlayOpen = false, onToggle = () => undefined, onNavigate = () => undefined }: SidebarProps) {
-  const visibleInboxCount = collapsed && needsYouCount > 9 ? "9+" : needsYouCount;
-  const visibleBoardCount = collapsed && boardWaitingCount > 9 ? "9+" : boardWaitingCount;
-  const toggleBoardDescriptionId = overlay && collapsed && needsYouVisible(boardWaitingCount)
+export function Sidebar({ route, attentionCount, collapsed = false, overlay = false, overlayOpen = false, onToggle = () => undefined, onNavigate = () => undefined }: SidebarProps) {
+  const visibleAttentionCount = collapsed && attentionCount > 9 ? "9+" : attentionCount;
+  const toggleBoardDescriptionId = overlay && collapsed && attentionVisible(attentionCount)
     ? "sidebar-toggle-board-waiting"
     : undefined;
   const afterRender = (action: () => void) => window.requestAnimationFrame(action);
@@ -70,23 +70,23 @@ export function Sidebar({ route, needsYouCount, boardWaitingCount = 0, collapsed
         onClick={toggle}
       >
         <SidebarIcon name="panel" />
-        {overlay && collapsed && needsYouVisible(boardWaitingCount) && <span className="sidebar__badge sidebar__badge--dot sidebar__badge--toggle" aria-hidden="true" data-count={visibleBoardCount}><span className="sidebar__badge-text">{visibleBoardCount}</span></span>}
+        {overlay && collapsed && attentionVisible(attentionCount) && <span className="sidebar__badge sidebar__badge--dot sidebar__badge--toggle" aria-hidden="true" data-count={visibleAttentionCount}><span className="sidebar__badge-text">{visibleAttentionCount}</span></span>}
       </button>
-      {toggleBoardDescriptionId !== undefined && <span id={toggleBoardDescriptionId} className="sidebar__toggle-description" aria-hidden="true">Board, {boardWaitingCount} waiting on you</span>}
+      {toggleBoardDescriptionId !== undefined && <span id={toggleBoardDescriptionId} className="sidebar__toggle-description" aria-hidden="true">Board, {attentionCount} waiting on you</span>}
       <div id="sidebar-links" className="sidebar__links">
       {NAV_ENTRIES.map((e) => {
         const active = route === e.route;
         const classes = ["sidebar__link", active && "sidebar__link--active"].filter(Boolean).join(" ");
-        const inboxCountLabel = e.route === "inbox" && needsYouVisible(needsYouCount) ? `Inbox ${needsYouCount}` : undefined;
-        const boardCountLabel = e.route === "board" && needsYouVisible(boardWaitingCount) ? `Board ${boardWaitingCount}` : undefined;
+        const inboxCountLabel = e.route === "inbox" && attentionVisible(attentionCount) ? `Inbox ${attentionCount}` : undefined;
+        const boardCountLabel = e.route === "board" && attentionVisible(attentionCount) ? `Board ${attentionCount}` : undefined;
         return (
           <a key={e.route} className={classes} href={e.href} title={collapsed ? e.label : undefined} aria-label={inboxCountLabel ?? boardCountLabel ?? (collapsed ? e.label : undefined)} aria-current={active ? "page" : undefined} onClick={dismiss}>
             <SidebarIcon name={e.route as Exclude<IconName, "panel">} />
             <span className="sidebar__link-text">{e.label}</span>
-            {e.route === "inbox" && needsYouVisible(needsYouCount) && " "}
-            {e.route === "inbox" && needsYouVisible(needsYouCount) && <span className={["sidebar__badge", collapsed && "sidebar__badge--dot"].filter(Boolean).join(" ")} role="img" aria-label={`Inbox, ${needsYouCount} needs you`}>{visibleInboxCount}</span>}
-            {e.route === "board" && needsYouVisible(boardWaitingCount) && " "}
-            {e.route === "board" && needsYouVisible(boardWaitingCount) && <span className={["sidebar__badge", "sidebar__badge--board", collapsed && "sidebar__badge--dot"].filter(Boolean).join(" ")} role="img" aria-label={`Board, ${boardWaitingCount} waiting on you`}>{visibleBoardCount}</span>}
+            {e.route === "inbox" && attentionVisible(attentionCount) && " "}
+            {e.route === "inbox" && attentionVisible(attentionCount) && <span className={["sidebar__badge", collapsed && "sidebar__badge--dot"].filter(Boolean).join(" ")} role="img" aria-label={`Inbox, ${attentionCount} needs you`}>{visibleAttentionCount}</span>}
+            {e.route === "board" && attentionVisible(attentionCount) && " "}
+            {e.route === "board" && attentionVisible(attentionCount) && <span className={["sidebar__badge", "sidebar__badge--board", collapsed && "sidebar__badge--dot"].filter(Boolean).join(" ")} role="img" aria-label={`Board, ${attentionCount} waiting on you`}>{visibleAttentionCount}</span>}
           </a>
         );
       })}

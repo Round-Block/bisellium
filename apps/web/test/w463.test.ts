@@ -48,7 +48,7 @@ test("W-463-b1 behaviour 1: variant C replaces the membership column with one wa
   const model = boardModel(officina, opera, inbox);
 
   assert.deepEqual(model.columns.map(({ id }) => id), ["planned", "in_progress", "verifying", "awaiting_review", "done", "halted"], "Needs-you is no longer a lifecycle column");
-  assert.deepEqual(model.waiting.map(({ id }) => id), ["W-1", "W-3", "W-4", "W-8"], "zero, one and many asks count each waiting opus once in the strip");
+  assert.deepEqual(model.waiting.map(({ id }) => id), ["W-1", "W-3", "W-4", "W-8", "W-404"], "zero, one and many asks count each waiting opus once, including a replyable orphan question");
   assert.deepEqual(model.waiting[0]?.asks, [{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 2 }], "the strip retains Greenlight and counted Inbox decision words");
   assert.deepEqual(model.waiting[1]?.asks, [{ kind: "human_gate", count: 1 }], "the strip retains the Human gate word");
   assert.deepEqual(model.waiting[2]?.asks, [{ kind: "inbox", count: 1 }], "a lone Inbox decision remains a Board wait");
@@ -56,7 +56,7 @@ test("W-463-b1 behaviour 1: variant C replaces the membership column with one wa
   const phaseCards = model.columns.flatMap(({ cards }) => cards.map(({ id }) => id));
   assert.deepEqual(phaseCards, ["W-2", "W-1", "W-3", "W-4", "W-5", "W-6", "W-7"], "every opus remains exactly once in its lifecycle phase");
   assert.equal(phaseCards.filter((id) => id === "W-1").length, 1, "a waiting opus has no duplicate card");
-  assert.equal(model.waiting.some(({ id }) => id === "W-404"), false, "an ask with no Board entry creates no strip item");
+  assert.equal(model.waiting.some(({ id, boardEntry }) => id === "W-404" && !boardEntry), true, "an ask with no Board entry creates a replyable strip item but no lifecycle card");
   assert.deepEqual(model.unplaced, ["W-8"], "an unplaced waiting opus keeps its strip entry outside lifecycle columns");
   assert.equal(boardModel(officina, [opus("W-8", "done")], { opera: [], petitiones: [] }).waiting.length, 0, "an opus with no ask leaves the strip empty");
 });
@@ -107,23 +107,23 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
   assert.match(served, /many-entry strip keeps the W-410 whole-strip height[\s\S]*empty strip collapses to exactly its label line[\s\S]*one-entry strip keeps the W-410 whole-strip height/, "the served row pins collapsed zero and W-410-height populated strips");
 });
 
-test("W-463-b3 behaviour 3: the Board badge reuses strip membership while Inbox keeps D-135", () => {
+test("W-463-b3 behaviour 3: both badges reuse the unified strip membership under D-151", () => {
   const app = read("src/App.tsx");
   const api = read("src/api.ts");
   const sidebar = read("src/components/Sidebar.tsx");
   const css = read("src/components/w025.css");
   const served = read("tests-serve/w463.spec.ts");
 
-  assert.match(app, /if \(route === "board"\) return;[\s\S]*if \(active\) setBoardWaitingCount\(boardModel\(officina, opera, inbox\)\.waiting\.length\)/, "the mounted Board ignores obsolete shell snapshots and supplies its live badge count");
-  assert.match(app, /fetchInbox\(\{ shared: true \}\)[\s\S]*active && route !== "inbox"[\s\S]*setNeedsYouCount\(needsYouTotal\(inbox\)\)/, "the Inbox badge refreshes independently of Officina and opera reads");
+  assert.match(app, /const \[attentionCount, setAttentionCount\] = useState\(0\)/, "the shell owns one count for the Inbox and Board badges");
+  assert.match(app, /attentionTotal\(attentionCollection\(officina, opera, inbox\)\)/, "off-screen shell reads count the same collection");
   assert.match(api, /let inboxInFlight: \{ promise: Promise<InboxResponse>; settledAt\?: number \} \| undefined;[\s\S]*INBOX_SHARE_WINDOW_MS = 50;[\s\S]*opts\?\.shared === true && inboxInFlight !== undefined[\s\S]*return inboxInFlight\.promise;[\s\S]*getJSON<InboxResponse>\("\/api\/inbox"\)/, "only the shell's mount reads join an in-flight Inbox request; every other caller issues a fresh GET");
   assert.doesNotMatch(app.replace(/fetchInbox\(\{ shared: true \}\)/g, ""), /fetchInbox\(/, "the shell reads Inbox only through the shared mount read");
-  assert.match(sidebar, /e\.route === "board"[\s\S]*Board, \$\{boardWaitingCount\} waiting on you/, "the Board link owns a labelled nonzero badge");
-  assert.match(sidebar, /collapsed && boardWaitingCount > 9 \? "9\+" : boardWaitingCount/, "the collapsed Board dot caps only its visible count");
+  assert.match(sidebar, /e\.route === "board"[\s\S]*Board, \$\{attentionCount\} waiting on you/, "the Board link owns the same labelled nonzero badge as Inbox");
+  assert.match(sidebar, /collapsed && attentionCount > 9 \? "9\+" : attentionCount/, "collapsed dots cap only their visible count");
   assert.match(sidebar, /overlay && collapsed[\s\S]*sidebar__badge--toggle/, "the closed narrow shell keeps the chosen mock's Board alert on its toggle");
-  assert.match(sidebar, /aria-describedby=\{toggleBoardDescriptionId\}[\s\S]*Board, \{boardWaitingCount\} waiting on you/, "the ruled toggle name gains a full-count waiting description");
+  assert.match(sidebar, /aria-describedby=\{toggleBoardDescriptionId\}[\s\S]*Board, \{attentionCount\} waiting on you/, "the ruled toggle name gains a full-count waiting description");
   assert.match(css, /\.shell--sidebar-collapsed \.sidebar__link\[href="#\/board"\]/, "the collapsed Board icon anchors its dot");
-  assert.match(served, /Inbox badge stays question-only/, "served geometry distinguishes both navigation totals");
+  assert.match(served, /Inbox and Board badges share the collection total/, "served geometry equates both navigation totals");
 });
 
 test("W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handler", () => {
@@ -132,7 +132,7 @@ test("W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handle
   const css = read("src/components/w025.css");
   const served = read("tests-serve/w463.spec.ts");
 
-  assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced", "waiting"\)\}[\s\S]*<WaitingFacts card=\{card\} compact \/>/, "a waiting entry takes its accessible name from the visible five-fact rail, identifies its return-focus origin and remains wired to the shared card selection callback");
+  assert.match(view, /className="board__waiting-item"[\s\S]*card\.destination === "inbox"[\s\S]*onOpenInbox\(card\.attentionKey\)[\s\S]*onSelectCard\(card\.id, columnId \?\? "unplaced", "waiting"\)/, "a waiting entry routes questions to Inbox and Board-owned asks to the shared card selection callback, identifying its return-focus origin");
   assert.match(served, /unplaced waiting entry opens the existing drawer/, "an unplaced strip entry has an explicit drawer outcome");
   assert.match(view, /<Card[\s\S]*onSelect=\{onSelectCard\}/, "lifecycle cards retain the same selection callback");
   assert.match(board, /sel\.columnId === "unplaced"[\s\S]*model\.unplaced\.includes\(sel\.id\)[\s\S]*model\.waiting\.some/, "an unplaced waiting selection stays open in the existing drawer");

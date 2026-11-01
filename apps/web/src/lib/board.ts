@@ -111,10 +111,9 @@ export interface BoardModel {
   unplaced: string[];
 }
 
-/** D-135: the Inbox badge counts open questions only. Linked questions share
- * one opus key; every unlinked question keeps its own petitio key. */
-export function needsYouTotal(inbox: Pick<InboxResponse, "opera" | "petitiones">): number {
-  return new Set(inbox.petitiones.map((petitio) => petitio.opus === undefined ? `petitio:${petitio.id}` : `opus:${petitio.opus}`)).size;
+/** D-151: every consumer reports the size of the collection it renders. */
+export function attentionTotal(attention: readonly AttentionRow[]): number {
+  return attention.length;
 }
 
 export function humanGateIds(o: Pick<OfficinaResponse, "probationes">): Set<string> {

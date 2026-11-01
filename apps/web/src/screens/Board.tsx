@@ -18,7 +18,7 @@ import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../ap
 import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
-import { boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
+import { attentionTotal, boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
   studio: "",
@@ -90,7 +90,7 @@ export function Board({ onStatus, onWaitingCount, initialSelectionId, onInitialS
     modelRef.current = model;
   }, [model]);
   useEffect(() => {
-    if (everLoaded) onWaitingCount?.(model.waiting.length);
+    if (everLoaded) onWaitingCount?.(attentionTotal(model.waiting));
   }, [everLoaded, model.waiting.length, onWaitingCount]);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 612px)");

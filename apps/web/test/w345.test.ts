@@ -56,14 +56,14 @@ test("W-345-b3 behaviour 3: each reason belongs to one petition", async () => {
   assert.equal(readReason(both, undefined), "", "no selected petition exposes no reason");
   const source = read("src/screens/Inbox.tsx");
   assert.match(source, /const \[reasons, setReasons\] = useState<Record<string, string>>\(\{\}\);/, "Inbox stores reasons by petition id");
-  assert.match(source, /const decisionId = detachedPetition\?\.id \?\? focusedId;[\s\S]*const reason = reasonForPetition\(reasons, decisionId\);/, "the visible reason follows the selected or retained petition id");
+  assert.match(source, /const decisionId = detachedPetition\?\.id \?\? focusedPetition\?\.id;[\s\S]*const reason = reasonForPetition\(reasons, decisionId\);/, "the visible reason follows the selected or retained petition id");
 });
 
 test("W-345-b4 behaviour 4: only a failed first Inbox read clears records", () => {
   const source = read("src/screens/Inbox.tsx");
   assert.match(
     source,
-    /\.catch\(\(\) => \{\s*if \(!hasSuccessfulLoadRef\.current\) setData\(EMPTY\);\s*setLoaded\(true\);\s*setReadFailed\(true\);/,
+    /\.catch\(\(\) => \{\s*if \(!hasSuccessfulLoadRef\.current\) \{\s*setData\(EMPTY\);\s*setAttention\(\[\]\);\s*\}\s*setLoaded\(true\);\s*setReadFailed\(true\);/,
     "a first-load failure is empty while a background failure retains the last successful response",
   );
 });
@@ -100,10 +100,9 @@ test("W-345-b6 behaviour 6: Inbox offers DIRECTION's verbs and records Defer as 
   const view = (await import("../src/screens/InboxView.js")) as Record<string, unknown>;
   const html = renderToStaticMarkup(
     React.createElement(view["InboxView"] as ComponentType<Record<string, unknown>>, {
-      petitiones: [{ id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }],
-      opera: [],
+      items: [{ attentionKey: "opus:W-1", destination: "inbox", boardEntry: true, petitio: { id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }, id: "W-1", title: "A decision", state: "greenlit", gates: [], needsYou: true, asks: [{ kind: "inbox", count: 1 }], blocked: false }],
       focusIndex: 0,
-      expandedId: "P-1",
+      expandedId: "opus:W-1",
       reason: "because",
       confirmation: "Recorded defer answer for P-1; the petition remains open awaiting the asker's reply.",
       onReasonChange: () => undefined,
@@ -121,8 +120,7 @@ test("W-345-b6 behaviour 6: Inbox offers DIRECTION's verbs and records Defer as 
   assert.match(html, /Recorded defer answer for P-1; the petition remains open awaiting the asker&#x27;s reply\./, "the exact Defer record effect is visible after success");
   const withoutSelection = renderToStaticMarkup(
     React.createElement(view["InboxView"] as ComponentType<Record<string, unknown>>, {
-      petitiones: [{ id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }],
-      opera: [],
+      items: [{ attentionKey: "opus:W-1", destination: "inbox", boardEntry: true, petitio: { id: "P-1", opus: "W-1", from: "architect", subject: "A decision", body: "Evidence" }, id: "W-1", title: "A decision", state: "greenlit", gates: [], needsYou: true, asks: [{ kind: "inbox", count: 1 }], blocked: false }],
       focusIndex: 9,
       expandedId: null,
       reason: "",
@@ -135,10 +133,10 @@ test("W-345-b6 behaviour 6: Inbox offers DIRECTION's verbs and records Defer as 
   );
   assert.match(withoutSelection, /Recorded decline answer for P-2; the petition is resolved\./, "confirmation renders without a selected petition");
   const inbox = read("src/screens/Inbox.tsx");
-  assert.match(inbox, /setFocusIndex\(\(index\) => reconcileFocusIndex\(index, petitiones\.length\)\);/, "a refreshed list reconciles selection after removal");
-  assert.match(inbox, /onNeedsYouCountRef\.current\?\.\(needsYouTotal\(d\)\);/, "a successful refresh reports the remaining distinct-Inbox-question count through the stable callback's current listener");
+  assert.match(inbox, /setFocusIndex\(\(index\) => reconcileFocusIndex\(index, attention\.length\)\);/, "a refreshed attention list reconciles selection after removal");
+  assert.match(inbox, /onNeedsYouCountRef\.current\?\.\(attentionTotal\(nextAttention\)\);/, "a successful refresh reports the remaining shared-attention count through the stable callback's current listener");
   const app = read("src/App.tsx");
-  assert.match(app, /<Inbox onStatus=\{setStatus\} onNeedsYouCount=\{setNeedsYouCount\} \/>/, "the shell badge follows the Inbox's refreshed needs-you count");
+  assert.match(app, /onNeedsYouCount=\{setAttentionCount\}/, "both shell badges follow the Inbox's refreshed attention count");
   assert.match(inbox, /const reportedStatus = confirmation !== undefined[\s\S]*?status\.state === "ready"[\s\S]*?text: confirmation/, "the existing shell live region receives the recorded effect");
   const css = read("src/components/w025.css");
   const confirmationRule = /\.inbox__confirmation\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
