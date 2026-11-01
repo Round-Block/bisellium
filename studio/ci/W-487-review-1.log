@@ -1,0 +1,24 @@
+# opus: W-487
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1966d-69a1-7663-b51e-056c5573f601
+# outcome: failed
+# at: 2026-11-01T09:28:22.997Z
+# tree: tree:1f64ffc817c437a4d434966220debdf268e43efd
+# ui_input: ci/W-487-spec-12.log
+# design_digest: sha256:a7681271043b5f5fbdeef38bbee73f20513dee7402c6ac9b8f84503b6e72c041
+# ticket: {"opus":"W-487","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-487/studio","head":"fa569dd5c222a46f02e5e53c430ebbeeb803dd75","brief":"17b1c32725ab791a6a7e63f889e227f9aa1f0534","at":"2026-11-01T09:25:12.049Z"}
+
+## Findings
+1. blocking — apps/web/src/screens/Inbox.tsx:125 [severity: S1] Reconciliation equates a retained `attentionKey` with a retained decision. If an ordinary refresh removes the drafted petition but leaves another question, Greenlight, or Human gate on the same opus, `keepDetached` is false and the reading pane silently replaces the draft instead of preserving it as withdrawn, contrary to brief:79. — check: apps/web/tests-serve/w487.spec.ts b2: type a ratio on a mixed row, remove only its petition during an ordinary refresh while retaining its Board ask, and require the original draft with disabled withdrawn controls [class: tests×tests-that-agree-with-the-bug]
+2. blocking — apps/web/src/screens/InboxView.tsx:177 [severity: S1] A detached petition derives `Open Board actions` from the fallback live `selectedItem`; when the removed petition is followed by a mixed row, its withdrawn detail exposes a clickable action for the other opus, violating brief:54’s preserved detached-reply interaction. — check: apps/web/test/w407.test.ts: render a detached petition beside a mixed replacement item and require no Board action until that live item is selected [class: tests×one-sided-bound-assertion]
+3. blocking — apps/web/src/App.tsx:100 [severity: S1] The mounted-screen short-circuit retains the shell’s previous nonzero count, while first-load failures in Inbox or Board never report zero. Navigating from a successfully counted Officina/Seats screen into a failing Inbox or Board therefore leaves both badges nonzero although the mounted collection is empty, contrary to brief:52. — check: apps/web/tests-serve/w487.spec.ts b4: seed a nonzero off-screen count, hash-navigate without reload, fail the mounted screen’s first reconciliation, and require both badges hidden [class: tests×one-sided-bound-assertion]
+
+## UI input disposition
+The authoritative ui-lead input is adopted: the attached desktop and phone pairs show complete ask-kind and route labels, useful wide reading context, consistent badge totals, contained Board overflow, and stable Seats/Officina hierarchy without a visual blocker. Those static images cannot exercise the ordinary-refresh and failed-first-load transitions above, so they do not alter the failing behavioural verdict.
+
+## Verdict
+The declared paths, assertion reds, automated gates, and static responsive presentation are sound, but three in-domain reconciliation paths violate the brief’s draft-preservation and single-total promises.
+VERDICT: FAIL
