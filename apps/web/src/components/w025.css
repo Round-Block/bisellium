@@ -2690,6 +2690,11 @@
     white-space: nowrap;
   }
 
+  .board__strip-item[aria-current="true"] {
+    border-color: var(--ink);
+    background: var(--rule);
+  }
+
   .board__columns {
     scroll-snap-type: x mandatory;
     padding: var(--sp-2) 0;

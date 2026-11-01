@@ -68,7 +68,7 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
 
   assert.doesNotMatch(view, /Nothing waiting on you/, "the Board owns no empty-state phrase");
   assert.match(view, /board__waiting--empty[\s\S]*<strong>\{waiting\.length\}<\/strong>[\s\S]*waiting\.length > 0 && <div className=\{`board__waiting-rail\$\{canScrollRight/, "the mounted empty strip collapses to its label and zero count");
-  assert.match(view, /<WaitingStrip waiting=\{model\.waiting\}[\s\S]*<div className="board__strip">/, "the waiting strip always precedes phase navigation");
+  assert.match(view, /<WaitingStrip waiting=\{model\.waiting\}[\s\S]*<PhaseNavigation columns=\{model\.columns\}/, "the waiting strip always precedes W-411's phase navigation");
   assert.match(view, /function WaitingFacts[\s\S]*board__waiting-head[\s\S]*OWNER[\s\S]*NEXT[\s\S]*ASK/, "one waiting-card component carries the W-410 handoff rail on both surfaces");
   assert.match(view, /card\.needsYou \? <WaitingFacts card=\{card\}/, "waiting lifecycle cards replace the old card copy with the same five facts");
   assert.match(view, /className="board__waiting-item"[\s\S]*<WaitingFacts card=\{card\} compact \/>[\s\S]*<\/button>/, "strip entries reuse the five-fact component");

@@ -239,6 +239,61 @@ function scrollColumnIntoView(columnId: string): void {
   el?.scrollIntoView({ inline: "start", block: "nearest" });
 }
 
+function PhaseNavigation({ columns }: { columns: BoardModel["columns"] }): JSX.Element {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [currentColumnId, setCurrentColumnId] = useState(columns[0]?.id);
+  const updateCurrentColumn = useCallback(() => {
+    const track = document.querySelector<HTMLElement>(".board__columns");
+    if (!track) return;
+    const trackLeft = track.getBoundingClientRect().left;
+    const nearest = [...track.querySelectorAll<HTMLElement>(":scope > .board__column")]
+      .sort((a, b) => Math.abs(a.getBoundingClientRect().left - trackLeft) - Math.abs(b.getBoundingClientRect().left - trackLeft))[0];
+    if (nearest?.dataset["columnId"]) setCurrentColumnId(nearest.dataset["columnId"]);
+  }, []);
+
+  useEffect(() => {
+    const track = document.querySelector<HTMLElement>(".board__columns");
+    if (!track) return;
+    updateCurrentColumn();
+    track.addEventListener("scroll", updateCurrentColumn, { passive: true });
+    const observer = new ResizeObserver(updateCurrentColumn);
+    observer.observe(track);
+    return () => {
+      track.removeEventListener("scroll", updateCurrentColumn);
+      observer.disconnect();
+    };
+  }, [columns.length, updateCurrentColumn]);
+
+  useEffect(() => {
+    const strip = stripRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!strip || !active) return;
+    const stripBox = strip.getBoundingClientRect();
+    const activeBox = active.getBoundingClientRect();
+    if (activeBox.left < stripBox.left) strip.scrollLeft -= stripBox.left - activeBox.left;
+    if (activeBox.right > stripBox.right) strip.scrollLeft += activeBox.right - stripBox.right;
+  }, [currentColumnId]);
+
+  return (
+    <div ref={stripRef} className="board__strip" aria-label="Board phases">
+      {columns.map((column) => (
+        <button
+          key={column.id}
+          type="button"
+          className="board__strip-item"
+          aria-current={column.id === currentColumnId ? "true" : undefined}
+          onClick={() => {
+            setCurrentColumnId(column.id);
+            scrollColumnIntoView(column.id);
+          }}
+        >
+          {column.name} <span className="board__strip-count">{column.cards.length}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, branchNote, generatedAt, notice }: BoardViewProps): JSX.Element {
   return (
     <div className="board" inert={inert || undefined}>
@@ -254,13 +309,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
       <WaitingStrip waiting={model.waiting} columns={model.columns} onSelectCard={onSelectCard} />
-      <div className="board__strip">
-        {model.columns.map((column) => (
-          <button key={column.id} type="button" className="board__strip-item" onClick={() => scrollColumnIntoView(column.id)}>
-            {column.name} <span className="board__strip-count">{column.cards.length}</span>
-          </button>
-        ))}
-      </div>
+      <PhaseNavigation columns={model.columns} />
       <div className="board__columns">
         {model.columns.map((column) => (
           <Column key={column.id} column={column} selectedId={selectedId} focusedByColumn={focusedByColumn} onSelectCard={onSelectCard} />
