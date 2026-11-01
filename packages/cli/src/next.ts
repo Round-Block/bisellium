@@ -47,6 +47,7 @@ import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs
 import { boundHead, clean, cleanup, dirtyHold, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readMergeQueue, rebindPr, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
 import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
+import { sweepLines, sweepWorktrees, unpushedBranches } from "./prune.js";
 import { runVerdict } from "./verdict.js";
 import { performRewrite, rewriteOf } from "./rewrite.js";
 import { DAILY_TRACKER, dailyRetroOwed, owedRetros } from "./retro.js";
@@ -3058,7 +3059,14 @@ function performDone(f: Facts, d: Derived): StepResult {
   const sha = git(repo, ["rev-parse", "--short", "HEAD"]).stdout.trim();
   const back = switchBack(repo);
   if (back !== undefined) return heldResult(`the done record is committed on ${chore} (${sha}), but the main checkout could not switch back to master (${back}); run: git -C ${repo} switch master`);
-  return { ok: true, lines: [...recorded, `branch: ${chore}`, `commit: ${sha}`, ...cap.out.map((l) => `done: ${one(l)}`)] };
+  // W-489: the opus's own worktrees go with it (a branch on origin is left for prune, which reads its PR); the real clock, never --now
+  let swept: string[];
+  try {
+    swept = sweepLines(sweepWorktrees(repo, f.studioAbs, { opus: id, prs: unpushedBranches(repo), nowMs: Date.now() }), true);
+  } catch (e) {
+    swept = [`worktree sweep failed: ${one((e as Error).message)}`];
+  }
+  return { ok: true, lines: [...recorded, `branch: ${chore}`, `commit: ${sha}`, ...cap.out.map((l) => `done: ${one(l)}`), ...swept] };
 }
 
 // ---------------------------------------------------------------------------

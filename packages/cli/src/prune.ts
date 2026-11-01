@@ -359,6 +359,11 @@ export function sweepLines(s: SweepResult, kept: boolean): string[] {
   ];
 }
 
+/** The done perform's lookup, git only: a branch with no remote-tracking ref was never pushed, so it has no PR; one on origin is left unread. */
+export function unpushedBranches(repo: string): PrLookup {
+  return (branches) => new Map(branches.filter((b) => git(["show-ref", "--verify", "--quiet", `refs/remotes/origin/${b}`], repo).status !== 0).map((b) => [b, "NONE" as const]));
+}
+
 const PRUNE_USAGE = "usage: bisellium prune --studio <dir> [--repo <dir>]";
 
 const PRUNE_FLAGS = new Set(["--studio", "--repo"]);
