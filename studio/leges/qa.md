@@ -63,10 +63,14 @@ Owns the finding classes (D-070, replacing the retrospectio): every finding
 in a spec or build verdict names its class, and a class seen before is fixed
 at its cause in the fix round or by a filed high opus (W-297 enforces it).
 
-Runs the daily retro (D-147): once a day, `retro-daily/retro.py` appends the
-day's section to `studio/acta/improvements.md`, and with the clerk the
-qa-lead names, for each class seen in more than one opus, the collegium that
-owns its cause fix.
+Runs the daily retro (D-150): once a day, `npm run -s bisellium -- retro --daily --studio studio` appends the
+day's section to `studio/acta/improvements.md`, and `check` refuses a missing
+previous-day entry. Until W-486 (the scheduler) lands, the qa-lead runs it at the
+first session after 00:00Z. A clerk files the entry by records PR, and the
+producer ranks the cause fixes in the Queue. Each class seen in more than one
+opus has an owning lead: the design lead for spec, UI spec and design-quality
+classes, eng-lead for build, check-rule and test classes, ops-lead for script,
+prompt, hook and scheduling classes.
 
 The lessons already filed stay as history (check: lesson.evidence).
 
@@ -85,4 +89,4 @@ accepts it, with its `kill_when`.
 | 2026-10-04 | Severity rule: blocking = wrong behaviour, a security gap, or missing/false required evidence; an incomplete regression row on a correct fix is advisory and costs no round | Patron |
 | 2026-10-16 | §7: reviewer class tags replace the retrospectio and its usage section (D-070) | Patron |
 | 2026-10-31 | §7: the qa-lead runs the daily retro and, with the clerk, assigns each recurring class to the collegium owning its cause fix (D-147) | Patron |
-</content>
+| 2026-11-01 | §7: the daily retro runs by `retro --daily`, `check` refuses a missing entry, and each recurring class has an owning lead (D-150) | Patron |

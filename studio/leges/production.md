@@ -143,10 +143,12 @@ names each step and writes the step ticket the next record write consumes
    is dispatched only where an order names one (no prototype, or one the
    replay cannot reproduce), for required fixes (D-086 A) and for fix
    rounds, and writes code, reds and their `handoff`, running `next` before
-   each `red`. The architect (Opus 5.5) signs engineering specs and stages the
-   prototype; for `kind: ui`, `ui-architect` (Codex `gpt-5.6-sol`) does so (D-091 A).
-   Codex `gpt-5.6-sol` is the engineering spec and every build review gate (D-066 C);
-   `ui-spec-reviewer` (Claude Opus 5.5) is the UI spec gate. Each tags findings' classes (D-070);
+   each `red`. The engineering architect (Opus 5.5) signs engineering specs and stages the
+   prototype; the design lead (Codex `gpt-5.6-sol`) writes and signs UI specs and prototypes (D-150 C).
+   Codex `gpt-5.6-sol` is the engineering spec and engineering build review gate (D-066 C);
+   Claude Opus 5.5 reviews the UI spec and the UI build, and Codex `gpt-5.6-terra` builds `kind: ui` (D-150 C).
+   Until W-452 lands the old seat ids (`ui-architect`, `ui-spec-reviewer`, `ui-lead`) keep running,
+   and opera in flight finish on them (D-150 B). Each tags findings' classes (D-070);
    the orchestrator records their verdicts. A clerk (no shell) edits handoff
    and dossier text only; a Haiku general-purpose agent republishes. The
    Patron greenlights, holds, and merges PRs touching `.claude/`,
@@ -224,8 +226,13 @@ names each step and writes the step ticket the next record write consumes
    round also fixes its cause (a check rule, brief-admission rule, prompt
    template or hook in the same opus) or files a greenlit high opus for the
    class (D-076 D); wording classes recur as advisories. Once a day the
-   qa-lead runs (D-147) `~/.bisellium-evidence/retro-daily/retro.py` and updates
-   `studio/acta/improvements.md`. W-297 makes
+   qa-lead runs `npm run -s bisellium -- retro --daily --studio studio` (D-150 A)
+   and `check` refuses a missing previous-day entry (W-459). Until W-486 (the scheduler)
+   lands, the qa-lead runs it at the first session after 00:00Z. A clerk
+   files the entry by records PR, and the producer ranks the cause fixes in the
+   Queue. Each recurring class has an owning lead: the design lead for spec, UI
+   spec and design-quality classes, eng-lead for build, check-rule and test
+   classes, ops-lead for script, prompt, hook and scheduling classes. W-297 makes
    `verdict` and `next` enforce it; until then the qa-lead checks a failing
    verdict's classes with `~/.bisellium-evidence/lesson-census/census.py`.
    After done, `npm run -s bisellium -- tick --studio studio`.
@@ -289,6 +296,8 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
   pause and write the resume state instead.
 - When usage limits are tight, run one Claude workstream at a time;
   Codex-tier work may run alongside it without serializing.
+- A new process rule binds only opera started after the rule merges; opera in
+  flight finish on the rules they started under (D-150 B).
 
 ## 12. Amendment log
 
@@ -338,4 +347,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-10-21 | §9 steps 0-2, §10: `kind: ui` uses the D-091 pair—Codex Sol signs with Astra's input, Claude Opus reviews; engineering and build review stay unchanged (W-348) | Patron |
 | 2026-10-22 | §8: the UI architect and the UI builder run Codex with its network sandbox lifted to run served browser rows; reviewers stay read-only (D-105) | Patron |
 | 2026-10-31 | §9 step 7: the daily retro is the qa-lead's, classes assigned to the owning collegium with the clerk (D-147) | Patron |
-</content>
+| 2026-11-01 | §9 steps 0 and 7, §11: the daily retro runs by `retro --daily` with an owning lead per class; design mirrors engineering in roles and models (seat changes W-452); a new process rule binds only opera started after it merges (D-150) | Patron |

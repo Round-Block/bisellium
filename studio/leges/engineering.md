@@ -1,6 +1,6 @@
 # Engineering Lex
 
-Magister: `eng-lead` (Fabri) · Adopted: 2026-09-17 · Amended: see §9
+Magister: `eng-lead` (Fabri) · Spec signer: the engineering architect (Claude Opus 5.5, who signs engineering specs and prototypes); Claude Sonnet builds; Codex `gpt-5.6-sol` reviews specs and builds (D-150 C). Until W-452 lands, the old seat ids keep running. · Adopted: 2026-09-17 · Amended: see §9
 
 ## 1. Mandate
 
@@ -68,3 +68,4 @@ red for every behaviour its spec listed (check: lesson.evidence).
 | 2026-09-18 | Rewritten into enforceable clauses; role named as Fabri (W-018) | Patron |
 | 2026-09-19 | Builder-isolation clause adopted (P-001 §1: worktree or own commit, verifier void on tree change, no `git checkout --` restores) | Patron |
 | 2026-09-19 | Assertion-level reds clause (P-005) and containment-helper clause (P-007) adopted | Patron |
+| 2026-11-01 | Header: engineering spec signing moves into this collegium; Claude writes, Codex checks; seat changes are W-452, in-flight opera finish on the old seats (D-150 B, C) | Patron |
