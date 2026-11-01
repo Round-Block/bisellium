@@ -470,7 +470,7 @@ test("W-489-b6 behaviour 6: a filesystem shape the sweep cannot probe never abor
       process.chdir(here);
     }
     assert.deepEqual([pruneThrown, code], [undefined, 0], "a sweep that throws leaves prune exiting 0");
-    assert.match(out, /^worktree sweep failed: /m, "prune prints the sweep's failure");
+    assert.match(out, /^worktree sweep failed: /m, "prune prints the sweep's failure"); // one-sided: the text after the prefix is the thrown error's own message, a limit
     assert.equal(existsSync(join(repo, ".worktrees", "W-7-later")), true, "no worktree is removed by a sweep that failed");
   } finally {
     if (locked !== undefined) chmodSync(locked, 0o755);
