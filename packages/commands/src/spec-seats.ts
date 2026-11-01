@@ -87,3 +87,21 @@ export function readSpecSeats(manifest: unknown, id: string, rec: Dict, logs: Sp
   if (signed.model === reviewed.model) return bad(`collegia.${collegium}: ${signer} and ${reviewer} are both ${signed.model}; the reviewer must be another model (D-150 C)`);
   return { route: "collegium", collegium, signer, reviewer: { sella: reviewer, model: reviewed.model } };
 }
+
+/**
+ * W-452 (Patron 2026-11-01: UI screen rulings are delegated to the design lead): the seat whose structured UI ruling counts beside
+ * the Patron's, derived from the manifest: `spec_seats.collegia.design.signer` when it names one declared, live `kind: agent`
+ * seat of the design collegium; otherwise none, and only `by: patron` rules (today's rule). The Patron keeps control: the
+ * manifest is code-owned, and a `by: patron` ruling always reads as before.
+ */
+export function uiRulingSeat(manifest: unknown): string | undefined {
+  const s = isDict(manifest) ? manifest["spec_seats"] : undefined;
+  const collegia = isDict(s) ? s["collegia"] : undefined;
+  const design = isDict(collegia) ? collegia["design"] : undefined;
+  const signer = isDict(design) ? str(design["signer"]) : undefined;
+  if (signer === undefined || !isDict(manifest)) return undefined;
+  const rows = (Array.isArray(manifest["sellae"]) ? manifest["sellae"] : []).filter((r): r is Dict => isDict(r) && r["id"] === signer);
+  const row = rows[0];
+  if (rows.length !== 1 || row === undefined || (row["retired"] !== undefined && row["retired"] !== false) || row["kind"] !== "agent" || row["collegium"] !== "design") return undefined;
+  return signer;
+}

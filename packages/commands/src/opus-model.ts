@@ -12,7 +12,8 @@ import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, rea
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isMap, isScalar, parseDocument } from "yaml";
 import { NATIVE_OPUS_KINDS, type NativeOpusKind } from "@bisellium/schema";
-import type { Manifest } from "@bisellium/adapter-native";
+import { readManifest, type Manifest } from "@bisellium/adapter-native";
+import { uiRulingSeat } from "./spec-seats.js";
 import { splitFront } from "./frontmatter.js";
 
 export type OpusModelRule =
@@ -896,6 +897,18 @@ interface RulingResult {
   at?: string;
 }
 
+/** W-452: whether `by` may rule a UI opus's screens: the Patron, or the design lead the officina's manifest names (`uiRulingSeat`);
+ *  an unreadable manifest names no lead, so only the Patron rules. */
+function rulesScreens(root: string, by: string | undefined): boolean {
+  if (by === "patron") return true;
+  if (by === undefined) return false;
+  try {
+    return uiRulingSeat(readManifest(root)) === by;
+  } catch {
+    return false;
+  }
+}
+
 function ruling(root: string, record: NativeRecord, decisionId: string, digest: string, inputAt?: string, servedAt?: string, servedTree?: string): RulingResult {
   if (!DECISION_ID.test(decisionId)) return { valid: false, current: false, problem: `${decisionId} is not a decision id` };
   const file = readContainedRegularFile(root, `decisions/${decisionId}.md`, "decisions");
@@ -912,7 +925,7 @@ function ruling(root: string, record: NativeRecord, decisionId: string, digest: 
     id: scalar("id"), by: scalar("by"), provenance: scalar("provenance"), title: scalar("title"), kill_when: scalar("kill_when"),
     opus: scalar("opus"), certifies: scalar("certifies"), design_digest: scalar("design_digest"), at: scalar("at"),
   };
-  if (values.id !== decisionId || values.by !== "patron" || values.provenance !== "stated" || !values.title?.trim() || !values.kill_when?.trim() || values.opus !== record.id || !values.certifies || !TREE_CERTIFICATE.test(values.certifies) || !values.design_digest || !DIGEST.test(values.design_digest) || !values.at || utcTimestampProblem(values.at) || split.body.trim() === "")
+  if (values.id !== decisionId || !rulesScreens(root, values.by) || values.provenance !== "stated" || !values.title?.trim() || !values.kill_when?.trim() || values.opus !== record.id || !values.certifies || !TREE_CERTIFICATE.test(values.certifies) || !values.design_digest || !DIGEST.test(values.design_digest) || !values.at || utcTimestampProblem(values.at) || split.body.trim() === "")
     return { valid: false, current: false, problem: `${decisionId} is not a structured Patron UI ruling for this opus` };
   const current =
     inputAt !== undefined &&
