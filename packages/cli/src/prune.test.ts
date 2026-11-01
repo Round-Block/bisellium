@@ -358,6 +358,59 @@ test("W-489-b1 submodule-dirty patch round-trip: a worktree whose initialized su
   }
 });
 
+test("W-489-b5 behaviour 5: a dirty worktree holding a nested repository in a recognised form is kept by both sweeps, never saved as a gitlink and force-removed", () => {
+  const fx = w489Repo();
+  try {
+    const { repo, studio, root } = fx;
+    const subSrc = join(root, "subsrc");
+    git(["init", "-q", "-b", "master", subSrc], root);
+    writeFileSync(join(subSrc, "s.txt"), "s\n");
+    git(["add", "s.txt"], subSrc);
+    git([...W489_ID, "commit", "-q", "-m", "sub init"], subSrc);
+    git([...W489_ID, "-c", "protocol.file.allow=always", "submodule", "add", "-q", subSrc, "vendor"], repo);
+    git([...W489_ID, "commit", "-q", "-m", "add submodule"], repo);
+    git(["push", "-q", "origin", "master"], repo);
+    git(["fetch", "-q", "origin"], repo);
+    writeOpus(studio, "W-7", "done");
+    const nested = (dir: string, file: string, gitdir?: string): void => {
+      mkdirSync(dir, { recursive: true });
+      git(["init", "-q", "-b", "master", ...(gitdir === undefined ? [] : ["--separate-git-dir", gitdir]), dir], root);
+      writeFileSync(join(dir, file), `${file}\n`);
+      git(["add", file], dir);
+      git([...W489_ID, "commit", "-q", "-m", file], dir);
+    };
+    const emb = w489Wt(repo, "W-7-emb", "w7-emb");
+    nested(join(emb, "emb"), "x.txt");
+    const gf = w489Wt(repo, "W-7-gitfile", "w7-gitfile");
+    mkdirSync(join(gf, "plain"));
+    writeFileSync(join(gf, "plain", "p.txt"), "p\n");
+    nested(join(gf, "plain", "deep"), "y.txt", join(root, "deep.git"));
+    const sub = w489Wt(repo, "W-7-sub", "w7-sub");
+    git(["-c", "protocol.file.allow=always", "submodule", "update", "-q", "--init"], sub);
+    writeFileSync(join(sub, "note.txt"), "note\n");
+    const fake = w489Prs({ "w7-emb": "NONE", "w7-gitfile": "NONE", "w7-sub": "NONE" });
+
+    const s = w489Sweep(repo, studio, { opus: "W-7", prs: fake.prs, nowMs: Date.now() });
+    const kept = new Map(s.kept.map((e) => [basename(e.path), e.reason]));
+    assert.equal(kept.has("W-7-emb"), true, "the worktree holding an untracked embedded repository is kept");
+    assert.equal(readFileSync(join(emb, "emb", "x.txt"), "utf8"), "x.txt\n", "the embedded repository's committed file is still on disk");
+    assert.equal(kept.has("W-7-gitfile"), true, "the worktree holding an untracked gitfile is kept");
+    assert.equal(existsSync(join(gf, "plain", "deep", "y.txt")), true, "the gitfile repository's file is still on disk");
+    assert.equal(kept.has("W-7-sub"), true, "the worktree holding a clean initialized submodule is kept");
+    assert.equal(existsSync(join(sub, "vendor", "s.txt")), true, "the submodule's checkout is still on disk");
+    assert.deepEqual(s.removed, [], "none of the three is removed");
+    assert.match(kept.get("W-7-emb") ?? "", /\bemb\b/, "each kept reason names its nested repository's path");
+    assert.match(kept.get("W-7-gitfile") ?? "", /plain\/deep/, "each kept reason names its nested repository's path");
+    assert.match(kept.get("W-7-sub") ?? "", /submodule.*vendor/, "each kept reason names its nested repository's path");
+    assert.equal(existsSync(join(repo, ".bisellium", "worktree-diffs")), false, "no patch is saved for them");
+
+    const p = w489Sweep(repo, studio, { prs: fake.prs, nowMs: Date.now() });
+    assert.deepEqual([p.removed, p.kept.map((e) => basename(e.path)).sort()], [[], ["W-7-emb", "W-7-gitfile", "W-7-sub"]], "prune's sweep keeps all three");
+  } finally {
+    rmSync(fx.root, { recursive: true, force: true });
+  }
+});
+
 test("W-489-b2 behaviour 2: prune's sweep removes a worktree whose opus is done, whose PR is merged or closed, or (clean) whose commit is in origin/master, and keeps the rest", () => {
   const fx = w489Repo();
   try {
