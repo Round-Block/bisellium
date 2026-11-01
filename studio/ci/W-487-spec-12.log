@@ -1,0 +1,24 @@
+# opus: W-487
+# phase: spec
+# round: 12
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a195fb-94a1-7363-a8c1-c480f157353b
+# outcome: passed
+# at: 2026-11-01T08:31:31.647Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# dispatch_prompt: ci/W-487-ui-prompt-12.md
+# design_digest: sha256:a7681271043b5f5fbdeef38bbee73f20513dee7402c6ac9b8f84503b6e72c041
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":12,"actor":"ui-lead","studio":".worktrees/W-487/studio","head":"aa2898264f67c46e273ae164500e325c58033389","brief":"17b1c32725ab791a6a7e63f889e227f9aa1f0534","at":"2026-11-01T08:31:27.505Z"}
+
+## Findings
+
+No findings
+
+## Recommendation
+
+Round 9 had no findings; the earlier reading-pane, ask-kind, Board asker/date, route-label and Intent findings all remain closed.
+My round-9 pass still holds: the re-signed brief adds only four assertion markers at lines 78, 80, 82 and 84, and the prototype hash is unchanged.
+The screens still read right: complete ask kinds and destination labels distinguish Board-owned asks from replyable questions, the reading panes retain useful context, and both badges tally consistently.
+The agent-written unified collection remains sensible on the captures and preserves the Patron’s Outlook split and date presentation.
+Verdict: passed
