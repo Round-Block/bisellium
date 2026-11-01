@@ -485,7 +485,10 @@ const stop = (transcript: string, tasks: unknown[], extra: Record<string, unknow
 test("W-310-b4 behaviour 4: at SubagentStop the guard sends back an agent whose own background work still runs", async () => {
   const t = tmp();
   const transcript = join(t, "agent ü.jsonl");
-  writeFileSync(transcript, '{"type":"tool_result","content":"Command running in background with ID: bash_ab12cd"}\n{"x":"mon_77ee"}\n');
+  writeFileSync(
+    transcript,
+    '{"type":"tool_result","content":"Command running in background with ID: bash_ab12cd"}\n{"x":"mon_77ee"}\n{"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu_h","name":"SubagentHandback","input":{}}]}}\n',
+  );
   const shell = { id: "bash_ab12cd", type: "shell", status: "running", description: "wait", command: "sleep 600" };
   const r = await guard(stop(transcript, [shell]));
   assert.equal(r.code, 2, "its own shell still runs: sent back");
@@ -827,4 +830,22 @@ test("W-494-b1 behaviour 1: a subagent's second background Bash call is refused 
   assert.equal((await guard(bash(second, W494_RUNNER(none.session), true))).code, 0, "the first background run is allowed");
   assert.equal((await guard(bash(second, W494_RUNNER(join(tmp(), "gone.jsonl")), true))).code, 0, "fail-open: no transcript");
   assert.equal((await guard(bash(second, { ...W494_RUNNER(session), agent_id: "../r1" }, true))).code, 0, "an agent id that is no plain name is not judged");
+});
+
+test("W-494-b2 behaviour 2: at SubagentStop a turn that hands nothing back may end while the agent's one run is live", async () => {
+  const shell = (id: string): Record<string, unknown> => ({ id, type: "shell", status: "running", description: "ci", command: "npm run -s bisellium -- ci" });
+  const waiting = w494Session([w494Start("bci00001"), w494Start("bwait0001"), w494Tool("Bash")]).agent;
+  assert.equal((await guard(stop(waiting, [shell("bci00001")]))).code, 0, "one live run: the turn may end");
+  const two = await guard(stop(waiting, [shell("bci00001"), shell("bwait0001")]));
+  assert.equal(two.code, 2, "two live runs: sent back");
+  assert.match(two.err, /bci00001, bwait0001/);
+  assert.match(two.err, /all but one/);
+  assert.equal((await guard(stop(waiting, [shell("bci00001"), shell("bwait0001")], { stop_hook_active: true }))).code, 0, "sent back once only");
+  const handed = w494Session([w494Start("bci00001"), w494Tool("SubagentHandback")]).agent;
+  const back = await guard(stop(handed, [shell("bci00001")]));
+  assert.equal(back.code, 2, "its report is in and its one run still runs: sent back (W-310)");
+  assert.match(back.err, /your report is in/);
+  const reused = w494Session([w494Tool("SubagentHandback"), w494Start("bci00001"), w494Tool("Bash")]).agent;
+  assert.equal((await guard(stop(reused, [shell("bci00001")]))).code, 0, "a reused agent's earlier hand-back does not count");
+  assert.equal((await guard(stop(handed, [shell("bother001")]))).code, 0, "another thread's run is not the agent's");
 });
