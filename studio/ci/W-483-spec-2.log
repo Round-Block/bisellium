@@ -1,0 +1,21 @@
+# opus: W-483
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1951f-d811-75a2-97d7-0a6c0ace5103
+# outcome: passed
+# at: 2026-11-01T03:24:28.286Z
+# tree: tree:3cf259852c633ef5abc9674d618f641fa18f1aae
+# brief: briefs/W-483.md blob:57872e55baa46192346fcd5b7a16f4129949f885
+# ticket: {"opus":"W-483","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"0d644523996ff0729ae8813fe8ef2f503a4694d9","brief":"57872e55baa46192346fcd5b7a16f4129949f885","at":"2026-11-01T03:24:25.307Z"}
+
+## Findings
+1. advisory — brief:27 “wherever `scripts/ci-scope.test.mjs` runs” over-promises: the recorded filtered W-483 command skips `W-211-b1`, and `W-483-b1` does not apply the pin to the real manifest. Replace brief:27 with: “Promise pin: whenever `W-211-b1` is selected—including unfiltered `npm test` and `test:record`—the real `source_excludes` must contain `examples/` and every accepted direct dossier page exactly once, may contain `HANDOFF` at most once, and contain nothing else; filtered runs that skip `W-211-b1` do not pin the real manifest.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/ci-scope.test.mjs W-211-b1
+2. advisory — brief:29 The identity promise names three Git readers without stating their disagreement over committed, untracked, ignored, coarsely reported, or unreadable entries, and its limit incorrectly calls them “two functions.” Replace brief:29 with: “Promise identity: `sourceTreeHash` trusts committed `git ls-tree` data for SOURCE identity, `servedUiHash` trusts committed `git ls-tree` data for served paths, and `isDirtyOutside` trusts `git status --porcelain` for worktree dirtiness. The tree readers omit all uncommitted entries; status may report non-ignored untracked paths coarsely and omits ignored untracked paths; Git failure throws, and unreadable or otherwise omitted entries are outside this promise. For the tracked handoff and source files created by `W-483-b1`, a handoff edit is not dirty and its commit keeps both hashes, while a source edit is dirty and its commit moves the SOURCE tree. Limit: this opus does not add the manifest line, and the row runs these three unchanged shim functions rather than every caller.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: scripts/ci-scope.test.mjs W-483-b1
+3. advisory — brief:59 The table omits the full domain and rejector for changed `recordOnly(paths, studio)`, and its reused-code row omits `servedUiHash` and W-483-b1’s direct Git setup calls. Replace brief:59 with: “| 2. `recordOnly(paths, studio)` as changed and called by `W-483-b1` | `paths` is a non-empty array of repository-relative strings and `studio` is a repository-relative string; every accepted path is under the studio, exactly `HANDOFF`, or a direct dossier HTML page | `recordOnly` returns false for empty, outside, or wrong-shaped inputs; `W-483-b1` pins those refusals |” followed by “| 3. W-483-b1’s temporary repository, read by its `git` fixture helper and unchanged `sourceTreeHash`, `isDirtyOutside`, and `servedUiHash` calls | an initialized repository with readable `HEAD`, the stated tracked fixture paths, and successful Git operations | each call uses `execFileSync`; a non-zero exit or thrown read fails the Node test |”. [severity: S3] [class: spec×input-without-named-rejector] — check: scripts/ci-scope.test.mjs W-483-b1
+
+## Verdict
+The design is feasible; the builder should adopt the three advisory boundary and promise corrections.
+
+VERDICT: PASS
