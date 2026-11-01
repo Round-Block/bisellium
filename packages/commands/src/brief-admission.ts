@@ -363,7 +363,7 @@ function actualLines(block: readonly string[], indent: string): Set<string> {
   if (/^'.*'$/.test(value)) return new Set([value.slice(1, -1).replaceAll("''", "'").trim()]);
   if (!/^\|[-+]?$/.test(value)) return new Set();
   const out = new Set<string>();
-  for (let i = at + 1; i < block.length && (block[i]!.startsWith(`${indent}  `) || block[i]!.trim() === ""); i++) out.add(block[i]!.trim());
+  for (let i = at + 1; i < block.length && (block[i]!.startsWith(`${indent} `) || block[i]!.trim() === ""); i++) out.add(block[i]!.trim());
   return out;
 }
 
