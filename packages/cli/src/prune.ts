@@ -181,7 +181,7 @@ function listedWorktrees(root: string): ListedWorktree[] | undefined {
 /** The opus ids a worktree's name and branch carry: `<LETTERS>-<digits>`, bounded so W-48 is not W-489. */
 export function carriedOpusIds(name: string, branch: string | undefined): string[] {
   const ids = new Set<string>();
-  for (const text of [name, branch ?? ""]) for (const m of text.matchAll(/(?<![A-Za-z0-9])[A-Z]+-\d+(?!\d)/g)) ids.add(m[0]);
+  for (const text of [name, branch ?? ""]) for (const m of text.matchAll(/(?<![A-Za-z0-9])[A-Z]+-\d+(?!\d)/g)) ids.add(m[0]); // one-sided: the brief fixes an ASCII id token, a non-ASCII letter before it is a stated limit
   return [...ids];
 }
 

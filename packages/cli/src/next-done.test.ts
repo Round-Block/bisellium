@@ -1507,7 +1507,7 @@ test("W-489-b4 behaviour 4: the done perform removes the worktrees that carry it
   const diffs = join(repo, ".bisellium", "worktree-diffs");
   assert.equal(lines.length, 4, ran("four worktree lines", o));
   const specLine = lines.find((l) => l.startsWith(`worktree removed: ${spec} `)) ?? "";
-  assert.ok(specLine.startsWith(`worktree removed: ${spec} (opus ${OPUS} done); uncommitted changes saved to ${diffs}/${OPUS}-spec-`), ran("the dirty scratch worktree is removed and its patch saved", o));
+  assert.ok(specLine.startsWith(`worktree removed: ${spec} (opus ${OPUS} done); uncommitted changes saved to ${diffs}/${OPUS}-spec-`), ran("the dirty scratch worktree is removed and its patch saved", o)); // one-sided: the patch file name ends in a time stamp
   assert.ok(lines.includes(`worktree removed: ${verify} (opus ${OPUS} done)`), ran("the verify worktree is removed", o));
   assert.deepEqual(lines.filter((l) => l.startsWith("worktree kept: ")).sort(), [`worktree kept: ${fresh} (younger than an hour)`, `worktree kept: ${pushed} (its PR state was not read)`], ran("a young worktree and one whose branch is on origin are kept", o));
   assert.equal(existsSync(spec) || existsSync(verify), false, "the removed worktrees are gone");
@@ -1528,6 +1528,6 @@ test("W-489-b4 behaviour 4: the done perform removes the worktrees that carry it
   writeFileSync(join(badRepo, ".git", "refs", "remotes", "origin", "stage", OPUS), "0000000000000000000000000000000000000001\n");
   const ob = next(bad, [OPUS, "--perform", "--expect", "done"]);
   expectStep(ob, "done", "performed", "the done perform still succeeds when a remote ref cannot be read");
-  assert.equal(outLines(ob).filter((l) => l.startsWith("worktree kept: ") && l.startsWith(`worktree kept: ${badPath} (its PR cannot be read`)).length, 1, ran("the worktree whose remote ref cannot be read is kept for its PR", ob));
+  assert.equal(outLines(ob).filter((l) => /^worktree kept: .* \(its PR cannot be read: git show-ref .* exited 128\)$/.test(l) && l.includes(badPath)).length, 1, ran("the worktree whose remote ref cannot be read is kept for its PR", ob));
   assert.equal(existsSync(badPath), true, "the worktree stays");
 });
