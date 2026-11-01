@@ -99,9 +99,9 @@ test("W-487-b3 behaviour 3: both surfaces route each attention item to its ownin
   const inbox = readFileSync(resolve("apps/web/src/screens/Inbox.tsx"), "utf8");
 
   assert.match(view, /card\.destination === "inbox"[\s\S]*onOpenInbox\(card\.attentionKey\)/, "a question in the Board strip routes to its Inbox row");
-  assert.match(view, /onSelectCard\(card\.id, columnId \?\? "unplaced"\)/, "a Board-owned strip item still opens the existing drawer callback");
+  assert.match(view, /onSelectCard\(card\.id, columnId \?\? "unplaced", "waiting"\)/, "a Board-owned strip item still opens the existing drawer callback");
   assert.match(app, /setPendingBoardOpus\(opusId\)[\s\S]*window\.location\.hash = "#\/board"/, "Inbox hands a Board-owned item to the mounted Board without adding a public deep route");
-  assert.match(board, /initialSelectionId[\s\S]*openDrawer\(initialSelectionId, columnId \?\? "unplaced"\)/, "Board opens the requested existing drawer after its model reconciles");
+  assert.match(board, /initialSelectionId[\s\S]*openDrawer\(initialSelectionId, columnId \?\? "unplaced", "waiting"\)/, "Board opens the requested existing drawer after its model reconciles");
   assert.match(inbox, /initialAttentionKey[\s\S]*setExpandedId\(initialAttentionKey\)/, "Board hands a replyable item back to its matching Inbox detail");
 });
 
