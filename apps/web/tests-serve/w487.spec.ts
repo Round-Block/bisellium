@@ -58,6 +58,27 @@ async function install(page: Page, data: Fixture): Promise<void> {
   await page.route("**/api/events?item=*", (route) => route.fulfill({ json: [] }));
 }
 
+async function installLiveDouble(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    let source: EventTarget | undefined;
+    class LiveDouble extends EventTarget {
+      constructor(_url: string) {
+        super();
+        source = this;
+        queueMicrotask(() => this.dispatchEvent(new Event("open")));
+      }
+
+      close(): void {}
+    }
+    Object.defineProperty(window, "EventSource", { configurable: true, value: LiveDouble });
+    (window as typeof window & { __w487EmitLive: (type: "error" | "open" | "message") => void }).__w487EmitLive = (type) => {
+      source?.dispatchEvent(type === "message"
+        ? new MessageEvent("message", { data: JSON.stringify({ name: "workflow.state_changed", attrs: {} }) })
+        : new Event(type));
+    };
+  });
+}
+
 async function expectGeometry(page: Page, width: number, selector: string): Promise<void> {
   const geometry = await page.locator(selector).evaluate((node) => {
     const box = node.getBoundingClientRect();
@@ -250,4 +271,58 @@ test("W-487-b4 hides both badges when the mounted Inbox first load fails", async
   await page.evaluate(() => { window.location.hash = "#/inbox"; });
   await expect(page.locator(".inbox__empty")).toBeVisible();
   await expect(page.locator('a[href="#/inbox"] .sidebar__badge, a[href="#/board"] .sidebar__badge')).toHaveCount(0);
+});
+
+test("W-487-b4 retains both badges after an Inbox background read failure", async ({ page }) => {
+  served = await startServed("w487-b4-inbox-retained-failure");
+  const data = fixture();
+  let failRead = false;
+  await page.route("**/api/officina", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: officina }));
+  await page.route("**/api/opera", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.opera }));
+  await page.route("**/api/inbox", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.inbox }));
+  await page.goto(`${served.baseURL}/?w487=b4-inbox-retained-failure#/inbox`);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("4");
+  failRead = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.locator(".screen-notice").first()).toContainText("Could not load the inbox.");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("4");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge')).toHaveText("4");
+});
+
+test("W-487-b4 retains both badges after a relevant Board event read failure", async ({ page }) => {
+  served = await startServed("w487-b4-board-event-retained-failure");
+  const data = fixture();
+  let failRead = false;
+  await installLiveDouble(page);
+  await page.route("**/api/officina", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: officina }));
+  await page.route("**/api/opera", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.opera }));
+  await page.route("**/api/inbox", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.inbox }));
+  await page.goto(`${served.baseURL}/?w487=b4-board-event-retained-failure#/board`);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("4");
+  failRead = true;
+  await page.evaluate(() => (window as typeof window & { __w487EmitLive: (type: "message") => void }).__w487EmitLive("message"));
+  await expect(page.locator(".shell__status")).toHaveAttribute("data-state", "error");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("4");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge')).toHaveText("4");
+});
+
+test("W-487-b4 retains both badges after an unselected Board reconnect read failure", async ({ page }) => {
+  served = await startServed("w487-b4-board-reconnect-retained-failure");
+  const data = fixture();
+  let failRead = false;
+  await installLiveDouble(page);
+  await page.route("**/api/officina", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: officina }));
+  await page.route("**/api/opera", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.opera }));
+  await page.route("**/api/inbox", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: data.inbox }));
+  await page.goto(`${served.baseURL}/?w487=b4-board-reconnect-retained-failure#/board`);
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("4");
+  failRead = true;
+  await page.evaluate(() => {
+    const live = window as typeof window & { __w487EmitLive: (type: "error" | "open") => void };
+    live.__w487EmitLive("error");
+    live.__w487EmitLive("open");
+  });
+  await expect(page.locator(".shell__status")).toHaveAttribute("data-state", "error");
+  await expect(page.locator('a[href="#/inbox"] .sidebar__badge')).toHaveText("4");
+  await expect(page.locator('a[href="#/board"] .sidebar__badge')).toHaveText("4");
 });
