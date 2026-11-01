@@ -1589,6 +1589,7 @@ test("W-492-b1 behaviour 1: a kill whose pinned assertion failed on the source t
     ["a | block", `|\n${KILLED_SOURCE.map((l) => `    ${l}`).join("\n")}`],
     ["a |+ block", `|+\n${KILLED_SOURCE.map((l) => `    ${l}`).join("\n")}`],
     ["a quoted line", "'  return 0;'"],
+    ["a |- block indented one space beyond the key", `|-\n${KILLED_SOURCE.map((l) => `   ${l}`).join("\n")}`],
   ] as const) {
     const k = killFiles(MUTATION, tapActual("W-300-b1", "'row: exit 2'", actual));
     refused(`an actual as ${name}`, row(k), textual(k.output));
