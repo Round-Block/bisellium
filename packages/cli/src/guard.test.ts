@@ -875,3 +875,14 @@ test("W-494-b3 behaviour 3: a wait loop on pgrep -f is refused and steered to an
   ];
   for (const c of allowed) assert.equal((await guard(bash(c))).code, 0, `allowed: ${c}`);
 });
+
+test("W-494-b4 behaviour 4: the agents and the briefs keep one background run at a time and wait on an exit file in the foreground", () => {
+  const text = (rel: string): string => readFileSync(join(REPO, rel), "utf8");
+  assert.match(text(".claude/agents/ladder-runner.md"), /one background run at a time/, "the ladder-runner keeps one background run at a time");
+  for (const rel of [".claude/agents/ladder-runner.md", ".claude/agents/builder.md", ".claude/agents/architect.md", "studio/prompts/builder-brief.md", "studio/prompts/spec-draft.md"]) {
+    const t = text(rel);
+    assert.match(t, /one background run at a time/, `${rel}: one background run at a time`);
+    assert.ok(t.includes("timeout 540 bash -c 'until [ -f X.exit ]; do sleep 10; done'"), `${rel}: the foreground exit-file poll`);
+    assert.ok(t.includes("never `pgrep -f`"), `${rel}: never pgrep -f`);
+  }
+});
