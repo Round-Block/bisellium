@@ -215,7 +215,12 @@ function nestedRepository(path: string): string | undefined {
   for (const entry of ls.stdout.split("\0")) {
     const m = /^160000 \S+ \d\t(.+)$/.exec(entry);
     if (m === null || m[1] === undefined) continue;
-    if (lstatSync(join(path, m[1], ".git"), { throwIfNoEntry: false }) !== undefined) return `submodule ${m[1]} is a nested repository a patch cannot hold`;
+    try {
+      if (lstatSync(join(path, m[1], ".git"), { throwIfNoEntry: false }) !== undefined) return `submodule ${m[1]} is a nested repository a patch cannot hold`;
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (code !== "ENOTDIR") return `submodule ${m[1]} cannot be probed for a nested repository: ${code ?? (e as Error).message}`;
+    }
   }
   const st = git(["status", "--porcelain", "-z", "--untracked-files=all"], path);
   if (st.status !== 0) return "its untracked files cannot be read";
@@ -308,13 +313,22 @@ export function sweepWorktrees(repo: string, studio: string, o: { opus?: string;
     }
     const r = git(["worktree", "remove", ...(c.dirty ? ["--force"] : []), "--", c.w.path], root);
     if (r.status === 0) out.removed.push({ path: c.w.path, reason: reason.remove, ...(saved === undefined ? {} : { saved }) });
-    else if (lstatSync(c.w.path, { throwIfNoEntry: false }) === undefined) out.removed.push({ path: c.w.path, reason: reason.remove, ...(saved === undefined ? {} : { saved }), adminLeft: true });
+    else if (checkoutGone(c.w.path)) out.removed.push({ path: c.w.path, reason: reason.remove, ...(saved === undefined ? {} : { saved }), adminLeft: true });
     else keep(c.w.path, `git worktree remove failed: ${r.stderr.trim()}`);
   }
   // an admin directory whose checkout is gone is pruned; one a sandbox holds busy stays for a later run, and is counted
   git(["worktree", "prune"], root);
   out.adminLeft = git(["worktree", "prune", "--dry-run", "--verbose"], root).stderr.split("\n").filter((l) => l.startsWith("Removing ")).length;
   return out;
+}
+
+/** True when nothing is at `path` (ENOENT); any other answer, an lstat error included, is a checkout still there. */
+function checkoutGone(path: string): boolean {
+  try {
+    return lstatSync(path, { throwIfNoEntry: false }) === undefined;
+  } catch {
+    return false;
+  }
 }
 
 /** Prune's reason to remove a candidate, or to keep it. */
@@ -422,19 +436,26 @@ export function runPrune(args: string[], deps: { prs?: PrLookup; nowMs?: number 
   }
 
   const worktreeResult = reclaimWorktrees(repo);
-  const sweep = sweepWorktrees(repo, studio, { prs: deps.prs ?? ghPrStates(repo), nowMs: deps.nowMs ?? Date.now() });
+  let sweep: SweepResult = { removed: [], kept: [], adminLeft: 0 };
+  let sweepFailed: string | undefined;
+  try {
+    sweep = sweepWorktrees(repo, studio, { prs: deps.prs ?? ghPrStates(repo), nowMs: deps.nowMs ?? Date.now() });
+  } catch (e) {
+    sweepFailed = `worktree sweep failed: ${(e as Error).message}`;
+  }
   const branchResult = pruneStaleOpusBranches(repo, studio);
   const logResult = pruneCiLogs(studio);
 
   if (worktreeResult.removed.length > 0) {
     for (const w of worktreeResult.removed) console.log(`worktree removed: ${w.path} (${w.reason})`);
   }
+  if (sweepFailed !== undefined) console.log(sweepFailed);
   for (const line of sweepLines(sweep, false)) console.log(line);
   if (branchResult.removed.length > 0) {
     for (const b of branchResult.removed) console.log(`branch removed: ${b.branch} (${b.reason})`);
   }
   for (const name of logResult.removed) console.log(`ci log removed: ${name}`);
-  if (worktreeResult.removed.length === 0 && sweep.removed.length === 0 && sweep.adminLeft === 0 && branchResult.removed.length === 0 && logResult.removed.length === 0) {
+  if (sweepFailed === undefined && worktreeResult.removed.length === 0 && sweep.removed.length === 0 && sweep.adminLeft === 0 && branchResult.removed.length === 0 && logResult.removed.length === 0) {
     console.log("nothing to prune");
   }
 
