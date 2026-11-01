@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseRoute } from "./lib/route.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
@@ -49,6 +49,7 @@ export function App() {
   // W-341: the active screen reports its one status here; the shell owns the one live region, so it is never
   // remounted by a screen's own layout changes and announces every state change.
   const [status, setStatus] = useState<ScreenStatus>(READY);
+  const hasMountedAttentionRef = useRef(false);
   const route = parseRoute(hash);
 
   const openBoardAttention = (opusId: string): void => {
@@ -108,7 +109,11 @@ export function App() {
   }, [route]);
 
   useEffect(() => {
-    if ((route === "inbox" || route === "board") && status.state === "error") setAttentionCount(0);
+    if (route === "inbox" || route === "board") hasMountedAttentionRef.current = false;
+  }, [route]);
+
+  useEffect(() => {
+    if ((route === "inbox" || route === "board") && status.state === "error" && !hasMountedAttentionRef.current) setAttentionCount(0);
   }, [route, status.state]);
 
   return (
@@ -136,7 +141,10 @@ export function App() {
         {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
           <Board
             onStatus={setStatus}
-            onWaitingCount={setAttentionCount}
+            onWaitingCount={(count) => {
+              hasMountedAttentionRef.current = true;
+              setAttentionCount(count);
+            }}
             initialSelectionId={pendingBoardOpus}
             onInitialSelectionConsumed={() => setPendingBoardOpus(undefined)}
             onOpenInbox={openInboxAttention}
@@ -144,7 +152,10 @@ export function App() {
         ) : (
           <Inbox
             onStatus={setStatus}
-            onNeedsYouCount={setAttentionCount}
+            onNeedsYouCount={(count) => {
+              hasMountedAttentionRef.current = true;
+              setAttentionCount(count);
+            }}
             onOpenBoard={openBoardAttention}
             initialAttentionKey={pendingInboxAttention}
             onInitialAttentionConsumed={() => setPendingInboxAttention(undefined)}
