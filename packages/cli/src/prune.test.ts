@@ -1,7 +1,7 @@
 import { describe, it, before, after, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, lstatSync, mkdtempSync, mkdirSync, symlinkSync, writeFileSync, rmSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, symlinkSync, utimesSync, writeFileSync, rmSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { pruneStaleOpusBranches, runPrune } from "./prune.js";
@@ -211,5 +211,120 @@ test("W-131 behaviour 4: prune removes exactly the gate logs of a done opus that
     assert.equal(existsSync(join(linked.repo, "outside.log")), true, "a symlink's target is never touched");
   } finally {
     for (const fx of fixtures) rmSync(fx.repo, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// W-489 (studio/briefs/W-489.md): worktrees reclaimed when their opus or PR ends. Each fixture is a repository with a
+// bare origin whose master is fetched, its worktrees under <repo>/.worktrees/; "old" is a gitdir file two hours back.
+// The PR lookup is a fake that records each call: no row runs gh.
+// ---------------------------------------------------------------------------
+const W489_ID = ["-c", "user.name=test", "-c", "user.email=test@test"];
+function w489Repo(): { root: string; repo: string; studio: string } {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "w489-")));
+  const repo = join(root, "repo");
+  git(["init", "-q", "--bare", "-b", "master", join(root, "origin.git")], root);
+  git(["init", "-q", "-b", "master", repo], root);
+  writeFileSync(join(repo, "a.txt"), "a\n");
+  git(["add", "a.txt"], repo);
+  git([...W489_ID, "commit", "-q", "-m", "init"], repo);
+  git(["remote", "add", "origin", join(root, "origin.git")], repo);
+  git(["push", "-q", "origin", "master"], repo);
+  git(["fetch", "-q", "origin"], repo);
+  writeFileSync(join(repo, ".git", "info", "exclude"), ".worktrees/\n.bisellium/\nstudio/\n");
+  return { root, repo, studio: makeStudio(repo) };
+}
+/** A worktree `.worktrees/<name>`, on a new branch or detached at master; old unless `young`. */
+function w489Wt(repo: string, name: string, branch: string | undefined, o: { young?: boolean } = {}): string {
+  const path = join(repo, ".worktrees", name);
+  git(["worktree", "add", "-q", ...(branch === undefined ? ["--detach"] : ["-b", branch]), path, "master"], repo);
+  if (o.young !== true) w489Age(path, 2);
+  return path;
+}
+function w489Age(path: string, hours: number): void {
+  const admin = spawnSync("git", ["rev-parse", "--absolute-git-dir"], { cwd: path, encoding: "utf8" }).stdout.trim();
+  const t = new Date(Date.now() - hours * 3_600_000);
+  utimesSync(join(admin, "gitdir"), t, t);
+}
+const w489Commit = (path: string, msg: string): void => git([...W489_ID, "commit", "-q", "--allow-empty", "-m", msg], path);
+/** A fake PR lookup over `states`, answering only the branches asked for; `calls` records each call's branches, sorted. */
+function w489Prs(states: Record<string, string>): { calls: string[][]; prs: (branches: readonly string[]) => Map<string, string> } {
+  const calls: string[][] = [];
+  return { calls, prs: (branches) => (calls.push([...branches].sort()), new Map(Object.entries(states).filter(([b]) => branches.includes(b)))) };
+}
+type W489Entry = { path: string; reason: string; saved?: string; adminLeft?: true };
+type W489Sweep = { removed: W489Entry[]; kept: W489Entry[]; adminLeft: number };
+/** The sweep under test; before it exists, an empty result, so a row fails at its first assertion, never at a load. */
+function w489Sweep(repo: string, studio: string, o: Record<string, unknown>): W489Sweep {
+  const sweep = (pruneModule as unknown as Record<string, unknown>)["sweepWorktrees"];
+  return typeof sweep === "function" ? (sweep as (r: string, s: string, o: unknown) => W489Sweep)(repo, studio, o) : { removed: [], kept: [], adminLeft: 0 };
+}
+const w489Brief = (es: W489Entry[]): [string, string][] => es.map((e): [string, string] => [basename(e.path), e.reason]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+const w489Admin = (repo: string): string => join(repo, ".git", "worktrees");
+
+test("W-489-b1 behaviour 1: the done perform's sweep removes every worktree that carries its opus id, past the guards, saving a dirty one's patch", () => {
+  const fx = w489Repo();
+  try {
+    const { repo, studio, root } = fx;
+    const spec = w489Wt(repo, "W-7-spec", "spec-scratch/W-7");
+    const stage = w489Wt(repo, "W-7-stage", undefined);
+    writeFileSync(join(stage, "a.txt"), "a changed\n");
+    writeFileSync(join(stage, "new.txt"), "new file content\n");
+    w489Wt(repo, "verify-W-7", "verify/W-7");
+    w489Wt(repo, "x-W-7", undefined, { young: true });
+    const lost = w489Wt(repo, "W-7-lost", undefined);
+    w489Commit(lost, "a commit no ref holds");
+    w489Age(lost, 2);
+    w489Wt(repo, "W-7-locked", undefined);
+    git(["worktree", "lock", join(repo, ".worktrees", "W-7-locked")], repo);
+    w489Wt(repo, "W-7-unread", "scratch/W-7-unread");
+    const other = w489Wt(repo, "W-70-spec", "spec-scratch/W-70");
+    const outside = join(root, "elsewhere-W-7");
+    git(["worktree", "add", "-q", "--detach", outside, "master"], repo);
+    w489Age(outside, 2);
+    const fake = w489Prs({ "spec-scratch/W-7": "NONE", "verify/W-7": "OPEN", "spec-scratch/W-70": "NONE" });
+
+    const s = w489Sweep(repo, studio, { opus: "W-7", prs: fake.prs, nowMs: Date.now() });
+    assert.deepEqual(w489Brief(s.removed), [["W-7-spec", "opus W-7 done"], ["W-7-stage", "opus W-7 done"]], "every old, unguarded worktree carrying W-7 is removed");
+    assert.equal(existsSync(spec), false, "a clean worktree on a never-pushed branch is gone");
+    assert.equal(existsSync(stage), false, "a dirty detached worktree is gone");
+    const saved = s.removed.find((e) => basename(e.path) === "W-7-stage")?.saved ?? "";
+    assert.equal(dirname(saved), join(repo, ".bisellium", "worktree-diffs"), "a dirty worktree patch is saved under <repo>/.bisellium/worktree-diffs/");
+    assert.match(basename(saved), /^W-7-stage-.+\.patch$/, "the patch is named for its worktree");
+    const patch = readFileSync(saved, "utf8");
+    assert.ok(patch.includes("+a changed") && patch.includes("+new file content"), "the patch holds the tracked change and the untracked file content");
+    git(["apply", "--check", saved], repo);
+    assert.equal(s.removed.find((e) => basename(e.path) === "W-7-spec")?.saved, undefined, "a clean worktree saves no patch");
+    assert.deepEqual(
+      w489Brief(s.kept),
+      [
+        ["W-7-locked", "locked"],
+        ["W-7-lost", "detached at a commit no branch, tag or remote-tracking ref holds"],
+        ["W-7-unread", "its PR state was not read"],
+        ["verify-W-7", "its PR is open"],
+        ["x-W-7", "younger than an hour"],
+      ],
+      "a locked, unheld, unread, open-PR or young worktree of W-7 is kept, each for its own reason",
+    );
+    assert.equal(existsSync(other), true, "W-70 is not W-7: its worktree is untouched");
+    assert.equal(existsSync(outside), true, "a worktree outside .worktrees/ is untouched");
+    assert.deepEqual(fake.calls, [["scratch/W-7-unread", "spec-scratch/W-7", "verify/W-7"]], "the PR lookup is asked once, for the candidates' branches only");
+
+    // a sandbox holds an admin directory busy: the checkout goes, the admin directory waits for a later run
+    const busy = w489Wt(repo, "W-7-busy", undefined);
+    chmodSync(w489Admin(repo), 0o555);
+    let held: W489Sweep;
+    try {
+      held = w489Sweep(repo, studio, { opus: "W-7", prs: fake.prs, nowMs: Date.now() });
+    } finally {
+      chmodSync(w489Admin(repo), 0o755);
+    }
+    assert.deepEqual(held.removed.map((e) => [basename(e.path), e.adminLeft]), [["W-7-busy", true]], "a busy admin directory still counts the checkout removed");
+    assert.equal(existsSync(busy), false, "its checkout is gone");
+    assert.equal(held.adminLeft, 1, "the busy admin directory is counted");
+    assert.equal(w489Sweep(repo, studio, { opus: "W-7", prs: fake.prs, nowMs: Date.now() }).adminLeft, 0, "a later run prunes it");
+    assert.equal(existsSync(join(w489Admin(repo), "W-7-busy")), false, "its admin directory is gone");
+  } finally {
+    rmSync(fx.root, { recursive: true, force: true });
   }
 });
