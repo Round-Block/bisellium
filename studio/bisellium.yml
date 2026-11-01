@@ -63,7 +63,7 @@ ui_spec_reviewer: ui-spec-reviewer
 # W-452 (D-150 C, D-129 A): each collegium's spec signer and reviewer, for opera whose first spec log is at or after since
 # (D-150 B: an opus in flight keeps the keys above). A kind: ui opus keeps the UI pair.
 spec_seats:
-  since: 2026-11-01T18:00:00.000Z
+  since: 2026-11-01T04:24:32.000Z
   collegia:
     engineering: { signer: architect, reviewer: spec-reviewer }
     ops: { signer: ops-lead, reviewer: spec-reviewer }
