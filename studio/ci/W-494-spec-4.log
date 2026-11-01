@@ -1,0 +1,22 @@
+# opus: W-494
+# phase: spec
+# round: 4
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T14:05:56.697Z
+# tree: tree:bebca299a8bca36dcfd832d16c723d2c89cffce0
+# brief: briefs/W-494.md blob:9b113f137d3aba770d1bbf0f372938e3b1e6afd9
+# ticket: {"opus":"W-494","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":".worktrees/W-494/studio","head":"8fc6995558159e827c0582676e04a597e2cf062b","brief":"9b113f137d3aba770d1bbf0f372938e3b1e6afd9","at":"2026-11-01T14:05:51.949Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-494-spec/promise-ledger-r2.md
+
+## Findings
+
+1. advisory — revision 2 closes the opus branch's tests-gate failure: W-139's read check (`ci-scope.mjs --check-reads`) reported `unlisted: packages/cli/src/guard.test.ts (read studio/prompts/builder-brief.md)`; row b4's commit now adds `guard.test.ts` to `package.json`'s `test:record`, and `package.json` is in Files owned; guard.test.ts run under the read recorder leaves no `unlisted:` line — check: reads-check.out, brief:47, brief:3
+2. advisory — the harness moves a foreground Bash command past about 180 seconds to the background, itself a second waiter; the poll in both refusals, the three agents and the two briefs is now `timeout 170 …`, repeated, row b1 pins it and kill K14 guards it; no rule judges a foreground command's length, and a moved poll reads as a live run, stated limits — check: brief:25, brief:31, kills.out, green-b1.log
+3. advisory — the series is re-staged over master 7a1f9c47; four reds accepted and failing at their declared assertions, fourteen kills guarded, the gates pass at the tip with ci-scope.test.mjs and ci-workflow.test.mjs added; revision 1's evidence is kept in r1/ — check: red-accept.out, declared.out, gates-proto.out, r2-delta-over-opus-branch.diff
+
+## Verdict
+
+passed — signed by the ops-lead seat (`claude-opus-5-5`, spec_seats, D-150 C), brief revision 2 at `studio/briefs/W-494.md`, drafted and prototyped by the architect: four behaviours, prototype `prototype.mbox` over master 7a1f9c47; code-owned paths touched, the Patron merges.
