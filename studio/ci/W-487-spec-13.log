@@ -1,0 +1,25 @@
+# opus: W-487
+# phase: spec
+# round: 13
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1956b-41f9-7240-bd0c-d8ebf0f83f7c
+# outcome: passed
+# at: 2026-11-01T15:05:37.919Z
+# tree: tree:05659db0fe94d3e7a369c41386cf1691518b8075
+# brief: briefs/W-487.md blob:e2cfaf0e42094667ffb8f63a045565fd81691144
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":13,"actor":"architect","studio":".worktrees/W-487/studio","head":"2c6bdda090c2fe49b092ba826de7d45e9d11567f","brief":"e2cfaf0e42094667ffb8f63a045565fd81691144","at":"2026-11-01T15:05:20.059Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-487-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the W-411 b2/b3 Board-drawer fixture is now an explicitly owned W-487 migration and every other W-411 Board concern remains excluded — check: studio/briefs/W-487.md:34, studio/briefs/W-487.md:105
+2. advisory — the owned W-411 fixture contains no petition, so D-151 keeps those predecessor rows Board-owned without changing a W-411 assertion — check: apps/web/tests-serve/w411.spec.ts:42
+3. advisory — the prototype remains eight commits after 533357e5 and its reapplied tree matches the rebuilt head — check: /home/edckt/.bisellium-evidence/W-487-spec/mbox-check.out
+4. advisory — all eight prototype commits independently build the web bundle — check: /home/edckt/.bisellium-evidence/W-487-spec/series-builds.txt
+5. advisory — the changed b4 red stage and all four recorder-form red outputs remain accepted `ERR_ASSERTION` failures without module-load errors — check: /home/edckt/.bisellium-evidence/W-487-spec/b1-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b2-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b3-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b4-red-recorded.log
+
+## Verdict
+
+passed — signature round 11 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-487.md`; `ci/W-487-review-2.log` finding 1 was adopted; the four Genuine red lines restore their round-10 pinned row and assertion markers (W-473); the mbox sha256 is `4067a370ec82a36558f159fa1cd2d0e5ea5c23c8781ba3ec7258addfbc33caea`, and no record write, `next` or `verdict` was performed.
