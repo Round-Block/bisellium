@@ -2455,7 +2455,10 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  z-index: 10;
+  /* The narrow shell rail sits at z-index: 20. Keep the drawer's fixed
+   * Close control in this higher stacking context so that rail cannot
+   * intercept its pointer target. */
+  z-index: 21;
 }
 
 .board-drawer__header {
