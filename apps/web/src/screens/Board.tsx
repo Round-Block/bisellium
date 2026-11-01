@@ -41,7 +41,13 @@ interface PendingCloseRestoration {
   waitingScrollLeft: number | undefined;
 }
 
-export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: ScreenStatus) => void; onWaitingCount?: (count: number) => void } = {}): JSX.Element {
+export function Board({ onStatus, onWaitingCount, initialSelectionId, onInitialSelectionConsumed, onOpenInbox }: {
+  onStatus?: (status: ScreenStatus) => void;
+  onWaitingCount?: (count: number) => void;
+  initialSelectionId?: string;
+  onInitialSelectionConsumed?: () => void;
+  onOpenInbox?: (attentionKey: string) => void;
+} = {}): JSX.Element {
   const [officina, setOfficina] = useState<OfficinaResponse | typeof EMPTY_OFFICINA>(EMPTY_OFFICINA);
   const [opera, setOpera] = useState<OpusEntry[]>([]);
   const [inbox, setInbox] = useState<Pick<InboxResponse, "opera" | "petitiones">>({ opera: [], petitiones: [] });
@@ -75,6 +81,7 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
   const scrollSnapshotRef = useRef<{ scrollLeft: number | undefined; waitingScrollLeft: number | undefined }>({ scrollLeft: undefined, waitingScrollLeft: undefined });
   const pendingCloseRestorationRef = useRef<PendingCloseRestoration | undefined>(undefined);
   const pendingFocusRef = useRef<{ columnId: string; cardId: string } | undefined>(undefined);
+  const initialSelectionOpenedRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     selectedRef.current = selected;
@@ -368,6 +375,16 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
     void fetchDrawerEvents(id);
   }
 
+  useEffect(() => {
+    if (!everLoaded || initialSelectionId === undefined || initialSelectionOpenedRef.current === initialSelectionId) return;
+    const columnId = model.columns.find((column) => column.cards.some((card) => card.id === initialSelectionId))?.id;
+    const waiting = model.waiting.find((item) => item.id === initialSelectionId && item.boardEntry);
+    if (waiting === undefined) return;
+    initialSelectionOpenedRef.current = initialSelectionId;
+    openDrawer(initialSelectionId, columnId ?? "unplaced");
+    onInitialSelectionConsumed?.();
+  }, [everLoaded, initialSelectionId, model, onInitialSelectionConsumed]);
+
   function closeDrawer(): void {
     // selectedRef, not `selected`: this function is also called from the
     // keydown effect's MOUNT-ONCE closure (deps []), which would otherwise
@@ -445,6 +462,7 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
         selectedId={selected?.id ?? lastSelectedId}
         focusedByColumn={focusedByColumn}
         onSelectCard={(id, columnId, origin) => openDrawer(id, columnId, origin)}
+        onOpenInbox={(attentionKey) => onOpenInbox?.(attentionKey)}
         liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
         branchNote={branchNote("branchRecords" in officina ? officina.branchRecords : undefined)}
         generatedAt={generatedAt}

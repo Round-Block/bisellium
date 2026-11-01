@@ -57,10 +57,12 @@ const DEV_OPERA: OpusEntry[] = DEV_DATA.petitiones.map((petitio) => ({
   state: "greenlit", tokens: 0, probationes: {}, traditio: undefined,
 }));
 
-export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard }: {
+export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttentionKey, onInitialAttentionConsumed }: {
   onStatus?: (status: ScreenStatus) => void;
   onNeedsYouCount?: (count: number) => void;
   onOpenBoard?: (opusId: string) => void;
+  initialAttentionKey?: string;
+  onInitialAttentionConsumed?: () => void;
 } = {}): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [attention, setAttention] = useState<AttentionRow[]>([]);
@@ -77,6 +79,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard }: {
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const [outcome, setOutcome] = useState<"refused" | "error" | undefined>(undefined);
+  const initialAttentionOpenedRef = useRef<string | undefined>(undefined);
   const [readPetitionIds, setReadPetitionIds] = useState<Set<string>>(() => {
     try { return decodeInboxReadSet(localStorage.getItem(INBOX_READ_STORAGE_KEY)); }
     catch { return new Set(); }
@@ -163,6 +166,18 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard }: {
   }, [demo]);
 
   useVisibleRefresh(refreshInbox);
+
+  useEffect(() => {
+    if (initialAttentionKey === undefined || initialAttentionOpenedRef.current === initialAttentionKey) return;
+    const index = attention.findIndex((item) => item.attentionKey === initialAttentionKey);
+    if (index < 0) return;
+    initialAttentionOpenedRef.current = initialAttentionKey;
+    setFocusIndex(index);
+    setExpandedId(initialAttentionKey);
+    const petitio = attention[index]?.petitio;
+    if (petitio !== undefined) markRead(petitio.id);
+    onInitialAttentionConsumed?.();
+  }, [attention, initialAttentionKey, onInitialAttentionConsumed]);
 
   const focusedItem = attention[focusIndex];
   const focusedId = focusedItem?.attentionKey;

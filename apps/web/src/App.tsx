@@ -41,6 +41,8 @@ export function App() {
   const [hash, setHash] = useState(currentHash());
   const [needsYouCount, setNeedsYouCount] = useState(0);
   const [boardWaitingCount, setBoardWaitingCount] = useState(0);
+  const [pendingBoardOpus, setPendingBoardOpus] = useState<string | undefined>(undefined);
+  const [pendingInboxAttention, setPendingInboxAttention] = useState<string | undefined>(undefined);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
@@ -49,6 +51,15 @@ export function App() {
   // remounted by a screen's own layout changes and announces every state change.
   const [status, setStatus] = useState<ScreenStatus>(READY);
   const route = parseRoute(hash);
+
+  const openBoardAttention = (opusId: string): void => {
+    setPendingBoardOpus(opusId);
+    window.location.hash = "#/board";
+  };
+  const openInboxAttention = (attentionKey: string): void => {
+    setPendingInboxAttention(attentionKey);
+    window.location.hash = "#/inbox";
+  };
 
   // Only the user's toggle at >=960px writes the preference (brief:21): never a mount, a reload or the narrow overlay.
   const toggleWideSidebar = () => {
@@ -162,7 +173,23 @@ export function App() {
       />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
-        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? <Board onStatus={setStatus} onWaitingCount={setBoardWaitingCount} /> : <Inbox onStatus={setStatus} onNeedsYouCount={setNeedsYouCount} />}
+        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
+          <Board
+            onStatus={setStatus}
+            onWaitingCount={setBoardWaitingCount}
+            initialSelectionId={pendingBoardOpus}
+            onInitialSelectionConsumed={() => setPendingBoardOpus(undefined)}
+            onOpenInbox={openInboxAttention}
+          />
+        ) : (
+          <Inbox
+            onStatus={setStatus}
+            onNeedsYouCount={setNeedsYouCount}
+            onOpenBoard={openBoardAttention}
+            initialAttentionKey={pendingInboxAttention}
+            onInitialAttentionConsumed={() => setPendingInboxAttention(undefined)}
+          />
+        )}
       </main>
       <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
         {status.text}

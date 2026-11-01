@@ -135,6 +135,9 @@ test("W-410-b4 drawer shows reasons and evidence at 1280, 640 and 390", async ({
   for (const width of [1280, 640, 390] as const) {
     await openBoard(page, width);
     await page.locator('[data-waiting-id="W-1"]').click();
+    await expect(page, `${width}: the mixed question row routes to its Inbox reply`).toHaveURL(/#\/inbox$/);
+    await openBoard(page, width);
+    await page.locator('[data-card-id="W-1"]').click();
     const drawer = page.getByRole("dialog", { name: longTitle });
     await expect(drawer, `${width}: the existing drawer opens`).toBeVisible();
     await expect(drawer.getByRole("heading", { name: "Why it waits" }), `${width}: reasons are named`).toBeVisible();
