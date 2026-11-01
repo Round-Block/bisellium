@@ -385,7 +385,7 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     const waiting = model.waiting.find((item) => item.id === initialSelectionId && item.boardEntry);
     if (waiting === undefined) return;
     initialSelectionOpenedRef.current = initialSelectionId;
-    openDrawer(initialSelectionId, columnId ?? "unplaced");
+    openDrawer(initialSelectionId, columnId ?? "unplaced", "waiting");
     onInitialSelectionConsumed?.();
   }, [everLoaded, initialSelectionId, model, onInitialSelectionConsumed]);
 
