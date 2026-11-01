@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { parseRoute } from "./lib/route.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
@@ -50,6 +50,9 @@ export function App() {
   // remounted by a screen's own layout changes and announces every state change.
   const [status, setStatus] = useState<ScreenStatus>(READY);
   const hasMountedAttentionRef = useRef(false);
+  const onAttentionLoaded = useCallback(() => {
+    hasMountedAttentionRef.current = true;
+  }, []);
   const route = parseRoute(hash);
 
   const openBoardAttention = (opusId: string): void => {
@@ -141,10 +144,8 @@ export function App() {
         {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
           <Board
             onStatus={setStatus}
-            onWaitingCount={(count) => {
-              hasMountedAttentionRef.current = true;
-              setAttentionCount(count);
-            }}
+            onWaitingCount={setAttentionCount}
+            onAttentionLoaded={onAttentionLoaded}
             initialSelectionId={pendingBoardOpus}
             onInitialSelectionConsumed={() => setPendingBoardOpus(undefined)}
             onOpenInbox={openInboxAttention}
@@ -152,10 +153,8 @@ export function App() {
         ) : (
           <Inbox
             onStatus={setStatus}
-            onNeedsYouCount={(count) => {
-              hasMountedAttentionRef.current = true;
-              setAttentionCount(count);
-            }}
+            onNeedsYouCount={setAttentionCount}
+            onAttentionLoaded={onAttentionLoaded}
             onOpenBoard={openBoardAttention}
             initialAttentionKey={pendingInboxAttention}
             onInitialAttentionConsumed={() => setPendingInboxAttention(undefined)}

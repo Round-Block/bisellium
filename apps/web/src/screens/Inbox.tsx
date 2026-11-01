@@ -57,9 +57,10 @@ const DEV_OPERA: OpusEntry[] = DEV_DATA.petitiones.map((petitio) => ({
   state: "greenlit", tokens: 0, probationes: {}, traditio: undefined,
 }));
 
-export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttentionKey, onInitialAttentionConsumed }: {
+export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoard, initialAttentionKey, onInitialAttentionConsumed }: {
   onStatus?: (status: ScreenStatus) => void;
   onNeedsYouCount?: (count: number) => void;
+  onAttentionLoaded?: () => void;
   onOpenBoard?: (opusId: string) => void;
   initialAttentionKey?: string;
   onInitialAttentionConsumed?: () => void;
@@ -95,6 +96,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
   const refreshingRef = useRef(false);
   const pendingRefreshRef = useRef(false);
   const onNeedsYouCountRef = useRef(onNeedsYouCount);
+  const onAttentionLoadedRef = useRef(onAttentionLoaded);
   const refreshIntentRef = useRef<{ preferredIndex: number; reopenDetail: boolean; reveal: boolean } | null>(null);
   dataRef.current = data;
   attentionRef.current = attention;
@@ -102,6 +104,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
   expandedIdRef.current = expandedId;
   detachedPetitionRef.current = detachedPetition;
   onNeedsYouCountRef.current = onNeedsYouCount;
+  onAttentionLoadedRef.current = onAttentionLoaded;
 
   const refreshInbox = useCallback((): void => {
     if (refreshingRef.current) {
@@ -135,6 +138,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
       setDetachedPetition(keepDetached ? currentPetition : null);
       setExpandedId(detailWasOpen ? (keepDetached ? `detached:${currentPetition.id}` : (nextAttention[nextIndex]?.attentionKey ?? null)) : null);
       if (intent?.reveal && nextAttention.length > 0) setFocusRequest((request) => request + 1);
+      onAttentionLoadedRef.current?.();
       onNeedsYouCountRef.current?.(attentionTotal(nextAttention));
       hasSuccessfulLoadRef.current = true;
       setLoaded(true);

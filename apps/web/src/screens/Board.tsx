@@ -41,9 +41,10 @@ interface PendingCloseRestoration {
   waitingScrollLeft: number | undefined;
 }
 
-export function Board({ onStatus, onWaitingCount, initialSelectionId, onInitialSelectionConsumed, onOpenInbox }: {
+export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSelectionId, onInitialSelectionConsumed, onOpenInbox }: {
   onStatus?: (status: ScreenStatus) => void;
   onWaitingCount?: (count: number) => void;
+  onAttentionLoaded?: () => void;
   initialSelectionId?: string;
   onInitialSelectionConsumed?: () => void;
   onOpenInbox?: (attentionKey: string) => void;
@@ -90,8 +91,11 @@ export function Board({ onStatus, onWaitingCount, initialSelectionId, onInitialS
     modelRef.current = model;
   }, [model]);
   useEffect(() => {
-    if (everLoaded) onWaitingCount?.(attentionTotal(model.waiting));
-  }, [everLoaded, model.waiting.length, onWaitingCount]);
+    if (everLoaded) {
+      onAttentionLoaded?.();
+      onWaitingCount?.(attentionTotal(model.waiting));
+    }
+  }, [everLoaded, model.waiting.length, onAttentionLoaded, onWaitingCount]);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 612px)");
     const update = (): void => setBoardTrackCollapsed(query.matches);
