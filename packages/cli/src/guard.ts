@@ -452,6 +452,97 @@ export function ownLiveWork(input: Dict): string[] {
   });
 }
 
+/** W-494: the stopping or calling subagent's own transcript. A PreToolUse input names the session's transcript
+ *  (`transcript_path`) and the agent (`agent_id`); Claude Code keeps a subagent's transcript at
+ *  `<session transcript without .jsonl>/subagents/agent-<agent_id>.jsonl` (`probe/hook-input-probe.out`). The rule
+ *  recognises that path and a `transcript_path` that already names `agent-<agent_id>.jsonl`; any other input is not
+ *  judged. */
+export function agentTranscriptPath(input: Dict): string | undefined {
+  const id = str(input["agent_id"]);
+  const session = str(input["transcript_path"]);
+  if (id === undefined || session === undefined || !/^[A-Za-z0-9_-]+$/.test(id)) return undefined;
+  const own = `agent-${id}.jsonl`;
+  if (basename(session) === own) return session;
+  if (!session.endsWith(".jsonl")) return undefined;
+  return join(dirname(session), basename(session, ".jsonl"), "subagents", own);
+}
+
+/** W-494: the background Bash runs a transcript shows started and not yet ended, in start order. Started: a record whose
+ *  `toolUseResult.backgroundTaskId` names the task. Ended: a `task-notification` attachment whose prompt names it in
+ *  `<task-id>…</task-id>` (any status), or a TaskStop result (`toolUseResult.task_id` with a message opening
+ *  `Successfully stopped task`). A line that is not JSON is skipped. */
+export function liveBackgroundRuns(transcript: string): string[] {
+  const started: string[] = [];
+  const ended = new Set<string>();
+  for (const line of transcript.split("\n")) {
+    if (!/backgroundTaskId|task-notification|Successfully stopped task/.test(line)) continue;
+    let rec: unknown;
+    try {
+      rec = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!isDict(rec)) continue;
+    const result = isDict(rec["toolUseResult"]) ? rec["toolUseResult"] : {};
+    const bg = str(result["backgroundTaskId"]);
+    if (bg !== undefined && !started.includes(bg)) started.push(bg);
+    const stopped = str(result["task_id"]);
+    if (stopped !== undefined && str(result["message"])?.startsWith("Successfully stopped task")) ended.add(stopped);
+    const att = isDict(rec["attachment"]) ? rec["attachment"] : {};
+    const prompt = att["commandMode"] === "task-notification" ? str(att["prompt"]) : undefined;
+    for (const m of prompt?.matchAll(/<task-id>([^<]+)<\/task-id>/g) ?? []) if (m[1] !== undefined) ended.add(m[1]);
+  }
+  return started.filter((id) => !ended.has(id));
+}
+
+/** W-494: true when the last tool call in a subagent's transcript is SubagentHandback, so this stop follows its report.
+ *  A reused agent's transcript holds earlier hand-backs; only the last tool call counts. A line that is not JSON is
+ *  skipped. */
+export function handsBack(transcript: string): boolean {
+  let last: string | undefined;
+  for (const line of transcript.split("\n")) {
+    if (!line.includes('"tool_use"')) continue;
+    let rec: unknown;
+    try {
+      rec = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const content = isDict(rec) && rec["type"] === "assistant" && isDict(rec["message"]) ? rec["message"]["content"] : undefined;
+    for (const c of Array.isArray(content) ? content : []) if (isDict(c) && c["type"] === "tool_use" && str(c["name"]) !== undefined) last = str(c["name"]);
+  }
+  return last === "SubagentHandback";
+}
+
+/** W-494: the calling subagent's live background runs, read from its own transcript; [] for the main thread or a
+ *  transcript that cannot be read (fail-open). */
+export function callerLiveRuns(input: Dict): string[] {
+  const path = agentTranscriptPath(input);
+  if (path === undefined) return [];
+  try {
+    return liveBackgroundRuns(readFileSync(path, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+/** W-494: a wait loop, as the rule recognises one: `while` or `until` opening the command text, a simple command or a
+ *  quoted `-c` script, or a call of `wait-until.sh`. */
+const WAIT_LOOP = /(?:^|[;&|(\n'"`])\s*(?:while|until)(?=[\s;]|$)|wait-until\.sh/;
+/** W-494: `pgrep` given `-f` (alone or among other short flags, after other short flags) or `--full`. */
+const PGREP_FULL = /(?:^|[\s;&|(`'"/!])pgrep(?:\s+-[A-Za-z]+)*?\s+(?:-[A-Za-z]*f[A-Za-z]*|--full)(?=[\s;'"`)]|$)/;
+/** W-494: true when the command text holds a wait loop and a `pgrep -f` anywhere, quotes and `-c` scripts included:
+ *  `pgrep -f` matches the shell running this very call, whose command line holds the pattern, so the loop never sees
+ *  the run end (the 11-01 W-452 done run). Lexical: a pgrep given its flags another way (`-u me -f`), one reached through
+ *  a variable or a script file, and a `ps | grep` wait are not recognised (a limit). */
+export function selfMatchingWait(command: string): boolean {
+  return WAIT_LOOP.test(command) && PGREP_FULL.test(command);
+}
+
+/** The foreground wait a refusal names: the run writes its exit file last, and the wait polls it in calls under the Bash
+ *  tool's 120 s default foreground cap (a longer call is moved to the background, a second waiter). */
+export const EXIT_FILE_POLL = "timeout 100 bash -c 'until [ -f X.exit ]; do sleep 10; done'";
+
 /** W-444: what a Stop rule is handed besides the reply: the hook input, the home whose usage readings it may read, and
  *  the clock. */
 export interface StopContext {
@@ -543,8 +634,17 @@ export function guardRefusal(input: Dict): string | undefined {
   if (event === "SubagentStop") {
     if (input["stop_hook_active"] === true) return undefined;
     const ids = ownLiveWork(input);
-    return ids.length
-      ? `refused: your report is in but your own background work still runs (${ids.join(", ")}): stop each with TaskStop, then finish (W-310)`
+    if (ids.length === 0) return undefined;
+    let back = false;
+    try {
+      back = handsBack(readFileSync(str(input["agent_transcript_path"]) ?? "", "utf8"));
+    } catch {
+      back = false;
+    }
+    if (back) return `refused: your report is in but your own background work still runs (${ids.join(", ")}): stop each with TaskStop, then finish (W-310)`;
+    // W-494: a turn that hands nothing back may end while the agent's one run is live; the run's notice wakes it
+    return ids.length > 1
+      ? `refused: ${ids.length} of your own background runs still run (${ids.join(", ")}) (W-494): stop all but one with TaskStop; a turn may end while one run is live, and its notice wakes you`
       : undefined;
   }
   if (event === "Stop") return stopRefusal(input);
@@ -565,8 +665,15 @@ export function guardRefusal(input: Dict): string | undefined {
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
+    if (selfMatchingWait(command))
+      return `refused: \`pgrep -f\` matches this call's own command line, so a loop waiting on it never ends (W-494): have the run write an exit file last (\`cmd > X.log 2>&1; echo $? > X.exit\`) and poll that in the foreground in calls under the 120 s default Bash cap: \`${EXIT_FILE_POLL}\`, repeated`;
     if (args["run_in_background"] === true && unboundedLoop(command))
       return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
+    if (args["run_in_background"] === true && !main) {
+      const live = callerLiveRuns(input);
+      if (live.length > 0)
+        return `refused: your background run ${live.join(", ")} is still live, and an agent keeps one background run at a time (W-494): wait for it in the foreground (write an exit file last, \`cmd > X.log 2>&1; echo $? > X.exit\`, and poll it in calls under the 120 s default Bash cap, \`${EXIT_FILE_POLL}\`, repeated), or stop it with TaskStop, then start the next`;
+    }
     return undefined;
   }
   if (tool === "Write" || tool === "Edit" || tool === "NotebookEdit") {

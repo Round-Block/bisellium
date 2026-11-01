@@ -29,14 +29,24 @@ discarded. `--keep` never preserves the clone. Git reads, add and ordinary
 commit are brokered; remotes, configuration, hooks, reset/stash/ref operations
 and credentials are unavailable by contract.
 
-Anything over ~5 minutes (the full `npm test`) runs as its own Bash call
+Anything over ~2 minutes (the full `npm test`) runs as its own Bash call
 with the tool's `run_in_background: true` parameter, never
 `&`/nohup/setsid/disown (they die when the call returns; a hook refuses
 them): `cmd > X.log 2>&1; echo $? > X.exit`. Poll with short foreground
-checks (`cat X.exit; tail -1 X.log`), each under the 10-minute call cap;
+checks (`cat X.exit; tail -1 X.log`), each under the Bash tool's 120-second default cap;
 never a background watcher or wait loop (retro-32's phantom "running
 task" class). No exit file and a log stale for 5 minutes means dead:
 report it.
+
+Keep one background run at a time; the guard refuses a second while the
+first is live (W-494). A run writes its exit file last
+(`cmd > X.log 2>&1; echo $? > X.exit`); wait for it in the foreground with
+`timeout 100 bash -c 'until [ -f X.exit ]; do sleep 10; done'`, repeated
+until the file is there, each poll under the 120-second cap the Bash tool
+puts on a foreground call by default (a longer call is moved to the
+background, a second waiter); never a new background waiter, and
+never `pgrep -f`, which matches the waiting command itself. A turn may end
+while your one run is live: its notice wakes you.
 
 Before you hand back, stop your own background work (TaskStop); the
 SubagentStop guard sends you back while it still runs (W-310).

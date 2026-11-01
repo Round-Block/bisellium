@@ -1,0 +1,22 @@
+# opus: W-494
+# phase: spec
+# round: 9
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19731-2082-7c21-85a1-94ae0f631b11
+# outcome: passed
+# at: 2026-11-01T15:09:08.041Z
+# tree: tree:7c3788e18c3192dc6b1033e85d13dd72c1e2d10d
+# brief: briefs/W-494.md blob:8a201f3552a76849a41359507e6aa22eca963c1c
+# ticket: {"opus":"W-494","step":"spec","action":"verdict-spec","round":9,"actor":"spec-reviewer","studio":".worktrees/W-494/studio","head":"1bbc1a75f930a0a32bdffda1ec3f60e3a95e5bb9","brief":"8a201f3552a76849a41359507e6aa22eca963c1c","at":"2026-11-01T15:09:07.401Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-494-spec-7.log #1: closed - brief:37 and brief:87 now promise only that no text claims 10 minutes is the default foreground-call cap; W-494-b4 checks 10-minute mentions against the explicit `timeout` parameter, with K16 and K17 guarding the missed forms.
+
+## Verdict
+Revision 4 closes the false-promise blocker and states the lexical check’s limits.
+
+VERDICT: PASS

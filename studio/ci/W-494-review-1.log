@@ -1,0 +1,19 @@
+# opus: W-494
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a197bb-cd41-7761-bf44-f56802d0d87a
+# outcome: passed
+# at: 2026-11-01T15:32:43.468Z
+# tree: tree:90f1c41be75444b4b153d745ec401895fa3ed119
+# brief: briefs/W-494.md blob:8a201f3552a76849a41359507e6aa22eca963c1c
+# ticket: {"opus":"W-494","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-494/studio","head":"ecbdf19ac95fc9f647a4005d89f5be2d7cd29cef","brief":"8a201f3552a76849a41359507e6aa22eca963c1c","at":"2026-11-01T15:30:28.219Z"}
+
+## Findings
+No findings
+
+## Verdict
+The four behaviours match the signed brief; source scope, assertion-level reds, and final certified gates are consistent.
+
+VERDICT: PASS

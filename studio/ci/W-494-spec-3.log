@@ -1,0 +1,20 @@
+# opus: W-494
+# phase: spec
+# round: 3
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19731-2082-7c21-85a1-94ae0f631b11
+# outcome: passed
+# at: 2026-11-01T13:01:38.734Z
+# tree: tree:a47beb79918962048279baae4a1d9dd8ee68b309
+# brief: briefs/W-494.md blob:54e07c38a883c86474aae44a12154ab1ae3afba6
+# ticket: {"opus":"W-494","step":"spec","action":"verdict-spec","round":3,"actor":"spec-reviewer","studio":"studio","head":"046c6f96977200226ec4af3781136cc898534d50","brief":"54e07c38a883c86474aae44a12154ab1ae3afba6","at":"2026-11-01T13:01:37.881Z"}
+
+## Findings
+1. advisory — brief:29 [severity: S2] The refusal-text promise is broader than the specified ordering: a second background call that is a self-matching wait or unbounded loop is refused earlier without naming the live run or TaskStop. Replace the clause with: “when no earlier self-matching-wait or unbounded-loop refusal applies, the W-494 refusal names the live run, the exit-file poll and TaskStop; those earlier refusals retain their own text.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/guard.test.ts
+2. advisory — brief:33 [severity: S2] A main-thread wait containing a ladder write, or issued while a review notice is pending, receives that earlier refusal rather than the promised exit-file-poll refusal. Replace the clause with: “when no pending review-notice or ladder-write refusal applies, the W-494 refusal names the exit-file poll; otherwise the earlier refusal applies.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/guard.test.ts
+
+## Verdict
+The input boundary is complete and the numbered behaviours are feasible; both findings are advisory promise limits because every overlapping call still fails closed.
+
+VERDICT: PASS

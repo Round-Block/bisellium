@@ -1,0 +1,26 @@
+# opus: W-494
+# phase: spec
+# round: 8
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T15:08:31.504Z
+# tree: tree:7c3788e18c3192dc6b1033e85d13dd72c1e2d10d
+# brief: briefs/W-494.md blob:8a201f3552a76849a41359507e6aa22eca963c1c
+# ticket: {"opus":"W-494","step":"spec","action":"verdict-spec","round":8,"actor":"architect","studio":".worktrees/W-494/studio","head":"f5093cffdfe5ba4ed347adb096beb2625f739da6","brief":"8a201f3552a76849a41359507e6aa22eca963c1c","at":"2026-11-01T15:08:21.673Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-494-spec/promise-ledger-r4.md
+
+## Findings
+
+1. advisory — revision 4 adopts spec review round 7's text: none of the five guidance texts claims that 10 minutes is the default foreground-call cap; the guidance is kept (the `timeout` parameter's 10-minute maximum is true) and row b4 is widened instead: every mention of 10 (or ten) minutes must follow "`timeout` parameter" within 30 characters, a lexical rule whose unrecognised forms (`600 s`, a claim inside that window) are stated limits — check: brief:37, brief:87, brief:3
+2. advisory — kills K16 ("capped at ten minutes by default") and K17 (the reviewer's "10 minutes at most" detached from the parameter), the forms revision 3's phrase regex missed, are guarded, and K15 still is; seventeen kills in all — check: kills.out, kill-K16.out, kill-K17.out
+3. advisory — the series is re-staged over master 7a1f9c47 (only row b4 and its feature commit change); four reds accepted and failing at their declared assertions, the gates pass at the tip and guard.test.ts leaves no `unlisted:` read; revision 3's evidence is kept in r3/ — check: red-accept.out, declared.out, gates-proto.out, reads-check.out, r4-delta-over-opus-branch.diff
+
+## Earlier findings
+
+- ci/W-494-spec-7.log #1: closed — brief:37 and brief:87 now read "none claims that 10 minutes is the default foreground-call cap" (the reviewer's text); row b4 checks every 10-minute mention in the five texts sits within 30 characters after "`timeout` parameter", so builder-brief.md's "(10 minutes at most)" passes as the parameter's maximum and any other 10-minute cap claim fails (kills K15, K16, K17 guarded, kills.out)
+
+## Verdict
+
+passed — round 8, signed by the ops-lead seat (`claude-opus-5-5`, spec_seats, D-150 C), brief revision 4 at `studio/briefs/W-494.md`, drafted and prototyped by the architect: four behaviours, prototype `prototype.mbox` over master 7a1f9c47; code-owned paths touched, the Patron merges.

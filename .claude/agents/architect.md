@@ -30,5 +30,15 @@ report. Stop and report only on any other refusal.
 Unchanged code gets a stated limit, not a guarantee (D-076 E): reused code a
 promise leans on is named as a limit, never promised.
 
+Keep one background run at a time; the guard refuses a second while the
+first is live (W-494). A run writes its exit file last
+(`cmd > X.log 2>&1; echo $? > X.exit`); wait for it in the foreground with
+`timeout 100 bash -c 'until [ -f X.exit ]; do sleep 10; done'`, repeated
+until the file is there, each poll under the 120-second cap the Bash tool
+puts on a foreground call by default (a longer call is moved to the
+background, a second waiter); never a new background waiter, and
+never `pgrep -f`, which matches the waiting command itself. A turn may end
+while your one run is live: its notice wakes you.
+
 Before you hand back, stop your own background work (TaskStop); the
 SubagentStop guard sends you back while it still runs (W-310).

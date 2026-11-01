@@ -1,0 +1,41 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-494-b2\s --import tsx packages/cli/src/guard.test.ts
+# exit: 1
+# at: 2026-11-01T13:36:26.795Z
+# sella: ops-lead
+# tree: tree:b1282f05587ead4a83f81e7f6d04fe0d3916584e
+# ticket: {"opus":"W-494","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-494/studio","head":"69804d11bd631249b9aedbe5c9c797385dda68c7","brief":"54e07c38a883c86474aae44a12154ab1ae3afba6","at":"2026-11-01T13:36:26.709Z"}
+
+TAP version 13
+# Subtest: W-494-b2 behaviour 2: at SubagentStop a turn that hands nothing back may end while the agent's one run is live
+not ok 1 - W-494-b2 behaviour 2: at SubagentStop a turn that hands nothing back may end while the agent's one run is live
+  ---
+  duration_ms: 12.172906
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-494/packages/cli/src/guard.test.ts:12:2227'
+  failureType: 'testCodeFailure'
+  error: |-
+    one live run: the turn may end
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-494/packages/cli/src/guard.test.ts:838:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 24.665375
