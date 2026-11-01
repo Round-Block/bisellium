@@ -29,12 +29,13 @@ test("W-411-b3 behaviour 3: item detail keeps its close path in view", () => {
   assert.match(served, /item detail remains readable and closable at 1280, 640 and 390/, "the served row pins all ruled widths");
 });
 
-test.skip("W-411-b4 behaviour 4: return restores selection, exact focus origin and both Board scrolls", () => {
+test("W-411-b4 behaviour 4: return restores selection, exact focus origin and both Board scrolls", () => {
   assert.match(board, /origin:\s*"card"\s*\|\s*"waiting"/, "a selection records which visible copy opened detail");
   assert.match(board, /waitingScrollLeft/, "the waiting rail scroll is snapshotted with the phase track");
   assert.match(board, /lastSelectedId/, "selection outlives the open drawer");
   assert.match(view, /onSelect\(card\.id, columnId, "card"\)/, "a lifecycle card identifies itself as the focus origin");
   assert.match(view, /onSelectCard\(card\.id, columnId \?\? "unplaced", "waiting"\)/, "a waiting entry identifies itself as the focus origin");
-  assert.match(css, /\.board__card\[aria-selected="true"\]/, "returned selection has a visible state");
+  assert.match(css, /\.board__card\[aria-selected="true"\]\s*\{[^}]*background:\s*var\(--rule\)/s, "selected lifecycle cards use a distinct rule fill");
+  assert.match(css, /\.board__card\[aria-selected="true"\] \.board__waiting-owner small,[\s\S]*?color:\s*var\(--ink-2\)/, "selected ask labels meet the contrast floor");
   assert.match(served, /return restores selection, exact focus and both scroll offsets at 1280, 640 and 390/, "the served row pins all ruled widths");
 });

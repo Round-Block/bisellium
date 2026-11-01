@@ -78,6 +78,17 @@ async function cardColours(locator: Locator): Promise<{ background: string; bord
   });
 }
 
+function contrastRatio(foreground: string, background: string): number {
+  const channels = (value: string): number[] => [...value.matchAll(/[\d.]+/g)].slice(0, 3).map(([part]) => Number(part) / 255);
+  const luminance = (value: string): number => {
+    const [red = 0, green = 0, blue = 0] = channels(value).map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  };
+  const light = Math.max(luminance(foreground), luminance(background));
+  const dark = Math.min(luminance(foreground), luminance(background));
+  return (light + 0.05) / (dark + 0.05);
+}
+
 test("W-411-b1 header omits implementation prose at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w411-b1");
   await installFixture(page);
@@ -184,13 +195,18 @@ test("W-411-b3 item detail remains readable and closable at 1280, 640 and 390", 
   }
 });
 
-test.skip("W-411-b4 return restores selection, exact focus and both scroll offsets at 1280, 640 and 390", async ({ page }) => {
+test("W-411-b4 return restores selection, exact focus and both scroll offsets at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w411-b4");
   await installFixture(page);
   for (const width of WIDTHS) {
     await openBoard(page, width, "b4");
     const columns = page.locator(".board__columns");
     const waitingItems = page.locator(".board__waiting-items");
+    const waitingCard = page.locator('[data-card-id="W-5"]');
+    const ordinaryCard = page.locator('[data-card-id="W-11"]');
+    const waitingBefore = await cardColours(waitingCard);
+    const ordinaryBefore = await cardColours(ordinaryCard);
+    expect(waitingBefore.background, `${width}: waiting and ordinary cards begin with distinct fills`).not.toBe(ordinaryBefore.background);
     await columns.evaluate((node) => { node.scrollLeft = Math.min(node.scrollWidth - node.clientWidth, Math.max(40, node.clientWidth)); });
     await waitingItems.evaluate((node) => { node.scrollLeft = Math.min(node.scrollWidth - node.clientWidth, 596); });
     const opener = page.locator('[data-waiting-id="W-5"]');
@@ -209,16 +225,30 @@ test.skip("W-411-b4 return restores selection, exact focus and both scroll offse
     await expect(opener, `${width}: focus returns to the waiting-strip opener`).toBeFocused();
     const selected = page.locator('[data-card-id="W-5"]');
     await expect(selected, `${width}: item selection survives closing detail`).toHaveAttribute("aria-selected", "true");
+    const rule = await cssColour(page, "--rule");
+    await expect.poll(async () => (await cardColours(selected)).background, { message: `${width}: selected waiting card reaches the rule fill` }).toBe(rule);
+    const selectedColours = await cardColours(selected);
+    expect(selectedColours.background, `${width}: selection differs from the same waiting card before selection`).not.toBe(waitingBefore.background);
+    expect(selectedColours.background, `${width}: selection also differs from an ordinary unselected card`).not.toBe(ordinaryBefore.background);
+    for (const label of [".board__waiting-owner small", ".board__waiting-next small", ".board__waiting-ask small"]) {
+      const colours = await selected.locator(label).evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { foreground: style.color, background: getComputedStyle(node.closest(".board__card")!).backgroundColor };
+      });
+      expect(contrastRatio(colours.foreground, colours.background), `${width}: ${label} meets 4.5:1 on the selected fill`).toBeGreaterThanOrEqual(4.5);
+    }
     expect(await columns.evaluate((node) => node.scrollLeft), `${width}: phase scroll is restored`).toBeCloseTo(before.columns, 0);
     expect(await waitingItems.evaluate((node) => node.scrollLeft), `${width}: waiting scroll is restored`).toBeCloseTo(before.waiting, 0);
 
-    await selected.scrollIntoViewIfNeeded();
-    await selected.focus();
+    await ordinaryCard.scrollIntoViewIfNeeded();
+    await ordinaryCard.focus();
     const cardScroll = await columns.evaluate((node) => node.scrollLeft);
     await page.keyboard.press("Enter");
     await page.keyboard.press("Escape");
-    await expect(selected, `${width}: lifecycle-card focus returns to the lifecycle card`).toBeFocused();
-    await expect(selected, `${width}: lifecycle-card selection remains`).toHaveAttribute("aria-selected", "true");
+    await expect(ordinaryCard, `${width}: lifecycle-card focus returns to the lifecycle card`).toBeFocused();
+    await expect(ordinaryCard, `${width}: lifecycle-card selection remains`).toHaveAttribute("aria-selected", "true");
+    await expect.poll(async () => (await cardColours(ordinaryCard)).background, { message: `${width}: an ordinary card reaches the selected rule fill` }).toBe(rule);
+    expect(rule, `${width}: an ordinary card also differs from itself after selection`).not.toBe(ordinaryBefore.background);
     expect(await columns.evaluate((node) => node.scrollLeft), `${width}: lifecycle-card phase scroll is restored`).toBeCloseTo(cardScroll, 0);
   }
 });
