@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
@@ -676,7 +676,7 @@ function isMutation(diff: string): boolean {
 
 /** W-381: why a pinned line's kill is missing or proves nothing, or undefined. Its kills are those on the ledger lines citing
  *  it (`brief:<n>`, any status); one whose patch is a mutation and whose output proves a pin of the line (`killedPin`)
- *  suffices, else the first kill's first problem is reported. */
+ *  on what the code does (`textKillProblem`, W-492) suffices, else the first kill's first problem is reported. */
 function killProblem(c: RuledCase, entries: readonly { text: string; briefs: Set<number> }[]): string | undefined {
   const kills = entries.filter((e) => e.briefs.has(c.line)).flatMap((e) => [...e.text.matchAll(KILL)].map((m) => [m[1]!, m[2]!] as const));
   if (kills.length === 0)
@@ -694,11 +694,22 @@ function killProblem(c: RuledCase, entries: readonly { text: string; briefs: Set
             ? `brief:${c.line}'s kill \`${output}\` ${o.error}`
             : killedPin(o.text, c.pins) === undefined
               ? `brief:${c.line}'s kill \`${output}\` does not show a pinned row failing at its pinned assertion (${c.pins.map((pin) => `\`${pin.row}\` "${pin.assertion}"`).join(", ")})`
-              : undefined;
+              : textKillProblem(c, output, o.text, p.text);
     if (why === undefined) return undefined;
     first ??= why;
   }
   return first;
+}
+
+/** W-492 (D-076 D): why a kill that proves a pin of `c` proves only source text, or undefined: every pin its output proves
+ *  (`killedPin`) failed on the text the kill changed (`textKilledLine`), so the pinned assertion reads the source, not
+ *  what the code does (W-487 review 1: two S1 findings on promises whose kills changed the text their rows matched). */
+function textKillProblem(c: RuledCase, output: string, text: string, patch: string): string | undefined {
+  const read = c.pins.filter((pin) => killedPin(text, [pin]) !== undefined).map((pin) => textKilledLine(text, pin, patch));
+  const line = read.every((l) => l !== undefined) ? read[0] : undefined;
+  return line === undefined
+    ? undefined
+    : `brief:${c.line}'s kill \`${output}\` fails at a pinned assertion that read the source text the kill changed (its actual holds the added line "${line}"), so it proves that text, not what the code does: pin brief:${c.line} by an assertion on a call's result, rendered markup or a served page, or say unpinned (a stated limit, scoped in the ledger)`;
 }
 
 /** W-445: an absolute or ~/ path as written, home expanded, or "" when it is neither (os.homedir() can throw). */

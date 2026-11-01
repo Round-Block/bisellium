@@ -289,7 +289,35 @@ export function killedPin(output: string, pins: readonly Pin[]): Pin | undefined
   return pins.find((pin) => provesPin(lines, pin));
 }
 
+/** W-492 (D-076 D): the line of a kill's own mutation that the failure proving `pin` was read from, or undefined. The kill's
+ *  output proves `pin` as `killedPin` reads it, and the proving diagnostic block's `actual:` value (a `|-`, `|` or `|+`
+ *  block scalar, each line trimmed, or a quoted `'<text>'`, a doubled `''` read as one quote) holds, as a whole trimmed
+ *  line, a line the patch adds (a line opening `+` after its first `@@ ` hunk header, without the `+`, trimmed) that holds a
+ *  letter or a digit: the pinned assertion read the source text the kill changed, so the kill proves that text, not what
+ *  the code does. ponytail: every other `actual` form (a boolean, as `assert.ok(text.includes(…))` prints, a substring, a
+ *  plain scalar), a patch that only removes lines, and a behaviour that prints a changed line verbatim are not told apart. */
+export function textKilledLine(output: string, pin: Pin, patch: string): string | undefined {
+  const lines = output.split(/\r?\n/);
+  if (lines[0] !== "TAP version 13") return undefined;
+  const proved = provingBlock(lines, pin);
+  if (proved === undefined) return undefined;
+  const actual = actualLines(proved.block, proved.indent);
+  const body = patch.split(/\r?\n/);
+  const hunk = body.findIndex((l) => l.startsWith("@@ "));
+  if (hunk === -1) return undefined;
+  return body
+    .slice(hunk + 1)
+    .filter((l) => l.startsWith("+"))
+    .map((l) => l.slice(1).trim())
+    .find((l) => /[\p{L}\p{N}]/u.test(l) && actual.has(l));
+}
+
 function provesPin(lines: string[], pin: Pin): boolean {
+  return provingBlock(lines, pin) !== undefined;
+}
+
+/** The diagnostic block (its lines after `---`, and its indent) that proves `pin` among a kill's output lines, or undefined. */
+function provingBlock(lines: string[], pin: Pin): { block: string[]; indent: string } | undefined {
   // the indent before `head` and the pinned row's name when `line` opens with them, else undefined
   const named = (line: string, head: RegExp): string | undefined => {
     const m = head.exec(line);
@@ -303,14 +331,15 @@ function provesPin(lines: string[], pin: Pin): boolean {
     const e = lines.findIndex((l, i) => i > s && l.startsWith(indent) && /^(?:not )?ok \d+ - /.test(l.slice(indent.length)));
     if (e === -1 || named(lines[e]!, /^( *)not ok \d+ - /) !== indent) continue;
     const close = lines.findIndex((l, i) => i > e && l === `${indent}  ...`);
-    if (diagnosticProves(lines.slice(s, close === -1 ? e + 1 : close + 1), pin.assertion.trim())) return true;
+    const proving = provingDiagnostic(lines.slice(s, close === -1 ? e + 1 : close + 1), pin.assertion.trim());
+    if (proving !== undefined) return proving;
   }
-  return false;
+  return undefined;
 }
 
-/** Whether some YAML diagnostic block among `lines` (a `---` line to the next `...` line at its indent) carries an `error:`
- *  message that is `assertion` or opens with it and `: `, and `code: 'ERR_ASSERTION'`. */
-function diagnosticProves(lines: string[], assertion: string): boolean {
+/** The first YAML diagnostic block among `lines` (a `---` line to the next `...` line at its indent) that carries an `error:`
+ *  message that is `assertion` or opens with it and `: `, and `code: 'ERR_ASSERTION'`, with its indent; else undefined. */
+function provingDiagnostic(lines: string[], assertion: string): { block: string[]; indent: string } | undefined {
   for (let i = 0; i < lines.length; i++) {
     const open = /^( *)---$/.exec(lines[i]!);
     if (open === null) continue;
@@ -319,9 +348,23 @@ function diagnosticProves(lines: string[], assertion: string): boolean {
     const at = block.findIndex((l) => l.startsWith(`${open[1]}error: `));
     const value = at === -1 ? undefined : block[at]!.slice(`${open[1]}error: `.length);
     const message = value === "|-" ? block[at + 1]?.trim() : value !== undefined && /^'.*'$/.test(value) ? value.slice(1, -1).replaceAll("''", "'").trim() : undefined;
-    if ((message === assertion || message?.startsWith(`${assertion}: `) === true) && block.includes(`${open[1]}code: 'ERR_ASSERTION'`)) return true;
+    if ((message === assertion || message?.startsWith(`${assertion}: `) === true) && block.includes(`${open[1]}code: 'ERR_ASSERTION'`)) return { block, indent: open[1]! };
   }
-  return false;
+  return undefined;
+}
+
+/** W-492: a diagnostic block's `actual:` value as trimmed lines: a `|-`, `|` or `|+` block scalar's lines (each more
+ *  indented than the key, or blank), or a quoted `'<text>'` with `''` read as one quote; any other form is no line. */
+function actualLines(block: readonly string[], indent: string): Set<string> {
+  const key = `${indent}actual: `;
+  const at = block.findIndex((l) => l.startsWith(key));
+  if (at === -1) return new Set();
+  const value = block[at]!.slice(key.length);
+  if (/^'.*'$/.test(value)) return new Set([value.slice(1, -1).replaceAll("''", "'").trim()]);
+  if (!/^\|[-+]?$/.test(value)) return new Set();
+  const out = new Set<string>();
+  for (let i = at + 1; i < block.length && (block[i]!.startsWith(`${indent}  `) || block[i]!.trim() === ""); i++) out.add(block[i]!.trim());
+  return out;
 }
 
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
