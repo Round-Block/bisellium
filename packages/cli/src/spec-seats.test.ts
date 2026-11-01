@@ -117,3 +117,113 @@ test("W-452-b1 behaviour 1: with spec_seats, an opus's spec is signed and review
   held("a state outside the gate's domain", () => {}, /spec_seats: the trunk record's state backlog is outside the gate's domain/, rec("ops", { state: "backlog" }));
   held("a malformed setting holds a kind: ui opus too", (m) => (seatsOf(m)["since"] = 7), /since must be an ISO instant/, rec("design", { kind: "ui" }));
 });
+
+// ---------------------------------------------------------------------------
+// W-452-b2 (D-150 B): an opus whose spec sequence began before since keeps today's seats, before the branch and after it.
+// ---------------------------------------------------------------------------
+/** A brief with the six design-lex sections (as next-world's briefText(1); not imported, so this file is no next row file, W-179). */
+const BRIEF = ["# W-900 fixture brief", "", "## Intent", "", "Fixture.", "", "## Files owned", "", "- `source.txt`", "", "## Interfaces", "", "None.", "", "## Behaviours to test", "", "1. **Fixture behaviour 1.**", "", "## Acceptance", "", "Fixture.", "", "## Out of scope", "", "Fixture.", ""].join("\n");
+const PIN = `briefs/W-900.md blob:${createHash("sha1").update(`blob ${Buffer.byteLength(BRIEF)}\0`).update(BRIEF).digest("hex")}`;
+const specLogText = (round: number, sella: string, at: string, o: { model?: string; outcome?: string; ats?: string[] } = {}): string =>
+  [
+    "# opus: W-900",
+    "# phase: spec",
+    `# round: ${round}`,
+    `# sella: ${sella}`,
+    ...(o.model === undefined ? [] : [`# model: ${o.model}`]),
+    `# outcome: ${o.outcome ?? "passed"}`,
+    ...(o.ats ?? [`# at: ${at}`]),
+    `# brief: ${PIN}`,
+    "",
+    "## Findings",
+    "No findings",
+    "",
+  ].join("\n");
+const src = (files: Record<string, string | undefined>) => ({
+  read: (rel: string) => files[rel],
+  list: (dir: string) => Object.keys(files).filter((rel) => rel.startsWith(`${dir}/`)).map((rel) => rel.slice(dir.length + 1)),
+});
+const BEFORE = "2026-11-01T11:59:59.999Z";
+
+function seatFacts(files: Record<string, string>, o: { branch?: boolean; record?: Dict } = {}): Facts {
+  const manifest = seatsManifest();
+  const record = { ...rec("ops"), title: "seats fixture", probationes: {}, ...o.record };
+  const s = src({ [`briefs/W-900.md`]: BRIEF, ...files });
+  return {
+    id: "W-900",
+    repo: "/fixture",
+    studioRel: "studio",
+    studioAbs: "/fixture/studio",
+    excludes: [],
+    design: "architect",
+    tip: o.branch === true ? "branch-tip" : undefined,
+    wt: { dir: "/fixture/.worktrees/W-900", studio: "/fixture/.worktrees/W-900/studio", usable: o.branch === true },
+    trunk: src({}),
+    trunkRecord: record,
+    certified: () => false,
+    branch: o.branch === true ? s : undefined,
+    branchRecord: o.branch === true ? record : undefined,
+    work: o.branch === true ? src({}) : s,
+    choreDone: false,
+    residue: false,
+    pushed: false,
+    manifest,
+    specOwner: { where: "the main checkout (studio)", record, manifest },
+    curTree: () => undefined,
+    buildRounds: () => ({ error: "unused" }),
+    gates: () => undefined,
+    redFindings: () => [],
+    replay: () => undefined,
+    uiSpecProblems: () => [],
+    uiSpecInput: () => undefined,
+    uiReviewProblems: () => [],
+    uiReviewInput: () => undefined,
+    pr: () => ({ kind: "none" }),
+    owed: () => ({ owed: [] }),
+    daily: () => ({ owed: undefined }),
+    evidenceAt: () => 0,
+    wtCiProblem: () => undefined,
+    wtChanges: () => ({ spec: [], other: [], bad: [] }),
+    mainChanges: () => ({ spec: [], other: [], bad: [] }),
+  } as unknown as Facts;
+}
+
+test("W-452-b2 behaviour 2: an opus whose first spec log predates since keeps today's seats (D-150 B), in next's reader and its orders", () => {
+  const logs = (files: Record<string, string | undefined>) => ({ id: "W-900", src: src(files) });
+  const legacy = readSpecReviewer(seatsManifest(), rec("ops"), logs({ "ci/W-900-spec-1.log": specLogText(1, "architect", BEFORE) }));
+  assert.deepEqual(legacy, pair("architect", SR, SOL), "an ops opus whose first spec log predates since keeps the architect");
+  assert.deepEqual(readSpecReviewer(seatsManifest(), rec("ops"), logs({ "ci/W-900-spec-1.log": specLogText(1, "ops-lead", SINCE) })), pair("ops-lead", SR, SOL), "a first spec log at since is under the new seats");
+  assert.deepEqual(
+    readSpecReviewer(seatsManifest(), rec("ops"), logs({ "ci/W-900-spec-2.log": specLogText(2, SR, SINCE, { model: SOL }), "ci/W-900-spec-10.log": specLogText(10, "architect", BEFORE) })),
+    pair("architect", SR, SOL),
+    "any spec log before since keeps today's seats, whatever its round",
+  );
+  assert.deepEqual(
+    readSpecReviewer(seatsManifest(), rec("ops"), logs({ "ci/W-9001-spec-1.log": specLogText(1, "architect", BEFORE), "ci/W-900-review-1.log": specLogText(1, "qa-lead", BEFORE), "ci/W-900-spec-01.log": specLogText(1, "architect", BEFORE) })),
+    pair("ops-lead", SR, SOL),
+    "another opus's spec log, a review log and a spec log named outside the grammar do not start this opus",
+  );
+  const held = (name: string, files: Record<string, string | undefined>, why: RegExp): void => {
+    const got = readSpecReviewer(seatsManifest(), rec("ops"), logs(files));
+    assert.ok("error" in got, `${name}: next holds (${JSON.stringify(got)})`);
+    assert.match(got.error, why, `${name}: the hold names the log`);
+  };
+  held("an unreadable spec log", { "ci/W-900-spec-1.log": undefined }, /ci\/W-900-spec-1\.log is unreadable/);
+  held("a spec log with no # at:", { "ci/W-900-spec-1.log": specLogText(1, "architect", BEFORE, { ats: [] }) }, /ci\/W-900-spec-1\.log carries no single "# at:" instant/);
+  held("a spec log with two # at:", { "ci/W-900-spec-1.log": specLogText(1, "architect", BEFORE, { ats: [`# at: ${BEFORE}`, `# at: ${SINCE}`] }) }, /carries no single "# at:" instant/);
+  held("a spec log whose # at: is no instant", { "ci/W-900-spec-1.log": specLogText(1, "architect", "yesterday") }, /carries no single "# at:" instant/);
+  assert.deepEqual(readSpecReviewer(seatsManifest(), rec("design", { kind: "ui" }), logs({ "ci/W-900-spec-1.log": undefined })), pair("ui-architect", "ui-spec-reviewer", OPUS_MODEL), "a kind: ui opus reads no log: it keeps the UI pair");
+
+  // next's orders: before the branch the main checkout's logs decide, after it the branch's
+  const unsigned = deriveNext(seatFacts({}));
+  assert.equal(unsigned.order?.sella, "ops-lead", "a new ops opus orders ops-lead to sign");
+  const oldSigned = deriveNext(seatFacts({ "ci/W-900-spec-1.log": specLogText(1, "architect", BEFORE) }));
+  assert.equal(oldSigned.order?.sella, SR, "an architect signature from before since is the signature: the review is ordered");
+  assert.equal(oldSigned.order?.extra.find(([k]) => k === "model")?.[1], SOL, "on the reviewer's model");
+  const newArchitect = deriveNext(seatFacts({ "ci/W-900-spec-1.log": specLogText(1, "architect", SINCE) }));
+  assert.equal(newArchitect.order?.sella, "ops-lead", "an architect signature at since is not the ops signature: ops-lead is ordered");
+  const reviewed = { "ci/W-900-spec-1.log": specLogText(1, "architect", BEFORE), "ci/W-900-spec-2.log": specLogText(2, SR, SINCE, { model: SOL }) };
+  const ready = deriveNext(seatFacts(reviewed, { branch: true }));
+  assert.equal(ready.step, "ready", "after the branch, the branch's logs keep today's seats and the reviewed spec reaches ready");
+  assert.deepEqual(ready.extra, [["attributed", "architect (signed ci/W-900-spec-1.log)"]], "ready is attributed to the architect");
+});
