@@ -48,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-463 done (#948), W-410 done (#946); E1 W-452 spec signed, Codex spec review running; E2 W-483 building from its prototype (W-486 deferred).
+In flight (lane state: ~/.bisellium-evidence/current-state.md, 11-01 05:40Z): W-483 done (#950, row 192). E1 W-452 fix round 1 done (since pinned per the Patron), ci --opus then build review r2. E2 W-489 branching with a required build fix (spec r2 S1, design keeps). U1 W-487 design lead revising red evidence before signing. U2 W-411 signed, Opus UI spec review r2 running.
 1. W-452 — seats per D-150 C: one design lead, engineering signs its own specs; kind ui retired, re-tag; design-lead UI rulings count (D-150 C) (high); 2. W-483 — handoff into source_excludes (then a one-line bisellium.yml records PR while no opus is between branch and done)
 3. W-489 — worktrees reclaimed when their opus or PR ends (Patron 11-01); 4. W-490 — handoff traps checked against open opera, capped (Patron 11-01)
 5. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
