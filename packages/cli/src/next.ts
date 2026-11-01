@@ -734,6 +734,9 @@ function furtherAlongBranches(f: Facts): { refs: string[] } | { error: string } 
   return { refs: out };
 }
 
+/** W-491: the officina's manifest, repo-relative: the one officina record that decides behaviour. `mergedTree` refuses a master
+ * change to it (W-259) and `fixedOutside` counts a commit that changes it as a fix (W-491). */
+const manifestRel = (studioRel: string): string => `${studioRel}/bisellium.yml`;
 /** W-330: a first-parent commit on master after the opus's merge commit whose own diff is not records-only, with its source paths. */
 type SourceCommit = { sha: string; source: string[] };
 /**
@@ -754,7 +757,7 @@ function mergedTree(repo: string, studioRel: string, excludes: string[], merged:
     if ("why" in walked) return walked;
     chain = walked.chain;
   }
-  const policy = since.filter((p) => p === `${studioRel}/bisellium.yml` || p === `${studioRel}/${recordRel(id)}`);
+  const policy = since.filter((p) => p === manifestRel(studioRel) || p === `${studioRel}/${recordRel(id)}`);
   if (policy.length > 0) return { why: `master changed ${policy.map((p) => clean(p)).join(", ")} since the merge commit ${merged.slice(0, 12)}, which certify's run did not judge` };
   const at = chain?.[chain.length - 1]?.sha ?? merged;
   try {
@@ -1314,7 +1317,7 @@ export function deriveNext(f: Facts): Derived {
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");
-      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : failedNow ? (outside > 0 ? `review round ${gate.round} failed at this tree and brief; ${outside} commit(s) after its log are empty or change a path that is not an officina record (D-086 B)` : `review round ${gate.round} failed at this tree and brief on evidence findings only; ${evidenceFix} commit(s) after its log add or change a path under ci/reds/${id}/ (W-428)`) : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
+      return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : failedNow ? (outside > 0 ? `review round ${gate.round} failed at this tree and brief; ${outside} commit(s) after its log are empty or change the officina's manifest or a path that is not an officina record (D-086 B, W-491)` : `review round ${gate.round} failed at this tree and brief on evidence findings only; ${evidenceFix} commit(s) after its log add or change a path under ci/reds/${id}/ (W-428)`) : gate.tree === cur ? `review round ${gate.round} ${gate.status} against an older brief` : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
         phase: "review",
         round: Math.max(0, ...rounds.map((r) => r.n)) + 1,
         resume: rounds.length > 0,
@@ -1716,8 +1719,9 @@ function ownedOpen(line: string, files: string[]): boolean {
 }
 /**
  * W-328 (D-086 B): how many commits on opus/<id>'s first-parent line after the one that last changed `round`'s log, merges
- * aside, are empty (a fix whose kept outputs live outside the repository) or change a path that is not an officina record
- * (`recordOnly`, the one list certify reads: the studio, the session handoff, a dossier page). Every read fails closed: an
+ * aside, are empty (a fix whose kept outputs live outside the repository), change a path that is not an officina record
+ * (`recordOnly`, the one list certify reads: the studio, the session handoff, a dossier page) or, W-491, change the
+ * officina's manifest (`manifestRel`), the one record that decides behaviour. Every read fails closed: an
  * unread round, a log not committed on the branch, or a git read that fails is a hold's why, never a count.
  */
 function fixedOutside(f: Facts, round: BuildReviewRound | undefined): number | { why: string } {
@@ -1731,7 +1735,10 @@ function fixedOutside(f: Facts, round: BuildReviewRound | undefined): number | {
   return log.stdout
     .split("\x01")
     .slice(1)
-    .filter((c) => !recordOnly(c.split("\0").slice(1).map((p) => p.replace(/^\n/, "")).filter((p) => p !== ""), f.studioRel)).length;
+    .filter((c) => {
+      const paths = c.split("\0").slice(1).map((p) => p.replace(/^\n/, "")).filter((p) => p !== "");
+      return !recordOnly(paths, f.studioRel) || paths.includes(manifestRel(f.studioRel));
+    }).length;
 }
 /** W-328 (D-086 B), W-428: the commit on opus/<id> that last changed `round`'s log, or why not, each why ending `uncounted`. */
 function logCommit(f: Facts, round: BuildReviewRound, uncounted: string): string | { why: string } {

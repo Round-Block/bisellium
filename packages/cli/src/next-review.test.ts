@@ -86,7 +86,7 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
     ["a source_excludes with an empty string", (t) => t.replace("source_excludes: []", 'source_excludes: [""]')],
   ];
   for (const [name, edit] of malformed) trial(w, both(edit), () => excludesHeld(n167(w), `${name} holds`));
-  trial(w, both((t) => `${t}review_probatio: review\n`), () => buildFix(n167(w), "review_probatio: review is the default spelled out"));
+  trial(w, both((t) => `${t}review_probatio: review\n`), () => reviewNamed(n167(w), 2, "review_probatio: review is the default spelled out"));
 
   // the worktree manifest against the main checkout's: one row per key, naming it and both values
   const drift: [string, (t: string) => string, RegExp[]][] = [
@@ -102,7 +102,7 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
       reviewHeld(o, `a worktree manifest that differs in ${name} holds`);
       for (const part of parts) assert.match(o.kv.get("why") ?? "", part, ran(`${name}: why names ${part}`, o));
     });
-  trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => t.replace("studio: W-124 fixture", "studio: renamed") }], () => buildFix(n167(w), "an unrelated key differing does not hold"));
+  trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => t.replace("studio: W-124 fixture", "studio: renamed") }], () => reviewNamed(n167(w), 2, "an unrelated key differing does not hold"));
   trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => `${t}: [unparseable\n` }], () => specHeld(n167(w), "an unparseable worktree manifest holds", /bisellium\.yml: .*the spec's seat pairing is read only from the checkout that owns its evidence, \.worktrees\/W-900\/studio \(W-355\)$/));
 
   // the cited gate
@@ -1331,7 +1331,7 @@ test("W-309-b2 behaviour 2: the review rung's fix-check perform runs codex in a 
 // W-328 (D-086 B, D-106 A): a failed round's fix committed outside the source tree is re-reviewed, never sent back to the
 // builder; a fix check's open path outside the brief's Files owned is the producer's evidence line, never the builder's.
 // ---------------------------------------------------------------------------
-const OUTSIDE = (n: number): string => `review round 1 failed at this tree and brief; ${n} commit(s) after its log are empty or change a path that is not an officina record (D-086 B)`;
+const OUTSIDE = (n: number): string => `review round 1 failed at this tree and brief; ${n} commit(s) after its log are empty or change the officina's manifest or a path that is not an officina record (D-086 B, W-491)`;
 /** `evidence/` joins the source excludes in both manifests (they must agree), committed alone on each side. */
 function excludeEvidence(w: World): void {
   for (const dir of [w.repo, w.wt]) {
