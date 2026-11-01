@@ -1,0 +1,25 @@
+# opus: W-487
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1956b-41f9-7240-bd0c-d8ebf0f83f7c
+# outcome: passed
+# at: 2026-11-01T08:01:51.641Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-487.md blob:7a13b8533d63450e9950d9bbe783c5e68803a6f8
+# ticket: {"opus":"W-487","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"7a13b8533d63450e9950d9bbe783c5e68803a6f8","at":"2026-11-01T08:01:38.427Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-487-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the fixed route cap is removed; Board-owned rows preserve their complete ask kinds and show `Opens Board drawer` in full whenever both labels fit at 1280, 840, 640 and 390 — check: apps/web/src/components/w025.css, apps/web/tests-serve/w487.spec.ts, /home/edckt/.bisellium-evidence/W-487-spec/w487-served.out, /home/edckt/.bisellium-evidence/W-487-spec/shots/inbox-board-only-1280.png, /home/edckt/.bisellium-evidence/W-487-spec/shots/inbox-board-only-840.png, /home/edckt/.bisellium-evidence/W-487-spec/shots/inbox-sample-640.png, /home/edckt/.bisellium-evidence/W-487-spec/shots/inbox-sample-390.png
+2. advisory — Intent now states the retained Inbox detail and answer controls, mixed-row Board action, Board-strip ownership routes and unchanged public-route, count, endpoint, write-shape and drawer scope — check: studio/briefs/W-487.md:19
+3. advisory — Board-owned rows retain asker `Board`, the known `27 Oct` or absent `–` date, the existing reading-pane context and no reply controls — check: apps/web/test/w487.test.ts, apps/web/tests-serve/w487.spec.ts, /home/edckt/.bisellium-evidence/W-487-spec/gates-proto.out
+4. advisory — the focused W-487 served row, the final Node rows, web typecheck and final web build pass on the rebuilt prototype — check: /home/edckt/.bisellium-evidence/W-487-spec/w487-served.out, /home/edckt/.bisellium-evidence/W-487-spec/gates-proto.out
+5. advisory — each behaviour cites a fresh recorder-form assertion red with `ERR_ASSERTION`; the rebuilt mbox applies as eight commits and every commit independently builds the web bundle — check: /home/edckt/.bisellium-evidence/W-487-spec/b1-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b2-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b3-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/b4-red-recorded.log, /home/edckt/.bisellium-evidence/W-487-spec/mbox-check.out, /home/edckt/.bisellium-evidence/W-487-spec/series-builds.txt
+
+## Verdict
+
+passed — signature round 7 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-487.md`; `/home/edckt/agents/bisellium/studio/ci/W-487-spec-6.log` findings 1–2 were adopted, the mbox sha256 is `a5585d130994dfc61b8adec7040b4b06f7a24f9323fe9da4f8493e39c217ce69`, and no record write, `next` or `verdict` was performed.
