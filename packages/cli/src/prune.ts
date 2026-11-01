@@ -361,7 +361,15 @@ export function sweepLines(s: SweepResult, kept: boolean): string[] {
 
 /** The done perform's lookup, git only: a branch with no remote-tracking ref was never pushed, so it has no PR; one on origin is left unread. */
 export function unpushedBranches(repo: string): PrLookup {
-  return (branches) => new Map(branches.filter((b) => git(["show-ref", "--verify", "--quiet", `refs/remotes/origin/${b}`], repo).status !== 0).map((b) => [b, "NONE" as const]));
+  return (branches) => {
+    const states = new Map<string, PrState>();
+    for (const b of branches) {
+      const r = git(["show-ref", "--verify", "--quiet", `refs/remotes/origin/${b}`], repo);
+      if (r.status === 1) states.set(b, "NONE");
+      else if (r.status !== 0) return { error: `git show-ref refs/remotes/origin/${b} exited ${r.status}` };
+    }
+    return states;
+  };
 }
 
 const PRUNE_USAGE = "usage: bisellium prune --studio <dir> [--repo <dir>]";
