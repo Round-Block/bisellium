@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, fetchOfficina, fetchOpera, submitAnswer, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
-import { InboxView } from "./InboxView.js";
+import { InboxView, liveSelectedAttentionItem } from "./InboxView.js";
 import {
   answerOptions,
   buildReply,
@@ -183,6 +183,8 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
   const focusedItem = attention[focusIndex];
   const focusedId = focusedItem?.attentionKey;
   const focusedPetition = focusedItem?.petitio;
+  const selectedItem = attention.find((item) => item.attentionKey === expandedId) ?? focusedItem;
+  const liveSelectedItem = liveSelectedAttentionItem(selectedItem, detachedPetition);
   const decisionId = detachedPetition?.id ?? focusedPetition?.id;
   const reason = reasonForPetition(reasons, decisionId);
   const decisionUnavailable = detachedPetition !== null;
@@ -227,7 +229,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
         setFocusRequest((request) => request + 1);
         return;
       }
-      if (e.key === "Enter" && focusedItem !== undefined) {
+      if (e.key === "Enter" && focusedItem !== undefined && liveSelectedItem === focusedItem) {
         if (focusedItem.destination === "board") {
           onOpenBoard?.(focusedItem.id);
           return;
@@ -250,7 +252,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onOpenBoard, initialAttention
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [attention, focusedItem, focusedPetition, expandedId, reason, decisionUnavailable, onOpenBoard]);
+  }, [attention, focusedItem, focusedPetition, liveSelectedItem, expandedId, reason, decisionUnavailable, onOpenBoard]);
 
   function submit(petitioId: string, verb: Verb): void {
     if (sendingRef.current) return;

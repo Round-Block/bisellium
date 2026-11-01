@@ -57,6 +57,14 @@ function attentionDate(item: AttentionRow): string {
   return item.waitingSince === undefined ? "–" : datePresentation(item.waitingSince);
 }
 
+/** A withdrawn detail owns the selection until the Patron chooses a live row. */
+export function liveSelectedAttentionItem(
+  selectedItem: AttentionRow | undefined,
+  detachedPetition: InboxResponse["petitiones"][number] | null,
+): AttentionRow | undefined {
+  return detachedPetition === null ? selectedItem : undefined;
+}
+
 export function InboxView(props: InboxViewProps): JSX.Element {
   const {
     items, focusIndex, expandedId = null, focusRequest = 0,
@@ -68,7 +76,8 @@ export function InboxView(props: InboxViewProps): JSX.Element {
   } = props;
   const focusedItem = items[focusIndex];
   const selectedItem = items.find((item) => item.attentionKey === expandedId) ?? focusedItem;
-  const item = selectedItem;
+  const liveSelectedItem = liveSelectedAttentionItem(selectedItem, detachedPetition);
+  const item = liveSelectedItem;
   const focusedPetition = focusedItem?.petitio;
   const selectedPetition = detachedPetition ?? selectedItem?.petitio;
   const focusedItemRef = useRef<HTMLButtonElement>(null);
@@ -156,14 +165,14 @@ export function InboxView(props: InboxViewProps): JSX.Element {
         </section>
 
         <section className="inbox__reading-pane" aria-label="Selected decision">
-          {detachedPetition === null && selectedItem?.destination === "board" && (
+          {liveSelectedItem?.destination === "board" && (
             <div className="inbox__expansion inbox__expansion--board">
               <div className="inbox__reading-scroll">
                 <div className="inbox__reading">
-                  <div className="inbox__meta"><span>{selectedItem.id}</span><span>from Board</span><span>{attentionDate(selectedItem)}</span></div>
-                  <h2 className="inbox__expanded-subject">{selectedItem.title}</h2>
-                  <p className="inbox__board-asks">{askKindText(selectedItem)}</p>
-                  <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(selectedItem.id)}>Open Board drawer</button>
+                  <div className="inbox__meta"><span>{liveSelectedItem.id}</span><span>from Board</span><span>{attentionDate(liveSelectedItem)}</span></div>
+                  <h2 className="inbox__expanded-subject">{liveSelectedItem.title}</h2>
+                  <p className="inbox__board-asks">{askKindText(liveSelectedItem)}</p>
+                  <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(liveSelectedItem.id)}>Open Board drawer</button>
                 </div>
               </div>
             </div>
@@ -174,8 +183,8 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                 <div className="inbox__reading">
                   <div className="inbox__meta"><span>{selectedPetition.opus}</span><span>from {selectedPetition.from}</span><span>{datePresentation(selectedPetition.opened)}</span></div>
                   <h2 className="inbox__expanded-subject">{selectedPetition.subject}</h2>
-                  {detachedPetition === null && selectedItem?.boardEntry && selectedItem.asks?.some((ask) => ask.kind !== "inbox") && (
-                    <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(selectedItem.id)}>Open Board actions</button>
+                  {liveSelectedItem?.boardEntry && liveSelectedItem.asks?.some((ask) => ask.kind !== "inbox") && (
+                    <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(liveSelectedItem.id)}>Open Board actions</button>
                   )}
                   <div className="inbox__ask">
                     {selectedPetition.body ? askBlocks(selectedPetition.body).map((block, index) => {
