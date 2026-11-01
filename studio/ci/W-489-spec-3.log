@@ -1,0 +1,23 @@
+# opus: W-489
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T08:24:38.834Z
+# tree: tree:9b5232eb05b73af3e830b6f631a45af5003ad055
+# brief: briefs/W-489.md blob:45beb027fe6fce70cc13c387795015038408a12c
+# ticket: {"opus":"W-489","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-489/studio","head":"0d7a62685a7db8916c52eef036495362c1b99012","brief":"45beb027fe6fce70cc13c387795015038408a12c","at":"2026-11-01T08:24:35.200Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-489-spec/promise-ledger-r2.md
+
+## Findings
+
+1. advisory — revision 2 closes the build-review class `spec×promise-unattainable-under-accepted-domain` (review rounds 1 and 2) by stating the patch domain's recognised nested-repository forms: any nested `.git` (directory or gitfile) at a path git does not ignore, tracked (an initialized submodule, clean or not) or untracked (an embedded repository at any depth), keeps a dirty worktree; a nested repository under an ignored path, a bare repository with no `.git` entry and an uninitialized submodule are limits — check: brief:17, brief:27, brief:67, r2/nested-git-forms.out
+2. advisory — a clean worktree holding an initialized submodule leans on git's own refusal of `worktree remove` without `--force` (unchanged git behaviour, a stated limit), and a dirty one's submodule repository lives under the worktree's admin directory, so a force removal would lose it; behaviour 5 keeps it — check: r2/worktree-remove-submodule.out, brief:27
+3. advisory — behaviour 5 is a required build fix with one genuine red: row W-489-b5 over opus/W-489 a05516d7 fails at its declared assertion (accepted by the replay classifier, failing at the declaration by the branch's W-473 reader) and passes with the prototype fix, prune.test.ts whole green beside the round-1 row — check: red-b5.log, green-b5.log, r2/red-accept-b5.out, r2/declared-b5.out, r2/prune-test-green.out
+4. advisory — the Codex test check rerun on revision 2 lists the same two flips, both named, no unnamed flip, and adds the round-1 submodule row as must-stay-green; the revision-2 ledger passes the writer and the full admission admits the brief — check: fixture-census.md, r2/ledger-check.out, r2/admission.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-489.md`: five behaviours, behaviour 5 (nested repositories kept) a required build fix, prototype `r2/prototype-b5.mbox` over opus/W-489 a05516d7; no code-owned path.
