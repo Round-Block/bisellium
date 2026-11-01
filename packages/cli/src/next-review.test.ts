@@ -2137,3 +2137,44 @@ test("W-428-b3 behaviour 3: a blocker is an evidence finding only when every cla
   after([`blocking (security): a red recorded on the fixed tree at brief:1 [severity: S1] ${EVIDENCE_TAG}. check: none: fixture`], () => buildFix(n167(w), "a security blocker carrying the evidence tag: build, phase fix"));
   after([plain(), `advisory: a red missing at brief:1 [severity: S3] ${EVIDENCE_TAG}. check: none: fixture`], () => buildFix(n167(w), "the evidence tag on an advisory finding only: build, phase fix"));
 });
+
+// W-452-b4 (Patron 2026-11-01): a UI ruling by the design lead the manifest names counts beside the Patron's (studio/briefs/W-452.md)
+const W452_SEATS = "spec_seats:\n  since: 2026-01-01T00:00:00Z\n  collegia:\n    design: { signer: design-lead, reviewer: ui-lead }\n";
+const W452_LEAD = "  - { id: design-lead, collegium: design, kind: agent, model: gpt-5.6-sol, harness: codex }";
+/** The worktree's manifest with the design-lead row (`row`, or none) and spec_seats (or none), committed on the branch. */
+function w452Manifest(w: World, base: string, o: { row?: string; seats?: boolean }, label: string): void {
+  const rowed = o.row === undefined ? base : base.replace("probationes:", `${o.row}\nprobationes:`);
+  put(w.wtStudio, "bisellium.yml", `${rowed}${o.seats === false ? "" : W452_SEATS}`);
+  commit(w.wt, `studio(${OPUS}): ${label}`);
+}
+
+test("W-452-b4 behaviour 4: a UI ruling by the design lead the manifest's spec_seats names counts beside the Patron's, and no other seat's does", { timeout: 1_800_000 }, () => {
+  const w = uiReviewWorld("w452-b4");
+  codexSays(w, { session: "s-452-4", reply: UI_PASS_REPLY });
+  const reviewed = performReview(w);
+  assert.equal(reviewed.kv.get("review"), "round 1 passed", ran("fixture: the UI review passes", reviewed));
+  const base = readFileSync(join(w.wtStudio, "bisellium.yml"), "utf8");
+  w452Manifest(w, base, { row: W452_LEAD }, "spec_seats names design-lead");
+  // the ruling is attached as the Patron's (amend --ui-ruling judges it), then its author becomes the design lead
+  w377Ruling(w, "D-960");
+  w377Amend(w, "D-960");
+  commit(w.wt, `studio(${OPUS}): a ui ruling`);
+  const ruled = readFileSync(join(w.wtStudio, "decisions", "D-960.md"), "utf8");
+  const by = (who: string, label: string): void => {
+    put(w.wtStudio, "decisions/D-960.md", ruled.replace("by: patron", `by: ${who}`));
+    commit(w.wt, `studio(${OPUS}): ${label}`);
+  };
+  by("design-lead", "the ruling by the design lead");
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a design-lead ruling counts once spec_seats names design-lead the design signer");
+  w452Manifest(w, base, { row: W452_LEAD, seats: false }, "the design-lead seat, no spec_seats");
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "held", "with no spec_seats a design-lead ruling holds the pr");
+  w452Manifest(w, base, { row: W452_LEAD.replace("kind: agent", "kind: agent, retired: true") }, "a retired design-lead");
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "held", "a retired design lead rules nothing");
+  w452Manifest(w, base, { row: W452_LEAD.replace("collegium: design", "collegium: qa") }, "a design-lead outside design");
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "held", "a signer outside the design collegium rules nothing");
+  w452Manifest(w, base, { row: W452_LEAD }, "spec_seats names design-lead again");
+  by("ui-lead", "a ruling by another seat");
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "held", "a ruling by another seat holds the pr");
+  by("patron", "the Patron's own ruling");
+  expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a by: patron ruling reads as before, with spec_seats declared");
+});
