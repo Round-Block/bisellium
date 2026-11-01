@@ -1704,7 +1704,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .inbox__item { transition-duration: 0ms; }
+  .inbox__item,
+  .board__card { transition-duration: 0ms; }
 }
 
 /* ── Seats (W-065) ────────────────────────────────────────────────── */
@@ -2358,6 +2359,17 @@
   box-shadow: none;
   border-left: 2px solid var(--transparent);
   background: var(--surface);
+  transition: background-color 120ms ease-out;
+}
+
+.board__card[aria-selected="true"] {
+  background: var(--rule);
+}
+
+.board__card[aria-selected="true"] .board__waiting-owner small,
+.board__card[aria-selected="true"] .board__waiting-next small,
+.board__card[aria-selected="true"] .board__waiting-ask small {
+  color: var(--ink-2);
 }
 
 .board__card--amber {

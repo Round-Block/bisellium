@@ -19,7 +19,7 @@ export interface BoardViewProps {
   selectedId?: string;
   /** Roving tabindex: exactly one card per column carries tabIndex 0. */
   focusedByColumn: Record<string, string | undefined>;
-  onSelectCard: (id: string, columnId: string) => void;
+  onSelectCard: (id: string, columnId: string, origin: "card" | "waiting") => void;
   /** Connection state and last successful refresh, already formatted by
    *  `lib/board.ts`'s `liveLabel`; this belongs to the header, not a footer. */
   liveness?: string;
@@ -85,7 +85,7 @@ function Card({
   columnId: string;
   selected: boolean;
   focused: boolean;
-  onSelect: (id: string, columnId: string) => void;
+  onSelect: (id: string, columnId: string, origin: "card" | "waiting") => void;
 }): JSX.Element {
   return (
     <div
@@ -95,7 +95,7 @@ function Card({
       tabIndex={focused ? 0 : -1}
       data-column-id={columnId}
       data-card-id={card.id}
-      onClick={() => onSelect(card.id, columnId)}
+      onClick={() => onSelect(card.id, columnId, "card")}
     >
       <GateLadder gates={card.gates} />
       {card.needsYou ? <WaitingFacts card={card} /> : <>
@@ -119,7 +119,7 @@ function Column({
   column: BoardModel["columns"][number];
   selectedId?: string;
   focusedByColumn: Record<string, string | undefined>;
-  onSelectCard: (id: string, columnId: string) => void;
+  onSelectCard: (id: string, columnId: string, origin: "card" | "waiting") => void;
 }): JSX.Element {
   const focusedId = focusedByColumn[column.id] ?? column.cards[0]?.id;
   const classes = ["board__column", column.pinned && "board__column--pinned"].filter(Boolean).join(" ");
@@ -149,7 +149,7 @@ function Column({
 function WaitingStrip({ waiting, columns, onSelectCard }: {
   waiting: CardRow[];
   columns: BoardModel["columns"];
-  onSelectCard: (id: string, columnId: string) => void;
+  onSelectCard: (id: string, columnId: string, origin: "card" | "waiting") => void;
 }): JSX.Element {
   const itemsRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
@@ -212,7 +212,7 @@ function WaitingStrip({ waiting, columns, onSelectCard }: {
                 type="button"
                 className="board__waiting-item"
                 data-waiting-id={card.id}
-                onClick={() => onSelectCard(card.id, columnId ?? "unplaced")}
+                onClick={() => onSelectCard(card.id, columnId ?? "unplaced", "waiting")}
                 onFocus={(event) => revealFocusedWaitingItem(event.currentTarget)}
               >
                 <WaitingFacts card={card} compact />
