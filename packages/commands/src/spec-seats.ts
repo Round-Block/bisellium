@@ -10,6 +10,7 @@ import { instant } from "@bisellium/schema";
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
+const esc = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** A studio-relative reader of the checkout that owns the spec evidence (`next`'s Src; verdict's officina). */
 export interface SpecLogSource {
@@ -34,13 +35,29 @@ function seat(m: Dict, id: string, role: "signer" | "reviewer", collegium?: stri
   return model === undefined ? { error: `${id} declares no model; the spec ${role}'s model is read from its row` } : { model };
 }
 
+/** D-150 B: whether the opus's spec sequence began before `since`: a spec log of it whose `# at:` is earlier. */
+function startedBefore(id: string, since: Date, logs: SpecLogSource | undefined): boolean | { error: string } {
+  const name = new RegExp(`^${esc(id)}-spec-[1-9][0-9]{0,14}\\.log$`);
+  for (const log of (logs?.list("ci") ?? []).filter((n) => name.test(n)).sort()) {
+    const text = logs!.read(`ci/${log}`);
+    if (text === undefined) return { error: `ci/${log} is unreadable; an opus's spec seats follow its first spec log (D-150 B)` };
+    const head = text.split("\n");
+    const end = head.indexOf("");
+    const ats = (end === -1 ? head : head.slice(0, end)).filter((l) => l.startsWith("# at: "));
+    const at = ats.length === 1 ? instant(ats[0]!.slice("# at: ".length)) : undefined;
+    if (at === undefined) return { error: `ci/${log} carries no single "# at:" instant; an opus's spec seats follow its first spec log (D-150 B)` };
+    if (at.getTime() < since.getTime()) return true;
+  }
+  return false;
+}
+
 /**
  * The spec seats of one opus: `legacy` (today's routing, read by the caller as before), its collegium's pair, or why the setting
  * cannot be read (next holds at spec; verdict refuses). Every form but a mapping `{ since, collegia }` is refused; a row is
  * `{ signer, reviewer }`, two declared live agent seats on different models (D-150 C: one writes, another checks), the signer a
  * seat of the row's collegium.
  */
-export function readSpecSeats(manifest: unknown, id: string, rec: Dict, _logs: SpecLogSource | undefined): SpecSeatRoute {
+export function readSpecSeats(manifest: unknown, id: string, rec: Dict, logs: SpecLogSource | undefined): SpecSeatRoute {
   if (!isDict(manifest) || !("spec_seats" in manifest)) return { route: "legacy" };
   const bad = (why: string): { error: string } => ({ error: `bisellium.yml#spec_seats: ${why}` });
   const s = manifest["spec_seats"];
@@ -50,6 +67,9 @@ export function readSpecSeats(manifest: unknown, id: string, rec: Dict, _logs: S
   const collegia = s["collegia"];
   if (!isDict(collegia)) return bad("collegia must be a mapping of collegium id to { signer, reviewer }");
   if (rec["kind"] === "ui") return { route: "legacy" };
+  const started = startedBefore(id, since, logs);
+  if (typeof started !== "boolean") return started;
+  if (started) return { route: "legacy" };
   const collegium = str(rec["collegium"]);
   if (collegium === undefined) return bad(`opera/${id}.md names no collegium, so no seats sign its spec`);
   const row = collegia[collegium];
