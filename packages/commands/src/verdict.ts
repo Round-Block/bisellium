@@ -7,6 +7,7 @@ import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
 import { ensureRealDirectory } from "./ids.js";
+import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { USAGE } from "./usage.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
@@ -390,6 +391,24 @@ export function readSequence(root: string, opus: string, phase: SequencePhase, s
   if (last.session === undefined) return { last: { round: last.round, log: last.rel } };
   const parsed = parseVerdictLog(last.text, opus, last.rel);
   return "error" in parsed ? parsed : { last: { round: last.round, log: last.rel, session: last.session, parsed } };
+}
+
+/** W-452: the officina's spec logs for readSpecSeats, read through the contained reader; an unlistable ci/ lists nothing here, and
+ *  readSequence then refuses it before any verdict is written. */
+function specLogSource(root: string): SpecLogSource {
+  return {
+    read: (rel) => {
+      const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
+      return "error" in file ? undefined : file.bytes.toString("utf8");
+    },
+    list: (dir) => {
+      try {
+        return readdirSync(join(root, dir));
+      } catch {
+        return [];
+      }
+    },
+  };
 }
 
 function hasHeaderBreak(value: string): boolean {
@@ -997,6 +1016,13 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   // W-338: on a kind: ui opus only the ui-lead's spec verdict is the UI input; every other seat's (the architect's
   // signature, the spec review) is a plain spec verdict, judged as on any other opus
   const plain = !isUi || (phase === "spec" && sella !== "ui-lead");
+  // W-452: every spec verdict path, the ui-lead's UI input included, reads bisellium.yml#spec_seats as next does; a setting it
+  // refuses holds next at spec, so the verdict exits 2 here, before anything is written
+  const seats = phase === "spec" ? readSpecSeats(manifest, opusId, record as unknown as Record<string, unknown>, specLogSource(root)) : undefined;
+  if (seats !== undefined && "error" in seats) {
+    console.error(`${opusId}: ${seats.error}`);
+    return { exitCode: 2 };
+  }
   if (!isUi && (dispatchPrompt !== undefined || uiInput !== undefined)) {
     console.error("--dispatch-prompt and --ui-input are UI-only flags");
     return { exitCode: 2 };
@@ -1132,7 +1158,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       return { exitCode: 2 };
     }
     // W-306/W-348: the signer for this kind cites a promise ledger covering every caller the brief names in code
-    const design = readDesignMagister(manifest);
+    // W-452: with bisellium.yml#spec_seats, the signer of an opus started under it is its collegium's (next reads the same)
+    const design = seats?.route === "collegium" ? { magister: seats.signer } : readDesignMagister(manifest);
     if ("error" in design) {
       console.error(`${opusId}: ${design.error}`);
       return { exitCode: 2 };
