@@ -107,6 +107,10 @@ export function App() {
     return () => { active = false; };
   }, [route]);
 
+  useEffect(() => {
+    if ((route === "inbox" || route === "board") && status.state === "error") setAttentionCount(0);
+  }, [route, status.state]);
+
   return (
     <div className={[
       "shell",
