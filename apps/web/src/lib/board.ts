@@ -47,6 +47,17 @@ export interface CardRow {
   blocked: boolean;
 }
 
+export interface AttentionRow extends CardRow {
+  /** Stable identity for one combined opus ask or one unlinked question. */
+  attentionKey: string;
+  /** Questions remain replyable in Inbox; Board-only asks open the drawer. */
+  destination: "inbox" | "board";
+  /** False for questions whose opus is absent and for unlinked questions. */
+  boardEntry: boolean;
+  /** The next question to answer for this combined item, in served order. */
+  petitio?: InboxResponse["petitiones"][number];
+}
+
 function recordValue(record: unknown, key: string): unknown {
   return typeof record === "object" && record !== null ? (record as Record<string, unknown>)[key] : undefined;
 }
@@ -94,7 +105,7 @@ export interface BoardModel {
   columns: BoardColumn[];
   /** D-138: one entry per waiting opus, rendered in the pinned strip. The
    * lifecycle card remains the sole card instance in `columns`. */
-  waiting: CardRow[];
+  waiting: AttentionRow[];
   /** Opera whose state maps to no declared phase: counted and named, never
    *  dropped into the first column and never thrown on. */
   unplaced: string[];
@@ -146,11 +157,11 @@ export function cardRow(opus: OpusEntry, human: Set<string>): CardRow {
   };
 }
 
-export function boardModel(
+function classifiedCards(
   o: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">,
   opera: OpusEntry[],
-  inbox: Pick<InboxResponse, "opera" | "petitiones"> = { opera: [], petitiones: [] },
-): BoardModel {
+  inbox: Pick<InboxResponse, "opera" | "petitiones">,
+): Map<string, CardRow> {
   const human = humanGateIds(o);
   const inboxOpera = new Set(inbox.opera.map((entry) => entry.id));
   const petitionCount = new Map<string, number>();
@@ -161,6 +172,105 @@ export function boardModel(
     const opened = instantMs(petitio.opened);
     if (opened !== undefined) petitionOpened.set(petitio.opus, [...(petitionOpened.get(petitio.opus) ?? []), opened]);
   }
+  const stateToPhase = new Map(o.lifecycle.states.map((state) => [state.id, state.phase] as const));
+  const cards = new Map<string, CardRow>();
+  for (const opus of opera) {
+    const phase = stateToPhase.get(opus.state);
+    const card = cardRow(opus, human);
+    card.gates = gateRow(o.probationes, opus.probationes);
+    const linkedDecisions = petitionCount.get(opus.id) ?? 0;
+    const greenlightAsk = phase === BACKLOG_PHASE;
+    const humanGateAsk = card.needsYou || (inboxOpera.has(opus.id) && !greenlightAsk);
+    card.asks = [
+      ...(greenlightAsk ? [{ kind: "greenlight" as const, count: 1 }] : []),
+      ...(linkedDecisions > 0 ? [{ kind: "inbox" as const, count: linkedDecisions }] : []),
+      ...(humanGateAsk ? [{ kind: "human_gate" as const, count: 1 }] : []),
+    ];
+    card.needsYou = card.asks.length > 0;
+    card.nextActor = recordedNextActor(opus.traditio);
+
+    const askInstants: number[] = [];
+    const traditioAt = instantMs(recordValue(opus.traditio, "at"));
+    if (greenlightAsk && traditioAt !== undefined) askInstants.push(traditioAt);
+    if (linkedDecisions > 0) askInstants.push(...(petitionOpened.get(opus.id) ?? []));
+    if (humanGateAsk) {
+      const gateInstants = Object.entries(opus.probationes)
+        .filter(([id, result]) => human.has(id) && result.status === "pending")
+        .map(([, result]) => instantMs(result.at))
+        .filter((value): value is number => value !== undefined);
+      if (gateInstants.length > 0) askInstants.push(...gateInstants);
+      else if (traditioAt !== undefined) askInstants.push(traditioAt);
+    }
+    card.waitingSince = askInstants.length > 0 ? Math.min(...askInstants) : undefined;
+    cards.set(opus.id, card);
+  }
+  return cards;
+}
+
+/** D-151: the sole attention collection. Opera are emitted in Board source
+ * order; linked questions without a Board entry and unlinked questions then
+ * retain the Inbox response's order. Multiple questions on one opus expose
+ * the first question until its reply removes it, without multiplying rows. */
+export function attentionCollection(
+  o: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">,
+  opera: OpusEntry[],
+  inbox: Pick<InboxResponse, "opera" | "petitiones">,
+): AttentionRow[] {
+  const cards = classifiedCards(o, opera, inbox);
+  const firstPetition = new Map<string, InboxResponse["petitiones"][number]>();
+  const missingCounts = new Map<string, number>();
+  for (const petitio of inbox.petitiones) {
+    if (petitio.opus === undefined) continue;
+    if (!firstPetition.has(petitio.opus)) firstPetition.set(petitio.opus, petitio);
+    if (!cards.has(petitio.opus)) missingCounts.set(petitio.opus, (missingCounts.get(petitio.opus) ?? 0) + 1);
+  }
+
+  const attention: AttentionRow[] = [];
+  for (const opus of opera) {
+    const card = cards.get(opus.id)!;
+    if (!card.needsYou) continue;
+    const petitio = firstPetition.get(opus.id);
+    attention.push({
+      ...card,
+      attentionKey: `opus:${opus.id}`,
+      destination: petitio === undefined ? "board" : "inbox",
+      boardEntry: true,
+      ...(petitio === undefined ? {} : { petitio }),
+    });
+  }
+
+  const emittedMissing = new Set<string>();
+  for (const petitio of inbox.petitiones) {
+    if (petitio.opus !== undefined && cards.has(petitio.opus)) continue;
+    if (petitio.opus !== undefined && emittedMissing.has(petitio.opus)) continue;
+    if (petitio.opus !== undefined) emittedMissing.add(petitio.opus);
+    const count = petitio.opus === undefined ? 1 : (missingCounts.get(petitio.opus) ?? 1);
+    attention.push({
+      attentionKey: petitio.opus === undefined ? `petitio:${petitio.id}` : `opus:${petitio.opus}`,
+      destination: "inbox",
+      boardEntry: false,
+      petitio,
+      id: petitio.opus ?? petitio.id,
+      title: petitio.subject,
+      sella: petitio.from,
+      state: "question",
+      gates: [],
+      needsYou: true,
+      asks: [{ kind: "inbox", count }],
+      nextActor: "patron",
+      waitingSince: instantMs(petitio.opened),
+      blocked: false,
+    });
+  }
+  return attention;
+}
+
+export function boardModel(
+  o: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">,
+  opera: OpusEntry[],
+  inbox: Pick<InboxResponse, "opera" | "petitiones"> = { opera: [], petitiones: [] },
+): BoardModel {
+  const cards = classifiedCards(o, opera, inbox);
 
   // Unique phases, in the lifecycle's own declared order, backlog excluded.
   const phases: string[] = [];
@@ -178,39 +288,11 @@ export function boardModel(
   }
 
   const unplaced: string[] = [];
-  const waiting: CardRow[] = [];
+  const waiting = attentionCollection(o, opera, inbox);
   const backlog: CardRow[] = [];
   for (const opus of opera) {
     const phase = stateToPhase.get(opus.state);
-    const card = cardRow(opus, human);
-    card.gates = gateRow(o.probationes, opus.probationes);
-
-    const linkedDecisions = petitionCount.get(opus.id) ?? 0;
-    const greenlightAsk = phase === BACKLOG_PHASE;
-    const humanGateAsk = card.needsYou || (inboxOpera.has(opus.id) && !greenlightAsk);
-    card.asks = [
-      ...(greenlightAsk ? [{ kind: "greenlight" as const, count: 1 }] : []),
-      ...(linkedDecisions > 0 ? [{ kind: "inbox" as const, count: linkedDecisions }] : []),
-      ...(humanGateAsk ? [{ kind: "human_gate" as const, count: 1 }] : []),
-    ];
-    card.needsYou = (card.asks?.length ?? 0) > 0;
-    card.nextActor = recordedNextActor(opus.traditio);
-
-    const askInstants: number[] = [];
-    const traditioAt = instantMs(recordValue(opus.traditio, "at"));
-    if (greenlightAsk && traditioAt !== undefined) askInstants.push(traditioAt);
-    if (linkedDecisions > 0) askInstants.push(...(petitionOpened.get(opus.id) ?? []));
-    if (humanGateAsk) {
-      const gateInstants = Object.entries(opus.probationes)
-        .filter(([id, result]) => human.has(id) && result.status === "pending")
-        .map(([, result]) => instantMs(result.at))
-        .filter((value): value is number => value !== undefined);
-      if (gateInstants.length > 0) askInstants.push(...gateInstants);
-      else if (traditioAt !== undefined) askInstants.push(traditioAt);
-    }
-    card.waitingSince = askInstants.length > 0 ? Math.min(...askInstants) : undefined;
-
-    if (card.needsYou) waiting.push({ ...card });
+    const card = cards.get(opus.id)!;
 
     if (phase === BACKLOG_PHASE) {
       backlog.push(card);

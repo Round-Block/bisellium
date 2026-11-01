@@ -41,7 +41,7 @@ function opus(
   };
 }
 
-test("W-410-b1 behaviour 1: one waiting model carries the handoff facts without changing membership", () => {
+test("W-410-b1 behaviour 1: one attention model carries handoff facts plus orphan questions", () => {
   const opera = [
     opus("W-1", "backlog", { sella: "producer", traditio: { blocked_on: "patron", at: "2026-10-31T00:00:00Z" } }),
     opus("W-2", "greenlit", { sella: "architect", traditio: { blocked_on: "patron", at: "2026-10-31T01:00:00Z" } }),
@@ -61,7 +61,7 @@ test("W-410-b1 behaviour 1: one waiting model carries the handoff facts without 
   };
 
   const model = board.boardModel(officina, opera, inbox);
-  assert.deepEqual(model.waiting.map(({ id }) => id), ["W-1", "W-3", "W-4", "W-5"], "the existing once-per-opus waiting membership is unchanged");
+  assert.deepEqual(model.waiting.map(({ id }) => id), ["W-1", "W-3", "W-4", "W-5", "W-404"], "the shared collection adds an orphan question after Board-backed asks");
   const rows = Object.fromEntries(model.waiting.map((card) => [card.id, card]));
   assert.equal(rows["W-1"]?.sella, "producer", "the existing sella remains the owning agent");
   assert.equal(rows["W-1"]?.nextActor, "patron", "a recorded blocker is the next actor");
@@ -71,7 +71,7 @@ test("W-410-b1 behaviour 1: one waiting model carries the handoff facts without 
   assert.equal(rows["W-4"]?.waitingSince, at("2026-10-31T00:30:00Z"), "an Inbox decision uses its opened instant");
   assert.equal(rows["W-5"]?.waitingSince, undefined, "an unknown age stays unknown instead of being invented");
   assert.deepEqual(rows["W-1"]?.asks, [{ kind: "greenlight", count: 1 }, { kind: "inbox", count: 1 }], "the action asked reuses W-409 ask kinds");
-  assert.equal(model.waiting.some(({ id }) => id === "W-404"), false, "an ask with no Board entry still creates no ghost card");
+  assert.equal(rows["W-404"]?.boardEntry, false, "an orphan question is attention without a Board lifecycle entry");
   assert.deepEqual(model.columns.flatMap(({ cards }) => cards.map(({ id }) => id)), ["W-2", "W-1", "W-3", "W-4", "W-5", "W-6", "W-7"], "every lifecycle phase keeps exactly one placed card");
 });
 
