@@ -526,6 +526,19 @@ export function callerLiveRuns(input: Dict): string[] {
   }
 }
 
+/** W-494: a wait loop, as the rule recognises one: `while` or `until` opening the command text, a simple command or a
+ *  quoted `-c` script, or a call of `wait-until.sh`. */
+const WAIT_LOOP = /(?:^|[;&|(\n'"`])\s*(?:while|until)(?=[\s;]|$)|wait-until\.sh/;
+/** W-494: `pgrep` given `-f` (alone or among other short flags, after other short flags) or `--full`. */
+const PGREP_FULL = /(?:^|[\s;&|(`'"/!])pgrep(?:\s+-[A-Za-z]+)*?\s+(?:-[A-Za-z]*f[A-Za-z]*|--full)(?=[\s;'"`)]|$)/;
+/** W-494: true when the command text holds a wait loop and a `pgrep -f` anywhere, quotes and `-c` scripts included:
+ *  `pgrep -f` matches the shell running this very call, whose command line holds the pattern, so the loop never sees
+ *  the run end (the 11-01 W-452 done run). Lexical: a pgrep given its flags another way (`-u me -f`), one reached through
+ *  a variable or a script file, and a `ps | grep` wait are not recognised (a limit). */
+export function selfMatchingWait(command: string): boolean {
+  return WAIT_LOOP.test(command) && PGREP_FULL.test(command);
+}
+
 /** The foreground wait a refusal names: the run writes its exit file last, and the wait polls it under the call cap. */
 export const EXIT_FILE_POLL = "timeout 540 bash -c 'until [ -f X.exit ]; do sleep 10; done'";
 
@@ -651,6 +664,8 @@ export function guardRefusal(input: Dict): string | undefined {
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
+    if (selfMatchingWait(command))
+      return `refused: \`pgrep -f\` matches this call's own command line, so a loop waiting on it never ends (W-494): have the run write an exit file last (\`cmd > X.log 2>&1; echo $? > X.exit\`) and poll that in the foreground: \`${EXIT_FILE_POLL}\``;
     if (args["run_in_background"] === true && unboundedLoop(command))
       return "refused: a background while/until loop needs a hard bound (W-310): prefix `timeout <seconds>` or wait with `~/.bisellium-evidence/wait-until.sh <minutes> <condition>`";
     if (args["run_in_background"] === true && !main) {
