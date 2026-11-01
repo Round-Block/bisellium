@@ -70,9 +70,10 @@ In flight (lane state: ~/.bisellium-evidence/current-state.md): W-382 done (#935
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
 1. W-463 — Board asks stand out (merged #911; done waits on a master verify and ruling)
 2. W-410 — Board handoff rails (merged #937; done waits on a master verify and ruling)
-3. W-411; 4. W-412; 5. W-413; 6. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 7. W-467 (Officina on Home's palette); 8. W-453 (D-128 D)
-9. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-10. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+3. W-487 — the Inbox lists every waiting ask, badges tally (D-151, supersedes D-135)
+4. W-411; 5. W-412; 6. W-413; 7. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 8. W-467 (Officina on Home's palette); 9. W-453 (D-128 D)
+10. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
+11. W-300 — the drawer shows `next`'s read-only step, actor, round and health
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
