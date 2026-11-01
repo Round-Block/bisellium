@@ -884,7 +884,9 @@ test("W-494-b4 behaviour 4: the agents and the briefs keep one background run at
   for (const rel of [".claude/agents/ladder-runner.md", ".claude/agents/builder.md", ".claude/agents/architect.md", "studio/prompts/builder-brief.md", "studio/prompts/spec-draft.md"]) {
     const t = text(rel);
     assert.match(t, /one background run at a time/, `${rel}: one background run at a time`);
-    assert.ok(t.includes("timeout 170 bash -c 'until [ -f X.exit ]; do sleep 10; done'"), `${rel}: the foreground exit-file poll`);
+    assert.ok(t.includes("timeout 100 bash -c 'until [ -f X.exit ]; do sleep 10; done'"), `${rel}: the foreground exit-file poll`);
     assert.ok(t.includes("never `pgrep -f`"), `${rel}: never pgrep -f`);
+    for (const m of t.matchAll(/\b(?:10|ten)[- ]min(?:ute)?s?\b/gi))
+      assert.ok(t.slice(Math.max(0, m.index - 30), m.index).includes("`timeout` parameter"), `${rel}: no claim that 10 minutes is the default cap`);
   }
 });
