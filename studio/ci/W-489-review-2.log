@@ -1,0 +1,22 @@
+# opus: W-489
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1960b-a50b-70c2-a42a-b5da6e0bef64
+# outcome: failed
+# at: 2026-11-01T08:09:00.504Z
+# tree: tree:9b5232eb05b73af3e830b6f631a45af5003ad055
+# brief: briefs/W-489.md blob:a8b438870c08b6088058433364316dedc19a2ebb
+# ticket: {"opus":"W-489","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-489/studio","head":"e020388809fc0ab2dc740d920a44ca41ebcab041","brief":"a8b438870c08b6088058433364316dedc19a2ebb","at":"2026-11-01T08:08:20.678Z"}
+
+## Findings
+1. blocking — packages/cli/src/prune.ts:209 Reached from ci/W-489-review-1.log #1’s class: `dirtySubmodule` enumerates only indexed gitlinks, so an untracked embedded Git repository bypasses the guard; line 224 stages it as a gitlink whose patch omits its files, after which the sweep can force-remove them despite brief:67. [severity: S1] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/prune.test.ts (W-489-b1 untracked embedded-repository patch round-trip)
+
+## Earlier findings
+- ci/W-489-review-1.log #1: closed — packages/cli/src/prune.ts:208 detects dirty indexed submodules and returns a save error so the sweep keeps them; packages/cli/src/prune.test.ts:332 pins their modified and untracked contents remaining on disk.
+
+## Verdict
+The tracked-submodule case is fixed, but the same destructive omission remains for untracked embedded repositories.
+
+VERDICT: FAIL
