@@ -1,0 +1,5 @@
+certifies: tree:9b5232eb05b73af3e830b6f631a45af5003ad055
+command: npm run -s typecheck
+exit code: 0
+
+
