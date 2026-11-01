@@ -818,7 +818,8 @@ test("W-494-b1 behaviour 1: a subagent's second background Bash call is refused 
   assert.doesNotMatch(r.err, /bdone0001/, "a run whose notification arrived is not named");
   assert.doesNotMatch(r.err, /bmain0001/, "the session's own runs are not the agent's");
   assert.match(r.err, /until \[ -f X\.exit \]/, "the refusal names the exit-file poll");
-  assert.match(r.err, /timeout 170 /, "the poll stays under the harness's 3-minute foreground limit");
+  const poll = /timeout (\d+) bash -c 'until \[ -f X\.exit \]/.exec(r.err);
+  assert.ok(poll !== null && Number(poll[1]) < 120, "the poll stays under the Bash tool's 120-second default cap");
   assert.match(r.err, /TaskStop/);
   assert.equal((await guard(bash(second, W494_RUNNER(agent), true))).code, 2, "a transcript_path naming the agent's own transcript is read too");
   assert.equal((await guard(bash(second, W494_RUNNER(session)))).code, 0, "a foreground call is not judged");
