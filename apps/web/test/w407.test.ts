@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import * as React from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { AttentionRow } from "../src/lib/board.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (fileName: string): string => readFileSync(resolve(ROOT, fileName), "utf8");
@@ -194,4 +195,23 @@ test("W-407-b6 behaviour 6: a detached petition does not inherit Board actions f
     onSubmit: () => undefined,
   }));
   assert.doesNotMatch(html, /Open Board actions/, "a detached petition exposes no replacement item's Board action");
+});
+
+test("W-407-b6 behaviour 6: a withdrawn draft blocks the fallback Board drawer until its row is selected", async () => {
+  const inbox = read("apps/web/src/screens/Inbox.tsx");
+  const view = read("apps/web/src/screens/InboxView.tsx");
+
+  assert.match(view, /export function liveSelectedAttentionItem\([\s\S]*detachedPetition === null \? selectedItem : undefined/, "the detached-draft boundary removes the fallback live selection for every consumer");
+  assert.match(inbox, /const selectedItem = attention\.find\(\(item\) => item\.attentionKey === expandedId\) \?\? focusedItem;[\s\S]*const liveSelectedItem = liveSelectedAttentionItem\(selectedItem, detachedPetition\);[\s\S]*e\.key === "Enter" && focusedItem !== undefined && liveSelectedItem === focusedItem[\s\S]*focusedItem\.destination === "board"[\s\S]*onOpenBoard\?\.\(focusedItem\.id\)/, "Enter from a non-text target cannot open a fallback Board row while the withdrawn draft remains selected");
+  assert.match(view, /onClick=\{\(\) => \{[\s\S]*onFocusChange\(index\);[\s\S]*item\.destination === "board"[\s\S]*onOpenBoard\(item\.id\)/, "selecting the live Board row first retains its Board-drawer action");
+
+  const { liveSelectedAttentionItem } = await import("../src/screens/InboxView.js");
+  const fallbackBoardItem: AttentionRow = {
+    id: "W-488", title: "Replacement Board item", state: "building", sella: "builder",
+    gates: [], needsYou: true, asks: [{ kind: "human_gate", count: 1 }], blocked: false,
+    attentionKey: "opus:W-488", destination: "board", boardEntry: true,
+  };
+  const withdrawnDraft = { id: "P-407", opus: "W-407", from: "builder-a", subject: "Withdrawn decision", body: "Withdrawn ask." };
+  assert.equal(liveSelectedAttentionItem(fallbackBoardItem, withdrawnDraft), undefined, "the selected withdrawn draft rejects a fallback Board-owned row");
+  assert.equal(liveSelectedAttentionItem(fallbackBoardItem, null), fallbackBoardItem, "the Board-owned row becomes actionable only after the Patron selects it");
 });
