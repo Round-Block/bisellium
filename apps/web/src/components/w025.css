@@ -1704,7 +1704,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .inbox__item { transition-duration: 0ms; }
+  .inbox__item,
+  .board__card { transition-duration: 0ms; }
 }
 
 /* ── Seats (W-065) ────────────────────────────────────────────────── */
@@ -1999,13 +2000,6 @@
 .board__project-select option {
   color: var(--accent-yellow);
   background: var(--surface);
-}
-
-.board__project-select-reason {
-  min-width: 0;
-  font-size: 12px;
-  color: var(--ink-3);
-  overflow-wrap: anywhere;
 }
 
 .board__liveness {
@@ -2365,6 +2359,17 @@
   box-shadow: none;
   border-left: 2px solid var(--transparent);
   background: var(--surface);
+  transition: background-color 120ms ease-out;
+}
+
+.board__card[aria-selected="true"] {
+  background: var(--rule);
+}
+
+.board__card[aria-selected="true"] .board__waiting-owner small,
+.board__card[aria-selected="true"] .board__waiting-next small,
+.board__card[aria-selected="true"] .board__waiting-ask small {
+  color: var(--ink-2);
 }
 
 .board__card--amber {
@@ -2450,24 +2455,29 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  z-index: 10;
+  /* The narrow shell rail sits at z-index: 20. Keep the drawer's fixed
+   * Close control in this higher stacking context so that rail cannot
+   * intercept its pointer target. */
+  z-index: 21;
 }
 
 .board-drawer__header {
   padding: var(--sp-6) 56px var(--sp-4) var(--sp-6);
   border-bottom: 1px solid var(--rule);
   position: relative;
+  background: var(--surface);
   flex-shrink: 0;
 }
 
 .board-drawer__close {
-  position: absolute;
+  position: fixed;
   top: 12px;
   right: 12px;
   min-width: 44px;
   min-height: 44px;
-  border: none;
-  background: none;
+  z-index: 11;
+  border: 1px solid var(--rule);
+  background: var(--surface);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -2626,6 +2636,10 @@
 /* Narrow: <=899px — above Board's phone boundary the drawer leaves the rail
    visible. */
 @media (max-width: 899px) {
+  .board-drawer__close {
+    top: 60px;
+  }
+
   .board__waiting-label {
     flex-direction: row;
     align-items: baseline;
@@ -2695,6 +2709,11 @@
     font-size: 12px;
     padding: 4px 8px;
     white-space: nowrap;
+  }
+
+  .board__strip-item[aria-current="true"] {
+    border-color: var(--ink);
+    background: var(--rule);
   }
 
   .board__columns {

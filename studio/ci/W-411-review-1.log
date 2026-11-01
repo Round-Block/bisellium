@@ -1,0 +1,22 @@
+# opus: W-411
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1966d-8e5f-72f3-ab3a-54fbbda8ac0c
+# outcome: passed
+# at: 2026-11-01T09:27:25.199Z
+# tree: tree:8775d0bb13043e33373ef148319de505c38b08a9
+# ui_input: ci/W-411-spec-9.log
+# design_digest: sha256:53098c8d238b03598574aa77a56bb024aedd60ae0f102370ec904ed11bbaff9d
+# ticket: {"opus":"W-411","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-411/studio","head":"de96b6c59025d06a1d13601bdf6201d5f7a12aec","brief":"478fc3873cbebdcb84b1a4b39c4190aa9d28e754","at":"2026-11-01T09:25:22.069Z"}
+
+## Findings
+No findings
+
+## UI input disposition
+The authoritative ui-lead round-9 input passed with two capture-quality advisories. I inspected all eight attached desktop/phone images: the final Board is fully loaded, its neutral current-phase styling and overflow cues remain clear, and Inbox, Seats, and Officina show no responsive regression. Although the initial-view packet does not show the bottom-scrolled drawer, final certified served row b3 proves the scrolling header and pinned, visible, clickable Close control at 1280, 640, and 390; therefore the remaining capture-strengthening advisory does not affect the verdict.
+
+## Verdict
+All four behaviours, declared predecessor flips, owned-path boundary, assertion reds, and final certified gates are satisfied. The initial Close-control layering failure is recorded and its fix passes the final served suite.
+VERDICT: PASS

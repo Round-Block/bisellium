@@ -1,0 +1,21 @@
+# opus: W-411
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1956b-4301-71b2-bccd-a1958a64f128
+# outcome: passed
+# at: 2026-11-01T05:34:41.019Z
+# tree: tree:3003f18ad01310d73cf7a6491d280e9de13b5418
+# brief: briefs/W-411.md blob:70679999fee8b506e91ce93bc5323b22606101d4
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"de5565d185409254e8c303438db51dc8993ccb36","brief":"70679999fee8b506e91ce93bc5323b22606101d4","at":"2026-11-01T05:34:37.548Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-411-spec/promise-ledger.md
+
+## Findings
+
+No findings
+
+## Verdict
+
+passed — signature round 2 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-411.md`; four behaviours are pinned by genuine assertion reds whose cited evidence records the exact replay command, the eight-commit prototype series builds at every commit, the served rows pass at 1280, 640 and 390, the prototype sha256 is `1b162cbe6edd4ec575fe0d25f6bf2a2babbf0899243d5ae81e36c8d78e8a9717`, and no record write, `next` or `verdict` was performed.

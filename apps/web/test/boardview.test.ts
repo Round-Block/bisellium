@@ -146,8 +146,8 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   check(5, "BoardView: no emoji", !/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(html), html);
 }
 
-// The project selector: disabled, exactly one option = officina.studio, the
-// unavailability reason is TEXT, never a title attribute.
+// The project selector remains a disabled one-studio product fact; implementation
+// explanations stay out of the product header and out of title attributes.
 {
   const html = renderToStaticMarkup(BoardView(baseProps({ studio: "epoch0", model: { columns: [], waiting: [], unplaced: [] } })));
   const selectMatch = /<select[^>]*class="board__project-select"[^>]*>([\s\S]*?)<\/select>/.exec(html);
@@ -155,8 +155,8 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   check(5, "BoardView: the project select is disabled", /<select[^>]*disabled/.test(html), html);
   const options = selectMatch ? [...selectMatch[1]!.matchAll(/<option[^>]*>([^<]*)<\/option>/g)] : [];
   check(5, "BoardView: exactly one option, equal to officina.studio", options.length === 1 && options[0]![1] === "epoch0", JSON.stringify(options));
-  check(5, "BoardView: the unavailability reason is visible text", html.includes("one officina per"), html);
-  check(5, "BoardView: the reason is never carried only in a title attribute", !/<select[^>]*title="[^"]*officina per/.test(html), html);
+  check(5, "BoardView: the header omits the implementation explanation", !html.includes("one officina per") && !html.includes("project registry"), html);
+  check(5, "BoardView: the omitted explanation is not moved into a title attribute", !/<select[^>]*title="[^"]*(?:officina per|project registry)/.test(html), html);
 }
 
 // role="option" per card; exactly one card per column carries tabIndex={0}.

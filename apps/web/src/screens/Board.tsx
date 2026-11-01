@@ -31,12 +31,14 @@ const REFETCH_DEBOUNCE_MS = 30;
 interface Selection {
   id: string;
   columnId: string;
+  origin: "card" | "waiting";
 }
 
 interface PendingCloseRestoration {
   selection: Selection;
   fallback: boolean;
   scrollLeft: number | undefined;
+  waitingScrollLeft: number | undefined;
 }
 
 export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: ScreenStatus) => void; onWaitingCount?: (count: number) => void } = {}): JSX.Element {
@@ -45,6 +47,7 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
   const [inbox, setInbox] = useState<Pick<InboxResponse, "opera" | "petitiones">>({ opera: [], petitiones: [] });
   const [eventsByItem, setEventsByItem] = useState<Record<string, EventRow[]>>({});
   const [selected, setSelected] = useState<Selection | undefined>(undefined);
+  const [lastSelectedId, setLastSelectedId] = useState<string | undefined>(undefined);
   const [focusedByColumn, setFocusedByColumn] = useState<Record<string, string | undefined>>({});
   const [connected, setConnected] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | undefined>(undefined);
@@ -69,7 +72,7 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
   const modelRef = useRef(model);
   const connRef = useRef<{ connected: boolean; everFetched: boolean }>({ connected: false, everFetched: false });
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const scrollSnapshotRef = useRef<number | undefined>(undefined);
+  const scrollSnapshotRef = useRef<{ scrollLeft: number | undefined; waitingScrollLeft: number | undefined }>({ scrollLeft: undefined, waitingScrollLeft: undefined });
   const pendingCloseRestorationRef = useRef<PendingCloseRestoration | undefined>(undefined);
   const pendingFocusRef = useRef<{ columnId: string; cardId: string } | undefined>(undefined);
 
@@ -199,11 +202,16 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
 
     const scrollEl = document.querySelector<HTMLElement>(".board__columns");
     if (scrollEl && pending.scrollLeft !== undefined) scrollEl.scrollLeft = pending.scrollLeft;
+    const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
+    if (waitingEl && pending.waitingScrollLeft !== undefined) waitingEl.scrollLeft = pending.waitingScrollLeft;
 
     const { selection, fallback } = pending;
     const columnEl = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${selection.columnId}"]`);
     if (!fallback) {
-      columnEl?.querySelector<HTMLElement>(`[data-card-id="${selection.id}"]`)?.focus({ preventScroll: true });
+      const origin = selection.origin === "waiting"
+        ? document.querySelector<HTMLElement>(`[data-waiting-id="${selection.id}"]`)
+        : columnEl?.querySelector<HTMLElement>(`[data-card-id="${selection.id}"]`);
+      origin?.focus({ preventScroll: true });
       return;
     }
     const firstCard = columnEl?.querySelector<HTMLElement>("[data-card-id]");
@@ -307,7 +315,8 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
       ? model.unplaced.includes(sel.id) && model.waiting.some((card) => card.id === sel.id)
       : column?.cards.some((c) => c.id === sel.id) ?? false;
     if (stillThere) return;
-    pendingCloseRestorationRef.current = { selection: sel, fallback: true, scrollLeft: scrollSnapshotRef.current };
+    pendingCloseRestorationRef.current = { selection: sel, fallback: true, ...scrollSnapshotRef.current };
+    setLastSelectedId(undefined);
     setSelected(undefined);
   }, [model]);
 
@@ -350,10 +359,12 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
     setFocusedByColumn((prev) => ({ ...prev, [columnId]: cardId }));
   }
 
-  function openDrawer(id: string, columnId: string): void {
+  function openDrawer(id: string, columnId: string, origin: "card" | "waiting"): void {
     const scrollEl = document.querySelector<HTMLElement>(".board__columns");
-    scrollSnapshotRef.current = scrollEl?.scrollLeft;
-    setSelected({ id, columnId });
+    const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
+    scrollSnapshotRef.current = { scrollLeft: scrollEl?.scrollLeft, waitingScrollLeft: waitingEl?.scrollLeft };
+    setLastSelectedId(id);
+    setSelected({ id, columnId, origin });
     void fetchDrawerEvents(id);
   }
 
@@ -365,7 +376,7 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
     // regardless of which render's closure invoked it.
     const sel = selectedRef.current;
     if (sel) {
-      pendingCloseRestorationRef.current = { selection: sel, fallback: false, scrollLeft: scrollSnapshotRef.current };
+      pendingCloseRestorationRef.current = { selection: sel, fallback: false, ...scrollSnapshotRef.current };
     }
     setSelected(undefined);
   }
@@ -409,7 +420,7 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
         focusCard(target.id, target.cards[row]!.id);
       } else if (e.key === "Enter") {
         e.preventDefault();
-        openDrawer(cardId, columnId);
+        openDrawer(cardId, columnId, "card");
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -431,9 +442,9 @@ export function Board({ onStatus, onWaitingCount }: { onStatus?: (status: Screen
         studio={officina.studio}
         model={model}
         inert={selected !== undefined && boardTrackCollapsed}
-        selectedId={selected?.id}
+        selectedId={selected?.id ?? lastSelectedId}
         focusedByColumn={focusedByColumn}
-        onSelectCard={(id, columnId) => openDrawer(id, columnId)}
+        onSelectCard={(id, columnId, origin) => openDrawer(id, columnId, origin)}
         liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
         branchNote={branchNote("branchRecords" in officina ? officina.branchRecords : undefined)}
         generatedAt={generatedAt}

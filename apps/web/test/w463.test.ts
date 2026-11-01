@@ -68,7 +68,7 @@ test("W-463-b2 behaviour 2: the pinned strip and in-place highlights stay legibl
 
   assert.doesNotMatch(view, /Nothing waiting on you/, "the Board owns no empty-state phrase");
   assert.match(view, /board__waiting--empty[\s\S]*<strong>\{waiting\.length\}<\/strong>[\s\S]*waiting\.length > 0 && <div className=\{`board__waiting-rail\$\{canScrollRight/, "the mounted empty strip collapses to its label and zero count");
-  assert.match(view, /<WaitingStrip waiting=\{model\.waiting\}[\s\S]*<div className="board__strip">/, "the waiting strip always precedes phase navigation");
+  assert.match(view, /<WaitingStrip waiting=\{model\.waiting\}[\s\S]*<PhaseNavigation columns=\{model\.columns\}/, "the waiting strip always precedes W-411's phase navigation");
   assert.match(view, /function WaitingFacts[\s\S]*board__waiting-head[\s\S]*OWNER[\s\S]*NEXT[\s\S]*ASK/, "one waiting-card component carries the W-410 handoff rail on both surfaces");
   assert.match(view, /card\.needsYou \? <WaitingFacts card=\{card\}/, "waiting lifecycle cards replace the old card copy with the same five facts");
   assert.match(view, /className="board__waiting-item"[\s\S]*<WaitingFacts card=\{card\} compact \/>[\s\S]*<\/button>/, "strip entries reuse the five-fact component");
@@ -132,7 +132,7 @@ test("W-463-b4 behaviour 4: strip entries reuse the lifecycle-card drawer handle
   const css = read("src/components/w025.css");
   const served = read("tests-serve/w463.spec.ts");
 
-  assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced"\)\}[\s\S]*<WaitingFacts card=\{card\} compact \/>/, "a waiting entry takes its accessible name from the visible five-fact rail and remains wired to the shared card selection callback");
+  assert.match(view, /<button[\s\S]*type="button"[\s\S]*className="board__waiting-item"[\s\S]*onClick=\{\(\) => onSelectCard\(card\.id, columnId \?\? "unplaced", "waiting"\)\}[\s\S]*<WaitingFacts card=\{card\} compact \/>/, "a waiting entry takes its accessible name from the visible five-fact rail, identifies its return-focus origin and remains wired to the shared card selection callback");
   assert.match(served, /unplaced waiting entry opens the existing drawer/, "an unplaced strip entry has an explicit drawer outcome");
   assert.match(view, /<Card[\s\S]*onSelect=\{onSelectCard\}/, "lifecycle cards retain the same selection callback");
   assert.match(board, /sel\.columnId === "unplaced"[\s\S]*model\.unplaced\.includes\(sel\.id\)[\s\S]*model\.waiting\.some/, "an unplaced waiting selection stays open in the existing drawer");

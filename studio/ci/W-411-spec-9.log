@@ -1,0 +1,29 @@
+# opus: W-411
+# phase: spec
+# round: 9
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a195f8-d531-7410-9775-1fc278904113
+# outcome: passed
+# at: 2026-11-01T08:19:29.524Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# dispatch_prompt: ci/W-411-ui-prompt-9.md
+# design_digest: sha256:53098c8d238b03598574aa77a56bb024aedd60ae0f102370ec904ed11bbaff9d
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":9,"actor":"ui-lead","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"478fc3873cbebdcb84b1a4b39c4190aa9d28e754","at":"2026-11-01T08:19:21.903Z"}
+
+## Findings
+
+1. advisory — brief:100 — The many-item bottom captures at 1280 and 640 do not demonstrate the long title scrolling away — replace with: “Use the b3 long-body fixture for these captures, with the complete header scrolled out and Close still visible.” — check: capture-shots.mts:83; drawer-many-1280-expanded-bottom.png; drawer-many-640-bottom.png.
+2. advisory — brief:100 — board-sample-1280-expanded.png still shows “Loading the board…” and incomplete ASK information, weakening comparison with the settled pre-change screen — replace with: “Capture the sample Board after loading completes and its expected waiting facts appear.” — check: capture-shots.mts:51; board-sample-1280-expanded.png.
+
+## Earlier findings
+
+- ci/W-411-spec-6.log #1: closed — brief:48, brief:82 and brief:122 require pinned Close at all three widths; prototype w025.css:2469 implements it. The sample bottom captures show Close retained after the header scrolls away at 1280, 640 and 390, and the recorded passing b3 checks containment, opacity, 44px size, visible focus and pointer closure.
+
+## Recommendation
+
+The W-411 screens now read correctly at 1280, 640 and 390: the header is plain, the phone’s current phase is visible, and selection is distinct from waiting status.
+The agent-authored neutral phase and selection treatments make sense on these screens; the Patron’s all-width Close ruling preserves an accessible exit without pinning the long title.
+The round-6 wording advisories are closed at brief:84 and brief:40, and the earlier phase, selection and phone-header findings remain closed.
+The two capture improvements above strengthen review evidence without reopening a UI blocker.
+Verdict: passed

@@ -1,0 +1,21 @@
+# opus: W-411
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1956b-4301-71b2-bccd-a1958a64f128
+# outcome: passed
+# at: 2026-11-01T08:07:04.530Z
+# tree: tree:294198656ce5ac5e503ed545182ec183b3ea7194
+# brief: briefs/W-411.md blob:478fc3873cbebdcb84b1a4b39c4190aa9d28e754
+# ticket: {"opus":"W-411","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"00257858276af52a472aa39caa0f63929b7fbf6b","brief":"478fc3873cbebdcb84b1a4b39c4190aa9d28e754","at":"2026-11-01T08:06:56.093Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-411-spec/promise-ledger.md
+
+## Findings
+
+No findings
+
+## Verdict
+
+passed — signature round 4 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-411.md`; `ci/W-411-spec-6.log` finding 1 and advisories 2-3, and `ci/W-411-spec-5.log` advisories 1 and 3 are adopted; Default 3 records the Patron's 2026-11-01 ruling, "Go with your rec": pin Close at 1280, 640 and 390; four behaviours are pinned by genuine assertion reds whose cited evidence records the exact replay command, the eight-commit prototype series builds at every commit, the served rows pass at 1280, 640 and 390, the prototype sha256 is `6f7e5a2a4f91e7115a22de30c8fb512cc611c11e05e1b8ec293b0cda07c8f063`, and no record write, `next` or `verdict` was performed.
