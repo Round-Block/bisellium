@@ -869,7 +869,7 @@ test("W-494-b3 behaviour 3: a wait loop on pgrep -f is refused and steered to an
     assert.equal((await guard(bash(c, RUNNER, true))).code, 2, `a subagent, background: ${c}`);
   }
   const allowed = [
-    "timeout 540 bash -c 'until [ -f /tmp/x.exit ]; do sleep 10; done'",
+    "timeout 100 bash -c 'until [ -f /tmp/x.exit ]; do sleep 10; done'",
     "pgrep -f node",
     "until ! pgrep node; do sleep 5; done",
     "pgrep -x -l npm; echo waiting until done",
