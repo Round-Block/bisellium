@@ -329,6 +329,35 @@ test("W-489-b1 behaviour 1: the done perform's sweep removes every worktree that
   }
 });
 
+test("W-489-b1 submodule-dirty patch round-trip: a worktree whose initialized submodule holds modified or untracked contents is kept, never force-removed", () => {
+  const fx = w489Repo();
+  try {
+    const { repo, studio, root } = fx;
+    const subSrc = join(root, "subsrc");
+    git(["init", "-q", "-b", "master", subSrc], root);
+    writeFileSync(join(subSrc, "s.txt"), "s\n");
+    git(["add", "s.txt"], subSrc);
+    git([...W489_ID, "commit", "-q", "-m", "sub init"], subSrc);
+    git([...W489_ID, "-c", "protocol.file.allow=always", "submodule", "add", "-q", subSrc, "vendor"], repo);
+    git([...W489_ID, "commit", "-q", "-m", "add submodule"], repo);
+    git(["push", "-q", "origin", "master"], repo);
+    const wt = w489Wt(repo, "W-9-sub", undefined);
+    git(["-c", "protocol.file.allow=always", "submodule", "update", "-q", "--init"], wt);
+    writeFileSync(join(wt, "vendor", "s.txt"), "s modified in the submodule\n");
+    writeFileSync(join(wt, "vendor", "untracked.txt"), "untracked in the submodule\n");
+    const fake = w489Prs({});
+
+    const s = w489Sweep(repo, studio, { opus: "W-9", prs: fake.prs, nowMs: Date.now() });
+    assert.equal(existsSync(join(wt, "vendor", "untracked.txt")), true, "the submodule's untracked file is still on disk");
+    assert.equal(readFileSync(join(wt, "vendor", "s.txt"), "utf8"), "s modified in the submodule\n", "the submodule's modification is still on disk");
+    assert.deepEqual(s.removed, [], "the worktree is not removed");
+    assert.equal(s.kept.length, 1, "the worktree is kept");
+    assert.match(s.kept[0]?.reason ?? "", /submodule.*vendor/, "the kept reason names the submodule");
+  } finally {
+    rmSync(fx.root, { recursive: true, force: true });
+  }
+});
+
 test("W-489-b2 behaviour 2: prune's sweep removes a worktree whose opus is done, whose PR is merged or closed, or (clean) whose commit is in origin/master, and keeps the rest", () => {
   const fx = w489Repo();
   try {
