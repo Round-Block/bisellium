@@ -238,8 +238,8 @@ test("W-209-b1 behaviour 1: the dossier's direct HTML pages are record-only; its
     assert.equal(mod.recordOnly(paths), false, `${JSON.stringify(paths)} is not record-only`);
 });
 
-test("W-211-b1 behaviour 1: source_excludes is examples/ plus the dossier's direct HTML pages, and test:record runs this pin", async () => {
-  const { recordOnly } = await import("./ci-scope.mjs");
+test("W-211-b1 behaviour 1: source_excludes is examples/ plus the dossier's direct HTML pages, may name the handoff, and test:record runs this pin", async () => {
+  const { recordOnly, sourceExcludesProblems } = await import("./ci-scope.mjs");
   const command = "node --test-reporter=tap scripts/ci-scope.test.mjs";
   assert.ok(andSplit(pkgScripts()["test:record"]).includes(command), `test:record runs "${command}"`);
   const listed = parseYaml(readFileSync(join(REPO, "studio", "bisellium.yml"), "utf8")).source_excludes;
@@ -247,7 +247,7 @@ test("W-211-b1 behaviour 1: source_excludes is examples/ plus the dossier's dire
     .filter((entry) => entry.isFile())
     .map((entry) => `docs/design/dossier/${entry.name}`)
     .filter((path) => recordOnly([path]));
-  assert.deepEqual([...listed].sort(), ["examples/", ...pages].sort(), "source_excludes names exactly these");
+  assert.deepEqual(sourceExcludesProblems(listed, pages), [], "source_excludes names exactly these");
 });
 
 test("W-483-b1 behaviour 1: source_excludes may name the handoff, and a handoff edit then moves no SOURCE tree", async () => {
