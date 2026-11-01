@@ -403,3 +403,53 @@ test("W-489-b2 behaviour 2: prune's sweep removes a worktree whose opus is done,
     rmSync(fx.root, { recursive: true, force: true });
   }
 });
+
+test("W-489-b3 behaviour 3: bisellium prune runs the sweep and prints each removed worktree, asking for PR states only when a worktree is a candidate", () => {
+  const fx = w489Repo();
+  try {
+    const { repo, studio } = fx;
+    writeOpus(studio, "W-7", "done");
+    const a = w489Wt(repo, "W-7-a", "spec-scratch/W-7");
+    writeFileSync(join(a, "notes.txt"), "W-7 notes\n");
+    w489Wt(repo, "fresh-W-7", "chore/fresh", { young: true });
+    const fake = w489Prs({ "spec-scratch/W-7": "NONE", "chore/fresh": "NONE" });
+    const prune = (): string => {
+      const orig = console.log;
+      let out = "";
+      console.log = (...parts: unknown[]) => void (out += parts.join(" ") + "\n");
+      try {
+        (runPrune as (args: string[], deps: unknown) => { exitCode: number })(["--studio", studio, "--repo", repo], { prs: fake.prs, nowMs: Date.now() });
+      } finally {
+        console.log = orig;
+      }
+      return out;
+    };
+
+    const first = prune().split("\n").filter(Boolean);
+    const diffs = join(repo, ".bisellium", "worktree-diffs");
+    assert.equal(first.length, 1, `one line, the removed worktree: ${first.join(" | ")}`);
+    assert.match(first[0]!, new RegExp(`^worktree removed: ${a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\(opus W-7 done\\); uncommitted changes saved to ${diffs.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/W-7-a-.+\\.patch$`), "prune prints the removed worktree, its reason and its patch");
+    assert.equal(existsSync(a), false, "the worktree is gone");
+    assert.deepEqual(fake.calls, [["spec-scratch/W-7"]], "the lookup is asked once, for the branch of the one candidate");
+    assert.equal(prune(), "nothing to prune\n", "a second run finds nothing: a young worktree is kept silently");
+    assert.equal(fake.calls.length, 1, "with no candidate the PR lookup is not asked");
+
+    // a busy admin directory is named, and a later run clears it
+    const c = w489Wt(repo, "W-7-c", undefined);
+    chmodSync(w489Admin(repo), 0o555);
+    let busy: string;
+    try {
+      busy = prune();
+    } finally {
+      chmodSync(w489Admin(repo), 0o755);
+    }
+    assert.deepEqual(
+      busy.split("\n").filter(Boolean),
+      [`worktree removed: ${c} (opus W-7 done); its admin directory is held busy, a later prune retries`, "worktree admin directories left: 1 (held busy; a later prune retries)"],
+      "the removal and the busy admin directory are printed",
+    );
+    assert.equal(prune(), "nothing to prune\n", "a later run prunes the admin directory");
+  } finally {
+    rmSync(fx.root, { recursive: true, force: true });
+  }
+});
