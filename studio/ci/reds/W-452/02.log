@@ -1,0 +1,62 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-452-b2\s --import tsx packages/cli/src/spec-seats.test.ts
+# exit: 1
+# at: 2026-11-01T04:24:10.000Z
+# sella: builder.W-452
+# tree: tree:86a29e602f518948a6a10afea02843e39325b54e
+# ticket: {"opus":"W-452","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-452/studio","head":"fa0768de5f149f5561977d06e34d1b8b8bf08570","brief":"6a238ebfdf08e36d16da0d32dfba5647ac0e1afb","at":"2026-11-01T04:24:09.068Z"}
+
+TAP version 13
+# Subtest: W-452-b2 behaviour 2: an opus whose first spec log predates since keeps today's seats (D-150 B), in next's reader and its orders
+not ok 1 - W-452-b2 behaviour 2: an opus whose first spec log predates since keeps today's seats (D-150 B), in next's reader and its orders
+  ---
+  duration_ms: 4.899602
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/spec-seats.test.ts:1:8923'
+  failureType: 'testCodeFailure'
+  error: |-
+    an ops opus whose first spec log predates since keeps the architect
+    + actual - expected
+    
+      {
+        reviewer: {
+    +     design: 'ops-lead',
+    -     design: 'architect',
+          model: 'gpt-5.6-sol',
+          sella: 'spec-reviewer'
+        },
+    +   signer: 'ops-lead'
+    -   signer: 'architect'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    signer: 'architect'
+    reviewer:
+      sella: 'spec-reviewer'
+      model: 'gpt-5.6-sol'
+      design: 'architect'
+  actual:
+    signer: 'ops-lead'
+    reviewer:
+      sella: 'spec-reviewer'
+      model: 'gpt-5.6-sol'
+      design: 'ops-lead'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-452/packages/cli/src/spec-seats.test.ts:194:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11.581603
