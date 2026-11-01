@@ -7,6 +7,7 @@
  * W-139 adds the `test:record` rows (`--test-name-pattern=W-139.behaviour.N:`).
  * W-335 adds scripts/test-reads.mjs's row (`--test-name-pattern='^W-335-b1\s'`).
  * W-368 adds the runner-image and action-runtime row (`--test-name-pattern='^W-368-b1\s'`).
+ * W-483 adds the handoff's row (`--test-name-pattern='^W-483-b1\s'`).
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -237,8 +238,8 @@ test("W-209-b1 behaviour 1: the dossier's direct HTML pages are record-only; its
     assert.equal(mod.recordOnly(paths), false, `${JSON.stringify(paths)} is not record-only`);
 });
 
-test("W-211-b1 behaviour 1: source_excludes is examples/ plus the dossier's direct HTML pages, and test:record runs this pin", async () => {
-  const { recordOnly } = await import("./ci-scope.mjs");
+test("W-211-b1 behaviour 1: source_excludes is examples/ plus the dossier's direct HTML pages, may name the handoff, and test:record runs this pin", async () => {
+  const { recordOnly, sourceExcludesProblems } = await import("./ci-scope.mjs");
   const command = "node --test-reporter=tap scripts/ci-scope.test.mjs";
   assert.ok(andSplit(pkgScripts()["test:record"]).includes(command), `test:record runs "${command}"`);
   const listed = parseYaml(readFileSync(join(REPO, "studio", "bisellium.yml"), "utf8")).source_excludes;
@@ -246,7 +247,61 @@ test("W-211-b1 behaviour 1: source_excludes is examples/ plus the dossier's dire
     .filter((entry) => entry.isFile())
     .map((entry) => `docs/design/dossier/${entry.name}`)
     .filter((path) => recordOnly([path]));
-  assert.deepEqual([...listed].sort(), ["examples/", ...pages].sort(), "source_excludes names exactly these");
+  assert.deepEqual(sourceExcludesProblems(listed, pages), [], "source_excludes names exactly these");
+});
+
+test("W-483-b1 behaviour 1: source_excludes may name the handoff, and a handoff edit then moves no SOURCE tree", async () => {
+  const mod = await import("./ci-scope.mjs");
+  const pin = mod.sourceExcludesProblems ?? (() => ["scripts/ci-scope.mjs exports no sourceExcludesProblems"]);
+  const handoff = "docs/SESSION-HANDOFF.md";
+  const pages = ["docs/design/dossier/body.html", "docs/design/dossier/head.html"];
+  const required = ["examples/", ...pages];
+  assert.deepEqual(pin([...required, handoff], pages), [], "a list naming the handoff passes the pin");
+  assert.deepEqual(pin(required, pages), [], "a list without the handoff passes the pin");
+  assert.deepEqual(pin([handoff, ...pages, "examples/"], pages), [], "order is ignored");
+  assert.deepEqual(pin([...required, handoff, handoff], pages), [`duplicate: "${handoff}"`], "the handoff twice fails");
+  assert.deepEqual(pin([...required, "docs/"], pages), ['extra: "docs/"'], "a directory over the handoff fails");
+  assert.deepEqual(pin([...required, `${handoff}/`], pages), [`extra: "${handoff}/"`], "another spelling fails");
+  assert.deepEqual(pin([...required, "packages/"], pages), ['extra: "packages/"'], "a source path fails");
+  assert.deepEqual(pin(["examples/", pages[0], handoff], pages), [`missing: "${pages[1]}"`], "a missing page fails");
+  assert.deepEqual(pin("examples/", pages), ["not a list"], "a scalar fails");
+  assert.equal(mod.HANDOFF, handoff, "recordOnly and the pin share one handoff path");
+  assert.equal(mod.recordOnly([handoff]), true, "the handoff is a record to recordOnly");
+
+  // The SOURCE identity under the studio's own list with the handoff named, through the unchanged shim readers.
+  const { isDirtyOutside, servedUiHash, sourceTreeHash } = await import("../packages/shim/src/sourceTree.ts");
+  const listed = parseYaml(readFileSync(join(REPO, "studio", "bisellium.yml"), "utf8")).source_excludes;
+  const exclusions = ["studio", ".bisellium", ...new Set([...listed, handoff])];
+  const tmp = mkdtempSync(join(tmpdir(), "w483-"));
+  try {
+    const id = ["-c", "user.name=w483", "-c", "user.email=w483@x.invalid", "-c", "commit.gpgsign=false"];
+    const git = (...args) => execFileSync("git", [...id, ...args], { cwd: tmp, encoding: "utf8" });
+    for (const [rel, body] of [
+      [handoff, "# Handoff\n"],
+      ["packages/a.ts", "export const a = 1;\n"],
+      ["apps/web/a.tsx", "export {};\n"],
+      ["studio/bisellium.yml", "bisellium: 1\n"],
+    ]) {
+      mkdirSync(join(tmp, dirname(rel)), { recursive: true });
+      writeFileSync(join(tmp, rel), body);
+    }
+    git("init", "-q");
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+    const tree = sourceTreeHash(tmp, exclusions);
+    const served = servedUiHash(tmp);
+    writeFileSync(join(tmp, handoff), "# Handoff\n\n- a checkpoint line\n");
+    assert.equal(isDirtyOutside(tmp, exclusions), false, "an uncommitted handoff edit is not a dirty source tree");
+    git("commit", "-q", "-am", "handoff");
+    assert.equal(sourceTreeHash(tmp, exclusions), tree, "a handoff-only commit keeps the SOURCE tree");
+    assert.equal(servedUiHash(tmp), served, "a handoff-only commit keeps the served UI hash");
+    writeFileSync(join(tmp, "packages/a.ts"), "export const a = 2;\n");
+    assert.equal(isDirtyOutside(tmp, exclusions), true, "an uncommitted source edit is dirty");
+    git("commit", "-q", "-am", "source");
+    assert.notEqual(sourceTreeHash(tmp, exclusions), tree, "a source commit moves the SOURCE tree");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test("W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite", () => {

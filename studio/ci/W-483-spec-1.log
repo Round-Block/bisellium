@@ -1,0 +1,23 @@
+# opus: W-483
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-01T03:20:13.267Z
+# tree: tree:3cf259852c633ef5abc9674d618f641fa18f1aae
+# brief: briefs/W-483.md blob:57872e55baa46192346fcd5b7a16f4129949f885
+# ticket: {"opus":"W-483","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"2a4a3e74f332a5e627d3af10487f9a4b07a60a9d","brief":"57872e55baa46192346fcd5b7a16f4129949f885","at":"2026-11-01T03:20:07.256Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-483-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — every reader of the excluded set (verify, check, the verdict capture, red, the ladder's certificate and trees, branch and merge, receipt admission, certify and its mint, the host replay, rewrite) spreads the manifest's list unchanged into the shim's hash pair, which excludes a one-file entry; W-382's served-UI hash never reads the list; so the handoff joins the set by one manifest line and no reader changes — check: readers.out, brief:17
+2. advisory — the line cannot ride on the opus (buildReviewDrift holds a worktree whose list differs) nor land first (W-211-b1 fails it on master in the records merge group); this opus makes the pin admit the handoff at most once, after which the records PR passes it, and the 11-01 handoff-only commits keep their SOURCE tree under the list with the handoff — check: landing.out, brief:19, brief:90
+3. advisory — the red fails by assertion on its red commit at the declared assertion and is accepted by the replay classifier; nine one-hunk kills of scripts/ci-scope.mjs and packages/shim/src/sourceTree.ts each fail their row at the assertion they guard — check: red-logs.out, red-accept.out, declared.out, kills.out
+4. advisory — lint, format:check and typecheck pass; ADOPTION.md stays at its 1032-line cap; the full admission admits the brief and the ledger passes the writer; the Codex test check's flips are named and its must-stay-green rows pass at the tip; one code-owned path (docs/ADOPTION.md), so the Patron merges — check: gates-proto.out, admission.out, ledger-check.out, fixture-census.md, census-green.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-483.md`, prototype `prototype.mbox` (two patches) over master 2a4a3e74; one behaviour, 1 point, one code-owned path (docs/ADOPTION.md).

@@ -23,13 +23,33 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  * `.html`. W-243: the one list of officina record paths; certify and `next`'s done and landing guards read it too.
  */
 const DOSSIER_PAGE = /^docs\/design\/dossier\/[^/]+\.html$/;
+/** W-483: the handoff, the one record outside the officina that is not a dossier page. */
+export const HANDOFF = "docs/SESSION-HANDOFF.md";
 export function recordOnly(paths, studio = "studio") {
   return (
     paths.length > 0 &&
-    paths.every(
-      (path) => path.startsWith(`${studio}/`) || path === "docs/SESSION-HANDOFF.md" || DOSSIER_PAGE.test(path),
-    )
+    paths.every((path) => path.startsWith(`${studio}/`) || path === HANDOFF || DOSSIER_PAGE.test(path))
   );
+}
+
+/**
+ * W-211, W-483: the problems with `listed` as `studio/bisellium.yml#source_excludes`, sorted; none means it is the
+ * pinned list: `examples/` and each of `pages` (the dossier's direct pages) exactly once, and the handoff at most once.
+ * Another entry, a repeat or a missing one is a problem; order is ignored; a value that is not a list is one problem.
+ */
+export function sourceExcludesProblems(listed, pages) {
+  if (!Array.isArray(listed)) return ["not a list"];
+  const required = ["examples/", ...pages];
+  const allowed = new Set([...required, HANDOFF]);
+  const seen = new Set();
+  const problems = new Set();
+  for (const entry of listed) {
+    if (seen.has(entry)) problems.add(`duplicate: ${JSON.stringify(entry)}`);
+    else if (!allowed.has(entry)) problems.add(`extra: ${JSON.stringify(entry)}`);
+    seen.add(entry);
+  }
+  for (const entry of required) if (!seen.has(entry)) problems.add(`missing: ${JSON.stringify(entry)}`);
+  return [...problems].sort();
 }
 
 /**
