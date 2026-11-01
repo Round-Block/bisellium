@@ -174,7 +174,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                 <div className="inbox__reading">
                   <div className="inbox__meta"><span>{selectedPetition.opus}</span><span>from {selectedPetition.from}</span><span>{datePresentation(selectedPetition.opened)}</span></div>
                   <h2 className="inbox__expanded-subject">{selectedPetition.subject}</h2>
-                  {selectedItem?.boardEntry && selectedItem.asks?.some((ask) => ask.kind !== "inbox") && (
+                  {detachedPetition === null && selectedItem?.boardEntry && selectedItem.asks?.some((ask) => ask.kind !== "inbox") && (
                     <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(selectedItem.id)}>Open Board actions</button>
                   )}
                   <div className="inbox__ask">
