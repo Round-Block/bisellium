@@ -1514,4 +1514,20 @@ test("W-489-b4 behaviour 4: the done perform removes the worktrees that carry it
   assert.ok(readFileSync(specLine.slice(specLine.indexOf(diffs)), "utf8").includes("+the architect's notes"), "the patch holds the untracked file");
   assert.equal(existsSync(other) && existsSync(fresh) && existsSync(pushed), true, "the W-9001 worktree, the young one and the pushed one stay");
   assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD is back on master");
+
+  // a remote-tracking ref git cannot read (show-ref exits 128) is not an absent one: the worktree stays
+  const bad = world("w489-b4-bad", "cleanup", { patron: true });
+  scenario(bad, { list: mergedList(bad) });
+  appendFileSync(join(bad.repo, ".git", "info", "exclude"), ".worktrees/\n");
+  const badRepo = realpathSync(bad.repo);
+  const badPath = join(badRepo, ".worktrees", `${OPUS}-broken`);
+  git(bad.repo, ["worktree", "add", "-q", "-b", `stage/${OPUS}`, badPath, "master"]);
+  const old = new Date(Date.now() - 2 * 3_600_000);
+  utimesSync(join(git(badPath, ["rev-parse", "--absolute-git-dir"]), "gitdir"), old, old);
+  mkdirSync(join(badRepo, ".git", "refs", "remotes", "origin", "stage"), { recursive: true });
+  writeFileSync(join(badRepo, ".git", "refs", "remotes", "origin", "stage", OPUS), "0000000000000000000000000000000000000001\n");
+  const ob = next(bad, [OPUS, "--perform", "--expect", "done"]);
+  expectStep(ob, "done", "performed", "the done perform still succeeds when a remote ref cannot be read");
+  assert.equal(outLines(ob).filter((l) => l.startsWith("worktree kept: ") && l.startsWith(`worktree kept: ${badPath} (its PR cannot be read`)).length, 1, ran("the worktree whose remote ref cannot be read is kept for its PR", ob));
+  assert.equal(existsSync(badPath), true, "the worktree stays");
 });
