@@ -1,0 +1,55 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-495-b5\s --import tsx packages/cli/src/w495.test.ts
+# exit: 1
+# at: 2026-11-02T09:55:40.368Z
+# sella: builder.W-495
+# tree: tree:59c2058ae28b40fdfdb527266ba8337e3449ccd6
+# ticket: {"opus":"W-495","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-495/studio","head":"37eaac418f473d096c71aab31533384d0c2d6713","brief":"8f099ad2a002e2f6dd080b7fd677352c100132bf","at":"2026-11-02T09:55:30.562Z"}
+
+TAP version 13
+# Subtest: W-495-b5 behaviour 5: a first spec signature later than the rung's clock is no start: the cost line reads none, never negative hours
+not ok 1 - W-495-b5 behaviour 5: a first spec signature later than the rung's clock is no start: the cost line reads none, never negative hours
+  ---
+  duration_ms: 2537.930588
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:10:2419'
+  failureType: 'testCodeFailure'
+  error: |-
+    a start after the clock has no span: none, before any hours are printed
+    --- exit 0
+    --- stdout
+    next: W-900 branch performed
+    branch: opus/W-900
+    worktree: /tmp/claude-1000/w124-w495-b4-future-cnjClD/repo/.worktrees/W-900
+    next-step: ready
+    usage: Claude unread (no status-line file); Codex unread (no session log holds a week rate_limits)
+    cost: Claude week unread, Codex week unread over -0.7 h since the first spec signature
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'cost: Claude week unread, Codex week unread over -0.7 h since the first spec signature'
+    - "cost: none (the first spec signature of W-900 (2026-10-02T01:00:00.000Z) is after this rung's clock)"
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: "cost: none (the first spec signature of W-900 (2026-10-02T01:00:00.000Z) is after this rung's clock)"
+  actual: 'cost: Claude week unread, Codex week unread over -0.7 h since the first spec signature'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:263:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2582.302619

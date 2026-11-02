@@ -54,7 +54,6 @@ interface Mod {
   readingLine: (r: Reading) => string;
   appendReading: (home: string, r: Reading, write?: (fd: number, data: Buffer) => number) => string | undefined;
   readReadings: (home: string) => Reading[] | { error: string };
-  opusCost: (readings: Reading[], id: string) => Cost | undefined;
   costPhrase: (c: Cost) => string;
   codexBurnLine: (r: Reading, now: Date) => string;
 }
@@ -124,6 +123,7 @@ test("W-430-b1 behaviour 1: a usage reading reads Claude's 5h, week and context 
     claude_week_used: 85,
     claude_seen: "2026-10-28T01:59:00.000Z",
     context_tokens: 171318,
+    claude_resets: 1793253600,
   }, "both plans read: the newest log with a week rate_limits, its last such line; the context is the current input, cache-creation and cache-read tokens");
   assert.equal(readingLine(r), `usage: Claude 5h 20%, week 85%, context 171318 tokens; Codex week 61%, resets ${RESETS_ISO}`, "the reading as one line");
   assert.deepEqual(takeReading(home, now, "rung", { opus: "W-1", step: "branch" }), { ...r, label: "rung", opus: "W-1", step: "branch" }, "a rung reading names its opus and step");
@@ -195,6 +195,7 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
     claude_week_used: 85,
     claude_seen: NOW_ISO,
     context_tokens: 171318,
+    claude_resets: 1793253600,
   }, ran("the reading: at the verb's clock, both plans, the rung named", o));
   assert.equal(lineOf(o.out, "usage: "), `usage: Claude 5h 20%, week 85%, context 171318 tokens; Codex week 61%, resets ${RESETS_ISO}`, ran("printed as its line", o));
 
@@ -265,23 +266,22 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   write(join(w.home, ".bisellium-evidence", "usage", "readings.jsonl"), JSON.stringify({ at: "2026-10-02T10:00:00.000Z", label: "before", codex_week_used: 55, codex_resets: null, codex_from: null, claude_5h_used: null, claude_week_used: 80, claude_seen: null }) + "\n");
   const o = next(w, [OPUS, "--perform", "--expect", "branch"]);
   assert.equal(o.first, `next: ${OPUS} branch performed`, ran("the rung is performed", o));
-  assert.equal(lineOf(o.out, "cost: "), "cost: Claude week +5%, Codex week +6% over 0.0 h", ran("its cost: the interval its reading closes", o));
+  // W-495: the cost so far is the plans' use from the first spec signature (01:00Z) to the reading (12:00Z)
+  assert.equal(lineOf(o.out, "cost: "), "cost: Claude week +5%, Codex week +6% over 11.0 h since the first spec signature", ran("its cost: the use over its span", o));
 
   const m = await load();
-  const opusCost = fn(m, "opusCost");
   const costPhrase = fn(m, "costPhrase");
   const at = (h: number): string => new Date(Date.UTC(2026, 9, 28, h)).toISOString();
   const r = (h: number, opus: string | undefined, claude: number | null, codex: number | null): Reading =>
     ({ at: at(h), label: opus ?? "script", ...(opus === undefined ? {} : { opus, step: "x" }), codex_week_used: codex, codex_resets: null, codex_from: null, codex_seen: null, claude_5h_used: null, claude_week_used: claude, claude_seen: null, context_tokens: null }) as Reading;
   const lines = [r(0, "W-1", 10, 20), r(1, "W-2", 12, 25), r(2, "W-1", 15, 27), r(3, undefined, 16, 30), r(4, "W-1", 3, 31), r(5, "W-2", null, 33)];
-  assert.deepEqual(opusCost(lines, "W-1"), { claude: 6, codex: 3, hours: 4, readings: 3 }, "W-1 closes 1->2 (+3, +2) and 3->4 (a reset: +3, then +1); its first reading closes none");
-  assert.deepEqual(opusCost(lines, "W-2"), { claude: 2, codex: 7, hours: 4, readings: 2 }, "W-2 closes 0->1 (+2, +5) and 4->5 (Claude unread: no rise; +2)");
-  assert.equal(opusCost(lines, "W-3"), undefined, "no reading names it: no cost");
   assert.equal(costPhrase({ claude: 6, codex: 3, hours: 4, readings: 3 }), "Claude week +6%, Codex week +3% over 4.0 h");
   assert.equal(costPhrase({ claude: null, codex: 2.25, hours: 0.25, readings: 1 }), "Claude week unread, Codex week +2.3% over 0.3 h");
 
-  // done's history-row check: the row naming the opus carries its cost, when the readings name it
-  const { historyRowRefusal } = (await import("./next.js")) as { historyRowRefusal: (repo: string, id: string, home?: string) => string | undefined };
+  // W-495: done no longer asks the row for this phrase (it writes the row's figures itself, W-495-b3); the readings file's
+  // foreign and wrong-type lines are still skipped, and W-214's refusal stands
+  const { historyRowRefusal } = (await import("./next.js")) as { historyRowRefusal: (repo: string, id: string) => string | undefined };
+  const readReadings = fn(m, "readReadings");
   const repo = scratchHome("b3-repo");
   const HISTORY = "docs/design/dossier/progress-body.html";
   git(repo, ["init", "-q", "-b", "master"]);
@@ -289,7 +289,6 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   git(repo, ["add", "-A"]);
   git(repo, ["commit", "-q", "-m", "history"]);
   const home = scratchHome("b3-home");
-  write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
   const row = (text: string): void => write(join(repo, HISTORY), `<table>\n${text}\n</table>\n`);
   // a line that lacks a field of the line shape, or holds one of the wrong type, is skipped and counted for nobody
   const good = lines.map((l) => JSON.stringify(l));
@@ -303,22 +302,11 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
     [r(26, "W-1", 1, 1)],
   ];
   write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), [...good, ...foreign.map((l) => JSON.stringify(l))].join("\n") + "\n");
+  assert.deepEqual(readReadings(home), lines, "foreign and wrong-type lines naming W-1 are skipped, never counted");
   row("<tr><td>W-1 shipped</td><td>Cycle about 240 min</td></tr>");
-  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /add "Claude week \+6%, Codex week \+3% over 4\.0 h" beside its hours/, "foreign and wrong-type lines naming W-1 are skipped, never counted");
-  write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), good.join("\n") + "\n");
-  assert.equal(historyRowRefusal(repo, "W-1", home), `the checkpoint row naming W-1 carries no cost: add "Claude week +6%, Codex week +3% over 4.0 h" beside its hours (W-430: its plan cost from the usage readings), then re-run`, "a row without the cost: refused, naming the phrase");
-  row("<tr><td>W-1 shipped</td><td>Cycle about 240 min; Claude week +6%, Codex week +3% over 4.0 h</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-1", home), undefined, "the row carries it: done may commit");
-  // a done held and run again: its own done readings leave the phrase as it was; a cost that read neither plan asks none
-  writeFileSync(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), [...lines, { ...r(6, "W-1", 40, 50), step: "done" }, r(7, "W-4", null, null), r(8, "W-4", null, null)].map((l) => JSON.stringify(l)).join("\n") + "\n");
-  row("<tr><td>W-1 shipped</td><td>Cycle about 240 min</td></tr>");
-  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /add "Claude week \+6%, Codex week \+3% over 4\.0 h" beside its hours/, "a held done's own reading leaves the phrase as it was");
-  row("<tr><td>W-4 shipped</td><td>Cycle about 30 min</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-4", home), undefined, "a cost that read neither plan asks none");
-  row("<tr><td>W-3 shipped</td><td>Cycle about 30 min</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-3", home), undefined, "no reading names W-3: no cost is asked");
+  assert.equal(historyRowRefusal(repo, "W-1"), undefined, "a row naming the opus: W-214 asks nothing more (its figures are W-495's)");
   row("<tr><td>W-2 shipped</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-1", home), "the checkpoint rides the done commit, and docs/design/dossier/progress-body.html adds no history row naming W-1; add it, then re-run", "no row names it: W-214's refusal, unchanged");
+  assert.equal(historyRowRefusal(repo, "W-1"), "the checkpoint rides the done commit, and docs/design/dossier/progress-body.html adds no history row naming W-1; add it, then re-run", "no row names it: W-214's refusal, unchanged");
 });
 
 test("W-430-b4 behaviour 4: past 300000 context tokens on a fresh status line a dispatch order waits, telling the session to let running work finish and refresh the handoff; a rung the verb performs still runs", { timeout: 600_000 }, () => {

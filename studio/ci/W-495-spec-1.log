@@ -1,0 +1,24 @@
+# opus: W-495
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T02:00:37.152Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# brief: briefs/W-495.md blob:68278edf1c11ac87103cb70c68c8720a5a3a43ea
+# ticket: {"opus":"W-495","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"3146651c02bb16c18fe278df4e34bcd3a1d97b22","brief":"68278edf1c11ac87103cb70c68c8720a5a3a43ea","at":"2026-11-02T02:00:36.643Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-495-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the +0% is pinned to its cause: W-430's opusCost gives each reading interval to the opus whose rung reading closes it, and the session's script readings (no opus) land seconds before most rungs, so an opus's rungs close intervals of seconds while the plans' use sits in intervals the script's readings and other lanes close (W-452: 4 of 169 readings in its cycle name it, +0/+0 against +7/+14; W-494: +0/+0 against +2/+2); a second fault, a stale Codex log's fall read as a reset, would read W-452's Codex as +88 over its span — check: sources.out, diagnose.out, W-495-b1, red-b3.out (master quotes "Claude week +0%, Codex week +22% over 0.0 h" to paste)
+2. advisory — the cost is now every lane's plan use in the cycle (first spec signature to land), not this opus's share, and the row says so; the split between parallel lanes and whether drafting before the first signature counts are put to the Patron rather than estimated — check: brief Promise span and Promise figures limits, Defaults 1 and 2
+3. advisory — done writes the figures itself into a `{{figures}}` slot and no refusal quotes a figure; W-430's phrase check goes, so five existing rows flip (W-179-b1, W-430-b1, W-430-b2, W-430-b3, W-214-b1) plus the census pins of W-163-b6, each named with its edit; the Codex test check lists exactly these, Unnamed: None — check: fixture-census.md, green-summary.out, brief Acceptance
+4. advisory — four reds, one at a time, each accepted at assertion level on the commit before its behaviour (b1 and b2 through the modules' dynamic import, never a module-load failure); each row passes at its stage and later; thirteen one-hunk source kills each fail their row at a pinned assertion, proved by master's killedPin and none text-killed; gates, admission on master's code and the census pass — check: red-accept.out, kills.out, gates.log, admission.out, green-containment.out
+5. advisory — rows 195 and 197 are corrected by a kept script over master's record timestamps and this host's readings (row 195: 433 min, Claude +7%, Codex +14%; row 197: 158 min, +2%, +2%); the readings in those spans are already written, so the builder's run gives the same figures — check: rows.out, rows.diff, brief Acceptance
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, spec_seats engineering signer, D-150 C), brief revision 1 at `studio/briefs/W-495.md` (spec round 1), prototyped over master 206061a7; four behaviours, one new module, one new test file and one kept script, five named flips, no code-owned path.

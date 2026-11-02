@@ -1,0 +1,23 @@
+# opus: W-495
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a199fd-4571-75a0-a30c-611335d17f31
+# outcome: failed
+# at: 2026-11-02T06:14:26.692Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# brief: briefs/W-495.md blob:d2059bf1ebfe4072337678965bcfdc7bbf07c032
+# ticket: {"opus":"W-495","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"628ff587ac40a5df6a6e6e484491ee257444f7b0","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T06:14:19.512Z"}
+
+## Findings
+1. blocking — brief:83 Reached by ci/W-495-spec-2.log #5’s class: the valid domain requires one shipped row and says every other input throws, but `scripts/checkpoint-rows.mts:44` uses `findIndex` without rejecting a second match. An ordinary duplicate row makes the builder’s script succeed and rewrite only the first, leaving stale figures; replace the clause with “exactly one matching row; zero or multiple matches are rejected before either write, pinned by a duplicate-row fixture.” [severity: S1] [design: keeps] [class: spec×input-without-named-rejector] — check: packages/cli/src/w495.test.ts checkpoint-rows duplicate-row case
+
+## Earlier findings
+- ci/W-495-spec-2.log #1: closed — brief:48 and brief:78 now reject an earlier-reset line before baseline selection; brief:90 pins 5/reset 200, stale 95/reset 100, 6/reset 200 as +1, and K14 fails that assertion when the ordering is reversed.
+- ci/W-495-spec-2.log #2: closed — brief:48 now counts every later reset’s whole value regardless of direction; brief:90 pins rising and equal first values as +3, and K15 fails the rising assertion when reset handling is restored to fall-only.
+
+## Verdict
+The two earlier reset defects are closed, but the newly declared exact-one-row input still fails open on an ordinary duplicate.
+
+VERDICT: FAIL

@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-495-b2\s --import tsx packages/cli/src/w495.test.ts
+# exit: 1
+# at: 2026-11-02T06:17:06.208Z
+# sella: builder.W-495
+# tree: tree:59657d05f7384824dfee0bdabfb8d70ca4fe9699
+# ticket: {"opus":"W-495","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-495/studio","head":"7a9266929095c93e446c58a61e6038fd34350149","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T06:17:03.938Z"}
+
+TAP version 13
+# Subtest: W-495-b2 behaviour 2: the checkpoint figures are the cycle from the first spec signature to land, the lead from the greenlight to land and the plans' use in the cycle; what is missing is named, never filled in
+not ok 1 - W-495-b2 behaviour 2: the checkpoint figures are the cycle from the first spec signature to land, the lead from the greenlight to land and the plans' use in the cycle; what is missing is named, never filled in
+  ---
+  duration_ms: 7.681629
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:1:7144'
+  failureType: 'testCodeFailure'
+  error: |-
+    checkpoint.ts exports checkpointFigures
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    fn (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:70:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:168:29)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 19.370769

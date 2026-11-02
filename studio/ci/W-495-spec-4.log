@@ -1,0 +1,24 @@
+# opus: W-495
+# phase: spec
+# round: 4
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T06:11:02.382Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# brief: briefs/W-495.md blob:d2059bf1ebfe4072337678965bcfdc7bbf07c032
+# ticket: {"opus":"W-495","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"628ff587ac40a5df6a6e6e484491ee257444f7b0","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T06:10:54.834Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-495-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief revision 3 records the Patron's answers to Defaults (2026-11-02, "Yes to all"): Defaults 1, 2, 4 and 5 as written, each marked agreed on its item, and Defaults 3 corrects all seven rows 193 to 199 (W-491, W-489, W-452, W-411, W-494, W-492, W-487), not only 195 and 197; the title, Intent, Files owned (now also `body.html`; the last commit `docs(W-495): rows 193 to 199 from computed figures`), the rows paragraph of Interfaces, Input domain row 6, the Limits, Acceptance and Out of scope (the rows line dropped) say so; revision 3 is produced by the kept `revise-r4.py` from the signed revision 2 and keeps all 35 of its `pinned by` markers — check: revise-r4.py, brief-r2-signed.md, brief Defaults, brief Acceptance
+2. advisory — row 199 landed on master with W-487's done (#985, 7b7e1e39) before this prototype, so the script runs over all seven ids on that base: 193 31 min (+1%, +2%), 194 272 min (+6%, +11%), 195 433 min (+7%, +14%), 196 319 min (+6%, +11%), 197 158 min (+2%, +2%), 198 705 min (+2%, +2%), 199 668 min (+9%, +11%); rows 195 and 197 read as in round 3; the readings in those spans are already written, so the builder's run gives the same figures — check: rows.out, rows.diff, brief Acceptance
+3. advisory — the kept script's spend-cell grammar now admits a `:` after the figures' parenthesis (rows 193 and 194 open their prose with one), so their prose is kept whole; the masthead now names W-487, one of the seven ids, so the script's existing masthead rule sets its `cycle 1211 min` to the computed 668 min — check: scripts/checkpoint-rows.mts, rows.diff, masthead-r4.out, brief Interfaces The rows and Input domain row 6
+4. advisory — the source and the rows `W-495-b1` to `W-495-b4` are revision 2's, rerun on master 7b7e1e39 (only docs and records moved since 206061a7): four reds accepted at assertion level on the commit before each behaviour, each row passing at its stage and later, the nine touched or must-stay-green test files whole and green, fifteen kills guarded at their pinned assertions, lint, format, typecheck, both officina checks and the admission clean — check: series.out, red-accept.out, green-summary.out, kills.out, gates.log, admission.out
+5. advisory — the Codex test check rerun on revision 3 lists the same six flips (W-179-b1, W-430-b1, W-430-b2, W-430-b3, W-214-b1, W-163-b6), all named in Acceptance, Unnamed: None; no row flips from the seven-row change, the script being a kept script no row tests — check: fixture-census.md, brief Acceptance
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, spec_seats engineering signer, D-150 C), brief revision 3 at `studio/briefs/W-495.md` (spec round 4, the Patron's Defaults answers of 2026-11-02), prototyped over master 7b7e1e39 (prototype.mbox sha256:71ca2d8c12b965ae3a55ae2711caf5d789bd31576502b8dd181312f13186d021); four behaviours, one new module, one new test file and one kept script run over rows 193 to 199, six named flips, no code-owned path.

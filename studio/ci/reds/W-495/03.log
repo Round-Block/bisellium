@@ -1,0 +1,50 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-495-b3\s --import tsx packages/cli/src/w495.test.ts
+# exit: 1
+# at: 2026-11-02T06:17:15.659Z
+# sella: builder.W-495
+# tree: tree:822b9597a000b882a7a766f0fe47778878868eb2
+# ticket: {"opus":"W-495","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-495/studio","head":"ab27cde82f39cfee6dc639bd257b4ce5c86efc56","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T06:17:13.493Z"}
+
+TAP version 13
+# Subtest: W-495-b3 behaviour 3: done writes the checkpoint figures into the row naming the opus, at its {{figures}} slot; a row without the slot, or figures it cannot compute, hold done and name what is missing
+not ok 1 - W-495-b3 behaviour 3: done writes the checkpoint figures into the row naming the opus, at its {{figures}} slot; a row without the slot, or figures it cannot compute, hold done and name what is missing
+  ---
+  duration_ms: 2576.613121
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:6:3115'
+  failureType: 'testCodeFailure'
+  error: |-
+    a row with typed figures and no slot: the why names what is missing
+    --- exit 1
+    --- stdout
+    next: W-900 done held
+    why: refusing: the checkpoint row naming W-900 carries no cost: add "Claude week +0%, Codex week +22% over 0.0 h" beside its hours (W-430: its plan cost from the usage readings), then re-run
+    next-step: done
+    usage: Claude unread (no status-line file); Codex unread (no session log holds a week rate_limits)
+    cost: Claude week +0%, Codex week +22% over 0.0 h
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'why: refusing: the checkpoint row naming W-900 carries no cost: add "Claude week +0%, Codex week +22% over 0.0 h" beside its hours (W-430: its plan cost from the usage readings), then re-run'
+  operator: 'match'
+  stack: |-
+    held (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:215:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:222:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2601.919162

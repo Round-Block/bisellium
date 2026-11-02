@@ -959,7 +959,8 @@ test("W-214-b1 behaviour 1: done refuses until the checkpoint's history row nami
   rmSync(join(w.repo, ROW));
   refusedRow("the history page deleted");
   // the row naming the opus and the masthead ride the done commit with the record and the handoff
-  put(w.repo, ROW, `<tr><td>W-899 shipped</td></tr>\n<tr><td>${OPUS} shipped</td></tr>\n`);
+  // W-495: the row carries the slot done writes its figures into
+  put(w.repo, ROW, `<tr><td>W-899 shipped</td></tr>\n<tr><td>${OPUS} shipped</td><td>{{figures}}</td></tr>\n`);
   put(w.repo, MAST, `<p>cascade 2: ${OPUS}</p>\n`);
   expectStep(next(w, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the row naming the opus admits done");
   const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `refs/heads/${chore}`]).split("\n").sort();

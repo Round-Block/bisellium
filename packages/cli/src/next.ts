@@ -38,7 +38,7 @@ import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseV
 import { readSpecSeats } from "@bisellium/commands/spec-seats.js";
 import { actionFacts, parseTicketLine, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
-import { ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
+import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { ID_RE } from "./check.js";
@@ -55,7 +55,8 @@ import { DAILY_TRACKER, dailyRetroOwed, owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
-import { appendReading, codexBurnLine, costPhrase, opusCost, readReadings, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
+import { FIGURES_SLOT, checkpointFigures, fillFigures, firstSpecSignature } from "./checkpoint.js";
+import { appendReading, codexBurnLine, costPhrase, readReadings, spanCost, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
 
 export { MIN_CHECKS };
 
@@ -2795,45 +2796,101 @@ function handoffHold(f: Facts): StepResult | undefined {
   return findings.length === 0 ? undefined : held(findings);
 }
 
-/** W-214: why done may not commit yet: master keeps the history page and the working tree adds no line naming `id` to it.
- *  W-430: or no added line naming `id` carries its cost phrase, when the readings under `home` name the opus (none, or an
- *  unreadable readings file, asks nothing). Reads only; a git failure is a reason. */
-export function historyRowRefusal(repo: string, id: string, home = homedir()): string | undefined {
+/** W-214: the working tree's added lines naming `id` on the history page, or why they cannot be read; undefined when master
+ *  keeps no history page (nothing is asked). Reads only. */
+function historyRows(repo: string, id: string): { rows: string[] } | { why: string } | undefined {
   const kept = git(repo, ["ls-tree", "-z", "--name-only", TRUNK, "--", HISTORY]);
-  if (kept.error !== undefined || kept.status !== 0) return `master's tree cannot be read: ${one(kept.error?.message ?? kept.stderr)}`;
+  if (kept.error !== undefined || kept.status !== 0) return { why: `master's tree cannot be read: ${one(kept.error?.message ?? kept.stderr)}` };
   if (kept.stdout === "") return undefined;
   const diff = git(repo, ["diff", "--no-ext-diff", "--no-textconv", "--no-color", "--unified=0", TRUNK, "--", HISTORY]);
-  if (diff.error !== undefined || diff.status !== 0) return `could not diff ${HISTORY}: ${one(diff.error?.message ?? diff.stderr)}`;
+  if (diff.error !== undefined || diff.status !== 0) return { why: `could not diff ${HISTORY}: ${one(diff.error?.message ?? diff.stderr)}` };
   const named = new RegExp(`(?<![\\w-])${esc(id)}(?![\\w-])`);
   // added lines only: everything after the first hunk header, so the `+++ b/<path>` header is never read as a row
   const lines = diff.stdout.split("\n");
   const added = lines.slice(lines.findIndex((l) => l.startsWith("@@")) + 1).filter((l) => l.startsWith("+"));
-  const rows = added.filter((l) => named.test(l));
-  if (rows.length === 0) return `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run`;
-  const cost = costOf(home, id);
-  if ("none" in cost || rows.some((l) => l.includes(cost.phrase))) return undefined;
-  return `the checkpoint row naming ${id} carries no cost: add "${cost.phrase}" beside its hours (W-430: its plan cost from the usage readings), then re-run`;
+  return { rows: added.filter((l) => named.test(l)) };
+}
+
+/** W-214: why done may not commit yet: master keeps the history page and the working tree adds no line naming `id` to it.
+ *  Reads only; a git failure is a reason. (W-495: the row's cost is no longer asked here; done writes its figures.) */
+export function historyRowRefusal(repo: string, id: string): string | undefined {
+  const read = historyRows(repo, id);
+  if (read === undefined) return undefined;
+  if ("why" in read) return read.why;
+  return read.rows.length === 0 ? `the checkpoint rides the done commit, and ${HISTORY} adds no history row naming ${id}; add it, then re-run` : undefined;
+}
+
+/** W-495: the committer time of a commit on master, or undefined when it cannot be read. */
+function commitTime(repo: string, rev: string): Date | undefined {
+  const r = git(repo, ["show", "-s", "--format=%cI", rev, "--"]);
+  return r.error === undefined && r.status === 0 ? instant(r.stdout.trim()) : undefined;
+}
+/** W-495: the greenlight: the committer time of the oldest master commit that added or removed its record's
+ *  `state: greenlit` line, quoted or not (the commit that wrote it), or undefined. */
+function greenlitAt(repo: string, studioRel: string, id: string): Date | undefined {
+  const r = git(repo, ["log", "--reverse", "--format=%cI", "-G^state: .?greenlit.?$", TRUNK, "--", `${studioRel}/${recordRel(id)}`]);
+  return r.error === undefined && r.status === 0 ? instant(r.stdout.split("\n")[0]?.trim()) : undefined;
+}
+
+/** W-495: done writes the checkpoint row's figures itself. While master keeps the history page, the added row naming the
+ *  opus carries FIGURES_SLOT, which is filled with the sentence `checkpointFigures` computes from the record timestamps
+ *  (the first spec signature on master, the greenlight, the land: the merge commit of the settled PR) and the usage
+ *  readings under `home`; or it already carries that sentence (done run again). Why not, naming what is missing and never
+ *  a value to type. */
+function checkpointHold(f: Facts, home = homedir()): string | undefined {
+  const read = historyRows(f.repo, f.id);
+  if (read === undefined) return undefined;
+  if ("why" in read) return read.why;
+  const merge = mergeOf(f);
+  const fig = checkpointFigures({
+    id: f.id,
+    spec: firstSpecSignature(f.id, [f.trunk]),
+    greenlit: greenlitAt(f.repo, f.studioRel, f.id),
+    land: merge === undefined ? undefined : commitTime(f.repo, merge),
+    readings: readReadings(home),
+  });
+  if ("missing" in fig) return `the checkpoint figures cannot be computed: ${fig.missing.join("; ")}`;
+  if (read.rows.some((l) => l.includes(fig.sentence))) return undefined;
+  if (!read.rows.some((l) => l.includes(FIGURES_SLOT))) return `the checkpoint row naming ${f.id} has no ${FIGURES_SLOT} slot: put ${FIGURES_SLOT} where its cycle, lead and cost go, then re-run (W-495: done writes them from the record and the usage readings; a typed figure is not one)`;
+  try {
+    const dir = existingRealDirectory(f.repo, ...dirname(HISTORY).split("/"));
+    if (dir === undefined) return `${dirname(HISTORY)} is not in the working tree`;
+    const page = readContainedRegularFile(f.repo, HISTORY, HISTORY.split("/")[0]!);
+    if ("error" in page) return `could not read ${HISTORY}: ${one(page.error)}`;
+    const filled = fillFigures(page.bytes.toString("utf8"), f.id, fig.sentence);
+    // O_NOFOLLOW: a symlink planted at the page's name is refused at the open
+    const fd = openSync(join(dir, HISTORY.slice(HISTORY.lastIndexOf("/") + 1)), constants.O_WRONLY | constants.O_TRUNC | constants.O_NOFOLLOW);
+    try {
+      writeFileSync(fd, filled.page);
+    } finally {
+      closeSync(fd);
+    }
+  } catch (e) {
+    return `could not write the figures into ${HISTORY}: ${one((e as Error).message)}`;
+  }
+  return undefined;
 }
 
 /** W-430: the usage reading a performed rung takes at `nowMs`, labelled `<opus> <step>`: appended to the readings file under
  *  the home folder and printed as its `usage:` line, then the opus's cost so far as its `cost:` line (the phrase its
  *  checkpoint row carries). A reading that cannot be recorded is printed with why; the step's result never depends on it. */
-function rungUsage(id: string, step: Step, nowMs: number): string[] {
+function rungUsage(f: Facts, step: Step, nowMs: number): string[] {
+  const { id } = f;
   const home = homedir();
   const reading: Reading = takeReading(home, new Date(nowMs), `${id} ${step}`, { opus: id, step });
   const bad = appendReading(home, reading);
-  const cost = costOf(home, id);
-  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`]), `cost: ${"phrase" in cost ? cost.phrase : `none (${cost.none})`}`];
+  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`]), `cost: ${costSoFar(f, home, nowMs)}`];
 }
 
-/** W-430: the opus's cost from the readings file, as its checkpoint row carries it, or why there is none. Its own done
- *  readings are left out, so a done held and run again asks the same phrase; a cost that read neither plan asks none. */
-function costOf(home: string, id: string): { phrase: string } | { none: string } {
+/** W-495: the opus's cost so far: the plans' whole use from its first spec signature (on master, its branch or the main
+ *  checkout) to `nowMs`, as `spanCost` reads it, or why there is none. */
+function costSoFar(f: Facts, home: string, nowMs: number): string {
+  const spec = firstSpecSignature(f.id, [f.trunk, f.branch, f.work]);
+  if (spec === undefined) return `none (no spec signature of ${f.id} yet)`;
+  if (spec.getTime() > nowMs) return `none (the first spec signature of ${f.id} (${spec.toISOString()}) is after this rung's clock)`;
   const all = readReadings(home);
-  if ("error" in all) return { none: `the readings file cannot be read: ${all.error}` };
-  const c = opusCost(all.filter((r) => r.opus !== id || r.step !== "done"), id);
-  if (c === undefined) return { none: `no usage reading names ${id} before its done` };
-  return c.claude === null && c.codex === null ? { none: `no usage reading of ${id} read either plan` } : { phrase: costPhrase(c) };
+  if ("error" in all) return `none (the readings file cannot be read: ${all.error})`;
+  return `${costPhrase(spanCost(all, spec.getTime(), nowMs))} since the first spec signature`;
 }
 
 const CERTIFY_LOG_MAX = 16 * 1024 * 1024;
@@ -3047,6 +3104,8 @@ function performDone(f: Facts, d: Derived): StepResult {
   const why = mergeRefusal(repo, id);
   if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);
+  const figures = checkpointHold(f);
+  if (figures !== undefined) return heldResult(`refusing: ${figures}`);
   const base = git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim();
   const switched = git(repo, ["switch", "-q", "-c", chore]);
   if (switched.status !== 0) return heldResult(`could not create ${chore}: ${one(switched.stderr)}`);
@@ -3401,7 +3460,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         }
         log(`${d2.step} ${result.ok ? "performed" : "held"}`);
         // W-430: every rung performed (or held once performing) takes a usage reading, appended and printed
-        const usageLines = rungUsage(id, d2.step, a.testClock ? a.nowMs : Date.now());
+        const usageLines = rungUsage(f, d2.step, a.testClock ? a.nowMs : Date.now());
         f = gather(repo, opened.root, id);
         const d3 = deriveNext(f);
         for (const l of refreshTicket(f, d3, a.nowMs)) log(l);
