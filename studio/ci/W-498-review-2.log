@@ -1,0 +1,22 @@
+# opus: W-498
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19c1a-f48d-7422-89a5-01fa688ff746
+# outcome: failed
+# at: 2026-11-02T15:01:33.536Z
+# tree: tree:45ad748bbd0dcb2454b5ab75e8c46a374a1011e4
+# brief: briefs/W-498.md blob:330fe4eafb0d54deca45bc2c711119828dc7932c
+# ticket: {"opus":"W-498","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-498/studio","head":"b6cbe6abed1766dc869f9bfe7d14471e6707f87c","brief":"330fe4eafb0d54deca45bc2c711119828dc7932c","at":"2026-11-02T15:00:02.831Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:109 Reached by ci/W-498-review-1.log #1’s class: `whyLine` passes the diagnostic through `one()`, which removes U+FEFF, so W-498-f3 reports BOM-prefixed paths as their distinct BOM-less owned or record paths instead of preserving each path through `clean` as required by brief:48. [severity: S1] [class: mechanism×identity-normalization-not-centralized] — check: packages/cli/src/next-review.test.ts
+
+## Earlier findings
+- ci/W-498-review-1.log #1: closed — packages/cli/src/next.ts:1777 now makes every invalid-UTF-8 changed path unowned, while strict decoding rejects an invalid committed brief; W-498-f1 and W-498-f4 pin both collision directions.
+
+## Verdict
+The authorization bypass is closed, but the same normalization class still falsifies diagnostics for a valid in-domain pathname.
+
+VERDICT: FAIL
