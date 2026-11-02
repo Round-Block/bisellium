@@ -61,6 +61,56 @@ export interface AttentionRow extends CardRow {
   petitio?: InboxResponse["petitiones"][number];
   /** Every input decision combined into this row. */
   petitionIds?: string[];
+  /** Stable serialization of the gate evidence that was shown with this
+   * decision. Inbox re-reads the opus immediately before a linked answer and
+   * refuses when this binding changed. */
+  evidenceRevision?: string;
+  evidenceBindings?: DecisionEvidenceBinding[];
+  /** True when a visible refresh found that the evidence pinned when this
+   * petition was first displayed is no longer the current Board binding. */
+  evidenceStale?: boolean;
+}
+
+export interface DecisionEvidenceBinding {
+  gate: string;
+  label: string;
+  status: string;
+  revision?: string;
+  record?: string;
+}
+
+export function decisionEvidenceBindings(
+  opus: Pick<OpusEntry, "probationes">,
+  declared: Pick<OfficinaResponse["probationes"][number], "id" | "name">[],
+): DecisionEvidenceBinding[] {
+  const labels = new Map(declared.map((gate) => [gate.id, gate.name ?? gate.id]));
+  return Object.entries(opus.probationes)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([gate, result]) => result.evidence?.certifies || result.evidence?.href ? [{
+      gate,
+      label: labels.get(gate) ?? gate,
+      status: result.status,
+      revision: result.evidence?.certifies,
+      record: result.evidence?.href,
+    }] : []);
+}
+
+/** The complete decision-evidence identity, independent of YAML/object key
+ * order. A status, certified source revision or decision-record path change
+ * makes a previously displayed verdict stale. */
+export function decisionEvidenceRevision(opus: Pick<OpusEntry, "probationes">): string {
+  return JSON.stringify(Object.entries(opus.probationes)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([gate, result]) => ({
+      gate,
+      status: result.status,
+      revision: result.evidence?.certifies ?? null,
+      record: result.evidence?.href ?? null,
+    })));
+}
+
+export function decisionEvidenceIsCurrent(shown: string | undefined, current: OpusEntry | undefined): boolean {
+  return shown === undefined || (current !== undefined && decisionEvidenceRevision(current) === shown);
 }
 
 function recordValue(record: unknown, key: string): unknown {
@@ -254,6 +304,8 @@ export function attentionCollection(
       destination: petitio === undefined ? "board" : "inbox",
       boardEntry: true,
       petitionIds: petitionIds.get(opus.id) ?? [],
+      evidenceRevision: decisionEvidenceRevision(opus),
+      evidenceBindings: decisionEvidenceBindings(opus, o.probationes),
       ...(petitio === undefined ? {} : { petitio }),
     });
   }
@@ -461,8 +513,15 @@ export interface DrawerDetail {
    *  revision binding and stale-verdict refusal; these strings make neither
    *  claim. Present only for a card in the existing Needs-you membership. */
   waitingReasons?: string[];
-  /** W-410 display only: evidence links already recorded on gates. */
-  waitingEvidence?: { label: string; href: string }[];
+  /** W-412: one explicit binding for every gate carrying a certified source
+   * revision or decision-record path. */
+  waitingEvidence?: {
+    gate: string;
+    label: string;
+    status: string;
+    revision?: string;
+    record?: string;
+  }[];
   record: { label: string; value: string }[];
   /** Event-derived and possibly incomplete — rendered beside the front
    *  matter's own `tokens` total, with both sources named (ruling 14). */
@@ -550,7 +609,13 @@ export function drawerDetail(
     const next = typeof nextValue === "string" ? nextValue.trim() : "";
     if (next) reasons.push(next);
     waitingReasons = [...new Set(reasons)];
-    waitingEvidence = gates.flatMap((gate) => gate.evidence ? [{ label: gate.name, href: gate.evidence }] : []);
+    waitingEvidence = gates.flatMap((gate) => gate.evidence || gate.certifies ? [{
+      gate: gate.id,
+      label: gate.name,
+      status: gate.status,
+      revision: gate.certifies,
+      record: gate.evidence,
+    }] : []);
   }
 
   const record: { label: string; value: string }[] = [];

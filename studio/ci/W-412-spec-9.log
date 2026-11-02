@@ -1,0 +1,21 @@
+# opus: W-412
+# phase: spec
+# round: 9
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19ada-f801-75a1-99d3-6d41392a6f26
+# outcome: passed
+# at: 2026-11-02T08:57:03.312Z
+# tree: tree:aa3edd4f13ee96c43fc7b75cf32eaf622029712e
+# brief: briefs/W-412.md blob:732d32d621f79dd0565f30b10b3950a548e3b103
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":".worktrees/W-412/studio","head":"bddddc6a59a4f06394ea9177d8adb5d052c3562a","brief":"732d32d621f79dd0565f30b10b3950a548e3b103","at":"2026-11-02T08:56:59.140Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-412-spec/promise-ledger.md
+
+## Findings
+
+No findings
+
+## Verdict
+
+passed — signature round 7 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-412.md`; the four-commit prototype applies after base `4b0df1fb`, both Genuine reds replay with command-headed TAP and cumulative greens, every series commit builds independently, the fresh mbox application matches the prototype tree, focused policy and served gates prove W-412's evidence binding and stale-verdict refusal, W-366-b2 keeps the neutral Inbox evidence-link token outside the accent allowlist, W-463-b3 keeps its exact shell-read count after awaiting the prior Board read, the merged-base BoardDrawer document-order row stays green, admission and ledger/replay validation pass, and no record write, next, handoff, verdict or repository commit operation was performed.

@@ -84,7 +84,25 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
         <section className="board-drawer__waiting-evidence-list">
           <h3 className="board-drawer__section-head">Evidence</h3>
           {detail.waitingEvidence.length > 0 ? detail.waitingEvidence.map((evidence) => (
-            <a key={`${evidence.label}:${evidence.href}`} className="board-drawer__waiting-evidence" href={evidence.href}>{evidence.label}</a>
+            <div key={evidence.gate} className="board-drawer__evidence-binding">
+              <h4 className="board-drawer__evidence-name">{evidence.label}</h4>
+              <dl className="board-drawer__evidence-facts">
+                <div>
+                  <dt>Reviewed revision</dt>
+                  <dd title={evidence.revision}>{evidence.revision ?? "Not recorded."}</dd>
+                </div>
+                <div>
+                  <dt>Gate result</dt>
+                  <dd>{evidence.gate} &middot; {evidence.status}</dd>
+                </div>
+                <div>
+                  <dt>Decision record</dt>
+                  <dd>{evidence.record
+                    ? <a className="board-drawer__waiting-evidence" href={evidence.record}>{evidence.record}</a>
+                    : "Not recorded."}</dd>
+                </div>
+              </dl>
+            </div>
           )) : <p className="board-drawer__waiting-empty">No evidence recorded.</p>}
         </section>
       )}

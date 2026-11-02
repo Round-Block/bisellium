@@ -1,0 +1,27 @@
+# opus: W-412
+# phase: spec
+# round: 11
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19b07-640c-7080-a3b3-503c3aecd333
+# outcome: passed
+# at: 2026-11-02T09:03:01.970Z
+# tree: tree:aa3edd4f13ee96c43fc7b75cf32eaf622029712e
+# dispatch_prompt: ci/W-412-ui-prompt-11.md
+# design_digest: sha256:442645d31f1e141173a87c0ac9cb57dbf9597449629327958e27c3d70f6c18ea
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":11,"actor":"ui-lead","studio":".worktrees/W-412/studio","head":"1f2ef5189135acfd1afa11f3f1ab157a13284114","brief":"732d32d621f79dd0565f30b10b3950a548e3b103","at":"2026-11-02T09:03:00.789Z"}
+
+## Findings
+
+1. advisory — brief:17 — My round-8 marker advisory still holds: the lost-link capture says “Evidence changed” above a refusal that correctly names an unavailable Board item. — replace with: “The linked Board item is no longer available.” for the lost-link marker, as a builder copy adjustment. — check: apps/web/tests-serve/w412.spec.ts; shots/inbox-stale-390.png.
+2. advisory — brief:29 — Keeping the accent test unchanged does not justify giving the same record link different colours across surfaces. I prefer cyan matching the drawer, as proposed in round 10. The supplied Inbox captures still contain cyan links, so they do not demonstrate the new ink treatment. — replace with: “Offer the Patron underlined cyan decision-record links matching the drawer as a Default; update the accent allowlist if adopted and capture the selected treatment.” — check: apps/web/test/tokens.test.ts; apps/web/src/components/w025.css; shots/inbox-bound-*.png and shots/inbox-stale-*.png.
+
+## Earlier findings
+
+## Recommendation
+
+My round-5 blocker remains closed: the lost-link refusal explains the disappearance, non-submission and retained draft.
+Ink with an underline is a reasonable link treatment and presents no demonstrated legibility defect, but the supplied captures cannot verify it; cyan gives the same binding a consistent visual cue across both surfaces.
+The W-463-b3 await changes test sequencing only and changes no screen.
+I find no other UI defect in the delta.
+Verdict: passed

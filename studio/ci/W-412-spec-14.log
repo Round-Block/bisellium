@@ -1,0 +1,27 @@
+# opus: W-412
+# phase: spec
+# round: 14
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19b07-640c-7080-a3b3-503c3aecd333
+# outcome: passed
+# at: 2026-11-02T09:39:51.553Z
+# tree: tree:a63bce2aea53d230b9d982fbdbe84f1477312889
+# dispatch_prompt: ci/W-412-ui-prompt-14.md
+# design_digest: sha256:9ee949d1303ffc50ccff38fd9c9b34d12a8352d1e4e65ff0f8c40d26c1dfad45
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":14,"actor":"ui-lead","studio":".worktrees/W-412/studio","head":"85d679fa0842e689e1a317614be7be0772965e32","brief":"4a738e7eb5c8e8ca977901d19483a0a0b8e91422","at":"2026-11-02T09:39:50.355Z"}
+
+## Findings
+
+1. advisory — brief:17 — My lost-link marker advisory still holds: “Evidence changed” is less precise than the refusal below it. — replace with: “The linked Board item is no longer available.” for the lost-link marker, as a builder copy adjustment. — check: apps/web/tests-serve/w412.spec.ts; shots/inbox-stale-390.png.
+2. advisory — brief:29 — Reusing the drawer class honours the cyan ruling but also introduces an unrequested 13px link within 12px Inbox facts. Colour and underline already distinguish the action; extra size adds unnecessary emphasis. The supplied captures predate this class reuse, so they cannot verify its size effect. — replace with: “Keep the shared cyan class; apply `.inbox__decision-evidence-row .board-drawer__waiting-evidence { font-size: inherit; line-height: inherit; }` and regenerate the Inbox captures.” — check: apps/web/src/components/w025.css; apps/web/tests-serve/w412.spec.ts.
+
+## Earlier findings
+
+## Recommendation
+
+My round-5 blocker remains closed, and my round-11 colour preference is resolved by the Patron’s cyan ruling and its implementation.
+Cyan underlined links read clearly at all three captured widths and consistently identify the same record action in the drawer and Inbox.
+The brief honours the colour ruling, but the inherited size increase is an incidental visual change; it merits adjustment as an advisory, with no demonstrated legibility defect.
+I find no other UI defect in the delta.
+Verdict: passed

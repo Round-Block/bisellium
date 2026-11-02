@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type JSX } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type JSX } from "react";
 import { fetchInbox, fetchOfficina, fetchOpera, submitAnswer, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
 import { InboxView, liveSelectedAttentionItem } from "./InboxView.js";
 import {
@@ -18,7 +18,7 @@ import {
 } from "./inboxLogic.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 import { useVisibleRefresh } from "../lib/useVisibleRefresh.js";
-import { attentionCollection, attentionTotal, type AttentionRow } from "../lib/board.js";
+import { attentionCollection, attentionTotal, decisionEvidenceIsCurrent, type AttentionRow } from "../lib/board.js";
 
 const EMPTY: InboxResponse = { opera: [], petitiones: [] };
 
@@ -47,6 +47,14 @@ const DEV_DATA: InboxResponse = {
 };
 
 const WRITE_FAILED = "Could not send the answer.";
+const STALE_EVIDENCE = "Evidence changed since it was shown. Review the current Board evidence before deciding.";
+const LOST_BOARD_LINK = "The linked Board item is no longer available for this decision. Verdict not submitted. Your draft is kept.";
+
+interface PinnedDecisionEvidence {
+  boardEntry: boolean;
+  revision?: string;
+  bindings?: AttentionRow["evidenceBindings"];
+}
 
 const DEV_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit"> = {
   lifecycle: { id: "opus", states: [{ id: "greenlit", name: "Greenlit", phase: "planned" }] },
@@ -95,6 +103,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoar
   const hasSuccessfulLoadRef = useRef(false);
   const refreshingRef = useRef(false);
   const pendingRefreshRef = useRef(false);
+  const decisionEvidenceSnapshotsRef = useRef(new Map<string, PinnedDecisionEvidence>());
   const onNeedsYouCountRef = useRef(onNeedsYouCount);
   const onAttentionLoadedRef = useRef(onAttentionLoaded);
   const refreshIntentRef = useRef<{ preferredIndex: number; reopenDetail: boolean; reveal: boolean } | null>(null);
@@ -105,6 +114,38 @@ export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoar
   detachedPetitionRef.current = detachedPetition;
   onNeedsYouCountRef.current = onNeedsYouCount;
   onAttentionLoadedRef.current = onAttentionLoaded;
+
+  function pinDecisionEvidence(item: AttentionRow | undefined): PinnedDecisionEvidence | undefined {
+    if (item === undefined) return undefined;
+    const petitionId = item.petitio?.id;
+    if (petitionId === undefined) return undefined;
+    const existing = decisionEvidenceSnapshotsRef.current.get(petitionId);
+    if (existing !== undefined) return existing;
+    const pinned = {
+      boardEntry: item.boardEntry,
+      revision: item.evidenceRevision,
+      bindings: item.evidenceBindings,
+    };
+    decisionEvidenceSnapshotsRef.current.set(petitionId, pinned);
+    return pinned;
+  }
+
+  function retainPinnedDecisionEvidence(rows: AttentionRow[], opera: OpusEntry[]): AttentionRow[] {
+    return rows.map((item) => {
+      const petitionId = item.petitio?.id;
+      const pinned = petitionId === undefined ? undefined : decisionEvidenceSnapshotsRef.current.get(petitionId);
+      if (pinned === undefined) return item;
+      const evidenceStale = pinned.boardEntry && (
+        !item.boardEntry || !decisionEvidenceIsCurrent(pinned.revision, opera.find((opus) => opus.id === item.id))
+      );
+      return {
+        ...item,
+        evidenceRevision: pinned.revision,
+        evidenceBindings: pinned.bindings,
+        evidenceStale,
+      };
+    });
+  }
 
   const refreshInbox = useCallback((): void => {
     if (refreshingRef.current) {
@@ -119,7 +160,7 @@ export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoar
       opera: OpusEntry[],
       d: InboxResponse,
     ): void => {
-      const nextAttention = attentionCollection(officina, opera, d);
+      const nextAttention = retainPinnedDecisionEvidence(attentionCollection(officina, opera, d), opera);
       const current = attentionRef.current;
       const currentIndex = focusIndexRef.current;
       const currentItem = current[currentIndex];
@@ -193,6 +234,12 @@ export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoar
   const reason = reasonForPetition(reasons, decisionId);
   const decisionUnavailable = detachedPetition !== null;
 
+  useLayoutEffect(() => {
+    const decisionVisible = liveSelectedItem?.destination === "inbox"
+      && (window.matchMedia("(min-width: 840px)").matches || expandedId !== null);
+    if (decisionVisible) pinDecisionEvidence(liveSelectedItem);
+  }, [liveSelectedItem, expandedId]);
+
   function chooseIndex(index: number): void {
     setDetachedPetition(null);
     setFocusIndex(index);
@@ -265,7 +312,30 @@ export function Inbox({ onStatus, onNeedsYouCount, onAttentionLoaded, onOpenBoar
     setConfirmation(undefined);
     setOutcome(undefined);
     setSending(true);
-    void submitAnswer(petitioId, buildReply(verb, reason), answerOptions(verb)).then((result) => {
+    const shown = attentionRef.current.find((item) => item.petitionIds?.includes(petitioId) ?? item.petitio?.id === petitioId);
+    const pinned = decisionEvidenceSnapshotsRef.current.get(petitioId) ?? pinDecisionEvidence(shown);
+    const submitCurrent = async () => {
+      if (!demo && pinned?.boardEntry === true) {
+        if (shown?.boardEntry !== true) {
+          return { kind: "refused" as const, exitCode: 1, output: LOST_BOARD_LINK };
+        }
+        let current: OpusEntry[];
+        try {
+          current = await fetchOpera();
+        } catch {
+          return { kind: "error" as const };
+        }
+        const currentOpus = current.find((opus) => opus.id === shown.id);
+        if (currentOpus === undefined) {
+          return { kind: "refused" as const, exitCode: 1, output: LOST_BOARD_LINK };
+        }
+        if (!decisionEvidenceIsCurrent(pinned.revision, currentOpus)) {
+          return { kind: "refused" as const, exitCode: 1, output: STALE_EVIDENCE };
+        }
+      }
+      return submitAnswer(petitioId, buildReply(verb, reason), answerOptions(verb));
+    };
+    void submitCurrent().then((result) => {
       sendingRef.current = false;
       setSending(false);
       // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
