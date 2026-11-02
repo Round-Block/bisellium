@@ -176,6 +176,7 @@ test("W-501-b2 behaviour 2: every GET under /api/ needs the session token, by he
     assert.equal(byHeader.status, 200, "the header token opens the live stream");
     const byQuery = await send(P, `/api/live?token=${TOKEN}`);
     assert.equal(byQuery.status, 200, "the query token opens the live stream");
+    // one-sided: the stream's Content-Type may carry a charset suffix; the prefix is the contract
     assert.ok(byQuery.type.startsWith("text/event-stream"), "the query token's response is the event stream");
     assert.equal((await send(P, `/api/inbox?token=${TOKEN}`)).status, 401, "the query token is accepted on /api/live only");
     // the shell and its assets carry no studio state and need no token
