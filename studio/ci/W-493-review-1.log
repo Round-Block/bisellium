@@ -1,0 +1,24 @@
+# opus: W-493
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19ae6-fb22-7611-b84f-8fb069bbc28d
+# outcome: passed
+# at: 2026-11-02T06:19:15.323Z
+# tree: tree:af8ed23a0d68346f1514b6d78d851ad5d52e6dec
+# ui_input: ci/W-493-spec-6.log
+# design_digest: sha256:22f567bf47c6ba145c5e29d6c745f72a5dbbf57209d50d138c3883afed3b050d
+# ticket: {"opus":"W-493","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-493/studio","head":"c6d63236476a9afc0101fcafaeb0ac07e301cb21","brief":"7758299bf195295e44a1180842809e851568d0a2","at":"2026-11-02T06:16:29.558Z"}
+
+## Findings
+1. advisory — apps/web/tests-serve/w493.spec.ts:82 [severity: S2] The geometry assertion measures only ordinary `W-3`; it never asserts that the new progress line remains inside the 145px waiting card. The UI capture shows correct rendering, but the ui-lead’s final containment advisory and brief:46 remain unpinned. [class: ui×unbounded-variant-height] — check: apps/web/tests-serve/w493.spec.ts
+2. advisory — apps/web/test/w493.test.ts:43 [severity: S3] Behaviour 1 exercises uncleared gates only through absent results, and its zero-gate case stops at structured model data. Treating a present pending/failed status as cleared or changing visible `0/0 · no gates` copy would leave the focused rows green; the implementation itself is correct. [class: review×builder-self-review-misses-regression-fixture] — check: apps/web/test/w493.test.ts
+
+## UI input disposition
+The authoritative ui-lead input supports the quiet progress line, Planned omission, and description-first hierarchy, while identifying the unpinned waiting-card variant carried into finding 1. All eight captures were inspected as desktop/phone pairs: navigation, controls, density, wrapping and horizontal cues remain usable; desktop Board progress is legible and contained, while phone Board correctly omits progress and reserved space in Planned. No visual blocker appears. The captures do not show an open Board drawer, so its hierarchy is established by source inspection and the passing served rows.
+
+## Verdict
+The implementation is behaviorally correct within the stated domain, changes exactly the twelve owned code paths, has genuine assertion reds, and passes the recorded gates. Both findings are incomplete regression coverage and therefore advisory under the QA charter.
+
+VERDICT: PASS
