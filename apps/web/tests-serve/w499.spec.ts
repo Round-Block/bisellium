@@ -236,3 +236,66 @@ test("W-499-b2 Why it waits states each reason once at 1280, 640 and 390", async
   }
 });
 
+test("W-499-b3 full-width narrow drawer keeps the Board mounted, inert and restorable", async ({ page }) => {
+  served = await startServed("w499-b3");
+  for (const width of [1280, 640, 390] as const) {
+    await openBoard(page, width, "expanded", `b3-${width}`);
+    const workspace = page.locator(".board-workspace");
+    const board = page.locator(".board");
+    const columns = page.locator(".board__columns");
+    const waiting = page.locator(".board__waiting-items");
+    const opener = page.locator('[data-card-id="W-004"]');
+    await columns.evaluate((node) => { node.scrollLeft = 164; });
+    await waiting.evaluate((node) => { node.scrollLeft = 40; });
+    await opener.evaluate((node) => (node as HTMLElement).focus({ preventScroll: true }));
+    const snapshot = await opener.evaluate((node) => new Promise<{ columns: number; waiting: number }>((resolve) => {
+      node.addEventListener("click", () => {
+        const track = node.closest(".board__columns") as HTMLElement;
+        const waitingTrack = document.querySelector<HTMLElement>(".board__waiting-items")!;
+        track.scrollLeft = track.scrollLeft;
+        waitingTrack.scrollLeft = waitingTrack.scrollLeft;
+        resolve({ columns: track.scrollLeft, waiting: waitingTrack.scrollLeft });
+      }, { once: true });
+      (node as HTMLElement).click();
+    }));
+    const drawer = page.locator(".board-drawer");
+    const close = page.locator(".board-drawer__close");
+    await expect(drawer).toBeVisible();
+    await expect(close, `${width}: Close remains visible and reachable`).toBeInViewport();
+    await expect(close, `${width}: opening moves focus into the drawer`).toBeFocused();
+    await expect(board, `${width}: Board remains mounted`).toBeAttached();
+
+    const openGeometry = await page.evaluate(() => ({
+      workspace: document.querySelector<HTMLElement>(".board-workspace")!.getBoundingClientRect().width,
+      board: document.querySelector<HTMLElement>(".board")!.getBoundingClientRect().width,
+      drawer: document.querySelector<HTMLElement>(".board-drawer")!.getBoundingClientRect().width,
+    }));
+    if (width <= 640) {
+      expect(openGeometry.board, `${width}: Board is entirely out of view`).toBe(0);
+      expect(openGeometry.drawer, `${width}: drawer takes the full available content width`).toBe(openGeometry.workspace);
+      await expect(board, `${width}: hidden mounted Board is unavailable to keyboard interaction`).toHaveAttribute("inert", "");
+      await page.keyboard.press("Tab");
+      expect(await page.evaluate(() => document.activeElement?.closest(".board") === null), `${width}: Tab cannot enter the inert Board`).toBe(true);
+    } else {
+      expect(openGeometry.board, "1280: pushed Board remains visible beside the drawer").toBeGreaterThan(0);
+      expect(openGeometry.drawer, "1280: existing fixed drawer width remains unchanged").toBe(540);
+      await expect(board, "1280: visible Board remains keyboard-available").not.toHaveAttribute("inert", "");
+    }
+
+    await close.click();
+    await expect(drawer).toBeHidden();
+    const closedRanges = await page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>(".board__columns")!;
+      const waitingTrack = document.querySelector<HTMLElement>(".board__waiting-items")!;
+      return {
+        columns: Math.max(0, track.scrollWidth - track.clientWidth),
+        waiting: Math.max(0, waitingTrack.scrollWidth - waitingTrack.clientWidth),
+      };
+    });
+    await expect.poll(() => columns.evaluate((node) => node.scrollLeft), `${width}: lifecycle snapshot restores within the closed range`).toBe(Math.min(snapshot.columns, closedRanges.columns));
+    await expect.poll(() => waiting.evaluate((node) => node.scrollLeft), `${width}: waiting snapshot restores within the closed range`).toBe(Math.min(snapshot.waiting, closedRanges.waiting));
+    await expect(board).not.toHaveAttribute("inert", "");
+    await expect(opener, `${width}: latest opener selection remains`).toHaveAttribute("aria-selected", "true");
+    await expect(opener, `${width}: focus returns to the latest opener`).toBeFocused();
+  }
+});

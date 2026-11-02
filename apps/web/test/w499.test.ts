@@ -114,3 +114,54 @@ test("W-499-b2 behaviour 2: Why it waits states each reason once", () => {
   assert.equal(detail.waitingReasons?.[0], question, "the complete long question is not replaced by its capped subject");
 });
 
+test("W-499-b3 behaviour 3: the 640 drawer takes the content row and restores its mounted Board", async () => {
+  const boardSource = readFileSync(new URL("../src/screens/Board.tsx", import.meta.url), "utf8");
+  const boardCss = readFileSync(new URL("../src/components/w025.css", import.meta.url), "utf8");
+  assert.match(
+    boardCss,
+    /@media \(max-width: 640px\) \{[\s\S]*\.board-workspace:has\(\.board-drawer\) \{\s*grid-template-columns: minmax\(0, 1fr\) 100%;/,
+    "the 640 drawer owns the full content row while the Board remains mounted in its zero-width grid cell",
+  );
+  assert.match(
+    boardSource,
+    /window\.matchMedia\("\(max-width: 640px\)"\)[\s\S]*inert=\{selected !== undefined && boardTrackCollapsed\}/,
+    "the mounted Board becomes inert at the full-drawer breakpoint",
+  );
+
+  const built = spawnSync("npm", ["run", "-s", "build", "--workspace", "@bisellium/web"], { cwd: process.cwd(), encoding: "utf8" });
+  assert.equal(built.status, 0, `the 640 served pin builds its own bundle: ${`${built.stdout ?? ""} ${built.stderr ?? ""}`.trim().slice(-800)}`);
+  const served = await startServed("w499-b3-node");
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: { width: 640, height: 900 } });
+    await page.goto(`${served.baseURL}/?w499=b3-node#/board`);
+    const prompt = page.locator("#token-prompt-input");
+    if (await prompt.isVisible()) {
+      await prompt.fill(served.token);
+      await page.locator(".token-prompt__submit").click();
+    }
+    const board = page.locator(".board");
+    const opener = page.locator('[data-card-id="W-004"]');
+    await opener.evaluate((node) => (node as HTMLElement).focus({ preventScroll: true }));
+    await opener.evaluate((node) => (node as HTMLElement).click());
+    await page.locator(".board-drawer").waitFor();
+    const geometry = await page.evaluate(() => ({
+      workspace: document.querySelector<HTMLElement>(".board-workspace")!.getBoundingClientRect().width,
+      board: document.querySelector<HTMLElement>(".board")!.getBoundingClientRect().width,
+      drawer: document.querySelector<HTMLElement>(".board-drawer")!.getBoundingClientRect().width,
+      inert: document.querySelector<HTMLElement>(".board")!.hasAttribute("inert"),
+    }));
+    assert.equal(geometry.board, 0, "the mounted Board is entirely out of view at 640");
+    assert.equal(geometry.drawer, geometry.workspace, "the drawer receives the full available content width at 640");
+    assert.equal(geometry.inert, true, "the out-of-view Board is unavailable to keyboard interaction");
+    assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("board-drawer__close")), true, "the visible Close control receives focus");
+    await page.locator(".board-drawer__close").click();
+    await page.locator(".board-drawer").waitFor({ state: "hidden" });
+    assert.equal(await board.evaluate((node) => node.getBoundingClientRect().width), geometry.workspace, "Close restores the Board to the content row");
+    assert.equal(await board.evaluate((node) => node.hasAttribute("inert")), false, "Close restores Board keyboard availability");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-card-id")), "W-004", "Close restores focus to the opener");
+  } finally {
+    await browser.close();
+    await served.close();
+  }
+});
