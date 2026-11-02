@@ -1,0 +1,22 @@
+# opus: W-498
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19be2-61d9-73e3-bb1a-6ed83c5e7b8a
+# outcome: failed
+# at: 2026-11-02T10:56:08.584Z
+# tree: tree:ac4ef93de69d1b91a38b0bf22c7ea92ca872aa43
+# brief: briefs/W-498.md blob:f91bafd750a480da7a98c6bca7a542c3444222b4
+# ticket: {"opus":"W-498","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"e914366e6d5e4ae3aecb6790fb9337b1661b1f7e","brief":"f91bafd750a480da7a98c6bca7a542c3444222b4","at":"2026-11-02T10:56:08.074Z"}
+
+## Findings
+1. blocking — brief:48 A plausible bulk edit or rebase can leave enough unowned paths that a producer’s real `bisellium next` output is clipped at 1000 characters by `say`, omitting later paths and the promised remediation routes; `W-498-b1` has no over-1000-character case. Replace brief:48 with: “The hold is emitted with `uncut: true`, so every outside path’s `clean` rendering and both routes remain present; limit: `clean` replaces controls with spaces and clips an individual rendered path at 200 characters.” [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-review.test.ts W-498-b1: assert a multi-path why longer than 1000 characters remains complete
+2. advisory — brief:68 The valid domain says any direct dossier page is record-only, but `recordOnly` accepts only direct `.html` pages. Replace brief:68 with: “| 3. The officina records | paths below the studio, exact `docs/SESSION-HANDOFF.md`, or a direct `.html` page in `docs/design/dossier/`; every other path is source | `recordOnly` (reused) excludes exactly those paths; `boundaryBreach` retains every other path and holds unless row 2 owns it |”. [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: scripts/ci-scope.test.mjs W-209-b1
+3. advisory — brief:69 The table omits the changed `mergeTreeConflict(f.repo, ORIGIN_TRUNK, branchRef)` call and the added test readers through `advanceOrigin`, fixture Git/rebase calls, `readFileSync`, `existsSync`, `next`, and `w498Held`. Add: “| 5. The review-rung `mergeTreeConflict` call | `git merge-tree --write-tree` exits 0 for clean or 1 for conflict | `mergeTreeConflict` returns an error for every other exit or spawn error, and `deriveNext` holds review |” and “| 6. `W-498-b1`’s fixture and result inputs | fixture Git and file operations succeed; the committed brief reads; the refused review log is absent; `next` returns the asserted status and fields | `git` and `readFileSync` throw, while `assert`/`w498Held` reject every unexpected result, failing the row |”. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-ladder.test.ts W-337-b1; packages/cli/src/next-review.test.ts W-498-b1
+4. advisory — brief:69 The reused-gates row omits the separately required `bisellium ci` call and leaves lint, format, and both officina checks unnamed. Replace brief:69 with: “| 4. The reused gates | `npm test`, `npm run -s typecheck`, `npm run -s lint`, `npm run -s format:check`, `npm run -s check -- studio --repo .`, `npm run -s check -- examples/sample-studio --repo .`, and `bisellium ci --opus W-498 --studio studio` each exit 0 | exit: every listed reused call’s non-zero exit fails acceptance; unpinned, a stated limit (D-076 E) |”. [severity: S4] [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+
+## Verdict
+The promised complete diagnostic is infeasible for a plausible bulk boundary breach until the output is made uncut and tested.
+
+VERDICT: FAIL
