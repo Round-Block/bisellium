@@ -53,12 +53,14 @@ export interface Reading {
   claude_week_used: number | null;
   claude_seen: string | null;
   context_tokens: number | null;
+  /** W-495: Claude's week reset (epoch seconds) from the status line; absent in the script's lines and older ones. */
+  claude_resets?: number | null;
 }
 
 /** The status-line file's Claude values: its `rl` percentages, its `ctx.current_usage` input, cache-creation and
  *  cache-read tokens summed (the context the next turn sends), and its `at`. Each is null when absent or malformed. */
-function claudeReading(home: string): Pick<Reading, "claude_5h_used" | "claude_week_used" | "claude_seen" | "context_tokens"> {
-  const none = { claude_5h_used: null, claude_week_used: null, claude_seen: null, context_tokens: null };
+function claudeReading(home: string): Pick<Reading, "claude_5h_used" | "claude_week_used" | "claude_seen" | "context_tokens" | "claude_resets"> {
+  const none = { claude_5h_used: null, claude_week_used: null, claude_seen: null, context_tokens: null, claude_resets: null };
   const file = readContainedRegularFile(join(home, EVIDENCE), `${USAGE}/${CLAUDE_FILE}`, USAGE, CLAUDE_MAX);
   if ("error" in file) return none;
   let doc: unknown;
@@ -78,6 +80,7 @@ function claudeReading(home: string): Pick<Reading, "claude_5h_used" | "claude_w
     claude_week_used: pct("seven_day"),
     claude_seen: seen ? seen.toISOString() : null,
     context_tokens: parts.length === 3 && parts.every((p) => p !== null) ? parts.reduce<number>((a, b) => a + (b ?? 0), 0) : null,
+    claude_resets: isDict(rl["seven_day"]) ? num((rl["seven_day"] as Dict)["resets_at"]) : null,
   };
 }
 
@@ -198,7 +201,7 @@ function isReading(v: unknown): v is Reading {
   const numOrNull = (k: string): boolean => v[k] === null || num(v[k]) !== null;
   const strOrNull = (k: string): boolean => v[k] === null || typeof v[k] === "string";
   const required = ["codex_week_used", "codex_resets", "claude_5h_used", "claude_week_used"].every(numOrNull) && ["codex_from", "claude_seen"].every(strOrNull);
-  const optional = (["opus", "step"].every((k) => v[k] === undefined || typeof v[k] === "string")) && (v["codex_seen"] === undefined || strOrNull("codex_seen")) && (v["context_tokens"] === undefined || numOrNull("context_tokens"));
+  const optional = (["opus", "step"].every((k) => v[k] === undefined || typeof v[k] === "string")) && (v["codex_seen"] === undefined || strOrNull("codex_seen")) && (v["context_tokens"] === undefined || numOrNull("context_tokens")) && (v["claude_resets"] === undefined || numOrNull("claude_resets"));
   return required && optional;
 }
 
@@ -254,6 +257,55 @@ export function opusCost(readings: Reading[], id: string): Cost | undefined {
   });
   if (n === 0 || first === undefined || last === undefined) return undefined;
   return { claude, codex, hours: (last - first) / 3_600_000, readings: n };
+}
+
+/** W-495: one plan's use over a span, from the readings in time order up to its end. The level is the plan's last value at
+ *  or before the start (else its first in the span). A line of an earlier week than one already read is passed over first,
+ *  before or in the span. In the span, a later week reset instant than any read counts the reading's whole value (the use
+ *  since the reset), whether it rose, stayed or fell; with the same or an unknown reset a rise above the level counts and a
+ *  fall counts nothing (a stale source). Null when fewer than two values of the plan are read (the level and one after it). */
+function planUse(timed: { r: Reading; at: number }[], from: number, value: (r: Reading) => number | null, resetsOf: (r: Reading) => number | null | undefined): number | null {
+  let level: number | null = null;
+  let resets: number | null = null;
+  let use: number | null = null;
+  for (const { r, at } of timed) {
+    const v = value(r);
+    const rr = resetsOf(r) ?? null;
+    if (v === null) continue;
+    // a line of an earlier week than one already read is a stale log: passed over before it can be the level (W-495 r2)
+    if (rr !== null && resets !== null && rr < resets) continue;
+    if (at <= from || level === null) {
+      level = v;
+      if (rr !== null) resets = resets === null ? rr : Math.max(resets, rr);
+      continue;
+    }
+    use ??= 0;
+    if (rr !== null && resets !== null && rr > resets) {
+      // the week reset since the level: the new week's whole value is its use, risen, equal or fallen
+      use += v;
+      level = v;
+    } else if (v > level) {
+      use += v - level;
+      level = v;
+    }
+    if (rr !== null) resets = resets === null ? rr : Math.max(resets, rr);
+  }
+  return use;
+}
+
+/** W-495: the plans' whole use between two instants (epoch ms), every reading counted whoever took it: the script's, every
+ *  opus's and every lane's. Hours are the span's; `readings` counts those inside it. */
+export function spanCost(readings: Reading[], from: number, to: number): Cost {
+  const timed = readings
+    .map((r) => ({ r, at: instant(r.at)!.getTime() }))
+    .filter((x) => x.at <= to)
+    .sort((a, b) => a.at - b.at);
+  return {
+    claude: planUse(timed, from, (r) => r.claude_week_used, (r) => r.claude_resets),
+    codex: planUse(timed, from, (r) => r.codex_week_used, (r) => r.codex_resets),
+    hours: (to - from) / 3_600_000,
+    readings: timed.filter((x) => x.at > from).length,
+  };
 }
 
 const points = (v: number | null): string => (v === null ? "unread" : `+${Math.round(v * 10) / 10}%`);

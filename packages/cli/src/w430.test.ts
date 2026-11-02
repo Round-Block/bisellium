@@ -124,6 +124,7 @@ test("W-430-b1 behaviour 1: a usage reading reads Claude's 5h, week and context 
     claude_week_used: 85,
     claude_seen: "2026-10-28T01:59:00.000Z",
     context_tokens: 171318,
+    claude_resets: 1793253600,
   }, "both plans read: the newest log with a week rate_limits, its last such line; the context is the current input, cache-creation and cache-read tokens");
   assert.equal(readingLine(r), `usage: Claude 5h 20%, week 85%, context 171318 tokens; Codex week 61%, resets ${RESETS_ISO}`, "the reading as one line");
   assert.deepEqual(takeReading(home, now, "rung", { opus: "W-1", step: "branch" }), { ...r, label: "rung", opus: "W-1", step: "branch" }, "a rung reading names its opus and step");
@@ -195,6 +196,7 @@ test("W-430-b2 behaviour 2: next --perform appends one usage reading at the rung
     claude_week_used: 85,
     claude_seen: NOW_ISO,
     context_tokens: 171318,
+    claude_resets: 1793253600,
   }, ran("the reading: at the verb's clock, both plans, the rung named", o));
   assert.equal(lineOf(o.out, "usage: "), `usage: Claude 5h 20%, week 85%, context 171318 tokens; Codex week 61%, resets ${RESETS_ISO}`, ran("printed as its line", o));
 
