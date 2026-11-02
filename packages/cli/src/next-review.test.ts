@@ -2372,3 +2372,21 @@ test("W-498-f3 fix 1: a path with a leading BOM is neither owned nor a record as
   // the report's why line passes `one` (\s+ collapsed, trimmed), which reads U+FEFF as whitespace: the five are named, the BOM itself not shown
   w498Held(next(g, [OPUS, ...BUDGET]), bom.map((p) => p.slice(1)), "BOM-prefixed paths are held and named");
 });
+
+// W-498 fix 1, fourth pass: the committed brief is read as bytes too. A Files owned span whose bytes are not valid UTF-8
+// (`x<FF>.txt`) decodes to U+FFFD, so it must not own the valid path `x�.txt`: the unreadable brief holds the build.
+test("W-498-f4 fix 1: a committed brief whose bytes are not valid UTF-8 does not own a valid U+FFFD path", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f4", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile);
+  const anchor = Buffer.from("- `source.txt`");
+  const at = signed.indexOf(anchor);
+  assert.notEqual(at, -1, "fixture: the brief owns source.txt");
+  const at2 = at + anchor.length;
+  writeFileSync(briefFile, Buffer.concat([signed.subarray(0, at2), Buffer.from("\n- `x"), Buffer.from([0xff]), Buffer.from(".txt`"), signed.subarray(at2)]));
+  commit(g.wt, `studio(${OPUS}): Files owned holds a span of invalid UTF-8`);
+  w498Commit(g, "x�.txt", "a valid path holding U+FFFD\n", "feat: a valid U+FFFD path beside an invalid brief span");
+  const held = next(g, [OPUS, ...BUDGET]);
+  assert.equal(held.first, `next: ${OPUS} build held`, "an invalid-UTF-8 brief span does not own the valid U+FFFD path: the build holds");
+  assert.equal(held.kv.get("why"), `briefs/${OPUS}.md on refs/heads/opus/${OPUS} is not valid UTF-8, so the paths opus/${OPUS} changes cannot be checked against Files owned (W-498)`, ran("an invalid-UTF-8 committed brief: why", held));
+});
