@@ -1,0 +1,23 @@
+# opus: W-493
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 67b5bfce-e8e8-4ffe-a8d5-e5b8aecc2b42
+# session_reason: the round-2 reviewer ran by claude -p in the sandbox and cannot be resumed; a fresh session reviewed the delta
+# outcome: passed
+# at: 2026-11-02T02:11:44.091Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# brief: briefs/W-493.md blob:7758299bf195295e44a1180842809e851568d0a2
+# ticket: {"opus":"W-493","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":".worktrees/W-493/studio","head":"5deb3857f23ee7fa5b879546827cab87a2f138bc","brief":"7758299bf195295e44a1180842809e851568d0a2","at":"2026-11-02T02:11:40.390Z"}
+
+Claude week 55%, 5h 15% | Codex week 83% | context 253k of 300k
+
+## Findings
+1. advisory — brief:46 [severity: S2] The new waiting-card sentence ("also gain progress text and keep their existing 145px height and maximum height") sits ahead of "This is pinned by `W-493-css …`". But that row only measures ordinary cards against 108 (proto `tests-serve/w493.spec.ts:90`, `test/w493.test.ts:131`). Nothing measures that the progress line fits inside a 145px waiting card. The fixed height holds because the CSS is unchanged (`w025.css:2427-2428`), but clipping inside the card is not pinned. Replacement: "Cards waiting on you outside Planned also gain progress text and keep their existing 145px height and maximum height, which is unchanged CSS (w025.css:2427); the served row also measures one waiting card's progress line inside its box." [class: ui×unbounded-variant-height; reached by round-2 advisory 3's class] — check: apps/web/tests-serve/w493.spec.ts
+
+## Earlier findings
+
+## Verdict
+The delta takes in all three of round 2's advisories and the ui-lead's two corrections. Lines 73 and 75 name the failing assertions recorded in the b1 and b2 reds, line 112 names the monospace exception, and admission reports no problems; one S2 advisory remains for the builder.
+VERDICT: PASS

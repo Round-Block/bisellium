@@ -1,0 +1,38 @@
+# opus: W-493
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a199c5-9281-7011-9a3c-037c2e2637e2
+# outcome: passed
+# at: 2026-11-02T02:09:49.324Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# brief: briefs/W-493.md blob:7758299bf195295e44a1180842809e851568d0a2
+# ticket: {"opus":"W-493","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":".worktrees/W-493/studio","head":"5deb3857f23ee7fa5b879546827cab87a2f138bc","brief":"7758299bf195295e44a1180842809e851568d0a2","at":"2026-11-02T02:09:45.668Z"}
+
+# W-493 design signature — round 5
+
+Model: `gpt-5.6-sol`
+
+Role: design lead under D-150 C
+
+Base: `e8762225`
+
+Brief: /home/edckt/agents/bisellium/.worktrees/W-493-spec/studio/briefs/W-493.md
+
+Prototype: /home/edckt/.bisellium-evidence/W-493-spec/prototype.mbox sha256:89983d8a86fb64290d48dfd16d5c2865de1566a3db0cc214b4c03ac70d2f318b
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-493-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Behaviour 1's Genuine red now declares its one exact TAP failure after the marker — check: `/home/edckt/.bisellium-evidence/W-493-spec/b1-red-recorded.log`
+2. advisory — Behaviour 2's Genuine red now declares its one exact TAP failure after the marker — check: `/home/edckt/.bisellium-evidence/W-493-spec/b2-red-recorded.log`
+3. advisory — Current-source and authority wording now names the two base-e8762225 screen files and the Patron's 11-01 ruling — check: `/home/edckt/agents/bisellium/.worktrees/W-493-spec/studio/briefs/W-493.md`
+4. advisory — Card containment now distinguishes ordinary cards from 145px waiting-on-you cards, and the monospace gate-summary exception is explicit — check: `/home/edckt/agents/bisellium/.worktrees/W-493-spec/studio/briefs/W-493.md`
+5. advisory — Every ledger kill still passes origin/master's W-492 source-read audit — check: `/home/edckt/.bisellium-evidence/W-493-spec/ledger-source-read-check.out`
+6. advisory — Base admission and origin/master's W-473 red-declaration check both report zero problems — check: `/home/edckt/.bisellium-evidence/W-493-spec/admission-r5.out`
+
+## Verdict
+
+passed — both Genuine reds declare their exact recorded TAP failures; all promise kills remain source-read-safe; admission reports zero problems; the prototype, tests and captures are unchanged.
