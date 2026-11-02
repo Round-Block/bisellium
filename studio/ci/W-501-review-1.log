@@ -1,0 +1,19 @@
+# opus: W-501
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19cf8-bf35-7ef3-8a1b-bd797624cbd9
+# outcome: failed
+# at: 2026-11-02T15:57:05.359Z
+# tree: tree:dfc6dcc9d71e5716044e2da28ac9ea32f351ac05
+# brief: briefs/W-501.md blob:6ffbf3798472e9e083367d05ccd3e197d1f39cf8
+# ticket: {"opus":"W-501","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-501/studio","head":"2fd636cd97718d3fce9f81d3ef21e6d2e103a0ad","brief":"6ffbf3798472e9e083367d05ccd3e197d1f39cf8","at":"2026-11-02T15:55:08.474Z"}
+
+## Findings
+1. blocking — apps/server/src/http.ts:471 `readTokenOk` accepts `/api/live?%74oken=<session-token>` because `URLSearchParams` decodes the parameter name, but `loggedUrl` only redacts literal `token=`, so the access log exposes the credential despite brief:34’s promise that it never prints the token. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: apps/server/test/w501.test.ts W-501-b2
+
+## Verdict
+The read gates otherwise align with the brief, but the accepted encoded query form leaks the session token into the access log.
+
+VERDICT: FAIL
