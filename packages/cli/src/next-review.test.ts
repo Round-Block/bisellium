@@ -2340,3 +2340,19 @@ test("W-498-f1 fix 1: a changed path whose bytes are not valid UTF-8 is never ow
   assert.equal(held.first, `next: ${OPUS} build held`, "a raw 0xFF path is not owned by the brief's U+FFFD spelling: the build holds");
   w498Held(held, ["x\uFFFD.txt"], "a raw 0xFF path is not owned by the brief's U+FFFD spelling");
 });
+
+// W-498 fix 1, second pass: only a path whose Git bytes are not valid UTF-8 is held as unprovable. A valid-UTF-8 path that
+// genuinely holds U+FFFD is compared byte for byte like any other: an exact span and a folder span own it.
+test("W-498-f2 fix 1: a valid UTF-8 path holding U+FFFD is owned by an exact span and by a folder span", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f2", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `x\uFFFD.txt`\n- `dir\uFFFD/`"));
+  commit(g.wt, `studio(${OPUS}): Files owned names the replacement spellings`);
+  w498Commit(g, "x\uFFFD.txt", "a valid path holding U+FFFD\n", "feat: an exactly owned U+FFFD path");
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "an exact span owns a valid U+FFFD path: review round 1");
+  w498Commit(g, "dir\uFFFD/child.txt", "under a U+FFFD folder\n", "feat: a path under an owned U+FFFD folder");
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "a folder span owns a path under a valid U+FFFD folder: review round 1");
+  w498Commit(g, "dir\uFFFDX/near.txt", "beside the folder\n", "feat: a sibling of the owned U+FFFD folder");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["dir\uFFFDX/near.txt"], "a sibling that only opens like the folder is not owned");
+});
