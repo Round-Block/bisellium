@@ -203,7 +203,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                           <dl>
                             <div><dt>Reviewed revision</dt><dd><code title={binding.revision}>{binding.revision ?? "Not recorded."}</code></dd></div>
                             <div><dt>Gate result</dt><dd>{binding.gate} · {binding.status}</dd></div>
-                            <div><dt>Decision record</dt><dd>{binding.record ? <a href={binding.record}>{binding.record}</a> : "Not recorded."}</dd></div>
+                            <div><dt>Decision record</dt><dd>{binding.record ? <a className="board-drawer__waiting-evidence" href={binding.record}>{binding.record}</a> : "Not recorded."}</dd></div>
                           </dl>
                         </div>
                       ))}

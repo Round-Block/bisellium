@@ -1546,8 +1546,9 @@
   color: var(--ink);
 }
 
-.inbox__decision-evidence-row a {
-  color: var(--ink);
+.inbox__decision-evidence-row .board-drawer__waiting-evidence {
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .inbox__evidence-stale {
