@@ -1739,10 +1739,13 @@ function boundaryBreach(f: Facts): string | undefined {
   if (paths === undefined) return `could not read what opus/${f.id} changes against origin/master (git diff failed), so its paths cannot be checked against Files owned (W-498)`;
   const source = paths.filter((p) => !recordOnly([p], f.studioRel));
   if (source.length === 0) return undefined;
+  // diffPaths decodes git's bytes as UTF-8: a path holding U+FFFD is no faithful round trip of them (an invalid byte reads
+  // as the replacement), so it can never be proven owned and fails closed as outside Files owned
+  const unproven = (p: string): boolean => p.includes("\uFFFD");
   const brief = git(f.repo, ["cat-file", "blob", `${head}:${join(f.studioRel, briefRel(f.id))}`]);
   if (brief.status !== 0 || brief.error !== undefined) return `${briefRel(f.id)} is not a readable blob on ${head}, so the paths opus/${f.id} changes cannot be checked against Files owned (W-498)`;
   const owned = ownedFiles(brief.stdout);
-  const outside = source.filter((p) => !owned.some((o) => o === p || (o.endsWith("/") && p.startsWith(o))));
+  const outside = source.filter((p) => unproven(p) || !owned.some((o) => o === p || (o.endsWith("/") && p.startsWith(o))));
   if (outside.length === 0) return undefined;
   return `opus/${f.id} changes ${outside.length} path(s) outside its brief's Files owned, in its diff against origin/master (a rebase's resolutions included): ${outside.map((p) => clean(p)).join(", ")}; revise the brief to own them (a spec amendment, signed again) or revert them on opus/${f.id} (W-498)`;
 }
