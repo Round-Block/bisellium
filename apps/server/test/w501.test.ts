@@ -223,13 +223,18 @@ test("W-501-f1: the access log never prints the token, whatever spelling of the 
     }
     // the reader and the redaction agree: a decoded-name `token` is accepted AND redacted
     assert.equal((await send(P, `/api/live?%74oken=${TOKEN}`)).status, 200, "the reader accepts the encoded name");
-    await new Promise((r) => setImmediate(r));
+    // `send` drops the stream once its head is read, and the access log line follows the stream's finish: closing the
+    // server ends every live stream, then the line is awaited
+    await s.close();
+    const liveLine = /GET \/api\/live\?%74oken=redacted 200/;
+    for (let i = 0; i < 100 && !liveLine.test(logged.join("")); i++) await new Promise((r) => setTimeout(r, 20));
     const log = logged.join("");
+    assert.match(log, liveLine, "an accepted encoded name is logged on the live stream, redacted");
     assert.equal(log.includes(TOKEN), false, "the access log never prints the token, in any spelling");
     assert.match(log, /GET \/api\/inbox\?%74oken=redacted 401/, "an encoded name is redacted, name kept");
     assert.match(log, /GET \/api\/inbox\?x=1&%74oken=redacted&y=2 401/, "other parameters are kept");
   } finally {
-    await s.close();
+    await s.close().catch(() => undefined);
     process.stderr.write = write;
   }
 });
