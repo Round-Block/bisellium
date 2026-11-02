@@ -601,8 +601,11 @@ export function drawerDetail(
     for (const petitio of inbox.petitiones.filter((item) => item.opus === opus.id)) {
       const subject = typeof petitio.subject === "string" ? petitio.subject.trim() : "";
       const body = typeof petitio.body === "string" ? petitio.body.trim() : "";
-      if (subject.length > 0 && body.length > 0) reasons.push(`${subject}: ${body}`);
-      else if (subject.length > 0 || body.length > 0) reasons.push(subject || body);
+      // The body is the verbatim question; the subject is its Inbox row label
+      // and, for legacy petitiones, may be a capped derivation of that body.
+      // Treating both as reason text joins a shortened prefix back onto its
+      // own source. Use the label only as the honest fallback for an empty body.
+      if (body.length > 0 || subject.length > 0) reasons.push(body || subject);
     }
     for (const gate of gates.filter((item) => item.human && opus.probationes[item.id]?.status === "pending")) reasons.push(`${gate.name} is pending.`);
     const nextValue = recordValue(opus.traditio, "next");
