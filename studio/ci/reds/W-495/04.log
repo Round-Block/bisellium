@@ -1,0 +1,55 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-495-b4\s --import tsx packages/cli/src/w495.test.ts
+# exit: 1
+# at: 2026-11-02T06:17:30.077Z
+# sella: builder.W-495
+# tree: tree:ef0d3d3e78a04844fd9d62ef36b4531a570a3bf1
+# ticket: {"opus":"W-495","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-495/studio","head":"c2a304c6b82fc364f47f1f80d4df841ef2fd0e21","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T06:17:28.263Z"}
+
+TAP version 13
+# Subtest: W-495-b4 behaviour 4: each rung's cost line is the plans' whole use from the opus's first spec signature to the rung's reading
+not ok 1 - W-495-b4 behaviour 4: each rung's cost line is the plans' whole use from the opus's first spec signature to the rung's reading
+  ---
+  duration_ms: 1128.098168
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:10:1523'
+  failureType: 'testCodeFailure'
+  error: |-
+    the cost from the last reading before the first spec signature (01:00Z) to the rung's reading (12:00Z)
+    --- exit 0
+    --- stdout
+    next: W-900 branch performed
+    branch: opus/W-900
+    worktree: /tmp/claude-1000/w124-w495-b4-hCkZI1/repo/.worktrees/W-900
+    next-step: ready
+    usage: Claude 5h 20%, week 85%, context 171318 tokens; Codex week 61%, resets 2026-10-05T00:00:00Z
+    cost: Claude week +5%, Codex week +6% over 0.0 h
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'cost: Claude week +5%, Codex week +6% over 0.0 h'
+    - 'cost: Claude week +5%, Codex week +6% over 11.0 h since the first spec signature'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'cost: Claude week +5%, Codex week +6% over 11.0 h since the first spec signature'
+  actual: 'cost: Claude week +5%, Codex week +6% over 0.0 h'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:252:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1146.651466
