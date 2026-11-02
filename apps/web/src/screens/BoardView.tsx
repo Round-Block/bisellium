@@ -7,7 +7,6 @@
  */
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { formatWaitingAge, type AttentionRow, type BoardModel, type CardRow } from "../lib/board.js";
-import { GateLadder } from "../components/GateLadder.js";
 import { Colophon } from "../components/Colophon.js";
 
 export interface BoardViewProps {
@@ -44,6 +43,12 @@ function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
     : ask.kind === "inbox"
       ? ask.count === 1 ? "Inbox decision" : `${ask.count} Inbox decisions`
       : "Human gate";
+}
+
+function gateProgressLabel(progress: NonNullable<CardRow["gateProgress"]>): string {
+  if (progress.total === 0) return "0/0 · no gates";
+  if (progress.next === undefined) return `${progress.cleared}/${progress.total} · complete`;
+  return `${progress.cleared}/${progress.total} · next: ${progress.next}`;
 }
 
 function WaitingFacts({ card, compact = false }: { card: CardRow; compact?: boolean }): JSX.Element {
@@ -98,7 +103,11 @@ function Card({
       data-card-id={card.id}
       onClick={() => onSelect(card.id, columnId, "card")}
     >
-      <GateLadder gates={card.gates} />
+      {columnId !== "planned" && card.gateProgress !== undefined && (
+        <span className="board__card-gates" title={gateProgressLabel(card.gateProgress)}>
+          {gateProgressLabel(card.gateProgress)}
+        </span>
+      )}
       {card.needsYou ? <WaitingFacts card={card} /> : <>
         <span className="board__card-id">{card.id}</span>
         <span className="board__card-title" title={card.title}>{card.title}</span>

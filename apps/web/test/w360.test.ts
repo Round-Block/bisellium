@@ -43,7 +43,7 @@ test("W-360-b2 behaviour 2: every route proves its own settled data and has no l
   const baselines = read("apps/web/tests-serve/screenshots.spec.ts");
   const seats = read("apps/web/src/screens/Seats.tsx");
 
-  for (const evidence of [".inbox__row", "[data-card-id]", ".gate-ladder", 'select[aria-label^="model for seat "]', ".officina__panel-heading", ".officina__loading"]) {
+  for (const evidence of [".inbox__row", "[data-card-id]", ".board__card-gates", 'select[aria-label^="model for seat "]', ".officina__panel-heading", ".officina__loading"]) {
     assert.ok(capture.includes(evidence), `${evidence} is named as route-owned loaded evidence`);
   }
   assert.ok(capture.includes('data-state="ready"'), "non-live screens wait for their settled shell status");

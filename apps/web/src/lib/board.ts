@@ -35,6 +35,9 @@ export interface CardRow {
    *  (ui-lead ruling 8). */
   state: string;
   gates: Gate[];
+  /** Compact progress for lifecycle cards. The declared manifest supplies
+   * both order and names; presentation decides which phases show it. */
+  gateProgress?: { cleared: number; total: number; next?: string };
   needsYou: boolean;
   /** Why this opus belongs to the attention-membership column. Kept as
    * structured data so presentation never has to infer an ask from copy. */
@@ -179,6 +182,18 @@ function classifiedCards(
     const phase = stateToPhase.get(opus.state);
     const card = cardRow(opus, human);
     card.gates = gateRow(o.probationes, opus.probationes);
+    const nextGate = o.probationes.find((gate) => {
+      const status = opus.probationes[gate.id]?.status;
+      return status !== "passed" && status !== "waived";
+    });
+    card.gateProgress = {
+      cleared: o.probationes.filter((gate) => {
+        const status = opus.probationes[gate.id]?.status;
+        return status === "passed" || status === "waived";
+      }).length,
+      total: o.probationes.length,
+      ...(nextGate === undefined ? {} : { next: nextGate.name ?? nextGate.id }),
+    };
     const linkedDecisions = petitionCount.get(opus.id) ?? 0;
     const greenlightAsk = phase === BACKLOG_PHASE;
     const humanGateAsk = card.needsYou || (inboxOpera.has(opus.id) && !greenlightAsk);

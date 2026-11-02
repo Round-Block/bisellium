@@ -2432,9 +2432,19 @@
   border-left-color: var(--ink);
 }
 
-.board__card > .gate-ladder {
+.board__card-gates {
+  display: block;
+  min-width: 0;
+  min-height: 14px;
   box-sizing: border-box;
   flex-shrink: 0;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .board__card-title {

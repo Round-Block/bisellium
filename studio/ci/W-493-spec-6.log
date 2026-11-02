@@ -1,0 +1,26 @@
+# opus: W-493
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a199f8-3262-79b3-92c6-05122776d151
+# outcome: passed
+# at: 2026-11-02T05:52:19.781Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# dispatch_prompt: ci/W-493-ui-prompt-6.md
+# design_digest: sha256:22f567bf47c6ba145c5e29d6c745f72a5dbbf57209d50d138c3883afed3b050d
+# ticket: {"opus":"W-493","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":".worktrees/W-493/studio","head":"565e9c35b985b34fda49423763c03884408b1feb","brief":"7758299bf195295e44a1180842809e851568d0a2","at":"2026-11-02T05:52:19.197Z"}
+
+## Findings
+
+1. advisory — brief:112 — “Restriction of monospace to agent-written text” misstates DIRECTION:84–87; the restriction itself is agent-written. Its blanket prohibition on monospace words remains too absolute for the coherent count-and-gate summary visible at 390 — replace with: “The monospace gate-summary line, status words included, is a deliberate local exception to DIRECTION’s agent-written restriction of monospace to identifiers, numerals and file paths.” — check: `docs/design/DIRECTION.md:84`; `/home/edckt/.bisellium-evidence/W-493-spec/shots/board-390.png`
+2. advisory — brief:46 — “This is pinned by” incorrectly extends the ordinary-card measurement to waiting-card geometry. The captures support the visual judgment, but the cited row does not measure waiting-card containment — replace with: “The cited W-493-css row pins ordinary-card geometry only. Cards waiting on you outside Planned also gain progress text and retain the existing 145px height and maximum height. Their progress-line containment is unpinned by this row and is a stated limit; W-004 was visually inspected in the desktop capture.” — check: `/home/edckt/.bisellium-evidence/W-493-spec/proto-repo/apps/web/test/w493.test.ts:118`; `/home/edckt/.bisellium-evidence/W-493-spec/shots/board-1280-collapsed.png`
+
+## Recommendation
+
+The earlier height advisory is resolved by brief:46; the earlier monospace wording point still applies as an advisory.
+Adopt both wording corrections in the brief revision; neither blocks the UI design.
+Use an explicit stated limit for waiting-card containment; name a pin only when an assertion actually measures that variant.
+The unchanged captures still support the quiet progress line, Planned omission and description-first drawer, with W-004’s waiting facts legible inside its existing card.
+The remaining delta correctly identifies the base source and Patron authority; the assertion declarations introduce no UI change.
+Verdict: passed

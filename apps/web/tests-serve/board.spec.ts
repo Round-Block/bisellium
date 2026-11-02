@@ -504,7 +504,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await served?.close();
   });
 
-  test("1280px: 288px lifecycle columns below the waiting strip, task-ID cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
+  test("1280px: 288px lifecycle columns below the waiting strip, 80px task-ID/progress cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
     served = await startServed("board-1280");
     const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -519,10 +519,10 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const columnsBox = await page.locator(".board__columns").boundingBox();
     expect((waitingBox?.y ?? Number.POSITIVE_INFINITY) + (waitingBox?.height ?? 0)).toBeLessThanOrEqual((columnsBox?.y ?? 0) + 1);
 
-    // D-143 puts a task-ID line on every card, including the non-waiting Done card.
+    // D-143 keeps the task-ID line; W-493 adds the 14px progress line above it.
     const card = page.locator('.board__column[data-column-id="done"] .board__card').first();
     const cardBox = await card.boundingBox();
-    expect(cardBox?.height).toBeCloseTo(72, 0);
+    expect(cardBox?.height).toBeCloseTo(80, 0);
     const cardShadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
     expect(cardShadow === "none" || cardShadow === "").toBe(true);
 
@@ -730,7 +730,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     await served?.close();
   });
 
-  test("a 300-character mixed title clamps to two lines while a short task-ID card remains 72px", async ({ page }) => {
+  test("a 300-character mixed title clamps to two lines while a short progress-text card remains 80px", async ({ page }) => {
     served = await startServed("w087-title-bounds");
     const prose = "Several ordinary words must wrap before this unbroken token ";
     const title = prose + "x".repeat(300 - prose.length);
@@ -763,7 +763,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
 
     const containment = await card.evaluate((el) => {
       const box = el.getBoundingClientRect();
-      const ladder = el.querySelector(".gate-ladder")?.getBoundingClientRect();
+      const progress = el.querySelector(".board__card-gates")?.getBoundingClientRect();
       const metaElement = el.querySelector(".board__card-meta");
       const meta = metaElement?.getBoundingClientRect();
       const style = getComputedStyle(el);
@@ -773,21 +773,21 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         maxHeight: style.maxHeight,
         flexShrink: style.flexShrink,
         metaLineHeight: metaElement ? getComputedStyle(metaElement).lineHeight : "",
-        ladderInside: !!ladder && ladder.height > 0 && ladder.top >= box.top && ladder.bottom <= box.bottom,
+        progressInside: !!progress && progress.height > 0 && progress.top >= box.top && progress.bottom <= box.bottom,
         metaInside: !!meta && meta.height > 0 && meta.top >= box.top && meta.bottom <= box.bottom,
       };
     });
-    expect(containment.height).toBe(90);
+    expect(containment.height).toBe(98);
     expect(containment.height).toBeLessThanOrEqual(108);
     expect(containment.minHeight).toBe("64px");
     expect(containment.maxHeight).toBe("108px");
     expect(containment.flexShrink).toBe("0");
     expect(containment.metaLineHeight).toBe("14px");
-    expect(containment.ladderInside).toBe(true);
+    expect(containment.progressInside).toBe(true);
     expect(containment.metaInside).toBe(true);
 
     const shortCard = page.locator('.board__card[data-card-id="W-005"]');
-    expect((await shortCard.boundingBox())?.height).toBe(72);
+    expect((await shortCard.boundingBox())?.height).toBe(80);
   });
 });
 

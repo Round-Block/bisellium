@@ -7,17 +7,18 @@
  * checked-out files directly).
  */
 import { renderToStaticMarkup } from "react-dom/server";
+import React from "react";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BoardView, type BoardViewProps } from "../src/screens/BoardView.js";
 import { BoardDrawer } from "../src/screens/BoardDrawer.js";
-import { GateLadder } from "../src/components/GateLadder.js";
 import type { Gate } from "../src/lib/gateLadder.js";
 import type { BoardModel, CardRow, DrawerDetail } from "../src/lib/board.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, "..", "src");
+(globalThis as { React?: unknown }).React = React;
 
 const only = process.argv[2] ? Number(process.argv[2]) : undefined;
 let failed = 0;
@@ -34,7 +35,7 @@ const SAMPLE_GATES: Gate[] = [
 ];
 
 function card(overrides: Partial<CardRow> = {}): CardRow {
-  return { id: "W-1", title: "a train build", sella: "builder-a", state: "building", gates: SAMPLE_GATES, needsYou: false, blocked: false, ...overrides };
+  return { id: "W-1", title: "a train build", sella: "builder-a", state: "building", gates: SAMPLE_GATES, gateProgress: { cleared: 1, total: 2, next: "Review" }, needsYou: false, blocked: false, ...overrides };
 }
 
 function column(overrides: Partial<BoardModel["columns"][number]> = {}): BoardModel["columns"][number] {
@@ -94,7 +95,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   const metaMatch = /<span class="board__card-meta">(.*?)<\/span>\s*<\/(?:div|span)>/.exec(html);
   check(5, "BoardView: sella and state share one meta line", !!metaMatch && metaMatch[1]!.includes("builder-a") && metaMatch[1]!.includes("building"), html);
   const rows = (html.match(/class="board__card-title"/g) ?? []).length + (html.match(/class="board__card-meta"/g) ?? []).length;
-  check(5, "BoardView: no fourth text row on a card (title + one meta line only)", rows === 2, String(rows));
+  check(5, "BoardView: card keeps one title and one meta line beside gate progress", rows === 2 && html.includes("1/2 · next: Review"), html);
 }
 
 // Amber left-rule only on a needs-you card; bad only on a blocked one; both
@@ -184,14 +185,16 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   check(5, "BoardView: hostile title/sella — escaped text is present", html.includes("&lt;img"), html);
 }
 
-// (a) Ladder byte-identity + the import that proves reuse.
+// W-493 replaces the unlabelled card ladder with a short text line, while
+// Planned cards omit that line.
 {
-  const standalone = renderToStaticMarkup(GateLadder({ gates: SAMPLE_GATES }));
-  const model: BoardModel = { columns: [column({ cards: [card({ gates: SAMPLE_GATES })] })], waiting: [], unplaced: [] };
+  const model: BoardModel = { columns: [column({ cards: [card()] })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
-  check(5, "BoardView: a card's ladder markup equals GateLadder's own output for the same gates", html.includes(standalone), `${standalone}\n---\n${html}`);
+  check(5, "BoardView: a non-Planned card states gate progress in text", html.includes("board__card-gates") && html.includes("1/2 · next: Review"), html);
+  const planned = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", cards: [card()] })], waiting: [], unplaced: [] } })));
+  check(5, "BoardView: a Planned card omits gate progress", !planned.includes("board__card-gates"), planned);
   const boardViewSrc = readFileSync(join(SRC, "screens", "BoardView.tsx"), "utf8");
-  check(5, "BoardView: source imports GateLadder from ../components/GateLadder.js", /from ["']\.\.\/components\/GateLadder\.js["']/.test(boardViewSrc), boardViewSrc);
+  check(5, "BoardView: source no longer imports the square GateLadder", !/GateLadder/.test(boardViewSrc), boardViewSrc);
 }
 
 // (b) Board.tsx's import allowlist + forbidden-identifier set (the
@@ -267,7 +270,7 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
   check(6, "BoardDrawer: no selection -> no drawer element", html === "");
 }
 
-// Sections in order: header, banner, gates, events, record.
+// W-493 order: header, record description, banner, gates, events.
 {
   const d = detail({
     waitingOn: { gate: "owner", name: "Owner decision", petitio: { id: "P-1", from: "builder-a", subject: "accept drift?" } },
@@ -277,8 +280,8 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
     tokensDeclared: 1200,
   });
   const html = renderToStaticMarkup(BoardDrawer({ detail: d, onClose: () => undefined }));
-  const positions = ["board-drawer__header", "board-drawer__banner", "board-drawer__gates", "board-drawer__events", "board-drawer__record"].map((c) => html.indexOf(c));
-  check(6, "BoardDrawer: header, banner, gates, events, record — all present", positions.every((p) => p >= 0), JSON.stringify(positions));
+  const positions = ["board-drawer__header", "board-drawer__record", "board-drawer__banner", "board-drawer__gates", "board-drawer__events"].map((c) => html.indexOf(c));
+  check(6, "BoardDrawer: header, record, banner, gates, events — all present", positions.every((p) => p >= 0), JSON.stringify(positions));
   check(6, "BoardDrawer: sections appear in document order", positions.every((p, i) => i === 0 || p > positions[i - 1]!), JSON.stringify(positions));
 }
 
