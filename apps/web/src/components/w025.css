@@ -2458,7 +2458,6 @@
 }
 
 .board__column-policy,
-.board__blocked-count,
 .board__column-metrics {
   min-width: 0;
   font-family: var(--font-body);
@@ -2474,8 +2473,6 @@
 }
 
 .board__column-policy span {
-  display: inline-block;
-  width: 34px;
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -2487,8 +2484,7 @@
 }
 
 .board__wip-count,
-.board__column-dwell,
-.board__blocked-count {
+.board__column-dwell {
   font-family: var(--font-mono);
 }
 
@@ -2507,9 +2503,8 @@
   background: var(--rule);
 }
 
-.board__wip-rule--no-cap {
-  background: linear-gradient(90deg, var(--rule) 0 25%, var(--surface) 25% 50%, var(--rule) 50% 75%, var(--surface) 75% 100%);
-  background-size: 8px 3px;
+.board__wip-rule--empty {
+  background: var(--surface);
 }
 
 .board__wip-fill {

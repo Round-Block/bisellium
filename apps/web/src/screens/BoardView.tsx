@@ -162,14 +162,12 @@ function Column({
         <span className="board__column-name">{column.name}</span>
         <span className="board__column-count">{shown}</span>
       </div>
-      {column.entryRule !== undefined && <div className="board__column-policy"><span>Enter</span> {column.entryRule}</div>}
-      {column.exitRule !== undefined && <div className="board__column-policy"><span>Exit</span> {column.exitRule}</div>}
+      {column.entryRule !== undefined && column.exitRule !== undefined && <div className="board__column-policy">{column.entryRule}; {column.exitRule}</div>}
       <div className="board__column-metrics">
         <span className={column.atCap ? "board__wip-count board__wip-count--at-cap" : "board__wip-count"}>{wip}</span>
         {showDwell && <span className="board__column-dwell" title={dwellTitle}>median {formatDwell(column.medianDwellMs)}</span>}
       </div>
-      <div className="board__blocked-count">{blockedCount} blocked · counted</div>
-      <div className={column.cap === undefined ? "board__wip-rule board__wip-rule--no-cap" : "board__wip-rule"}>
+      <div className={column.cap === undefined ? "board__wip-rule board__wip-rule--empty" : "board__wip-rule"}>
         {column.cap !== undefined && (
           <div
             className="board__wip-fill"

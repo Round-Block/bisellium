@@ -383,7 +383,25 @@ export function boardModel(
   const stateToPhase = new Map(o.lifecycle.states.map((s) => [s.id, s.phase] as const));
 
   const columns = new Map<string, BoardColumn>();
+  const entryNames = (phase: string): string[] => o.lifecycle.states
+    .filter((state) => state.phase === phase || (phase === "planned" && state.phase === BACKLOG_PHASE))
+    .map((state) => state.name);
   for (const phase of phases) {
+    const membership = entryNames(phase).join(" + ") || humanizePhase(phase);
+    const entryRule = phase === "done" ? "Complete" : phase === "halted" ? "Stopped" : membership;
+    const exitRule = phase === "planned"
+      ? "approval + readiness before building"
+      : phase === "in_progress"
+        ? "build complete before verification"
+        : phase === "verifying"
+          ? "passing checks before review"
+          : phase === "awaiting_review"
+            ? "approval completes work"
+            : phase === "done"
+              ? "no forward exit"
+              : phase === "halted"
+                ? "resume when condition is met"
+                : "recorded condition is met";
     const col: BoardColumn = {
       id: phase,
       name: humanizePhase(phase),
@@ -393,8 +411,8 @@ export function boardModel(
       blockedCount: 0,
       atCap: false,
       dwellSampleCount: 0,
-      entryRule: "",
-      exitRule: "",
+      entryRule,
+      exitRule,
       membership: false,
     };
     if (o.wip_limit !== undefined && o.lifecycle.states.some((state) => state.phase === phase && CHECK_WIP_STATES.has(state.id))) {
