@@ -85,6 +85,8 @@ const NEXT_USAGE =
   "       bisellium next --all [--studio <dir>] [--repo <dir>]";
 
 const TRUNK = "refs/heads/master";
+/** W-498: the trunk an opus branch is rebased onto and reviewed against: the review rung's conflict check and its Files owned diff. */
+const ORIGIN_TRUNK = "refs/remotes/origin/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
@@ -1278,6 +1280,10 @@ export function deriveNext(f: Facts): Derived {
         inputs: [briefRel(id), ...(gate?.evidence === undefined ? [] : [gate.evidence]), fixCheck.census],
         extra: [["open", owned.join(" | ")], ...fixes],
       });
+    // W-498 (D-076 D): a path the branch changes outside its committed brief's Files owned holds before the suite and the
+    // review; the producer revises the brief (a spec amendment) or reverts the path
+    const breach = boundaryBreach(f);
+    if (breach !== undefined) return { ...hold("build", breach), uncut: true };
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
     // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
@@ -1307,7 +1313,7 @@ export function deriveNext(f: Facts): Derived {
     const uiBranch = [...f.uiReviewProblems(), ...(superseded === undefined ? [] : [superseded])];
     if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
       const branchRef = `refs/heads/opus/${id}`;
-      const trunkConflict = mergeTreeConflict(f.repo, "refs/remotes/origin/master", branchRef);
+      const trunkConflict = mergeTreeConflict(f.repo, ORIGIN_TRUNK, branchRef);
       if ("error" in trunkConflict) return hold("review", `${trunkConflict.error}; no review is ordered`);
       if (trunkConflict.conflict)
         return named(
@@ -1719,6 +1725,27 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
   return { status: g["status"], evidence, tree: round.tree, round: round.n, brief: round.brief };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
+/**
+ * W-498 (D-076 D): why opus/<id> may not reach the suite or the review, or undefined. Every path `diffPaths` lists for
+ * origin/master...opus/<id> (the merge base's diff, so a rebase's conflict resolutions count, and trunk's own moves do not)
+ * that is not an officina record (`recordOnly`, the one list certify reads) must be named by the committed branch brief's
+ * Files owned (`ownedFiles`, the blob the spec gate judged, never the worktree's): a span equal to the path, or a span
+ * ending in `/` that the path opens with. A span holding a glob is not expanded. Each read fails closed: a diff or a brief
+ * git cannot read is a hold's why. Uncommitted worktree edits are not read; `verify` refuses to certify a dirty tree.
+ */
+function boundaryBreach(f: Facts): string | undefined {
+  const head = `refs/heads/opus/${f.id}`;
+  const paths = diffPaths(f.repo, ORIGIN_TRUNK, head);
+  if (paths === undefined) return `could not read what opus/${f.id} changes against origin/master (git diff failed), so its paths cannot be checked against Files owned (W-498)`;
+  const source = paths.filter((p) => !recordOnly([p], f.studioRel));
+  if (source.length === 0) return undefined;
+  const brief = git(f.repo, ["cat-file", "blob", `${head}:${join(f.studioRel, briefRel(f.id))}`]);
+  if (brief.status !== 0 || brief.error !== undefined) return `${briefRel(f.id)} is not a readable blob on ${head}, so the paths opus/${f.id} changes cannot be checked against Files owned (W-498)`;
+  const owned = ownedFiles(brief.stdout);
+  const outside = source.filter((p) => !owned.some((o) => o === p || (o.endsWith("/") && p.startsWith(o))));
+  if (outside.length === 0) return undefined;
+  return `opus/${f.id} changes ${outside.length} path(s) outside its brief's Files owned, in its diff against origin/master (a rebase's resolutions included): ${outside.map((p) => clean(p)).join(", ")}; revise the brief to own them (a spec amendment, signed again) or revert them on opus/${f.id} (W-498)`;
+}
 /**
  * W-328 (D-106 A): an open line is the builder's when a `path:line` its lead names (its first backticked span when it opens
  * with one, else its text before the first ` — `), a leading `./` dropped, is exactly a Files owned path, or when its lead
