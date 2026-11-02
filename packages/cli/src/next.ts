@@ -2887,6 +2887,7 @@ function rungUsage(f: Facts, step: Step, nowMs: number): string[] {
 function costSoFar(f: Facts, home: string, nowMs: number): string {
   const spec = firstSpecSignature(f.id, [f.trunk, f.branch, f.work]);
   if (spec === undefined) return `none (no spec signature of ${f.id} yet)`;
+  if (spec.getTime() > nowMs) return `none (the first spec signature of ${f.id} (${spec.toISOString()}) is after this rung's clock)`;
   const all = readReadings(home);
   if ("error" in all) return `none (the readings file cannot be read: ${all.error})`;
   return `${costPhrase(spanCost(all, spec.getTime(), nowMs))} since the first spec signature`;
