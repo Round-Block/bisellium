@@ -282,8 +282,10 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   assert.equal(costPhrase({ claude: 6, codex: 3, hours: 4, readings: 3 }), "Claude week +6%, Codex week +3% over 4.0 h");
   assert.equal(costPhrase({ claude: null, codex: 2.25, hours: 0.25, readings: 1 }), "Claude week unread, Codex week +2.3% over 0.3 h");
 
-  // done's history-row check: the row naming the opus carries its cost, when the readings name it
-  const { historyRowRefusal } = (await import("./next.js")) as { historyRowRefusal: (repo: string, id: string, home?: string) => string | undefined };
+  // W-495: done no longer asks the row for this phrase (it writes the row's figures itself, W-495-b3); the readings file's
+  // foreign and wrong-type lines are still skipped, and W-214's refusal stands
+  const { historyRowRefusal } = (await import("./next.js")) as { historyRowRefusal: (repo: string, id: string) => string | undefined };
+  const readReadings = fn(m, "readReadings");
   const repo = scratchHome("b3-repo");
   const HISTORY = "docs/design/dossier/progress-body.html";
   git(repo, ["init", "-q", "-b", "master"]);
@@ -291,7 +293,6 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   git(repo, ["add", "-A"]);
   git(repo, ["commit", "-q", "-m", "history"]);
   const home = scratchHome("b3-home");
-  write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
   const row = (text: string): void => write(join(repo, HISTORY), `<table>\n${text}\n</table>\n`);
   // a line that lacks a field of the line shape, or holds one of the wrong type, is skipped and counted for nobody
   const good = lines.map((l) => JSON.stringify(l));
@@ -305,22 +306,11 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
     [r(26, "W-1", 1, 1)],
   ];
   write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), [...good, ...foreign.map((l) => JSON.stringify(l))].join("\n") + "\n");
+  assert.deepEqual(readReadings(home), lines, "foreign and wrong-type lines naming W-1 are skipped, never counted");
   row("<tr><td>W-1 shipped</td><td>Cycle about 240 min</td></tr>");
-  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /add "Claude week \+6%, Codex week \+3% over 4\.0 h" beside its hours/, "foreign and wrong-type lines naming W-1 are skipped, never counted");
-  write(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), good.join("\n") + "\n");
-  assert.equal(historyRowRefusal(repo, "W-1", home), `the checkpoint row naming W-1 carries no cost: add "Claude week +6%, Codex week +3% over 4.0 h" beside its hours (W-430: its plan cost from the usage readings), then re-run`, "a row without the cost: refused, naming the phrase");
-  row("<tr><td>W-1 shipped</td><td>Cycle about 240 min; Claude week +6%, Codex week +3% over 4.0 h</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-1", home), undefined, "the row carries it: done may commit");
-  // a done held and run again: its own done readings leave the phrase as it was; a cost that read neither plan asks none
-  writeFileSync(join(home, ".bisellium-evidence", "usage", "readings.jsonl"), [...lines, { ...r(6, "W-1", 40, 50), step: "done" }, r(7, "W-4", null, null), r(8, "W-4", null, null)].map((l) => JSON.stringify(l)).join("\n") + "\n");
-  row("<tr><td>W-1 shipped</td><td>Cycle about 240 min</td></tr>");
-  assert.match(historyRowRefusal(repo, "W-1", home) ?? "", /add "Claude week \+6%, Codex week \+3% over 4\.0 h" beside its hours/, "a held done's own reading leaves the phrase as it was");
-  row("<tr><td>W-4 shipped</td><td>Cycle about 30 min</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-4", home), undefined, "a cost that read neither plan asks none");
-  row("<tr><td>W-3 shipped</td><td>Cycle about 30 min</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-3", home), undefined, "no reading names W-3: no cost is asked");
+  assert.equal(historyRowRefusal(repo, "W-1"), undefined, "a row naming the opus: W-214 asks nothing more (its figures are W-495's)");
   row("<tr><td>W-2 shipped</td></tr>");
-  assert.equal(historyRowRefusal(repo, "W-1", home), "the checkpoint rides the done commit, and docs/design/dossier/progress-body.html adds no history row naming W-1; add it, then re-run", "no row names it: W-214's refusal, unchanged");
+  assert.equal(historyRowRefusal(repo, "W-1"), "the checkpoint rides the done commit, and docs/design/dossier/progress-body.html adds no history row naming W-1; add it, then re-run", "no row names it: W-214's refusal, unchanged");
 });
 
 test("W-430-b4 behaviour 4: past 300000 context tokens on a fresh status line a dispatch order waits, telling the session to let running work finish and refresh the handoff; a rung the verb performs still runs", { timeout: 600_000 }, () => {
