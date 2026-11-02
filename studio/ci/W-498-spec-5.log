@@ -1,0 +1,22 @@
+# opus: W-498
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T15:06:23.017Z
+# tree: tree:45ad748bbd0dcb2454b5ab75e8c46a374a1011e4
+# brief: briefs/W-498.md blob:28a3484808dfe0e61ff26b03125a0cc086620eca
+# ticket: {"opus":"W-498","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-498/studio","head":"86eaffa3ea7a850696be14182209bc17ec387160","brief":"28a3484808dfe0e61ff26b03125a0cc086620eca","at":"2026-11-02T15:06:12.963Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-498-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — build review round 2's S1 (ci/W-498-review-2.log #1) is inside the stated domain: brief:66 already compares a non-ASCII path byte for byte and brief:48 already renders each path through `clean` only; the defect is reused code the promise leaned on, `whyLine`'s `one` (packages/cli/src/next.ts:107, `\s+` collapsed and trimmed, which reads U+FEFF, U+00A0 and U+3000 as whitespace and folds a run of spaces), so the domain stays and the rendering is now a named requirement — check: brief:48, brief:66, packages/cli/src/next.ts:110
+2. advisory — revision 3 changes three lines in place (no line moves): brief:3 the status, brief:39 Files owned names `whyLine` in next.ts, brief:48 requires an `uncut` why printed without `one`, pinned by row W-498-f3 naming each BOM-prefixed path with its BOM plus a U+00A0 path and a two-space path byte for byte, with every W-377 row (the other uncut why) green; a one-line builder fix round, no new file, no code-owned path — check: brief:3, brief:39, brief:48
+3. advisory — round 1's class instance (invalid UTF-8 read as U+FFFD) stays closed by the strict decode at packages/cli/src/next.ts:1777 and rows W-498-f1 and W-498-f4, as round 2 found; the identity comparison itself is byte-faithful, only the report's rendering is not — check: ci/W-498-review-2.log, packages/cli/src/next-review.test.ts:2378
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072, D-085 class loop), brief revision 3 at `studio/briefs/W-498.md`: the BOM form is in domain; the fix round prints an uncut why without `one` and W-498-f3 pins it; one behaviour, 1 point, no code-owned path.

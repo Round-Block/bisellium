@@ -21,6 +21,7 @@
  * `/proc` for EVERY health read (including the verb's own `/proc/self/stat`),
  * honoured only when `BISELLIUM_TEST_CLOCK=1` is also set; so is `--now`.
  */
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync, type Dirent } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -86,6 +87,8 @@ const NEXT_USAGE =
   "       bisellium next --all [--studio <dir>] [--repo <dir>]";
 
 const TRUNK = "refs/heads/master";
+/** W-498: the trunk an opus branch is rebased onto and reviewed against: the review rung's conflict check and its Files owned diff. */
+const ORIGIN_TRUNK = "refs/remotes/origin/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
 /** W-214: the checkpoint's history page; while master keeps it, the done commit carries a row naming the opus. */
 const HISTORY = "docs/design/dossier/progress-body.html";
@@ -105,7 +108,8 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v !== 
 const one = (text: string): string => text.replace(/\s+/g, " ").trim();
 // W-377: a line that opens with UNCUT is printed whole; every other line is cut at 1000 characters (`say`)
 const UNCUT = "\u0001";
-const whyLine = (d: Derived): string => `${d.uncut === true ? UNCUT : ""}why: ${one(d.why)}`;
+// W-498: an uncut why skips `one`, which would strip U+FEFF and collapse spaces; `say`'s `clean` still maps controls to spaces
+const whyLine = (d: Derived): string => (d.uncut === true ? `${UNCUT}why: ${d.why}` : `why: ${one(d.why)}`);
 const esc = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const recordRel = (id: string): string => `opera/${id}.md`;
 const briefRel = (id: string): string => `briefs/${id}.md`;
@@ -1279,6 +1283,10 @@ export function deriveNext(f: Facts): Derived {
         inputs: [briefRel(id), ...(gate?.evidence === undefined ? [] : [gate.evidence]), fixCheck.census],
         extra: [["open", owned.join(" | ")], ...fixes],
       });
+    // W-498 (D-076 D): a path the branch changes outside its committed brief's Files owned holds before the suite and the
+    // review; the producer revises the brief (a spec amendment) or reverts the path
+    const breach = boundaryBreach(f);
+    if (breach !== undefined) return { ...hold("build", breach), uncut: true };
     // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
     const gates = f.gates();
     // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
@@ -1308,7 +1316,7 @@ export function deriveNext(f: Facts): Derived {
     const uiBranch = [...f.uiReviewProblems(), ...(superseded === undefined ? [] : [superseded])];
     if (!(gate !== undefined && gate.status === "passed" && current(gate)) || uiBranch.length > 0) {
       const branchRef = `refs/heads/opus/${id}`;
-      const trunkConflict = mergeTreeConflict(f.repo, "refs/remotes/origin/master", branchRef);
+      const trunkConflict = mergeTreeConflict(f.repo, ORIGIN_TRUNK, branchRef);
       if ("error" in trunkConflict) return hold("review", `${trunkConflict.error}; no review is ordered`);
       if (trunkConflict.conflict)
         return named(
@@ -1720,6 +1728,59 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
   return { status: g["status"], evidence, tree: round.tree, round: round.n, brief: round.brief };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
+/**
+ * W-498 fix 1: the paths `git diff --name-only --no-renames -z <base>...<head>` lists, as `diffPaths` reads them but from the
+ * raw bytes: each NUL-split entry is decoded as UTF-8, and `valid` is false for an entry that is not valid UTF-8 (its text then
+ * carries U+FFFD, `diffPaths`'s rendering). Such a path is no faithful round trip of Git's bytes, so it can never be proven
+ * owned; a valid path, U+FFFD included, is compared as written. Undefined when git fails, times out or overflows.
+ */
+function rawDiffPaths(repo: string, base: string, head: string): { text: string; valid: boolean }[] | undefined {
+  const r = spawnSync("git", ["diff", "--name-only", "--no-renames", "-z", `${base}...${head}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "ignore"], timeout: 120_000, maxBuffer: 64 * 1024 * 1024 });
+  if (r.status !== 0 || r.error !== undefined) return undefined;
+  const strict = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+  const loose = new TextDecoder("utf-8", { ignoreBOM: true });
+  const out: { text: string; valid: boolean }[] = [];
+  let from = 0;
+  for (let at = r.stdout.indexOf(0, from); from < r.stdout.length; at = r.stdout.indexOf(0, from)) {
+    const end = at === -1 ? r.stdout.length : at;
+    const raw = r.stdout.subarray(from, end);
+    from = end + 1;
+    if (raw.length === 0) continue;
+    try {
+      out.push({ text: strict.decode(raw), valid: true });
+    } catch {
+      out.push({ text: loose.decode(raw), valid: false });
+    }
+  }
+  return out;
+}
+/**
+ * W-498 (D-076 D): why opus/<id> may not reach the suite or the review, or undefined. Every path `rawDiffPaths` lists for
+ * origin/master...opus/<id> (the merge base's diff, so a rebase's conflict resolutions count, and trunk's own moves do not)
+ * that is not an officina record (`recordOnly`, the one list certify reads) must be named by the committed branch brief's
+ * Files owned (`ownedFiles`, the blob the spec gate judged, never the worktree's): a span equal to the path, or a span
+ * ending in `/` that the path opens with. A span holding a glob is not expanded. Each read fails closed: a diff or a brief
+ * git cannot read, or whose bytes are not valid UTF-8 (decoded fatally, a BOM kept), is a hold's why. Uncommitted worktree edits are not read; `verify` refuses to certify a dirty tree.
+ */
+function boundaryBreach(f: Facts): string | undefined {
+  const head = `refs/heads/opus/${f.id}`;
+  const paths = rawDiffPaths(f.repo, ORIGIN_TRUNK, head);
+  if (paths === undefined) return `could not read what opus/${f.id} changes against origin/master (git diff failed), so its paths cannot be checked against Files owned (W-498)`;
+  const source = paths.filter((p) => !recordOnly([p.text], f.studioRel));
+  if (source.length === 0) return undefined;
+  const brief = spawnSync("git", ["cat-file", "blob", `${head}:${join(f.studioRel, briefRel(f.id))}`], { cwd: f.repo, encoding: "buffer", stdio: ["ignore", "pipe", "ignore"], timeout: 120_000, maxBuffer: 16 * 1024 * 1024 });
+  if (brief.status !== 0 || brief.error !== undefined) return `${briefRel(f.id)} is not a readable blob on ${head}, so the paths opus/${f.id} changes cannot be checked against Files owned (W-498)`;
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(brief.stdout);
+  } catch {
+    return `${briefRel(f.id)} on ${head} is not valid UTF-8, so the paths opus/${f.id} changes cannot be checked against Files owned (W-498)`;
+  }
+  const owned = ownedFiles(text);
+  const outside = source.filter((p) => !p.valid || !owned.some((o) => o === p.text || (o.endsWith("/") && p.text.startsWith(o)))).map((p) => p.text);
+  if (outside.length === 0) return undefined;
+  return `opus/${f.id} changes ${outside.length} path(s) outside its brief's Files owned, in its diff against origin/master (a rebase's resolutions included): ${outside.map((p) => clean(p)).join(", ")}; revise the brief to own them (a spec amendment, signed again) or revert them on opus/${f.id} (W-498)`;
+}
 /**
  * W-328 (D-106 A): an open line is the builder's when a `path:line` its lead names (its first backticked span when it opens
  * with one, else its text before the first ` — `), a leading `./` dropped, is exactly a Files owned path, or when its lead

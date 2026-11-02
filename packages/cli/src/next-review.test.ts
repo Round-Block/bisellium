@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, specHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceOrigin, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, specHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
 const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1 [severity: S1]. check: none: fixture`;
 const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1 [severity: S1]. check: none: fixture`;
@@ -2224,4 +2224,176 @@ test("W-452-b4 behaviour 4: a UI ruling by the design lead the manifest's spec_s
   expectStep(next(w, [OPUS, ...BUDGET]), "pr", "held", "a ruling by another seat holds the pr");
   by("patron", "the Patron's own ruling");
   expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a by: patron ruling reads as before, with spec_seats declared");
+});
+
+// ---------------------------------------------------------------------------
+// W-498 (D-076 D): a path opus/<id> changes against origin/master (the merge base's diff, so a rebase's resolutions count)
+// that is neither an officina record nor named by the committed branch brief's Files owned holds before the suite and the
+// review, naming the path and the two routes. The fixture brief owns `source.txt` and the fixture rows' builder paths, none
+// under tests-serve/ and not README.md.
+// ---------------------------------------------------------------------------
+const w498Why = (paths: string[]): string =>
+  `opus/${OPUS} changes ${paths.length} path(s) outside its brief's Files owned, in its diff against origin/master (a rebase's resolutions included): ${paths.join(", ")}; revise the brief to own them (a spec amendment, signed again) or revert them on opus/${OPUS} (W-498)`;
+function w498Held(o: Out, paths: string[], row: string): void {
+  expectStep(o, "build", "held", row);
+  assert.equal(o.kv.get("why"), w498Why(paths), ran(`${row}: why names the paths and the two routes`, o));
+  assert.equal(o.kv.has("role"), false, ran(`${row}: no builder or censor is dispatched`, o));
+  assert.equal(o.kv.has("command"), false, ran(`${row}: no suite or review command is named`, o));
+}
+function w498Commit(w: World, rel: string, text: string, message: string): void {
+  put(w.wt, rel, text);
+  commit(w.wt, message);
+  writeGates(w);
+}
+
+test("W-498-b1 behaviour 1: a path opus/<id> changes outside its committed brief's Files owned holds the suite and the review, naming the path and the two routes", { timeout: 1_800_000 }, () => {
+  const g = world("w498-b1", "build", { automated: true });
+  // an unowned test path committed on the branch, its gates current: held before review, never review round 1
+  w498Commit(g, "tests-serve/sibling.spec.ts", "a sibling's test\n", "fix: an edit outside Files owned");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve/sibling.spec.ts"], "an unowned test path, gates current");
+  // the review perform re-derives and is refused: no round is spent
+  const perform = next(g, [OPUS, ...BUDGET, "--perform", "--expect", "review"]);
+  assert.notEqual(perform.status, 0, ran("the review perform is refused", perform));
+  assert.equal(existsSync(join(g.wtStudio, "ci", `${OPUS}-review-1.log`)), false, ran("no review log is written", perform));
+  // the gates not yet run at this tree: held before the suite, so no producer suite order and no builder
+  w498Commit(g, "tests-serve/sibling.spec.ts", "a second edit\n", "fix: another edit outside Files owned");
+  put(g.wt, "source.txt", "an owned edit, gates not run\n");
+  commit(g.wt, "feat: an owned edit");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve/sibling.spec.ts"], "gates stale: held before the suite");
+  writeGates(g);
+  // Files owned is the committed branch brief's: the worktree's brief edited to own the path does not count
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `tests-serve/sibling.spec.ts`"));
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve/sibling.spec.ts"], "an uncommitted brief revision does not own the path");
+  // route 1: the brief revised and committed owns it (a span equal to the path), so review round 1 is named
+  commit(g.wt, `studio(${OPUS}): Files owned revised`);
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "the committed brief revision owns the path: review round 1");
+  // a folder span (ending in /) owns every path under it, and only those
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `tests-serve/`"));
+  commit(g.wt, `studio(${OPUS}): a folder owned`);
+  w498Commit(g, "tests-serve/deeper/other.spec.ts", "under the folder\n", "test: under the owned folder");
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "a path under an owned folder span: review round 1");
+  w498Commit(g, "tests-serve-x/near.spec.ts", "beside the folder\n", "test: beside the owned folder");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve-x/near.spec.ts"], "a path that only opens like the folder name is not under it");
+  // route 2: the path reverted; the officina records (studio/, the handoff, a dossier page) are never counted
+  git(g.wt, ["rm", "-q", "-r", "tests-serve-x"]);
+  commit(g.wt, "revert: the edit outside Files owned");
+  put(g.wt, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Queue\n\n- (a records line)\n");
+  put(g.wt, "docs/design/dossier/page.html", "<p>a dossier page</p>\n");
+  commit(g.wt, "chore: officina records");
+  writeGates(g);
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "reverted, records only beside owned paths: review round 1");
+  // a rebase's conflict resolution counts: origin/master moves source.txt and README.md; the resolution keeps the branch's
+  // source.txt and the old README.md, so the branch now changes README.md against origin/master
+  advanceOrigin(g, "README.md", "trunk moved\n");
+  advanceOrigin(g, "source.txt", "trunk's source\n");
+  git(g.wt, ["fetch", "-q", "origin"]);
+  const rebase = spawnSync("git", ["rebase", "-q", "refs/remotes/origin/master"], { cwd: g.wt, env: SETUP_ENV, encoding: "utf8", timeout: 60_000 });
+  assert.notEqual(rebase.status, 0, `fixture: the rebase stops on a conflict: ${rebase.stdout}${rebase.stderr}`);
+  while (spawnSync("git", ["rev-parse", "-q", "--verify", "REBASE_HEAD"], { cwd: g.wt, env: SETUP_ENV }).status === 0) {
+    git(g.wt, ["checkout", "-q", "--theirs", "--", "."]);
+    put(g.wt, "README.md", "fixture\n");
+    git(g.wt, ["add", "-A"]);
+    spawnSync("git", ["-c", "core.editor=true", "rebase", "--continue"], { cwd: g.wt, env: SETUP_ENV, encoding: "utf8", timeout: 60_000 });
+  }
+  writeGates(g);
+  w498Held(next(g, [OPUS, ...BUDGET]), ["README.md"], "a rebase resolution that changes README.md against origin/master");
+  // trunk's own paths are not the branch's: with README.md restored to trunk's, review is named again
+  git(g.wt, ["checkout", "-q", "refs/remotes/origin/master", "--", "README.md"]);
+  commit(g.wt, "fix: the resolution restores trunk's README.md");
+  writeGates(g);
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "trunk's moved paths are not counted: review round 1");
+  // a hold over 1000 characters is printed whole: every path and both routes (W-377's uncut why)
+  const bulk = Array.from({ length: 14 }, (_, i) => `bulk/a-long-generated-path-name-for-the-uncut-why-${String(i).padStart(2, "0")}.spec.ts`);
+  for (const rel of bulk) put(g.wt, rel, "bulk\n");
+  commit(g.wt, "fix: a bulk edit outside Files owned");
+  writeGates(g);
+  const long = next(g, [OPUS, ...BUDGET]);
+  w498Held(long, bulk, "a hold over 1000 characters is printed whole");
+  assert.ok(w498Why(bulk).length > 1000, ran("fixture: the why is over 1000 characters", long));
+  // every read fails closed: an unreadable diff, and an unreadable committed brief once a source path changes
+  const noDiff = next(g, [OPUS, ...BUDGET], { env: { GIT_STUB_REAL: failingGit("w498-b1-diff", ["diff --name-only"]) } });
+  expectStep(noDiff, "build", "held", "an unreadable diff holds");
+  assert.equal(noDiff.kv.get("why"), `could not read what opus/${OPUS} changes against origin/master (git diff failed), so its paths cannot be checked against Files owned (W-498)`, ran("an unreadable diff: why", noDiff));
+  const noBrief = next(g, [OPUS, ...BUDGET], { env: { GIT_STUB_REAL: failingGit("w498-b1-blob", ["cat-file blob"]) } });
+  expectStep(noBrief, "build", "held", "an unreadable committed brief holds");
+  assert.equal(noBrief.kv.get("why"), `briefs/${OPUS}.md is not a readable blob on refs/heads/opus/${OPUS}, so the paths opus/${OPUS} changes cannot be checked against Files owned (W-498)`, ran("an unreadable committed brief: why", noBrief));
+});
+
+// W-498 review round 1 (D-086 A): `diffPaths` decodes Git's path bytes as UTF-8, so a changed `x<FF>.txt` reads as `x\uFFFD.txt`.
+// A path whose decoded form holds U+FFFD is no faithful round trip of Git's bytes: it can never be proven owned, even by a
+// brief that spells the replacement character, so it holds the ladder and is named.
+test("W-498-f1 fix 1: a changed path whose bytes are not valid UTF-8 is never owned by the brief's U+FFFD spelling", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f1", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `x\uFFFD.txt`"));
+  commit(g.wt, `studio(${OPUS}): Files owned names the replacement spelling`);
+  const raw = Buffer.concat([Buffer.from(`${g.wt}/x`), Buffer.from([0xff]), Buffer.from(".txt")]);
+  writeFileSync(raw, "a path of invalid UTF-8\n");
+  commit(g.wt, "fix: a path with the byte 0xFF");
+  writeGates(g);
+  assert.equal(existsSync(raw), true, "fixture: the raw-byte path is committed");
+  const held = next(g, [OPUS, ...BUDGET]);
+  // a plain message: the unfixed ladder's report carries a dispatch-activity read error that is not this row's assertion
+  assert.equal(held.first, `next: ${OPUS} build held`, "a raw 0xFF path is not owned by the brief's U+FFFD spelling: the build holds");
+  w498Held(held, ["x\uFFFD.txt"], "a raw 0xFF path is not owned by the brief's U+FFFD spelling");
+});
+
+// W-498 fix 1, second pass: only a path whose Git bytes are not valid UTF-8 is held as unprovable. A valid-UTF-8 path that
+// genuinely holds U+FFFD is compared byte for byte like any other: an exact span and a folder span own it.
+test("W-498-f2 fix 1: a valid UTF-8 path holding U+FFFD is owned by an exact span and by a folder span", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f2", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `x\uFFFD.txt`\n- `dir\uFFFD/`"));
+  commit(g.wt, `studio(${OPUS}): Files owned names the replacement spellings`);
+  w498Commit(g, "x\uFFFD.txt", "a valid path holding U+FFFD\n", "feat: an exactly owned U+FFFD path");
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "an exact span owns a valid U+FFFD path: review round 1");
+  w498Commit(g, "dir\uFFFD/child.txt", "under a U+FFFD folder\n", "feat: a path under an owned U+FFFD folder");
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "a folder span owns a path under a valid U+FFFD folder: review round 1");
+  w498Commit(g, "dir\uFFFDX/near.txt", "beside the folder\n", "feat: a sibling of the owned U+FFFD folder");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["dir\uFFFDX/near.txt"], "a sibling that only opens like the folder is not owned");
+});
+
+// W-498 fix 1, third pass: a path whose Git bytes start with a UTF-8 BOM (EF BB BF) keeps the BOM in its name. It is not the
+// BOM-less path: not owned by that path's span, and not an officina record at the studio, handoff or dossier spelling. The
+// report prints the uncut why byte for byte, so the BOM, a U+00A0 and a run of two spaces are named as `clean` renders them.
+test("W-498-f3 fix 1: a path with a leading BOM is neither owned nor a record as its BOM-less spelling", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f3", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `x.txt`\n- `dir/`"));
+  commit(g.wt, `studio(${OPUS}): Files owned names x.txt and dir/`);
+  const bom = ["dir/child.txt", "docs/SESSION-HANDOFF.md", "docs/design/dossier/page.html", "studio/rogue.ts", "x.txt"].map((p) => `\uFEFF${p}`);
+  const nbsp = "tests-serve/a\u00A0b.spec.ts";
+  const spaced = "tests-serve/a  b.spec.ts";
+  for (const rel of [...bom, nbsp, spaced]) put(g.wt, rel, "a path with a BOM, a U+00A0 or two spaces\n");
+  commit(g.wt, "fix: BOM-prefixed, U+00A0 and double-space paths");
+  writeGates(g);
+  const held = next(g, [OPUS, ...BUDGET]);
+  w498Held(held, [spaced, nbsp, ...bom], "BOM-prefixed, U+00A0 and double-space paths are held and named byte for byte");
+  const why = held.kv.get("why") ?? "";
+  for (const p of bom) assert.ok(why.includes(`: ${p}`) || why.includes(`, ${p}`), ran(`the BOM-prefixed path ${JSON.stringify(p)} is named with its BOM`, held));
+  assert.ok(why.includes(nbsp), ran("the U+00A0 path is named with its U+00A0", held));
+  assert.ok(why.includes(spaced), ran("the double-space path is named with both spaces", held));
+});
+
+// W-498 fix 1, fourth pass: the committed brief is read as bytes too. A Files owned span whose bytes are not valid UTF-8
+// (`x<FF>.txt`) decodes to U+FFFD, so it must not own the valid path `x�.txt`: the unreadable brief holds the build.
+test("W-498-f4 fix 1: a committed brief whose bytes are not valid UTF-8 does not own a valid U+FFFD path", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f4", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile);
+  const anchor = Buffer.from("- `source.txt`");
+  const at = signed.indexOf(anchor);
+  assert.notEqual(at, -1, "fixture: the brief owns source.txt");
+  const at2 = at + anchor.length;
+  writeFileSync(briefFile, Buffer.concat([signed.subarray(0, at2), Buffer.from("\n- `x"), Buffer.from([0xff]), Buffer.from(".txt`"), signed.subarray(at2)]));
+  commit(g.wt, `studio(${OPUS}): Files owned holds a span of invalid UTF-8`);
+  w498Commit(g, "x�.txt", "a valid path holding U+FFFD\n", "feat: a valid U+FFFD path beside an invalid brief span");
+  const held = next(g, [OPUS, ...BUDGET]);
+  assert.equal(held.first, `next: ${OPUS} build held`, "an invalid-UTF-8 brief span does not own the valid U+FFFD path: the build holds");
+  assert.equal(held.kv.get("why"), `briefs/${OPUS}.md on refs/heads/opus/${OPUS} is not valid UTF-8, so the paths opus/${OPUS} changes cannot be checked against Files owned (W-498)`, ran("an invalid-UTF-8 committed brief: why", held));
 });

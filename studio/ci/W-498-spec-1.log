@@ -1,0 +1,23 @@
+# opus: W-498
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T10:50:26.282Z
+# tree: tree:ac4ef93de69d1b91a38b0bf22c7ea92ca872aa43
+# brief: briefs/W-498.md blob:f91bafd750a480da7a98c6bca7a542c3444222b4
+# ticket: {"opus":"W-498","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"cf0997831720aff3f151684c27027b323b57aad9","brief":"f91bafd750a480da7a98c6bca7a542c3444222b4","at":"2026-11-02T10:50:14.256Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-498-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the class instance is reproduced at the head W-487's round 2 judged (b7151128: apps/web/tests-serve/w411.spec.ts outside Files owned), and the exact-or-folder rule finds no path outside on either in-flight branch (W-412, W-495, read against their committed, revised briefs) or on any of the last 28 merged opera — check: boundary-census.out, owned-census.out
+2. advisory — the enforcement point is the ladder's build rung before f.gates(), not ready (no code yet), not ci --opus/verify (pipeline files under D-063 §4, and verify also runs on master), and not the review perform alone (after the suite); every review order and perform re-derives through it and the merge-base diff carries rebase resolutions — check: brief:17, brief:19, brief:20, brief:21
+3. advisory — one behaviour: the red is accepted and fails at its declared assertion, green on behaviour 1's commit, ten kills all guarded, and the ledger passes the prototype's writer — check: red-accept.out, declared.out, kills.out, ledger-check.out
+4. advisory — seventeen existing rows flip on the check alone because their fixture builders commit paths the shared fixture brief did not own; the Codex test check named six (W-340-b2, W-328-b1, W-418-b2, W-462-b1, W-462-b2, W-462-b3), the run found eleven more (W-274-b1, seven W-377 rows, W-416-b2, W-452-b4, W-326-b3); all are named in Acceptance, the fixture brief owns the eleven paths and evidence/, and every next*.test.ts file passes whole on the tip with lint, format:check and typecheck — check: fixture-census.md, flips-tip.out, gates-proto.out, brief:84
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-498.md`: one behaviour, a path an opus branch changes outside its committed brief's Files owned holds the ladder at build before the suite and the review, naming the path and the two routes; prototype `prototype.mbox` over master 4b0df1fb; no code-owned path.
