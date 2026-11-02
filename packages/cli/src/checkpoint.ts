@@ -12,7 +12,7 @@ import { costPhrase, spanCost, type Cost, type Reading } from "./usage-reading.j
 export const FIGURES_SLOT = "{{figures}}";
 
 const esc = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const named = (id: string): RegExp => new RegExp(`(?<![\\w-])${esc(id)}(?![\\w-])`);
+const named = (id: string): RegExp => new RegExp(`(?<![\\w-])${esc(id)}(?![\\w-])`); // one-sided: W-214's own match of an opus id on the history page, reused; a non-ASCII letter beside an id is a stated limit
 
 /** A studio-relative reader (next's Src). */
 export interface SpecLogs {

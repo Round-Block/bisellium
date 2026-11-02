@@ -42,12 +42,13 @@ for (const id of ids) {
   const named = new RegExp(`<strong>${esc(id)} shipped \\(PR (\\d+)\\)</strong>`);
   const lines = page.split("\n");
   const rows = lines.flatMap((l, n) => (named.test(l) ? [n] : []));
-  if (rows.length !== 1) throw new Error(`${id}: ${rows.length} history rows name ${id} shipped; exactly one is expected`);
+  if (rows.length !== 1)
+    throw new Error(`${id}: ${rows.length} history rows name ${id} shipped; exactly one is expected`);
   const i = rows[0]!;
   const pr = named.exec(lines[i]!)![1]!;
   const land = git("log", "--first-parent", "--format=%H %cI %s", "master")
     .split("\n")
-    .find((l) => l.endsWith(`(#${pr})`) && new RegExp(`(?<![\\w-])${esc(id)}(?![\\w-])`).test(l));
+    .find((l) => l.endsWith(`(#${pr})`) && new RegExp(`(?<![\\w-])${esc(id)}(?![\\w-])`).test(l)); // one-sided: the same id match as done's, an ASCII id token
   if (land === undefined) throw new Error(`no master commit names ${id} and ends (#${pr})`);
   const greenlit = git(
     "log",
