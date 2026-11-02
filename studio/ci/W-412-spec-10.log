@@ -1,0 +1,22 @@
+# opus: W-412
+# phase: spec
+# round: 10
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: f894b137-88b1-42c7-8897-69a82a2f590b
+# session_reason: dc2cf997 cannot be resumed from claude -p in the sandbox (No conversation found); fresh reviewer session
+# outcome: passed
+# at: 2026-11-02T08:59:23.757Z
+# tree: tree:aa3edd4f13ee96c43fc7b75cf32eaf622029712e
+# brief: briefs/W-412.md blob:732d32d621f79dd0565f30b10b3950a548e3b103
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":".worktrees/W-412/studio","head":"bddddc6a59a4f06394ea9177d8adb5d052c3562a","brief":"732d32d621f79dd0565f30b10b3950a548e3b103","at":"2026-11-02T08:59:18.504Z"}
+
+## Findings
+1. advisory — brief:39 [severity: S4] "Line 1549, change from `--accent-cyan`" names a line that is not in base 4b0df1fb; the prototype adds it. With `--ink`, the Inbox decision-record link no longer matches the drawer's cyan link for the same binding (tokens.test.ts:166–167). That choice keeps a test green; the Patron did not rule it, and the brief's Defaults do not ask them. Replacement text: "- `apps/web/src/components/w025.css`: contain the plain definition-list bindings in the drawer and Inbox; the new `.inbox__decision-evidence-row a` uses `color: var(--ink)` with its default underline (no new accent consumer, so `W-366-b2` stays unflipped); a cyan link matching the drawer is a Default for the Patron." [class: ui×link-colour-by-test-not-screen] — check: apps/web/test/tokens.test.ts
+
+## Earlier findings
+
+## Verdict
+The rebase is backed by evidence: the mbox tree matches e66997c8, and W-463-b3, the BoardDrawer order row and W-411 b1–b4 all pass; with no new reader and no unguarded promise, only one advisory remains.
+Claude week 59%, 5h 22% | Codex week 88% | context 171k of 300k
+VERDICT: PASS
