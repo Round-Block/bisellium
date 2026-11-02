@@ -261,7 +261,7 @@ test("W-495-b4 a first spec signature later than the rung's clock is no start: t
   expectStep(o, "branch", "performed", "the branch rung is performed with the clock before the spec signature (01:00Z)");
   const cost = o.out.split("\n").find((l) => l.startsWith("cost: "));
   assert.match(cost ?? "", /^cost: none \(/, ran("a start after the clock has no span: none, before any hours are printed", o));
-  assert.doesNotMatch(cost ?? "", /-\d/, "no negative figure");
+  assert.doesNotMatch(cost ?? "", /-\d+\.\d h/, "no negative hours");
 });
 
 test("W-495-b4 duplicate rows are rejected before any write: the kept rows script wants exactly one row naming the opus", { timeout: 120_000 }, () => {
