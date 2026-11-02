@@ -2356,3 +2356,18 @@ test("W-498-f2 fix 1: a valid UTF-8 path holding U+FFFD is owned by an exact spa
   w498Commit(g, "dir\uFFFDX/near.txt", "beside the folder\n", "feat: a sibling of the owned U+FFFD folder");
   w498Held(next(g, [OPUS, ...BUDGET]), ["dir\uFFFDX/near.txt"], "a sibling that only opens like the folder is not owned");
 });
+
+// W-498 fix 1, third pass: a path whose Git bytes start with a UTF-8 BOM (EF BB BF) keeps the BOM in its name. It is not the
+// BOM-less path: not owned by that path's span, and not an officina record at the studio, handoff or dossier spelling.
+test("W-498-f3 fix 1: a path with a leading BOM is neither owned nor a record as its BOM-less spelling", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f3", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `x.txt`\n- `dir/`"));
+  commit(g.wt, `studio(${OPUS}): Files owned names x.txt and dir/`);
+  const bom = ["dir/child.txt", "docs/SESSION-HANDOFF.md", "docs/design/dossier/page.html", "studio/rogue.ts", "x.txt"].map((p) => `﻿${p}`);
+  for (const rel of bom) put(g.wt, rel, "a BOM-prefixed path\n");
+  commit(g.wt, "fix: BOM-prefixed paths");
+  writeGates(g);
+  w498Held(next(g, [OPUS, ...BUDGET]), bom, "BOM-prefixed paths are held and named");
+});
