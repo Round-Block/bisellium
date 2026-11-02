@@ -1735,8 +1735,8 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 function rawDiffPaths(repo: string, base: string, head: string): { text: string; valid: boolean }[] | undefined {
   const r = spawnSync("git", ["diff", "--name-only", "--no-renames", "-z", `${base}...${head}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "ignore"], timeout: 120_000, maxBuffer: 64 * 1024 * 1024 });
   if (r.status !== 0 || r.error !== undefined) return undefined;
-  const strict = new TextDecoder("utf-8", { fatal: true });
-  const loose = new TextDecoder("utf-8");
+  const strict = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+  const loose = new TextDecoder("utf-8", { ignoreBOM: true });
   const out: { text: string; valid: boolean }[] = [];
   let from = 0;
   for (let at = r.stdout.indexOf(0, from); from < r.stdout.length; at = r.stdout.indexOf(0, from)) {
