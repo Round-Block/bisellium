@@ -1,0 +1,22 @@
+# opus: W-498
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19c1a-f48d-7422-89a5-01fa688ff746
+# outcome: passed
+# at: 2026-11-02T16:16:37.006Z
+# tree: tree:5cfdb8b9e65c653a67e61f314f9ba4871622ca63
+# brief: briefs/W-498.md blob:28a3484808dfe0e61ff26b03125a0cc086620eca
+# ticket: {"opus":"W-498","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-498/studio","head":"6510249c07dcd11503019390c89289956f0de62f","brief":"28a3484808dfe0e61ff26b03125a0cc086620eca","at":"2026-11-02T16:16:06.754Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-498-review-2.log #1: closed — packages/cli/src/next.ts:110 now bypasses `one` for every uncut why, and W-498-f3 asserts preservation of U+FEFF, U+00A0, and consecutive spaces while the existing W-377 uncut cases remain green.
+
+## Verdict
+The change closes the standing diagnostic-normalization defect without introducing a blocking regression.
+
+VERDICT: PASS
