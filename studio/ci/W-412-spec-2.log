@@ -1,0 +1,22 @@
+# opus: W-412
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a7bfa3de-5899-4751-9cf8-30a21ed4bbe5
+# outcome: failed
+# at: 2026-11-02T06:37:33.882Z
+# tree: tree:64ccfe095234d1523f8da77980391388fdb3b4c6
+# brief: briefs/W-412.md blob:65c9b9a0d7fe75e67e1a0965a559b2ac11b92c8c
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"00fddd6e9123f3365656c4512f29576e5386cae0","brief":"65c9b9a0d7fe75e67e1a0965a559b2ac11b92c8c","at":"2026-11-02T06:37:33.153Z"}
+
+## Findings
+1. blocking — brief:17 The 30 s/focus `useVisibleRefresh` silently overwrites `attentionRef`'s `evidenceRevision` and the displayed binding, so the preflight compares against the latest poll, not what the Patron read. A disappeared opus also becomes `boardEntry: false`, which skips the preflight, and the answer posts. Replace with: "Pin the snapshot per petition when the decision is first shown. A refresh never overwrites it but marks the decision stale. Refuse if the row loses `boardEntry`." [severity: S1] [design: changes] [class: ui×reader-disagreement] — check: none: a w412 served row that fires `focus` after the opera swap and expects refusal and 0 POSTs
+2. advisory — brief:48 Replace "is refused before `submitAnswer`" with "is refused against the snapshot pinned at first display". [severity: S2] [class: ui×promise-overreach] — check: apps/web/tests-serve/w412.spec.ts
+3. advisory — brief:42 The prototype binding has no `label`, so the Inbox headings show gate ids where the drawer shows names, and the Inbox record is plain text where the drawer has a link. Replace with: "the Inbox heads each binding by `label` and links its record". [severity: S4] [class: ui×cross-surface-consistency] — check: none: a b2 served assertion for "Patron call"
+4. advisory — brief:68 Replace with: "b2's Node red is a source-order guard; the served row carries the promise." [severity: S4] [class: test×source-text-oracle] — check: apps/web/test/w412.test.ts
+
+## Verdict
+The background refresh silently replaces the evidence snapshot the Patron saw, so the stale-verdict promise fails; fixing it changes the design.
+Claude week 57%, 5h 9% | Codex week 86% | context 207k of 300k
+VERDICT: FAIL

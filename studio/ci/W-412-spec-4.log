@@ -1,0 +1,23 @@
+# opus: W-412
+# phase: spec
+# round: 4
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 68e01e30-d38c-4360-b4f3-fd85901357fd
+# session_reason: the round-2 reviewer ran by claude -p in the sandbox and cannot be resumed; a fresh session reviewed the delta
+# outcome: passed
+# at: 2026-11-02T06:51:09.344Z
+# tree: tree:64ccfe095234d1523f8da77980391388fdb3b4c6
+# brief: briefs/W-412.md blob:2a7ef3a088198e67b7a99aedbff0f3769f8c984b
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"00fddd6e9123f3365656c4512f29576e5386cae0","brief":"2a7ef3a088198e67b7a99aedbff0f3769f8c984b","at":"2026-11-02T06:51:07.989Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-412-spec-2.log #1: closed — The brief now says to "Pin the snapshot per petition when the decision is first shown", that a refresh "never overwrites it but marks the decision stale", and to "Refuse if the row loses `boardEntry`" (brief Intent, Files owned and Behaviour 2, plus Default 3/4). The prototype implements this. `pinDecisionEvidence` is first-write-wins per petition id. `retainPinnedDecisionEvidence` runs on every `refreshInbox`: it puts back the pinned revision and bindings and sets `evidenceStale`. The submit path refuses when `pinned.boardEntry` is set but `shown?.boardEntry !== true`, and otherwise compares the fresh opera read against the pinned revision (prototype.mbox:797-877). The served b2 row fires `focus` after swapping opera to treeB, or to `[]` at 390 (the lost-row case). It then asserts the stale note, that the treeA binding is still shown with no treeB, the refusal text, `posts === 0` and that the draft is kept (prototype.mbox:406-416).
+
+## Verdict
+The round-3 change fixes the one standing blocker in the brief, the prototype and its served focus-refresh row, and no new blocking defect appears in the delta.
+Claude week 57%, 5h 10% | Codex week 86% | context 219k of 300k
+VERDICT: PASS

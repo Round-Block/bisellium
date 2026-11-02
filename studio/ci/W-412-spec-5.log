@@ -1,0 +1,26 @@
+# opus: W-412
+# phase: spec
+# round: 5
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19b07-640c-7080-a3b3-503c3aecd333
+# outcome: revise
+# at: 2026-11-02T06:54:06.156Z
+# tree: tree:64ccfe095234d1523f8da77980391388fdb3b4c6
+# dispatch_prompt: ci/W-412-ui-prompt-5.md
+# design_digest: sha256:55c2a1694ebca5eb7aa925212eea7eff6724e112af4daebdbb9accf9df4dc80b
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":5,"actor":"ui-lead","studio":"studio","head":"00fddd6e9123f3365656c4512f29576e5386cae0","brief":"2a7ef3a088198e67b7a99aedbff0f3769f8c984b","at":"2026-11-02T06:51:34.231Z"}
+
+## Findings
+
+1. blocking — brief:106 — The agent-written instruction to review current Board evidence also appears when the linked opus has disappeared. In `inbox-stale-390.png`, the Board action is gone, but the refusal neither explains that disappearance nor acknowledges that the requested evidence is unavailable. — replace with: “For changed evidence on an available Board item, instruct the Patron to review current Board evidence. For a lost Board link, say: ‘The linked Board item is no longer available for this decision. Verdict not submitted. Your draft is kept.’ Retain the original binding and mark it stale.” — check: apps/web/tests-serve/w412.spec.ts; /home/edckt/.bisellium-evidence/W-412-spec/shots/inbox-stale-390.png
+
+## Recommendation
+
+This is my first input on W-412; I have no earlier findings to reassess.
+Default 1 is appropriate: quiet labels and unboxed definition lists keep each gate’s three facts together, preserve complete values through wrapping, and respect W-493’s record-first order; boxes or a table would add no useful distinction.
+Default 2 correctly repeats the binding above the Inbox controls, with readable gate headings and actionable record paths.
+Default 3 correctly preserves the evidence first read and the reason draft; the stale notice and refusal remain legible at 1280, 640 and 390.
+Default 4 correctly leaves standalone questions unbound and refuses disappeared links, but the disappearance needs its own truthful explanation.
+The architect can resolve this with a brief and copy revision without changing the binding design.
+Verdict: revise

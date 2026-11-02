@@ -1,0 +1,21 @@
+# opus: W-412
+# phase: spec
+# round: 3
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19ada-f801-75a1-99d3-6d41392a6f26
+# outcome: passed
+# at: 2026-11-02T06:49:21.034Z
+# tree: tree:64ccfe095234d1523f8da77980391388fdb3b4c6
+# brief: briefs/W-412.md blob:2a7ef3a088198e67b7a99aedbff0f3769f8c984b
+# ticket: {"opus":"W-412","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"00fddd6e9123f3365656c4512f29576e5386cae0","brief":"2a7ef3a088198e67b7a99aedbff0f3769f8c984b","at":"2026-11-02T06:49:15.110Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-412-spec/promise-ledger.md
+
+## Findings
+
+No findings
+
+## Verdict
+
+passed — signature round 3 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-412.md`; each petition pins its evidence snapshot at first display, focus refresh retains that binding and marks changed or lost Board rows stale, the served row proves refusal with zero answer POSTs, both Genuine reds cite regenerated command-headed TAP output, all four prototype commits build independently, and no record write, next or verdict operation was performed.
