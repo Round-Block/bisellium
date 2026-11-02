@@ -6,9 +6,11 @@
  * A module the tree does not hold yet is an assertion failure of the row, never a module-load failure of the file.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import { NOW_ISO, OPUS, T, branchExists, commit, expectHeld, expectStep, git, mergedList, next, outLines, put, ran, scenario, touchHandoff, world } from "./next-world.test.js";
 
@@ -250,4 +252,26 @@ test("W-495-b4 behaviour 4: each rung's cost line is the plans' whole use from t
   expectStep(o, "branch", "performed", "the branch rung is performed");
   const cost = o.out.split("\n").find((l) => l.startsWith("cost: "));
   assert.equal(cost, "cost: Claude week +5%, Codex week +6% over 11.0 h since the first spec signature", ran("the cost from the last reading before the first spec signature (01:00Z) to the rung's reading (12:00Z)", o));
+});
+
+test("W-495-b4 duplicate rows are rejected before any write: the kept rows script wants exactly one row naming the opus", { timeout: 120_000 }, () => {
+  const repo = scratchHome("rows");
+  const row = (n: number): string => `<tr><td>1</td><td><strong>W-1 shipped (PR ${n})</strong></td><td>Cycle 10 min, Claude week +0%, Codex week +0% over 1.0 h. Review passed.</td></tr>`;
+  const mast = "<p>cascade 1: W-1 shipped PR 5 and more; cycle 10 min</p>\n";
+  const script = fileURLToPath(new URL("../../../scripts/checkpoint-rows.mts", import.meta.url));
+  const run = (page: string): { status: number | null; stderr: string; page: string; mast: string } => {
+    write(join(repo, "docs/design/dossier/progress-body.html"), page);
+    write(join(repo, "docs/design/dossier/body.html"), mast);
+    const r = spawnSync(process.execPath, ["--import", "tsx", script, repo, "W-1"], { encoding: "utf8" });
+    return { status: r.status, stderr: r.stderr, page: readFileSync(join(repo, "docs/design/dossier/progress-body.html"), "utf8"), mast: readFileSync(join(repo, "docs/design/dossier/body.html"), "utf8") };
+  };
+  const twice = `${row(5)}\n${row(6)}\n`;
+  const dup = run(twice);
+  assert.notEqual(dup.status, 0, "two rows naming the opus stop the script");
+  assert.match(dup.stderr, /W-1: 2 history rows name W-1 shipped; exactly one is expected/, "and the message names the count: a duplicate rewrites neither row");
+  assert.equal(dup.page, twice, "the page is unchanged");
+  assert.equal(dup.mast, mast, "the masthead is unchanged");
+  const none = run("<tr><td>nothing</td></tr>\n");
+  assert.notEqual(none.status, 0, "no row naming the opus stops the script");
+  assert.match(none.stderr, /W-1: 0 history rows name W-1 shipped; exactly one is expected/, "and the message names the count: none");
 });
