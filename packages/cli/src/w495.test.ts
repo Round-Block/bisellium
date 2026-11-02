@@ -254,6 +254,16 @@ test("W-495-b4 behaviour 4: each rung's cost line is the plans' whole use from t
   assert.equal(cost, "cost: Claude week +5%, Codex week +6% over 11.0 h since the first spec signature", ran("the cost from the last reading before the first spec signature (01:00Z) to the rung's reading (12:00Z)", o));
 });
 
+test("W-495-b4 a first spec signature later than the rung's clock is no start: the cost line reads none, never negative hours", { timeout: 600_000 }, () => {
+  const w = world("w495-b4-future", "spec");
+  putReadings(w.home, [reading("2026-10-01T00:00:00.000Z", undefined, 50, 30), reading("2026-10-02T00:30:00.000Z", undefined, 80, 55)]);
+  const o = next(w, [OPUS, "--perform", "--expect", "branch", "--now", "2026-10-02T00:20:00.000Z"]);
+  expectStep(o, "branch", "performed", "the branch rung is performed with the clock before the spec signature (01:00Z)");
+  const cost = o.out.split("\n").find((l) => l.startsWith("cost: "));
+  assert.match(cost ?? "", /^cost: none \(/, ran("a start after the clock has no span: none, before any hours are printed", o));
+  assert.doesNotMatch(cost ?? "", /-\d/, "no negative figure");
+});
+
 test("W-495-b4 duplicate rows are rejected before any write: the kept rows script wants exactly one row naming the opus", { timeout: 120_000 }, () => {
   const repo = scratchHome("rows");
   const row = (n: number): string => `<tr><td>1</td><td><strong>W-1 shipped (PR ${n})</strong></td><td>Cycle 10 min, Claude week +0%, Codex week +0% over 1.0 h. Review passed.</td></tr>`;
