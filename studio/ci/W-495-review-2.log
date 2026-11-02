@@ -1,0 +1,22 @@
+# opus: W-495
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19b7d-5eda-7110-b259-6933362603ff
+# outcome: failed
+# at: 2026-11-02T09:40:28.730Z
+# tree: tree:d382495fe815750be3976ee5c6bcc49430a78f5a
+# brief: briefs/W-495.md blob:d2059bf1ebfe4072337678965bcfdc7bbf07c032
+# ticket: {"opus":"W-495","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-495/studio","head":"e46af7f415a580160a806a8608e1aa4bfe203ff2","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T09:39:28.233Z"}
+
+## Findings
+1. blocking — packages/cli/src/w495.test.ts:257 The change adds a new W-495-b4 assertion, but the delta contains no replacement `studio/ci/reds/W-495/04.log`; the retained red predates this case, so brief:108’s required pre-fix red does not evidence the new regression row. [severity: S1] [class: review×evidence-backfilled-or-absent] — check: studio/ci/reds/W-495/04.log
+
+## Earlier findings
+- ci/W-495-review-1.log #1: closed — packages/cli/src/next.ts:2890 rejects a first spec signature later than the rung clock before calling `spanCost`, and packages/cli/src/w495.test.ts:257 pins `none` with no negative hours.
+
+## Verdict
+The behavior defect is fixed, but its new regression case lacks the required recorded red.
+
+VERDICT: FAIL
