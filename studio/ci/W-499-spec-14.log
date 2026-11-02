@@ -1,0 +1,25 @@
+# opus: W-499
+# phase: spec
+# round: 14
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 14adc308-36b0-4b24-9928-548a43e1d799
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-02T23:17:43.909Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-499.md blob:b3644bd1dfb0d6a685a5282090453841b8b68e7c
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":14,"actor":"spec-reviewer","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"b3644bd1dfb0d6a685a5282090453841b8b68e7c","at":"2026-11-02T23:17:29.080Z"}
+
+## Findings
+1. advisory — brief:77 [severity: S4] The phrase "without moving or resizing the card" is pinned only horizontally (cardLeft, cardWidth); nothing checks cardTop or height. Replacement text: "…while card left, top, width and height stay unchanged." [class: ui×test-boundary-narrower-than-promise] — check: none: a cardTop assertion in apps/web/tests-serve/w499.spec.ts
+2. advisory — brief:77 [severity: S4] Same class as my round-11 advisory #1: W-004's row writes scrollLeft back to the target before measuring (prototype.mbox:314-319). Replacement text: "…measured after ArrowRight without rewriting scrollLeft." [class: ui×test-boundary-narrower-than-promise] — check: apps/web/tests-serve/w499.spec.ts
+3. advisory — brief:19 [severity: S4] Sense holds: all four focus captures show a complete rectangle, the four-sided rows check it (prototype.mbox:295-302, 323-330), and the drawer captures are unchanged. No replacement needed. [class: ui×sense-on-captures] — check: none: no extra check is needed
+
+## Earlier findings
+
+## Verdict
+The four-sided clearance holds in every focused capture and every edge is checked; only S4 nits remain.
+VERDICT: PASS
+
+Claude week 66%, 5h 2% | Codex week 5% | context 108k of 300k

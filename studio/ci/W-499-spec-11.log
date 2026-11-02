@@ -1,0 +1,25 @@
+# opus: W-499
+# phase: spec
+# round: 11
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a50e901b-11e1-44c1-b6e7-c38999c3c0f3
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-02T16:34:16.587Z
+# tree: tree:915cc2517e8b3365880ca53da43309fd0c8e9144
+# brief: briefs/W-499.md blob:72024ddb2a2236da19fca4c05fb867562c618d8e
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":11,"actor":"spec-reviewer","studio":"studio","head":"1b4fe9951af4b7886713d1e7ce7ac48983d0911b","brief":"72024ddb2a2236da19fca4c05fb867562c618d8e","at":"2026-11-02T16:34:04.003Z"}
+
+Claude week 65%, 5h 7% | Codex week 3% | context 227k of 300k
+
+## Findings
+1. advisory — brief:77 [severity: S4] The W-004 open-drawer focus row re-writes `scrollLeft` after focusing and before measuring (`w499.spec.ts:191-196`). So it doesn't check that keyboard focus alone keeps the outline clear. Replacement: "…measured without re-writing the scroll offset after focus…" [class: tests×ruled-case-uncovered] — check: none: assert `scrollLeft` equals the clamped target after ArrowRight
+2. advisory — brief:19 [severity: S4] The 20px clip leaves a 4px strip outside it. At offsets other than the aligned target or scroll zero, a preceding column can paint up to 4px there. Replacement: append "At other offsets, up to 4px of a preceding column may paint in the unclipped strip (a limit)." [class: spec×promise-unattainable-under-accepted-domain] — check: none
+3. advisory — brief:116 [severity: S4] Sense: all four focus captures show the complete ring with no fragment; the drawer captures still make sense. An agent proposed the 20px/4px clearance, and Default 1 puts it to the Patron. Replacement: none. [class: tests×ruled-case-uncovered] — check: none
+
+## Earlier findings
+
+## Verdict
+Revision 7 closes the round-9 focus-ring blocker: the captures show the full ring and a served row checks it, so only advisories remain.
+VERDICT: PASS

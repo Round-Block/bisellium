@@ -1,0 +1,24 @@
+# opus: W-499
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: bd203edb-7ca8-4f1d-80d2-a6f75be0bae4
+# outcome: passed
+# at: 2026-11-02T12:38:19.958Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-499.md blob:bc340850c738a00a4a375b84205abcac97fa0833
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"1f92ec5dc47adeb07e93367c581f3cbdb591d923","brief":"bc340850c738a00a4a375b84205abcac97fa0833","at":"2026-11-02T12:38:14.603Z"}
+
+Claude week 62%, 5h 15% | Codex week 93% | context 205k of 300k
+
+## Findings
+1. advisory — brief:42 [severity: S2] The pinned test `W-499-geometry…` exists only in the evidence folder, so it won't ship (same at brief:44 and 58–62). Replacement: pin to `W-499-b1 Planned holds its place while the drawer opens at 1280, 640 and 390`, using its "drawer-open track begins with Planned" and "close restores the caller's exact lifecycle position" checks. [class: spec×stale-citation-residue] — check: none: admission rejects pins absent from Files-owned tests
+2. advisory — brief:44 [severity: S2] If a second card is opened while the drawer is open, Close returns to the in-drawer position, not the original. Replacement: append "— limit: a second open re-snapshots; Close restores the most recent open." [class: spec×promise-unattainable-under-accepted-domain] — check: none: served row opening W-006 from inside the drawer
+3. advisory — brief:15 [severity: S2] The base capture also shows the card escaping the track's clipping. The reset covers only the moment of opening, so "cause-level" overclaims. Replacement: add "user scroll while open and in-track clipping are limits" to brief:19. [class: spec×fix-opens-new-surface] — check: none
+4. advisory — brief:107 [severity: S4] Sense: snapping to Planned moves the opened W-004 out of view. Replacement: "keep the opened card's column at the left edge." Default 1 already puts this to the Patron. [class: tests×ruled-case-uncovered] — check: none
+5. advisory — brief:48 [severity: S4] The banner claim isn't pinned. Replacement: add "(unchanged, not pinned by W-499)". [class: tests×ruled-case-uncovered] — check: apps/web/test/w499.test.ts
+
+## Verdict
+Inputs are bounded and both behaviours are feasible; all findings are advisory.
+VERDICT: PASS

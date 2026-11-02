@@ -1,0 +1,27 @@
+# opus: W-499
+# phase: spec
+# round: 7
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c2d-e4e6-7e50-b7b6-87fe5e20b08f
+# outcome: passed
+# at: 2026-11-02T16:01:47.274Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-499.md blob:6f7e103ac4dbe972f85ef18dc806ec999adc40b8
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"6f7e103ac4dbe972f85ef18dc806ec999adc40b8","at":"2026-11-02T16:00:53.885Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-499-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief:47 brief:66 brief:68 brief:69 holds — lifecycle openers align to their clamped inset, the leading gutter paints no preceding-column fragment, and Planned/later/terminal cards remain reachable without changing widths — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-geometry.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-geometry.out` — check: apps/web/src/screens/Board.tsx, apps/web/src/components/w025.css, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts
+2. advisory — brief:49 holds — W-001 then W-004 re-snapshots the browser-reported offset and Close strictly restores `min(snapshot, closedMax)` with W-004 selected and focused — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-restore.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-restore.out` — check: apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts
+3. advisory — brief:51 brief:65 brief:67 holds — at 640 and 390 the drawer owns the content row beneath navigation while the mounted zero-width Board is inert; at 1280 the 540px drawer and visible Board remain unchanged; Close restores both saved scrolls, selection and focus; closes the ui-lead's round-6 blocker #2, the 640 sliver — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-narrow.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-narrow.out` — check: apps/web/src/components/w025.css, apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, shots/drawer-640-200pct.png
+4. advisory — brief:53 brief:55 brief:70 brief:71 brief:72 holds — complete petitio bodies, pending gates and handoff text contribute one exact reason each, with empty-body subject fallback and first-occurrence ordering — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-reasons.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-reasons.out` — check: apps/web/src/lib/board.ts, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts
+5. advisory — brief:73 scoped — fixed paths, three normalized inner Node red commands and environment forms are explicit limits; all three reds fail by assertion and pass at their own and later stages, and all six commits independently build — check: /home/edckt/.bisellium-evidence/W-499-spec/reds-host.out, /home/edckt/.bisellium-evidence/W-499-spec/series-builds.txt, /home/edckt/.bisellium-evidence/W-499-spec/mbox-check.out
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 7 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-499.md`; all eight refreshed captures were inspected, prototype sha256 `a37778d186455a1852aa95681736ecfe9d516f2289d2635feb407c1a1d5e364a`, and no record write, `next` or `verdict` was performed.

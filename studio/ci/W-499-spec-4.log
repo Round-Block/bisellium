@@ -1,0 +1,25 @@
+# opus: W-499
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c2d-e4e6-7e50-b7b6-87fe5e20b08f
+# outcome: passed
+# at: 2026-11-02T14:52:21.821Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-499.md blob:b8473352b3bccdfa3c3a841ed0a12d327d79d202
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"b8473352b3bccdfa3c3a841ed0a12d327d79d202","at":"2026-11-02T14:52:01.759Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-499-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — UI-lead finding 1 and review advisories 1/4 are adopted: the shipped W-499-b1 Node/browser row and served rows align W-007, W-004 and terminal W-001 to their own clamped lifecycle inset at 1280 expanded/collapsed, 640 and 390 — check: apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, kill-geometry.out
+2. advisory — Review advisory 2 is pinned: every open refreshes the scroll snapshot, a second mounted open aligns its own column, and Close restores the browser-reported position captured by that most recent open — check: apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, kill-restore.out
+3. advisory — Review advisories 3/5 are adopted: user scroll while open and right-edge in-track clipping are explicit limits, while the banner claim is unchanged and not pinned by W-499 — check: studio/briefs/W-499.md
+4. advisory — UI-lead advisory 2 remains a named Patron follow-up: the approved 640 Board sliver is unchanged, while all eight rebuilt captures were inspected and the two 1280 drawers keep Awaiting review and W-004 beside the drawer — check: capture-shots.out, shots/drawer-1280-expanded.png, shots/drawer-1280-collapsed.png, shots/drawer-640-200pct.png
+5. advisory — The host's deterministic `101 !== 100` came from a synthetic unfocused opener and a pre-open requested offset; the row now establishes the real focused-origin state, source and row write/read back at the same opener event, and strict equality uses that captured value whether a machine reports 100 or 101 — check: apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, series-builds.txt, mbox-check.out
+
+## Verdict
+
+passed — signature round 6 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-499.md`; exact close restoration is pinned to the focused opener's browser-reported offset without tolerance or a machine-specific constant, prototype sha256 `5aaf0e863d9f0f1f61c0e862ea0d1aed72d0be90c3f1a7d5db7fd0c65720f023`, and no record write, `next` or `verdict` was performed.

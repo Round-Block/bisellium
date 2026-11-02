@@ -1,0 +1,28 @@
+# opus: W-499
+# phase: spec
+# round: 9
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19c45-8f7e-70a2-869e-f50f0319ddbc
+# outcome: revise
+# at: 2026-11-02T16:08:41.961Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# dispatch_prompt: ci/W-499-ui-prompt-9.md
+# design_digest: sha256:05bb39f358be9e3f5e32515d9116c5d6fb9e1a5c227142326f1f9488f1cf5bd5
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":9,"actor":"ui-lead","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"6f7e103ac4dbe972f85ef18dc806ec999adc40b8","at":"2026-11-02T16:08:30.837Z"}
+
+## Findings
+
+1. blocking — brief:19 — The agent-written instruction to clip the entire leading gutter removes the left edge of an aligned card’s focus ring, including with the drawer closed. The prototype clips at the card’s left edge, while its 2px outline and 2px offset extend 4px beyond it. Removing column fragments must preserve this keyboard cue; DIRECTION §5’s complete focus ring makes sense here. — replace with: Keep preceding-column fragments out of the leading inset while preserving the focused card’s complete outline. Leave 4px of clearance outside the aligned card, with and without the drawer open, without changing column widths or scroll targets. — check: apps/web/src/components/w025.css and apps/web/tests-serve/w499.spec.ts; keyboard-focus W-006 at scroll zero at 1280 expanded/collapsed and 640, and W-004 beside its open drawer at 1280; verify the entire ring remains visible.
+
+## Earlier findings
+
+- ci/W-499-spec-6.log #2: closed — brief:21 and brief:51 adopt the required layout; rebuilt drawer-640-200pct.png shows the full content-width drawer beneath navigation with no Board sliver and a visible Close control, while the prototype’s b3 checks cover the mounted Board’s inertness and restoration.
+
+## Recommendation
+
+The 640 and 390 drawers now read sensibly, with readable content and a clearly reachable Close control.
+Round-6 advisory #1 is resolved: the revised source and recorded b1/b3 checks restore both scroll positions within their closed ranges, with selection and focus returned to the latest opener.
+Round-6 advisory #3’s detached fragments are gone from both 1280 captures, and the selected-column context remains correct, but the clipping introduces the focus-ring regression above.
+Revise the clipping clearance and verify keyboard-focused states; the drawer layout itself needs no further redesign.
+Verdict: revise

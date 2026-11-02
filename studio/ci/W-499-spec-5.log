@@ -1,0 +1,24 @@
+# opus: W-499
+# phase: spec
+# round: 5
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 663c9bb5-e020-4d46-a034-9d5cdd8c0d54
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-02T14:55:59.311Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-499.md blob:b8473352b3bccdfa3c3a841ed0a12d327d79d202
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"b8473352b3bccdfa3c3a841ed0a12d327d79d202","at":"2026-11-02T14:55:48.735Z"}
+
+Claude week 63%, 5h 26% | Codex week 97% | context 202k of 300k
+
+## Findings
+1. advisory — brief:44 [severity: S2] A second open saves the narrow drawer-open offset, which can exceed the closed layout's scroll range (W-001, then a neighbouring card). Close then clamps to the end of the track, so brief:38 and brief:70 overclaim exactness. The second-open row only tries 0. Replacement limit: "a second open re-snapshots; Close restores the most recent open, clamped to the closed layout's scroll range." Reached via round 2's #2 class. [class: spec×promise-unattainable-under-accepted-domain] — check: none: served row opening W-001, then W-004, asserting Close lands at `min(snapshot, closedMax)`
+2. advisory — brief:61 [severity: S4] Sense: in drawer-1280-expanded.png the earlier column's count "1" is clipped at the track's left edge. That is the in-track clipping brief:19 already limits. The rule makes sense on all four drawer captures, and Defaults item 1 puts it to the Patron. Replacement: none needed. [class: tests×ruled-case-uncovered] — check: none
+
+## Earlier findings
+
+## Verdict
+The delta adopts the ui-lead's Default 1 and round 2's advisories; inputs stay bounded and both behaviours are feasible, with one advisory clamp limit.
+VERDICT: PASS

@@ -1,0 +1,29 @@
+# opus: W-499
+# phase: spec
+# round: 15
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19c45-8f7e-70a2-869e-f50f0319ddbc
+# outcome: passed
+# at: 2026-11-02T23:21:27.068Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# dispatch_prompt: ci/W-499-ui-prompt-15.md
+# design_digest: sha256:22bafd097421d203461bb65b65bbf8df157640382a1e74f111bacf24e3e20fdc
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":15,"actor":"ui-lead","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"b3644bd1dfb0d6a685a5282090453841b8b68e7c","at":"2026-11-02T23:21:15.389Z"}
+
+## Findings
+
+1. advisory — studio/briefs/W-499.md:77 — The captures show no geometry regression, but the unchanged-geometry claim checks only card left and width — replace with: Pin unchanged card left, top, width and height against the pre-change geometry, alongside all four outline-clearance checks — check: apps/web/tests-serve/w499.spec.ts:182
+2. advisory — studio/briefs/W-499.md:77 — The W-004 row resets scrollLeft after ArrowRight, so it proves clearance at the arranged target rather than the position keyboard navigation produces — replace with: Measure all four outline edges immediately after ArrowRight without rewriting scrollLeft; retain the aligned-target check separately — check: apps/web/tests-serve/w499.spec.ts:203
+
+## Earlier findings
+
+- ci/W-499-spec-12.log #1: closed — The rebuilt focus-w006-1280-collapsed.png, focus-w006-1280-expanded.png, focus-w006-640-200pct.png and focus-w004-drawer-1280-expanded.png show complete rectangles; pixel inspection confirms uninterrupted top, bottom, left and right edges in all four captures.
+
+## Recommendation
+
+The focused states and both 1280 drawer layouts read clearly; the full-width drawers at 640 and 390 satisfy the Patron’s ruling and keep the reasons and Close control legible.
+Restoring the latest open’s position within the closed layout’s available range remains sensible.
+Round-12 advisory #2 is addressed: the brief now limits the fragment-free claim to aligned positions and scroll zero; possible fragments in the reserved 4px strip at other offsets are an acceptable scrolling limit.
+The agent-written gutter and alignment rules now make sense on the captures, and the remaining evidence limitations do not demonstrate a UI defect.
+Verdict: passed

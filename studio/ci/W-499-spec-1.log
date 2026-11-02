@@ -1,0 +1,24 @@
+# opus: W-499
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c2d-e4e6-7e50-b7b6-87fe5e20b08f
+# outcome: passed
+# at: 2026-11-02T12:33:45.102Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-499.md blob:bc340850c738a00a4a375b84205abcac97fa0833
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"1f92ec5dc47adeb07e93367c581f3cbdb591d923","brief":"bc340850c738a00a4a375b84205abcac97fa0833","at":"2026-11-02T12:33:36.256Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-499-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — The lifecycle offset belongs to the closed layout; the drawer-open layout now begins at Planned and exact close restoration remains intact at 1280 expanded/collapsed, 640 and 390 — check: apps/web/src/screens/Board.tsx, apps/web/tests-serve/w499.spec.ts, kill-geometry.out, kill-restore.out
+2. advisory — Each linked petitio contributes its complete nonblank body once, with subject only as the blank-body fallback; pending-gate and handoff reasons retain exact first-occurrence order — check: apps/web/src/lib/board.ts, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, kill-reasons.out
+3. advisory — Both direct TAP reds fail by assertion with the required `not ok 1` titles, every earlier row stays green at later stages, and all four prototype commits independently build the web bundle — check: b1-red-recorded.log, b2-red-recorded.log, reds-host.out, series-builds.txt
+4. advisory — The four-commit mbox reapplies to the expected tree, focused predecessor rows pass, the ledger mutation pins pass validation, and eight inspected captures cover Board and drawer at every ruled viewport/sidebar state — check: mbox-check.out, gates-proto.out, ledger-check.out, capture-shots.out, shots/
+
+## Verdict
+
+passed — signature round 1 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-499.md`; prototype sha256 `f92cf121b0c71291c1dc36ac4af5a3592694ba80305222933dfaeaf919a1297d`, with no record write, `next` or `verdict` performed.

@@ -1,0 +1,27 @@
+# opus: W-499
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19c45-8f7e-70a2-869e-f50f0319ddbc
+# outcome: revise
+# at: 2026-11-02T12:43:12.835Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# dispatch_prompt: ci/W-499-ui-prompt-3.md
+# design_digest: sha256:87ca92a13dbca8b730188f4b2742592836cfa76c11366f31307db7a0b987b3c4
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"1f92ec5dc47adeb07e93367c581f3cbdb591d923","brief":"bc340850c738a00a4a375b84205abcac97fa0833","at":"2026-11-02T12:43:06.159Z"}
+
+## Findings
+
+1. blocking — brief:107 — Always resetting to Planned is an agent-written default, not the Patron’s ruling to repair the broken column. Both 1280 captures show W-004’s drawer beside Planned and In progress, with its own Awaiting review column offscreen; the waiting-strip entry preserves identity but loses the lifecycle context. — replace with: On opening a lifecycle item, align its own column with the lifecycle viewport’s left inset, clamped to the available scroll range. Keep headers and cards contained, including Planned when reached. For an item without a lifecycle column, retain the current position. — check: apps/web/tests-serve/w499.spec.ts, covering W-007, W-004 and a terminal-column opener at both 1280 sidebar states.
+2. advisory — brief:93 — To the Patron: the retained geometry at 640 leaves a 100px Board sliver containing chopped headings, card text and a severely wrapped footer. The drawer itself reads well, but this remnant does not provide useful context. D-157 approved the earlier drawer captures, so this is advice on that approved arrangement. — replace with: In a follow-up, use the full-width drawer whenever the remaining Board cannot display one readable column; preserve its position for Close. — check: /home/edckt/.bisellium-evidence/W-499-spec/shots/drawer-640-200pct.png.
+
+## Recommendation
+
+This is my first W-499 input; I have no earlier findings to reaffirm or withdraw.
+Default 1 should keep the opened card’s column in view: this is a small change to the scroll target and its checks, requiring no new layout design.
+Exact pre-open restoration is right; restoring the most recent open is also acceptable when the person explicitly selects another Board card while the drawer remains open, provided that limit is stated and checked.
+Default 2 reads correctly: show the complete body, use the subject only for a blank body, and retain the banner subject as the Inbox link.
+Default 3 should retain exact trimmed deduplication: the two short gate and handoff bullets still sound repetitive, but differing recorded statements should remain separate.
+The 1280 expanded and collapsed drawers and the 390 drawer are legible, and the repeated first sentence is gone; the remaining visual problems are the displaced lifecycle context and the 640 Board sliver described above.
+Verdict: revise
