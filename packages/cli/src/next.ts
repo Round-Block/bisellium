@@ -107,7 +107,8 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v !== 
 const one = (text: string): string => text.replace(/\s+/g, " ").trim();
 // W-377: a line that opens with UNCUT is printed whole; every other line is cut at 1000 characters (`say`)
 const UNCUT = "\u0001";
-const whyLine = (d: Derived): string => `${d.uncut === true ? UNCUT : ""}why: ${one(d.why)}`;
+// W-498: an uncut why skips `one`, which would strip U+FEFF and collapse spaces; `say`'s `clean` still maps controls to spaces
+const whyLine = (d: Derived): string => (d.uncut === true ? `${UNCUT}why: ${d.why}` : `why: ${one(d.why)}`);
 const esc = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const recordRel = (id: string): string => `opera/${id}.md`;
 const briefRel = (id: string): string => `briefs/${id}.md`;
