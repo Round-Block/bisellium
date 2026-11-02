@@ -7,7 +7,7 @@
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1633,4 +1633,88 @@ test("W-492-b1 behaviour 1: a kill whose pinned assertion failed on the source t
   assert.equal(read!(out.replace("TAP version 13\n", ""), pin, MUTATION), undefined, "no TAP version line: no line");
   assert.equal(read!(out, { row: "W-300-b1", assertion: "other" }, MUTATION), undefined, "a pin the output does not prove: no line");
   assert.equal(read!(out, pin, "+  return 0;\n"), undefined, "a patch with no hunk header: no line");
+});
+
+// W-497 (D-076 D): the readers of a diagnostic value read the grammar its writer prints, checked against the writer itself
+/** The values row W-497-b1 has Node's own TAP reporter print, as `[case, value]`: one-line strings in each quoting and
+ *  escape `util.inspect` writes, then a string of lines (a `|-` block). */
+const TAP_STRINGS = [
+  ["a plain line, single-quoted", "return 0;"],
+  ["a line holding an apostrophe, double-quoted", "return f('it');"],
+  ["a line holding both quote kinds, backquoted", `say("it's");`],
+  ["a line holding all three quotes and a ${, single-quoted with escapes", "f('a', \"b\", `${c}`);"],
+  ["a line holding a backslash", "const re = /\\d+/;"],
+  ["a line holding a tab", "a\tb;"],
+  ["a line holding a control character", "bell\u0007;"],
+  ["a line holding non-ASCII text", "naïve → ü 😀;"],
+  ["a string of lines, as a block", "  first();\n    return 0;\n}"],
+] as const;
+
+/** One failing subtest per case of `TAP_STRINGS` and per code-point chunk, run by the Node running this row with its TAP
+ *  reporter: `E-<i>` fails `assert.ok(false, value)` (its `error:` is the value), `A-<i>` fails `assert.equal(value, …,
+ *  "actual <i>")` (its `actual:` is the value), `N-0` fails `assert.equal(3, 4, "a number")`, `U-<j>` fails `assert.ok(false,
+ *  chunk j)`. The child runs with no `NODE_TEST_CONTEXT`, so it prints TAP whatever runs this row. */
+function nodeTap(values: readonly string[], chunks: readonly string[]): string {
+  const dir = mkdtempSync(join(tmpdir(), "w497-tap-"));
+  try {
+    const file = join(dir, "values.test.mjs");
+    writeFileSync(
+      file,
+      [
+        'import test from "node:test";',
+        'import assert from "node:assert/strict";',
+        `const V = ${JSON.stringify(values)};`,
+        `const U = ${JSON.stringify(chunks)};`,
+        'V.forEach((v, i) => test(`E-${i}`, () => assert.ok(false, v)));',
+        'V.forEach((v, i) => test(`A-${i}`, () => assert.equal(v, "\\u0000", `actual ${i}`)));',
+        'test("N-0", () => assert.equal(3, 4, "a number"));',
+        'U.forEach((u, j) => test(`U-${j}`, () => assert.ok(false, u)));',
+        "",
+      ].join("\n"),
+    );
+    const env = { ...process.env };
+    delete env["NODE_TEST_CONTEXT"];
+    delete env["NODE_OPTIONS"];
+    return spawnSync(process.execPath, ["--test-reporter=tap", "--test", file], { encoding: "utf8", env }).stdout;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test("W-497-b1 behaviour 1: every reader of a TAP diagnostic value reads each form Node's own reporter writes", () => {
+  type Pin = { row: string; assertion: string };
+  const m = admissionModule as unknown as {
+    killedPin: (output: string, pins: readonly Pin[]) => Pin | undefined;
+    redFailsAt: (output: string, pin: Pin) => boolean;
+    firstFailure: (output: string) => string | undefined;
+    textKilledLine: (output: string, pin: Pin, patch: string) => string | undefined;
+  };
+  // U+0000 to U+00FF but LF, in chunks of 32, then a lone surrogate of each half and a line separator
+  const chunks: string[] = [];
+  for (let c = 0; c < 0x100; c += 32) chunks.push([...Array(32).keys()].map((k) => String.fromCharCode(c + k)).filter((u) => u !== "\n").join(""));
+  chunks.push("\ud800 high", "low \udc00", "line separator");
+  const out = nodeTap(
+    TAP_STRINGS.map(([, v]) => v),
+    chunks,
+  );
+  assert.equal(out.split("\n")[0], "TAP version 13", "the child printed TAP");
+  /** the output from row's `# Subtest:` line to the next one: the one subtest firstFailure reads */
+  const subtest = (row: string): string => {
+    const lines = out.split("\n");
+    const s = lines.indexOf(`# Subtest: ${row}`);
+    const e = lines.findIndex((l, i) => i > s && l.startsWith("# Subtest: "));
+    return lines.slice(s, e === -1 ? undefined : e).join("\n");
+  };
+  TAP_STRINGS.forEach(([name, value], i) => {
+    const first = value.split("\n")[0]!;
+    const message: Pin = { row: `E-${i}`, assertion: first };
+    assert.deepEqual(m.killedPin(out, [message]), message, `killedPin: ${name}`);
+    assert.equal(m.redFailsAt(out, message), true, `redFailsAt: ${name}`);
+    assert.equal(m.firstFailure(subtest(`E-${i}`)), value.includes("\n") ? first.trim() : value, `firstFailure: ${name}`);
+    const added = value.split("\n").at(-2) ?? value;
+    const patch = `--- a/x.ts\n+++ b/x.ts\n@@ -1 +1 @@\n-x\n+${added}\n`;
+    assert.equal(m.textKilledLine(out, { row: `A-${i}`, assertion: `actual ${i}` }, patch), added.trim(), `textKilledLine: ${name}`);
+  });
+  assert.equal(m.textKilledLine(out, { row: "N-0", assertion: "a number" }, "@@ -1 +1 @@\n-4\n+3\n"), undefined, "textKilledLine: a number is no line");
+  chunks.forEach((chunk, j) => assert.equal(m.firstFailure(subtest(`U-${j}`)), chunk, `firstFailure: every code point of chunk ${j} round-trips`));
 });
