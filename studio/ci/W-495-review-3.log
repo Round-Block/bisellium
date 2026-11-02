@@ -1,0 +1,22 @@
+# opus: W-495
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19b7d-5eda-7110-b259-6933362603ff
+# outcome: passed
+# at: 2026-11-02T10:26:34.492Z
+# tree: tree:9d87ab6a70041896f1a1e224f74c696201aca184
+# brief: briefs/W-495.md blob:8f099ad2a002e2f6dd080b7fd677352c100132bf
+# ticket: {"opus":"W-495","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-495/studio","head":"dd1813b940a300f0ea4699ac6b9ac5193a2422cf","brief":"8f099ad2a002e2f6dd080b7fd677352c100132bf","at":"2026-11-02T10:25:51.386Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-495-review-2.log #1: closed — studio/ci/reds/W-495/05.log:1 records behavior 5’s exact selector and failing exit; its assertion at line 18 captures the pre-fix negative-hours result, matching the signed behavior-5 row.
+
+## Verdict
+The required regression red is now complete and consistent with the signed brief.
+
+VERDICT: PASS
