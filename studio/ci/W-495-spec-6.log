@@ -1,0 +1,23 @@
+# opus: W-495
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T09:54:05.945Z
+# tree: tree:d382495fe815750be3976ee5c6bcc49430a78f5a
+# brief: briefs/W-495.md blob:8f099ad2a002e2f6dd080b7fd677352c100132bf
+# ticket: {"opus":"W-495","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-495/studio","head":"24302fab0d2f957594dc059d96bad706e4d2f05f","brief":"8f099ad2a002e2f6dd080b7fd677352c100132bf","at":"2026-11-02T09:53:56.238Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-495-spec/promise-ledger-r5.md
+
+## Findings
+
+1. advisory — brief revision 4 answers build review round 2 (`ci/W-495-review-2.log`, S1, evidence-backfilled-or-absent): the future-signature case the builder added for build review round 1 moves out of row `W-495-b4` into its own row `W-495-b5`, behaviour 5, with its own Genuine red, pin ("a start after the clock has no span: none, before any hours are printed"), kill K16 and Acceptance lines; Files owned, the rung's cost paragraph of Interfaces, Promise rungcost and Size say so; behaviour 4, its pin and its recorded red are unchanged; produced by the kept `revise-r5.py` from the signed revision 3 (blob d2059bf1, `brief-r3-signed.md`), the brief's line numbers above the Behaviours unchanged — check: revise-r5.py, brief-r4.md, brief Behaviours to test 5, brief Acceptance
+2. advisory — behaviour 5 is prototyped on the opus branch at a69d090c (`.worktrees/W-495-spec-r5`, `apply-b5.py` renaming the case only): at the fix the `^W-495-b5\s` row passes and w495.test.ts passes whole (6 of 6); with `costSoFar`'s guard removed (`kill-K16.patch`, one hunk of next.ts, as the builder's restage 4a3ea268) the row fails by assertion at its pin on the scratch restage commit 7357fc96, printing `over -0.7 h` (`red-b5.log`, headed by its command as `bisellium red` records one), while the `^W-495-b4\s` row, a prerequisite of `red`, still passes there; the replay classifier accepts `red-b5.out`, master's `declaredReds` names the b5 pin for behaviour 5 and `redFailsAt` holds on it, `killedPin` proves K16 and `textKilledLine` finds no text kill — check: b5.sh, b5.out, red-b5.log, proto-b5-fix.out, proto-b4-prefix-r5.out, green-w495-r5.out, check-r5.out
+3. advisory — the full brief admission on revision 4 is clean (`check-r5.out`: `[]`), and the Codex test check rerun on revision 4 lists the same six flips (W-179-b1, W-430-b1, W-430-b2, W-430-b3, W-214-b1, W-163-b6), all named in Acceptance, Unnamed: None (run before the brief's two red-output citations moved from `red-b5.out` to `red-b5.log`, its only change since); the rename flips no other row — check: check-r5.out, fixture-census.md, brief Acceptance
+4. advisory — unchanged code behaviour 5 leans on is a stated limit, as the brief's Limits list states it (D-076 E): `firstSpecSignature` across `gather`'s sources and the world fixture's clock are reused, not promised here; the duplicate-rows case the builder keeps under `W-495-b4` is outside this revision — check: brief Limits, packages/cli/src/w495.test.ts
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, spec_seats engineering signer, D-150 C), brief revision 4 at `studio/briefs/W-495.md` on opus/W-495 (build review round 2's S1 answered by behaviour 5), behaviour 5 prototyped over the opus branch at a69d090c; five behaviours, six named flips, no code-owned path.
