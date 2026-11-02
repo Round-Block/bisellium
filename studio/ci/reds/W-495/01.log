@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-495-b1\s --import tsx packages/cli/src/w495.test.ts
+# exit: 1
+# at: 2026-11-02T06:16:51.210Z
+# sella: builder.W-495
+# tree: tree:ca105d2009d3c3a9d821fc34144f20384f084550
+# ticket: {"opus":"W-495","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-495/studio","head":"a40efe77f1dd3d7e957832acfbae3eafc78e7242","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T06:16:49.316Z"}
+
+TAP version 13
+# Subtest: W-495-b1 behaviour 1: the plans' whole use over a span is read from every reading in it, from the last one at or before its start; a stale source's fall counts nothing, a moved week reset counts the new week
+not ok 1 - W-495-b1 behaviour 1: the plans' whole use over a span is read from every reading in it, from the last one at or before its start; a stale source's fall counts nothing, a moved week reset counts the new week
+  ---
+  duration_ms: 46.817985
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:1:2834'
+  failureType: 'testCodeFailure'
+  error: |-
+    usage-reading.ts exports spanCost
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    fn (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:70:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-495/packages/cli/src/w495.test.ts:114:20)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 160.444988
