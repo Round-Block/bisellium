@@ -461,8 +461,9 @@ export interface DrawerDetail {
    *  revision binding and stale-verdict refusal; these strings make neither
    *  claim. Present only for a card in the existing Needs-you membership. */
   waitingReasons?: string[];
-  /** W-410 display only: evidence links already recorded on gates. */
-  waitingEvidence?: { label: string; href: string }[];
+  /** W-412: one explicit binding for every gate carrying a certified source
+   * revision or decision-record path. */
+  waitingEvidence?: { gate: string; label: string; status: string; revision?: string; record?: string }[];
   record: { label: string; value: string }[];
   /** Event-derived and possibly incomplete — rendered beside the front
    *  matter's own `tokens` total, with both sources named (ruling 14). */
@@ -550,7 +551,7 @@ export function drawerDetail(
     const next = typeof nextValue === "string" ? nextValue.trim() : "";
     if (next) reasons.push(next);
     waitingReasons = [...new Set(reasons)];
-    waitingEvidence = gates.flatMap((gate) => gate.evidence ? [{ label: gate.name, href: gate.evidence }] : []);
+    waitingEvidence = gates.flatMap((gate) => gate.evidence || gate.certifies ? [{ gate: gate.id, label: gate.name, status: gate.status, revision: gate.certifies, record: gate.evidence }] : []);
   }
 
   const record: { label: string; value: string }[] = [];

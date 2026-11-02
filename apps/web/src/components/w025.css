@@ -2626,6 +2626,15 @@
   line-height: 18px;
 }
 
+.board-drawer__evidence-binding { min-width: 0; padding: 8px 0; border-top: 1px solid var(--rule); }
+.board-drawer__evidence-name { margin: 0 0 6px; font-family: var(--font-body); font-size: 13px; line-height: 18px; font-weight: 600; color: var(--ink); }
+.board-drawer__evidence-facts { margin: 0; }
+.board-drawer__evidence-facts > div { display: grid; grid-template-columns: minmax(104px, 0.4fr) minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.board-drawer__evidence-facts dt,
+.board-drawer__evidence-facts dd { min-width: 0; margin: 0; font-size: 12px; line-height: 18px; }
+.board-drawer__evidence-facts dt { color: var(--ink-3); }
+.board-drawer__evidence-facts dd { font-family: var(--font-mono); color: var(--ink-2); overflow-wrap: anywhere; }
+
 .board-drawer__section-head {
   font-size: 11px;
   font-weight: 600;
