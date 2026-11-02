@@ -82,7 +82,7 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
     const lifecyclePhases = new Set(fixture.lifecycle.states.map(({ phase }) => phase).filter((phase) => phase !== "backlog"));
     await expect(page.locator(".board__column[data-column-id]")).toHaveCount(lifecyclePhases.size);
     await expect.poll(() => page.locator("[data-card-id]").count()).toBeGreaterThan(0);
-    await expect.poll(() => page.locator(".gate-ladder").count()).toBeGreaterThan(0);
+    await expect.poll(() => page.locator(".board__card-gates").count()).toBeGreaterThan(0);
     await expect(page.locator(".board__waiting")).toBeInViewport();
     await expect(page.locator(".board__liveness")).toContainText(/connected|live/);
     await expect(page.locator('.shell__status[data-state="live"]'), "board: its complete reconciliation is live").toHaveCount(1);

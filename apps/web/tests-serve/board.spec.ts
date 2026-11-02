@@ -730,7 +730,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     await served?.close();
   });
 
-  test("a 300-character mixed title clamps to two lines while a short task-ID card remains 72px", async ({ page }) => {
+  test("a 300-character mixed title clamps to two lines while a short progress-text card remains 80px", async ({ page }) => {
     served = await startServed("w087-title-bounds");
     const prose = "Several ordinary words must wrap before this unbroken token ";
     const title = prose + "x".repeat(300 - prose.length);
@@ -763,7 +763,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
 
     const containment = await card.evaluate((el) => {
       const box = el.getBoundingClientRect();
-      const ladder = el.querySelector(".gate-ladder")?.getBoundingClientRect();
+      const progress = el.querySelector(".board__card-gates")?.getBoundingClientRect();
       const metaElement = el.querySelector(".board__card-meta");
       const meta = metaElement?.getBoundingClientRect();
       const style = getComputedStyle(el);
@@ -773,21 +773,21 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         maxHeight: style.maxHeight,
         flexShrink: style.flexShrink,
         metaLineHeight: metaElement ? getComputedStyle(metaElement).lineHeight : "",
-        ladderInside: !!ladder && ladder.height > 0 && ladder.top >= box.top && ladder.bottom <= box.bottom,
+        progressInside: !!progress && progress.height > 0 && progress.top >= box.top && progress.bottom <= box.bottom,
         metaInside: !!meta && meta.height > 0 && meta.top >= box.top && meta.bottom <= box.bottom,
       };
     });
-    expect(containment.height).toBe(90);
+    expect(containment.height).toBe(98);
     expect(containment.height).toBeLessThanOrEqual(108);
     expect(containment.minHeight).toBe("64px");
     expect(containment.maxHeight).toBe("108px");
     expect(containment.flexShrink).toBe("0");
     expect(containment.metaLineHeight).toBe("14px");
-    expect(containment.ladderInside).toBe(true);
+    expect(containment.progressInside).toBe(true);
     expect(containment.metaInside).toBe(true);
 
     const shortCard = page.locator('.board__card[data-card-id="W-005"]');
-    expect((await shortCard.boundingBox())?.height).toBe(72);
+    expect((await shortCard.boundingBox())?.height).toBe(80);
   });
 });
 

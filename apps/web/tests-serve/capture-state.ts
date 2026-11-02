@@ -34,7 +34,7 @@ export async function expectCapturedScreenSettled(page: Page, route: CaptureRout
   } else if (route === "board") {
     await expect(page.locator('.shell__status[data-state="live"]'), "board: its complete reconciliation is live").toHaveCount(1);
     await expect.poll(() => page.locator("[data-card-id]").count(), "board: served cards have landed").toBeGreaterThan(0);
-    await expect.poll(() => page.locator(".gate-ladder").count(), "board: gate evidence has landed").toBeGreaterThan(0);
+    await expect.poll(() => page.locator(".board__card-gates").count(), "board: gate progress has landed").toBeGreaterThan(0);
   } else if (route === "seats") {
     await expect(page.locator('.shell__status[data-state="ready"]'), "seats: its roster and model reads have settled").toHaveCount(1);
     const selects = page.locator('select[aria-label^="model for seat "]');
