@@ -145,6 +145,7 @@ function Column({
   const totalCount = column.totalCount ?? column.cards.length;
   const blockedCount = column.blockedCount ?? column.cards.filter((card) => card.blocked).length;
   const dwellSampleCount = column.dwellSampleCount ?? 0;
+  const showDwell = column.id !== "done" && column.id !== "halted";
   const shown = column.cards.length === totalCount
     ? `${totalCount} shown`
     : `${column.cards.length} of ${totalCount} shown`;
@@ -165,7 +166,7 @@ function Column({
       {column.exitRule !== undefined && <div className="board__column-policy"><span>Exit</span> {column.exitRule}</div>}
       <div className="board__column-metrics">
         <span className={column.atCap ? "board__wip-count board__wip-count--at-cap" : "board__wip-count"}>{wip}</span>
-        <span className="board__column-dwell" title={dwellTitle}>median {formatDwell(column.medianDwellMs)}</span>
+        {showDwell && <span className="board__column-dwell" title={dwellTitle}>median {formatDwell(column.medianDwellMs)}</span>}
       </div>
       <div className="board__blocked-count">{blockedCount} blocked · counted</div>
       <div className={column.cap === undefined ? "board__wip-rule board__wip-rule--no-cap" : "board__wip-rule"}>

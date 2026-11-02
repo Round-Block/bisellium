@@ -294,6 +294,9 @@ function classifiedCards(
       else if (traditioAt !== undefined) askInstants.push(traditioAt);
     }
     card.waitingSince = askInstants.length > 0 ? Math.min(...askInstants) : undefined;
+    const handoffStage = recordValue(opus.traditio, "stage");
+    const handoffAt = instantMs(recordValue(opus.traditio, "at"));
+    card.dwellSince = handoffStage === opus.state ? handoffAt : undefined;
     cards.set(opus.id, card);
   }
   return cards;
@@ -439,7 +442,7 @@ export function boardModel(
       col.atCap = wipCount >= col.cap;
     }
     const now = options.now ?? Date.now();
-    const dwells = col.cards
+    const dwells = col.id === "done" || col.id === "halted" ? [] : col.cards
       .flatMap((card) => card.dwellSince === undefined ? [] : [Math.max(0, now - card.dwellSince)])
       .sort((a, b) => a - b);
     col.dwellSampleCount = dwells.length;
