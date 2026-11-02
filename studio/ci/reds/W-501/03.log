@@ -1,0 +1,41 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-501-b3\s --import tsx apps/web/test/w501.test.ts
+# exit: 1
+# at: 2026-11-02T14:48:29.550Z
+# sella: builder.W-501
+# tree: tree:e4343a39289bf6f7255cfe49099b93dc85388e22
+# ticket: {"opus":"W-501","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-501/studio","head":"17fdff4505418edb149730253a1044ff600b6e35","brief":"6ffbf3798472e9e083367d05ccd3e197d1f39cf8","at":"2026-11-02T14:48:28.402Z"}
+
+TAP version 13
+# Subtest: W-501-b3 behaviour 3: reads send the session token, a refused read raises the prompt, and a token saved after one re-reads the screens
+not ok 1 - W-501-b3 behaviour 3: reads send the session token, a refused read raises the prompt, and a token saved after one re-reads the screens
+  ---
+  duration_ms: 3.145708
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-501/apps/web/test/w501.test.ts:1:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    a read sends the session token
+    + actual - expected
+    
+    + undefined
+    - 'tok w501/+'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'tok w501/+'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-501/apps/web/test/w501.test.ts:63:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 146.391136
