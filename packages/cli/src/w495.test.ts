@@ -162,3 +162,35 @@ test("W-495-b1 behaviour 1: the plans' whole use over a span is read from every 
   claudeFile(home, "2026-11-01T08:00:00.000Z", 52, 1793858400);
   assert.equal(takeReading(home, new Date("2026-11-01T08:00:00.000Z"), "probe").claude_resets, 1793858400, "a reading carries claude_resets from rl.seven_day.resets_at");
 });
+
+test("W-495-b2 behaviour 2: the checkpoint figures are the cycle from the first spec signature to land, the lead from the greenlight to land and the plans' use in the cycle; what is missing is named, never filled in", async () => {
+  const m = await loadCheckpoint();
+  const checkpointFigures = fn(m, "checkpointFigures", "checkpoint.ts");
+  const firstSpecSignature = fn(m, "firstSpecSignature", "checkpoint.ts");
+  const fillFigures = fn(m, "fillFigures", "checkpoint.ts");
+  const log = (at: string | string[]): string => `# opus: W-494\n# phase: spec\n${(Array.isArray(at) ? at : [at]).map((a) => `# at: ${a}\n`).join("")}\nbody\n`;
+  const src = (files: Record<string, string>): SpecLogs => ({ read: (rel) => files[rel.slice(3)], list: () => Object.keys(files) });
+  const logs = src({ "W-494-spec-1.log": log("2026-11-01T12:57:17.314Z"), "W-494-spec-2.log": log("2026-11-01T13:20:00.000Z"), "W-4940-spec-1.log": log("2026-11-01T01:00:00.000Z"), "W-494-spec-3.log": log(["2026-11-01T02:00:00.000Z", "2026-11-01T03:00:00.000Z"]), "W-494-review-1.log": log("2026-11-01T00:00:00.000Z") });
+  const branch = src({ "W-494-spec-4.log": log("2026-11-01T14:00:00.000Z") });
+  const spec = firstSpecSignature("W-494", [undefined, branch, logs]);
+  assert.equal(spec?.toISOString(), "2026-11-01T12:57:17.314Z", "the earliest # at of the opus's spec logs, across the sources: not another opus's, not a review log, not a header with two");
+  const greenlit = new Date("2026-11-01T11:39:59Z");
+  const land = new Date("2026-11-01T15:35:02Z");
+  const readings = [reading("2026-11-01T12:56:48Z", undefined, 51, 78), reading("2026-11-01T14:00:00Z", undefined, 52, 79), reading("2026-11-01T15:09:49Z", "W-494", 53, 80), reading("2026-11-01T16:00:00Z", undefined, 60, 90)];
+  const fig = checkpointFigures({ id: "W-494", spec, greenlit, land, readings });
+  assert.ok("sentence" in fig, `figures computed: ${JSON.stringify(fig)}`);
+  assert.equal(fig.sentence, `Cycle 158 min from the first spec signature (11-01 12:57Z) to land (11-01 15:35Z); lead 235 min (0.2 days) from the greenlight (11-01 11:39Z); Claude week +2%, Codex week +2% over 2.6 h ${TAIL}`, "the row's figures: cycle, lead and the plans' use in the cycle");
+  assert.deepEqual([fig.cycle, fig.lead], [158, 235], "the minutes, rounded");
+  const none = checkpointFigures({ id: "W-494", spec, greenlit, land, readings: [] });
+  assert.ok("sentence" in none && none.sentence.includes("Claude week unread, Codex week unread over 2.6 h"), "no reading in the cycle: the cost says unread, computed, not refused");
+  const missing = checkpointFigures({ id: "W-494", spec: undefined, greenlit: undefined, land: undefined, readings: { error: "EACCES" } });
+  assert.ok("missing" in missing, "nothing to compute from: missing");
+  assert.equal(missing.missing.length, 4, `each missing input is named: ${JSON.stringify(missing)}`);
+  assert.match(missing.missing.join(" | "), /first spec signature.*greenlight.*land.*usage readings cannot be read \(EACCES\)/, "the start, the greenlight, the land and the readings, in that order");
+  assert.doesNotMatch(missing.missing.join(" | "), /\d+ min|\+\d+%|\d+\.\d h/, "and no value is suggested");
+  const late = checkpointFigures({ id: "W-494", spec: new Date("2026-11-01T16:00:00Z"), greenlit, land, readings });
+  assert.ok("missing" in late && /after the land/.test(late.missing[0] ?? ""), "a start after the land is named, not a negative cycle");
+  const page = ["<tr><td>W-4940 shipped</td><td>{{figures}}</td></tr>", "<tr><td>W-494 shipped</td><td>{{figures}} Review passed.</td></tr>", "<tr><td>W-493</td><td>{{figures}}</td></tr>"].join("\n");
+  const filled = fillFigures(page, "W-494", "FIG.");
+  assert.deepEqual(filled, { page: ["<tr><td>W-4940 shipped</td><td>{{figures}}</td></tr>", "<tr><td>W-494 shipped</td><td>FIG. Review passed.</td></tr>", "<tr><td>W-493</td><td>{{figures}}</td></tr>"].join("\n"), filled: 1 }, "the slot is filled only on the line naming the opus");
+});
