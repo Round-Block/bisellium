@@ -194,3 +194,48 @@ test("W-495-b2 behaviour 2: the checkpoint figures are the cycle from the first 
   const filled = fillFigures(page, "W-494", "FIG.");
   assert.deepEqual(filled, { page: ["<tr><td>W-4940 shipped</td><td>{{figures}}</td></tr>", "<tr><td>W-494 shipped</td><td>FIG. Review passed.</td></tr>", "<tr><td>W-493</td><td>{{figures}}</td></tr>"].join("\n"), filled: 1 }, "the slot is filled only on the line naming the opus");
 });
+
+test("W-495-b3 behaviour 3: done writes the checkpoint figures into the row naming the opus, at its {{figures}} slot; a row without the slot, or figures it cannot compute, hold done and name what is missing", { timeout: 1_800_000 }, () => {
+  const chore = `chore/done-${OPUS}`;
+  const ROW = "docs/design/dossier/progress-body.html";
+  const w = world("w495-b3", "cleanup");
+  put(w.repo, ROW, "<tr><td>W-899 shipped</td></tr>\n");
+  commit(w.repo, "test: master keeps the history page");
+  git(w.repo, ["push", "-q", "origin", "master"]);
+  scenario(w, { list: mergedList(w) });
+  touchHandoff(w);
+  // the readings: the baseline before the first spec signature, a stale dip inside, and a reading after the land
+  putReadings(w.home, [reading("2026-10-01T00:00:00.000Z", undefined, 1, 1), reading("2026-10-02T00:30:00.000Z", undefined, 10, 20), reading("2026-10-02T05:00:00.000Z", undefined, 12, 23), reading("2026-10-02T06:00:00.000Z", OPUS, 12, 22), reading("2026-10-02T07:00:00.000Z", undefined, 13, 25), reading("2099-01-01T00:00:00.000Z", undefined, 90, 90)]);
+  const page = (): string => readFileSync(join(w.repo, ROW), "utf8");
+  const held = (label: string, why: RegExp): void => {
+    const was = page();
+    const o = next(w, [OPUS, "--perform", "--expect", "done"]);
+    expectHeld(o, label);
+    const line = outLines(o).find((l) => l.startsWith("why: ")) ?? "";
+    assert.match(line, why, ran(`${label}: the why names what is missing`, o));
+    assert.doesNotMatch(line, /Claude week \+|Cycle \d+ min/, ran(`${label}: and suggests no value`, o));
+    assert.equal(page(), was, `${label}: the page is unchanged`);
+    assert.equal(branchExists(w, chore), false, `${label}: no chore/done-<id> is made`);
+  };
+  // a row with typed figures and no slot: held
+  put(w.repo, ROW, `<tr><td>W-899 shipped</td></tr>\n<tr><td>${OPUS} shipped</td><td>Cycle about 240 min, Claude week +0%, Codex week +0% over 7.8 h.</td></tr>\n`);
+  held("a row with typed figures and no slot", /has no \{\{figures\}\} slot/);
+  // the slot, but the readings cannot be read: held, named
+  put(w.repo, ROW, `<tr><td>W-899 shipped</td></tr>\n<tr><td>${OPUS} shipped</td><td>{{figures}} Review passed.</td></tr>\n`);
+  rmSync(readingsFile(w.home));
+  mkdirSync(readingsFile(w.home));
+  held("unreadable readings", /the checkpoint figures cannot be computed: the usage readings cannot be read/);
+  rmSync(readingsFile(w.home), { recursive: true });
+  putReadings(w.home, [reading("2026-10-01T00:00:00.000Z", undefined, 1, 1), reading("2026-10-02T00:30:00.000Z", undefined, 10, 20), reading("2026-10-02T05:00:00.000Z", undefined, 12, 23), reading("2026-10-02T06:00:00.000Z", OPUS, 12, 22), reading("2026-10-02T07:00:00.000Z", undefined, 13, 25), reading("2099-01-01T00:00:00.000Z", undefined, 90, 90)]);
+  // the slot: done fills it with the figures it computes and commits the row
+  const o = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectStep(o, "done", "performed", "the row with the slot admits done");
+  const spec = new Date(T.spec);
+  const greenlit = new Date(git(w.repo, ["log", "--reverse", "--format=%cI", "master"]).split("\n")[0]!);
+  const land = new Date(git(w.repo, ["show", "-s", "--format=%cI", w.mergeOid!]));
+  const cycle = Math.round((land.getTime() - spec.getTime()) / 60_000);
+  const lead = Math.round((land.getTime() - greenlit.getTime()) / 60_000);
+  const sentence = `Cycle ${cycle} min from the first spec signature (${stamp(spec)}) to land (${stamp(land)}); lead ${lead} min (${(lead / 1440).toFixed(1)} days) from the greenlight (${stamp(greenlit)}); Claude week +3%, Codex week +5% over ${((land.getTime() - spec.getTime()) / 3_600_000).toFixed(1)} h ${TAIL}`;
+  const committed = git(w.repo, ["show", `refs/heads/${chore}:${ROW}`]);
+  assert.equal(committed.split("\n")[1], `<tr><td>${OPUS} shipped</td><td>${sentence} Review passed.</td></tr>`, ran("the done commit's row carries the computed figures in the slot", o));
+});
