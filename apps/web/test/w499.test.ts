@@ -84,3 +84,33 @@ test("W-499-b1 behaviour 1: opened lifecycle column aligns and the most recent o
   }
 });
 
+test("W-499-b2 behaviour 2: Why it waits states each reason once", () => {
+  const question = "Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new item?";
+  const officina: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit"> = {
+    lifecycle: { id: "opus", states: [{ id: "review", name: "Review", phase: "awaiting_review" }] },
+    probationes: [{ id: "patron", name: "Patron call", kind: "human" }],
+    wip_limit: 4,
+  };
+  const opus: OpusEntry = {
+    id: "W-004", title: "Inventory drag-and-drop", body: "Record body", kind: "ui", collegium: "design",
+    sella: "builder", state: "review", tokens: 0, probationes: { patron: { status: "pending" } },
+    traditio: { next: question, blocked_on: "patron" },
+  };
+  const inbox: Pick<InboxResponse, "opera" | "petitiones"> = {
+    opera: [{ id: opus.id, title: opus.title, collegium: opus.collegium, sella: opus.sella }],
+    petitiones: [
+      { id: "P-1", opus: opus.id, from: "eng-lead", subject: "Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new…", body: question },
+      { id: "P-2", opus: opus.id, from: "producer", subject: "Call", body: "Patron call is pending." },
+      { id: "P-3", opus: opus.id, from: "producer", subject: "Explicit subject fallback", body: "   " },
+    ],
+  };
+  const card = boardModel(officina, [opus], inbox).waiting[0];
+  const detail = drawerDetail(opus, officina, inbox, [], card);
+  assert.deepEqual(
+    detail.waitingReasons,
+    [question, "Patron call is pending.", "Explicit subject fallback"],
+    "petitio bodies, recorded gates and handoff copy contribute one exact nonblank bullet apiece",
+  );
+  assert.equal(detail.waitingReasons?.[0], question, "the complete long question is not replaced by its capped subject");
+});
+

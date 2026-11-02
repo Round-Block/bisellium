@@ -220,3 +220,19 @@ test("W-499-b1 keyboard-focused cards keep their complete outline in the clear i
   expect(openGeometry.gutterColumnId, "1280-expanded-W-004-open: at the aligned target no preceding-column content occupies the clipped inset").toBeNull();
 });
 
+test("W-499-b2 Why it waits states each reason once at 1280, 640 and 390", async ({ page }) => {
+  served = await startServed("w499-b2");
+  for (const width of [1280, 640, 390] as const) {
+    await openBoard(page, width, "expanded", `b2-${width}`);
+    await page.locator('[data-card-id="W-004"]').click();
+    const reasons = page.locator(".board-drawer__reason");
+    await expect(reasons, `${width}: the sample wait has one question, one pending gate and one handoff reason`).toHaveCount(3);
+    await expect(reasons.nth(0), `${width}: the complete question appears once`).toHaveText(/Drag-and-drop grew a second screen \(split stacks\)\. Accept the scope drift and\s+ship both, or cut split stacks to a new item\?/);
+    await expect(reasons.nth(1), `${width}: the recorded pending gate appears once`).toHaveText("Patron call is pending.");
+    await expect(reasons.nth(2), `${width}: the handoff reason appears once`).toHaveText("await patron call");
+    expect((await reasons.allTextContents()).join(" ").match(/Drag-and-drop grew a second screen/g)?.length, `${width}: the question sentence is not repeated inside its own bullet`).toBe(1);
+    await expect(page.locator(".board-drawer__reasons"), `${width}: no capped subject is joined back onto its source body`).not.toContainText("new…:");
+    await page.locator(".board-drawer__close").click();
+  }
+});
+
