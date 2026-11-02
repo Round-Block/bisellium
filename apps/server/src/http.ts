@@ -457,6 +457,20 @@ function checkWriteAuth(req: IncomingMessage, token: string, acceptedOrigins: Ac
   return undefined;
 }
 
+/** W-501: a GET under /api/ serves studio state, so it carries the session token: the `X-Bisellium-Token` header (every
+ *  `fetch` the console makes), or, on /api/live alone, `?token=` (a browser's EventSource cannot send a header). The
+ *  shell (`/`) and `/assets/` are not under /api/: a navigation and a script tag send no header, they hold no studio
+ *  state, and D-023 keeps the token out of the bundle. */
+function readTokenOk(req: IncomingMessage, url: URL, token: string): boolean {
+  if (tokensMatch(token, req.headers["x-bisellium-token"] as string | undefined)) return true;
+  return url.pathname === "/api/live" && tokensMatch(token, url.searchParams.get("token") ?? undefined);
+}
+
+/** W-501: the access log's request line, with any `token=` query value replaced, so a /api/live token never reaches it. */
+function loggedUrl(raw: string): string {
+  return raw.replace(/([?&]token=)[^&#]*/gi, "$1redacted");
+}
+
 // ---------------------------------------------------------------------------
 // Static file serving: apps/web/dist if it's been built, else a one-page
 // index of the API routes.
@@ -676,6 +690,9 @@ async function route(
       return;
     }
   }
+
+  // ---- W-501: every read under /api/ carries the session token (readTokenOk); the shell and assets need none. -------
+  if (method === "GET" && pathname.startsWith("/api/") && !readTokenOk(req, url, token)) return sendError(res, 401, "missing or invalid X-Bisellium-Token");
 
   if (method === "GET" && pathname === "/api/officina") return sendJson(res, 200, store.api.officina());
 
@@ -951,7 +968,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
   const server = createServer((req, res) => {
     const start = Date.now();
     const method = req.method ?? "GET";
-    const url = req.url ?? "/";
+    const url = loggedUrl(req.url ?? "/");
     res.on("finish", () => {
       // Deliberately not console.error: that binding can be mid-swap for an
       // unrelated concurrent write (withCapturedConsole), which would
