@@ -504,7 +504,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await served?.close();
   });
 
-  test("1280px: 288px lifecycle columns below the waiting strip, task-ID cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
+  test("1280px: 288px lifecycle columns below the waiting strip, 80px task-ID/progress cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
     served = await startServed("board-1280");
     const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -519,10 +519,10 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const columnsBox = await page.locator(".board__columns").boundingBox();
     expect((waitingBox?.y ?? Number.POSITIVE_INFINITY) + (waitingBox?.height ?? 0)).toBeLessThanOrEqual((columnsBox?.y ?? 0) + 1);
 
-    // D-143 puts a task-ID line on every card, including the non-waiting Done card.
+    // D-143 keeps the task-ID line; W-493 adds the 14px progress line above it.
     const card = page.locator('.board__column[data-column-id="done"] .board__card').first();
     const cardBox = await card.boundingBox();
-    expect(cardBox?.height).toBeCloseTo(72, 0);
+    expect(cardBox?.height).toBeCloseTo(80, 0);
     const cardShadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
     expect(cardShadow === "none" || cardShadow === "").toBe(true);
 
