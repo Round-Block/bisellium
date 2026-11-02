@@ -1,0 +1,22 @@
+# opus: W-501
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19c51-8f98-7b32-8c2b-1f7a06fcc4d2
+# outcome: failed
+# at: 2026-11-02T14:15:45.322Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-501.md blob:25717421183422d6b989abdb58c2c2539beff587
+# ticket: {"opus":"W-501","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"25717421183422d6b989abdb58c2c2539beff587","at":"2026-11-02T14:15:40.020Z"}
+
+## Findings
+1. blocking — brief:89 The prototype’s `readSucceeded` is module-global, not mount-scoped: after an earlier successful screen, a serve restart leaves a stale stored token; navigating to a new screen gets `401`, but saving the replacement token leaves `rereadOwed` false and the real screen failed. Replace brief:89 with: `| 6. A read’s refusal in the current routed-screen mount | each route/readEpoch mount begins with no successful screen read; local refusal, its pre-success 401 and a refused stream owe one re-read, while a later refusal after that mount loaded does not | beginReadMount (specified), called by App from useLayoutEffect on route/readEpoch before screen reads, resets the mount marker; getJSON, subscribeLive and rereadAfterTokenSaved refuse and consume it as stated; W-501-b3 pins a prior successful screen followed by a stale-token failure on a newly mounted screen |`. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/test/w501.test.ts W-501-b3 “a stale token on a new mount after an earlier success re-reads once”
+2. advisory — brief:139 “A dropped live stream” overpromises: b3 expressly makes an ordinarily reconnecting stream issue no check read and owe no remount; only an authentication-refused, closed stream does. Replace brief:139 with: `5. Once a screen has loaded, saving a new token just closes the prompt, so a half-written answer is kept; you then press the button again. The screen reloads its data only when it never got its data—a fresh tab or stale token before the current screen loaded—or when the live stream is authentication-refused and closed; an ordinarily dropped, reconnecting stream does not reload it. Agree?` [severity: S2] [class: spec×prose-contradiction-under-revision] — check: apps/web/test/w501.test.ts W-501-b3 “a reconnecting stream issues no read”
+3. advisory — brief:140 Ordinary CI cannot compare the screenshots as claimed: no complete baseline set is committed or downloaded, and `screenshots.spec.ts` skips comparison when that set is absent, matching the recorded 148-pass/1-skip evidence. Replace brief:140 with: `6. No file this opus changes is one you own. Because it is security work, it waits for your yes on this design before the branch opens. Once the token is in, no screen’s look changes. A fresh tab shows each screen’s loading or error state behind the prompt, and the live stream waits until the token is saved. The pixel-baseline row skips here and in ordinary CI while no complete baseline set is committed; the remaining served browser rows still run. Agree?` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/tests-serve/screenshots.spec.ts
+4. advisory — brief:91 Row 8 names only the new W-501 rows’ fixtures, while owned existing server, CLI and Playwright fixtures add readers for held, printed or scraped tokens and their HTTP/browser results. Replace brief:91 with: `| 8. The owned tests’ fixture and result inputs | fixture setup succeeds; held, printed or scraped tokens are nonempty and equal the current fixture server token; bound ports, HTTP operations, logs and browser results have the values each retained or new assertion expects | every filesystem, subprocess, server and browser helper failure throws or rejects, and node:test/Playwright assertions reject an absent token or mismatched result |`. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.changed-test-reader-coverage
+
+## Verdict
+The mount-lifetime defect is a design-changing blocker; the remaining findings are advisory corrections.
+
+VERDICT: FAIL

@@ -124,6 +124,7 @@ type ErrorCode =
   | "request body must be a JSON object"
   | "request body too large"
   | "forbidden"
+  | "host is not this console"
   | "not found"
   | "too many /api/live clients"
   | "missing or invalid X-Bisellium-Token"
@@ -421,6 +422,17 @@ export function acceptedOriginsFor(port: number): AcceptedOrigins {
   return [`http://127.0.0.1:${port}`, `http://localhost:${port}`];
 }
 
+/** W-501: a DNS-rebinding page (a foreign name re-resolved to 127.0.0.1) reaches this socket with its own name in `Host`,
+ *  so every request must name the bound loopback socket: the authority of one of the accepted origins (`127.0.0.1:<port>`
+ *  or `localhost:<port>`, ASCII case ignored). An absent, repeated-and-joined or any other Host is refused. Derived from
+ *  the same pair the write Origin check reads, so the two never drift apart. */
+function hostAccepted(req: IncomingMessage, acceptedOrigins: AcceptedOrigins): boolean {
+  const host = req.headers["host"];
+  if (typeof host !== "string") return false;
+  const given = host.toLowerCase();
+  return acceptedOrigins.some((origin) => origin.slice(origin.indexOf("//") + 2) === given);
+}
+
 /** Order matters, and is exactly what the spec's cases pin down: Origin
  *  (this is a local tool, never a CORS-enabled API) is checked before the
  *  token is even looked at; then the token; then Content-Type. An absent
@@ -443,6 +455,38 @@ function checkWriteAuth(req: IncomingMessage, token: string, acceptedOrigins: Ac
   const contentType = (req.headers["content-type"] ?? "").toString();
   if (!/^application\/json(\s*;.*)?$/i.test(contentType.trim())) return 415;
   return undefined;
+}
+
+/** W-501: a GET under /api/ serves studio state, so it carries the session token: the `X-Bisellium-Token` header (every
+ *  `fetch` the console makes), or, on /api/live alone, `?token=` (a browser's EventSource cannot send a header). The
+ *  shell (`/`) and `/assets/` are not under /api/: a navigation and a script tag send no header, they hold no studio
+ *  state, and D-023 keeps the token out of the bundle. */
+function readTokenOk(req: IncomingMessage, url: URL, token: string): boolean {
+  if (tokensMatch(token, req.headers["x-bisellium-token"] as string | undefined)) return true;
+  return url.pathname === "/api/live" && tokensMatch(token, url.searchParams.get("token") ?? undefined);
+}
+
+/** W-501: the access log's request line, with the value of every query parameter whose DECODED name is `token` replaced,
+ *  so a /api/live token never reaches it. The reader (`readTokenOk`) names parameters through URLSearchParams, which
+ *  decodes `%74oken` and `+`; the redaction decodes each name the same way, so the two cannot disagree on what a token
+ *  parameter is. The name match is case-insensitive: redacting more than the reader accepts costs nothing. */
+function loggedUrl(raw: string): string {
+  const hash = raw.indexOf("#");
+  const head = hash < 0 ? raw : raw.slice(0, hash);
+  const tail = hash < 0 ? "" : raw.slice(hash);
+  const q = head.indexOf("?");
+  if (q < 0) return raw;
+  const query = head
+    .slice(q + 1)
+    .split("&")
+    .map((pair) => {
+      const eq = pair.indexOf("=");
+      const name = eq < 0 ? pair : pair.slice(0, eq);
+      const decoded = [...new URLSearchParams(name).keys()][0] ?? "";
+      return decoded.toLowerCase() === "token" ? `${name}=redacted` : pair;
+    })
+    .join("&");
+  return `${head.slice(0, q + 1)}${query}${tail}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -648,6 +692,10 @@ async function route(
   const pathname = url.pathname;
   const method = req.method ?? "GET";
 
+  // ---- W-501: every request, read or write, shell or asset, names the bound loopback socket in Host, before any route
+  // (a DNS-rebinding page carries its own name). -------------------------------------------------------------------
+  if (!hostAccepted(req, acceptedOrigins)) return sendError(res, 403, "host is not this console");
+
   // ---- writes: token + accepted-origin + application/json required.
   // Loopback (the bind itself) is never sufficient on its own — see
   // checkWriteAuth. --------------------------------------------------------
@@ -660,6 +708,9 @@ async function route(
       return;
     }
   }
+
+  // ---- W-501: every read under /api/ carries the session token (readTokenOk); the shell and assets need none. -------
+  if (method === "GET" && pathname.startsWith("/api/") && !readTokenOk(req, url, token)) return sendError(res, 401, "missing or invalid X-Bisellium-Token");
 
   if (method === "GET" && pathname === "/api/officina") return sendJson(res, 200, store.api.officina());
 
@@ -935,7 +986,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
   const server = createServer((req, res) => {
     const start = Date.now();
     const method = req.method ?? "GET";
-    const url = req.url ?? "/";
+    const url = loggedUrl(req.url ?? "/");
     res.on("finish", () => {
       // Deliberately not console.error: that binding can be mid-swap for an
       // unrelated concurrent write (withCapturedConsole), which would

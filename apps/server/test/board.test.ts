@@ -75,7 +75,7 @@ interface JsonResponse {
 }
 
 async function getJson(base: string, path: string): Promise<JsonResponse> {
-  const res = await fetch(base + path);
+  const res = await fetch(base + path, { headers: { "x-bisellium-token": TEST_TOKEN } });
   const text = await res.text();
   let body: unknown;
   try {
@@ -113,7 +113,7 @@ function connectSSE(port: number): { events: Record<string, unknown>[]; close: (
     failReady = reject;
   });
   ready.catch(() => undefined); // a test that never awaits it raises no unhandled rejection
-  const req = httpRequest({ host: "127.0.0.1", port, path: "/api/live", method: "GET" }, (res: IncomingMessage) => {
+  const req = httpRequest({ host: "127.0.0.1", port, path: "/api/live", method: "GET", headers: { "x-bisellium-token": TEST_TOKEN } }, (res: IncomingMessage) => {
     markReady();
     res.setEncoding("utf8");
     res.on("data", (chunk: string) => {

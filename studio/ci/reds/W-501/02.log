@@ -1,0 +1,42 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-501-b2\s --import tsx apps/server/test/w501.test.ts
+# exit: 1
+# at: 2026-11-02T14:48:22.235Z
+# sella: builder.W-501
+# tree: tree:ef8d93b14ee354a11ac73bdc675f385c6398f2a4
+# ticket: {"opus":"W-501","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-501/studio","head":"c9afe8bdf78f02940a8cdecaaa98253b54314948","brief":"6ffbf3798472e9e083367d05ccd3e197d1f39cf8","at":"2026-11-02T14:48:21.037Z"}
+
+TAP version 13
+GET /api/officina 200 5ms
+# Subtest: W-501-b2 behaviour 2: every GET under /api/ needs the session token, by header or, on /api/live only, by query; the shell and assets need none
+not ok 1 - W-501-b2 behaviour 2: every GET under /api/ needs the session token, by header or, on /api/live only, by query; the shell and assets need none
+  ---
+  duration_ms: 134.068467
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-501/apps/server/test/w501.test.ts:1:4859'
+  failureType: 'testCodeFailure'
+  error: |-
+    /api/officina without the token is refused
+    
+    200 !== 401
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 401
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-501/apps/server/test/w501.test.ts:164:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 141.361585

@@ -183,7 +183,7 @@ test("W-472-b2 behaviour 2: new --description writes the long text below the fro
   }
   try {
     const port = Number(/listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(lines.join("\n"))?.[1]);
-    const opera = (await (await fetch(`http://127.0.0.1:${port}/api/opera`)).json()) as { id: string; body: string }[];
+    const opera = (await (await fetch(`http://127.0.0.1:${port}/api/opera`, { headers: { "x-bisellium-token": started.token ?? "" } })).json()) as { id: string; body: string }[];
     // the store drops the closing LF as file framing (apps/server/src/store.ts readOpusBody), so the body is the text itself
     assert.equal(opera.find((o) => o.id === added.out.trim())?.body, text, "GET /api/opera carries the description as the record's body");
   } finally {

@@ -68,7 +68,7 @@ async function main(): Promise<void> {
     // ---- checkStudio is the real one (./check.js), not a stub: /api/health
     // reflects an actual check run against this studio. ---------------------
     {
-      const res = await fetch(`${base}/api/health`);
+      const res = await fetch(`${base}/api/health`, { headers: { "x-bisellium-token": started.token ?? "" } });
       const body = (await res.json()) as { ok?: boolean; blocks?: number; advisories?: number; findingsByRule?: unknown };
       check("serve wiring: /api/health 200", res.status === 200, String(res.status));
       check(

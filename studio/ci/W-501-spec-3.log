@@ -1,0 +1,28 @@
+# opus: W-501
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T14:41:15.741Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-501.md blob:6ffbf3798472e9e083367d05ccd3e197d1f39cf8
+# ticket: {"opus":"W-501","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"6ffbf3798472e9e083367d05ccd3e197d1f39cf8","at":"2026-11-02T14:41:09.036Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-501-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review round 2's S1 is closed by design: whether a read succeeded is scoped to the routed-screen mount, not the module; `beginReadMount` (new api.ts export) resets the mount marker and App calls it from `useLayoutEffect` on `[route, readEpoch]`, before the screen's passive-effect reads; row 6 is the reviewer's replacement text, its "Rejected by" cell opening with the backticked function name the admission requires (D-050) and carrying its W-473 pins — check: brief:89, brief:26, brief:36, brief:66
+2. advisory — the S1 is pinned by `W-501-b3` "a stale token on a new mount after an earlier success re-reads once" (an earlier screen loads, a new mount begins, its stale-token 401 owes one re-read, taken once) and by the source pin "the shell begins a read mount on each route and read epoch"; K24 (the marker never reset, revision 1's module-scoped behaviour on this sequence) and K22 fail at the first, K25 (App not beginning a mount) at the second; all twenty-five kills are guarded — check: kills.out, kill-K24.out, kill-K25.out, brief:110
+3. advisory — the three advisories adopt the reviewer's replacement text verbatim at brief:139 (only an authentication-refused, closed stream reloads), brief:140 (the pixel-baseline row skips while no complete baseline set is committed) and brief:91 (row 8, the owned tests' fixture and result inputs); row 8's cell gains the admission's "limit:" opening and "unpinned, a stated limit (D-076 E)", forced by D-050 and the ledger writer; brief:120's skip sentence is aligned with brief:140 — check: admission.out, ledger-check.out, brief:120
+4. advisory — red order one at a time over master 685a2eea (master moved only in studio/ and one dossier html since revision 1): each red is accepted and fails at its declared assertion, each green passes; gates pass, the served suite runs 148 passed and 1 skipped (the pixel-baseline row), the flips match Acceptance row for row (34, 4, 7, 6, 2, 4, 1 and the served suite cut at its bound, plus api.test.ts), and the Codex test check of this revision lists one flip, server.test.ts:583, named in Acceptance; the same nine rows of four apps/web/test files outside npm test fail on master as on the tip — check: red-accept.out, declared.out, gates-proto.out, serve-proto.out, flips.out, flips-web.out, fixture-census.md, web-baseline.out
+5. advisory — no other promise or scope changed; no code-owned path; security work, so the design and Defaults wait for the Patron before branch — check: brief:57, brief:131
+
+## Earlier findings
+
+- ci/W-501-spec-2.log #1: closed — the success marker is mount-scoped (`beginReadMount`, apps/web/src/api.ts:206, called at apps/web/src/App.tsx:103 from useLayoutEffect on route/readEpoch), row 6 replaced as asked (brief:89), pinned by W-501-b3 "a stale token on a new mount after an earlier success re-reads once" and killed by K24 and K25 (kills.out)
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-501.md`: three behaviours, the console refuses a request whose Host is not its bound loopback socket, needs the session token on every GET under /api/, and its pages send that token, re-reading a screen once when its own mount never loaded; prototype `prototype.mbox` (sha256 a12842f0…) over master 685a2eea, scratch tip b296d09f; no code-owned path; security work, so the Patron approves the design before branch.

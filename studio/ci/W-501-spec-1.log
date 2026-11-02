@@ -1,0 +1,25 @@
+# opus: W-501
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T12:52:03.229Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-501.md blob:25717421183422d6b989abdb58c2c2539beff587
+# ticket: {"opus":"W-501","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"1f92ec5dc47adeb07e93367c581f3cbdb591d923","brief":"25717421183422d6b989abdb58c2c2539beff587","at":"2026-11-02T12:51:57.339Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-501-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the read surface is open on master: every GET route answers without the token and no route reads Host (http.ts:433, :664, :692, :742), so a DNS-rebinding page reads studio state; red-b1 shows master answering a rebinding Host 200 and red-b2 a tokenless read 200 — check: red-b1.log, red-b2.log
+2. advisory — the design is two gates at the top of route(): Host against the authorities of the accepted origin pair on every request (shell, assets and writes included; writes keep Origin, token and Content-Type after it), then the session token on every GET under /api/, by header or, on /api/live only, by query since EventSource sends no header; the shell and assets pass on Host alone because a navigation sends no header, they hold no state, and D-023 keeps the token out of anything GET / serves — check: brief:17, brief:19, brief:20, brief:22, brief:24
+3. advisory — the console sends the held token, refuses a read in the page when none is held (no 401 on the wire), checks a server-closed stream with one read, and re-mounts the routed screen once when the screens never got their data (no token, a 401 before any read succeeded, a refused stream), never after a refusal once they loaded, so a drafted answer survives (the W-412 answer path reads before it writes); a re-mount, not a reload, so a token held in memory for a storage-denied browser survives; the served Playwright suite passes whole on the tip over master 1f92ec5d, 148 passed and 1 skipped (the pixel-baseline row, absent baselines, as on master) — check: serve-proto.out, brief:26
+4. advisory — three behaviours, red order one at a time: each red is accepted and fails at its declared assertion, each green passes, twenty-three kills are all guarded, and the ledger passes the writer — check: red-accept.out, declared.out, kills.out, ledger-check.out
+5. advisory — existing rows flip on the source alone (34 server.test.ts checks with the no-trust-from-Host write row, 4 board.test.ts checks, W-129-b3 to b9, W-153-b5's 6 rows, 2 packages/cli server.test.ts checks, 4 cli.test.ts serve checks, W-472-b2, and the served suite wholesale); the Codex test check (run on an earlier draft of this brief) named two flips (server.test.ts:583 and api.test.ts:62, W-024 behaviour 2), both named in Acceptance with the rest; each fixture now sends or seeds the token it holds (W-412's new served spec among the seeded), and every listed file passes on the tip — check: flips.out, flips-serve.out, flips-web.out, fixture-census.md, gates-proto.out, brief:114
+6. advisory — security work under production lex §7: the design and Defaults wait for the Patron before branch; no code-owned path; four apps/web/test files outside npm test (w410, w463, w487, w493) fail the same nine rows on master as on the tip — check: brief:140, brief:131, web-baseline.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-501.md`: three behaviours, the console refuses a request whose Host is not its bound loopback socket, needs the session token on every GET under /api/, and its pages send that token; prototype `prototype.mbox` over master 1f92ec5d; no code-owned path; security work, so the Patron approves the design before branch.

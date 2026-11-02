@@ -51,7 +51,7 @@ async function expectOnlyScreen(page: Page, route: string): Promise<void> {
 }
 
 async function getJSON<T>(s: ServedInstance, path: string): Promise<T> {
-  const res = await fetch(`${s.baseURL}${path}`);
+  const res = await fetch(`${s.baseURL}${path}`, { headers: { "X-Bisellium-Token": s.token } });
   expect(res.status, `GET ${path}`).toBe(200);
   return (await res.json()) as T;
 }

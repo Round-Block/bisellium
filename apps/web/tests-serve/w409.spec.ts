@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { startServed, type ServedInstance } from "./harness.js";
+import { seedToken, startServed, type ServedInstance } from "./harness.js";
 
 const WIDTHS = [1280, 640, 390] as const;
 let served: ServedInstance | undefined;
@@ -29,6 +29,7 @@ const makeOpus = (id: string, state: string, probationes: Record<string, { statu
 
 test("W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w409-b1");
+  await seedToken(page, served);
   const opera = [
     makeOpus("W-1", "backlog"), makeOpus("W-2", "greenlit"), makeOpus("W-3", "building"),
     makeOpus("W-4", "verifying", { patron: { status: "pending" } }), makeOpus("W-5", "review"),
@@ -56,6 +57,7 @@ test("W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390", as
 
 test("W-409-b2 unified attention totals match on Inbox and Board at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w409-b2");
+  await seedToken(page, served);
   const opera = [makeOpus("W-1", "backlog"), makeOpus("W-2", "building", { patron: { status: "pending" } }), makeOpus("W-3", "done")];
   const inbox = {
     opera: [{ id: "W-1", title: "W-1 title", collegium: "design", sella: "producer" }, { id: "W-2", title: "W-2 title", collegium: "design", sella: "builder" }],
@@ -87,6 +89,7 @@ test("W-409-b2 unified attention totals match on Inbox and Board at 1280, 640 an
 
 test("W-409-b3 ask kinds and long titles stay legible at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w409-b3");
+  await seedToken(page, served);
   const longTitle = `A greenlight request whose deliberately long title remains readable from its native affordance ${"across widths ".repeat(20)}`;
   const opera = [
     { ...makeOpus("W-1", "backlog"), title: longTitle },

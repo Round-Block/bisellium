@@ -12,6 +12,7 @@ import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Page } from "@playwright/test";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // apps/web/tests-serve -> apps/web -> apps -> repo root.
@@ -30,12 +31,12 @@ export interface ServedInstance {
 
 /** Polls `GET /api/officina` until it answers 200 — the readiness probe the
  *  brief requires in place of a fixed sleep. */
-async function waitForReady(baseURL: string, timeoutMs = 20_000): Promise<void> {
+async function waitForReady(baseURL: string, token: string, timeoutMs = 20_000): Promise<void> {
   const start = Date.now();
   let lastErr: unknown;
   while (Date.now() - start < timeoutMs) {
     try {
-      const res = await fetch(`${baseURL}/api/officina`);
+      const res = await fetch(`${baseURL}/api/officina`, { headers: { "X-Bisellium-Token": token } });
       if (res.status === 200) return;
     } catch (e) {
       lastErr = e;
@@ -92,7 +93,7 @@ export async function startServed(tag: string, options: { now?: string; prepareS
   });
 
   const baseURL = `http://127.0.0.1:${port}`;
-  await waitForReady(baseURL);
+  await waitForReady(baseURL, token!);
 
   return {
     port: port!,
@@ -113,4 +114,10 @@ export async function startServed(tag: string, options: { now?: string; prepareS
       rmSync(studioDir, { recursive: true, force: true });
     },
   };
+}
+
+/** W-501: every read under /api/ needs the session token. A spec that is not about pasting it starts as a tab where the
+ *  Patron pasted it: the served token in sessionStorage before any page script runs (the latest seed wins). */
+export async function seedToken(page: Page, served: { token: string }): Promise<void> {
+  await page.addInitScript((token) => window.sessionStorage.setItem("bisellium.token", token), served.token);
 }

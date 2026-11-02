@@ -78,7 +78,7 @@ function studio(exit: string): string {
 
 async function serve(studioDir: string, checkStudio: StartServerOptions["checkStudio"]) {
   const server = await startServer({ studioDir, checkStudio, runners: noopRunners, token: "w153", once: true, now: NOW, port: 0 });
-  return { server, get: (path: string) => fetch(`http://127.0.0.1:${server.port}${path}`) };
+  return { server, get: (path: string) => fetch(`http://127.0.0.1:${server.port}${path}`, { headers: { "x-bisellium-token": "w153" } }) };
 }
 
 test("W-153-b5 behaviour 5: GET /api/completion serves the same meter and estimate from the records", async () => {

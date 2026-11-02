@@ -8,7 +8,7 @@
  * one-behaviour-per-log contract) restricts which behaviour's checks run;
  * omitted, all of this file's behaviours run.
  */
-import { fetchInbox, postWrite, submitAnswer } from "../src/api.js";
+import { fetchInbox, postWrite, setToken, submitAnswer } from "../src/api.js";
 
 const only = process.argv[2] ? Number(process.argv[2]) : undefined;
 
@@ -59,6 +59,8 @@ async function safeWrite<T extends { kind: string }>(fn: () => Promise<T>): Prom
 }
 
 async function main(): Promise<void> {
+  // W-501: a read needs a held token, as the Patron's pasted one
+  setToken("test-token-w024");
   // behaviour 2: fetchInbox GETs /api/inbox and returns the parsed body.
   mockFetch({ status: 200, body: { opera: [], petitiones: [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask", body: "" }] } });
   const inbox = await fetchInbox();

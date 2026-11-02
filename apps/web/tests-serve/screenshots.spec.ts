@@ -62,7 +62,7 @@ async function stabilizeOfficinaPath(page: Page): Promise<void> {
 
 async function expectLoadedState(page: Page, route: string, width: number): Promise<void> {
   if (route === "inbox") {
-    const inbox = await page.request.get(`${served!.baseURL}/api/inbox`);
+    const inbox = await page.request.get(`${served!.baseURL}/api/inbox`, { headers: { "X-Bisellium-Token": served!.token } });
     const fixture = (await inbox.json()) as { petitiones: { id: string; opus: string }[] };
     expect(fixture.petitiones[0]).toMatchObject({ id: "A-1", opus: "W-004" });
     await expect(page.locator(".inbox__row").first()).toHaveAttribute("data-focused", "true");
@@ -77,7 +77,7 @@ async function expectLoadedState(page: Page, route: string, width: number): Prom
       await expect(page.locator(".inbox__reading-pane")).toBeHidden();
     }
   } else if (route === "board") {
-    const officina = await page.request.get(`${served!.baseURL}/api/officina`);
+    const officina = await page.request.get(`${served!.baseURL}/api/officina`, { headers: { "X-Bisellium-Token": served!.token } });
     const fixture = (await officina.json()) as { lifecycle: { states: { phase: string }[] } };
     const lifecyclePhases = new Set(fixture.lifecycle.states.map(({ phase }) => phase).filter((phase) => phase !== "backlog"));
     await expect(page.locator(".board__column[data-column-id]")).toHaveCount(lifecyclePhases.size);

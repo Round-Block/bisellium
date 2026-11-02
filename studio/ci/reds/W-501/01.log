@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-501-b1\s --import tsx apps/server/test/w501.test.ts
+# exit: 1
+# at: 2026-11-02T14:48:04.668Z
+# sella: builder.W-501
+# tree: tree:e522add38283f7f02775caf909981505f051e7f6
+# ticket: {"opus":"W-501","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-501/studio","head":"bc35402274a5df6a895bf34c7e755e4f9f75cce6","brief":"6ffbf3798472e9e083367d05ccd3e197d1f39cf8","at":"2026-11-02T14:48:03.487Z"}
+
+TAP version 13
+GET /api/inbox 200 12ms
+# Subtest: W-501-b1 behaviour 1: a request whose Host is not the bound loopback authority is refused before any route, read or write
+not ok 1 - W-501-b1 behaviour 1: a request whose Host is not the bound loopback authority is refused before any route, read or write
+  ---
+  duration_ms: 149.0988
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-501/apps/server/test/w501.test.ts:1:2291'
+  failureType: 'testCodeFailure'
+  error: |-
+    a rebinding Host is refused on a state read
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-501/apps/server/test/w501.test.ts:96:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 283.585245

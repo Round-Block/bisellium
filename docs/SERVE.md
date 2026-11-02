@@ -31,7 +31,15 @@ serves, read-only through bounded `git`, and overlays them on the trunk's
 file may change only `state` (to `building`, `verifying` or `review`),
 `traditio` and `heartbeat`. It can replace a trunk record, never create one,
 never writes, and reports a degraded read as `branchRecords` in
-`GET /api/officina`. Reads:
+`GET /api/officina`.
+
+Every request, read or write, must name the bound socket in `Host`
+(`127.0.0.1:<port>` or `localhost:<port>`), or it is refused `403` before any
+route (W-501: a DNS-rebinding page carries its own name). Every `GET` under
+`/api/` needs the token `serve` prints, as `X-Bisellium-Token`, or `401`;
+`/api/live` also takes it as `?token=` (EventSource sends no header), and the
+access log prints that value as `redacted`. The shell (`/`) and `/assets/`
+need no token. Reads:
 
 ```
 GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?, lifecycle, branchRecords

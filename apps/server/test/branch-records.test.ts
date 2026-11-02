@@ -283,7 +283,7 @@ interface Json {
   body: any;
 }
 async function get(run: Running, path: string): Promise<Json> {
-  const res = await fetch(run.base + path);
+  const res = await fetch(run.base + path, { headers: { "x-bisellium-token": "w129-token" } });
   const text = await res.text();
   let body: any;
   try {
