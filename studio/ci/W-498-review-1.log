@@ -1,0 +1,19 @@
+# opus: W-498
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19c1a-f48d-7422-89a5-01fa688ff746
+# outcome: failed
+# at: 2026-11-02T11:56:25.681Z
+# tree: tree:3527f591facc6c004c3027bef5678980342a7253
+# brief: briefs/W-498.md blob:330fe4eafb0d54deca45bc2c711119828dc7932c
+# ticket: {"opus":"W-498","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-498/studio","head":"3ddb5548c414fef50c9722256bcab22c426a0ec8","brief":"330fe4eafb0d54deca45bc2c711119828dc7932c","at":"2026-11-02T11:52:53.713Z"}
+
+## Findings
+1. blocking — scripts/ci-scope.mjs:63 `diffPaths` decodes Git’s raw pathname bytes as UTF-8, replacing invalid bytes with U+FFFD; therefore a changed `x<FF>.txt` compares equal to brief-owned `x�.txt`, allowing an unowned source path through `boundaryBreach` despite brief:66 requiring byte-for-byte comparison. [severity: S1] [class: mechanism×identity-normalization-not-centralized] — check: packages/cli/src/next-review.test.ts
+
+## Verdict
+The Files owned authorization boundary can admit a distinct, unowned Git pathname within the declared input domain.
+
+VERDICT: FAIL
