@@ -51,8 +51,7 @@ globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
   calls.push({ url: String(url), init });
   return { ok: status >= 200 && status < 300, status, json: async () => ({ studio: "s", ok: true, output: "" }) } as Response;
 }) as typeof fetch;
-// sleep-waiver: fixture -- a zero-delay turn only, to let the stubbed fetch promises settle; there is no real wait
-const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+const tick = (): Promise<void> => new Promise((r) => setImmediate(r));
 
 // A namespace import, so a name api.ts does not export yet is an assertion's failure, not a module-load error.
 const api = (await import("../src/api.js")) as typeof import("../src/api.js") & Record<string, unknown>;
