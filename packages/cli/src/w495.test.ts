@@ -239,3 +239,15 @@ test("W-495-b3 behaviour 3: done writes the checkpoint figures into the row nami
   const committed = git(w.repo, ["show", `refs/heads/${chore}:${ROW}`]);
   assert.equal(committed.split("\n")[1], `<tr><td>${OPUS} shipped</td><td>${sentence} Review passed.</td></tr>`, ran("the done commit's row carries the computed figures in the slot", o));
 });
+
+test("W-495-b4 behaviour 4: each rung's cost line is the plans' whole use from the opus's first spec signature to the rung's reading", { timeout: 600_000 }, () => {
+  const w = world("w495-b4", "spec");
+  const resets = Math.floor(ms("2026-10-05T00:00:00Z") / 1000);
+  claudeFile(w.home, NOW_ISO, 85, 1793858400);
+  codexLog(w.home, "2026-10-02T11:50:00.000Z", 61, resets);
+  putReadings(w.home, [reading("2026-10-01T00:00:00.000Z", undefined, 50, 30, { codexResets: resets }), reading("2026-10-02T00:30:00.000Z", undefined, 80, 55, { codexResets: resets })]);
+  const o = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(o, "branch", "performed", "the branch rung is performed");
+  const cost = o.out.split("\n").find((l) => l.startsWith("cost: "));
+  assert.equal(cost, "cost: Claude week +5%, Codex week +6% over 11.0 h since the first spec signature", ran("the cost from the last reading before the first spec signature (01:00Z) to the rung's reading (12:00Z)", o));
+});
