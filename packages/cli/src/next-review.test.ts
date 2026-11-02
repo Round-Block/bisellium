@@ -2320,3 +2320,23 @@ test("W-498-b1 behaviour 1: a path opus/<id> changes outside its committed brief
   expectStep(noBrief, "build", "held", "an unreadable committed brief holds");
   assert.equal(noBrief.kv.get("why"), `briefs/${OPUS}.md is not a readable blob on refs/heads/opus/${OPUS}, so the paths opus/${OPUS} changes cannot be checked against Files owned (W-498)`, ran("an unreadable committed brief: why", noBrief));
 });
+
+// W-498 review round 1 (D-086 A): `diffPaths` decodes Git's path bytes as UTF-8, so a changed `x<FF>.txt` reads as `x\uFFFD.txt`.
+// A path whose decoded form holds U+FFFD is no faithful round trip of Git's bytes: it can never be proven owned, even by a
+// brief that spells the replacement character, so it holds the ladder and is named.
+test("W-498-f1 fix 1: a changed path whose bytes are not valid UTF-8 is never owned by the brief's U+FFFD spelling", { timeout: 1_800_000 }, () => {
+  const g = world("w498-f1", "build", { automated: true });
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `x\uFFFD.txt`"));
+  commit(g.wt, `studio(${OPUS}): Files owned names the replacement spelling`);
+  const raw = Buffer.concat([Buffer.from(`${g.wt}/x`), Buffer.from([0xff]), Buffer.from(".txt")]);
+  writeFileSync(raw, "a path of invalid UTF-8\n");
+  commit(g.wt, "fix: a path with the byte 0xFF");
+  writeGates(g);
+  assert.equal(existsSync(raw), true, "fixture: the raw-byte path is committed");
+  const held = next(g, [OPUS, ...BUDGET]);
+  // a plain message: the unfixed ladder's report carries a dispatch-activity read error that is not this row's assertion
+  assert.equal(held.first, `next: ${OPUS} build held`, "a raw 0xFF path is not owned by the brief's U+FFFD spelling: the build holds");
+  w498Held(held, ["x\uFFFD.txt"], "a raw 0xFF path is not owned by the brief's U+FFFD spelling");
+});
