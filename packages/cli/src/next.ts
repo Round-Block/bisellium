@@ -21,6 +21,7 @@
  * `/proc` for EVERY health read (including the verb's own `/proc/self/stat`),
  * honoured only when `BISELLIUM_TEST_CLOCK=1` is also set; so is `--now`.
  */
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync, type Dirent } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -1726,7 +1727,33 @@ function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; roun
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
 /**
- * W-498 (D-076 D): why opus/<id> may not reach the suite or the review, or undefined. Every path `diffPaths` lists for
+ * W-498 fix 1: the paths `git diff --name-only --no-renames -z <base>...<head>` lists, as `diffPaths` reads them but from the
+ * raw bytes: each NUL-split entry is decoded as UTF-8, and `valid` is false for an entry that is not valid UTF-8 (its text then
+ * carries U+FFFD, `diffPaths`'s rendering). Such a path is no faithful round trip of Git's bytes, so it can never be proven
+ * owned; a valid path, U+FFFD included, is compared as written. Undefined when git fails, times out or overflows.
+ */
+function rawDiffPaths(repo: string, base: string, head: string): { text: string; valid: boolean }[] | undefined {
+  const r = spawnSync("git", ["diff", "--name-only", "--no-renames", "-z", `${base}...${head}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "ignore"], timeout: 120_000, maxBuffer: 64 * 1024 * 1024 });
+  if (r.status !== 0 || r.error !== undefined) return undefined;
+  const strict = new TextDecoder("utf-8", { fatal: true });
+  const loose = new TextDecoder("utf-8");
+  const out: { text: string; valid: boolean }[] = [];
+  let from = 0;
+  for (let at = r.stdout.indexOf(0, from); from < r.stdout.length; at = r.stdout.indexOf(0, from)) {
+    const end = at === -1 ? r.stdout.length : at;
+    const raw = r.stdout.subarray(from, end);
+    from = end + 1;
+    if (raw.length === 0) continue;
+    try {
+      out.push({ text: strict.decode(raw), valid: true });
+    } catch {
+      out.push({ text: loose.decode(raw), valid: false });
+    }
+  }
+  return out;
+}
+/**
+ * W-498 (D-076 D): why opus/<id> may not reach the suite or the review, or undefined. Every path `rawDiffPaths` lists for
  * origin/master...opus/<id> (the merge base's diff, so a rebase's conflict resolutions count, and trunk's own moves do not)
  * that is not an officina record (`recordOnly`, the one list certify reads) must be named by the committed branch brief's
  * Files owned (`ownedFiles`, the blob the spec gate judged, never the worktree's): a span equal to the path, or a span
@@ -1735,17 +1762,14 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
  */
 function boundaryBreach(f: Facts): string | undefined {
   const head = `refs/heads/opus/${f.id}`;
-  const paths = diffPaths(f.repo, ORIGIN_TRUNK, head);
+  const paths = rawDiffPaths(f.repo, ORIGIN_TRUNK, head);
   if (paths === undefined) return `could not read what opus/${f.id} changes against origin/master (git diff failed), so its paths cannot be checked against Files owned (W-498)`;
-  const source = paths.filter((p) => !recordOnly([p], f.studioRel));
+  const source = paths.filter((p) => !recordOnly([p.text], f.studioRel));
   if (source.length === 0) return undefined;
-  // diffPaths decodes git's bytes as UTF-8: a path holding U+FFFD is no faithful round trip of them (an invalid byte reads
-  // as the replacement), so it can never be proven owned and fails closed as outside Files owned
-  const unproven = (p: string): boolean => p.includes("\uFFFD");
   const brief = git(f.repo, ["cat-file", "blob", `${head}:${join(f.studioRel, briefRel(f.id))}`]);
   if (brief.status !== 0 || brief.error !== undefined) return `${briefRel(f.id)} is not a readable blob on ${head}, so the paths opus/${f.id} changes cannot be checked against Files owned (W-498)`;
   const owned = ownedFiles(brief.stdout);
-  const outside = source.filter((p) => unproven(p) || !owned.some((o) => o === p || (o.endsWith("/") && p.startsWith(o))));
+  const outside = source.filter((p) => !p.valid || !owned.some((o) => o === p.text || (o.endsWith("/") && p.text.startsWith(o)))).map((p) => p.text);
   if (outside.length === 0) return undefined;
   return `opus/${f.id} changes ${outside.length} path(s) outside its brief's Files owned, in its diff against origin/master (a rebase's resolutions included): ${outside.map((p) => clean(p)).join(", ")}; revise the brief to own them (a spec amendment, signed again) or revert them on opus/${f.id} (W-498)`;
 }
