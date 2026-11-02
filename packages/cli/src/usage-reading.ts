@@ -230,35 +230,6 @@ export interface Cost {
   readings: number;
 }
 
-/** The plan use one reading interval shows: the rise, or the later value when the week reset between them. */
-const rise = (from: number | null | undefined, to: number | null | undefined): number | null =>
-  typeof from !== "number" || typeof to !== "number" ? null : to >= from ? to - from : to;
-
-/** An opus's cost: each interval between two consecutive readings in file order belongs to the opus whose rung reading
- *  closes it, so the opera's costs add up to the plans' whole use; its hours run from its first reading to its last.
- *  Undefined when no reading names the opus. */
-export function opusCost(readings: Reading[], id: string): Cost | undefined {
-  let claude: number | null = null;
-  let codex: number | null = null;
-  let first: number | undefined;
-  let last: number | undefined;
-  let n = 0;
-  readings.forEach((r, i) => {
-    if (r.opus !== id) return;
-    n++;
-    const at = instant(r.at)!.getTime();
-    first ??= at;
-    last = at;
-    const prev = readings[i - 1];
-    const c = rise(prev?.claude_week_used, r.claude_week_used);
-    const x = rise(prev?.codex_week_used, r.codex_week_used);
-    if (c !== null) claude = (claude ?? 0) + c;
-    if (x !== null) codex = (codex ?? 0) + x;
-  });
-  if (n === 0 || first === undefined || last === undefined) return undefined;
-  return { claude, codex, hours: (last - first) / 3_600_000, readings: n };
-}
-
 /** W-495: one plan's use over a span, from the readings in time order up to its end. The level is the plan's last value at
  *  or before the start (else its first in the span). A line of an earlier week than one already read is passed over first,
  *  before or in the span. In the span, a later week reset instant than any read counts the reading's whole value (the use

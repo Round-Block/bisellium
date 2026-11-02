@@ -56,7 +56,7 @@ import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } f
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
 import { FIGURES_SLOT, checkpointFigures, fillFigures, firstSpecSignature } from "./checkpoint.js";
-import { appendReading, codexBurnLine, costPhrase, opusCost, readReadings, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
+import { appendReading, codexBurnLine, costPhrase, readReadings, spanCost, readingLine, takeReading, windDown, type Reading } from "./usage-reading.js";
 
 export { MIN_CHECKS };
 
@@ -2874,22 +2874,22 @@ function checkpointHold(f: Facts, home = homedir()): string | undefined {
 /** W-430: the usage reading a performed rung takes at `nowMs`, labelled `<opus> <step>`: appended to the readings file under
  *  the home folder and printed as its `usage:` line, then the opus's cost so far as its `cost:` line (the phrase its
  *  checkpoint row carries). A reading that cannot be recorded is printed with why; the step's result never depends on it. */
-function rungUsage(id: string, step: Step, nowMs: number): string[] {
+function rungUsage(f: Facts, step: Step, nowMs: number): string[] {
+  const { id } = f;
   const home = homedir();
   const reading: Reading = takeReading(home, new Date(nowMs), `${id} ${step}`, { opus: id, step });
   const bad = appendReading(home, reading);
-  const cost = costOf(home, id);
-  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`]), `cost: ${"phrase" in cost ? cost.phrase : `none (${cost.none})`}`];
+  return [readingLine(reading), ...(bad === undefined ? [] : [`usage-error: the reading was not recorded: ${bad}`]), `cost: ${costSoFar(f, home, nowMs)}`];
 }
 
-/** W-430: the opus's cost from the readings file, as its checkpoint row carries it, or why there is none. Its own done
- *  readings are left out, so a done held and run again asks the same phrase; a cost that read neither plan asks none. */
-function costOf(home: string, id: string): { phrase: string } | { none: string } {
+/** W-495: the opus's cost so far: the plans' whole use from its first spec signature (on master, its branch or the main
+ *  checkout) to `nowMs`, as `spanCost` reads it, or why there is none. */
+function costSoFar(f: Facts, home: string, nowMs: number): string {
+  const spec = firstSpecSignature(f.id, [f.trunk, f.branch, f.work]);
+  if (spec === undefined) return `none (no spec signature of ${f.id} yet)`;
   const all = readReadings(home);
-  if ("error" in all) return { none: `the readings file cannot be read: ${all.error}` };
-  const c = opusCost(all.filter((r) => r.opus !== id || r.step !== "done"), id);
-  if (c === undefined) return { none: `no usage reading names ${id} before its done` };
-  return c.claude === null && c.codex === null ? { none: `no usage reading of ${id} read either plan` } : { phrase: costPhrase(c) };
+  if ("error" in all) return `none (the readings file cannot be read: ${all.error})`;
+  return `${costPhrase(spanCost(all, spec.getTime(), nowMs))} since the first spec signature`;
 }
 
 const CERTIFY_LOG_MAX = 16 * 1024 * 1024;
@@ -3459,7 +3459,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         }
         log(`${d2.step} ${result.ok ? "performed" : "held"}`);
         // W-430: every rung performed (or held once performing) takes a usage reading, appended and printed
-        const usageLines = rungUsage(id, d2.step, a.testClock ? a.nowMs : Date.now());
+        const usageLines = rungUsage(f, d2.step, a.testClock ? a.nowMs : Date.now());
         f = gather(repo, opened.root, id);
         const d3 = deriveNext(f);
         for (const l of refreshTicket(f, d3, a.nowMs)) log(l);

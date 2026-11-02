@@ -54,7 +54,6 @@ interface Mod {
   readingLine: (r: Reading) => string;
   appendReading: (home: string, r: Reading, write?: (fd: number, data: Buffer) => number) => string | undefined;
   readReadings: (home: string) => Reading[] | { error: string };
-  opusCost: (readings: Reading[], id: string) => Cost | undefined;
   costPhrase: (c: Cost) => string;
   codexBurnLine: (r: Reading, now: Date) => string;
 }
@@ -267,18 +266,15 @@ test("W-430-b3 behaviour 3: an opus's cost is the plan use of the reading interv
   write(join(w.home, ".bisellium-evidence", "usage", "readings.jsonl"), JSON.stringify({ at: "2026-10-02T10:00:00.000Z", label: "before", codex_week_used: 55, codex_resets: null, codex_from: null, claude_5h_used: null, claude_week_used: 80, claude_seen: null }) + "\n");
   const o = next(w, [OPUS, "--perform", "--expect", "branch"]);
   assert.equal(o.first, `next: ${OPUS} branch performed`, ran("the rung is performed", o));
-  assert.equal(lineOf(o.out, "cost: "), "cost: Claude week +5%, Codex week +6% over 0.0 h", ran("its cost: the interval its reading closes", o));
+  // W-495: the cost so far is the plans' use from the first spec signature (01:00Z) to the reading (12:00Z)
+  assert.equal(lineOf(o.out, "cost: "), "cost: Claude week +5%, Codex week +6% over 11.0 h since the first spec signature", ran("its cost: the use over its span", o));
 
   const m = await load();
-  const opusCost = fn(m, "opusCost");
   const costPhrase = fn(m, "costPhrase");
   const at = (h: number): string => new Date(Date.UTC(2026, 9, 28, h)).toISOString();
   const r = (h: number, opus: string | undefined, claude: number | null, codex: number | null): Reading =>
     ({ at: at(h), label: opus ?? "script", ...(opus === undefined ? {} : { opus, step: "x" }), codex_week_used: codex, codex_resets: null, codex_from: null, codex_seen: null, claude_5h_used: null, claude_week_used: claude, claude_seen: null, context_tokens: null }) as Reading;
   const lines = [r(0, "W-1", 10, 20), r(1, "W-2", 12, 25), r(2, "W-1", 15, 27), r(3, undefined, 16, 30), r(4, "W-1", 3, 31), r(5, "W-2", null, 33)];
-  assert.deepEqual(opusCost(lines, "W-1"), { claude: 6, codex: 3, hours: 4, readings: 3 }, "W-1 closes 1->2 (+3, +2) and 3->4 (a reset: +3, then +1); its first reading closes none");
-  assert.deepEqual(opusCost(lines, "W-2"), { claude: 2, codex: 7, hours: 4, readings: 2 }, "W-2 closes 0->1 (+2, +5) and 4->5 (Claude unread: no rise; +2)");
-  assert.equal(opusCost(lines, "W-3"), undefined, "no reading names it: no cost");
   assert.equal(costPhrase({ claude: 6, codex: 3, hours: 4, readings: 3 }), "Claude week +6%, Codex week +3% over 4.0 h");
   assert.equal(costPhrase({ claude: null, codex: 2.25, hours: 0.25, readings: 1 }), "Claude week unread, Codex week +2.3% over 0.3 h");
 
