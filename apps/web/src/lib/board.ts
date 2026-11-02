@@ -470,6 +470,7 @@ export function boardModel(
         ? dwells[middle]
         : (dwells[middle - 1]! + dwells[middle]!) / 2;
     }
+    if (options.filter === "blocked") col.cards = col.cards.filter((card) => card.blocked);
   }
 
   return { columns: [...columns.values()], waiting, unplaced };

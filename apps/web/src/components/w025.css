@@ -2867,6 +2867,10 @@
 /* Narrow: <=899px — above Board's phone boundary the drawer leaves the rail
    visible. */
 @media (max-width: 899px) {
+  .board-workspace:has(.board-drawer) .board__wip-scope {
+    display: none;
+  }
+
   .board-drawer__close {
     top: 60px;
   }
