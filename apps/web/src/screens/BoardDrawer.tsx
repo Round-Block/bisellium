@@ -28,6 +28,29 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
         </span>
       </div>
 
+      <div className="board-drawer__record">
+        <h3 className="board-drawer__section-head">From the officina record</h3>
+        <div className="board-drawer__record-body">{detail.body.length > 0 ? detail.body : "No record body."}</div>
+        {detail.tokensDeclared !== undefined && (
+          <div className="board-drawer__record-row">
+            <span className="board-drawer__record-label">tokens (declared)</span>
+            <span className="board-drawer__record-value">{detail.tokensDeclared}</span>
+          </div>
+        )}
+        {detail.tokensBySella.length > 0 && (
+          <div className="board-drawer__record-row">
+            <span className="board-drawer__record-label">tokens (event-derived, possibly incomplete)</span>
+            <span className="board-drawer__record-value">{detail.tokensBySella.map((t) => `${t.sella}: ${t.tokens}`).join(", ")}</span>
+          </div>
+        )}
+        {detail.record.map((r) => (
+          <div key={r.label} className="board-drawer__record-row">
+            <span className="board-drawer__record-label">{r.label}</span>
+            <span className="board-drawer__record-value">{r.value}</span>
+          </div>
+        ))}
+      </div>
+
       {detail.waitingOn && (
         <div className="board-drawer__banner">
           <span className="board-drawer__banner-label">Waiting on you.</span>{" "}
@@ -94,28 +117,6 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
         ))}
       </div>
 
-      <div className="board-drawer__record">
-        <h3 className="board-drawer__section-head">From the officina record</h3>
-        <div className="board-drawer__record-body">{detail.body.length > 0 ? detail.body : "No record body."}</div>
-        {detail.tokensDeclared !== undefined && (
-          <div className="board-drawer__record-row">
-            <span className="board-drawer__record-label">tokens (declared)</span>
-            <span className="board-drawer__record-value">{detail.tokensDeclared}</span>
-          </div>
-        )}
-        {detail.tokensBySella.length > 0 && (
-          <div className="board-drawer__record-row">
-            <span className="board-drawer__record-label">tokens (event-derived, possibly incomplete)</span>
-            <span className="board-drawer__record-value">{detail.tokensBySella.map((t) => `${t.sella}: ${t.tokens}`).join(", ")}</span>
-          </div>
-        )}
-        {detail.record.map((r) => (
-          <div key={r.label} className="board-drawer__record-row">
-            <span className="board-drawer__record-label">{r.label}</span>
-            <span className="board-drawer__record-value">{r.value}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
