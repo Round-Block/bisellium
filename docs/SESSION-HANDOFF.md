@@ -49,27 +49,27 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-452 done (#968), W-411 verify passed (#972), done next; W-494 gates passed, brief rev 3 next (polls under 120 s); W-492 fix gates passed, build review r2 next; W-487 review r2 failed (files owned), handoff then brief revision; W-495–W-498 filed (#969–#973).
-1. W-494 — subagents never stack background waiters (Patron 11-01) (high); 2. W-492 — cause fix, tests×one-sided-bound-assertion recurs after W-334, W-376, W-392 (W-487 review r1; D-076 D) (high); 3. W-495 — done computes its own checkpoint figures (Patron 11-01) (high); 4. W-497 — cause fix, shared-log-grammar-rejects-valid-records (W-459, W-492; D-076 D) (high); 5. W-498 — cause fix, files-owned-boundary-exceeded (D-076 D) (high); 6. W-496 — the background guard matches only real background syntax (Patron 11-01); 7. W-490 — handoff traps checked against open opera, capped (Patron 11-01)
-8. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
-9. W-333 — the queue as a record, `studio/queue.yml`, auto-claiming idle lanes (W-478 folded) (high) `next.ts`
-10. W-393 — one spec admission table checked at signing (W-395, W-394, W-481 folded) (high); 11. W-458 — done finishes a merged rung: one trunk step (W-469 and "a held done requests the guard sync" folded); 12. W-363 — one stage executor: spec review, fix round, build-before-review as performs (W-480, W-482, W-470 folded) `next.ts`
-13. W-476 — cause fix, validation-order-masks-errors (high); 14. W-471 — a failing gate's log keeps its real failure; 15. W-455 — the containment helper refuses a symlinked final file
-16. W-414 — cause fix, ruled-case-uncovered (high); 17. W-460 — cause fix, tests-that-agree-with-the-bug (high); 18. W-464 — replay-environment-not-pristine
-19. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`; 20. W-383 — security-boundary test fix; 21. W-431 — verb dead ends; 22. W-432 — verb dead ends
-23. W-429 — petitio length limits; 24. W-261 — woken orchestration; 25. W-434 — dispatch prompts as artifacts; 26. W-254 — delete talk and tick daily branch; 27. W-349 — flaky row W-279-b3
-28. W-399 — record verb sella check; 29. W-242 — hook-set code; 30. W-372 — agent waits on background perform; 31. W-400 — CLAUDE.md, AGENTS.md code-owned
-32. W-401 — sessions receipt provider; 33. W-245 — provider-agnostic closing step; 34. W-227 — cleanup with removed-worktree metadata `next.ts`; 35. W-283 — Status page served; 36. W-374 — next --all in-flight only `next.ts`
-37. W-375 — context serves lex without §9, §12; 38. W-380 — prune old evidence; 39. W-331 — next.ts split `next.ts`; 40. W-183 — heavy-job slots `next.ts`
-41. W-169 — lane claims `next.ts`; 42. W-332 — step tickets `next.ts`; 43. W-308 — opus timeline `next.ts`; 44. W-304 — seats read live, console MVP; 45. W-298 — petitio verb; 46. W-280 — Inbox newItem fail-open; 47. W-301 — console writes via auto-merge PR
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-495 spec signed r3, Codex spec review r4 next; W-487 done held (D-160 ruling match, then done PR, Patron review); W-493 spec r6 ui-lead input to reissue as revise, then Sol revision 5.
+1. W-495 — done computes its own checkpoint figures (Patron 11-01) (high); 2. W-497 — cause fix, shared-log-grammar-rejects-valid-records (W-459, W-492; D-076 D) (high); 3. W-498 — cause fix, files-owned-boundary-exceeded (D-076 D) (high); 4. W-496 — the background guard matches only real background syntax (Patron 11-01); 5. W-490 — handoff traps checked against open opera, capped (Patron 11-01)
+6. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
+7. W-333 — the queue as a record, `studio/queue.yml`, auto-claiming idle lanes (W-478 folded) (high) `next.ts`
+8. W-393 — one spec admission table checked at signing (W-395, W-394, W-481 folded) (high); 9. W-458 — done finishes a merged rung: one trunk step (W-469 and "a held done requests the guard sync" folded); 10. W-363 — one stage executor: spec review, fix round, build-before-review as performs (W-480, W-482, W-470 folded) `next.ts`
+11. W-476 — cause fix, validation-order-masks-errors (high); 12. W-471 — a failing gate's log keeps its real failure; 13. W-455 — the containment helper refuses a symlinked final file
+14. W-414 — cause fix, ruled-case-uncovered (high); 15. W-460 — cause fix, tests-that-agree-with-the-bug (high); 16. W-464 — replay-environment-not-pristine
+17. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`; 18. W-383 — security-boundary test fix; 19. W-431 — verb dead ends; 20. W-432 — verb dead ends
+21. W-429 — petitio length limits; 22. W-261 — woken orchestration; 23. W-434 — dispatch prompts as artifacts; 24. W-254 — delete talk and tick daily branch; 25. W-349 — flaky row W-279-b3
+26. W-399 — record verb sella check; 27. W-242 — hook-set code; 28. W-372 — agent waits on background perform; 29. W-400 — CLAUDE.md, AGENTS.md code-owned
+30. W-401 — sessions receipt provider; 31. W-245 — provider-agnostic closing step; 32. W-227 — cleanup with removed-worktree metadata `next.ts`; 33. W-283 — Status page served; 34. W-374 — next --all in-flight only `next.ts`
+35. W-375 — context serves lex without §9, §12; 36. W-380 — prune old evidence; 37. W-331 — next.ts split `next.ts`; 38. W-183 — heavy-job slots `next.ts`
+39. W-169 — lane claims `next.ts`; 40. W-332 — step tickets `next.ts`; 41. W-308 — opus timeline `next.ts`; 42. W-304 — seats read live, console MVP; 43. W-298 — petitio verb; 44. W-280 — Inbox newItem fail-open; 45. W-301 — console writes via auto-merge PR
 Cut (Patron 11-01, workflow review): W-436, W-465, W-457, W-405. Deferred: W-484 (docs-drift lint folded in), W-485, W-486, W-479, W-371, W-456. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold.
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
 1. W-487 — the Inbox lists every waiting ask, badges tally (D-151, supersedes D-135)
-2. W-411; 3. W-493 — Board cards' gate text, drawer description first (Patron 11-01); 4. W-412; 5. W-413; 6. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 7. W-467 (Officina on Home's palette); 8. W-453 (D-128 D)
-9. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-10. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-11. W-488 — comment on served UI captures (design lead 11-01)
+2. W-493 — Board cards' gate text, drawer description first (Patron 11-01); 3. W-412; 4. W-413; 5. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 6. W-467 (Officina on Home's palette); 7. W-453 (D-128 D)
+8. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
+9. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+10. W-488 — comment on served UI captures (design lead 11-01)
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
