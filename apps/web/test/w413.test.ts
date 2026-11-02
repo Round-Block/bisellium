@@ -124,3 +124,21 @@ test("W-413-b3 behaviour 3: every lifecycle column names its entry and exit rule
   const custom = boardModel({ ...officina(), lifecycle: customLifecycle }, []);
   assert.deepEqual([column(custom, "archived").entryRule, column(custom, "archived").exitRule], ["Stored records", "recorded condition is met"], "a custom phase uses its served state name and the fixed fallback condition");
 });
+
+test("W-413-b4 behaviour 4: a Board filter reports visible cards against the unchanged total", () => {
+  const model = boardModel(officina(3), [
+    opus("W-1", "greenlit"),
+    opus("W-2", "building"),
+    opus("W-3", "building", { blocked: true }),
+    opus("W-4", "halted", { blocked: true }),
+  ], undefined, { filter: "blocked", now: NOW });
+  assert.deepEqual(
+    [column(model, "planned"), column(model, "in_progress"), column(model, "halted")].map((entry) => [entry.cards.length, entry.totalCount, entry.blockedCount]),
+    [[0, 1, 0], [1, 2, 1], [1, 1, 1]],
+    "the filter hides all, some and none while total and blocked counts stay fixed",
+  );
+  const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model, focusedByColumn: {}, onSelectCard: () => undefined, filter: "blocked" }));
+  assert.match(html, /aria-label="Filter Board work"[^>]*><option value="all">All work<\/option><option value="blocked" selected="">Blocked only<\/option>/, "the selected filter is visible and reversible");
+  assert.match(html, />1 of 2 shown</, "filtered columns state visible against total");
+  assert.match(html, />Shared WIP 2 \/ 3 · 1 blocked</, "filtering never changes the named shared numerator or blocked contribution");
+});
