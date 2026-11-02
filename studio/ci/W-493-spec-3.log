@@ -1,0 +1,27 @@
+# opus: W-493
+# phase: spec
+# round: 3
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a199f8-3262-79b3-92c6-05122776d151
+# outcome: passed
+# at: 2026-11-02T01:59:41.492Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# dispatch_prompt: ci/W-493-ui-prompt-3.md
+# design_digest: sha256:fef095562ee28b073ddac8cb6348d53110819e5c13f5afda921533a63aa067b7
+# ticket: {"opus":"W-493","step":"spec","action":"verdict-spec","round":3,"actor":"ui-lead","studio":"studio","head":"3146651c02bb16c18fe278df4e34bcd3a1d97b22","brief":"e3f9859e3c51aa5f1a436865adafe4e11d52d233","at":"2026-11-02T01:59:35.174Z"}
+
+## Findings
+
+1. advisory — brief:46 — Adopt spec advisory 3’s distinction, but correct “unbounded”: both base and prototype fix waiting cards at 145px. W-004’s progress, title, owner, next actor and ask fit visibly — replace with: “The 108px bound applies to ordinary cards. Cards waiting on you outside Planned also gain progress text and retain their existing 145px height and maximum height.” — check: `/home/edckt/.bisellium-evidence/W-493-spec/proto-repo/apps/web/src/components/w025.css:2426`; `/home/edckt/.bisellium-evidence/W-493-spec/shots/board-1280-collapsed.png`
+2. advisory — brief:112 — DIRECTION:84–87’s agent-written prohibition on monospace words is too absolute here: the count and named next gate read coherently as one quiet status line. The brief should identify this deliberate exception — replace with: “Use one quiet monospace gate-summary line above the card id, including its status words; this local design choice qualifies DIRECTION’s agent-written monospace restriction.” — check: `/home/edckt/.bisellium-evidence/W-493-spec/shots/board-390.png`
+
+## Recommendation
+
+This is my first input on W-493; I have no earlier findings to reassess.
+Default 1 reads well: retain the position above the id and the proposed `next:`, `complete` and `no gates` wording; the text supplies information the shipped squares concealed.
+Default 2 correctly follows the Patron’s 11-01 ruling: omit progress and its reserved space throughout Planned, including backlog records.
+Default 3 is adequate at 390 without an icon, chip, colour or second line: ordinary gate names fit, and opening the card provides the full named gate list; native title supplements that access for pointer users.
+Default 4 works across the drawer captures: moving the whole record block puts context first while keeping the waiting request visible and subsequent sections in a sensible order.
+For question 5, adopt the corrected height distinction above; the taller waiting card reads clearly, and the added line fits its existing height.
+Verdict: passed

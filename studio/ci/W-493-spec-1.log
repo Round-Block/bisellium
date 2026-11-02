@@ -1,0 +1,38 @@
+# opus: W-493
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a199c5-9281-7011-9a3c-037c2e2637e2
+# outcome: passed
+# at: 2026-11-02T01:51:07.136Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# brief: briefs/W-493.md blob:e3f9859e3c51aa5f1a436865adafe4e11d52d233
+# ticket: {"opus":"W-493","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"3146651c02bb16c18fe278df4e34bcd3a1d97b22","brief":"e3f9859e3c51aa5f1a436865adafe4e11d52d233","at":"2026-11-02T01:51:02.609Z"}
+
+# W-493 design signature — round 4
+
+Model: `gpt-5.6-sol`
+
+Role: design lead under D-150 C
+
+Base: `e8762225`
+
+Brief: /home/edckt/agents/bisellium/.worktrees/W-493-spec/studio/briefs/W-493.md
+
+Prototype: /home/edckt/.bisellium-evidence/W-493-spec/prototype.mbox sha256:89983d8a86fb64290d48dfd16d5c2865de1566a3db0cc214b4c03ac70d2f318b
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-493-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Brief line 42 remains pinned by the structured `boardModel` call result; its counting mutation fails without reading the changed source line — check: `/home/edckt/.bisellium-evidence/W-493-spec/ledger-source-read-check.out`
+2. advisory — Brief line 44 now pins Planned omission in rendered Board markup; its conditional mutation fails at that rendered assertion — check: `/home/edckt/.bisellium-evidence/W-493-spec/kill-b1-planned.out`
+3. advisory — Brief line 46 now pins CSS containment through a Node TAP row that builds and serves the mutated stage, measures Chromium at 1280, 640 and 390, and asserts its call result — check: `/home/edckt/.bisellium-evidence/W-493-spec/kill-b1-css.out`
+4. advisory — Brief line 48 now pins drawer order in rendered markup; its header mutation fails at the rendered-order assertion — check: `/home/edckt/.bisellium-evidence/W-493-spec/kill-b2-record.out`
+5. advisory — Brief line 50 now pins the complete named gate list in rendered markup; its list mutation fails at the rendered-list assertion — check: `/home/edckt/.bisellium-evidence/W-493-spec/kill-b2-gates.out`
+6. advisory — The source-classifier domain at brief line 67 is explicitly unpinned and scoped as a stated limit; every remaining kill was checked with origin/master's W-492 functions and none reads an added source line — check: `/home/edckt/.bisellium-evidence/W-493-spec/ledger-source-read-check.out`
+
+## Verdict
+
+passed — all five promises are pinned by call results, rendered markup or a served page; source-only classifiers are limited; every kill passes the W-492 audit; both Genuine reds and every rebuilt series commit remain valid.

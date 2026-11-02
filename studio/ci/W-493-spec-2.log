@@ -1,0 +1,24 @@
+# opus: W-493
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 4cdaddfc-cd38-4e7a-b9bc-89861b5c4fdb
+# outcome: passed
+# at: 2026-11-02T01:54:49.717Z
+# tree: tree:88a7d994c5c5714bff6489c1a603832b25a05c1e
+# brief: briefs/W-493.md blob:e3f9859e3c51aa5f1a436865adafe4e11d52d233
+# ticket: {"opus":"W-493","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"3146651c02bb16c18fe278df4e34bcd3a1d97b22","brief":"e3f9859e3c51aa5f1a436865adafe4e11d52d233","at":"2026-11-02T01:54:45.665Z"}
+
+Claude week 55%, 5h 10% | Codex week 83% | context 196k of 300k
+
+## Findings
+1. advisory — brief:15 [severity: S4] The cited "current source" worktree already holds the prototype. Replacement: "Current source evidence is `apps/web/src/screens/BoardView.tsx` and `BoardDrawer.tsx` at base e8762225." [class: brief×stale-evidence-citation] — check: none: an admission rule that a current-source citation names the base tree
+
+2. advisory — brief:19 [severity: S4] "W-493 now supplies that ruling" claims the Patron's 11-01 ruling for an agent's brief. Replacement: "the Patron's 11-01 ruling (studio/opera/W-493.md) decides them; W-493 carries it out." [class: design×agent-text-as-ruling] — check: none: an admission rule that a claimed ruling cites the Patron and a date
+
+3. advisory — brief:46 [severity: S2] Cards waiting on you outside Planned also gain the line, and they already exceed 108px (W-004 at 1280); the limit doesn't say so. Replacement: append "; cards waiting on you outside Planned gain the line and stay unbounded, as before." [class: ui×unbounded-variant-height] — check: apps/web/tests-serve/w493.spec.ts
+
+## Verdict
+Every changed reader states its domain and limits, and every promise has a row or a stated limit; the Patron ruled the change itself and it reads well on the captures.
+VERDICT: PASS
