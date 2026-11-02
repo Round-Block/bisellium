@@ -1,0 +1,18 @@
+# opus: W-492
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19749-9ff9-77b0-9918-36b15da2643b
+# outcome: failed
+# at: 2026-11-01T13:30:00.312Z
+# tree: tree:a97d5f015a29eb7d8a5c3259e3fb365b7159035c
+# brief: briefs/W-492.md blob:33941ab7f43e80b787f6e01c6e2113bb1472858e
+# ticket: {"opus":"W-492","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-492/studio","head":"e7749a0f23206932a637665dcb5ef01ca4956807","brief":"33941ab7f43e80b787f6e01c6e2113bb1472858e","at":"2026-11-01T13:29:47.194Z"}
+
+## Findings
+1. blocking — packages/commands/src/brief-admission.ts:366 [severity: S1] `actualLines` requires block-scalar content to begin at least two spaces beyond the `actual:` key, so a valid `actual: |-` whose content is indented by one space is treated as absent and the text kill is admitted; brief:60 explicitly includes block-scalar lines with any greater indentation. — check: packages/cli/src/verdict-citation.test.ts W-492-b1 (add a one-space-indented `actual: |-` fixture) [class: review×shared-log-grammar-rejects-valid-records]
+
+## Verdict
+The implementation fails open for a valid block-scalar form in the declared input domain.
+VERDICT: FAIL
