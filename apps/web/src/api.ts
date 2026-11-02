@@ -38,6 +38,9 @@ const TOKEN_KEY = "bisellium.token";
  *  apps/web/test/*.test.ts run under plain node (no DOM), where
  *  `sessionStorage` doesn't exist. */
 export function getToken(): string {
+  // W-501: reads need the token too, so one pasted this page is held in memory as well, never persisted: a browser that
+  // denies sessionStorage still reads with it.
+  if (pastedToken !== "") return pastedToken;
   try {
     return typeof sessionStorage === "undefined" ? "" : (sessionStorage.getItem(TOKEN_KEY) ?? "");
   } catch {
@@ -45,11 +48,14 @@ export function getToken(): string {
   }
 }
 
+let pastedToken = "";
+
 export function hasToken(): boolean {
   return getToken() !== "";
 }
 
 export function setToken(token: string): void {
+  pastedToken = token;
   try {
     if (typeof sessionStorage !== "undefined") sessionStorage.setItem(TOKEN_KEY, token);
   } catch {
@@ -187,10 +193,46 @@ export interface EventRow {
 
 // ── shared helper ────────────────────────────────────────────────────
 
+/** W-501: the screens owe a re-read once a token is saved when they never got their data (no token held, or a read
+ *  refused before any read succeeded in the current routed-screen mount) or the live stream was refused. A read refused
+ *  after that mount loaded leaves it, and a drafted answer, in place. Taken once by `rereadAfterTokenSaved`. */
+let rereadOwed = false;
+/** W-501: whether a read has succeeded in the current routed-screen mount; reset by `beginReadMount`. */
+let mountLoaded = false;
+
+/** W-501: the shell calls this when it mounts its routed screen (a route or a read epoch), before the screen's reads: the
+ *  new mount has no successful read yet, so a stale token refused there owes the re-read even after an earlier screen
+ *  loaded. */
+export function beginReadMount(): void {
+  mountLoaded = false;
+}
+
+function refuseRead(owed: boolean): void {
+  if (owed) rereadOwed = true;
+  unauthorizedListener?.();
+}
+
+/** Every read sends the session token (W-501: the server refuses a GET under /api/ without it). With none held, the read
+ *  is refused here, with no request; a refusal raises the one token prompt, as a write's does, and rejects with 401. */
 async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+  const token = getToken();
+  if (token === "") {
+    refuseRead(true);
+    return Promise.reject(401);
+  }
+  const res = await fetch(path, { headers: { "X-Bisellium-Token": token } });
+  if (res.status === 401) refuseRead(!mountLoaded);
   if (!res.ok) return Promise.reject(res.status);
+  mountLoaded = true;
   return (await res.json()) as T;
+}
+
+/** W-501: the token prompt's save asks this whether the screens must re-mount and read again (see `rereadOwed`); true at
+ *  most once per refusal, and false after only a refused write or a read refused once they had loaded. */
+export function rereadAfterTokenSaved(): boolean {
+  if (!rereadOwed) return false;
+  rereadOwed = false;
+  return true;
 }
 
 /** The one POST helper every write goes through. `res.ok` decides nothing
@@ -346,7 +388,26 @@ export function subscribeLive(handlers: {
   onError?: () => void;
 }): () => void {
   if (typeof EventSource === "undefined") return () => undefined;
-  const source = new EventSource("/api/live");
+  // W-501: EventSource sends no header, so the session token rides in the query (the server takes it there on /api/live
+  // only); with none held, no stream opens and the read counts as refused.
+  const token = getToken();
+  if (token === "") {
+    refuseRead(true);
+    return () => undefined;
+  }
+  const source = new EventSource(`/api/live?token=${encodeURIComponent(token)}`);
+  // W-501: a stream the server closed (a refusal, not a reconnect) gives no status, so one read tells a refused token
+  // apart: its 401 raises the prompt and owes the re-read that opens a new stream. 2 is EventSource.CLOSED, as a number
+  // so a test double needs no static.
+  source.addEventListener("error", () => {
+    if (source.readyState === 2)
+      void fetchOfficina().then(
+        () => undefined,
+        (status: unknown) => {
+          if (status === 401) rereadOwed = true;
+        },
+      );
+  });
   if (handlers.onOpen) source.addEventListener("open", handlers.onOpen);
   if (handlers.onError) source.addEventListener("error", handlers.onError);
   source.addEventListener("message", (ev: MessageEvent<string>) => {

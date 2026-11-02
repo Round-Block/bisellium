@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { parseRoute } from "./lib/route.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
@@ -6,7 +6,7 @@ import { Inbox } from "./screens/Inbox.js";
 import { Seats } from "./screens/Seats.js";
 import { Board } from "./screens/Board.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
-import { fetchInbox, fetchOfficina, fetchOpera, hasToken, setUnauthorizedListener } from "./api.js";
+import { beginReadMount, fetchInbox, fetchOfficina, fetchOpera, hasToken, rereadAfterTokenSaved, setUnauthorizedListener } from "./api.js";
 import { READY, type ScreenStatus } from "./lib/screenState.js";
 import { attentionCollection, attentionTotal } from "./lib/board.js";
 
@@ -43,6 +43,8 @@ export function App() {
   const [pendingBoardOpus, setPendingBoardOpus] = useState<string | undefined>(undefined);
   const [pendingInboxAttention, setPendingInboxAttention] = useState<string | undefined>(undefined);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
+  // W-501: bumped when a token is saved after a refused read, re-mounting the routed screen so it reads again with it.
+  const [readEpoch, setReadEpoch] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [wideSidebar, setWideSidebar] = useState(initialWideSidebar);
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -96,6 +98,10 @@ export function App() {
     return () => query.removeEventListener("change", onChange);
   }, []);
 
+  // W-501: each routed-screen mount (a route or a read epoch) begins with no successful read. A layout effect runs before
+  // every passive effect, so this precedes the screen's own reads and the attention read below.
+  useLayoutEffect(() => beginReadMount(), [route, readEpoch]);
+
   useEffect(() => {
     if (location.search.includes("demo")) {
       setAttentionCount(3);
@@ -109,7 +115,7 @@ export function App() {
       })
       .catch(() => undefined);
     return () => { active = false; };
-  }, [route]);
+  }, [route, readEpoch]);
 
   useEffect(() => {
     if (route === "inbox" || route === "board") hasMountedAttentionRef.current = false;
@@ -125,7 +131,14 @@ export function App() {
       wideSidebar && sidebarCollapsed && "shell--sidebar-collapsed",
       !wideSidebar && overlayOpen && "shell--overlay-open",
     ].filter(Boolean).join(" ")}>
-      {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
+      {tokenPromptOpen && (
+        <TokenPrompt
+          onSubmit={() => {
+            setTokenPromptOpen(false);
+            if (rereadAfterTokenSaved()) setReadEpoch((n) => n + 1);
+          }}
+        />
+      )}
       <Sidebar
         route={route}
         attentionCount={attentionCount}
@@ -141,6 +154,7 @@ export function App() {
       />
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
+        <Fragment key={readEpoch}>
         {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
           <Board
             onStatus={setStatus}
@@ -160,6 +174,7 @@ export function App() {
             onInitialAttentionConsumed={() => setPendingInboxAttention(undefined)}
           />
         )}
+        </Fragment>
       </main>
       <div className="shell__status" role="status" aria-live="polite" data-state={status.state}>
         {status.text}
