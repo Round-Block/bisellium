@@ -49,7 +49,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-495 spec signed r3, Codex spec review r4 next; W-487 done held (D-160 ruling match, then done PR, Patron review); W-493 spec r6 ui-lead input to reissue as revise, then Sol revision 5.
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-487 done (#985); W-495 brief revision 3 for the Patron's Defaults (all yes 11-02: rows 193–199 corrected), architect re-signing, Codex spec review next; W-493 spec ui-lead input to reissue as revise, then Sol revision 5.
 1. W-495 — done computes its own checkpoint figures (Patron 11-01) (high); 2. W-497 — cause fix, shared-log-grammar-rejects-valid-records (W-459, W-492; D-076 D) (high); 3. W-498 — cause fix, files-owned-boundary-exceeded (D-076 D) (high); 4. W-496 — the background guard matches only real background syntax (Patron 11-01); 5. W-490 — handoff traps checked against open opera, capped (Patron 11-01)
 6. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
 7. W-333 — the queue as a record, `studio/queue.yml`, auto-claiming idle lanes (W-478 folded) (high) `next.ts`
@@ -65,13 +65,11 @@ In flight (lane state: ~/.bisellium-evidence/current-state.md): W-495 spec signe
 Cut (Patron 11-01, workflow review): W-436, W-465, W-457, W-405. Deferred: W-484 (docs-drift lint folded in), W-485, W-486, W-479, W-371, W-456. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold.
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-487 — the Inbox lists every waiting ask, badges tally (D-151, supersedes D-135)
-2. W-493 — Board cards' gate text, drawer description first (Patron 11-01); 3. W-412; 4. W-413; 5. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 6. W-467 (Officina on Home's palette); 7. W-453 (D-128 D)
-8. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-9. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-10. W-488 — comment on served UI captures (design lead 11-01)
+1. W-493 — Board cards' gate text, drawer description first (Patron 11-01); 2. W-412; 3. W-413; 4. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 5. W-467 (Officina on Home's palette); 6. W-453 (D-128 D)
+7. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
+8. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+9. W-488 — comment on served UI captures (design lead 11-01)
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
-
