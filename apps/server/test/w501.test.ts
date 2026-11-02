@@ -227,7 +227,7 @@ test("W-501-f1: the access log never prints the token, whatever spelling of the 
     // server ends every live stream, then the line is awaited
     await s.close();
     const liveLine = /GET \/api\/live\?%74oken=redacted 200/;
-    for (let i = 0; i < 100 && !liveLine.test(logged.join("")); i++) await new Promise((r) => setTimeout(r, 20));
+    for (let i = 0; i < 100000 && !liveLine.test(logged.join("")); i++) await new Promise((r) => setImmediate(r));
     const log = logged.join("");
     assert.match(log, liveLine, "an accepted encoded name is logged on the live stream, redacted");
     assert.equal(log.includes(TOKEN), false, "the access log never prints the token, in any spelling");
