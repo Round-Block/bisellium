@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, specHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
+import { BIN, BUDGET, CODEX_BIN, Edit, F, Json, MAIN, MANIFEST_REL, NOW_MS, OPUS, Out, SETUP_ENV, T, TSX, WT_STUDIO_REL, World, addReview, advanceOrigin, advanceSource, amend, architectOrder, buildFix, cli, commit, editRecord, eventsOf, excludesHeld, expectStep, failingGit, fixChecked, found, ghCalls, git, gitYesNo, handoffAt, n167, next, openList, plain, prArgs, put, ran, record167, reviewHeld, specHeld, reviewNamed, reviewerOrder, rt, scenario, sourceTree, ticketed, tipOf, trial, verb, w167, w206World, world, writeGates, writeReceipt, writeReds, writeTranscript, wtSpec } from "./next-world.test.js";
 
 const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1 [severity: S1]. check: none: fixture`;
 const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1 [severity: S1]. check: none: fixture`;
@@ -2224,4 +2224,99 @@ test("W-452-b4 behaviour 4: a UI ruling by the design lead the manifest's spec_s
   expectStep(next(w, [OPUS, ...BUDGET]), "pr", "held", "a ruling by another seat holds the pr");
   by("patron", "the Patron's own ruling");
   expectStep(next(w, [OPUS, ...BUDGET]), "pr", "named", "a by: patron ruling reads as before, with spec_seats declared");
+});
+
+// ---------------------------------------------------------------------------
+// W-498 (D-076 D): a path opus/<id> changes against origin/master (the merge base's diff, so a rebase's resolutions count)
+// that is neither an officina record nor named by the committed branch brief's Files owned holds before the suite and the
+// review, naming the path and the two routes. The fixture brief owns `source.txt` and the fixture rows' builder paths, none
+// under tests-serve/ and not README.md.
+// ---------------------------------------------------------------------------
+const w498Why = (paths: string[]): string =>
+  `opus/${OPUS} changes ${paths.length} path(s) outside its brief's Files owned, in its diff against origin/master (a rebase's resolutions included): ${paths.join(", ")}; revise the brief to own them (a spec amendment, signed again) or revert them on opus/${OPUS} (W-498)`;
+function w498Held(o: Out, paths: string[], row: string): void {
+  expectStep(o, "build", "held", row);
+  assert.equal(o.kv.get("why"), w498Why(paths), ran(`${row}: why names the paths and the two routes`, o));
+  assert.equal(o.kv.has("role"), false, ran(`${row}: no builder or censor is dispatched`, o));
+  assert.equal(o.kv.has("command"), false, ran(`${row}: no suite or review command is named`, o));
+}
+function w498Commit(w: World, rel: string, text: string, message: string): void {
+  put(w.wt, rel, text);
+  commit(w.wt, message);
+  writeGates(w);
+}
+
+test("W-498-b1 behaviour 1: a path opus/<id> changes outside its committed brief's Files owned holds the suite and the review, naming the path and the two routes", { timeout: 1_800_000 }, () => {
+  const g = world("w498-b1", "build", { automated: true });
+  // an unowned test path committed on the branch, its gates current: held before review, never review round 1
+  w498Commit(g, "tests-serve/sibling.spec.ts", "a sibling's test\n", "fix: an edit outside Files owned");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve/sibling.spec.ts"], "an unowned test path, gates current");
+  // the review perform re-derives and is refused: no round is spent
+  const perform = next(g, [OPUS, ...BUDGET, "--perform", "--expect", "review"]);
+  assert.notEqual(perform.status, 0, ran("the review perform is refused", perform));
+  assert.equal(existsSync(join(g.wtStudio, "ci", `${OPUS}-review-1.log`)), false, ran("no review log is written", perform));
+  // the gates not yet run at this tree: held before the suite, so no producer suite order and no builder
+  w498Commit(g, "tests-serve/sibling.spec.ts", "a second edit\n", "fix: another edit outside Files owned");
+  put(g.wt, "source.txt", "an owned edit, gates not run\n");
+  commit(g.wt, "feat: an owned edit");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve/sibling.spec.ts"], "gates stale: held before the suite");
+  writeGates(g);
+  // Files owned is the committed branch brief's: the worktree's brief edited to own the path does not count
+  const briefFile = join(g.wt, "studio", "briefs", `${OPUS}.md`);
+  const signed = readFileSync(briefFile, "utf8");
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `tests-serve/sibling.spec.ts`"));
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve/sibling.spec.ts"], "an uncommitted brief revision does not own the path");
+  // route 1: the brief revised and committed owns it (a span equal to the path), so review round 1 is named
+  commit(g.wt, `studio(${OPUS}): Files owned revised`);
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "the committed brief revision owns the path: review round 1");
+  // a folder span (ending in /) owns every path under it, and only those
+  writeFileSync(briefFile, signed.replace("- `source.txt`", "- `source.txt`\n- `tests-serve/`"));
+  commit(g.wt, `studio(${OPUS}): a folder owned`);
+  w498Commit(g, "tests-serve/deeper/other.spec.ts", "under the folder\n", "test: under the owned folder");
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "a path under an owned folder span: review round 1");
+  w498Commit(g, "tests-serve-x/near.spec.ts", "beside the folder\n", "test: beside the owned folder");
+  w498Held(next(g, [OPUS, ...BUDGET]), ["tests-serve-x/near.spec.ts"], "a path that only opens like the folder name is not under it");
+  // route 2: the path reverted; the officina records (studio/, the handoff, a dossier page) are never counted
+  git(g.wt, ["rm", "-q", "-r", "tests-serve-x"]);
+  commit(g.wt, "revert: the edit outside Files owned");
+  put(g.wt, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Queue\n\n- (a records line)\n");
+  put(g.wt, "docs/design/dossier/page.html", "<p>a dossier page</p>\n");
+  commit(g.wt, "chore: officina records");
+  writeGates(g);
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "reverted, records only beside owned paths: review round 1");
+  // a rebase's conflict resolution counts: origin/master moves source.txt and README.md; the resolution keeps the branch's
+  // source.txt and the old README.md, so the branch now changes README.md against origin/master
+  advanceOrigin(g, "README.md", "trunk moved\n");
+  advanceOrigin(g, "source.txt", "trunk's source\n");
+  git(g.wt, ["fetch", "-q", "origin"]);
+  const rebase = spawnSync("git", ["rebase", "-q", "refs/remotes/origin/master"], { cwd: g.wt, env: SETUP_ENV, encoding: "utf8", timeout: 60_000 });
+  assert.notEqual(rebase.status, 0, `fixture: the rebase stops on a conflict: ${rebase.stdout}${rebase.stderr}`);
+  while (spawnSync("git", ["rev-parse", "-q", "--verify", "REBASE_HEAD"], { cwd: g.wt, env: SETUP_ENV }).status === 0) {
+    git(g.wt, ["checkout", "-q", "--theirs", "--", "."]);
+    put(g.wt, "README.md", "fixture\n");
+    git(g.wt, ["add", "-A"]);
+    spawnSync("git", ["-c", "core.editor=true", "rebase", "--continue"], { cwd: g.wt, env: SETUP_ENV, encoding: "utf8", timeout: 60_000 });
+  }
+  writeGates(g);
+  w498Held(next(g, [OPUS, ...BUDGET]), ["README.md"], "a rebase resolution that changes README.md against origin/master");
+  // trunk's own paths are not the branch's: with README.md restored to trunk's, review is named again
+  git(g.wt, ["checkout", "-q", "refs/remotes/origin/master", "--", "README.md"]);
+  commit(g.wt, "fix: the resolution restores trunk's README.md");
+  writeGates(g);
+  reviewNamed(next(g, [OPUS, ...BUDGET]), 1, "trunk's moved paths are not counted: review round 1");
+  // a hold over 1000 characters is printed whole: every path and both routes (W-377's uncut why)
+  const bulk = Array.from({ length: 14 }, (_, i) => `bulk/a-long-generated-path-name-for-the-uncut-why-${String(i).padStart(2, "0")}.spec.ts`);
+  for (const rel of bulk) put(g.wt, rel, "bulk\n");
+  commit(g.wt, "fix: a bulk edit outside Files owned");
+  writeGates(g);
+  const long = next(g, [OPUS, ...BUDGET]);
+  w498Held(long, bulk, "a hold over 1000 characters is printed whole");
+  assert.ok(w498Why(bulk).length > 1000, ran("fixture: the why is over 1000 characters", long));
+  // every read fails closed: an unreadable diff, and an unreadable committed brief once a source path changes
+  const noDiff = next(g, [OPUS, ...BUDGET], { env: { GIT_STUB_REAL: failingGit("w498-b1-diff", ["diff --name-only"]) } });
+  expectStep(noDiff, "build", "held", "an unreadable diff holds");
+  assert.equal(noDiff.kv.get("why"), `could not read what opus/${OPUS} changes against origin/master (git diff failed), so its paths cannot be checked against Files owned (W-498)`, ran("an unreadable diff: why", noDiff));
+  const noBrief = next(g, [OPUS, ...BUDGET], { env: { GIT_STUB_REAL: failingGit("w498-b1-blob", ["cat-file blob"]) } });
+  expectStep(noBrief, "build", "held", "an unreadable committed brief holds");
+  assert.equal(noBrief.kv.get("why"), `briefs/${OPUS}.md is not a readable blob on refs/heads/opus/${OPUS}, so the paths opus/${OPUS} changes cannot be checked against Files owned (W-498)`, ran("an unreadable committed brief: why", noBrief));
 });

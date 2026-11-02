@@ -386,6 +386,7 @@ export function briefText(behaviours: number): string {
     "## Files owned",
     "",
     "- `source.txt`",
+    "- the paths the fixture rows commit as a builder's (W-498): `apps/web/src/lib/nav.ts`, `evidence/`, `w326.test.mjs`, `w462.test.mjs`, `impl.txt`, `.gitignore`, `package.json`, `apps/web/package.json`, `apps/web/build.mjs`, `apps/web/src/main.mjs`, `docs/ADOPTION.md`, `src/plain.ts`",
     "",
     "## Interfaces",
     "",
