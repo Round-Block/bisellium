@@ -1,0 +1,22 @@
+# opus: W-412
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19bbd-f4af-7933-990a-def3fbb9f46b
+# outcome: passed
+# at: 2026-11-02T10:14:18.075Z
+# tree: tree:5bf3a8adc4bf055aedeebb9567b0380ebee45bc5
+# ui_input: ci/W-412-spec-14.log
+# design_digest: sha256:9ee949d1303ffc50ccff38fd9c9b34d12a8352d1e4e65ff0f8c40d26c1dfad45
+# ticket: {"opus":"W-412","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-412/studio","head":"549172c49e1e97d8a82847726e570b0decc2301c","brief":"4a738e7eb5c8e8ca977901d19483a0a0b8e91422","at":"2026-11-02T10:11:16.905Z"}
+
+## Findings
+No findings
+
+## UI input disposition
+The authoritative ui-lead input passed with two advisories, both resolved: lost-link copy now names the unavailable Board item, and the cyan record link inherits the Inbox fact-row sizing. Across all eight images, desktop hierarchy remains clear and the phone layouts preserve navigation, legibility, overflow cues, and reachable detail without clipping.
+
+## Verdict
+The implementation satisfies both behaviours, with genuine reds, passing gates, owned source paths, and responsive evidence consistent with the brief.
+VERDICT: PASS
