@@ -1758,7 +1758,7 @@ function rawDiffPaths(repo: string, base: string, head: string): { text: string;
  * that is not an officina record (`recordOnly`, the one list certify reads) must be named by the committed branch brief's
  * Files owned (`ownedFiles`, the blob the spec gate judged, never the worktree's): a span equal to the path, or a span
  * ending in `/` that the path opens with. A span holding a glob is not expanded. Each read fails closed: a diff or a brief
- * git cannot read is a hold's why. Uncommitted worktree edits are not read; `verify` refuses to certify a dirty tree.
+ * git cannot read, or whose bytes are not valid UTF-8 (decoded fatally, a BOM kept), is a hold's why. Uncommitted worktree edits are not read; `verify` refuses to certify a dirty tree.
  */
 function boundaryBreach(f: Facts): string | undefined {
   const head = `refs/heads/opus/${f.id}`;
@@ -1766,9 +1766,15 @@ function boundaryBreach(f: Facts): string | undefined {
   if (paths === undefined) return `could not read what opus/${f.id} changes against origin/master (git diff failed), so its paths cannot be checked against Files owned (W-498)`;
   const source = paths.filter((p) => !recordOnly([p.text], f.studioRel));
   if (source.length === 0) return undefined;
-  const brief = git(f.repo, ["cat-file", "blob", `${head}:${join(f.studioRel, briefRel(f.id))}`]);
+  const brief = spawnSync("git", ["cat-file", "blob", `${head}:${join(f.studioRel, briefRel(f.id))}`], { cwd: f.repo, encoding: "buffer", stdio: ["ignore", "pipe", "ignore"], timeout: 120_000, maxBuffer: 16 * 1024 * 1024 });
   if (brief.status !== 0 || brief.error !== undefined) return `${briefRel(f.id)} is not a readable blob on ${head}, so the paths opus/${f.id} changes cannot be checked against Files owned (W-498)`;
-  const owned = ownedFiles(brief.stdout);
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(brief.stdout);
+  } catch {
+    return `${briefRel(f.id)} on ${head} is not valid UTF-8, so the paths opus/${f.id} changes cannot be checked against Files owned (W-498)`;
+  }
+  const owned = ownedFiles(text);
   const outside = source.filter((p) => !p.valid || !owned.some((o) => o === p.text || (o.endsWith("/") && p.text.startsWith(o)))).map((p) => p.text);
   if (outside.length === 0) return undefined;
   return `opus/${f.id} changes ${outside.length} path(s) outside its brief's Files owned, in its diff against origin/master (a rebase's resolutions included): ${outside.map((p) => clean(p)).join(", ")}; revise the brief to own them (a spec amendment, signed again) or revert them on opus/${f.id} (W-498)`;
