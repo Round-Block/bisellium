@@ -1,0 +1,21 @@
+# opus: W-497
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19af9-553d-72a3-8203-7077d25e3a76
+# outcome: passed
+# at: 2026-11-02T06:40:39.562Z
+# tree: tree:64ccfe095234d1523f8da77980391388fdb3b4c6
+# brief: briefs/W-497.md blob:b7647ea8c74eb98e53a312758a356cb2f0751b6a
+# ticket: {"opus":"W-497","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"00fddd6e9123f3365656c4512f29576e5386cae0","brief":"b7647ea8c74eb98e53a312758a356cb2f0751b6a","at":"2026-11-02T06:40:38.918Z"}
+
+## Findings
+1. advisory — brief:32 [severity: S2] Master’s permissive single-quote regex also accepted malformed quoted values containing a bare quote or unknown escape, while `inspectedString` makes those plain, so “every form master’s readers read” is false. Replace brief:32 with: “Promise kept-forms: the supported kept forms are still read as before: a valid single-quoted line with YAML’s `''` read as one quote; a `|-`, `|` or `|+` block whose lines are one space or more past the key; a number or boolean `actual:` as no line; and a plain `error:` reported by `firstFailure` as printed, with the existing pins — limit: malformed single-quoted values that master’s permissive regex accepted, including a bare quote of its own kind or an unknown escape, are now plain; `code: 'ERR_ASSERTION'` remains compared as written; W-492-b1’s other hand-written YAML fixtures stay W-492’s.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/verdict-citation.test.ts W-497-b1 malformed-single-quote boundary
+2. advisory — brief:65 [severity: S4] `nodeTap` only returns child stdout and does not reject another protocol; the row’s assertions are the real fail-closed boundary. Replace brief:65’s Rejected-by cell with: “`assert.equal` and `assert.deepEqual` in `W-497-b1` (specified): the first-line assertion rejects a stream not opening `TAP version 13`, and the per-reader assertions reject missing or misread subtests, failing the row; keep the existing pins.” [class: spec×input-without-named-rejector] — check: none: brief.input.rejector should require the named function to perform or propagate refusal
+3. advisory — brief:67 [severity: S4] The reused-call row omits the separately required `bisellium ci` call and leaves several calls unnamed as “lint,” `format:check`, and “both officina checks.” Replace brief:67 with: “| 4. The reused gates | `npm test`, `npm run -s typecheck`, `npm run -s lint`, `npm run -s format:check`, `npm run -s check -- studio --repo .`, `npm run -s check -- examples/sample-studio --repo .`, and `bisellium ci --opus W-497 --studio studio` each exit 0 | exit: `npm test` and every other listed call are reused; any non-zero exit fails acceptance; unpinned (a stated limit, D-076 E) |”. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+
+## Verdict
+The design is feasible and its production boundary has no blocking gap; the false compatibility promise and two rejector/call-boundary descriptions are advisory fixes for the build.
+
+VERDICT: PASS

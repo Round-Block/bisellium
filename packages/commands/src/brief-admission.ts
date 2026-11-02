@@ -277,11 +277,84 @@ export function ruledCases(briefText: string): {
   return { cases, formless, pathGaps, surfaceGaps, promises, prototype };
 }
 
+// ---------------------------------------------------------------------------
+// W-497 (D-076 D): the one reader of a value in a diagnostic block of Node's TAP reporter, in the grammar its writer
+// prints. Node's reporter (`jsToYaml`, `lib/internal/test_runner/reporter/tap.js`) is the writer: a one-line string is
+// printed through `util.inspect`, so it is quoted `'…'`, or `"…"` when it holds a `'` and no `"`, or `` `…` `` when it
+// holds both and no `` ` `` or `${`, with inspect's escapes (`\\`, `\'` in the `'…'` form, `\b`, `\t`, `\n`, `\f`, `\r`,
+// `\xHH` for the other control characters, `\uHHHH` for a lone surrogate); a string of more lines is a `|-` block, each
+// line two spaces past the key; any other value is printed as inspect prints it. The readers of such a block
+// (`killedPin`, `redFailsAt` and `firstFailure` read `error:`, `textKilledLine` reads `actual:`) read the value here, and
+// row `W-497-b1` checks them against the output of the Node that runs the suite, so a reader narrower than its writer
+// fails a row instead of skipping a valid record.
+// They live here, not in a module of their own: the plain-node host loads this file with no import (W-140-b2).
+// ---------------------------------------------------------------------------
+
+/** A diagnostic value: a quoted string or a block scalar's lines, decoded; or any other value as printed. */
+export type TapValue = { form: "quoted" | "block"; lines: string[] } | { form: "plain"; text: string };
+
+/** The escapes `util.inspect` writes in a quoted string, and the character each stands for (`\x` and `\u` are read apart). */
+const ESCAPED: Readonly<Record<string, string>> = { "\\": "\\", "'": "'", b: "\b", t: "\t", n: "\n", f: "\f", r: "\r" };
+const HEX = /^[0-9A-Fa-f]+$/;
+
+/** The value of `key` in `block` (a diagnostic block's lines, after its `---`): the first line that is `<indent><key>:`
+ *  or opens with it and a space. A `|-`, `|` or `|+` value is a block: the lines after it each opening `<indent>` and a
+ *  space, or blank, each with its leading spaces cut to at most two past `indent` (Node's own two, W-492's one).
+ *  A value quoted as `util.inspect` quotes a string is decoded (`inspectedString`). Any other value is plain, as printed.
+ *  No such line is undefined. */
+export function tapValue(block: readonly string[], indent: string, key: string): TapValue | undefined {
+  const head = `${indent}${key}:`;
+  const at = block.findIndex((l) => l === head || l.startsWith(`${head} `));
+  if (at === -1) return undefined;
+  const value = block[at]!.slice(head.length + 1);
+  if (/^\|[-+]?$/.test(value)) {
+    const lines: string[] = [];
+    for (let i = at + 1; i < block.length && (block[i]!.startsWith(`${indent} `) || block[i]!.trim() === ""); i++) {
+      const line = block[i]!;
+      lines.push(line.slice(Math.min(/^ */.exec(line)![0].length, indent.length + 2)));
+    }
+    return { form: "block", lines };
+  }
+  const quoted = inspectedString(value);
+  return quoted === undefined ? { form: "plain", text: value } : { form: "quoted", lines: [quoted] };
+}
+
+/** A one-line string as `util.inspect` quotes it, decoded: `'…'`, `"…"` or `` `…` `` whose body holds no bare quote of
+ *  its kind, and whose `\` opens one of inspect's escapes (`ESCAPED`, `\xHH`, `\uHHHH`). In the `'…'` form a doubled
+ *  `''` is read as one quote too (YAML's form, which W-492's reader read). Anything else is undefined: not a string. */
+export function inspectedString(text: string): string | undefined {
+  const q = text[0];
+  if (text.length < 2 || (q !== "'" && q !== '"' && q !== "`") || text[text.length - 1] !== q) return undefined;
+  const body = text.slice(1, -1);
+  let out = "";
+  for (let i = 0; i < body.length; i++) {
+    const c = body[i]!;
+    if (c === "\\") {
+      const e = body[i + 1];
+      const width = e === "x" ? 2 : e === "u" ? 4 : 0;
+      if (width > 0) {
+        const hex = body.slice(i + 2, i + 2 + width);
+        if (hex.length !== width || !HEX.test(hex)) return undefined;
+        out += String.fromCharCode(Number.parseInt(hex, 16));
+        i += 1 + width;
+      } else if (e !== undefined && Object.hasOwn(ESCAPED, e)) {
+        out += ESCAPED[e]!;
+        i += 1;
+      } else return undefined;
+    } else if (c === q) {
+      if (q !== "'" || body[i + 1] !== "'") return undefined;
+      out += "'";
+      i += 1;
+    } else out += c;
+  }
+  return out;
+}
+
 /** W-381: the first pin a kill's output proves, in pin order, or undefined. The output is Node's TAP reporter's (its first
  *  line is exactly `TAP version 13`); a pin is proved when its row's subtest, from a `# Subtest: <row>` line to its own
  *  status line at the same indent and that line's diagnostic block, has that status line read `not ok <k> - <row>` (each
  *  the row's name, then a space or the line's end) and holds a diagnostic block whose `error:` message (trimmed: a quoted
- *  `'<text>'`, a doubled `''` read as one quote, or the first line of an `error: |-` block) is the pin's assertion text, or
+ *  string or the first line of a block, as `tapValue` reads it, W-497) is the pin's assertion text, or
  *  opens with it and `: ` (a row's `<case>: <detail>` message), and whose `code:` is `'ERR_ASSERTION'`. ponytail: every other TAP or YAML form, and a Playwright report, proves nothing. */
 export function killedPin(output: string, pins: readonly Pin[]): Pin | undefined {
   const lines = output.split(/\r?\n/);
@@ -290,8 +363,8 @@ export function killedPin(output: string, pins: readonly Pin[]): Pin | undefined
 }
 
 /** W-492 (D-076 D): the line of a kill's own mutation that the failure proving `pin` was read from, or undefined. The kill's
- *  output proves `pin` as `killedPin` reads it, and the proving diagnostic block's `actual:` value (a `|-`, `|` or `|+`
- *  block scalar, each line trimmed, or a quoted `'<text>'`, a doubled `''` read as one quote) holds, as a whole trimmed
+ *  output proves `pin` as `killedPin` reads it, and the proving diagnostic block's `actual:` value (a quoted string or a
+ *  block's lines, as `tapValue` reads it, W-497, each trimmed) holds, as a whole trimmed
  *  line, a line the patch adds (a line opening `+` after its first `@@ ` hunk header, without the `+`, trimmed) that holds a
  *  letter or a digit: the pinned assertion read the source text the kill changed, so the kill proves that text, not what
  *  the code does. ponytail: every other `actual` form (a boolean, as `assert.ok(text.includes(…))` prints, a substring, a
@@ -345,26 +418,18 @@ function provingDiagnostic(lines: string[], assertion: string): { block: string[
     if (open === null) continue;
     const end = lines.findIndex((l, j) => j > i && l === `${open[1]}...`);
     const block = lines.slice(i + 1, end === -1 ? undefined : end);
-    const at = block.findIndex((l) => l.startsWith(`${open[1]}error: `));
-    const value = at === -1 ? undefined : block[at]!.slice(`${open[1]}error: `.length);
-    const message = value === "|-" ? block[at + 1]?.trim() : value !== undefined && /^'.*'$/.test(value) ? value.slice(1, -1).replaceAll("''", "'").trim() : undefined;
+    const value = tapValue(block, open[1]!, "error");
+    const message = value === undefined || value.form === "plain" ? undefined : value.lines[0]?.trim();
     if ((message === assertion || message?.startsWith(`${assertion}: `) === true) && block.includes(`${open[1]}code: 'ERR_ASSERTION'`)) return { block, indent: open[1]! };
   }
   return undefined;
 }
 
-/** W-492: a diagnostic block's `actual:` value as trimmed lines: a `|-`, `|` or `|+` block scalar's lines (each more
- *  indented than the key, or blank), or a quoted `'<text>'` with `''` read as one quote; any other form is no line. */
+/** W-492: a diagnostic block's `actual:` value as trimmed lines, as `tapValue` reads it (W-497): a quoted string's one
+ *  line or a block's lines; a plain value (a boolean, a number) or no `actual:` is no line. */
 function actualLines(block: readonly string[], indent: string): Set<string> {
-  const key = `${indent}actual: `;
-  const at = block.findIndex((l) => l.startsWith(key));
-  if (at === -1) return new Set();
-  const value = block[at]!.slice(key.length);
-  if (/^'.*'$/.test(value)) return new Set([value.slice(1, -1).replaceAll("''", "'").trim()]);
-  if (!/^\|[-+]?$/.test(value)) return new Set();
-  const out = new Set<string>();
-  for (let i = at + 1; i < block.length && (block[i]!.startsWith(`${indent} `) || block[i]!.trim() === ""); i++) out.add(block[i]!.trim());
-  return out;
+  const value = tapValue(block, indent, "actual");
+  return new Set(value === undefined || value.form === "plain" ? [] : value.lines.map((l) => l.trim()));
 }
 
 /** W-161: problems with the one "Input domain" section: a three-column table whose rows each name a record, its
@@ -833,14 +898,15 @@ export function redFailsAt(output: string, pin: Pin): boolean {
   return provesPin(output.split(/\r?\n/), pin);
 }
 
-/** W-473: the first diagnostic `error:` message in a red's output (a quoted `'<text>'` with `''` read as one quote, the first
- *  line of an `error: |-` block, else the value as printed), for a refusal to name what the red did fail at; none is undefined. */
+/** W-473: the first diagnostic `error:` message in a red's output, as `tapValue` reads it (W-497): a quoted string decoded,
+ *  the first line of a block trimmed, else the value as printed; for a refusal to name what the red did fail at; none is
+ *  undefined. */
 export function firstFailure(output: string): string | undefined {
   const lines = output.split(/\r?\n/);
   const at = lines.findIndex((l) => /^ *error: /.test(l));
   if (at === -1) return undefined;
-  const value = lines[at]!.replace(/^ *error: /, "");
-  return value === "|-" ? lines[at + 1]?.trim() : /^'.*'$/.test(value) ? value.slice(1, -1).replaceAll("''", "'") : value;
+  const value = tapValue(lines.slice(at), /^ */.exec(lines[at]!)![0], "error")!;
+  return value.form === "plain" ? value.text : value.form === "block" ? value.lines[0]?.trim() : value.lines[0];
 }
 
 /** A red command word that runs Playwright: `playwright`, or a path ending `/playwright`. */
