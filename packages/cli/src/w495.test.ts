@@ -260,7 +260,7 @@ test("W-495-b4 a first spec signature later than the rung's clock is no start: t
   const o = next(w, [OPUS, "--perform", "--expect", "branch", "--now", "2026-10-02T00:20:00.000Z"]);
   expectStep(o, "branch", "performed", "the branch rung is performed with the clock before the spec signature (01:00Z)");
   const cost = o.out.split("\n").find((l) => l.startsWith("cost: "));
-  assert.match(cost ?? "", /^cost: none \(/, ran("a start after the clock has no span: none, before any hours are printed", o));
+  assert.equal(cost, `cost: none (the first spec signature of ${OPUS} (${T.spec}) is after this rung's clock)`, ran("a start after the clock has no span: none, before any hours are printed", o));
   assert.doesNotMatch(cost ?? "", /-\d+\.\d h/, "no negative hours");
 });
 
