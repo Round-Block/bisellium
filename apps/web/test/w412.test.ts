@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { drawerDetail, type CardRow } from "../src/lib/board.js";
+import { decisionEvidenceIsCurrent, decisionEvidenceRevision, drawerDetail, type CardRow } from "../src/lib/board.js";
 import { BoardDrawer } from "../src/screens/BoardDrawer.js";
 import type { OpusEntry } from "../src/api.js";
 import "./support/register-css-stub.mjs";
@@ -66,4 +68,27 @@ test("W-412-b1 behaviour 1: drawer evidence names revision, gate result and deci
   assert.deepEqual(none.waitingEvidence, [], "zero recorded evidence invents no binding");
   const complete = drawerDetail(cases.at(-1)!, { probationes: declared }, { petitiones: [] }, [], waitingCard(cases.at(-1)!));
   assert.equal(complete.waitingEvidence?.length, declared.length, "all recorded gates retain all decision bindings");
+});
+
+test("W-412-b2 behaviour 2: a linked verdict is refused when displayed evidence changed", () => {
+  const shown = makeOpus("building", {
+    review: { status: "passed", evidence: { certifies: `tree:${"a".repeat(40)}`, href: "ci/W-1-review-1.log" } },
+  });
+  const revision = decisionEvidenceRevision(shown);
+  assert.equal(decisionEvidenceIsCurrent(revision, shown), true, "unchanged displayed evidence remains current");
+  assert.equal(decisionEvidenceIsCurrent(undefined, undefined), true, "a standalone question with no Board evidence remains unbound");
+  assert.equal(decisionEvidenceIsCurrent(revision, undefined), false, "a disappeared linked opus makes the verdict stale");
+  for (const [label, probationes] of [
+    ["gate result", { review: { status: "failed", evidence: shown.probationes.review!.evidence } }],
+    ["reviewed revision", { review: { status: "passed", evidence: { certifies: `tree:${"b".repeat(40)}`, href: "ci/W-1-review-1.log" } } }],
+    ["decision record", { review: { status: "passed", evidence: { certifies: `tree:${"a".repeat(40)}`, href: "ci/W-1-review-2.log" } } }],
+  ] as const) {
+    assert.equal(decisionEvidenceIsCurrent(revision, makeOpus("building", probationes)), false, `a changed ${label} makes the verdict stale`);
+  }
+  const inbox = readFileSync(join(import.meta.dirname, "../src/screens/Inbox.tsx"), "utf8");
+  const pinAt = inbox.indexOf("function pinDecisionEvidence(");
+  const refreshAt = inbox.indexOf("function retainPinnedDecisionEvidence(");
+  assert.ok(pinAt >= 0 && refreshAt >= 0 && pinAt < refreshAt, "the first-display evidence pin is declared before refresh reconciliation");
+  assert.ok(inbox.indexOf("await fetchOpera()") < inbox.indexOf("return submitAnswer("), "the current opera read happens before the answer is submitted");
+  assert.match(inbox, /Evidence changed since it was shown/, "the refusal tells the Patron why the verdict was not submitted");
 });

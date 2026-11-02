@@ -63,6 +63,21 @@ export interface AttentionRow extends CardRow {
   petitionIds?: string[];
 }
 
+/** W-412 b2 red-stage seam: the pure table is implemented so the source-order guard is the single red. */
+export function decisionEvidenceRevision(opus: Pick<OpusEntry, "probationes">): string {
+  return JSON.stringify(Object.entries(opus.probationes)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([gate, result]) => ({
+      gate,
+      status: result.status,
+      revision: result.evidence?.certifies ?? null,
+      record: result.evidence?.href ?? null,
+    })));
+}
+export function decisionEvidenceIsCurrent(shown: string | undefined, current: OpusEntry | undefined): boolean {
+  return shown === undefined || (current !== undefined && decisionEvidenceRevision(current) === shown);
+}
+
 function recordValue(record: unknown, key: string): unknown {
   return typeof record === "object" && record !== null ? (record as Record<string, unknown>)[key] : undefined;
 }
