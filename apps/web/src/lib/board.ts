@@ -11,6 +11,10 @@ import type { Gate, GateStatus } from "./gateLadder.js";
  *  else about the column set comes from the served lifecycle. */
 const BACKLOG_PHASE = "backlog";
 
+/** Keep this set byte-for-byte aligned with packages/cli/src/check.ts. The
+ * Board's cap numerator is the same policy fact that emits `wip.cap`. */
+const CHECK_WIP_STATES = new Set(["building", "verifying"]);
+
 /** Only the phases this brief actually names get a friendlier head; anything
  *  else (a fixture's own extra phase) is humanized from its id rather than
  *  hardcoded — the column set must never be a constant (behaviour 1). */
@@ -47,6 +51,9 @@ export interface CardRow {
   nextActor?: string;
   /** Oldest parseable instant among this card's active ask sources. */
   waitingSince?: number;
+  /** Recorded handoff into the card's current lifecycle state. A missing,
+   * malformed or stale-stage handoff remains unknown rather than guessed. */
+  dwellSince?: number;
   blocked: boolean;
 }
 
@@ -149,11 +156,30 @@ export interface BoardColumn {
    * membership is rendered above the columns, so no waiting column is pinned. */
   pinned: boolean;
   cards: CardRow[];
-  /** Present on the in-progress column only. */
+  /** Whole lifecycle membership before a presentation filter is applied. */
+  totalCount: number;
+  /** Failed-gate cards in totalCount. Blocked work always consumes WIP. */
+  blockedCount: number;
+  /** Present on every column containing one of check's WIP_STATES. */
   cap?: number;
+  /** Shared check-compatible numerator, repeated on each capped WIP column. */
+  wipCount?: number;
+  /** Blocked members of wipCount; blocked work still consumes the cap. */
+  wipBlockedCount?: number;
   atCap: boolean;
+  medianDwellMs?: number;
+  dwellSampleCount: number;
+  entryRule: string;
+  exitRule: string;
   /** Phase columns are lifecycle membership, never attention membership. */
   membership: boolean;
+}
+
+export type BoardFilter = "all" | "blocked";
+
+export interface BoardModelOptions {
+  filter?: BoardFilter;
+  now?: number;
 }
 
 export interface BoardModel {
@@ -341,6 +367,7 @@ export function boardModel(
   o: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">,
   opera: OpusEntry[],
   inbox: Pick<InboxResponse, "opera" | "petitiones"> = { opera: [], petitiones: [] },
+  options: BoardModelOptions = {},
 ): BoardModel {
   const cards = classifiedCards(o, opera, inbox);
 
@@ -354,8 +381,22 @@ export function boardModel(
 
   const columns = new Map<string, BoardColumn>();
   for (const phase of phases) {
-    const col: BoardColumn = { id: phase, name: humanizePhase(phase), pinned: false, cards: [], atCap: false, membership: false };
-    if (phase === "in_progress" && o.wip_limit !== undefined) col.cap = o.wip_limit;
+    const col: BoardColumn = {
+      id: phase,
+      name: humanizePhase(phase),
+      pinned: false,
+      cards: [],
+      totalCount: 0,
+      blockedCount: 0,
+      atCap: false,
+      dwellSampleCount: 0,
+      entryRule: "",
+      exitRule: "",
+      membership: false,
+    };
+    if (o.wip_limit !== undefined && o.lifecycle.states.some((state) => state.phase === phase && CHECK_WIP_STATES.has(state.id))) {
+      col.cap = o.wip_limit;
+    }
     columns.set(phase, col);
   }
 
@@ -385,8 +426,29 @@ export function boardModel(
   if (planned) planned.cards.push(...backlog);
   else unplaced.push(...backlog.map((card) => card.id));
 
+  const wipOpera = opera.filter((opus) => CHECK_WIP_STATES.has(opus.state));
+  const wipCount = wipOpera.length;
+  const wipBlockedCount = wipOpera.filter((opus) => cards.get(opus.id)?.blocked).length;
+
   for (const col of columns.values()) {
-    if (col.cap !== undefined) col.atCap = col.cards.length >= col.cap;
+    col.totalCount = col.cards.length;
+    col.blockedCount = col.cards.filter((card) => card.blocked).length;
+    if (col.cap !== undefined) {
+      col.wipCount = wipCount;
+      col.wipBlockedCount = wipBlockedCount;
+      col.atCap = wipCount >= col.cap;
+    }
+    const now = options.now ?? Date.now();
+    const dwells = col.cards
+      .flatMap((card) => card.dwellSince === undefined ? [] : [Math.max(0, now - card.dwellSince)])
+      .sort((a, b) => a - b);
+    col.dwellSampleCount = dwells.length;
+    if (dwells.length > 0) {
+      const middle = Math.floor(dwells.length / 2);
+      col.medianDwellMs = dwells.length % 2 === 1
+        ? dwells[middle]
+        : (dwells[middle - 1]! + dwells[middle]!) / 2;
+    }
   }
 
   return { columns: [...columns.values()], waiting, unplaced };

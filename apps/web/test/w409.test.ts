@@ -65,7 +65,7 @@ test("W-409-b1 behaviour 1: every Patron ask adds membership without replacing t
   const board = read("src/screens/Board.tsx");
   const served = read("tests-serve/w409.spec.ts");
   assert.match(store, /phase === "backlog"/, "the existing Inbox route recognises lifecycle backlog as a greenlight ask");
-  assert.match(board, /boardModel\(officina, opera, inbox\)/, "the Board joins the existing Inbox response instead of adding a data source");
+  assert.match(board, /boardModel\(officina, opera, inbox, \{/, "the Board joins the existing Inbox response and local display policy instead of adding a data source");
   assert.match(served, /W-409-b1 Patron asks retain lifecycle membership at 1280, 640 and 390/, "the served row pins every ruled viewport");
 });
 

@@ -2111,6 +2111,24 @@
   background: var(--surface);
 }
 
+.board__filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.board__filter {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 4px 8px;
+  font: inherit;
+  color: var(--ink-2);
+  background: var(--surface);
+}
+
 .board__liveness {
   flex-shrink: 0;
   margin-left: auto;
@@ -2118,6 +2136,15 @@
   font-size: 11px;
   color: var(--ink-3);
   white-space: nowrap;
+}
+
+.board__wip-scope {
+  margin: 4px var(--sp-6) 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-2);
+  flex-shrink: 0;
 }
 
 .board__waiting {
@@ -2430,18 +2457,64 @@
   color: var(--ink-3);
 }
 
+.board__column-policy,
+.board__blocked-count,
+.board__column-metrics {
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ink-3);
+}
+
+.board__column-policy {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board__column-policy span {
+  display: inline-block;
+  width: 34px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.board__column-metrics {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.board__wip-count,
+.board__column-dwell,
+.board__blocked-count {
+  font-family: var(--font-mono);
+}
+
+.board__wip-count--at-cap {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.board__column-dwell {
+  flex-shrink: 0;
+  text-align: right;
+}
+
 .board__wip-rule {
   height: 3px;
   background: var(--rule);
 }
 
+.board__wip-rule--no-cap {
+  background: linear-gradient(90deg, var(--rule) 0 25%, var(--surface) 25% 50%, var(--rule) 50% 75%, var(--surface) 75% 100%);
+  background-size: 8px 3px;
+}
+
 .board__wip-fill {
   height: 100%;
   background: var(--ink);
-}
-
-.board__wip-fill--amber {
-  background: var(--amber);
 }
 
 .board__column-cards {
@@ -2826,6 +2899,10 @@
   .board__liveness {
     flex: 1 0 100%;
     margin-left: 0;
+  }
+
+  .board__wip-scope {
+    margin-inline: var(--sp-4);
   }
 
   .board__waiting {

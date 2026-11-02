@@ -6,7 +6,7 @@
  * here rather than being threaded up through Board.tsx.
  */
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { formatWaitingAge, type AttentionRow, type BoardModel, type CardRow } from "../lib/board.js";
+import { formatWaitingAge, type AttentionRow, type BoardFilter, type BoardModel, type CardRow } from "../lib/board.js";
 import { Colophon } from "../components/Colophon.js";
 
 export interface BoardViewProps {
@@ -28,6 +28,15 @@ export interface BoardViewProps {
   generatedAt?: string;
   /** W-341: the screen's visible status line in a loading, empty or error state; absent at rest. */
   notice?: string;
+  filter?: BoardFilter;
+  onFilterChange?: (filter: BoardFilter) => void;
+}
+
+function formatDwell(ms: number | undefined): string {
+  if (ms === undefined) return "—";
+  if (ms < 3_600_000) return "<1h";
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h`;
+  return `${Math.floor(ms / 86_400_000)}d`;
 }
 
 function cardClassName(card: CardRow): string {
@@ -133,20 +142,40 @@ function Column({
 }): JSX.Element {
   const focusedId = focusedByColumn[column.id] ?? column.cards[0]?.id;
   const classes = ["board__column", column.pinned && "board__column--pinned"].filter(Boolean).join(" ");
+  const totalCount = column.totalCount ?? column.cards.length;
+  const blockedCount = column.blockedCount ?? column.cards.filter((card) => card.blocked).length;
+  const dwellSampleCount = column.dwellSampleCount ?? 0;
+  const shown = column.cards.length === totalCount
+    ? `${totalCount} shown`
+    : `${column.cards.length} of ${totalCount} shown`;
+  const wipCount = column.wipCount ?? totalCount;
+  const wip = column.cap === undefined
+    ? `${totalCount} ${totalCount === 1 ? "item" : "items"} · ${blockedCount} blocked`
+    : `Shared WIP ${wipCount} / ${column.cap} · ${column.wipBlockedCount ?? blockedCount} blocked`;
+  const dwellTitle = dwellSampleCount === 0
+    ? "Median dwell unavailable: no current-state handoff time is recorded"
+    : `Median dwell from ${dwellSampleCount} of ${totalCount} recorded current-state handoffs`;
   return (
     <div className={classes} data-column-id={column.id}>
       <div className="board__column-head" tabIndex={-1}>
         <span className="board__column-name">{column.name}</span>
-        <span className="board__column-count">{column.cards.length}</span>
+        <span className="board__column-count">{shown}</span>
       </div>
-      {column.cap !== undefined && (
-        <div className="board__wip-rule">
+      {column.entryRule !== undefined && <div className="board__column-policy"><span>Enter</span> {column.entryRule}</div>}
+      {column.exitRule !== undefined && <div className="board__column-policy"><span>Exit</span> {column.exitRule}</div>}
+      <div className="board__column-metrics">
+        <span className={column.atCap ? "board__wip-count board__wip-count--at-cap" : "board__wip-count"}>{wip}</span>
+        <span className="board__column-dwell" title={dwellTitle}>median {formatDwell(column.medianDwellMs)}</span>
+      </div>
+      <div className="board__blocked-count">{blockedCount} blocked · counted</div>
+      <div className={column.cap === undefined ? "board__wip-rule board__wip-rule--no-cap" : "board__wip-rule"}>
+        {column.cap !== undefined && (
           <div
-            className={["board__wip-fill", column.atCap && "board__wip-fill--amber"].filter(Boolean).join(" ")}
-            style={{ width: `${Math.min(100, (column.cards.length / Math.max(1, column.cap)) * 100)}%` }}
+            className="board__wip-fill"
+            style={{ width: `${Math.min(100, (wipCount / Math.max(1, column.cap)) * 100)}%` }}
           />
-        </div>
-      )}
+        )}
+      </div>
       <div className="board__column-cards" role="listbox" aria-label={column.name}>
         {column.cards.map((card) => (
           <Card key={card.id} card={card} columnId={column.id} selected={card.id === selectedId} focused={card.id === focusedId} onSelect={onSelectCard} />
@@ -307,7 +336,7 @@ function PhaseNavigation({ columns }: { columns: BoardModel["columns"] }): JSX.E
   );
 }
 
-export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, onOpenInbox = () => undefined, liveness, branchNote, generatedAt, notice }: BoardViewProps): JSX.Element {
+export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, onOpenInbox = () => undefined, liveness, branchNote, generatedAt, notice, filter = "all", onFilterChange = () => undefined }: BoardViewProps): JSX.Element {
   return (
     <div className="board" inert={inert || undefined}>
       <div className="board__header">
@@ -317,8 +346,16 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
             <option value={studio}>{studio}</option>
           </select>
         </div>
+        <label className="board__filter-wrap">
+          <span>Show</span>
+          <select className="board__filter" aria-label="Filter Board work" value={filter} onChange={(event) => onFilterChange(event.target.value as BoardFilter)}>
+            <option value="all">All work</option>
+            <option value="blocked">Blocked only</option>
+          </select>
+        </label>
         {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
       </div>
+      <p className="board__wip-scope">Shared WIP = Building + Verifying; blocked work included</p>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
       <WaitingStrip waiting={model.waiting} columns={model.columns} onSelectCard={onSelectCard} onOpenInbox={onOpenInbox} />

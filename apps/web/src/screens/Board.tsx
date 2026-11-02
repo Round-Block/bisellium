@@ -18,7 +18,7 @@ import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../ap
 import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
-import { attentionTotal, boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
+import { attentionTotal, boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets, type BoardFilter } from "../lib/board.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
   studio: "",
@@ -71,8 +71,9 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
   const [everLoaded, setEverLoaded] = useState(false);
   // W-341: the last reconciliation's outcome; a later successful one clears it.
   const [readFailed, setReadFailed] = useState(false);
+  const [filter, setFilter] = useState<BoardFilter>("all");
 
-  const model = boardModel(officina, opera, inbox);
+  const model = boardModel(officina, opera, inbox, { filter, now: Date.now() });
 
   // Refs mirroring state that stable (mount-once) closures need to read.
   const selectedRef = useRef<Selection | undefined>(undefined);
@@ -471,6 +472,8 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
         branchNote={branchNote("branchRecords" in officina ? officina.branchRecords : undefined)}
         generatedAt={generatedAt}
         notice={status.state === "loading" || status.state === "empty" || status.state === "error" ? status.text : undefined}
+        filter={filter}
+        onFilterChange={setFilter}
       />
       <BoardDrawer detail={detail} onClose={closeDrawer} />
     </div>
