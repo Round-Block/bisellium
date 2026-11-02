@@ -1,0 +1,21 @@
+# opus: W-501
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19c51-8f98-7b32-8c2b-1f7a06fcc4d2
+# outcome: passed
+# at: 2026-11-02T14:43:45.357Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-501.md blob:6ffbf3798472e9e083367d05ccd3e197d1f39cf8
+# ticket: {"opus":"W-501","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"6ffbf3798472e9e083367d05ccd3e197d1f39cf8","at":"2026-11-02T14:43:40.667Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-501-spec-2.log #1: closed — brief:89 now scopes success to the current route/readEpoch mount; `beginReadMount` resets the marker, App calls it from `useLayoutEffect` before passive reads, W-501-b3 pins the prior-success/new-mount/stale-token case, and K24/K25 kill the mechanism and its wiring.
+
+## Verdict
+The earlier design-changing blocker is closed, and the revision introduces no new blocking finding.
+VERDICT: PASS
