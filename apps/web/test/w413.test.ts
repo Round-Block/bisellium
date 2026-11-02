@@ -100,3 +100,27 @@ test("W-413-b2 behaviour 2: median dwell uses recorded current-state handoffs on
   const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model: terminal, focusedByColumn: {}, onSelectCard: () => undefined }));
   assert.doesNotMatch(html.match(/data-column-id="done"[\s\S]*?<div class="board__column-cards"/)?.[0] ?? "", /board__column-dwell/, "Done renders no median");
 });
+
+test("W-413-b3 behaviour 3: every lifecycle column names its entry and exit rule", () => {
+  const model = boardModel(officina(4), []);
+  assert.deepEqual(
+    model.columns.map(({ id, entryRule, exitRule }) => [id, entryRule, exitRule]),
+    [
+      ["planned", "Backlog + Greenlit", "approval + readiness before building"],
+      ["in_progress", "Building", "build complete before verification"],
+      ["verifying", "Verifying", "passing checks before review"],
+      ["awaiting_review", "Awaiting review", "approval completes work"],
+      ["done", "Complete", "no forward exit"],
+      ["halted", "Stopped", "resume when condition is met"],
+    ],
+    "membership uses served state names while exit copy stays fixed by standard phase id",
+  );
+  const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model, focusedByColumn: {}, onSelectCard: () => undefined }));
+  assert.match(html, />Backlog \+ Greenlit; approval \+ readiness before building</, "Planned states its membership and condition before building");
+  assert.match(html, />Verifying; passing checks before review</, "Verifying states the checks condition before review");
+  assert.match(html, />Complete; no forward exit</, "Done does not imply another destination");
+  assert.match(html, />Stopped; resume when condition is met</, "Halted states the recorded resume condition");
+  const customLifecycle: OfficinaResponse["lifecycle"] = { id: "opus", states: [...lifecycle.states, { id: "archived", name: "Stored records", phase: "archived" }] };
+  const custom = boardModel({ ...officina(), lifecycle: customLifecycle }, []);
+  assert.deepEqual([column(custom, "archived").entryRule, column(custom, "archived").exitRule], ["Stored records", "recorded condition is met"], "a custom phase uses its served state name and the fixed fallback condition");
+});
