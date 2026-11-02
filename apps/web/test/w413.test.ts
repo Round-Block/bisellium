@@ -83,3 +83,20 @@ test("W-413-b1 behaviour 1: Board and check share the WIP numerator, cap and blo
   );
   assert.match(html, />Shared WIP = Building \+ Verifying; blocked work included</, "the visible key names the shared population and blocked-work rule");
 });
+
+test("W-413-b2 behaviour 2: median dwell uses recorded current-state handoffs only", () => {
+  const none = column(boardModel(officina(4), [], undefined, { now: NOW }), "in_progress");
+  const one = column(boardModel(officina(4), [opus("W-1", "building", { hours: 2 })], undefined, { now: NOW }), "in_progress");
+  const many = column(boardModel(officina(4), [
+    opus("W-1", "building", { hours: 9 }),
+    opus("W-2", "building", { hours: 1 }),
+    opus("W-3", "building", { hours: 3 }),
+    opus("W-4", "building", { hours: 99, stage: "greenlit" }),
+  ], undefined, { now: NOW }), "in_progress");
+  assert.deepEqual([none.medianDwellMs, one.medianDwellMs, many.medianDwellMs], [undefined, 7_200_000, 10_800_000], "no, one and many items have honest median dwell");
+  assert.equal(many.dwellSampleCount, 3, "a stale-stage handoff is excluded rather than guessed");
+  const terminal = boardModel(officina(4), [opus("W-5", "done", { hours: 2 }), opus("W-6", "halted", { hours: 3 })], undefined, { now: NOW });
+  assert.deepEqual([column(terminal, "done").medianDwellMs, column(terminal, "halted").medianDwellMs], [undefined, undefined], "Done and Halted omit a median whose last stage is not current work");
+  const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model: terminal, focusedByColumn: {}, onSelectCard: () => undefined }));
+  assert.doesNotMatch(html.match(/data-column-id="done"[\s\S]*?<div class="board__column-cards"/)?.[0] ?? "", /board__column-dwell/, "Done renders no median");
+});
