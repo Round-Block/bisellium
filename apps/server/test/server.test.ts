@@ -580,7 +580,7 @@ async function main(): Promise<void> {
       // headers) — a raw node:http request is what actually lets a test
       // send them, same as connectSSE() above needs the raw module for SSE.
       const rHost = await rawPostJson(P, "/api/greenlight", { opus: "W-002" }, { host: "evil.example" });
-      check("auth: Host: evil.example, no Origin -> 200 (no trust from Host)", rHost.status === 200, String(rHost.status));
+      check("auth: Host: evil.example, no Origin -> 403 (no trust from Host; W-501 refuses a foreign Host)", rHost.status === 403, String(rHost.status));
       const rXfh = await rawPostJson(P, "/api/greenlight", { opus: "W-002" }, {
         "x-forwarded-host": `127.0.0.1:${P}`,
         origin: "https://evil.example",

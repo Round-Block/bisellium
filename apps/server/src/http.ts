@@ -124,6 +124,7 @@ type ErrorCode =
   | "request body must be a JSON object"
   | "request body too large"
   | "forbidden"
+  | "host is not this console"
   | "not found"
   | "too many /api/live clients"
   | "missing or invalid X-Bisellium-Token"
@@ -421,6 +422,17 @@ export function acceptedOriginsFor(port: number): AcceptedOrigins {
   return [`http://127.0.0.1:${port}`, `http://localhost:${port}`];
 }
 
+/** W-501: a DNS-rebinding page (a foreign name re-resolved to 127.0.0.1) reaches this socket with its own name in `Host`,
+ *  so every request must name the bound loopback socket: the authority of one of the accepted origins (`127.0.0.1:<port>`
+ *  or `localhost:<port>`, ASCII case ignored). An absent, repeated-and-joined or any other Host is refused. Derived from
+ *  the same pair the write Origin check reads, so the two never drift apart. */
+function hostAccepted(req: IncomingMessage, acceptedOrigins: AcceptedOrigins): boolean {
+  const host = req.headers["host"];
+  if (typeof host !== "string") return false;
+  const given = host.toLowerCase();
+  return acceptedOrigins.some((origin) => origin.slice(origin.indexOf("//") + 2) === given);
+}
+
 /** Order matters, and is exactly what the spec's cases pin down: Origin
  *  (this is a local tool, never a CORS-enabled API) is checked before the
  *  token is even looked at; then the token; then Content-Type. An absent
@@ -647,6 +659,10 @@ async function route(
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const pathname = url.pathname;
   const method = req.method ?? "GET";
+
+  // ---- W-501: every request, read or write, shell or asset, names the bound loopback socket in Host, before any route
+  // (a DNS-rebinding page carries its own name). -------------------------------------------------------------------
+  if (!hostAccepted(req, acceptedOrigins)) return sendError(res, 403, "host is not this console");
 
   // ---- writes: token + accepted-origin + application/json required.
   // Loopback (the bind itself) is never sufficient on its own — see
