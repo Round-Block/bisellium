@@ -128,3 +128,67 @@ test("W-501-b1 behaviour 1: a request whose Host is not the bound loopback autho
     await s.close();
   }
 });
+
+const TOKEN_REFUSED = JSON.stringify({ error: "missing or invalid X-Bisellium-Token" });
+/** Every GET route under /api/ that serves studio state, and one no route answers. */
+const STATE_READS = [
+  "/api/officina",
+  "/api/models",
+  "/api/opera",
+  "/api/opus/W-001",
+  "/api/inbox",
+  "/api/acta",
+  "/api/aerarium",
+  "/api/providers",
+  "/api/health",
+  "/api/completion",
+  "/api/timeline/patron",
+  "/api/events",
+  "/api/receipts",
+  "/api/live",
+  "/api/no-such-route",
+];
+
+test("W-501-b2 behaviour 2: every GET under /api/ needs the session token, by header or, on /api/live only, by query; the shell and assets need none", async () => {
+  const s = await serve("b2");
+  const logged: string[] = [];
+  const write = process.stderr.write.bind(process.stderr);
+  process.stderr.write = ((chunk: string | Uint8Array, ...rest: unknown[]) => {
+    logged.push(String(chunk));
+    return (write as (c: string | Uint8Array, ...r: unknown[]) => boolean)(chunk, ...rest);
+  }) as typeof process.stderr.write;
+  try {
+    const P = s.port;
+    for (const path of STATE_READS) {
+      const r = await send(P, path);
+      assert.equal(r.status, 401, `${path} without the token is refused`);
+      assert.equal(r.body, TOKEN_REFUSED, `${path}: the refusal names the token`);
+    }
+    assert.equal((await send(P, "/api/officina", { headers: { "x-bisellium-token": "wrong" } })).status, 401, "a wrong token is refused");
+    assert.equal((await send(P, "/api/officina", { headers: { "x-bisellium-token": "" } })).status, 401, "an empty token is refused");
+    assert.equal((await send(P, "/api/live?token=wrong")).status, 401, "a wrong query token is refused on /api/live");
+    // the token by header reads every route; /api/live also by query, since EventSource sends no header
+    const officina = await send(P, "/api/officina", { headers: withToken });
+    assert.equal(officina.status, 200, "the header token reads /api/officina");
+    assert.equal(typeof (JSON.parse(officina.body) as { studio?: unknown }).studio, "string", "the read serves the officina");
+    assert.equal((await send(P, "/api/opus/W-001", { headers: withToken })).status, 200, "the header token reads an opus");
+    const byHeader = await send(P, "/api/live", { headers: withToken });
+    assert.equal(byHeader.status, 200, "the header token opens the live stream");
+    const byQuery = await send(P, `/api/live?token=${TOKEN}`);
+    assert.equal(byQuery.status, 200, "the query token opens the live stream");
+    assert.ok(byQuery.type.startsWith("text/event-stream"), "the query token's response is the event stream");
+    assert.equal((await send(P, `/api/inbox?token=${TOKEN}`)).status, 401, "the query token is accepted on /api/live only");
+    // the shell and its assets carry no studio state and need no token
+    assert.equal((await send(P, "/")).status, 200, "the shell loads without the token");
+    const asset = await send(P, "/assets/no-such-asset.js");
+    assert.equal(asset.status, 404, "an asset GET needs no token");
+    // the access log never prints a token given in the query
+    await new Promise((r) => setImmediate(r));
+    const log = logged.join("");
+    assert.match(log, /GET \/api\/inbox\?token=redacted 401/, "the access log redacts the query token");
+    assert.equal(log.includes(TOKEN), false, "the access log never prints the token");
+  } finally {
+    await s.close();
+    process.stderr.write = write;
+  }
+});

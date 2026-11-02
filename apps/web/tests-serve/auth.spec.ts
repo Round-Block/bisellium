@@ -8,7 +8,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { startServed, WEB_DIST, type ServedInstance } from "./harness.js";
+import { seedToken, startServed, WEB_DIST, type ServedInstance } from "./harness.js";
 
 const TOKEN_KEY = "bisellium.token";
 
@@ -68,14 +68,16 @@ test.describe("token delivery, mounted (W-067 behaviour 2)", () => {
 
   test("a wrong token in sessionStorage produces a 401 that reopens the prompt, and the replacement then succeeds", async ({ page }) => {
     served = await startServed("auth-wrong-token");
-    await page.addInitScript(
-      ([key, value]) => window.sessionStorage.setItem(key, value),
-      [TOKEN_KEY, "definitely-the-wrong-token"],
-    );
+    // W-501: the reads need the token, so the screen loads, and the reason is typed, with the right one; the stored token
+    // goes wrong just before the write, so only the write is refused.
+    await seedToken(page, served);
     await page.goto(served.baseURL);
     await expect(page.locator(".token-prompt")).toBeHidden();
+    await page.locator(".inbox__row").first().click();
+    await page.locator(".inbox__input-ratio").fill("approve: wrong token first");
+    await page.evaluate(([key, value]) => window.sessionStorage.setItem(key, value), [TOKEN_KEY, "definitely-the-wrong-token"]);
+    await page.getByRole("button", { name: /approve/i }).click();
 
-    await approveFirstPetitio(page, "approve: wrong token first");
     await expect(page.locator(".token-prompt")).toBeVisible();
 
     await page.locator("#token-prompt-input").fill(served.token);

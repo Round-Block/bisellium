@@ -48,7 +48,7 @@ test.describe("the answer button, end to end (W-067 acceptance)", () => {
     // The replyable question joins the sample's Board-owned attention item.
     await expect(page.locator(".inbox__row")).toHaveCount(2);
     const inboxBefore: { petitiones: { id: string; subject: string }[] } = await page.evaluate(() =>
-      fetch("/api/inbox").then((r) => r.json()),
+      fetch("/api/inbox", { headers: { "X-Bisellium-Token": sessionStorage.getItem("bisellium.token") ?? "" } }).then((r) => r.json()),
     );
     const target = inboxBefore.petitiones[0]!;
 

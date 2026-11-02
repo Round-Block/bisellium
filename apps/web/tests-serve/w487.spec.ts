@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { startServed, type ServedInstance } from "./harness.js";
+import { seedToken, startServed, type ServedInstance } from "./harness.js";
 
 const WIDTHS = [1280, 640, 390] as const;
 let served: ServedInstance | undefined;
@@ -113,6 +113,7 @@ async function expectBoardRowLabels(page: Page, width: number): Promise<void> {
 
 test("W-487-b1 one attention collection combines asks at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w487-b1");
+  await seedToken(page, served);
   const data = fixture();
   await install(page, data);
   for (const width of WIDTHS) {
@@ -131,6 +132,7 @@ test("W-487-b1 one attention collection combines asks at 1280, 640 and 390", asy
 
 test("W-487-b2 Inbox labels Board routes without reply controls at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w487-b2");
+  await seedToken(page, served);
   const data = fixture();
   await install(page, data);
   for (const width of WIDTHS) {
@@ -189,6 +191,7 @@ test("W-487-b2 Inbox labels Board routes without reply controls at 1280, 640 and
 
 test("W-487-b2 keeps a withdrawn mixed-row draft when its petition alone disappears", async ({ page }) => {
   served = await startServed("w487-b2-withdrawn-mixed");
+  await seedToken(page, served);
   const data = fixture();
   await install(page, data);
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -205,6 +208,7 @@ test("W-487-b2 keeps a withdrawn mixed-row draft when its petition alone disappe
 
 test("W-487-b3 Inbox and Board items route to their owning action at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w487-b3");
+  await seedToken(page, served);
   const data = fixture();
   await install(page, data);
   for (const width of WIDTHS) {
@@ -225,6 +229,7 @@ test("W-487-b3 Inbox and Board items route to their owning action at 1280, 640 a
 
 test("W-487-b4 Inbox and Board badges share zero and many totals at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w487-b4");
+  await seedToken(page, served);
   const data: Fixture = {
     opera: [],
     inbox: { opera: [], petitiones: Array.from({ length: 12 }, (_, index) => ({ id: `P-${index + 1}`, from: "producer", subject: `Standalone ${index + 1}`, body: "Choose" })) },
@@ -258,6 +263,7 @@ test("W-487-b4 Inbox and Board badges share zero and many totals at 1280, 640 an
 
 test("W-487-b4 hides both badges when the mounted Inbox first load fails", async ({ page }) => {
   served = await startServed("w487-b4-mounted-failure");
+  await seedToken(page, served);
   const data = fixture();
   let failMountedLoad = false;
   await page.route("**/api/officina", (route) => failMountedLoad ? route.fulfill({ status: 500 }) : route.fulfill({ json: officina }));
@@ -275,6 +281,7 @@ test("W-487-b4 hides both badges when the mounted Inbox first load fails", async
 
 test("W-487-b4 retains both badges after an Inbox background read failure", async ({ page }) => {
   served = await startServed("w487-b4-inbox-retained-failure");
+  await seedToken(page, served);
   const data = fixture();
   let failRead = false;
   await page.route("**/api/officina", (route) => failRead ? route.fulfill({ status: 500 }) : route.fulfill({ json: officina }));
@@ -291,6 +298,7 @@ test("W-487-b4 retains both badges after an Inbox background read failure", asyn
 
 test("W-487-b4 retains both badges after a relevant Board event read failure", async ({ page }) => {
   served = await startServed("w487-b4-board-event-retained-failure");
+  await seedToken(page, served);
   const data = fixture();
   let failRead = false;
   await installLiveDouble(page);
@@ -308,6 +316,7 @@ test("W-487-b4 retains both badges after a relevant Board event read failure", a
 
 test("W-487-b4 retains both badges after an unselected Board reconnect read failure", async ({ page }) => {
   served = await startServed("w487-b4-board-reconnect-retained-failure");
+  await seedToken(page, served);
   const data = fixture();
   let failRead = false;
   await installLiveDouble(page);

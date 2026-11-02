@@ -100,7 +100,7 @@ interface JsonResponse {
 }
 
 async function getJson(base: string, path: string): Promise<JsonResponse> {
-  const res = await fetch(base + path);
+  const res = await fetch(base + path, { headers: { "x-bisellium-token": TEST_TOKEN } });
   const text = await res.text();
   let body: unknown;
   try {
@@ -180,7 +180,7 @@ function connectSSE(port: number): { events: Record<string, unknown>[]; res: Inc
     failReady = reject;
   });
   ready.catch(() => {}); // a test that never awaits it raises no unhandled rejection
-  const req = httpRequest({ host: "127.0.0.1", port, path: "/api/live", method: "GET" }, (res: IncomingMessage) => {
+  const req = httpRequest({ host: "127.0.0.1", port, path: "/api/live", method: "GET", headers: { "x-bisellium-token": TEST_TOKEN } }, (res: IncomingMessage) => {
     response = res;
     markReady();
     res.setEncoding("utf8");
@@ -818,7 +818,7 @@ async function main(): Promise<void> {
       // MAX_SSE_CLIENTS is 50 (apps/server/src/http.ts) — open one past it.
       for (let i = 0; i < 51; i++) opened.push(connectSSE(sCap.port));
       await Promise.all(opened.map((c) => c.ready)); // the 51st gets its 503 response, which also fires the callback
-      const res = await fetch(`http://127.0.0.1:${sCap.port}/api/live`);
+      const res = await fetch(`http://127.0.0.1:${sCap.port}/api/live`, { headers: { "x-bisellium-token": TEST_TOKEN } });
       check("sse: a client past MAX_SSE_CLIENTS gets 503", res.status === 503, String(res.status));
       await res.text().catch(() => undefined);
     } finally {
@@ -1145,7 +1145,7 @@ async function main(): Promise<void> {
     const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, checkStudio: throwingCheckStudio }));
     try {
       const base = `http://127.0.0.1:${s.port}`;
-      const res = await fetch(`${base}/api/health`);
+      const res = await fetch(`${base}/api/health`, { headers: { "x-bisellium-token": TEST_TOKEN } });
       const text = await res.text();
       let body: any;
       try {
@@ -1170,7 +1170,7 @@ async function main(): Promise<void> {
     const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, checkStudio: throwingCheckStudio }));
     try {
       const base = `http://127.0.0.1:${s.port}`;
-      const { result: res, stderr } = await withServerStderr(() => fetch(`${base}/api/health`));
+      const { result: res, stderr } = await withServerStderr(() => fetch(`${base}/api/health`, { headers: { "x-bisellium-token": TEST_TOKEN } }));
       const body: any = await res.json().catch(() => undefined);
       const ref = body?.ref;
       check("b2: body carries a ref", typeof ref === "string" && ref.length > 0, JSON.stringify(body));

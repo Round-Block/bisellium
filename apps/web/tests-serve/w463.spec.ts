@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { startServed, type ServedInstance } from "./harness.js";
+import { seedToken, startServed, type ServedInstance } from "./harness.js";
 
 const WIDTHS = [1280, 640, 390] as const;
 let served: ServedInstance | undefined;
@@ -53,6 +53,7 @@ async function waitingLabelGeometry(page: Page): Promise<{ belowDelta: number; r
 
 test("W-463-b1 variant C keeps one lifecycle card and one strip membership at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w463-b1");
+  await seedToken(page, served);
   const fixture: Fixture = {
     opera: [
       makeOpus("W-1", "backlog"), makeOpus("W-2", "greenlit"), makeOpus("W-3", "building", { patron: { status: "pending" } }),
@@ -95,6 +96,7 @@ test("W-463-b1 variant C keeps one lifecycle card and one strip membership at 12
 
 test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w463-b2");
+  await seedToken(page, served);
   const longTitle = `A waiting title that is deliberately long enough to ellipsize in the compact pinned strip ${"across every ruled width ".repeat(12)}`;
   const many: Fixture = {
     opera: [...Array.from({ length: 6 }, (_, index) => makeOpus(`W-${index + 1}`, index < 3 ? "backlog" : "building", index === 0 ? { patron: { status: "pending" } } : {}, index === 0 ? longTitle : `Waiting work ${index + 1}`)), makeOpus("W-7", "done")],
@@ -389,6 +391,7 @@ test("W-463-b2 the horizontal strip, responsive count and highlighted cards fit 
 
 test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390", async ({ page }) => {
   served = await startServed("w463-b4");
+  await seedToken(page, served);
   const fixture: Fixture = {
     opera: [makeOpus("W-1", "backlog"), makeOpus("W-2", "done"), makeOpus("W-8", "unknown", { patron: { status: "pending" } })],
     inbox: { opera: [], petitiones: [] },
@@ -429,6 +432,7 @@ test("W-463-b4 waiting entry opens the lifecycle card's drawer at 1280 and 390",
 
 test("W-463-b3 Inbox and Board badges share the collection total", async ({ page }) => {
   served = await startServed("w463-b3");
+  await seedToken(page, served);
   const fixture: Fixture = {
     opera: [makeOpus("W-1", "backlog"), makeOpus("W-2", "building", { patron: { status: "pending" } }), makeOpus("W-3", "done")],
     inbox: {

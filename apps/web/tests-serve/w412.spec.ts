@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { startServed, type ServedInstance } from "./harness.js";
+import { seedToken, startServed, type ServedInstance } from "./harness.js";
 
 const WIDTHS = [1280, 640, 390] as const;
 let served: ServedInstance | undefined;
@@ -44,6 +44,7 @@ async function install(page: Page, current: () => unknown[]): Promise<void> {
 
 test("W-412-b1 drawer binds decision evidence at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w412-b1");
+  await seedToken(page, served);
   await install(page, () => [boundOpus()]);
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
@@ -67,6 +68,7 @@ test("W-412-b1 drawer binds decision evidence at 1280, 640 and 390", async ({ pa
 
 test("W-412-b2 stale linked verdict is refused before POST at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w412-b2");
+  await seedToken(page, served);
   let opera = [boundOpus()];
   let posts = 0;
   await install(page, () => opera);

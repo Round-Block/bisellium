@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { startServed, type ServedInstance } from "./harness.js";
+import { seedToken, startServed, type ServedInstance } from "./harness.js";
 
 const WIDTHS = [1280, 640, 390] as const;
 let served: ServedInstance | undefined;
@@ -61,6 +61,7 @@ async function openBoard(page: Page, width: number, row: string): Promise<void> 
 
 test("W-493-b1 gate progress replaces card squares at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w493-b1");
+  await seedToken(page, served);
   await install(page);
   for (const width of WIDTHS) {
     await openBoard(page, width, "b1");
@@ -94,6 +95,7 @@ test("W-493-b1 gate progress replaces card squares at 1280, 640 and 390", async 
 
 test("W-493-b2 drawer puts the record description first at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w493-b2");
+  await seedToken(page, served);
   await install(page);
   for (const width of WIDTHS) {
     await openBoard(page, width, "b2");

@@ -122,7 +122,7 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
     const start = Date.now();
     while (Date.now() - start < 10_000) {
       try {
-        if ((await fetch(`${base}/api/officina`)).status === 200) return;
+        if ((await fetch(`${base}/api/officina`, { headers: { "X-Bisellium-Token": token ?? "" } })).status === 200) return;
       } catch {
         // not up yet
       }
@@ -161,15 +161,20 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
  *  removed — TARGET-9's mounted-lifetime requirement, spanning mount,
  *  reconciliation, SSE delivery, disconnect/reconnect, every drawer and
  *  keyboard interaction, and unmount. */
-async function installWriteCounter(page: Page): Promise<{ count: () => number }> {
+async function installWriteCounter(page: Page, resign?: { readonly token: string }): Promise<{ count: () => number }> {
   let nonGet = 0;
   // Awaited, not fire-and-forget: TARGET-9's requirement is an ORDERING one
   // (the counter live before page.goto) — awaiting page.route()'s own
   // promise is what actually says so, rather than relying on Playwright's
   // channel ordering to make it true in practice (censor round 1, A4).
   await page.route("**/api/**", (route) => {
-    if (route.request().method() !== "GET") nonGet++;
-    void route.continue();
+    const request = route.request();
+    if (request.method() !== "GET") nonGet++;
+    if (resign === undefined) return void route.continue();
+    // W-501: a restarted serve prints a new token; re-sign the read (header and /api/live's query) with the current one
+    const url = new URL(request.url());
+    if (url.searchParams.has("token")) url.searchParams.set("token", resign.token);
+    void route.continue({ url: url.toString(), headers: { ...request.headers(), "x-bisellium-token": resign.token } });
   });
   return { count: () => nonGet };
 }
@@ -241,9 +246,9 @@ function appendUsageEvent(studioDir: string, itemId: string): void {
 }
 
 async function expectedModel(served: ServedInstance): Promise<BoardModel> {
-  const officina = (await (await fetch(`${served.baseURL}/api/officina`)).json()) as OfficinaResponse;
-  const opera = (await (await fetch(`${served.baseURL}/api/opera`)).json()) as OpusEntry[];
-  const inbox = (await (await fetch(`${served.baseURL}/api/inbox`)).json()) as InboxResponse;
+  const officina = (await (await fetch(`${served.baseURL}/api/officina`, { headers: { "X-Bisellium-Token": served.token } })).json()) as OfficinaResponse;
+  const opera = (await (await fetch(`${served.baseURL}/api/opera`, { headers: { "X-Bisellium-Token": served.token } })).json()) as OpusEntry[];
+  const inbox = (await (await fetch(`${served.baseURL}/api/inbox`, { headers: { "X-Bisellium-Token": served.token } })).json()) as InboxResponse;
   return boardModel(officina, opera, inbox);
 }
 
@@ -337,7 +342,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
   test("reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload", async ({ page }) => {
     const r = await startRestartable("board-reconnect");
     served = r;
-    const counter = await installWriteCounter(page);
+    const counter = await installWriteCounter(page, r);
     await openBoard(page, r);
 
     r.kill();
@@ -353,7 +358,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
   test("reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening", async ({ page }) => {
     const r = await startRestartable("board-reconnect-drawer");
     served = r;
-    const counter = await installWriteCounter(page);
+    const counter = await installWriteCounter(page, r);
     await openBoard(page, r);
 
     await page.locator('.board__card[data-card-id="W-002"]').click();
@@ -813,7 +818,7 @@ test.describe("W-087 behaviour 2: the served drawer carries a bounded opus body"
     expect(Buffer.byteLength(body, "utf8")).toBeGreaterThan(bodyLimit);
     setOpusBody(served.studioDir, "W-004", body);
 
-    const response = await fetch(`${served.baseURL}/api/opera`);
+    const response = await fetch(`${served.baseURL}/api/opera`, { headers: { "X-Bisellium-Token": served.token } });
     expect(response.status).toBe(200);
     const opera = (await response.json()) as OpusEntry[];
     const w004 = opera.find((row) => row.id === "W-004");
@@ -838,7 +843,7 @@ test.describe("W-087 behaviour 2: the served drawer carries a bounded opus body"
     writeFileSync(linkedPath, readFileSync(opusPath));
     rmSync(opusPath);
     symlinkSync("../linked-W-004.md", opusPath);
-    const linkedResponse = await fetch(`${served.baseURL}/api/opera`);
+    const linkedResponse = await fetch(`${served.baseURL}/api/opera`, { headers: { "X-Bisellium-Token": served.token } });
     expect(linkedResponse.status).toBe(200);
     const linkedOpera = (await linkedResponse.json()) as OpusEntry[];
     expect(linkedOpera.find((row) => row.id === "W-004")?.body).toBe("");
@@ -857,7 +862,7 @@ test.describe("W-087 behaviour 2: the served drawer carries a bounded opus body"
     expect(Buffer.byteLength(body, "utf8")).toBe(bodyLimit);
     setOpusBody(served.studioDir, "W-004", body);
 
-    const response = await fetch(`${served.baseURL}/api/opera`);
+    const response = await fetch(`${served.baseURL}/api/opera`, { headers: { "X-Bisellium-Token": served.token } });
     expect(response.status).toBe(200);
     const opera = (await response.json()) as OpusEntry[];
     const returnedBody = opera.find((row) => row.id === "W-004")?.body;
@@ -879,7 +884,7 @@ test.describe("W-087 behaviour 2: the served drawer carries a bounded opus body"
     expect(encoded.subarray(bodyLimit - 1, bodyLimit + 2)).toEqual(Buffer.from("€", "utf8"));
     setOpusBody(served.studioDir, "W-004", body);
 
-    const response = await fetch(`${served.baseURL}/api/opera`);
+    const response = await fetch(`${served.baseURL}/api/opera`, { headers: { "X-Bisellium-Token": served.token } });
     expect(response.status).toBe(200);
     const opera = (await response.json()) as OpusEntry[];
     const returnedBody = opera.find((row) => row.id === "W-004")?.body;
@@ -900,7 +905,7 @@ test.describe("W-087 behaviour 2: the served drawer carries a bounded opus body"
     const body = "  leading spaces\n\ttabbed line\n\nline with trailing spaces  \nfinal trailing spaces   ";
     setOpusBody(served.studioDir, "W-004", body);
 
-    const response = await fetch(`${served.baseURL}/api/opera`);
+    const response = await fetch(`${served.baseURL}/api/opera`, { headers: { "X-Bisellium-Token": served.token } });
     expect(response.status).toBe(200);
     const opera = (await response.json()) as OpusEntry[];
     expect(opera.find((row) => row.id === "W-004")?.body).toBe(body);

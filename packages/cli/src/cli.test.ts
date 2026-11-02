@@ -228,7 +228,7 @@ async function testServeWiring(): Promise<void> {
       const timer = setTimeout(() => resolvePort(undefined), 10_000);
       const tryMatch = () => {
         const m = /listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(stdout);
-        if (m) {
+        if (m && /write-auth token \(X-Bisellium-Token\): \S+\n/.test(stdout)) {
           clearTimeout(timer);
           resolvePort(Number(m[1]));
         }
@@ -243,16 +243,17 @@ async function testServeWiring(): Promise<void> {
     );
 
     if (port !== undefined) {
-      const officina = await fetch(`http://127.0.0.1:${port}/api/officina`);
+      const auth = { headers: { "x-bisellium-token": /write-auth token \(X-Bisellium-Token\): (\S+)/.exec(stdout)?.[1] ?? "" } };
+      const officina = await fetch(`http://127.0.0.1:${port}/api/officina`, auth);
       check("serve: GET /api/officina responds 200", officina.status === 200, String(officina.status));
 
-      const inbox = await fetch(`http://127.0.0.1:${port}/api/inbox`);
+      const inbox = await fetch(`http://127.0.0.1:${port}/api/inbox`, auth);
       check("serve: GET /api/inbox responds 200", inbox.status === 200, String(inbox.status));
 
-      const aerarium = await fetch(`http://127.0.0.1:${port}/api/aerarium`);
+      const aerarium = await fetch(`http://127.0.0.1:${port}/api/aerarium`, auth);
       check("serve: GET /api/aerarium responds 200", aerarium.status === 200, String(aerarium.status));
 
-      const health = await fetch(`http://127.0.0.1:${port}/api/health`);
+      const health = await fetch(`http://127.0.0.1:${port}/api/health`, auth);
       check("serve: GET /api/health responds 200", health.status === 200, String(health.status));
 
       // This child was NOT given NODE_ENV=test, so the test-only manual
