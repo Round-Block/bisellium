@@ -88,7 +88,10 @@ test("W-412-b2 stale linked verdict is refused before POST at 1280, 640 and 390"
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/opera"));
     await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     await refreshed;
-    await expect(page.locator(".inbox__evidence-stale"), `${width}: focus refresh marks the pinned decision stale`).toHaveText("Evidence changed since it was shown.");
+    const staleMarker = width === 390
+      ? "The linked Board item is no longer available."
+      : "Evidence changed since it was shown.";
+    await expect(page.locator(".inbox__evidence-stale"), `${width}: focus refresh marks the pinned decision stale`).toHaveText(staleMarker);
     await expect(page.getByLabel("Decision evidence").getByText(treeA, { exact: true }).first(), `${width}: refresh keeps the first-display revision`).toBeVisible();
     await expect(page.getByLabel("Decision evidence").getByText(treeB, { exact: true }), `${width}: refresh never replaces the pinned revision`).toHaveCount(0);
     if (width === 390) await expect(page.getByRole("button", { name: "Open Board actions" }), "390: the lost Board action is unavailable").toHaveCount(0);

@@ -196,7 +196,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   {liveSelectedItem?.evidenceBindings !== undefined && liveSelectedItem.evidenceBindings.length > 0 && (
                     <div className="inbox__decision-evidence" aria-label="Decision evidence">
                       <span className="inbox__evidence-label">Decision evidence</span>
-                      {liveSelectedItem.evidenceStale && <p className="inbox__evidence-stale">Evidence changed since it was shown.</p>}
+                      {liveSelectedItem.evidenceStale && <p className="inbox__evidence-stale">{liveSelectedItem.boardEntry ? "Evidence changed since it was shown." : "The linked Board item is no longer available."}</p>}
                       {liveSelectedItem.evidenceBindings.map((binding) => (
                         <div key={binding.gate} className="inbox__decision-evidence-row">
                           <strong>{binding.label}</strong>
