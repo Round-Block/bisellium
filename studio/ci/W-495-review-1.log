@@ -1,0 +1,19 @@
+# opus: W-495
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19b7d-5eda-7110-b259-6933362603ff
+# outcome: failed
+# at: 2026-11-02T09:05:17.190Z
+# tree: tree:b7cbab5fcf0e24d45b4fea0f40c60da5363c2acb
+# brief: briefs/W-495.md blob:d2059bf1ebfe4072337678965bcfdc7bbf07c032
+# ticket: {"opus":"W-495","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-495/studio","head":"2828023de300df93a14146f4d2ad95b2653b64d5","brief":"d2059bf1ebfe4072337678965bcfdc7bbf07c032","at":"2026-11-02T09:00:45.554Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:2888 A valid spec log whose `# at:` is later than the rung clock—such as ordinary clock skew or a timestamp typo—is treated as an existing start, so `spanCost` receives `from > to` and the rung prints negative hours instead of `none` before the first signature, violating brief:64. [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/cli/src/w495.test.ts W-495-b4 future-signature case
+
+## Verdict
+The rung-cost path mishandles an accepted timestamp ordering and can emit impossible negative checkpoint evidence.
+
+VERDICT: FAIL
