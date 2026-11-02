@@ -7,7 +7,8 @@ import test from "node:test";
 import { chromium } from "playwright";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { boardModel } from "../src/lib/board.js";
+import { boardModel, type DrawerDetail } from "../src/lib/board.js";
+import { BoardDrawer } from "../src/screens/BoardDrawer.js";
 import "./support/register-css-stub.mjs";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -142,4 +143,26 @@ test("W-493-css served progress line keeps one line, ellipsis and card containme
     await browser.close();
     await new Promise<void>((resolveClose, reject) => server.close((error) => error ? reject(error) : resolveClose()));
   }
+});
+
+test("W-493-b2 behaviour 2: the record description is the drawer's first detail section", () => {
+  const detail: DrawerDetail = {
+    id: "W-2",
+    title: "Rendered drawer",
+    state: "building",
+    body: "The record description comes first.",
+    gates: declared.map(({ id, name }) => ({ id, name, status: "pending", human: false })),
+    record: [],
+    tokensBySella: [],
+    events: [],
+  };
+  const markup = renderToStaticMarkup(React.createElement(BoardDrawer, { detail, onClose: () => undefined }));
+  const order = ["board-drawer__header", "board-drawer__record", "board-drawer__gates", "board-drawer__events"].map((className) => markup.indexOf(className));
+  assert.ok(order.every((position, index) => position >= 0 && (index === 0 || position > order[index - 1]!)), "rendered record description follows the header before named gates and events");
+  assert.deepEqual(
+    declared.filter(({ name }) => markup.includes(`>${name}<`)).map(({ name }) => name),
+    declared.map(({ name }) => name),
+    "rendered drawer keeps the complete named gate list",
+  );
+  assert.match(markup, /board-drawer__record-body">The record description comes first\.<\/div>/, "rendered drawer preserves the authored record description");
 });

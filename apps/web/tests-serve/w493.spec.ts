@@ -91,3 +91,25 @@ test("W-493-b1 gate progress replaces card squares at 1280, 640 and 390", async 
     expect(geometry.pageOverflow, `${width}: gate copy adds no page overflow`).toBeLessThanOrEqual(0);
   }
 });
+
+test("W-493-b2 drawer puts the record description first at 1280, 640 and 390", async ({ page }) => {
+  served = await startServed("w493-b2");
+  await install(page);
+  for (const width of WIDTHS) {
+    await openBoard(page, width, "b2");
+    await page.locator('[data-card-id="W-2"]').click();
+    const drawer = page.locator(".board-drawer");
+    const directOrder = await drawer.locator(":scope > *").evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).className));
+    expect(directOrder.slice(0, 2), `${width}: record follows the header`).toEqual(["board-drawer__header", "board-drawer__record"]);
+    await expect(drawer.locator(".board-drawer__record-body"), `${width}: authored description is first detail`).toHaveText("The record description comes first.");
+    await expect(drawer.getByRole("heading", { name: "Gate ladder" }), `${width}: named gate list stays`).toBeAttached();
+    await expect(drawer.locator(".board-drawer__gate-name"), `${width}: all six gate names stay`).toHaveCount(6);
+    await drawer.evaluate((node) => { node.scrollTop = node.scrollHeight; });
+    await expect(drawer.locator(".board-drawer__events"), `${width}: events remain reachable after the named gate list`).toBeVisible();
+    await drawer.locator(".board-drawer__close").click();
+
+    await page.locator('[data-card-id="W-3"]').click();
+    await expect(page.locator(".board-drawer__record-body"), `${width}: an absent description has an honest first-section placeholder`).toHaveText("No record body.");
+    await page.locator(".board-drawer__close").click();
+  }
+});

@@ -162,8 +162,11 @@ test("W-411-b3 item detail remains readable and closable at 1280, 640 and 390", 
       return style.overflow === "visible" && style.textOverflow !== "ellipsis" && style.webkitLineClamp === "none";
     }), `${width}: the complete long title is not truncated`).toBe(true);
     await expect(drawer.locator(".board-drawer__toolbar")).toHaveCount(0);
+    const initialOrder = await drawer.locator(":scope > *").evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).className));
+    expect(initialOrder.slice(0, 2), `${width}: W-493 puts the record description directly below the header`).toEqual(["board-drawer__header", "board-drawer__record"]);
+    await expect(drawer.locator(".board-drawer__record"), `${width}: the record description begins visible`).toBeVisible();
     await drawer.evaluate((node) => { node.scrollTop = node.scrollHeight; });
-    await expect(drawer.locator(".board-drawer__record")).toBeVisible();
+    await expect(drawer.locator(".board-drawer__events"), `${width}: the final events section remains reachable`).toBeVisible();
     const geometry = await drawer.evaluate((node) => {
       const box = node.getBoundingClientRect();
       const head = node.querySelector<HTMLElement>(".board-drawer__header")!.getBoundingClientRect();

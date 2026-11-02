@@ -270,7 +270,7 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
   check(6, "BoardDrawer: no selection -> no drawer element", html === "");
 }
 
-// Sections in order: header, banner, gates, events, record.
+// W-493 order: header, record description, banner, gates, events.
 {
   const d = detail({
     waitingOn: { gate: "owner", name: "Owner decision", petitio: { id: "P-1", from: "builder-a", subject: "accept drift?" } },
@@ -280,8 +280,8 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
     tokensDeclared: 1200,
   });
   const html = renderToStaticMarkup(BoardDrawer({ detail: d, onClose: () => undefined }));
-  const positions = ["board-drawer__header", "board-drawer__banner", "board-drawer__gates", "board-drawer__events", "board-drawer__record"].map((c) => html.indexOf(c));
-  check(6, "BoardDrawer: header, banner, gates, events, record — all present", positions.every((p) => p >= 0), JSON.stringify(positions));
+  const positions = ["board-drawer__header", "board-drawer__record", "board-drawer__banner", "board-drawer__gates", "board-drawer__events"].map((c) => html.indexOf(c));
+  check(6, "BoardDrawer: header, record, banner, gates, events — all present", positions.every((p) => p >= 0), JSON.stringify(positions));
   check(6, "BoardDrawer: sections appear in document order", positions.every((p, i) => i === 0 || p > positions[i - 1]!), JSON.stringify(positions));
 }
 
