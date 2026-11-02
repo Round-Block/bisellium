@@ -41,8 +41,9 @@ const readings = readReadings(homedir());
 for (const id of ids) {
   const named = new RegExp(`<strong>${esc(id)} shipped \\(PR (\\d+)\\)</strong>`);
   const lines = page.split("\n");
-  const i = lines.findIndex((l) => named.test(l));
-  if (i < 0) throw new Error(`no history row names ${id} shipped`);
+  const rows = lines.flatMap((l, n) => (named.test(l) ? [n] : []));
+  if (rows.length !== 1) throw new Error(`${id}: ${rows.length} history rows name ${id} shipped; exactly one is expected`);
+  const i = rows[0]!;
   const pr = named.exec(lines[i]!)![1]!;
   const land = git("log", "--first-parent", "--format=%H %cI %s", "master")
     .split("\n")
