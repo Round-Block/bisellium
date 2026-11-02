@@ -49,26 +49,26 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
 
 Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-487 done (#985); W-495 brief revision 3 for the Patron's Defaults (all yes 11-02: rows 193–199 corrected), architect re-signing, Codex spec review next; W-493 spec ui-lead input to reissue as revise, then Sol revision 5.
-1. W-495 — done computes its own checkpoint figures (Patron 11-01) (high); 2. W-497 — cause fix, shared-log-grammar-rejects-valid-records (W-459, W-492; D-076 D) (high); 3. W-498 — cause fix, files-owned-boundary-exceeded (D-076 D) (high); 4. W-501 — the console refuses DNS-rebinding reads: GETs check the token and Host header (Patron 11-02) (high); 5. W-496 — the background guard matches only real background syntax (Patron 11-01); 6. W-490 — handoff traps checked against open opera, capped (Patron 11-01)
-7. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
-8. W-333 — the queue as a record, `studio/queue.yml`, auto-claiming idle lanes (W-478 folded) (high) `next.ts`
-9. W-393 — one spec admission table checked at signing (W-395, W-394, W-481 folded) (high); 10. W-458 — done finishes a merged rung: one trunk step (W-469 and "a held done requests the guard sync" folded); 11. W-363 — one stage executor: spec review, fix round, build-before-review as performs (W-480, W-482, W-470 folded) `next.ts`
-12. W-476 — cause fix, validation-order-masks-errors (high); 13. W-471 — a failing gate's log keeps its real failure; 14. W-455 — the containment helper refuses a symlinked final file
-15. W-414 — cause fix, ruled-case-uncovered (high); 16. W-460 — cause fix, tests-that-agree-with-the-bug (high); 17. W-464 — replay-environment-not-pristine
-18. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`; 19. W-383 — security-boundary test fix; 20. W-431 — verb dead ends; 21. W-432 — verb dead ends
-22. W-429 — petitio length limits; 23. W-261 — woken orchestration; 24. W-434 — dispatch prompts as artifacts; 25. W-254 — delete talk and tick daily branch; 26. W-349 — flaky row W-279-b3
-27. W-399 — record verb sella check; 28. W-242 — hook-set code; 29. W-372 — agent waits on background perform; 30. W-400 — CLAUDE.md, AGENTS.md code-owned
-31. W-401 — sessions receipt provider; 32. W-245 — provider-agnostic closing step; 33. W-227 — cleanup with removed-worktree metadata `next.ts`; 34. W-283 — Status page served; 35. W-374 — next --all in-flight only `next.ts`
-36. W-375 — context serves lex without §9, §12; 37. W-380 — prune old evidence; 38. W-331 — next.ts split `next.ts`; 39. W-183 — heavy-job slots `next.ts`
-40. W-169 — lane claims `next.ts`; 41. W-332 — step tickets `next.ts`; 42. W-308 — opus timeline `next.ts`; 43. W-304 — seats read live, console MVP; 44. W-298 — petitio verb; 45. W-280 — Inbox newItem fail-open; 46. W-301 — console writes via auto-merge PR
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-497 done, W-495 done, W-493 done, W-412 done; E1 W-498 build fix round 2 (builder), then fix census, suite, Codex review r3; E2 W-501 build: suite rerun (builder), then Codex review r1; UI1 W-413 spec: Sol revision 3 for the Opus r2 S1; UI2 W-499 spec: fixture census, Sol signs r7, Opus r8, ui-lead r9.
+1. W-498 — cause fix, files-owned-boundary-exceeded (D-076 D) (high); 2. W-501 — the console refuses DNS-rebinding reads: GETs check the token and Host header (Patron 11-02) (high); 3. W-496 — the background guard matches only real background syntax (Patron 11-01); 4. W-490 — handoff traps checked against open opera, capped (Patron 11-01)
+5. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
+6. W-333 — the queue as a record, `studio/queue.yml`, auto-claiming idle lanes (W-478 folded) (high) `next.ts`
+7. W-393 — one spec admission table checked at signing (W-395, W-394, W-481 folded) (high); 8. W-458 — done finishes a merged rung: one trunk step (W-469 and "a held done requests the guard sync" folded); 9. W-363 — one stage executor: spec review, fix round, build-before-review as performs (W-480, W-482, W-470 folded) `next.ts`
+10. W-476 — cause fix, validation-order-masks-errors (high); 11. W-471 — a failing gate's log keeps its real failure; 12. W-455 — the containment helper refuses a symlinked final file
+13. W-414 — cause fix, ruled-case-uncovered (high); 14. W-460 — cause fix, tests-that-agree-with-the-bug (high); 15. W-464 — replay-environment-not-pristine
+16. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`; 17. W-383 — security-boundary test fix; 18. W-431 — verb dead ends; 19. W-432 — verb dead ends
+20. W-429 — petitio length limits; 21. W-261 — woken orchestration; 22. W-434 — dispatch prompts as artifacts; 23. W-254 — delete talk and tick daily branch; 24. W-349 — flaky row W-279-b3
+25. W-399 — record verb sella check; 26. W-242 — hook-set code; 27. W-372 — agent waits on background perform; 28. W-400 — CLAUDE.md, AGENTS.md code-owned
+29. W-401 — sessions receipt provider; 30. W-245 — provider-agnostic closing step; 31. W-227 — cleanup with removed-worktree metadata `next.ts`; 32. W-283 — Status page served; 33. W-374 — next --all in-flight only `next.ts`
+34. W-375 — context serves lex without §9, §12; 35. W-380 — prune old evidence; 36. W-331 — next.ts split `next.ts`; 37. W-183 — heavy-job slots `next.ts`
+38. W-169 — lane claims `next.ts`; 39. W-332 — step tickets `next.ts`; 40. W-308 — opus timeline `next.ts`; 41. W-304 — seats read live, console MVP; 42. W-298 — petitio verb; 43. W-280 — Inbox newItem fail-open; 44. W-301 — console writes via auto-merge PR
 Cut (Patron 11-01, workflow review): W-436, W-465, W-457, W-405. Deferred: W-484 (docs-drift lint folded in), W-485, W-486, W-479, W-371, W-456. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold.
 
 UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-493 — Board cards' gate text, drawer description first (Patron 11-01); 2. W-499 — Board drawer: Planned column holds its place with the sidebar expanded; Why it waits states each reason once (Patron 11-02, D-162 follow-up); 3. W-412; 4. W-413; 5. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 6. W-467 (Officina on Home's palette); 7. W-453 (D-128 D)
-8. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-9. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-10. W-488 — comment on served UI captures (design lead 11-01); 11. W-500 — Runs screen: opus list with detail, Waiting on you, Now only (Patron 11-02; run status from code-owned hook status events)
+1. W-499 — Board drawer: Planned column holds its place with the sidebar expanded; Why it waits states each reason once (Patron 11-02, D-162 follow-up); 2. W-413; 3. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 4. W-467 (Officina on Home's palette); 5. W-453 (D-128 D)
+6. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
+7. W-300 — the drawer shows `next`'s read-only step, actor, round and health
+8. W-488 — comment on served UI captures (design lead 11-01); 9. W-500 — Runs screen: opus list with detail, Waiting on you, Now only (Patron 11-02; run status from code-owned hook status events)
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
