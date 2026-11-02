@@ -466,9 +466,27 @@ function readTokenOk(req: IncomingMessage, url: URL, token: string): boolean {
   return url.pathname === "/api/live" && tokensMatch(token, url.searchParams.get("token") ?? undefined);
 }
 
-/** W-501: the access log's request line, with any `token=` query value replaced, so a /api/live token never reaches it. */
+/** W-501: the access log's request line, with the value of every query parameter whose DECODED name is `token` replaced,
+ *  so a /api/live token never reaches it. The reader (`readTokenOk`) names parameters through URLSearchParams, which
+ *  decodes `%74oken` and `+`; the redaction decodes each name the same way, so the two cannot disagree on what a token
+ *  parameter is. The name match is case-insensitive: redacting more than the reader accepts costs nothing. */
 function loggedUrl(raw: string): string {
-  return raw.replace(/([?&]token=)[^&#]*/gi, "$1redacted");
+  const hash = raw.indexOf("#");
+  const head = hash < 0 ? raw : raw.slice(0, hash);
+  const tail = hash < 0 ? "" : raw.slice(hash);
+  const q = head.indexOf("?");
+  if (q < 0) return raw;
+  const query = head
+    .slice(q + 1)
+    .split("&")
+    .map((pair) => {
+      const eq = pair.indexOf("=");
+      const name = eq < 0 ? pair : pair.slice(0, eq);
+      const decoded = [...new URLSearchParams(name).keys()][0] ?? "";
+      return decoded.toLowerCase() === "token" ? `${name}=redacted` : pair;
+    })
+    .join("&");
+  return `${head.slice(0, q + 1)}${query}${tail}`;
 }
 
 // ---------------------------------------------------------------------------

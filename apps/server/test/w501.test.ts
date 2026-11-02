@@ -193,3 +193,43 @@ test("W-501-b2 behaviour 2: every GET under /api/ needs the session token, by he
     process.stderr.write = write;
   }
 });
+
+test("W-501-f1: the access log never prints the token, whatever spelling of the parameter the reader accepts", async () => {
+  const s = await serve("f1");
+  const logged: string[] = [];
+  const write = process.stderr.write.bind(process.stderr);
+  process.stderr.write = ((chunk: string | Uint8Array, ...rest: unknown[]) => {
+    logged.push(String(chunk));
+    return (write as (c: string | Uint8Array, ...r: unknown[]) => boolean)(chunk, ...rest);
+  }) as typeof process.stderr.write;
+  try {
+    const P = s.port;
+    const spellings = [
+      `token=${TOKEN}`,
+      `%74oken=${TOKEN}`,
+      `to%6Ben=${TOKEN}`,
+      `%74%6F%6B%65%6E=${TOKEN}`,
+      `%74oken=wrong&token=${TOKEN}`,
+      `x=1&%74oken=${TOKEN}&y=2`,
+      `token=wrong&%74oken=${TOKEN}`,
+      `Token=${TOKEN}`,
+      `TOKEN=${TOKEN}`,
+      `%54oken=${TOKEN}`,
+    ];
+    for (const q of spellings) {
+      // /api/live opens a stream for an accepted spelling; an unaccepted one is refused: both are logged
+      await send(P, `/api/live?${q}`);
+      await send(P, `/api/inbox?${q}`);
+    }
+    // the reader and the redaction agree: a decoded-name `token` is accepted AND redacted
+    assert.equal((await send(P, `/api/live?%74oken=${TOKEN}`)).status, 200, "the reader accepts the encoded name");
+    await new Promise((r) => setImmediate(r));
+    const log = logged.join("");
+    assert.equal(log.includes(TOKEN), false, "the access log never prints the token, in any spelling");
+    assert.match(log, /GET \/api\/inbox\?%74oken=redacted 401/, "an encoded name is redacted, name kept");
+    assert.match(log, /GET \/api\/inbox\?x=1&%74oken=redacted&y=2 401/, "other parameters are kept");
+  } finally {
+    await s.close();
+    process.stderr.write = write;
+  }
+});
