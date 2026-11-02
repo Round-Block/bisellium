@@ -2359,6 +2359,8 @@
 }
 
 .board__columns {
+  /* Preserve the card focus outline's 2px width plus 2px offset. */
+  --board-columns-left-clip: calc(var(--sp-6) - 4px);
   position: relative;
   flex-grow: 1;
   display: flex;
@@ -2375,6 +2377,11 @@
    * racing Board.tsx's own programmatic scrollIntoView and landing
    * somewhere neither specified nor deterministic (measured). */
   overflow-anchor: none;
+  /* The selected column lands at the padded inset. Crop only that leading
+   * gutter, less the focus outline's four-pixel reach, so fragments from the
+   * preceding column cannot detach there; the scroll range, 288px columns
+   * and terminal reachability stay unchanged. */
+  clip-path: inset(0 0 0 var(--board-columns-left-clip));
 }
 
 .board__columns::-webkit-scrollbar {
@@ -2447,6 +2454,11 @@
 .board__column-cards {
   flex-grow: 1;
   overflow-y: auto;
+  /* Equal four-sided negative margin and padding extend only the scroller's
+   * paint box; card and column geometry stay unchanged while the complete
+   * focus outline can reach 4px, including above the first card. */
+  margin: -4px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
@@ -2880,6 +2892,7 @@
   }
 
   .board__columns {
+    --board-columns-left-clip: 0px;
     scroll-snap-type: x mandatory;
     padding: var(--sp-2) 0;
   }
