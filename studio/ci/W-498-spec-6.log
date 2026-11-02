@@ -1,0 +1,21 @@
+# opus: W-498
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19be2-61d9-73e3-bb1a-6ed83c5e7b8a
+# outcome: passed
+# at: 2026-11-02T15:16:15.620Z
+# tree: tree:45ad748bbd0dcb2454b5ab75e8c46a374a1011e4
+# brief: briefs/W-498.md blob:28a3484808dfe0e61ff26b03125a0cc086620eca
+# ticket: {"opus":"W-498","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-498/studio","head":"86eaffa3ea7a850696be14182209bc17ec387160","brief":"28a3484808dfe0e61ff26b03125a0cc086620eca","at":"2026-11-02T15:16:14.285Z"}
+
+## Findings
+1. advisory — brief:71 Reached by ci/W-498-spec-2.log #3’s class: the input table covers only `W-498-b1`, omitting revision 3’s changed `W-498-f3` result reader and its U+FEFF, U+00A0, and consecutive-space domain. Replace brief:71 with: “| 6. `W-498-b1` and changed `W-498-f3` fixture and result inputs | fixture Git and file operations succeed; `W-498-f3` supplies paths containing leading U+FEFF, U+00A0, and two consecutive spaces; `next` returns the asserted status and fields | fixture operations throw on failure, while `assert` and `w498Held` reject every unexpected result, failing the row; unpinned, a stated limit (D-076 E) |”. [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: none: brief.input.changed-test-reader-coverage
+
+## Earlier findings
+
+## Verdict
+The amendment feasibly closes the normalization defect; only an advisory input-table omission remains.
+
+VERDICT: PASS
