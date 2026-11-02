@@ -1547,7 +1547,7 @@
 }
 
 .inbox__decision-evidence-row a {
-  color: var(--accent-cyan);
+  color: var(--ink);
 }
 
 .inbox__evidence-stale {

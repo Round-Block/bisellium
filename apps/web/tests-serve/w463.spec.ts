@@ -515,13 +515,18 @@ test("W-463-b3 Inbox and Board badges share the collection total", async ({ page
   await page.unroute("**/api/opera");
   await page.unroute("**/api/inbox");
   await page.route("**/api/officina", (route) => route.fulfill({ status: 500, json: { error: "officina unavailable" } }));
-  await page.route("**/api/opera", (route) => route.fulfill({ status: 500, json: { error: "opera unavailable" } }));
+  let independentBoardOperaReads = 0;
+  await page.route("**/api/opera", async (route) => {
+    await route.fulfill({ status: 500, json: { error: "opera unavailable" } });
+    independentBoardOperaReads += 1;
+  });
   await page.route("**/api/inbox", (route) => route.fulfill({ json: {
     opera: [{ id: "W-1", title: "W-1 title", collegium: "design", sella: "builder" }],
     petitiones: [{ id: "P-1", opus: "W-1", from: "producer", subject: "Choose", body: "Choose" }],
   } }));
   await page.goto(`${served.baseURL}/?w463=b3-independent-inbox#/board`);
   await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), "the unified count fails closed when Officina and opera cannot reconcile").toHaveCount(0);
+  await expect.poll(() => independentBoardOperaReads, { message: "the failed Board mount's opera read settles before its route is replaced" }).toBeGreaterThanOrEqual(1);
 
   // Nonempty Inbox data on the real clock: the count change the screen reports
   // never reissues the shell's mount read, so the cohort stays one request.
