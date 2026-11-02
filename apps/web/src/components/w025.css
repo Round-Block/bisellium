@@ -2827,6 +2827,15 @@
   }
 }
 
+/* At the ruled 640px zoom case the fixed-width drawer cannot leave one
+   readable Board column. Give it the whole content row while retaining the
+   zero-width Board grid cell for restoration on Close. */
+@media (max-width: 640px) {
+  .board-workspace:has(.board-drawer) {
+    grid-template-columns: minmax(0, 1fr) 100%;
+  }
+}
+
 /* Board phone: <=612px — the shipped 613/612 boundary for one full-width
    column at a time (scroll-snap), the column-name strip and full-width drawer. */
 @media (max-width: 612px) {

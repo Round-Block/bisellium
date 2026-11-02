@@ -59,7 +59,7 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
   const [connected, setConnected] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | undefined>(undefined);
   const [boardTrackCollapsed, setBoardTrackCollapsed] = useState(
-    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 612px)").matches === true,
+    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches === true,
   );
   // True only once officina AND opera AND inbox have all landed from the
   // SAME reconciliation. Each is set from its own independently-resolving
@@ -97,7 +97,7 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     }
   }, [everLoaded, model.waiting.length, onAttentionLoaded, onWaitingCount]);
   useEffect(() => {
-    const query = window.matchMedia("(max-width: 612px)");
+    const query = window.matchMedia("(max-width: 640px)");
     const update = (): void => setBoardTrackCollapsed(query.matches);
     update();
     query.addEventListener("change", update);
