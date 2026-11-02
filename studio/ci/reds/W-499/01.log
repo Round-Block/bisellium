@@ -1,0 +1,517 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-499-b1\s --import tsx apps/web/test/w499.test.ts
+# exit: 1
+# at: 2026-11-02T23:22:38.539Z
+# sella: ui-architect
+# tree: tree:bbd017bc2c04eede7052c0d5dd2a3acdaf6542f5
+# ticket: {"opus":"W-499","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-499/studio","head":"fa7908d44b4506baf2e2e45ca81bc64bc0dcca23","brief":"b3644bd1dfb0d6a685a5282090453841b8b68e7c","at":"2026-11-02T23:22:38.461Z"}
+
+TAP version 13
+# Subtest: W-499-b1 behaviour 1: opened lifecycle column aligns and the most recent open restores
+not ok 1 - W-499-b1 behaviour 1: opened lifecycle column aligns and the most recent open restores
+  ---
+  duration_ms: 5.53054
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-499/apps/web/test/w499.test.ts:1:342'
+  failureType: 'testCodeFailure'
+  error: 'drawer alignment derives a clamped target from the opened lifecycle column'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    /**
+     * apps/web/src/screens/Board.tsx — W-064: the container. Three fetches, the
+     * `EventSource` with connect/reconnect reconciliation, drawer selection,
+     * keyboard state and scroll restoration. Read-only by Patron decree: this
+     * file imports exactly the five read-only fetchers below from `../api.js` —
+     * behaviour 5 asserts that clause verbatim, and none of this file, BoardView,
+     * BoardDrawer or lib/board.ts ever mentions a write helper (structural half
+     * of TARGET-9's pair; behaviours 7-9's mounted request counter is the other).
+     *
+     * The Board never polls on a timer of its own (Interfaces): reconciliation
+     * runs only on the EventSource's own connect/reconnect (`onOpen`), and a
+     * relevant frame schedules the same reconciliation through one trailing
+     * timer — never a `setInterval`.
+     */
+    import { useEffect, useLayoutEffect, useRef, useState, type JSX } from "react";
+    import { fetchEvents, fetchInbox, fetchOfficina, fetchOpera, subscribeLive } from "../api.js";
+    import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
+    import { BoardView } from "./BoardView.js";
+    import { BoardDrawer } from "./BoardDrawer.js";
+    import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
+    import { attentionTotal, boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
+    
+    const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
+      studio: "",
+      lifecycle: { id: "", states: [] },
+      probationes: [],
+    };
+    
+    const REFETCH_DEBOUNCE_MS = 30;
+    
+    interface Selection {
+      id: string;
+      columnId: string;
+      origin: "card" | "waiting";
+    }
+    
+    interface PendingCloseRestoration {
+      selection: Selection;
+      fallback: boolean;
+      scrollLeft: number | undefined;
+      waitingScrollLeft: number | undefined;
+    }
+    
+    export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSelectionId, onInitialSelectionConsumed, onOpenInbox }: {
+      onStatus?: (status: ScreenStatus) => void;
+      onWaitingCount?: (count: number) => void;
+      onAttentionLoaded?: () => void;
+      initialSelectionId?: string;
+      onInitialSelectionConsumed?: () => void;
+      onOpenInbox?: (attentionKey: string) => void;
+    } = {}): JSX.Element {
+      const [officina, setOfficina] = useState<OfficinaResponse | typeof EMPTY_OFFICINA>(EMPTY_OFFICINA);
+      const [opera, setOpera] = useState<OpusEntry[]>([]);
+      const [inbox, setInbox] = useState<Pick<InboxResponse, "opera" | "petitiones">>({ opera: [], petitiones: [] });
+      const [eventsByItem, setEventsByItem] = useState<Record<string, EventRow[]>>({});
+      const [selected, setSelected] = useState<Selection | undefined>(undefined);
+      const [lastSelectedId, setLastSelectedId] = useState<string | undefined>(undefined);
+      const [focusedByColumn, setFocusedByColumn] = useState<Record<string, string | undefined>>({});
+      const [connected, setConnected] = useState(false);
+      const [lastRefreshAt, setLastRefreshAt] = useState<string | undefined>(undefined);
+      const [boardTrackCollapsed, setBoardTrackCollapsed] = useState(
+        () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 612px)").matches === true,
+      );
+      // True only once officina AND opera AND inbox have all landed from the
+      // SAME reconciliation. Each is set from its own independently-resolving
+      // fetch's .then() (so officina can commit, and re-render, before opera
+      // does) — `officina.lifecycle.id !== ""` alone is not a safe "real data
+      // has loaded" signal for exactly that reason: it can go true on a render
+      // where opera is still []. This flips only after `await Promise.all`
+      // below has genuinely completed.
+      const [everLoaded, setEverLoaded] = useState(false);
+      // W-341: the last reconciliation's outcome; a later successful one clears it.
+      const [readFailed, setReadFailed] = useState(false);
+    
+      const model = boardModel(officina, opera, inbox);
+    
+      // Refs mirroring state that stable (mount-once) closures need to read.
+      const selectedRef = useRef<Selection | undefined>(undefined);
+      const modelRef = useRef(model);
+      const connRef = useRef<{ connected: boolean; everFetched: boolean }>({ connected: false, everFetched: false });
+      const refetchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+      const scrollSnapshotRef = useRef<{ scrollLeft: number | undefined; waitingScrollLeft: number | undefined }>({ scrollLeft: undefined, waitingScrollLeft: undefined });
+      const pendingCloseRestorationRef = useRef<PendingCloseRestoration | undefined>(undefined);
+      const pendingFocusRef = useRef<{ columnId: string; cardId: string } | undefined>(undefined);
+      const initialSelectionOpenedRef = useRef<string | undefined>(undefined);
+    
+      useEffect(() => {
+        selectedRef.current = selected;
+      }, [selected]);
+      useEffect(() => {
+        modelRef.current = model;
+      }, [model]);
+      useEffect(() => {
+        if (everLoaded) {
+          onAttentionLoaded?.();
+          onWaitingCount?.(attentionTotal(model.waiting));
+        }
+      }, [everLoaded, model.waiting.length, onAttentionLoaded, onWaitingCount]);
+      useEffect(() => {
+        const query = window.matchMedia("(max-width: 612px)");
+        const update = (): void => setBoardTrackCollapsed(query.matches);
+        update();
+        query.addEventListener("change", update);
+        return () => query.removeEventListener("change", update);
+      }, []);
+    
+      // The columns remain the only scroll state. The painted cue mirrors that
+      // state and proxies pointer input back into columns.scrollLeft so browsers
+      // never present adjacent native and painted thumbs.
+      useLayoutEffect(() => {
+        const columns = document.querySelector<HTMLElement>(".board__columns");
+        const cue = document.querySelector<HTMLElement>(".board__scroll-cue");
+        const thumb = cue?.querySelector<HTMLElement>(".board__scroll-cue-thumb");
+        if (!columns || !cue || !thumb) return;
+    
+        let drag: { pointerId: number; startX: number; startScrollLeft: number } | undefined;
+    
+        const cueRange = (): { availableTrack: number; maxScroll: number; thumbWidth: number } | undefined => {
+          const trackWidth = cue.clientWidth;
+          const maxScroll = columns.scrollWidth - columns.clientWidth;
+          const hasOverflow = Number.isFinite(trackWidth)
+            && Number.isFinite(columns.scrollWidth)
+            && Number.isFinite(columns.clientWidth)
+            && Number.isFinite(columns.scrollLeft)
+            && trackWidth > 0
+            && columns.scrollWidth > 0
+            && maxScroll > 0;
+          if (!hasOverflow) return undefined;
+    
+          const thumbWidth = Math.min(trackWidth, Math.max(0, trackWidth * columns.clientWidth / columns.scrollWidth));
+          const availableTrack = Math.max(0, trackWidth - thumbWidth);
+          if (!Number.isFinite(availableTrack) || availableTrack <= 0) return undefined;
+          return { availableTrack, maxScroll, thumbWidth };
+        };
+    
+        const updateScrollCue = (): void => {
+          cue.hidden = false;
+          const range = cueRange();
+          cue.hidden = range === undefined;
+          if (!range) return;
+    
+          const { availableTrack, maxScroll, thumbWidth } = range;
+          const scrollLeft = Math.min(maxScroll, Math.max(0, columns.scrollLeft));
+          const thumbOffset = Math.min(availableTrack, Math.max(0, availableTrack * scrollLeft / maxScroll));
+          cue.style.setProperty("--board-scroll-thumb-width", `${thumbWidth}px`);
+          cue.style.setProperty("--board-scroll-thumb-offset", `${thumbOffset}px`);
+        };
+    
+        const onThumbPointerDown = (event: PointerEvent): void => {
+          if (!event.isPrimary || event.button !== 0) return;
+          event.preventDefault();
+          event.stopPropagation();
+          drag = { pointerId: event.pointerId, startX: event.clientX, startScrollLeft: columns.scrollLeft };
+          thumb.setPointerCapture(event.pointerId);
+        };
+    
+        const onThumbPointerMove = (event: PointerEvent): void => {
+          if (!drag || event.pointerId !== drag.pointerId) return;
+          const range = cueRange();
+          if (!range) return;
+          const { availableTrack, maxScroll } = range;
+          const deltaX = event.clientX - drag.startX;
+          columns.scrollLeft = Math.min(maxScroll, Math.max(0, drag.startScrollLeft + deltaX * maxScroll / availableTrack));
+        };
+    
+        const finishThumbDrag = (event: PointerEvent): void => {
+          if (!drag || event.pointerId !== drag.pointerId) return;
+          if (thumb.hasPointerCapture(event.pointerId)) thumb.releasePointerCapture(event.pointerId);
+          drag = undefined;
+        };
+    
+        const onTrackPointerDown = (event: PointerEvent): void => {
+          if (event.target === thumb || !event.isPrimary || event.button !== 0) return;
+          const range = cueRange();
+          if (!range) return;
+          event.preventDefault();
+          const { availableTrack, maxScroll, thumbWidth } = range;
+          const track = cue.getBoundingClientRect();
+          const thumbOffset = Math.min(availableTrack, Math.max(0, event.clientX - track.left - thumbWidth / 2));
+          columns.scrollLeft = Math.min(maxScroll, Math.max(0, thumbOffset * maxScroll / availableTrack));
+        };
+    
+        updateScrollCue();
+        columns.addEventListener("scroll", updateScrollCue, { passive: true });
+        cue.addEventListener("pointerdown", onTrackPointerDown);
+        thumb.addEventListener("pointerdown", onThumbPointerDown);
+        thumb.addEventListener("pointermove", onThumbPointerMove);
+        thumb.addEventListener("pointerup", finishThumbDrag);
+        thumb.addEventListener("pointercancel", finishThumbDrag);
+        const resizeObserver = new ResizeObserver(updateScrollCue);
+        resizeObserver.observe(columns);
+        resizeObserver.observe(cue);
+        return () => {
+          columns.removeEventListener("scroll", updateScrollCue);
+          cue.removeEventListener("pointerdown", onTrackPointerDown);
+          thumb.removeEventListener("pointerdown", onThumbPointerDown);
+          thumb.removeEventListener("pointermove", onThumbPointerMove);
+          thumb.removeEventListener("pointerup", finishThumbDrag);
+          thumb.removeEventListener("pointercancel", finishThumbDrag);
+          resizeObserver.disconnect();
+        };
+      }, [model.columns.length]);
+    
+      // Restore only after React has committed the closed layout. Scheduling this
+      // from the close event can race that commit, leaving the narrow drawer-open
+      // grid to clamp or replace the saved offset. preventScroll keeps focus
+      // restoration from changing the offset again.
+      useLayoutEffect(() => {
+        if (selected) return;
+        const pending = pendingCloseRestorationRef.current;
+        if (!pending) return;
+        pendingCloseRestorationRef.current = undefined;
+    
+        const scrollEl = document.querySelector<HTMLElement>(".board__columns");
+        if (scrollEl && pending.scrollLeft !== undefined) scrollEl.scrollLeft = pending.scrollLeft;
+        const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
+        if (waitingEl && pending.waitingScrollLeft !== undefined) waitingEl.scrollLeft = pending.waitingScrollLeft;
+    
+        const { selection, fallback } = pending;
+        const columnEl = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${selection.columnId}"]`);
+        if (!fallback) {
+          const origin = selection.origin === "waiting"
+            ? document.querySelector<HTMLElement>(`[data-waiting-id="${selection.id}"]`)
+            : columnEl?.querySelector<HTMLElement>(`[data-card-id="${selection.id}"]`);
+          origin?.focus({ preventScroll: true });
+          return;
+        }
+        const firstCard = columnEl?.querySelector<HTMLElement>("[data-card-id]");
+        if (firstCard) {
+          firstCard.focus({ preventScroll: true });
+          return;
+        }
+        columnEl?.querySelector<HTMLElement>(".board__column-head")?.focus({ preventScroll: true });
+      }, [selected]);
+    
+      function markRefreshed(): void {
+        setLastRefreshAt(new Date().toISOString());
+      }
+    
+      async function fetchDrawerEvents(id: string): Promise<void> {
+        const rows = await fetchEvents({ item: id });
+        setEventsByItem((prev) => ({ ...prev, [id]: rows }));
+      }
+    
+      async function fetchBoardOnly(): Promise<void> {
+        let fetched: [OfficinaResponse, OpusEntry[], InboxResponse];
+        try {
+          fetched = await Promise.all([fetchOfficina(), fetchOpera(), fetchInbox()]);
+        } catch {
+          setReadFailed(true);
+          return;
+        }
+        const [o, ops, ib] = fetched;
+        setReadFailed(false);
+        setOfficina(o);
+        setOpera(ops);
+        setInbox(ib);
+        setEverLoaded(true);
+        markRefreshed();
+      }
+    
+      // Driven by reconcileTargets' own output — not a hand-rolled duplicate of
+      // its list — so the brief's claim ("Reconciliation fetches exactly
+      // reconcileTargets(selected)") is literally true, and the one place that
+      // list lives is lib/board.ts's own already-pinned export (behaviour 3).
+      async function fullReconcile(selectedId: string | undefined): Promise<void> {
+        const tasks = reconcileTargets(selectedId).map((target) => {
+          if (target === "/api/officina") return fetchOfficina().then(setOfficina);
+          if (target === "/api/opera") return fetchOpera().then(setOpera);
+          if (target === "/api/inbox") return fetchInbox().then(setInbox);
+          return fetchDrawerEvents(selectedId!);
+        });
+        try {
+          await Promise.all(tasks);
+        } catch {
+          setReadFailed(true);
+          return;
+        }
+        setReadFailed(false);
+        setEverLoaded(true);
+        markRefreshed();
+      }
+    
+      function scheduleBoardRefetch(): void {
+        if (refetchTimer.current) clearTimeout(refetchTimer.current);
+        refetchTimer.current = setTimeout(() => {
+          refetchTimer.current = undefined;
+          void fetchBoardOnly();
+        }, REFETCH_DEBOUNCE_MS);
+      }
+    
+      // ---- SSE: connect/reconnect reconciliation + frame-driven refetch -------
+      useEffect(() => {
+        const unsubscribe = subscribeLive({
+          onOpen: () => {
+            const reason = reconcileReason(connRef.current, { connected: true });
+            connRef.current = { connected: true, everFetched: true };
+            setConnected(true);
+            if (reason) void fullReconcile(selectedRef.current?.id);
+          },
+          onError: () => {
+            connRef.current = { connected: false, everFetched: connRef.current.everFetched };
+            setConnected(false);
+          },
+          onEvent: (e) => {
+            if (boardNeedsRefetch(e)) scheduleBoardRefetch();
+            const sel = selectedRef.current;
+            if (sel !== undefined && drawerNeedsRefetch(e, sel.id)) void fetchDrawerEvents(sel.id);
+          },
+        });
+        return () => {
+          if (refetchTimer.current) clearTimeout(refetchTimer.current);
+          unsubscribe();
+        };
+        // Mount-once: every handler above reads current state through refs.
+      }, []);
+    
+      // ---- Removal / column-change while the drawer is open: close it, and
+      // restore focus to the nearest remaining card in that column, or the
+      // column head if it's now empty. Never document.body. ---------------------
+      useEffect(() => {
+        const sel = selected;
+        if (!sel) return;
+        const column = model.columns.find((c) => c.id === sel.columnId);
+        const stillThere = sel.columnId === "unplaced"
+          ? model.unplaced.includes(sel.id) && model.waiting.some((card) => card.id === sel.id)
+          : column?.cards.some((c) => c.id === sel.id) ?? false;
+        if (stillThere) return;
+        pendingCloseRestorationRef.current = { selection: sel, fallback: true, ...scrollSnapshotRef.current };
+        setLastSelectedId(undefined);
+        setSelected(undefined);
+      }, [model]);
+    
+      // The pushed layout can collapse the Board cell to zero. Once the drawer
+      // has mounted, move focus to its visible close control at every width.
+      useEffect(() => {
+        if (!selected) return;
+        requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".board-drawer__close")?.focus());
+      }, [selected]);
+    
+      // ---- Phone: the pinned waiting strip carries attention membership, so
+      // lifecycle navigation always starts at its first declared phase. --------
+      const didInitialScroll = useRef(false);
+      useEffect(() => {
+        if (didInitialScroll.current) return;
+        // `everLoaded` is the real "no data yet" signal: the three reads resolve
+        // independently, so the lifecycle alone is not enough to choose a DOM
+        // column deterministically.
+        if (!everLoaded) return;
+        didInitialScroll.current = true;
+        if (typeof window === "undefined" || !window.matchMedia?.("(max-width: 612px)").matches) return;
+        const targetId = model.columns[0]?.id;
+        if (targetId === undefined) return;
+        requestAnimationFrame(() => {
+          document.querySelector<HTMLElement>(`.board__columns [data-column-id="${targetId}"]`)?.scrollIntoView({ inline: "start", block: "nearest" });
+        });
+      }, [everLoaded, model]);
+    
+      // ---- Focus the pending roving-tabindex target after a render, so state
+      // updates (React) and imperative focus (DOM) stay in sync. ----------------
+      useEffect(() => {
+        const pending = pendingFocusRef.current;
+        if (!pending) return;
+        pendingFocusRef.current = undefined;
+        document.querySelector<HTMLElement>(`.board__columns [data-column-id="${pending.columnId}"] [data-card-id="${pending.cardId}"]`)?.focus();
+      }, [focusedByColumn]);
+    
+      function focusCard(columnId: string, cardId: string): void {
+        pendingFocusRef.current = { columnId, cardId };
+        setFocusedByColumn((prev) => ({ ...prev, [columnId]: cardId }));
+      }
+    
+      function openDrawer(id: string, columnId: string, origin: "card" | "waiting"): void {
+        const scrollEl = document.querySelector<HTMLElement>(".board__columns");
+        const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
+        scrollSnapshotRef.current = { scrollLeft: scrollEl?.scrollLeft, waitingScrollLeft: waitingEl?.scrollLeft };
+        setLastSelectedId(id);
+        setSelected({ id, columnId, origin });
+        void fetchDrawerEvents(id);
+      }
+    
+      useEffect(() => {
+        if (!everLoaded || initialSelectionId === undefined || initialSelectionOpenedRef.current === initialSelectionId) return;
+        const columnId = model.columns.find((column) => column.cards.some((card) => card.id === initialSelectionId))?.id;
+        const waiting = model.waiting.find((item) => item.id === initialSelectionId && item.boardEntry);
+        if (waiting === undefined) return;
+        initialSelectionOpenedRef.current = initialSelectionId;
+        openDrawer(initialSelectionId, columnId ?? "unplaced", "waiting");
+        onInitialSelectionConsumed?.();
+      }, [everLoaded, initialSelectionId, model, onInitialSelectionConsumed]);
+    
+      function closeDrawer(): void {
+        // selectedRef, not `selected`: this function is also called from the
+        // keydown effect's MOUNT-ONCE closure (deps []), which would otherwise
+        // forever close over the FIRST render's `selected` (undefined) and skip
+        // the restoration branch below on every Esc — the ref is always current
+        // regardless of which render's closure invoked it.
+        const sel = selectedRef.current;
+        if (sel) {
+          pendingCloseRestorationRef.current = { selection: sel, fallback: false, ...scrollSnapshotRef.current };
+        }
+        setSelected(undefined);
+      }
+    
+      // ---- Keyboard: roving tabindex within a column, cross-column arrows,
+      // Enter opens, Esc closes and restores focus. -----------------------------
+      useEffect(() => {
+        function onKeyDown(e: KeyboardEvent): void {
+          if (e.key === "Escape") {
+            if (!selectedRef.current) return;
+            e.preventDefault();
+            closeDrawer();
+            return;
+          }
+          const active = document.activeElement as HTMLElement | null;
+          if (!active || !active.hasAttribute("data-card-id")) return;
+          const columnId = active.getAttribute("data-column-id");
+          const cardId = active.getAttribute("data-card-id");
+          if (!columnId || !cardId) return;
+          const col = modelRef.current.columns.find((c) => c.id === columnId);
+          if (!col) return;
+    
+          if (e.key === "j" || e.key === "ArrowDown" || e.key === "k" || e.key === "ArrowUp") {
+            const ids = col.cards.map((c) => c.id);
+            const idx = ids.indexOf(cardId);
+            const next = e.key === "j" || e.key === "ArrowDown" ? Math.min(ids.length - 1, idx + 1) : Math.max(0, idx - 1);
+            if (next !== idx) {
+              e.preventDefault();
+              focusCard(columnId, ids[next]!);
+            }
+          } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+            const nonEmpty = modelRef.current.columns.filter((c) => c.cards.length > 0);
+            const curIdx = nonEmpty.findIndex((c) => c.id === columnId);
+            if (curIdx === -1) return;
+            const rowIdx = col.cards.findIndex((c) => c.id === cardId);
+            const targetIdx = curIdx + (e.key === "ArrowRight" ? 1 : -1);
+            const target = nonEmpty[targetIdx];
+            if (!target) return;
+            e.preventDefault();
+            const row = Math.min(rowIdx, target.cards.length - 1);
+            focusCard(target.id, target.cards[row]!.id);
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            openDrawer(cardId, columnId, "card");
+          }
+        }
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+        // Reads current state entirely through refs.
+      }, []);
+    
+      const selectedCard = selected
+        ? model.waiting.find((card) => card.id === selected.id) ?? model.columns.flatMap((column) => column.cards).find((card) => card.id === selected.id)
+        : undefined;
+      const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? [], selectedCard) : undefined;
+      const generatedAt = formatBoardTimestamp(new Date().toISOString());
+      const status = screenStatus("board", { loaded: everLoaded, empty: opera.length === 0, failed: readFailed || undefined, live: everLoaded ? connected : undefined });
+      useEffect(() => onStatus?.(status), [status.state, status.text]);
+    
+      return (
+        <div className="board-workspace">
+          <BoardView
+            studio={officina.studio}
+            model={model}
+            inert={selected !== undefined && boardTrackCollapsed}
+            selectedId={selected?.id ?? lastSelectedId}
+            focusedByColumn={focusedByColumn}
+            onSelectCard={(id, columnId, origin) => openDrawer(id, columnId, origin)}
+            onOpenInbox={(attentionKey) => onOpenInbox?.(attentionKey)}
+            liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
+            branchNote={branchNote("branchRecords" in officina ? officina.branchRecords : undefined)}
+            generatedAt={generatedAt}
+            notice={status.state === "loading" || status.state === "empty" || status.state === "error" ? status.text : undefined}
+          />
+          <BoardDrawer detail={detail} onClose={closeDrawer} />
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-499/apps/web/test/w499.test.ts:13:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 527.421193
