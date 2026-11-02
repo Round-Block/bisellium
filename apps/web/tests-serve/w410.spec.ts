@@ -145,7 +145,7 @@ test("W-410-b4 drawer shows reasons and evidence at 1280, 640 and 390", async ({
     await expect(drawer.locator(".board-drawer__reason", { hasText: "W-1 reason" }), `${width}: the opus body is not repeated as a waiting reason`).toHaveCount(0);
     await expect(drawer.getByText("W-1 reason", { exact: true }), `${width}: the opus body appears once in its record section`).toHaveCount(1);
     await expect(drawer.getByRole("heading", { name: "Evidence" }), `${width}: evidence is named`).toBeVisible();
-    await expect(drawer.locator('.board-drawer__waiting-evidence[href="studio/ci/reviews/W-1.md"]'), `${width}: recorded evidence is a visible link`).toHaveText("Patron call");
+    await expect(drawer.locator('.board-drawer__waiting-evidence[href="studio/ci/reviews/W-1.md"]'), `${width}: recorded evidence is a visible decision-record link`).toHaveText("studio/ci/reviews/W-1.md");
     const geometry = await drawer.evaluate((node) => {
       const box = node.getBoundingClientRect();
       const reason = node.querySelector<HTMLElement>(".board-drawer__reasons")!.getBoundingClientRect();

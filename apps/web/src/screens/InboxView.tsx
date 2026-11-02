@@ -193,6 +193,22 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                       return <p key={index}>{block.text}</p>;
                     }) : <p>No content provided.</p>}
                   </div>
+                  {liveSelectedItem?.evidenceBindings !== undefined && liveSelectedItem.evidenceBindings.length > 0 && (
+                    <div className="inbox__decision-evidence" aria-label="Decision evidence">
+                      <span className="inbox__evidence-label">Decision evidence</span>
+                      {liveSelectedItem.evidenceStale && <p className="inbox__evidence-stale">Evidence changed since it was shown.</p>}
+                      {liveSelectedItem.evidenceBindings.map((binding) => (
+                        <div key={binding.gate} className="inbox__decision-evidence-row">
+                          <strong>{binding.label}</strong>
+                          <dl>
+                            <div><dt>Reviewed revision</dt><dd><code title={binding.revision}>{binding.revision ?? "Not recorded."}</code></dd></div>
+                            <div><dt>Gate result</dt><dd>{binding.gate} · {binding.status}</dd></div>
+                            <div><dt>Decision record</dt><dd>{binding.record ? <a href={binding.record}>{binding.record}</a> : "Not recorded."}</dd></div>
+                          </dl>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {selectedLinks.length > 0 && (
                     <div className="inbox__evidence" aria-label="Evidence">
                       <span className="inbox__evidence-label">Evidence</span>

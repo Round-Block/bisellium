@@ -115,7 +115,7 @@ test("W-410-b3 behaviour 3: variant C handoff rails have the Patron-ruled vertic
   assert.match(served, /scroll viewport ends before the chevron/, "served geometry pins the dedicated chevron end-cap");
 });
 
-test("W-410-b4 behaviour 4: the drawer displays waiting reasons and evidence without binding semantics", () => {
+test("W-410-b4 behaviour 4: the drawer displays waiting reasons and evidence for W-412 to bind", () => {
   const entry = opus("W-1", "backlog", {
     body: "The Patron must choose the board rail.",
     probationes: { patron: { status: "pending", evidence: { href: "studio/ci/reviews/W-1.md", certifies: "abc123" } } },
@@ -133,7 +133,7 @@ test("W-410-b4 behaviour 4: the drawer displays waiting reasons and evidence wit
     "Await Patron selection.",
   ], "the drawer collects question, recorded-pending gate and handoff reasons without repeating the record body");
   assert.equal(detail["body"], "The Patron must choose the board rail.", "the opus body remains in its existing record field");
-  assert.deepEqual(detail["waitingEvidence"], [{ label: "Patron call", href: "studio/ci/reviews/W-1.md" }], "the drawer displays recorded gate evidence without deciding whether it is current");
+  assert.deepEqual(detail["waitingEvidence"], [{ gate: "patron", label: "Patron call", status: "pending", revision: "abc123", record: "studio/ci/reviews/W-1.md" }], "the drawer binds recorded gate evidence to its result, revision and decision record");
 
   const unrecorded = opus("W-2", "backlog", {
     body: "This body belongs only to the record section.",
