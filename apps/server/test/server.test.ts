@@ -275,7 +275,7 @@ async function withServerStderr<T>(fn: (live: { readonly text: string }) => Prom
 function induceRequestStreamError(port: number, path: string, token: string): Promise<void> {
   return new Promise((resolvePromise) => {
     const sock = netConnect(port, "127.0.0.1", () => {
-      const headers = [`POST ${path} HTTP/1.1`, "Host: 127.0.0.1", "Content-Type: application/json", `X-Bisellium-Token: ${token}`, "Content-Length: 1000", "", ""].join("\r\n");
+      const headers = [`POST ${path} HTTP/1.1`, `Host: 127.0.0.1:${port}`, "Content-Type: application/json", `X-Bisellium-Token: ${token}`, "Content-Length: 1000", "", ""].join("\r\n");
       sock.write(headers);
       sock.write('{"opus":"W-002"'); // far short of the declared 1000 bytes
       // sleep-waiver: fixture -- induced mid-request abort: the half-sent body must stay open briefly before the hard destroy
