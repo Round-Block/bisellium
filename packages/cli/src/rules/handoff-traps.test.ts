@@ -100,3 +100,17 @@ test("W-490-b2 behaviour 2: a Known traps line whose named opus is done is refus
   assert.deepEqual(found(text, finishing), [["process.handoff.trap", at(text, "- Until W-3: a trap W-3 retires.")]], "finishing the named opus refuses its line");
   assert.deepEqual(found(handoff(["- Standing: the W-1 pattern, which W-1 set."])), [], "an id in a Standing line's text is not a marker");
 });
+
+test("W-490-b3 behaviour 3: the Known traps item holds at most 12 lines", () => {
+  const lines = (n: number): string[] => Array.from({ length: n }, (_, i) => `- Standing: trap ${i + 1}.`);
+  const heading = "4. Known traps (each line opens `Standing:` or `Until W-<n>:`; at most 12):";
+  assert.deepEqual(found(handoff(lines(12))), [], "12 lines pass");
+  let text = handoff(lines(13));
+  assert.deepEqual(found(text), [["process.handoff.traps", at(text, heading)]], "13 lines are refused at the item");
+  const finding = sessionHandoffFindings(text, base()).find((f) => f.rule === "process.handoff.traps");
+  assert.equal(finding?.message, "the Known traps item holds 13 lines; the cap is 12", "the refusal names the count and the cap");
+  assert.deepEqual(found(handoff([...lines(6), "", "", ...lines(6).map((l) => l.replace("trap", "more"))])), [], "blank lines are not counted");
+  text = handoff([...lines(12), "- unmarked."]);
+  assert.deepEqual(found(text), [["process.handoff.trap", at(text, "- unmarked.")], ["process.handoff.traps", at(text, heading)]], "an unmarked line counts toward the cap");
+  assert.deepEqual(found(handoff(lines(12)).replace("- an unmarked line outside the item.", lines(3).join("\n"))), [], "lines after the next numbered item are not counted");
+});
