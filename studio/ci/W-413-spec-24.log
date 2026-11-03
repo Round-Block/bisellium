@@ -1,0 +1,27 @@
+# opus: W-413
+# phase: spec
+# round: 24
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-03T12:30:21.310Z
+# tree: tree:a48288a074e1a23cc3650b16f351a8b090c3a1a7
+# brief: briefs/W-413.md blob:d7764eaf39f61bfb3a27cb6afdffa30fa6678eca
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":24,"actor":"architect","studio":".worktrees/W-413/studio","head":"64199613a36f15edcac6224b130a4cc26be3a063","brief":"d7764eaf39f61bfb3a27cb6afdffa30fa6678eca","at":"2026-11-03T12:28:23.492Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ui-lead round-23 finding 1 is closed: elapsed timing is limited to non-Done, non-Halted work, and Halted W-8 receives neither timing field nor estimate and reads `Stopped; no completion estimate` — check: kill-b2-halted.out, gates-proto-r29.out, ci/shots/W-413/cards-1280-timing-crop.png
+2. advisory — ui-lead round-23 finding 2 is closed: W-2 and W-6 retain the true non-positive remainder and render `Taking longer than usual (estimate)` instead of a floored positive duration — check: kill-b2-overdue.out, gates-proto-r29.out, ci/shots/W-413/cards-1280-timing-crop.png
+3. advisory — revision 18 flips no additional predecessor row; the complete previously named migration set is unchanged, while W-341, W-415, W-493 containment and W-339/W-361 remain green — check: fixture-census.md, census-r29-run.out, series-rows-r29.txt, gates-proto-r29.out
+4. advisory — the required captures assert both exact replacement sentences at every width, and the timing crop visibly places overdue W-6, Halted W-8 and actual Done durations together — check: capture-shots-r29.out, ci/shots/W-413/cards-1280-timing-crop.png
+5. advisory — the prototype retains exactly ten alternating replay-approved one-line subjects; every commit builds, cumulative rows pass, all reds and mutation kills fail by assertion, and the final mbox sha256 is `e23c9d7bf234361b39a4c9d792c076f6fb6cb0fd3ceda0068e6c1e87f265a651` — check: prototype.mbox, prototype.sha256, series-builds.txt, series-rows-r29.txt, kills-r29.out, mbox-check.out
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 29 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; the Halted exclusion, overdue wording, replayable prototype, complete census and ruled-width captures are ready for review, with no blocking design question and no record write, `next` or `verdict` performed.
