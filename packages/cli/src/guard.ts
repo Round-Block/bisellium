@@ -402,6 +402,61 @@ const DETACHERS = new Set(["nohup", "setsid", "disown"]);
 /** W-496: the word that stands in `code` for skipped text (quotes, escapes, expansions, a heredoc delimiter). */
 const SKIPPED = "Q";
 
+const ANSI_C: Record<string, string> = { a: "\x07", b: "\b", e: "\x1b", E: "\x1b", f: "\f", n: "\n", r: "\r", t: "\t", v: "\v", "\\": "\\", "'": "'", '"': '"', "?": "?" };
+
+/** W-496: the text of a `$'…'` body with its escapes decoded as bash does: `\xHH`, `\uHHHH`, `\UHHHHHHHH`, `\NNN` octal,
+ *  `\cX`, and the single-letter escapes; any other backslash stays. */
+function ansiC(body: string): string {
+  return body.replace(/\\(x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|[0-7]{1,3}|c[\s\S]|[\s\S])/g, (m, e: string) => {
+    if (e.length > 1 && (e[0] === "x" || e[0] === "u" || e[0] === "U")) {
+      const n = parseInt(e.slice(1), 16);
+      return n <= 0x10ffff ? String.fromCodePoint(n) : m;
+    }
+    if (/^[0-7]/.test(e)) return String.fromCharCode(parseInt(e, 8) & 255);
+    if (e.length > 1) return String.fromCharCode(e.charCodeAt(1) & 31);
+    return ANSI_C[e] ?? m;
+  });
+}
+
+/** W-496: a heredoc's delimiter word read from `start` by shell quote removal, to the first unquoted blank or operator
+ *  character: a backslash-newline goes, a backslash quotes the next character, single quotes keep their text, double
+ *  quotes and `$"…"` keep theirs but for a backslash before `$`, a backtick, `"`, `\` or a newline, and `$'…'` decodes its
+ *  escapes (`ansiC`). `end` is the index after the word. */
+export function heredocDelimiter(line: string, start: number): { delim: string; end: number } {
+  let delim = "";
+  let j = start;
+  while (j < line.length && !" \t\n;&|<>()".includes(line[j]!)) {
+    const c = line[j]!;
+    if (c === "\\") {
+      if (line[j + 1] !== "\n") delim += line[j + 1] ?? "";
+      j += 2;
+    } else if (c === "'" || (c === "$" && line[j + 1] === "'")) {
+      const ansi = c === "$";
+      let e = j + (ansi ? 2 : 1);
+      const from = e;
+      while (e < line.length && line[e] !== "'") e += ansi && line[e] === "\\" ? 2 : 1;
+      const body = line.slice(from, Math.min(e, line.length));
+      delim += ansi ? ansiC(body) : body;
+      j = e + 1;
+    } else if (c === '"' || (c === "$" && line[j + 1] === '"')) {
+      let e = j + (c === "$" ? 2 : 1);
+      while (e < line.length && line[e] !== '"') {
+        const n = line[e + 1];
+        if (line[e] === "\\" && n === "\n") e += 2;
+        else if (line[e] === "\\" && n !== undefined && "$`\"\\".includes(n)) {
+          delim += n;
+          e += 2;
+        } else delim += line[e++];
+      }
+      j = e + 1;
+    } else {
+      delim += c;
+      j++;
+    }
+  }
+  return { delim, end: Math.min(j, line.length) };
+}
+
 /** W-496: the code a shell runs in `line`, and whether an `&` in it ends or separates a command. Read as bash reads them:
  *  single quotes; `$'…'` and double quotes, where a backslash escapes the next character; a backslash outside quotes; a
  *  `#` opening a word, to the line's end; `${…}` and `$((…))`, parentheses counted; and heredocs: after `<<` or `<<-`
@@ -416,6 +471,10 @@ function shellCode(line: string): { code: string; amp: boolean } {
   const closers: string[] = [];
   /** True inside a word: a `#` there is a character, not a comment (a quote, an escape or an expansion is part of the word). */
   let word = false;
+  /** The open `(`s outside expansions, true for a `$(` (whose close ends a word) and false for a subshell's. */
+  const parens: boolean[] = [];
+  /** True between a pair of backticks. */
+  let tick = false;
   const docs: { delim: string; tabs: boolean }[] = [];
   /** The index of the quote closing the one at `i` (or the last index), skipping a backslash's next character when `escapes`. */
   const close = (i: number, escapes: boolean): number => {
@@ -457,23 +516,11 @@ function shellCode(line: string): { code: string; amp: boolean } {
       const tabs = line[j] === "-";
       if (tabs) j++;
       while (line[j] === " " || line[j] === "\t") j++;
-      let delim = "";
-      for (; j < line.length && !" \t\n;&|<>()".includes(line[j]!); j++) {
-        const ansi = line[j] === "$" && (line[j + 1] === "'" || line[j + 1] === '"');
-        if (ansi) j++;
-        const d = line[j]!;
-        if (d === "'" || d === '"') {
-          const end = close(j, d === '"' || ansi);
-          const quoted = line.slice(j + 1, end);
-          delim += d === '"' || ansi ? quoted.replace(/\\(.)/g, "$1") : quoted;
-          j = end;
-        } else if (d === "\\") delim += line[++j] ?? "";
-        else delim += d;
-      }
+      const { delim, end } = heredocDelimiter(line, j);
       if (delim !== "") docs.push({ delim, tabs });
       code += "<<" + SKIPPED;
-      word = delim !== "";
-      i = j - 1;
+      word = end > j;
+      i = end - 1;
     } else {
       if (c === "$" && line[i + 1] === "{") {
         if (closers.length === 0) code += SKIPPED;
@@ -496,6 +543,12 @@ function shellCode(line: string): { code: string; amp: boolean } {
         continue;
       }
       word = !" \t\n;&|()<>".includes(c);
+      if (c === "(") parens.push(prev === "$");
+      else if (c === ")") word = parens.pop() === true;
+      else if (c === "`") {
+        tick = !tick;
+        word = !tick;
+      }
       if (c === "&") {
         if (line[i + 1] === "&") {
           code += "&&";
