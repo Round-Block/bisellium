@@ -54,7 +54,7 @@ const officina = (cap?: number): Pick<OfficinaResponse, "lifecycle" | "probation
   probationes: [{ id: "tests", name: "Tests", kind: "automated" }],
   ...(cap === undefined ? {} : { wip_limit: cap }),
 });
-const opus = (id: string, state: string, opts: { blocked?: boolean; hours?: number; stage?: string } = {}): OpusEntry => ({
+const opus = (id: string, state: string, opts: { blocked?: boolean; startHours?: number; endHours?: number; start?: unknown; end?: unknown } = {}): OpusEntry => ({
   id,
   title: `${id} title`,
   body: "",
@@ -62,14 +62,11 @@ const opus = (id: string, state: string, opts: { blocked?: boolean; hours?: numb
   collegium: "design",
   sella: "builder",
   state,
+  ...(opts.startHours === undefined && opts.start === undefined ? {} : { start: opts.start ?? new Date(NOW - opts.startHours! * 3_600_000).toISOString() }),
+  ...(opts.endHours === undefined && opts.end === undefined ? {} : { end: opts.end ?? new Date(NOW - opts.endHours! * 3_600_000).toISOString() }),
   tokens: 0,
   probationes: opts.blocked ? { tests: { status: "failed" } } : {},
-  traditio: opts.hours === undefined ? undefined : {
-    sella: "builder",
-    stage: opts.stage ?? state,
-    blocked_on: "none",
-    at: new Date(NOW - opts.hours * 3_600_000).toISOString(),
-  },
+  traditio: undefined,
 });
 const column = (model: ReturnType<typeof boardModel>, id: string) => model.columns.find((entry) => entry.id === id)!;
 
@@ -108,4 +105,44 @@ test("W-413-b1 behaviour 1: every column has separate total and blocked rows", (
   assert.ok(mixedContrast(darkBlockingText, tokenValue("surface")) >= 4.5 && mixedContrast(darkBlockingText, tokenValue("wash")) >= 4.5, "the red positive blocked count clears 4.5 to 1 on both dark surfaces");
   assert.ok(mixedContrast(lightBlockingText, "#ffffff") >= 4.5 && mixedContrast(lightBlockingText, "#f4f7f6") >= 4.5, "the red positive blocked count clears 4.5 to 1 on both approved light surfaces");
   assert.ok(contrast("#677270", "#ffffff") >= 4.5 && contrast("#677270", "#f4f7f6") >= 4.5, "the existing light-scheme ink-3 token keeps None blocked readable on both surfaces");
+});
+
+test("W-413-b2 behaviour 2: cards show recorded elapsed, actual completion and an honest estimate", () => {
+  const opera = [
+    opus("W-open", "building", { startHours: 2 }),
+    opus("W-2", "building", { startHours: 9 }),
+    opus("W-8", "halted", { startHours: 4 }),
+    opus("W-done-6", "done", { startHours: 10, endHours: 4 }),
+    opus("W-done-8", "done", { startHours: 12, endHours: 4 }),
+    opus("W-done-10", "done", { startHours: 14, endHours: 4 }),
+    opus("W-bad-open", "verifying", { start: "not-an-instant" }),
+    opus("W-bad-done", "done", { startHours: 1, endHours: 2 }),
+  ];
+  const model = boardModel(officina(4), opera, undefined, { now: NOW });
+  const open = column(model, "in_progress").cards.find((card) => card.id === "W-open");
+  assert.deepEqual(
+    [open?.elapsedMs, open?.estimatedRemainingMs],
+    [2 * 3_600_000, 6 * 3_600_000],
+    "an open card uses recorded start for elapsed and the completed-cycle median for estimated time left",
+  );
+  const overdue = column(model, "in_progress").cards.find((card) => card.id === "W-2");
+  assert.deepEqual([overdue?.elapsedMs, overdue?.estimatedRemainingMs], [9 * 3_600_000, -1 * 3_600_000], "an overdue open card retains elapsed time and a non-positive estimate");
+  const halted = column(model, "halted").cards.find((card) => card.id === "W-8");
+  assert.deepEqual([halted?.elapsedMs, halted?.estimatedRemainingMs], [undefined, undefined], "a Halted card receives neither elapsed time nor a completion estimate");
+  assert.equal(column(model, "done").cards.find((card) => card.id === "W-done-8")?.actualCompletionMs, 8 * 3_600_000, "a done card uses its recorded start-to-end span as actual completion time");
+  assert.equal(column(model, "verifying").cards[0]?.elapsedMs, undefined, "a malformed start shows no elapsed time");
+  assert.equal(column(model, "done").cards.find((card) => card.id === "W-bad-done")?.actualCompletionMs, undefined, "an end before start shows no actual completion time");
+
+  const tooFew = boardModel(officina(4), [opus("W-open", "building", { startHours: 2 }), ...opera.slice(1, 3)], undefined, { now: NOW });
+  assert.equal(column(tooFew, "in_progress").cards[0]?.estimatedRemainingMs, undefined, "fewer than three valid completed opera produce no estimate");
+
+  const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model, focusedByColumn: {}, onSelectCard: () => undefined }));
+  assert.match(html, />Started 2 hours ago\. About 6 hours left \(estimate\)\.</, "an open card states elapsed and estimated remaining time without abbreviations");
+  assert.match(html, />Started 9 hours ago\. Taking longer than usual \(estimate\)</, "an overdue open card says it is taking longer than usual instead of promising another hour");
+  assert.match(html, />Stopped; no completion estimate</, "a Halted card states that it has no completion estimate");
+  assert.match(html, />Took 8 hours</, "a done card states its recorded completion time plainly");
+  const noEstimateHtml = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model: tooFew, focusedByColumn: {}, onSelectCard: () => undefined }));
+  assert.match(noEstimateHtml, />Started 2 hours ago\. No time estimate yet\.</, "an insufficient sample says there is no estimate instead of guessing");
+  assert.doesNotMatch(html, /board__column-dwell|median dwell/, "column headers no longer show a median dwell metric");
+  assert.match(readFileSync("apps/server/src/store.ts", "utf8"), /state: w\.state,[\s\S]*start: w\.meta\["start"\],[\s\S]*end: w\.meta\["end"\]/, "the existing start and end record fields are served on each /api/opera row");
 });
