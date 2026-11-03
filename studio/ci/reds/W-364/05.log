@@ -1,0 +1,60 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-364-b5\s --import tsx packages/cli/src/w364.test.ts
+# exit: 1
+# at: 2026-11-03T14:11:44.678Z
+# sella: builder.W-364
+# tree: tree:a08b5df92814fcdd30632e4301ea5bdc85b67e65
+# ticket: {"opus":"W-364","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-364/studio","head":"5f2b59204efd68731901840a47b5e507a2e37b0b","brief":"4ed52084503fe2c171af501706d228ca01d482b2","at":"2026-11-03T14:11:38.474Z"}
+
+warning: Git ref-wide allocation unavailable; using local records only
+TAP version 13
+# Subtest: W-364-b5 behaviour 5: a heavy run admitted inside a session runs its steps and gates outside it
+not ok 1 - W-364-b5 behaviour 5: a heavy run admitted inside a session runs its steps and gates outside it
+  ---
+  duration_ms: 1513.291013
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-364/packages/cli/src/w364.test.ts:1:13764'
+  failureType: 'testCodeFailure'
+  error: |-
+    a heavy run's steps and gates start outside the session
+    + actual - expected
+    
+    + [
+    +   'audit BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION',
+    +   'format:check BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION',
+    +   'check BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION',
+    +   'check BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION',
+    +   'test BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION',
+    +   'lint BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION',
+    +   'typecheck BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'audit BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+    1: 'format:check BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+    2: 'check BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+    3: 'check BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+    4: 'test BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+    5: 'lint BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+    6: 'typecheck BISELLIUM_SELLA,BISELLIUM_STUDIO,BISELLIUM_SESSION'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-364/packages/cli/src/w364.test.ts:278:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1520.843739
