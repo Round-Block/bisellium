@@ -1,0 +1,27 @@
+# opus: W-413
+# phase: spec
+# round: 21
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-03T11:54:30.142Z
+# tree: tree:a48288a074e1a23cc3650b16f351a8b090c3a1a7
+# brief: briefs/W-413.md blob:f904dd142085a36da74bd6a1268729c277e17ec7
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":21,"actor":"architect","studio":".worktrees/W-413/studio","head":"a431a9783ef7b154dded1fba702285142e54c24d","brief":"f904dd142085a36da74bd6a1268729c277e17ec7","at":"2026-11-03T11:53:02.062Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Patron revision-17 ruling closed: a positive blocked header row now uses red `--severity-blocking-text`, while `None blocked` and the total row remain neutral `--ink-3` — check: kill-b1-blocked-header-token.out, kill-b1-blocked-header-derivation.out, ci/shots/W-413/header-blocked-1280-crop.png
+2. advisory — master had no text-safe blocking token, so the shared token file derives one from 75% `--severity-blocking` and 25% theme `--ink`; it measures 5.73:1/4.74:1 on dark surface/wash and 6.94:1/6.44:1 in the approved light mapping — check: palette-census-r28.out, apps/web/test/w413.test.ts
+3. advisory — revision 15's exact `--severity-blocking` card marker remains red and card copy remains neutral; the derived header red and exact card red are visibly related without losing their distinct text/line roles — check: kill-b1-blocked-token.out, ci/shots/W-413/blocked-card-1280-crop.png, ci/shots/W-413/board-1280-unfiltered.png
+4. advisory — revision 17 flips no additional predecessor row; W-361's revision-15 marker migration remains the only colour-related migration, while W-339, W-341, W-415 and W-493 containment stay green — check: fixture-census.md, census-r28-run.out, series-rows-r28.txt, gates-proto-r28.out
+5. advisory — the prototype retains exactly ten alternating replay-approved subjects; every commit builds, cumulative rows pass, all reds and mutation kills fail by assertion, and the final mbox sha256 is `0480bc78f8e44900b6459d8bc1595c9e06654e65b2cec4052af0b812eab286a6` — check: prototype.mbox, prototype.sha256, series-builds.txt, series-rows-r28.txt, kills-r28.out, mbox-check.out
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 28 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; the red positive blocked-header treatment, neutral zero state, retained card marker, replayable prototype, complete census and ruled-width captures are ready for review, with no blocking design question and no record write, `next` or `verdict` performed.
