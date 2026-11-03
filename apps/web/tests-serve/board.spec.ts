@@ -266,7 +266,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     const expected = await expectedModel(served);
     for (const col of expected.columns) {
       const head = page.locator(`.board__column[data-column-id="${col.id}"] .board__column-count`);
-      await expect(head).toHaveText(`${col.cards.length} shown`);
+      await expect(head).toHaveText(`${col.cards.length} ${col.cards.length === 1 ? "task" : "tasks"}`);
     }
     await expect(page.locator(".board__waiting-label strong")).toHaveText(String(expected.waiting.length));
 

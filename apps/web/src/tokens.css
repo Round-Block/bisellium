@@ -49,6 +49,7 @@
   --bad: #ff5555;
   /* Patron 2026-10-28: one severity vocabulary for Officina Health and W-427 Inbox. */
   --severity-blocking: var(--bad);
+  --severity-blocking-text: color-mix(in srgb, var(--severity-blocking) 75%, var(--ink));
   --severity-high: var(--amber);
   --severity-low: #6272a4;
   --accent-cyan: #8be9fd;

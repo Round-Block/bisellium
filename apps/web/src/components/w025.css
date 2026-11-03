@@ -2138,15 +2138,6 @@
   white-space: nowrap;
 }
 
-.board__wip-scope {
-  margin: 4px var(--sp-6) 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--ink-2);
-  flex-shrink: 0;
-}
-
 .board__waiting {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
@@ -2451,65 +2442,33 @@
   color: var(--ink-2);
 }
 
-.board__column-count {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-3);
+.board__column-counts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
 }
 
-.board__column-policy,
-.board__column-metrics {
-  min-width: 0;
-  font-family: var(--font-body);
+.board__column-count,
+.board__column-blocked {
+  font-family: var(--font-mono);
   font-size: 11px;
   line-height: 14px;
   color: var(--ink-3);
 }
 
+.board__column-blocked--active {
+  color: var(--severity-blocking-text);
+}
+
 .board__column-policy {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.board__column-policy span {
-  font-weight: 600;
-  color: var(--ink-2);
-}
-
-.board__column-metrics {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-2);
-}
-
-.board__wip-count,
-.board__column-dwell {
-  font-family: var(--font-mono);
-}
-
-.board__wip-count--at-cap {
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.board__column-dwell {
-  flex-shrink: 0;
-  text-align: right;
-}
-
-.board__wip-rule {
-  height: 3px;
-  background: var(--rule);
-}
-
-.board__wip-rule--empty {
-  background: var(--surface);
-}
-
-.board__wip-fill {
-  height: 100%;
-  background: var(--ink);
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
 }
 
 .board__column-cards {
@@ -2560,7 +2519,7 @@
 }
 
 .board__card--bad {
-  border-left-color: var(--ink);
+  border-left-color: var(--severity-blocking);
 }
 
 .board__card-gates {
@@ -2867,10 +2826,6 @@
 /* Narrow: <=899px — above Board's phone boundary the drawer leaves the rail
    visible. */
 @media (max-width: 899px) {
-  .board-workspace:has(.board-drawer) .board__wip-scope {
-    display: none;
-  }
-
   .board-drawer__close {
     top: 60px;
   }
@@ -2898,10 +2853,6 @@
   .board__liveness {
     flex: 1 0 100%;
     margin-left: 0;
-  }
-
-  .board__wip-scope {
-    margin-inline: var(--sp-4);
   }
 
   .board__waiting {

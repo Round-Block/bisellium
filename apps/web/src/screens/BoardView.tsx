@@ -32,13 +32,6 @@ export interface BoardViewProps {
   onFilterChange?: (filter: BoardFilter) => void;
 }
 
-function formatDwell(ms: number | undefined): string {
-  if (ms === undefined) return "—";
-  if (ms < 3_600_000) return "<1h";
-  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h`;
-  return `${Math.floor(ms / 86_400_000)}d`;
-}
-
 function cardClassName(card: CardRow): string {
   // Ruling: on a card that is both blocked and needs-you, only "bad" shows
   // (DIRECTION §3: at most one amber region, and a failure outranks a wait).
@@ -129,6 +122,10 @@ function Card({
   );
 }
 
+function plural(value: number, singular: string): string {
+  return `${value} ${value === 1 ? singular : `${singular}s`}`;
+}
+
 function Column({
   column,
   selectedId,
@@ -144,37 +141,20 @@ function Column({
   const classes = ["board__column", column.pinned && "board__column--pinned"].filter(Boolean).join(" ");
   const totalCount = column.totalCount ?? column.cards.length;
   const blockedCount = column.blockedCount ?? column.cards.filter((card) => card.blocked).length;
-  const dwellSampleCount = column.dwellSampleCount ?? 0;
-  const showDwell = column.id !== "done" && column.id !== "halted";
   const shown = column.cards.length === totalCount
-    ? `${totalCount} shown`
-    : `${column.cards.length} of ${totalCount} shown`;
-  const wipCount = column.wipCount ?? totalCount;
-  const wip = column.cap === undefined
-    ? `${totalCount} ${totalCount === 1 ? "item" : "items"} · ${blockedCount} blocked`
-    : `Shared WIP ${wipCount} / ${column.cap} · ${column.wipBlockedCount ?? blockedCount} blocked`;
-  const dwellTitle = dwellSampleCount === 0
-    ? "Median dwell unavailable: no current-state handoff time is recorded"
-    : `Median dwell from ${dwellSampleCount} of ${totalCount} recorded current-state handoffs`;
+    ? plural(totalCount, "task")
+    : `Showing ${column.cards.length} of ${plural(totalCount, "task")}`;
+  const blocked = blockedCount === 0 ? "None blocked" : `${blockedCount} blocked`;
   return (
     <div className={classes} data-column-id={column.id}>
       <div className="board__column-head" tabIndex={-1}>
         <span className="board__column-name">{column.name}</span>
-        <span className="board__column-count">{shown}</span>
+        <span className="board__column-counts">
+          <span className="board__column-count">{shown}</span>
+          <span className={`board__column-blocked${blockedCount > 0 ? " board__column-blocked--active" : ""}`}>{blocked}</span>
+        </span>
       </div>
-      {column.entryRule !== undefined && column.exitRule !== undefined && <div className="board__column-policy">{column.entryRule}; {column.exitRule}</div>}
-      <div className="board__column-metrics">
-        <span className={column.atCap ? "board__wip-count board__wip-count--at-cap" : "board__wip-count"}>{wip}</span>
-        {showDwell && <span className="board__column-dwell" title={dwellTitle}>median {formatDwell(column.medianDwellMs)}</span>}
-      </div>
-      <div className={column.cap === undefined ? "board__wip-rule board__wip-rule--empty" : "board__wip-rule"}>
-        {column.cap !== undefined && (
-          <div
-            className="board__wip-fill"
-            style={{ width: `${Math.min(100, (wipCount / Math.max(1, column.cap)) * 100)}%` }}
-          />
-        )}
-      </div>
+      {column.entryRule !== undefined && column.exitRule !== undefined && <div className="board__column-policy">{column.entryRule} {column.exitRule}</div>}
       <div className="board__column-cards" role="listbox" aria-label={column.name}>
         {column.cards.map((card) => (
           <Card key={card.id} card={card} columnId={column.id} selected={card.id === selectedId} focused={card.id === focusedId} onSelect={onSelectCard} />
@@ -354,7 +334,6 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
         </label>
         {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
       </div>
-      <p className="board__wip-scope">Shared WIP = Building + Verifying; blocked work included</p>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}
       {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
       <WaitingStrip waiting={model.waiting} columns={model.columns} onSelectCard={onSelectCard} onOpenInbox={onOpenInbox} />

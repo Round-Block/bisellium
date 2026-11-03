@@ -254,7 +254,7 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
   assert.match(cssRule(".gate-ladder__mark--bad-diagonal"), /clip-path\s*:/, "the failed gate keeps its diagonal shape cue");
   assert.match(cssRule(".inbox__notice--failure::before"), /width\s*:\s*8px[\s\S]*height\s*:\s*8px[\s\S]*background\s*:\s*var\(--bad\)/, "the Inbox failure keeps its eight-pixel bad square");
   assert.match(cssRule(".seats__confirm-error"), /color\s*:\s*var\(--ink\)/, "confirmation error copy uses the highest-contrast text token");
-  assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--ink\)/, "a blocked card keeps its non-colour left-rule cue without consuming bad");
+  assert.match(cssRule(".board__card--bad"), /border-left-color\s*:\s*var\(--severity-blocking\)/, "a blocked card uses the shared blocking-severity token without making text red");
   assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*color\s*:\s*var\(--accent-cyan\)/, "drawer evidence links and their visited state use the cyan link accent");
   assert.match(componentCss, /\.board-drawer__gate-evidence,\s*\.board-drawer__gate-evidence:visited\s*{[^}]*text-decoration\s*:\s*underline/, "drawer evidence links retain their underline");
   assert.match(cssRule(".sidebar__badge"), /color\s*:\s*var\(--amber\)/, "the Inbox badge uses amber");

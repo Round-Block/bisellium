@@ -149,7 +149,7 @@ if (runs(2)) {
     const html = renderToStaticMarkup(BoardView(props()));
 
     // (a) Genuine red
-    const head = /<div class="board__column-head"[^>]*><span class="board__column-name">Planned<\/span><span class="board__column-count">(\d+) shown<\/span>/.exec(html);
+    const head = /<div class="board__column-head"[^>]*><span class="board__column-name">Planned<\/span><span class="board__column-counts"><span class="board__column-count">(\d+) tasks?<\/span><span class="board__column-blocked">None blocked<\/span><\/span>/.exec(html);
     assert.equal(head?.[1], "4", "2(a): the Planned column head count is 4");
 
     // (b)

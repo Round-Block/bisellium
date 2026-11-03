@@ -11,10 +11,6 @@ import type { Gate, GateStatus } from "./gateLadder.js";
  *  else about the column set comes from the served lifecycle. */
 const BACKLOG_PHASE = "backlog";
 
-/** Keep this set byte-for-byte aligned with packages/cli/src/check.ts. The
- * Board's cap numerator is the same policy fact that emits `wip.cap`. */
-const CHECK_WIP_STATES = new Set(["building", "verifying"]);
-
 /** Only the phases this brief actually names get a friendlier head; anything
  *  else (a fixture's own extra phase) is humanized from its id rather than
  *  hardcoded — the column set must never be a constant (behaviour 1). */
@@ -51,9 +47,6 @@ export interface CardRow {
   nextActor?: string;
   /** Oldest parseable instant among this card's active ask sources. */
   waitingSince?: number;
-  /** Recorded handoff into the card's current lifecycle state. A missing,
-   * malformed or stale-stage handoff remains unknown rather than guessed. */
-  dwellSince?: number;
   blocked: boolean;
 }
 
@@ -158,17 +151,11 @@ export interface BoardColumn {
   cards: CardRow[];
   /** Whole lifecycle membership before a presentation filter is applied. */
   totalCount: number;
-  /** Failed-gate cards in totalCount. Blocked work always consumes WIP. */
+  /** Failed-gate cards in totalCount. */
   blockedCount: number;
-  /** Present on every column containing one of check's WIP_STATES. */
+  /** Legacy model fact retained for callers; W-413 does not render limits. */
   cap?: number;
-  /** Shared check-compatible numerator, repeated on each capped WIP column. */
-  wipCount?: number;
-  /** Blocked members of wipCount; blocked work still consumes the cap. */
-  wipBlockedCount?: number;
   atCap: boolean;
-  medianDwellMs?: number;
-  dwellSampleCount: number;
   entryRule: string;
   exitRule: string;
   /** Phase columns are lifecycle membership, never attention membership. */
@@ -294,9 +281,6 @@ function classifiedCards(
       else if (traditioAt !== undefined) askInstants.push(traditioAt);
     }
     card.waitingSince = askInstants.length > 0 ? Math.min(...askInstants) : undefined;
-    const handoffStage = recordValue(opus.traditio, "stage");
-    const handoffAt = instantMs(recordValue(opus.traditio, "at"));
-    card.dwellSince = handoffStage === opus.state ? handoffAt : undefined;
     cards.set(opus.id, card);
   }
   return cards;
@@ -383,25 +367,7 @@ export function boardModel(
   const stateToPhase = new Map(o.lifecycle.states.map((s) => [s.id, s.phase] as const));
 
   const columns = new Map<string, BoardColumn>();
-  const entryNames = (phase: string): string[] => o.lifecycle.states
-    .filter((state) => state.phase === phase || (phase === "planned" && state.phase === BACKLOG_PHASE))
-    .map((state) => state.name);
   for (const phase of phases) {
-    const membership = entryNames(phase).join(" + ") || humanizePhase(phase);
-    const entryRule = phase === "done" ? "Complete" : phase === "halted" ? "Stopped" : membership;
-    const exitRule = phase === "planned"
-      ? "approval + readiness before building"
-      : phase === "in_progress"
-        ? "build complete before verification"
-        : phase === "verifying"
-          ? "passing checks before review"
-          : phase === "awaiting_review"
-            ? "approval completes work"
-            : phase === "done"
-              ? "no forward exit"
-              : phase === "halted"
-                ? "resume when condition is met"
-                : "recorded condition is met";
     const col: BoardColumn = {
       id: phase,
       name: humanizePhase(phase),
@@ -410,14 +376,11 @@ export function boardModel(
       totalCount: 0,
       blockedCount: 0,
       atCap: false,
-      dwellSampleCount: 0,
-      entryRule,
-      exitRule,
+      entryRule: "",
+      exitRule: "",
       membership: false,
     };
-    if (o.wip_limit !== undefined && o.lifecycle.states.some((state) => state.phase === phase && CHECK_WIP_STATES.has(state.id))) {
-      col.cap = o.wip_limit;
-    }
+    if (phase === "in_progress" && o.wip_limit !== undefined) col.cap = o.wip_limit;
     columns.set(phase, col);
   }
 
@@ -447,30 +410,10 @@ export function boardModel(
   if (planned) planned.cards.push(...backlog);
   else unplaced.push(...backlog.map((card) => card.id));
 
-  const wipOpera = opera.filter((opus) => CHECK_WIP_STATES.has(opus.state));
-  const wipCount = wipOpera.length;
-  const wipBlockedCount = wipOpera.filter((opus) => cards.get(opus.id)?.blocked).length;
-
   for (const col of columns.values()) {
     col.totalCount = col.cards.length;
     col.blockedCount = col.cards.filter((card) => card.blocked).length;
-    if (col.cap !== undefined) {
-      col.wipCount = wipCount;
-      col.wipBlockedCount = wipBlockedCount;
-      col.atCap = wipCount >= col.cap;
-    }
-    const now = options.now ?? Date.now();
-    const dwells = col.id === "done" || col.id === "halted" ? [] : col.cards
-      .flatMap((card) => card.dwellSince === undefined ? [] : [Math.max(0, now - card.dwellSince)])
-      .sort((a, b) => a - b);
-    col.dwellSampleCount = dwells.length;
-    if (dwells.length > 0) {
-      const middle = Math.floor(dwells.length / 2);
-      col.medianDwellMs = dwells.length % 2 === 1
-        ? dwells[middle]
-        : (dwells[middle - 1]! + dwells[middle]!) / 2;
-    }
-    if (options.filter === "blocked") col.cards = col.cards.filter((card) => card.blocked);
+    if (col.cap !== undefined) col.atCap = col.cards.length >= col.cap;
   }
 
   return { columns: [...columns.values()], waiting, unplaced };

@@ -154,7 +154,7 @@ test("W-341-b4 behaviour 4: the Board shows and reports loading, empty, error, s
   await matrix();
   const view = (await load("src/screens/BoardView.tsx"))["BoardView"];
   const base = { studio: "s", model: { columns: [], waiting: [] }, focusedByColumn: {}, onSelectCard: () => undefined };
-  assert.match(render(view, { ...base, notice: "Could not load the board." }), /<\/div><p class="board__wip-scope">Shared WIP = Building \+ Verifying; blocked work included<\/p><p class="screen-notice board__notice">Could not load the board.<\/p><aside class="board__waiting board__waiting--empty"/, "the Shared-WIP key sits between the header and notice, before the collapsed zero waiting strip");
+  assert.match(render(view, { ...base, notice: "Could not load the board." }), /<\/div><p class="screen-notice board__notice">Could not load the board.<\/p><aside class="board__waiting board__waiting--empty"/, "the notice sits under the header and before the collapsed zero waiting strip");
   assert.equal(count(render(view, base), "screen-notice"), 0, "no notice at rest");
   wired("Board");
   const source = read("src/screens/Board.tsx");
