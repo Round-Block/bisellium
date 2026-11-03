@@ -103,6 +103,14 @@ test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match
   await passes("a quoted nohup runs", "echo 'nohup sleep 600' \"setsid x\"");
   await refused("an & after a quoted one is judged", "echo 'a & b' &", "&");
   await refused("an & after a # inside a word is judged", "echo a#b &", "&");
+  await passes("a quoted nohup as a command word runs", "'nohup' sleep 600");
+  await passes("a double-quoted setsid as a command word runs", '"setsid" node serve.js');
+  await passes("a nohup inside an arithmetic expansion runs", "echo $((6 & nohup))");
+  await passes("a nohup inside a parameter expansion runs", "echo ${x:-nohup} ${y//&/ & }");
+  await passes("an ANSI-C quoted nohup runs", "echo $'setsid x & y'");
+  await passes("quoted and escaped blanks keep one word", "echo 'a & b' \"c & d\" e\\ & f");
+  await refused("an & after a quoted nohup is judged", "'nohup' sleep 600 &", "&");
+  await refused("a real nohup after an arithmetic expansion is judged", "echo $((6 & 3)) && nohup sleep 600", "nohup");
 });
 
 test("W-496-b3 behaviour 3: the repo's Bash calls meet only the bisellium guard at PreToolUse, and CLAUDE.md says what it refuses", () => {
