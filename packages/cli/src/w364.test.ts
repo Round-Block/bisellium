@@ -189,6 +189,8 @@ test("W-364-b4 behaviour 4: the guard refuses the main thread's shell writes int
   const root = checkout();
   const script = join(root, "..", "write log.sh");
   writeFileSync(script, "#!/bin/sh\necho done > studio/ci/W-1-tests.log\n");
+  const quiet = join(root, "..", "read log.sh");
+  writeFileSync(quiet, "#!/bin/sh\ntee /tmp/copy <<- studio/ci/W-1-tests.log\n");
   const refused: [string, string][] = [
     ["echo x > studio/ci/W-1-tests.log", "studio/ci/W-1-tests.log"],
     ["npm test >studio/ci/W-1-tests.log 2>&1", "studio/ci/W-1-tests.log"],
@@ -205,6 +207,8 @@ test("W-364-b4 behaviour 4: the guard refuses the main thread's shell writes int
     ["cp -t studio/ci /tmp/a.log /tmp/b.log", "studio/ci"],
     ["cp --target-directory=docs/design/dossier /tmp/a.html", "docs/design/dossier"],
     ["tee studio/ci/x.log < /tmp/in", "studio/ci/x.log"],
+    ["tee studio/ci/x.log <<- EOF\nbody\nEOF", "studio/ci/x.log"],
+    ["bash -c 'tee studio/ci/x.log <<- EOF'", "studio/ci/x.log"],
     ["tee /tmp/copy studio/ci/x.log <<< note", "studio/ci/x.log"],
     ["cp /tmp/a studio/ci/x.log < /tmp/in", "studio/ci/x.log"],
     ["sed -i 's/building/review/' studio/opera/W-1.md", "studio/opera/W-1.md"],
@@ -231,6 +235,18 @@ test("W-364-b4 behaviour 4: the guard refuses the main thread's shell writes int
     "echo x > studio/briefs/W-1.md",
     "cp studio/ci/W-1-tests.log /tmp/",
     "tee /tmp/copy < studio/ci/W-1-tests.log",
+    "tee /tmp/copy <<- studio/ci/W-1-tests.log",
+    "tee /tmp/copy << studio/ci/W-1-tests.log",
+    "tee /tmp/copy <<-studio/ci/W-1-tests.log",
+    "tee /tmp/copy <<studio/ci/W-1-tests.log",
+    "tee /tmp/copy 0<<- studio/ci/W-1-tests.log",
+    "cp /tmp/a /tmp/b <<- studio/ci/W-1-tests.log",
+    "mv /tmp/a /tmp/b <<- studio/ci/W-1-tests.log",
+    "install -m 644 /tmp/a /tmp/b <<- studio/ci/x.log",
+    "sed -i s/a/b/ /tmp/f <<- studio/ci/W-1-tests.log",
+    "bash -c 'tee /tmp/copy <<- studio/ci/W-1-tests.log'",
+    "cd studio && tee /tmp/copy <<- ci/W-1-tests.log",
+    `sh '${quiet}'`,
     "tee /tmp/copy <studio/ci/W-1-tests.log",
     "tee /tmp/copy <<< studio/ci/W-1-tests.log",
     "tee /tmp/copy 0< studio/ci/W-1-tests.log",
