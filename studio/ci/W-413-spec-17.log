@@ -1,0 +1,27 @@
+# opus: W-413
+# phase: spec
+# round: 17
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: passed
+# at: 2026-11-03T03:26:48.766Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# dispatch_prompt: ci/W-413-ui-prompt-17.md
+# design_digest: sha256:f380cb0df130d9f84b42b37bc33ba6c986bd2dc30528bc0cd182cfa2a3ab6864
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":17,"actor":"ui-lead","studio":".worktrees/W-413/studio","head":"c54c7361fe0ebe7cdbce48a473d06f86ce569d4e","brief":"81ce0b907d30f847c2873bc19652655e1828492a","at":"2026-11-03T03:25:26.704Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+## Recommendation
+
+Round-14 advisories #1 and #2 still hold: restoration needs a visibility assertion, and suppression uses a viewport breakpoint rather than available rail width.
+Earlier shared-scope, condition-copy, singular-item and cramped-key findings remain closed; the existing drawer geometry and repeated-reason issues remain assigned to W-499.
+Round 15 changes only the brief’s four red-assertion declarations; the diff and unchanged prototype checksum confirm no user-visible change.
+All eight captures retain the previously accepted W-413 presentation, including readable headers, the shared-scope key and its suppression beside the 640 drawer.
+The delta introduces no new UI rule or legibility defect and preserves the Patron’s neutral cap treatment.
+Verdict: passed
