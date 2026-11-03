@@ -234,7 +234,7 @@ test("W-499-b4 behaviour 4: the banner routes plainly and reasons choose one sou
   const noPetitioDrawer = renderToStaticMarkup(BoardDrawer({ detail: gateDetail, onClose: () => undefined }));
   const noPetitioBanner = noPetitioDrawer.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "";
   assert.match(noPetitioBanner, /Waiting on you[\s\S]*no question recorded\./, "the no-petitio banner states that no question is recorded without a link");
-  assert.doesNotMatch(noPetitioBanner, /<a\b/, "the no-petitio banner has no link");
+  assert.doesNotMatch(noPetitioBanner, /<a(?![\p{L}\p{M}\p{N}])/u, "the no-petitio banner has no link");
   const emptyDrawer = renderToStaticMarkup(BoardDrawer({ detail: emptyDetail, onClose: () => undefined }));
   assert.match(emptyDrawer, /No waiting reason recorded\./, "no chosen source is stated honestly");
   const css = readFileSync(new URL("../src/components/w025.css", import.meta.url), "utf8");

@@ -3,3 +3,7 @@ drops:
     drop: 104
     opus: W-179
     reason: moved, not removed, into next-branch.test.ts, next-done.test.ts, next-ladder.test.ts, next-queue.test.ts, next-review.test.ts, next-spec.test.ts (split by behaviour group, every row kept once)
+  - path: apps/web/test/boardview.test.ts
+    drop: 1
+    opus: W-499
+    reason: W-499 b4 names the BoardView behaviour 6 banner rows as flipped; the subject and sender rows merge into one omission row, the subject/sender link row becomes the Go to Inbox link row, and the gate-named no-question row is dropped because the no-petitio banner no longer names the gate (the no-question and no-link rows remain)
