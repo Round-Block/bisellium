@@ -406,6 +406,32 @@ export function boardModel(
 
   const columns = new Map<string, BoardColumn>();
   for (const phase of phases) {
+    const entryRule = phase === "planned"
+      ? "Waiting to start."
+      : phase === "in_progress"
+        ? "Being built."
+        : phase === "verifying"
+          ? "Being checked."
+          : phase === "awaiting_review"
+            ? "Waiting for review."
+            : phase === "done"
+              ? "Complete."
+              : phase === "halted"
+                ? "Stopped."
+                : "In this stage.";
+    const exitRule = phase === "planned"
+      ? "Moves on when approved and ready to build."
+      : phase === "in_progress"
+        ? "Moves on when the build is complete."
+        : phase === "verifying"
+          ? "Moves on when checks pass."
+          : phase === "awaiting_review"
+            ? "Finished when approved."
+            : phase === "done"
+              ? "No next step."
+              : phase === "halted"
+                ? "Resumes when the blocking condition is resolved."
+                : "Moves on when its recorded condition is met.";
     const col: BoardColumn = {
       id: phase,
       name: humanizePhase(phase),
@@ -414,8 +440,8 @@ export function boardModel(
       totalCount: 0,
       blockedCount: 0,
       atCap: false,
-      entryRule: "",
-      exitRule: "",
+      entryRule,
+      exitRule,
       membership: false,
     };
     if (phase === "in_progress" && o.wip_limit !== undefined) col.cap = o.wip_limit;
