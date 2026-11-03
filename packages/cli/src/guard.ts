@@ -399,6 +399,9 @@ export function unboundedLoop(command: string, bounded = false, depth = 0): bool
 /** W-496: the commands that detach work from the Bash call, refused as a simple command's first word. */
 const DETACHERS = new Set(["nohup", "setsid", "disown"]);
 
+/** W-496: the word that stands in `code` for skipped text (quotes, escapes, expansions, a heredoc delimiter). */
+const SKIPPED = "Q";
+
 /** W-496: the code a shell runs in `line`, and whether an `&` in it ends or separates a command. Read as bash reads them:
  *  single quotes; `$'…'` and double quotes, where a backslash escapes the next character; a backslash outside quotes; a
  *  `#` opening a word, to the line's end; `${…}` and `$((…))`, parentheses counted; and heredocs: after `<<` or `<<-`
@@ -424,10 +427,10 @@ function shellCode(line: string): { code: string; amp: boolean } {
     if (c === "'" || c === '"' || (c === "$" && line[i + 1] === "'")) {
       const open = c === "$" ? i + 1 : i;
       const end = close(open, c !== "'");
-      code += line.slice(i, end + 1);
+      if (closers.length === 0) code += SKIPPED;
       i = end;
     } else if (c === "\\") {
-      code += line.slice(i, i + 2);
+      if (closers.length === 0) code += line[i + 1] === "\n" ? " " : SKIPPED;
       i++;
     } else if (c === "#" && closers.length === 0 && " \t\n;&|()<>".includes(prev)) {
       const j = line.indexOf("\n", i);
@@ -461,23 +464,27 @@ function shellCode(line: string): { code: string; amp: boolean } {
         else delim += d;
       }
       if (delim !== "") docs.push({ delim, tabs });
-      code += line.slice(i, j);
+      code += "<<" + SKIPPED;
       i = j - 1;
     } else {
       if (c === "$" && line[i + 1] === "{") {
+        if (closers.length === 0) code += SKIPPED;
         closers.push("}");
-        code += c;
+        i++;
         continue;
       }
       if (c === "$" && line.startsWith("((", i + 1)) {
+        if (closers.length === 0) code += SKIPPED;
         closers.push(")", ")");
-        code += "$((";
         i += 2;
         continue;
       }
-      if (closers.length > 0 && c === "(") closers.push(")");
-      else if (closers.length > 0 && c === closers[closers.length - 1]) closers.pop();
-      else if (c === "&" && closers.length === 0) {
+      if (closers.length > 0) {
+        if (c === "(") closers.push(")");
+        else if (c === closers[closers.length - 1]) closers.pop();
+        continue;
+      }
+      if (c === "&") {
         if (line[i + 1] === "&") {
           code += "&&";
           i++;
