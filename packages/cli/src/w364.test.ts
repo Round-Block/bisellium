@@ -92,3 +92,55 @@ test("W-364-b1 behaviour 1: verify and ci --opus refuse outside a bisellium run 
     "the host runner's gates run ci --opus inside its session",
   );
 });
+
+const HEAVY = /is a heavy run, run only by a dispatched agent \(W-364\)/;
+
+test("W-364-b2 behaviour 2: the guard refuses the main thread's codex exec, verify and ci --opus runs, directly, through bisellium run or in a script", async () => {
+  const dir = tmp();
+  const script = join(dir, "census pass.sh");
+  writeFileSync(script, "#!/bin/sh\nset -u\ncodex exec -m gpt-5.6-sol -s read-only - < /tmp/p.md\n");
+  const refused: [string, string][] = [
+    ["bisellium verify W-1 --studio studio --repo .", "verify"],
+    ["npm run -s bisellium -- verify W-1 --studio studio --repo . > /tmp/v.log 2>&1; echo $? > /tmp/v.exit", "verify"],
+    ["npm run -s bisellium -- ci --opus W-1 --studio studio --repo .", "ci --opus"],
+    ["cd /tmp && timeout 3000 npx bisellium ci --opus W-1 --studio studio", "ci --opus"],
+    ["codex exec -c model_provider=openai -m gpt-5.6-sol -s read-only --skip-git-repo-check -C . -o /tmp/o.md - < /tmp/p.md", "codex exec"],
+    ["codex -c model_reasoning_effort=high exec 'review the diff'", "codex exec"],
+    ["codex e 'list the tests'", "codex exec"],
+    ["/usr/local/bin/codex exec x", "codex exec"],
+    ["bash -c 'codex exec -s read-only x'", "codex exec"],
+    [`bash '${script}' W-1`, "codex exec (in"],
+    ["bisellium run --sella eng-lead --no-worktree --studio studio -- npm run -s bisellium -- ci --opus W-1 --studio studio --repo .", "ci --opus"],
+    ["npm run -s bisellium -- run --sella producer --no-worktree --studio studio -- env FOO=1 bisellium verify W-1 --studio studio", "verify"],
+    ["bisellium run --sella eng-lead -- codex exec x", "codex exec"],
+  ];
+  const first = await guard(bash(refused[0]![0], dir));
+  assert.equal(first.code, 2, "main thread refused: bisellium verify W-1 --studio studio --repo .");
+  assert.match(first.err, HEAVY, "the refusal names a heavy run and the dispatched agent");
+  assert.match(first.err, /`verify`/, "the refusal names the step");
+  assert.match(first.err, /bisellium run --sella <seat>/, "the refusal names the session route");
+  for (const [c, step] of refused) {
+    const r = await guard(bash(c, dir));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.ok(r.err.includes(`\`${step}`), `the refusal names ${step}: ${c}`);
+    for (const who of [RUNNER, BUILDER]) assert.equal((await guard(bash(c, dir, who))).code, 0, `a subagent runs it: ${c}`);
+  }
+  const allowed = [
+    "bisellium ci",
+    "npm run -s bisellium -- ci --offline",
+    "codex --version",
+    "codex login status",
+    "echo codex exec",
+    "git commit -m 'run codex exec and bisellium verify'",
+    "grep -n verify packages/cli/src/main.ts",
+    "bisellium run --sella builder --opus W-1 -- claude -p 'build it'",
+    "cat > /tmp/p.md <<'EOF'\ncodex exec -m gpt-5.6-sol -s read-only -\nbisellium verify W-1 --studio studio\nnpm run -s bisellium -- ci --opus W-1\nEOF",
+    "cat > /tmp/notes.md <<EOF\nLimits: popd\nthen scripts/x.sh runs codex exec\nEOF\necho done",
+    "# codex exec in a comment\nls",
+  ];
+  assert.equal((await guard(bash(allowed[8]!, dir))).code, 0, "a heredoc's text is not read as a command");
+  assert.equal((await guard(bash(allowed[9]!, dir))).code, 0, "the 11-03 heredoc runs");
+  for (const c of allowed) assert.equal((await guard(bash(c, dir))).code, 0, `allowed: ${c}`);
+  const afterDoc = await guard(bash("cat > /tmp/p.md <<'EOF'\nnothing here\nEOF\ncodex exec x", dir));
+  assert.equal(afterDoc.code, 2, "a codex exec after a heredoc's terminator is judged");
+});
