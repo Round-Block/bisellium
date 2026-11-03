@@ -1,0 +1,23 @@
+# opus: W-499
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19eb9-0e59-7750-9d95-26ba2d5632fe
+# outcome: passed
+# at: 2026-11-03T00:06:42.055Z
+# tree: tree:0fa25cb17f8c7f746c58a44dd619a7a75cacf69a
+# ui_input: ci/W-499-spec-15.log
+# design_digest: sha256:22bafd097421d203461bb65b65bbf8df157640382a1e74f111bacf24e3e20fdc
+# ticket: {"opus":"W-499","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-499/studio","head":"6deefe185700b75ddd72f98340aa386e668ee118","brief":"b3644bd1dfb0d6a685a5282090453841b8b68e7c","at":"2026-11-03T00:04:48.955Z"}
+
+## Findings
+1. advisory — apps/web/tests-serve/w499.spec.ts:182 The focus-clearance row checks card left and width but not top or height, leaving the brief’s unchanged-geometry claim incompletely pinned. [severity: S4] [class: tests×ruled-case-uncovered] — check: apps/web/tests-serve/w499.spec.ts
+2. advisory — apps/web/tests-serve/w499.spec.ts:203 The W-004 keyboard row manually realigns `scrollLeft` after ArrowRight, so it does not prove that the browser’s actual keyboard-focus position preserves the complete outline. [severity: S4] [class: tests×ruled-case-uncovered] — check: apps/web/tests-serve/w499.spec.ts
+
+## UI input disposition
+The authoritative ui-lead passed the design and closed the earlier missing-top-outline blocker after inspecting rebuilt focus and drawer captures; its two remaining evidence limitations are the advisories above. All eight attached desktop/phone images retain legible hierarchy, responsive navigation, intentional Board overflow cues, and contained values without a visible cross-screen regression; because they show general screen states rather than the open drawer or focused cards, they corroborate regression safety but do not close those two test gaps.
+
+## Verdict
+The three specified behaviours pass across the declared widths, all reds fail by assertion, the gates certify the reviewed source tree, and the source diff matches the nine owned paths. The remaining findings concern incomplete evidence for otherwise correct behaviour and therefore do not fail the round.
+VERDICT: PASS
