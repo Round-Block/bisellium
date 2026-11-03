@@ -1064,12 +1064,28 @@ export function guardWiring(settings: unknown): string[] {
  *  builder and gate cells): the CLI's one sign that it runs inside a `bisellium run` session. */
 export const SESSION_ENV = "BISELLIUM_SESSION";
 
+/** W-364: the variables `bisellium run` stamps that name its session (its seat, its officina, its id); a heavy run drops them. */
+export const SESSION_VARS = ["BISELLIUM_SELLA", "BISELLIUM_STUDIO", SESSION_ENV] as const;
+
+/** W-364: the heavy run a CLI argv names: `verify` with any argument, `ci` with `--opus` among its arguments. */
+function heavyVerb(cmd: string | undefined, args: readonly string[]): "verify" | "ci --opus" | undefined {
+  return cmd === "verify" && args.length > 0 ? "verify" : cmd === "ci" && args.includes("--opus") ? "ci --opus" : undefined;
+}
+
+/** W-364: a heavy run admitted inside a session leaves it before its steps and gates start: `SESSION_VARS` are dropped from
+ *  `env`, so the suite runs without the session's seat, studio, or session-id variables (the run's Git identity remains) and a
+ *  nested verb against a fixture never reads the run's seat (11-03: `done` read `BISELLIUM_SELLA=producer` in close.test.ts). Any other argv leaves `env` as it is. */
+export function leaveSession(cmd: string | undefined, args: readonly string[], env: NodeJS.ProcessEnv = process.env): void {
+  if (heavyVerb(cmd, args) === undefined) return;
+  for (const name of SESSION_VARS) delete env[name];
+}
+
 /** W-364: the CLI's refusal of a heavy run outside a `bisellium run` session, so a heavy run from any harness's main
  *  thread is refused by the verb: `verify` with any argument and `ci` with `--opus` among its arguments, when
  *  `SESSION_ENV` is unset or empty. Undefined otherwise: `verify` with no argument keeps its usage line, and `ci`
  *  without `--opus` (the CI workflow's steps) runs. The variable is a claim, not an attestation (D-045). */
 export function sessionRefusal(cmd: string | undefined, args: readonly string[], env: NodeJS.ProcessEnv = process.env): string | undefined {
-  const step = cmd === "verify" && args.length > 0 ? "verify" : cmd === "ci" && args.includes("--opus") ? "ci --opus" : undefined;
+  const step = heavyVerb(cmd, args);
   if (step === undefined || (env[SESSION_ENV] ?? "") !== "") return undefined;
   return `refused: \`bisellium ${step}\` runs only inside a bisellium run session (W-364): dispatch an agent, which runs it as \`bisellium run --sella <seat> --no-worktree --studio studio -- npm run -s bisellium -- ${step} …\` (a seat that is not a builder template, as eng-lead or producer)`;
 }

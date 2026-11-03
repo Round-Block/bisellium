@@ -28,7 +28,7 @@ import { mergeRefusal } from "./integrate.js";
 import { runReady, runDone, runReview, runRed, runHalt, runWaive, runAmend } from "./lifecycle.js";
 import { runVerdict } from "./verdict.js";
 import { runServe } from "./serve.js";
-import { sessionRefusal } from "./guard.js";
+import { leaveSession, sessionRefusal } from "./guard.js";
 import { runHooks, runHookEvent } from "./hooks.js";
 import { runDocs } from "./docs.js";
 import { runBranch, runMerge } from "./branch.js";
@@ -94,6 +94,7 @@ async function main(argv: string[]): Promise<number> {
     console.error(heavy);
     return 2;
   }
+  leaveSession(cmd, rest);
   // `run` and `verify` own their argv end to end (see the comment on
   // FLAGS_BY_COMMAND above) — dispatch before the generic flag parser ever
   // sees their args.
