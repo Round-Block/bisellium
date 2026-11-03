@@ -32,6 +32,36 @@ export interface BoardViewProps {
   onFilterChange?: (filter: BoardFilter) => void;
 }
 
+function formatDuration(ms: number): string {
+  if (ms < 3_600_000) return "less than 1 hour";
+  if (ms < 86_400_000) return plural(Math.floor(ms / 3_600_000), "hour");
+  return plural(Math.floor(ms / 86_400_000), "day");
+}
+
+function formatEstimate(ms: number): string {
+  if (ms < 3_600_000) return "1 hour";
+  return formatDuration(ms);
+}
+
+function CardTiming({ card, phase }: { card: CardRow; phase: string }): JSX.Element | null {
+  if (phase === "done") {
+    return card.actualCompletionMs === undefined
+      ? null
+      : <span className="board__card-timing">Took {formatDuration(card.actualCompletionMs)}</span>;
+  }
+  if (phase === "halted") return <span className="board__card-timing">Stopped; no completion estimate</span>;
+  if (card.elapsedMs === undefined) return <span className="board__card-timing">No time estimate yet</span>;
+  return (
+    <span className="board__card-timing">
+      Started {formatDuration(card.elapsedMs)} ago. {card.estimatedRemainingMs === undefined
+        ? "No time estimate yet."
+        : card.estimatedRemainingMs <= 0
+          ? "Taking longer than usual (estimate)"
+          : `About ${formatEstimate(card.estimatedRemainingMs)} left (estimate).`}
+    </span>
+  );
+}
+
 function cardClassName(card: CardRow): string {
   // Ruling: on a card that is both blocked and needs-you, only "bad" shows
   // (DIRECTION §3: at most one amber region, and a failure outranks a wait).
@@ -118,6 +148,7 @@ function Card({
           <span className="board__card-state">{card.state}</span>
         </span>
       </>}
+      <CardTiming card={card} phase={columnId} />
     </div>
   );
 }

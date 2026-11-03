@@ -47,6 +47,12 @@ export interface CardRow {
   nextActor?: string;
   /** Oldest parseable instant among this card's active ask sources. */
   waitingSince?: number;
+  /** For non-Done, non-Halted work, elapsed time from the record's parseable `start`. */
+  elapsedMs?: number;
+  /** For completed work, the record's exact parseable `start` → `end` span. */
+  actualCompletionMs?: number;
+  /** For non-Done, non-Halted work, the completed-cycle median minus elapsed. */
+  estimatedRemainingMs?: number;
   blocked: boolean;
 }
 
@@ -177,6 +183,17 @@ export interface BoardModel {
   /** Opera whose state maps to no declared phase: counted and named, never
    *  dropped into the first column and never thrown on. */
   unplaced: string[];
+}
+
+const MIN_COMPLETION_SAMPLES = 3;
+
+function median(values: number[]): number | undefined {
+  if (values.length < MIN_COMPLETION_SAMPLES) return undefined;
+  const ordered = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 1
+    ? ordered[middle]
+    : (ordered[middle - 1]! + ordered[middle]!) / 2;
 }
 
 /** D-151: every consumer reports the size of the collection it renders. */
@@ -365,6 +382,27 @@ export function boardModel(
     phases.push(s.phase);
   }
   const stateToPhase = new Map(o.lifecycle.states.map((s) => [s.id, s.phase] as const));
+  const now = options.now ?? Date.now();
+  const completedCycles = opera.flatMap((opus) => {
+    if (stateToPhase.get(opus.state) !== "done") return [];
+    const start = instantMs(opus.start);
+    const end = instantMs(opus.end);
+    return start !== undefined && end !== undefined && end >= start ? [end - start] : [];
+  });
+  const completionEstimate = median(completedCycles);
+
+  for (const opus of opera) {
+    const card = cards.get(opus.id)!;
+    const start = instantMs(opus.start);
+    const phase = stateToPhase.get(opus.state);
+    if (phase === "done") {
+      const end = instantMs(opus.end);
+      if (start !== undefined && end !== undefined && end >= start) card.actualCompletionMs = end - start;
+    } else if (phase !== "halted" && start !== undefined && start <= now) {
+      card.elapsedMs = now - start;
+      if (completionEstimate !== undefined) card.estimatedRemainingMs = completionEstimate - card.elapsedMs;
+    }
+  }
 
   const columns = new Map<string, BoardColumn>();
   for (const phase of phases) {

@@ -395,6 +395,8 @@ export class Store extends CoreStore {
           collegium: w.meta["collegium"],
           sella: w.meta["sella"],
           state: w.state,
+          start: w.meta["start"],
+          end: w.meta["end"],
           tokens: w.meta["tokens"],
           probationes: w.probationes,
           traditio: w.meta["traditio"],

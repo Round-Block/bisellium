@@ -2471,6 +2471,10 @@
   overflow-wrap: anywhere;
 }
 
+.board__card-timing {
+  font-family: var(--font-mono);
+}
+
 .board__column-cards {
   flex-grow: 1;
   overflow-y: auto;
@@ -2571,6 +2575,16 @@
   font-size: 12px;
   line-height: 14px;
   color: var(--ink-2);
+}
+
+.board__card-timing {
+  display: block;
+  min-height: 12px;
+  flex-shrink: 0;
+  color: var(--ink-3);
+  font-size: 10px;
+  line-height: 12px;
+  overflow-wrap: anywhere;
 }
 
 .board__card:focus {
