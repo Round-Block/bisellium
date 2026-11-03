@@ -1,0 +1,29 @@
+# opus: W-413
+# phase: spec
+# round: 26
+# sella: ui-lead
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: passed
+# at: 2026-11-03T12:39:20.729Z
+# tree: tree:a48288a074e1a23cc3650b16f351a8b090c3a1a7
+# dispatch_prompt: ci/W-413-ui-prompt-26.md
+# design_digest: sha256:4dd4acb3c3652d8fb54e4b1a9132736f3ae605eb07bfd866a4a761738568f038
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":26,"actor":"ui-lead","studio":".worktrees/W-413/studio","head":"9f6dde68dec7b78da165e7e549c5fdf85f7286f8","brief":"d7764eaf39f61bfb3a27cb6afdffa30fa6678eca","at":"2026-11-03T12:36:43.803Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+- ci/W-413-spec-23.log #1: closed — brief:23 and :58 specify the overdue wording; the prototype preserves non-positive remainders and b2 asserts W-2/W-6. Desktop, phone and zoom captures show the correction, including W-6 in cards-1280-timing-crop.png.
+- ci/W-413-spec-23.log #2: closed — brief:21 and :58 exclude Halted timing; the prototype skips both timing fields and b2 asserts W-8’s fixed sentence. cards-1280-timing-crop.png visibly shows “Stopped; no completion estimate” without a countdown.
+
+## Recommendation
+
+The revised timing distinguishes active estimates, overdue work, completed durations and stopped work clearly.
+Counts, filtering, blocked colours and header height remain readable at 1280, 390 and 640/200%, consistent with D-167.
+Round 25’s closing-full-stop suggestion is optional editorial consistency; its absence does not obscure meaning.
+Earlier cap/key findings remain superseded by D-167, condition-copy and singular-count findings remain closed, and the separate W-499 drawer findings are unchanged.
+No further UI correction is needed in this delta.
+Verdict: passed
