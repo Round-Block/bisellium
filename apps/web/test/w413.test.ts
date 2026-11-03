@@ -146,3 +146,27 @@ test("W-413-b2 behaviour 2: cards show recorded elapsed, actual completion and a
   assert.doesNotMatch(html, /board__column-dwell|median dwell/, "column headers no longer show a median dwell metric");
   assert.match(readFileSync("apps/server/src/store.ts", "utf8"), /state: w\.state,[\s\S]*start: w\.meta\["start"\],[\s\S]*end: w\.meta\["end"\]/, "the existing start and end record fields are served on each /api/opera row");
 });
+
+test("W-413-b3 behaviour 3: every lifecycle column names its entry and exit rule", () => {
+  const model = boardModel(officina(4), []);
+  assert.deepEqual(
+    model.columns.map(({ id, entryRule, exitRule }) => [id, entryRule, exitRule]),
+    [
+      ["planned", "Waiting to start.", "Moves on when approved and ready to build."],
+      ["in_progress", "Being built.", "Moves on when the build is complete."],
+      ["verifying", "Being checked.", "Moves on when checks pass."],
+      ["awaiting_review", "Waiting for review.", "Finished when approved."],
+      ["done", "Complete.", "No next step."],
+      ["halted", "Stopped.", "Resumes when the blocking condition is resolved."],
+    ],
+    "every standard phase explains its present condition and next step without lifecycle jargon",
+  );
+  const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model, focusedByColumn: {}, onSelectCard: () => undefined }));
+  assert.match(html, />Waiting to start\. Moves on when approved and ready to build\.</, "Planned explains what the stage means and when work moves on");
+  assert.match(html, />Being checked\. Moves on when checks pass\.</, "Verifying explains its checks condition in plain language");
+  assert.match(html, />Complete\. No next step\.</, "Done plainly says there is no next step");
+  assert.match(html, />Stopped\. Resumes when the blocking condition is resolved\.</, "Halted plainly states the resume condition");
+  const customLifecycle: OfficinaResponse["lifecycle"] = { id: "opus", states: [...lifecycle.states, { id: "archived", name: "Stored records", phase: "archived" }] };
+  const custom = boardModel({ ...officina(), lifecycle: customLifecycle }, []);
+  assert.deepEqual([column(custom, "archived").entryRule, column(custom, "archived").exitRule], ["In this stage.", "Moves on when its recorded condition is met."], "a custom phase gets a plain fallback without exposing its configured state name");
+});
