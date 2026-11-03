@@ -1,0 +1,21 @@
+# opus: W-364
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a148-16b8-7131-8574-989e0ec72447
+# outcome: passed
+# at: 2026-11-03T14:09:23.323Z
+# tree: tree:5c5cc4c3dee4c69856908c117955ba017c431453
+# brief: briefs/W-364.md blob:4ed52084503fe2c171af501706d228ca01d482b2
+# ticket: {"opus":"W-364","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":".worktrees/W-364/studio","head":"8bed70ad8ea18ec01b98fbe0ecbb80433a8a760c","brief":"4ed52084503fe2c171af501706d228ca01d482b2","at":"2026-11-03T14:09:18.056Z"}
+
+## Findings
+1. advisory — studio/briefs/W-364.md:145 [severity: S2] Default 9 says tests run “exactly as they do outside a session,” but brief:30 says the session’s Git identity remains; the same overclaim appears at brief:19. Replace both claims with “run without the session’s seat, studio, or session-id variables; the run’s Git identity remains.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose must match brief:30’s retained-environment limit
+
+## Earlier findings
+
+## Verdict
+The revision’s new input boundary and behavior are feasible; only its environment-equivalence wording overpromises.
+
+VERDICT: PASS

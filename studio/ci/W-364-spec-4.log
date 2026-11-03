@@ -1,0 +1,23 @@
+# opus: W-364
+# phase: spec
+# round: 4
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-03T13:28:40.318Z
+# tree: tree:5c5cc4c3dee4c69856908c117955ba017c431453
+# brief: briefs/W-364.md blob:4ed52084503fe2c171af501706d228ca01d482b2
+# ticket: {"opus":"W-364","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":".worktrees/W-364/studio","head":"4bdefeda72809004160d00a36d37cd8f8adb0c60","brief":"4ed52084503fe2c171af501706d228ca01d482b2","at":"2026-11-03T13:28:26.105Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-364-spec/amend/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 names `packages/cli/src/guard.test.ts` in Files owned (W-494-b1's main-thread case, behaviour 2), the path W-498 held the build on; the eight paths opus/W-364 changes over master are all owned, and revision 2's series touches only owned paths (guard.ts, main.ts, w364.test.ts) — check: brief:42, brief:53, amend/prototype.mbox
+2. advisory — Default 3 changes and goes back to the Patron: a builder template cannot run `bisellium run --no-worktree` (probed, exit 2), and its confined `run --opus` route keeps no gate log and may not export `studio/`, so the ladder-runner runs the gate run as `bisellium run --sella producer --no-worktree` from the opus worktree, which the probe shows admitted with the session set — check: brief:139, amend/route-probe.out
+3. advisory — behaviour 5 closes the 11-03 suite contamination: a `verify` or `ci --opus` admitted inside a session drops BISELLIUM_SELLA, BISELLIUM_STUDIO and BISELLIUM_SESSION before its steps and gates run; the close.test.ts gate fails under a real producer session before it and passes after; its red is accepted and fails at its declared assertion, rows b1 to b4 pass on its red commit, and K22 to K24 are guarded; Default 9 is new for the Patron — check: brief:30, brief:87, brief:107, brief:145, amend/close-gate-pre.log, amend/close-gate-post.log, amend/red-accept.out, amend/declared.out, amend/kills.out
+4. advisory — all twenty-four kills are guarded at revision 2's tip; the gates and every listed file pass there, the studio check's one block being behaviour 5's red, which the build records; the Codex test check names the same three flips and no unnamed one; the full gate run inside a producer session, twice in a throwaway clone, lists no close row among its failures, and each run failed one row this change does not reach (W-279-b3 at load 10, passing alone and in a session; W-085 behaviour 8, which holds on the machine's live context reading and fails on master too) — check: amend/kills.out, amend/gates.out, amend/fixture-census.md, amend/ci-session.log, amend/w279-b3.out, amend/w085-next.out
+
+## Verdict
+
+passed — W-364 brief revision 2 at `studio/briefs/W-364.md`, signed by the architect (`claude-opus-5-5`, D-072, D-150 C): Files owned names guard.test.ts, Default 3's builder route moves to the producer's `bisellium run --no-worktree` gate run, and behaviour 5 makes a heavy run admitted inside a session run its steps and gates outside it; prototype `amend/prototype.mbox`, two patches over opus/W-364 4bdefeda; changed Default 3 and new Default 9 go to the Patron.
