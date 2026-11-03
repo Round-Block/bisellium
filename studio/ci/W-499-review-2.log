@@ -1,0 +1,24 @@
+# opus: W-499
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19eb9-0e59-7750-9d95-26ba2d5632fe
+# outcome: passed
+# at: 2026-11-03T06:13:06.883Z
+# tree: tree:8bcc9bf326f875e0646dd21de8fd4f58f33cc2a4
+# ui_input: ci/W-499-spec-18.log
+# design_digest: sha256:8c5b230b2aad8a836c0240a1cee4a622092f4909bb14f89b03d997716fbaa3b5
+# ticket: {"opus":"W-499","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-499/studio","head":"a8bde2dd02d35bf330db4b8f6c2eae5b90c70990","brief":"32c51b2c9476aa4e60f7b9164ba0e21e174f99f0","at":"2026-11-03T06:11:58.764Z"}
+
+## Findings
+1. advisory — apps/web/test/w499.test.ts:218 The new b4 row exercises only pending gates, while brief:75 also declares stale, failed, passed, and waived cases; the implementation handles them, but the regression row does not pin their wording or exclusion. [severity: S4] [class: tests×ruled-case-uncovered] — check: apps/web/test/w499.test.ts
+
+## UI input disposition
+The authoritative ui-lead passed the revised banner and single-source reason design; its two remaining concerns concern untouched b1 evidence and therefore are outside this delta. All eight attached desktop/phone images preserve navigation, hierarchy, containment, and intended Board overflow cues, though they show general screens rather than the changed open-drawer state.
+
+## Earlier findings
+
+## Verdict
+The Patron-directed banner and reason-source delta matches the re-signed brief and passes its gates; only the incomplete status-matrix regression row remains advisory.
+VERDICT: PASS
