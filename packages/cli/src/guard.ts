@@ -693,6 +693,88 @@ export function writeRefusal(filePath: string, cwd: string | undefined, main: bo
   return undefined;
 }
 
+/** W-364: the paths the main thread does not write by shell, relative to their checkout: the officina's gate logs and
+ *  opus records (the bisellium verbs write them), decisions and the handoff (a dispatched clerk) and the dossier (a
+ *  dispatched agent). A directory names itself and everything under it. */
+const RECORD_PATHS = ["studio/ci/", "studio/opera/", "studio/decisions/", DOSSIER, "docs/SESSION-HANDOFF.md"];
+
+/** W-364: the path relative to its checkout (`realOf`, `checkoutOf`) when it is one of `RECORD_PATHS` or under one;
+ *  undefined for any other path and for a path in no checkout. */
+function recordPath(path: string): string | undefined {
+  const real = realOf(path);
+  const top = checkoutOf(real);
+  if (!top) return undefined;
+  const rel = relative(top, real).split(sep).join("/");
+  return RECORD_PATHS.some((r) => (r.endsWith("/") ? rel === r.slice(0, -1) || rel.startsWith(r) : rel === r)) ? rel : undefined;
+}
+
+/** A redirection word: `>` or `>>` after an optional fd number, its target in the word or the next one (`commandSeq` breaks
+ *  a word at `&` and `|`, so `&>` reads as `>`, and `>|` is not seen: a limit). */
+const REDIRECT = /^\d*>>?([\s\S]*)$/;
+
+/** W-364: the words a simple command writes to, as the rule recognises them: each redirection's target (`REDIRECT`;
+ *  `commandSeq` breaks at `&`, so `>&2`'s fd is never read as one); `tee`'s operands; the target of `cp`, `mv` and `install` (`-t`, `-t<dir>` or
+ *  `--target-directory`, else the last of two or more operands); and with `-i` (in any short cluster) or `--in-place`,
+ *  `sed`'s file operands (the first operand is its script unless `-e`, `-f`, `--expression` or `--file` gives one).
+ *  `raw` is the command as written, `w` the words after `strip`'s prefixes. */
+function writeTargets(w: string[], raw: string[]): string[] {
+  const out: string[] = [];
+  const redirected = new Set<number>();
+  raw.forEach((x, i) => {
+    const m = REDIRECT.exec(x);
+    if (!m) return;
+    const t = m[1] === "" ? raw[i + 1] : m[1];
+    if (m[1] === "") redirected.add(i + 1);
+    if (t !== undefined) out.push(t);
+  });
+  const offset = raw.length - w.length;
+  const args = w.slice(1).filter((x, i) => !REDIRECT.test(x) && !redirected.has(offset + 1 + i));
+  const operands = args.filter((x) => !x.startsWith("-"));
+  const b = base(w[0]);
+  if (b === "tee") out.push(...operands);
+  if (b === "cp" || b === "mv" || b === "install") {
+    const t = args.findIndex((x) => x === "-t" || x === "--target-directory");
+    const joined = args.find((x) => /^-t./.test(x) || x.startsWith("--target-directory="));
+    if (t >= 0 && args[t + 1] !== undefined) out.push(args[t + 1]!);
+    else if (joined !== undefined) out.push(joined.startsWith("--") ? joined.slice(joined.indexOf("=") + 1) : joined.slice(2));
+    else if (operands.length >= 2) out.push(operands[operands.length - 1]!);
+  }
+  if (b === "sed" && args.some((x) => /^-[A-Za-z]*i/.test(x) || x === "--in-place" || x.startsWith("--in-place="))) {
+    const files: string[] = [];
+    let script = false;
+    for (let i = 0; i < args.length; i++) {
+      const x = args[i]!;
+      if (x === "-e" || x === "-f" || x === "--expression" || x === "--file") {
+        script = true;
+        i++;
+      } else if (/^-[A-Za-z]*[ef]/.test(x) || x.startsWith("--expression=") || x.startsWith("--file=")) script = true;
+      else if (!x.startsWith("-")) files.push(x);
+    }
+    out.push(...(script ? files : files.slice(1)));
+  }
+  return out;
+}
+
+/** W-364: the record path (`recordPath`) a command writes by shell (`writeTargets`), walked as `ladderWrite` walks (each
+ *  line without its comments and heredoc bodies); or a whole refusal line (`REFUSED`) for a script in a directory the
+ *  guard cannot know. A target built from a variable is not judged. */
+export function recordWrite(command: string, ctx: ShellContext): string | undefined {
+  return walk(
+    command,
+    ctx,
+    (w, raw, here) => {
+      for (const t of writeTargets(w, raw)) {
+        const path = wordPath(t, here);
+        const rel = path === undefined ? undefined : recordPath(path);
+        if (rel !== undefined) return rel;
+      }
+      return undefined;
+    },
+    0,
+    false,
+  );
+}
+
 /** SubagentStop: the in-flight shell and monitor tasks (`background_tasks`) whose id the stopping
  *  agent's own transcript names, so the agent started them. */
 export function ownLiveWork(input: Dict): string[] {
@@ -928,6 +1010,10 @@ export function guardRefusal(input: Dict): string | undefined {
     const heavy = main ? heavyRun(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (heavy?.startsWith(REFUSED)) return heavy;
     if (heavy) return `refused: \`${heavy}\` is a heavy run, run only by a dispatched agent (W-364): dispatch one with the command; it runs verify and ci --opus inside a \`bisellium run --sella <seat> …\` session`;
+    // W-364: the main thread's shell writes into the records, the handoff and the dossier (an early warning: the verbs own the records)
+    const record = main ? recordWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
+    if (record?.startsWith(REFUSED)) return record;
+    if (record) return `refused: the orchestrator session does not write \`${record}\` by shell (W-364): the bisellium verbs write studio/ci/ and studio/opera/, a dispatched clerk the decisions and the handoff, a dispatched agent the dossier`;
     // W-496: background syntax in a foreground call, any thread's (a jq PreToolUse hook matched an `&` anywhere before)
     const form = args["run_in_background"] === true ? undefined : backgroundForm(command);
     if (form) return `refused: \`${form}\` puts work in the background, where it dies when this Bash call returns (W-496): run the long command as its own Bash call with the run_in_background parameter set to true instead`;
