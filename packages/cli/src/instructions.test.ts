@@ -230,22 +230,16 @@ withTempCopy(join(repo, "studio"), (dir) => {
       const syncRequested = 'test ! -e "$CLAUDE_PROJECT_DIR/.git/bisellium/sync" || bisellium hook-event sync --studio studio';
       const isSync = (c: string): boolean => c === syncCommand || c === syncRequested;
       report("settings.timeouts-all-2", allTimeouts.length > 0 && allTimeouts.every((t, i) => t === (isSync(allCommands[i] ?? "") ? 60 : 2)), JSON.stringify(allTimeouts));
-      // The one non-bisellium hook: the PreToolUse background guard, pinned exactly.
-      const bgGuardCommand = "jq -e '.tool_input.run_in_background != true and (.tool_input.command // \"\" | gsub(\"\\\"(\\\\\\\\.|[^\\\"\\\\\\\\])*\\\"|\\\\x27[^\\\\x27]*\\\\x27\"; \"Q\") | test(\"(^|\\\\s)&(?![&>])|(?<![&>|<\\\\\\\\])&(?=\\\\s|$|[;)}])|(^|[^-\\\\w./])(nohup|setsid|disown)(?![-\\\\w.])\"))' >/dev/null 2>&1 && { echo 'Blocked: &, nohup, setsid and disown die when this Bash call returns. Run the long command as its own Bash call with the run_in_background parameter set to true instead.' >&2; exit 2; }; exit 0";
-      const bisellium = allCommands.filter((c) => c !== bgGuardCommand && c !== syncRequested);
+      const bisellium = allCommands.filter((c) => c !== syncRequested);
       report(
         "settings.commands-carry-studio-no-sella",
         bisellium.length > 0 && bisellium.every((c) => /^bisellium /.test(c) && c.includes("--studio studio") && !c.includes("--sella")),
         JSON.stringify(bisellium),
       );
       const pre = hooks?.["PreToolUse"] as { matcher?: string; hooks: { type?: string; command: string; timeout: number }[] }[] | undefined;
-      const preHook = pre?.[0]?.hooks[0];
-      report(
-        "settings.pretooluse-bg-guard",
-        pre?.length === 2 && pre[0]?.matcher === "Bash" && pre[0].hooks.length === 1 && preHook?.type === "command" && preHook.timeout === 2 && preHook.command === bgGuardCommand,
-        JSON.stringify(pre),
-      );
-      const guardGroup = pre?.[1];
+      // W-496: the background check moved into the guard, so PreToolUse holds the guard's group alone.
+      report("settings.pretooluse-one-group", pre?.length === 1, JSON.stringify(pre));
+      const guardGroup = pre?.[0];
       report(
         "settings.pretooluse-guard",
         guardGroup?.matcher === "Bash|Write|Edit|NotebookEdit" && guardGroup.hooks.length === 1 && guardGroup.hooks[0]?.command === "bisellium hook-event guard --studio studio",

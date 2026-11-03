@@ -84,7 +84,9 @@ refuse: wired for `PreToolUse` on `Bash|Write|Edit|NotebookEdit` and for
 `SubagentStop`, it exits 2 with one stderr line (Claude Code refuses the tool
 call, or keeps the subagent running, and shows the line), and exits 0 on
 anything else, an unreadable input or its own error included (deny-only,
-fail-open). It refuses: a hand ladder record write (`branch`, `ready`, `done`,
+fail-open). It refuses: in a foreground Bash call, any thread's, a trailing or separating `&` (not `&&`, `>&2`, `2>&1`,
+`&>` or `|&`) or `nohup`, `setsid` or `disown` as a command, read outside quotes, heredoc bodies and comments (W-496,
+which retired the jq PreToolUse hook that matched an `&` anywhere); a hand ladder record write (`branch`, `ready`, `done`,
 `merge`, `review`, `verdict` but at `--phase handoff`, and `next --perform`
 with `--chain`, with `--expect` naming one of them, `spec` or `review`, or with
 no `--expect`), direct or in a script file the command runs (read up to 256 KiB), from the main thread, a
