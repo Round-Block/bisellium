@@ -152,6 +152,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "process.prompt_templates",
   "process.review_tier",
   "process.tdd",
+  "queue.shape",
   "receipt.shape",
   "retro.daily.missing",
   "retro.overdue",

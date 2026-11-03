@@ -1,0 +1,20 @@
+# opus: W-333
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a159-e07d-7ec0-87a8-25ec29eb3c60
+# outcome: failed
+# at: 2026-11-03T12:23:48.636Z
+# tree: tree:48f3314cf82f40fde55b21269c4e273d5f9cdcaa
+# brief: briefs/W-333.md blob:dd6bb690fa2d63beb23e3f5f33c060385b0e6194
+# ticket: {"opus":"W-333","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"905a1239cacf226f44bddfdf24c652340ae6b0e2","brief":"dd6bb690fa2d63beb23e3f5f33c060385b0e6194","at":"2026-11-03T12:23:46.469Z"}
+
+## Findings
+1. blocking — brief:20 A plausible clerk mistake can assign two lanes to two entries both marked `next_ts`; `readQueue` accepts this and `laneLines` reports both busy, so `check` and `next --all` fail open on the stated one-at-a-time rule, while W-333-b2 covers only one held marked entry. Replace brief:20’s final sentence with: “A malformed file prints one held line and the run exits 1; an idle lane does not fail the run. Limit: this prevents an idle lane from taking another marked `next_ts` entry, but does not reject a file in which multiple lanes already hold marked `next_ts` entries.” [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w333.test.ts W-333-b2
+2. advisory — brief:30 The promise that every skipped entry is named exceeds `runAll`’s reused 1000-character line cap; a valid long queue can have its skipped tail clipped. Replace “for each entry above the take” with “for entries above the take until `runAll`’s reused 1000-character line cap; a longer skipped tail is clipped”. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w333.test.ts W-333-b2
+3. advisory — brief:68 The stated queue-id domain admits a leading digit, but `QUEUE_ID` requires the first character to be a lower-case letter. Replace “a queue id of lower-case letters, digits and hyphens” with “a queue id beginning with a lower-case letter, followed by lower-case letters, digits or hyphens”. [severity: S2] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w333.test.ts W-333-b1
+
+## Verdict
+The accepted domain needs one design-changing limit for pre-existing concurrent `next_ts` assignments; the remaining promise and domain mismatches are advisory.
+VERDICT: FAIL

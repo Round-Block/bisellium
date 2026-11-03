@@ -24,7 +24,13 @@ npm run bisellium -- next --all [--studio <dir>] [--repo <dir>]
 as `next <opus>` derives it before the dispatch gate (so no budget or handover hold and no step health) and the traditio
 read from the record that gate reads, then (W-404, when the officina has a `milestones.yml`) one line `milestones: <k> of
 <n> exits met, <p>% by weight · <id> met|open: <exit>; path <ids>` per milestone, as `bisellium milestones` reports it
-(a malformed `milestones.yml` or an unreadable opus record prints `milestones: held · why: …` and exits 1), then `open: <n>`. It writes no ticket, marker or step log. A record that cannot be read or carries no
+(a malformed `milestones.yml` or an unreadable opus record prints `milestones: held · why: …` and exits 1), then (W-333, when the
+officina has a `queue.yml`) one line per lane, by queue in file order: `lane: <queue> <lane> · <opus> <state>` for a lane
+holding an opus that is not done or halted, else `lane: <queue> <lane> · idle[ (<opus> <state>)] · takes <opus> (#<rank>)`
+or `· nothing to take`, then `· skipped <opus> (#<rank>): <why>, …` for the entries passed over above it, until `runAll`'s 1000-character line cap (a longer skipped tail is clipped; held `in <lane>`,
+`taken by <lane>` earlier in the run, a state other than greenlit up to review, or `next.ts with <lane>'s <opus>` while a
+lane holds or takes a `next_ts` entry); an idle lane does not fail the run, a malformed `queue.yml` prints `queue: held ·
+why: …` and exits 1, then `open: <n>`. It writes no ticket, marker or step log. A record that cannot be read or carries no
 lifecycle state prints `next: <opus> unreadable`; a record in neither `master` nor `opus/<opus>` (which `next <opus>`
 refuses as unknown), a present traditio without string `sella`, `stage`, `next` and `blocked_on` and an ISO `at`, and a
 derivation that throws each print `next: <opus> failed`; a held derivation prints its line as is. Any of these exits 1

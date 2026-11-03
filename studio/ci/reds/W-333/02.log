@@ -1,0 +1,55 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-333-b2\s --import tsx packages/cli/src/w333.test.ts
+# exit: 1
+# at: 2026-11-03T12:38:19.813Z
+# sella: builder.W-333
+# tree: tree:0dad9468862934c28b686963c731a8ec4d950014
+# ticket: {"opus":"W-333","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-333/studio","head":"8c2d69eb7318687395db08660fd27e5c235655f1","brief":"b1d5ae337d4654bcce52bbc0bfb00eba94a20399","at":"2026-11-03T12:38:18.645Z"}
+
+TAP version 13
+# Subtest: W-333-b2 behaviour 2: next --all prints one line per lane by queue, an idle lane naming the highest entry it could start, and writes nothing
+not ok 1 - W-333-b2 behaviour 2: next --all prints one line per lane by queue, an idle lane naming the highest entry it could start, and writes nothing
+  ---
+  duration_ms: 385.590956
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-333/packages/cli/src/w333.test.ts:41:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    the lane lines, by queue
+    + actual - expected
+    
+    + []
+    - [
+    -   'lane: engineering E1 · W-1 greenlit',
+    -   "lane: engineering E2 · idle · takes W-4 (#4) · skipped W-1 (#1): in E1, W-2 (#2): next.ts with E1's W-1, W-3 (#3): done",
+    -   'lane: ui UI1 · idle (W-5 done) · takes W-6 (#2) · skipped W-5 (#1): done',
+    -   'lane: ui UI2 · idle · takes W-7 (#3) · skipped W-5 (#1): done, W-6 (#2): taken by UI1',
+    -   'lane: ui UI3 · idle · nothing to take · skipped W-5 (#1): done, W-6 (#2): taken by UI1, W-7 (#3): taken by UI2'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'lane: engineering E1 · W-1 greenlit'
+    1: "lane: engineering E2 · idle · takes W-4 (#4) · skipped W-1 (#1): in E1, W-2 (#2): next.ts with E1's W-1, W-3 (#3): done"
+    2: 'lane: ui UI1 · idle (W-5 done) · takes W-6 (#2) · skipped W-5 (#1): done'
+    3: 'lane: ui UI2 · idle · takes W-7 (#3) · skipped W-5 (#1): done, W-6 (#2): taken by UI1'
+    4: 'lane: ui UI3 · idle · nothing to take · skipped W-5 (#1): done, W-6 (#2): taken by UI1, W-7 (#3): taken by UI2'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-333/packages/cli/src/w333.test.ts:184:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 393.616557

@@ -42,6 +42,7 @@ import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisell
 import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
+import { laneLines, readQueue } from "./queue.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -3315,6 +3316,19 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
       failed = true;
       lines.push(`next: ${id} failed · why: ${one((e as Error).message)}`);
     }
+  }
+  // W-333 (W-478 folded): with a queue.yml, one line per lane by queue, an idle lane naming the entry it would take;
+  // a malformed file prints one held line and the run exits 1, as a held milestones line does
+  const queue = readQueue(studioAbs);
+  if (queue.kind === "held") {
+    failed = true;
+    lines.push(`queue: held · why: ${queue.why}`);
+  } else if (queue.kind === "ok") {
+    const src = fsSrc(studioAbs);
+    lines.push(...laneLines(queue.file, (opus) => {
+      const s = recordOf(src, opus)?.["state"];
+      return typeof s === "string" ? s : undefined;
+    }));
   }
   const milestones = milestonesLine(studioAbs, repo, new Date());
   if (milestones !== undefined) {
