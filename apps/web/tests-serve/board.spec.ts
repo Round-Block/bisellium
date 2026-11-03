@@ -735,7 +735,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     await served?.close();
   });
 
-  test("a 300-character mixed title clamps to two lines while a short progress-text card remains 80px", async ({ page }) => {
+  test("a 300-character mixed title clamps to two lines while a short progress-text card remains 96px", async ({ page }) => {
     served = await startServed("w087-title-bounds");
     const prose = "Several ordinary words must wrap before this unbroken token ";
     const title = prose + "x".repeat(300 - prose.length);
@@ -792,7 +792,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     expect(containment.metaInside).toBe(true);
 
     const shortCard = page.locator('.board__card[data-card-id="W-005"]');
-    expect((await shortCard.boundingBox())?.height).toBe(80);
+    expect((await shortCard.boundingBox())?.height).toBe(96);
   });
 });
 
