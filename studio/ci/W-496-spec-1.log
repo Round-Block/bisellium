@@ -1,0 +1,24 @@
+# opus: W-496
+# phase: spec
+# round: 1
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-02T23:40:43.389Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-496.md blob:84a625a1bfbe69c556777215c82c41445d1830a9
+# ticket: {"opus":"W-496","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"84a625a1bfbe69c556777215c82c41445d1830a9","at":"2026-11-02T23:40:42.708Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-496-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the jq PreToolUse hook refuses an `&` beside a blank anywhere after cutting quoted strings, and the word nohup, setsid or disown anywhere; it does not know heredocs, so the 11-01 heredoc holding `&middot;` and `git grep -e nohup` are refused while `sleep 600&echo` runs; red-b1 shows master's guard letting `sleep 600 &` run — check: jq-claims.out, red-b1.log, brief:15
+2. advisory — the design moves the check into `bisellium hook-event guard` (the only hook target a hook may run, CLAUDE.md), as `backgroundForm` over a bash-shaped scan, after the main thread's ladder-write refusal, and drops the jq group from `.claude/settings.json`; the rows are real node:test rows of the guard — check: brief:17, brief:19, brief:22
+3. advisory — three behaviours, red order one at a time: each red is accepted and fails at its declared assertion, each green passes, twenty-seven kills are all guarded, and the ledger passes the writer — check: red-accept.out, declared.out, kills.out, ledger-check.out
+4. advisory — existing rows flip on the change alone: instructions.test.ts's settings.pretooluse-bg-guard and settings.pretooluse-guard, and guard.test.ts's W-310-b5 (its fixture indexed PreToolUse group 1); each is adapted and every listed file, lint, format:check, typecheck and both officina checks pass on the tip; check.test.ts's two W-089 rows fail only at a detached HEAD, as on master — check: flips.out, detached-baseline.out, gates-proto.out, fixture-census.md
+5. advisory — one code-owned path, `.claude/settings.json`, so the Patron merges; the check is live once the PATH install has the merge, a stated limit — check: brief:30, brief:3
+
+## Verdict
+
+passed — drafted and prototyped by the architect and signed by the ops-lead seat (`claude-opus-5-5`, spec_seats, D-150 C), brief revision 1 at `studio/briefs/W-496.md`: three behaviours, the guard refuses a foreground Bash call's real background syntax only, reads quotes, comments and heredoc bodies as text, and replaces the jq hook; prototype `prototype.mbox` over master a1ec75f7; one code-owned path, `.claude/settings.json`.
