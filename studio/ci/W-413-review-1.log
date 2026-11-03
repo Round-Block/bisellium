@@ -1,0 +1,23 @@
+# opus: W-413
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19fef-cf9e-7331-b906-2e8d0acdf906
+# outcome: passed
+# at: 2026-11-03T05:45:57.147Z
+# tree: tree:a48288a074e1a23cc3650b16f351a8b090c3a1a7
+# ui_input: ci/W-413-spec-20.log
+# design_digest: sha256:dd10e96d02eaf65772357ee0c57b606a66273e289a570fca8b146b5970cfe30c
+# ticket: {"opus":"W-413","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-413/studio","head":"7f796f6f26832a7739c007af3169ad4cd67098af","brief":"24c53955fcbb56590444f3f5f2a0521fcd36d6cc","at":"2026-11-03T05:44:13.567Z"}
+
+## Findings
+1. advisory — apps/web/tests-serve/w413.spec.ts:141 The drawer-close assertion checks text but not restored visibility, so it can pass while the scope key remains hidden. [severity: S4] [class: tests×assertion-satisfied-by-the-wrong-cause] — check: apps/web/tests-serve/w413.spec.ts: add `toBeVisible()` after closing the 640px drawer
+2. advisory — apps/web/src/components/w025.css:2869 At the excluded 900px form, the 540px drawer leaves a 360px Board rail, but the `max-width: 899px` rule leaves the scope key visible rather than suppressing it based on available rail width. [severity: S3] [class: ui×breakpoint-does-not-track-available-rail] — check: none: a served drawer row at exactly 900px
+
+## UI input disposition
+The authoritative ui-lead input passed the design while retaining these two advisories. All eight images were inspected: the Board’s shared-WIP key, local counts, policy lines, neutral cap treatment, filter, overflow cues and responsive hierarchy are legible at 1280 and 390; the paired Inbox, Seats and Officina captures show no regression or unreachable content affecting this opus. The images therefore support a passing verdict.
+
+## Verdict
+All four declared behaviors are correct within the brief’s accepted domain, the source and evidence boundaries hold, and neither advisory is blocking.
+VERDICT: PASS
