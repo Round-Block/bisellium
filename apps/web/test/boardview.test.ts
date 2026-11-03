@@ -304,8 +304,8 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
   const withoutPetitio = renderToStaticMarkup(BoardDrawer({ detail: detail({ waitingOn: { gate: "owner", name: "Owner decision" } }), onClose: () => undefined }));
   check(6, "BoardDrawer: no petitio — states no question recorded", withoutPetitio.includes("Waiting on you") && withoutPetitio.includes("no question recorded."), withoutPetitio);
   check(6, "BoardDrawer: no petitio — renders no Inbox link", !withoutPetitio.includes("href=\"#/inbox\""), withoutPetitio);
-  const bareBanner = (withoutPetitio.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-  check(6, "BoardDrawer: no petitio — banner reads exactly the no-question copy, with no anchor and no gate name", bareBanner === "Waiting on you — no question recorded." && !/<a[\s>]/.test(withoutPetitio.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "") && !bareBanner.includes("Owner decision"), withoutPetitio);
+  const bannerMarkup = withoutPetitio.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  check(6, "BoardDrawer: no petitio — banner reads exactly the no-question copy, with no anchor and no gate name", /^<span class="board-drawer__banner-label">Waiting on you<\/span>\s+—\s+<span class="board-drawer__banner-text">no question recorded\.<\/span>$/.test(bannerMarkup) && !bannerMarkup.includes("<a") && !bannerMarkup.includes("Owner decision"), withoutPetitio);
 }
 
 // One gate row per DECLARED probatio; status is a literal WORD in the text
