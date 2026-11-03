@@ -1,0 +1,20 @@
+# opus: W-490
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19eb5-63b5-7160-a3f7-abed0526c28c
+# outcome: passed
+# at: 2026-11-03T00:04:57.112Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-490.md blob:9de1494ee7eda177d12b5305085ef9b9476e19a1
+# ticket: {"opus":"W-490","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"9de1494ee7eda177d12b5305085ef9b9476e19a1","at":"2026-11-03T00:04:53.219Z"}
+
+## Findings
+1. advisory — brief:73 [severity: S2] `trapLines` only selects lines; it never rejects input or emits a finding. Replace brief:73’s rejector with “`sessionHandoffFindings` (specified), after `trapLines` retains each nonblank in-item line: `process.handoff.trap` when the line grammar rejects it.” [class: spec×input-without-named-rejector] — check: packages/cli/src/rules/handoff-traps.test.ts
+2. advisory — brief:32 [severity: S2] With multiple Known traps items, the duplicate-item branch emits one `process.handoff.input` and skips every per-line check, so the universal per-line promise is too broad. Replace its opening with “Promise marker: when exactly one Known traps item exists, check blocks each invalid line as specified; when more than one exists, `sessionHandoffFindings` emits `process.handoff.input` at the second and does not inspect either item’s lines”; retain the existing pins and reused-code limit. [class: interface×validation-order-masks-errors] — check: packages/cli/src/rules/handoff-traps.test.ts
+3. advisory — brief:36 [severity: S2] The cap is likewise skipped when a second Known traps item exists. Replace its opening with “Promise cap: when exactly one Known traps item exists, more than 12 nonblank lines emit `process.handoff.traps`; with multiple items, the Known-traps branch guarantees only `process.handoff.input` at the second and no cap finding”; retain the existing pins and whole-file limit. [class: interface×validation-order-masks-errors] — check: packages/cli/src/rules/handoff-traps.test.ts
+
+## Verdict
+The design is feasible and fail-closed, with three advisory promise-boundary corrections for the build.
+VERDICT: PASS
