@@ -180,3 +180,60 @@ test("W-364-b3 behaviour 3: the guard refuses the main thread's Write, Edit and 
   for (const p of [join(root, "docs/design/notes.md"), join(root, "docs/ADOPTION.md"), join(root, "studio/briefs/W-1.md")])
     assert.equal((await guard(write(p, root))).code, 0, `main thread allowed: ${p}`);
 });
+
+const RECORD = /does not write `([^`]+)` by shell \(W-364\)/;
+
+test("W-364-b4 behaviour 4: the guard refuses the main thread's shell writes into the records, the handoff and the dossier", async () => {
+  const root = checkout();
+  const script = join(root, "..", "write log.sh");
+  writeFileSync(script, "#!/bin/sh\necho done > studio/ci/W-1-tests.log\n");
+  const refused: [string, string][] = [
+    ["echo x > studio/ci/W-1-tests.log", "studio/ci/W-1-tests.log"],
+    ["npm test >studio/ci/W-1-tests.log 2>&1", "studio/ci/W-1-tests.log"],
+    ["cat > studio/opera/W-1.md <<'EOF'\n---\nid: W-1\n---\nEOF", "studio/opera/W-1.md"],
+    ["printf '%s\\n' x >> docs/SESSION-HANDOFF.md", "docs/SESSION-HANDOFF.md"],
+    ["echo x 2>>studio/decisions/D-9.md", "studio/decisions/D-9.md"],
+    ["make &> studio/ci/make.log", "studio/ci/make.log"],
+    ["echo x 1> docs/design/dossier/body.html", "docs/design/dossier/body.html"],
+    ["tee -a studio/decisions/D-9.md < /tmp/d.md", "studio/decisions/D-9.md"],
+    ["cp /tmp/body.html docs/design/dossier/body.html", "docs/design/dossier/body.html"],
+    ["mv /tmp/W-1.md studio/opera/", "studio/opera"],
+    ["install -m 644 /tmp/x.log studio/ci/x.log", "studio/ci/x.log"],
+    ["cp /tmp/x.log studio/ci/x.log > /tmp/cp.out", "studio/ci/x.log"],
+    ["cp -t studio/ci /tmp/a.log /tmp/b.log", "studio/ci"],
+    ["cp --target-directory=docs/design/dossier /tmp/a.html", "docs/design/dossier"],
+    ["sed -i 's/building/review/' studio/opera/W-1.md", "studio/opera/W-1.md"],
+    ["sed -i.bak -e 's/a/b/' docs/SESSION-HANDOFF.md", "docs/SESSION-HANDOFF.md"],
+    [`echo x > ${root}/studio/ci/abs.log`, "studio/ci/abs.log"],
+    ["cd studio && echo x > ci/rel.log", "studio/ci/rel.log"],
+    ["bash -c 'echo x > studio/ci/inner.log'", "studio/ci/inner.log"],
+    [`sh '${script}'`, "studio/ci/W-1-tests.log"],
+    ["echo x > .worktrees/W-1/studio/ci/W-1-lint.log", "studio/ci/W-1-lint.log"],
+  ];
+  const first = await guard(bash(refused[0]![0], root));
+  assert.equal(first.code, 2, "main thread refused: echo x > studio/ci/W-1-tests.log");
+  assert.match(first.err, RECORD, "the refusal names the path written");
+  assert.match(first.err, /the bisellium verbs write studio\/ci\/ and studio\/opera\/, a dispatched clerk the decisions and the handoff, a dispatched agent the dossier/, "the refusal names who writes each");
+  for (const [c, rel] of refused) {
+    const r = await guard(bash(c, root));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.equal(RECORD.exec(r.err)?.[1]?.replace(/ \(in .*$/, ""), rel, `the refusal names ${rel}: ${c}`);
+    assert.equal((await guard(bash(c, root, BUILDER))).code, 0, `a subagent's shell write is not judged: ${c}`);
+  }
+  const allowed = [
+    "cat studio/opera/W-1.md",
+    "grep -h tree: studio/ci/*.log > /tmp/out.txt",
+    "echo x > studio/briefs/W-1.md",
+    "cp studio/ci/W-1-tests.log /tmp/",
+    "sed -n 1,5p studio/opera/W-1.md",
+    "sed 's/a/b/' studio/opera/W-1.md > /tmp/o.md",
+    "cat > /tmp/note.md <<'EOF'\necho x > studio/ci/W-1-tests.log\nEOF",
+    'echo "a > studio/ci/x.log"',
+    "echo x >&2",
+    "npm test 2>&1 | tail -5",
+    "echo x > $EV/studio/ci/x.log",
+    `echo x > ${join(tmp(), "studio/ci/x.log")}`,
+    "npm run -s bisellium -- handoff --opus W-1 --sella producer --next n --studio studio",
+  ];
+  for (const c of allowed) assert.equal((await guard(bash(c, root))).code, 0, `allowed: ${c}`);
+});
