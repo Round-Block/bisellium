@@ -712,7 +712,11 @@ function recordPath(path: string): string | undefined {
  *  a word at `&` and `|`, so `&>` reads as `>`, and `>|` is not seen: a limit). */
 const REDIRECT = /^\d*>>?([\s\S]*)$/;
 
-/** W-364: the words a simple command writes to, as the rule recognises them: each redirection's target (`REDIRECT`;
+/** W-364: an input redirection word: `<`, `<<<` or `<&` after an optional fd number (`<>` opens for writing and is not one), its
+ *  source in the word or the next one. It writes nothing and is not an operand of the command. */
+const INPUT = /^\d*<(?!>)<{0,2}&?([\s\S]*)$/;
+
+/** W-364: the words a simple command writes to, as the rule recognises them: each output redirection's target (`REDIRECT`; an input redirection, `INPUT`, is neither a target nor an operand;
  *  `commandSeq` breaks at `&`, so `>&2`'s fd is never read as one); `tee`'s operands; the target of `cp`, `mv` and `install` (`-t`, `-t<dir>` or
  *  `--target-directory`, else the last of two or more operands); and with `-i` (in any short cluster) or `--in-place`,
  *  `sed`'s file operands (the first operand is its script unless `-e`, `-f`, `--expression` or `--file` gives one).
@@ -728,7 +732,10 @@ function writeTargets(w: string[], raw: string[]): string[] {
     if (t !== undefined) out.push(t);
   });
   const offset = raw.length - w.length;
-  const args = w.slice(1).filter((x, i) => !REDIRECT.test(x) && !redirected.has(offset + 1 + i));
+  w.forEach((x, i) => {
+    if (INPUT.exec(x)?.[1] === "") redirected.add(offset + i + 1);
+  });
+  const args = w.slice(1).filter((x, i) => !REDIRECT.test(x) && !INPUT.test(x) && !redirected.has(offset + 1 + i));
   const operands = args.filter((x) => !x.startsWith("-"));
   const b = base(w[0]);
   if (b === "tee") out.push(...operands);
