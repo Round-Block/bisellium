@@ -414,6 +414,8 @@ function shellCode(line: string): { code: string; amp: boolean } {
   let code = "";
   let amp = false;
   const closers: string[] = [];
+  /** True inside a word: a `#` there is a character, not a comment (a quote, an escape or an expansion is part of the word). */
+  let word = false;
   const docs: { delim: string; tabs: boolean }[] = [];
   /** The index of the quote closing the one at `i` (or the last index), skipping a backslash's next character when `escapes`. */
   const close = (i: number, escapes: boolean): number => {
@@ -428,15 +430,18 @@ function shellCode(line: string): { code: string; amp: boolean } {
       const open = c === "$" ? i + 1 : i;
       const end = close(open, c !== "'");
       if (closers.length === 0) code += SKIPPED;
+      word = true;
       i = end;
     } else if (c === "\\") {
       if (closers.length === 0) code += line[i + 1] === "\n" ? " " : SKIPPED;
+      if (line[i + 1] !== "\n") word = true;
       i++;
-    } else if (c === "#" && closers.length === 0 && " \t\n;&|()<>".includes(prev)) {
+    } else if (c === "#" && closers.length === 0 && !word) {
       const j = line.indexOf("\n", i);
       i = (j < 0 ? line.length : j) - 1;
     } else if (c === "\n" && docs.length > 0) {
       code += c;
+      word = false;
       let k = i + 1;
       for (const d of docs.splice(0)) {
         while (k < line.length) {
@@ -465,25 +470,30 @@ function shellCode(line: string): { code: string; amp: boolean } {
       }
       if (delim !== "") docs.push({ delim, tabs });
       code += "<<" + SKIPPED;
+      word = delim !== "";
       i = j - 1;
     } else {
       if (c === "$" && line[i + 1] === "{") {
         if (closers.length === 0) code += SKIPPED;
         closers.push("}");
+        word = true;
         i++;
         continue;
       }
       if (c === "$" && line.startsWith("((", i + 1)) {
         if (closers.length === 0) code += SKIPPED;
         closers.push(")", ")");
+        word = true;
         i += 2;
         continue;
       }
       if (closers.length > 0) {
         if (c === "(") closers.push(")");
         else if (c === closers[closers.length - 1]) closers.pop();
+        word = true;
         continue;
       }
+      word = !" \t\n;&|()<>".includes(c);
       if (c === "&") {
         if (line[i + 1] === "&") {
           code += "&&";
