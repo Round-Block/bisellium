@@ -1,0 +1,25 @@
+# opus: W-490
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-03T00:00:23.665Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-490.md blob:9de1494ee7eda177d12b5305085ef9b9476e19a1
+# ticket: {"opus":"W-490","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"9de1494ee7eda177d12b5305085ef9b9476e19a1","at":"2026-11-03T00:00:15.299Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-490-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — master's Known traps block (Boot step 4) holds 13 lines and nothing retires one: one opens `Standing (W-323 pattern):`, one `Until W-239:`, four carry an inline `until W-<n>` or `Until filed:`, the rest name nothing; with the rule alone over master a1ec75f7, check blocks 12 lines and the 13-line item — check: flips.out, brief:30
+2. advisory — the design is one marker per line, `- Standing: ` or `- Until W-<n>: `, read inside the existing sessionHandoffFindings: the item runs to the next numbered item or heading with blank lines skipped, a second retirement in a line's text is refused so "Until filed" cannot survive, a done opus's line is refused, and the item is capped at 12; next's done step already marks the finishing opus done before reading the handoff (handoffHold, reused), so the lane that lands the fix retires its trap — check: brief:19, brief:20, brief:21, brief:22, brief:26
+3. advisory — three behaviours, red order one at a time: each red is accepted and fails at its declared assertion, each green passes, thirteen kills are all guarded, the admission is clean, and the ledger passes the writer — check: red-accept.out, declared.out, kills.out, admission.out, ledger-check.out
+4. advisory — behaviour 1's commit re-marks the real block to 12 lines (traps-master.txt to traps-tip.txt): the new-opus-record line joins Records PRs, three inline notes become the markers Until W-372, Until W-283 and Until W-371, and the one "Until filed" clause leaves for the producer to file; check studio --repo . passes on the tip, and lint, format:check, typecheck and every handoff-fixture test file pass whole — check: gates-proto.out, brief:99
+5. advisory — the Codex test check lists no flip and 37 must-stay-green rows (W-186-b1 and W-299-b1, the next-done and next-ladder done performs through handoffHold, W-215-b4's handoff packet, the real-studio checks in check.test.ts, rules.test.ts and w267.test.ts, the rule-id harvest, doc-cap, status-slate row 8, and three test:suite readers); every handoff fixture has no Known traps item and so is outside the rule, and each named file passes whole on the tip — check: fixture-census.md, gates-proto.out, gates-census.out, brief:107
+6. advisory — handoff-check.mjs on the tip fails only on its own non-block checks (a done Queue id, two in-flight lines), the same three as on master; they are not this opus's — check: flips.out, gates-proto.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-490.md`: three behaviours, each Known traps line names its retiring opus or is Standing, a line whose opus is done is refused, and the item is capped at 12 lines; prototype `prototype.mbox` over master a1ec75f7; the opus's own commit re-marks master's block to pass; no code-owned path.
