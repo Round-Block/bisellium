@@ -170,3 +170,21 @@ test("W-413-b3 behaviour 3: every lifecycle column names its entry and exit rule
   const custom = boardModel({ ...officina(), lifecycle: customLifecycle }, []);
   assert.deepEqual([column(custom, "archived").entryRule, column(custom, "archived").exitRule], ["In this stage.", "Moves on when its recorded condition is met."], "a custom phase gets a plain fallback without exposing its configured state name");
 });
+
+test("W-413-b4 behaviour 4: a Board filter reports visible cards against the unchanged total", () => {
+  const model = boardModel(officina(3), [
+    opus("W-1", "greenlit"),
+    opus("W-2", "building"),
+    opus("W-3", "building", { blocked: true }),
+    opus("W-4", "halted", { blocked: true }),
+  ], undefined, { filter: "blocked", now: NOW });
+  assert.deepEqual(
+    [column(model, "planned"), column(model, "in_progress"), column(model, "halted")].map((entry) => [entry.cards.length, entry.totalCount, entry.blockedCount]),
+    [[0, 1, 0], [1, 2, 1], [1, 1, 1]],
+    "the filter hides all, some and none while total and blocked counts stay fixed",
+  );
+  const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model, focusedByColumn: {}, onSelectCard: () => undefined, filter: "blocked" }));
+  assert.match(html, /aria-label="Choose which tasks to show"[^>]*><option value="all">All tasks<\/option><option value="blocked" selected="">Blocked tasks<\/option>/, "the selected task filter is visible and reversible in plain words");
+  assert.match(html, />Showing 1 of 2 tasks</, "filtered columns state the visible and total task counts");
+  assert.match(html, /data-column-id="in_progress"[\s\S]*?>Showing 1 of 2 tasks<[\s\S]*?>1 blocked</, "filtering keeps the column's own total and blocked rows");
+});
