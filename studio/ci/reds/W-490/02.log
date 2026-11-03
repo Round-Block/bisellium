@@ -1,0 +1,52 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-490-b2\s --import tsx packages/cli/src/rules/handoff-traps.test.ts
+# exit: 1
+# at: 2026-11-03T02:42:33.431Z
+# sella: builder.W-490
+# tree: tree:b4af6fef1859d4381b2873351a3c3689be745502
+# ticket: {"opus":"W-490","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-490/studio","head":"6e5b3642252b1ba87bedab66a1ad15f2288219d8","brief":"9de1494ee7eda177d12b5305085ef9b9476e19a1","at":"2026-11-03T02:42:28.529Z"}
+
+TAP version 13
+# Subtest: W-490-b2 behaviour 2: a Known traps line whose named opus is done is refused
+not ok 1 - W-490-b2 behaviour 2: a Known traps line whose named opus is done is refused
+  ---
+  duration_ms: 7.813443
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-490/packages/cli/src/rules/handoff-traps.test.ts:8:463'
+  failureType: 'testCodeFailure'
+  error: |-
+    an Until line naming a done opus is refused
+    + actual - expected
+    
+    + []
+    - [
+    -   [
+    -     'process.handoff.trap',
+    -     'docs/SESSION-HANDOFF.md:8'
+    -   ]
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'process.handoff.trap'
+      1: 'docs/SESSION-HANDOFF.md:8'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-490/packages/cli/src/rules/handoff-traps.test.ts:93:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15.471187
