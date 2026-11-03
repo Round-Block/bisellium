@@ -95,7 +95,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   const metaMatch = /<span class="board__card-meta">(.*?)<\/span>\s*<\/(?:div|span)>/.exec(html);
   check(5, "BoardView: sella and state share one meta line", !!metaMatch && metaMatch[1]!.includes("builder-a") && metaMatch[1]!.includes("building"), html);
   const rows = (html.match(/class="board__card-title"/g) ?? []).length + (html.match(/class="board__card-meta"/g) ?? []).length;
-  check(5, "BoardView: card keeps one title and one meta line beside gate progress", rows === 2 && html.includes("1/2 · next: Review"), html);
+  check(5, "BoardView: card keeps one title and one meta line beside check progress", rows === 2 && html.includes("1 of 2 checks complete — Review next"), html);
 }
 
 // Amber left-rule only on a needs-you card; bad only on a blocked one; both
@@ -190,7 +190,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 {
   const model: BoardModel = { columns: [column({ cards: [card()] })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
-  check(5, "BoardView: a non-Planned card states gate progress in text", html.includes("board__card-gates") && html.includes("1/2 · next: Review"), html);
+  check(5, "BoardView: a non-Planned card states check progress in plain text", html.includes("board__card-gates") && html.includes("1 of 2 checks complete — Review next"), html);
   const planned = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", cards: [card()] })], waiting: [], unplaced: [] } })));
   check(5, "BoardView: a Planned card omits gate progress", !planned.includes("board__card-gates"), planned);
   const boardViewSrc = readFileSync(join(SRC, "screens", "BoardView.tsx"), "utf8");

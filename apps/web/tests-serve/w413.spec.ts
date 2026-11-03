@@ -12,7 +12,11 @@ test.afterEach(async () => {
 
 const officina = {
   studio: "Sample Studio", patron: "patron", collegia: [], sellae: [], wip_limit: 3,
-  probationes: [{ id: "tests", name: "Tests", kind: "automated" }],
+  probationes: [
+    { id: "tests", name: "Tests", kind: "automated" },
+    { id: "review", name: "Review", kind: "agent" },
+    { id: "approval", name: "Approval", kind: "human" },
+  ],
   lifecycle: { id: "opus", states: [
     { id: "backlog", name: "Backlog", phase: "backlog" },
     { id: "greenlit", name: "Greenlit", phase: "planned" },
@@ -23,25 +27,25 @@ const officina = {
     { id: "halted", name: "Halted", phase: "halted" },
   ] },
 };
-const makeOpus = (id: string, state: string, startHours: number | undefined, blocked = false, endHours?: number) => ({
+const makeOpus = (id: string, state: string, startHours: number | undefined, blocked = false, endHours?: number, checks?: Record<string, { status: string }>) => ({
   id, title: `${id} policy card`, body: `${id} body`, kind: "ui", collegium: "design", sella: "builder", state, tokens: 0,
   ...(startHours === undefined ? {} : { start: new Date(NOW.getTime() - startHours * 3_600_000).toISOString() }),
   ...(endHours === undefined ? {} : { end: new Date(NOW.getTime() - endHours * 3_600_000).toISOString() }),
-  probationes: blocked ? { tests: { status: "failed" } } : {},
+  probationes: checks ?? (blocked ? { tests: { status: "failed" } } : {}),
   traditio: undefined,
 });
 const opera = [
   makeOpus("W-1", "greenlit", 6),
   makeOpus("W-2", "building", 9),
   makeOpus("W-3", "building", 1, true),
-  makeOpus("W-4", "building", 3),
+  makeOpus("W-4", "building", 3, false, undefined, { tests: { status: "passed" }, review: { status: "waived" } }),
   makeOpus("W-5", "building", undefined),
   makeOpus("W-6", "review", 24),
-  makeOpus("W-7", "done", 12, false, 4),
+  makeOpus("W-7", "done", 12, false, 4, { tests: { status: "passed" }, review: { status: "waived" }, approval: { status: "passed" } }),
   makeOpus("W-8", "halted", 4, true),
   makeOpus("W-9", "verifying", 2),
-  makeOpus("W-10", "done", 10, false, 4),
-  makeOpus("W-11", "done", 14, false, 4),
+  makeOpus("W-10", "done", 10, false, 4, { tests: { status: "passed" }, review: { status: "waived" }, approval: { status: "passed" } }),
+  makeOpus("W-11", "done", 14, false, 4, { tests: { status: "passed" }, review: { status: "waived" }, approval: { status: "passed" } }),
 ];
 
 async function install(page: Page): Promise<void> {
@@ -151,5 +155,31 @@ test("W-413-b4 filtered cards stay counted against totals at 1280, 640 and 390",
     await expect(page.getByRole("dialog", { name: "W-3 policy card" }), `${width}: policy headers do not break the existing drawer`).toBeVisible();
     await page.getByRole("button", { name: "close" }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${width}: policy and filter add no page overflow`).toBeLessThanOrEqual(0);
+  }
+});
+
+test("W-413-b5 card check progress uses plain words without ratios at 1280, 640 and 390", async ({ page }) => {
+  served = await startServed("w413-b5");
+  await install(page);
+  for (const width of WIDTHS) {
+    await openBoard(page, width, "b5");
+    await expect(page.locator('[data-card-id="W-3"] .board__card-gates'), `${width}: a failed check is named`).toHaveText("A check failed: Tests");
+    await expect(page.locator('[data-card-id="W-2"] .board__card-gates'), `${width}: zero completed checks name what is next`).toHaveText("No checks complete yet — Tests next");
+    await expect(page.locator('[data-card-id="W-4"] .board__card-gates'), `${width}: partial progress uses words instead of a ratio`).toHaveText("2 of 3 checks complete — Approval next");
+    await expect(page.locator('[data-card-id="W-7"] .board__card-gates'), `${width}: completed checks need no next label`).toHaveText("All checks are complete");
+    const geometry = await page.locator('[data-card-id="W-4"]').evaluate((node) => ({
+      cardHeight: node.getBoundingClientRect().height,
+      lineInside: (() => {
+        const line = node.querySelector<HTMLElement>(".board__card-gates")!.getBoundingClientRect();
+        const card = node.getBoundingClientRect();
+        return line.left >= card.left - 0.5 && line.right <= card.right + 0.5 && line.top >= card.top && line.bottom <= card.bottom;
+      })(),
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }));
+    expect(geometry.cardHeight, `${width}: longer check copy preserves W-493's card bound`).toBeLessThanOrEqual(108);
+    expect(geometry.lineInside, `${width}: longer check copy stays inside its card`).toBe(true);
+    expect(geometry.pageOverflow, `${width}: longer check copy adds no page overflow`).toBeLessThanOrEqual(0);
+    const progress = await page.locator(".board__card-gates").allTextContents();
+    expect(progress.some((line) => /\b\d+\/\d+\b|next:/.test(line)), `${width}: no card or column retains progress-ratio shorthand`).toBe(false);
   }
 });

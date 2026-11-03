@@ -78,9 +78,11 @@ function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
 }
 
 function gateProgressLabel(progress: NonNullable<CardRow["gateProgress"]>): string {
-  if (progress.total === 0) return "0/0 · no gates";
-  if (progress.next === undefined) return `${progress.cleared}/${progress.total} · complete`;
-  return `${progress.cleared}/${progress.total} · next: ${progress.next}`;
+  if (progress.failed !== undefined) return `A check failed: ${progress.failed}`;
+  if (progress.total === 0) return "No checks are required";
+  if (progress.next === undefined) return "All checks are complete";
+  if (progress.cleared === 0) return `No checks complete yet — ${progress.next} next`;
+  return `${progress.cleared} of ${progress.total} checks complete — ${progress.next} next`;
 }
 
 function WaitingFacts({ card, compact = false }: { card: CardRow; compact?: boolean }): JSX.Element {
