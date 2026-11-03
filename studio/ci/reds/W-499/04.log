@@ -1,0 +1,66 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-499-b4\s --import tsx apps/web/test/w499.test.ts
+# exit: 1
+# at: 2026-11-03T03:30:44.468Z
+# sella: builder.W-499
+# tree: tree:17925d1112809747ce0988f82e9b4b26426a5af3
+# ticket: {"opus":"W-499","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-499/studio","head":"7ca43ba863f6f0a7da81be90eef14aa5014cd7ae","brief":"32c51b2c9476aa4e60f7b9164ba0e21e174f99f0","at":"2026-11-03T03:30:35.843Z"}
+
+TAP version 13
+# Subtest: W-499-b4 behaviour 4: the banner routes plainly and reasons choose one source
+not ok 1 - W-499-b4 behaviour 4: the banner routes plainly and reasons choose one source
+  ---
+  duration_ms: 6.67701
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-499/apps/web/test/w499.test.ts:1:8976'
+  failureType: 'testCodeFailure'
+  error: |-
+    petitio reasons keep source order and first-sender attribution while lower-priority sources stay absent
+    + actual - expected
+    
+      [
+    +   'Choose the reviewed scope.',
+    +   'Subject fallback',
+    +   'Patron call is pending.',
+    +   'lower-priority next'
+    -   {
+    -     from: 'eng-lead',
+    -     text: 'Choose the reviewed scope.'
+    -   },
+    -   {
+    -     from: 'qa-lead',
+    -     text: 'Subject fallback'
+    -   }
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      text: 'Choose the reviewed scope.'
+      from: 'eng-lead'
+    1:
+      text: 'Subject fallback'
+      from: 'qa-lead'
+  actual:
+    0: 'Choose the reviewed scope.'
+    1: 'Subject fallback'
+    2: 'Patron call is pending.'
+    3: 'lower-priority next'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-499/apps/web/test/w499.test.ts:198:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16.576202
