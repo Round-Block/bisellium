@@ -1,0 +1,56 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-413-b1\s --import tsx apps/web/test/w413.test.ts
+# exit: 1
+# at: 2026-11-03T03:47:07.528Z
+# sella: ui-architect
+# tree: tree:8f5839c60db49e3e8e7286c9190f6a3d63845a3e
+# ticket: {"opus":"W-413","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-413/studio","head":"d3375af530d236764e9e753f780526daa59d0277","brief":"24c53955fcbb56590444f3f5f2a0521fcd36d6cc","at":"2026-11-03T03:47:07.483Z"}
+
+TAP version 13
+# Subtest: W-413-b1 behaviour 1: Board and check share the WIP numerator, cap and blocked contribution
+not ok 1 - W-413-b1 behaviour 1: Board and check share the WIP numerator, cap and blocked contribution
+  ---
+  duration_ms: 5.277169
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-413/apps/web/test/w413.test.ts:1:1563'
+  failureType: 'testCodeFailure'
+  error: |-
+    zero, one, at-cap and over-cap use check's building plus verifying states
+    + actual - expected
+    
+      [
+    +   undefined,
+    +   undefined,
+    +   undefined,
+    +   undefined
+    -   0,
+    -   1,
+    -   2,
+    -   3
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 0
+    1: 1
+    2: 2
+    3: 3
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-413/apps/web/test/w413.test.ts:56:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 629.560452
