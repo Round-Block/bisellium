@@ -1,0 +1,52 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-490-b1\s --import tsx packages/cli/src/rules/handoff-traps.test.ts
+# exit: 1
+# at: 2026-11-03T02:42:05.886Z
+# sella: builder.W-490
+# tree: tree:f053c7a39701f3172d53eb3d34514bbb921a53bd
+# ticket: {"opus":"W-490","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-490/studio","head":"59433ad8136614dafd7b3b9f0b8713ac12b3932b","brief":"9de1494ee7eda177d12b5305085ef9b9476e19a1","at":"2026-11-03T02:42:00.000Z"}
+
+TAP version 13
+# Subtest: W-490-b1 behaviour 1: each Known traps line opens `- Standing: ` or `- Until W-<n>: `, naming an opus with a record
+not ok 1 - W-490-b1 behaviour 1: each Known traps line opens `- Standing: ` or `- Until W-<n>: `, naming an opus with a record
+  ---
+  duration_ms: 4.169183
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-490/packages/cli/src/rules/handoff-traps.test.ts:1:1426'
+  failureType: 'testCodeFailure'
+  error: |-
+    an unmarked line is refused
+    + actual - expected
+    
+    + []
+    - [
+    -   [
+    -     'process.handoff.trap',
+    -     'docs/SESSION-HANDOFF.md:8'
+    -   ]
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'process.handoff.trap'
+      1: 'docs/SESSION-HANDOFF.md:8'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-490/packages/cli/src/rules/handoff-traps.test.ts:52:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 250.878453
