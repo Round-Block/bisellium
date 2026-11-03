@@ -303,7 +303,7 @@ test("W-499-b4 drawer separates Inbox navigation from one chosen reason source a
   served = await startServed("w499-b4");
   for (const width of [1280, 640, 390] as const) {
     await openBoard(page, width, "expanded", `b4-petitio-${width}`);
-    const sampleInbox = await page.evaluate(async () => await (await fetch("/api/inbox")).json() as { opera: unknown[]; petitiones: { opus?: string }[] });
+    const sampleInbox = await page.evaluate(async (token) => await (await fetch("/api/inbox", { headers: { "X-Bisellium-Token": token } })).json() as { opera: unknown[]; petitiones: { opus?: string }[] }, served!.token);
     await page.locator('[data-card-id="W-004"]').click();
     const drawer = page.locator(".board-drawer");
     const banner = drawer.locator(".board-drawer__banner");
