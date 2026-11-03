@@ -3,9 +3,14 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { chromium } from "playwright";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { boardModel, drawerDetail } from "../src/lib/board.js";
+import { BoardDrawer } from "../src/screens/BoardDrawer.js";
 import type { InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
 import { startServed } from "../tests-serve/harness.js";
+
+(globalThis as { React?: unknown }).React = React;
 
 test("W-499-b1 behaviour 1: opened lifecycle column aligns and the most recent open restores", async () => {
   const boardSource = readFileSync(new URL("../src/screens/Board.tsx", import.meta.url), "utf8");
@@ -164,4 +169,69 @@ test("W-499-b3 behaviour 3: the 640 drawer takes the content row and restores it
     await browser.close();
     await served.close();
   }
+});
+test("W-499-b4 behaviour 4: the banner routes plainly and reasons choose one source", () => {
+  const officina: Pick<OfficinaResponse, "probationes"> = {
+    probationes: [
+      { id: "patron", name: "Patron call", kind: "human" },
+      { id: "copy", name: "Patron call", kind: "human" },
+    ],
+  };
+  const makeOpus = (traditio: unknown, probationes: OpusEntry["probationes"]): OpusEntry => ({
+    id: "W-004", title: "Inventory drag-and-drop", body: "Record body", kind: "ui", collegium: "design",
+    sella: "builder", state: "review", tokens: 0, probationes, traditio,
+  });
+  const waitingCard = { id: "W-004", title: "Inventory drag-and-drop", state: "review", gates: [], needsYou: true, blocked: false };
+  const question = "Choose the reviewed scope.";
+  const petitiones: InboxResponse["petitiones"] = [
+    { id: "P-1", opus: "W-004", from: "eng-lead", subject: "Choose", body: `  ${question}  ` },
+    { id: "P-2", opus: "W-004", from: "producer", subject: "Duplicate", body: question },
+    { id: "P-3", opus: "W-004", from: "qa-lead", subject: "  Subject fallback  ", body: "   " },
+  ];
+  const petitionDetail = drawerDetail(
+    makeOpus({ next: "lower-priority next" }, { patron: { status: "pending" } }),
+    officina,
+    { petitiones },
+    [],
+    waitingCard,
+  );
+  assert.deepEqual(
+    petitionDetail.waitingReasons,
+    [{ text: question, from: "eng-lead" }, { text: "Subject fallback", from: "qa-lead" }],
+    "petitio reasons keep source order and first-sender attribution while lower-priority sources stay absent",
+  );
+
+  const nextDetail = drawerDetail(
+    makeOpus({ next: "  Use the recorded handoff.  " }, { patron: { status: "pending" } }),
+    officina,
+    { petitiones: [{ id: "P-empty", opus: "W-004", from: "producer", subject: " ", body: " " }] },
+    [],
+    waitingCard,
+  );
+  assert.deepEqual(nextDetail.waitingReasons, [{ text: "Use the recorded handoff." }], "recorded next is chosen only when no petitio supplies usable text");
+
+  const gateDetail = drawerDetail(
+    makeOpus({ next: " " }, { patron: { status: "pending" }, copy: { status: "pending" } }),
+    officina,
+    { petitiones: [] },
+    [],
+    waitingCard,
+  );
+  assert.deepEqual(gateDetail.waitingReasons, [{ text: "Patron call is pending." }], "outstanding human-gate descriptions are the third source and collapse exact duplicates");
+
+  const emptyDetail = drawerDetail(makeOpus({}, {}), officina, { petitiones: [] }, [], waitingCard);
+  assert.deepEqual(emptyDetail.waitingReasons, [], "no usable source leaves the honest empty reason state");
+
+  const petitionDrawer = renderToStaticMarkup(BoardDrawer({ detail: petitionDetail, onClose: () => undefined }));
+  const petitionBanner = petitionDrawer.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  assert.match(petitionBanner, /<span[^>]*>Waiting on you<\/span> —\s*<a[^>]*href="#\/inbox"[^>]*>Go to Inbox<\/a>/, "only the plain Go to Inbox navigation words are linked");
+  assert.doesNotMatch(petitionBanner, /Choose the reviewed scope|eng-lead/, "the banner does not repeat the question or sender");
+  const noPetitioDrawer = renderToStaticMarkup(BoardDrawer({ detail: gateDetail, onClose: () => undefined }));
+  const noPetitioBanner = noPetitioDrawer.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  assert.match(noPetitioBanner, /Waiting on you[\s\S]*no question recorded\./, "the no-petitio banner states that no question is recorded without a link");
+  assert.doesNotMatch(noPetitioBanner, /<a\b/, "the no-petitio banner has no link");
+  const emptyDrawer = renderToStaticMarkup(BoardDrawer({ detail: emptyDetail, onClose: () => undefined }));
+  assert.match(emptyDrawer, /No waiting reason recorded\./, "no chosen source is stated honestly");
+  const css = readFileSync(new URL("../src/components/w025.css", import.meta.url), "utf8");
+  assert.match(css, /\.board-drawer__banner-link,[\s\S]*\.board-drawer__banner-link:visited[\s\S]*color:\s*var\(--ink\);[\s\S]*text-decoration:\s*underline;/, "the Inbox route is a plain underlined text link, not an evidence link");
 });

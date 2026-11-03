@@ -299,3 +299,43 @@ test("W-499-b3 full-width narrow drawer keeps the Board mounted, inert and resto
     await expect(opener, `${width}: focus returns to the latest opener`).toBeFocused();
   }
 });
+test("W-499-b4 drawer separates Inbox navigation from one chosen reason source at 1280, 640 and 390", async ({ page }) => {
+  served = await startServed("w499-b4");
+  for (const width of [1280, 640, 390] as const) {
+    await openBoard(page, width, "expanded", `b4-petitio-${width}`);
+    const sampleInbox = await page.evaluate(async () => await (await fetch("/api/inbox")).json() as { opera: unknown[]; petitiones: { opus?: string }[] });
+    await page.locator('[data-card-id="W-004"]').click();
+    const drawer = page.locator(".board-drawer");
+    const banner = drawer.locator(".board-drawer__banner");
+    await expect(banner, `${width}: banner carries only status and route`).toHaveText("Waiting on you — Go to Inbox");
+    const inboxLink = banner.getByRole("link", { name: "Go to Inbox", exact: true });
+    await expect(inboxLink, `${width}: only the destination words are linked`).toHaveAttribute("href", "#/inbox");
+    await expect(banner, `${width}: banner does not repeat the question`).not.toContainText("Drag-and-drop grew a second screen");
+    const linkStyle = await inboxLink.evaluate((node) => ({
+      color: getComputedStyle(node).color,
+      parentColor: getComputedStyle(node.parentElement!).color,
+      decoration: getComputedStyle(node).textDecorationLine,
+    }));
+    expect(linkStyle.color, `${width}: Inbox navigation inherits ordinary banner text colour`).toBe(linkStyle.parentColor);
+    expect(linkStyle.decoration, `${width}: Inbox navigation is plainly underlined`).toContain("underline");
+    const reasons = drawer.locator(".board-drawer__reason");
+    await expect(reasons, `${width}: petitio source suppresses next and gate restatements`).toHaveCount(1);
+    await expect(reasons, `${width}: complete question retains its sender attribution`).toHaveText(/Drag-and-drop grew a second screen \(split stacks\)\.[\s\S]*— from eng-lead/);
+    await expect(drawer.locator(".board-drawer__reasons"), `${width}: lower-priority gate reason stays absent`).not.toContainText("Patron call is pending.");
+    await expect(drawer.locator(".board-drawer__reasons"), `${width}: lower-priority next stays absent`).not.toContainText("await patron call");
+    await page.locator(".board-drawer__close").click();
+
+    await page.route("**/api/inbox", (route) => route.fulfill({ json: {
+      ...sampleInbox,
+      petitiones: sampleInbox.petitiones.filter((petitio) => petitio.opus !== "W-004"),
+    } }));
+    await page.reload();
+    await expect(page.locator('[data-card-id="W-004"]')).toBeAttached();
+    await page.locator('[data-card-id="W-004"]').click();
+    const noQuestionBanner = page.locator(".board-drawer__banner");
+    await expect(noQuestionBanner, `${width}: no-petitio banner is explicit`).toHaveText("Waiting on you — no question recorded.");
+    await expect(noQuestionBanner.getByRole("link"), `${width}: no-petitio banner has no link`).toHaveCount(0);
+    await expect(page.locator(".board-drawer__reason"), `${width}: recorded next is the sole fallback source`).toHaveText(["await patron call"]);
+    await page.unroute("**/api/inbox");
+  }
+});
