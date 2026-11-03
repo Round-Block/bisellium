@@ -420,6 +420,7 @@ const ID_TOKEN = /\bW-\d+\b/g;
 // W-490: a Known traps line's marker, and the retirement words no line may hold after it
 const TRAP_MARK = /^- (?:Standing|Until (W-\d+)): \S/;
 const TRAP_UNTIL = /(?<![\p{L}\p{M}\p{N}])until (?:W-\d+|filed)(?![\p{L}\p{M}\p{N}])/iu;
+const TRAPS_CAP = 12;
 
 export interface HandoffOpus {
   state: string;
@@ -500,11 +501,12 @@ export function sessionHandoffFindings(text: string, opera: ReadonlyMap<string, 
   }
 
   // W-490: the Boot list's Known traps item: each line opens `- Standing: ` or `- Until W-<n>: `, the one opus that retires
-  // it, and holds no other retirement; the named opus has a record and is not done
+  // it, and holds no other retirement; the named opus has a record and is not done; at most TRAPS_CAP lines
   const trapsAt = headings(/^\d+\.\s+Known traps(?![\p{L}\p{M}\p{N}])/u);
   if (trapsAt.length > 1) add("process.handoff.input", trapsAt[1]! + 1, "more than one Known traps item");
   else if (trapsAt[0] !== undefined) {
-    for (const i of trapLines(lines, trapsAt[0])) {
+    const block = trapLines(lines, trapsAt[0]);
+    for (const i of block) {
       const mark = TRAP_MARK.exec(lines[i]!);
       const id = mark?.[1];
       if (mark === null || TRAP_UNTIL.test(lines[i]!.slice(mark[0].length - 1)))
@@ -512,6 +514,7 @@ export function sessionHandoffFindings(text: string, opera: ReadonlyMap<string, 
       else if (id !== undefined && !opera.has(id)) add("process.handoff.input", i + 1, `${id} has no record`);
       else if (id !== undefined && opera.get(id)!.state === "done") add("process.handoff.trap", i + 1, `${id} is done: remove the trap it retired, or re-mark what still stands`);
     }
+    if (block.length > TRAPS_CAP) add("process.handoff.traps", trapsAt[0] + 1, `the Known traps item holds ${block.length} lines; the cap is ${TRAPS_CAP}`);
   }
 
   // Whole file: relative references and the line cap

@@ -43,7 +43,15 @@ opus (`process.handoff.queue`; W-299: a `done` or `halted` id in it is no findin
 any line starting `## Resume point` (`process.handoff.resume`; W-299, D-077 B: work
 state is the opus records, read by `next --all`), the phrases
 `this one`, `this PR` and `above)` (`process.handoff.reference`), and more than 100
-split lines (`process.handoff.lines`) all block.
+split lines (`process.handoff.lines`) all block. W-490: the Boot list's
+`N. Known traps` item, up to the next numbered item or heading (blank lines
+skipped), holds lines that each open `- Standing: ` or `- Until W-<n>: `, the one
+opus that retires the trap, and hold no other `until W-<n>` or `until filed`. Any
+other line, or one whose opus is `done`, blocks (`process.handoff.trap`; an id with
+no record and a second Known traps item are `process.handoff.input`), and more than
+12 lines blocks (`process.handoff.traps`). A handoff with no such item is outside
+the rule. `next`'s done step reads the handoff with its opus done, so it holds
+while a trap names that opus.
 
 **Hidden pipe exits (W-221).** `process.pipe_exit` blocks a pipe that hides a
 command's exit. `check` blocks, on every officina, an automated probatio `command`
