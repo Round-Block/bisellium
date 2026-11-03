@@ -1,0 +1,28 @@
+# opus: W-413
+# phase: spec
+# round: 16
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: a4482824-4386-42d8-b75d-23dcd0874227
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-03T03:22:02.958Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:81ce0b907d30f847c2873bc19652655e1828492a
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":16,"actor":"spec-reviewer","studio":".worktrees/W-413/studio","head":"54e84855735656eccc8889b3e3585e06d0d1d86f","brief":"81ce0b907d30f847c2873bc19652655e1828492a","at":"2026-11-03T03:20:42.721Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+The round-15 change only moves each red claim into a W-473 **Genuine red:** pin. I checked all four pins against the recorded reds and they are accurate:
+- Each pinned row name matches the `# Subtest`/`not ok 1` row in `b<k>-red-recorded.log` word for word.
+- Each quoted assertion is the first `error:` message in that log, with `code: 'ERR_ASSERTION'`.
+- Each log runs one test and records one failure (`# tests 1`, `# fail 1`).
+- No behaviour, layout, Default, row or capture changed, and the brief admission facts show no problems. So nothing new is in scope under (a) or (b), and the screens read as they did at round 13.
+
+Usage: Claude week 68%, 5h 20% | Codex week 11% | context 186k of 300k (reading at 2026-11-03T03:19:35Z).
+
+VERDICT: PASS
