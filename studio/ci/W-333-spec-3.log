@@ -1,0 +1,24 @@
+# opus: W-333
+# phase: spec
+# round: 3
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-03T12:31:33.856Z
+# tree: tree:48f3314cf82f40fde55b21269c4e273d5f9cdcaa
+# brief: briefs/W-333.md blob:b1d5ae337d4654bcce52bbc0bfb00eba94a20399
+# ticket: {"opus":"W-333","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"905a1239cacf226f44bddfdf24c652340ae6b0e2","brief":"b1d5ae337d4654bcce52bbc0bfb00eba94a20399","at":"2026-11-03T12:31:28.459Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-333-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — round 2 finding 1 (S1, two lanes each holding a `next_ts` entry passed `readQueue` and both read busy, so the one-at-a-time rule failed open) is closed, not adopted as a limit: `readQueue` now rejects a file in which more than one lane holds an entry marked `next_ts` (`more than one lane holds a next_ts entry: …`), so `queue.shape` blocks and `next --all` holds; row b1 pins it ("two lanes holding next_ts entries") and kill K14 shows it guarded; brief:20 states that the rule holds for held lanes as well as an idle lane's take — check: brief:20, brief:28, brief:70, kills.out
+2. advisory — round 2 finding 2 adopted verbatim: brief:30 names the skipped entries "for entries above the take until `runAll`’s reused 1000-character line cap; a longer skipped tail is clipped" — check: brief:30
+3. advisory — round 2 finding 3 adopted verbatim: brief:68 reads "a queue id beginning with a lower-case letter, followed by lower-case letters, digits or hyphens", and Promise shape (brief:28) matches it — check: brief:68, brief:28
+4. advisory — the prototype series is rebuilt with every patch Subject on one line (`feat(W-333): behaviour 1, queue.shape`, `feat(W-333): behaviour 2, next --all lane lines`), checked by series.sh's folded-subject count (0); each red is accepted and fails at its declared assertion, each green passes, row b1 passes on row b2's red commit, fourteen kills are all guarded, no existing row flips, every gate passes on the tip, and the ledger passes the writer — check: prototype.mbox, red-accept.out, declared.out, red-logs.out, kills.out, flips.out, gates-proto.out, ledger-check.out
+5. advisory — scope unchanged otherwise: the real `studio/queue.yml`, the handoff's pointer, a writing verb, lane claims and grouping the opus lines by queue are follow-on work; the one `next.ts` touch is a single block in `runAll`; no code-owned path — check: brief:94, brief:24
+
+## Verdict
+
+passed — W-333 revised and signed by the architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 2 at `studio/briefs/W-333.md`: two behaviours, `queue.shape` judges `studio/queue.yml` (now also refusing more than one lane holding a `next_ts` entry) and `next --all` prints each queue's lanes with what an idle lane would take (W-478 folded); prototype `prototype.mbox` over master 79b23ec9 with one-line subjects; no code-owned path; the Defaults go to the Patron before branch.

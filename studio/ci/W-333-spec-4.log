@@ -1,0 +1,22 @@
+# opus: W-333
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a159-e07d-7ec0-87a8-25ec29eb3c60
+# outcome: passed
+# at: 2026-11-03T12:35:52.409Z
+# tree: tree:48f3314cf82f40fde55b21269c4e273d5f9cdcaa
+# brief: briefs/W-333.md blob:b1d5ae337d4654bcce52bbc0bfb00eba94a20399
+# ticket: {"opus":"W-333","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"905a1239cacf226f44bddfdf24c652340ae6b0e2","brief":"b1d5ae337d4654bcce52bbc0bfb00eba94a20399","at":"2026-11-03T12:35:51.897Z"}
+
+## Findings
+1. advisory — brief:20 The new line-cap limit at brief:30 conflicts with this dependent promise that every skipped entry is named. Replace “Every entry passed over above the take is named with its reason, so a skipped entry keeps its place and the reason it waits is visible.” with “Entries passed over above the take are named with their reasons until `runAll`’s reused 1000-character line cap; a longer skipped tail is clipped, while the queue order itself is unchanged.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w333.test.ts W-333-b2
+2. advisory — brief:111 Default 3 still promises every skipped entry despite the adopted 1000-character limit. Replace its first sentence with: “`next --all` adds one line per lane: what each lane holds, or, for an idle lane, which entry it would take next and the entries it passes over above that, with the reason (held by another lane, not yet greenlit or already done, or a `next.ts` opus while another lane has one), until `runAll`’s reused 1000-character line cap; a longer skipped tail is clipped.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w333.test.ts W-333-b2
+
+## Earlier findings
+- ci/W-333-spec-2.log #1: closed - `readQueue` now rejects more than one lane holding marked `next_ts` entries; W-333-b1 pins the case and K14 guards it.
+
+## Verdict
+The previous blocking finding is closed; the remaining line-cap contradictions are advisory wording fixes.
+VERDICT: PASS

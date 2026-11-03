@@ -1,0 +1,24 @@
+# opus: W-333
+# phase: spec
+# round: 1
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-03T12:17:08.882Z
+# tree: tree:48f3314cf82f40fde55b21269c4e273d5f9cdcaa
+# brief: briefs/W-333.md blob:dd6bb690fa2d63beb23e3f5f33c060385b0e6194
+# ticket: {"opus":"W-333","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"905a1239cacf226f44bddfdf24c652340ae6b0e2","brief":"dd6bb690fa2d63beb23e3f5f33c060385b0e6194","at":"2026-11-03T12:17:02.148Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-333-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — `studio/queue.yml` holds one ranked list per queue with the lanes that share it, plus the halted, cut and deferred lists; one reader (`readQueue`, queue.ts) serves the new blocking rule `queue.shape` and `next --all`, so the two cannot disagree; the rule is inert while the file is absent; red-b1 shows master's check reporting nothing for a twice-listed opus — check: brief:28, red-b1.log, kills.out
+2. advisory — `next --all` prints one line per lane by queue: a busy lane's opus and state, or the entry an idle lane would take, passing over held, taken, not-takeable and blocked `next_ts` entries with their reasons, so a skipped entry keeps its place (W-478 folded); it reports only, claims nothing and writes nothing; a malformed file holds the run — check: brief:30, red-b2.log, kills.out
+3. advisory — two behaviours, red order one at a time: each red is accepted and fails at its declared assertion, each green passes, row b1 passes on row b2's red commit, thirteen kills are all guarded, and the ledger passes the writer — check: red-accept.out, declared.out, red-logs.out, kills.out, ledger-check.out
+4. advisory — no existing row flips on the change alone (no fixture has a `queue.yml`; the rule-id registry moves with the rule); every listed file, lint, format:check, typecheck and both officina checks pass on the tip, and the Codex test check names no unnamed flip — check: flips.out, gates-proto.out, fixture-census.md
+5. advisory — the real `studio/queue.yml`, the handoff's pointer, a writing verb, lane claims and grouping the opus lines by queue are follow-on work; the one `next.ts` touch is a single block in `runAll`, and W-364 shares only `package.json` (a separate hunk); no code-owned path — check: brief:94, brief:24
+
+## Verdict
+
+passed — W-333 drafted, prototyped and signed by the architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-333.md`: two behaviours, `queue.shape` judges `studio/queue.yml` and `next --all` prints each queue's lanes with what an idle lane would take (W-478 folded); prototype `prototype.mbox` over master 79b23ec9; no code-owned path; the Defaults go to the Patron before branch.
