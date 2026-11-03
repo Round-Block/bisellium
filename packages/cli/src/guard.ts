@@ -673,9 +673,12 @@ function checkoutOf(path: string): string | undefined {
   }
 }
 
+/** W-364: the dossier, which the main thread does not write. */
+const DOSSIER = "docs/design/dossier/";
+
 /** W-290: in a git checkout, `studio/decisions/**` and `docs/SESSION-HANDOFF.md` are written only
- *  by a dispatched clerk; the main thread writes nothing outside `studio/` and `docs/`. A path
- *  outside every checkout is not judged. */
+ *  by a dispatched clerk; the main thread writes nothing outside `studio/` and `docs/`, nor (W-364) under
+ *  `docs/design/dossier/`. A path outside every checkout is not judged. */
 export function writeRefusal(filePath: string, cwd: string | undefined, main: boolean, clerk: boolean): string | undefined {
   const real = realOf(resolve(cwd ?? process.cwd(), filePath));
   const top = checkoutOf(real);
@@ -683,6 +686,8 @@ export function writeRefusal(filePath: string, cwd: string | undefined, main: bo
   const rel = relative(top, real).split(sep).join("/");
   if (rel.startsWith("studio/decisions/") || rel === "docs/SESSION-HANDOFF.md")
     return clerk ? undefined : `refused: ${rel} is written only by a dispatched clerk subagent (W-290): dispatch a clerk with the text`;
+  if (main && rel.startsWith(DOSSIER))
+    return `refused: the orchestrator session does not write the dossier (${rel}) (W-364): dispatch a subagent with the text`;
   if (main && !rel.startsWith("studio/") && !rel.startsWith("docs/"))
     return `refused: the orchestrator session does not write source or tests (${rel}) (W-290): dispatch a builder subagent`;
   return undefined;
