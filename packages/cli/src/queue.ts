@@ -174,3 +174,55 @@ export function readQueue(studio: string): QueueRead {
   if (problems.length > 0) return held();
   return { kind: "ok", file: { queues, ...lists } };
 }
+
+/** The states an idle lane may take an entry in: the ones `next --all` lists (greenlit up to review). */
+const TAKEABLE = new Set(["greenlit", "building", "verifying", "review"]);
+/** A lane whose opus is in one of these holds nothing: the lane is idle. */
+const RELEASED = new Set(["done", "halted"]);
+
+/**
+ * W-333 (W-478 folded): one line per lane, by queue in file order. A lane holding an opus that is not done or halted
+ * is busy: `lane: <queue> <lane> · <opus> <state>`. Any other lane is idle and names the entry it would take: the
+ * highest entry of its own queue's `next` that no lane holds or takes before it, whose record is greenlit up to review,
+ * and that is not marked `next_ts` while another lane holds or takes a `next_ts` opus (one `next.ts` opus at a time).
+ * Busy lanes are read first, then idle lanes in file order, each idle lane's take holding its entry for the lanes after
+ * it. Every entry passed over above the take is named with its reason; a skipped entry keeps its place (nothing is
+ * reordered or written). `stateOf` reads an opus record's state (undefined: none).
+ */
+export function laneLines(file: QueueFile, stateOf: (opus: string) => string | undefined): string[] {
+  const state = (opus: string): string => stateOf(opus) ?? "no state";
+  const nextTs = new Set(file.queues.flatMap((q) => q.next.filter((e) => e.nextTs).map((e) => e.opus)));
+  const held = new Map<string, string>();
+  let nextTsBy: string | undefined;
+  const hold = (opus: string, why: string, lane: string): void => {
+    held.set(opus, why);
+    if (nextTs.has(opus) && nextTsBy === undefined) nextTsBy = `${lane}'s ${opus}`;
+  };
+  const busy = (opus: string | undefined): opus is string => opus !== undefined && !RELEASED.has(state(opus));
+  for (const q of file.queues) for (const [lane, opus] of q.lanes) if (busy(opus)) hold(opus, `in ${lane}`, lane);
+  const lines: string[] = [];
+  for (const q of file.queues)
+    for (const [lane, opus] of q.lanes) {
+      const head = `lane: ${q.id} ${lane}`;
+      if (busy(opus)) {
+        lines.push(`${head} · ${opus} ${state(opus)}`);
+        continue;
+      }
+      const skipped: string[] = [];
+      let take: string | undefined;
+      for (const [i, e] of q.next.entries()) {
+        const s = state(e.opus);
+        const why = held.get(e.opus) ?? (!TAKEABLE.has(s) ? s : e.nextTs && nextTsBy !== undefined ? `next.ts with ${nextTsBy}` : undefined);
+        if (why !== undefined) {
+          skipped.push(`${e.opus} (#${i + 1}): ${why}`);
+          continue;
+        }
+        take = `takes ${e.opus} (#${i + 1})`;
+        hold(e.opus, `taken by ${lane}`, lane);
+        break;
+      }
+      const idle = opus === undefined ? "idle" : `idle (${opus} ${state(opus)})`;
+      lines.push([head, idle, take ?? "nothing to take", ...(skipped.length > 0 ? [`skipped ${skipped.join(", ")}`] : [])].join(" · "));
+    }
+  return lines;
+}
