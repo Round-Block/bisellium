@@ -500,7 +500,7 @@ export function sessionHandoffFindings(text: string, opera: ReadonlyMap<string, 
   }
 
   // W-490: the Boot list's Known traps item: each line opens `- Standing: ` or `- Until W-<n>: `, the one opus that retires
-  // it, and holds no other retirement; the named opus has a record
+  // it, and holds no other retirement; the named opus has a record and is not done
   const trapsAt = headings(/^\d+\.\s+Known traps(?![\p{L}\p{M}\p{N}])/u);
   if (trapsAt.length > 1) add("process.handoff.input", trapsAt[1]! + 1, "more than one Known traps item");
   else if (trapsAt[0] !== undefined) {
@@ -510,6 +510,7 @@ export function sessionHandoffFindings(text: string, opera: ReadonlyMap<string, 
       if (mark === null || TRAP_UNTIL.test(lines[i]!.slice(mark[0].length - 1)))
         add("process.handoff.trap", i + 1, "a Known traps line opens `- Standing: ` or `- Until W-<n>: `, naming the one opus that retires it, and holds no other `until`");
       else if (id !== undefined && !opera.has(id)) add("process.handoff.input", i + 1, `${id} has no record`);
+      else if (id !== undefined && opera.get(id)!.state === "done") add("process.handoff.trap", i + 1, `${id} is done: remove the trap it retired, or re-mark what still stands`);
     }
   }
 
