@@ -408,10 +408,10 @@ const ANSI_C: Record<string, string> = { a: "\x07", b: "\b", e: "\x1b", E: "\x1b
  *  `\cX`, and the single-letter escapes; any other backslash stays. `\xHH` and `\NNN` are bytes, literal characters are
  *  their UTF-8 bytes, and the whole byte run is read as UTF-8, so `\303\277` is "ÿ" and the delimiter compares byte for
  *  byte with the terminator line. */
-function ansiC(body: string): string {
+function ansiC(body: string): Buffer {
   const bytes: Buffer[] = [];
   let at = 0;
-  for (const m of body.matchAll(/\\(x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|[0-7]{1,3}|c[\s\S]|[\s\S])/g)) {
+  for (const m of body.matchAll(/\\(x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|[0-7]{1,3}|c[\s\S]|[\s\S])/gu)) {
     bytes.push(Buffer.from(body.slice(at, m.index)));
     at = m.index + m[0].length;
     const e = m[1]!;
@@ -424,7 +424,7 @@ function ansiC(body: string): string {
     else bytes.push(Buffer.from(ANSI_C[e] ?? m[0]));
   }
   bytes.push(Buffer.from(body.slice(at)));
-  return Buffer.concat(bytes).toString("utf8");
+  return Buffer.concat(bytes);
 }
 
 /** W-496: a heredoc's delimiter word read from `start` by shell quote removal, to the first unquoted blank or operator
@@ -432,20 +432,23 @@ function ansiC(body: string): string {
  *  quotes and `$"…"` keep theirs but for a backslash before `$`, a backtick, `"`, `\` or a newline, and `$'…'` decodes its
  *  escapes (`ansiC`). `end` is the index after the word. */
 export function heredocDelimiter(line: string, start: number): { delim: string; end: number } {
-  let delim = "";
+  const parts: Buffer[] = [];
+  const put = (text: string): number => parts.push(Buffer.from(text));
   let j = start;
   while (j < line.length && !" \t\n;&|<>()".includes(line[j]!)) {
     const c = line[j]!;
     if (c === "\\") {
-      if (line[j + 1] !== "\n") delim += line[j + 1] ?? "";
-      j += 2;
+      const ch = j + 1 < line.length ? String.fromCodePoint(line.codePointAt(j + 1)!) : "";
+      if (ch !== "\n") put(ch);
+      j += 1 + Math.max(ch.length, 1);
     } else if (c === "'" || (c === "$" && line[j + 1] === "'")) {
       const ansi = c === "$";
       let e = j + (ansi ? 2 : 1);
       const from = e;
       while (e < line.length && line[e] !== "'") e += ansi && line[e] === "\\" ? 2 : 1;
       const body = line.slice(from, Math.min(e, line.length));
-      delim += ansi ? ansiC(body) : body;
+      if (ansi) parts.push(ansiC(body));
+      else put(body);
       j = e + 1;
     } else if (c === '"' || (c === "$" && line[j + 1] === '"')) {
       let e = j + (c === "$" ? 2 : 1);
@@ -453,17 +456,22 @@ export function heredocDelimiter(line: string, start: number): { delim: string; 
         const n = line[e + 1];
         if (line[e] === "\\" && n === "\n") e += 2;
         else if (line[e] === "\\" && n !== undefined && "$`\"\\".includes(n)) {
-          delim += n;
+          put(n);
           e += 2;
-        } else delim += line[e++];
+        } else {
+          const ch = String.fromCodePoint(line.codePointAt(e)!);
+          put(ch);
+          e += ch.length;
+        }
       }
       j = e + 1;
     } else {
-      delim += c;
-      j++;
+      const ch = String.fromCodePoint(line.codePointAt(j)!);
+      put(ch);
+      j += ch.length;
     }
   }
-  return { delim, end: Math.min(j, line.length) };
+  return { delim: Buffer.concat(parts).toString("utf8"), end: Math.min(j, line.length) };
 }
 
 /** W-496: the code a shell runs in `line`, and whether an `&` in it ends or separates a command. Read as bash reads them:
