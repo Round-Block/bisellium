@@ -144,6 +144,16 @@ test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match
   await refused("a double-quoted delimiter drops a backslash before a quote", 'cat <<"E\\"F" > f\nbody\nE"F\nsleep 600 &', "&");
   await passes("a single-quoted delimiter keeps its backslash", "cat <<'E\\OF'\nEOF\nsleep 600 &\nE\\OF");
   await passes("an ANSI-C delimiter with a newline never ends", "cat <<$'EO\\nF'\nEO\nF\nsleep 600 &");
+  for (const [what, word] of [
+    ["a multi-byte octal escape", "$'E\\303\\277F'"],
+    ["a multi-byte hex escape", "$'E\\xc3\\xbfF'"],
+    ["a literal character beside a hex escape", "$'Eÿ\\x46'"],
+    ["a hex and an octal escape", "$'E\\xc3\\277F'"],
+    ["a code point escape", "$'E\\u00ffF'"],
+  ] as const) {
+    await refused(`${what} in a delimiter is a UTF-8 terminator: code after it is judged`, `cat <<${word} > f\nbody\nEÿF\nsleep 600 &`, "&");
+    await passes(`${what} in a delimiter is a UTF-8 terminator: the body runs`, `cat <<${word}\nsleep 600 &\nEÿF`);
+  }
   await passes("a quoted nohup as a command word runs", "'nohup' sleep 600");
   await passes("a double-quoted setsid as a command word runs", '"setsid" node serve.js');
   await passes("a nohup inside an arithmetic expansion runs", "echo $((6 & nohup))");
