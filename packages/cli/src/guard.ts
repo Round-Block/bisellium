@@ -907,3 +907,17 @@ export function guardWiring(settings: unknown): string[] {
   if (!groups("Stop").some(runs)) missing.push(`Stop -> ${GUARD_COMMAND} (type command, timeout 2)`);
   return missing;
 }
+
+/** W-364: the variable `bisellium run` sets for the command it runs (`run.ts`, `builder-run.ts`, and the host runner's
+ *  builder and gate cells): the CLI's one sign that it runs inside a `bisellium run` session. */
+export const SESSION_ENV = "BISELLIUM_SESSION";
+
+/** W-364: the CLI's refusal of a heavy run outside a `bisellium run` session, so a heavy run from any harness's main
+ *  thread is refused by the verb: `verify` with any argument and `ci` with `--opus` among its arguments, when
+ *  `SESSION_ENV` is unset or empty. Undefined otherwise: `verify` with no argument keeps its usage line, and `ci`
+ *  without `--opus` (the CI workflow's steps) runs. The variable is a claim, not an attestation (D-045). */
+export function sessionRefusal(cmd: string | undefined, args: readonly string[], env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const step = cmd === "verify" && args.length > 0 ? "verify" : cmd === "ci" && args.includes("--opus") ? "ci --opus" : undefined;
+  if (step === undefined || (env[SESSION_ENV] ?? "") !== "") return undefined;
+  return `refused: \`bisellium ${step}\` runs only inside a bisellium run session (W-364): dispatch an agent, which runs it as \`bisellium run --sella <seat> --no-worktree --studio studio -- npm run -s bisellium -- ${step} …\` (a seat that is not a builder template, as eng-lead or producer)`;
+}

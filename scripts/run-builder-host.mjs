@@ -822,6 +822,8 @@ try {
       nodeBin: NODE_BIN,
       browsers: BROWSERS,
     });
+    // W-364: the CLI runs `ci --opus` only inside a `bisellium run` session; this host run is one
+    Object.assign(gateCell.env, { BISELLIUM_SESSION: request.sessionId });
     const gate = await launch(
       "bwrap",
       sandboxArgs({
