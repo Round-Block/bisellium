@@ -104,3 +104,14 @@ test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match
   await refused("an & after a quoted one is judged", "echo 'a & b' &", "&");
   await refused("an & after a # inside a word is judged", "echo a#b &", "&");
 });
+
+test("W-496-b3 behaviour 3: the repo's Bash calls meet only the bisellium guard at PreToolUse, and CLAUDE.md says what it refuses", () => {
+  const settings = JSON.parse(readFileSync(join(REPO, ".claude", "settings.json"), "utf8")) as { hooks: Record<string, { matcher?: string; hooks: { command: string }[] }[]> };
+  const covers = (m: string | undefined, tool: string): boolean => m === undefined || m === "*" || m.split("|").includes(tool);
+  const onBash = (settings.hooks["PreToolUse"] ?? []).filter((g) => covers(g.matcher, "Bash")).flatMap((g) => g.hooks.map((h) => h.command));
+  assert.deepEqual(onBash, [GUARD_COMMAND], "the guard is the one PreToolUse hook a Bash call meets");
+  const all = Object.values(settings.hooks).flatMap((groups) => groups.flatMap((g) => g.hooks.map((h) => h.command)));
+  assert.ok(all.every((c) => !/(^|[\s;&|])jq\s/.test(c)), "no hook command runs jq");
+  const claude = readFileSync(join(REPO, "CLAUDE.md"), "utf8");
+  assert.ok(claude.includes("a foreground Bash call's trailing or separating `&` and `nohup`, `setsid` or `disown` as a command, outside quotes, heredoc bodies and comments"), "CLAUDE.md names the background forms the guard refuses");
+});
