@@ -109,3 +109,118 @@ test("W-333-b1 behaviour 1: queue.shape judges studio/queue.yml, one blocking fi
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// Behaviour 2: next --all prints one line per lane, by queue; an idle lane names the entry it would take (W-478)
+// ---------------------------------------------------------------------------
+const MAIN = join(dirname(fileURLToPath(import.meta.url)), "main.ts");
+const TSX = import.meta.resolve("tsx");
+
+/** A git repository holding an init officina at `studio/` whose opera are committed: the shape `next --all` reads. */
+function laneWorld(states: [string, string][]): { repo: string; studio: string } {
+  const root = mkdtempSync(join(tmpdir(), "bisellium-w333-b2-"));
+  dirs.push(root);
+  const repo = join(root, "repo");
+  mkdirSync(repo);
+  const git = (...args: string[]): void => {
+    const r = spawnSync("git", ["-c", "user.name=w333", "-c", "user.email=w333@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: repo, encoding: "utf8" });
+    assert.equal(r.status, 0, `git ${args.join(" ")}: ${r.stderr}`);
+  };
+  git("init", "-q", "-b", "master");
+  const studio = join(repo, "studio");
+  const init = initStudio(studio, { now: NOW });
+  assert.ok(init.root, init.message);
+  for (const [id, state] of states) opus(studio, id, state);
+  git("add", "-A");
+  git("commit", "-q", "-m", "fixture");
+  return { repo, studio };
+}
+
+function nextAll(w: { repo: string; studio: string }, home: string): { status: number | null; out: string; err: string } {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, "next", "--all", "--studio", w.studio, "--repo", w.repo], { cwd: w.repo, encoding: "utf8", timeout: 300_000, env: { ...process.env, BISELLIUM_SELLA: "", HOME: home } });
+  return { status: r.status, out: r.stdout ?? "", err: r.stderr ?? "" };
+}
+
+/** Every file under `dir` (its .git included), path and bytes: two equal snapshots mean nothing was written. */
+function snapshot(dir: string): string {
+  const out: string[] = [];
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else out.push(`${p}\n${readFileSync(p, "base64")}`);
+    }
+  };
+  walk(dir);
+  return out.join("\n");
+}
+
+const laneOut = (out: string): string[] => out.split("\n").filter((l) => /^(lane|queue): /.test(l));
+
+const LANES = `queues:
+  engineering:
+    lanes: { E1: W-1, E2: ~ }
+    next:
+      - { opus: W-1, says: "holds next.ts", next_ts: true }
+      - { opus: W-2, says: "also next.ts", next_ts: true }
+      - { opus: W-3, says: "done already" }
+      - { opus: W-4, says: "free" }
+  ui:
+    lanes: { UI1: W-5, UI2: ~, UI3: ~ }
+    next:
+      - { opus: W-5, says: "done, so UI1 is idle" }
+      - { opus: W-6, says: "first free" }
+      - { opus: W-7, says: "second free" }
+`;
+
+test("W-333-b2 behaviour 2: next --all prints one line per lane by queue, an idle lane naming the highest entry it could start, and writes nothing", { timeout: 900_000 }, () => {
+  const w = laneWorld([["W-1", "greenlit"], ["W-2", "greenlit"], ["W-3", "done"], ["W-4", "greenlit"], ["W-5", "done"], ["W-6", "greenlit"], ["W-7", "greenlit"]]);
+  const home = mkdtempSync(join(tmpdir(), "w333-home-"));
+  dirs.push(home);
+  writeFileSync(join(w.studio, "queue.yml"), LANES);
+
+  const before = snapshot(w.repo);
+  const r = nextAll(w, home);
+  assert.deepEqual(
+    laneOut(r.out),
+    [
+      "lane: engineering E1 · W-1 greenlit",
+      "lane: engineering E2 · idle · takes W-4 (#4) · skipped W-1 (#1): in E1, W-2 (#2): next.ts with E1's W-1, W-3 (#3): done",
+      "lane: ui UI1 · idle (W-5 done) · takes W-6 (#2) · skipped W-5 (#1): done",
+      "lane: ui UI2 · idle · takes W-7 (#3) · skipped W-5 (#1): done, W-6 (#2): taken by UI1",
+      "lane: ui UI3 · idle · nothing to take · skipped W-5 (#1): done, W-6 (#2): taken by UI1, W-7 (#3): taken by UI2",
+    ],
+    "the lane lines, by queue",
+  );
+  const order = r.out
+    .trimEnd()
+    .split("\n")
+    .map((l) => l.split(":")[0])
+    .filter((k, i, a) => k !== a[i - 1]);
+  assert.deepEqual(order, ["next", "lane", "codex", "open"], "the lane lines follow every opus line, before the Codex line and the open count");
+  assert.equal(r.status, 0, `an idle lane is reported, not failed: exit 0 (${r.err})`);
+  assert.equal(snapshot(w.repo), before, "next --all writes nothing: every file under the repository, .git included, is byte-identical");
+
+  // E1's opus is done: its lane takes the skipped next.ts entry at its own place, and E2 still takes W-4
+  writeFileSync(join(w.studio, "opera", "W-1.md"), readFileSync(join(w.studio, "opera", "W-1.md"), "utf8").replace("state: greenlit", "state: done"));
+  assert.deepEqual(
+    laneOut(nextAll(w, home).out).slice(0, 2),
+    [
+      "lane: engineering E1 · idle (W-1 done) · takes W-2 (#2) · skipped W-1 (#1): done",
+      "lane: engineering E2 · idle · takes W-4 (#4) · skipped W-1 (#1): done, W-2 (#2): taken by E1, W-3 (#3): done",
+    ],
+    "a skipped entry keeps its place: once the next.ts opus is done, the first idle lane takes it",
+  );
+
+  // malformed: a held line, and the run exits 1 after every line
+  writeFileSync(join(w.studio, "queue.yml"), LANES.replace("UI2: ~", "UI2: W-3"));
+  const held = nextAll(w, home);
+  assert.deepEqual(laneOut(held.out), ["queue: held · why: queue.yml is malformed: lane UI2 holds W-3, which is not an entry of queue ui next"], "a malformed queue.yml: the held line alone");
+  assert.equal(held.status, 1, "a malformed queue.yml: exit 1");
+
+  // absent: no line, as before W-333
+  rmSync(join(w.studio, "queue.yml"));
+  const absent = nextAll(w, home);
+  assert.deepEqual(laneOut(absent.out), [], "no queue.yml: no lane line");
+  assert.equal(absent.status, 0, "no queue.yml: exit 0");
+});
