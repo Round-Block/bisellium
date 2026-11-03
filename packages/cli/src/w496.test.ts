@@ -112,6 +112,13 @@ test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match
   await passes("a # after a blank opens a comment", "echo a #comment &");
   await passes("a # after ( opens a comment", "(#comment &\n)");
   await passes("a # after a line end opens a comment", "echo a\n#comment &");
+  await refused("code after an ANSI-C quoted delimiter's heredoc is judged", "cat <<$'EOF' > f\nbody\nEOF\nsleep 600 &", "&");
+  await refused("code after a <<- ANSI-C quoted delimiter's heredoc is judged", "cat <<-$'EOF' > f\n\tbody\n\tEOF\nsleep 600 &", "&");
+  await passes("an ANSI-C quoted delimiter's body runs", "cat <<$'EOF'\nsleep 600 &\nEOF");
+  await refused("code after a locale-quoted delimiter's heredoc is judged", "cat <<$\"EOF\" > f\nbody\nEOF\nsleep 600 &", "&");
+  await refused("code after a backslash delimiter's heredoc is judged", "cat <<\\EOF > f\nbody\nEOF\nsleep 600 &", "&");
+  await refused("code after a mixed-quote delimiter's heredoc is judged", "cat <<E'O'\"F\" > f\nbody\nEOF\nsleep 600 &", "&");
+  await passes("an unterminated heredoc body runs to the end", "cat <<EOF\nsleep 600 &\nnohup x");
   await passes("a quoted nohup as a command word runs", "'nohup' sleep 600");
   await passes("a double-quoted setsid as a command word runs", '"setsid" node serve.js');
   await passes("a nohup inside an arithmetic expansion runs", "echo $((6 & nohup))");
