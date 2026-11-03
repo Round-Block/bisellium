@@ -150,6 +150,9 @@ test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match
     ["a literal character beside a hex escape", "$'Eÿ\\x46'"],
     ["a hex and an octal escape", "$'E\\xc3\\277F'"],
     ["a code point escape", "$'E\\u00ffF'"],
+    ["bytes split across two ANSI-C words", "$'E\\xc3'$'\\xbfF'"],
+    ["bytes split across octal ANSI-C words and an unquoted tail", "$'E\\303'$'\\277'F"],
+    ["bytes split across a literal-quoted word", "'E'$'\\xc3'$'\\xbf'F"],
   ] as const) {
     await refused(`${what} in a delimiter is a UTF-8 terminator: code after it is judged`, `cat <<${word} > f\nbody\nEÿF\nsleep 600 &`, "&");
     await passes(`${what} in a delimiter is a UTF-8 terminator: the body runs`, `cat <<${word}\nsleep 600 &\nEÿF`);
