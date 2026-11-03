@@ -188,3 +188,28 @@ test("W-413-b4 behaviour 4: a Board filter reports visible cards against the unc
   assert.match(html, />Showing 1 of 2 tasks</, "filtered columns state the visible and total task counts");
   assert.match(html, /data-column-id="in_progress"[\s\S]*?>Showing 1 of 2 tasks<[\s\S]*?>1 blocked</, "filtering keeps the column's own total and blocked rows");
 });
+
+test("W-413-b5 behaviour 5: card check progress says what happened and what comes next in plain words", () => {
+  const checks = [
+    { id: "tests", name: "Tests", kind: "automated" as const },
+    { id: "review", name: "Review", kind: "agent" as const },
+    { id: "approval", name: "Approval", kind: "human" as const },
+  ];
+  const withChecks = { ...officina(4), probationes: checks };
+  const entry = (id: string, state: string, probationes: OpusEntry["probationes"]): OpusEntry => ({ ...opus(id, state), probationes });
+  const model = boardModel(withChecks, [
+    entry("W-failed", "building", { tests: { status: "failed" } }),
+    entry("W-none", "verifying", {}),
+    entry("W-some", "review", { tests: { status: "passed" }, review: { status: "waived" } }),
+    entry("W-all", "done", { tests: { status: "passed" }, review: { status: "waived" }, approval: { status: "passed" } }),
+  ]);
+  const html = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model, focusedByColumn: {}, onSelectCard: () => undefined }));
+  assert.match(html, />A check failed: Tests</, "a failed check is named in plain words before any progress count");
+  assert.match(html, />No checks complete yet — Tests next</, "zero completed checks name the next check without a ratio");
+  assert.match(html, />2 of 3 checks complete — Approval next</, "partial progress gives the completed and total counts in words");
+  assert.match(html, />All checks are complete</, "completed checks need no invented next step");
+  const noChecks = boardModel({ ...officina(4), probationes: [] }, [opus("W-no-checks", "building")]);
+  const noChecksHtml = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model: noChecks, focusedByColumn: {}, onSelectCard: () => undefined }));
+  assert.match(noChecksHtml, />No checks are required</, "an empty declared check set is stated honestly");
+  assert.doesNotMatch(`${html}${noChecksHtml}`, /\b\d+\/\d+\b|next:/, "card and column policy text contains no progress ratio or shorthand next label");
+});
