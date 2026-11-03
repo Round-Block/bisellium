@@ -1,0 +1,20 @@
+# opus: W-333
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1a1bd-6d22-7f40-bb42-dfab6d9c135c
+# outcome: passed
+# at: 2026-11-03T14:12:04.855Z
+# tree: tree:b7a3977dc7fb507c5797731033656d550d41d309
+# brief: briefs/W-333.md blob:b1d5ae337d4654bcce52bbc0bfb00eba94a20399
+# ticket: {"opus":"W-333","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-333/studio","head":"bfa2f675cb91122b080c08d10af8583d78c4a516","brief":"b1d5ae337d4654bcce52bbc0bfb00eba94a20399","at":"2026-11-03T14:08:27.377Z"}
+
+## Findings
+1. advisory — docs/NEXT.md:25 [severity: S2] The reference says milestone lines precede lane lines, but `runAll` and brief:20 put lane lines before milestones; W-333-b2 has no milestones fixture to pin that ordering. [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w333.test.ts
+2. advisory — packages/cli/src/queue.ts:123 [severity: S2] A leading-digit queue id such as `1-ui` is rejected with a message whose stated character rule it satisfies, rather than naming brief:68’s required initial lower-case letter; W-333-b1 tests only capitalization and asserts the stale wording. [class: tests×tests-that-agree-with-the-bug] — check: packages/cli/src/w333.test.ts
+3. advisory — packages/cli/src/w333.test.ts:91 [severity: S2] The purported single-problem missing-`next` fixture also introduces the unknown key `later`, while line 107 merely checks that the missing-`next` finding is among the results; it does not establish brief:78’s single-problem evidence claim. [class: tests×ruled-case-uncovered] — check: packages/cli/src/w333.test.ts
+
+## Verdict
+Runtime behavior, scope, reds, and gate evidence satisfy the brief; the advisory documentation and regression-precision issues do not require another review round.
+VERDICT: PASS
