@@ -144,3 +144,39 @@ test("W-364-b2 behaviour 2: the guard refuses the main thread's codex exec, veri
   const afterDoc = await guard(bash("cat > /tmp/p.md <<'EOF'\nnothing here\nEOF\ncodex exec x", dir));
   assert.equal(afterDoc.code, 2, "a codex exec after a heredoc's terminator is judged");
 });
+
+/** A checkout under the OS tmp dir (`.git/HEAD`) with a linked worktree `.worktrees/W-1` (a `.git` file). */
+function checkout(): string {
+  const root = join(tmp(), "repo");
+  mkdirSync(join(root, ".git"), { recursive: true });
+  writeFileSync(join(root, ".git", "HEAD"), "ref: refs/heads/master\n");
+  for (const d of ["studio/ci", "studio/opera", "studio/decisions", "studio/briefs", "docs/design/dossier", ".worktrees/W-1/studio/ci", ".worktrees/W-1/docs/design/dossier"])
+    mkdirSync(join(root, d), { recursive: true });
+  writeFileSync(join(root, ".worktrees/W-1/.git"), "gitdir: ../../.git/worktrees/W-1\n");
+  return root;
+}
+const write = (path: string, cwd: string, extra: Record<string, unknown> = {}, tool = "Write") => ({
+  hook_event_name: "PreToolUse",
+  tool_name: tool,
+  tool_input: tool === "NotebookEdit" ? { notebook_path: path } : { file_path: path, content: "x" },
+  cwd,
+  ...extra,
+});
+
+test("W-364-b3 behaviour 3: the guard refuses the main thread's Write, Edit and NotebookEdit under docs/design/dossier/", async () => {
+  const root = checkout();
+  const dossier = [join(root, "docs/design/dossier/body.html"), join(root, "docs/design/dossier/new page.html"), join(root, ".worktrees/W-1/docs/design/dossier/head.html")];
+  const first = await guard(write(dossier[0]!, root));
+  assert.equal(first.code, 2, "main thread refused: docs/design/dossier/body.html");
+  assert.match(first.err, /does not write the dossier \(docs\/design\/dossier\/body\.html\) \(W-364\): dispatch a subagent/, "the refusal names the dossier and the route");
+  assert.equal((await guard(write(dossier[0]!, root, BUILDER))).code, 0, "a subagent writes the dossier");
+  for (const p of dossier) {
+    assert.equal((await guard(write(p, root))).code, 2, `main thread refused: ${p}`);
+    assert.equal((await guard(write(p, root, BUILDER))).code, 0, `a subagent writes ${p}`);
+  }
+  assert.equal((await guard(write(dossier[0]!, root, {}, "Edit"))).code, 2, "Edit");
+  assert.equal((await guard(write(join(root, "docs/design/dossier/x.ipynb"), root, {}, "NotebookEdit"))).code, 2, "NotebookEdit");
+  assert.equal((await guard(write("docs/design/dossier/body.html", root))).code, 2, "a relative path against the input's cwd");
+  for (const p of [join(root, "docs/design/notes.md"), join(root, "docs/ADOPTION.md"), join(root, "studio/briefs/W-1.md")])
+    assert.equal((await guard(write(p, root))).code, 0, `main thread allowed: ${p}`);
+});
