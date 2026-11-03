@@ -1,0 +1,27 @@
+# opus: W-413
+# phase: spec
+# round: 20
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: passed
+# at: 2026-11-03T03:46:59.473Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# dispatch_prompt: ci/W-413-ui-prompt-20.md
+# design_digest: sha256:dd10e96d02eaf65772357ee0c57b606a66273e289a570fca8b146b5970cfe30c
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":20,"actor":"ui-lead","studio":".worktrees/W-413/studio","head":"43e4525cf7877e250b90e62d72a4133b50295697","brief":"24c53955fcbb56590444f3f5f2a0521fcd36d6cc","at":"2026-11-03T03:46:48.362Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+## Recommendation
+
+Round-14 advisories #1 and #2 still hold: restoration needs a visibility assertion, and suppression uses a viewport breakpoint rather than available rail width.
+Earlier shared-scope, condition-copy, singular-item and cramped-key findings remain closed; the existing drawer geometry and repeated-reason issues remain assigned to W-499.
+Round 18 changes patch organization without changing anything users see: the old and rebuilt prototype heads have identical Git trees.
+All eight captures retain the accepted W-413 presentation, and the brief diff changes only series, migration and evidence descriptions.
+The delta introduces no UI defect or new screen rule and preserves the Patron’s neutral cap treatment.
+Verdict: passed
