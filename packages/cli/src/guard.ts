@@ -405,17 +405,26 @@ const SKIPPED = "Q";
 const ANSI_C: Record<string, string> = { a: "\x07", b: "\b", e: "\x1b", E: "\x1b", f: "\f", n: "\n", r: "\r", t: "\t", v: "\v", "\\": "\\", "'": "'", '"': '"', "?": "?" };
 
 /** W-496: the text of a `$'…'` body with its escapes decoded as bash does: `\xHH`, `\uHHHH`, `\UHHHHHHHH`, `\NNN` octal,
- *  `\cX`, and the single-letter escapes; any other backslash stays. */
+ *  `\cX`, and the single-letter escapes; any other backslash stays. `\xHH` and `\NNN` are bytes, literal characters are
+ *  their UTF-8 bytes, and the whole byte run is read as UTF-8, so `\303\277` is "ÿ" and the delimiter compares byte for
+ *  byte with the terminator line. */
 function ansiC(body: string): string {
-  return body.replace(/\\(x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|[0-7]{1,3}|c[\s\S]|[\s\S])/g, (m, e: string) => {
-    if (e.length > 1 && (e[0] === "x" || e[0] === "u" || e[0] === "U")) {
+  const bytes: Buffer[] = [];
+  let at = 0;
+  for (const m of body.matchAll(/\\(x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|[0-7]{1,3}|c[\s\S]|[\s\S])/g)) {
+    bytes.push(Buffer.from(body.slice(at, m.index)));
+    at = m.index + m[0].length;
+    const e = m[1]!;
+    if (e.length > 1 && (e[0] === "u" || e[0] === "U")) {
       const n = parseInt(e.slice(1), 16);
-      return n <= 0x10ffff ? String.fromCodePoint(n) : m;
-    }
-    if (/^[0-7]/.test(e)) return String.fromCharCode(parseInt(e, 8) & 255);
-    if (e.length > 1) return String.fromCharCode(e.charCodeAt(1) & 31);
-    return ANSI_C[e] ?? m;
-  });
+      bytes.push(Buffer.from(n <= 0x10ffff ? String.fromCodePoint(n) : m[0]));
+    } else if (e.length > 1 && e[0] === "x") bytes.push(Buffer.from([parseInt(e.slice(1), 16)]));
+    else if (/^[0-7]/.test(e)) bytes.push(Buffer.from([parseInt(e, 8) & 255]));
+    else if (e.length > 1) bytes.push(Buffer.from([e.charCodeAt(1) & 31]));
+    else bytes.push(Buffer.from(ANSI_C[e] ?? m[0]));
+  }
+  bytes.push(Buffer.from(body.slice(at)));
+  return Buffer.concat(bytes).toString("utf8");
 }
 
 /** W-496: a heredoc's delimiter word read from `start` by shell quote removal, to the first unquoted blank or operator
