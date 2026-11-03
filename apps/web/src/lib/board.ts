@@ -478,6 +478,7 @@ export function boardModel(
     col.totalCount = col.cards.length;
     col.blockedCount = col.cards.filter((card) => card.blocked).length;
     if (col.cap !== undefined) col.atCap = col.cards.length >= col.cap;
+    if (options.filter === "blocked") col.cards = col.cards.filter((card) => card.blocked);
   }
 
   return { columns: [...columns.values()], waiting, unplaced };

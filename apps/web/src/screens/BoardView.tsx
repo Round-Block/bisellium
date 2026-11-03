@@ -358,9 +358,9 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
         </div>
         <label className="board__filter-wrap">
           <span>Show</span>
-          <select className="board__filter" aria-label="Filter Board work" value={filter} onChange={(event) => onFilterChange(event.target.value as BoardFilter)}>
-            <option value="all">All work</option>
-            <option value="blocked">Blocked only</option>
+          <select className="board__filter" aria-label="Choose which tasks to show" value={filter} onChange={(event) => onFilterChange(event.target.value as BoardFilter)}>
+            <option value="all">All tasks</option>
+            <option value="blocked">Blocked tasks</option>
           </select>
         </label>
         {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
