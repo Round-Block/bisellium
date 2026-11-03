@@ -237,7 +237,7 @@ names each step and writes the step ticket the next record write consumes
    verdict's classes with `~/.bisellium-evidence/lesson-census/census.py`.
    After done, `npm run -s bisellium -- tick --studio studio`.
 
-`.claude/` changes stop merge/branch/done for the Patron's command.
+`.claude/` changes wait for the Patron only at merge: code-owner review of the PR (D-165).
 
 ## 10. Models
 
