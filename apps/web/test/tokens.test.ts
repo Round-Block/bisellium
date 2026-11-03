@@ -162,7 +162,6 @@ test("W-366-b2 behaviour 2: each accent has one non-status selector role", () =>
       "::selection => accent-pink",
       ".board__project-select => accent-yellow",
       ".board__project-select option => accent-yellow",
-      ".board-drawer__banner-link => accent-cyan",
       ".board-drawer__gate-evidence, .board-drawer__gate-evidence:visited => accent-cyan",
       ".board-drawer__waiting-evidence, .board-drawer__waiting-evidence:visited => accent-cyan",
       ".inbox__evidence a => accent-cyan",
@@ -281,7 +280,7 @@ test("W-361-b2 behaviour 2: bad remains a non-text gate mark while confirm and b
     [".board__project-select option", "accent-yellow"],
     [".board__strip-item", "ink"],
     [".board-drawer__close", "ink-2"],
-    [".board-drawer__banner-link", "accent-cyan"],
+    [".board-drawer__banner-link,\n.board-drawer__banner-link:visited", "ink"],
     [".board-drawer__gate-evidence,\n.board-drawer__gate-evidence:visited", "accent-cyan"],
   ] as const;
   for (const [selector, textToken] of interactiveTextTokens) {

@@ -113,10 +113,14 @@ test("W-499-b2 behaviour 2: Why it waits states each reason once", () => {
   const detail = drawerDetail(opus, officina, inbox, [], card);
   assert.deepEqual(
     detail.waitingReasons,
-    [question, "Patron call is pending.", "Explicit subject fallback"],
-    "petitio bodies, recorded gates and handoff copy contribute one exact nonblank bullet apiece",
+    [
+      { text: question, from: "eng-lead" },
+      { text: "Patron call is pending.", from: "producer" },
+      { text: "Explicit subject fallback", from: "producer" },
+    ],
+    "petitio bodies contribute one exact attributed bullet apiece without lower-priority restatements",
   );
-  assert.equal(detail.waitingReasons?.[0], question, "the complete long question is not replaced by its capped subject");
+  assert.equal(detail.waitingReasons?.[0]?.text, question, "the complete long question is not replaced by its capped subject");
 });
 
 test("W-499-b3 behaviour 3: the 640 drawer takes the content row and restores its mounted Board", async () => {
@@ -170,6 +174,7 @@ test("W-499-b3 behaviour 3: the 640 drawer takes the content row and restores it
     await served.close();
   }
 });
+
 test("W-499-b4 behaviour 4: the banner routes plainly and reasons choose one source", () => {
   const officina: Pick<OfficinaResponse, "probationes"> = {
     probationes: [

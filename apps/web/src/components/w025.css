@@ -2651,10 +2651,11 @@
   font-size: 13px;
 }
 
-/* The banner's petitio text IS the link to its Inbox thread (DIRECTION §3:
- * cyan carries content/evidence links). */
-.board-drawer__banner-link {
-  color: var(--accent-cyan);
+/* Navigation copy stays an ordinary underlined text link. Decision-record
+ * paths below retain the cyan evidence-link treatment. */
+.board-drawer__banner-link,
+.board-drawer__banner-link:visited {
+  color: var(--ink);
   text-decoration: underline;
 }
 

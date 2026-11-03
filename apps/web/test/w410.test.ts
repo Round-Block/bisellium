@@ -128,10 +128,8 @@ test("W-410-b4 behaviour 4: the drawer displays waiting reasons and evidence for
   const card = board.boardModel(officina, [entry], inbox).waiting[0];
   const detail = (board.drawerDetail as unknown as (...args: unknown[]) => Record<string, unknown>)(entry, officina, inbox, [], card);
   assert.deepEqual(detail["waitingReasons"], [
-    "Compare the reviewed variants.",
-    "Patron call is pending.",
-    "Await Patron selection.",
-  ], "the drawer collects each question, recorded-pending gate and handoff reason once without repeating labels or record body");
+    { text: "Compare the reviewed variants.", from: "architect" },
+  ], "the drawer chooses attributed petitio reasons without appending gate or handoff restatements");
   assert.equal(detail["body"], "The Patron must choose the board rail.", "the opus body remains in its existing record field");
   assert.deepEqual(detail["waitingEvidence"], [{ gate: "patron", label: "Patron call", status: "pending", revision: "abc123", record: "studio/ci/reviews/W-1.md" }], "the drawer binds recorded gate evidence to its result, revision and decision record");
 

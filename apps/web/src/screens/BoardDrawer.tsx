@@ -53,18 +53,13 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
 
       {detail.waitingOn && (
         <div className="board-drawer__banner">
-          <span className="board-drawer__banner-label">Waiting on you.</span>{" "}
+          <span className="board-drawer__banner-label">Waiting on you</span> &mdash; {" "}
           {detail.waitingOn.petitio ? (
-            // The compensating surface the Patron's "Read-only now, Reply as
-            // follow-on" decree rests on: a link to the thread, not a write.
-            // Inbox has no per-petitio deep link (not owned by this opus —
-            // W-073 is where "Reply" itself lands), so this names the
-            // screen the thread lives on; the Patron finds it there.
             <a className="board-drawer__banner-text board-drawer__banner-link" href="#/inbox">
-              {detail.waitingOn.petitio.subject} &mdash; from {detail.waitingOn.petitio.from}
+              Go to Inbox
             </a>
           ) : (
-            <span className="board-drawer__banner-text">{detail.waitingOn.name}: no question was asked.</span>
+            <span className="board-drawer__banner-text">no question recorded.</span>
           )}
         </div>
       )}
@@ -74,7 +69,11 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
           <h3 className="board-drawer__section-head">Why it waits</h3>
           {detail.waitingReasons.length > 0 ? (
             <ul className="board-drawer__reason-list">
-              {detail.waitingReasons.map((reason, index) => <li key={index} className="board-drawer__reason">{reason}</li>)}
+              {detail.waitingReasons.map((reason, index) => (
+                <li key={index} className="board-drawer__reason">
+                  {reason.text}{reason.from ? <> &mdash; from {reason.from}</> : null}
+                </li>
+              ))}
             </ul>
           ) : <p className="board-drawer__waiting-empty">No waiting reason recorded.</p>}
         </section>

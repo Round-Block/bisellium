@@ -226,12 +226,11 @@ test("W-499-b2 Why it waits states each reason once at 1280, 640 and 390", async
     await openBoard(page, width, "expanded", `b2-${width}`);
     await page.locator('[data-card-id="W-004"]').click();
     const reasons = page.locator(".board-drawer__reason");
-    await expect(reasons, `${width}: the sample wait has one question, one pending gate and one handoff reason`).toHaveCount(3);
-    await expect(reasons.nth(0), `${width}: the complete question appears once`).toHaveText(/Drag-and-drop grew a second screen \(split stacks\)\. Accept the scope drift and\s+ship both, or cut split stacks to a new item\?/);
-    await expect(reasons.nth(1), `${width}: the recorded pending gate appears once`).toHaveText("Patron call is pending.");
-    await expect(reasons.nth(2), `${width}: the handoff reason appears once`).toHaveText("await patron call");
+    await expect(reasons, `${width}: the sample wait chooses the petitio source only`).toHaveCount(1);
+    await expect(reasons.nth(0), `${width}: the complete question and sender appear once`).toHaveText(/Drag-and-drop grew a second screen \(split stacks\)\. Accept the scope drift and\s+ship both, or cut split stacks to a new item\? — from eng-lead/);
     expect((await reasons.allTextContents()).join(" ").match(/Drag-and-drop grew a second screen/g)?.length, `${width}: the question sentence is not repeated inside its own bullet`).toBe(1);
     await expect(page.locator(".board-drawer__reasons"), `${width}: no capped subject is joined back onto its source body`).not.toContainText("new…:");
+    await expect(page.locator(".board-drawer__reasons"), `${width}: lower-priority gate and next sources are not appended`).not.toContainText(/Patron call is pending\.|await patron call/);
     await page.locator(".board-drawer__close").click();
   }
 });
@@ -299,6 +298,7 @@ test("W-499-b3 full-width narrow drawer keeps the Board mounted, inert and resto
     await expect(opener, `${width}: focus returns to the latest opener`).toBeFocused();
   }
 });
+
 test("W-499-b4 drawer separates Inbox navigation from one chosen reason source at 1280, 640 and 390", async ({ page }) => {
   served = await startServed("w499-b4");
   for (const width of [1280, 640, 390] as const) {
