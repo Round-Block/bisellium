@@ -1,0 +1,32 @@
+# opus: W-413
+# phase: spec
+# round: 8
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: revise
+# at: 2026-11-02T16:55:06.936Z
+# tree: tree:a9f95a519d3e73972b490f84e33feacb3a59244f
+# dispatch_prompt: ci/W-413-ui-prompt-8.md
+# design_digest: sha256:82c7da26a851a1f16210641a42f64a881dee6d79cec68b3ff9f2b7600d4552d7
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":8,"actor":"ui-lead","studio":"studio","head":"c16823b92e34e593d7bee8f7c1a2e76895626463","brief":"a9f6f15cd447c71a480cbe78ceb298a1edb3b209","at":"2026-11-02T16:54:46.167Z"}
+
+## Findings
+
+1. blocking — brief:125 — The agent-written `Shared WIP` label distinguishes shared from local counts, but the captured screen never identifies which states share the cap. Building + Verifying appears in the brief, not the UI; at 390 the reader cannot establish that Review is excluded — replace with: “Keep the repeated shared ratio and add a visible scope key: `Shared WIP = Building + Verifying; blocked work included`, readable at all three widths.” — check: prototype apps/web/src/screens/BoardView.tsx:155; apps/web/tests-serve/w413.spec.ts b1; board-390.png.
+2. advisory — brief:21 — As round 7 notes, `Building; ready for verification` can read as a current readiness claim rather than an exit condition, and the brief omits two standard strings — replace with: “Use `Building; build complete before verification`; list all six membership/condition strings and the custom-phase fallback in Intent and Default 4.” — check: prototype apps/web/src/lib/board.ts:395; apps/web/test/w413.test.ts b3; apps/web/tests-serve/w413.spec.ts b3.
+3. advisory — brief:51 — “Follows the served lifecycle” overstates how exit conditions are derived; the prototype selects fixed copy by phase id. This does not contradict the standard lifecycle shown in these captures — replace with: “Membership uses served state names; exit copy is fixed per standard phase id and does not read the served transition graph. Alternate transition graphs remain outside this promise.” — check: prototype apps/web/src/lib/board.ts:386.
+
+## Earlier findings
+
+- ci/W-413-spec-5.log #1: open — `Shared WIP` fixes the local/shared distinction, but prototype BoardView.tsx:155 and board-390.png still omit the requested Building + Verifying scope explanation.
+- ci/W-413-spec-5.log #2: closed — Prototype board.ts:392–403 now supplies approval, readiness, checks and resumption conditions; b3 covers all six standard phases, and the captures show the revised policy copy. The remaining In progress wording refinement is advisory.
+
+## Recommendation
+
+Round-5 advisory #3 is closed: Awaiting review visibly reads `1 item · 0 blocked`.
+Round-5 advisory #4 still holds: Planned’s drawer geometry and the repeated waiting reason remain W-499’s work under D-162.
+The revised headers fit at 1280, 640 and 390; Planned’s sentence is dense but readable, and the shared ratio remains distinct from the local median.
+The neutral rule and bold cap treatment preserve the Patron’s ruling; neither the agent-written two-line prescription nor the current compact layout warrants a new legibility blocker.
+The architect can close the remaining scope explanation gap within the existing design.
+Verdict: revise

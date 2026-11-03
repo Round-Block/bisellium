@@ -1,0 +1,24 @@
+# opus: W-413
+# phase: spec
+# round: 4
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: d3e0b2f4-5a65-46a7-aad6-7a307a972f39
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-02T16:25:18.521Z
+# tree: tree:915cc2517e8b3365880ca53da43309fd0c8e9144
+# brief: briefs/W-413.md blob:07854b98aba8eb2c87e79a6873e99f6774db23cb
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"1b4fe9951af4b7886713d1e7ce7ac48983d0911b","brief":"07854b98aba8eb2c87e79a6873e99f6774db23cb","at":"2026-11-02T16:25:03.511Z"}
+
+## Findings
+1. advisory — brief:17 `[severity: S4]` The 1280 capture reads `1 items · 0 blocked` (Awaiting review), and no row pins the singular. Replacement: "other columns say `1 item` or `N items`, then `· N blocked`" (also brief:45, brief:78, Default 1). The Defaults do not raise it. [class: ui×sense-on-real-records] — check: none: a b1 assertion that a one-item non-WIP column reads `1 item`
+
+## Earlier findings
+- ci/W-413-spec-2.log #1: closed — brief:45 and brief:78 take the numerator from check's `WIP_STATES` (building + verifying, `packages/cli/src/check.ts:86,693-696`). Both WIP columns repeat it, and b1 compares it with a real `checkStudio()` `wip.cap` finding (prototype.mbox:87-89). The 1280 capture shows `3 / 3 WIP · 1 blocked` in both columns.
+
+## Verdict
+The round-2 blocker is closed and advisories #2-#4 are adopted; only a singular/plural copy nit remains.
+VERDICT: PASS
+
+Claude week 65%, 5h 5% | Codex week 2% | context 193k of 300k

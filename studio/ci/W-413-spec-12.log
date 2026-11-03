@@ -1,0 +1,30 @@
+# opus: W-413
+# phase: spec
+# round: 12
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-02T23:55:51.079Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:448a4143e37ffe559fa520d02e8ce7d071430f3e
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":12,"actor":"architect","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"448a4143e37ffe559fa520d02e8ce7d071430f3e","at":"2026-11-02T23:55:30.847Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ui-lead round-11 finding 1 is closed: the complete Shared-WIP key remains visible on the unobstructed Board at 1280, 640 and 390, is suppressed when the 640 drawer leaves a narrow Board rail, and returns on close; b1 and b4 pin those states — check: apps/web/src/components/w025.css, apps/web/tests-serve/w413.spec.ts, kill-b4-drawer-scope.out, capture-shots.out, shots/drawer-640-200pct.png
+2. advisory — ui-lead round-11 finding 2 is closed: Intent and Default 4 now describe the six strings as standard-fixture examples, membership follows served names with Complete/Stopped overrides for Done/Halted, exit clauses remain fixed per phase id, and custom phases retain their fallback — check: studio/briefs/W-413.md, apps/web/src/lib/board.ts, apps/web/test/w413.test.ts, kill-b3-rules.out, kill-b3-fallback.out
+3. advisory — ui-lead round-11 finding 3 and Opus round-10 finding 2 are closed: the key promises the standard Building and Verifying labels and expressly leaves renamed WIP labels outside its copy promise — check: studio/briefs/W-413.md, apps/web/src/screens/BoardView.tsx, apps/web/tests-serve/w413.spec.ts
+4. advisory — the revision is otherwise layout-minimal: W-499 remains the sole owner of coherent Planned/open-drawer geometry and one complete non-repeated waiting reason under D-162; W-413 changes neither drawer code nor reason copy — check: studio/briefs/W-413.md, studio/opera/W-499.md, shots/
+5. advisory — no new predecessor row flips in revision 7: the repeated final-stage census finds only W-413's new drawer assertion on the added selector; migrated W-341-b4 remains green with the Shared-WIP key in its child-order oracle, and unchanged W-415-b2 remains green while scanning the changed Board CSS — check: census-r12-run.out, fixture-census.md, apps/web/test/w341.test.ts, w341-final.out, w415-final.out
+6. advisory — all four rebuilt Genuine reds are selected Node TAP assertion failures with exact `# command:` headers, and every earlier behaviour remains green on later red stages — check: reds-host.out, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+7. advisory — all ten rebuilt prototype commits independently build the web bundle; the mbox reapplies to base 685a2eea and has sha256 `ddd10f9bf726034ad2e4ec4fbc3772f22ca8e41278c6a32f8e1ffb2392d33142` — check: series-builds.txt, mbox-check.out, prototype.mbox, prototype.sha256
+8. advisory — focused Node, typecheck, build and served rows pass; every policy mutation, including drawer-aware key suppression, is killed; eight regenerated and manually inspected captures retain zero page overflow — check: gates-proto.out, kills.out, capture-shots.out, shots/
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 12 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; all round-11 findings are closed in prototype sha256 `ddd10f9bf726034ad2e4ec4fbc3772f22ca8e41278c6a32f8e1ffb2392d33142`, and no record write, `next` or `verdict` was performed.

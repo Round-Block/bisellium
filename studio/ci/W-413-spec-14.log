@@ -1,0 +1,30 @@
+# opus: W-413
+# phase: spec
+# round: 14
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: passed
+# at: 2026-11-03T00:03:35.024Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# dispatch_prompt: ci/W-413-ui-prompt-14.md
+# design_digest: sha256:51a4ee8558c8eefe20471f72e3323e3b1ef88c536407741afd985535af84d0e7
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":14,"actor":"ui-lead","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"448a4143e37ffe559fa520d02e8ce7d071430f3e","at":"2026-11-03T00:02:59.746Z"}
+
+## Findings
+
+1. advisory — brief:85 — The restoration check verifies text, which can pass while the key remains hidden; b1 supplies the initial visibility check — replace with: “b1 verifies unobstructed visibility; b4 verifies suppression beside the 640 drawer and visible, complete text after close.” — check: prototype apps/web/tests-serve/w413.spec.ts:141; add `toBeVisible()` after close.
+2. advisory — brief:128 — The agent-written “narrow Board rail” wording suggests suppression responds to available space, but implementation uses a viewport breakpoint; 900–1279 drawer layouts remain uncaptured — replace with: “Suppress the key beside an open drawer below 900px viewport width; closing restores it. Intermediate drawer widths remain outside the captured evidence.” — check: prototype apps/web/src/components/w025.css:2869.
+
+## Earlier findings
+
+- ci/W-413-spec-11.log #1: closed — `drawer-640-200pct.png` removes the eight-line key; all four unobstructed Board captures retain it legibly, and closing removes the drawer element that activates CSS suppression.
+
+## Recommendation
+
+Round-11 advisories #2 and #3 are closed: served-name examples and the standard-label limit are explicit.
+Earlier shared-scope, condition-copy and singular-item findings remain closed.
+At 1280, 640 and 390, the unobstructed key and compact column headers read well; the agent-designed suppression makes sense beside the 640 drawer.
+The neutral cap treatment preserves the Patron’s ruling, and neither round-13 advisory demonstrates a remaining captured UI defect.
+The clipped Planned column beside the expanded desktop drawer and repeated waiting reason still read badly; both remain assigned to W-499 under D-162.
+Verdict: passed
