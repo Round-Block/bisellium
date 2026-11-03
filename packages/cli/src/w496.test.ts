@@ -119,6 +119,31 @@ test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match
   await refused("code after a backslash delimiter's heredoc is judged", "cat <<\\EOF > f\nbody\nEOF\nsleep 600 &", "&");
   await refused("code after a mixed-quote delimiter's heredoc is judged", "cat <<E'O'\"F\" > f\nbody\nEOF\nsleep 600 &", "&");
   await passes("an unterminated heredoc body runs to the end", "cat <<EOF\nsleep 600 &\nnohup x");
+  await refused("a # after a command substitution is no comment", "echo $(true)#not-a-comment &", "&");
+  await refused("a # after a backtick substitution is no comment", "echo `true`#not-a-comment &", "&");
+  await refused("a # after a nested substitution is no comment", "echo $(echo $(true))#not-a-comment &", "&");
+  await passes("a # opening a word inside a substitution is a comment", "echo $(true #c )\necho done");
+  await refused("an & inside a command substitution is still judged", "echo $(true)x $(sleep 600 &)", "&");
+  for (const [what, word] of [
+    ["a backslash", "E\\OF"],
+    ["a backslash-newline continuation", "EO\\\nF"],
+    ["single quotes", "'E'OF"],
+    ["double quotes", '"E"OF'],
+    ["a locale-quoted word", '$"EOF"'],
+    ["an ANSI-C hex escape", "$'E\\x4fF'"],
+    ["an ANSI-C octal escape", "$'E\\117F'"],
+    ["an ANSI-C unicode escape", "$'E\\u004fF'"],
+    ["an ANSI-C escaped quote", "E$'\\x4f'F"],
+    ["mixed quoting", "\\E'O'$'F'"],
+  ] as const) {
+    await refused(`${what} in a delimiter is removed: code after the terminator is judged`, `cat <<${word} > f\nbody\nEOF\nsleep 600 &`, "&");
+    await passes(`${what} in a delimiter is removed: the body runs`, `cat <<${word}\nsleep 600 &\nEOF`);
+  }
+  await refused("a double-quoted delimiter keeps a backslash before an ordinary character", 'cat <<"E\\OF" > f\nbody\nE\\OF\nsleep 600 &', "&");
+  await passes("a double-quoted delimiter keeps a backslash: EOF does not end it", 'cat <<"E\\OF"\nEOF\nsleep 600 &\nE\\OF');
+  await refused("a double-quoted delimiter drops a backslash before a quote", 'cat <<"E\\"F" > f\nbody\nE"F\nsleep 600 &', "&");
+  await passes("a single-quoted delimiter keeps its backslash", "cat <<'E\\OF'\nEOF\nsleep 600 &\nE\\OF");
+  await passes("an ANSI-C delimiter with a newline never ends", "cat <<$'EO\\nF'\nEO\nF\nsleep 600 &");
   await passes("a quoted nohup as a command word runs", "'nohup' sleep 600");
   await passes("a double-quoted setsid as a command word runs", '"setsid" node serve.js');
   await passes("a nohup inside an arithmetic expansion runs", "echo $((6 & nohup))");
