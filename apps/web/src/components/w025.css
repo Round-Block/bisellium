@@ -2359,6 +2359,8 @@
 }
 
 .board__columns {
+  /* Preserve the card focus outline's 2px width plus 2px offset. */
+  --board-columns-left-clip: calc(var(--sp-6) - 4px);
   position: relative;
   flex-grow: 1;
   display: flex;
@@ -2375,6 +2377,11 @@
    * racing Board.tsx's own programmatic scrollIntoView and landing
    * somewhere neither specified nor deterministic (measured). */
   overflow-anchor: none;
+  /* The selected column lands at the padded inset. Crop only that leading
+   * gutter, less the focus outline's four-pixel reach, so fragments from the
+   * preceding column cannot detach there; the scroll range, 288px columns
+   * and terminal reachability stay unchanged. */
+  clip-path: inset(0 0 0 var(--board-columns-left-clip));
 }
 
 .board__columns::-webkit-scrollbar {
@@ -2447,6 +2454,11 @@
 .board__column-cards {
   flex-grow: 1;
   overflow-y: auto;
+  /* Equal four-sided negative margin and padding extend only the scroller's
+   * paint box; card and column geometry stay unchanged while the complete
+   * focus outline can reach 4px, including above the first card. */
+  margin: -4px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
@@ -2639,10 +2651,11 @@
   font-size: 13px;
 }
 
-/* The banner's petitio text IS the link to its Inbox thread (DIRECTION §3:
- * cyan carries content/evidence links). */
-.board-drawer__banner-link {
-  color: var(--accent-cyan);
+/* Navigation copy stays an ordinary underlined text link. Decision-record
+ * paths below retain the cyan evidence-link treatment. */
+.board-drawer__banner-link,
+.board-drawer__banner-link:visited {
+  color: var(--ink);
   text-decoration: underline;
 }
 
@@ -2815,6 +2828,15 @@
   }
 }
 
+/* At the ruled 640px zoom case the fixed-width drawer cannot leave one
+   readable Board column. Give it the whole content row while retaining the
+   zero-width Board grid cell for restoration on Close. */
+@media (max-width: 640px) {
+  .board-workspace:has(.board-drawer) {
+    grid-template-columns: minmax(0, 1fr) 100%;
+  }
+}
+
 /* Board phone: <=612px — the shipped 613/612 boundary for one full-width
    column at a time (scroll-snap), the column-name strip and full-width drawer. */
 @media (max-width: 612px) {
@@ -2880,6 +2902,7 @@
   }
 
   .board__columns {
+    --board-columns-left-clip: 0px;
     scroll-snap-type: x mandatory;
     padding: var(--sp-2) 0;
   }

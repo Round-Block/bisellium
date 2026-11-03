@@ -1,0 +1,27 @@
+# opus: W-499
+# phase: spec
+# round: 10
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c2d-e4e6-7e50-b7b6-87fe5e20b08f
+# outcome: passed
+# at: 2026-11-02T16:30:54.589Z
+# tree: tree:915cc2517e8b3365880ca53da43309fd0c8e9144
+# brief: briefs/W-499.md blob:72024ddb2a2236da19fca4c05fb867562c618d8e
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":10,"actor":"architect","studio":"studio","head":"1b4fe9951af4b7886713d1e7ce7ac48983d0911b","brief":"72024ddb2a2236da19fca4c05fb867562c618d8e","at":"2026-11-02T16:30:14.926Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-499-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief:19 brief:43 brief:47 brief:65 brief:66 brief:69 holds — lifecycle openers align to their clamped inset; the track clips only 20px and the card scroller extends its paint box 4px with equal negative margin and padding, so the complete focus outline survives both clip ancestors at 1280 expanded/collapsed and 640 without changing card/column widths or exposing preceding-column fragments; closes the ui-lead's round-9 blocker #1, the clipped focus outline — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-geometry.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-geometry.out` and `/home/edckt/.bisellium-evidence/W-499-spec/kill-focus.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-focus.out` — check: apps/web/src/screens/Board.tsx, apps/web/src/components/w025.css, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, shots/focus-w006-1280-expanded.png, shots/focus-w006-1280-collapsed.png, shots/focus-w006-640-200pct.png, shots/focus-w004-drawer-1280-expanded.png
+2. advisory — brief:49 holds — W-001 then W-004 re-snapshots the browser-reported offset and Close strictly restores `min(snapshot, closedMax)` with W-004 selected and focused — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-restore.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-restore.out` — check: apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts
+3. advisory — brief:51 brief:65 brief:67 holds — at 640 and 390 the drawer owns the content row beneath navigation while the mounted zero-width Board is inert; at 1280 the 540px drawer and visible Board remain unchanged; Close restores both saved scrolls, selection and focus; closes the ui-lead's round-6 blocker #2, the 640 sliver — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-narrow.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-narrow.out` — check: apps/web/src/components/w025.css, apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, shots/drawer-640-200pct.png
+4. advisory — brief:53 brief:55 brief:70 brief:71 brief:72 holds — complete petitio bodies, pending gates and handoff text contribute one exact reason each, with empty-body subject fallback and first-occurrence ordering — killed by `/home/edckt/.bisellium-evidence/W-499-spec/kill-reasons.patch` -> `/home/edckt/.bisellium-evidence/W-499-spec/kill-reasons.out` — check: apps/web/src/lib/board.ts, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts
+5. advisory — brief:73 scoped — fixed paths, three normalized inner Node red commands and environment forms are explicit limits; all three reds fail by assertion and pass at their own and later stages, all five served W-499 rows pass, and all six commits independently build — check: /home/edckt/.bisellium-evidence/W-499-spec/reds-host.out, /home/edckt/.bisellium-evidence/W-499-spec/gates-proto.out, /home/edckt/.bisellium-evidence/W-499-spec/series-builds.txt, /home/edckt/.bisellium-evidence/W-499-spec/mbox-check.out
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 10 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-499.md`; all twelve refreshed captures were inspected, prototype sha256 `0bb97f56f6c702d13752bd6e23cda502ad61a3084861fc5ea40fc15c4ecb51d0`, and no record write, `next` or `verdict` was performed.

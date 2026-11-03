@@ -1,0 +1,29 @@
+# opus: W-499
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19c45-8f7e-70a2-869e-f50f0319ddbc
+# outcome: revise
+# at: 2026-11-02T15:05:04.422Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# dispatch_prompt: ci/W-499-ui-prompt-6.md
+# design_digest: sha256:4a755366e08d3b5c939745f4b629cad15d780cb0c17a63fff187ad8108a8fc86
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"b8473352b3bccdfa3c3a841ed0a12d327d79d202","at":"2026-11-02T15:04:54.908Z"}
+
+## Findings
+
+1. advisory — brief:44 — Close clamping is sensible, but the brief still promises exact restoration without the closed-layout range limit proposed in round 5. — replace with: Close restores the browser-reported position captured at the most recent open, clamped to the closed layout’s available scroll range, with selection and focus returned to that opener. — check: apps/web/tests-serve/w499.spec.ts, opening W-001 then W-004 and checking `min(snapshot, closedMax)`.
+2. blocking — brief:93 — The 640 drawer leaves an unreadable approximately 100px Board sliver. The Patron ruled on 2026-11-02 that this must be fixed inside W-499; excluding it now contradicts that ruling. — replace with: At 640 CSS px, opening an item gives the drawer the full available content width beneath the navigation row. Keep the Board mounted but entirely out of view and unavailable to keyboard interaction while the drawer is open. Keep Close visible and reachable. Closing restores the Board, its latest opener’s selection and focus, and its saved scroll positions within the available range. Include this layout change in W-499’s owned files and acceptance checks. — check: apps/web/tests-serve/w499.spec.ts and rebuilt shots/drawer-640-200pct.png.
+3. advisory — brief:19 — The clipping allowance leaves the preceding column’s detached “1” in the left gutter in both 1280 drawer captures, although the selected column remains legible. — replace with: Keep the aligned column’s left inset clear of preceding-column fragments without changing column widths or reachability. — check: shots/drawer-1280-expanded.png and shots/drawer-1280-collapsed.png.
+
+## Earlier findings
+
+- ci/W-499-spec-3.log #1: closed — brief:19 and brief:107 adopt the requested alignment; both rebuilt 1280 drawer captures show Awaiting review and W-004 together, and the prototype’s served matrix covers Planned and terminal openers.
+
+## Recommendation
+
+The selected-column alignment resolves my original blocker, and the Close clamp remains the appropriate return behavior when the wider Board cannot retain the saved offset.
+At 640, adopt the full-width drawer presentation already used at 390, preserving the navigation row and restoring the Board on Close.
+The design lead must incorporate this layout change into the brief, prototype, checks and rebuilt captures before the opus proceeds.
+Verdict: revise

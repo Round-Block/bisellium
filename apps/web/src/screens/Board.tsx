@@ -59,7 +59,7 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
   const [connected, setConnected] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | undefined>(undefined);
   const [boardTrackCollapsed, setBoardTrackCollapsed] = useState(
-    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 612px)").matches === true,
+    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches === true,
   );
   // True only once officina AND opera AND inbox have all landed from the
   // SAME reconciliation. Each is set from its own independently-resolving
@@ -97,7 +97,7 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     }
   }, [everLoaded, model.waiting.length, onAttentionLoaded, onWaitingCount]);
   useEffect(() => {
-    const query = window.matchMedia("(max-width: 612px)");
+    const query = window.matchMedia("(max-width: 640px)");
     const update = (): void => setBoardTrackCollapsed(query.matches);
     update();
     query.addEventListener("change", update);
@@ -201,36 +201,53 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     };
   }, [model.columns.length]);
 
+  // The drawer pushes the mounted Board into a narrower grid cell. Align the
+  // selected lifecycle column after that layout commits: a fixed closed-layout
+  // offset can put its header/card under the shell edge. An unplaced waiting
+  // entry has no lifecycle target, so its current position is left alone.
+  useLayoutEffect(() => {
+    if (!selected) return;
+    const columns = document.querySelector<HTMLElement>(".board__columns");
+    const target = columns?.querySelector<HTMLElement>(`[data-column-id="${selected.columnId}"]`);
+    if (!columns || !target) return;
+    const inset = Number.parseFloat(getComputedStyle(columns).paddingLeft) || 0;
+    const maxScroll = Math.max(0, columns.scrollWidth - columns.clientWidth);
+    columns.scrollLeft = Math.min(maxScroll, Math.max(0, target.offsetLeft - inset));
+  }, [selected]);
+
   // Restore only after React has committed the closed layout. Scheduling this
   // from the close event can race that commit, leaving the narrow drawer-open
-  // grid to clamp or replace the saved offset. preventScroll keeps focus
-  // restoration from changing the offset again.
+  // grid to clamp or replace the saved offset. Focus first, then make the
+  // browser-reported offsets the final writes.
   useLayoutEffect(() => {
     if (selected) return;
     const pending = pendingCloseRestorationRef.current;
     if (!pending) return;
     pendingCloseRestorationRef.current = undefined;
 
-    const scrollEl = document.querySelector<HTMLElement>(".board__columns");
-    if (scrollEl && pending.scrollLeft !== undefined) scrollEl.scrollLeft = pending.scrollLeft;
-    const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
-    if (waitingEl && pending.waitingScrollLeft !== undefined) waitingEl.scrollLeft = pending.waitingScrollLeft;
-
     const { selection, fallback } = pending;
     const columnEl = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${selection.columnId}"]`);
-    if (!fallback) {
-      const origin = selection.origin === "waiting"
+    const focusTarget = !fallback
+      ? selection.origin === "waiting"
         ? document.querySelector<HTMLElement>(`[data-waiting-id="${selection.id}"]`)
-        : columnEl?.querySelector<HTMLElement>(`[data-card-id="${selection.id}"]`);
-      origin?.focus({ preventScroll: true });
-      return;
-    }
-    const firstCard = columnEl?.querySelector<HTMLElement>("[data-card-id]");
-    if (firstCard) {
-      firstCard.focus({ preventScroll: true });
-      return;
-    }
-    columnEl?.querySelector<HTMLElement>(".board__column-head")?.focus({ preventScroll: true });
+        : columnEl?.querySelector<HTMLElement>(`[data-card-id="${selection.id}"]`)
+      : columnEl?.querySelector<HTMLElement>("[data-card-id]")
+        ?? columnEl?.querySelector<HTMLElement>(".board__column-head");
+    focusTarget?.focus({ preventScroll: true });
+
+    const restoreOffsets = (): void => {
+      const scrollEl = document.querySelector<HTMLElement>(".board__columns");
+      if (scrollEl && pending.scrollLeft !== undefined) {
+        const closedMax = Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth);
+        scrollEl.scrollLeft = Math.min(closedMax, Math.max(0, pending.scrollLeft));
+      }
+      const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
+      if (waitingEl && pending.waitingScrollLeft !== undefined) {
+        const closedMax = Math.max(0, waitingEl.scrollWidth - waitingEl.clientWidth);
+        waitingEl.scrollLeft = Math.min(closedMax, Math.max(0, pending.waitingScrollLeft));
+      }
+    };
+    restoreOffsets();
   }, [selected]);
 
   function markRefreshed(): void {
@@ -373,6 +390,12 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
   function openDrawer(id: string, columnId: string, origin: "card" | "waiting"): void {
     const scrollEl = document.querySelector<HTMLElement>(".board__columns");
     const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
+    // A requested CSS-pixel offset can normalise to a neighbouring reported
+    // value on another device scale or subpixel layout. Write the current
+    // request back at the actual open boundary, then snapshot what the browser
+    // reports as reachable rather than the earlier requested number.
+    if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollLeft;
+    if (waitingEl) waitingEl.scrollLeft = waitingEl.scrollLeft;
     scrollSnapshotRef.current = { scrollLeft: scrollEl?.scrollLeft, waitingScrollLeft: waitingEl?.scrollLeft };
     setLastSelectedId(id);
     setSelected({ id, columnId, origin });

@@ -293,20 +293,19 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
   check(6, "BoardDrawer: banner absent when waitingOn is unset", !withoutBanner.includes("board-drawer__banner"), withoutBanner);
 }
 
-// With a joined petitio: subject + from, linked. With no petitio: names the
-// gate, states no question was asked — never an invented one.
+// With a joined petitio: only plain destination copy is linked. With no
+// petitio: the banner states that no question is recorded and has no link.
 {
   const withPetitio = renderToStaticMarkup(BoardDrawer({ detail: detail({ waitingOn: { gate: "owner", name: "Owner decision", petitio: { id: "P-1", from: "builder-a", subject: "accept drift?" } } }), onClose: () => undefined }));
-  check(6, "BoardDrawer: with a petitio — shows its subject", withPetitio.includes("accept drift?"), withPetitio);
-  check(6, "BoardDrawer: with a petitio — shows its from", withPetitio.includes("builder-a"), withPetitio);
-  // The compensating surface the Patron's "Read-only now, Reply as
-  // follow-on" decree rests on — a real <a> to the Inbox thread, not a
-  // write. A span here would satisfy the two checks above by accident.
-  check(6, "BoardDrawer: the petitio subject/from is a link (an <a> element) to the Inbox thread", /<a[^>]*href="#\/inbox"[^>]*>accept drift\?/.test(withPetitio), withPetitio);
+  const banner = withPetitio.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  check(6, "BoardDrawer: with a petitio — omits its subject and sender from the banner", !banner.includes("accept drift?") && !banner.includes("builder-a"), withPetitio);
+  check(6, "BoardDrawer: only Go to Inbox is a link to the Inbox screen", /<a[^>]*href="#\/inbox"[^>]*>Go to Inbox<\/a>/.test(withPetitio), withPetitio);
 
   const withoutPetitio = renderToStaticMarkup(BoardDrawer({ detail: detail({ waitingOn: { gate: "owner", name: "Owner decision" } }), onClose: () => undefined }));
-  check(6, "BoardDrawer: no petitio — names the gate", withoutPetitio.includes("Owner decision"), withoutPetitio);
-  check(6, "BoardDrawer: no petitio — states no question was asked", /no question/i.test(withoutPetitio), withoutPetitio);
+  check(6, "BoardDrawer: no petitio — states no question recorded", withoutPetitio.includes("Waiting on you") && withoutPetitio.includes("no question recorded."), withoutPetitio);
+  check(6, "BoardDrawer: no petitio — renders no Inbox link", !withoutPetitio.includes("href=\"#/inbox\""), withoutPetitio);
+  const bannerMarkup = withoutPetitio.match(/<div class="board-drawer__banner">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  check(6, "BoardDrawer: no petitio — banner reads exactly the no-question copy, with no anchor and no gate name", /^<span class="board-drawer__banner-label">Waiting on you<\/span>\s+—\s+<span class="board-drawer__banner-text">no question recorded\.<\/span>$/.test(bannerMarkup) && !bannerMarkup.includes("<a") && !bannerMarkup.includes("Owner decision"), withoutPetitio);
 }
 
 // One gate row per DECLARED probatio; status is a literal WORD in the text

@@ -1008,9 +1008,9 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     await served?.close();
   });
 
-  test("the keyboard-focused close ring remains visible while live resize toggles Board inert at 613/612", async ({ page }) => {
+  test("the keyboard-focused close ring remains visible while live resize toggles Board inert at 641/640", async ({ page }) => {
     served = await startServed("w087-pushed-drawer-focus-inert");
-    await page.setViewportSize({ width: 613, height: 900 });
+    await page.setViewportSize({ width: 641, height: 900 });
     await openBoard(page, served);
 
     const source = page.locator('.board__card[data-card-id="W-002"]');
@@ -1041,10 +1041,10 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
 
     const board = page.locator(".board");
     const drawer = page.locator(".board-drawer");
-    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(73, 0);
+    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(101, 0);
     await expect(board).not.toHaveAttribute("inert", "");
 
-    await page.setViewportSize({ width: 612, height: 900 });
+    await page.setViewportSize({ width: 640, height: 900 });
     await expect(drawer).toBeVisible();
     await expect(board).toHaveAttribute("inert", "");
     expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBe(0);
@@ -1056,10 +1056,10 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     await page.keyboard.press("Shift+Tab");
     expect(await page.evaluate(() => document.activeElement?.closest(".board") === null)).toBe(true);
 
-    await page.setViewportSize({ width: 613, height: 900 });
+    await page.setViewportSize({ width: 641, height: 900 });
     await expect(drawer).toBeVisible();
     await expect(board).not.toHaveAttribute("inert", "");
-    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(73, 0);
+    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(101, 0);
   });
 
   test("the binding breakpoint table, terminal reachability and both focus-return paths hold", async ({ page }) => {
@@ -1072,7 +1072,8 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
       { viewport: 1440, board: 680, main: 1220, close: "escape" },
       { viewport: 800, board: 260, main: 800, close: "escape" },
       { viewport: 900, board: 360, main: 900, close: "escape" },
-      { viewport: 613, board: 73, main: 613, close: "escape" },
+      { viewport: 641, board: 101, main: 641, close: "escape" },
+      { viewport: 640, board: 0, main: 640, close: "escape" },
       { viewport: 612, board: 0, main: 612, close: "escape" },
       { viewport: 606, board: 0, main: 606, close: "escape" },
       { viewport: 600, board: 0, main: 600, close: "escape" },

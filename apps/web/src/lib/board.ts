@@ -509,10 +509,11 @@ export interface DrawerDetail {
   /** Set only when a human gate is pending. `petitio` is joined from
    *  /api/inbox on `opus`; absent when no petitio names this opus. */
   waitingOn?: { gate: string; name: string; petitio?: { id: string; from: string; subject: string } };
-  /** W-410 display only: why the selected waiting card is waiting. W-412 owns
-   *  revision binding and stale-verdict refusal; these strings make neither
-   *  claim. Present only for a card in the existing Needs-you membership. */
-  waitingReasons?: string[];
+  /** W-410/W-499 display only: one chosen explanation source for the selected
+   *  waiting card. Petitio reasons retain the first sender as attribution;
+   *  lower-priority sources are never appended. W-412 owns revision binding
+   *  and stale-verdict refusal. */
+  waitingReasons?: { text: string; from?: string }[];
   /** W-412: one explicit binding for every gate carrying a certified source
    * revision or decision-record path. */
   waitingEvidence?: {
@@ -594,21 +595,46 @@ export function drawerDetail(
     };
   }
 
-  let waitingReasons: string[] | undefined;
+  let waitingReasons: DrawerDetail["waitingReasons"];
   let waitingEvidence: DrawerDetail["waitingEvidence"];
   if (card?.needsYou) {
-    const reasons: string[] = [];
+    const petitionReasons: NonNullable<DrawerDetail["waitingReasons"]> = [];
+    const seenPetitionText = new Set<string>();
     for (const petitio of inbox.petitiones.filter((item) => item.opus === opus.id)) {
       const subject = typeof petitio.subject === "string" ? petitio.subject.trim() : "";
       const body = typeof petitio.body === "string" ? petitio.body.trim() : "";
-      if (subject.length > 0 && body.length > 0) reasons.push(`${subject}: ${body}`);
-      else if (subject.length > 0 || body.length > 0) reasons.push(subject || body);
+      // The body is the verbatim question; the subject is its Inbox row label
+      // and, for legacy petitiones, may be a capped derivation of that body.
+      // Treating both as reason text joins a shortened prefix back onto its
+      // own source. Use the label only as the honest fallback for an empty body.
+      const text = body || subject;
+      if (text.length > 0 && !seenPetitionText.has(text)) {
+        seenPetitionText.add(text);
+        petitionReasons.push({ text, from: petitio.from });
+      }
     }
-    for (const gate of gates.filter((item) => item.human && opus.probationes[item.id]?.status === "pending")) reasons.push(`${gate.name} is pending.`);
     const nextValue = recordValue(opus.traditio, "next");
     const next = typeof nextValue === "string" ? nextValue.trim() : "";
-    if (next) reasons.push(next);
-    waitingReasons = [...new Set(reasons)];
+    const gateReasons: NonNullable<DrawerDetail["waitingReasons"]> = [];
+    const seenGateText = new Set<string>();
+    for (const gate of gates) {
+      const recorded = opus.probationes[gate.id];
+      if (!gate.human || recorded === undefined || recorded.status === "passed" || recorded.status === "waived") continue;
+      const text = recorded.status === "pending"
+        ? `${gate.name} is pending.`
+        : recorded.status === "stale"
+          ? `${gate.name} is stale.`
+          : `${gate.name} has failed.`;
+      if (!seenGateText.has(text)) {
+        seenGateText.add(text);
+        gateReasons.push({ text });
+      }
+    }
+    waitingReasons = petitionReasons.length > 0
+      ? petitionReasons
+      : next.length > 0
+        ? [{ text: next }]
+        : gateReasons;
     waitingEvidence = gates.flatMap((gate) => gate.evidence || gate.certifies ? [{
       gate: gate.id,
       label: gate.name,

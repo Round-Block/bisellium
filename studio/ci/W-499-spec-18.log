@@ -1,0 +1,28 @@
+# opus: W-499
+# phase: spec
+# round: 18
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19c45-8f7e-70a2-869e-f50f0319ddbc
+# outcome: passed
+# at: 2026-11-03T03:29:17.297Z
+# tree: tree:0fa25cb17f8c7f746c58a44dd619a7a75cacf69a
+# dispatch_prompt: ci/W-499-ui-prompt-18.md
+# design_digest: sha256:8c5b230b2aad8a836c0240a1cee4a622092f4909bb14f89b03d997716fbaa3b5
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":18,"actor":"ui-lead","studio":".worktrees/W-499/studio","head":"1224bd367e8d3ebe68d3fcd81708a7ff06290789","brief":"32c51b2c9476aa4e60f7b9164ba0e21e174f99f0","at":"2026-11-03T03:28:36.439Z"}
+
+## Findings
+
+1. advisory — studio/briefs/W-499.md:81 — Round-15 advisory #1 still holds: unchanged card geometry is asserted only horizontally, although the refreshed captures show no regression — replace with: Pin unchanged card left, top, width and height against the pre-change geometry alongside all four outline-clearance checks — check: apps/web/tests-serve/w499.spec.ts:182
+2. advisory — studio/briefs/W-499.md:81 — Round-15 advisory #2 still holds: the W-004 focus row resets scrollLeft after ArrowRight before measuring clearance — replace with: Measure all four outline edges immediately after ArrowRight without rewriting scrollLeft; retain the aligned-target check separately — check: apps/web/tests-serve/w499.spec.ts:203
+
+## Earlier findings
+
+## Recommendation
+
+Revision 9 adopts the approved drawer rules: both 1280 layouts, 640 and 390 show the complete question once with its sender, and a short banner with only “Go to Inbox” plainly underlined.
+The prototype implements the approved body/subject fallback, then recorded next, then outstanding human-gate descriptions, then the empty state; lower-priority facts remain available in their existing sections.
+The no-petitio banner has the approved copy and no link, while the refreshed captures retain complete focus rectangles, readable narrow drawers and visible Close controls.
+The remaining agent-written layout rules make sense on these screens; no new legibility defect appears.
+Round-17’s stale-title advisory is editorial: brief:83 already distinguishes b2’s original red from its migrated assertions, and the recorded evidence title should remain intact.
+Verdict: passed

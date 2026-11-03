@@ -1,0 +1,59 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-499-b2\s --import tsx apps/web/test/w499.test.ts
+# exit: 1
+# at: 2026-11-02T23:22:41.855Z
+# sella: ui-architect
+# tree: tree:6d4de0d00d138350ff5d7a0b972105d37c3186b0
+# ticket: {"opus":"W-499","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-499/studio","head":"fe4708712d51bccc150cff70f1c81697772a72d2","brief":"b3644bd1dfb0d6a685a5282090453841b8b68e7c","at":"2026-11-02T23:22:41.800Z"}
+
+TAP version 13
+# Subtest: W-499-b2 behaviour 2: Why it waits states each reason once
+not ok 1 - W-499-b2 behaviour 2: Why it waits states each reason once
+  ---
+  duration_ms: 8.110183
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-499/apps/web/test/w499.test.ts:1:4358'
+  failureType: 'testCodeFailure'
+  error: |-
+    petitio bodies, recorded gates and handoff copy contribute one exact nonblank bullet apiece
+    + actual - expected
+    
+      [
+    +   'Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new…: Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new item?',
+    +   'Call: Patron call is pending.',
+    +   'Explicit subject fallback',
+    +   'Patron call is pending.',
+        'Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new item?',
+    -   'Patron call is pending.',
+    -   'Explicit subject fallback'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new item?'
+    1: 'Patron call is pending.'
+    2: 'Explicit subject fallback'
+  actual:
+    0: 'Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new…: Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new item?'
+    1: 'Call: Patron call is pending.'
+    2: 'Explicit subject fallback'
+    3: 'Patron call is pending.'
+    4: 'Drag-and-drop grew a second screen (split stacks). Accept the scope drift and ship both, or cut split stacks to a new item?'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-499/apps/web/test/w499.test.ts:109:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18.251837

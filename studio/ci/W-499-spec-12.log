@@ -1,0 +1,28 @@
+# opus: W-499
+# phase: spec
+# round: 12
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19c45-8f7e-70a2-869e-f50f0319ddbc
+# outcome: revise
+# at: 2026-11-02T16:37:49.642Z
+# tree: tree:915cc2517e8b3365880ca53da43309fd0c8e9144
+# dispatch_prompt: ci/W-499-ui-prompt-12.md
+# design_digest: sha256:bb5d744204d469ed33e4129b4b403c91d30dfa353e5409950ea2da1a5a32f9fc
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":12,"actor":"ui-lead","studio":"studio","head":"1b4fe9951af4b7886713d1e7ce7ac48983d0911b","brief":"72024ddb2a2236da19fca4c05fb867562c618d8e","at":"2026-11-02T16:37:36.183Z"}
+
+## Findings
+
+1. blocking — brief:19 — The left edge is repaired, but all four focused-state captures still show U-shaped outlines: the top edge is missing. The agent-written horizontal-only clearance does not satisfy the promised complete ring. `.board__column-cards` still clips the first card’s outline vertically, and the served checks measure only left/right clearance. — replace with: Preserve the focused card’s complete outline on all four sides through every clipping ancestor, including the first card at the scroller’s top. Reserve its 4px outward reach vertically as well as horizontally without moving the cards or changing column widths. — check: apps/web/src/components/w025.css and apps/web/tests-serve/w499.spec.ts; verify all four outline edges in the four focus captures, measuring after keyboard focus without resetting the scroll offset.
+2. advisory — brief:19 — The absence-of-fragments claim is broader than the aligned-state evidence: arbitrary scroll offsets can expose preceding content in the reserved 4px strip. That small edge fragment is acceptable during ordinary scrolling and does not justify clipping the focus cue again. — replace with: At the aligned target, the leading inset contains no preceding-column fragment; at other offsets, preceding content may occupy the reserved 4px strip. — check: apps/web/tests-serve/w499.spec.ts.
+
+## Earlier findings
+
+- ci/W-499-spec-9.log #1: open — The left edge is restored, but focus-w006-1280-expanded.png, focus-w006-1280-collapsed.png, focus-w006-640-200pct.png and focus-w004-drawer-1280-expanded.png all lack the outline’s top edge; the complete-ring requirement remains unmet.
+
+## Recommendation
+
+The drawer captures remain readable at 1280, 640 and 390; the selected-column alignment, narrow full-width presentation and clamped Close behavior retain the earlier corrections.
+The focused captures establish improved horizontal clearance, but they contradict the claim that the complete ring is visible.
+Extend clearance vertically and verify the actual keyboard result; no drawer redesign is needed.
+Verdict: revise

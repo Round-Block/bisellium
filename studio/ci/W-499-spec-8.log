@@ -1,0 +1,25 @@
+# opus: W-499
+# phase: spec
+# round: 8
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 5f85ad98-9d75-4210-8fd4-ef2c0cc44572
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-02T16:05:29.971Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-499.md blob:6f7e103ac4dbe972f85ef18dc806ec999adc40b8
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"6f7e103ac4dbe972f85ef18dc806ec999adc40b8","at":"2026-11-02T16:05:15.558Z"}
+
+Claude week 65%, 5h 3% | Codex week 100% | context 152k of 300k
+
+## Findings
+1. advisory — brief:77 [severity: S2] At 640 and 390 the Board is zero-width, so served b1 skips the containment and clear-inset checks (`trackWidth > 0`). Replacement: "…at 1280 expanded/collapsed headers/cards stay contained and the inset is clear; at 640/390 b1 pins only the clamped target, no overflow and Close restoration." [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/tests-serve/w499.spec.ts
+2. advisory — brief:19 [severity: S2] The gutter `clip-path` applies even with the drawer closed. `.board__card:focus` reaches 4px into the gutter, so a card at the inset loses its ring's left edge. Replacement: "Clip only the gutter less the 4px focus-ring reach, so a focused card's ring stays whole." [class: tests×ruled-case-uncovered] — check: none: served row focusing W-006 at scroll 0, checking the outline is unclipped
+3. advisory — brief:116 [severity: S4] Sense: all four drawer captures make sense. 640/390 follow the Patron's 2026-11-02 ruling; Defaults 1 and 4 put the rest to the Patron. Replacement: none. [class: tests×ruled-case-uncovered] — check: none
+
+## Earlier findings
+
+## Verdict
+Revision 6 follows the Patron's 640 ruling and takes both earlier advisories; only advisories remain.
+VERDICT: PASS

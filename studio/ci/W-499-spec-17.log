@@ -1,0 +1,24 @@
+# opus: W-499
+# phase: spec
+# round: 17
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 1b8c7d53-fafe-46e2-a9ac-a358d4f51a4e
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-03T03:25:37.139Z
+# tree: tree:0fa25cb17f8c7f746c58a44dd619a7a75cacf69a
+# brief: briefs/W-499.md blob:32c51b2c9476aa4e60f7b9164ba0e21e174f99f0
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":17,"actor":"spec-reviewer","studio":".worktrees/W-499/studio","head":"a5178a81f8172544c3169bdf3fcd2405383fad99","brief":"32c51b2c9476aa4e60f7b9164ba0e21e174f99f0","at":"2026-11-03T03:24:19.110Z"}
+
+## Findings
+1. advisory — brief:84 [severity: S4] b2's Genuine red and served row still use the titles "petitio bodies, recorded gates and handoff copy contribute one exact nonblank bullet apiece" and "Why it waits states each reason once". After b4, gates and `next` no longer feed b2's final expectation. Replacement: keep the recorded red title, since it is evidence, and add to brief:83: "b2's row titles name its original red; after b4 the row asserts attributed petitio reasons only, and gate/next suppression is b4's." — check: none: a census rule that flags a migrated row whose title names a removed source [class: brief×stale-pin-title]
+
+## Earlier findings
+
+## Verdict
+Revision 9 matches the drawer rules the Patron approved on 2026-11-03 and adds no reader. The prototype `drawerDetail()` (`.worktrees/W-499-spec/apps/web/src/lib/board.ts:601-637`) picks one source in the approved order, removes duplicates only within that source and skips unrecorded, passed and waived gates. The brief states its limits. At every width the captures show a short banner where only `Go to Inbox` is linked and the full question once, with its sender. The duplicated reasons are gone.
+
+Claude week 68%, 5h 21% | Codex week 11% | context 203k of 300k
+
+VERDICT: PASS

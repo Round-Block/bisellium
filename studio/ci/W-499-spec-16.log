@@ -1,0 +1,27 @@
+# opus: W-499
+# phase: spec
+# round: 16
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c2d-e4e6-7e50-b7b6-87fe5e20b08f
+# outcome: passed
+# at: 2026-11-03T03:20:24.184Z
+# tree: tree:0fa25cb17f8c7f746c58a44dd619a7a75cacf69a
+# brief: briefs/W-499.md blob:32c51b2c9476aa4e60f7b9164ba0e21e174f99f0
+# ticket: {"opus":"W-499","step":"spec","action":"verdict-spec","round":16,"actor":"architect","studio":".worktrees/W-499/studio","head":"faaef934b1d2d8231bcd73981d41be24eacb3c38","brief":"32c51b2c9476aa4e60f7b9164ba0e21e174f99f0","at":"2026-11-03T03:19:46.632Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-499-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — brief:19 brief:50 holds — lifecycle openers align to their clamped inset and the unchanged four-sided clearance preserves the complete rectangular focus outline at 1280 expanded/collapsed and 640, including W-004 beside its open drawer; the refreshed served mutation fails on the missing top edge — check: apps/web/src/screens/Board.tsx, apps/web/src/components/w025.css, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, /home/edckt/.bisellium-evidence/W-499-spec/kill-focus.out, /home/edckt/.bisellium-evidence/W-499-spec/shots/focus-w006-1280-expanded.png
+2. advisory — brief:19 brief:52 holds — W-001 then W-004 re-snapshots the browser-reported offset and Close strictly restores `min(snapshot, closedMax)` with W-004 selected and focused — check: apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, /home/edckt/.bisellium-evidence/W-499-spec/kill-restore.out
+3. advisory — brief:21 brief:54 holds — at 640 and 390 the drawer owns the content row while the mounted zero-width Board is inert; at 1280 the 540px drawer and visible Board remain unchanged; Close restores both saved scrolls, selection and focus — check: apps/web/src/components/w025.css, apps/web/src/screens/Board.tsx, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, /home/edckt/.bisellium-evidence/W-499-spec/shots/drawer-640-200pct.png
+4. advisory — brief:23 brief:56 brief:58 holds — the banner now carries only status and its plain underlined Inbox route, while `Why it waits` chooses exactly one attributed petitio, recorded-next, recorded-outstanding-human-gate or honest-empty source in approved priority order; exact duplicates collapse only inside that source, closing the Patron's duplicate finding — check: apps/web/src/lib/board.ts, apps/web/src/screens/BoardDrawer.tsx, apps/web/src/components/w025.css, apps/web/test/w499.test.ts, apps/web/tests-serve/w499.spec.ts, /home/edckt/.bisellium-evidence/W-499-spec/kill-b4.out, /home/edckt/.bisellium-evidence/W-499-spec/kill-next.out, /home/edckt/.bisellium-evidence/W-499-spec/kill-banner.out, /home/edckt/.bisellium-evidence/W-499-spec/shots/drawer-390.png
+5. advisory — brief:77 scoped — all four Genuine reds fail by assertion and pass on their stages, b1-b3 remain green at the b4 red, all six served W-499 rows and named flipped rows pass, all eight commits build independently, and the mbox replays to tree `ba85c97a86d39640596602e25fb4f99a410b3cca` — check: /home/edckt/.bisellium-evidence/W-499-spec/reds-host.out, /home/edckt/.bisellium-evidence/W-499-spec/gates-proto.out, /home/edckt/.bisellium-evidence/W-499-spec/series-builds.txt, /home/edckt/.bisellium-evidence/W-499-spec/mbox-check.out
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 16 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-499.md`; all twelve refreshed captures were inspected, including four drawers with one attributed reason and no repeated banner copy, prototype sha256 `f3afb335a803fdb10648877d20dc02b7a70bb0cadfac5bc82881bf98ccdb5904`, and no record write, `next` or `verdict` was performed.

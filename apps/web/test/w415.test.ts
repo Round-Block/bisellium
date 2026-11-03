@@ -33,8 +33,9 @@ test("W-415-b1 behaviour 1: D-119's icon rail carries D-120's shared attention d
 test("W-415-b2 behaviour 2: screens reflow without unnamed page overflow", () => {
   const board = read("apps/web/src/screens/Board.tsx"), css = read("apps/web/src/components/w025.css"), served = read("apps/web/tests-serve/w415.spec.ts");
   assert.doesNotMatch(css, /100vw/, "screen internals avoid viewport-unit width assumptions");
-  assert.equal((board.match(/matchMedia\?\.\("\(max-width: 612px\)"\)/g) ?? []).length, 2, "Board initial logic keeps 612");
-  assert.equal((board.match(/matchMedia\("\(max-width: 612px\)"\)/g) ?? []).length, 1, "Board resize logic keeps 612");
+  assert.equal((board.match(/matchMedia\?\.\("\(max-width: 612px\)"\)/g) ?? []).length, 1, "Board phone initial-phase logic keeps 612");
+  assert.equal((board.match(/matchMedia\?\.\("\(max-width: 640px\)"\)/g) ?? []).length, 1, "Board drawer inert initial logic follows the ruled 640 full-width drawer");
+  assert.equal((board.match(/matchMedia\("\(max-width: 640px\)"\)/g) ?? []).length, 1, "Board drawer inert resize logic follows the ruled 640 full-width drawer");
   assert.match(served, /640 CSS-pixel zoom viewport/, "served row pins 200% equivalent width");
   assert.match(served, /sole horizontal scroller/, "Board phase strip is the named exception");
   assert.match(css, /@media \(max-width: 599px\)/, "existing shell content breakpoint remains 599");

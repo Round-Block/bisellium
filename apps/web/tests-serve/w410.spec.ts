@@ -141,7 +141,7 @@ test("W-410-b4 drawer shows reasons and evidence at 1280, 640 and 390", async ({
     const drawer = page.getByRole("dialog", { name: longTitle });
     await expect(drawer, `${width}: the existing drawer opens`).toBeVisible();
     await expect(drawer.getByRole("heading", { name: "Why it waits" }), `${width}: reasons are named`).toBeVisible();
-    await expect(drawer.locator(".board-drawer__reason"), `${width}: question, recorded-pending gate and handoff reasons are displayed`).toContainText(["Choose: Choose the reviewed design", "Patron call is pending.", "move"]);
+    await expect(drawer.locator(".board-drawer__reason"), `${width}: the attributed question is the sole chosen reason source`).toHaveText(["Choose the reviewed design — from architect"]);
     await expect(drawer.locator(".board-drawer__reason", { hasText: "W-1 reason" }), `${width}: the opus body is not repeated as a waiting reason`).toHaveCount(0);
     await expect(drawer.getByText("W-1 reason", { exact: true }), `${width}: the opus body appears once in its record section`).toHaveCount(1);
     await expect(drawer.getByRole("heading", { name: "Evidence" }), `${width}: evidence is named`).toBeVisible();
