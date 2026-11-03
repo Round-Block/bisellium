@@ -459,11 +459,13 @@ function shellCode(line: string): { code: string; amp: boolean } {
       while (line[j] === " " || line[j] === "\t") j++;
       let delim = "";
       for (; j < line.length && !" \t\n;&|<>()".includes(line[j]!); j++) {
+        const ansi = line[j] === "$" && (line[j + 1] === "'" || line[j + 1] === '"');
+        if (ansi) j++;
         const d = line[j]!;
         if (d === "'" || d === '"') {
-          const end = close(j, d === '"');
+          const end = close(j, d === '"' || ansi);
           const quoted = line.slice(j + 1, end);
-          delim += d === '"' ? quoted.replace(/\\(.)/g, "$1") : quoted;
+          delim += d === '"' || ansi ? quoted.replace(/\\(.)/g, "$1") : quoted;
           j = end;
         } else if (d === "\\") delim += line[++j] ?? "";
         else delim += d;
