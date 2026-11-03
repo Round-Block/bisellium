@@ -87,3 +87,16 @@ test("W-490-b1 behaviour 1: each Known traps line opens `- Standing: ` or `- Unt
     rmSync(repo, { recursive: true, force: true });
   }
 });
+
+test("W-490-b2 behaviour 2: a Known traps line whose named opus is done is refused", () => {
+  let text = handoff(["- Standing: a.", "- Until W-1: a trap W-1 retired."]);
+  assert.deepEqual(found(text), [["process.handoff.trap", at(text, "- Until W-1: a trap W-1 retired.")]], "an Until line naming a done opus is refused");
+  const finding = sessionHandoffFindings(text, base()).find((f) => f.rule === "process.handoff.trap");
+  assert.equal(finding?.message, "W-1 is done: remove the trap it retired, or re-mark what still stands", "the refusal names the done opus");
+  for (const id of ["W-2", "W-3", "W-4"]) assert.deepEqual(found(handoff([`- Until ${id}: a trap.`])), [], `a line naming a ${base().get(id)!.state} opus stands`);
+  // next's done step reads the handoff with the opus it finishes marked done (handoffHold): the line it names is then refused
+  text = handoff(["- Until W-3: a trap W-3 retires."]);
+  const finishing = base().set("W-3", { state: "done", end: "2026-11-03T00:00:00Z" });
+  assert.deepEqual(found(text, finishing), [["process.handoff.trap", at(text, "- Until W-3: a trap W-3 retires.")]], "finishing the named opus refuses its line");
+  assert.deepEqual(found(handoff(["- Standing: the W-1 pattern, which W-1 set."])), [], "an id in a Standing line's text is not a marker");
+});
