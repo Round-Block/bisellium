@@ -396,6 +396,203 @@ export function unboundedLoop(command: string, bounded = false, depth = 0): bool
   return false;
 }
 
+/** W-496: the commands that detach work from the Bash call, refused as a simple command's first word. */
+const DETACHERS = new Set(["nohup", "setsid", "disown"]);
+
+/** W-496: the word that stands in `code` for skipped text (quotes, escapes, expansions, a heredoc delimiter). */
+const SKIPPED = "Q";
+
+const ANSI_C: Record<string, string> = { a: "\x07", b: "\b", e: "\x1b", E: "\x1b", f: "\f", n: "\n", r: "\r", t: "\t", v: "\v", "\\": "\\", "'": "'", '"': '"', "?": "?" };
+
+/** W-496: the text of a `$'…'` body with its escapes decoded as bash does: `\xHH`, `\uHHHH`, `\UHHHHHHHH`, `\NNN` octal,
+ *  `\cX`, and the single-letter escapes; any other backslash stays. `\xHH` and `\NNN` are bytes, literal characters are
+ *  their UTF-8 bytes, and the whole byte run is read as UTF-8, so `\303\277` is "ÿ" and the delimiter compares byte for
+ *  byte with the terminator line. */
+function ansiC(body: string): Buffer {
+  const bytes: Buffer[] = [];
+  let at = 0;
+  for (const m of body.matchAll(/\\(x[0-9A-Fa-f]{1,2}|u[0-9A-Fa-f]{1,4}|U[0-9A-Fa-f]{1,8}|[0-7]{1,3}|c[\s\S]|[\s\S])/gu)) {
+    bytes.push(Buffer.from(body.slice(at, m.index)));
+    at = m.index + m[0].length;
+    const e = m[1]!;
+    if (e.length > 1 && (e[0] === "u" || e[0] === "U")) {
+      const n = parseInt(e.slice(1), 16);
+      bytes.push(Buffer.from(n <= 0x10ffff ? String.fromCodePoint(n) : m[0]));
+    } else if (e.length > 1 && e[0] === "x") bytes.push(Buffer.from([parseInt(e.slice(1), 16)]));
+    else if (/^[0-7]/.test(e)) bytes.push(Buffer.from([parseInt(e, 8) & 255]));
+    else if (e.length > 1) bytes.push(Buffer.from([e.charCodeAt(1) & 31]));
+    else bytes.push(Buffer.from(ANSI_C[e] ?? m[0]));
+  }
+  bytes.push(Buffer.from(body.slice(at)));
+  return Buffer.concat(bytes);
+}
+
+/** W-496: a heredoc's delimiter word read from `start` by shell quote removal, to the first unquoted blank or operator
+ *  character: a backslash-newline goes, a backslash quotes the next character, single quotes keep their text, double
+ *  quotes and `$"…"` keep theirs but for a backslash before `$`, a backtick, `"`, `\` or a newline, and `$'…'` decodes its
+ *  escapes (`ansiC`). `end` is the index after the word. */
+export function heredocDelimiter(line: string, start: number): { delim: string; end: number } {
+  const parts: Buffer[] = [];
+  const put = (text: string): number => parts.push(Buffer.from(text));
+  let j = start;
+  while (j < line.length && !" \t\n;&|<>()".includes(line[j]!)) {
+    const c = line[j]!;
+    if (c === "\\") {
+      const ch = j + 1 < line.length ? String.fromCodePoint(line.codePointAt(j + 1)!) : "";
+      if (ch !== "\n") put(ch);
+      j += 1 + Math.max(ch.length, 1);
+    } else if (c === "'" || (c === "$" && line[j + 1] === "'")) {
+      const ansi = c === "$";
+      let e = j + (ansi ? 2 : 1);
+      const from = e;
+      while (e < line.length && line[e] !== "'") e += ansi && line[e] === "\\" ? 2 : 1;
+      const body = line.slice(from, Math.min(e, line.length));
+      if (ansi) parts.push(ansiC(body));
+      else put(body);
+      j = e + 1;
+    } else if (c === '"' || (c === "$" && line[j + 1] === '"')) {
+      let e = j + (c === "$" ? 2 : 1);
+      while (e < line.length && line[e] !== '"') {
+        const n = line[e + 1];
+        if (line[e] === "\\" && n === "\n") e += 2;
+        else if (line[e] === "\\" && n !== undefined && "$`\"\\".includes(n)) {
+          put(n);
+          e += 2;
+        } else {
+          const ch = String.fromCodePoint(line.codePointAt(e)!);
+          put(ch);
+          e += ch.length;
+        }
+      }
+      j = e + 1;
+    } else {
+      const ch = String.fromCodePoint(line.codePointAt(j)!);
+      put(ch);
+      j += ch.length;
+    }
+  }
+  return { delim: Buffer.concat(parts).toString("utf8"), end: Math.min(j, line.length) };
+}
+
+/** W-496: the code a shell runs in `line`, and whether an `&` in it ends or separates a command. Read as bash reads them:
+ *  single quotes; `$'…'` and double quotes, where a backslash escapes the next character; a backslash outside quotes; a
+ *  `#` opening a word, to the line's end; `${…}` and `$((…))`, parentheses counted; and heredocs: after `<<` or `<<-`
+ *  (a `<<<` here-string reads as `<<` with an empty delimiter, so it opens none) outside quotes and expansions and its delimiter word (quotes and backslashes removed), the lines after
+ *  the next newline up to one equal to the delimiter (`<<-`: leading tabs dropped), or to the end, one heredoc after
+ *  another. `code` is `line` without its comments and heredoc bodies. An `&` outside all of these ends or separates a
+ *  command unless it is `&&`, follows `<`, `>`, `|` or `;` (`>&2`, `2>&1`, `<&0`, `|&`, `;&`) or precedes `>` (`&>`,
+ *  `&>>`). An unterminated quote runs to the end (bash refuses that line). */
+function shellCode(line: string): { code: string; amp: boolean } {
+  let code = "";
+  let amp = false;
+  const closers: string[] = [];
+  /** True inside a word: a `#` there is a character, not a comment (a quote, an escape or an expansion is part of the word). */
+  let word = false;
+  /** The open `(`s outside expansions, true for a `$(` (whose close ends a word) and false for a subshell's. */
+  const parens: boolean[] = [];
+  /** True between a pair of backticks. */
+  let tick = false;
+  const docs: { delim: string; tabs: boolean }[] = [];
+  /** The index of the quote closing the one at `i` (or the last index), skipping a backslash's next character when `escapes`. */
+  const close = (i: number, escapes: boolean): number => {
+    let j = i + 1;
+    for (; j < line.length && line[j] !== line[i]; j++) if (escapes && line[j] === "\\") j++;
+    return Math.min(j, line.length - 1);
+  };
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]!;
+    const prev = line[i - 1] ?? "\n";
+    if (c === "'" || c === '"' || (c === "$" && line[i + 1] === "'")) {
+      const open = c === "$" ? i + 1 : i;
+      const end = close(open, c !== "'");
+      if (closers.length === 0) code += SKIPPED;
+      word = true;
+      i = end;
+    } else if (c === "\\") {
+      if (closers.length === 0) code += line[i + 1] === "\n" ? " " : SKIPPED;
+      if (line[i + 1] !== "\n") word = true;
+      i++;
+    } else if (c === "#" && closers.length === 0 && !word) {
+      const j = line.indexOf("\n", i);
+      i = (j < 0 ? line.length : j) - 1;
+    } else if (c === "\n" && docs.length > 0) {
+      code += c;
+      word = false;
+      let k = i + 1;
+      for (const d of docs.splice(0)) {
+        while (k < line.length) {
+          const e = line.indexOf("\n", k);
+          const text = line.slice(k, e < 0 ? line.length : e);
+          k = e < 0 ? line.length : e + 1;
+          if ((d.tabs ? text.replace(/^\t+/, "") : text) === d.delim) break;
+        }
+      }
+      i = k - 1;
+    } else if (c === "<" && line[i + 1] === "<" && closers.length === 0) {
+      let j = i + 2;
+      const tabs = line[j] === "-";
+      if (tabs) j++;
+      while (line[j] === " " || line[j] === "\t") j++;
+      const { delim, end } = heredocDelimiter(line, j);
+      if (delim !== "") docs.push({ delim, tabs });
+      code += "<<" + SKIPPED;
+      word = end > j;
+      i = end - 1;
+    } else {
+      if (c === "$" && line[i + 1] === "{") {
+        if (closers.length === 0) code += SKIPPED;
+        closers.push("}");
+        word = true;
+        i++;
+        continue;
+      }
+      if (c === "$" && line.startsWith("((", i + 1)) {
+        if (closers.length === 0) code += SKIPPED;
+        closers.push(")", ")");
+        word = true;
+        i += 2;
+        continue;
+      }
+      if (closers.length > 0) {
+        if (c === "(") closers.push(")");
+        else if (c === closers[closers.length - 1]) closers.pop();
+        word = true;
+        continue;
+      }
+      word = !" \t\n;&|()<>".includes(c);
+      if (c === "(") parens.push(prev === "$");
+      else if (c === ")") word = parens.pop() === true;
+      else if (c === "`") {
+        tick = !tick;
+        word = !tick;
+      }
+      if (c === "&") {
+        if (line[i + 1] === "&") {
+          code += "&&";
+          i++;
+          continue;
+        }
+        if (line[i + 1] !== ">" && !"<>|;".includes(prev)) amp = true;
+      }
+      code += c;
+    }
+  }
+  return { code, amp };
+}
+
+/** W-496: the background form a foreground Bash call holds, or undefined: `&` when an `&` ends or separates a command
+ *  (`shellCode`), else `nohup`, `setsid` or `disown` when one is a simple command's first word after the prefixes `strip`
+ *  drops, by any path. A script the command runs (`-c`, a file) is not read: a limit. */
+export function backgroundForm(command: string): string | undefined {
+  const { code, amp } = shellCode(command);
+  if (amp) return "&";
+  for (const words of simpleCommands(code)) {
+    const first = base(strip(words).words[0]);
+    if (DETACHERS.has(first)) return first;
+  }
+  return undefined;
+}
+
 /** The path with its longest existing prefix resolved through symlinks. */
 function realOf(path: string): string {
   const tail: string[] = [];
@@ -665,6 +862,9 @@ export function guardRefusal(input: Dict): string | undefined {
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
+    // W-496: background syntax in a foreground call, any thread's (a jq PreToolUse hook matched an `&` anywhere before)
+    const form = args["run_in_background"] === true ? undefined : backgroundForm(command);
+    if (form) return `refused: \`${form}\` puts work in the background, where it dies when this Bash call returns (W-496): run the long command as its own Bash call with the run_in_background parameter set to true instead`;
     if (selfMatchingWait(command))
       return `refused: \`pgrep -f\` matches this call's own command line, so a loop waiting on it never ends (W-494): have the run write an exit file last (\`cmd > X.log 2>&1; echo $? > X.exit\`) and poll that in the foreground in calls under the 120 s default Bash cap: \`${EXIT_FILE_POLL}\`, repeated`;
     if (args["run_in_background"] === true && unboundedLoop(command))

@@ -1,0 +1,23 @@
+# opus: W-496
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19f62-8c76-7940-a545-3e3d274c6511
+# outcome: passed
+# at: 2026-11-03T07:19:07.301Z
+# tree: tree:ede45ec805860fb25312d97ae6ee7a3c657fbcaf
+# brief: briefs/W-496.md blob:84a625a1bfbe69c556777215c82c41445d1830a9
+# ticket: {"opus":"W-496","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-496/studio","head":"96f903e51f2a4b9910df80a41cfbb737fdf79631","brief":"84a625a1bfbe69c556777215c82c41445d1830a9","at":"2026-11-03T07:17:44.307Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-496-review-1.log #1: closed — packages/cli/src/guard.ts:508 replaces quoted and expansion text with a neutral token, with regression cases covering quoted detachers and detachers inside expansions.
+- ci/W-496-review-1.log #2: closed — packages/cli/src/guard.ts:489 tracks lexical word state for comments, including escaped blanks and expansion, quote, and substitution boundaries.
+- ci/W-496-review-1.log #3: closed — packages/cli/src/guard.ts:434 performs heredoc delimiter quote removal, with regression cases for ANSI-C delimiters and code after their terminators.
+
+## Verdict
+The round-2 delta closes every earlier blocker without introducing a new defect in the touched domain.
+VERDICT: PASS

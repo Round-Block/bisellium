@@ -1,0 +1,21 @@
+# opus: W-496
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a19ea3-444e-7590-86e7-13178e8eb6e4
+# outcome: passed
+# at: 2026-11-02T23:45:17.714Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-496.md blob:84a625a1bfbe69c556777215c82c41445d1830a9
+# ticket: {"opus":"W-496","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"84a625a1bfbe69c556777215c82c41445d1830a9","at":"2026-11-02T23:45:14.263Z"}
+
+## Findings
+1. advisory — brief:28 The prototype quote-removes simple-command words before checking detachers, so `'nohup' sleep 600` is refused, contradicting brief:28, brief:69’s claim that a quoted word passes, and behaviour 2’s heading. [severity: S2] Replace brief:28’s opening with “An `&` in quoted text never matches; a quoted detacher matches only when quote removal makes it a simple command’s first word”; replace brief:69’s “a quoted word” with “a quoted argument”; replace brief:80’s heading with “Ampersands in quoted text, heredoc bodies and comments never match, and code after them is still judged.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w496.test.ts W-496-b1/W-496-b2
+2. advisory — brief:28 `shellCode` does not read every heredoc delimiter as Bash does: `$'EOF'` becomes `$EOF`, and inside a double-quoted delimiter it removes a backslash before any character although Bash retains it before nonspecial characters, so later code can be hidden or exposed. [severity: S3] Append to brief:28’s limit: “ANSI-C-quoted heredoc delimiters and nonspecial backslashes inside double-quoted delimiters are not read as Bash reads them and may carry the body to the wrong terminator.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: the stated delimiter-parser limit is intentionally unpinned
+3. advisory — brief:67 Rows 67–70 and 72 name detector functions, a command exit, or generic assertions instead of the real functions that reject, although the implemented paths do fail closed. [severity: S4] Replace rows 67–69’s rejector text with “`guardRefusal` (specified), after `shellCode`/`backgroundForm` classify the form; `handleGuard` emits the refusal and exits 2”; replace row 70’s with “`readFileSync`/`JSON.parse` throw and `assert.deepEqual`/`assert.ok` reject”; replace row 72’s with “`readFileSync`/`JSON.parse` throw and `refused`, `passes`, `assert.deepEqual` and `assert.ok` reject unexpected results.” [class: spec×input-without-named-rejector] — check: none: brief.input.named-rejector
+4. advisory — brief:71 The reused-gates row names no function that converts a non-zero reused call into refusal. [severity: S4] Replace its rejector cell with: “`runCi` (existing) returns non-zero when `runStep` or `runVerify` returns non-zero; every listed call is run through that acceptance path; unpinned, a stated limit (D-076 E).” [class: spec×input-without-named-rejector] — check: none: brief.input.named-rejector
+
+## Verdict
+The brief is feasible with the advisory promise limits and rejector-name corrections; no blocking S1 or security gap remains.
+VERDICT: PASS

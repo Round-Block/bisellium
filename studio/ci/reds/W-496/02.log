@@ -1,0 +1,42 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-496-b2\s --import tsx packages/cli/src/w496.test.ts
+# exit: 1
+# at: 2026-11-03T02:42:33.069Z
+# sella: builder.W-496
+# tree: tree:d65f73e8c4ccca5a88fb9280529d496c736b3627
+# ticket: {"opus":"W-496","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-496/studio","head":"9eb4c48cceae27296cedd799964d194614985ccd","brief":"84a625a1bfbe69c556777215c82c41445d1830a9","at":"2026-11-03T02:42:31.727Z"}
+
+TAP version 13
+# Subtest: W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match, and the code after them is still judged
+not ok 1 - W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match, and the code after them is still judged
+  ---
+  duration_ms: 6.964706
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-496/packages/cli/src/w496.test.ts:1:3593'
+  failureType: 'testCodeFailure'
+  error: |-
+    a heredoc holding an HTML entity runs
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    passes (/home/edckt/agents/bisellium/.worktrees/W-496/packages/cli/src/w496.test.ts:48:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-496/packages/cli/src/w496.test.ts:83:3)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18.812485

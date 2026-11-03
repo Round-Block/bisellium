@@ -534,7 +534,7 @@ test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard wh
   (typed["hooks"] as Record<string, { hooks: { type: string }[] }[]>)["SubagentStop"]![0]!.hooks[0]!.type = "prompt";
   assert.equal(hookGuard(JSON.stringify(typed)).length, 1, "a non-command hook type blocks");
   const slow = realSettings();
-  (slow["hooks"] as Record<string, { hooks: { timeout: number }[] }[]>)["PreToolUse"]![1]!.hooks[0]!.timeout = 5;
+  (slow["hooks"] as Record<string, { hooks: { timeout: number }[] }[]>)["PreToolUse"]![0]!.hooks[0]!.timeout = 5;
   assert.equal(hookGuard(JSON.stringify(slow)).length, 4, "a timeout other than 2 blocks each tool");
   assert.deepEqual(hookGuard(undefined), [], "no settings file: not judged");
   assert.deepEqual(hookGuard(readFileSync(SETTINGS_PATH, "utf8")), [], "the repo's own settings wire the guard");

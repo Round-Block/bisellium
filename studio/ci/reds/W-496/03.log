@@ -1,0 +1,49 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-496-b3\s --import tsx packages/cli/src/w496.test.ts
+# exit: 1
+# at: 2026-11-03T02:42:43.536Z
+# sella: builder.W-496
+# tree: tree:5f3a73264c4a6853a2ee2b3212774e572f800455
+# ticket: {"opus":"W-496","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-496/studio","head":"1da7ca2590fea8b8f626f61da17a391b27681389","brief":"84a625a1bfbe69c556777215c82c41445d1830a9","at":"2026-11-03T02:42:42.219Z"}
+
+TAP version 13
+# Subtest: W-496-b3 behaviour 3: the repo's Bash calls meet only the bisellium guard at PreToolUse, and CLAUDE.md says what it refuses
+not ok 1 - W-496-b3 behaviour 3: the repo's Bash calls meet only the bisellium guard at PreToolUse, and CLAUDE.md says what it refuses
+  ---
+  duration_ms: 6.360626
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-496/packages/cli/src/w496.test.ts:1:5793'
+  failureType: 'testCodeFailure'
+  error: |-
+    the guard is the one PreToolUse hook a Bash call meets
+    + actual - expected
+    
+      [
+    +   `jq -e '.tool_input.run_in_background != true and (.tool_input.command // "" | gsub("\\"(\\\\\\\\.|[^\\"\\\\\\\\])*\\"|\\\\x27[^\\\\x27]*\\\\x27"; "Q") | test("(^|\\\\s)&(?![&>])|(?<![&>|<\\\\\\\\])&(?=\\\\s|$|[;)}])|(^|[^-\\\\w./])(nohup|setsid|disown)(?![-\\\\w.])"))' >/dev/null 2>&1 && { echo 'Blocked: &, nohup, setsid and disown die when this Bash call returns. Run the long command as its own Bash call with the run_in_background parameter set to true instead.' >&2; exit 2; }; exit 0`,
+        'bisellium hook-event guard --studio studio'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'bisellium hook-event guard --studio studio'
+  actual:
+    0: `jq -e '.tool_input.run_in_background != true and (.tool_input.command // "" | gsub("\\"(\\\\\\\\.|[^\\"\\\\\\\\])*\\"|\\\\x27[^\\\\x27]*\\\\x27"; "Q") | test("(^|\\\\s)&(?![&>])|(?<![&>|<\\\\\\\\])&(?=\\\\s|$|[;)}])|(^|[^-\\\\w./])(nohup|setsid|disown)(?![-\\\\w.])"))' >/dev/null 2>&1 && { echo 'Blocked: &, nohup, setsid and disown die when this Bash call returns. Run the long command as its own Bash call with the run_in_background parameter set to true instead.' >&2; exit 2; }; exit 0`
+    1: 'bisellium hook-event guard --studio studio'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-496/packages/cli/src/w496.test.ts:112:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21.351009
