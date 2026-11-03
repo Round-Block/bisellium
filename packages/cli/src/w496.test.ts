@@ -78,3 +78,29 @@ test("W-496-b1 behaviour 1: a foreground Bash call holding real background synta
   await passes("a run_in_background call's & runs", "sleep 600 &", { bg: true });
   await passes("a run_in_background call's nohup runs", "nohup sleep 600", { bg: true });
 });
+
+test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match, and the code after them is still judged", async () => {
+  await passes("a heredoc holding an HTML entity runs", "cat > f.html <<'EOF'\n<p>a &middot; b &mdash; c</p>\nEOF");
+  await passes("an unquoted heredoc's body runs", "cat > f.txt <<EOF\nx & y\nnohup z\nEOF");
+  await passes("a double-quoted delimiter's body runs", 'cat > f.txt << "END"\nsleep 600 &\nEND\necho done');
+  await passes("two heredocs on one line run", "cat <<A - <<B\n&a\nA\n&b\nB\necho done");
+  await passes("a body line that only opens with the delimiter keeps the body open", "cat <<EOF > f\nEOF & more\nEOF");
+  await passes("a heredoc in a command substitution runs", "x=$(cat <<'EOF'\na &amp; b\nEOF\n)");
+  await refused("code after a heredoc's terminator is judged", "cat > f.html <<'EOF'\n&middot;\nEOF\nsleep 600 &", "&");
+  await refused("nohup after a heredoc is judged", "cat > f <<EOF\nx\nEOF\nnohup sleep 600", "nohup");
+  await refused("code after a <<- heredoc's tab-indented terminator is judged", "cat <<-EOF > f\n\ta & b\n\tEOF\nsleep 600 &", "&");
+  await refused("an & on the heredoc's own line is judged", "cat <<'EOF' > f &\nbody\nEOF", "&");
+  await refused("an & after a here-string is judged", "cat <<< EOF\nsleep 600 &\nEOF", "&");
+  await refused("a << inside quotes opens no heredoc", 'echo "<<EOF"\nsleep 600 &\nEOF', "&");
+  await passes("a single-quoted & runs", "echo 'a & b'");
+  await passes("a double-quoted & runs", 'git commit -m "fix: a & b"');
+  await passes("an escaped double quote keeps the string open", 'echo "say \\"a & b\\" twice"');
+  await passes("an ANSI-C quoted & runs", "printf $'it\\'s a & b\\n'");
+  await passes("a backslash-escaped & runs", "echo a \\& b");
+  await passes("a comment's & runs", "npm test # a & b\n# sleep 600 &");
+  await passes("an & inside a parameter expansion runs", "echo ${x//&/and}");
+  await passes("an & inside an arithmetic expansion runs", "echo $(( 6 & 3 ))");
+  await passes("a quoted nohup runs", "echo 'nohup sleep 600' \"setsid x\"");
+  await refused("an & after a quoted one is judged", "echo 'a & b' &", "&");
+  await refused("an & after a # inside a word is judged", "echo a#b &", "&");
+});
