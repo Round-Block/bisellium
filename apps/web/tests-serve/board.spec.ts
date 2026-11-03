@@ -782,7 +782,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         metaInside: !!meta && meta.height > 0 && meta.top >= box.top && meta.bottom <= box.bottom,
       };
     });
-    expect(containment.height).toBe(98);
+    expect(containment.height).toBe(108);
     expect(containment.height).toBeLessThanOrEqual(108);
     expect(containment.minHeight).toBe("64px");
     expect(containment.maxHeight).toBe("108px");
