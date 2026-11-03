@@ -1,8 +1,9 @@
 /**
- * W-364 rows b1-b4 (studio/briefs/W-364.md): the main thread's heavy runs and record writes refused. node:test TAP,
+ * W-364 rows b1-b5 (studio/briefs/W-364.md): the main thread's heavy runs and record writes refused. node:test TAP,
  * selected by `--test-name-pattern='^W-364-b<n>\s'`. Row b1 spawns the CLI (`main.ts`) with and without a
  * `bisellium run` session; rows b2-b4 feed hook inputs to `runHookEvent(["guard", …])` and read its exit code and
- * stderr. Fixtures live under the OS tmp dir.
+ * stderr; row b5 runs `ci --opus` inside a session on a scratch repo whose steps and gates report the session variables they
+ * see. Fixtures live under the OS tmp dir.
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -14,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import { runHookEvent } from "./hooks.js";
 import { initStudio } from "./init.js";
+import { newItem } from "./new.js";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MAIN = join(REPO, "packages/cli/src/main.ts");
@@ -236,4 +238,42 @@ test("W-364-b4 behaviour 4: the guard refuses the main thread's shell writes int
     "npm run -s bisellium -- handoff --opus W-1 --sella producer --next n --studio studio",
   ];
   for (const c of allowed) assert.equal((await guard(bash(c, root))).code, 0, `allowed: ${c}`);
+});
+
+/** A scratch git repo whose CI steps (package.json scripts) and verify gates each run `probe.mjs <name>`, which appends the
+ *  name and the run-session variables it sees (`-` for none) to `env.log`. */
+function probeRepo(): string {
+  const repo = tmp();
+  writeFileSync(
+    join(repo, "probe.mjs"),
+    'import { appendFileSync } from "node:fs";\nconst seen = ["BISELLIUM_SELLA", "BISELLIUM_STUDIO", "BISELLIUM_SESSION"].filter((k) => process.env[k] !== undefined);\nappendFileSync("env.log", `${process.argv[2]} ${seen.join(",") || "-"}\\n`);\n',
+  );
+  writeFileSync(join(repo, ".gitignore"), "env.log\n");
+  const scripts = Object.fromEntries(["audit", "typecheck", "lint", "format:check", "test", "check"].map((s) => [s, `node probe.mjs ${s}`]));
+  writeFileSync(join(repo, "package.json"), JSON.stringify({ name: "w364-probe", private: true, scripts }, null, 2));
+  for (const args of [["init", "-q", "-b", "master"], ["config", "user.email", "t@t"], ["config", "user.name", "t"], ["add", "-A"], ["commit", "-q", "-m", "fixture"]]) {
+    const r = spawnSync("git", args, { cwd: repo, encoding: "utf8", timeout: 30_000 });
+    if (r.status !== 0) throw new Error(`git ${args.join(" ")} failed: ${r.stderr}`);
+  }
+  return repo;
+}
+
+test("W-364-b5 behaviour 5: a heavy run admitted inside a session runs its steps and gates outside it", () => {
+  const repo = probeRepo();
+  const studio = join(tmp(), "studio");
+  initStudio(studio);
+  const manifest = join(studio, "bisellium.yml");
+  const marker = "probationes:\n  - { id: patron, name: Patron call, kind: human }\n";
+  const text = readFileSync(manifest, "utf8");
+  if (!text.includes(marker)) throw new Error(`initStudio's manifest template changed:\n${text}`);
+  const gates = ["tests, name: Tests, kind: automated, command: \"npm test -s\"", "lint, name: Lint, kind: automated, command: \"npm run -s lint\"", "types, name: Typecheck, kind: automated, command: \"npm run -s typecheck\""];
+  writeFileSync(manifest, text.replace(marker, `${marker}${gates.map((g) => `  - { id: ${g} }\n`).join("")}`));
+  const created = newItem(studio, { kind: "task", collegium: "production", title: "w364 b5" });
+  if (!created.ok || !created.id) throw new Error(`newItem failed: ${created.message}`);
+  const session = { BISELLIUM_SESSION: "s-5", BISELLIUM_SELLA: "producer", BISELLIUM_STUDIO: "studio" };
+  const ci = cli(["ci", "--opus", created.id, "--studio", studio, "--repo", repo], session);
+  assert.equal(ci.code, 0, "inside a session: ci --opus runs its steps and gates");
+  const lines = readFileSync(join(repo, "env.log"), "utf8").trim().split("\n");
+  for (const name of ["audit", "check", "test", "lint", "typecheck"]) assert.ok(lines.some((l) => l.split(" ")[0] === name), `${name} ran`);
+  assert.deepEqual(lines.filter((l) => !l.endsWith(" -")), [], "a heavy run's steps and gates start outside the session");
 });
