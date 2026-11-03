@@ -211,5 +211,5 @@ test("W-413-b5 behaviour 5: card check progress says what happened and what come
   const noChecks = boardModel({ ...officina(4), probationes: [] }, [opus("W-no-checks", "building")]);
   const noChecksHtml = renderToStaticMarkup(createElement(BoardView, { studio: "studio", model: noChecks, focusedByColumn: {}, onSelectCard: () => undefined }));
   assert.match(noChecksHtml, />No checks are required</, "an empty declared check set is stated honestly");
-  assert.doesNotMatch(`${html}${noChecksHtml}`, /\b\d+\/\d+\b|next:/, "card and column policy text contains no progress ratio or shorthand next label");
+  assert.doesNotMatch(`${html}${noChecksHtml}`, /(?<![\p{L}\p{M}\p{N}])\d+\/\d+(?![\p{L}\p{M}\p{N}])|next:/u, "card and column policy text contains no progress ratio or shorthand next label");
 });

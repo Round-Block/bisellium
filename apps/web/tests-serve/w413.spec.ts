@@ -180,6 +180,6 @@ test("W-413-b5 card check progress uses plain words without ratios at 1280, 640 
     expect(geometry.lineInside, `${width}: longer check copy stays inside its card`).toBe(true);
     expect(geometry.pageOverflow, `${width}: longer check copy adds no page overflow`).toBeLessThanOrEqual(0);
     const progress = await page.locator(".board__card-gates").allTextContents();
-    expect(progress.some((line) => /\b\d+\/\d+\b|next:/.test(line)), `${width}: no card or column retains progress-ratio shorthand`).toBe(false);
+    expect(progress.some((line) => /(?<![\p{L}\p{M}\p{N}])\d+\/\d+(?![\p{L}\p{M}\p{N}])|next:/u.test(line)), `${width}: no card or column retains progress-ratio shorthand`).toBe(false);
   }
 });
