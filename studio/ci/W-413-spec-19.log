@@ -1,0 +1,22 @@
+# opus: W-413
+# phase: spec
+# round: 19
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 8c19eba1-6d61-40fb-a7f0-cc9271042b19
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-03T03:45:24.375Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:24c53955fcbb56590444f3f5f2a0521fcd36d6cc
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":19,"actor":"spec-reviewer","studio":".worktrees/W-413/studio","head":"d6860c93b3eb9b8a07cc4442852f668f3aea4c76","brief":"24c53955fcbb56590444f3f5f2a0521fcd36d6cc","at":"2026-11-03T03:45:00.817Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+Revision 9 moves every flipped-row migration into `feat(W-413): behaviour 1`, leaving eight alternating red/feat commits. The mbox confirms this: that commit carries the board.test.ts, board-truth.test.ts, boardview.test.ts, w341.test.ts, w409.test.ts, board.spec.ts and w409.spec.ts edits. The same commit also adds all eleven column keys that those migrations expect. The r18 host replay shows each earlier row passing at every later red stage, and series-rows-r18.txt has no failing row at any feature commit. Layout, copy and captures are unchanged, so the screens read as they did in round 16.
+Claude week 69%, 5h 25% | Codex week 12% | context 271k of 300k
+VERDICT: PASS
