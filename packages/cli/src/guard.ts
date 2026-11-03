@@ -399,15 +399,96 @@ export function unboundedLoop(command: string, bounded = false, depth = 0): bool
 /** W-496: the commands that detach work from the Bash call, refused as a simple command's first word. */
 const DETACHERS = new Set(["nohup", "setsid", "disown"]);
 
-/** W-496: the code a shell runs in `line`, and whether an `&` in it ends or separates a command: every `&` but `&&`,
- *  one after `<`, `>`, `|` or `;` (`>&2`, `2>&1`, `<&0`, `|&`, `;&`) and one before `>` (`&>`, `&>>`). */
+/** W-496: the code a shell runs in `line`, and whether an `&` in it ends or separates a command. Read as bash reads them:
+ *  single quotes; `$'…'` and double quotes, where a backslash escapes the next character; a backslash outside quotes; a
+ *  `#` opening a word, to the line's end; `${…}` and `$((…))`, parentheses counted; and heredocs: after `<<` or `<<-`
+ *  (a `<<<` here-string reads as `<<` with an empty delimiter, so it opens none) outside quotes and expansions and its delimiter word (quotes and backslashes removed), the lines after
+ *  the next newline up to one equal to the delimiter (`<<-`: leading tabs dropped), or to the end, one heredoc after
+ *  another. `code` is `line` without its comments and heredoc bodies. An `&` outside all of these ends or separates a
+ *  command unless it is `&&`, follows `<`, `>`, `|` or `;` (`>&2`, `2>&1`, `<&0`, `|&`, `;&`) or precedes `>` (`&>`,
+ *  `&>>`). An unterminated quote runs to the end (bash refuses that line). */
 function shellCode(line: string): { code: string; amp: boolean } {
+  let code = "";
+  let amp = false;
+  const closers: string[] = [];
+  const docs: { delim: string; tabs: boolean }[] = [];
+  /** The index of the quote closing the one at `i` (or the last index), skipping a backslash's next character when `escapes`. */
+  const close = (i: number, escapes: boolean): number => {
+    let j = i + 1;
+    for (; j < line.length && line[j] !== line[i]; j++) if (escapes && line[j] === "\\") j++;
+    return Math.min(j, line.length - 1);
+  };
   for (let i = 0; i < line.length; i++) {
-    if (line[i] !== "&") continue;
-    if (line[i + 1] === "&") i++;
-    else if (line[i + 1] !== ">" && !"<>|;".includes(line[i - 1] ?? "")) return { code: line, amp: true };
+    const c = line[i]!;
+    const prev = line[i - 1] ?? "\n";
+    if (c === "'" || c === '"' || (c === "$" && line[i + 1] === "'")) {
+      const open = c === "$" ? i + 1 : i;
+      const end = close(open, c !== "'");
+      code += line.slice(i, end + 1);
+      i = end;
+    } else if (c === "\\") {
+      code += line.slice(i, i + 2);
+      i++;
+    } else if (c === "#" && closers.length === 0 && " \t\n;&|()<>".includes(prev)) {
+      const j = line.indexOf("\n", i);
+      i = (j < 0 ? line.length : j) - 1;
+    } else if (c === "\n" && docs.length > 0) {
+      code += c;
+      let k = i + 1;
+      for (const d of docs.splice(0)) {
+        while (k < line.length) {
+          const e = line.indexOf("\n", k);
+          const text = line.slice(k, e < 0 ? line.length : e);
+          k = e < 0 ? line.length : e + 1;
+          if ((d.tabs ? text.replace(/^\t+/, "") : text) === d.delim) break;
+        }
+      }
+      i = k - 1;
+    } else if (c === "<" && line[i + 1] === "<" && closers.length === 0) {
+      let j = i + 2;
+      const tabs = line[j] === "-";
+      if (tabs) j++;
+      while (line[j] === " " || line[j] === "\t") j++;
+      let delim = "";
+      for (; j < line.length && !" \t\n;&|<>()".includes(line[j]!); j++) {
+        const d = line[j]!;
+        if (d === "'" || d === '"') {
+          const end = close(j, d === '"');
+          const quoted = line.slice(j + 1, end);
+          delim += d === '"' ? quoted.replace(/\\(.)/g, "$1") : quoted;
+          j = end;
+        } else if (d === "\\") delim += line[++j] ?? "";
+        else delim += d;
+      }
+      if (delim !== "") docs.push({ delim, tabs });
+      code += line.slice(i, j);
+      i = j - 1;
+    } else {
+      if (c === "$" && line[i + 1] === "{") {
+        closers.push("}");
+        code += c;
+        continue;
+      }
+      if (c === "$" && line.startsWith("((", i + 1)) {
+        closers.push(")", ")");
+        code += "$((";
+        i += 2;
+        continue;
+      }
+      if (closers.length > 0 && c === "(") closers.push(")");
+      else if (closers.length > 0 && c === closers[closers.length - 1]) closers.pop();
+      else if (c === "&" && closers.length === 0) {
+        if (line[i + 1] === "&") {
+          code += "&&";
+          i++;
+          continue;
+        }
+        if (line[i + 1] !== ">" && !"<>|;".includes(prev)) amp = true;
+      }
+      code += c;
+    }
   }
-  return { code: line, amp: false };
+  return { code, amp };
 }
 
 /** W-496: the background form a foreground Bash call holds, or undefined: `&` when an `&` ends or separates a command
