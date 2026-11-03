@@ -396,6 +396,33 @@ export function unboundedLoop(command: string, bounded = false, depth = 0): bool
   return false;
 }
 
+/** W-496: the commands that detach work from the Bash call, refused as a simple command's first word. */
+const DETACHERS = new Set(["nohup", "setsid", "disown"]);
+
+/** W-496: the code a shell runs in `line`, and whether an `&` in it ends or separates a command: every `&` but `&&`,
+ *  one after `<`, `>`, `|` or `;` (`>&2`, `2>&1`, `<&0`, `|&`, `;&`) and one before `>` (`&>`, `&>>`). */
+function shellCode(line: string): { code: string; amp: boolean } {
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] !== "&") continue;
+    if (line[i + 1] === "&") i++;
+    else if (line[i + 1] !== ">" && !"<>|;".includes(line[i - 1] ?? "")) return { code: line, amp: true };
+  }
+  return { code: line, amp: false };
+}
+
+/** W-496: the background form a foreground Bash call holds, or undefined: `&` when an `&` ends or separates a command
+ *  (`shellCode`), else `nohup`, `setsid` or `disown` when one is a simple command's first word after the prefixes `strip`
+ *  drops, by any path. A script the command runs (`-c`, a file) is not read: a limit. */
+export function backgroundForm(command: string): string | undefined {
+  const { code, amp } = shellCode(command);
+  if (amp) return "&";
+  for (const words of simpleCommands(code)) {
+    const first = base(strip(words).words[0]);
+    if (DETACHERS.has(first)) return first;
+  }
+  return undefined;
+}
+
 /** The path with its longest existing prefix resolved through symlinks. */
 function realOf(path: string): string {
   const tail: string[] = [];
@@ -665,6 +692,9 @@ export function guardRefusal(input: Dict): string | undefined {
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
+    // W-496: background syntax in a foreground call, any thread's (a jq PreToolUse hook matched an `&` anywhere before)
+    const form = args["run_in_background"] === true ? undefined : backgroundForm(command);
+    if (form) return `refused: \`${form}\` puts work in the background, where it dies when this Bash call returns (W-496): run the long command as its own Bash call with the run_in_background parameter set to true instead`;
     if (selfMatchingWait(command))
       return `refused: \`pgrep -f\` matches this call's own command line, so a loop waiting on it never ends (W-494): have the run write an exit file last (\`cmd > X.log 2>&1; echo $? > X.exit\`) and poll that in the foreground in calls under the 120 s default Bash cap: \`${EXIT_FILE_POLL}\`, repeated`;
     if (args["run_in_background"] === true && unboundedLoop(command))
