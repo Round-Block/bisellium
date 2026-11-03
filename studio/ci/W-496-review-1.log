@@ -1,0 +1,20 @@
+# opus: W-496
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19f62-8c76-7940-a545-3e3d274c6511
+# outcome: failed
+# at: 2026-11-03T06:27:35.018Z
+# tree: tree:773ebef897d856284d39d168d47c4d9d50e25404
+# brief: briefs/W-496.md blob:84a625a1bfbe69c556777215c82c41445d1830a9
+# ticket: {"opus":"W-496","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-496/studio","head":"764a7828152bfccc4645d3ee990b45fd9ef38103","brief":"84a625a1bfbe69c556777215c82c41445d1830a9","at":"2026-11-03T06:27:30.538Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:500 [severity: S1] `backgroundForm` reparses preserved quote and expansion text, so valid foreground forms such as `'nohup' sleep 600` and `echo $((6 & nohup))` are refused, although brief:28 and brief:69 require quoted words and arithmetic expansions not to match — check: packages/cli/src/w496.test.ts W-496-b2 [class: tests×ruled-case-uncovered]
+2. blocking — packages/cli/src/guard.ts:432 [severity: S1] Comment recognition uses the preceding raw character instead of lexical word state, so `echo \ #not-a-comment &` treats `#not-a-comment &` as a comment and misses the real background separator; brief:28 requires only a `#` that opens a word to start a comment — check: packages/cli/src/w496.test.ts W-496-b2 [class: tests×ruled-case-uncovered]
+3. blocking — packages/cli/src/guard.ts:455 [severity: S1] Heredoc delimiter normalization misreads ANSI-C quoted delimiters: `<<$'EOF'` records `$EOF`, consumes through the real `EOF`, and therefore misses background code after the terminator, contrary to brief:68’s quoted-delimiter domain — check: packages/cli/src/w496.test.ts W-496-b2 [class: tests×ruled-case-uncovered]
+
+## Verdict
+All three defects affect inputs inside the brief’s stated lexical domain, so they block the round.
+VERDICT: FAIL
