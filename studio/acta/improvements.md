@@ -534,3 +534,104 @@ Classes in more than one opus, 2026-10-19..2026-11-01:
 #### Owed cause fixes
 
 - OWED class gate×tests (W-340, W-407): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+### 2026-11-02
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-412 | 455 | 1 | S1 1 |
+| W-487 | 1430 | 2 | S1 4 |
+| W-492 | 737 | 1 | S1 1 |
+| W-493 | 541 | 0 |  |
+| W-494 | 706 | 1 | untagged 1 |
+| W-495 | 615 | 4 | S1 5 |
+| W-497 | 114 | 0 |  |
+| W-498 | 364 | 3 | S1 3 |
+| W-501 | 618 | 2 | S1 2 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-412 | review | 1 | passed | - |  |
+| W-412 | spec | 1 | passed | - |  |
+| W-412 | spec | 2 | failed | 4 | ui×reader-disagreement S1 |
+| W-412 | spec | 3 | passed | 12 |  |
+| W-412 | spec | 4 | passed | 2 |  |
+| W-412 | spec | 5 | passed | 3 | untagged untagged |
+| W-412 | spec | 6 | passed | 5 |  |
+| W-412 | spec | 7 | passed | 2 |  |
+| W-412 | spec | 8 | passed | 2 |  |
+| W-412 | spec | 9 | passed | 114 |  |
+| W-412 | spec | 10 | passed | 2 |  |
+| W-412 | spec | 11 | passed | 4 |  |
+| W-412 | spec | 12 | passed | 33 |  |
+| W-412 | spec | 13 | passed | 2 |  |
+| W-412 | spec | 14 | passed | 2 |  |
+| W-493 | review | 1 | passed | - |  |
+| W-493 | spec | 1 | passed | - |  |
+| W-493 | spec | 2 | passed | 4 |  |
+| W-493 | spec | 3 | passed | 5 |  |
+| W-493 | spec | 4 | passed | 10 |  |
+| W-493 | spec | 5 | passed | 2 |  |
+| W-493 | spec | 6 | passed | 221 |  |
+| W-495 | review | 1 | failed | - | tests×ruled-case-uncovered S1 |
+| W-495 | review | 2 | failed | 35 | review×evidence-backfilled-or-absent S1 |
+| W-495 | review | 3 | passed | 46 |  |
+| W-495 | spec | 1 | passed | - |  |
+| W-495 | spec | 2 | failed | 7 | spec×promise-unattainable-under-accepted-domain S1, spec×promise-unattainable-under-accepted-domain S1 |
+| W-495 | spec | 3 | passed | 18 |  |
+| W-495 | spec | 4 | passed | 226 |  |
+| W-495 | spec | 5 | failed | 3 | spec×input-without-named-rejector S1 |
+| W-495 | spec | 6 | passed | 220 |  |
+| W-497 | review | 1 | passed | - |  |
+| W-497 | spec | 1 | passed | - |  |
+| W-497 | spec | 2 | passed | 5 |  |
+| W-498 | review | 1 | failed | - | mechanism×identity-normalization-not-centralized S1 |
+| W-498 | review | 2 | failed | 185 | mechanism×identity-normalization-not-centralized S1 |
+| W-498 | review | 3 | passed | 75 |  |
+| W-498 | spec | 1 | passed | - |  |
+| W-498 | spec | 2 | failed | 6 | spec×promise-unattainable-under-accepted-domain S1 |
+| W-498 | spec | 3 | passed | 26 |  |
+| W-498 | spec | 4 | passed | 10 |  |
+| W-498 | spec | 5 | passed | 214 |  |
+| W-498 | spec | 6 | passed | 10 |  |
+| W-501 | review | 1 | failed | - | tests×security-boundary-cases-uncovered S1 |
+| W-501 | review | 2 | passed | 38 |  |
+| W-501 | spec | 1 | passed | - |  |
+| W-501 | spec | 2 | failed | 84 | spec×promise-unattainable-under-accepted-domain S1 |
+| W-501 | spec | 3 | passed | 26 |  |
+| W-501 | spec | 4 | passed | 2 |  |
+
+- LOOP W-498 review: class mechanism×identity-normalization-not-centralized, rounds 1-2 (minutes since previous round: r1 -, r2 185)
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-487 | ci/W-487-tests-3263b289.log | gate×W-339 | W-339-b1 |
+| W-494 | ci/W-494-tests-bebca299.log | gate×tests |  |
+
+Classes in more than one opus, 2026-10-20..2026-11-02:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 3 opera: W-340, W-407, W-494
+- class interface×validation-order-masks-errors seen in 2 opera: W-379, W-474
+- class mechanism×replay-environment-not-pristine seen in 3 opera: W-360, W-462, W-477
+- class review×evidence-backfilled-or-absent seen in 12 opera: W-340, W-341, W-360, W-361, W-366, W-406, W-415, W-417, W-425, W-430, W-477, W-495
+- class review×fail-open-on-malformed-records-patched-per-site seen in 10 opera: W-275, W-326, W-337, W-338, W-348, W-403, W-404, W-430, W-444, W-468
+- class review×shared-log-grammar-rejects-valid-records seen in 2 opera: W-459, W-492
+- class security×symlink-parent-write-escape seen in 4 opera: W-418, W-423, W-430, W-461
+- class spec×fix-opens-new-surface seen in 2 opera: W-310, W-362
+- class spec×input-domain-missing-or-unenforceable seen in 24 opera: W-299, W-305, W-310, W-334, W-337, W-338, W-339, W-340, W-348, W-358, W-362, W-369, W-370, W-376, W-377, W-381, W-403, W-409, W-430, W-433, W-445, W-452, W-459, W-461
+- class spec×input-without-named-rejector seen in 7 opera: W-288, W-310, W-328, W-416, W-418, W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 26 opera: W-241, W-268, W-299, W-310, W-326, W-339, W-341, W-348, W-355, W-369, W-377, W-379, W-398, W-407, W-417, W-425, W-452, W-459, W-462, W-468, W-472, W-489, W-494, W-495, W-498, W-501
+- class tests×one-sided-bound-assertion seen in 11 opera: W-310, W-317, W-328, W-330, W-345, W-360, W-369, W-377, W-381, W-392, W-487
+- class tests×ruled-case-uncovered seen in 13 opera: W-335, W-336, W-337, W-350, W-376, W-404, W-415, W-444, W-450, W-454, W-463, W-474, W-495
+- class tests×security-boundary-cases-uncovered seen in 4 opera: W-310, W-369, W-379, W-501
+- class tests×tests-that-agree-with-the-bug seen in 3 opera: W-407, W-409, W-487
+- class workflow×files-owned-boundary-exceeded seen in 3 opera: W-339, W-340, W-487
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-340, W-407, W-494): no lesson of it names a greenlit cause-fix opus in addressed_by
