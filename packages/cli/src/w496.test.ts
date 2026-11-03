@@ -103,6 +103,15 @@ test("W-496-b2 behaviour 2: quoted text, heredoc bodies and comments never match
   await passes("a quoted nohup runs", "echo 'nohup sleep 600' \"setsid x\"");
   await refused("an & after a quoted one is judged", "echo 'a & b' &", "&");
   await refused("an & after a # inside a word is judged", "echo a#b &", "&");
+  await refused("a # after an escaped blank is no comment", "echo \\ #not-a-comment &", "&");
+  await refused("a # after an arithmetic expansion is no comment", "echo $((1))#not-a-comment &", "&");
+  await refused("a # after a parameter expansion is no comment", "echo ${x}#not-a-comment &", "&");
+  await refused("a # after a quoted word is no comment", "echo 'a'#not-a-comment &", "&");
+  await refused("a # after an escaped character is no comment", "echo a\\;#not-a-comment &", "&");
+  await passes("a # after a ; opens a comment", "echo a;#comment &");
+  await passes("a # after a blank opens a comment", "echo a #comment &");
+  await passes("a # after ( opens a comment", "(#comment &\n)");
+  await passes("a # after a line end opens a comment", "echo a\n#comment &");
   await passes("a quoted nohup as a command word runs", "'nohup' sleep 600");
   await passes("a double-quoted setsid as a command word runs", '"setsid" node serve.js');
   await passes("a nohup inside an arithmetic expansion runs", "echo $((6 & nohup))");
