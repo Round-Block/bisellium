@@ -712,9 +712,9 @@ function recordPath(path: string): string | undefined {
  *  a word at `&` and `|`, so `&>` reads as `>`, and `>|` is not seen: a limit). */
 const REDIRECT = /^\d*>>?([\s\S]*)$/;
 
-/** W-364: an input redirection word: `<`, `<<<` or `<&` after an optional fd number (`<>` opens for writing and is not one), its
+/** W-364: an input redirection word: `<`, `<<<`, `<&`, or a heredoc operator `<<` or `<<-` (its delimiter, not a file) after an optional fd number (`<>` opens for writing and is not one), its
  *  source in the word or the next one. It writes nothing and is not an operand of the command. */
-const INPUT = /^\d*<(?!>)<{0,2}&?([\s\S]*)$/;
+const INPUT = /^\d*<(?!>)(?:<<|<-|<)?&?([\s\S]*)$/;
 
 /** W-364: the words a simple command writes to, as the rule recognises them: each output redirection's target (`REDIRECT`; an input redirection, `INPUT`, is neither a target nor an operand;
  *  `commandSeq` breaks at `&`, so `>&2`'s fd is never read as one); `tee`'s operands; the target of `cp`, `mv` and `install` (`-t`, `-t<dir>` or
