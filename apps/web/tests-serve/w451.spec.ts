@@ -89,6 +89,34 @@ test("W-451-b1 pasted and Inbox work links open a durable Board drawer at 1280, 
   }
 });
 
+test("W-451-b1 modified Enter keeps the focused Inbox Board link in its current tab", async ({ page }) => {
+  served = await startServed("w451-b1-modified-enter");
+  await seedToken(page, served);
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  await page.goto(`${served.baseURL}/?w451=b1-Control+Enter#/inbox`);
+  const controlWorkLink = page.locator('.inbox__item[href^="#/board/"]').first();
+  await controlWorkLink.focus();
+  await page.keyboard.press("Control+Enter");
+  await expect(page, "Control+Enter: modified activation leaves the current tab at Inbox").toHaveURL(/#\/inbox$/);
+  await expect(page.getByRole("heading", { name: "Inbox", exact: true }), "Control+Enter: modified activation keeps the Inbox screen").toBeVisible();
+
+  await page.goto(`${served.baseURL}/?w451=b1-Meta+Enter#/inbox`);
+  const metaWorkLink = page.locator('.inbox__item[href^="#/board/"]').first();
+  await metaWorkLink.focus();
+  // Linux Chromium natively follows Meta+Enter, so synthesize it to isolate the window listener.
+  await metaWorkLink.evaluate((link) => link.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, bubbles: true, cancelable: true })));
+  await expect(page, "Meta+Enter: modified activation leaves the current tab at Inbox").toHaveURL(/#\/inbox$/);
+  await expect(page.getByRole("heading", { name: "Inbox", exact: true }), "Meta+Enter: modified activation keeps the Inbox screen").toBeVisible();
+
+  await page.goto(`${served.baseURL}/?w451=b1-plain-enter#/inbox`);
+  const workLink = page.locator('.inbox__item[href^="#/board/"]').first();
+  await workLink.focus();
+  await page.keyboard.press("Enter");
+  await expect(page, "plain Enter routes the current tab").toHaveURL(/#\/board\/W-\d+$/);
+  await expect(page.getByRole("dialog"), "plain Enter opens the linked Board drawer").toBeVisible();
+});
+
 test("W-451-b1 a pasted returned opus with no lifecycle column stays open after refetch", async ({ page }) => {
   served = await startServed("w451-b1-unplaced", {
     prepareStudio: (studioDir) => {
