@@ -1,0 +1,23 @@
+# opus: W-300
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-04T18:56:47.442Z
+# tree: tree:ce08b5a1021e99ff15b2b7802eaeea9f07217651
+# brief: briefs/W-300.md blob:9abb1a4afdafafa9ddb8a7e58fc8c59ac826eadf
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"af688d1bd2ba7226e1262fe0f6da0ead36e66d92","brief":"9abb1a4afdafafa9ddb8a7e58fc8c59ac826eadf","at":"2026-11-04T18:56:41.254Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-300-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the first prototype's own row found that report mode's path is not the only writer: the review rung's `git merge-tree --write-tree` wrote a loose object into `.git/objects`, so the read runs with a scratch object directory and no optional locks, and the row compares every file by bytes and mtime; git may still freshen an existing object's mtime, a stated limit — check: packages/cli/src/ladder-read.ts, kill-K1.out, kill-K2.out
+2. advisory — on master the only rung naming the Patron is `greenlight`, so the route serves a backlog opus as well as those in flight, which is wider than the record's words; it is named as a Default for the Patron — check: packages/cli/src/next.ts:1060, brief Defaults item 2
+3. advisory — the Codex test check found `W-179-b1`, which the first draft missed: a file importing the shared fixture is a next row file, so `w300.test.ts` joins `test:suite`'s one segment and the declared list, the same lines W-298 edits; whoever lands second merges them by hand — check: fixture-census.md, brief Overlaps
+4. advisory — `W-499-b3` flakes and `W-493-css` fails at master too, each in a file in no chain; neither is this opus's and neither is touched — check: w499-flake.out, w493-check.out
+
+## Verdict
+
+passed — W-300's brief revision 1 signed by the architect (`claude-opus-5-5`, D-072, D-150 C): three behaviours, each red recorded and accepted, 34 kills guarded, the whole served suite passing on the prototype, and this series applied on W-451's tip with its Board rows passing.
