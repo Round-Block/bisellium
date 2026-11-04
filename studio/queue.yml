@@ -1,9 +1,9 @@
 queues:
   engineering:
-    lanes: { E1: W-502, E2: W-364 }
+    lanes: { E1: W-502, E2: W-505 }
     next:
-      - { opus: W-364, says: "main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec", folded: [W-290] }
       - { opus: W-502, says: "next answers quickly on long-running opera; exempt from the D-174 freeze", next_ts: true }
+      - { opus: W-505, says: "guard sync accepts the sandbox's empty alternates placeholder; Patron go-ahead 2026-11-04, exempt from the D-174 freeze" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
       - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
