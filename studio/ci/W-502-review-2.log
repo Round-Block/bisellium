@@ -1,0 +1,21 @@
+# opus: W-502
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1a494-fc7e-7a11-813a-d97da1c4b8b7
+# outcome: failed
+# at: 2026-11-04T06:15:52.383Z
+# tree: tree:207979c8c5b444123e75f13ef81a82511cf2b8fa
+# brief: briefs/W-502.md blob:97a53e117f0a60114934bfe5887a728ae352e0c8
+# ticket: {"opus":"W-502","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-502/studio","head":"8719c71db8ed79dd9791dd7e775c2831bc6e3b86","brief":"97a53e117f0a60114934bfe5887a728ae352e0c8","at":"2026-11-04T06:14:33.382Z"}
+
+## Findings
+1. blocking — studio/ci/W-502-spec-6.log:7 Revision 3’s current brief blob has only a failed spec-reviewer verdict: brief:122 falsely claims every swept command except `open-lessons.test.ts` passed, while its cited census records a timeout. The branch nevertheless advanced to build review with stale architect-only spec status, so required spec evidence is missing. [severity: S1] [class: spec-gate×self-signed] — check: none: require a passing spec-reviewer verdict for the current brief blob before build review
+
+## Earlier findings
+- ci/W-502-review-1.log #1: closed — docs/NEXT.md:262 records the built-branch before/after figures, and brief:118 now requires that durable location instead of the overwritten handoff text
+
+## Verdict
+The prior blocker is closed, but the current spec revision remains failed and contains false required evidence.
+VERDICT: FAIL
