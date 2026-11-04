@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-505-b1\s --import tsx packages/cli/src/w369.test.ts
+# exit: 1
+# at: 2026-11-04T08:15:03.139Z
+# sella: ops-lead
+# tree: tree:e38a89e94ab92fc84cc54084a803c462e0a23fe7
+# ticket: {"opus":"W-505","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-505/studio","head":"bf909b40fd39c26537cdf67cdff35a3a69700ae5","brief":"aa21cf7c4f93ac1dff125768cfe6dc2f052f6f9c","at":"2026-11-04T08:15:03.105Z"}
+
+TAP version 13
+# Subtest: W-505-b1 behaviour 1: the sync accepts exactly an empty regular file at objects/info/alternates, the sandbox's placeholder; content, a symlink, anything not regular and the other three paths stay refused
+not ok 1 - W-505-b1 behaviour 1: the sync accepts exactly an empty regular file at objects/info/alternates, the sandbox's placeholder; content, a symlink, anything not regular and the other three paths stay refused
+  ---
+  duration_ms: 92.98
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-505/packages/cli/src/w369.test.ts:12:754'
+  failureType: 'testCodeFailure'
+  error: |-
+    the empty placeholder syncs: sync: refused: /tmp/claude-1000/w369-OvInol/sync ü it's/agent/.git/objects/info/alternates exists; master was not moved
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-505/packages/cli/src/w369.test.ts:283:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 849.177453
