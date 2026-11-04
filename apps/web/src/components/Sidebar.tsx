@@ -44,7 +44,7 @@ export function Sidebar({ route, attentionCount, collapsed = false, overlay = fa
     if (!overlay) return;
     afterRender(() => overlayOpen
       ? button.focus()
-      : nav?.querySelector<HTMLAnchorElement>(".sidebar__link")?.focus());
+      : nav?.querySelector<HTMLAnchorElement>('.sidebar__link[aria-current="page"]')?.focus());
   };
   const dismiss = (event: ReactMouseEvent<HTMLAnchorElement>) => {
     const button = event.currentTarget.closest(".sidebar")?.querySelector<HTMLButtonElement>(".sidebar__toggle");
