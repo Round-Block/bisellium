@@ -117,6 +117,9 @@ test("W-413-b2 behaviour 2: cards show recorded elapsed, actual completion and a
     opus("W-done-10", "done", { startHours: 14, endHours: 4 }),
     opus("W-bad-open", "verifying", { start: "not-an-instant" }),
     opus("W-bad-done", "done", { startHours: 1, endHours: 2 }),
+    opus("W-feb-open", "review", { start: "2026-02-31T08:00:00Z" }),
+    opus("W-feb-start", "done", { start: "2026-02-31T08:00:00Z", endHours: 4 }),
+    opus("W-feb-end", "done", { startHours: 12, end: "2026-02-30T08:00:00Z" }),
   ];
   const model = boardModel(officina(4), opera, undefined, { now: NOW });
   const open = column(model, "in_progress").cards.find((card) => card.id === "W-open");
@@ -132,6 +135,10 @@ test("W-413-b2 behaviour 2: cards show recorded elapsed, actual completion and a
   assert.equal(column(model, "done").cards.find((card) => card.id === "W-done-8")?.actualCompletionMs, 8 * 3_600_000, "a done card uses its recorded start-to-end span as actual completion time");
   assert.equal(column(model, "verifying").cards[0]?.elapsedMs, undefined, "a malformed start shows no elapsed time");
   assert.equal(column(model, "done").cards.find((card) => card.id === "W-bad-done")?.actualCompletionMs, undefined, "an end before start shows no actual completion time");
+
+  assert.equal(column(model, "awaiting_review").cards.find((card) => card.id === "W-feb-open")?.elapsedMs, undefined, "an impossible calendar start (February 31) shows no elapsed time instead of a normalized date");
+  assert.equal(column(model, "done").cards.find((card) => card.id === "W-feb-start")?.actualCompletionMs, undefined, "an impossible calendar start shows no actual completion time");
+  assert.equal(column(model, "done").cards.find((card) => card.id === "W-feb-end")?.actualCompletionMs, undefined, "an impossible calendar end shows no actual completion time");
 
   const tooFew = boardModel(officina(4), [opus("W-open", "building", { startHours: 2 }), ...opera.slice(1, 3)], undefined, { now: NOW });
   assert.equal(column(tooFew, "in_progress").cards[0]?.estimatedRemainingMs, undefined, "fewer than three valid completed opera produce no estimate");
