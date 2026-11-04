@@ -303,7 +303,7 @@ test("W-505-b1 behaviour 1: the sync accepts exactly an empty regular file at ob
   // the count-objects assertion above is live: a file with content does name a store
   const named = world();
   put(alternates(named), `${join(named.patron, ".git", "objects")}\n`);
-  assert.match(git(named.agent, "count-objects", "-v"), /^alternate: /m, "git names the store a file with content holds");
+  assert.match(git(named.agent, "count-objects", "-v"), /^alternate: "\/.*\/patron\/\.git\/objects"$/m, "git names the store a file with content holds");
 
   const refused = (what: string, setup: (v: World) => void, path = "objects/info/alternates"): void => {
     const v = world();
