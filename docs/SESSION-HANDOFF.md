@@ -31,7 +31,6 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and daily retro.
 - Records dates are UTC; Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the opus after W-292.
-- W-505: a merge touching packages/, apps/ or scripts/ stops at `MERGED_NOT_FETCHED` because the sandbox's empty alternates file refuses the guard sync; the Patron runs the `merge --ff-only <sha>` line the perform prints; ask for it, then rerun.
 6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (evidence paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
 7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227). Lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (D-109).
 
@@ -47,11 +46,13 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137).
 
-Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-283 W-289 W-290 W-298 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-502 W-503 W-504 W-505 W-506.
+Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-283 W-289 W-290 W-298 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506.
 
-D-174 (11-03 audit) freezes new process opera until 11-17; W-502, W-505 and product opera are exempt. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
+D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
-In flight (lane state and the Patron's 11-04 console rulings, to file first: ~/.bisellium-evidence/current-state.md): E1 W-502 next answers quickly, merged (#1030), the done step still to run. E2 W-505 guard sync fix: PR #1032 left the merge queue because `npm test` hung on the runner: find the cause in the gates log, fix, re-enqueue. UI1 W-413 Board counts, merged and verified, the done step still to run; check its certificate still counts now W-502 moved master. UI2 W-451 work links: revision 1 ready to sign after a handover record, then UI input and Opus spec review.
+In flight (lane state: ~/.bisellium-evidence/current-state.md): UI2 W-451 work links: build review round 1 failed on one blocker, Ctrl/Cmd+Enter on the new Board links, S2-tagged: send the tag back to its reviewer, then a fix round. The Patron sees its screens before the PR opens.
+
+Lanes E1, E2 and UI1 are free: take the Queue's order, and un-halt W-073, W-438, W-136 before listing them. W-505's real proof is the sync hook's line once the Patron's clone has 1e235d4b.
 
 W-467 and W-503 have not started: W-467 follows W-503, whose palette it takes. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
 
