@@ -130,8 +130,11 @@ function instantMs(value: unknown): number | undefined {
   const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/.exec(value);
   if (match === null) return undefined;
   const [year, month, day, hour, minute, second] = [1, 2, 3, 4, 5, 6].map((index) => Number(match[index] ?? 0)) as [number, number, number, number, number, number];
-  const calendar = new Date(Date.UTC(year, month - 1, day));
-  if (calendar.getUTCFullYear() !== year || calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day || hour > 23 || minute > 59 || second > 59) return undefined;
+  // Fields are compared directly: Date.UTC maps years 0 to 99 onto 1900 to 1999.
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const monthDays = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  const offset = /^[+-](\d{2}):?(\d{2})$/.exec(match[7] ?? "");
+  if (monthDays === undefined || day < 1 || day > monthDays || hour > 23 || minute > 59 || second > 59 || (offset !== null && (Number(offset[1]) > 23 || Number(offset[2]) > 59))) return undefined;
   const parsed = new Date(value).getTime();
   return Number.isFinite(parsed) ? parsed : undefined;
 }
