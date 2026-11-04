@@ -129,6 +129,7 @@ test("W-451-b1 Back and Forward keep a returned filtered opus route-owned", asyn
   await expect(page.getByRole("dialog", { name: "Save-slot migration" }), "Forward keeps a returned filtered opus open").toBeVisible();
   await expect(page, "Forward keeps the filtered opus route").toHaveURL(/#\/board\/W-001$/);
 });
+
 test("W-451-b1 Close exposes the same closed-Board Back step and consumes the drawer Forward entry", async ({ page }) => {
   served = await startServed("w451-b1-close-history");
   await seedToken(page, served);
@@ -190,5 +191,19 @@ test("W-451-b1 Close and Escape restore visible Board focus after route-state ch
     const firstVisibleColumn = page.locator(".board__column").first();
     await expect(firstVisibleColumn.locator(":focus"), `${width}: unplaced Close chooses the deterministic first visible column`).toHaveCount(1);
     await expectFocusedAndVisible(page, `${width}: unplaced opus Close`);
+  }
+});
+
+test("W-451-b2 the narrow menu opens on the current page at 640 and 390", async ({ page }) => {
+  served = await startServed("w451-b2");
+  await seedToken(page, served);
+  for (const width of [640, 390] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ["inbox", "board", "seats", "officina"] as const) {
+      await page.goto(`${served.baseURL}/?w451=b2-${width}-${route}#/${route}`);
+      await page.locator(".sidebar__toggle").click();
+      await expect(page.locator(`.sidebar__link[href="#/${route}"]`), `${width} ${route}: current page receives focus`).toBeFocused();
+      await page.keyboard.press("Escape");
+    }
   }
 });

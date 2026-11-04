@@ -45,3 +45,11 @@ test("W-451-b1 behaviour 1: Board work links are durable drawer routes", () => {
   assert.match(inboxView, /event\.button === 0 && !event\.metaKey && !event\.ctrlKey && !event\.shiftKey && !event\.altKey/, "only an ordinary primary activation routes the current tab");
   assert.match(inboxView, /onClick=\{\(event\) => \{\s*if \(!ownsBoardLinkActivation\(event\)\) return;/, "modified and non-primary link clicks retain native browser behavior");
 });
+
+test("W-451-b2 behaviour 2: the narrow menu opens on the current page", () => {
+  const sidebar = read("apps/web/src/components/Sidebar.tsx");
+  const served = read("apps/web/tests-serve/w415.spec.ts");
+  assert.match(sidebar, /querySelector<HTMLAnchorElement>\('\.sidebar__link\[aria-current="page"\]'\)\?\.focus/, "opening focuses the active link identified by aria-current");
+  assert.doesNotMatch(sidebar, /querySelector<HTMLAnchorElement>\("\.sidebar__link"\)\?\.focus/, "opening never falls back to the first page");
+  assert.match(served, /for \(const route of ROUTES\)[\s\S]*current page receives focus/, "the existing W-415 row checks every current page at both narrow widths");
+});
