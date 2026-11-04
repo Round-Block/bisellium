@@ -1,0 +1,18 @@
+# opus: W-502
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1a494-fc7e-7a11-813a-d97da1c4b8b7
+# outcome: failed
+# at: 2026-11-04T03:26:13.688Z
+# tree: tree:ec9f6fc6639637ca4f7a852a97ddfed3b0f1b84d
+# brief: briefs/W-502.md blob:086b1f2f843a6eb44b408f6c39a6858fc53d7a1c
+# ticket: {"opus":"W-502","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-502/studio","head":"992ee3fc0df8c173fd5c20199be9ebfed1ae4983","brief":"086b1f2f843a6eb44b408f6c39a6858fc53d7a1c","at":"2026-11-04T03:23:08.434Z"}
+
+## Findings
+1. blocking — studio/opera/W-502.md:29 The builder handoff says only “ready for review”; it omits the built-branch timing figures required by brief:93, so the required performance evidence is missing. — check: none: require the build handoff to record the promised before/after measurements [severity: S1] [class: review×evidence-backfilled-or-absent]
+
+## Verdict
+The implementation and regression evidence otherwise align with the specified behaviour, but the missing acceptance measurement blocks this round.
+VERDICT: FAIL
