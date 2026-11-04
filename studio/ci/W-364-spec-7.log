@@ -1,0 +1,21 @@
+# opus: W-364
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a148-16b8-7131-8574-989e0ec72447
+# outcome: passed
+# at: 2026-11-04T00:23:49.107Z
+# tree: tree:c838e2e0adbf46e974b84ccc997b902704f46381
+# brief: briefs/W-364.md blob:26d53b9c80eee784653a815e002118344ed9ceed
+# ticket: {"opus":"W-364","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":".worktrees/W-364/studio","head":"8178d1dae92adb4b60d1e455a259fa28f11f8a3d","brief":"26d53b9c80eee784653a815e002118344ed9ceed","at":"2026-11-04T00:23:45.621Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+Revision 3 names the added shell-input forms and rejector, and states the lexical rule’s remaining limits precisely enough to bound its promises.
+
+VERDICT: PASS

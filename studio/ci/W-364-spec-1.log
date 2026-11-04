@@ -1,0 +1,24 @@
+# opus: W-364
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-03T10:19:05.587Z
+# tree: tree:48f3314cf82f40fde55b21269c4e273d5f9cdcaa
+# brief: briefs/W-364.md blob:05758b0bc48c3ef6ea3fcee94675f34210ca9769
+# ticket: {"opus":"W-364","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"79b23ec9dfb8938d8af762726e9c759c8284dd43","brief":"05758b0bc48c3ef6ea3fcee94675f34210ca9769","at":"2026-11-03T10:18:56.980Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-364-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the CLI half refuses `verify` and `ci --opus` outside a `bisellium run` session (BISELLIUM_SESSION), so a heavy run from any harness's main thread is refused by the verb; the host runner's gate cell gains its run's session so certify and builder runs keep running `ci --opus`; red-b1 shows master's verify running with no refusal — check: brief:28, red-b1.log, kills.out
+2. advisory — the guard refuses the main thread's `codex exec`, `verify` and `ci --opus` (also wrapped in `bisellium run`), its dossier writes and its shell writes into the records, the handoff and the dossier; one `walk` serves the ladder, heavy-run and shell-write rules, reading each line without comments and heredoc bodies through W-496's `shellCode`, which also ends the 11-03 heredoc misread; a heredoc fed to a shell is a stated limit — check: brief:30, brief:32, brief:24, red-b2.log, red-b3.log, red-b4.log
+3. advisory — four behaviours, red order one at a time: each red is accepted and fails at its declared assertion, each green passes, every earlier row passes on each later red commit, twenty-one kills are all guarded, and the ledger passes the writer — check: red-accept.out, declared.out, red-logs.out, kills.out, ledger-check.out
+4. advisory — three existing rows flip on the change alone (stage-states W-129 behaviour 15, next-review W-312-b1 through next-world's SETUP_ENV, guard.test W-494-b1's main-thread case), each named and edited in Files owned; the Codex test check names the same three and no unnamed one, and every listed file, lint, format:check, typecheck and both officina checks pass on the tip — check: flips.out, fixture-census.md, gates-proto.out
+5. advisory — no code-owned path is touched, but the refusals change what the orchestrator may run (lex §9 step 3's post-reds `ci --opus`, a ui opus's post-merge `verify`, `scripts/opus-done.sh`, the builder brief's `ci --opus`, the census passes' `codex exec`); those texts are the Patron's or W-363's, so the Defaults go to the Patron before branch — check: brief:115, brief:126
+
+## Verdict
+
+passed — W-364 drafted, prototyped and signed by the architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-364.md`: four behaviours, the CLI refuses verify and ci --opus outside a bisellium run session and the guard refuses the main thread's heavy runs, dossier writes and shell record writes; prototype `prototype.mbox` over master 79b23ec9; no code-owned path; the Defaults go to the Patron before branch.

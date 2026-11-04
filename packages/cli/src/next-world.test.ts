@@ -89,6 +89,8 @@ export const SETUP_ENV: NodeJS.ProcessEnv = {
   GIT_CONFIG_GLOBAL: "/dev/null",
   GIT_CONFIG_NOSYSTEM: "1",
   GIT_TERMINAL_PROMPT: "0",
+  // W-364: the fixture's `verify` runs only inside a `bisellium run` session
+  BISELLIUM_SESSION: "next-world-fixture",
   GIT_AUTHOR_NAME: "W-124 Test",
   GIT_AUTHOR_EMAIL: "w124@example.invalid",
   GIT_COMMITTER_NAME: "W-124 Test",

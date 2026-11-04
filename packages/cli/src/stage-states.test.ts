@@ -800,6 +800,8 @@ if (runs(15)) {
     const ENV: NodeJS.ProcessEnv = { ...process.env, TZ: "UTC" };
     delete ENV["BISELLIUM_SELLA"];
     delete ENV["BISELLIUM_ROLE"];
+    // W-364: `verify` runs only inside a `bisellium run` session
+    ENV["BISELLIUM_SESSION"] = "W-120-fixture";
     // The transcript lives outside the repo's working tree: a file inside it makes the tree dirty and every
     // verdict and verify certificate would read dirty:, not tree:.
     const outside = scratch("b15-transcript");

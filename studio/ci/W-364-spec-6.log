@@ -1,0 +1,24 @@
+# opus: W-364
+# phase: spec
+# round: 6
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-04T00:11:49.072Z
+# tree: tree:c838e2e0adbf46e974b84ccc997b902704f46381
+# brief: briefs/W-364.md blob:26d53b9c80eee784653a815e002118344ed9ceed
+# ticket: {"opus":"W-364","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-364/studio","head":"9ecce9fb5d6573d04204e565e5bc3273fd552834","brief":"26d53b9c80eee784653a815e002118344ed9ceed","at":"2026-11-04T00:11:39.505Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-364-spec/hold/promise-ledger.md
+
+## Findings
+
+1. advisory — the answer to the D-085 hold is the limit, not a fix round: `tee '<' studio/ci/x.log` is a literal file named `<`, which no one writes by mistake (D-045), and a fix only for quoted signs would leave the same cause in place; the rule reads `commandSeq`'s words, not the shell's parse, so the brief now states the class on row 7, and a form inside it is an advisory in review (D-085 E) — check: brief:84, brief:38, hold/forms.out
+2. advisory — the class holds forms review has not named, each run through the reviewed `recordWrite`: an escaped or double-quoted sign, `'<<'`, `'<<<'`, `'0<'`, `cp '>' /tmp/a <record>` (a write missed), `echo '>' <record>` (a harmless line refused), and an operand after `2>&1`, `<&0`, `>&2` or a process substitution (a write missed, unquoted); the last group is legal shell an ordinary line could hold, though a redirection there is unusual, so it is the part of this limit to weigh at the checkpoint — check: hold/forms.out, brief:84, brief:143
+3. advisory — no source changes in revision 3; the input redirection forms the fix rounds added are now named as recognised and pinned, with four new kills, and all twenty-eight kills fail their rows at opus/W-364 9ecce9fb — check: hold/kills.out, brief:114
+4. advisory — review round 2's S3 is answered late, not backfilled as if at the time: row b4 on each fix round's red test commit fails at an assertion and passes on its fix, run on 11-04 in a throwaway clone; no `bisellium red` log was recorded when the rounds ran — check: hold/fix-reds.out
+5. advisory — Default 7 gains the plain-language limit; the Patron agreed the earlier wording, so this goes to the checkpoint as a veto (D-085 B) rather than holding review — check: brief:143
+
+## Verdict
+
+passed — W-364 brief revision 3 at `studio/briefs/W-364.md`, signed by the architect (`claude-opus-5-5`, D-072, D-150 C) in answer to the class-loop hold (D-085 A): the shell-write rule's limit is stated by class, the source is unchanged, and review resumes against the amended brief.

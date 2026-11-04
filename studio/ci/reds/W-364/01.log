@@ -1,0 +1,40 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-364-b1\s --import tsx packages/cli/src/w364.test.ts
+# exit: 1
+# at: 2026-11-03T12:07:05.901Z
+# sella: builder.W-364
+# tree: tree:dcb476fdc767e28eddb8d2ee341d9a4f87239d16
+# ticket: {"opus":"W-364","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-364/studio","head":"b1e2b6ee6ec183a33eceb08571e14d0b7eb25e36","brief":"05758b0bc48c3ef6ea3fcee94675f34210ca9769","at":"2026-11-03T12:07:04.903Z"}
+
+TAP version 13
+# Subtest: W-364-b1 behaviour 1: verify and ci --opus refuse outside a bisellium run session, from any caller
+not ok 1 - W-364-b1 behaviour 1: verify and ci --opus refuse outside a bisellium run session, from any caller
+  ---
+  duration_ms: 291.19066
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-364/packages/cli/src/w364.test.ts:1:1748'
+  failureType: 'testCodeFailure'
+  error: 'verify: the refusal names the session'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    unknown opus: W-999
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-364/packages/cli/src/w364.test.ts:68:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 651.295365

@@ -323,14 +323,34 @@ function enterable(path: string): boolean {
  *  a directory the line did not set: `unknown` holds from there on, in the `-c` scripts and script
  *  files it runs too, and a script file named without `/`, `~/` or `$HOME/` at its start is
  *  refused whatever it holds (the whole refusal line is returned). Limits: a `cd` target built
- *  from a variable is not followed; nor are `CDPATH`, `env -C`, `autocd` and a `cd` in a sourced script. */
+ *  from a variable is not followed; nor are `CDPATH`, `env -C`, `autocd` and a `cd` in a sourced script. W-364: each line
+ *  is read without its comments and heredoc bodies (`walk`), so a heredoc fed to a shell is not read. */
 export function ladderWrite(command: string, ctx: ShellContext, depth = 0, unknown = false): string | undefined {
+  return walk(command, ctx, ladderJudge, depth, unknown);
+}
+
+/** W-364: a rule `walk` asks of each simple command: its words after `strip`'s prefixes, its words as written (its
+ *  redirections among them) and one directory it may run in; it answers what it found, or undefined. */
+type Judge = (words: string[], raw: string[], here: ShellContext) => string | undefined;
+
+/** The hand ladder record write a CLI argv makes (`ladderStep`), as a `walk` rule. */
+const ladderJudge: Judge = (w) => {
+  const argv = cliArgv(w);
+  return argv ? ladderStep(argv) : undefined;
+};
+
+/** The walk `ladderWrite` describes, for any `judge` (W-364): it is asked of each simple command in each directory the
+ *  command may run in, before its `-c` script and the script file it runs are read. Each line (the command, a `-c`
+ *  script, a script file) is read without its comments and heredoc bodies (`shellCode`'s `bare`), so text a heredoc
+ *  carries is never read as a command, nor a `cd -` or `popd` in it as moving the shell; a heredoc fed to a shell
+ *  (`bash <<EOF`) is then not read (a limit). */
+function walk(command: string, ctx: ShellContext, judge: Judge, depth: number, unknown: boolean): string | undefined {
   let cwd = ctx.cwd;
   const held = new Set([cwd]);
   let certain = true;
   let uncertain = false;
   let moved = false;
-  for (const c of commandSeq(command)) {
+  for (const c of commandSeq(shellCode(command).bare)) {
     const { words: w, literal } = strip(c.words);
     if (certain && c.words[0] === "cd" && w.length === 2 && !/^[-+]/.test(w[1]!) && /^[;\n]*$/.test(c.before) && /^(?:[;\n]*|&&\n*)$/.test(c.after)) {
       const target = wordPath(w[1]!, { ...ctx, cwd });
@@ -354,31 +374,57 @@ export function ladderWrite(command: string, ctx: ShellContext, depth = 0, unkno
       continue;
     }
     const here = (uncertain ? [...held] : [cwd]).map((d) => ({ ...ctx, cwd: d }));
+    for (const h of here) {
+      const found = judge(w, c.words, h);
+      if (found) return found;
+    }
     const inner = shellScript(w);
     if (inner !== undefined) {
       for (const h of here) {
-        const found = depth < 3 ? ladderWrite(inner, h, depth + 1, unknown) : undefined;
+        const found = depth < 3 ? walk(inner, h, judge, depth + 1, unknown) : undefined;
         if (found) return found;
       }
       continue;
     }
-    const argv = cliArgv(w);
-    if (argv) {
-      const step = ladderStep(argv);
-      if (step) return step;
-      continue;
-    }
+    if (cliArgv(w)) continue;
     const file = depth < 3 ? scriptOf(w, literal) : undefined;
     if (file !== undefined && unknown && !HERE_ABSOLUTE.test(file))
       return `${REFUSED}\`${file}\` runs in a directory the guard cannot know (after \`cd -\`, \`popd\` or \`pushd\` with no directory) (W-310): run it by absolute path, or dispatch a ladder-runner`;
     for (const h of here) {
       const path = file === undefined ? undefined : wordPath(file, h);
       const text = path === undefined ? undefined : scriptText(path);
-      const found = text === undefined ? undefined : ladderWrite(text, h, depth + 1, unknown);
+      const found = text === undefined ? undefined : walk(text, h, judge, depth + 1, unknown);
       if (found) return found.startsWith(REFUSED) ? found : `${found} (in ${file})`;
     }
   }
   return undefined;
+}
+
+/** W-364: the codex options that take the next word, skipped before its subcommand. */
+const CODEX_OPERAND = (w: string): boolean =>
+  ["-c", "--config", "-m", "--model", "-p", "--profile", "-s", "--sandbox", "-a", "--ask-for-approval", "-C", "--cd", "-i", "--image", "--enable", "--disable", "--local-provider"].includes(w);
+
+/** W-364: the heavy run the words make, or undefined: `codex exec` (or its alias `e`, after codex's leading options,
+ *  `CODEX_OPERAND`'s with their value), the CLI's `verify`, its `ci` with `--opus`, and either of the last two as the
+ *  command after `bisellium run`'s `--` (its prefixes stripped). */
+export function heavyStep(w: string[]): string | undefined {
+  if (base(w[0]) === "codex") {
+    const sub = w[leading(w, CODEX_OPERAND).operand];
+    return sub === "exec" || sub === "e" ? "codex exec" : undefined;
+  }
+  const argv = cliArgv(w);
+  if (argv === undefined) return undefined;
+  if (argv[0] === "verify") return "verify";
+  if (argv[0] === "ci" && argv.includes("--opus")) return "ci --opus";
+  const k = argv[0] === "run" ? argv.indexOf("--") : -1;
+  return k < 0 ? undefined : heavyStep(strip(argv.slice(k + 1)).words);
+}
+
+/** W-364: the heavy run (`heavyStep`) a command runs, walked as `ladderWrite` walks (directories, `-c` scripts and
+ *  script files three deep, each line without its comments and heredoc bodies); or a whole refusal line (`REFUSED`)
+ *  for a script in a directory the guard cannot know. */
+export function heavyRun(command: string, ctx: ShellContext): string | undefined {
+  return walk(command, ctx, (w) => heavyStep(w), 0, false);
 }
 
 /** True when a simple command starts a `while` or `until` loop outside any `timeout` with a
@@ -481,9 +527,12 @@ export function heredocDelimiter(line: string, start: number): { delim: string; 
  *  the next newline up to one equal to the delimiter (`<<-`: leading tabs dropped), or to the end, one heredoc after
  *  another. `code` is `line` without its comments and heredoc bodies. An `&` outside all of these ends or separates a
  *  command unless it is `&&`, follows `<`, `>`, `|` or `;` (`>&2`, `2>&1`, `<&0`, `|&`, `;&`) or precedes `>` (`&>`,
- *  `&>>`). An unterminated quote runs to the end (bash refuses that line). */
-function shellCode(line: string): { code: string; amp: boolean } {
+ *  `&>>`). An unterminated quote runs to the end (bash refuses that line). W-364: `bare` is `line` without its comments and
+ *  heredoc bodies, everything else (quotes included) as written. */
+function shellCode(line: string): { code: string; amp: boolean; bare: string } {
   let code = "";
+  /** W-364: the spans `bare` leaves out, [start, end). */
+  const cuts: [number, number][] = [];
   let amp = false;
   const closers: string[] = [];
   /** True inside a word: a `#` there is a character, not a comment (a quote, an escape or an expansion is part of the word). */
@@ -514,6 +563,7 @@ function shellCode(line: string): { code: string; amp: boolean } {
       i++;
     } else if (c === "#" && closers.length === 0 && !word) {
       const j = line.indexOf("\n", i);
+      cuts.push([i, j < 0 ? line.length : j]);
       i = (j < 0 ? line.length : j) - 1;
     } else if (c === "\n" && docs.length > 0) {
       code += c;
@@ -527,6 +577,7 @@ function shellCode(line: string): { code: string; amp: boolean } {
           if ((d.tabs ? text.replace(/^\t+/, "") : text) === d.delim) break;
         }
       }
+      cuts.push([i + 1, k]);
       i = k - 1;
     } else if (c === "<" && line[i + 1] === "<" && closers.length === 0) {
       let j = i + 2;
@@ -577,7 +628,13 @@ function shellCode(line: string): { code: string; amp: boolean } {
       code += c;
     }
   }
-  return { code, amp };
+  let bare = "";
+  let at = 0;
+  for (const [from, to] of cuts) {
+    bare += line.slice(at, from);
+    at = to;
+  }
+  return { code, amp, bare: bare + line.slice(at) };
 }
 
 /** W-496: the background form a foreground Bash call holds, or undefined: `&` when an `&` ends or separates a command
@@ -616,9 +673,12 @@ function checkoutOf(path: string): string | undefined {
   }
 }
 
+/** W-364: the dossier, which the main thread does not write. */
+const DOSSIER = "docs/design/dossier/";
+
 /** W-290: in a git checkout, `studio/decisions/**` and `docs/SESSION-HANDOFF.md` are written only
- *  by a dispatched clerk; the main thread writes nothing outside `studio/` and `docs/`. A path
- *  outside every checkout is not judged. */
+ *  by a dispatched clerk; the main thread writes nothing outside `studio/` and `docs/`, nor (W-364) under
+ *  `docs/design/dossier/`. A path outside every checkout is not judged. */
 export function writeRefusal(filePath: string, cwd: string | undefined, main: boolean, clerk: boolean): string | undefined {
   const real = realOf(resolve(cwd ?? process.cwd(), filePath));
   const top = checkoutOf(real);
@@ -626,9 +686,100 @@ export function writeRefusal(filePath: string, cwd: string | undefined, main: bo
   const rel = relative(top, real).split(sep).join("/");
   if (rel.startsWith("studio/decisions/") || rel === "docs/SESSION-HANDOFF.md")
     return clerk ? undefined : `refused: ${rel} is written only by a dispatched clerk subagent (W-290): dispatch a clerk with the text`;
+  if (main && rel.startsWith(DOSSIER))
+    return `refused: the orchestrator session does not write the dossier (${rel}) (W-364): dispatch a subagent with the text`;
   if (main && !rel.startsWith("studio/") && !rel.startsWith("docs/"))
     return `refused: the orchestrator session does not write source or tests (${rel}) (W-290): dispatch a builder subagent`;
   return undefined;
+}
+
+/** W-364: the paths the main thread does not write by shell, relative to their checkout: the officina's gate logs and
+ *  opus records (the bisellium verbs write them), decisions and the handoff (a dispatched clerk) and the dossier (a
+ *  dispatched agent). A directory names itself and everything under it. */
+const RECORD_PATHS = ["studio/ci/", "studio/opera/", "studio/decisions/", DOSSIER, "docs/SESSION-HANDOFF.md"];
+
+/** W-364: the path relative to its checkout (`realOf`, `checkoutOf`) when it is one of `RECORD_PATHS` or under one;
+ *  undefined for any other path and for a path in no checkout. */
+function recordPath(path: string): string | undefined {
+  const real = realOf(path);
+  const top = checkoutOf(real);
+  if (!top) return undefined;
+  const rel = relative(top, real).split(sep).join("/");
+  return RECORD_PATHS.some((r) => (r.endsWith("/") ? rel === r.slice(0, -1) || rel.startsWith(r) : rel === r)) ? rel : undefined;
+}
+
+/** A redirection word: `>` or `>>` after an optional fd number, its target in the word or the next one (`commandSeq` breaks
+ *  a word at `&` and `|`, so `&>` reads as `>`, and `>|` is not seen: a limit). */
+const REDIRECT = /^\d*>>?([\s\S]*)$/;
+
+/** W-364: an input redirection word: `<`, `<<<`, `<&`, or a heredoc operator `<<` or `<<-` (its delimiter, not a file) after an optional fd number (`<>` opens for writing and is not one), its
+ *  source in the word or the next one. It writes nothing and is not an operand of the command. */
+const INPUT = /^\d*<(?!>)(?:<<|<-|<)?&?([\s\S]*)$/;
+
+/** W-364: the words a simple command writes to, as the rule recognises them: each output redirection's target (`REDIRECT`; an input redirection, `INPUT`, is neither a target nor an operand;
+ *  `commandSeq` breaks at `&`, so `>&2`'s fd is never read as one); `tee`'s operands; the target of `cp`, `mv` and `install` (`-t`, `-t<dir>` or
+ *  `--target-directory`, else the last of two or more operands); and with `-i` (in any short cluster) or `--in-place`,
+ *  `sed`'s file operands (the first operand is its script unless `-e`, `-f`, `--expression` or `--file` gives one).
+ *  `raw` is the command as written, `w` the words after `strip`'s prefixes. */
+function writeTargets(w: string[], raw: string[]): string[] {
+  const out: string[] = [];
+  const redirected = new Set<number>();
+  raw.forEach((x, i) => {
+    const m = REDIRECT.exec(x);
+    if (!m) return;
+    const t = m[1] === "" ? raw[i + 1] : m[1];
+    if (m[1] === "") redirected.add(i + 1);
+    if (t !== undefined) out.push(t);
+  });
+  const offset = raw.length - w.length;
+  w.forEach((x, i) => {
+    if (INPUT.exec(x)?.[1] === "") redirected.add(offset + i + 1);
+  });
+  const args = w.slice(1).filter((x, i) => !REDIRECT.test(x) && !INPUT.test(x) && !redirected.has(offset + 1 + i));
+  const operands = args.filter((x) => !x.startsWith("-"));
+  const b = base(w[0]);
+  if (b === "tee") out.push(...operands);
+  if (b === "cp" || b === "mv" || b === "install") {
+    const t = args.findIndex((x) => x === "-t" || x === "--target-directory");
+    const joined = args.find((x) => /^-t./.test(x) || x.startsWith("--target-directory="));
+    if (t >= 0 && args[t + 1] !== undefined) out.push(args[t + 1]!);
+    else if (joined !== undefined) out.push(joined.startsWith("--") ? joined.slice(joined.indexOf("=") + 1) : joined.slice(2));
+    else if (operands.length >= 2) out.push(operands[operands.length - 1]!);
+  }
+  if (b === "sed" && args.some((x) => /^-[A-Za-z]*i/.test(x) || x === "--in-place" || x.startsWith("--in-place="))) {
+    const files: string[] = [];
+    let script = false;
+    for (let i = 0; i < args.length; i++) {
+      const x = args[i]!;
+      if (x === "-e" || x === "-f" || x === "--expression" || x === "--file") {
+        script = true;
+        i++;
+      } else if (/^-[A-Za-z]*[ef]/.test(x) || x.startsWith("--expression=") || x.startsWith("--file=")) script = true;
+      else if (!x.startsWith("-")) files.push(x);
+    }
+    out.push(...(script ? files : files.slice(1)));
+  }
+  return out;
+}
+
+/** W-364: the record path (`recordPath`) a command writes by shell (`writeTargets`), walked as `ladderWrite` walks (each
+ *  line without its comments and heredoc bodies); or a whole refusal line (`REFUSED`) for a script in a directory the
+ *  guard cannot know. A target built from a variable is not judged. */
+export function recordWrite(command: string, ctx: ShellContext): string | undefined {
+  return walk(
+    command,
+    ctx,
+    (w, raw, here) => {
+      for (const t of writeTargets(w, raw)) {
+        const path = wordPath(t, here);
+        const rel = path === undefined ? undefined : recordPath(path);
+        if (rel !== undefined) return rel;
+      }
+      return undefined;
+    },
+    0,
+    false,
+  );
 }
 
 /** SubagentStop: the in-flight shell and monitor tasks (`background_tasks`) whose id the stopping
@@ -862,6 +1013,14 @@ export function guardRefusal(input: Dict): string | undefined {
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
+    // W-364: the main thread's heavy runs, refused here before the CLI refuses verify and ci --opus outside a session
+    const heavy = main ? heavyRun(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
+    if (heavy?.startsWith(REFUSED)) return heavy;
+    if (heavy) return `refused: \`${heavy}\` is a heavy run, run only by a dispatched agent (W-364): dispatch one with the command; it runs verify and ci --opus inside a \`bisellium run --sella <seat> …\` session`;
+    // W-364: the main thread's shell writes into the records, the handoff and the dossier (an early warning: the verbs own the records)
+    const record = main ? recordWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
+    if (record?.startsWith(REFUSED)) return record;
+    if (record) return `refused: the orchestrator session does not write \`${record}\` by shell (W-364): the bisellium verbs write studio/ci/ and studio/opera/, a dispatched clerk the decisions and the handoff, a dispatched agent the dossier`;
     // W-496: background syntax in a foreground call, any thread's (a jq PreToolUse hook matched an `&` anywhere before)
     const form = args["run_in_background"] === true ? undefined : backgroundForm(command);
     if (form) return `refused: \`${form}\` puts work in the background, where it dies when this Bash call returns (W-496): run the long command as its own Bash call with the run_in_background parameter set to true instead`;
@@ -906,4 +1065,34 @@ export function guardWiring(settings: unknown): string[] {
   if (!groups("SubagentStop").some((g) => runs(g) && g["matcher"] === "*")) missing.push(`SubagentStop * -> ${GUARD_COMMAND} (type command, timeout 2)`);
   if (!groups("Stop").some(runs)) missing.push(`Stop -> ${GUARD_COMMAND} (type command, timeout 2)`);
   return missing;
+}
+
+/** W-364: the variable `bisellium run` sets for the command it runs (`run.ts`, `builder-run.ts`, and the host runner's
+ *  builder and gate cells): the CLI's one sign that it runs inside a `bisellium run` session. */
+export const SESSION_ENV = "BISELLIUM_SESSION";
+
+/** W-364: the variables `bisellium run` stamps that name its session (its seat, its officina, its id); a heavy run drops them. */
+export const SESSION_VARS = ["BISELLIUM_SELLA", "BISELLIUM_STUDIO", SESSION_ENV] as const;
+
+/** W-364: the heavy run a CLI argv names: `verify` with any argument, `ci` with `--opus` among its arguments. */
+function heavyVerb(cmd: string | undefined, args: readonly string[]): "verify" | "ci --opus" | undefined {
+  return cmd === "verify" && args.length > 0 ? "verify" : cmd === "ci" && args.includes("--opus") ? "ci --opus" : undefined;
+}
+
+/** W-364: a heavy run admitted inside a session leaves it before its steps and gates start: `SESSION_VARS` are dropped from
+ *  `env`, so the suite runs without the session's seat, studio, or session-id variables (the run's Git identity remains) and a
+ *  nested verb against a fixture never reads the run's seat (11-03: `done` read `BISELLIUM_SELLA=producer` in close.test.ts). Any other argv leaves `env` as it is. */
+export function leaveSession(cmd: string | undefined, args: readonly string[], env: NodeJS.ProcessEnv = process.env): void {
+  if (heavyVerb(cmd, args) === undefined) return;
+  for (const name of SESSION_VARS) delete env[name];
+}
+
+/** W-364: the CLI's refusal of a heavy run outside a `bisellium run` session, so a heavy run from any harness's main
+ *  thread is refused by the verb: `verify` with any argument and `ci` with `--opus` among its arguments, when
+ *  `SESSION_ENV` is unset or empty. Undefined otherwise: `verify` with no argument keeps its usage line, and `ci`
+ *  without `--opus` (the CI workflow's steps) runs. The variable is a claim, not an attestation (D-045). */
+export function sessionRefusal(cmd: string | undefined, args: readonly string[], env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const step = heavyVerb(cmd, args);
+  if (step === undefined || (env[SESSION_ENV] ?? "") !== "") return undefined;
+  return `refused: \`bisellium ${step}\` runs only inside a bisellium run session (W-364): dispatch an agent, which runs it as \`bisellium run --sella <seat> --no-worktree --studio studio -- npm run -s bisellium -- ${step} …\` (a seat that is not a builder template, as eng-lead or producer)`;
 }

@@ -823,7 +823,8 @@ test("W-494-b1 behaviour 1: a subagent's second background Bash call is refused 
   assert.match(r.err, /TaskStop/);
   assert.equal((await guard(bash(second, W494_RUNNER(agent), true))).code, 2, "a transcript_path naming the agent's own transcript is read too");
   assert.equal((await guard(bash(second, W494_RUNNER(session)))).code, 0, "a foreground call is not judged");
-  assert.equal((await guard(bash(second, { transcript_path: session }, true))).code, 0, "the main thread is not judged");
+  // W-364: the main thread's `ci --opus` is a heavy run, refused on its own; its one-run case runs a test log
+  assert.equal((await guard(bash("npm test > t.log 2>&1; echo $? > t.exit", { transcript_path: session }, true))).code, 0, "the main thread is not judged");
   const ended = w494Session([w494Start("blive0001"), w494Notice("blive0001")]);
   assert.equal((await guard(bash(second, W494_RUNNER(ended.session), true))).code, 0, "a run ended by its notification frees the slot");
   const stopped = w494Session([w494Start("blive0001"), w494Stopped("blive0001")]);
