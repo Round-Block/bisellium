@@ -4,6 +4,7 @@ queues:
     next:
       - { opus: W-505, says: "guard sync accepts the sandbox's empty alternates placeholder; Patron go-ahead 2026-11-04, exempt from the D-174 freeze" }
       - { opus: W-298, says: "petitio verb" }
+      - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; starts after W-298" }
       - { opus: W-300, says: "the drawer shows next's read-only step, actor, round and health" }
       - { opus: W-308, says: "opus timeline", next_ts: true }
       - { opus: W-074, says: "greenlight and decline from the Board drawer, with W-289's refusal and a halt route" }

@@ -46,13 +46,13 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137).
 
-Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-283 W-289 W-290 W-298 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506.
+Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-283 W-289 W-290 W-298 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507.
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
-In flight (lane state: ~/.bisellium-evidence/current-state.md): UI2 W-451 work links: build review round 1 failed on one blocker, Ctrl/Cmd+Enter on the new Board links, S2-tagged: send the tag back to its reviewer, then a fix round. The Patron sees its screens before the PR opens.
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-451 work links: build review passed, pr waits on the Patron's screen ruling; W-300 drawer step line: build review passed, pr after W-451 and the Patron's look; W-298 petitio verb: spec at the two-review cap, re-signs with stated limits at the Opus reset; W-500 Runs screen: spec drafting by Codex on W-300's prototype, its build follows W-300 on master.
 
-Lanes E1, E2 and UI1 are free: take the Queue's order, and un-halt W-073, W-438, W-136 before listing them. W-505's real proof is the sync hook's line once the Patron's clone has 1e235d4b.
+W-073, W-438 and W-136 stay halted until the freeze ends (D-178). W-507, W-298's remainder, has not started and follows W-298.
 
 W-467 and W-503 have not started: W-467 follows W-503, whose palette it takes. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
 
