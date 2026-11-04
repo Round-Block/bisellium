@@ -1,0 +1,44 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-451-b1\s --import tsx apps/web/test/w451.test.ts
+# exit: 1
+# at: 2026-11-04T13:08:48.508Z
+# sella: builder.W-451
+# tree: tree:914e6351c0aaee11eb71577137bf99e4927025f2
+# ticket: {"opus":"W-451","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-451/studio","head":"e716ca99f2a5eff5664aa291b861f4c609a02caa","brief":"cf6f6d7712a2f760bf15a1d76daeaa53bed54ffa","at":"2026-11-04T13:08:45.630Z"}
+
+TAP version 13
+# Subtest: W-451-b1 behaviour 1: Board work links are durable drawer routes
+not ok 1 - W-451-b1 behaviour 1: Board work links are durable drawer routes
+  ---
+  duration_ms: 2.220672
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-451/apps/web/test/w451.test.ts:1:482'
+  failureType: 'testCodeFailure'
+  error: |-
+    the hash router exposes a Board drawer target
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-451/apps/web/test/w451.test.ts:21:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 484.819122
