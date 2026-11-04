@@ -4,7 +4,7 @@ queues:
     next:
       - { opus: W-502, says: "next answers quickly on long-running opera; exempt from the D-174 freeze", next_ts: true }
       - { opus: W-505, says: "guard sync accepts the sandbox's empty alternates placeholder; Patron go-ahead 2026-11-04, exempt from the D-174 freeze" }
-      - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the D-174 freeze ends 2026-11-17" }
+      - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
       - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
