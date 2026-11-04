@@ -157,7 +157,7 @@ test("W-487-b2 Inbox labels Board routes without reply controls at 1280, 640 and
     await expectBoardRowLabels(page, width);
     await mixed.click();
     await expect(page.locator(".inbox__action-bar"), `${width}: questions retain the Inbox reply controls`).toBeVisible();
-    await expect(page.getByRole("button", { name: "Open Board actions" }), `${width}: combined row exposes its Board-owned action`).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open Board actions" }), `${width}: combined row exposes its shareable Board-owned action`).toHaveAttribute("href", "#/board/W-1");
     await expectGeometry(page, width, ".inbox__workspace");
   }
 
@@ -171,7 +171,7 @@ test("W-487-b2 Inbox labels Board routes without reply controls at 1280, 640 and
     await expect(reading.locator(".inbox__meta").getByText("W-2", { exact: true }), `${width}: Board-only initial selection shows the opus id`).toBeVisible();
     await expect(reading.locator(".inbox__expanded-subject"), `${width}: Board-only initial selection shows the title`).toHaveText("W-2 title");
     await expect(reading.locator(".inbox__board-asks"), `${width}: Board-only initial selection shows its ask kinds`).toHaveText("Human gate");
-    await expect(reading.getByRole("button", { name: "Open Board drawer" }), `${width}: Board-only initial selection offers one drawer action`).toBeVisible();
+    await expect(reading.getByRole("link", { name: "Open Board drawer" }), `${width}: Board-only initial selection offers one shareable drawer action`).toHaveAttribute("href", "#/board/W-2");
     await expect(reading.locator(".inbox__action-bar"), `${width}: Board-only initial selection has no reply controls`).toHaveCount(0);
     await page.locator(".inbox__item").click();
     await expect(page.getByRole("dialog", { name: "W-2 title" }), `${width}: clicking the Board-only row opens the existing drawer`).toBeVisible();
@@ -221,7 +221,7 @@ test("W-487-b3 Inbox and Board items route to their owning action at 1280, 640 a
 
     await page.goto(`${served.baseURL}/?w487=b3-inbox-${width}#/inbox`);
     await page.locator(".inbox__item", { hasText: "W-2 title" }).click();
-    await expect(page, `${width}: Board-owned Inbox item routes to Board`).toHaveURL(/#\/board$/);
+    await expect(page, `${width}: Board-owned Inbox item keeps its shareable Board route`).toHaveURL(/#\/board\/W-2$/);
     await expect(page.getByRole("dialog", { name: "W-2 title" }), `${width}: existing Board drawer opens`).toBeVisible();
     await expectGeometry(page, width, ".board-workspace");
   }

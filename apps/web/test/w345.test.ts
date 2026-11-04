@@ -71,7 +71,7 @@ test("W-345-b4 behaviour 4: only a failed first Inbox read clears records", () =
 test("W-345-b5 behaviour 5: the selected answer controls remain reachable in Outlook mobile detail", () => {
   const css = read("src/components/w025.css");
   const view = read("src/screens/InboxView.tsx");
-  assert.match(view, /className=\{\["inbox__item", "inbox__row"[\s\S]*?role="option"[\s\S]*?aria-selected=\{hasFocus && !decisionUnavailable\}[\s\S]*?tabIndex=\{hasFocus \? 0 : -1\}/, "petition rows expose listbox and roving-tab semantics without selecting a withdrawn row");
+  assert.match(view, /const common = \{[\s\S]*?className: \["inbox__item", "inbox__row"[\s\S]*?role: "option"[\s\S]*?"aria-selected": hasFocus && !decisionUnavailable[\s\S]*?tabIndex: hasFocus \? 0 : -1[\s\S]*?return \(\s*<button[\s\S]*?type="button"[\s\S]*?\{\.\.\.common\}/, "native petition buttons receive the shared listbox and roving-tab semantics without selecting a withdrawn row");
   assert.match(view, /focusedItemRef\.current\?\.focus\(\{ preventScroll: true \}\);[\s\S]*?focusedItemRef\.current\?\.scrollIntoView\(\{ block: "nearest" \}\)/, "selection movement focuses and reveals only as far as needed");
   assert.match(css, /\.inbox__item--focused\s*\{[^}]*background:\s*var\(--wash\)/, "the selected wash alone identifies the roving keyboard item");
   assert.match(css, /\.inbox__item:focus,[\s\S]*?\.inbox__item:focus-visible\s*\{[^}]*outline:\s*0;[^}]*box-shadow:\s*none/, "petition rows add neither a focus underline nor a surrounding box");

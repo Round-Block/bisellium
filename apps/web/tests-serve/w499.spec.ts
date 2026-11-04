@@ -114,6 +114,7 @@ test("W-499-b1 opened lifecycle columns stay contained and restore at 1280, 640 
       const columns = page.locator(".board__columns");
       const opener = page.locator(`[data-card-id="${cardId}"]`);
       await columns.evaluate((node, value) => { node.scrollLeft = value; }, requestedPrior);
+      await opener.scrollIntoViewIfNeeded();
       const prior = await columns.evaluate((node) => node.scrollLeft);
       await opener.evaluate((node) => (node as HTMLElement).click());
       const drawer = page.locator(".board-drawer");
@@ -246,6 +247,7 @@ test("W-499-b3 full-width narrow drawer keeps the Board mounted, inert and resto
     const opener = page.locator('[data-card-id="W-004"]');
     await columns.evaluate((node) => { node.scrollLeft = 164; });
     await waiting.evaluate((node) => { node.scrollLeft = 40; });
+    await opener.scrollIntoViewIfNeeded();
     await opener.evaluate((node) => (node as HTMLElement).focus({ preventScroll: true }));
     const snapshot = await opener.evaluate((node) => new Promise<{ columns: number; waiting: number }>((resolve) => {
       node.addEventListener("click", () => {
