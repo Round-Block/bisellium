@@ -32,8 +32,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 - D-085 F rides the fix census and daily retro.
 - Records dates are UTC; Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the opus after W-292.
 6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (evidence paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
-7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
-8. Until W-333's `studio/queue.yml` lands (D-077 B), lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (D-109).
+7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227). Lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (D-109).
 
 ## Artifacts
 
@@ -45,29 +44,16 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 ## Queue
 
-Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137). Halted: W-239 (D-106 D), W-435.
+Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137).
 
-Engineering, one ranked list (D-111; `next.ts` items one at a time):
-In flight (lane state: ~/.bisellium-evidence/current-state.md): D-174 (11-03 audit) freezes new process opera until 11-17. E1 free: next, an exempt opus for `next` taking over 100 s. E2 W-364 build review r2 failed (quoted `<` read as a redirection, same class as r1): the architect states the limit or keeps the domain (D-085). UI1 W-413 gates passed; build review r2, then the Patron's screens. UI2 W-451 halted for a re-spec from master in smaller pieces; next UI entry W-467.
-1. W-364 — main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec (W-290; Patron 11-01, folded)
-2. W-333 — the queue as a record, `studio/queue.yml`, auto-claiming idle lanes (W-478 folded) (high) `next.ts`
-3. W-393 — one spec admission table checked at signing (W-395, W-394, W-481 folded) (high); 4. W-458 — done finishes a merged rung: one trunk step (W-469 and "a held done requests the guard sync" folded); 5. W-363 — one stage executor: spec review, fix round, build-before-review as performs (W-480, W-482, W-470 folded) `next.ts`
-6. W-476 — cause fix, validation-order-masks-errors (high); 7. W-471 — a failing gate's log keeps its real failure; 8. W-455 — the containment helper refuses a symlinked final file
-9. W-414 — cause fix, ruled-case-uncovered (high); 10. W-460 — cause fix, tests-that-agree-with-the-bug (high); 11. W-464 — replay-environment-not-pristine
-12. W-185 — records checked once, at load: cause fix, fail-open-on-malformed-records (high) `next.ts`; 13. W-383 — security-boundary test fix; 14. W-431 — verb dead ends; 15. W-432 — verb dead ends
-16. W-429 — petitio length limits; 17. W-261 — woken orchestration; 18. W-434 — dispatch prompts as artifacts; 19. W-254 — delete talk and tick daily branch; 20. W-349 — flaky row W-279-b3
-21. W-399 — record verb sella check; 22. W-242 — hook-set code; 23. W-372 — agent waits on background perform; 24. W-400 — CLAUDE.md, AGENTS.md code-owned
-25. W-401 — sessions receipt provider; 26. W-245 — provider-agnostic closing step; 27. W-227 — cleanup with removed-worktree metadata `next.ts`; 28. W-283 — Status page served; 29. W-374 — next --all in-flight only `next.ts`
-30. W-375 — context serves lex without §9, §12; 31. W-380 — prune old evidence; 32. W-331 — next.ts split `next.ts`; 33. W-183 — heavy-job slots `next.ts`
-34. W-169 — lane claims `next.ts`; 35. W-332 — step tickets `next.ts`; 36. W-308 — opus timeline `next.ts`; 37. W-304 — seats read live, console MVP; 38. W-298 — petitio verb; 39. W-280 — Inbox newItem fail-open; 40. W-301 — console writes via auto-merge PR
-Cut (Patron 11-01, workflow review): W-436, W-465, W-457, W-405. Deferred: W-484 (docs-drift lint folded in), W-485, W-486, W-479, W-371, W-456. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold.
+Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-283 W-289 W-290 W-298 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-502.
 
-UI, one ranked list (D-111; order D-090 B; models D-091, D-099; `kind: ui` at start, D-088 E, except W-338):
-1. W-413; 2. W-451 — Home: gates passed a0d5d440; data W-439, W-440; 3. W-467 (Officina on Home's palette); 4. W-453 (D-128 D)
-5. W-074 — greenlight and decline from the Board drawer, with W-289's refusal (Patron-only, high) and a `halt` route (D-080 E)
-6. W-300 — the drawer shows `next`'s read-only step, actor, round and health
-7. W-488 — comment on served UI captures (design lead 11-01); 8. W-500 — Runs screen: opus list with detail, Waiting on you, Now only (Patron 11-02; run status from code-owned hook status events)
+D-174 (11-03 audit) freezes new process opera until 11-17; W-364, W-502 and product opera are exempt.
+
+In flight (lane state: ~/.bisellium-evidence/current-state.md): E1 W-502 spec: next answers quickly on long-running opera, filed and greenlit 11-04; E2 W-364 review: build review round 3 against brief revision 3, which states the shell-write limit; UI1 W-413 reds: fix round for build review round 2's three findings, then the Patron's screens; UI2 W-451 spec: re-spec from current master in smaller pieces; W-467 spec: waits on W-451, whose palette it takes.
+
+W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
-Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): W-040 W-045 W-051 W-068 W-070 W-073 W-078 W-081 W-090 W-091 W-093 W-094 W-098 W-099 W-113 W-115 W-116 W-118 W-133 W-135 W-136 W-138 W-143 W-144 W-145 W-146 W-147 W-149 W-150 W-151 W-154 W-157 W-158 W-159 W-160 W-165 W-172 W-173 W-174 W-175 W-176 W-190 W-195 W-198 W-208 W-210 W-217 W-219 W-228 W-229 W-230 W-238 W-248 W-249 W-250 W-251 W-252 W-260 W-269 W-270 W-271 W-272 W-273 W-276 W-278 W-282 W-296.
+Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): none.
