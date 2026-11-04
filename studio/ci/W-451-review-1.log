@@ -1,0 +1,22 @@
+# opus: W-451
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1a6c4-5651-7b53-9e61-1d3d39d1a955
+# outcome: failed
+# at: 2026-11-04T13:37:53.410Z
+# tree: tree:467c5d588e5e5121fe0a0c55c4e999c5944d2d08
+# ui_input: ci/W-451-spec-7.log
+# design_digest: sha256:428d3204b9cf7c8dcf0adc195fb2b69208e396fa366faf90a7631bdac10573e8
+# ticket: {"opus":"W-451","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-451/studio","head":"75501daa795c3a36f56ccd2bd55a21476ed76c69","brief":"cf6f6d7712a2f760bf15a1d76daeaa53bed54ffa","at":"2026-11-04T13:34:05.197Z"}
+
+## Findings
+1. blocking — apps/web/src/screens/InboxView.tsx:155 [severity: S2] The new Board links preserve modified pointer clicks, but Ctrl/Cmd+Enter still bubbles to the global Enter handler at `Inbox.tsx:283`, which routes the current tab before native modified-link navigation; this violates brief:71. [class: ui×link-activation-semantics] — check: none: a served Ctrl/Cmd+Enter assertion in apps/web/tests-serve/w451.spec.ts
+
+## UI input disposition
+The authoritative ui-lead input passed revision 2. All eight attached desktop and phone captures preserve clear navigation, hierarchy, responsive scanning, and explicit Board overflow cues without additional clipping or visual regressions; they do not exercise the modified-keyboard activation defect above.
+
+## Verdict
+The declared paths, reds, gates, route reconciliation, focus restoration, and visual evidence otherwise conform, but the in-domain modified-link keyboard defect is blocking.
+VERDICT: FAIL
