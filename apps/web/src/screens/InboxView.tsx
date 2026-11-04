@@ -1,4 +1,4 @@
-import { useEffect, useRef, type JSX, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, type JSX, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import type { InboxResponse } from "../api.js";
 import type { AttentionRow, CardRow } from "../lib/board.js";
 import { boardOpusHref } from "../lib/route.js";
@@ -62,6 +62,12 @@ function ownsBoardLinkActivation(event: ReactMouseEvent<HTMLAnchorElement>): boo
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
 }
 
+function preserveModifiedLinkActivation(event: ReactKeyboardEvent<HTMLElement>): void {
+  if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) return;
+  if (!(event.target instanceof Element) || event.target.closest("a[href]") === null) return;
+  event.stopPropagation();
+}
+
 /** A withdrawn detail owns the selection until the Patron chooses a live row. */
 export function liveSelectedAttentionItem(
   selectedItem: AttentionRow | undefined,
@@ -107,7 +113,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
   const delegateDescriptionId = selectedPetition ? `delegate-unavailable-${selectedPetition.id}` : undefined;
 
   return (
-    <div className={["inbox", expandedId !== null && "inbox--detail-open"].filter(Boolean).join(" ")}>
+    <div className={["inbox", expandedId !== null && "inbox--detail-open"].filter(Boolean).join(" ")} onKeyDown={preserveModifiedLinkActivation}>
       <h1 className="inbox__title">Inbox</h1>
       {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
       <div className={["inbox__workspace", expandedId !== null && "inbox__workspace--detail"].filter(Boolean).join(" ")}>
@@ -157,9 +163,6 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   key={item.attentionKey}
                   {...common}
                   href={boardOpusHref(item.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) event.stopPropagation();
-                  }}
                   onClick={(event) => {
                     if (!ownsBoardLinkActivation(event)) return;
                     onFocusChange(index);
