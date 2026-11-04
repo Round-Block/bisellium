@@ -46,11 +46,11 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137).
 
-Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-283 W-289 W-290 W-298 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-502.
+Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-283 W-289 W-290 W-298 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-502 W-503 W-504.
 
 D-174 (11-03 audit) freezes new process opera until 11-17; W-364, W-502 and product opera are exempt.
 
-In flight (lane state: ~/.bisellium-evidence/current-state.md): E1 W-502 spec: next answers quickly on long-running opera, filed and greenlit 11-04; E2 W-364 review: build review round 3 against brief revision 3, which states the shell-write limit; UI1 W-413 reds: fix round for build review round 2's three findings, then the Patron's screens; UI2 W-451 spec: re-spec from current master in smaller pieces; W-467 spec: waits on W-451, whose palette it takes.
+In flight (lane state: ~/.bisellium-evidence/current-state.md): E1 W-502 spec: next answers quickly on long-running opera, filed and greenlit 11-04; E2 W-364 review: build review round 3 against brief revision 3, which states the shell-write limit; UI1 W-413 reds: fix round for build review round 2's three findings, then the Patron's screens; UI2 W-451 spec: Home's first piece of four (D-175); W-467 spec: waits on W-503, whose palette it takes.
 
 W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
 
