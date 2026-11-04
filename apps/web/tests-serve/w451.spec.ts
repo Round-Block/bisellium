@@ -14,8 +14,7 @@ async function forcePoll(instance: { baseURL: string }): Promise<void> {
   if (response.status !== 200) throw new Error(`/api/_poll answered ${response.status}`);
 }
 
-function setOpusState(studioDir: string, id: string, from: string, to: string): void {
-  const path = join(studioDir, "opera", `${id}.md`);
+function setOpusState(path: string, from: string, to: string): void {
   writeFileSync(path, readFileSync(path, "utf8").replace(`state: ${from}`, `state: ${to}`));
 }
 
@@ -150,7 +149,7 @@ test("W-451-b1 Close exposes the same closed-Board Back step and consumes the dr
 test("W-451-b1 Close and Escape restore visible Board focus after route-state changes", async ({ page }) => {
   test.setTimeout(120_000);
   served = await startServed("w451-b1-close-focus", {
-    prepareStudio: (studioDir) => setOpusState(studioDir, "W-006", "greenlit", "unplaced-test"),
+    prepareStudio: (studioDir) => setOpusState(join(studioDir, "opera", "W-006.md"), "greenlit", "unplaced-test"),
   });
   await seedToken(page, served);
 
@@ -162,7 +161,7 @@ test("W-451-b1 Close and Escape restore visible Board focus after route-state ch
     const originalColumnId = await originalMovedCard.getAttribute("data-column-id");
     expect(originalColumnId).not.toBeNull();
     await originalMovedCard.click();
-    setOpusState(served.studioDir, "W-002", "building", "review");
+    setOpusState(join(served.studioDir, "opera", "W-002.md"), "building", "review");
     await forcePoll(served);
     const movedCard = page.locator('[data-card-id="W-002"]');
     await expect(movedCard, `${width}: the open opus moves to its current lifecycle column`).toHaveCount(1);
@@ -170,7 +169,7 @@ test("W-451-b1 Close and Escape restore visible Board focus after route-state ch
     await page.locator(".board-drawer__close").click();
     await expect(movedCard, `${width}: Close focuses the moved opus's current card`).toBeFocused();
     await expectFocusedAndVisible(page, `${width}: moved opus Close`);
-    setOpusState(served.studioDir, "W-002", "review", "building");
+    setOpusState(join(served.studioDir, "opera", "W-002.md"), "review", "building");
     await forcePoll(served);
 
     await page.goto(`${served.baseURL}/?w451=b1-focus-filtered-${width}#/board`);
