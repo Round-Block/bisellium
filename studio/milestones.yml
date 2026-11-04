@@ -18,7 +18,7 @@ milestones:
     title: The Patron's desk
     weight: 15
     exit:
-      needs: a browser test that makes all four Patron decisions from the console and finds each in the records
+      needs: a browser test that sees the queue and in-flight state, sees what needs the Patron, greenlights, declines, holds or re-ranks an opus, answers a question or approves a ruling with a reason, watches a build, and finds every console write landed on master, all from the console
   - id: M5
     title: The whole console, live
     weight: 10
