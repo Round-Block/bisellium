@@ -1,12 +1,13 @@
 /**
  * W-369 rows b1-b3 (studio/briefs/W-369.md): `scripts/agent-workspace.sh sync`, the installed guard's `hook-event sync`
- * and its wiring, and the merge rung's sync request. node:test TAP, selected by `--test-name-pattern='^W-369-b<n>\s'`.
+ * and its wiring, and the merge rung's sync request; W-505-b1 (studio/briefs/W-505.md): the sandbox's empty alternates
+ * placeholder. node:test TAP, selected by `--test-name-pattern='^W-369-b<n>\s'` or `'^W-505-b1\s'`.
  * Every fixture (an origin, the Patron's clone, an agent clone, a home) lives under the OS tmp dir; nothing here reads
  * or writes the real ~/.claude, ~/projects or the agent clone.
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -76,7 +77,7 @@ function world(): { f: string; agent: string; patron: string; seed: string; adva
 }
 /** `agent-workspace.sh sync` (or `script`) on the fixture: exit code and output. */
 function sync(w: { f: string; agent: string; patron: string }, env: Record<string, string> = {}, script = SCRIPT): { code: number | null; out: string } {
-  const r = spawnSync("bash", [script, "sync"], { encoding: "utf8", env: { PATH: process.env["PATH"] ?? "/usr/bin:/bin", HOME: w.f, AGENT_DIR: w.agent, PATRON_DIR: w.patron, ...env } });
+  const r = spawnSync("bash", [script, "sync"], { encoding: "utf8", timeout: 60_000, env: { PATH: process.env["PATH"] ?? "/usr/bin:/bin", HOME: w.f, AGENT_DIR: w.agent, PATRON_DIR: w.patron, ...env } });
   return { code: r.status, out: `${r.stdout}${r.stderr}` };
 }
 const head = (dir: string): string => git(dir, "rev-parse", "HEAD");
@@ -266,6 +267,73 @@ test("W-369-b1 behaviour 1: agent-workspace.sh sync fast-forwards the agent clon
     assert.match(call, /^GIT_NO_REPLACE_OBJECTS=1$/m, `replacement objects are off: ${call.split("\n")[0]}`);
     assert.doesNotMatch(call, /^GIT_(ALTERNATE_OBJECT_DIRECTORIES|GRAFT_FILE)=/m, `no alternates or graft file from the environment: ${call.split("\n")[0]}`);
   }
+});
+
+test("W-505-b1 behaviour 1: the sync accepts exactly an empty regular file at objects/info/alternates, the sandbox's placeholder; content, a symlink, anything not regular and the other three paths stay refused", () => {
+  type World = ReturnType<typeof world>;
+  const alternates = (v: World): string => join(v.agent, ".git", "objects", "info", "alternates");
+
+  // the placeholder as the sandbox leaves it: an empty regular file beside .claude-sandbox-noreplace, the clone reached through a symlink
+  const w = world();
+  const target = git(w.seed, "rev-parse", "HEAD");
+  put(alternates(w), "");
+  mkdirSync(join(w.agent, ".git", "objects", "info", ".claude-sandbox-noreplace"));
+  put(join(w.agent, ".git", "bisellium", "sync"), "0000\n");
+  const r = sync(w, { AGENT_DIR: join(w.f, "agent link") });
+  assert.equal(r.code, 0, `the empty placeholder syncs: ${r.out}`);
+  assert.match(r.out, /^sync: master [0-9a-f]{12} -> [0-9a-f]{12}$/m, "the move past the placeholder is named");
+  assert.equal(head(w.agent), target, "master reaches origin's master past the placeholder");
+  assert.equal(readFileSync(join(w.agent, "packages", "new"), "utf8"), "n1\n", "the incoming file is written past the placeholder");
+  assert.equal(existsSync(join(w.agent, ".git", "bisellium", "sync")), false, "the request is answered past the placeholder");
+  assert.ok(lstatSync(alternates(w)).isFile() && lstatSync(alternates(w)).size === 0, "the placeholder stays, a regular file of zero bytes");
+  assert.doesNotMatch(git(w.agent, "count-objects", "-v"), /^alternate: /m, "git names no store for the empty file");
+  const again = sync(w);
+  assert.equal(again.code, 0, `a current master with the placeholder: ${again.out}`);
+  assert.match(again.out, /^sync: master is current \([0-9a-f]{12}\)$/m, "a current master with the placeholder is said so");
+
+  // the rule reads type and size, not mode: an empty file names nothing whoever can read it, and git passes over an unreadable one
+  const locked = world();
+  const lockedTarget = git(locked.seed, "rev-parse", "HEAD");
+  put(alternates(locked), "");
+  chmodSync(alternates(locked), 0o000);
+  const lockedRun = sync(locked);
+  assert.equal(lockedRun.code, 0, `an empty file of mode 000 syncs: ${lockedRun.out}`);
+  assert.equal(head(locked.agent), lockedTarget, "master moves past an empty file of mode 000");
+
+  // the count-objects assertion above is live: a file with content does name a store
+  const named = world();
+  put(alternates(named), `${join(named.patron, ".git", "objects")}\n`);
+  assert.match(git(named.agent, "count-objects", "-v"), /^alternate: /m, "git names the store a file with content holds");
+
+  const refused = (what: string, setup: (v: World) => void, path = "objects/info/alternates"): void => {
+    const v = world();
+    setup(v);
+    const was = head(v.agent);
+    const out = sync(v);
+    assert.equal(out.code, 1, `${what}: refused: ${out.out}`);
+    assert.match(out.out, new RegExp(`^sync: refused: .*${reEsc(path)} exists; master was not moved$`, "m"), `${what}: the reason`);
+    assert.equal(head(v.agent), was, `${what}: master did not move`);
+  };
+  // content: the boundary is zero bytes, so a line git would skip is still content
+  refused("one newline at alternates", (v) => put(alternates(v), "\n"));
+  refused("a comment line at alternates", (v) => put(alternates(v), "# a comment\n"));
+  // a symlink is judged as a link, whatever it leads to
+  for (const [what, to] of [
+    ["a symlink to an empty file at alternates", "empty"],
+    ["a symlink to a file with content at alternates", "full"],
+    ["a dangling symlink at alternates", "missing"],
+  ] as const)
+    refused(what, (v) => {
+      put(join(v.f, "empty"), "");
+      put(join(v.f, "full"), `${join(v.patron, ".git", "objects")}\n`);
+      symlinkSync(join(v.f, to), alternates(v));
+    });
+  // anything not regular, a zero-length one included
+  refused("a directory at alternates", (v) => mkdirSync(alternates(v)));
+  refused("a FIFO at alternates", (v) => assert.equal(spawnSync("mkfifo", [alternates(v)]).status, 0, "mkfifo makes the FIFO"));
+  // only the observed placeholder is admitted: the other three paths stay refused even when empty
+  for (const path of ["info/attributes", "info/grafts", "objects/info/http-alternates"]) refused(`an empty ${path}`, (v) => put(join(v.agent, ".git", path), ""), path);
+  refused("an objects/info/http-alternates file with content", (v) => put(join(v.agent, ".git", "objects", "info", "http-alternates"), "https://example.invalid/objects\n"), "objects/info/http-alternates");
 });
 
 /** `bisellium hook-event sync` on the fixture with `payload` on stdin: exit code, stdout and stderr. */
