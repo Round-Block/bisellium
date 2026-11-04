@@ -2164,19 +2164,31 @@ function assess(read: MarkerRead | undefined, derived: Step, env: Env): Health {
 /** W-316: seconds a dispatch order with no marker may go with no file of its opus changing before its health reads stalled. */
 export const DISPATCH_SILENCE_SECONDS = 900;
 
+/**
+ * W-502: the entries one silence read lists before it stops and says it did not judge. A walk cut short proves neither
+ * silence nor activity, and the line is a notice, so the step and exit status stay. Nothing is cached: a read is whole or says not.
+ */
+export const SILENCE_WALK_ENTRIES = 100_000;
+
 type Newest = { path: string; mtimeMs: number };
-/** The newest regular file under `dir`: `node_modules` and `.git` skipped, no symlink followed; a listing or lstat that fails throws. */
-function newestFile(dir: string, best: Newest | undefined): Newest | undefined {
+type Walk = { left: number; newest: Newest | undefined };
+/**
+ * Reads the newest regular file under `dir` into `walk`: `node_modules` and `.git` skipped, no symlink followed; a listing
+ * or lstat that fails throws. False once `walk.left` entries have been listed: the walk stopped and its newest proves nothing.
+ */
+function newestFile(dir: string, walk: Walk): boolean {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.name === "node_modules" || e.name === ".git") continue;
+    if (walk.left-- === 0) return false;
     const p = join(dir, e.name);
-    if (e.isDirectory()) best = newestFile(p, best);
-    else if (e.isFile()) {
+    if (e.isDirectory()) {
+      if (!newestFile(p, walk)) return false;
+    } else if (e.isFile()) {
       const m = lstatSync(p).mtimeMs;
-      if (best === undefined || m > best.mtimeMs) best = { path: p, mtimeMs: m };
+      if (walk.newest === undefined || m > walk.newest.mtimeMs) walk.newest = { path: p, mtimeMs: m };
     }
   }
-  return best;
+  return true;
 }
 
 /**
@@ -2184,8 +2196,9 @@ function newestFile(dir: string, best: Newest | undefined): Newest | undefined {
  * DISPATCH_SILENCE_SECONDS: the files under `<repo>/.worktrees/<id>` and `<id>-*` (the opus worktree, scratch
  * worktrees) and `~/.bisellium-evidence/<id>` and `<id>-*` (directories only). No counted file, or a newer one, is undefined.
  * Only an absent parent or lease (ENOENT) is nothing; any other failed read is `{ unknown }`, never a partial walk's answer.
+ * W-502: a walk past `entries` listed entries answers a note saying it did not judge, never a partial walk's answer either.
  */
-function silence(repo: string, wtParent: string, id: string, nowMs: number): { stalled: string } | { unknown: string } | undefined {
+function silence(repo: string, wtParent: string, id: string, nowMs: number, entries: number): { note: string } | { unknown: string } | undefined {
   const absent = (e: unknown): boolean => (e as NodeJS.ErrnoException).code === "ENOENT";
   const mine = (parent: string): string[] => {
     let entries: Dirent[];
@@ -2201,14 +2214,22 @@ function silence(repo: string, wtParent: string, id: string, nowMs: number): { s
     // a `bisellium run` in flight holds the opus's producer lease; the host run's own timeout bounds how long that is true
     const lease = lstatSync(join(repo, ".bisellium", "leases", id, "pid"), { throwIfNoEntry: false });
     if (lease?.isFile() === true && Math.floor((nowMs - lease.mtimeMs) / 1000) <= HOST_RUN_TIMEOUT_MS / 1000) return undefined;
-    let newest: Newest | undefined;
-    for (const dir of [...mine(wtParent), ...mine(join(homedir(), ".bisellium-evidence"))]) newest = newestFile(dir, newest);
-    if (newest === undefined) return undefined;
-    const age = Math.floor((nowMs - newest.mtimeMs) / 1000);
-    return age > DISPATCH_SILENCE_SECONDS ? { stalled: `stalled (no step recorded; newest file ${newest.path} changed ${age}s ago, past ${DISPATCH_SILENCE_SECONDS}s)` } : undefined;
+    const walk: Walk = { left: entries, newest: undefined };
+    for (const dir of [...mine(wtParent), ...mine(join(homedir(), ".bisellium-evidence"))]) {
+      if (!newestFile(dir, walk)) return { note: `no step recorded (silence not judged: past ${entries} entries, stopped in ${dir})` };
+    }
+    if (walk.newest === undefined) return undefined;
+    const age = Math.floor((nowMs - walk.newest.mtimeMs) / 1000);
+    return age > DISPATCH_SILENCE_SECONDS ? { note: `stalled (no step recorded; newest file ${walk.newest.path} changed ${age}s ago, past ${DISPATCH_SILENCE_SECONDS}s)` } : undefined;
   } catch (e) {
     return { unknown: e instanceof Error ? e.message : String(e) };
   }
+}
+
+/** W-502: SILENCE_WALK_ENTRIES, or the test seam BISELLIUM_TEST_SILENCE_ENTRIES (a count, honoured only with BISELLIUM_TEST_CLOCK=1). */
+function silenceEntries(testClock: boolean): number {
+  const seam = process.env["BISELLIUM_TEST_SILENCE_ENTRIES"];
+  return testClock && seam !== undefined && /^[0-9]+$/.test(seam) ? Number(seam) : SILENCE_WALK_ENTRIES;
 }
 
 function newMarker(id: string, step: Step, writer: Marker["writer"], pid: number, ticks: number, output: string, nowMs: number, pollMs: number): Marker {
@@ -3455,9 +3476,9 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           return sayT(1, [`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: the output mtime is ahead of the clock; nothing is performed"]);
         default: {
           // W-316: a dispatch order (held for its budget or handover too) with no marker is checked for silence
-          const quiet = h.kind === "none" && ungated.order !== undefined ? silence(repo, dirname(f.wt.dir), id, env.nowMs) : undefined;
+          const quiet = h.kind === "none" && ungated.order !== undefined ? silence(repo, dirname(f.wt.dir), id, env.nowMs, silenceEntries(a.testClock)) : undefined;
           if (quiet !== undefined && "unknown" in quiet) return sayT(1, [`next: ${id} ${d1.step} held`, `health: unknown (dispatch activity cannot be read: ${quiet.unknown})`, "why: dispatch activity cannot be proven; nothing is performed"]);
-          const note = quiet?.stalled ?? (h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)");
+          const note = quiet?.note ?? (h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)");
           const status = d1.status === "named" ? "named" : d1.status;
           return sayT(d1.status === "held" ? 1 : 0, [...lines(status), `health: ${note}`]);
         }

@@ -1,0 +1,21 @@
+# opus: W-502
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a432-59bc-7e42-8afc-7804ba883cc7
+# outcome: failed
+# at: 2026-11-04T05:37:59.494Z
+# tree: tree:99961433648d536c181d55b27a735cf6a984477d
+# brief: briefs/W-502.md blob:97a53e117f0a60114934bfe5887a728ae352e0c8
+# ticket: {"opus":"W-502","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-502/studio","head":"3cb4d9e56055753d6499e0a8e8d342ac8816f2e1","brief":"97a53e117f0a60114934bfe5887a728ae352e0c8","at":"2026-11-04T05:37:53.551Z"}
+
+## Findings
+1. blocking — studio/briefs/W-502.md:122 brief:122 says every swept command passed except `open-lessons.test.ts`, but `r3/census.out:10` records the nine-file next command timing out after 590 seconds; `r3/census-next.out` proves later isolated runs, not that command. State the timeout and isolated reruns or provide a passing run of the promised command. [severity: S1] [design: keeps] [class: review×evidence-backfilled-or-absent] — check: none: compare every cited census command exit with the acceptance claim
+2. advisory — studio/briefs/W-502.md:101 Reached through ci/W-502-spec-2.log #1’s class, the new test boundary repeats the named-rejector defect: `spawnSync` and `windDown` return values rather than reject them, while `assert.equal` is the actual rejector; additionally, the `W-502-b2` child subprocess at brief:110 has no input row and `assert.match` does not reject a non-zero exit. [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/open-lessons.test.ts W-085 behaviour 8/W-502-b2
+
+## Earlier findings
+
+## Verdict
+The HOME isolation is feasible, but the signed revision contains false required census evidence.
+VERDICT: FAIL

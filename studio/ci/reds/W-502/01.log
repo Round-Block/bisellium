@@ -1,0 +1,44 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-502-b1\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-11-04T02:45:46.538Z
+# sella: builder.W-502
+# tree: tree:1780617552203301cc5a6922fa4ade4b8ff22e71
+# ticket: {"opus":"W-502","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-502/studio","head":"bfbb06b474e50d1fd174e060676ba5f09da561ff","brief":"086b1f2f843a6eb44b408f6c39a6858fc53d7a1c","at":"2026-11-04T02:45:45.100Z"}
+
+TAP version 13
+# Subtest: W-502-b1 behaviour 1: past its entry budget a silence read stops and says it did not judge, the step and exit unchanged
+not ok 1 - W-502-b1 behaviour 1: past its entry budget a silence read stops and says it did not judge, the step and exit unchanged
+  ---
+  duration_ms: 957.148827
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-502/packages/cli/src/next-review.test.ts:151:12322'
+  failureType: 'testCodeFailure'
+  error: |-
+    one entry past the budget: the walk stops and says it did not judge, never stalled
+    + actual - expected
+    
+    + 'stalled (no step recorded; newest file /tmp/claude-1000/w124-w502-b1-aAleth/repo/.worktrees/W-900/.gitignore changed 3600s ago, past 900s)'
+    - 'no step recorded (silence not judged: past 19 entries, stopped in /tmp/claude-1000/w124-w502-b1-aAleth/repo/.worktrees/W-900)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'no step recorded (silence not judged: past 19 entries, stopped in /tmp/claude-1000/w124-w502-b1-aAleth/repo/.worktrees/W-900)'
+  actual: 'stalled (no step recorded; newest file /tmp/claude-1000/w124-w502-b1-aAleth/repo/.worktrees/W-900/.gitignore changed 3600s ago, past 900s)'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-502/packages/cli/src/next-review.test.ts:2428:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1290.066888

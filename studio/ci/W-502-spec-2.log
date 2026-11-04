@@ -1,0 +1,18 @@
+# opus: W-502
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a432-59bc-7e42-8afc-7804ba883cc7
+# outcome: passed
+# at: 2026-11-04T02:36:41.326Z
+# tree: tree:e4d8b9c66c3bc2420a77343f2455d316591daf3e
+# brief: briefs/W-502.md blob:086b1f2f843a6eb44b408f6c39a6858fc53d7a1c
+# ticket: {"opus":"W-502","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"0696f0e44dc76270dc2392ca8d84b13a825443d0","brief":"086b1f2f843a6eb44b408f6c39a6858fc53d7a1c","at":"2026-11-04T02:36:38.165Z"}
+
+## Findings
+1. advisory — brief:82 The row groups several added test readers without naming each valid domain and concrete rejector; “a spawn or read failure throws” and “node:test assertions” are not function names. Replace brief:82 with `| 8. The owned test's inputs | world(...) returns its temporary-HOME fixture; realpathSync and listed read an existing readable worktree; next(...) returns each case's exact step, exit and health; import("./next.js") resolves with SILENCE_WALK_ENTRIES equal to 100000 | test fails on thrown or rejected setup, read or import; expectStep, assert.equal, assert.match and assert.doesNotMatch reject a missing spawn result, wrong Out or wrong export; unpinned, a stated limit (D-076 E) |`. [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/next-review.test.ts W-502-b1
+
+## Verdict
+The production input boundary and behaviour promises are feasible with their stated limits; the remaining test-boundary defect is advisory.
+VERDICT: PASS
