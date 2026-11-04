@@ -119,6 +119,8 @@ test("W-413-b2 behaviour 2: cards show recorded elapsed, actual completion and a
     opus("W-bad-done", "done", { startHours: 1, endHours: 2 }),
     opus("W-feb-open", "review", { start: "2026-02-31T08:00:00Z" }),
     opus("W-feb-start", "done", { start: "2026-02-31T08:00:00Z", endHours: 4 }),
+    opus("W-old-open", "review", { start: "0099-12-31T00:00:00Z" }),
+    opus("W-old-done", "done", { start: "0050-01-01T00:00:00Z", end: "0050-01-01T08:00:00Z" }),
     opus("W-feb-end", "done", { startHours: 12, end: "2026-02-30T08:00:00Z" }),
   ];
   const model = boardModel(officina(4), opera, undefined, { now: NOW });
@@ -139,6 +141,9 @@ test("W-413-b2 behaviour 2: cards show recorded elapsed, actual completion and a
   assert.equal(column(model, "awaiting_review").cards.find((card) => card.id === "W-feb-open")?.elapsedMs, undefined, "an impossible calendar start (February 31) shows no elapsed time instead of a normalized date");
   assert.equal(column(model, "done").cards.find((card) => card.id === "W-feb-start")?.actualCompletionMs, undefined, "an impossible calendar start shows no actual completion time");
   assert.equal(column(model, "done").cards.find((card) => card.id === "W-feb-end")?.actualCompletionMs, undefined, "an impossible calendar end shows no actual completion time");
+
+  assert.equal(column(model, "awaiting_review").cards.find((card) => card.id === "W-old-open")?.elapsedMs, NOW - Date.parse("0099-12-31T00:00:00Z"), "a real date in years 0000 to 0099 is read as written, not mapped to 1999");
+  assert.equal(column(model, "done").cards.find((card) => card.id === "W-old-done")?.actualCompletionMs, 8 * 3_600_000, "a real two-digit-year start and end give their exact span");
 
   const tooFew = boardModel(officina(4), [opus("W-open", "building", { startHours: 2 }), ...opera.slice(1, 3)], undefined, { now: NOW });
   assert.equal(column(tooFew, "in_progress").cards[0]?.estimatedRemainingMs, undefined, "fewer than three valid completed opera produce no estimate");
