@@ -2397,3 +2397,63 @@ test("W-498-f4 fix 1: a committed brief whose bytes are not valid UTF-8 does not
   assert.equal(held.first, `next: ${OPUS} build held`, "an invalid-UTF-8 brief span does not own the valid U+FFFD path: the build holds");
   assert.equal(held.kv.get("why"), `briefs/${OPUS}.md on refs/heads/opus/${OPUS} is not valid UTF-8, so the paths opus/${OPUS} changes cannot be checked against Files owned (W-498)`, ran("an invalid-UTF-8 committed brief: why", held));
 });
+
+// ---------------------------------------------------------------------------
+// W-502: a silence read lists at most SILENCE_WALK_ENTRIES entries, so `next` answers quickly whatever an opus's
+// evidence holds; past them it says it did not judge, never stalled, active or unknown.
+// ---------------------------------------------------------------------------
+test("W-502-b1 behaviour 1: past its entry budget a silence read stops and says it did not judge, the step and exit unchanged", { timeout: 1_800_000 }, async () => {
+  const w = world("w502-b1", "reds", { automated: true });
+  const wt = realpathSync(w.wt);
+  ageTree(w.wt, 3600);
+  putAged(join(w.wt, "node_modules", "pkg", "index.js"), 3600); // never listed, so never counted
+  /** The entries the walk lists under `dir`: every one but node_modules and .git, a directory's own included. */
+  const listed = (dir: string): number => {
+    let n = 0;
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === "node_modules" || e.name === ".git") continue;
+      n += 1 + (e.isDirectory() ? listed(join(dir, e.name)) : 0);
+    }
+    return n;
+  };
+  const inBudget = listed(w.wt);
+  const healthAt = (label: string, entries: number | string, status = "named", o: { clock?: boolean } = {}): string => {
+    const r = next(w, [OPUS, ...BUDGET], { env: { BISELLIUM_TEST_SILENCE_ENTRIES: String(entries) }, ...o });
+    expectStep(r, "build", status, label);
+    assert.equal(r.status, status === "held" ? 1 : 0, ran(`${label}: the exit status is the step's, unchanged`, r));
+    return r.kv.get("health") ?? "";
+  };
+  const STALLED = /^stalled \(no step recorded; newest file .* changed 3600s ago, past 900s\)$/;
+  const unjudged = (entries: number): string => `no step recorded (silence not judged: past ${entries} entries, stopped in ${wt})`;
+  assert.equal(healthAt("one short", inBudget - 1), unjudged(inBudget - 1), "one entry past the budget: the walk stops and says it did not judge, never stalled");
+  assert.match(healthAt("exactly the budget", inBudget), STALLED, "every entry inside the budget: judged as before");
+
+  // the work avoided: a counted directory past the stop is never listed, so its failed read is never reached; inside the budget it still holds
+  const shut = join(w.home, ".bisellium-evidence", `${OPUS}-spec`);
+  mkdirSync(shut, { recursive: true, mode: 0o755 });
+  chmodSync(shut, 0o000);
+  try {
+    assert.equal(healthAt("stopped before it", inBudget - 1), unjudged(inBudget - 1), "a counted directory past the stop is not listed");
+    assert.match(healthAt("reaches it", inBudget + 1, "held"), /^unknown \(dispatch activity cannot be read: EACCES: permission denied, scandir '[^']*W-900-spec'\)$/, "a walk that reaches the unreadable directory still fails closed");
+  } finally {
+    chmodSync(shut, 0o755);
+    rmSync(shut, { recursive: true });
+  }
+
+  // a partial walk is neither silence nor activity: a fresh file it may have seen changes nothing, and a whole walk still reads it
+  // (two fresh files, so a walk that stops one entry short has listed at least one, whatever the listing's order)
+  for (const name of ["fresh-1.txt", "fresh-2.txt"]) putAged(join(w.wt, name), 10);
+  assert.equal(healthAt("fresh, stopped", inBudget + 1), unjudged(inBudget + 1), "a fresh file does not make a stopped walk read active");
+  assert.equal(healthAt("fresh, whole", inBudget + 2), "no step recorded", "a whole walk still reads a fresh file as activity");
+  for (const name of ["fresh-1.txt", "fresh-2.txt"]) rmSync(join(w.wt, name));
+
+  // a run in flight is read before the walk, and the seam is a test seam only
+  const lease = join(w.repo, ".bisellium", "leases", OPUS, "pid");
+  putAged(lease, 60);
+  assert.equal(healthAt("a lease", 0), "no step recorded", "a lease in flight answers before any entry is listed");
+  rmSync(dirname(lease), { recursive: true });
+  assert.match(healthAt("an empty seam", ""), STALLED, "a seam that is not a count leaves the budget as it is");
+  assert.doesNotMatch(healthAt("no test clock", 0, "named", { clock: false }), /not judged/, "the seam is honoured only with BISELLIUM_TEST_CLOCK=1");
+  const { SILENCE_WALK_ENTRIES } = (await import("./next.js")) as { SILENCE_WALK_ENTRIES?: number };
+  assert.equal(SILENCE_WALK_ENTRIES, 100_000, "the budget's value: above W-451's 70024 entries, the largest honest opus measured");
+});
