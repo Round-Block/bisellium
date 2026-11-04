@@ -254,11 +254,17 @@ timeout is a `bisellium run` in flight, never a stall. The step named and the
 exit status are unchanged (W-316). A counted directory, file or the lease that
 exists but cannot be read is never skipped: it reads `next: <id> <step> held`,
 `health: unknown (dispatch activity cannot be read: <reason>)`, exit 1 (W-316).
-Linux only.
+The walk lists at most `SILENCE_WALK_ENTRIES` (100000) entries, so `next` answers
+quickly whatever an opus's evidence holds. Past them it stops and reads `health:
+no step recorded (silence not judged: past 100000 entries, stopped in <dir>)`,
+never stalled, active or unknown, with the step and exit status unchanged; a
+counted directory past the stop is not listed, so its failed read is not reached
+(W-502). Linux only.
 
 Test seams, honoured only with `BISELLIUM_TEST_CLOCK=1`: `--now <iso>` (otherwise
-a usage error) and `BISELLIUM_TEST_PROC=<dir>` replacing `/proc` for every
-health read, including the verb's own `/proc/self/stat`.
+a usage error), `BISELLIUM_TEST_PROC=<dir>` replacing `/proc` for every
+health read, including the verb's own `/proc/self/stat`, and
+`BISELLIUM_TEST_SILENCE_ENTRIES=<count>` replacing `SILENCE_WALK_ENTRIES`.
 
 **Step tickets (W-233).** With `step_tickets: required` in `bisellium.yml`
 (the only value; absent keeps the ladder as it was, anything else holds `next`
