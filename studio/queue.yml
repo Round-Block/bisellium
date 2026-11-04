@@ -3,7 +3,7 @@ queues:
     lanes: { E1: W-502, E2: W-364 }
     next:
       - { opus: W-364, says: "main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec", folded: [W-290] }
-      - { opus: W-502, says: "next answers quickly on long-running opera; exempt from the D-174 freeze" }
+      - { opus: W-502, says: "next answers quickly on long-running opera; exempt from the D-174 freeze", next_ts: true }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
       - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
@@ -46,9 +46,11 @@ queues:
     lanes: { UI1: W-413, UI2: W-451 }
     next:
       - { opus: W-413, says: "Board WIP policy legible: count against cap, median dwell, each column's entry and exit rule, blocked work counted, filtered against total counts shown" }
-      - { opus: W-451, says: "Home: re-spec from current master in smaller pieces (D-174 item 6)" }
+      - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
+      - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
       - { opus: W-467, says: "Officina on Home's palette" }
       - { opus: W-453, says: "Home Queue shows one lane per lead (production, design, engineering, qa, ops)" }
+      - { opus: W-504, says: "Home: Completion and Spend row (D-175 piece 4); needs W-439" }
       - { opus: W-074, says: "greenlight and decline from the Board drawer, with W-289's refusal and a halt route" }
       - { opus: W-300, says: "the drawer shows next's read-only step, actor, round and health" }
       - { opus: W-488, says: "comment on served UI captures" }
