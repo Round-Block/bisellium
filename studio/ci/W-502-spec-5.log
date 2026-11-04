@@ -1,0 +1,22 @@
+# opus: W-502
+# phase: spec
+# round: 5
+# sella: architect
+# outcome: passed
+# at: 2026-11-04T05:33:53.327Z
+# tree: tree:99961433648d536c181d55b27a735cf6a984477d
+# brief: briefs/W-502.md blob:97a53e117f0a60114934bfe5887a728ae352e0c8
+# ticket: {"opus":"W-502","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-502/studio","head":"4a3968dac3e079f8ff202a841555e184889af66c","brief":"97a53e117f0a60114934bfe5887a728ae352e0c8","at":"2026-11-04T05:33:47.020Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-502-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — the gates at tree 99961433 failed on `W-085 behaviour 8`, and the cause is the row, not W-502: its spawn of `next --budget` inherits the HOME of the session running the suite, and a fresh reading past 300000 tokens holds the order; revision 3 adds behaviour 2, a HOME of the row's own at that one spawn, and no source file changes — check: red-b2.log, green-b2.log, kills-r3.out
+2. advisory — the census found a second reader of the host's usage, `scripts/review-packet.test.mjs` (44 reads), whose rows pass on a host past the wind-down because none reads the fact's order or exit; it is left unchanged and named a limit, as is a later test spawning `next` by hand — check: r3/census-tally.out, r3/census-more.out, brief Limits
+3. advisory — a one-hunk source mutation cannot undo a test's `env`, so the isolation itself is shown by the red and K13, a test-file edit; K11 and K12 are the source kills, proving the row reaches a gated order and that the reading is past the wind-down — check: kills-r3.out, promise-ledger-r3.md
+4. advisory — behaviour 1, its row, red and kills are unchanged; the series names revision 2's patches with one Subject line cut to the replay's grammar, and `next` does not replay it since a red is recorded: a builder builds behaviour 2 as a fix round — check: series-check-r3.out, packages/cli/src/prototype-replay.ts:244
+
+## Verdict
+
+passed — W-502 revised and signed by the architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 3 at `studio/briefs/W-502.md`: behaviour 2 gives `W-085 behaviour 8` its own HOME, so a long session no longer fails the suite, and the wind-down hold is unchanged.
