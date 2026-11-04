@@ -1,0 +1,70 @@
+queues:
+  engineering:
+    lanes: { E1: W-502, E2: W-364 }
+    next:
+      - { opus: W-364, says: "main-thread heavy runs and dossier writes refused: verify and ci --opus outside a bisellium run, the main thread's dossier writes and codex exec", folded: [W-290] }
+      - { opus: W-502, says: "next answers quickly on long-running opera; exempt from the D-174 freeze" }
+      - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
+      - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
+      - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
+      - { opus: W-476, says: "cause fix, validation-order-masks-errors" }
+      - { opus: W-471, says: "a failing gate's log keeps its real failure" }
+      - { opus: W-455, says: "the containment helper refuses a symlinked final file" }
+      - { opus: W-414, says: "cause fix, ruled-case-uncovered" }
+      - { opus: W-460, says: "cause fix, tests-that-agree-with-the-bug" }
+      - { opus: W-464, says: "replay-environment-not-pristine" }
+      - { opus: W-185, says: "records checked once, at load: cause fix, fail-open-on-malformed-records", next_ts: true }
+      - { opus: W-383, says: "security-boundary test fix" }
+      - { opus: W-431, says: "verb dead ends" }
+      - { opus: W-432, says: "verb dead ends" }
+      - { opus: W-429, says: "petitio length limits" }
+      - { opus: W-261, says: "woken orchestration" }
+      - { opus: W-434, says: "dispatch prompts as artifacts" }
+      - { opus: W-254, says: "delete talk and tick daily branch" }
+      - { opus: W-349, says: "flaky row W-279-b3" }
+      - { opus: W-399, says: "record verb sella check" }
+      - { opus: W-242, says: "hook-set code" }
+      - { opus: W-372, says: "agent waits on background perform" }
+      - { opus: W-400, says: "CLAUDE.md, AGENTS.md code-owned" }
+      - { opus: W-401, says: "sessions receipt provider" }
+      - { opus: W-245, says: "provider-agnostic closing step" }
+      - { opus: W-227, says: "cleanup with removed-worktree metadata", next_ts: true }
+      - { opus: W-283, says: "Status page served" }
+      - { opus: W-374, says: "next --all in-flight only", next_ts: true }
+      - { opus: W-375, says: "context serves lex without §9, §12" }
+      - { opus: W-380, says: "prune old evidence" }
+      - { opus: W-331, says: "next.ts split", next_ts: true }
+      - { opus: W-183, says: "heavy-job slots", next_ts: true }
+      - { opus: W-169, says: "lane claims", next_ts: true }
+      - { opus: W-332, says: "step tickets", next_ts: true }
+      - { opus: W-308, says: "opus timeline", next_ts: true }
+      - { opus: W-304, says: "seats read live, console MVP" }
+      - { opus: W-298, says: "petitio verb" }
+      - { opus: W-280, says: "Inbox newItem fail-open" }
+      - { opus: W-301, says: "console writes via auto-merge PR" }
+  ui:
+    lanes: { UI1: W-413, UI2: W-451 }
+    next:
+      - { opus: W-413, says: "Board WIP policy legible: count against cap, median dwell, each column's entry and exit rule, blocked work counted, filtered against total counts shown" }
+      - { opus: W-451, says: "Home: re-spec from current master in smaller pieces (D-174 item 6)" }
+      - { opus: W-467, says: "Officina on Home's palette" }
+      - { opus: W-453, says: "Home Queue shows one lane per lead (production, design, engineering, qa, ops)" }
+      - { opus: W-074, says: "greenlight and decline from the Board drawer, with W-289's refusal and a halt route" }
+      - { opus: W-300, says: "the drawer shows next's read-only step, actor, round and health" }
+      - { opus: W-488, says: "comment on served UI captures" }
+      - { opus: W-500, says: "Runs screen: opus list with detail, Waiting on you, Now only: run status from code-owned hook status events" }
+halted:
+  - { opus: W-239, says: "next's merge step always fast-forwards the main checkout to the merged commit, .github/ and .claude/ included: the Patron's approval gate is the PR's code-owner review, not the pull" }
+  - { opus: W-435, says: "Home: the console's landing page — one high-level overview across every screen (Inbox, Board, Seats, Officina) with shortcut links into each" }
+cut:
+  - { opus: W-436, says: "hard rule, enforced: memory does not work: every open item lives in a record the moment it arises" }
+  - { opus: W-465, says: "the orchestrator drains before it hands over: past 250k context it starts no new task unless the Patron asks for that one" }
+  - { opus: W-457, says: "next names a builder, not ci --opus, when the signed brief's Files owned names a file no branch commit has touched since the signature" }
+  - { opus: W-405, says: "the pr step refuses a kind: ui opus until the Patron's screen approval is recorded for its built screenshots" }
+deferred:
+  - { opus: W-484, says: "Doc rules: byte cap, real rule ids, link fragments; docs-drift lint folded in" }
+  - { opus: W-485, says: "ADOPTION.md restructured as a lean agent-readable contract" }
+  - { opus: W-486, says: "The application schedules the daily retro" }
+  - { opus: W-479, says: "an outside advisory that breaks the gates for every PR has a filing path: the fix opus files without an admin merge" }
+  - { opus: W-371, says: "one provider-neutral sandbox row per seat in the manifest (write roots, network, tools), which bisellium run composes for each harness" }
+  - { opus: W-456, says: "time every serial step of test:suite and test:record from today's ci --opus logs, prototype a bounded concurrent node --test pool for them" }
