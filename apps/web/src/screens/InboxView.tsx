@@ -157,6 +157,9 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   key={item.attentionKey}
                   {...common}
                   href={boardOpusHref(item.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) event.stopPropagation();
+                  }}
                   onClick={(event) => {
                     if (!ownsBoardLinkActivation(event)) return;
                     onFocusChange(index);
