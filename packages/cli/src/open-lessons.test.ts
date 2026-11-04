@@ -347,7 +347,10 @@ test("W-085 behaviour 8: next's dispatch order names the boot bundle", () => {
   git("add", "-A");
   git("commit", "-q", "-m", "init");
 
-  const r = spawnSync(process.execPath, ["--import", import.meta.resolve("tsx"), join(import.meta.dirname, "main.ts"), "next", "W-900", "--studio", "studio", "--repo", repo, "--budget", "100000"], { cwd: repo, encoding: "utf8" });
+  // W-502: a dispatch order reads the session's usage under $HOME; the host's own reading past the wind-down would hold this one
+  const home = mkdtempSync(join(tmpdir(), "bisellium-w085-home-"));
+  made.push(home);
+  const r = spawnSync(process.execPath, ["--import", import.meta.resolve("tsx"), join(import.meta.dirname, "main.ts"), "next", "W-900", "--studio", "studio", "--repo", repo, "--budget", "100000"], { cwd: repo, env: { ...process.env, HOME: home }, encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
   const lines = r.stdout.split("\n");
   const at = lines.findIndex((l) => l.startsWith("sella: "));
