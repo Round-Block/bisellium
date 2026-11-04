@@ -31,6 +31,51 @@ async function expectFocusedAndVisible(page: import("@playwright/test").Page, me
   expect(box!.y, `${message}: the destination starts before the vertical viewport ends`).toBeLessThan(page.viewportSize()!.height);
 }
 
+const boardActionFixture = {
+  officina: {
+    studio: "Sample Studio", patron: "patron", collegia: [], sellae: [], wip_limit: 4,
+    probationes: [{ id: "patron", name: "Patron call", kind: "human" }],
+    lifecycle: { id: "opus", states: [
+      { id: "backlog", name: "Backlog", phase: "backlog" },
+      { id: "greenlit", name: "Greenlit", phase: "planned" },
+      { id: "building", name: "Building", phase: "in_progress" },
+      { id: "done", name: "Done", phase: "done" },
+    ] },
+  },
+  opera: [
+    { id: "W-1", title: "W-1 title", body: "", kind: "ui", collegium: "design", sella: "builder", state: "backlog", tokens: 0, probationes: { patron: { status: "pending" } }, traditio: undefined },
+    { id: "W-2", title: "W-2 title", body: "", kind: "ui", collegium: "design", sella: "builder", state: "building", tokens: 0, probationes: { patron: { status: "pending", at: "2026-10-27T00:00:00Z" } }, traditio: undefined },
+  ],
+  inbox: {
+    opera: [{ id: "W-2", title: "W-2 title", collegium: "design", sella: "builder" }],
+    petitiones: [{ id: "P-1", opus: "W-1", from: "producer", opened: Date.UTC(2026, 9, 27), subject: "First decision", body: "First question" }],
+  },
+};
+
+async function installBoardActionFixture(page: import("@playwright/test").Page): Promise<void> {
+  await page.route("**/api/officina", (route) => route.fulfill({ json: boardActionFixture.officina }));
+  await page.route("**/api/opera", (route) => route.fulfill({ json: boardActionFixture.opera }));
+  await page.route("**/api/inbox", (route) => route.fulfill({ json: boardActionFixture.inbox }));
+  await page.route("**/api/events?item=*", (route) => route.fulfill({ json: [] }));
+}
+
+async function expectModifiedEnterKeepsInbox(
+  page: import("@playwright/test").Page,
+  link: import("@playwright/test").Locator,
+  label: string,
+): Promise<void> {
+  await link.focus();
+  await page.keyboard.press("Control+Enter");
+  await expect(page, `${label}: Control+Enter leaves the current tab at Inbox`).toHaveURL(/#\/inbox$/);
+  await expect(page.getByRole("heading", { name: "Inbox", exact: true }), `${label}: Control+Enter keeps the Inbox screen`).toBeVisible();
+
+  await link.focus();
+  // Linux Chromium natively follows Meta+Enter, so synthesize it to isolate the window listener.
+  await link.evaluate((element) => element.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, bubbles: true, cancelable: true })));
+  await expect(page, `${label}: Meta+Enter leaves the current tab at Inbox`).toHaveURL(/#\/inbox$/);
+  await expect(page.getByRole("heading", { name: "Inbox", exact: true }), `${label}: Meta+Enter keeps the Inbox screen`).toBeVisible();
+}
+
 test.afterEach(async () => {
   await served?.close();
   served = undefined;
@@ -115,6 +160,35 @@ test("W-451-b1 modified Enter keeps the focused Inbox Board link in its current 
   await page.keyboard.press("Enter");
   await expect(page, "plain Enter routes the current tab").toHaveURL(/#\/board\/W-\d+$/);
   await expect(page.getByRole("dialog"), "plain Enter opens the linked Board drawer").toBeVisible();
+});
+
+test("W-451-b1 modified Enter keeps the Open Board drawer action in its current tab", async ({ page }) => {
+  served = await startServed("w451-b1-modified-enter-drawer");
+  await seedToken(page, served);
+  await installBoardActionFixture(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${served.baseURL}/?w451=b1-modified-enter-drawer#/inbox`);
+  await page.locator('.inbox__item[href^="#/board/"]').focus();
+  const drawerLink = page.getByRole("link", { name: "Open Board drawer" });
+  await expect(drawerLink).toBeVisible();
+  await expectModifiedEnterKeepsInbox(page, drawerLink, "Open Board drawer");
+});
+
+test("W-451-b1 modified Enter keeps the Open Board actions state in its current tab", async ({ page }) => {
+  served = await startServed("w451-b1-modified-enter-actions");
+  await seedToken(page, served);
+  await installBoardActionFixture(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${served.baseURL}/?w451=b1-modified-enter-actions#/inbox`);
+  const petitionRow = page.locator(".inbox__item", { hasText: "First decision" });
+  await petitionRow.focus();
+  const actionsLink = page.getByRole("link", { name: "Open Board actions" });
+  await expect(actionsLink).toBeVisible();
+  const readState = await petitionRow.getAttribute("class");
+  const detailState = await page.locator(".inbox").getAttribute("class");
+  await expectModifiedEnterKeepsInbox(page, actionsLink, "Open Board actions");
+  await expect(petitionRow, "Open Board actions leaves the petition read state unchanged").toHaveAttribute("class", readState ?? "");
+  await expect(page.locator(".inbox"), "Open Board actions leaves the detail state unchanged").toHaveAttribute("class", detailState ?? "");
 });
 
 test("W-451-b1 a pasted returned opus with no lifecycle column stays open after refetch", async ({ page }) => {
