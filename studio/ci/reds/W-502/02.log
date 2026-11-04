@@ -1,0 +1,73 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-502-b2\s --import tsx packages/cli/src/open-lessons.test.ts
+# exit: 1
+# at: 2026-11-04T05:39:40.623Z
+# sella: builder.W-502
+# tree: tree:eadc85e81dd76c35911548154523eb98a686704f
+# ticket: {"opus":"W-502","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-502/studio","head":"facc32f87f061b1931843002f0de9f46ed638040","brief":"97a53e117f0a60114934bfe5887a728ae352e0c8","at":"2026-11-04T05:39:33.374Z"}
+
+TAP version 13
+# Subtest: W-502-b2 behaviour 2: on a host past the wind-down W-085 behaviour 8 still passes, and the host's reading still holds an order
+not ok 1 - W-502-b2 behaviour 2: on a host past the wind-down W-085 behaviour 8 still passes, and the host's reading still holds an order
+  ---
+  duration_ms: 2411.576598
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-502/packages/cli/src/open-lessons.test.ts:15:3667'
+  failureType: 'testCodeFailure'
+  error: 'W-085 behaviour 8 passes on a host past the wind-down'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    TAP version 13
+    # Subtest: W-085 behaviour 8: next's dispatch order names the boot bundle
+    not ok 1 - W-085 behaviour 8: next's dispatch order names the boot bundle
+      ---
+      duration_ms: 699.047918
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-502/packages/cli/src/open-lessons.test.ts:15:300'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-502/packages/cli/src/open-lessons.test.ts:351:10)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+      ...
+    1..1
+    # tests 1
+    # suites 0
+    # pass 0
+    # fail 1
+    # cancelled 0
+    # skipped 0
+    # todo 0
+    # duration_ms 1808.522836
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-502/packages/cli/src/open-lessons.test.ts:403:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3441.325227
