@@ -1,0 +1,29 @@
+# opus: W-413
+# phase: spec
+# round: 6
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-02T16:47:29.212Z
+# tree: tree:915cc2517e8b3365880ca53da43309fd0c8e9144
+# brief: briefs/W-413.md blob:a9f6f15cd447c71a480cbe78ceb298a1edb3b209
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"1b4fe9951af4b7886713d1e7ce7ac48983d0911b","brief":"a9f6f15cd447c71a480cbe78ceb298a1edb3b209","at":"2026-11-02T16:46:50.648Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ui-lead round-5 finding 1 is closed: both WIP columns name `Shared WIP T / cap · N blocked`, Building plus Verifying is the shared population, and b1 separately shows a two-card local Building count beside shared T=3 — check: apps/web/test/w413.test.ts, apps/web/tests-serve/w413.spec.ts, kill-b1-shared-copy.out
+2. advisory — ui-lead round-5 finding 2 is closed: compact policy copy states membership and exit conditions, including Planned approval/readiness, Verifying passing checks, Done's no-forward-exit and Halted's conditional resume — check: apps/web/src/lib/board.ts, apps/web/test/w413.test.ts, kill-b3-rules.out, kill-b3-compact.out
+3. advisory — ui-lead round-5 finding 3 and Opus round-4 advisory 1 are closed: non-WIP columns render singular `1 item` or plural `N items`, followed by the blocked contribution — check: apps/web/src/screens/BoardView.tsx, apps/web/tests-serve/w413.spec.ts, kill-b1-singular.out
+4. advisory — ui-lead round-5 finding 4 remains correctly outside W-413: W-499 owns coherent Planned/open-drawer geometry and one complete non-repeated waiting reason; the overlap is named without changing drawer code or copy — check: studio/briefs/W-413.md, studio/opera/W-499.md, shots/
+5. advisory — all four revised Genuine reds are selected Node TAP assertion failures with exact recorder-compatible `# command:` headers; every earlier behaviour stays green on later red stages — check: reds-host.out, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+6. advisory — all ten clean prototype commits independently build the web bundle; the mbox reapplies to base 685a2eea and has sha256 `4ceb2195335c82e6c1dfa4125187fb4ad3ddabfa8d83c2e5e2056479485ed878` — check: series-builds.txt, mbox-check.out, prototype.mbox, prototype.sha256
+7. advisory — focused Node, typecheck, build and served rows pass; eight regenerated and manually inspected captures show the named shared ratio, local metrics and compact condition copy without page overflow — check: gates-proto.out, capture-shots.out, shots/
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 6 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; the round-5 UI findings and round-4 Opus advisory are closed in prototype sha256 `4ceb2195335c82e6c1dfa4125187fb4ad3ddabfa8d83c2e5e2056479485ed878`, and no record write, `next` or `verdict` was performed.

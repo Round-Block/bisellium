@@ -1,0 +1,23 @@
+# opus: W-413
+# phase: spec
+# round: 22
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 097f5823-ffd3-4b11-9978-1276a6ddc45d
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-03T12:02:42.621Z
+# tree: tree:a48288a074e1a23cc3650b16f351a8b090c3a1a7
+# brief: briefs/W-413.md blob:f904dd142085a36da74bd6a1268729c277e17ec7
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":22,"actor":"spec-reviewer","studio":".worktrees/W-413/studio","head":"13156e337537586a7f61778602154320973433f8","brief":"f904dd142085a36da74bd6a1268729c277e17ec7","at":"2026-11-03T12:01:12.114Z"}
+
+## Findings
+1. advisory — brief:21 [severity: S2] Halted cards that keep `start` (`lifecycle.ts:323-325`) take the prototype's open-card path, so they show an estimate for stopped work. Replacement: "Elapsed applies to non-Done, non-Halted work; a Halted card never shows an estimate." Add this case to b2. [design: keeps] [class: tests×ruled-case-uncovered] — check: none: a W-413-b2 assertion that a halted card has no `(estimate)`
+2. advisory — brief:58 [severity: S2] The brief says the estimate is "floored at zero", but `formatEstimate` shows 0 as `About 1 hour left`, so overdue cards read that indefinitely. Replacement: "at or below zero says `Taking longer than usual (estimate)`." [design: keeps] [class: tests×one-sided-bound-assertion] — check: none: a W-413-b2 overdue-card assertion
+
+## Earlier findings
+
+## Verdict
+The brief states the D-167 rulings as promises with limits, reads `start`/`end` from the same snapshot as `state` with `instantMs()` rejecting bad values, and migrates each flipped row in the commit that flips it; the captures make sense on screen.
+Claude week 72%, 5h 15% | Codex week 19% | context 203k of 300k
+VERDICT: PASS

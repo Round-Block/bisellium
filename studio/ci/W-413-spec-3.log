@@ -1,0 +1,27 @@
+# opus: W-413
+# phase: spec
+# round: 3
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-02T16:21:51.085Z
+# tree: tree:915cc2517e8b3365880ca53da43309fd0c8e9144
+# brief: briefs/W-413.md blob:07854b98aba8eb2c87e79a6873e99f6774db23cb
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"1b4fe9951af4b7886713d1e7ce7ac48983d0911b","brief":"07854b98aba8eb2c87e79a6873e99f6774db23cb","at":"2026-11-02T16:20:41.255Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Review finding 1 is adopted: the Board cap numerator uses check's exact building-plus-verifying state set, repeats the shared value on both WIP columns, includes blocked work, and b1 compares it with a real `checkStudio()` `wip.cap` finding; other columns say `N items` — check: apps/web/src/lib/board.ts, apps/web/test/w413.test.ts, apps/web/tests-serve/w413.spec.ts, b1-red-recorded.log
+2. advisory — Review finding 2 is adopted: Done and Halted compute no dwell sample and render no median, while active non-terminal columns preserve no/one/many and stale-stage handling — check: apps/web/src/lib/board.ts, apps/web/src/screens/BoardView.tsx, apps/web/test/w413.test.ts, kill-b2-terminal.out
+3. advisory — Review finding 3 is adopted: each column header is name/count, one `entry → exit` line, then one WIP-or-items metric line with optional median; served b3 bounds the header to 82px at 1280, 640 and 390 — check: apps/web/src/screens/BoardView.tsx, apps/web/src/components/w025.css, apps/web/tests-serve/w413.spec.ts, shots/
+4. advisory — Review finding 4 is adopted: the Input domain names runtime `instantMs()` as the missing/unparseable-time rejector and exact `handoffStage === opus.state` as the stale-stage rejector — check: studio/briefs/W-413.md, apps/web/src/lib/board.ts
+5. advisory — All four revised Genuine reds are selected Node TAP assertion failures with recorder-compatible `# command:` headers; each earlier behaviour stays green at later red stages and all final rows pass — check: reds-host.out, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+6. advisory — Every one of the ten clean red/green-and-migration prototype commits builds its own web bundle; the mbox reapplies to 685a2eea, matches final tree e267cf67 and has sha256 `0fe254a913ba6c5d483b3e56ebd9d075a33c46b2e1932565a92220e9d10429e5` — check: series-builds.txt, mbox-check.out, prototype.mbox, prototype.sha256
+7. advisory — Focused Node/typecheck/build and served W-413, W-409 and W-064 rows pass; eight regenerated and manually inspected captures show the compact policy and open drawer at the ruled shell states without page overflow — check: gates-proto.out, capture-shots.out, shots/
+
+## Verdict
+
+passed — signature round 3 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; all four Opus UI spec review round-2 findings are adopted in prototype sha256 `0fe254a913ba6c5d483b3e56ebd9d075a33c46b2e1932565a92220e9d10429e5`, and no record write, `next` or `verdict` was performed.

@@ -1,0 +1,24 @@
+# opus: W-413
+# phase: spec
+# round: 13
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: b3ec6585-013a-47a8-bf08-8de73c1bebec
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-02T23:58:56.999Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:448a4143e37ffe559fa520d02e8ce7d071430f3e
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":13,"actor":"spec-reviewer","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"448a4143e37ffe559fa520d02e8ce7d071430f3e","at":"2026-11-02T23:58:40.304Z"}
+
+Claude week 67%, 5h 12% | Codex week 9% | context 198k of 300k
+
+## Findings
+1. advisory — brief:85 [severity: S4] Served b4 (`w413.spec.ts:137-141`) never checks the key is visible before opening; b1:68 covers that. Its restore check, `toHaveText`, can pass while the key is still hidden. Replace with: "at 640 b4 pins the key hidden beside the drawer and visible after close (`toBeVisible` plus text); b1 pins it visible before opening." The same claim is at brief:56. [class: ui×test-pins-weaker-than-claim] — check: none: a b4 `toBeVisible()` on `.board__wip-scope` after close at 640.
+2. advisory — brief:56 [severity: S3] Suppression is a `max-width: 899px` breakpoint (`w025.css:2869-2871`), not the rail width. From 900 to 1279 the key stays beside a 360–740px rail with no capture there. Replace with: "suppress it below 900px viewport width while a drawer is open; other drawer widths are a limit." [class: ui×copy-overclaims-derivation] — check: none: a served drawer row at 900px.
+
+## Earlier findings
+
+## Verdict
+Round 12 closes the ui-lead's key blocker, and the key reads at 390 in two lines without crowding the headers. The suppression rule is agent-written and makes sense on the captures; Default 1 puts it to the Patron.
+VERDICT: PASS

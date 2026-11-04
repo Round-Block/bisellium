@@ -1,0 +1,27 @@
+# opus: W-413
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-02T15:06:17.521Z
+# tree: tree:b168bf96d7ef3b765d8c4d82754cce7682d92735
+# brief: briefs/W-413.md blob:eb4384d5c7996844c06c6333a6c26d272ab718af
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"685a2eea187f0be8bea58150281aabcb2416b628","brief":"eb4384d5c7996844c06c6333a6c26d272ab718af","at":"2026-11-02T15:05:59.350Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Revision-2 recorder finding is adopted: every Genuine red line ends with its absolute `bN-red-recorded.log` evidence citation, and each cited log begins with the exact direct Node command followed by one blank line and TAP output — check: studio/briefs/W-413.md, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+2. advisory — `reds-host.sh` now writes the recorder-compatible command header first and no longer prefixes behaviour, exit, sella or tree metadata; all four reds were regenerated under real-copy stage isolation — check: reds-host.sh, reds-host.out
+3. advisory — Each genuine red remains a selected Node TAP assertion failure with exactly one `not ok 1 - W-413-bN …`, while every earlier behaviour stays green at later red stages and all four final rows pass — check: reds-host.out, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+4. advisory — Producer revision-1 findings remain adopted: the two W-064 exact-key rows are named and migrated, and `stages.sh` copies dependencies so `@bisellium/*` resolves inside each stage — check: studio/briefs/W-413.md, apps/web/src/lib/board.test.ts, stages.sh, stage-isolation.out
+5. advisory — Every one of the eleven prototype commits builds its own web bundle; the mbox reapplies to 685a2eea and matches final tree 30a9c925 — check: series-builds.txt, mbox-check.out, prototype.mbox
+6. advisory — W-413, W-064 Board model, W-129, W-409, W-410, W-411, W-493, BoardView and token rows pass with web typecheck/build; W-413, migrated W-409 and W-064 served rows pass — check: gates-proto.out
+7. advisory — Brief admission and promise-ledger validation return no problems, and no officina record write, `next` or `verdict` was performed — check: admission.out, ledger-check.out
+
+## Verdict
+
+passed — signature round 3 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; recorder-compatible red citations and headers are adopted without changing the eleven-commit prototype sha256 `df7e627826da9c0088c0f268520efee000ca29a3ff5dcf0b486b2d0cb133461b`.

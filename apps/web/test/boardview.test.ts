@@ -71,7 +71,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   // earlier in the markup, so a bare html.indexOf(name) would find the strip
   // instead — this regex anchors on the column-head wrapper).
   const headCount = (name: string): number | undefined => {
-    const re = new RegExp(`<div class="board__column-head"[^>]*><span class="board__column-name">${name}</span><span class="board__column-count">(\\d+)</span>`);
+    const re = new RegExp(`<div class="board__column-head"[^>]*><span class="board__column-name">${name}</span><span class="board__column-counts"><span class="board__column-count">(\\d+) tasks?</span><span class="board__column-blocked">(?:None|\\d+) blocked</span></span>`);
     const m = re.exec(html);
     return m ? Number(m[1]) : undefined;
   };
@@ -79,8 +79,8 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   const positions = ["Planned", "In progress"].map(headPos);
   check(5, "BoardView: every lifecycle column head present, in order", positions.every((p) => p >= 0) && positions[1]! > positions[0]!, JSON.stringify(positions));
   check(5, 'BoardView: an empty waiting membership renders only label and "0"', html.includes("board__waiting") && html.includes("Waiting on you") && html.includes("<strong>0</strong>") && !html.includes("board__waiting-items"), html);
-  check(5, 'BoardView: Planned count is "2"', headCount("Planned") === 2, String(headCount("Planned")));
-  check(5, 'BoardView: In progress count is "1"', headCount("In progress") === 1, String(headCount("In progress")));
+  check(5, 'BoardView: Planned count is "2 tasks"', headCount("Planned") === 2, String(headCount("Planned")));
+  check(5, 'BoardView: In progress count is "1 task"', headCount("In progress") === 1, String(headCount("In progress")));
 }
 
 // One card per opus: title, sella, native state — state on the SAME LINE as
@@ -95,7 +95,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   const metaMatch = /<span class="board__card-meta">(.*?)<\/span>\s*<\/(?:div|span)>/.exec(html);
   check(5, "BoardView: sella and state share one meta line", !!metaMatch && metaMatch[1]!.includes("builder-a") && metaMatch[1]!.includes("building"), html);
   const rows = (html.match(/class="board__card-title"/g) ?? []).length + (html.match(/class="board__card-meta"/g) ?? []).length;
-  check(5, "BoardView: card keeps one title and one meta line beside gate progress", rows === 2 && html.includes("1/2 · next: Review"), html);
+  check(5, "BoardView: card keeps one title and one meta line beside check progress", rows === 2 && html.includes("1 of 2 checks complete — Review next"), html);
 }
 
 // Amber left-rule only on a needs-you card; bad only on a blocked one; both
@@ -190,7 +190,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
 {
   const model: BoardModel = { columns: [column({ cards: [card()] })], waiting: [], unplaced: [] };
   const html = renderToStaticMarkup(BoardView(baseProps({ model })));
-  check(5, "BoardView: a non-Planned card states gate progress in text", html.includes("board__card-gates") && html.includes("1/2 · next: Review"), html);
+  check(5, "BoardView: a non-Planned card states check progress in plain text", html.includes("board__card-gates") && html.includes("1 of 2 checks complete — Review next"), html);
   const planned = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", cards: [card()] })], waiting: [], unplaced: [] } })));
   check(5, "BoardView: a Planned card omits gate progress", !planned.includes("board__card-gates"), planned);
   const boardViewSrc = readFileSync(join(SRC, "screens", "BoardView.tsx"), "utf8");

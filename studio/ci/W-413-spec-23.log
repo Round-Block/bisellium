@@ -1,0 +1,27 @@
+# opus: W-413
+# phase: spec
+# round: 23
+# sella: ui-lead
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: revise
+# at: 2026-11-03T12:11:03.825Z
+# tree: tree:a48288a074e1a23cc3650b16f351a8b090c3a1a7
+# dispatch_prompt: ci/W-413-ui-prompt-23.md
+# design_digest: sha256:43e761e6bd1e161f694602ab5af9426c164e5e57cd6da3b64a6d75b9dc3fed5f
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":23,"actor":"ui-lead","studio":".worktrees/W-413/studio","head":"ee61f487d06667efdd3b775297687cb9d18d3dcd","brief":"f904dd142085a36da74bd6a1268729c277e17ec7","at":"2026-11-03T12:09:42.815Z"}
+
+## Findings
+
+1. blocking — brief:58 — The agent-written zero-floor and formatting rules turn an exhausted estimate into “About 1 hour left.” The captures show this on W-2 after nine hours and W-6 after one day, against the eight-hour completed-sample median; the display falsely keeps completion an hour away — replace with: “When estimated remaining time reaches zero, show ‘Taking longer than usual (estimate)’ alongside recorded elapsed time.” — check: prototype apps/web/src/screens/BoardView.tsx:41; W-413-b2 overdue assertions; board-1280-collapsed.png.
+2. blocking — brief:21 — The agent-written timing branch treats every non-Done card as active work. A Halted card retaining `start`, including fixture W-8, receives a completion countdown despite its “Stopped” stage explanation — replace with: “Halted cards may retain factual elapsed-time text, for example ‘Started 3 days ago’, but show ‘Stopped; no completion estimate’ and never a remaining-time forecast.” — check: prototype apps/web/src/lib/board.ts:399; W-413-b2 retained-start Halted case and a Halted-column capture.
+
+## Earlier findings
+
+## Recommendation
+
+The earlier shared-cap/key findings and round-14 restoration/breakpoint advisories are superseded by D-167’s explicit removal of the limit display; condition-copy and singular-count findings remain closed.
+The W-499 drawer findings remain separately assigned, and these simpler drawer fixtures do not establish their repair.
+The revised captures carry out the Patron’s two-row counts, visible filtering, per-card timing and blocked-colour rulings; positive blocked counts stand apart while “None blocked” stays neutral.
+Headers and cards remain readable at 1280, 390 and 640/200%, and filtered counts clearly retain their totals.
+The two round-22 timing advisories expose misleading UI behavior, so both need brief corrections before approval; the overall design can stand.
+Verdict: revise

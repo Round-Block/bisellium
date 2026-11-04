@@ -1,0 +1,25 @@
+# opus: W-413
+# phase: spec
+# round: 15
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-03T03:17:42.188Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:81ce0b907d30f847c2873bc19652655e1828492a
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":15,"actor":"architect","studio":".worktrees/W-413/studio","head":"aabff9b9146acf0e7726d244303877216f9526d1","brief":"81ce0b907d30f847c2873bc19652655e1828492a","at":"2026-11-03T03:17:10.830Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — W-473 is closed for behaviours 1–4: each Genuine-red marker now has exactly one W-322 pin naming its recorded Node TAP row and first `ERR_ASSERTION` message, with the former duplicate failure sentence folded into that marker line — check: studio/briefs/W-413.md, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+2. advisory — the targeted `declaredRedProblems` check returns no problems; all four declared pins equal `firstFailure()` and satisfy `redFailsAt()`, and the full brief admission check also returns no problems — check: admission-r15.out, admission.out
+3. advisory — this correction changes only the scratch brief; the ten-commit prototype contains no brief and its mbox remains sha256 `ddd10f9bf726034ad2e4ec4fbc3772f22ca8e41278c6a32f8e1ffb2392d33142` — check: prototype.mbox, prototype.sha256, mbox-check.out
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 15 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; the W-473 red declarations are closed without changing the prototype, and no record write, `next` or `verdict` was performed.

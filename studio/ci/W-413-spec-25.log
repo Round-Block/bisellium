@@ -1,0 +1,26 @@
+# opus: W-413
+# phase: spec
+# round: 25
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: e03e2cfe-7222-46bb-a92f-7aff1318191e
+# session_reason: a claude -p session cannot be resumed in the sandbox; fresh reviewer session (handoff trap)
+# outcome: passed
+# at: 2026-11-03T12:36:39.589Z
+# tree: tree:a48288a074e1a23cc3650b16f351a8b090c3a1a7
+# brief: briefs/W-413.md blob:d7764eaf39f61bfb3a27cb6afdffa30fa6678eca
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":25,"actor":"spec-reviewer","studio":".worktrees/W-413/studio","head":"ea670e286d0b89fbca53dc8a0daabba70e838415","brief":"d7764eaf39f61bfb3a27cb6afdffa30fa6678eca","at":"2026-11-03T12:32:09.832Z"}
+
+## Findings
+1. advisory — brief:30 [severity: S4] The overdue sentence has no closing full stop, unlike `About … left (estimate).`, and the prototype and b2 oracles copy the same mismatch. Replacement: "at or below zero it reads `Started 9 hours ago. Taking longer than usual (estimate).`". Make the same change at brief:51, brief:121 and in the b2 overdue oracle. [design: keeps] [class: tests×one-sided-bound-assertion] — check: apps/web/test/w413.test.ts W-413-b2 overdue regex
+
+## Earlier findings
+
+## Verdict
+Revision 18 makes only the two fixes from round 22 and the ui-lead's round 23. Both round-22 advisories are closed:
+- **Halted estimate:** brief:27, 51 and 117 add the Halted rule, the prototype skips Halted timing, b2 checks W-8 in the model, HTML and served page, and `kill-b2-halted.out` goes red.
+- **Overdue cards:** the zero floor is removed, so a remainder at or below zero now reads `Taking longer than usual (estimate)`, b2 checks W-2 and W-6, and `kill-b2-overdue.out` goes red.
+
+The r29 census and gates show no new or unnamed flipped row, and the 1280 timing crop reads plainly.
+Claude week 73%, 5h 24% | Codex week 21% | context 265k of 300k
+VERDICT: PASS

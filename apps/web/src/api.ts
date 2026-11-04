@@ -173,6 +173,10 @@ export interface OpusEntry {
   collegium: string;
   sella: string;
   state: string;
+  /** Existing opus record instants. The Board validates them at runtime;
+   * malformed source values remain unknown rather than being coerced. */
+  start?: unknown;
+  end?: unknown;
   tokens: number;
   /** W-064: a contract CORRECTION, not a widening (`evidence?: string` was
    *  wrong about the wire — see W-064's "Not append-only"). Blast radius

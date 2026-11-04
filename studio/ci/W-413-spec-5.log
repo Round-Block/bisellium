@@ -1,0 +1,30 @@
+# opus: W-413
+# phase: spec
+# round: 5
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: revise
+# at: 2026-11-02T16:30:38.689Z
+# tree: tree:915cc2517e8b3365880ca53da43309fd0c8e9144
+# dispatch_prompt: ci/W-413-ui-prompt-5.md
+# design_digest: sha256:74540ca0a7ce6f83b7b5492d51b8b797a5a73f171691ea605a34ecf7d57f770a
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":5,"actor":"ui-lead","studio":"studio","head":"1b4fe9951af4b7886713d1e7ce7ac48983d0911b","brief":"07854b98aba8eb2c87e79a6873e99f6774db23cb","at":"2026-11-02T16:30:18.013Z"}
+
+## Findings
+
+1. blocking — brief:124 — The agent-written repetition rule leaves the shared scope unstated: In progress shows two cards but `3 / 3 WIP · 1 blocked`, while Verifying repeats both numbers. At 390 this looks like contradictory column accounting — replace with: “Repeat `Shared WIP T/cap · N blocked` in both WIP columns; explicitly identify Building + Verifying as the shared population. Keep shown counts and median local to each column.” — check: apps/web/tests-serve/w413.spec.ts b1/b4; board-1280-collapsed.png and board-390.png.
+2. blocking — brief:127 — The agent-written rule substitutes neighbouring state names for entry/exit conditions. `Building → Verifying` says where, not when; `Backlog / Greenlit → Building` obscures the approval requirement, and `Done → Terminal` suggests another destination — replace with: “Use concise membership and exit-condition copy grounded in the existing lifecycle. Planned includes Backlog and Greenlit but requires approval and readiness before building; Verifying requires passing checks before review; Done says `Complete; no forward exit`; Halted says `Stopped; resume when condition is met`. Preserve the compact header.” — check: apps/web/test/w413.test.ts b3; apps/web/tests-serve/w413.spec.ts b3.
+3. advisory — brief:17 — The round-4 singular-copy issue remains visible in Awaiting review, and the prototype tests explicitly expect the incorrect wording — replace with: “Non-WIP columns say `1 item` or `N items`, followed by `· N blocked`.” — check: apps/web/test/w413.test.ts b1; apps/web/tests-serve/w413.spec.ts b1.
+4. advisory — brief:108 — The expanded desktop drawer still cuts through Planned, and the repeated first “Why it waits” sentence remains conspicuous, particularly at 390. These are already assigned to W-499 by the Patron — replace with: “Retain the W-499 follow-up for coherent Planned-column geometry and one complete, non-repeated waiting reason.” — check: studio/decisions/D-162.md; drawer-1280-expanded.png and drawer-390.png.
+
+## Recommendation
+
+This is my first W-413 input; I have no earlier findings to reassess.
+Default 1 has the correct numerator and includes blocked work, but its shared scope needs explicit wording.
+Default 2’s neutral full rule and bold ratio read well; the no-amber treatment follows the Patron’s dated ruling.
+Default 3’s `median —` is honest, and omitting Done/Halted medians is appropriate for this handoff-based measure; those omissions are established by the prototype, since those columns are outside the supplied captures.
+Default 4 needs meaningful policy copy, while Default 5’s local select and unchanged totals are appropriate.
+The three-line column headers remain readable at 1280, 640 and 390; the taller phone stack is acceptable, and DIRECTION’s agent-written two-line prescription should not force compression.
+The architect can resolve the two blockers through copy and policy-description changes within the existing layout.
+Verdict: revise

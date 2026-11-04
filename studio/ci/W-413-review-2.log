@@ -1,0 +1,26 @@
+# opus: W-413
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a19fef-cf9e-7331-b906-2e8d0acdf906
+# outcome: failed
+# at: 2026-11-04T00:10:58.602Z
+# tree: tree:7f0fe0c8517c52df4552005cb9ef68e7a226df36
+# ui_input: ci/W-413-spec-26.log
+# design_digest: sha256:4dd4acb3c3652d8fb54e4b1a9132736f3ae605eb07bfd866a4a761738568f038
+# ticket: {"opus":"W-413","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-413/studio","head":"8b7c8bf68711983b41953ca8b1f246eb6b5301da","brief":"d7764eaf39f61bfb3a27cb6afdffa30fa6678eca","at":"2026-11-04T00:07:22.427Z"}
+
+## Findings
+1. blocking — studio/ci/reds/W-413/01.log:10 The b1–b3 logs still record the superseded shared-WIP, column-median and served-membership rows, not the revised local-count, per-card-timing and plain-stage rows declared at brief:90, brief:92 and brief:94; required red evidence for three changed behaviors is therefore false or missing. [severity: S1] [class: tests×behaviour-selector-mismatches-declared-behaviour] — check: none: admission must match each recorded red’s subtest and first assertion to the current declared behavior
+2. blocking — apps/web/src/lib/board.ts:390 The new timing paths use permissive `Date` parsing, which normalizes impossible calendar dates such as February 31 instead of rejecting them; malformed `start`/`end` values can therefore create invented elapsed, completion and estimate values contrary to brief:21. [severity: S1] [class: review×date-parser-normalizes-impossible-record-date] — check: apps/web/test/w413.test.ts: add impossible-calendar `start` and `end` cases
+3. blocking — studio/ci/shots/W-413/manifest.txt:2 Both attached Board captures remain on `All tasks`; neither records the applied `Blocked tasks` state required by the capture acceptance at brief:114, so the current build’s attached UI evidence does not demonstrate the Patron-requested filter result. [severity: S1] [class: review×evidence-backfilled-or-absent] — check: none: capture the Board with `Blocked tasks` selected at desktop and phone widths
+
+## UI input disposition
+The authoritative ui-lead input accepts the revised design and closes the overdue- and Halted-timing issues. Across all eight attached images, Inbox, Seats and Officina remain legible at desktop and phone widths, while Board counts, blocked emphasis, stage/check copy, card timing, overflow cues and responsive hierarchy read clearly. However, the two attached Board images show only the unfiltered state, so they do not supply the required applied-filter evidence and contribute to the failing verdict.
+
+## Earlier findings
+
+## Verdict
+The revised visual direction is sound, but three current behaviors lack valid evidence and malformed record dates can produce false timing.
+VERDICT: FAIL

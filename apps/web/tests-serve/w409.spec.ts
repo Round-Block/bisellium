@@ -74,9 +74,9 @@ test("W-409-b2 unified attention totals match on Inbox and Board at 1280, 640 an
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${served.baseURL}/?w409=b2-${width}#/board`);
     await expect(page.locator(".board__waiting-label strong"), `${width}: Board membership keeps greenlight and human-gate asks`).toHaveText("2");
-    await expect(page.locator('.board__column[data-column-id="planned"] .board__column-count'), `${width}: Planned counts W-1 once`).toHaveText("1");
-    await expect(page.locator('.board__column[data-column-id="in_progress"] .board__column-count'), `${width}: in progress counts W-2 once`).toHaveText("1");
-    await expect(page.locator('.board__column[data-column-id="done"] .board__column-count'), `${width}: Done counts the no-ask opus once`).toHaveText("1");
+    await expect(page.locator('.board__column[data-column-id="planned"] .board__column-count'), `${width}: Planned counts W-1 once`).toHaveText("1 task");
+    await expect(page.locator('.board__column[data-column-id="in_progress"] .board__column-count'), `${width}: in progress counts W-2 once`).toHaveText("1 task");
+    await expect(page.locator('.board__column[data-column-id="done"] .board__column-count'), `${width}: Done counts the no-ask opus once`).toHaveText("1 task");
     if (width === 1280) {
       await expect(page.locator('a[href="#/inbox"] .sidebar__badge'), `${width}: expanded Inbox badge matches both waiting opera`).toHaveText("2");
     } else {

@@ -1,0 +1,26 @@
+# opus: W-413
+# phase: build
+# round: 3
+# sella: qa-lead
+# session: 01a19fef-cf9e-7331-b906-2e8d0acdf906
+# outcome: passed
+# at: 2026-11-04T04:39:29.585Z
+# tree: tree:ea5d223d977b912998f3bb207df9507516f9c62a
+# ui_input: ci/W-413-spec-26.log
+# design_digest: sha256:4dd4acb3c3652d8fb54e4b1a9132736f3ae605eb07bfd866a4a761738568f038
+# ticket: {"opus":"W-413","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-413/studio","head":"1a982f2cc218090166166af06ef8d39073df28b3","brief":"d7764eaf39f61bfb3a27cb6afdffa30fa6678eca","at":"2026-11-04T04:38:09.958Z"}
+
+## Findings
+No findings
+
+## UI input disposition
+The authoritative ui-lead input accepts the design. All eight desktop and phone captures preserve legible hierarchy, controls, responsive navigation and overflow cues. Neither Board capture shows the Blocked filter; that state is demonstrated to the Patron during the screen ruling and verified by the served filter row at 1280, 640 and 390.
+
+## Earlier findings
+- ci/W-413-review-2.log #1: closed — `/home/edckt/.bisellium-evidence/W-413-build/fix-r3/b2-red.log:4` and `b3-red.log:4` run the revised rows against pre-implementation source and fail at their pinned assertions with `ERR_ASSERTION`.
+- ci/W-413-review-2.log #2: closed — `apps/web/src/lib/board.ts:130` validates calendar fields before parsing, while `apps/web/test/w413.test.ts:141` covers impossible start and end dates.
+- ci/W-413-review-2.log #3: closed — `scripts/review-packet.mjs:192` restricts the packet to eight fixed route captures, while `studio/ci/W-413-served-e2e-ea5d223d.log:164` records the applied-filter behavior passing at all three ruled widths and the Patron receives the filtered state during the screen ruling.
+
+## Verdict
+The malformed-date behavior is corrected, the revised behaviors have genuine assertion-level reds, and the fixed capture packet is supplemented by valid served and Patron-reviewed filter evidence.
+VERDICT: PASS

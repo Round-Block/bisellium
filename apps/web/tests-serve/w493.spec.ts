@@ -67,10 +67,10 @@ test("W-493-b1 gate progress replaces card squares at 1280, 640 and 390", async 
     await openBoard(page, width, "b1");
     await expect(page.locator(".board__card .gate-ladder"), `${width}: lifecycle cards contain no unlabelled gate squares`).toHaveCount(0);
     await expect(page.locator('[data-column-id="planned"] [data-card-id="W-1"] .board__card-gates'), `${width}: Planned omits gate progress`).toHaveCount(0);
-    await expect(page.locator('[data-card-id="W-2"] .board__card-gates'), `${width}: some cleared gates name the next gate`).toHaveText("3/6 · next: QA verdict");
-    await expect(page.locator('[data-card-id="W-3"] .board__card-gates'), `${width}: long next-gate copy stays available`).toHaveAttribute("title", `4/6 · next: ${longGateName}`);
-    await expect(page.locator('[data-card-id="W-4"] .board__card-gates'), `${width}: all cleared gates state completion`).toHaveText("6/6 · complete");
-    await expect(page.locator('[data-card-id="W-6"] .board__card-gates'), `${width}: zero cleared gates name the first gate`).toHaveText("0/6 · next: Spec");
+    await expect(page.locator('[data-card-id="W-2"] .board__card-gates'), `${width}: some completed checks name what is next`).toHaveText("3 of 6 checks complete — QA verdict next");
+    await expect(page.locator('[data-card-id="W-3"] .board__card-gates'), `${width}: long next-check copy stays available`).toHaveAttribute("title", `4 of 6 checks complete — ${longGateName} next`);
+    await expect(page.locator('[data-card-id="W-4"] .board__card-gates'), `${width}: all completed checks state completion`).toHaveText("All checks are complete");
+    await expect(page.locator('[data-card-id="W-6"] .board__card-gates'), `${width}: zero completed checks name the first check`).toHaveText("No checks complete yet — Spec next");
     await expect(page.locator('[data-card-id="W-2"] .board__card-title'), `${width}: the long title remains available after clamping`).toHaveAttribute("title", /^A deliberately long card title/);
     const geometry = await page.locator('[data-card-id="W-3"]').evaluate((node) => {
       const card = node.getBoundingClientRect();

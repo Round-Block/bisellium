@@ -1,0 +1,26 @@
+# opus: W-413
+# phase: spec
+# round: 18
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-03T03:42:15.262Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:24c53955fcbb56590444f3f5f2a0521fcd36d6cc
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":18,"actor":"architect","studio":".worktrees/W-413/studio","head":"2cfbaac4b0de0080debd1908fa0a08b45021aaad","brief":"24c53955fcbb56590444f3f5f2a0521fcd36d6cc","at":"2026-11-03T03:40:30.015Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the replay refusal is closed: the prototype now has exactly eight alternating accepted subjects, and both former standalone migration patches are folded into `feat(W-413): behaviour 1`, where the scope key, shown-count copy and complete new BoardColumn own-key set first flip their predecessor oracles — check: rebuild-series-r18.out, prototype.mbox, mbox-check.out
+2. advisory — each of the eight commits independently builds; at every feature commit all then-present W-413 rows plus the affected predecessor Node files pass, while each red commit fails only at its declared pin and retains every earlier behaviour green — check: series-builds.txt, series-rows-r18.txt, reds-host.out, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+3. advisory — the final prototype tree is unchanged from the signed ten-commit tree, so layout, copy, Defaults, test rows and captures do not change; the rebuilt mbox has sha256 `506debf8538b28676b433f9a2d71f9594531f2a1318caa35d926055dcb486f18` — check: prototype.sha256, mbox-check.out, gates-proto.out, shots/
+4. advisory — the brief changes only its Prototype hash, eight-commit series description, behaviour-1 landing notes for the flipped predecessor rows, and eight-commit build/replay acceptance statements — check: studio/briefs/W-413.md
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 18 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; the signed prototype is replayable as four red/feature pairs, and no record write, `next` or `verdict` was performed.

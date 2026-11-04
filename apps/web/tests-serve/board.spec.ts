@@ -266,7 +266,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     const expected = await expectedModel(served);
     for (const col of expected.columns) {
       const head = page.locator(`.board__column[data-column-id="${col.id}"] .board__column-count`);
-      await expect(head).toHaveText(String(col.cards.length));
+      await expect(head).toHaveText(`${col.cards.length} ${col.cards.length === 1 ? "task" : "tasks"}`);
     }
     await expect(page.locator(".board__waiting-label strong")).toHaveText(String(expected.waiting.length));
 
@@ -735,7 +735,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     await served?.close();
   });
 
-  test("a 300-character mixed title clamps to two lines while a short progress-text card remains 80px", async ({ page }) => {
+  test("a 300-character mixed title clamps to two lines while a short progress-text card remains 96px", async ({ page }) => {
     served = await startServed("w087-title-bounds");
     const prose = "Several ordinary words must wrap before this unbroken token ";
     const title = prose + "x".repeat(300 - prose.length);
@@ -782,7 +782,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
         metaInside: !!meta && meta.height > 0 && meta.top >= box.top && meta.bottom <= box.bottom,
       };
     });
-    expect(containment.height).toBe(98);
+    expect(containment.height).toBe(108);
     expect(containment.height).toBeLessThanOrEqual(108);
     expect(containment.minHeight).toBe("64px");
     expect(containment.maxHeight).toBe("108px");
@@ -792,7 +792,7 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
     expect(containment.metaInside).toBe(true);
 
     const shortCard = page.locator('.board__card[data-card-id="W-005"]');
-    expect((await shortCard.boundingBox())?.height).toBe(80);
+    expect((await shortCard.boundingBox())?.height).toBe(96);
   });
 });
 

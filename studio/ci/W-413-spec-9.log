@@ -1,0 +1,30 @@
+# opus: W-413
+# phase: spec
+# round: 9
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a19c9e-6752-7210-8b4b-6e808426ac0c
+# outcome: passed
+# at: 2026-11-02T23:30:58.381Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:d1455f894b3bfcf3d7100eaff6cbe1617509431f
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"d1455f894b3bfcf3d7100eaff6cbe1617509431f","at":"2026-11-02T23:29:23.071Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-413-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — ui-lead round-8 finding 1 is closed: the repeated shared ratio remains in both WIP columns and a visible key now says `Shared WIP = Building + Verifying; blocked work included`; b1 checks exact text and visibility at 1280, 640 and 390 — check: apps/web/src/screens/BoardView.tsx, apps/web/tests-serve/w413.spec.ts, kill-b1-scope-key.out, shots/
+2. advisory — ui-lead round-8 finding 2 is closed: Building now says `build complete before verification`, and Intent, Default 4 and b3 enumerate all six standard strings plus the served-membership custom fallback — check: studio/briefs/W-413.md, apps/web/src/lib/board.ts, apps/web/test/w413.test.ts, kill-b3-fallback.out
+3. advisory — ui-lead round-8 finding 3 is closed: the promise now states that membership uses served state names while exit copy is fixed per standard phase id, does not read the served transition graph, and excludes alternate transition graphs — check: studio/briefs/W-413.md, apps/web/src/lib/board.ts, kill-b3-rules.out
+4. advisory — W-499 remains the sole owner of coherent Planned/open-drawer geometry and one complete non-repeated waiting reason under D-162; W-413 changes neither drawer code nor reason copy — check: studio/briefs/W-413.md, studio/opera/W-499.md, shots/
+5. advisory — all four rebuilt Genuine reds are selected Node TAP assertion failures with exact `# command:` headers, and every earlier behaviour remains green on later red stages — check: reds-host.out, b1-red-recorded.log, b2-red-recorded.log, b3-red-recorded.log, b4-red-recorded.log
+6. advisory — all ten rebuilt prototype commits independently build the web bundle; the mbox reapplies to base 685a2eea and has sha256 `1999b926d976ca20175bbd097e5d9fd9634187793ed74a56307c31c7f5c42e5b` — check: series-builds.txt, mbox-check.out, prototype.mbox, prototype.sha256
+7. advisory — focused Node, typecheck, build and served rows pass; eight regenerated and manually inspected captures show the scope key and revised Building copy without page overflow — check: gates-proto.out, capture-shots.out, shots/
+8. advisory — revision-6 fixture finding is closed: W-341-b4 now migrates its exact Board child-order oracle through the Shared-WIP key, while W-415-b2 remains green unchanged and continues to constrain the changed Board CSS — check: apps/web/test/w341.test.ts, w341-final.out, w415-final.out
+
+## Earlier findings
+
+## Verdict
+
+passed — signature round 9 prepared by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-413.md`; all round-8 findings and the revision-6 fixture correction are closed in prototype sha256 `1999b926d976ca20175bbd097e5d9fd9634187793ed74a56307c31c7f5c42e5b`, and no record write, `next` or `verdict` was performed.

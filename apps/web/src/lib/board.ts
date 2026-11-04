@@ -37,7 +37,7 @@ export interface CardRow {
   gates: Gate[];
   /** Compact progress for lifecycle cards. The declared manifest supplies
    * both order and names; presentation decides which phases show it. */
-  gateProgress?: { cleared: number; total: number; next?: string };
+  gateProgress?: { cleared: number; total: number; next?: string; failed?: string };
   needsYou: boolean;
   /** Why this opus belongs to the attention-membership column. Kept as
    * structured data so presentation never has to infer an ask from copy. */
@@ -47,6 +47,12 @@ export interface CardRow {
   nextActor?: string;
   /** Oldest parseable instant among this card's active ask sources. */
   waitingSince?: number;
+  /** For non-Done, non-Halted work, elapsed time from the record's parseable `start`. */
+  elapsedMs?: number;
+  /** For completed work, the record's exact parseable `start` → `end` span. */
+  actualCompletionMs?: number;
+  /** For non-Done, non-Halted work, the completed-cycle median minus elapsed. */
+  estimatedRemainingMs?: number;
   blocked: boolean;
 }
 
@@ -120,6 +126,15 @@ function recordValue(record: unknown, key: string): unknown {
 function instantMs(value: unknown): number | undefined {
   if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
   if (typeof value !== "string") return undefined;
+  // Strict ISO 8601: Date alone normalizes an impossible day such as February 31 into a real one.
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/.exec(value);
+  if (match === null) return undefined;
+  const [year, month, day, hour, minute, second] = [1, 2, 3, 4, 5, 6].map((index) => Number(match[index] ?? 0)) as [number, number, number, number, number, number];
+  // Fields are compared directly: Date.UTC maps years 0 to 99 onto 1900 to 1999.
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const monthDays = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  const offset = /^[+-](\d{2}):?(\d{2})$/.exec(match[7] ?? "");
+  if (monthDays === undefined || day < 1 || day > monthDays || hour > 23 || minute > 59 || second > 59 || (offset !== null && (Number(offset[1]) > 23 || Number(offset[2]) > 59))) return undefined;
   const parsed = new Date(value).getTime();
   return Number.isFinite(parsed) ? parsed : undefined;
 }
@@ -149,11 +164,24 @@ export interface BoardColumn {
    * membership is rendered above the columns, so no waiting column is pinned. */
   pinned: boolean;
   cards: CardRow[];
-  /** Present on the in-progress column only. */
+  /** Whole lifecycle membership before a presentation filter is applied. */
+  totalCount: number;
+  /** Failed-gate cards in totalCount. */
+  blockedCount: number;
+  /** Legacy model fact retained for callers; W-413 does not render limits. */
   cap?: number;
   atCap: boolean;
+  entryRule: string;
+  exitRule: string;
   /** Phase columns are lifecycle membership, never attention membership. */
   membership: boolean;
+}
+
+export type BoardFilter = "all" | "blocked";
+
+export interface BoardModelOptions {
+  filter?: BoardFilter;
+  now?: number;
 }
 
 export interface BoardModel {
@@ -164,6 +192,17 @@ export interface BoardModel {
   /** Opera whose state maps to no declared phase: counted and named, never
    *  dropped into the first column and never thrown on. */
   unplaced: string[];
+}
+
+const MIN_COMPLETION_SAMPLES = 3;
+
+function median(values: number[]): number | undefined {
+  if (values.length < MIN_COMPLETION_SAMPLES) return undefined;
+  const ordered = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 1
+    ? ordered[middle]
+    : (ordered[middle - 1]! + ordered[middle]!) / 2;
 }
 
 /** D-151: every consumer reports the size of the collection it renders. */
@@ -236,6 +275,7 @@ function classifiedCards(
       const status = opus.probationes[gate.id]?.status;
       return status !== "passed" && status !== "waived";
     });
+    const failedGate = o.probationes.find((gate) => opus.probationes[gate.id]?.status === "failed");
     card.gateProgress = {
       cleared: o.probationes.filter((gate) => {
         const status = opus.probationes[gate.id]?.status;
@@ -243,6 +283,7 @@ function classifiedCards(
       }).length,
       total: o.probationes.length,
       ...(nextGate === undefined ? {} : { next: nextGate.name ?? nextGate.id }),
+      ...(failedGate === undefined ? {} : { failed: failedGate.name ?? failedGate.id }),
     };
     const linkedDecisions = petitionCount.get(opus.id) ?? 0;
     const greenlightAsk = phase === BACKLOG_PHASE;
@@ -341,6 +382,7 @@ export function boardModel(
   o: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit">,
   opera: OpusEntry[],
   inbox: Pick<InboxResponse, "opera" | "petitiones"> = { opera: [], petitiones: [] },
+  options: BoardModelOptions = {},
 ): BoardModel {
   const cards = classifiedCards(o, opera, inbox);
 
@@ -351,10 +393,68 @@ export function boardModel(
     phases.push(s.phase);
   }
   const stateToPhase = new Map(o.lifecycle.states.map((s) => [s.id, s.phase] as const));
+  const now = options.now ?? Date.now();
+  const completedCycles = opera.flatMap((opus) => {
+    if (stateToPhase.get(opus.state) !== "done") return [];
+    const start = instantMs(opus.start);
+    const end = instantMs(opus.end);
+    return start !== undefined && end !== undefined && end >= start ? [end - start] : [];
+  });
+  const completionEstimate = median(completedCycles);
+
+  for (const opus of opera) {
+    const card = cards.get(opus.id)!;
+    const start = instantMs(opus.start);
+    const phase = stateToPhase.get(opus.state);
+    if (phase === "done") {
+      const end = instantMs(opus.end);
+      if (start !== undefined && end !== undefined && end >= start) card.actualCompletionMs = end - start;
+    } else if (phase !== "halted" && start !== undefined && start <= now) {
+      card.elapsedMs = now - start;
+      if (completionEstimate !== undefined) card.estimatedRemainingMs = completionEstimate - card.elapsedMs;
+    }
+  }
 
   const columns = new Map<string, BoardColumn>();
   for (const phase of phases) {
-    const col: BoardColumn = { id: phase, name: humanizePhase(phase), pinned: false, cards: [], atCap: false, membership: false };
+    const entryRule = phase === "planned"
+      ? "Waiting to start."
+      : phase === "in_progress"
+        ? "Being built."
+        : phase === "verifying"
+          ? "Being checked."
+          : phase === "awaiting_review"
+            ? "Waiting for review."
+            : phase === "done"
+              ? "Complete."
+              : phase === "halted"
+                ? "Stopped."
+                : "In this stage.";
+    const exitRule = phase === "planned"
+      ? "Moves on when approved and ready to build."
+      : phase === "in_progress"
+        ? "Moves on when the build is complete."
+        : phase === "verifying"
+          ? "Moves on when checks pass."
+          : phase === "awaiting_review"
+            ? "Finished when approved."
+            : phase === "done"
+              ? "No next step."
+              : phase === "halted"
+                ? "Resumes when the blocking condition is resolved."
+                : "Moves on when its recorded condition is met.";
+    const col: BoardColumn = {
+      id: phase,
+      name: humanizePhase(phase),
+      pinned: false,
+      cards: [],
+      totalCount: 0,
+      blockedCount: 0,
+      atCap: false,
+      entryRule,
+      exitRule,
+      membership: false,
+    };
     if (phase === "in_progress" && o.wip_limit !== undefined) col.cap = o.wip_limit;
     columns.set(phase, col);
   }
@@ -386,7 +486,10 @@ export function boardModel(
   else unplaced.push(...backlog.map((card) => card.id));
 
   for (const col of columns.values()) {
+    col.totalCount = col.cards.length;
+    col.blockedCount = col.cards.filter((card) => card.blocked).length;
     if (col.cap !== undefined) col.atCap = col.cards.length >= col.cap;
+    if (options.filter === "blocked") col.cards = col.cards.filter((card) => card.blocked);
   }
 
   return { columns: [...columns.values()], waiting, unplaced };

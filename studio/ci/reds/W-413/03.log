@@ -1,0 +1,134 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-413-b3\s --import tsx apps/web/test/w413.test.ts
+# exit: 1
+# at: 2026-11-03T03:47:12.841Z
+# sella: ui-architect
+# tree: tree:23de2f1a0954aa9fad1b58905a2a86246dfcbe68
+# ticket: {"opus":"W-413","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-413/studio","head":"8bc3c82468330207cd60983af9ae5595a164da6e","brief":"24c53955fcbb56590444f3f5f2a0521fcd36d6cc","at":"2026-11-03T03:47:12.797Z"}
+
+TAP version 13
+# Subtest: W-413-b3 behaviour 3: every lifecycle column names its entry and exit rule
+not ok 1 - W-413-b3 behaviour 3: every lifecycle column names its entry and exit rule
+  ---
+  duration_ms: 5.692285
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-413/apps/web/test/w413.test.ts:1:5509'
+  failureType: 'testCodeFailure'
+  error: |-
+    membership uses served state names while exit copy stays fixed by standard phase id
+    + actual - expected
+    
+      [
+        [
+          'planned',
+    +     '',
+    +     ''
+    -     'Backlog + Greenlit',
+    -     'approval + readiness before building'
+        ],
+        [
+          'in_progress',
+    +     '',
+    +     ''
+    -     'Building',
+    -     'build complete before verification'
+        ],
+        [
+          'verifying',
+    +     '',
+    +     ''
+    -     'Verifying',
+    -     'passing checks before review'
+        ],
+        [
+          'awaiting_review',
+    +     '',
+    +     ''
+    -     'Awaiting review',
+    -     'approval completes work'
+        ],
+        [
+          'done',
+    +     '',
+    +     ''
+    -     'Complete',
+    -     'no forward exit'
+        ],
+        [
+          'halted',
+    +     '',
+    +     ''
+    -     'Stopped',
+    -     'resume when condition is met'
+        ]
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'planned'
+      1: 'Backlog + Greenlit'
+      2: 'approval + readiness before building'
+    1:
+      0: 'in_progress'
+      1: 'Building'
+      2: 'build complete before verification'
+    2:
+      0: 'verifying'
+      1: 'Verifying'
+      2: 'passing checks before review'
+    3:
+      0: 'awaiting_review'
+      1: 'Awaiting review'
+      2: 'approval completes work'
+    4:
+      0: 'done'
+      1: 'Complete'
+      2: 'no forward exit'
+    5:
+      0: 'halted'
+      1: 'Stopped'
+      2: 'resume when condition is met'
+  actual:
+    0:
+      0: 'planned'
+      1: ''
+      2: ''
+    1:
+      0: 'in_progress'
+      1: ''
+      2: ''
+    2:
+      0: 'verifying'
+      1: ''
+      2: ''
+    3:
+      0: 'awaiting_review'
+      1: ''
+      2: ''
+    4:
+      0: 'done'
+      1: ''
+      2: ''
+    5:
+      0: 'halted'
+      1: ''
+      2: ''
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-413/apps/web/test/w413.test.ts:106:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13.96294

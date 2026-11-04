@@ -1,0 +1,31 @@
+# opus: W-413
+# phase: spec
+# round: 11
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a19d15-63b0-72a3-b873-4970e4729eaf
+# outcome: revise
+# at: 2026-11-02T23:39:03.613Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# dispatch_prompt: ci/W-413-ui-prompt-11.md
+# design_digest: sha256:2d5af508dddef3e6c74b7c8fee4b2bbe33b95ab31fe7e3e86d3728c532933141
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":11,"actor":"ui-lead","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"d1455f894b3bfcf3d7100eaff6cbe1617509431f","at":"2026-11-02T23:38:51.270Z"}
+
+## Findings
+
+1. blocking — brief:107 — In `drawer-640-200pct.png`, the new scope key wraps into eight lines inside the narrow remaining Board rail, pushing the waiting strip and columns downward. The agent-written unconditional rendering rule makes the explanation unreadable in this state; this is additional to W-499’s existing defects — replace with: “Keep the complete key visible on the unobstructed Board at all three widths. Suppress it when the open drawer leaves only a narrow Board rail, and restore it on close.” — check: prototype apps/web/src/components/w025.css; apps/web/tests-serve/w413.spec.ts b1/b4; drawer-640-200pct.png.
+2. advisory — brief:131 — The agent-written requirement for “exactly six” strings conflicts with served membership names: the captured Awaiting review column correctly says `Review; approval completes work` — replace with: “These examples use the standard fixture names; membership follows served names, with Complete/Stopped overrides for Done/Halted, while exit clauses are fixed per phase id.” — check: prototype apps/web/src/lib/board.ts:386; board-1280-collapsed.png.
+3. advisory — brief:17 — Round 10 correctly identifies that the scope key is literal. It matches these captures, but does not adapt to renamed WIP states — replace with: “The key uses the standard Building and Verifying labels; renamed WIP labels are outside this copy promise.” — check: prototype apps/web/src/screens/BoardView.tsx:357.
+
+## Earlier findings
+
+- ci/W-413-spec-8.log #1: closed — All four Board captures visibly identify Building + Verifying and blocked-work inclusion; at 390 the complete key wraps into two readable lines, and served b1 asserts its text and visibility.
+
+## Recommendation
+
+Round-8 advisories #2 and #3 are closed: Building now states an exit condition, the strings and fallback are listed, and fixed exit-copy derivation is explicit.
+Round-5’s condition-copy and singular-item findings remain closed; its drawer geometry and repeated-reason advisory remains assigned to W-499.
+The unobstructed Board reads well at 1280, 640 and 390, with acceptable header height and clear separation between shared WIP and local counts and medians.
+The neutral cap treatment preserves the Patron’s ruling, and the round-10 naming limitations do not create a defect in these captured records.
+The new key needs one responsive adjustment for the 640 drawer state; the existing design can otherwise stand.
+Verdict: revise

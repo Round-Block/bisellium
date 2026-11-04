@@ -2111,6 +2111,24 @@
   background: var(--surface);
 }
 
+.board__filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.board__filter {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 4px 8px;
+  font: inherit;
+  color: var(--ink-2);
+  background: var(--surface);
+}
+
 .board__liveness {
   flex-shrink: 0;
   margin-left: auto;
@@ -2431,24 +2449,37 @@
   color: var(--ink-2);
 }
 
-.board__column-count {
+.board__column-counts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.board__column-count,
+.board__column-blocked {
   font-family: var(--font-mono);
   font-size: 11px;
+  line-height: 14px;
   color: var(--ink-3);
 }
 
-.board__wip-rule {
-  height: 3px;
-  background: var(--rule);
+.board__column-blocked--active {
+  color: var(--severity-blocking-text);
 }
 
-.board__wip-fill {
-  height: 100%;
-  background: var(--ink);
+.board__column-policy {
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
 }
 
-.board__wip-fill--amber {
-  background: var(--amber);
+.board__card-timing {
+  font-family: var(--font-mono);
 }
 
 .board__column-cards {
@@ -2504,7 +2535,7 @@
 }
 
 .board__card--bad {
-  border-left-color: var(--ink);
+  border-left-color: var(--severity-blocking);
 }
 
 .board__card-gates {
@@ -2556,6 +2587,16 @@
   font-size: 12px;
   line-height: 14px;
   color: var(--ink-2);
+}
+
+.board__card-timing {
+  display: block;
+  min-height: 12px;
+  flex-shrink: 0;
+  color: var(--ink-3);
+  font-size: 10px;
+  line-height: 12px;
+  overflow-wrap: anywhere;
 }
 
 .board__card:focus {

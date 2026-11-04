@@ -169,9 +169,9 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
   const model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes: [] }, [opus({ id: "W-1", state: "backlog" })]);
   check(1, "boardModel: Object.keys(model) is exactly [columns, waiting, unplaced]", JSON.stringify(Object.keys(model).sort()) === JSON.stringify(["columns", "unplaced", "waiting"]), JSON.stringify(Object.keys(model)));
   const planned = model.columns.find((c) => c.id === "planned");
-  check(1, "boardModel: Planned's own keys are exactly its declared set", planned !== undefined && JSON.stringify(Object.keys(planned).sort()) === JSON.stringify(["atCap", "cards", "id", "membership", "name", "pinned"].sort()), JSON.stringify(planned));
+  check(1, "boardModel: Planned's own keys are exactly its declared set", planned !== undefined && JSON.stringify(Object.keys(planned).sort()) === JSON.stringify(["atCap", "blockedCount", "cards", "entryRule", "exitRule", "id", "membership", "name", "pinned", "totalCount"].sort()), JSON.stringify(planned));
   const done = model.columns.find((c) => c.id === "done");
-  check(1, "boardModel: a plain phase column (no cap, no backlogCount) has exactly its base keys", done !== undefined && JSON.stringify(Object.keys(done).sort()) === JSON.stringify(["atCap", "cards", "id", "membership", "name", "pinned"].sort()), JSON.stringify(done));
+  check(1, "boardModel: a plain phase column (no cap, no backlogCount) has exactly its base keys", done !== undefined && JSON.stringify(Object.keys(done).sort()) === JSON.stringify(["atCap", "blockedCount", "cards", "entryRule", "exitRule", "id", "membership", "name", "pinned", "totalCount"].sort()), JSON.stringify(done));
 }
 
 // cap present on in_progress only, equal to wip_limit; atCap true at/over cap.

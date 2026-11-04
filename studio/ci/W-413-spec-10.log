@@ -1,0 +1,24 @@
+# opus: W-413
+# phase: spec
+# round: 10
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: d9f0d135-3a68-4075-97e1-7b6ccb859078
+# session_reason: reissue for verdict shape by a fresh session: a claude -p session cannot be resumed in the sandbox (handoff trap)
+# outcome: passed
+# at: 2026-11-02T23:36:15.890Z
+# tree: tree:69a9e899019a870b1a9d4b6a735c98f292e86202
+# brief: briefs/W-413.md blob:d1455f894b3bfcf3d7100eaff6cbe1617509431f
+# ticket: {"opus":"W-413","step":"spec","action":"verdict-spec","round":10,"actor":"spec-reviewer","studio":"studio","head":"a1ec75f7ff8c61c702ecd0d01ab67cb9bfae4889","brief":"d1455f894b3bfcf3d7100eaff6cbe1617509431f","at":"2026-11-02T23:36:04.173Z"}
+
+Claude week 66%, 5h 6% | Codex week 6% | context 141k of 300k
+
+## Findings
+1. advisory — brief:21 [severity: S2] The listed string `Awaiting review; approval completes work` holds only when the served state names match the fixture. The prototype fixes only the exit copy (`board.ts:386-391`), and the sample studio's 1280 capture reads `Review; approval comple…`. Default 4 (brief:131) makes the same overclaim. Replace with: "With the standard served names, the six strings are …; membership follows served names, and only the text after the semicolon is fixed per phase id." [class: ui×copy-overclaims-derivation] — check: none: a b3 served row asserting the sample studio's `Review; approval completes work`.
+2. advisory — brief:17 [severity: S3] The key is a hard-coded literal (`BoardView.tsx:357`), so a renamed building or verifying state makes the key disagree with its own columns. Replace with: "The key uses the WIP states' served names; renamed WIP states are a stated limit." [class: ui×copy-overclaims-derivation] — check: none: a b1 row with renamed WIP names.
+
+## Earlier findings
+
+## Verdict
+Every round-8 input is closed; two advisories remain. At 390 the key wraps above the Waiting strip without crowding headers; Default 1 puts it to the Patron.
+VERDICT: PASS

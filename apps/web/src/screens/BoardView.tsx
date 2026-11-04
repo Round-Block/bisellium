@@ -6,7 +6,7 @@
  * here rather than being threaded up through Board.tsx.
  */
 import { useCallback, useEffect, useRef, useState, type JSX } from "react";
-import { formatWaitingAge, type AttentionRow, type BoardModel, type CardRow } from "../lib/board.js";
+import { formatWaitingAge, type AttentionRow, type BoardFilter, type BoardModel, type CardRow } from "../lib/board.js";
 import { Colophon } from "../components/Colophon.js";
 
 export interface BoardViewProps {
@@ -28,6 +28,38 @@ export interface BoardViewProps {
   generatedAt?: string;
   /** W-341: the screen's visible status line in a loading, empty or error state; absent at rest. */
   notice?: string;
+  filter?: BoardFilter;
+  onFilterChange?: (filter: BoardFilter) => void;
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 3_600_000) return "less than 1 hour";
+  if (ms < 86_400_000) return plural(Math.floor(ms / 3_600_000), "hour");
+  return plural(Math.floor(ms / 86_400_000), "day");
+}
+
+function formatEstimate(ms: number): string {
+  if (ms < 3_600_000) return "1 hour";
+  return formatDuration(ms);
+}
+
+function CardTiming({ card, phase }: { card: CardRow; phase: string }): JSX.Element | null {
+  if (phase === "done") {
+    return card.actualCompletionMs === undefined
+      ? null
+      : <span className="board__card-timing">Took {formatDuration(card.actualCompletionMs)}</span>;
+  }
+  if (phase === "halted") return <span className="board__card-timing">Stopped; no completion estimate</span>;
+  if (card.elapsedMs === undefined) return <span className="board__card-timing">No time estimate yet</span>;
+  return (
+    <span className="board__card-timing">
+      Started {formatDuration(card.elapsedMs)} ago. {card.estimatedRemainingMs === undefined
+        ? "No time estimate yet."
+        : card.estimatedRemainingMs <= 0
+          ? "Taking longer than usual (estimate)"
+          : `About ${formatEstimate(card.estimatedRemainingMs)} left (estimate).`}
+    </span>
+  );
 }
 
 function cardClassName(card: CardRow): string {
@@ -46,9 +78,11 @@ function askKindLabel(ask: NonNullable<CardRow["asks"]>[number]): string {
 }
 
 function gateProgressLabel(progress: NonNullable<CardRow["gateProgress"]>): string {
-  if (progress.total === 0) return "0/0 · no gates";
-  if (progress.next === undefined) return `${progress.cleared}/${progress.total} · complete`;
-  return `${progress.cleared}/${progress.total} · next: ${progress.next}`;
+  if (progress.failed !== undefined) return `A check failed: ${progress.failed}`;
+  if (progress.total === 0) return "No checks are required";
+  if (progress.next === undefined) return "All checks are complete";
+  if (progress.cleared === 0) return `No checks complete yet — ${progress.next} next`;
+  return `${progress.cleared} of ${progress.total} checks complete — ${progress.next} next`;
 }
 
 function WaitingFacts({ card, compact = false }: { card: CardRow; compact?: boolean }): JSX.Element {
@@ -116,8 +150,13 @@ function Card({
           <span className="board__card-state">{card.state}</span>
         </span>
       </>}
+      <CardTiming card={card} phase={columnId} />
     </div>
   );
+}
+
+function plural(value: number, singular: string): string {
+  return `${value} ${value === 1 ? singular : `${singular}s`}`;
 }
 
 function Column({
@@ -133,20 +172,22 @@ function Column({
 }): JSX.Element {
   const focusedId = focusedByColumn[column.id] ?? column.cards[0]?.id;
   const classes = ["board__column", column.pinned && "board__column--pinned"].filter(Boolean).join(" ");
+  const totalCount = column.totalCount ?? column.cards.length;
+  const blockedCount = column.blockedCount ?? column.cards.filter((card) => card.blocked).length;
+  const shown = column.cards.length === totalCount
+    ? plural(totalCount, "task")
+    : `Showing ${column.cards.length} of ${plural(totalCount, "task")}`;
+  const blocked = blockedCount === 0 ? "None blocked" : `${blockedCount} blocked`;
   return (
     <div className={classes} data-column-id={column.id}>
       <div className="board__column-head" tabIndex={-1}>
         <span className="board__column-name">{column.name}</span>
-        <span className="board__column-count">{column.cards.length}</span>
+        <span className="board__column-counts">
+          <span className="board__column-count">{shown}</span>
+          <span className={`board__column-blocked${blockedCount > 0 ? " board__column-blocked--active" : ""}`}>{blocked}</span>
+        </span>
       </div>
-      {column.cap !== undefined && (
-        <div className="board__wip-rule">
-          <div
-            className={["board__wip-fill", column.atCap && "board__wip-fill--amber"].filter(Boolean).join(" ")}
-            style={{ width: `${Math.min(100, (column.cards.length / Math.max(1, column.cap)) * 100)}%` }}
-          />
-        </div>
-      )}
+      {column.entryRule !== undefined && column.exitRule !== undefined && <div className="board__column-policy">{column.entryRule} {column.exitRule}</div>}
       <div className="board__column-cards" role="listbox" aria-label={column.name}>
         {column.cards.map((card) => (
           <Card key={card.id} card={card} columnId={column.id} selected={card.id === selectedId} focused={card.id === focusedId} onSelect={onSelectCard} />
@@ -307,7 +348,7 @@ function PhaseNavigation({ columns }: { columns: BoardModel["columns"] }): JSX.E
   );
 }
 
-export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, onOpenInbox = () => undefined, liveness, branchNote, generatedAt, notice }: BoardViewProps): JSX.Element {
+export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, onOpenInbox = () => undefined, liveness, branchNote, generatedAt, notice, filter = "all", onFilterChange = () => undefined }: BoardViewProps): JSX.Element {
   return (
     <div className="board" inert={inert || undefined}>
       <div className="board__header">
@@ -317,6 +358,13 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
             <option value={studio}>{studio}</option>
           </select>
         </div>
+        <label className="board__filter-wrap">
+          <span>Show</span>
+          <select className="board__filter" aria-label="Choose which tasks to show" value={filter} onChange={(event) => onFilterChange(event.target.value as BoardFilter)}>
+            <option value="all">All tasks</option>
+            <option value="blocked">Blocked tasks</option>
+          </select>
+        </label>
         {liveness !== undefined && <div className="board__liveness">{liveness}</div>}
       </div>
       {notice !== undefined && <p className="screen-notice board__notice">{notice}</p>}

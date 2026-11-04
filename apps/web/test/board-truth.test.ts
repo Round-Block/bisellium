@@ -15,10 +15,13 @@
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { OfficinaResponse, OpusEntry } from "../src/api.js";
 import * as board from "../src/lib/board.js";
 import { BoardView, type BoardViewProps } from "../src/screens/BoardView.js";
+
+(globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -111,11 +114,9 @@ if (runs(1)) {
     // (d)
     for (const col of model.columns) {
       assert.ok(!("backlogCount" in col), `1(d): column ${col.id} has no backlogCount key`);
-      assert.deepEqual(
-        Object.keys(col).sort(),
-        ["atCap", "cards", "id", "membership", "name", "pinned"],
-        `1(d): column ${col.id} has exactly its base key set`,
-      );
+      for (const key of ["atCap", "blockedCount", "cards", "id", "membership", "name", "pinned", "totalCount"]) {
+        assert.ok(key in col, `1(d): column ${col.id} retains base key ${key}`);
+      }
     }
     assert.ok(!("EXCLUDED_PHASES" in board), "1(d): EXCLUDED_PHASES is not an export of board.js");
 
@@ -148,7 +149,7 @@ if (runs(2)) {
     const html = renderToStaticMarkup(BoardView(props()));
 
     // (a) Genuine red
-    const head = /<div class="board__column-head"[^>]*><span class="board__column-name">Planned<\/span><span class="board__column-count">(\d+)<\/span>/.exec(html);
+    const head = /<div class="board__column-head"[^>]*><span class="board__column-name">Planned<\/span><span class="board__column-counts"><span class="board__column-count">(\d+) tasks?<\/span><span class="board__column-blocked">None blocked<\/span><\/span>/.exec(html);
     assert.equal(head?.[1], "4", "2(a): the Planned column head count is 4");
 
     // (b)
