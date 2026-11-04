@@ -17,6 +17,7 @@ import type { HarnessProfile } from "@bisellium/shim";
 import { checkStudio } from "./check.js";
 import { buildContext } from "./context.js";
 import { runTalk } from "./talk.js";
+import { takeReading, windDown } from "./usage-reading.js";
 
 interface OpenLessonClass {
   class: string;
@@ -385,4 +386,20 @@ test("W-085 fix round 1: hostile class, latest, fix id and fix state stay inside
     assert.equal(/[\p{Cc}\u2028\u2029]/u.test(block.replaceAll("\n", "")), false, `${sella}: control characters`);
     assert.equal(lines.slice(h + 1, h + 8).some((l) => l.startsWith("## ")), false, `${sella}: no heading injected`);
   }
+});
+
+// ---- W-502 behaviour 2: a row that spawns a gated next reads no usage of the host running it ------
+test("W-502-b2 behaviour 2: on a host past the wind-down W-085 behaviour 8 still passes, and the host's reading still holds an order", () => {
+  const host = mkdtempSync(join(tmpdir(), "bisellium-w502-host-"));
+  made.push(host);
+  mkdirSync(join(host, ".bisellium-evidence", "usage"), { recursive: true });
+  const current_usage = { input_tokens: 310000, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+  writeFileSync(join(host, ".bisellium-evidence", "usage", "claude-latest.json"), JSON.stringify({ at: new Date().toISOString(), ctx: { current_usage } }));
+  assert.equal(windDown(takeReading(host, new Date(), "W-502-b2")), "context 310000 tokens is past 300000: let running tasks finish, refresh the session handoff, and start no new work (W-430)", "the host's reading is past the wind-down");
+
+  const env: NodeJS.ProcessEnv = { ...process.env, HOME: host };
+  delete env["NODE_TEST_CONTEXT"]; // inherited from a `node --test` parent it would turn this child's TAP into the runner's own stream
+  const r = spawnSync(process.execPath, ["--test-reporter=tap", "--test-name-pattern=^W-085 behaviour 8:", "--import", import.meta.resolve("tsx"), import.meta.filename], { env, encoding: "utf8", timeout: 120_000 });
+  assert.match(r.stdout, /^ok 1 - W-085 behaviour 8: next's dispatch order names the boot bundle$/m, "W-085 behaviour 8 passes on a host past the wind-down");
+  assert.equal(r.status, 0, `the child row exits clean: ${r.stderr}`);
 });
