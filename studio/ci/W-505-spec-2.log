@@ -1,0 +1,18 @@
+# opus: W-505
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a585-babe-73a3-975d-abf265011b5a
+# outcome: passed
+# at: 2026-11-04T07:52:18.942Z
+# tree: tree:cef30af3f08caec183e437ee6fecea94ae32171d
+# brief: briefs/W-505.md blob:aa21cf7c4f93ac1dff125768cfe6dc2f052f6f9c
+# ticket: {"opus":"W-505","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"b8666d2d32534ceee70c469e47e331d7ca6a7688","brief":"aa21cf7c4f93ac1dff125768cfe6dc2f052f6f9c","at":"2026-11-04T07:52:13.070Z"}
+
+## Findings
+1. advisory — brief:63 The Input domain omits `W-505-b1`’s added fixture readers and the changed `sync` helper’s reused Bash, Git and `mkfifo` calls, although their assertions fail closed. Replace brief:63 with its current row followed by: `| 4. W-505-b1 fixture records (alternates lstat, incoming bytes, request presence and agent HEAD) and its reused bash, git and mkfifo calls | fixture reads match the asserted type, size, content, presence and HEAD; each call spawns and returns the case’s asserted status/output, with sync completing within 60 s | lstatSync/readFileSync throw; the git helper and assert.ok/assert.equal/assert.match reject mismatches, spawn failures and timeouts, causing node:test and its gate to exit non-zero |`. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief.input.changed-reader-coverage
+
+## Verdict
+The omitted test-input boundary is advisory because every affected reader already fails closed; the behaviour and promises are otherwise feasible with their stated limits.
+VERDICT: PASS
