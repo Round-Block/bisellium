@@ -1,0 +1,22 @@
+# opus: W-451
+# phase: spec
+# round: 2
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: c7cbe1ce-51b4-4ed2-886a-c1377c748a00
+# outcome: failed
+# at: 2026-11-04T08:18:03.799Z
+# tree: tree:cef30af3f08caec183e437ee6fecea94ae32171d
+# brief: briefs/W-451.md blob:71d7079193e7bf597ebb6b667769cc29813618b3
+# ticket: {"opus":"W-451","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"b8666d2d32534ceee70c469e47e331d7ca6a7688","brief":"71d7079193e7bf597ebb6b667769cc29813618b3","at":"2026-11-04T08:17:59.771Z"}
+
+Claude week 80%, 5h 13% | Codex week 28% | context 233k of 300k
+
+## Findings
+1. blocking — brief:48 [severity: S1] A route-opened opus that is neither waiting nor in a lifecycle column gets `columnId "unplaced"`. The removal effect this opus changes (`Board.tsx:339-350`, which runs every render) closes it again at once. It then rewrites the URL to `#/board` with no notice. This hits an opus whose state has no column (`board.ts:475-486`), and an opus hidden by the Blocked filter that is reached through Back or Forward. Replacement: "…opens the matching `/api/opera` entry and keeps it open while returned, whether waiting, placed, unplaced or filtered." [design: keeps] [class: ui×route-state-reconciliation] — check: none: a served W-451-b1 assertion that a pasted link to an opus with no column keeps its drawer open after a refetch
+2. advisory — brief:46 [severity: S3] A Ctrl/Cmd or middle click on an Inbox link also runs `onOpenBoard`, so the current tab leaves Inbox. Replacement: "…`onClick` returns early for a modified or non-primary click." [class: ui×link-activation-semantics] — check: none: a served Ctrl-click assertion
+3. advisory — brief:29 [severity: S4] The Sidebar diff's indentation does not match the file's house style. Replacement: "…keeping the existing indentation." [class: code×house-style-drift] — check: none: a format check
+
+## Verdict
+The input domain is complete, but brief:48's promise that any returned opus opens from its link fails for an opus with no column. The fix keeps the design and is required in the build.
+VERDICT: FAIL

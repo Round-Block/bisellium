@@ -1,0 +1,25 @@
+# opus: W-451
+# phase: spec
+# round: 6
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1a4d8-6a1b-7333-af6e-7ea4350872f6
+# outcome: passed
+# at: 2026-11-04T12:37:32.144Z
+# tree: tree:df70e2f10748494dfb159262df7ad6116b8ebe40
+# brief: briefs/W-451.md blob:cf6f6d7712a2f760bf15a1d76daeaa53bed54ffa
+# ticket: {"opus":"W-451","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"38af647a5fec0aa40d499fe6bf3e132d2d614ff5","brief":"cf6f6d7712a2f760bf15a1d76daeaa53bed54ffa","at":"2026-11-04T12:37:26.370Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-451-spec-1104/promise-ledger.md
+
+## Findings
+
+1. advisory — Revision 2 restores Close and Escape focus to the opus's current rendered placement, then its former column, then a deterministic visible column, with body and clipped destinations rejected at every ruled width — check: reproduce-r2-focus.out, kill-close-focus.out, gates-proto.out
+2. advisory — Malformed Board routes remain mounted with an explicit unclipped notice and no dialog, while a non-native card cannot open a drawer — check: kill-malformed-notice.out, kill-native-card.out, capture-shots.out
+3. advisory — Open-drawer reconciliation refetches without reloading, and the disclosed explicit-Close Back and Forward cost is exercised in the served browser — check: kill-refetch-no-reload.out, kill-close-history-cost.out, gates-proto.out
+4. advisory — W-087, W-411-b4, W-499-b1 and W-499-b3 retain exact scroll-restoration assertions after their return openers are made visible; every W-413 row remains green unchanged — check: apps/web/tests-serve/board.spec.ts, apps/web/tests-serve/w411.spec.ts, apps/web/tests-serve/w499.spec.ts, gates-proto.out
+5. advisory — Both direct TAP reds fail by assertion with exact `not ok 1` titles, all five revision-2 mutations are killed, every recut commit builds, and the portable mbox matches its expected tree and applies to current master — check: b1-red-recorded.log, b2-red-recorded.log, series-builds.txt, mbox-check.out, master-apply-r2.out
+
+## Verdict
+
+passed — unsigned signature round 3 prepared by design lead Codex `gpt-5.6-sol` under D-150 C for revision 2 of `studio/briefs/W-451.md` on base `1fb5430a`; prototype sha256 `939d8b820e210907506b2b9aa2dc56d7171ce8bd530007971abf326ddb97d9af`, with no record write, `next` or `verdict` performed.

@@ -1,0 +1,28 @@
+# opus: W-451
+# phase: spec
+# round: 5
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1a65d-5ddc-77a0-b052-380cc0945e9e
+# outcome: revise
+# at: 2026-11-04T11:44:58.229Z
+# tree: tree:df70e2f10748494dfb159262df7ad6116b8ebe40
+# dispatch_prompt: ci/W-451-ui-prompt-5.md
+# design_digest: sha256:f6ed39174be0ee5a6f4df321a3b30353b18a978aa52730c14b6d90bc000c99bf
+# ticket: {"opus":"W-451","step":"spec","action":"verdict-spec","round":5,"actor":"ui-lead","studio":"studio","head":"2ecccc3b59c011c6507120848aff783eec753b8b","brief":"a7ea166e62ee4271d3ed3795ddd7411d04d605ba","at":"2026-11-04T11:44:48.474Z"}
+
+## Findings
+
+1. blocking — brief:87 — No earlier ui-lead findings appear in the supplied record. The agent-written rule retaining unchanged focus restoration does not make sense for the newly supported moved, filtered and unplaced work: Close can remove the focused drawer without providing a keyboard destination. This is especially disorienting at 390 and 640, where the drawer occupies the content area. — replace with: On Close or Escape, focus the opus’s currently rendered card, resolving its current placement. Otherwise use a remaining card or focusable head in its former column; if that column does not exist, use a deterministic visible column card or head. Never focus the body. The destination must be visible after layout and scroll restoration. — check: apps/web/tests-serve/w451.spec.ts; close after lifecycle movement, filtering and pasted unplaced work at 1280, 640 and 390, asserting the actual focused element and its visibility.
+
+2. advisory — brief:117 — The agent-written claim that Back and Forward retain “normal route history” conceals a navigation cost. Board → card → Close leaves consecutive closed-Board entries, so the first Back appears ineffective; repeated cycles can compound this. This is acceptable for this piece, but the Patron should be told explicitly. — replace with: Explicit Close replaces the drawer entry with bare Board. Cost to the Patron: after opening from Board and closing, the first Back can show the same closed Board; the replaced drawer entry is also unavailable through Forward. — check: apps/web/tests-serve/w451.spec.ts; exercise Board → card → Close → Back → Forward.
+
+3. advisory — brief:93 — The supplied unknown-id capture shows a readable missing-work notice, but it does not show the malformed-link notice. The two states should not be treated as the same visual evidence. — replace with: Retain the concise notice beneath the Board heading, with the Board usable and no drawer. Also capture and exercise `#/board/not-an-opus` at 1280, 640 and 390, showing “That Board link is not valid.” without clipping. — check: apps/web/tests-serve/w451.spec.ts and the corresponding notice captures.
+
+## Recommendation
+
+The reviewer’s close-focus rule is right, with an explicit fallback for nonexistent columns and a visible destination after restoration; the architect can specify this without changing the design.
+The 1280 split view and the full-width 640 and 390 drawers read well: identity, Close, the ask and evidence remain legible, with long evidence values wrapping on the phone.
+The unknown-work notice is clear, and the Officina menu gives the current page a clear location consistent with the Patron’s D-134 ruling.
+Keep the design, repair focus restoration, and disclose the apparently ineffective Back step as a cost.
+Verdict: revise

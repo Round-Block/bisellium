@@ -1,0 +1,25 @@
+# opus: W-451
+# phase: spec
+# round: 3
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1a4d8-6a1b-7333-af6e-7ea4350872f6
+# outcome: passed
+# at: 2026-11-04T11:35:41.533Z
+# tree: tree:df70e2f10748494dfb159262df7ad6116b8ebe40
+# brief: briefs/W-451.md blob:a7ea166e62ee4271d3ed3795ddd7411d04d605ba
+# ticket: {"opus":"W-451","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"2ecccc3b59c011c6507120848aff783eec753b8b","brief":"a7ea166e62ee4271d3ed3795ddd7411d04d605ba","at":"2026-11-04T11:35:32.083Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-451-spec-1104/promise-ledger.md
+
+## Findings
+
+1. advisory — Revision 1 replaces column-membership reconciliation with returned-opus reconciliation, so waiting, placed, unplaced and locally filtered route targets stay open while `/api/opera` returns them — check: apps/web/src/screens/Board.tsx, apps/web/tests-serve/w451.spec.ts, kill-returned-route.out
+2. advisory — Inbox Board anchors preserve native modified and non-primary activation while ordinary primary activation retains the existing selection and drawer callbacks — check: apps/web/src/screens/InboxView.tsx, apps/web/tests-serve/w451.spec.ts, gates-proto.out
+3. advisory — The W-064 and W-087 removal rows still close the drawer and restore focus on actual `/api/opera` removal; lifecycle movement is no longer treated as removal — check: apps/web/tests-serve/board.spec.ts, gates-proto.out
+4. advisory — Both direct TAP reds fail by assertion with exact `not ok 1` titles, cumulative greens hold, the returned-membership mutation is killed, and every recut prototype commit builds independently — check: b1-red-recorded.log, b2-red-recorded.log, reds-host.out, kill-returned-route.out, series-builds.txt
+5. advisory — The portable four-commit mbox matches its expected tree and the whole touched policy and served gate, including W-413 and all Board rows, passes — check: mbox-check.out, gates-proto.out
+
+## Verdict
+
+passed — unsigned signature round 2 prepared by design lead Codex `gpt-5.6-sol` under D-150 C for revision 1 of `studio/briefs/W-451.md` on base `1fb5430a`; prototype sha256 `c5f693db069b229b4c88b52a128d4c9a77fb3272ff09312b057f43eb0f97c588`, with no record write, `next` or `verdict` performed.

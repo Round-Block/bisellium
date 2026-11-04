@@ -1,0 +1,28 @@
+# opus: W-451
+# phase: spec
+# round: 7
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1a65d-5ddc-77a0-b052-380cc0945e9e
+# outcome: passed
+# at: 2026-11-04T13:05:39.960Z
+# tree: tree:df70e2f10748494dfb159262df7ad6116b8ebe40
+# dispatch_prompt: ci/W-451-ui-prompt-7.md
+# design_digest: sha256:428d3204b9cf7c8dcf0adc195fb2b69208e396fa366faf90a7631bdac10573e8
+# ticket: {"opus":"W-451","step":"spec","action":"verdict-spec","round":7,"actor":"ui-lead","studio":"studio","head":"1f92c069e812c4d48c30b57fbb8b8dc364b09282","brief":"cf6f6d7712a2f760bf15a1d76daeaa53bed54ffa","at":"2026-11-04T13:05:33.422Z"}
+
+## Findings
+
+No findings
+
+## Earlier findings
+
+- ci/W-451-spec-5.log #1: closed — brief:51 adopts the intended fallback order; prototype Board.tsx:248–262 resolves current placement, falls back to column content and reveals the focused destination. apps/web/tests-serve/w451.spec.ts:150 covers moved, filtered and unplaced work at all three widths; gates-proto.out records its pass, and kill-close-focus.out records failure when the fix is removed.
+
+## Recommendation
+
+Round-5 advisory #2 is closed: brief:127 plainly tells the Patron that the first Back can show the same closed Board and Forward cannot recover the replaced drawer entry.
+Round-5 advisory #3 is closed: the malformed-link captures at 1280, 640 and 390 show a clear, unclipped notice above the usable Board, supported by notice and no-dialog assertions.
+The refreshed drawers remain readable, with accessible Close controls and wrapping evidence text; the Officina menu continues to respect the Patron’s current-page focus ruling.
+Giving visible focus priority over the agent-written unconditional scroll-restoration rule is appropriate on these screens, and I find no additional UI defect in this delta.
+Verdict: passed
