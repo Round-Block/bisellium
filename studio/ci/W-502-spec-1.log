@@ -1,0 +1,24 @@
+# opus: W-502
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-04T01:12:52.166Z
+# tree: tree:e4d8b9c66c3bc2420a77343f2455d316591daf3e
+# brief: briefs/W-502.md blob:086b1f2f843a6eb44b408f6c39a6858fc53d7a1c
+# ticket: {"opus":"W-502","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"0696f0e44dc76270dc2392ca8d84b13a825443d0","brief":"086b1f2f843a6eb44b408f6c39a6858fc53d7a1c","at":"2026-11-04T01:12:40.612Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-502-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the 70 s is W-316's silence read and nothing else: 57.34 s of the 59.66 s profiled in `silence` and `newestFile`, over 5.1 million entries under `~/.bisellium-evidence/W-413-spec`, reached only on a dispatch order with no marker; the audit's record load and the branch's length and logs are not the cause — check: prof/cpu-order-before-2.txt, census.out
+2. advisory — a stopped walk gives no stall notice, and a failed read past the stop reads no `unknown`: stated as the limit of Promise budget rather than promised, because the note claims neither silence nor activity and the line stays a notice with the step and exit status unchanged — check: brief Promise budget, row W-502-b1
+3. advisory — W-413 itself reads `silence not judged` on a dispatch order until its throwaway evidence directories are removed; the brief names this and leaves the removal to W-380 or by hand, a Patron default — check: brief Limits, Defaults 2
+4. advisory — `next --all`'s 13 s does not call `silence` and is not moved by this opus; stated as out of scope with its profile — check: prof/cpu-all.txt
+5. advisory — this opus touches `next.ts` and is not marked `next_ts` in `studio/queue.yml`; W-364 and W-413 do not touch it at their current tips, read 2026-11-04, so no overlap today, and the mark is a records change for the orchestrator — check: brief Overlap
+
+## Verdict
+
+passed — W-502 drafted, prototyped and signed by the architect (`claude-opus-5-5`, D-072, D-150 C), brief revision 1 at `studio/briefs/W-502.md`: one behaviour, the silence read lists at most 100000 entries and then says it did not judge; prototype `prototype.mbox` over master 0696f0e4 with its red accepted and failing at its declared assertion, ten kills all guarded, no existing row flipped, `next W-413` on a dispatch order from 75.4 s, 59.7 s and 47.0 s to 3.74 s, 2.50 s and 2.65 s in the lab; no code-owned path.
