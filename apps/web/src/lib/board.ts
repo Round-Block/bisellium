@@ -477,6 +477,8 @@ export function boardModel(
   else unplaced.push(...backlog.map((card) => card.id));
 
   for (const col of columns.values()) {
+    col.totalCount = col.cards.length;
+    col.blockedCount = col.cards.filter((card) => card.blocked).length;
     if (col.cap !== undefined) col.atCap = col.cards.length >= col.cap;
     if (options.filter === "blocked") col.cards = col.cards.filter((card) => card.blocked);
   }
