@@ -11,7 +11,7 @@
 # What `sync` does (the installed guard's `hook-event sync`, outside the sandbox, at SessionStart and after a merge
 # perform asks for it): it refuses, changing nothing, unless $PATRON_DIR is on master with no uncommitted tracked change
 # and the agent clone's .git holds only setup's config keys (git's own core values among them), no hook, no
-# info/attributes, info/grafts or alternates; then prunes dead worktree entries, fetches origin's master into $PATRON_DIR and fast-forwards the
+# info/attributes, info/grafts or http-alternates, and no alternates but the sandbox's empty placeholder; then prunes dead worktree entries, fetches origin's master into $PATRON_DIR and fast-forwards the
 # agent clone's master to that commit when HEAD is master and clean and master is behind it. Git in the agent clone
 # runs with no global or system config, no hooks, no fsmonitor and no replacement refs; the commit comes from the Patron's clone only.
 #
@@ -434,6 +434,10 @@ patron_on_master() {
 # git config on the agent clone's config file alone: from /, no global or system config, a clean environment.
 cfg() { (cd / && env -i PATH="$PATH" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_NO_REPLACE_OBJECTS=1 git config --file "$1" "${@:2}"); }
 
+# One lstat of $1 (W-505): true only for a regular file of zero bytes. stat reads the type and the size in that one call
+# and never follows a symlink; a stat that fails is false, so the caller refuses.
+empty_regular() { [[ $(/usr/bin/stat -c '%A %s' -- "$1" 2>/dev/null) == -*' 0' ]]; }
+
 # The sync's inputs (W-369): prints the first fault and returns 1, or returns 0. Nothing here runs git in the agent clone.
 sync_inputs() {
   local agent patron gd h k kv t want v why
@@ -451,7 +455,12 @@ sync_inputs() {
   gd=$agent/.git
   [[ -d $gd && ! -L $gd && -f $gd/config && ! -L $gd/config ]] || { echo "$gd is not a git directory with its own config"; return 1; }
   for h in info/attributes info/grafts objects/info/alternates objects/info/http-alternates; do
-    if [[ -e $gd/$h || -L $gd/$h ]]; then echo "$gd/$h exists"; return 1; fi
+    if [[ -e $gd/$h || -L $gd/$h ]]; then
+      # the sandbox mounts an empty objects/info/alternates in the agent clone; it names no store, so exactly that passes (W-505)
+      [[ $h == objects/info/alternates ]] && empty_regular "$gd/$h" && continue
+      echo "$gd/$h exists"
+      return 1
+    fi
   done
   for h in "$gd"/hooks/*; do
     if [[ (-e $h || -L $h) && $h != *.sample ]]; then echo "a git hook is installed: $h"; return 1; fi
@@ -480,8 +489,9 @@ sync_inputs() {
 sync() {
   local why out n target head old st
   # every git below, in either clone, reads objects as they are: no replacement refs, no alternates or graft file from
-  # the environment (agit's env -i drops them; the Patron's calls inherit this one). A planted info/grafts or
-  # objects/info/alternates in the agent clone is refused by sync_inputs, which runs no git there.
+  # the environment (agit's env -i drops them; the Patron's calls inherit this one). A planted info/grafts or an
+  # objects/info/alternates with content in the agent clone is refused by sync_inputs, which runs no git there; an empty
+  # objects/info/alternates names no store and passes (W-505). sync_inputs judges once: a write after it is not seen.
   export GIT_NO_REPLACE_OBJECTS=1
   unset GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_GRAFT_FILE GIT_OBJECT_DIRECTORY
   stop() {

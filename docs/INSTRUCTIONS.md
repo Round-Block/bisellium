@@ -130,7 +130,9 @@ other than git's clone keys, setup's remote and credential helper and a
 branch's `remote`, `merge` or `vscode-merge-base`, or a value of
 `core.repositoryformatversion`, `core.filemode`, `core.bare` or
 `core.logallrefupdates` other than git's clone writes (0, true, false, true),
-or when a git hook or `info/attributes` exists. It then prunes dead worktree
+or when a git hook, `info/attributes`, `info/grafts`,
+`objects/info/http-alternates` or an `objects/info/alternates` other than the
+sandbox's empty regular file exists. It then prunes dead worktree
 entries and fetches origin's master into the Patron's clone; it leaves master
 unmoved when HEAD is not master, a tracked file is changed (also when master
 is already current), master is not behind, or an untracked or ignored file
