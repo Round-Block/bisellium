@@ -31,6 +31,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and daily retro.
 - Records dates are UTC; Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the opus after W-292.
+- W-505: a merge touching packages/, apps/ or scripts/ stops at `MERGED_NOT_FETCHED` because the sandbox's empty alternates file refuses the guard sync; the Patron runs the `merge --ff-only <sha>` line the perform prints; ask for it, then rerun.
 6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (evidence paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
 7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227). Lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (D-109).
 
@@ -50,9 +51,9 @@ Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074
 
 D-174 (11-03 audit) freezes new process opera until 11-17; W-502, W-505 and product opera are exempt.
 
-In flight (lane state: ~/.bisellium-evidence/current-state.md): E1 W-502 review: next answers quickly on long-running opera; a builder is adding the row's own HOME, then the fix check, gates and build review round 2; E2 W-505 spec: guard sync accepts the sandbox's empty alternates placeholder, greenlit by the Patron 11-04; once signed, its design goes to the Patron before branch (sandbox work, lex §7); UI1 W-413 reds: fix round for build review round 2's three findings, then the Patron's screens; UI2 W-451 spec: Home's first piece of four (D-175); W-467 spec: waits on W-503, whose palette it takes.
+In flight (lane state: ~/.bisellium-evidence/current-state.md): E1 W-502 build: next answers quickly on long-running opera; build review round 2 failed because the brief's census line is wrong: correct it, re-sign, pass spec review, review round 3, and a cause opus for its repeat class; E2 W-505 spec: guard sync accepts the sandbox's empty alternates placeholder, greenlit by the Patron 11-04; once signed, its design goes to the Patron before branch (sandbox work, lex §7); UI1 W-413 verify: Board counts and card timing merged (#1026): cleanup, master verify, done; UI2 W-451 spec: work links and phone-menu focus, draft unsigned, its prototype to refresh on master now W-413 landed.
 
-W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
+W-467 and W-503 have not started: W-467 follows W-503, whose palette it takes. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
 
 W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
 
