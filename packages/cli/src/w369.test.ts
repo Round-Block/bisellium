@@ -31,7 +31,8 @@ after(() => {
 
 /** git in a fixture, with a fixed identity and no global config; its trimmed stdout. */
 function git(cwd: string, ...args: string[]): string {
-  const r = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.invalid", "-c", "init.defaultBranch=master", ...args], { cwd, encoding: "utf8", env: { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null" } });
+  const r = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.invalid", "-c", "init.defaultBranch=master", ...args], { cwd, encoding: "utf8", timeout: 60_000, env: { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null" } });
+  assert.ok(r.error === undefined && r.signal === null, `git ${args.join(" ")} did not finish within 60s: ${r.error?.message ?? r.signal}`);
   assert.equal(r.status, 0, `git ${args.join(" ")}: ${r.stderr}`);
   return r.stdout.trim();
 }
@@ -307,9 +308,11 @@ test("W-505-b1 behaviour 1: the sync accepts exactly an empty regular file at ob
 
   const refused = (what: string, setup: (v: World) => void, path = "objects/info/alternates"): void => {
     const v = world();
-    setup(v);
+    // no git runs on the clone while a FIFO is in place: a git that opens one blocks for ever
     const was = head(v.agent);
+    setup(v);
     const out = sync(v);
+    if (lstatSync(alternates(v), { throwIfNoEntry: false })?.isFIFO()) rmSync(alternates(v));
     assert.equal(out.code, 1, `${what}: refused: ${out.out}`);
     assert.match(out.out, new RegExp(`^sync: refused: .*${reEsc(path)} exists; master was not moved$`, "m"), `${what}: the reason`);
     assert.equal(head(v.agent), was, `${what}: master did not move`);
