@@ -1,9 +1,13 @@
 queues:
   engineering:
-    lanes: { E1: W-502, E2: W-505 }
+    lanes: { E2: W-505 }
     next:
-      - { opus: W-502, says: "next answers quickly on long-running opera; exempt from the D-174 freeze", next_ts: true }
       - { opus: W-505, says: "guard sync accepts the sandbox's empty alternates placeholder; Patron go-ahead 2026-11-04, exempt from the D-174 freeze" }
+      - { opus: W-298, says: "petitio verb" }
+      - { opus: W-300, says: "the drawer shows next's read-only step, actor, round and health" }
+      - { opus: W-308, says: "opus timeline", next_ts: true }
+      - { opus: W-074, says: "greenlight and decline from the Board drawer, with W-289's refusal and a halt route" }
+      - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
@@ -38,24 +42,18 @@ queues:
       - { opus: W-183, says: "heavy-job slots", next_ts: true }
       - { opus: W-169, says: "lane claims", next_ts: true }
       - { opus: W-332, says: "step tickets", next_ts: true }
-      - { opus: W-308, says: "opus timeline", next_ts: true }
       - { opus: W-304, says: "seats read live, console MVP" }
-      - { opus: W-298, says: "petitio verb" }
       - { opus: W-280, says: "Inbox newItem fail-open" }
-      - { opus: W-301, says: "console writes via auto-merge PR" }
   ui:
-    lanes: { UI1: W-413, UI2: W-451 }
+    lanes: { UI2: W-451 }
     next:
-      - { opus: W-413, says: "Board WIP policy legible: count against cap, median dwell, each column's entry and exit rule, blocked work counted, filtered against total counts shown" }
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
+      - { opus: W-500, says: "Runs screen: opus list with detail, Waiting on you, Now only: run status from code-owned hook status events" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
       - { opus: W-467, says: "Officina on Home's palette" }
-      - { opus: W-453, says: "Home Queue shows one lane per lead (production, design, engineering, qa, ops)" }
       - { opus: W-504, says: "Home: Completion and Spend row (D-175 piece 4); needs W-439" }
-      - { opus: W-074, says: "greenlight and decline from the Board drawer, with W-289's refusal and a halt route" }
-      - { opus: W-300, says: "the drawer shows next's read-only step, actor, round and health" }
+      - { opus: W-453, says: "Home Queue shows one lane per lead (production, design, engineering, qa, ops)" }
       - { opus: W-488, says: "comment on served UI captures" }
-      - { opus: W-500, says: "Runs screen: opus list with detail, Waiting on you, Now only: run status from code-owned hook status events" }
 halted:
   - { opus: W-239, says: "next's merge step always fast-forwards the main checkout to the merged commit, .github/ and .claude/ included: the Patron's approval gate is the PR's code-owner review, not the pull" }
   - { opus: W-435, says: "Home: the console's landing page — one high-level overview across every screen (Inbox, Board, Seats, Officina) with shortcut links into each" }
