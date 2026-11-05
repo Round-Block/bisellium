@@ -13,6 +13,8 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import { runHookEvent } from "./hooks.js";
+import { checkStudio } from "./check.js";
+import { initStudio } from "./init.js";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const dirs: string[] = [];
@@ -238,4 +240,33 @@ test("W-508-b3 behaviour 3: at the session's next prompt the model is handed the
   assert.equal((await hook(malformed, prompt(7))).out, "", "a wrong-typed session_id gets nothing");
   assert.equal((await hook(malformed, { hook_event_name: "UserPromptSubmit", prompt: "next" })).out, "", "no session_id gets nothing");
   assert.ok(context(await hook(malformed, prompt("x".repeat(128)))).includes(LINE), "a 128-character session_id gets the reading");
+});
+
+/** A studio and a repo whose .claude/settings.json is `settings`; the hook.guard findings. */
+function hookGuard(settings: string): { message: string; level: string }[] {
+  const t = tmp();
+  const studio = join(t, "studio");
+  const now = new Date("2026-11-05T12:00:00Z");
+  assert.ok(initStudio(studio, { now }).root);
+  mkdirSync(join(t, ".claude"));
+  writeFileSync(join(t, ".claude", "settings.json"), settings);
+  return checkStudio(studio, now, { repo: t }).findings.filter((f) => f.rule === "hook.guard");
+}
+
+test("W-508-b4 behaviour 4: the repo wires the guard at UserPromptSubmit, check blocks hook.guard when it is not wired, and CLAUDE.md says a reply is never sent back", () => {
+  const text = readFileSync(join(REPO, ".claude", "settings.json"), "utf8");
+  const settings = JSON.parse(text) as { hooks: Record<string, { matcher?: string; hooks: { type: string; command: string; timeout: number }[] }[]> };
+  const unwired = structuredClone(settings);
+  delete unwired.hooks["UserPromptSubmit"];
+  const f = hookGuard(JSON.stringify(unwired));
+  assert.equal(f.length, 1, "no UserPromptSubmit group: one block");
+  assert.match(f[0]?.message ?? "", /the guard is not wired: UserPromptSubmit -> bisellium hook-event guard --studio studio \(type command, timeout 2\)/, "the block names the UserPromptSubmit group");
+  assert.deepEqual(hookGuard(text), [], "the repo's own settings wire the guard at UserPromptSubmit");
+  assert.deepEqual(settings.hooks["UserPromptSubmit"]?.flatMap((g) => g.hooks), [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }], "the UserPromptSubmit group runs the guard, timeout 2");
+  const slow = structuredClone(settings);
+  slow.hooks["UserPromptSubmit"]![0]!.hooks[0]!.timeout = 5;
+  assert.equal(hookGuard(JSON.stringify(slow)).length, 1, "a UserPromptSubmit hook timeout other than 2 blocks");
+  const claude = readFileSync(join(REPO, "CLAUDE.md"), "utf8");
+  assert.match(claude, /Stop never sends a reply back/, "CLAUDE.md says a reply is never sent back");
+  assert.doesNotMatch(claude, /sends the main thread's reply back/, "CLAUDE.md no longer says it is");
 });
