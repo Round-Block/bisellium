@@ -50,7 +50,9 @@ Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-451 work links: build review passed, pr waits on the Patron's screen ruling; W-300 drawer step line: build review passed, pr after W-451 and the Patron's look; W-298 petitio verb: spec at the two-review cap, re-signs with stated limits at the Opus reset; W-500 Runs screen: spec drafting by Codex on W-300's prototype, its build follows W-300 on master.
+In flight (lane state: ~/.bisellium-evidence/current-state.md): W-298 petitio verb: build review 1 failed on a terminal-control bug, builder fix round next; W-300 drawer step line: wrap fix built, screens approved, build review 2 then pr; W-451 work links: merged (#1045), master verify's tests gate failed once, unexplained and not reproduced, verify rerun on a quiet host then done; W-500 Runs screen: spec re-signs next after the ui-lead's revise, build follows W-300 on master.
+
+The Claude usage hold is ~98% (Patron 2026-11-05; lex change in PR #1046).
 
 W-073, W-438 and W-136 stay halted until the freeze ends (D-178). W-507, W-298's remainder, has not started and follows W-298.
 
