@@ -1,0 +1,26 @@
+# opus: W-508
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T12:41:22.374Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# brief: briefs/W-508.md blob:623dfa80cee0f1f96ab3ca4afba691c863ddcea1
+# ticket: {"opus":"W-508","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"9883a31b2bf9792c301c6a754c1e1e02c667c81d","brief":"623dfa80cee0f1f96ab3ca4afba691c863ddcea1","at":"2026-11-05T12:41:16.318Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-508-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the route is settled by probe, not by the docs alone: a Stop's `systemMessage` at exit 0 gives one model message, no second turn, an informational `Stop says:` line the model never sees, on versions 2.1.312 to 2.1.318; exit 2 reproduces the double reply; a UserPromptSubmit's `additionalContext` reaches the model; the prototype's own guard does all of it end to end — check: probe/twoturn-show.summary, probe/twoturn-refuse.summary, probe/headless-versions.summary, probe/e2e.summary
+2. advisory — what the Patron's own surface renders was not observed: the terminal probe was refused by the sandbox (a Unix socket connect) and not retried by another route, and the desktop app and phone cannot be probed from here; the binary's bridge filter forwards the attachment, read not seen; so a surface that drops the line loses it with no refusal to catch that, stated as a limit, with the Patron's own eye as the last Acceptance line and Defaults 1 — check: probe/interactive-refused.out, sources.out, brief Promise reading, Defaults 1
+3. advisory — the length rule is softer by design: a shown reply stays shown, so the rule now teaches the next reply and no longer forces a short one; the model is told, not forced; that is the price of no second reply, put to the Patron in Defaults 2 — check: brief Promise length, Promise next-turn, Defaults 2
+4. advisory — a documented seam change: `STOP_RULES` and `StopRule` keep their signature, but a rule's line is a note, not a refusal, and `stopRefusal` becomes `stopOutput`; W-436 and W-465, both halted by the freeze, were each to add a refusing Stop rule, and resumed as written they would bring the defect back: named in Out of scope, their records not edited here — check: sources.out, brief Intent, Out of scope
+5. advisory — the hook runs unsandboxed over a folder the sandbox can write, so it never executes `usage-reading.sh`, reading the plans' sources as data through `takeReading`, and the note store follows no symlink: exclusive temp file, rename over the note, read through `readContainedRegularFile`; found while drafting and pinned before signing — check: kills.out K14 and K22, W-508-b1, W-508-b3, brief Threat model
+6. advisory — W-444's rows are stated assertion by assertion: `W-444-b3` stands, `W-444-b1` and `W-444-b2` flip in behaviour 1's commit with the same inputs and boundaries, and each retired check of the reply's text names the `W-508-b2` pin that carries its purpose; the other flips are `W-310-b5`, `settings.hook-keys` and three `W-163-b6` inventory pins; the Codex test check names no flip the brief leaves out — check: fixture-census.md, brief Acceptance, proto-w444-stage1.out, green-summary.out
+7. advisory — four reds, one at a time, each accepted at assertion level on the commit before its behaviour and each row green at its stage and later; twenty-two one-hunk kills, each proved by master's killedPin; lint, format, typecheck, both officina checks, the touched and must-stay-green files whole, the admission, the red replay check and the ledger pass on the prototype — check: genuine-reds.out, stages-summary.out, kills.out, gates-run.log, green-summary.out, admission.out, red-replay-check.out, ledger-check.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 1 at `studio/briefs/W-508.md` (spec round 1), prototyped over master b521575c; a main-thread Stop never refuses, the hook shows the reading, an over-long reply is recorded and named to the model at its next prompt; four behaviours, one new module and one new test file, one code-owned path (`.claude/settings.json`), so the Patron merges.
