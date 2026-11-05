@@ -652,10 +652,13 @@ function gitPlace(root: string): "main" | "linked" | "outside" | "unknown" {
   return resolve(root, gitDir) === resolve(root, commonDir) ? "main" : "linked";
 }
 
+/** The display twin of integrate.ts's `clean` (same class, no clip): what petitio prints never carries a raw C0 or C1 control. */
+const shown = (text: string): string => text.replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ");
+
 export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult {
   const parsed = parseFlags(args, { valued: ["--from", "--subject", "--opus", "--studio", "--now"] });
   if ("error" in parsed) {
-    console.error(`${parsed.error}\n${PETITIO_USAGE}`);
+    console.error(`${shown(parsed.error)}\n${PETITIO_USAGE}`);
     return { exitCode: 2 };
   }
   const { values, positionals } = parsed;
@@ -677,27 +680,27 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
   }
   const opened = openStudio(values.get("--studio"));
   if ("error" in opened) {
-    console.error(opened.error);
+    console.error(shown(opened.error));
     return { exitCode: 2 };
   }
   const { root, manifest } = opened;
   const bad = manifestProblem(manifest);
   if (bad !== undefined) {
-    console.error(`${join(root, "bisellium.yml")}: ${bad}`);
+    console.error(shown(`${join(root, "bisellium.yml")}: ${bad}`));
     return { exitCode: 2 };
   }
   const patronId = manifest.patron ?? "patron";
   const resolved = resolveSeat(manifest, from);
   if (!resolved) {
-    console.error(`unknown sella "${from}" — not declared in bisellium.yml`);
+    console.error(`unknown sella "${shown(from)}" — not declared in bisellium.yml`);
     return { exitCode: 2 };
   }
   if (resolved.seat.id === patronId) {
-    console.error(`"${from}" is the Patron: a petitio is a question to the Patron, from a sella`);
+    console.error(`"${shown(from)}" is the Patron: a petitio is a question to the Patron, from a sella`);
     return { exitCode: 2 };
   }
   if (resolved.seat.retired) {
-    console.error(retiredDispatchMessage(manifest, resolved.seat));
+    console.error(shown(retiredDispatchMessage(manifest, resolved.seat)));
     return { exitCode: 2 };
   }
   const opusId = values.get("--opus");
@@ -705,17 +708,17 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
     const opusPath = safeItemPath(join(root, "opera"), opusId);
     const problem = typeof opusPath !== "string" ? opusPath.error : opusRecordProblem(root, opusId);
     if (problem !== undefined) {
-      console.error(`unknown opus: ${opusId}: ${problem}`);
+      console.error(`unknown opus: ${shown(opusId)}: ${shown(problem)}`);
       return { exitCode: 2 };
     }
   }
   const place = gitPlace(root);
   if (place === "linked") {
-    console.error(`${root} is in a linked worktree; file the petitio from the repository's main checkout, which next and the Inbox read`);
+    console.error(`${shown(root)} is in a linked worktree; file the petitio from the repository's main checkout, which next and the Inbox read`);
     return { exitCode: 2 };
   }
   if (place === "unknown") {
-    console.error(`git cannot tell whether ${root} is the main checkout, which next and the Inbox read; nothing is filed`);
+    console.error(`git cannot tell whether ${shown(root)} is the main checkout, which next and the Inbox read; nothing is filed`);
     return { exitCode: 2 };
   }
   try {
@@ -730,10 +733,10 @@ export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult
       (opusId === undefined ? "" : `opus: ${JSON.stringify(opusId)}\n`) +
       `---\n${body}\n`,
     );
-    console.log(`${id}: ${subject}`);
+    console.log(`${id}: ${shown(subject)}`);
     return { exitCode: 0 };
   } catch (e) {
-    console.error(`petitio failed: ${(e as Error).message}`);
+    console.error(`petitio failed: ${shown((e as Error).message)}`);
     return { exitCode: 2 };
   }
 }
