@@ -1,0 +1,36 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-300-b4\s --import tsx apps/web/test/w300.test.ts
+# exit: 1
+# at: 2026-11-05T02:38:49.004Z
+# sella: builder.W-300
+# tree: tree:276906964a4a4cf620e3f901855f632bc1fdf23a
+# ticket: {"opus":"W-300","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-300/studio","head":"2498e64e0c25947c0b92a7a57c595bcb986a07ab","brief":"f4001e8cef0c55b8ccfc102cf111ae1a18c66ee1","at":"2026-11-05T02:38:41.526Z"}
+
+TAP version 13
+# Subtest: W-300-b4 behaviour 4: the line wraps at 1280, 640 and 390 and nothing is cut
+not ok 1 - W-300-b4 behaviour 4: the line wraps at 1280, 640 and 390 and nothing is cut
+  ---
+  duration_ms: 7547.088348
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-300/apps/web/test/w300.test.ts:1:568'
+  failureType: 'testCodeFailure'
+  error: 'the line wraps: 1280'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  operator: 'fail'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-300/apps/web/test/w300.test.ts:21:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7566.922557
