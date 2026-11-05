@@ -85,15 +85,23 @@ test("W-300-b3 behaviour 3: the drawer shows the step under the title, amber onl
     await page.waitForLoadState("networkidle");
     expect(asked, `a Board load reads no step: ${width}`).toEqual([]);
 
-    // the real read: the Patron's rung, amber
-    await openDrawer(page, "W-007");
-    await expect(ladder, `the Patron's rung, from the real read: ${width}`).toContainText("Next: greenlight · patron · no step recorded · W-007 is in the backlog");
+    // the real read: the Patron's rung, amber: A-1 asks the Patron about W-004
+    await openDrawer(page, "W-004");
+    await expect(ladder, `the Patron's rung, from the real read: ${width}`).toContainText("Next: spec (held) · patron · no step recorded · A-1 asks the Patron; answer in the Inbox, or: bisellium answer --petitio A-1 <reply…> --studio studio");
     expect(await color(page), `amber when the Patron acts: ${width}`).toBe(AMBER);
     await expectUnderTitle(page, width, "the Patron's rung");
     if (capture !== undefined) {
       mkdirSync(capture, { recursive: true });
       await page.screenshot({ path: join(capture, `drawer-patron-${width}.png`) });
     }
+    await closeDrawer(page);
+
+    // the real read: a hold on anyone else, never amber: the Patron asked back on W-007 (A-2), and the producer replies
+    await openDrawer(page, "W-007");
+    await expect(ladder, `a hold on another actor, from the real read: ${width}`).toContainText("Next: greenlight (held) · producer · no step recorded · A-2: the Patron asked back; producer replies");
+    expect(await color(page), `a hold on another actor is not amber: ${width}`).not.toBe(AMBER);
+    await expectUnderTitle(page, width, "a hold on another actor");
+    if (capture !== undefined) await page.screenshot({ path: join(capture, `drawer-held-${width}.png`) });
     await closeDrawer(page);
 
     // the real read: anyone else, never amber
@@ -146,9 +154,15 @@ test("W-300-b3 behaviour 3: the drawer shows the step under the title, amber onl
     await page.unrouteAll();
   }
 
-  // a frame on the open opus reads the line again: the Patron's greenlight, committed, moves the step and takes the amber away
+  // the reply closes A-2, so W-007 stands on the Patron's real greenlight rung, amber
+  const petitio = join(served.studioDir, "petitiones", "A-2.md");
+  writeFileSync(petitio, readFileSync(petitio, "utf8").replace("state: awaiting_reply", "state: resolved"));
+  commitAll(served.studioDir);
   await openDrawer(page, "W-007");
-  await expect(ladder).toContainText("greenlight");
+  await expect(ladder, "the Patron's greenlight rung, from the real read").toContainText("Next: greenlight · patron · no step recorded · W-007 is in the backlog");
+  expect(await color(page), "amber on the Patron's greenlight rung").toBe(AMBER);
+
+  // a frame on the open opus reads the line again: the Patron's greenlight, committed, moves the step and takes the amber away
   const record = join(served.studioDir, "opera", "W-007.md");
   writeFileSync(record, readFileSync(record, "utf8").replace("state: backlog", "state: greenlit"));
   commitAll(served.studioDir);

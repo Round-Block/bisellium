@@ -1090,7 +1090,7 @@ function petitioHold(d: Derived, f: Facts): Derived {
 }
 
 /** W-298: the derivation every next.ts path acts on: the ladder (`deriveNext`), then the petitio hold. */
-function derivedStep(f: Facts): Derived {
+export function derivedStep(f: Facts): Derived {
   return petitioHold(deriveNext(f), f);
 }
 

@@ -16,7 +16,7 @@ import { openStudio } from "@bisellium/commands/writes.js";
 import type { LadderRead } from "@bisellium/server";
 import { ID_RE } from "./check.js";
 import { clean, git } from "./integrate.js";
-import { assess, deriveNext, gather, readMarker, silence, silenceEntries, type Derived } from "./next.js";
+import { assess, derivedStep, gather, readMarker, silence, silenceEntries, type Derived } from "./next.js";
 import { dirname, join, resolve } from "node:path";
 
 /** The same bound `next`'s `say` puts on a printed line. */
@@ -96,7 +96,7 @@ export function readLadder(studio: string, id: string, nowMs: number, testClock:
     return withoutGitWrites(resolve(repo, cd.stdout.trim()), () => {
       const f = gather(repo, opened.root, id);
       if (f.trunkRecord === undefined && f.branchRecord === undefined) return unavailable(`unknown opus: ${id}`);
-      const d = deriveNext(f);
+      const d = derivedStep(f);
       return { id, read: "ok", step: d.step, status: d.status, actor: d.actor, why: oneLine(d.why), round: roundOf(d), health: oneLine(healthOf(repo, id, d, dirname(f.wt.dir), nowMs, testClock)), pr: prOf(d) };
     });
   } catch (e) {
