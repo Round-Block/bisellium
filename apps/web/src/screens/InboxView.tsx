@@ -1,6 +1,7 @@
-import { useEffect, useRef, type JSX } from "react";
+import { useEffect, useRef, type JSX, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import type { InboxResponse } from "../api.js";
 import type { AttentionRow, CardRow } from "../lib/board.js";
+import { boardOpusHref } from "../lib/route.js";
 import { askBlocks, canSubmit, datePresentation, evidenceLinks, type Verb } from "./inboxLogic.js";
 
 export interface InboxViewProps {
@@ -57,6 +58,16 @@ function attentionDate(item: AttentionRow): string {
   return item.waitingSince === undefined ? "–" : datePresentation(item.waitingSince);
 }
 
+function ownsBoardLinkActivation(event: ReactMouseEvent<HTMLAnchorElement>): boolean {
+  return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+}
+
+function preserveModifiedLinkActivation(event: ReactKeyboardEvent<HTMLElement>): void {
+  if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) return;
+  if (!(event.target instanceof Element) || event.target.closest("a[href]") === null) return;
+  event.stopPropagation();
+}
+
 /** A withdrawn detail owns the selection until the Patron chooses a live row. */
 export function liveSelectedAttentionItem(
   selectedItem: AttentionRow | undefined,
@@ -80,7 +91,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
   const item = liveSelectedItem;
   const focusedPetition = focusedItem?.petitio;
   const selectedPetition = detachedPetition ?? selectedItem?.petitio;
-  const focusedItemRef = useRef<HTMLButtonElement>(null);
+  const focusedItemRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (focusRequest === 0) return;
@@ -102,7 +113,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
   const delegateDescriptionId = selectedPetition ? `delegate-unavailable-${selectedPetition.id}` : undefined;
 
   return (
-    <div className={["inbox", expandedId !== null && "inbox--detail-open"].filter(Boolean).join(" ")}>
+    <div className={["inbox", expandedId !== null && "inbox--detail-open"].filter(Boolean).join(" ")} onKeyDown={preserveModifiedLinkActivation}>
       <h1 className="inbox__title">Inbox</h1>
       {confirmation && <p className="inbox__confirmation">{confirmation}</p>}
       <div className={["inbox__workspace", expandedId !== null && "inbox__workspace--detail"].filter(Boolean).join(" ")}>
@@ -126,34 +137,53 @@ export function InboxView(props: InboxViewProps): JSX.Element {
               const unread = petitio !== undefined && !readPetitionIds.has(petitio.id);
               const notified = attentionDate(item);
               const asks = askKindText(item);
+              const keepFocusedItemRef = (node: HTMLElement | null): void => {
+                if (hasFocus) focusedItemRef.current = node;
+              };
+              const contents = <>
+                <span className="inbox__row-meta">
+                  <span className="inbox__sella">{attentionAsker(item)}</span>
+                  <span className="inbox__date">{notified}</span>
+                </span>
+                <span className="inbox__subject">{petitio?.subject ?? item.title}</span>
+                <span className={["inbox__ask-kind", item.destination === "inbox" && "inbox__ask-kind--full"].filter(Boolean).join(" ")}>{asks}</span>
+                {item.destination === "board" && <span className="inbox__route">Opens Board drawer</span>}
+              </>;
+              const common = {
+                className: ["inbox__item", "inbox__row", hasFocus && !decisionUnavailable && "inbox__item--focused", unread && "inbox__item--unread"].filter(Boolean).join(" "),
+                "data-focused": hasFocus && !decisionUnavailable,
+                ref: hasFocus ? keepFocusedItemRef : undefined,
+                role: "option",
+                "aria-selected": hasFocus && !decisionUnavailable,
+                tabIndex: hasFocus ? 0 : -1,
+                onFocus: () => onFocusChange(index),
+              } as const;
+              if (item.destination === "board") return (
+                <a
+                  key={item.attentionKey}
+                  {...common}
+                  href={boardOpusHref(item.id)}
+                  onClick={(event) => {
+                    if (!ownsBoardLinkActivation(event)) return;
+                    onFocusChange(index);
+                    onOpenBoard(item.id);
+                  }}
+                >
+                  {contents}
+                </a>
+              );
               return (
                 <button
                   key={item.attentionKey}
                   type="button"
-                  className={["inbox__item", "inbox__row", hasFocus && !decisionUnavailable && "inbox__item--focused", unread && "inbox__item--unread"].filter(Boolean).join(" ")}
-                  data-focused={hasFocus && !decisionUnavailable}
-                  ref={hasFocus ? focusedItemRef : undefined}
-                  role="option"
-                  aria-selected={hasFocus && !decisionUnavailable}
-                  tabIndex={hasFocus ? 0 : -1}
-                  onFocus={() => onFocusChange(index)}
+                  {...common}
                   onClick={() => {
                     onFocusChange(index);
-                    if (item.destination === "board") {
-                      onOpenBoard(item.id);
-                      return;
-                    }
                     if (petitio !== undefined) onRead(petitio.id);
                     onExpandChange(item.attentionKey);
                   }}
                 >
-                  <span className="inbox__row-meta">
-                    <span className="inbox__sella">{attentionAsker(item)}</span>
-                    <span className="inbox__date">{notified}</span>
-                  </span>
-                  <span className="inbox__subject">{petitio?.subject ?? item.title}</span>
-                  <span className={["inbox__ask-kind", item.destination === "inbox" && "inbox__ask-kind--full"].filter(Boolean).join(" ")}>{asks}</span>
-                  {item.destination === "board" && <span className="inbox__route">Opens Board drawer</span>}
+                  {contents}
                 </button>
               );
             })}
@@ -172,7 +202,10 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   <div className="inbox__meta"><span>{liveSelectedItem.id}</span><span>from Board</span><span>{attentionDate(liveSelectedItem)}</span></div>
                   <h2 className="inbox__expanded-subject">{liveSelectedItem.title}</h2>
                   <p className="inbox__board-asks">{askKindText(liveSelectedItem)}</p>
-                  <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(liveSelectedItem.id)}>Open Board drawer</button>
+                  <a className="inbox__board-route" href={boardOpusHref(liveSelectedItem.id)} onClick={(event) => {
+                    if (!ownsBoardLinkActivation(event)) return;
+                    onOpenBoard(liveSelectedItem.id);
+                  }}>Open Board drawer</a>
                 </div>
               </div>
             </div>
@@ -184,7 +217,10 @@ export function InboxView(props: InboxViewProps): JSX.Element {
                   <div className="inbox__meta"><span>{selectedPetition.opus}</span><span>from {selectedPetition.from}</span><span>{datePresentation(selectedPetition.opened)}</span></div>
                   <h2 className="inbox__expanded-subject">{selectedPetition.subject}</h2>
                   {liveSelectedItem?.boardEntry && liveSelectedItem.asks?.some((ask) => ask.kind !== "inbox") && (
-                    <button type="button" className="inbox__board-route" onClick={() => onOpenBoard(liveSelectedItem.id)}>Open Board actions</button>
+                        <a className="inbox__board-route" href={boardOpusHref(liveSelectedItem.id)} onClick={(event) => {
+                          if (!ownsBoardLinkActivation(event)) return;
+                          onOpenBoard(liveSelectedItem.id);
+                        }}>Open Board actions</a>
                   )}
                   <div className="inbox__ask">
                     {selectedPetition.body ? askBlocks(selectedPetition.body).map((block, index) => {

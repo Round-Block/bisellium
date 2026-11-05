@@ -489,7 +489,7 @@ test.describe("W-064 behaviour 8: keyboard traversal, the drawer, and focus rest
     await page.locator('.board__card[data-card-id="W-002"]').click();
     await expect(page.locator(".board-drawer")).toBeVisible();
 
-    setOpusState(served.studioDir, "W-002", "building", "review");
+    rmSync(join(served.studioDir, "opera", "W-002.md"));
     await forcePoll(served);
 
     await expect(page.locator(".board-drawer")).toBeHidden({ timeout: 11_000 });
@@ -1083,12 +1083,12 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     for (const row of widths) {
       await page.setViewportSize({ width: row.viewport, height: 900 });
       const source = page.locator('.board__card[data-card-id="W-002"]');
-      await source.scrollIntoViewIfNeeded();
-      await source.focus();
       const columns = page.locator(".board__columns");
       await columns.evaluate((el) => {
         el.scrollLeft = Math.min(137, Math.max(0, el.scrollWidth - el.clientWidth));
       });
+      await source.scrollIntoViewIfNeeded();
+      await source.focus();
       const beforeOpenScroll = await columns.evaluate((el) => el.scrollLeft);
       const fullWidth = await page.locator(".board").evaluate((el) => el.getBoundingClientRect().width);
       expect(fullWidth).toBeCloseTo(row.main, 0);
@@ -1165,8 +1165,8 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     }
 
     // The established reconciliation fallback is part of the focus contract:
-    // if the source leaves its column, focus lands on that column's nearest
-    // remaining card (or its head), never on document.body.
+    // if the source is removed from /api/opera, focus lands on its column's
+    // nearest remaining card (or its head), never on document.body.
     await page.setViewportSize({ width: 1280, height: 900 });
     const inProgress = page.locator('.board__column[data-column-id="in_progress"]');
     const beforeIds = await inProgress.locator(".board__card").evaluateAll((els) => els.map((el) => el.getAttribute("data-card-id")));
@@ -1178,7 +1178,7 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
     const beforeOpenScroll = await columns.evaluate((el) => el.scrollLeft);
     await page.keyboard.press("Enter");
     await expect(page.locator(".board-drawer__close")).toBeFocused();
-    setOpusState(served.studioDir, "W-002", "building", "review");
+    rmSync(join(served.studioDir, "opera", "W-002.md"));
     await forcePoll(served);
     await expect(page.locator(".board-drawer")).toBeHidden({ timeout: 11_000 });
     if (expectedFallback) await expect(inProgress.locator(`.board__card[data-card-id="${expectedFallback}"]`)).toBeFocused();

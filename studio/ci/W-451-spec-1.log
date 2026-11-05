@@ -1,0 +1,25 @@
+# opus: W-451
+# phase: spec
+# round: 1
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1a4d8-6a1b-7333-af6e-7ea4350872f6
+# outcome: passed
+# at: 2026-11-04T08:14:56.860Z
+# tree: tree:cef30af3f08caec183e437ee6fecea94ae32171d
+# brief: briefs/W-451.md blob:71d7079193e7bf597ebb6b667769cc29813618b3
+# ticket: {"opus":"W-451","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"b8666d2d32534ceee70c469e47e331d7ca6a7688","brief":"71d7079193e7bf597ebb6b667769cc29813618b3","at":"2026-11-04T08:14:53.295Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-451-spec-1104/promise-ledger.md
+
+## Findings
+
+1. advisory — Current master already owns the drawer interaction and narrow overlay; W-451 remains reduced to a durable Board drawer location plus current-page opening focus, with no Home surface — check: studio/briefs/W-451.md, gates-proto.out
+2. advisory — Valid, unknown and malformed Board targets have distinct outcomes; explicit Close returns to bare Board while browser Back and Forward retain ordinary route history — check: apps/web/src/lib/route.ts, apps/web/src/App.tsx, apps/web/tests-serve/w451.spec.ts
+3. advisory — W-345-b5 alone failed before migration; its source oracle now follows the shared props into the native petition button without dropping its mobile-detail assertions, and all six W-345 rows pass — check: w345-proto-before-migration.out, apps/web/test/w345.test.ts, w345-proto.out
+4. advisory — Both direct TAP reds fail by assertion with exact `not ok 1` titles, cumulative greens hold, and each recut prototype commit builds independently — check: b1-red-recorded.log, b2-red-recorded.log, reds-host.out, series-builds.txt
+5. advisory — The portable mbox matches its expected tree; the original gates and every census-only must-stay-green file pass or take the declared screenshot skip; and five refreshed captures remain readable — check: mbox-check.out, gates-proto.out, census-must-stay-green.out, capture-shots.out, shots/
+
+## Verdict
+
+passed — unsigned signature round 1 refreshed by design lead Codex `gpt-5.6-sol` under D-150 C for `studio/briefs/W-451.md` on base `1fb5430a`; prototype sha256 `e49ff7911d994fb75264eb889ee6b940c1b8f186654a4cce8e3723610afb3a6e`, with no record write, `next` or `verdict` performed.

@@ -51,7 +51,7 @@ test("W-415-b3 behaviour 3: phone retains its 48px top row and visible focus rin
   assert.match(css, /@media \(max-width: 959px\)[\s\S]*grid-template-rows:\s*48px 1fr/, "narrow shell retains the phone row");
   assert.match(served, /focus ring clears top[\s\S]*focus ring clears bottom/, "390 row pins the full focus ring");
   const sidebar = read("apps/web/src/components/Sidebar.tsx");
-  assert.match(sidebar, /querySelector<HTMLAnchorElement>\("\.sidebar__link"\)\?\.focus/, "opening moves focus into drawer");
+  assert.match(sidebar, /querySelector<HTMLAnchorElement>\('\.sidebar__link\[aria-current="page"\]'\)\?\.focus/, "opening moves focus to the current page under D-134");
   assert.match(sidebar, /event\.key !== "Escape"/, "Escape is the overlay's dismissal key");
   assert.match(sidebar, /querySelector<HTMLButtonElement>\("\.sidebar__toggle"\)/, "closing returns focus to toggle");
   assert.match(css, /shell--overlay-open \.shell__main\s*\{\s*overflow:\s*hidden/, "page behind cannot scroll");

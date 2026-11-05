@@ -19,6 +19,7 @@ import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
 import { screenStatus, type ScreenStatus } from "../lib/screenState.js";
 import { attentionTotal, boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets, type BoardFilter } from "../lib/board.js";
+import { canOpenBoardDrawer, parseLocation } from "../lib/route.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
   studio: "",
@@ -41,12 +42,14 @@ interface PendingCloseRestoration {
   waitingScrollLeft: number | undefined;
 }
 
-export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSelectionId, onInitialSelectionConsumed, onOpenInbox }: {
+export function Board({ onStatus, onWaitingCount, onAttentionLoaded, requestedOpusId, boardPathError, onDrawerRouteOpen, onDrawerRouteClose, onOpenInbox }: {
   onStatus?: (status: ScreenStatus) => void;
   onWaitingCount?: (count: number) => void;
   onAttentionLoaded?: () => void;
-  initialSelectionId?: string;
-  onInitialSelectionConsumed?: () => void;
+  requestedOpusId?: string;
+  boardPathError?: "malformed";
+  onDrawerRouteOpen?: (opusId: string) => void;
+  onDrawerRouteClose?: () => void;
   onOpenInbox?: (attentionKey: string) => void;
 } = {}): JSX.Element {
   const [officina, setOfficina] = useState<OfficinaResponse | typeof EMPTY_OFFICINA>(EMPTY_OFFICINA);
@@ -83,9 +86,8 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
   const scrollSnapshotRef = useRef<{ scrollLeft: number | undefined; waitingScrollLeft: number | undefined }>({ scrollLeft: undefined, waitingScrollLeft: undefined });
   const pendingCloseRestorationRef = useRef<PendingCloseRestoration | undefined>(undefined);
   const pendingFocusRef = useRef<{ columnId: string; cardId: string } | undefined>(undefined);
-  const initialSelectionOpenedRef = useRef<string | undefined>(undefined);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     selectedRef.current = selected;
   }, [selected]);
   useEffect(() => {
@@ -226,15 +228,8 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     if (!pending) return;
     pendingCloseRestorationRef.current = undefined;
 
-    const { selection, fallback } = pending;
+    const { selection } = pending;
     const columnEl = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${selection.columnId}"]`);
-    const focusTarget = !fallback
-      ? selection.origin === "waiting"
-        ? document.querySelector<HTMLElement>(`[data-waiting-id="${selection.id}"]`)
-        : columnEl?.querySelector<HTMLElement>(`[data-card-id="${selection.id}"]`)
-      : columnEl?.querySelector<HTMLElement>("[data-card-id]")
-        ?? columnEl?.querySelector<HTMLElement>(".board__column-head");
-    focusTarget?.focus({ preventScroll: true });
 
     const restoreOffsets = (): void => {
       const scrollEl = document.querySelector<HTMLElement>(".board__columns");
@@ -249,6 +244,22 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
       }
     };
     restoreOffsets();
+
+    const renderedCard = [...document.querySelectorAll<HTMLElement>("[data-card-id]")]
+      .find((card) => card.dataset.cardId === selection.id);
+    const renderedWaiting = [...document.querySelectorAll<HTMLElement>("[data-waiting-id]")]
+      .find((card) => card.dataset.waitingId === selection.id);
+    const currentTarget = selection.origin === "waiting"
+      ? renderedWaiting ?? renderedCard
+      : renderedCard ?? renderedWaiting;
+    const formerColumnTarget = columnEl?.querySelector<HTMLElement>("[data-card-id]")
+      ?? columnEl?.querySelector<HTMLElement>(".board__column-head");
+    const deterministicColumn = document.querySelector<HTMLElement>(".board__columns .board__column");
+    const deterministicTarget = deterministicColumn?.querySelector<HTMLElement>("[data-card-id]")
+      ?? deterministicColumn?.querySelector<HTMLElement>(".board__column-head");
+    const focusTarget = currentTarget ?? formerColumnTarget ?? deterministicTarget;
+    focusTarget?.focus({ preventScroll: true });
+    focusTarget?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [selected]);
 
   function markRefreshed(): void {
@@ -333,21 +344,19 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     // Mount-once: every handler above reads current state through refs.
   }, []);
 
-  // ---- Removal / column-change while the drawer is open: close it, and
-  // restore focus to the nearest remaining card in that column, or the
-  // column head if it's now empty. Never document.body. ---------------------
+  // ---- Removal while the drawer is open: close only when /api/opera no
+  // longer returns the selected record. Filtering, an undeclared state or
+  // waiting-only placement must not turn a durable route into a removal. ----
   useEffect(() => {
     const sel = selected;
     if (!sel) return;
-    const column = model.columns.find((c) => c.id === sel.columnId);
-    const stillThere = sel.columnId === "unplaced"
-      ? model.unplaced.includes(sel.id) && model.waiting.some((card) => card.id === sel.id)
-      : column?.cards.some((c) => c.id === sel.id) ?? false;
-    if (stillThere) return;
+    if (opera.some((entry) => entry.id === sel.id)) return;
     pendingCloseRestorationRef.current = { selection: sel, fallback: true, ...scrollSnapshotRef.current };
     setLastSelectedId(undefined);
+    selectedRef.current = undefined;
     setSelected(undefined);
-  }, [model]);
+    onDrawerRouteClose?.();
+  }, [model, opera]);
 
   // The pushed layout can collapse the Board cell to zero. Once the drawer
   // has mounted, move focus to its visible close control at every width.
@@ -388,7 +397,11 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     setFocusedByColumn((prev) => ({ ...prev, [columnId]: cardId }));
   }
 
-  function openDrawer(id: string, columnId: string, origin: "card" | "waiting"): void {
+  function openDrawer(id: string, columnId: string, origin: "card" | "waiting", publishRoute = true): void {
+    if (!canOpenBoardDrawer(id)) {
+      if (publishRoute) onDrawerRouteOpen?.(id);
+      return;
+    }
     const scrollEl = document.querySelector<HTMLElement>(".board__columns");
     const waitingEl = document.querySelector<HTMLElement>(".board__waiting-items");
     // A requested CSS-pixel offset can normalise to a neighbouring reported
@@ -398,22 +411,33 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollLeft;
     if (waitingEl) waitingEl.scrollLeft = waitingEl.scrollLeft;
     scrollSnapshotRef.current = { scrollLeft: scrollEl?.scrollLeft, waitingScrollLeft: waitingEl?.scrollLeft };
+    const selection = { id, columnId, origin };
     setLastSelectedId(id);
-    setSelected({ id, columnId, origin });
+    selectedRef.current = selection;
+    setSelected(selection);
     void fetchDrawerEvents(id);
+    if (publishRoute) onDrawerRouteOpen?.(id);
   }
 
   useEffect(() => {
-    if (!everLoaded || initialSelectionId === undefined || initialSelectionOpenedRef.current === initialSelectionId) return;
-    const columnId = model.columns.find((column) => column.cards.some((card) => card.id === initialSelectionId))?.id;
-    const waiting = model.waiting.find((item) => item.id === initialSelectionId && item.boardEntry);
-    if (waiting === undefined) return;
-    initialSelectionOpenedRef.current = initialSelectionId;
-    openDrawer(initialSelectionId, columnId ?? "unplaced", "waiting");
-    onInitialSelectionConsumed?.();
-  }, [everLoaded, initialSelectionId, model, onInitialSelectionConsumed]);
+    if (!everLoaded) return;
+    if (parseLocation(window.location.hash).boardOpusId !== requestedOpusId) return;
+    if (requestedOpusId === undefined) {
+      if (selected !== undefined) closeDrawer(false);
+      return;
+    }
+    if (selected?.id === requestedOpusId) return;
+    const record = opera.find((entry) => entry.id === requestedOpusId);
+    if (record === undefined) {
+      if (selected !== undefined) closeDrawer(false);
+      return;
+    }
+    const columnId = model.columns.find((column) => column.cards.some((card) => card.id === requestedOpusId))?.id;
+    const waiting = model.waiting.some((item) => item.id === requestedOpusId && item.boardEntry);
+    openDrawer(requestedOpusId, columnId ?? "unplaced", waiting ? "waiting" : "card", false);
+  }, [everLoaded, requestedOpusId, selected, opera, model]);
 
-  function closeDrawer(): void {
+  function closeDrawer(publishRoute = true): void {
     // selectedRef, not `selected`: this function is also called from the
     // keydown effect's MOUNT-ONCE closure (deps []), which would otherwise
     // forever close over the FIRST render's `selected` (undefined) and skip
@@ -423,7 +447,9 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
     if (sel) {
       pendingCloseRestorationRef.current = { selection: sel, fallback: false, ...scrollSnapshotRef.current };
     }
+    selectedRef.current = undefined;
     setSelected(undefined);
+    if (publishRoute) onDrawerRouteClose?.();
   }
 
   // ---- Keyboard: roving tabindex within a column, cross-column arrows,
@@ -479,6 +505,11 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
   const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? [], selectedCard) : undefined;
   const generatedAt = formatBoardTimestamp(new Date().toISOString());
   const status = screenStatus("board", { loaded: everLoaded, empty: opera.length === 0, failed: readFailed || undefined, live: everLoaded ? connected : undefined });
+  const routeNotice = boardPathError === "malformed"
+    ? "That Board link is not valid."
+    : requestedOpusId !== undefined && everLoaded && !opera.some((entry) => entry.id === requestedOpusId)
+      ? `Work item ${requestedOpusId} was not found.`
+      : undefined;
   useEffect(() => onStatus?.(status), [status.state, status.text]);
 
   return (
@@ -494,11 +525,11 @@ export function Board({ onStatus, onWaitingCount, onAttentionLoaded, initialSele
         liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
         branchNote={branchNote("branchRecords" in officina ? officina.branchRecords : undefined)}
         generatedAt={generatedAt}
-        notice={status.state === "loading" || status.state === "empty" || status.state === "error" ? status.text : undefined}
+        notice={routeNotice ?? (status.state === "loading" || status.state === "empty" || status.state === "error" ? status.text : undefined)}
         filter={filter}
         onFilterChange={setFilter}
       />
-      <BoardDrawer detail={detail} onClose={closeDrawer} />
+      <BoardDrawer detail={detail} onClose={() => closeDrawer()} />
     </div>
   );
 }

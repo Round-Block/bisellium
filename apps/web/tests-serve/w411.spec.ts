@@ -213,6 +213,7 @@ test("W-411-b4 return restores selection, exact focus and both scroll offsets at
     await columns.evaluate((node) => { node.scrollLeft = Math.min(node.scrollWidth - node.clientWidth, Math.max(40, node.clientWidth)); });
     await waitingItems.evaluate((node) => { node.scrollLeft = Math.min(node.scrollWidth - node.clientWidth, 596); });
     const opener = page.locator('[data-waiting-id="W-5"]');
+    await opener.scrollIntoViewIfNeeded();
     await opener.focus();
     const before = {
       columns: await columns.evaluate((node) => node.scrollLeft),

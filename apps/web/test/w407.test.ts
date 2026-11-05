@@ -82,7 +82,7 @@ test("W-407-b3 behaviour 3: roving selection, read state and narrow detail retur
   const inbox = read("apps/web/src/screens/Inbox.tsx");
   const view = read("apps/web/src/screens/InboxView.tsx");
   const css = read("apps/web/src/components/w025.css");
-  assert.match(view, /className=\{\["inbox__item", "inbox__row"[\s\S]*role="option"[\s\S]*aria-selected=\{hasFocus && !decisionUnavailable\}[\s\S]*tabIndex=\{hasFocus \? 0 : -1\}/, "rows use roving listbox semantics and no stale row claims selection");
+  assert.match(view, /className: \["inbox__item", "inbox__row"[\s\S]*role: "option"[\s\S]*"aria-selected": hasFocus && !decisionUnavailable[\s\S]*tabIndex: hasFocus \? 0 : -1/, "button and shareable-link rows use the same roving listbox semantics and no stale row claims selection");
   assert.match(inbox, /e\.key === "j" \|\| e\.key === "k"/, "j and k move");
   assert.match(inbox, /e\.key === "Enter"[\s\S]*focusedItem\.destination === "board"[\s\S]*setExpandedId\(focusedItem\.attentionKey\)/, "Enter routes Board-owned asks and opens replyable narrow items");
   assert.match(inbox, /e\.key === "Escape"[\s\S]*target\.closest\("\.sidebar"\)[\s\S]*expandedId === null[\s\S]*setExpandedId\(null\)[\s\S]*setFocusRequest/, "Inbox Escape returns to the selected row without stealing sidebar Escape");
@@ -203,7 +203,7 @@ test("W-407-b6 behaviour 6: a withdrawn draft blocks the fallback Board drawer u
 
   assert.match(view, /export function liveSelectedAttentionItem\([\s\S]*detachedPetition === null \? selectedItem : undefined/, "the detached-draft boundary removes the fallback live selection for every consumer");
   assert.match(inbox, /const selectedItem = attention\.find\(\(item\) => item\.attentionKey === expandedId\) \?\? focusedItem;[\s\S]*const liveSelectedItem = liveSelectedAttentionItem\(selectedItem, detachedPetition\);[\s\S]*e\.key === "Enter" && focusedItem !== undefined && liveSelectedItem === focusedItem[\s\S]*focusedItem\.destination === "board"[\s\S]*onOpenBoard\?\.\(focusedItem\.id\)/, "Enter from a non-text target cannot open a fallback Board row while the withdrawn draft remains selected");
-  assert.match(view, /onClick=\{\(\) => \{[\s\S]*onFocusChange\(index\);[\s\S]*item\.destination === "board"[\s\S]*onOpenBoard\(item\.id\)/, "selecting the live Board row first retains its Board-drawer action");
+  assert.match(view, /item\.destination === "board"[\s\S]*href=\{boardOpusHref\(item\.id\)\}[\s\S]*onClick=\{\(event\) => \{[\s\S]*if \(!ownsBoardLinkActivation\(event\)\) return;[\s\S]*onFocusChange\(index\);[\s\S]*onOpenBoard\(item\.id\)/, "selecting the live Board row first retains its shareable Board-drawer action while modified activations remain native links");
 
   const { liveSelectedAttentionItem } = await import("../src/screens/InboxView.js");
   const fallbackBoardItem: AttentionRow = {

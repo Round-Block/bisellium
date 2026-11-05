@@ -194,18 +194,25 @@ test("W-415-b3 the 959px overlay is click-only, focused, dismissible and non-scr
   await expect(page.locator(".sidebar__links"), "959 boundary starts with overlay closed").toBeHidden(); await page.locator(".sidebar").hover();
   await expect(page.locator(".sidebar__links"), "hover never opens the drawer").toBeHidden();
   for (const width of [640, 390]) {
-    await page.setViewportSize({ width, height: 900 }); const toggle = page.locator(".sidebar__toggle");
-    const closedToggle = await toggle.boundingBox();
-    await toggle.click();
-    const openToggle = await toggle.boundingBox();
-    expect(openToggle, `${width}: toggle retains identical viewport coordinates`).toEqual(closedToggle);
-    await expect(page.locator(".shell")).toHaveClass(/shell--overlay-open/);
-    await expect(page.locator('.sidebar__link[href="#/inbox"]'), `${width}: focus moves into drawer`).toBeFocused();
-    await expect(page.locator(".shell__main"), `${width}: page behind does not scroll`).toHaveCSS("overflow", "hidden");
-    const main = await page.locator(".shell__main").boundingBox();
-    expect(main!.y, `${width}: open overlay leaves main in its own row`).toBeCloseTo(48, 0);
-    expect(main!.height, `${width}: open overlay keeps the main pane visible behind it`).toBeGreaterThanOrEqual(800);
-    await page.keyboard.press("Escape"); await expect(toggle, `${width}: Escape returns focus to toggle`).toBeFocused();
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ROUTES) {
+      await page.goto(`${served!.baseURL}/?demo#/${route}`);
+      const toggle = page.locator(".sidebar__toggle");
+      const closedToggle = await toggle.boundingBox();
+      await toggle.click();
+      const openToggle = await toggle.boundingBox();
+      expect(openToggle, `${width} ${route}: toggle retains identical viewport coordinates`).toEqual(closedToggle);
+      await expect(page.locator(".shell")).toHaveClass(/shell--overlay-open/);
+      await expect(page.locator(`.sidebar__link[href="#/${route}"]`), `${width} ${route}: current page receives focus`).toBeFocused();
+      await expect(page.locator(".shell__main"), `${width} ${route}: page behind does not scroll`).toHaveCSS("overflow", "hidden");
+      const main = await page.locator(".shell__main").boundingBox();
+      expect(main!.y, `${width} ${route}: open overlay leaves main in its own row`).toBeCloseTo(48, 0);
+      expect(main!.height, `${width} ${route}: open overlay keeps the main pane visible behind it`).toBeGreaterThanOrEqual(800);
+      await page.keyboard.press("Escape");
+      await expect(toggle, `${width} ${route}: Escape returns focus to toggle`).toBeFocused();
+    }
+    await page.goto(`${served!.baseURL}/?demo#/inbox`);
+    const toggle = page.locator(".sidebar__toggle");
     await toggle.press("Enter"); await page.getByRole("link", { name: "Board" }).click();
     await expect(page.locator(".sidebar__links"), `${width}: choosing a screen closes drawer`).toBeHidden(); await expect(toggle, `${width}: navigation close returns focus`).toBeFocused();
   }

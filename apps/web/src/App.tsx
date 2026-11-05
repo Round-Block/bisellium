@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { parseRoute } from "./lib/route.js";
+import { boardOpusHref, parseLocation } from "./lib/route.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
 import { Inbox } from "./screens/Inbox.js";
@@ -40,7 +40,6 @@ function initialWideSidebar(): boolean {
 export function App() {
   const [hash, setHash] = useState(currentHash());
   const [attentionCount, setAttentionCount] = useState(0);
-  const [pendingBoardOpus, setPendingBoardOpus] = useState<string | undefined>(undefined);
   const [pendingInboxAttention, setPendingInboxAttention] = useState<string | undefined>(undefined);
   const [tokenPromptOpen, setTokenPromptOpen] = useState(!hasToken());
   // W-501: bumped when a token is saved after a refused read, re-mounting the routed screen so it reads again with it.
@@ -55,11 +54,17 @@ export function App() {
   const onAttentionLoaded = useCallback(() => {
     hasMountedAttentionRef.current = true;
   }, []);
-  const route = parseRoute(hash);
+  const parsedLocation = parseLocation(hash);
+  const route = parsedLocation.route;
 
   const openBoardAttention = (opusId: string): void => {
-    setPendingBoardOpus(opusId);
-    window.location.hash = "#/board";
+    const href = boardOpusHref(opusId);
+    window.location.hash = href;
+    setHash(href);
+  };
+  const closeBoardDrawerRoute = (): void => {
+    window.history.replaceState(window.history.state, "", "#/board");
+    setHash(currentHash());
   };
   const openInboxAttention = (attentionKey: string): void => {
     setPendingInboxAttention(attentionKey);
@@ -160,8 +165,10 @@ export function App() {
             onStatus={setStatus}
             onWaitingCount={setAttentionCount}
             onAttentionLoaded={onAttentionLoaded}
-            initialSelectionId={pendingBoardOpus}
-            onInitialSelectionConsumed={() => setPendingBoardOpus(undefined)}
+            requestedOpusId={parsedLocation.boardOpusId}
+            boardPathError={parsedLocation.boardPathError}
+            onDrawerRouteOpen={openBoardAttention}
+            onDrawerRouteClose={closeBoardDrawerRoute}
             onOpenInbox={openInboxAttention}
           />
         ) : (

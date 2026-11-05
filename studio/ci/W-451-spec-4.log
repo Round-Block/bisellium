@@ -1,0 +1,27 @@
+# opus: W-451
+# phase: spec
+# round: 4
+# sella: ui-spec-reviewer
+# model: claude-opus-5-5
+# session: 1f3f2a75-ad03-43b6-ad15-6218eec2a34e
+# session_reason: the round 2 reviewer ran by claude -p in the sandbox and cannot be resumed
+# outcome: failed
+# at: 2026-11-04T11:40:35.766Z
+# tree: tree:df70e2f10748494dfb159262df7ad6116b8ebe40
+# brief: briefs/W-451.md blob:a7ea166e62ee4271d3ed3795ddd7411d04d605ba
+# ticket: {"opus":"W-451","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"2ecccc3b59c011c6507120848aff783eec753b8b","brief":"a7ea166e62ee4271d3ed3795ddd7411d04d605ba","at":"2026-11-04T11:40:26.888Z"}
+
+## Earlier findings
+- ci/W-451-spec-2.log #1: closed — the removal effect now tests `/api/opera` membership (proto `Board.tsx:344`); served rows and `kill-returned-route.out` pin it.
+
+## Findings
+1. blocking — brief:87 [severity: S1] After a lifecycle move, a filter hiding the card, or a pasted unplaced opus, closing searches a stale column (`Board.tsx:232-239`), so focus falls to `document.body`; found by reading, not run. Replacement: "on close, focus the current card, else a column card or head, never body." [design: keeps] [class: ui×route-state-reconciliation] — check: none: a served close-focus row
+2. advisory — brief:51 [severity: S2] The malformed notice is unpinned. Replacement: "plus a served `#/board/not-an-opus` notice and no-dialog assertion." [class: ui×promise-without-pin] — check: none: that assertion
+3. advisory — brief:49 [severity: S3] A non-native id's drawer closes at once. Replacement: "a non-native card opens no drawer and shows the invalid notice." [class: ui×route-state-reconciliation] — check: none: a Node row
+4. advisory — brief:65 [severity: S4] The row refetches, never reloads. Replacement: "refetch while open is pinned." [class: ui×promise-without-pin] — check: none: `page.reload()`
+5. advisory — brief:117 [severity: S4] Sense: agent-written; after a card open, the first Back after Close looks dead. Replacement: "state this cost to the Patron." [class: ui×agent-rule-sense] — check: none: a served Back row
+
+## Verdict
+Round 2's blocker is closed, but close can drop focus to body; the fix keeps the design.
+Claude week 82%, 5h 9% | Codex week 30% | context 149k of 300k
+VERDICT: FAIL
