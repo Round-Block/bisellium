@@ -184,3 +184,75 @@ test("W-300-b3 behaviour 3: the drawer shows the step on one line under the titl
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   expect(await ladder.textContent(), "a late answer for another opus does not replace this one").toContain("Next: spec · ");
 });
+
+
+// W-300-b4: the Patron's ruling of 2026-11-05: the line wraps at 1280, 640 and 390 and nothing is cut.
+const WHY_1000 = "the review gate cites an older round and every ruling and path it names is long ".repeat(13).slice(0, 1000);
+const UNBROKEN = `ci/${"reviewround".repeat(50)}.log`;
+
+/** What the line and its text show: the height, and whether either keeps text it does not lay out. */
+const lineShown = (page: Page): Promise<{ height: number; cut: boolean; prHeight: number | null }> =>
+  page.evaluate(() => {
+    const line = document.querySelector<HTMLElement>(".board-drawer__ladder")!;
+    const text = document.querySelector<HTMLElement>(".board-drawer__ladder-text")!;
+    const pr = document.querySelector<HTMLElement>(".board-drawer__ladder-pr");
+    const cut = [line, text].some((el) => el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1 || getComputedStyle(el).textOverflow === "ellipsis" || getComputedStyle(el).whiteSpace === "nowrap");
+    return { height: line.getBoundingClientRect().height, cut, prHeight: pr === null ? null : pr.getBoundingClientRect().height };
+  });
+
+test("W-300-b4 behaviour 4: the line wraps at 1280, 640 and 390 and nothing is cut", async ({ page }) => {
+  test.setTimeout(180_000);
+  served = await startServed("w300-b4");
+  const ladder = page.locator(".board-drawer__ladder");
+  const pr = page.locator(".board-drawer__ladder-pr");
+
+  for (const width of WIDTHS) {
+    await page.route("**/api/opus/W-002/ladder", (route) => route.fulfill(json(answer("W-002", {}))));
+    await page.route("**/api/opus/W-003/ladder", (route) => route.fulfill(json(answer("W-003", { why: UNBROKEN }))));
+    await openBoard(page, width);
+
+    // a long why with a PR: it wraps, all of it is laid out, and the link stays whole on one line
+    await openDrawer(page, "W-002");
+    await expect(pr, `the PR link: ${width}`).toHaveText("PR #901");
+    const shown = await lineShown(page);
+    expect(shown.height, `the line wraps: ${width}`).toBeGreaterThanOrEqual(36);
+    expect(shown.cut, `nothing is cut: ${width}`).toBe(false);
+    expect(await ladder.textContent(), `the whole why is on the line: ${width}`).toContain(LONG);
+    expect(shown.prHeight, `the PR link stays on one line: ${width}`).toBeLessThanOrEqual(19);
+    const box = await pr.boundingBox();
+    expect(box!.x + box!.width, `the PR link is in the viewport: ${width}`).toBeLessThanOrEqual(width);
+    expect(box!.width, `the PR link is not cut: ${width}`).toBeGreaterThan(40);
+    await closeDrawer(page);
+
+    // a why with no space to break at, a path: it wraps too, and the drawer does not scroll sideways for it
+    await openDrawer(page, "W-003");
+    await expect(pr).toHaveText("PR #901");
+    expect((await lineShown(page)).cut, `an unbroken why is not cut: ${width}`).toBe(false);
+    const sideways = await page.locator(".board-drawer").evaluate((d) => d.scrollWidth - d.clientWidth);
+    expect(sideways, `the drawer does not scroll sideways: ${width}`).toBeLessThanOrEqual(0);
+    await closeDrawer(page);
+    await page.unrouteAll();
+  }
+
+  // the longest why a read serves, on a phone: the head scrolls with the drawer, so the meta line and the body are reached by scrolling
+  await page.route("**/api/opus/W-002/ladder", (route) => route.fulfill(json(answer("W-002", { why: WHY_1000 }))));
+  await openBoard(page, 390);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openDrawer(page, "W-002");
+  await expect(pr).toHaveText("PR #901");
+  expect((await lineShown(page)).cut, "the longest why is not cut").toBe(false);
+  expect(await ladder.textContent(), "the longest why is on the line whole").toContain(WHY_1000);
+  const inView = (selector: string): Promise<boolean> =>
+    page.locator(selector).evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return r.top >= 0 && r.top < window.innerHeight && r.height > 0;
+    });
+  await page.mouse.move(195, 500);
+  await page.mouse.wheel(0, 20_000);
+  await expect.poll(() => inView(".board-drawer__event:last-child"), { message: "the drawer's body is reached by scrolling" }).toBe(true);
+  expect(await inView(".board-drawer__close"), "the close stays in reach").toBe(true);
+  await page.mouse.wheel(0, -20_000);
+  await expect.poll(() => inView(".board-drawer__id"), { message: "the head scrolls back" }).toBe(true);
+  await page.locator(".board-drawer__meta").scrollIntoViewIfNeeded();
+  expect(await inView(".board-drawer__meta"), "the meta line is reached").toBe(true);
+});
