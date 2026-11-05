@@ -17,15 +17,15 @@
  * is `bisellium run` sessions) and from `events.jsonl` (which is derived
  * workflow telemetry).
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
-import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, parseFrontMatter, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
 import { WF, instant, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
-import { ensureRealDirectory } from "./ids.js";
+import { createNextRecord, ensureRealDirectory } from "./ids.js";
 import { readContainedRegularFile, readRecordAt } from "./opus-model.js";
 import { autoGrant } from "./auto-greenlight.js";
 
@@ -603,6 +603,139 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
 
   console.log(`${event.id}: ${event.name}`);
   return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// petitio (W-298): a sella's question to the Patron, filed in the records
+// ---------------------------------------------------------------------------
+
+const PETITIO_USAGE =
+  "usage: bisellium petitio --from <sella> --subject <text> [--opus <id>] [--studio <dir>] [--now <iso>] <body…>";
+
+const isMap = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/** `readManifest` only parses: the fields this verb reads are checked here, so a mistaken manifest is a refusal, not a crash. */
+function manifestProblem(manifest: unknown): string | undefined {
+  if (!isMap(manifest)) return "it is not a mapping";
+  const { patron, sellae } = manifest;
+  if (patron !== undefined && (typeof patron !== "string" || patron.trim() === "")) return "patron must be a nonblank id";
+  if (!Array.isArray(sellae)) return "sellae must be a list";
+  const ids = new Set<unknown>();
+  for (const row of sellae as unknown[]) {
+    if (!isMap(row) || typeof row["id"] !== "string" || row["id"].trim() === "" || ids.has(row["id"])) return "sellae must be mappings with unique ids";
+    if (row["retired"] !== undefined && typeof row["retired"] !== "boolean") return `sellae's ${row["id"]}: retired must be a boolean`;
+    ids.add(row["id"]);
+  }
+  return undefined;
+}
+
+/** Why `opera/<id>.md` is no record `check` would accept for a petitio's `opus`, read as a contained regular file. */
+function opusRecordProblem(root: string, id: string): string | undefined {
+  const file = readContainedRegularFile(root, `opera/${id}.md`, "opera");
+  if ("error" in file) return file.error;
+  try {
+    const { data } = parseFrontMatter<unknown>(file.bytes.toString("utf8"), id);
+    return isMap(data) && data["id"] === id ? undefined : "its record does not carry that id";
+  } catch (e) {
+    return (e as Error).message;
+  }
+}
+
+/** A linked worktree's officina is not the one `next` and the Inbox read; a directory outside git has none. Only git's own
+ *  "no repository found" answer means outside: any other failure (no git, a linked worktree whose admin directory is gone) cannot tell. */
+function gitPlace(root: string): "main" | "linked" | "outside" | "unknown" {
+  const r = spawnSync("git", ["-C", root, "rev-parse", "--git-dir", "--git-common-dir"], { encoding: "utf8", env: { ...process.env, LC_ALL: "C" } });
+  if (r.error !== undefined) return "unknown";
+  if (r.status !== 0) return /^fatal: not a git repository \(or any of the parent directories\): \.git\s*$/.test(r.stderr) ? "outside" : "unknown";
+  const [gitDir, commonDir] = r.stdout.trim().split("\n");
+  if (!gitDir || !commonDir) return "unknown";
+  return resolve(root, gitDir) === resolve(root, commonDir) ? "main" : "linked";
+}
+
+export function runPetitio(args: string[], opts: WriteOptions = {}): WriteResult {
+  const parsed = parseFlags(args, { valued: ["--from", "--subject", "--opus", "--studio", "--now"] });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${PETITIO_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, positionals } = parsed;
+  const from = values.get("--from");
+  const subject = values.get("--subject")?.trim();
+  const body = positionals.join(" ").trim();
+  if (!from || !subject || !body) {
+    console.error(PETITIO_USAGE);
+    return { exitCode: 2 };
+  }
+  if (/[\r\n]/.test(subject)) {
+    console.error("--subject must be one line: it is the Inbox's row label");
+    return { exitCode: 2 };
+  }
+  const now = resolveNow(values.get("--now"), opts.now);
+  if (!now) {
+    console.error("--now must be an ISO date");
+    return { exitCode: 2 };
+  }
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root, manifest } = opened;
+  const bad = manifestProblem(manifest);
+  if (bad !== undefined) {
+    console.error(`${join(root, "bisellium.yml")}: ${bad}`);
+    return { exitCode: 2 };
+  }
+  const patronId = manifest.patron ?? "patron";
+  const resolved = resolveSeat(manifest, from);
+  if (!resolved) {
+    console.error(`unknown sella "${from}" — not declared in bisellium.yml`);
+    return { exitCode: 2 };
+  }
+  if (resolved.seat.id === patronId) {
+    console.error(`"${from}" is the Patron: a petitio is a question to the Patron, from a sella`);
+    return { exitCode: 2 };
+  }
+  if (resolved.seat.retired) {
+    console.error(retiredDispatchMessage(manifest, resolved.seat));
+    return { exitCode: 2 };
+  }
+  const opusId = values.get("--opus");
+  if (opusId !== undefined) {
+    const opusPath = safeItemPath(join(root, "opera"), opusId);
+    const problem = typeof opusPath !== "string" ? opusPath.error : opusRecordProblem(root, opusId);
+    if (problem !== undefined) {
+      console.error(`unknown opus: ${opusId}: ${problem}`);
+      return { exitCode: 2 };
+    }
+  }
+  const place = gitPlace(root);
+  if (place === "linked") {
+    console.error(`${root} is in a linked worktree; file the petitio from the repository's main checkout, which next and the Inbox read`);
+    return { exitCode: 2 };
+  }
+  if (place === "unknown") {
+    console.error(`git cannot tell whether ${root} is the main checkout, which next and the Inbox read; nothing is filed`);
+    return { exitCode: 2 };
+  }
+  try {
+    const { id } = createNextRecord(root, "petitiones", "P", (candidate) =>
+      `---\n` +
+      `id: ${JSON.stringify(candidate)}\n` +
+      `from: ${JSON.stringify(resolved.seat.id)}\n` +
+      `to: ${JSON.stringify(patronId)}\n` +
+      `state: needs_you\n` +
+      `opened: ${JSON.stringify(now.toISOString())}\n` +
+      `subject: ${JSON.stringify(subject)}\n` +
+      (opusId === undefined ? "" : `opus: ${JSON.stringify(opusId)}\n`) +
+      `---\n${body}\n`,
+    );
+    console.log(`${id}: ${subject}`);
+    return { exitCode: 0 };
+  } catch (e) {
+    console.error(`petitio failed: ${(e as Error).message}`);
+    return { exitCode: 2 };
+  }
 }
 
 // ---------------------------------------------------------------------------

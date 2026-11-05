@@ -526,6 +526,7 @@ const PINNED_A: string[] = [
   "packages/commands/src/verify.ts:runVerify:opera#1",
   "packages/commands/src/writes.ts:runHandoff:opera#1",
   "packages/commands/src/writes.ts:runEmit:opera#1",
+  "packages/commands/src/writes.ts:runPetitio:opera#1",
   "packages/commands/src/writes.ts:runAnswer:petitiones#1",
   "packages/commands/src/writes.ts:runAnswer:opera#1",
   "packages/commands/src/writes.ts:runGreenlight:opera#1",
@@ -718,6 +719,11 @@ const PINNED_B: PinnedB[] = [
     key: "packages/commands/src/writes.ts:recordOwnerRefusal#1",
     disposition: "bypass-via-verify",
     why: "guarded at its lifecycle.ts callers, raw when verify.ts calls it",
+  },
+  {
+    key: "packages/commands/src/writes.ts:opusRecordProblem#1",
+    disposition: "guarded",
+    why: "W-298: the id passes safeItemPath at its one caller, and the record is read through readContainedRegularFile, which refuses a symlink and an escape; the bytes are only parsed for the record's id",
   },
   {
     key: "packages/commands/src/writes.ts:runAnswer#1",
