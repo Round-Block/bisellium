@@ -46,11 +46,11 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: two Engineering, two UI (D-137).
 
-Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507.
+Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-300 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-508.
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
-In flight (records on opus branches; notes: ~/.bisellium-evidence/current-state.md): W-298 petitio verb: merged (#1048); next the merge perform that fetches it, then the two done performs. W-300 drawer step line: W-298 has landed, so next the hand step, then build review 3, pr, merge. W-451 work links: merged (#1045), master verify's tests gate failed once, unexplained, verify rerun after W-300 lands, on a quiet host, then done.
+In flight (records on opus branches; notes: ~/.bisellium-evidence/current-state.md): W-298 petitio verb: done (#1051). W-300 drawer step line: rebased after W-298 merged, spec re-signed, ready for review 3; then pr, merge. W-451 work links: merged (#1045), master verify's tests gate failed once, unexplained, verify rerun after W-300 lands, on a quiet host, then done.
 
 Ahead of the build, both greenlit: W-503 Home: drafted by the design lead, unrecorded, in .worktrees/W-503-spec; next the test check, handoff record, copy to main, signature and spec review (lex §9), then the Patron sees the screens. W-500 Runs screen: held for the Patron's choice from the research below.
 
@@ -58,7 +58,7 @@ The Claude usage hold is ~98% (Patron 2026-11-05).
 
 Research is its own lane, apart from the work lanes (Patron 2026-11-05). Run first: publish the page for round 3 of the work-in-flight research and notify the Patron, by the plan in current-state.md. They asked for an equivalent of pixel-agents and agentroom, with agents as animated characters; both reports are in ~/.bisellium-evidence/runs-research-1105/round3/. W-500 stays held until they choose.
 
-W-073, W-438 and W-136 stay halted until the freeze ends (D-178). W-507, W-298's remainder, has not started and follows W-298.
+W-073, W-438 and W-136 stay halted until the freeze ends (D-178). W-507, W-298's remainder, is greenlit, its spec being drafted, unsigned. W-508 (a shown reply is never sent back, so no reply reaches the Patron twice) is exempt from the freeze on the Patron's word, 2026-11-05.
 
 W-467 has not started: it follows W-503 in the Queue and takes the palette of W-451's Home. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
 
