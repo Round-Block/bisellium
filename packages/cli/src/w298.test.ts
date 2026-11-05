@@ -41,6 +41,17 @@ test("W-298-b1 behaviour 1: petitio files a sella's question to the Patron in th
   const plain = join(w.root, "plain");
   put(plain, "bisellium.yml", readFileSync(join(w.studio, "bisellium.yml"), "utf8"));
   assert.equal(petitio(w, ["--from", "builder", "--subject", "s", "body"], plain).status, 0, "an officina outside git files as any other");
+  const CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/;
+  const ctl = petitio(w, ["--from", "builder", "--subject", "red \u001b[31mALERT\u0007 \u009b0m end", "body"]);
+  assert.equal(ctl.status, 0, `an admitted control-bearing subject files and exits 0\n--- ${ctl.stderr}${ctl.stdout}`);
+  assert.equal(read(w, "P-003").data.subject, "red \u001b[31mALERT\u0007 \u009b0m end", "the record keeps the control-bearing subject exactly");
+  assert.doesNotMatch(ctl.stdout, CONTROL, "stdout carries no raw C0 or C1 control");
+  assert.match(ctl.stdout, /^P-003: red .*ALERT.* end\n$/, "the printed line still names the id and the subject's text");
+  for (const [label, args] of [["--from", ["--from", "no\u001bbody", "--subject", "s", "body"]], ["--opus", ["--from", "builder", "--subject", "s", "--opus", "W-\u001b9", "body"]], ["an unknown flag", ["--from", "builder", "--\u001bbogus", "body"]]] as const) {
+    const bad = petitio(w, [...args]);
+    assert.equal(bad.status, 2, `${label} with a control is refused\n--- ${bad.stderr}${bad.stdout}`);
+    assert.doesNotMatch(bad.stderr, CONTROL, `${label}: stderr carries no raw control`);
+  }
 
   git(w.repo, ["worktree", "add", "-q", "-b", "linked", join(w.root, "linked")]);
   const manifest = join(w.studio, "bisellium.yml");
