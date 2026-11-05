@@ -2,6 +2,7 @@ queues:
   engineering:
     lanes: { E2: W-505 }
     next:
+      - { opus: W-509, says: "a CLI verb lands a records PR: everything runs through the CLI; Patron 2026-11-05, exempt from the D-178 freeze" }
       - { opus: W-505, says: "guard sync accepts the sandbox's empty alternates placeholder; Patron go-ahead 2026-11-04, exempt from the D-174 freeze" }
       - { opus: W-298, says: "petitio verb" }
       - { opus: W-508, says: "a shown reply is never sent back: no reply reaches them twice; Patron 2026-11-05, exempt from the D-178 freeze" }
