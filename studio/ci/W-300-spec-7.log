@@ -1,0 +1,27 @@
+# opus: W-300
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T05:34:20.389Z
+# tree: tree:825fe31cc1eecdd2c6f79ff2a170c4586594195f
+# brief: briefs/W-300.md blob:113fc3852615705c1299b2f94cdf70bc0285ada5
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-300/studio","head":"d9e9a168395a7ae0b45d6691da088a158a448801","brief":"113fc3852615705c1299b2f94cdf70bc0285ada5","at":"2026-11-05T05:34:16.352Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/promise-ledger.md
+
+## Findings
+
+1. advisory — "The measure" said a rung with no `gh` read runs under 1 s; the built branch's review rung ran 1.11 s to 1.15 s, so that bound was false. The bound is now under 2 s, the producer's call, and stays under 5 s with a `gh` read; the Patron can veto it as Default 5, added at the end so no earlier brief line moves — check: /home/edckt/.bisellium-evidence/W-300-build/accept/measure.out
+2. advisory — measure.out does not say which rung asks `gh`. The trace names W-451 and W-500 and no other, and does not say which opera it read, so I ran W-300's read through a logging shim, which logged no call. That read is the review rung with actor producer, where the measure's was actor censor: the same step at a later record — check: /home/edckt/.bisellium-evidence/W-300-build/accept/diag/gh-calls.log, /home/edckt/.bisellium-evidence/W-300-spec/line-1105b/read-W-300.out
+3. advisory — the served suite failed one row on the built tip, and the brief now says so and does not call it a pass: 160 passed, 1 skipped, `W-407-b6` failed once. Not reproduced in 80 repeats on the tip and on master, W-300's diff touches no Inbox file, and a clock race is likely but not established. The last Acceptance bullet's demand stands, so this signature does not say the bullet is met; the fix is the producer's to file as its own opus — check: /home/edckt/.bisellium-evidence/W-300-build/accept/serve.log, /home/edckt/.bisellium-evidence/W-300-build/accept/diag/loaded.txt
+4. advisory — corrected under the brief's own sweep: the "No existing row flips" bullet cited `gates-proto.out` for "160 rows, `W-300-b3` and the screenshot rows among them", and for every census row. That log keeps `160 passed`, a last row `ok 161` and exit 0, and names no served row, so the bullet now says the served rows pass there by summary alone and cites `green-b3.log` for `W-300-b3` — check: /home/edckt/.bisellium-evidence/W-300-spec/gates-proto.out, /home/edckt/.bisellium-evidence/W-300-spec/gates.sh
+5. advisory — not corrected, outside this revision's two sentences: Intent's "The cost, and the bound" still gives the 2026-11-04 scratch run's figures, 0.25 s to 0.3 s for W-300 and W-500 among them, which are not true of those rungs now. The measure bullet says what that run was. No later claim leans on those figures but the 15 s bound's "more than twice the worst measured", which they do not move — check: studio/briefs/W-300.md:28, /home/edckt/.bisellium-evidence/W-300-spec/measure.out
+6. advisory — not corrected, outside this revision: Input domain row 13 names `npm run -s test:serve` with no directory, and at the root that script does not exist; the last Acceptance bullet now says where it lives — check: studio/briefs/W-300.md:151, /home/edckt/.bisellium-evidence/W-300-build/accept/serve.note
+7. advisory — not corrected, not this brief's file: `docs/NEXT.md` at d9e9a168 says "0.25 s to 0.3 s" for a checkpoint rung, where this run's lowest is 0.26 s; its other figures round fairly. The served suite and the measure ran on b6e73b70, and d92a3c53 and d9e9a168 after it change only `studio/opera/W-300.md` and `docs/NEXT.md` — check: docs/NEXT.md:338, /home/edckt/.bisellium-evidence/W-300-build/accept/measure.out
+8. advisory — no behaviour, promise, test row, limit, other Default or `Prototype:` line moves, and no brief line is renumbered, so the revision 2 ledger is cited unchanged — check: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/promise-ledger.md
+
+## Verdict
+
+passed — W-300's brief revision 2 re-signed by the architect (`claude-opus-5-5`, D-072, D-150 C) after the two acceptance runs: the measure and the served suite now say what ran, the no-`gh` bound moves to under 2 s for the Patron's veto, one failed served row is stated and not called a pass, and one sentence that cited `gates-proto.out` for rows it does not name is corrected; no design change.

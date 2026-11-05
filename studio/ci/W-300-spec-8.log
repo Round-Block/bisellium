@@ -1,0 +1,19 @@
+# opus: W-300
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a7f1-7569-7db2-9eec-cd5ce87bb99c
+# outcome: failed
+# at: 2026-11-05T05:38:13.620Z
+# tree: tree:825fe31cc1eecdd2c6f79ff2a170c4586594195f
+# brief: briefs/W-300.md blob:113fc3852615705c1299b2f94cdf70bc0285ada5
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-300/studio","head":"d9e9a168395a7ae0b45d6691da088a158a448801","brief":"113fc3852615705c1299b2f94cdf70bc0285ada5","at":"2026-11-05T05:38:08.240Z"}
+
+## Findings
+1. blocking — brief:256 The required measurement evidence exits 1 (`measure.exit`); the bullet reports only successful measurements and omits that non-zero result. Replace `the fingerprint the same before and after.` with `the fingerprint the same before and after; the script exited 1 because its final zero-match grep printed 0 and returned 1, so the measurements hold but the script itself did not exit cleanly.` [severity: S1] [design: keeps] [class: review×evidence-backfilled-or-absent] — check: /home/edckt/.bisellium-evidence/W-300-build/accept/measure.exit
+2. advisory — brief:256 `docs/NEXT.md` does not exactly name the cited run’s checkpoint range: it says 0.25–0.3 seconds, while `measure.out` records 0.26–0.30 seconds. Replace `docs/NEXT.md names the 2026-11-05 run's figures with their date` with `docs/NEXT.md approximates the 2026-11-05 run's figures with their date` [severity: S4] [class: review×evidence-backfilled-or-absent] — check: none: compare documented timing ranges with the acceptance measurement log
+
+## Verdict
+The served failure and revised bounds are honestly stated, but the required measurement evidence still omits its non-zero exit.
+VERDICT: FAIL
