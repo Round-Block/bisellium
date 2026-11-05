@@ -1,0 +1,22 @@
+# opus: W-298
+# phase: spec
+# round: 6
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T02:25:03.205Z
+# tree: tree:8c4a8fc902702b75f63db7a45b535c2a4f248aaf
+# brief: briefs/W-298.md blob:f55eb5e660447a7e48ffcdbf1ad6ce0dfc250089
+# ticket: {"opus":"W-298","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":"studio","head":"269efca49c404fc64842175be71936b961b3ae22","brief":"f55eb5e660447a7e48ffcdbf1ad6ce0dfc250089","at":"2026-11-05T02:24:57.576Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-298-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review 5's finding 1 is not fixed here: `openPetitiones` calls `resolveSeat` without checking that `manifest.sellae` is a list, so a mistaken mapping with an open ask-back that has a `to` makes `next` throw rather than hold on the producer; under D-061 §4 it is a stated limit in the closed promise, the lift promise, Input domain row 10, Limits and Out of scope, carried by W-507 — check: /home/edckt/.bisellium-evidence/W-298-spec/resign-1105/limits-r3.out, studio/opera/W-507.md
+2. advisory — spec review 3's finding 2, still open at review 5, is not fixed here: a manifest Patron that is itself an instance id, such as `builder.2`, is accepted as a petitio sender; it is a stated limit in the refusal promise, Input domain rows 1 and 5, Limits and Out of scope, carried by W-507 — check: /home/edckt/.bisellium-evidence/W-298-spec/resign-1105/limits-r3.out, studio/opera/W-507.md
+3. advisory — revision 3 changes this brief alone: the prototype's mbox keeps its sha, so its reds, kills, flips and gates were not rerun; the promise ledger is regenerated for the new line numbers, and the Codex test check is not rerun; the whole suite and `bisellium ci` remain the opus branch's gates — check: /home/edckt/.bisellium-evidence/W-298-spec/ledger-check.out, /home/edckt/.bisellium-evidence/W-298-spec/admission.out
+
+## Verdict
+
+passed — W-298's brief revision 3 signed by `ladder-lead` (`claude-opus-5-5`, the signer `spec_seats` names for the production collegium, D-150 C): cut to what passed under D-061 §4, the two open cases stated as limits naming W-507, Default 2 saying in plain words that an Inbox answer lifts a hold only after it reaches the agent clone, until W-301; no design, code, test or prototype change.

@@ -1,0 +1,22 @@
+# opus: W-298
+# phase: spec
+# round: 4
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-04T19:24:34.488Z
+# tree: tree:ce08b5a1021e99ff15b2b7802eaeea9f07217651
+# brief: briefs/W-298.md blob:bdb1a50a248d77cc2f478ac62c7555433121229c
+# ticket: {"opus":"W-298","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"debcb104eaf4070385457b63c3361698c3dd8fc6","brief":"bdb1a50a248d77cc2f478ac62c7555433121229c","at":"2026-11-04T19:24:29.807Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-298-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review 3's findings 1 to 4 are closed and advisory 5 is adopted; none is rebutted. Finding 4's row is tightened: the field checks apply to an open record only, since a resolved record's other fields reach no output, pinned by "a resolved record's other fields are not read" — check: studio/ci/W-298-spec-3.log, packages/cli/src/w298.test.ts
+2. advisory — the Git probe reads as outside git only on git's exact "not a git repository (or any of the parent directories): .git"; a looser match would read a linked worktree with its admin directory gone as outside, killed by K31 — check: /home/edckt/.bisellium-evidence/W-298-spec/kill-K31.out
+3. advisory — the Codex test check ran on revision 1 and was not rerun: revision 2 moves no file in Files owned and only adds cases inside the two rows, and the three `inventory B` flips its new read causes were found by this revision's gates; the whole suite and `bisellium ci` remain the opus branch's gates — check: /home/edckt/.bisellium-evidence/W-298-spec/fixture-census.md, /home/edckt/.bisellium-evidence/W-298-spec/gates-proto.out
+
+## Verdict
+
+passed — W-298's brief revision 2 signed by `ladder-lead` (`claude-opus-5-5`, the signer `spec_seats` names for the production collegium, D-150 C): review 3's findings closed in the verb and the hold, prototyped over master debcb104, both reds accepted, 45 kills guarded, eight rows flipped by design and named: revision 1's five and `inventory B`'s three, for the opus record's contained read.

@@ -1,0 +1,22 @@
+# opus: W-298
+# phase: spec
+# round: 2
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-04T17:24:39.085Z
+# tree: tree:ce08b5a1021e99ff15b2b7802eaeea9f07217651
+# brief: briefs/W-298.md blob:b878273865fe641acc617c710aa77010f43749fc
+# ticket: {"opus":"W-298","step":"spec","action":"verdict-spec","round":2,"actor":"architect","studio":"studio","head":"af688d1bd2ba7226e1262fe0f6da0ead36e66d92","brief":"b878273865fe641acc617c710aa77010f43749fc","at":"2026-11-04T17:24:35.160Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-298-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the Codex test check found one flip the draft did not name: `W-179-b1`'s declared list of next row files, since `w298.test.ts` imports the shared fixture; the file now joins that segment and the row is named in Acceptance — check: /home/edckt/.bisellium-evidence/W-298-spec/fixture-census.md, /home/edckt/.bisellium-evidence/W-298-spec/gates-proto.out
+2. advisory — the round trip crosses clones: an answer in the Patron's Inbox lifts the hold only when that file reaches the agent clone's main checkout, so it errs towards waiting until W-301 or a clerk's `answer`; stated as a limit and put to the Patron as Default 2 — check: docs/SERVE.md, studio/briefs/W-298.md
+3. advisory — the prototype ran the files over the change one at a time, not the whole suite, per this host's one-heavy-job rule; the whole suite and `bisellium ci` are the opus branch's gates — check: /home/edckt/.bisellium-evidence/W-298-spec/gates-proto.out
+
+## Verdict
+
+passed — W-298's brief revision 1 signed by `ladder-lead` (`claude-opus-5-5`), the seat `spec_seats` names for the production collegium, re-signing round 1's `architect` signature: the verb and the `next` hold, prototyped over master af688d1b, both reds accepted, 28 kills guarded, five rows flipped by design and named.

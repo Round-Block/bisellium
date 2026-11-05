@@ -1,0 +1,24 @@
+# opus: W-298
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a797-bec8-7501-b59f-4aec982aefd6
+# outcome: failed
+# at: 2026-11-04T19:30:12.174Z
+# tree: tree:ce08b5a1021e99ff15b2b7802eaeea9f07217651
+# brief: briefs/W-298.md blob:bdb1a50a248d77cc2f478ac62c7555433121229c
+# ticket: {"opus":"W-298","step":"spec","action":"verdict-spec","round":5,"actor":"spec-reviewer","studio":"studio","head":"debcb104eaf4070385457b63c3361698c3dd8fc6","brief":"bdb1a50a248d77cc2f478ac62c7555433121229c","at":"2026-11-04T19:30:08.865Z"}
+
+## Findings
+1. blocking — brief:117 [severity: S1] [design: changes] The fix adds `resolveSeat(manifest, to)` without validating that `manifest.sellae` is a list: if `examples/sample-studio` accidentally changes `sellae` to a mapping, its existing awaiting-reply A-2 makes a real `next W-007` throw instead of holding on the producer, and W-298-b2 never varies the manifest. Replace brief:117’s final limit with: `limit: a non-string opus matches nothing and is petitio.opus’s to block; before resolveSeat, openPetitiones requires patron to be absent or a nonblank string and sellae to be a list of mappings with nonblank string ids, otherwise it holds on the producer; resolveSeat’s dot semantics are reused unchanged`. [class: spec×fix-opens-new-surface] — check: packages/cli/src/w298.test.ts
+
+## Earlier findings
+- ci/W-298-spec-3.log #1: closed — brief:112 now defines the manifest and Git-probe domains; `manifestProblem`, `gitPlace`, and W-298-b1 reject malformed fields, indeterminate Git, and linked worktrees.
+- ci/W-298-spec-3.log #2: open — brief:108 still fails when the manifest Patron is itself an instance: with `patron: builder.2` and live seat `builder`, apply-b1-feat.py:95 compares `builder` to `builder.2` and accepts the real Patron’s `--from builder.2`; no test covers that configuration.
+- ci/W-298-spec-3.log #3: closed — brief:111, `opusRecordProblem`, and W-298-b1 now reject directories, symlinks, malformed front matter, wrong types, and mismatched opus ids through the contained reader.
+- ci/W-298-spec-3.log #4: closed — brief:117 and W-298-b2 now validate every open record field the hold prints, while expressly not reading resolved or other-opus fields.
+
+## Verdict
+The opus-record and open-field fixes stand, but the Patron-instance case remains open and the hold fix introduces an unvalidated manifest reader.
+VERDICT: FAIL
