@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-508-b2\s --import tsx packages/cli/src/w508.test.ts
+# exit: 1
+# at: 2026-11-05T13:09:02.786Z
+# sella: architect
+# tree: tree:4be8f9d1ba2015dfb4b1774c0fdf2636bb72098f
+# ticket: {"opus":"W-508","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-508/studio","head":"adea0c64f20f15f3b0228be53240d464fb3aeff4","brief":"9244d8346cb7c65c76c5c6643bb7c73c18132a98","at":"2026-11-05T13:09:02.743Z"}
+
+TAP version 13
+# Subtest: W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' own sources, through systemMessage alone, with no second reply
+not ok 1 - W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' own sources, through systemMessage alone, with no second reply
+  ---
+  duration_ms: 7.458579
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-508/packages/cli/src/w508.test.ts:2:3745'
+  failureType: 'testCodeFailure'
+  error: |-
+    the hook shows the latest reading
+    + actual - expected
+    
+    + ''
+    - 'Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k'
+  actual: ''
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-508/packages/cli/src/w508.test.ts:131:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18.603676
