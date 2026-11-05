@@ -1,6 +1,6 @@
 /**
  * packages/cli/src/guard.ts — W-310 (with W-290): the guard `bisellium hook-event guard` runs for
- * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit), SubagentStop and Stop hooks. Deny-only at a tool call and a
+ * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit), SubagentStop, Stop and UserPromptSubmit hooks. Deny-only at a tool call and a
  * subagent's stop, and fail-open: it returns a refusal or nothing, never an allow, and hooks.ts lets the call run on any
  * error, unknown event or unreadable input. The main thread is a hook input without `agent_id`
  * (Claude Code sets it only inside a subagent, D-073 B).
@@ -22,7 +22,7 @@ import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { takeNotices } from "./review-notice.js";
-import { leaveReplyNote } from "./reply-note.js";
+import { leaveReplyNote, noteSession, takeReplyNote } from "./reply-note.js";
 import { claudeFresh, CONTEXT_WIND_DOWN, takeReading, type Reading } from "./usage-reading.js";
 
 type Dict = Record<string, unknown>;
@@ -955,9 +955,27 @@ export function stopOutput(input: Dict, home: string = homedir(), now: Date = ne
   return shown.length > 0 ? JSON.stringify({ systemMessage: shown.join("\n") }) : undefined;
 }
 
-/** W-508: what the guard prints on stdout for a hook input, exit 0: the Stop output; undefined for any other event. */
+/** W-508: UserPromptSubmit, the main thread's next turn: a JSON object whose `additionalContext` Claude Code hands the model
+ *  with the prompt: the reading, and the note of this session's earlier reply, taken once. Undefined when it holds neither.
+ *  A main-thread input has no `agent_id` and a session id the note store takes; any other, a wrong type included, is undefined
+ *  before the note or the usage sources are read. */
+export function promptOutput(input: Dict, home: string = homedir(), now: Date = new Date()): string | undefined {
+  const session = input["session_id"];
+  if (input["agent_id"] !== undefined || !noteSession(session)) return undefined;
+  const notes = takeReplyNote(home, session);
+  const reading = shownReading(takeReading(home, now, "prompt"));
+  const parts = [
+    ...(reading === undefined ? [] : [`Usage now: ${reading}. The Stop hook shows the Patron the latest reading under each reply, so a reply need not carry it.`]),
+    ...(notes.length === 0 ? [] : [`A reply in this session broke a reply rule at its Stop. It stands and is not sent back: do not resend or shorten it, answer this prompt. ${notes.join(" ")}`]),
+  ];
+  return parts.length > 0 ? JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: parts.join("\n") } }) : undefined;
+}
+
+/** W-508: what the guard prints on stdout for a hook input, exit 0: the Stop and UserPromptSubmit outputs; undefined for any
+ *  other event. */
 export function replyHookOutput(input: Dict): string | undefined {
-  return input["hook_event_name"] === "Stop" ? stopOutput(input) : undefined;
+  const event = input["hook_event_name"];
+  return event === "Stop" ? stopOutput(input) : event === "UserPromptSubmit" ? promptOutput(input) : undefined;
 }
 
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */

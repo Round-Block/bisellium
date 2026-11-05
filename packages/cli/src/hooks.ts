@@ -332,7 +332,8 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
 
 /** `hook-event guard` (W-310): the refusal on stderr and exit 2, which Claude Code shows the model and
  *  turns into a refused tool call (PreToolUse) or a subagent kept running (SubagentStop); exit 0 otherwise. A main-thread
- *  Stop is never refused, as its reply has been shown (W-508): `replyHookOutput` prints what it shows, exit 0.
+ *  Stop is never refused, as its reply has been shown, and a prompt is never blocked (W-508): `replyHookOutput` prints what
+ *  they show the Patron and hand the model, exit 0.
  *  Fail-open: a throw lands in runHookEvent's catch, which exits 0. */
 function handleGuard(payload: Record<string, unknown>): HooksResult {
   const said = replyHookOutput(payload);
