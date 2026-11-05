@@ -1,0 +1,25 @@
+# opus: W-300
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T02:31:36.275Z
+# tree: tree:eaded69e961f1a5c30a2361dad595bfd2e97d6a9
+# brief: briefs/W-300.md blob:f4001e8cef0c55b8ccfc102cf111ae1a18c66ee1
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-300/studio","head":"5dc73a1c2fc145b6e3891aeda509672c6af6fd01","brief":"f4001e8cef0c55b8ccfc102cf111ae1a18c66ee1","at":"2026-11-05T02:31:28.770Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/promise-ledger.md
+
+## Findings
+
+1. advisory — the Patron's "line wrap on the line under the title" is read as wrapping at every width with no limit on the lines, so nothing is cut and no ellipsis is drawn; the Patron can veto the reading, so it is the brief's Default 1 in plain words — check: brief Defaults item 1
+2. advisory — a 1000-character why is not clamped: the head is not fixed, it does not shrink and it scrolls with the drawer, and at 390x844 the longest why takes 30 lines and 540 px with the meta line on the first screen and the body reached by scrolling, so the promise is that all of it shows, with a tall head as the stated limit — check: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/green.log, apps/web/src/components/w025.css .board-drawer__header
+3. advisory — the fix is a fourth behaviour with its own red, not a rename alone: next and the red rule do not read a behaviour's name, but three reds all the replay's order no builder and no red for the wrap; behaviour 3 loses "on one line" and its red log stands as recorded — check: packages/cli/src/next.ts:1188, packages/cli/src/next.ts:1449, packages/commands/src/lifecycle.ts:969
+4. advisory — the signed red, greens and kills of behaviour 4 ran as a trial in the scratch worktree, never on the opus branch; the builder records the real red on its own commit and makes the fix from the text under The fix, exactly — check: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/trial.patch, /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/red-wrap.sh
+5. advisory — the first fixture for an unbroken why had hyphens, the browser broke there, and removing overflow-wrap went unseen until K37 said so; the fixture now has no break opportunity and K37 is guarded — check: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/kills-first.out, /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/kills.out
+6. advisory — the opus record's title still says "one line under the title"; the brief's title changes here and the record's is the producer's to amend — check: studio/opera/W-300.md
+
+## Verdict
+
+passed — W-300's brief revision 2 signed by the architect (`claude-opus-5-5`, D-072, D-150 C): the Patron's wrap ruling as a fourth behaviour, with its row, red, green and kills tried on a scratch tree, and every other decision of revision 1 standing.
