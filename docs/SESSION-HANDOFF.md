@@ -56,7 +56,7 @@ In flight (notes: ~/.bisellium-evidence/current-state.md): W-451 work links: mer
 
 Ahead of the build, greenlit: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home that D-175 says stands. It is branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1). Do no W-503 step before they answer; the producer's default is to restore the signed composition. D-181 restores the signed screens and puts Home after W-301.
 
-W-508 a shown reply: rebased, carries W-509's record and D-181 (D-181 line 1); next gates, review, pr; `.claude/settings.json` is code-owned, so the Patron merges. W-507 W-298's remainder: built, gates passed, on opus/W-507, parked until after M4 (D-181). W-509 a CLI verb lands a records PR: filed; `next` holds it until its record is on master.
+W-508 a shown reply: held: its review failed on the handoff it carried (ci/W-508-review-1.log on opus/W-508), and that branch still holds the two carried commits; its fate is decided after W-509. W-507 W-298's remainder: built, gates passed, on opus/W-507, parked until after M4 (D-181). W-509 a CLI verb lands a records PR: filed, next its spec.
 
 Open problem: `bisellium tick` exited 1, all five sella dailies failed with "No conversation found with session ID"; diagnose (W-300-build/rebase-1105/tick.out). To file: a brief for a UI spec must name the signed composition it follows, so the drift is not repeated.
 
