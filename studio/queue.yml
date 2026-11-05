@@ -50,7 +50,6 @@ queues:
     lanes: { UI2: W-451 }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
-      - { opus: W-500, says: "Runs screen: opus list with detail, Waiting on you, Now only: run status from code-owned hook status events" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
       - { opus: W-467, says: "Officina on Home's palette" }
       - { opus: W-504, says: "Home: Completion and Spend row (D-175 piece 4); needs W-439" }
@@ -65,6 +64,7 @@ cut:
   - { opus: W-457, says: "next names a builder, not ci --opus, when the signed brief's Files owned names a file no branch commit has touched since the signature" }
   - { opus: W-405, says: "the pr step refuses a kind: ui opus until the Patron's screen approval is recorded for its built screenshots" }
 deferred:
+  - { opus: W-500, says: "Runs screen and its theatre view: after MVP (Patron 2026-11-05); status in its record" }
   - { opus: W-484, says: "Doc rules: byte cap, real rule ids, link fragments; docs-drift lint folded in" }
   - { opus: W-485, says: "ADOPTION.md restructured as a lean agent-readable contract" }
   - { opus: W-486, says: "The application schedules the daily retro" }
