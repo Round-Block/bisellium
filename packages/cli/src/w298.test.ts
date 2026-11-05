@@ -6,7 +6,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { parseFrontMatter, snapshotDir } from "@bisellium/adapter-native";
@@ -101,4 +101,112 @@ test("W-298-b1 behaviour 1: petitio files a sella's question to the Patron in th
   const declared = good.replace("sellae:\n", "sellae:\n  - { id: patron, collegium: engineering, kind: agent }\n");
   under(declared, "the Patron declared as a seat", ["--from", "patron", "--subject", "s", "body"], /"patron" is the Patron/);
   under(declared, "an instance of the Patron's seat", ["--from", "patron.2", "--subject", "s", "body"], /"patron\.2" is the Patron/);
+});
+
+test("W-298-b2 behaviour 2: next names the Patron and holds while a petitio naming the opus is open, and reads what it cannot read as a hold", { timeout: 600_000 }, () => {
+  const w = world("w298-b2", "reds", { automated: true });
+  const SEAM = { env: { BISELLIUM_TEST_SILENCE_ENTRIES: "0" } };
+  const named = (label: string): void => {
+    const r = next(w, [OPUS, ...BUDGET]);
+    expectStep(r, "build", "named", label);
+    assert.equal(r.status, 0, ran(label, r));
+  };
+  const holds = (label: string, actor: string, why: RegExp): void => {
+    const r = next(w, [OPUS, ...BUDGET]);
+    assert.equal(r.first, `next: ${OPUS} build held`, ran(label, r));
+    assert.equal(r.status, 1, ran(label, r));
+    assert.equal(r.kv.get("actor"), actor, label);
+    assert.match(r.kv.get("why") ?? "", why, label);
+  };
+  const file = (id: string, state: string, opus: string, to = "patron"): void => put(w.studio, `petitiones/${id}.md`, `---\nid: ${id}\nfrom: builder\nto: ${to}\nstate: ${state}\nopus: ${opus}\n---\nbody\n`);
+
+  named("no petitiones directory holds nothing");
+  const open = next(w, [OPUS, ...BUDGET], SEAM);
+  assert.match(open.kv.get("health") ?? "", /silence not judged/, "the dispatch order reads its silence before a petitio is filed");
+
+  verb(w.repo, ["petitio", "--from", "builder", "--subject", "Which default?", "--opus", OPUS, "--studio", w.studio, "--now", NOW_ISO, "The whole question."]);
+  const held = next(w, [OPUS, ...BUDGET], SEAM);
+  assert.equal(held.first, `next: ${OPUS} build held`, ran("an open petitio holds the opus at its own rung", held));
+  assert.equal(held.status, 1, ran("a held opus exits 1", held));
+  assert.equal(held.kv.get("actor"), "patron", "next names the Patron as the actor");
+  assert.equal(held.kv.get("why"), `P-001 asks the Patron: Which default?; answer in the Inbox, or: bisellium answer --petitio P-001 <reply…> --studio studio`, "the why names the petitio, its subject and how to answer");
+  assert.equal(held.kv.get("underlying"), open.kv.get("why"), "the rung it would otherwise name stays visible");
+  assert.equal(held.kv.has("command"), false, "a held opus gets no order");
+  assert.equal(held.kv.get("health"), "no step recorded", "a held opus reads no silence: it waits on the Patron");
+
+  const all = next(w, ["--all"], { clock: false });
+  assert.equal(all.status, 1, ran("next --all exits 1 on a held opus", all));
+  assert.match(all.out, new RegExp(`^next: ${OPUS} build held · actor: patron · why: P-001 asks the Patron: Which default\\?; answer in the Inbox, or: bisellium answer --petitio P-001 <reply…> --studio studio · traditio: .*$`, "m"), "next --all prints the same hold");
+
+  verb(w.repo, ["answer", "--petitio", "P-001", "--ask-back", "Which one do you recommend?", "--studio", w.studio, "--now", NOW_ISO]);
+  holds("a Patron's question back holds on the sella it asks", "builder", /^P-001: the Patron asked back; builder replies$/);
+  verb(w.repo, ["answer", "--petitio", "P-001", "Take the first.", "--studio", w.studio, "--now", NOW_ISO]);
+  named("the answer lifts the hold");
+
+  file("P-30", "needs_you", "W-901");
+  named("a petitio naming another opus holds nothing");
+  verb(w.repo, ["petitio", "--from", "builder", "--subject", "No opus", "--studio", w.studio, "--now", NOW_ISO, "A question about no one opus."]);
+  named("a petitio naming no opus holds nothing");
+  put(w.studio, "petitiones/notes.txt", "not a record\n");
+  named("a file that is no record is not read");
+
+  file("P-10", "needs_you", OPUS);
+  file("P-9", "awaiting_reply", OPUS, "builder");
+  holds("two open petitiones are named in id order, the Patron first among actors", "patron", /^P-9: the Patron asked back; builder replies; P-10 asks the Patron; answer in the Inbox, or: bisellium answer --petitio P-10 <reply…> --studio studio$/);
+  file("P-9", "resolved", OPUS);
+  file("P-10", "resolved", OPUS);
+  named("a resolved petitio holds nothing");
+
+  file("P-11", "closed", OPUS);
+  holds("a state no reader knows holds, on the producer", "producer", /^petitiones\/P-11\.md: state "closed" is no petitio state$/);
+  file("P-11", "closed", "W-901");
+  named("an unknown state on another opus is not this opus's hold");
+  file("P-11", "resolved", OPUS);
+  put(w.studio, "petitiones/P-12.md", `---\nid: P-1\nfrom: builder\nto: patron\nstate: needs_you\nopus: ${OPUS}\n---\nbody\n`);
+  holds("an id that is not its filename holds, on the producer", "producer", /^petitiones\/P-12\.md: id "P-1" does not match its filename$/);
+  put(w.studio, "petitiones/P-12.md", `---\nid: P-12\nfrom: builder\nto: patron\nstate: needs_you\nopus: ${OPUS}\nsubject: "  "\n---\nbody\n`);
+  holds("a blank subject holds, on the producer", "producer", /^petitiones\/P-12\.md: subject must be a nonblank string$/);
+  put(w.studio, "petitiones/P-12.md", `---\nid: P-12\nfrom: builder\nto: patron\nstate: needs_you\nopus: ${OPUS}\nsubject: 7\n---\nbody\n`);
+  holds("a subject that is no string holds, on the producer", "producer", /^petitiones\/P-12\.md: subject must be a nonblank string$/);
+  file("P-12", "needs_you", OPUS, "builder");
+  holds("a question addressed past the Patron holds, on the producer", "producer", /^petitiones\/P-12\.md: needs_you must be addressed to the patron, not "builder"$/);
+  file("P-12", "awaiting_reply", OPUS, "nobody");
+  holds("an ask-back to no declared sella holds, on the producer", "producer", /^petitiones\/P-12\.md: to "nobody" is no declared sella$/);
+  put(w.studio, "petitiones/P-12.md", `---\nid: P-12\nfrom: patron\nstate: awaiting_reply\nopus: ${OPUS}\n---\nbody\n`);
+  holds("an ask-back to no one holds on the producer", "producer", /^P-12: the Patron asked back; producer replies$/);
+  put(w.studio, "petitiones/P-12.md", `---\nid: P-1\nfrom: builder\nto: nobody\nstate: resolved\nopus: ${OPUS}\nsubject: "  "\n---\nbody\n`);
+  named("a resolved record's other fields are not read");
+  put(w.studio, "petitiones/P-12.md", `---\nid: P-1\nfrom: builder\nto: nobody\nstate: needs_you\nopus: W-901\n---\nbody\n`);
+  named("another opus's fields are not this opus's hold");
+  unlinkSync(join(w.studio, "petitiones", "P-12.md"));
+  put(w.studio, "petitiones/P-11.md", "no front matter here\n");
+  holds("a record with no front matter holds, on the producer", "producer", /^petitiones\/P-11\.md cannot be read: .*missing front matter$/);
+  put(w.studio, "petitiones/P-11.md", "---\n- a list\n---\nbody\n");
+  holds("a record that is not a map holds, on the producer", "producer", /^petitiones\/P-11\.md cannot be read: its front matter is not a map$/);
+  unlinkSync(join(w.studio, "petitiones", "P-11.md"));
+  mkdirSync(join(w.studio, "petitiones", "P-11.md"));
+  holds("a record that is a directory holds, on the producer", "producer", /^petitiones\/P-11\.md cannot be read: .*$/);
+  rmdirSync(join(w.studio, "petitiones", "P-11.md"));
+  named("the hold lifts when the bad record is gone");
+  renameSync(join(w.studio, "petitiones"), join(w.studio, "petitiones-real"));
+  symlinkSync(join(w.studio, "petitiones-real"), join(w.studio, "petitiones"));
+  holds("a symlinked petitiones directory holds, on the producer", "producer", /^petitiones\/ cannot be listed: .*$/);
+
+  const p = world("w298-b2p", "spec");
+  expectStep(next(p, [OPUS]), "branch", "named", "the perform world starts at branch");
+  verb(p.repo, ["petitio", "--from", "builder", "--subject", "Before the branch", "--opus", OPUS, "--studio", p.studio, "--now", NOW_ISO, "body"]);
+  const refused = next(p, [OPUS, "--perform"]);
+  assert.equal(refused.first, `next: ${OPUS} branch held`, ran("--perform on a held opus performs nothing", refused));
+  assert.equal(gitYesNo(p.repo, ["rev-parse", "-q", "--verify", `refs/heads/opus/${OPUS}`]), false, "--perform on a held opus makes no branch");
+  verb(p.repo, ["answer", "--petitio", "P-001", "go", "--studio", p.studio, "--now", NOW_ISO]);
+  const performed = next(p, [OPUS, "--perform"]);
+  assert.equal(performed.first, `next: ${OPUS} branch performed`, ran("--perform runs once the petitio is answered", performed));
+
+  const d = world("w298-b2d", "done");
+  const before = next(d, [OPUS]);
+  verb(d.repo, ["petitio", "--from", "builder", "--subject", "After it was done", "--opus", OPUS, "--studio", d.studio, "--now", NOW_ISO, "body"]);
+  const after = next(d, [OPUS]);
+  assert.deepEqual([after.first, after.status, after.kv.get("actor")], [before.first, before.status, before.kv.get("actor")], "a done opus is not held: its retro and checkpoint go on");
+  put(d.studio, "petitiones/P-002.md", "no front matter here\n");
+  assert.equal(next(d, [OPUS]).first, before.first, "a done opus reads no petitio at all");
 });
