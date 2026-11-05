@@ -5,6 +5,7 @@
  */
 import type { JSX } from "react";
 import type { DrawerDetail } from "../lib/board.js";
+import { BoardDrawerLadder } from "./BoardDrawerLadder.js";
 
 export interface BoardDrawerProps {
   detail: DrawerDetail | undefined;
@@ -22,6 +23,7 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
         </button>
         <span className="board-drawer__id">{detail.id}</span>
         <h2 className="board-drawer__title">{detail.title}</h2>
+        <BoardDrawerLadder id={detail.id} refresh={detail.events.length} />
         <span className="board-drawer__meta">
           {detail.sella}
           {detail.collegium ? ` · ${detail.collegium}` : ""} &middot; {detail.state}
