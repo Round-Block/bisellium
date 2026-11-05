@@ -29,6 +29,7 @@ export const USAGE =
   "       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium emit <json> [--studio <dir>] [--now <iso>]\n" +
   "       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium petitio --from <sella> --subject <text> [--opus <id>] [--studio <dir>] [--now <iso>] <body…>\n" +
   "       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium greenlight <opus> [--auto | --decline <reason>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]\n" +

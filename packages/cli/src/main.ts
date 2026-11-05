@@ -21,7 +21,7 @@ import { runCi } from "./ci.js";
 import { runTalk } from "./talk.js";
 import { runTick } from "./tick.js";
 import { runPause, runResume } from "./pause.js";
-import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
+import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget, runPetitio } from "./writes.js";
 import { runDelegate } from "./delegate.js";
 import { runProbe } from "./probe.js";
 import { mergeRefusal } from "./integrate.js";
@@ -42,7 +42,7 @@ import { instant } from "@bisellium/schema";
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
 // `run`, `verify`, `talk`, `tick`, `pause`, `resume`, `handoff`, `emit`,
-// `answer`, `greenlight`, `budget`, `new`, `instructions`, `retro` and
+// `answer`, `petitio`, `greenlight`, `budget`, `new`, `instructions`, `retro` and
 // `verdict` are
 // NOT listed here: each parses its own argv (several have a trailing
 // free-text argument — talk's message, answer's reply — the generic parser
@@ -115,6 +115,7 @@ async function main(argv: string[]): Promise<number> {
   // not a decree — not added to the force-BISELLIUM_ROLE=patron list.
   if (cmd === "probe") return (await runProbe(rest)).exitCode;
   if (cmd === "emit") return runEmit(rest).exitCode;
+  if (cmd === "petitio") return runPetitio(rest).exitCode;
   if (cmd === "ready") return runReady(rest).exitCode;
   if (cmd === "halt") return runHalt(rest).exitCode;
   if (cmd === "waive") return runWaive(rest).exitCode;

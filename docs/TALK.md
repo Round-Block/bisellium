@@ -225,3 +225,17 @@ run it is on a different, failing harness. `bisellium probe` prints a
 warning when one id's harnesses disagree; nothing routes on `models.json`
 until the opus that wires dispatch says so.
 
+
+## bisellium petitio
+
+```bash
+npm run bisellium -- petitio --from <sella> --subject <text> [--opus <id>] [--studio <dir>] [--now <iso>] <body…>
+```
+
+A sella's question to the Patron outside a `talk` turn (W-298, D-080 D), filed as `petitiones/P-<n>.md`: `to` the
+manifest's patron, `state: needs_you`, `opened`, the one-line `subject` the Inbox shows as its row label, and the body
+verbatim. The id comes from the shared allocator. With `--opus <id>`, `next` holds that opus until the petitio is resolved
+(`docs/NEXT.md`); without it nothing is held. It refuses, exit 2 with nothing written, a missing `--from`, `--subject` or
+body, a blank or two-line subject, a `--from` that is not a live declared seat (the Patron included), an `--opus` with no
+record, and an officina in a linked worktree: file from the main checkout, the one `next` and the Inbox read. It writes
+the file and commits nothing; a records PR carries it to master. `answer --petitio` and the Inbox answer it.

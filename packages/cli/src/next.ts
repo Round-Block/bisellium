@@ -1042,6 +1042,58 @@ export interface Derived {
   uncut?: true;
 }
 
+/** W-298: the open petitiones naming `id`, in id order, from the main checkout's records (the ones `petitio` and the Inbox's `answer` write). Fails closed: a record that cannot be read may name this opus. */
+function openPetitiones(studioAbs: string, id: string, manifest: Manifest): { open: { id: string; asked: boolean; to: string; subject: string | undefined }[] } | { error: string } {
+  let names: string[];
+  try {
+    names = existingRealDirectory(studioAbs, "petitiones") === undefined ? [] : readdirSync(join(studioAbs, "petitiones"));
+  } catch (e) {
+    return { error: `petitiones/ cannot be listed: ${(e as Error).message}` };
+  }
+  const open: { id: string; asked: boolean; to: string; subject: string | undefined }[] = [];
+  for (const name of names.filter((n) => n.endsWith(".md")).sort((x, y) => x.localeCompare(y, "en", { numeric: true }))) {
+    const rel = `petitiones/${name}`;
+    const file = readContainedRegularFile(studioAbs, rel, "petitiones");
+    if ("error" in file) return { error: `${rel} cannot be read: ${file.error}` };
+    let data: unknown;
+    try {
+      data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
+    } catch (e) {
+      return { error: `${rel} cannot be read: ${(e as Error).message}` };
+    }
+    if (!isDict(data)) return { error: `${rel} cannot be read: its front matter is not a map` };
+    if (data["opus"] !== id || data["state"] === "resolved") continue;
+    if (data["state"] !== "needs_you" && data["state"] !== "awaiting_reply") return { error: `${rel}: state ${JSON.stringify(data["state"])} is no petitio state` };
+    const own = name.slice(0, -3);
+    const { id: named, subject, to } = data;
+    if (named !== undefined && named !== own) return { error: `${rel}: id ${JSON.stringify(named)} does not match its filename` };
+    if (subject !== undefined && (typeof subject !== "string" || subject.trim() === "")) return { error: `${rel}: subject must be a nonblank string` };
+    const asked = data["state"] === "needs_you";
+    if (asked && to !== undefined && to !== (manifest.patron ?? "patron")) return { error: `${rel}: needs_you must be addressed to the patron, not ${JSON.stringify(to)}` };
+    if (!asked && to !== undefined && (typeof to !== "string" || resolveSeat(manifest, to) === undefined)) return { error: `${rel}: to ${JSON.stringify(to)} is no declared sella` };
+    open.push({ id: own, asked, to: typeof to === "string" ? to : "producer", subject: typeof subject === "string" ? subject : undefined });
+  }
+  return { open };
+}
+
+/** W-298 (D-080 D): an open petitio naming the opus holds it at the rung it would name, on the Patron (or, once the Patron asked back, on the sella asked). A done opus is never held: its retro and checkpoint go on. */
+function petitioHold(d: Derived, f: Facts): Derived {
+  if (f.trunkRecord?.["state"] === "done") return d;
+  const read = openPetitiones(f.studioAbs, f.id, f.manifest);
+  const held = (actor: string, why: string): Derived => ({ step: d.step, status: "held", actor, why, extra: [["underlying", d.why]] });
+  if ("error" in read) return held("producer", read.error);
+  if (read.open.length === 0) return d;
+  const first = read.open.find((p) => p.asked);
+  const lines = read.open.map((p) => (p.asked ? `${p.id} asks the Patron${p.subject === undefined ? "" : `: ${p.subject}`}` : `${p.id}: the Patron asked back; ${p.to} replies`));
+  if (first === undefined) return held(read.open[0]!.to, lines.join("; "));
+  return held("patron", `${lines.join("; ")}; answer in the Inbox, or: bisellium answer --petitio ${first.id} <reply…> --studio ${f.studioRel}`);
+}
+
+/** W-298: the derivation every next.ts path acts on: the ladder (`deriveNext`), then the petitio hold. */
+function derivedStep(f: Facts): Derived {
+  return petitioHold(deriveNext(f), f);
+}
+
 /** The one legal next step, from facts alone (the only I/O is the lazy `pr()` read). */
 export function deriveNext(f: Facts): Derived {
   const { id } = f;
@@ -2735,7 +2787,7 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
   if (sequence.length > 0 && (sequence.length !== 1 || !SESSION_ID.test(sequence[0]!) || sequence[0] !== session))
     return heldResult(`refusing: ${recorded.log} records session ${session}, not the sequence's sole valid session (${before?.log})`);
   const outcome = recorded.outcome === "passed" ? "passed" : "failed";
-  for (const l of refreshTicket(f, deriveNext(f), nowMs)) log(l);
+  for (const l of refreshTicket(f, derivedStep(f), nowMs)) log(l);
   const r = capture(() => runReview([id, outcome === "passed" ? "--pass" : "--fail", "--evidence", `ci/${id}-review-${round}.log`, "--round", String(round), "--sella", censor, "--model", REVIEWER_MODEL, "--studio", wt.studio]));
   if (r.exit !== 0) return heldResult(`review refused: ${[...r.err, ...r.out].map(one).filter(Boolean)[0] ?? `exit ${r.exit}`}`);
   const paths = [`${studioRel}/ci/${id}-review-${round}.log`, `${studioRel}/${recordRel(id)}`];
@@ -3322,7 +3374,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
         lines.push(`next: ${id} failed · why: unknown opus: ${recordRel(id)} is in the working tree only, in neither master nor opus/${id}, so next ${id} refuses it`);
         continue;
       }
-      const d = deriveNext(f);
+      const d = derivedStep(f);
       // D-077 B: the opus's traditio, from the record the dispatch gate reads it from (the main checkout's before opus/<id>)
       const handover = handoverLine((f.tip === undefined ? recordOf(f.work, id) : (f.branchRecord ?? f.trunkRecord))?.["traditio"]);
       if ("error" in handover) {
@@ -3407,7 +3459,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   // W-430: the session's usage, read at most once and only when a dispatch order is gated
   let reading: Reading | undefined;
   const sessionUsage = (): Reading => (reading ??= takeReading(homedir(), new Date(a.nowMs), `${id} next`));
-  const derive = (facts: Facts): Derived => gateDispatch(deriveNext(facts), facts, a.budget, sessionUsage);
+  const derive = (facts: Facts): Derived => gateDispatch(derivedStep(facts), facts, a.budget, sessionUsage);
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
@@ -3452,7 +3504,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
     // ---- report mode (also --perform on a rung that is only named) ----
     if (!performable(d1)) {
       // W-233: the ticket is refreshed from the ungated derivation, before the --expect check
-      const ungated = deriveNext(f);
+      const ungated = derivedStep(f);
       const tickets = refreshTicket(f, ungated, a.nowMs);
       if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
       const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
@@ -3517,7 +3569,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         if (a.expect !== undefined && a.expect !== d2.step) return halt(refusalLines(d2));
         if (!performable(d2) || needsText(d2)) return { code: d2.status === "held" ? 1 : 0, lines: render(id, d2, f, d2.status), after: [], ok: false };
         // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
-        for (const l of refreshTicket(f, deriveNext(f), a.nowMs)) log(l);
+        for (const l of refreshTicket(f, derivedStep(f), a.nowMs)) log(l);
         const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
         const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
         let result: StepResult;
@@ -3558,7 +3610,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         // W-430: every rung performed (or held once performing) takes a usage reading, appended and printed
         const usageLines = rungUsage(f, d2.step, a.testClock ? a.nowMs : Date.now());
         f = gather(repo, opened.root, id);
-        const d3 = deriveNext(f);
+        const d3 = derivedStep(f);
         for (const l of refreshTicket(f, d3, a.nowMs)) log(l);
         const after = [`next-step: ${d3.step}`, ...(d3.status === "held" ? [`next-why: ${one(d3.why)}`] : [])];
         return { code: result.ok ? 0 : 1, lines: [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note], after, ok: result.ok, next: d3, usage: usageLines };

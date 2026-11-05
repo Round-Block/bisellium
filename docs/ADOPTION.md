@@ -556,7 +556,7 @@ nothing removes an entry once appended.
 
 ## petitiones/<id>.md
 
-Petitiones are for questions *not* about one opus (scope, aerarium, lex, routing); `opus` is optional. Item questions are gates.
+Petitiones are for questions to the Patron. `opus` is optional: most are about no one opus (scope, aerarium, lex, routing), and one that names an opus holds it, `next` naming the Patron as the actor, until it is resolved. What a gate decides stays a gate.
 
 ```yaml
 ---
@@ -566,15 +566,15 @@ from: eng-lead         # a sella, or the patron
 to: patron
 state: needs_you      # needs_you (to must be the patron) | awaiting_reply (from must be the patron) | resolved
 opened: 2026-09-17T09:58:00Z
-subject: "Split stacks: accept the scope drift, or cut to a new item?"  # required for new petitiones; advisory until W-038's writer stamps it — see below
+subject: "Split stacks: accept the scope drift, or cut to a new item?"  # required for new petitiones; `bisellium petitio` stamps it — see below
 ---
 The question, however many paragraphs it takes. Every paragraph travels to
 the Patron's inbox verbatim — no truncation. A subject is a row label, not a
 summary; anything it drops, the detail pane still has.
 ```
 
-`subject:` is required for new petitiones (the CLI writer stamps it once
-W-038 lands) and is checked, when present, as a non-blank string
+`subject:` is required for new petitiones (`bisellium petitio` stamps it and
+refuses a blank one) and is checked, when present, as a non-blank string
 (`petitio.subject`, blocking on a present-but-invalid value — blank,
 whitespace-only, or a non-string — advisory when the key is absent
 entirely). Absent, the inbox falls back to a legacy derivation from the
