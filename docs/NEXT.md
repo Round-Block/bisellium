@@ -334,3 +334,16 @@ refuses that call once with their text, so the session sends each to the Patron
 with PushNotification. Limits: the push is the session's tool call, not the
 CLI's; a notice waits for the main thread's next guarded call; a PR opened by
 hand is screened only when `review-request` is run for it.
+
+## The read for the console (W-300)
+
+`packages/cli/src/ladder-read.ts` answers what report mode says, as one JSON line
+(`LadderRead`: step, status, actor, why, round, health, PR), and writes nothing:
+no ticket, usage reading, marker or step log, no index refresh
+(`GIT_OPTIONAL_LOCKS=0`) and no git object (a scratch `GIT_OBJECT_DIRECTORY`, with
+the repository's as an alternate). It reads before the dispatch gate, as `next
+--all` does, so a budget or wind-down hold is not in it. `GET /api/opus/:id/ladder`
+serves it; a done or halted opus runs no read. Cost on this repository, 2026-11-04 UTC:
+0.25 s to 0.3 s, 2 s to 3 s on a rung that asks `gh` (`measure.out` in the W-300 evidence).
+Limits: git may freshen the mtime of a loose object it would have written, the same
+bytes; `gh`'s own state and the OS tmp dir are not the repository's.

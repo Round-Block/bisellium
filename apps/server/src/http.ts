@@ -30,6 +30,7 @@
  * directory sharing WEB_DIST's name as a prefix could pass).
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { ladderQueue, type LadderRead } from "./ladder.js";
 import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
@@ -57,6 +58,8 @@ export interface StartServerOptions {
    *  X-Bisellium-Token. Auto-generated when omitted (tests pin one so they
    *  can craft the header deterministically). */
   token?: string;
+  /** W-300: one opus's next step, injected like the runners; absent, the route answers `unavailable`. */
+  readLadder?: (id: string) => Promise<LadderRead>;
   /** Injected write runners, so apps/server calls no CLI module by name. */
   runners: {
     answer: (args: string[]) => { exitCode: number };
@@ -525,6 +528,7 @@ const ROUTE_INDEX_HTML = `<!doctype html>
 <li>GET /api/models</li>
 <li>GET /api/opera?state=&amp;collegium=</li>
 <li>GET /api/opus/:id</li>
+<li>GET /api/opus/:id/ladder</li>
 <li>GET /api/inbox</li>
 <li>GET /api/acta?days=</li>
 <li>GET /api/aerarium?period=</li>
@@ -683,6 +687,7 @@ async function route(
   checkStudio: StartServerOptions["checkStudio"],
   runners: StartServerOptions["runners"],
   getListing: () => Promise<ListingResult>,
+  readLadder: ((id: string) => Promise<LadderRead>) | undefined,
   token: string,
   acceptedOrigins: AcceptedOrigins,
   req: IncomingMessage,
@@ -729,6 +734,18 @@ async function route(
     const state = url.searchParams.get("state") ?? undefined;
     const collegium = url.searchParams.get("collegium") ?? undefined;
     return sendJson(res, 200, store.api.opera({ state, collegium }));
+  }
+
+  {
+    // W-300: read when asked, never on a Board load; a done or halted opus runs no read
+    const m = /^\/api\/opus\/([^/]+)\/ladder$/.exec(pathname);
+    if (method === "GET" && m) {
+      const id = decodeURIComponent(m[1]!);
+      const opus = store.api.opus(id);
+      if (!opus) return sendError(res, 404, "unknown opus");
+      if (opus.frontMatter.state === "done" || opus.frontMatter.state === "halted") return sendJson(res, 200, { id, read: "not-in-flight" } satisfies LadderRead);
+      return sendJson(res, 200, readLadder === undefined ? ({ id, read: "unavailable", why: "this server has no step read" } satisfies LadderRead) : await readLadder(id));
+    }
   }
 
   {
@@ -972,6 +989,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
   // GET /api/models' live listing: TTL-cached + timed out per-server-instance
   // (see createListingCache's docs).
   const getListing = createListingCache(opts.listModels ?? codexListModels, opts.listingTtlMs ?? MODELS_LISTING_TTL_MS);
+  const readLadder = opts.readLadder === undefined ? undefined : ladderQueue(opts.readLadder);
   // One store "event" listener for every connected /api/live client to fan
   // out from (W-016 behaviour 8) — never one listener per client.
   const sseHub = createSseHub(store);
@@ -994,7 +1012,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
       // response body instead of the terminal.
       process.stderr.write(`${method} ${url} ${res.statusCode} ${Date.now() - start}ms\n`);
     });
-    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, getListing, token, acceptedOrigins, req, res).catch((e) => serverError(res, e));
+    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, getListing, readLadder, token, acceptedOrigins, req, res).catch((e) => serverError(res, e));
   });
 
   await new Promise<void>((resolvePromise, reject) => {

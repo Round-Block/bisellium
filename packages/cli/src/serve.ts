@@ -10,8 +10,10 @@
  * once, at start.
  */
 import { resolve } from "node:path";
+import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { startServer, type StartServerOptions } from "@bisellium/server";
+import { fileURLToPath } from "node:url";
+import { startServer, type LadderRead, type StartServerOptions } from "@bisellium/server";
 import { runAnswer, runGreenlight, runBudget, runHandoff } from "@bisellium/commands/writes.js";
 import { runTalk } from "@bisellium/commands/talk.js";
 import { runPause, runResume } from "@bisellium/commands/pause.js";
@@ -29,6 +31,42 @@ const REAL_RUNNERS: StartServerOptions["runners"] = {
   resume: (args) => runResume(args),
   delegate: (args) => runDelegate(args),
 };
+
+/** W-300: the longest one step read may take: measured at 2 s to 4 s (docs/NEXT.md), and bounded so a hung git or gh cannot hold the line. */
+export const LADDER_READ_TIMEOUT_MS = 15_000;
+const LADDER_READ_BYTES = 1024 * 1024;
+
+/**
+ * W-300: one opus's step, read by a child process, since `gather` and `deriveNext` block on git and gh and the server must
+ * not. Never rejects: a child that fails, overruns or prints anything but its own answer reads `unavailable`.
+ */
+export function readLadderInChild(studioDir: string, id: string, opts: { entry?: string; timeoutMs?: number } = {}): Promise<LadderRead> {
+  const entry = opts.entry ?? fileURLToPath(new URL("./ladder-read.ts", import.meta.url));
+  const timeoutMs = opts.timeoutMs ?? LADDER_READ_TIMEOUT_MS;
+  return new Promise((settle) => {
+    const unavailable = (why: string): void => settle({ id, read: "unavailable", why });
+    const child = spawn(process.execPath, [...process.execArgv, entry, studioDir, id], { stdio: ["ignore", "pipe", "ignore"], timeout: timeoutMs, killSignal: "SIGKILL" });
+    const chunks: Buffer[] = [];
+    let bytes = 0;
+    child.stdout.on("data", (chunk: Buffer) => {
+      bytes += chunk.length;
+      if (bytes > LADDER_READ_BYTES) child.kill("SIGKILL");
+      else chunks.push(chunk);
+    });
+    child.on("error", (e) => unavailable(`the step read did not start: ${e.message}`));
+    child.on("close", (code, signal) => {
+      if (signal !== null) return unavailable(bytes > LADDER_READ_BYTES ? "the step read printed too much" : `the step read took longer than ${timeoutMs / 1000} s`);
+      if (code !== 0) return unavailable(`the step read exited ${code}`);
+      try {
+        const answer = JSON.parse(Buffer.concat(chunks).toString("utf8")) as LadderRead;
+        if (answer.id === id && (answer.read === "ok" || answer.read === "unavailable")) return settle(answer);
+      } catch {
+        /* falls through: not its answer */
+      }
+      unavailable("the step read answered nothing readable");
+    });
+  });
+}
 
 export interface RunServeOptions {
   /** Pinned clock override, used when `--now` isn't in `args` (tests). */
@@ -117,6 +155,7 @@ export async function runServe(args: string[], opts: RunServeOptions = {}): Prom
       now: parsed.now,
       checkStudio,
       runners: REAL_RUNNERS,
+      readLadder: (id) => readLadderInChild(studioDir, id),
       token: opts.token ?? randomBytes(24).toString("hex"),
     });
     console.log(`bisellium serve: listening on http://127.0.0.1:${started.port} (studio ${studioDir})`);
