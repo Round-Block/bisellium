@@ -1,0 +1,18 @@
+# opus: W-298
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1a9a8-addc-7b80-8c6d-75c95bad6861
+# outcome: failed
+# at: 2026-11-05T03:07:14.394Z
+# tree: tree:2791302c065bbd5bc6f8e19be2422adea50137de
+# brief: briefs/W-298.md blob:f55eb5e660447a7e48ffcdbf1ad6ce0dfc250089
+# ticket: {"opus":"W-298","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-298/studio","head":"29417260ab962ec6f0097dae303669174e9f024d","brief":"f55eb5e660447a7e48ffcdbf1ad6ce0dfc250089","at":"2026-11-05T03:02:44.184Z"}
+
+## Findings
+1. blocking — packages/commands/src/writes.ts:733 [severity: S1] `runPetitio` prints the admitted subject directly, so a one-line subject containing an ANSI control such as ESC reaches the terminal raw; this is inside the accepted domain and bypasses the sanitization expected for displayed record data (brief:82, brief:110). — check: packages/cli/src/w298.test.ts: add a CLI case asserting an admitted control-bearing subject is recorded exactly but stdout contains no raw C0/C1 controls [class: security×terminal-control-injection]
+
+## Verdict
+The record and hold behaviors otherwise match their rows, but the writer exposes an in-domain terminal-control injection.
+VERDICT: FAIL
