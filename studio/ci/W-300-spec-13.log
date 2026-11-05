@@ -1,0 +1,25 @@
+# opus: W-300
+# phase: spec
+# round: 13
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T12:51:01.896Z
+# tree: tree:489e07a771acf0e6ebcf41d819b9e12a70dfa8df
+# brief: briefs/W-300.md blob:c90c3f54a2fd564e39e9ccfc845ccd82dab734ff
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":13,"actor":"architect","studio":".worktrees/W-300/studio","head":"d689772d249be9ee76d66e63649cde2f32ece675","brief":"c90c3f54a2fd564e39e9ccfc845ccd82dab734ff","at":"2026-11-05T12:50:57.288Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-300-spec/serve-1105/promise-ledger.md
+
+## Findings
+
+1. advisory — build review 3's finding closed in the brief's words: the acceptance bullet said the served suite passes and recorded only an exit-1 run. It now cites a passing run of the whole suite, read at the log's end: `1 skipped`, `170 passed (42.2s)`, last row `ok 171`, exit 0 — check: /home/edckt/.bisellium-evidence/W-300-build/rebase-1105/serve-tip-2.log, /home/edckt/.bisellium-evidence/W-300-build/rebase-1105/serve-tip-2.exit
+2. advisory — the log names neither its command nor its commit. The command is the producer's record, and the bullet says so. The head rests on git, not the log: `d689772d` committed at 12:46:57 UTC, the log's last write at 12:48:33 UTC by mtime, and the head still `d689772d` with an empty status at 12:49 UTC — check: git -C /home/edckt/agents/bisellium/.worktrees/W-300 log -1 --format='%H %T %cI', stat of the log
+3. advisory — this is one pass, and the bullet says it does not establish that the likely race is gone. The earlier failure stands as it was: `W-407-b6` failed once at `tests-serve/w407.spec.ts:467`, reads 6, wanted 7, on `b6e73b70`, did not reproduce in 80 repeats, cause not established, fix outside this opus. The two runs are not on the same source: 31 files differ outside `studio/` between the two heads, and `w407.spec.ts` is not among them — check: git -C /home/edckt/agents/bisellium/.worktrees/W-300 diff --stat b6e73b70 d689772d -- apps packages docs scripts
+4. advisory — not changed, by this revision's scope: the bullet above, at brief:299, still says the whole served suite "has run once on the built tip, and one row failed", and its count of 160 is of `b6e73b70`. That is now true only of that earlier run. The corrected bullet says the earlier run is the one the bullet above counts; a reader of brief:299 alone sees the old count — check: studio/briefs/W-300.md:299, studio/briefs/W-300.md:300
+5. advisory — `bisellium ci --opus W-300 --studio studio` was not run by this signature, and neither was any other gate; the bullet's last sentence keeps that it must still pass. The sentence's subject moved from "That run" to "Neither run", because the bullet now holds two — check: studio/briefs/W-300.md:300
+6. advisory — one line of the brief changed, so no line number moved. The ledger is the W-298 seam's with its title changed and one line added for brief:300; its source line numbers are still the trial's and were not re-read against this head. No behaviour, limit, Default or the `Prototype:` line changed — check: git -C /home/edckt/agents/bisellium/.worktrees/W-300 diff --numstat, /home/edckt/.bisellium-evidence/W-300-spec/serve-1105/promise-ledger.md
+
+## Verdict
+
+passed — W-300's brief revision 2 re-signed by the architect (`claude-opus-5-5`, D-072, D-150 C) with one acceptance bullet corrected to name the passing served-suite run and keep the earlier failure as it was; no design change.
