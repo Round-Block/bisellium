@@ -642,9 +642,10 @@ function opusRecordProblem(root: string, id: string): string | undefined {
 }
 
 /** A linked worktree's officina is not the one `next` and the Inbox read; a directory outside git has none. Only git's own
- *  "no repository found" answer means outside: any other failure (no git, a linked worktree whose admin directory is gone) cannot tell. */
+ *  "no repository found" answer means outside: any other failure (no git, a linked worktree whose admin directory is gone) cannot tell.
+ *  Discovery may cross filesystems: a mount boundary above the officina (a sandbox's bound tmp) otherwise turns that answer into another wording. */
 function gitPlace(root: string): "main" | "linked" | "outside" | "unknown" {
-  const r = spawnSync("git", ["-C", root, "rev-parse", "--git-dir", "--git-common-dir"], { encoding: "utf8", env: { ...process.env, LC_ALL: "C" } });
+  const r = spawnSync("git", ["-C", root, "rev-parse", "--git-dir", "--git-common-dir"], { encoding: "utf8", env: { ...process.env, LC_ALL: "C", GIT_DISCOVERY_ACROSS_FILESYSTEM: "1" } });
   if (r.error !== undefined) return "unknown";
   if (r.status !== 0) return /^fatal: not a git repository \(or any of the parent directories\): \.git\s*$/.test(r.stderr) ? "outside" : "unknown";
   const [gitDir, commonDir] = r.stdout.trim().split("\n");
