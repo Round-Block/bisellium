@@ -14,7 +14,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 1. Read lex `studio/leges/production.md` §1-§8 and §10-§11; SessionStart injects §9 and runbook once `bisellium` is at master.
 2. Run: `bash scripts/agent-workspace.sh verify --inside`; `npm run -s bisellium -- next --all --studio studio --repo .` (read-only); `git status --short`; `node ~/.bisellium-evidence/handoff-check.mjs .`.
-3. Roles. A dispatched `ladder-runner` runs every record write (`next --perform`, `verdict`, `review`, `red`, `ready`, `done`, `branch`, `merge`) verbatim, never main thread. Engineering: Sonnet builders (background), Opus 5.5 architect, Codex `gpt-5.6-sol` review (D-066 C, D-072). `kind: ui`: Codex Sol drafts and signs, Opus 5.5 reviews spec, Codex `gpt-5.6-terra` builds, a fresh Sol session reviews build (D-091 A, D-099). `clerk` edits text only.
+3. Roles. A dispatched `ladder-runner` runs every record write (`next --perform`, `verdict`, `review`, `red`, `ready`, `done`, `branch`, `merge`) verbatim, never main thread. Engineering: Sonnet builders (background), Opus 5.5 architect, Codex `gpt-5.6-sol` review (D-066 C, D-072). `kind: ui`: Codex Sol drafts and signs, Opus 5.5 reviews spec, Codex `gpt-5.6-terra` builds, and `next` names the build reviewer (D-150 C). `clerk` edits text only.
 4. Known traps (each line opens `Standing:` or `Until W-<n>:`, the opus that retires it; at most 12; `check` refuses a line whose opus is done):
 - Standing: split a certify host-runner change out and land it first (W-323 pattern); the mint runs from the opus worktree with `--studio studio --repo .`.
 - Standing: `next` holds a signature or red on a stale handover: `bisellium handoff --opus <id> --sella producer --next … --studio <worktree>/studio`, commit the record. Every record write, the builder's `red` included, needs a `next` before it at the same head. Sign findings as `n. advisory — … — check: …` or `No findings`.
@@ -31,8 +31,8 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 5. Standing until their opus lands:
 - D-085 F rides the fix census and daily retro.
 - Records dates are UTC; Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the opus after W-292.
-6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro python3 -I retro-daily/retro.py . <date> --append (evidence paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
-7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227). Lane state lives in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (D-109).
+6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro `npm run -s bisellium -- retro --daily --studio studio` (evidence paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, each reply; UI Codex via codex-passes/ui-run.sh.
+7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227). The lanes are in studio/queue.yml; the producer's working notes are in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (notes, not a record; D-109 ended with W-333).
 
 ## Artifacts
 
@@ -50,14 +50,14 @@ Greenlit, named here until `process.handoff.queue` reads studio/queue.yml: W-074
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
-In flight (lane state: ~/.bisellium-evidence/current-state.md): W-298 petitio verb: build review 1 failed on a terminal-control bug, builder fix round next; W-300 drawer step line: wrap fix built, screens approved, build review 2 then pr; W-451 work links: merged (#1045), master verify's tests gate failed once, unexplained and not reproduced, verify rerun on a quiet host then done; W-500 Runs screen: spec re-signs next after the ui-lead's revise, build follows W-300 on master.
+In flight (records on opus branches; notes: ~/.bisellium-evidence/current-state.md): W-298 petitio verb: approved (#1048), left the merge queue: certify failed row W-298-b1, which passed locally; diagnose, fix, review, re-approval, merge. W-300 drawer step line: build review 3 held until W-298 lands, then hand step, review, pr, merge. W-451 work links: merged (#1045), master verify's tests gate failed once, unexplained, verify rerun after both land, on a quiet host, then done. Greenlit: W-500 Runs screen: spec held for the Patron's choice on https://claude.ai/artifact/T8VN1CF1f9SpbpKY7HdNgn.
 
-The Claude usage hold is ~98% (Patron 2026-11-05; lex change in PR #1046).
+The Claude usage hold is ~98% (Patron 2026-11-05).
 
 W-073, W-438 and W-136 stay halted until the freeze ends (D-178). W-507, W-298's remainder, has not started and follows W-298.
 
 W-467 and W-503 have not started: W-467 follows W-503, whose palette it takes. W-434 also links prototype hash, design digest, source tree, captures and reviews (design lead 11-01). To file: a decision replacing D-076 D's opus-per-class with a class registry and cost threshold. Also: a change so that `process.handoff.queue` reads studio/queue.yml, after which the id line above goes.
 
-W-281 rides any records PR. Backlog: W-427 (severity colours), W-438 (plain-English labels, after W-408), W-385 to W-391, W-397.
+W-281 rides any records PR. Halted: W-427 (severity colours). Backlog: W-385 to W-391, W-397.
 
 Later: every other opus record, re-ranked under D-083 A (last ranked list: history at 0553f97c). Greenlit (same history): none.
