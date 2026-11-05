@@ -95,6 +95,11 @@ test("W-298-b1 behaviour 1: petitio files a sella's question to the Patron in th
   put(w.root, "fakebin/git", "#!/bin/sh\nexit 1\n");
   chmodSync(join(w.root, "fakebin", "git"), 0o755);
   refused("a git that cannot answer", ["--from", "builder", "--subject", "s", "body"], /git cannot tell/, w.studio, { PATH: join(w.root, "fakebin") });
+  // a mount boundary above the officina (a sandbox's bound tmp) makes git answer "not a repository" in its other wording unless discovery may cross filesystems
+  put(w.root, "boundbin/git", '#!/bin/sh\nif [ "$GIT_DISCOVERY_ACROSS_FILESYSTEM" = 1 ]; then echo "fatal: not a git repository (or any of the parent directories): .git" >&2; else printf "fatal: not a git repository (or any parent up to mount point /)\\nStopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).\\n" >&2; fi\nexit 128\n');
+  chmodSync(join(w.root, "boundbin", "git"), 0o755);
+  const bound = run(w, ["petitio", "--from", "builder", "--subject", "s", "body", "--studio", plain], { PATH: join(w.root, "boundbin") });
+  assert.equal(bound.status, 0, `an officina outside git files though a mount boundary stops git's search\n--- ${bound.stderr}${bound.stdout}`);
 
   const good = readFileSync(manifest, "utf8");
   const under = (text: string, label: string, args: string[], reason: RegExp): void => {
