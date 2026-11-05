@@ -23,7 +23,7 @@ import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { takeNotices } from "./review-notice.js";
 import { leaveReplyNote } from "./reply-note.js";
-import { CONTEXT_WIND_DOWN, type Reading } from "./usage-reading.js";
+import { claudeFresh, CONTEXT_WIND_DOWN, takeReading, type Reading } from "./usage-reading.js";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -928,21 +928,31 @@ export function readingParts(r: Reading): string {
   const v = (n: number | null): string => (n === null ? "?" : String(n));
   return `Claude week ${v(pct(r.claude_week_used))}%, 5h ${v(pct(r.claude_5h_used))}% | Codex week ${v(pct(r.codex_week_used))}% | context ${v(contextK(r))}k of ${CONTEXT_WIND_DOWN / 1000}k`;
 }
+/** W-508: a reading as the hook shows it: `readingParts`, marked with when the Claude values were seen when the status line
+ *  is older than STALE_MS; undefined when no source gave a value, so a host with neither source shows nothing. */
+export function shownReading(r: Reading): string | undefined {
+  if ([r.claude_week_used, r.claude_5h_used, r.codex_week_used, r.context_tokens].every((v) => v === null)) return undefined;
+  return claudeFresh(r) || r.claude_seen === null ? readingParts(r) : `${readingParts(r)} (Claude values seen ${r.claude_seen})`;
+}
+
 /** The rules a main-thread final reply is judged by, in order; each note is one line. W-436 adds its rule here. */
 export const STOP_RULES: readonly StopRule[] = [replyLength];
 
 /** Stop (W-444, W-508): what the hook prints for the main thread's final reply, as Claude Code reads it: a JSON object whose
- *  one field `systemMessage` it shows the Patron, or undefined to print nothing. Each rule's note is left for the session's
- *  next turn and told to the Patron. A subagent (`agent_id`), a continuation another Stop hook caused (`stop_hook_active`)
- *  and a Stop with no reply text are not judged and show nothing. Never a refusal, so never a second reply. */
+ *  one field `systemMessage` it shows the Patron (the reading of the plans' own sources, then each rule's note), or undefined
+ *  to print nothing. Each rule's note is left for the session's next turn. A subagent (`agent_id`), a continuation another Stop hook caused (`stop_hook_active`)
+ *  and a Stop with no reply text are not judged and show nothing. An `agent_id` of a wrong type and a `stop_hook_active` that
+ *  is not boolean are refused here, before the reply is read, shown or recorded: neither is read as absent. Never a refusal, so never a second reply. */
 export function stopOutput(input: Dict, home: string = homedir(), now: Date = new Date(), rules: readonly StopRule[] = STOP_RULES): string | undefined {
-  if (str(input["agent_id"]) !== undefined || input["stop_hook_active"] === true) return undefined;
+  const active = input["stop_hook_active"];
+  if (input["agent_id"] !== undefined || typeof active !== "boolean" || active) return undefined;
   const reply = input["last_assistant_message"];
   if (typeof reply !== "string" || reply.trim() === "") return undefined;
   const notes = rules.flatMap((rule) => rule(reply, { input, home, now }) ?? []);
   const failed = notes.length > 0 ? leaveReplyNote(home, input["session_id"], notes) : undefined;
   const told = notes.map((n) => (failed === undefined ? `${n}; named to the model on its next turn` : `${n}; not recorded (${failed})`));
-  return told.length > 0 ? JSON.stringify({ systemMessage: told.join("\n") }) : undefined;
+  const shown = [...[shownReading(takeReading(home, now, "stop"))].flatMap((l) => l ?? []), ...told];
+  return shown.length > 0 ? JSON.stringify({ systemMessage: shown.join("\n") }) : undefined;
 }
 
 /** W-508: what the guard prints on stdout for a hook input, exit 0: the Stop output; undefined for any other event. */
