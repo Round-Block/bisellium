@@ -1,0 +1,21 @@
+# opus: W-300
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1a80a-8f51-7a71-98cf-3b70eaa20e30
+# outcome: failed
+# at: 2026-11-05T12:43:08.728Z
+# tree: tree:489e07a771acf0e6ebcf41d819b9e12a70dfa8df
+# brief: briefs/W-300.md blob:1b79056efc5a953a5b2f750b9805a29ecd29b5e2
+# ticket: {"opus":"W-300","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-300/studio","head":"a0a7ee569becdb8b629792b82103805be77c3f13","brief":"1b79056efc5a953a5b2f750b9805a29ecd29b5e2","at":"2026-11-05T12:42:11.602Z"}
+
+## Findings
+1. blocking — studio/briefs/W-300.md:300 [severity: S1] Reached through ci/W-300-review-2.log #1’s evidence class: the changed acceptance line claims the served suite passes but immediately records only an exit-1 full-suite run; targeted W-407 reruns do not supply the required passing full-suite evidence. brief:300 [class: review×evidence-backfilled-or-absent] — check: npm run -s test:serve (from apps/web)
+
+## Earlier findings
+- ci/W-300-review-2.log #1: closed — studio/briefs/W-300.md:299 now limits gates-proto.out to revision 1 before b4 and cites b4 only to the builder and trial runs that contain it.
+
+## Verdict
+The earlier attribution defect is fixed, but the changed acceptance evidence still lacks a passing served-suite run.
+VERDICT: FAIL
