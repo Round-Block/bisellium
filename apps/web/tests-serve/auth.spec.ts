@@ -44,7 +44,7 @@ test.describe("token delivery, mounted (W-067 behaviour 2)", () => {
 
   test("the entered token is used on the next write and survives a reload without re-prompting", async ({ page }) => {
     served = await startServed("auth-survive");
-    await page.goto(served.baseURL);
+    await page.goto(`${served.baseURL}/#/inbox`);
     await expect(page.locator(".token-prompt")).toBeVisible();
 
     await page.locator("#token-prompt-input").fill(served.token);
@@ -71,7 +71,7 @@ test.describe("token delivery, mounted (W-067 behaviour 2)", () => {
     // W-501: the reads need the token, so the screen loads, and the reason is typed, with the right one; the stored token
     // goes wrong just before the write, so only the write is refused.
     await seedToken(page, served);
-    await page.goto(served.baseURL);
+    await page.goto(`${served.baseURL}/#/inbox`);
     await expect(page.locator(".token-prompt")).toBeHidden();
     await page.locator(".inbox__row").first().click();
     await page.locator(".inbox__input-ratio").fill("approve: wrong token first");

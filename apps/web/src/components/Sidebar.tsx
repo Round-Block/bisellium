@@ -18,11 +18,12 @@ export interface SidebarProps {
 
 const attentionVisible = needsYouVisible;
 
-type IconName = "panel" | "inbox" | "board" | "seats" | "officina";
+type IconName = "panel" | "home" | "inbox" | "board" | "seats" | "officina";
 
 function SidebarIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
     panel: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /></>,
+    home: <><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v10h13V10M9.5 20v-6h5v6" /></>,
     inbox: <><path d="M4 5h16v14H4z" /><path d="M4 14h5l2 2h2l2-2h5" /></>,
     board: <><rect x="3" y="4" width="5" height="16" rx="1" /><rect x="10" y="4" width="5" height="11" rx="1" /><rect x="17" y="4" width="4" height="14" rx="1" /></>,
     seats: <><circle cx="8" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 20v-2a5 5 0 0 1 10 0v2M14 20v-1.5a4 4 0 0 1 7 0V20" /></>,

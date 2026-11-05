@@ -39,7 +39,7 @@ test.describe("the answer button, end to end (W-067 acceptance)", () => {
     const linesBefore = jsonlLines(timelinePath).length;
 
     // 1. open the console, paste the token `serve` printed.
-    await page.goto(served.baseURL);
+    await page.goto(`${served.baseURL}/#/inbox`);
     await expect(page.locator(".token-prompt")).toBeVisible();
     await page.locator("#token-prompt-input").fill(served.token);
     await page.locator(".token-prompt__submit").click();

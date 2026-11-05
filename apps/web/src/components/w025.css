@@ -3158,3 +3158,32 @@ details.officina__row > summary {
 .board-drawer__section-head {
   color: var(--accent-purple);
 }
+
+/* W-503: Home takes the W-451 palette and the existing shell spacing. */
+.home {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  padding: var(--sp-6);
+}
+
+.home__header {
+  margin-bottom: var(--sp-4);
+}
+
+.home__title {
+  margin: 0;
+  color: var(--accent-purple);
+  font: 700 30px/32px var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.home__lede {
+  margin: var(--sp-1) 0 0;
+  color: var(--ink-3);
+  font: 400 13px/18px var(--font-ui);
+}
+
+@media (max-width: 959px) {
+  .home { padding: var(--sp-4); }
+}

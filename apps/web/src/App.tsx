@@ -5,6 +5,7 @@ import { Officina } from "./screens/Officina.js";
 import { Inbox } from "./screens/Inbox.js";
 import { Seats } from "./screens/Seats.js";
 import { Board } from "./screens/Board.js";
+import { Home } from "./screens/Home.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
 import { beginReadMount, fetchInbox, fetchOfficina, fetchOpera, hasToken, rereadAfterTokenSaved, setUnauthorizedListener } from "./api.js";
 import { READY, type ScreenStatus } from "./lib/screenState.js";
@@ -160,7 +161,7 @@ export function App() {
       {/* W-341: focusable, so a keyboard user can scroll it at phone width (axe scrollable-region-focusable). */}
       <main className="shell__main" tabIndex={0}>
         <Fragment key={readEpoch}>
-        {route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
+        {route === "home" ? <Home onStatus={setStatus} /> : route === "officina" ? <Officina onStatus={setStatus} /> : route === "seats" ? <Seats onStatus={setStatus} /> : route === "board" ? (
           <Board
             onStatus={setStatus}
             onWaitingCount={setAttentionCount}

@@ -24,7 +24,7 @@ test.use({
 
 // behaviour 1: Inbox screen loads and shows the heading.
 test("inbox screen loads and shows heading", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/inbox");
   await expect(page.getByRole("heading", { name: "Inbox" })).toBeVisible();
 });
 

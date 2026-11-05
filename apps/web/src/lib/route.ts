@@ -1,8 +1,8 @@
 /**
  * apps/web/src/lib/route.ts — pure hash-routing map behind App.tsx. The map
- * is derived from nav.ts's NAV_ENTRIES (W-110): `/#/inbox` -> Inbox,
+ * is derived from nav.ts's NAV_ENTRIES (W-110): `/#/home` -> Home, `/#/inbox` -> Inbox,
  * `/#/board` -> Board, `/#/board/W-451` -> Board with that drawer target,
- * `/#/seats` -> Seats, `/#/officina` -> Officina, default -> Inbox.
+ * `/#/seats` -> Seats, `/#/officina` -> Officina, default -> Home.
  */
 import { NAV_ENTRIES } from "./nav.js";
 import type { Route } from "./nav.js";
@@ -46,7 +46,7 @@ export function parseLocation(hash: string): ParsedLocation {
       return { route: "board", boardOpusId: id };
     return { route: "board", boardPathError: "malformed" };
   }
-  return { route: BY_PATH.get(path) ?? "inbox" };
+  return { route: BY_PATH.get(path) ?? "home" };
 }
 
 export function parseRoute(hash: string): Route {
