@@ -66,7 +66,7 @@ detection. The Aedile owns the road, not the work travelling on it.
 - **Session hygiene.** Refresh before the context nears 350k (Patron 2026-10-13; subagent dispatches stay capped at 500k), at a clean
   point. The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
   automates fresh sessions; never run it while a session is working.
-- **Usage.** At ~87% Claude usage (the Patron reports it) start no new Opus
+- **Usage.** At ~98% Claude usage (the Patron reports it) start no new Opus
   work unless the Patron says go; never kill a running agent. Prefer Codex
   for drafting (D-027) and reviews when Claude is tight.
 - **Checkpoint after every opus:** a history row (`progress-body.html`) and
@@ -348,3 +348,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-10-22 | §8: the UI architect and the UI builder run Codex with its network sandbox lifted to run served browser rows; reviewers stay read-only (D-105) | Patron |
 | 2026-10-31 | §9 step 7: the daily retro is the qa-lead's, classes assigned to the owning collegium with the clerk (D-147) | Patron |
 | 2026-11-01 | §9 steps 0 and 7, §11: the daily retro runs by `retro --daily` with an owning lead per class; design mirrors engineering in roles and models (seat changes W-452); a new process rule binds only opera started after it merges (D-150) | Patron |
+| 2026-11-05 | §7: the hold on new Opus work moves from ~87% to ~98% Claude usage | Patron |
