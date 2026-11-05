@@ -343,7 +343,8 @@ no ticket, usage reading, marker or step log, no index refresh
 (`GIT_OPTIONAL_LOCKS=0`) and no git object (a scratch `GIT_OBJECT_DIRECTORY`, with
 the repository's as an alternate). It reads before the dispatch gate, as `next
 --all` does, so a budget or wind-down hold is not in it. `GET /api/opus/:id/ladder`
-serves it; a done or halted opus runs no read. Cost on this repository, 2026-11-04 UTC:
-0.25 s to 0.3 s, 2 s to 3 s on a rung that asks `gh` (`measure.out` in the W-300 evidence).
+serves it; a done or halted opus runs no read. Cost on this repository, 2026-11-05 UTC:
+0.25 s to 0.3 s on a checkpoint rung, about 1.1 s on a rung with git work and no `gh`,
+1.5 s to 2 s on a rung that asks `gh` (`measure.out` in the W-300 evidence).
 Limits: git may freshen the mtime of a loose object it would have written, the same
 bytes; `gh`'s own state and the OS tmp dir are not the repository's.
