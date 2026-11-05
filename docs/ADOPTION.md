@@ -556,7 +556,7 @@ nothing removes an entry once appended.
 
 ## petitiones/<id>.md
 
-Petitiones are for questions *not* about one opus (scope, aerarium, lex, routing); `opus` is optional. Item questions are gates.
+Petitiones are for questions to the Patron. `opus` is optional: most are about no one opus (scope, aerarium, lex, routing), and one that names an opus holds it, `next` naming the Patron as the actor, until it is resolved. What a gate decides stays a gate.
 
 ```yaml
 ---

@@ -230,6 +230,14 @@ record's `traditio.at` is not older than the newest red or review log
 orchestrator's attestation of the dispatch's context allowance: nothing measures
 the subagent and enforcement is the harness's.
 
+An open petitio holds its opus (W-298, D-080 D): while a record in the main checkout's `petitiones/` names the opus with
+`state: needs_you`, every path (report mode, `--perform`, `--chain`, `--all`) reads the rung it would name as held,
+`actor: patron`, exit 1, the why naming the petitio and how to answer it, `underlying:` the rung's own why, no order and
+no step ticket. `state: awaiting_reply` holds on the sella the Patron asked (`to`). A resolved record or one naming
+another opus holds nothing, nor does anything hold a done opus. A record that cannot be read (no front matter, not a
+map, not a regular file, a symlinked `petitiones/`) holds on the producer, naming the file, and so does an open record
+of this opus with an unknown state, an `id` that is not its filename, a blank `subject` or a wrong `to`. `next` reads only the main checkout's files, so an answer given elsewhere lifts the hold when it reaches them.
+
 Step health comes from evidence only. `next --perform` writes
 `<repo>/.bisellium/steps/<opus>.json` (`pid`, `start_ticks`, `output`,
 `writer`) and appends to `steps/<opus>.log`; `--track` registers a step the
