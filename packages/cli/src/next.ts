@@ -2110,7 +2110,7 @@ function parseMarker(text: string, id: string): Marker | string {
   return m as unknown as Marker;
 }
 
-function readMarker(repo: string, id: string): MarkerRead | undefined {
+export function readMarker(repo: string, id: string): MarkerRead | undefined {
   const path = markerPath(repo, id);
   let st;
   try {
@@ -2183,7 +2183,7 @@ type Health =
   | { kind: "unknown"; reason: string }
   | { kind: "anomaly"; ageS: number };
 
-function assess(read: MarkerRead | undefined, derived: Step, env: Env): Health {
+export function assess(read: MarkerRead | undefined, derived: Step, env: Env): Health {
   if (read === undefined) return { kind: "none" };
   if (read.marker === undefined) return { kind: "invalid", reason: read.invalid ?? "the marker is invalid" };
   const m = read.marker;
@@ -2250,7 +2250,7 @@ function newestFile(dir: string, walk: Walk): boolean {
  * Only an absent parent or lease (ENOENT) is nothing; any other failed read is `{ unknown }`, never a partial walk's answer.
  * W-502: a walk past `entries` listed entries answers a note saying it did not judge, never a partial walk's answer either.
  */
-function silence(repo: string, wtParent: string, id: string, nowMs: number, entries: number): { note: string } | { unknown: string } | undefined {
+export function silence(repo: string, wtParent: string, id: string, nowMs: number, entries: number): { note: string } | { unknown: string } | undefined {
   const absent = (e: unknown): boolean => (e as NodeJS.ErrnoException).code === "ENOENT";
   const mine = (parent: string): string[] => {
     let entries: Dirent[];
@@ -2279,7 +2279,7 @@ function silence(repo: string, wtParent: string, id: string, nowMs: number, entr
 }
 
 /** W-502: SILENCE_WALK_ENTRIES, or the test seam BISELLIUM_TEST_SILENCE_ENTRIES (a count, honoured only with BISELLIUM_TEST_CLOCK=1). */
-function silenceEntries(testClock: boolean): number {
+export function silenceEntries(testClock: boolean): number {
   const seam = process.env["BISELLIUM_TEST_SILENCE_ENTRIES"];
   return testClock && seam !== undefined && /^[0-9]+$/.test(seam) ? Number(seam) : SILENCE_WALK_ENTRIES;
 }
