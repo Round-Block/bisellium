@@ -2688,9 +2688,6 @@
   margin: 0 0 4px;
   color: var(--ink-2);
   font: 400 12px/18px var(--font-mono);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .board-drawer__ladder--patron {
@@ -2699,8 +2696,7 @@
 
 .board-drawer__ladder-text {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .board-drawer__ladder-pr {

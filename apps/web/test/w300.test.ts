@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
-test("W-300-b3 behaviour 3: the drawer shows the step on one line under the title, amber only when the actor is the Patron", { timeout: 400_000 }, () => {
+test("W-300-b3 behaviour 3: the drawer shows the step under the title, amber only when the actor is the Patron", { timeout: 400_000 }, () => {
   const r = spawnSync("npx", ["playwright", "test", "--config=apps/web/playwright.serve.config.ts", "--grep", "W-300-b3\\s"], { cwd: process.cwd(), encoding: "utf8", timeout: 380_000 });
   if (r.status === 0) return;
   const first = /^\s*Error: (.*)$/m.exec(`${r.stdout}${r.stderr}`);

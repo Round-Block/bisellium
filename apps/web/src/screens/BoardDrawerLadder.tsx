@@ -1,5 +1,5 @@
 /**
- * apps/web/src/screens/BoardDrawerLadder.tsx — W-300: one line under the drawer's title: the opus's next step, its actor,
+ * apps/web/src/screens/BoardDrawerLadder.tsx — W-300: the line under the drawer's title: the opus's next step, its actor,
  * round and health, then why, read from `GET /api/opus/:id/ladder` when the drawer opens and whenever its events change.
  * Amber only when the actor is the Patron. Read only: its one fetcher is `fetchLadder`.
  */
