@@ -30,8 +30,8 @@ interface NavEntry {
 const navEntries = (): readonly NavEntry[] | undefined => (nav as unknown as { NAV_ENTRIES?: readonly NavEntry[] }).NAV_ENTRIES;
 
 /** The mounted root element of each screen. */
-const SCREEN_ROOT: Record<string, string> = { inbox: ".inbox", board: ".board", seats: ".seats", officina: ".officina" };
-const ROUTES = ["inbox", "board", "seats", "officina"] as const;
+const SCREEN_ROOT: Record<string, string> = { home: ".home", inbox: ".inbox", board: ".board", seats: ".seats", officina: ".officina" };
+const ROUTES = ["home", "inbox", "board", "seats", "officina"] as const;
 
 let served: ServedInstance | undefined;
 test.afterEach(async () => {
@@ -80,7 +80,7 @@ test("W-110 behaviour 2: the rail reaches every screen it lists, says which one 
 
   // (b) clicking each rail link lands the hash, mounts that one screen and marks that one link active.
   const hash = (): Promise<string> => page.evaluate(() => location.hash);
-  for (const route of ["board", "seats", "officina", "inbox"]) {
+  for (const route of ["home", "board", "seats", "officina", "inbox"]) {
     await page.locator(`.sidebar__link[href="#/${route}"]`).click();
     await expect.poll(hash, `hash after clicking ${route}`).toBe(`#/${route}`);
     await expectOnlyScreen(page, route);
@@ -207,7 +207,7 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
       await page.screenshot({ path: join(dir, `${entry.route}-${width}.png`), fullPage: false });
     }
   }
-  const names = ["inbox-1280.png", "board-1280.png", "seats-1280.png", "officina-1280.png", "inbox-390.png", "board-390.png", "seats-390.png", "officina-390.png"];
+  const names = ["home-1280.png", "inbox-1280.png", "board-1280.png", "seats-1280.png", "officina-1280.png", "home-390.png", "inbox-390.png", "board-390.png", "seats-390.png", "officina-390.png"];
   expect(readdirSync(dir).filter((n) => n.endsWith(".png")).sort(), "the *.png names are exactly the fixed desktop and phone review set").toEqual([...names].sort());
   for (const name of names) {
     const file = join(dir, name);

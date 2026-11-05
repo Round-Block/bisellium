@@ -15,7 +15,7 @@ test("W-415-b1 behaviour 1: D-119's icon rail carries D-120's shared attention d
   assert.match(css, /\.sidebar\s*\{[^}]*padding:\s*8px 6px 16px/s, "wide toggle keeps one horizontal coordinate");
   assert.match(served, /1280 and 960/, "served row pins both wide widths");
   assert.match(served, /press\("Enter"\)[\s\S]*press\("Space"\)/, "native toggle is pinned by keyboard");
-  assert.match(sidebar, /type IconName = "panel" \| "inbox" \| "board" \| "seats" \| "officina"/, "console owns five inline icons");
+  assert.match(sidebar, /type IconName = "panel" \| "home" \| "inbox" \| "board" \| "seats" \| "officina"/, "console owns six inline icons including Home");
   assert.match(sidebar, /<svg[\s\S]*stroke="currentColor"[\s\S]*strokeWidth="1\.5"/, "icons share one monochrome stroke style");
   assert.match(sidebar, /title=\{collapsed \? e\.label/, "collapsed links have tooltips");
   assert.match(sidebar, /aria-current=\{active \? "page"/, "current screen is marked");

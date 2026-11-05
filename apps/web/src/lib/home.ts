@@ -44,11 +44,33 @@ export interface HomeSummary {
   wip: { id: string; label: string; count: number }[];
 }
 
-/** Red-stage seam: behaviour 3 replaces this empty summary with record counts. */
 export function homeSummary(
-  _officina: Pick<OfficinaResponse, "lifecycle">,
-  _opera: readonly OpusEntry[],
-  _health: HealthResponse,
+  officina: Pick<OfficinaResponse, "lifecycle">,
+  opera: readonly OpusEntry[],
+  health: HealthResponse,
 ): HomeSummary {
-  return { stuck: { count: 0, cue: "normal" }, health: { count: 0, cue: "normal", detail: "Healthy" }, wip: [] };
+  const stateToPhase = new Map(officina.lifecycle.states.map((state) => [state.id, state.phase] as const));
+  const activePhases = [...new Set(officina.lifecycle.states.map((state) => state.phase)
+    .filter((phase) => !["backlog", "planned", "done", "halted"].includes(phase)))];
+  const counts = new Map(activePhases.map((phase) => [phase, 0]));
+  let stuck = 0;
+  for (const item of opera) {
+    const phase = stateToPhase.get(item.state);
+    if (phase !== undefined && counts.has(phase)) counts.set(phase, (counts.get(phase) ?? 0) + 1);
+    if (phase !== "done" && phase !== "halted" && Object.values(item.probationes).some((gate) => gate.status === "failed")) stuck++;
+  }
+  const healthCount = health.blocks > 0 ? health.blocks : health.advisories;
+  const healthDetail = health.blocks > 0
+    ? `${health.blocks} blocking ${health.blocks === 1 ? "finding" : "findings"}`
+    : health.advisories > 0
+      ? `${health.advisories} high ${health.advisories === 1 ? "finding" : "findings"}`
+      : "Healthy";
+  return {
+    stuck: { count: stuck, cue: stuck > 0 ? "blocking" : "normal" },
+    health: { count: healthCount, cue: health.blocks > 0 ? "blocking" : health.advisories > 0 ? "high" : "normal", detail: healthDetail },
+    wip: activePhases.flatMap((phase) => {
+      const count = counts.get(phase) ?? 0;
+      return count === 0 ? [] : [{ id: phase, label: phase.replace(/_/g, " ").replace(/^./, (letter) => letter.toUpperCase()), count }];
+    }),
+  };
 }

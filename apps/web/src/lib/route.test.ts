@@ -1,6 +1,6 @@
 /**
  * apps/web/src/lib/route.test.ts — W-025 behaviour 9; W-065 behaviour 1
- * (Board and Seats routes; an unknown hash still falls back to inbox).
+ * (Board and Seats routes; W-503 moves the unknown-hash fallback to Home).
  */
 import { parseRoute } from "./route.js";
 
@@ -17,8 +17,8 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
 {
   check(9, 'route: "#/inbox" -> inbox', parseRoute("#/inbox") === "inbox", parseRoute("#/inbox"));
   check(9, 'route: "#/officina" -> officina', parseRoute("#/officina") === "officina", parseRoute("#/officina"));
-  check(9, 'route: "" (no hash) -> inbox', parseRoute("") === "inbox", parseRoute(""));
-  check(9, 'route: "#/" (root hash) -> inbox', parseRoute("#/") === "inbox", parseRoute("#/"));
+  check(9, 'route: "" (no hash) -> home', parseRoute("") === "home", parseRoute(""));
+  check(9, 'route: "#/" (root hash) -> home', parseRoute("#/") === "home", parseRoute("#/"));
 }
 
 // ---- W-065 behaviour 1: #/seats -> seats, #/board -> board, everything
@@ -28,9 +28,10 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   check(1, 'route: "#/board" -> board', parseRoute("#/board") === "board", parseRoute("#/board"));
   check(1, 'route: "#/inbox" unchanged', parseRoute("#/inbox") === "inbox", parseRoute("#/inbox"));
   check(1, 'route: "#/officina" unchanged', parseRoute("#/officina") === "officina", parseRoute("#/officina"));
-  check(1, 'route: "" unchanged', parseRoute("") === "inbox", parseRoute(""));
-  check(1, 'route: "#/" unchanged', parseRoute("#/") === "inbox", parseRoute("#/"));
-  check(1, 'route: unknown hash falls back to inbox', parseRoute("#/nonsense") === "inbox", parseRoute("#/nonsense"));
+  check(1, 'route: "#/home" -> home', parseRoute("#/home") === "home", parseRoute("#/home"));
+  check(1, 'route: "" now opens home', parseRoute("") === "home", parseRoute(""));
+  check(1, 'route: "#/" now opens home', parseRoute("#/") === "home", parseRoute("#/"));
+  check(1, 'route: unknown hash falls back to home', parseRoute("#/nonsense") === "home", parseRoute("#/nonsense"));
 }
 
 process.exit(failed ? 1 : 0);

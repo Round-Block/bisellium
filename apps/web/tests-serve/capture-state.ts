@@ -3,9 +3,10 @@ import { expect, type Page } from "@playwright/test";
 export const CAPTURE_NOW = "2026-09-25T09:35:43.947Z";
 export const CAPTURE_VIEWPORTS = [1280, 390] as const;
 
-export type CaptureRoute = "inbox" | "board" | "seats" | "officina";
+export type CaptureRoute = "home" | "inbox" | "board" | "seats" | "officina";
 
 const SCREEN_ROOT: Readonly<Record<CaptureRoute, string>> = {
+  home: ".home",
   inbox: ".inbox",
   board: ".board",
   seats: ".seats",
@@ -28,7 +29,10 @@ export async function expectCapturedScreenSettled(page: Page, route: CaptureRout
   const root = page.locator(SCREEN_ROOT[route]);
   await expect(root, `${route}: screen mounted`).toHaveCount(1);
 
-  if (route === "inbox") {
+  if (route === "home") {
+    await expect(page.locator('.shell__status[data-state="ready"]'), "home: its four reads have settled").toHaveCount(1);
+    await expect(page.locator(".home-card--needs"), "home: the attention composition has landed").toHaveCount(1);
+  } else if (route === "inbox") {
     await expect(page.locator('.shell__status[data-state="ready"]'), "inbox: its read has settled").toHaveCount(1);
     await expect(page.locator(".inbox__row").first(), "inbox: a served row is focused").toHaveAttribute("data-focused", "true");
   } else if (route === "board") {

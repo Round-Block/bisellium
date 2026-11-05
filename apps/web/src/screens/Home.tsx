@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { fetchInbox, fetchOfficina, fetchOpera, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
+import { fetchHealth, fetchInbox, fetchOfficina, fetchOpera, type HealthResponse, type InboxResponse, type OfficinaResponse, type OpusEntry } from "../api.js";
 import { attentionCollection, attentionTotal, type AttentionRow } from "../lib/board.js";
-import { homeAskText, homeNeeds } from "../lib/home.js";
+import { homeAskText, homeNeeds, homeSummary } from "../lib/home.js";
 import { READY, type ScreenStatus } from "../lib/screenState.js";
 
 interface HomeAttentionData {
   officina: OfficinaResponse;
   opera: OpusEntry[];
   inbox: InboxResponse;
+  health: HealthResponse;
 }
 
 export interface HomeProps {
@@ -20,15 +21,19 @@ function destination(item: AttentionRow): string {
   return item.destination === "board" && item.boardEntry ? `#/board/${encodeURIComponent(item.id)}` : "#/inbox";
 }
 
+function Cue({ severity }: { severity: "blocking" | "high" | "normal" }) {
+  return <span className={`severity-cue severity-cue--${severity}`} aria-hidden="true" />;
+}
+
 export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps = {}) {
   const [data, setData] = useState<HomeAttentionData>();
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
     onStatus?.({ state: "loading", text: "Loading home…" });
-    Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true })]).then(([officina, opera, inbox]) => {
+    Promise.all([fetchOfficina(), fetchOpera(), fetchInbox({ shared: true }), fetchHealth()]).then(([officina, opera, inbox, health]) => {
       if (!active) return;
-      setData({ officina, opera, inbox });
+      setData({ officina, opera, inbox, health });
       setFailed(false);
       const attention = attentionCollection(officina, opera, inbox);
       onNeedsYouCount?.(attentionTotal(attention));
@@ -43,6 +48,8 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
   }, [onStatus, onNeedsYouCount, onAttentionLoaded]);
   const attention = data ? attentionCollection(data.officina, data.opera, data.inbox) : [];
   const groups = homeNeeds(attention);
+  const summary = data ? homeSummary(data.officina, data.opera, data.health) : undefined;
+  const wipTotal = summary?.wip.reduce((total, row) => total + row.count, 0) ?? 0;
   return (
     <div className="home">
       <header className="home__header">
@@ -66,6 +73,30 @@ export function Home({ onStatus, onNeedsYouCount, onAttentionLoaded }: HomeProps
               </a>)}
             </section>)}
           </div>}
+        </article>
+        {summary && <aside className="home__tiles" aria-label="Stuck and Health">
+          <article className="home-tile" data-tile="stuck">
+            <div className="home-tile__head"><h2>Stuck</h2><Cue severity={summary.stuck.cue} /></div>
+            <strong className="home-tile__value">{summary.stuck.count}</strong>
+            <div className="home-tile__foot"><span>Work items with failed gates</span><a href="#/board">Board</a></div>
+          </article>
+          <article className="home-tile" data-tile="health">
+            <div className="home-tile__head"><h2>Health</h2><Cue severity={summary.health.cue} /></div>
+            <strong className="home-tile__value">{summary.health.count}</strong>
+            <div className="home-tile__foot"><span>{summary.health.detail}</span><a href="#/officina">Details</a></div>
+          </article>
+        </aside>}
+      </section>}
+      {summary && summary.wip.length > 0 && <section className="home__row home__row--work">
+        <article className="home-card home-card--wip">
+          <header className="home-card__head"><div><h2>Work in progress</h2><p>Active Board work by phase</p></div><a href="#/board">Board</a></header>
+          <div className="home-wip">
+            {summary.wip.map((row) => <div className="home-wip__row" key={row.id}>
+              <span>{row.label}</span>
+              <span className="home-wip__bar" aria-hidden="true"><span style={{ width: `${row.count / wipTotal * 100}%` }} /></span>
+              <strong>{row.count}</strong>
+            </div>)}
+          </div>
         </article>
       </section>}
     </div>

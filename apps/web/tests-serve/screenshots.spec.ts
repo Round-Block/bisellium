@@ -61,7 +61,10 @@ async function stabilizeOfficinaPath(page: Page): Promise<void> {
 }
 
 async function expectLoadedState(page: Page, route: string, width: number): Promise<void> {
-  if (route === "inbox") {
+  if (route === "home") {
+    await expect(page.locator('.shell__status[data-state="ready"]'), "home: all summary reads have settled").toHaveCount(1);
+    await expect(page.locator(".home-card--needs"), "home: Needs you is ready before capture").toHaveCount(1);
+  } else if (route === "inbox") {
     const inbox = await page.request.get(`${served!.baseURL}/api/inbox`, { headers: { "X-Bisellium-Token": served!.token } });
     const fixture = (await inbox.json()) as { petitiones: { id: string; opus: string }[] };
     expect(fixture.petitiones[0]).toMatchObject({ id: "A-1", opus: "W-004" });
