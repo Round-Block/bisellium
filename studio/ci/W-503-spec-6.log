@@ -1,0 +1,29 @@
+# opus: W-503
+# phase: spec
+# round: 6
+# sella: ui-lead
+# model: gpt-6-astra
+# session: 01a1abba-3a26-7073-847c-317f3bdbae78
+# outcome: passed
+# at: 2026-11-05T13:12:50.874Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# dispatch_prompt: ci/W-503-ui-prompt-6.md
+# design_digest: sha256:7c42d891c0282cd67eac038d6662db82c27c1ee87e2afca681d7dababd546a21
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":6,"actor":"ui-lead","studio":"studio","head":"9883a31b2bf9792c301c6a754c1e1e02c667c81d","brief":"9b989204c1f50a66fad868504a9426000d732763","at":"2026-11-05T13:12:44.990Z"}
+
+## Findings
+
+1. advisory — brief:15 — The agent-written fixed two-column rule reserves half of Needs you when only one group exists. That unused column serves no grouping purpose; this follows from the prototype CSS, since the supplied captures show two groups or none — replace with: “One populated group spans the card; two or more use at most two columns at 1280 and one column below 960, preserving group precedence and every ask label.” — check: apps/web/tests-serve/w503.spec.ts, b2 single-group width at 1280 with both sidebar states.
+
+## Earlier findings
+
+- ci/W-503-spec-3.log #1: closed — The revised prototype’s apps/web/src/lib/home.ts excludes done and halted phases; both b3 test definitions cover historical failures alongside multiple failed gates on one active opus and expect a count of 1.
+- ci/W-503-spec-3.log #2: closed — All eight recaptures show “Work items with failed gates”; the served b3 assertion checks that exact caption and counts the active opus once.
+- ci/W-503-spec-3.log #3: closed — Both home-needs-1280 captures now spread the two groups across the card, keeping their titles and combined asks on single lines; 640 and 390 retain readable stacking, and b2 covers two- and four-group geometry.
+
+## Recommendation
+
+The round-3 cue advisory is also closed: all eight recaptures show the high-advisory diamond, the prototype uses shared severity classes, and brief:19 and brief:54 state the corrected standard.
+Compared with round 3, desktop scanning is clearer, while narrow layouts and the honest empty-attention state retain their information without visible crowding or overflow.
+I support round 5’s single-group refinement as an advisory; the supplied screens demonstrate no remaining blocking defect or new loss of information.
+Verdict: passed

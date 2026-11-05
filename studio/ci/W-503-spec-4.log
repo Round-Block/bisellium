@@ -1,0 +1,25 @@
+# opus: W-503
+# phase: spec
+# round: 4
+# sella: ui-architect
+# model: gpt-5.6-sol
+# session: 01a1ab34-728f-77a3-b14c-41cea2a8a323
+# outcome: passed
+# at: 2026-11-05T13:07:21.713Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# brief: briefs/W-503.md blob:9b989204c1f50a66fad868504a9426000d732763
+# ticket: {"opus":"W-503","step":"spec","action":"verdict-spec","round":4,"actor":"architect","studio":"studio","head":"9883a31b2bf9792c301c6a754c1e1e02c667c81d","brief":"9b989204c1f50a66fad868504a9426000d732763","at":"2026-11-05T13:07:06.473Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-503-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — Stuck now counts each non-done/non-halted opus with one or several failed gates once and labels its unit `Work items with failed gates` — check: apps/web/src/lib/home.ts, apps/web/src/screens/Home.tsx, apps/web/test/w503.test.ts, apps/web/tests-serve/w503.spec.ts
+2. advisory — Health reuses the shared blocking square, high advisory diamond and healthy hollow-circle classes; the Home-only cue shapes and triangle are gone — check: apps/web/src/screens/Home.tsx, apps/web/src/components/w025.css, apps/web/test/w503.test.ts, apps/web/tests-serve/w503.spec.ts
+3. advisory — Two and four populated Needs you groups share the card in at most two columns at 1280 expanded and collapsed, then stack in one column below 960 without changing precedence or ask labels — check: apps/web/src/components/w025.css, apps/web/tests-serve/w503.spec.ts, shots/home-needs-1280-expanded.png, shots/home-needs-1280-collapsed.png, shots/home-needs-640.png, shots/home-needs-390.png
+4. advisory — The revised six-commit prototype reapplies to base 57718280 and origin/master 9883a31b, every commit builds, all assertion reds and mutations are accepted, and the focused rows, typecheck, build, lint and format pass — check: mbox-check.out, origin-master-apply.out, series-builds.txt, reds-host.out, ledger-kills.out, ledger-kills-served.out, gates-proto.out
+5. advisory — Eight recaptured review PNGs cover populated and resolved attention at 1280 expanded/collapsed, 640 and 390; inspection confirms full-width two-group use at 1280, one-column narrow groups, corrected caption/diamond cue and no horizontal overflow — check: capture-shots.out, shots/
+
+## Verdict
+
+passed — signature round 4 prepared but not recorded by the design lead, Codex `gpt-5.6-sol` under D-150 C, for `studio/briefs/W-503.md`; the revised six-commit prototype sha256 is `984d909d93cbd0ec35d85a54ba020cb7369d95da8491f100f40fb154cc44d9f4`, all four accepted ui-lead findings are closed without adding an owned file or flipping an outside-census row, and no commit to a branch, push, record signature, `next` or `verdict` was performed.
