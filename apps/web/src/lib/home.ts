@@ -1,4 +1,5 @@
 import type { AttentionRow } from "./board.js";
+import type { HealthResponse, OfficinaResponse, OpusEntry } from "../api.js";
 
 export interface HomeNeedGroup {
   id: "greenlights" | "human_gates" | "inbox_decisions" | "questions";
@@ -35,4 +36,19 @@ export function homeNeeds(attention: readonly AttentionRow[]): HomeNeedGroup[] {
     groups.find((group) => group.id === id)!.items.push(item);
   }
   return groups.filter((group) => group.items.length > 0);
+}
+
+export interface HomeSummary {
+  stuck: { count: number; cue: "blocking" | "normal" };
+  health: { count: number; cue: "blocking" | "high" | "normal"; detail: string };
+  wip: { id: string; label: string; count: number }[];
+}
+
+/** Red-stage seam: behaviour 3 replaces this empty summary with record counts. */
+export function homeSummary(
+  _officina: Pick<OfficinaResponse, "lifecycle">,
+  _opera: readonly OpusEntry[],
+  _health: HealthResponse,
+): HomeSummary {
+  return { stuck: { count: 0, cue: "normal" }, health: { count: 0, cue: "normal", detail: "Healthy" }, wip: [] };
 }

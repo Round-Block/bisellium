@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import type { InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
+import type { HealthResponse, InboxResponse, OfficinaResponse, OpusEntry } from "../src/api.js";
 import { attentionCollection } from "../src/lib/board.js";
-import { homeNeeds } from "../src/lib/home.js";
+import { homeNeeds, homeSummary } from "../src/lib/home.js";
 
 function servedRow(behaviour: number): void {
   const title = `W-503-b${behaviour}\\s`;
@@ -55,4 +55,38 @@ test("W-503-b2 behaviour 2: Needs you reuses D-151 groups and counts each attent
     ["questions", ["opus:W-404", "petitio:P-4"]],
   ], "Greenlight, Human gate, Inbox decision and questions group without duplicating a combined opus");
   servedRow(2);
+});
+
+test("W-503-b3 behaviour 3: Stuck, Health and one signed work summary use only recorded facts", { timeout: 300_000 }, () => {
+  const lifecycle = { id: "opus", states: [
+    { id: "backlog", name: "Backlog", phase: "backlog" },
+    { id: "greenlit", name: "Greenlit", phase: "planned" },
+    { id: "building", name: "Building", phase: "in_progress" },
+    { id: "checking", name: "Checking", phase: "verifying" },
+    { id: "review", name: "Review", phase: "awaiting_review" },
+    { id: "halted", name: "Halted", phase: "halted" },
+    { id: "done", name: "Done", phase: "done" },
+  ] };
+  const failed = opus("W-10", "checking");
+  failed.probationes = { tests: { status: "failed" }, lint: { status: "failed" } };
+  const halted = opus("W-12", "halted");
+  halted.probationes = { tests: { status: "failed" } };
+  const done = opus("W-13", "done");
+  done.probationes = { tests: { status: "failed" } };
+  const opera = [opus("W-7", "backlog"), opus("W-8", "greenlit"), opus("W-9", "building"), failed, opus("W-11", "review"), halted, done];
+  const health: HealthResponse = { at: "", ok: false, blocks: 0, advisories: 2, findingsByRule: {}, autonomy: { paused: false }, lastTick: "", due: [] };
+  const summary = homeSummary({ lifecycle }, opera, health);
+  assert.deepEqual(summary, {
+    stuck: { count: 1, cue: "blocking" },
+    health: { count: 2, cue: "high", detail: "2 high findings" },
+    wip: [
+      { id: "in_progress", label: "In progress", count: 1 },
+      { id: "verifying", label: "Verifying", count: 1 },
+      { id: "awaiting_review", label: "Awaiting review", count: 1 },
+    ],
+  }, "active work with several failed gates counts once while done and halted failures do not contribute");
+  assert.equal(homeSummary({ lifecycle }, opera, { ...health, blocks: 1 }).health.cue, "blocking", "a blocking finding uses the shared blocking cue");
+  assert.equal(homeSummary({ lifecycle }, opera, { ...health, ok: true, advisories: 0 }).health.cue, "normal", "healthy uses the shared hollow-circle cue");
+  assert.deepEqual(homeSummary({ lifecycle }, [], { ...health, ok: true, advisories: 0 }).wip, [], "zero in-flight work produces no empty lower summary");
+  servedRow(3);
 });
