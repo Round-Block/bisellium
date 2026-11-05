@@ -1,0 +1,27 @@
+# opus: W-300
+# phase: spec
+# round: 11
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T10:16:21.335Z
+# tree: dirty:e5c67e4ea1ef569e1c0c6a912b9742959af8d084
+# brief: briefs/W-300.md blob:1b79056efc5a953a5b2f750b9805a29ecd29b5e2
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":11,"actor":"architect","studio":".worktrees/W-300/studio","head":"3c1287287871e306694cbd98383a449364231a42","brief":"1b79056efc5a953a5b2f750b9805a29ecd29b5e2","at":"2026-11-05T10:16:15.539Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/promise-ledger.md
+
+## Findings
+
+1. advisory — item (3) of Overlaps W-298 said only row `W-300-b3`'s expected text for W-007 changes. That was false: A-2 is `awaiting_reply` to the producer, so W-007's real read is a hold on the producer and is not amber, and it is the sample's only backlog opus. The row's two real reads and its end move, and the brief gives the exact edit in "The W-298 seam, exactly" — check: /home/edckt/.bisellium-evidence/W-300-build/rebase-1105/b3-pw2.log, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/row-edit.patch
+2. advisory — the Promise line said a hold is not amber, which contradicted "Who is amber": `BoardDrawerLadder` decides amber by the actor alone, and W-004's real read under A-1 is held on the Patron and amber. The Promise line now says a hold on the Patron is amber and a hold on anyone else is not; the code does not change — check: apps/web/src/screens/BoardDrawerLadder.tsx:42, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/captures/drawer-patron-640.png
+3. advisory — a limit is added to the Promise line, and it is a real narrowing: the real `greenlight` rung was read at all three widths and is now read at 390 only, once A-2 is closed in the served copy. The three widths read W-004's and W-007's holds instead. `K44` shows the 390 read still fails when the rung is not amber — check: /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/kill-K44.out
+4. advisory — the row with this edit passes, exit 0, and only that row ran: not row b4, not the full suite and not the typecheck. The first try failed because the edit guessed W-004's step as `pr`; the real read is `spec`, and the row now pins that — check: /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/row-b3.exit, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/row-b3.log, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/trial-1.log, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/trial-1.exit
+5. advisory — the first grading of the kills printed `K42` and `K43` `NOT GUARDED`. That was the script's own check, which looked for a double-quoted message where TAP single-quotes one with no apostrophe; each output failed at the wanted assertion. The check is corrected and `kills.out` was graded again from the same kept outputs, with no rerun — check: /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/kills-run.log, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/kills.out, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/kill-K42.out, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/kill-K43.out
+6. advisory — what a Patron sees changes in two ways, and Default 2 now says both. A backlog opus on which the Patron asked back reads `greenlight (held)` with the sella's name in the quiet colour, where the approved screen's backlog opus was amber; and an opus waiting on the Patron's answer is amber with W-298's words, including the `bisellium answer` command. Layout, wrapping and the amber colour are as approved. The approved `drawer-patron-<width>.png` showed W-007; the same capture now shows W-004, and W-007's line is the new `drawer-held-<width>.png` — check: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/captures/drawer-patron-640.png, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/captures/drawer-patron-640.png, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/captures/drawer-held-640.png
+7. advisory — not changed, by this seam's scope: Promise read and Input domain row 4 still name `deriveNext` as the reused reader, which remains true underneath `derivedStep` but leaves `petitioHold` unnamed there, and no row of `W-300-b1` walks a petitio. The hold reaches the line pinned by `W-300-b3` through `K41` — check: studio/briefs/W-300.md:63, studio/briefs/W-300.md:142, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/kill-K41.out
+8. advisory — the `Prototype:` line and `prototype.mbox` are unchanged, and the mbox's row b3 is the earlier one, as with revision 2's edits. The row edit is the builder's on the seam commit, so the new pins are not on the opus branch at this signature. The temporary kills and the row trial were restored from copies, by sha256, and `git status` shows the two source files and this brief — check: /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/before.sha256, /home/edckt/.bisellium-evidence/W-300-spec/seam-1105/row-edit.py
+
+## Verdict
+
+passed — W-300's brief revision 2 re-signed by the architect (`claude-opus-5-5`, D-072, D-150 C) with one seam corrected: Overlaps W-298 item (3), the Promise line's words and pins, and row b3's exact edit, tried and killed on this tree; no behaviour of the source changes beyond item (2), and the Patron-visible change is named in Default 2.

@@ -2679,6 +2679,31 @@
   margin: 4px 0;
 }
 
+.board-drawer__ladder {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: baseline;
+  min-width: 0;
+  min-height: 18px;
+  margin: 0 0 4px;
+  color: var(--ink-2);
+  font: 400 12px/18px var(--font-mono);
+}
+
+.board-drawer__ladder--patron {
+  color: var(--amber);
+}
+
+.board-drawer__ladder-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.board-drawer__ladder-pr {
+  flex: none;
+  color: inherit;
+}
+
 .board-drawer__meta {
   font-size: 12px;
   color: var(--ink-2);

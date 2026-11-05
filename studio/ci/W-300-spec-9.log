@@ -1,0 +1,25 @@
+# opus: W-300
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T05:39:42.085Z
+# tree: tree:825fe31cc1eecdd2c6f79ff2a170c4586594195f
+# brief: briefs/W-300.md blob:a4baa621167991ebced7f671e42c3d95921bbb43
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":9,"actor":"architect","studio":".worktrees/W-300/studio","head":"d9e9a168395a7ae0b45d6691da088a158a448801","brief":"a4baa621167991ebced7f671e42c3d95921bbb43","at":"2026-11-05T05:39:37.867Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/promise-ledger.md
+
+## Findings
+
+1. advisory — spec review round 8 found "The measure" left out `measure.exit`, which is 1. Its replacement text is adopted verbatim: the script's final zero-match grep printed 0 and returned 1, so the measurements hold and the script did not exit cleanly — check: /home/edckt/.bisellium-evidence/W-300-build/accept/measure.exit, /home/edckt/.bisellium-evidence/W-300-build/accept/measure.out, /home/edckt/.bisellium-evidence/W-300-specreview/r8/verdict.md
+2. advisory — the review's second replacement is adopted verbatim: `docs/NEXT.md` approximates the run's figures, since it says 0.25 s where the run's lowest is 0.26 s. `docs/NEXT.md` itself is unchanged — check: docs/NEXT.md:338, /home/edckt/.bisellium-evidence/W-300-build/accept/measure.out
+3. advisory — the same check of both bullets found four more results left out, each now stated: both scratch-directory counts in measure.out printed 0; the gh trace and W-300's read through the shim keep no exit, so what they show is their lines alone; the first `test:serve` attempt at the root exited 1 with no output; the four diagnosis runs each exited 0 — check: /home/edckt/.bisellium-evidence/W-300-build/accept/serve.note, /home/edckt/.bisellium-evidence/W-300-build/accept/diag/loaded.txt, /home/edckt/.bisellium-evidence/W-300-build/accept/diag/r1.exit, /home/edckt/.bisellium-evidence/W-300-build/accept/diag/r3.exit
+4. advisory — the served suite still failed one row on the built tip, and nothing here says otherwise: 160 passed, 1 skipped, `W-407-b6` failed once, exit 1. The last Acceptance bullet's demand stands, so this signature does not say the bullet is met — check: /home/edckt/.bisellium-evidence/W-300-build/accept/serve.log, /home/edckt/.bisellium-evidence/W-300-build/accept/serve.exit
+5. advisory — still not corrected, as in the last signature: Intent's "The cost, and the bound" keeps the 2026-11-04 scratch run's figures, and Input domain row 13 names `test:serve` with no directory — check: studio/briefs/W-300.md:28, studio/briefs/W-300.md:151
+6. advisory — no behaviour, promise, test row, limit, Default or `Prototype:` line moves, and no brief line is renumbered, so the revision 2 ledger is cited unchanged — check: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/promise-ledger.md
+
+## Verdict
+
+passed — W-300's brief revision 2 re-signed by the architect (`claude-opus-5-5`, D-072, D-150 C) after spec review round 8: the review's two replacement texts adopted verbatim, and the other results the measure and served-suite bullets left out now stated; no design change.

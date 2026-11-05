@@ -1,0 +1,20 @@
+# opus: W-300
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1a80a-8f51-7a71-98cf-3b70eaa20e30
+# outcome: failed
+# at: 2026-11-05T05:02:14.001Z
+# tree: tree:db1a7465f484f74ca39a7135377ac06119969f6c
+# brief: briefs/W-300.md blob:f4001e8cef0c55b8ccfc102cf111ae1a18c66ee1
+# ticket: {"opus":"W-300","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-300/studio","head":"c517d35ea6c3894d0953806e409284ba1293f047","brief":"f4001e8cef0c55b8ccfc102cf111ae1a18c66ee1","at":"2026-11-05T05:00:26.873Z"}
+
+## Findings
+1. blocking — studio/briefs/W-300.md:258 [severity: S1] The acceptance claim says revision 1’s `gates-proto.out` includes W-300-b4, but that log certifies the behaviour-3 tip and records 160 rows before b4 existed; the new gate log may prove the current build, but it cannot make this cited evidence true. brief:258 [class: review×evidence-backfilled-or-absent] — check: none: evidence validation should reject claims that a cited log covers a row absent from its tested tree
+
+## Earlier findings
+
+## Verdict
+The wrap implementation is sound, but the false required-evidence claim blocks this round.
+VERDICT: FAIL

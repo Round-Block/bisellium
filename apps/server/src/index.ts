@@ -4,4 +4,5 @@
  * wrapper around `startServer` below.
  */
 export { Store, type StoreOptions } from "./store.js";
+export { ladderQueue, LADDER_WAITING, type LadderRead } from "./ladder.js";
 export { startServer, isPathContained, type StartServerOptions, type StartServerResult } from "./http.js";

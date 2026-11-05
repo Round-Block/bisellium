@@ -1,0 +1,20 @@
+# opus: W-300
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a7f1-7569-7db2-9eec-cd5ce87bb99c
+# outcome: passed
+# at: 2026-11-05T02:36:41.284Z
+# tree: tree:eaded69e961f1a5c30a2361dad595bfd2e97d6a9
+# brief: briefs/W-300.md blob:f4001e8cef0c55b8ccfc102cf111ae1a18c66ee1
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-300/studio","head":"5dc73a1c2fc145b6e3891aeda509672c6af6fd01","brief":"f4001e8cef0c55b8ccfc102cf111ae1a18c66ee1","at":"2026-11-05T02:36:35.421Z"}
+
+## Findings
+1. advisory — brief:15 [severity: S2] “Every width” exceeds the stated and tested domain of 1280, 640 and 390, while brief:77 expressly limits every other width. Replace “every width” at brief:15, brief:42, brief:168 and brief:276 with “1280, 640 and 390,” and rename behaviour 4 to “The line wraps at the three tested widths and nothing is cut.” [class: spec×promise-unattainable-under-accepted-domain] — check: apps/web/tests-serve/w300.spec.ts
+2. advisory — brief:150 [severity: S4] The changed test also reads viewport height—900 for the three-width cases and 844 for the long-text case—and `lineShown` merely measures rather than rejects. Replace brief:150 with a row naming viewports 1280×900, 640×900, 390×900 and 390×844, the spaced, unbroken and 1000-character why domains, and `expectUnderTitle` plus the Playwright `expect`/`expect.poll` assertions over `lineShown`, bounding boxes, drawer dimensions and `inView` as rejectors. [class: spec×input-domain-missing-or-unenforceable] — check: none: brief admission should require every viewport dimension and an actual rejecting function
+3. advisory — brief:258 [severity: S2] `gates-proto.out` covers the unchanged three-behaviour series and cannot contain row b4; the wrap evidence runs only targeted b3, b4 and measurement rows. Replace the opening evidence claim with: “`gates-proto.out` covers revision 1’s series tip and its 160-row served suite through W-300-b3; the wrap trial separately proves W-300-b3 and W-300-b4, and after behaviour 4 the builder runs and records the full served suite and gates.” [class: review×evidence-backfilled-or-absent] — check: none: evidence validation should reject claims that a cited log covers a row absent from its tested tree
+
+## Verdict
+The wrap revision is feasible and can proceed with these advisory contract and evidence corrections.
+VERDICT: PASS

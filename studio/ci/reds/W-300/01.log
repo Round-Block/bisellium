@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-300-b1\s --import tsx packages/cli/src/w300.test.ts
+# exit: 1
+# at: 2026-11-04T19:09:45.166Z
+# sella: architect
+# tree: tree:625b60625f77986b4fbd5c7b4222652faa096541
+# ticket: {"opus":"W-300","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-300/studio","head":"4b906b96a3246d404b35bf63a7cd9cc68eb2e2ab","brief":"9abb1a4afdafafa9ddb8a7e58fc8c59ac826eadf","at":"2026-11-04T19:09:45.115Z"}
+
+TAP version 13
+# Subtest: W-300-b1 behaviour 1: the read answers next's own step as plain data and writes nothing
+not ok 1 - W-300-b1 behaviour 1: the read answers next's own step as plain data and writes nothing
+  ---
+  duration_ms: 42.916336
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-300/packages/cli/src/w300.test.ts:1:2539'
+  failureType: 'testCodeFailure'
+  error: |-
+    the read exists as a file serve can run
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    read (/home/edckt/agents/bisellium/.worktrees/W-300/packages/cli/src/w300.test.ts:21:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-300/packages/cli/src/w300.test.ts:76:13)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 473.108445

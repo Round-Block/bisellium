@@ -366,6 +366,16 @@ export function fetchModels(): Promise<ModelRecordEntry[]> {
 
 // ── W-064 fetchers ───────────────────────────────────────────────────
 
+/** W-300: `GET /api/opus/:id/ladder`, one opus's next step; W-500's Runs screen reads the same shape. */
+export type LadderRead =
+  | { id: string; read: "ok"; step: string; status: "named" | "held" | "complete"; actor: string; why: string; round: number | null; health: string; pr: { number: number; url: string | null } | null }
+  | { id: string; read: "unavailable"; why: string }
+  | { id: string; read: "not-in-flight" };
+
+export function fetchLadder(id: string): Promise<LadderRead> {
+  return getJSON(`/api/opus/${encodeURIComponent(id)}/ladder`);
+}
+
 /** GET /api/events, unfiltered or scoped to one item (`?item=`). The
  *  unfiltered path is untouched (`since` numeric-seq only, ascending,
  *  earliest-N on a supplied limit); the filtered path returns the LAST N

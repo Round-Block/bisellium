@@ -1,0 +1,21 @@
+# opus: W-300
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a7f1-7569-7db2-9eec-cd5ce87bb99c
+# outcome: passed
+# at: 2026-11-04T19:07:40.378Z
+# tree: tree:ce08b5a1021e99ff15b2b7802eaeea9f07217651
+# brief: briefs/W-300.md blob:9abb1a4afdafafa9ddb8a7e58fc8c59ac826eadf
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"debcb104eaf4070385457b63c3361698c3dd8fc6","brief":"9abb1a4afdafafa9ddb8a7e58fc8c59ac826eadf","at":"2026-11-04T19:07:36.338Z"}
+
+## Findings
+1. advisory — brief:124 [severity: S2] The “every other form” claim omits malformed percent-encoding: `decodeURIComponent` throws and `serverError` returns 500. Replace the route-domain text with: “The route accepts a segment that `decodeURIComponent` successfully decodes to an id known by `store.api.opus`; malformed encoding is refused by `serverError` with 500, an unknown decoded id with 404, and the child rejects ids outside `ID_RE` as `unavailable`.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w300.test.ts
+2. advisory — brief:126 [severity: S4] “What the readers accept” does not state the keys’ valid domains. Replace the domain text with: “`source_excludes` is absent or a list of non-empty strings; `step_tickets` is absent or exactly `required`; `readLadder` converts any error from `readSourceExcludes` or `readStepTickets` to `unavailable` naming the key.” [class: spec×input-domain-missing-or-unenforceable] — check: none: add a brief-admission rule rejecting input domains defined only by reference to their reader
+3. advisory — brief:52 [severity: S2] `LadderRead.status` is the ungated derivation’s `named | held | complete`, but report-mode `next` changes its headline status to `running`, `dead`, or `held` for some health results; the test deliberately omits status from those comparisons. Replace the opening claim with: “`step` and `health` match report-mode `next`, and `actor` and `why` match where the report prints them; `status` is `deriveNext`’s derivation status, not the report headline’s health status.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w300.test.ts
+4. advisory — brief:130 [severity: S2] The claim that an unreadable marker path becomes `unknown` exceeds reused `readMarker`: any `lstatSync` failure is treated as no marker, while a read failure after successful stat becomes `dead (invalid marker: …)`. Replace that clause with: “A missing or unstatable marker is treated as absent by reused `readMarker` (a stated limit); a present non-regular, malformed, or unreadable-after-stat marker is `dead (invalid marker: …)`, while unreadable process or silence inputs become `unknown` through `assess` or `silence`.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w300.test.ts
+
+## Verdict
+The signed brief is feasible and fail-closed for its real callers, subject to these advisory contract corrections.
+VERDICT: PASS

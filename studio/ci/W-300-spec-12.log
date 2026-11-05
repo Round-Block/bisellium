@@ -1,0 +1,18 @@
+# opus: W-300
+# phase: spec
+# round: 12
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1a7f1-7569-7db2-9eec-cd5ce87bb99c
+# outcome: passed
+# at: 2026-11-05T10:41:41.537Z
+# tree: dirty:e5c67e4ea1ef569e1c0c6a912b9742959af8d084
+# brief: briefs/W-300.md blob:1b79056efc5a953a5b2f750b9805a29ecd29b5e2
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":12,"actor":"spec-reviewer","studio":".worktrees/W-300/studio","head":"3c1287287871e306694cbd98383a449364231a42","brief":"1b79056efc5a953a5b2f750b9805a29ecd29b5e2","at":"2026-11-05T10:41:37.115Z"}
+
+## Findings
+No findings
+
+## Verdict
+The seam is sound: the Promise line matches row b3, and the 390-only real greenlight read still distinguishes actor-based amber from hold-based amber without hiding a defect.
+VERDICT: PASS

@@ -227,7 +227,7 @@ flowchart TD
   log[(".bisellium/events.jsonl")]
   snaps[(".bisellium/snapshots/&lt;source&gt;.json")]
   idx[(".bisellium/index/index.db (SQLite)")]
-  reads["GET /api/officina /opera /inbox /acta<br/>/aerarium /providers /health<br/>GET /api/completion"]
+  reads["GET /api/officina /opera /inbox /acta<br/>/aerarium /providers /health<br/>GET /api/completion<br/>GET /api/opus/:id/ladder"]
   events["GET /api/events"]
   live["GET /api/live (SSE)"]
   posts["POST /api/answer /greenlight /budget<br/>/handoff /talk /pause /resume<br/>X-Bisellium-Token + no-Origin"]
@@ -253,6 +253,12 @@ append-only `events.jsonl` and folds each new event into the SQLite index —
 through `adapter-native` on every call (no cache to invalidate), and the POSTs
 never write directly: they call the runners `serve.ts` injected, which edit the
 files the next poll picks up.
+
+`GET /api/opus/:id/ladder` (W-300) answers one opus's next step, for the Board
+drawer's line and W-500's Runs screen: `readLadder`, injected by `serve.ts` like
+the runners, runs `packages/cli/src/ladder-read.ts` as a child process, one at a
+time with a 15 s bound, so the server never blocks on git or gh and imports no
+CLI module.
 
 The Inbox read keeps that same path. `adapter-native` carries a petitio's
 optional `opened` instant into the Snapshot, and `GET /api/inbox` returns it as
