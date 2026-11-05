@@ -1,0 +1,26 @@
+# opus: W-300
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T05:08:49.817Z
+# tree: tree:db1a7465f484f74ca39a7135377ac06119969f6c
+# brief: briefs/W-300.md blob:3e6c967f4cefc21a6682a1f22690bc1139d8b3fa
+# ticket: {"opus":"W-300","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-300/studio","head":"ea0bb7dee235a1b8a5ec0f5f754fd7bf2e4a87f1","brief":"3e6c967f4cefc21a6682a1f22690bc1139d8b3fa","at":"2026-11-05T05:08:45.564Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/promise-ledger.md
+
+## Findings
+
+1. advisory — the "No existing row flips" bullet said `gates-proto.out` covered row b4; that log ran revision 1's series tip 9d72c476 with 160 served rows before b4 existed, so the bullet now names that tip and cites b4 to the builder's run and the trial, which did run it — check: /home/edckt/.bisellium-evidence/W-300-spec/gates-proto.out, /home/edckt/.bisellium-evidence/W-300-build/wrap-1105/green-b34.log, /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/green-b4.log
+2. advisory — the whole served suite has not run on the built tip: the built tip's gates have no served step and only rows b3 and b4 have run served on it, so the brief says so and `npm run -s test:serve` stays owed under Acceptance; nothing here says the fix leaves the other served rows green — check: /home/edckt/.bisellium-evidence/W-300-build/wrap-1105/ci.out, studio/briefs/W-300.md:259
+3. advisory — the same bullet said every must-stay-green row of the census passes in `gates-proto.out`, but `W-124 behaviour 1` was not selected by that log's name pattern; the bullet now says so and cites the built tip's tests gate, by its exit alone, since that log keeps its last 200 lines — check: /home/edckt/.bisellium-evidence/W-300-spec/gates.sh, studio/ci/W-300-tests-db1a7465.log
+4. advisory — in `gates-proto.out` the `next-ladder.test.ts` step prints pass 4, fail 0 and exit 1, and the log keeps no more, so the exit is unexplained; I ran no test to explain it, and the brief says so rather than leaving it to be read as clean — check: /home/edckt/.bisellium-evidence/W-300-spec/gates-proto.out:34
+5. advisory — the bullet said W-499-b3 flakes on its focus assertion and that the flake log's counts were at the tip; the log holds pass counts only, naming no assertion, at an earlier tip 6067ea5e, so the sentence now says that — check: /home/edckt/.bisellium-evidence/W-300-spec/w499-flake.out, /home/edckt/.bisellium-evidence/W-300-spec/w499-flake.sh
+6. advisory — not corrected, as no log is misread: the measure bullet asks for a run on the built branch and cites `measure.out` only as this brief's own run, which `measure.sh` ran from the scratch worktree; I found no run of it on the built branch, so that run is owed as well — check: /home/edckt/.bisellium-evidence/W-300-spec/measure.sh, /home/edckt/.bisellium-evidence/W-300-spec/measure.out
+7. advisory — this correction edits one line of the brief and adds no bare CLI verb to it, so the revision 2 ledger's line numbers stand and it is cited unchanged; no behaviour, promise, row, limit, Default or `Prototype:` line moves — check: /home/edckt/.bisellium-evidence/W-300-spec/wrap-1105/promise-ledger.md
+
+## Verdict
+
+passed — W-300's brief revision 2 re-signed by the architect (`claude-opus-5-5`, D-072, D-150 C) after build review round 2: Acceptance's evidence citations corrected to what each log ran, and the unrun whole served suite on the built tip stated plainly; no design change.
