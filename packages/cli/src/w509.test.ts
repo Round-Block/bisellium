@@ -145,6 +145,72 @@ test("W-509-b1 behaviour 1: land carries the named records to master and leaves 
   usage([RECORD, ...TITLE_ARGS, "--no-such-flag"], /unknown flag/, "an unknown flag");
 });
 
+test("W-509-b2 behaviour 2: land refuses anything outside its records, before any commit or push, and names the way past", { timeout: 1_800_000 }, () => {
+  const w = world("w509-b2", "backlog");
+  put(w.repo, "studio/leges/engineering.md", "a rule\n");
+  put(w.repo, "studio/briefs/W-901.md", "a brief\n");
+  put(w.repo, "packages/cli/src/x.ts", "export const x = 1;\n");
+  noPrYet(w);
+  const refused = (paths: string[], name: string): void => {
+    const o = land(w, paths);
+    isRefused(o, new RegExp(`why: refusing: .*${name.replaceAll(".", "\\.").replaceAll("/", "\\/")}.* outside the records land carries`), name);
+    assert.match(o.out, /way past: code and rules keep a real PR \(D-181 line 6\)/, ran(`${name}: the way past`, o));
+    assert.deepEqual(mutating(w), [], `${name}: nothing is pushed`);
+    assert.equal(localHeads(w), "", `${name}: no head is cut`);
+  };
+  refused(["studio/leges/engineering.md"], "studio/leges/engineering.md");
+  refused(["studio/prompts/spec-draft.md"], "studio/prompts/spec-draft.md");
+  refused(["studio/bisellium.yml"], "studio/bisellium.yml");
+  refused(["studio/briefs/W-901.md"], "studio/briefs/W-901.md");
+  refused(["studio/milestones.yml"], "studio/milestones.yml");
+  refused(["packages/cli/src/x.ts"], "packages/cli/src/x.ts");
+  refused(["packages/cli/src/x.test.ts"], "packages/cli/src/x.test.ts");
+  refused(["docs/ARCHITECTURE.md"], "docs/ARCHITECTURE.md");
+  refused(["docs/design/dossier/sub/page.html"], "docs/design/dossier/sub/page.html");
+  refused(["studio/opera/../../packages/cli/src/x.ts"], "studio/opera/../../packages/cli/src/x.ts");
+  refused(["./studio/queue.yml"], "./studio/queue.yml");
+  refused(["studio/opera//W-901.md"], "studio/opera//W-901.md");
+  refused([join(w.repo, RECORD)], "studio/opera/W-901.md");
+  refused(["studio/opera"], "studio/opera");
+  refused(["studio/opera/"], "studio/opera/");
+  // one bad path among good ones refuses all of it
+  put(w.repo, RECORD, RECORD_TEXT);
+  refused([RECORD, "packages/cli/src/x.ts"], "packages/cli/src/x.ts");
+  // a symlink under a record folder, and a folder named as a path
+  symlinkSync("../../README.md", join(w.repo, "studio/opera/link.md"));
+  const link = land(w, ["studio/opera/link.md"]);
+  isRefused(link, /why: refusing: land carries regular files only, and studio\/opera\/link\.md is not one/, "a symlink");
+  assert.equal(localHeads(w), "", "a symlink: no head is cut");
+  put(w.repo, "studio/opera/sub/f.md", "in a folder\n");
+  const folder = land(w, ["studio/opera/sub"]);
+  isRefused(folder, /why: could not read a named path/, "a folder");
+  symlinkSync("../..", join(w.repo, "studio/opera/parent"));
+  const through = land(w, ["studio/opera/parent/README.md"]);
+  isRefused(through, /why: could not read a named path/, "a path through a symlink");
+  // off master, and in a linked worktree
+  git(w.repo, ["switch", "-q", "-c", "elsewhere"]);
+  const off = land(w, [RECORD]);
+  isRefused(off, /why: refusing: land runs on master, and HEAD is refs\/heads\/elsewhere/, "off master");
+  assert.match(off.out, /way past: git -C .* switch master/, ran("off master: the way past", off));
+  git(w.repo, ["switch", "-q", "master"]);
+  const linked = join(w.root, "linked");
+  git(w.repo, ["worktree", "add", "-q", "--detach", linked]);
+  const fromLinked = cli(w, ["land", RECORD, ...TITLE_ARGS, "--repo", linked, "--studio", join(linked, "studio"), ...FAST], linked);
+  isRefused(fromLinked, /why: refusing: .* is a linked worktree; land runs from the repository's main checkout/, "a linked worktree");
+  assert.deepEqual(mutating(w), [], "nothing was pushed in any of them");
+  // a name with a space, a quote and a non-ASCII letter is carried as it is, by that exact name
+  const odd = "studio/ci/W-901 a 'quoted' n\u00e4me.log";
+  put(w.repo, odd, "a log\n");
+  const named = land(w, [odd]);
+  assert.match(named.out, /why: pr create failed/, ran("an odd name goes on to the PR", named));
+  assert.deepEqual(git(w.repo, ["-c", "core.quotePath=false", "diff-tree", "--no-commit-id", "--name-only", "-r", `refs/heads/${headOf(named)}`]).split("\n"), [odd], "an odd name is carried by that exact name");
+  // every record form it does carry gets past the screen
+  for (const p of ["studio/ci/W-901-review-1.log", "studio/decisions/D-999.md", "studio/acta/2026-11-06.md", "studio/queue.yml", "docs/design/dossier/body.html", HANDOFF]) {
+    put(w.repo, p, "a record\n");
+    const o = land(w, [p]);
+    assert.doesNotMatch(o.out, /outside the records land carries/, ran(`${p} is carried`, o));
+  }
+});
 
 
 
