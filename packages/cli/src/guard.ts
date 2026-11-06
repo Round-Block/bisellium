@@ -1,7 +1,7 @@
 /**
  * packages/cli/src/guard.ts — W-310 (with W-290): the guard `bisellium hook-event guard` runs for
- * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit), SubagentStop and Stop hooks. Deny-only and
- * fail-open: it returns a refusal or nothing, never an allow, and hooks.ts lets the call run on any
+ * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit), SubagentStop, Stop and UserPromptSubmit hooks. Deny-only at a tool call and a
+ * subagent's stop, and fail-open: it returns a refusal or nothing, never an allow, and hooks.ts lets the call run on any
  * error, unknown event or unreadable input. The main thread is a hook input without `agent_id`
  * (Claude Code sets it only inside a subagent, D-073 B).
  *
@@ -14,15 +14,15 @@
  * `review-request` left under that checkout's Git common directory (review-notice.ts) and refuses the call once with
  * their text, so the session pushes them to the Patron; taking a notice removes it.
  *
- * W-444: at a main-thread Stop the guard judges the session's final reply (`last_assistant_message`) by the rules in
- * STOP_RULES and sends it back once with their refusals joined; W-436 adds its rule to that table.
+ * W-444, W-508: at a main-thread Stop the session's final reply (`last_assistant_message`) has been shown, so it is never
+ * sent back: Stop exits 0 and the hook itself shows the Patron the usage reading; at UserPromptSubmit it hands the model the
+ * same reading. No rule judges a reply's text at Stop (the Patron 2026-11-06 removed the length rule).
  */
 import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { instant } from "@bisellium/schema";
 import { takeNotices } from "./review-notice.js";
-import { CONTEXT_WIND_DOWN, readReadings, STALE_MS, type Reading } from "./usage-reading.js";
+import { claudeFresh, CONTEXT_WIND_DOWN, takeReading, type Reading } from "./usage-reading.js";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -891,88 +891,57 @@ export function selfMatchingWait(command: string): boolean {
  *  tool's 120 s default foreground cap (a longer call is moved to the background, a second waiter). */
 export const EXIT_FILE_POLL = "timeout 100 bash -c 'until [ -f X.exit ]; do sleep 10; done'";
 
-/** W-444: what a Stop rule is handed besides the reply: the hook input, the home whose usage readings it may read, and
- *  the clock. */
-export interface StopContext {
-  input: Dict;
-  home: string;
-  now: Date;
-}
-/** One rule a main-thread final reply is judged by: a refusal line, or undefined when the reply keeps it. */
-export type StopRule = (reply: string, ctx: StopContext) => string | undefined;
-
-/** The most words a reply to the Patron holds (Patron 2026-10-28: each asked point in one or two lines). */
-export const REPLY_WORDS = 200;
-/** A reply's words: its whitespace-separated runs that hold a letter or a digit, code blocks included (a bare `-`, `|`
- *  or fence is not a word). */
-export function replyWords(reply: string): number {
-  return reply.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
-}
-const replyLength: StopRule = (reply) => {
-  const n = replyWords(reply);
-  return n > REPLY_WORDS
-    ? `refused: this reply is ${n} words, over ${REPLY_WORDS} (W-444): reply again in at most ${REPLY_WORDS} words, code blocks counted, each asked point in one or two lines`
-    : undefined;
-};
-
 const pct = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 /** A reading's context in thousands of tokens, as `usage-reading.sh` prints it, or null when the reading has none. */
 const contextK = (r: Reading): number | null => {
   const t = pct(r.context_tokens);
   return t === null ? null : Math.floor(t / 1000);
 };
-/** A reading's four parts as a reply carries them, in the shape `usage-reading.sh` prints: a value it lacks is `?`. */
+/** A reading's four parts as the hook shows them, in the shape `usage-reading.sh` prints: a value it lacks is `?`. */
 export function readingParts(r: Reading): string {
   const v = (n: number | null): string => (n === null ? "?" : String(n));
   return `Claude week ${v(pct(r.claude_week_used))}%, 5h ${v(pct(r.claude_5h_used))}% | Codex week ${v(pct(r.codex_week_used))}% | context ${v(contextK(r))}k of ${CONTEXT_WIND_DOWN / 1000}k`;
 }
-/** Each part is bounded by a set of letters, marks and digits (not an ASCII `\b`), so `15h 3%` or `contexts` is no part. */
-const PARTS: [RegExp, (r: Reading) => number | null][] = [
-  [/(?<![\p{L}\p{M}\p{N}])Claude week (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.claude_week_used)],
-  [/(?<![\p{L}\p{M}\p{N}])5h (\d+(?:\.\d+)?|\?)%/u, (r) => pct(r.claude_5h_used)],
-  [/(?<![\p{L}\p{M}\p{N}])Codex week (\d+(?:\.\d+)?|\?)?%/u, (r) => pct(r.codex_week_used)],
-  [/(?<![\p{L}\p{M}\p{N}])context (\d+|\?)k(?![\p{L}\p{M}\p{N}])/u, contextK],
-];
-/** A reply carries a reading when one of its lines holds all four parts, each with the reading's value (a value the
- *  reading lacks is not compared). */
-export function carriesReading(reply: string, r: Reading): boolean {
-  return reply.split("\n").some((line) =>
-    PARTS.every(([re, value]) => {
-      const m = re.exec(line);
-      const want = value(r);
-      return m !== null && (want === null || Number(m[1]) === want);
-    }),
-  );
+/** W-508: a reading as the hook shows it: `readingParts`, marked with when the Claude values were seen when the status line
+ *  is older than STALE_MS; undefined when no source gave a value, so a host with neither source shows nothing. */
+export function shownReading(r: Reading): string | undefined {
+  if ([r.claude_week_used, r.claude_5h_used, r.codex_week_used, r.context_tokens].every((v) => v === null)) return undefined;
+  return claudeFresh(r) || r.claude_seen === null ? readingParts(r) : `${readingParts(r)} (Claude values seen ${r.claude_seen})`;
 }
-const SCRIPT = "~/.bisellium-evidence/usage/usage-reading.sh <label>";
-/** The reply carries the latest usage reading (the readings file's last), taken within STALE_MS of the Stop. No readings
- *  file or no reading in it asks nothing; any other read error is refused, naming the error. */
-const replyUsage: StopRule = (reply, { home, now }) => {
-  const readings = readReadings(home);
-  if ("error" in readings)
-    return `refused: the usage readings file ~/.bisellium-evidence/usage/readings.jsonl cannot be read (W-444): ${readings.error}; fix it, then run ${SCRIPT} and carry its line`;
-  const latest = readings[readings.length - 1];
-  if (latest === undefined) return undefined;
-  const at = instant(latest.at);
-  if (at === undefined || !(Math.abs(now.getTime() - at.getTime()) <= STALE_MS))
-    return `refused: this reply carries no usage reading taken in the last 30 minutes (W-444): the latest is from ${latest.at}; run ${SCRIPT} and carry its line`;
-  return carriesReading(reply, latest)
-    ? undefined
-    : `refused: this reply carries no line with the latest usage reading (W-444): carry "${readingParts(latest)}" (the reading at ${latest.at}), or run ${SCRIPT} and carry its line`;
-};
 
-/** The rules a main-thread final reply is judged by, in order; each refusal is one line. W-436 adds its rule here. */
-export const STOP_RULES: readonly StopRule[] = [replyLength, replyUsage];
-
-/** Stop (W-444): the refusals of `rules` for the main thread's final reply, one line each, joined; undefined for a
- *  subagent (`agent_id`), a continuation a Stop hook caused (`stop_hook_active`, so a reply is sent back once) or a Stop
- *  with no reply text. */
-export function stopRefusal(input: Dict, home: string = homedir(), now: Date = new Date(), rules: readonly StopRule[] = STOP_RULES): string | undefined {
-  if (str(input["agent_id"]) !== undefined || input["stop_hook_active"] === true) return undefined;
+/** Stop (W-444, W-508): what the hook prints for the main thread's final reply, as Claude Code reads it: a JSON object whose
+ *  one field `systemMessage` it shows the Patron (the reading of the plans' own sources), or undefined to print nothing. A subagent
+ *  (`agent_id`), a continuation another Stop hook caused (`stop_hook_active`) and a Stop with no reply text show nothing. An
+ *  `agent_id` of a wrong type and a `stop_hook_active` that is not boolean are refused here, before anything is read or shown:
+ *  neither is read as absent. Never a refusal, so never a second reply. */
+export function stopOutput(input: Dict, home: string = homedir(), now: Date = new Date()): string | undefined {
+  const active = input["stop_hook_active"];
+  if (input["agent_id"] !== undefined || typeof active !== "boolean" || active) return undefined;
   const reply = input["last_assistant_message"];
   if (typeof reply !== "string" || reply.trim() === "") return undefined;
-  const why = rules.flatMap((rule) => rule(reply, { input, home, now }) ?? []);
-  return why.length > 0 ? why.join("\n") : undefined;
+  const reading = shownReading(takeReading(home, now, "stop"));
+  return reading === undefined ? undefined : JSON.stringify({ systemMessage: reading });
+}
+
+/** A main-thread prompt's session id, as every probed input holds it. */
+const PROMPT_SESSION = /^[A-Za-z0-9_-]{1,128}$/;
+/** W-508: UserPromptSubmit, the main thread's next turn: a JSON object whose `additionalContext` Claude Code hands the model
+ *  with the prompt: the reading. Undefined when there is none. A main-thread input has no `agent_id` and a session id in
+ *  PROMPT_SESSION; any other, a wrong type included, is undefined before the usage sources are read. */
+export function promptOutput(input: Dict, home: string = homedir(), now: Date = new Date()): string | undefined {
+  const session = input["session_id"];
+  if (input["agent_id"] !== undefined || typeof session !== "string" || !PROMPT_SESSION.test(session)) return undefined;
+  const reading = shownReading(takeReading(home, now, "prompt"));
+  return reading === undefined
+    ? undefined
+    : JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: `Usage now: ${reading}. The Stop hook shows the Patron the latest reading under each reply, so a reply need not carry it.` } });
+}
+
+/** W-508: what the guard prints on stdout for a hook input, exit 0: the Stop and UserPromptSubmit outputs; undefined for any
+ *  other event. */
+export function replyHookOutput(input: Dict): string | undefined {
+  const event = input["hook_event_name"];
+  return event === "Stop" ? stopOutput(input) : event === "UserPromptSubmit" ? promptOutput(input) : undefined;
 }
 
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */
@@ -995,7 +964,6 @@ export function guardRefusal(input: Dict): string | undefined {
       ? `refused: ${ids.length} of your own background runs still run (${ids.join(", ")}) (W-494): stop all but one with TaskStop; a turn may end while one run is live, and its notice wakes you`
       : undefined;
   }
-  if (event === "Stop") return stopRefusal(input);
   if (event !== "PreToolUse") return undefined;
   // W-418: a notice a PR perform left for the Patron is handed to the main thread once, before anything else is judged;
   // an input with no cwd (the hooks-check probe) reads none
@@ -1048,8 +1016,8 @@ export const GUARD_COMMAND = "bisellium hook-event guard --studio studio";
 const GUARDED_TOOLS = ["Bash", "Write", "Edit", "NotebookEdit"];
 
 /** What the settings lack for the guard: a PreToolUse group whose matcher covers each of
- *  `GUARDED_TOOLS`, a SubagentStop group whose matcher is `*` and a Stop group (W-444; Stop takes no
- *  matcher), each holding a hook of type `command`, timeout 2, running `GUARD_COMMAND`. [] when wired. */
+ *  `GUARDED_TOOLS`, a SubagentStop group whose matcher is `*`, a Stop group (W-444) and a UserPromptSubmit group (W-508; neither
+ *  takes a matcher), each holding a hook of type `command`, timeout 2, running `GUARD_COMMAND`. [] when wired. */
 export function guardWiring(settings: unknown): string[] {
   const hooks = isDict(settings) && isDict(settings["hooks"]) ? settings["hooks"] : {};
   const groups = (event: string): Dict[] => (Array.isArray(hooks[event]) ? (hooks[event] as unknown[]).filter(isDict) : []);
@@ -1064,6 +1032,7 @@ export function guardWiring(settings: unknown): string[] {
     if (!groups("PreToolUse").some((g) => runs(g) && covers(g, tool))) missing.push(`PreToolUse ${tool} -> ${GUARD_COMMAND} (type command, timeout 2)`);
   if (!groups("SubagentStop").some((g) => runs(g) && g["matcher"] === "*")) missing.push(`SubagentStop * -> ${GUARD_COMMAND} (type command, timeout 2)`);
   if (!groups("Stop").some(runs)) missing.push(`Stop -> ${GUARD_COMMAND} (type command, timeout 2)`);
+  if (!groups("UserPromptSubmit").some(runs)) missing.push(`UserPromptSubmit -> ${GUARD_COMMAND} (type command, timeout 2)`);
   return missing;
 }
 

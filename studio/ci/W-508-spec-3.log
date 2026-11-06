@@ -1,0 +1,26 @@
+# opus: W-508
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-05T13:05:24.541Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# brief: briefs/W-508.md blob:9244d8346cb7c65c76c5c6643bb7c73c18132a98
+# ticket: {"opus":"W-508","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-508/studio","head":"3329871622e545e881219c455a8082e5f8472bcc","brief":"9244d8346cb7c65c76c5c6643bb7c73c18132a98","at":"2026-11-05T13:05:19.450Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-508-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 fixes why the ready step held: each Genuine red now declares its one failing assertion after its marker, and the recorded outputs fail at each by the red verb's own reader; the earlier `admission.mts` called only `briefAdmissionProblems`, the predicate shared with `check` and `next`'s spec order, while W-473's `declaredRedProblems` and W-166's red order sit later in `runReady`, so it passed a brief the verb held; it now runs the real `runReady` on a scratch copy of the officina, reproduces the hold on revision 1 and admits revision 2, stopping only at the step ticket that follows every admission check — check: revise-1105/admission-r1-brief.out, admission.out, replay-check.out
+2. advisory — a gap outside this opus: nothing before the ready step runs W-473, as neither `next`'s spec order nor the spec review calls `declaredRedProblems`, so another signed brief can reach the ready step and hold the same way; not fixed here, named for filing — check: packages/commands/src/lifecycle.ts `runReady`, packages/commands/src/brief-admission.ts `declaredRedProblems`
+3. advisory — the spec review's advisory 1 is adopted: at a Stop, an `agent_id` present but not a nonempty string or a `stop_hook_active` not boolean returns undefined before the reply is read, shown or recorded; an absent `stop_hook_active` counts as not boolean, so a Claude Code that renamed or dropped the field shows and judges nothing, stated as a limit; the docs and all ten probed Stop inputs carry the boolean — check: W-508-b2, kills.out K23 and K24, probe/hooks-docs.md, probe/work/
+4. advisory — the spec review's advisory 2 is adopted: a main-thread prompt has no `agent_id` and a `session_id` in the store's domain, and any other returns undefined before the note or usage sources are read, so an absent or out-of-domain id no longer gets the reading; all eight probed prompt inputs hold a 36-character id and no `agent_id` — check: W-508-b3, kills.out K25 and K26, probe/work/
+5. advisory — the spec review's advisory 3 is adopted as text: a timeout, interruption or process failure after the note is removed but before Claude Code accepts the output loses the note, including canceling the prompt check with Esc; the docs confirm that Esc stops the check — check: probe/hooks-docs.md "`Esc` during a prompt check", brief Promise next-turn
+6. advisory — the evidence was rebuilt, not carried: the series applies at `opus/W-508`'s head by the replay's own reader, every red, stage, gate and kill was rerun, and the two new rows add only to rows new in this opus, so the test check stands from revision 1 and is not rerun; the end-to-end probe also stands from revision 1, as revision 2 refuses only inputs no probe saw — check: series.out, replay-check.out, genuine-reds.out, stages-summary.out, gates-run.log, green-summary.out, kills.out, ledger-check.out, fixture-census.md
+7. advisory — carried from revision 1 unchanged: what the Patron's own surface renders was not observed, so the Patron's own eye closes Acceptance; the length rule teaches the next reply and no longer forces a short one (Defaults 2); `STOP_RULES` keeps its signature with a note in place of a refusal, and W-436 and W-465 need that change when they resume — check: probe/interactive-refused.out, brief Promise reading, Promise length, Out of scope
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-508.md`, prototyped over `opus/W-508` a4d0f28f, series sha256 44f19abe587477058f829598ab6980009ed00fb7be8852b1bb296b655800002c; no change of design: a main-thread Stop never refuses, the hook shows the reading, an over-long reply is recorded and named to the model at its next prompt; four behaviours, twenty-six kills, one code-owned path (`.claude/settings.json`), so the Patron merges.

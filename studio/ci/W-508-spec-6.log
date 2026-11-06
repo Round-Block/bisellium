@@ -1,0 +1,19 @@
+# opus: W-508
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1abbb-0f59-7180-b1e8-91c577ecdba4
+# outcome: passed
+# at: 2026-11-06T04:30:45.128Z
+# tree: tree:f7d8e7147b4794812ee252b45d5bb019d1d32b54
+# brief: briefs/W-508.md blob:cafd25b4dcf048f42810eb544aaa67d66dd73bc0
+# ticket: {"opus":"W-508","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-508/studio","head":"d8bd4079509de65d9a318a001c15cad74692512c","brief":"cafd25b4dcf048f42810eb544aaa67d66dd73bc0","at":"2026-11-06T04:30:40.079Z"}
+
+## Findings
+1. advisory — brief:43 `PROMPT_SESSION` is not removed: revision 3 adds and retains it so `promptOutput` fails closed. Replace the final clause with “and the addition of `PROMPT_SESSION` as `promptOutput`’s rejecting discriminator.” [severity: S4] [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w508.test.ts W-508-b3
+2. advisory — brief:70 The retained W-444-b2 assertion still calls a 201-word reply “over the limit,” leaving the removed rule in the test contract and comparison table. Replace every retained occurrence with “a 201-word reply without the reading: not refused.” [severity: S4] [class: tests×test-title-made-false-by-domain-change] — check: packages/cli/src/w444.test.ts W-444-b2
+
+## Verdict
+The recorded reds remain genuine and the length behavior is removed from implementation, but two non-blocking textual remnants should be corrected during the build.
+VERDICT: PASS

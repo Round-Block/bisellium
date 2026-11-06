@@ -1,0 +1,22 @@
+# opus: W-508
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1ac7c-02c7-7202-97c5-4bc3f204c6c4
+# outcome: passed
+# at: 2026-11-06T05:05:51.476Z
+# tree: tree:07e2d3140641ea418fc9deceaac08281b7b96849
+# brief: briefs/W-508.md blob:cafd25b4dcf048f42810eb544aaa67d66dd73bc0
+# ticket: {"opus":"W-508","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-508/studio","head":"0b869a44aa4331138fc465b48504e1db50b2e581","brief":"cafd25b4dcf048f42810eb544aaa67d66dd73bc0","at":"2026-11-06T05:03:52.205Z"}
+
+## Findings
+1. advisory — studio/briefs/W-508.md:43 [severity: S4] The revised Files owned row says behaviour 5 removes `PROMPT_SESSION`, but `packages/cli/src/guard.ts:927` adds and retains it, contradicting the brief’s own lines 35 and 64. [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w508.test.ts W-508-b3
+2. advisory — studio/briefs/W-508.md:70 [severity: S4] Reached through ci/W-508-spec-6.log #2’s class: the promise and comparison table at line 170 still cite “over the limit and without the reading,” although the changed assertion is “a 201-word reply without the reading.” [class: tests×test-title-made-false-by-domain-change] — check: packages/cli/src/w444.test.ts W-444-b2
+
+## Earlier findings
+- ci/W-508-review-1.log #1: closed — the round-2 W-508.diff contains no `docs/SESSION-HANDOFF.md` entry, and studio/briefs/W-508.md:54’s ownership claim now matches the packet path census.
+
+## Verdict
+The prior blocker is closed; the two remaining revision-text defects are advisory.
+VERDICT: PASS

@@ -1,0 +1,20 @@
+# opus: W-508
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1abbb-0f59-7180-b1e8-91c577ecdba4
+# outcome: passed
+# at: 2026-11-05T12:45:51.546Z
+# tree: tree:21576d658e1666430d61970fac77e025b946043b
+# brief: briefs/W-508.md blob:623dfa80cee0f1f96ab3ca4afba691c863ddcea1
+# ticket: {"opus":"W-508","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"9883a31b2bf9792c301c6a754c1e1e02c667c81d","brief":"623dfa80cee0f1f96ab3ca4afba691c863ddcea1","at":"2026-11-05T12:45:43.691Z"}
+
+## Findings
+1. advisory — brief:103 [severity: S3] `stopOutput` treats a wrong-typed `agent_id` as absent and any `stop_hook_active` value other than boolean `true` as a fresh main-thread Stop, so this reader accepts malformed discriminators instead of failing closed. Replace the wrong-type clauses with: “If `agent_id` is present but is not a nonempty string, or `stop_hook_active` is not boolean, `stopOutput` returns undefined before reading, showing or recording the reply.” [class: spec×input-without-named-rejector] — check: packages/cli/src/w508.test.ts W-508-b2 malformed Stop discriminators
+2. advisory — brief:106 [severity: S3] `promptOutput` still hands the reading when `session_id` is absent or outside the note-store domain, and treats a wrong-typed `agent_id` as main-thread input. Replace the domain clause with: “A main-thread input has no `agent_id` and a `session_id` matching `^[A-Za-z0-9_-]{1,128}$`; `promptOutput` returns undefined for wrong-typed or out-of-domain discriminators before reading the note or usage sources.” [class: spec×input-without-named-rejector] — check: packages/cli/src/w508.test.ts W-508-b3 malformed UserPromptSubmit discriminators
+3. advisory — brief:86 [severity: S2] `takeReplyNote` removes the note before hook output is printed, so cancellation after removal—including Claude Code stopping a UserPromptSubmit check on Esc—can lose the note without handing it to the model; the stated timeout limit does not cover this route. Replace that limit with: “A timeout, interruption or process failure after the note is removed but before Claude Code accepts the output loses the note; this includes canceling the prompt check with Esc.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: Claude Code owns prompt-hook cancellation, so the external cancellation limit must be stated
+
+## Verdict
+The signed brief is feasible with three advisory boundary and cancellation clarifications for the builder to adopt.
+VERDICT: PASS

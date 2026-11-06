@@ -1,0 +1,18 @@
+# opus: W-508
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1ac7c-02c7-7202-97c5-4bc3f204c6c4
+# outcome: failed
+# at: 2026-11-05T16:16:10.826Z
+# tree: tree:65114c0b28438ef41b2f3a3944c0965e372e3376
+# brief: briefs/W-508.md blob:9244d8346cb7c65c76c5c6643bb7c73c18132a98
+# ticket: {"opus":"W-508","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-508/studio","head":"1475c4f993a7d0ceac3c7c53c4b03872566b3412","brief":"9244d8346cb7c65c76c5c6643bb7c73c18132a98","at":"2026-11-05T16:12:48.806Z"}
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:22 [severity: S1] The branch changes `docs/SESSION-HANDOFF.md`, which is absent from Files owned despite brief:58 requiring every non-`studio/` changed path to be declared. [class: workflow×files-owned-boundary-exceeded] — check: probatio.declared
+
+## Verdict
+The undeclared handoff change breaches the opus’s ownership boundary and blocks this round.
+VERDICT: FAIL
