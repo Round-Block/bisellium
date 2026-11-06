@@ -357,9 +357,10 @@ after requesting review, and merges only on a rerun once GitHub reads it `APPROV
 A merge that times out prints `state=QUEUE_TIMEOUT` and its `queue-entry:`, with a
 `stuck:` line when the entry is `AWAITING_CHECKS` with its checks passed. Once merged,
 it stages its own paths as the merge commit holds them, fast-forwards master past any
-other work, and deletes the head. A copy edited meanwhile, a staged copy that differs
-or other work on an incoming path holds at `state=MERGED_NOT_FETCHED`, with nothing
-lost.
+other work, and deletes the head. A copy edited meanwhile, a staged copy that differs,
+an unfinished merge or other work on an incoming path holds at
+`state=MERGED_NOT_FETCHED`, with nothing lost. A copy's mode is not judged: it stays as
+it was and shows in `git status`.
 
 ## The read for the console (W-300)
 
