@@ -4,7 +4,7 @@
  * next-world's. Select one row with --test-name-pattern='^W-509-b<k>\s'.
  */
 import assert from "node:assert/strict";
-import { appendFileSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { FAST, type Json, type Out, PR_NUMBER, QUEUE_RULES, type Reply, SLUG, type World, asRule, cand, cli, commit, git, greens, mutating, put, ran, scratch, viewOf, world } from "./next-world.test.js";
@@ -341,10 +341,11 @@ test("W-509-b5 behaviour 5: a merge that times out reports the queue entry, and 
 
 test("W-509-b6 behaviour 6: landing never loses an edit: a differing copy, a staged copy or incoming work stops master with the edit kept", { timeout: 1_800_000 }, () => {
   /** A merge commit that also carries `extra`: another PR's change, reaching local master with this one. */
-  const mergeWith = (w: World, head: string, extra: Record<string, string>): string => {
+  const mergeWith = (w: World, head: string, extra: Record<string, string>, also: (dir: string) => void = () => undefined): string => {
     const dir = join(w.root, "merge-tree");
     git(w.repo, ["worktree", "add", "-q", "--detach", dir, `refs/heads/${head}`]);
     for (const [rel, text] of Object.entries(extra)) put(dir, rel, text);
+    also(dir);
     git(dir, ["add", "-A"]);
     git(dir, ["commit", "-q", "-m", "squash, with another change"]);
     const oid = git(dir, ["rev-parse", "HEAD"]);
@@ -373,6 +374,30 @@ test("W-509-b6 behaviour 6: landing never loses an edit: a differing copy, a sta
   put(b.w.repo, HANDOFF, "# Handoff\n\n## Queue\n\n- refreshed\n");
   stops(land(b.w, [HANDOFF, RECORD]), /docs\/SESSION-HANDOFF\.md has staged content that is neither HEAD's nor the merged commit's; it is kept/, "a staged copy");
   assert.equal(git(b.w.repo, ["show", `:${HANDOFF}`]), "# Handoff\n\n## Queue\n\n- a staged draft", "the staged draft is intact");
+
+  // a staged mode change with the merged content: the index entry differs from the merge commit, so nothing is staged over it
+  const bm = pushedHead("w509-b6-staged-mode", edits, [HANDOFF, RECORD]);
+  const bmMaster = git(bm.w.repo, ["rev-parse", "refs/heads/master"]);
+  landing(bm.w, bm.head);
+  chmodSync(join(bm.w.repo, HANDOFF), 0o755);
+  git(bm.w.repo, ["add", "--", HANDOFF]);
+  chmodSync(join(bm.w.repo, HANDOFF), 0o644);
+  const bmStops = land(bm.w, [HANDOFF, RECORD]);
+  stops(bmStops, /docs\/SESSION-HANDOFF\.md has staged content that is neither HEAD's nor the merged commit's/, "a staged mode change");
+  assert.equal(git(bm.w.repo, ["ls-files", "-s", "--", HANDOFF]).split(" ")[0], "100755", "a staged mode change: nothing is staged, the entry keeps its mode");
+  assert.equal(git(bm.w.repo, ["diff", "--cached", "--name-only"]), HANDOFF, "a staged mode change: only the entry the Patron staged");
+  assert.equal(git(bm.w.repo, ["rev-parse", "refs/heads/master"]), bmMaster, "a staged mode change: master stays");
+  git(bm.w.repo, ["reset", "-q", "--", HANDOFF]);
+  git(bm.w.repo, ["update-index", "--chmod=-x", "--", HANDOFF]);
+
+  // a working-copy mode change with the merged content: the copy stays, nothing is staged, and the same command finishes once cleared
+  const wm = pushedHead("w509-b6-copy-mode", edits, [HANDOFF, RECORD]);
+  const wmMaster = git(wm.w.repo, ["rev-parse", "refs/heads/master"]);
+  landing(wm.w, wm.head, { merge: mergeWith(wm.w, wm.head, {}, (dir) => chmodSync(join(dir, HANDOFF), 0o755)) });
+  stops(land(wm.w, [HANDOFF, RECORD]), /docs\/SESSION-HANDOFF\.md differs from the merged commit .*your copy is kept/, "a working-copy mode change");
+  assert.equal(statSync(join(wm.w.repo, HANDOFF)).mode & 0o111, 0, "a working-copy mode change: the copy stays as it was");
+  assert.equal(git(wm.w.repo, ["diff", "--cached", "--name-only"]), "", "a working-copy mode change: nothing is staged");
+  assert.equal(git(wm.w.repo, ["rev-parse", "refs/heads/master"]), wmMaster, "a working-copy mode change: master stays");
 
   // other work on a path the merge brings: named, untouched, and the same command finishes once it is cleared
   const c = pushedHead("w509-b6-incoming", (x) => {
