@@ -5,7 +5,9 @@ queues:
       - { opus: W-523, says: "land reads the code owner's approval and queues; exempt, first (D-187)" }
       - { opus: W-525, says: "a verb lifts a halt on an opus; exempt (D-187)" }
       - { opus: W-526, says: "greenlight writes no Patron line; M4's exit reworded; exempt (D-187)" }
+      - { opus: W-528, says: "give the gates job a timeout; exempt, the Patron said yes 2026-11-06 (W-527)" }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
+      - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial; exempt, the Patron said yes 2026-11-06 (W-456)" }
       - { opus: W-520, says: "evidence storage and one safe-to-clear test; takes over W-380; exempt from the freeze (D-184)", folded: [W-380] }
       - { opus: W-521, says: "check flags git differing from the queue runner's; exempt from the freeze (D-185)" }
       - { opus: W-522, says: "refuse process.exit after bulk output in fixtures; exempt from the freeze (D-185)" }
@@ -58,8 +60,8 @@ queues:
   research:
     lanes: { R1: W-456 }
     next:
-      - { opus: W-456, says: "study: time the serial test steps, prototype a bounded pool, measure its load; off the ladder until W-525 (D-183, D-187)" }
-      - { opus: W-527, says: "study the failed merge-group runs; read-only, off the ladder until W-525 (D-187)" }
+      - { opus: W-456, says: "study finished off the ladder, report in evidence; record closes once W-525 can move it (D-183, D-187)" }
+      - { opus: W-527, says: "study finished off the ladder, report in evidence; record closes once W-525 can move it (D-187)" }
   ui:
     lanes: { UI1: ~ }
     next:
