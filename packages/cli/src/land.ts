@@ -13,8 +13,10 @@ import { mkdtempSync, realpathSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { openStudio, parseFlags } from "@bisellium/commands/writes.js";
+import { instant } from "@bisellium/schema";
 import { recordOnly } from "../../../scripts/ci-scope.mjs";
-import { clean, git, quoted, readRef, type Ctx } from "./integrate.js";
+import { checkStudio } from "./check.js";
+import { clean, git, identifyPr, quoted, readRef, type Ctx } from "./integrate.js";
 import { performLanding } from "./next.js";
 
 export const LAND_USAGE = "usage: bisellium land <path>... --title <text> --sella <id> [--body-file <path>] [--past-check <reason>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]";
@@ -69,6 +71,25 @@ function buildTree(repo: string, paths: readonly string[]): Tree | string {
   }
 }
 
+/** The blocking findings of `check` on exactly the tree of `commit`, in a throwaway worktree: other work in the main checkout is not judged. On a throwaway branch, as CI attaches its event commit to one: `opus.records_unchanged` holds on a detached HEAD. */
+function checkCommit(repo: string, head: string, commit: string, studioRel: string, now: Date): { blocks: string[] } | { error: string } {
+  const dir = mkdtempSync(join(tmpdir(), "bisellium-land-check-"));
+  const tree = join(dir, "tree");
+  const branch = `${head}-check`;
+  try {
+    const added = git(repo, ["worktree", "add", "-q", "-B", branch, tree, commit]);
+    if (added.status !== 0 || added.error !== undefined) return { error: `git worktree add failed: ${clean(added.stderr.trim().split("\n")[0] ?? "")}` };
+    const result = checkStudio(join(tree, studioRel), now, { repo: tree });
+    if (result.notAStudio === true) return { error: `${studioRel} is not a studio at ${commit.slice(0, 12)}` };
+    return { blocks: result.findings.filter((f) => f.level === "block").map((f) => clean(`${f.rule} ${f.where}: ${f.message}`, 300)) };
+  } catch (e) {
+    return { error: clean(e instanceof Error ? e.message : String(e)) };
+  } finally {
+    git(repo, ["worktree", "remove", "--force", tree]);
+    git(repo, ["update-ref", "-d", `refs/heads/${branch}`]);
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 
 
@@ -117,6 +138,8 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
       return usage("--body-file is not readable");
     }
   }
+  const now = values.has("--now") ? instant(values.get("--now")) : new Date();
+  if (now === undefined) return usage("--now must be an ISO date");
   const gd = git(repo, ["rev-parse", "--git-dir"]);
   const cd = git(repo, ["rev-parse", "--git-common-dir"]);
   if (gd.status !== 0 || cd.status !== 0) return usage(`${repo} is not a git repository`);
@@ -159,6 +182,21 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
     const made = git(repo, ["commit-tree", built.tree, "-p", "HEAD", "-m", title, ...(bodyFile === undefined ? [] : ["-F", bodyFile]), ...(past === undefined ? [] : ["-m", `Past check: ${past}`]), "-m", trailer]);
     if (made.status !== 0 || made.error !== undefined) return say(1, head, [`why: could not commit the records: ${clean(made.stderr.trim().split("\n")[0] ?? "")}`]);
     commit = made.stdout.trim();
+  }
+  const prior = identifyPr(repo, head);
+  if (prior.kind === "held") return say(1, head, [`why: ${prior.reason}`]);
+  if (prior.kind === "none") {
+    const checked = checkCommit(repo, head, commit, studioRel, now);
+    if ("error" in checked) return say(1, head, [`why: check could not run on the tree to land: ${checked.error}; nothing pushed`]);
+    if (checked.blocks.length > 0) {
+      if (past === undefined)
+        return say(1, head, [
+          `why: refusing: check blocks the tree this landing carries (${checked.blocks.length} blocking); nothing pushed`,
+          ...checked.blocks.slice(0, 10).map((b) => `block: ${b}`),
+          `way past: fix the finding, or rerun with --past-check "<reason>": the reason rides the commit and the PR, and CI's own officina check still judges the merge`,
+        ]);
+      console.log(`past-check: ${clean(past, 300)} (${checked.blocks.length} blocking; CI's own officina check still judges the merge)`);
+    }
   }
   if (tip.kind !== "tip") {
     const created = git(repo, ["update-ref", ref, commit, ""]);
