@@ -634,3 +634,47 @@ test("W-523-b1 behaviour 1: the approval is the code owner's latest review on th
   const teamRun = land(team.w, [DECISION_PATH]);
   isRefused(teamRun, /^owner-review: @some-org\/some-team is not a login, /m, "a team owner");
 });
+
+test("W-523-b2 behaviour 2: land arms the queue when the PR opens, so approval alone sends it in", { timeout: 1_800_000 }, () => {
+  const { w, head, oid } = ownedHead("w523-b2");
+  landing(w, head, { rules: QUEUE_RULES, stuck: true });
+  const master = git(w.repo, ["rev-parse", "refs/heads/master"]);
+  const first = land(w, [DECISION_PATH]);
+  isRefused(first, /^state=PATRON_REVIEW$/m, "armed");
+  assert.match(first.out, /^queue: armed; PR #901 enters the merge queue on its code owner's approval, with no rerun$/m, ran("it says it is armed", first));
+  const merges = ghMerges(w);
+  assert.equal(merges.length, 1, ran("armed once", first));
+  for (const flag of ["--squash", "--auto", "--match-head-commit", oid]) assert.ok(merges[0]!.includes(flag), ran(`the arm carries ${flag}`, first));
+  assert.equal(ghCalls(w).some((c) => c[0] === "pr" && c[1] === "checks"), false, ran("arming does not wait on checks", first));
+  assert.equal(asks(w), 1, ran("their review is requested", first));
+  assert.match(first.out, /^run: bisellium land .* \(once it has merged, to bring the merge to the local master; the merge itself needs no rerun\)$/m, ran("the rerun's purpose is named", first));
+  assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), master, "master does not move");
+  assert.equal(read(w, DECISION_PATH), DECISION_BODY, "the edit stays in the tree");
+  takeNotice(w);
+  // GitHub merges it on the approval, with nothing run here; the same command then brings it to the local master
+  const m = landing(w, head, { rules: QUEUE_RULES });
+  writeFileSync(join(w.root, `merged-${head.replaceAll("/", "-")}.flag`), "");
+  const after = land(w, [DECISION_PATH]);
+  assert.equal(after.status, 0, ran("the rerun after the merge: exit 0", after));
+  assert.match(after.out, /^state=MERGED$/m, ran("the rerun after the merge: merged", after));
+  assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), m, "the rerun after the merge: local master is the merge commit");
+  assert.equal(ghMerges(w).length, 0, ran("the rerun after the merge: no merge is requested", after));
+  assert.equal(asks(w), 0, ran("the rerun after the merge: no review is requested", after));
+  assert.equal(takeNotice(w), false, ran("the rerun after the merge: no notice", after));
+  assert.equal(localHeads(w), "", "the rerun after the merge: the head is gone");
+  // each way it is not armed says so, and a rerun after approval still merges
+  const notArmed = (name: string, o: Gh, line: RegExp): void => {
+    const x = ownedHead(`w523-b2-${name.replaceAll(" ", "-")}`);
+    landing(x.w, x.head, { stuck: true, ...o });
+    const run = land(x.w, [DECISION_PATH]);
+    isRefused(run, /^state=PATRON_REVIEW$/m, name);
+    assert.match(run.out, line, ran(`${name}: says so`, run));
+    assert.match(run.out, /^run: bisellium land .* \(after their approval; it merges then\)$/m, ran(`${name}: the rerun is named`, run));
+    if (o.armFails !== true) assert.equal(ghMerges(x.w).length, 0, ran(`${name}: no arm`, run));
+  };
+  notArmed("no queue", {}, /^queue: not armed; master's merge queue did not read as on/m);
+  notArmed("a conflict", { rules: QUEUE_RULES, mss: "DIRTY" }, /^queue: not armed; PR #901 conflicts with master$/m);
+  notArmed("an open alert", { rules: QUEUE_RULES, alerts: { stdout: [{ number: 1 }] } }, /^queue: not armed; code scanning stopped it$/m);
+  notArmed("an unreadable alert list", { rules: QUEUE_RULES, alerts: { exit: 1, stderr: "stub: down" } }, /^queue: not armed; code scanning stopped it$/m);
+  notArmed("a failed arm", { rules: QUEUE_RULES, armFails: true }, /^queue: not armed; gh pr merge --squash --auto failed: stub: the arm failed$/m);
+});
