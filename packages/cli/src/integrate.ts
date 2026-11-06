@@ -42,8 +42,8 @@ export interface Run {
   error?: Error;
 }
 
-export function sh(cmd: "git" | "gh", args: string[], cwd: string, maxBuffer = 16 * 1024 * 1024): Run {
-  const r = spawnSync(cmd, args, { cwd, encoding: "utf8", timeout: 120_000, maxBuffer });
+export function sh(cmd: "git" | "gh", args: string[], cwd: string, maxBuffer = 16 * 1024 * 1024, input?: string): Run {
+  const r = spawnSync(cmd, args, { cwd, encoding: "utf8", timeout: 120_000, maxBuffer, ...(input === undefined ? {} : { input }) });
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "", ...(r.error === undefined ? {} : { error: r.error }) };
 }
 export const git = (cwd: string, args: string[]): Run => sh("git", args, cwd);
@@ -392,7 +392,7 @@ function workedAt(repo: string, path: string, merged: string | undefined): strin
     } catch {
       return "error";
     }
-    hashed = spawnSync("git", ["hash-object", "--stdin"], { cwd: repo, input: target, encoding: "utf8" });
+    hashed = sh("git", ["hash-object", "--stdin"], repo, undefined, target);
     return hashed.status === 0 ? `120000 ${hashed.stdout.trim()}` : "error";
   }
   hashed = git(repo, ["hash-object", "--", path]);
