@@ -1,12 +1,12 @@
 /**
  * W-508 rows (studio/briefs/W-508.md): a shown reply is never sent back. The guard `bisellium hook-event guard` at Stop exits 0
- * whatever the reply holds, shows the Patron the reading and records what a reply rule finds; at UserPromptSubmit it names that
- * to the model, with the reading. node:test TAP, selected by `--test-name-pattern='^W-508-b<n>\s'`. Rows b1 to b3 feed hook
+ * whatever the reply holds and shows the Patron the reading; at UserPromptSubmit it hands the model the same reading. No rule
+ * judges a reply's length (the Patron 2026-11-06). node:test TAP, selected by `--test-name-pattern='^W-508-b<n>\s'`. Rows b1 to b3 and b5 feed hook
  * inputs to `runHookEvent` with HOME set to a fixture home under the OS tmp dir (its status-line file and Codex log); b4 checks a
  * fixture repo's settings and reads the real `.claude/settings.json` and `CLAUDE.md`. Nothing reads or writes the real home or `studio/`.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
@@ -82,48 +82,14 @@ const stop = (reply: string | undefined, extra: Record<string, unknown> = {}): R
 });
 /** What a Stop's stdout shows the Patron, "" when it printed nothing. */
 const shown = (r: { out: string }): string => (r.out === "" ? "" : ((JSON.parse(r.out) as { systemMessage?: string }).systemMessage ?? ""));
-const notePath = (h: string, session = "s1"): string => join(USAGE(h), "reply-notes", session);
 
-test("W-508-b1 behaviour 1: a Stop never sends a main-thread reply back; a reply over 200 words is recorded for the session's next turn and the Patron is told", async () => {
+test("W-508-b1 behaviour 1: a Stop never sends a main-thread reply back", async () => {
   const h = home(FULL);
   const over = await hook(h, stop(words(201)));
   assert.equal(over.code, 0, "a 201-word reply: not refused");
   assert.equal(over.err, "", "nothing on stderr for Claude Code to feed back");
-  assert.match(readFileSync(notePath(h), "utf8"), /this reply is 201 words, over 200 \(W-444\)/, "the note names the count and the limit");
-  assert.match(shown(over), /this reply is 201 words, over 200 \(W-444\).*named to the model on its next turn/, "the Patron is told, in the hook's own line");
   assert.equal((await hook(h, stop(words(400)))).code, 0, "a 400-word reply: not refused");
-  assert.match(readFileSync(notePath(h), "utf8"), /this reply is 400 words/, "a later over-long reply replaces the note");
   assert.equal((await hook(h, stop(words(200)))).code, 0, "200 words: exits 0");
-  assert.match(readFileSync(notePath(h), "utf8"), /this reply is 400 words/, "a reply in bounds leaves the note");
-  const fresh = home(FULL);
-  await hook(fresh, stop(words(200)));
-  assert.equal(existsSync(notePath(fresh)), false, "200 words: no note");
-  const escaped = home(FULL);
-  const bad = await hook(escaped, stop(words(201), { session_id: "../../../x" }));
-  assert.equal(bad.code, 0, "a session id the store does not take: not refused");
-  assert.match(shown(bad), /not recorded/, "a session id the store does not take: the Patron is told");
-  assert.deepEqual(readdirSync(escaped).sort(), [".bisellium-evidence", ".codex"], "a session id the store does not take: no file escapes");
-  const planted = home(FULL);
-  mkdirSync(join(USAGE(planted), "reply-notes"));
-  const victim = join(planted, "victim");
-  writeFileSync(victim, "untouched");
-  symlinkSync(victim, join(USAGE(planted), "reply-notes", `.s1.${process.pid}`));
-  const trap = await hook(planted, stop(words(201)));
-  assert.equal(readFileSync(victim, "utf8"), "untouched", "a symlink at the temp path is not followed");
-  assert.equal(trap.code, 0, "a symlink at the temp path: not refused");
-  assert.match(shown(trap), /not recorded/, "a symlink at the temp path: the Patron is told");
-  const replaced = home(FULL);
-  mkdirSync(join(USAGE(replaced), "reply-notes"));
-  const kept = join(replaced, "kept");
-  writeFileSync(kept, "untouched");
-  symlinkSync(kept, notePath(replaced));
-  await hook(replaced, stop(words(201)));
-  assert.equal(readFileSync(kept, "utf8"), "untouched", "a symlink at the note's path is replaced, not followed");
-  const blocked = home(FULL);
-  writeFileSync(join(USAGE(blocked), "reply-notes"), "a file in the way");
-  const stuck = await hook(blocked, stop(words(201)));
-  assert.equal(stuck.code, 0, "a note that cannot be written: not refused");
-  assert.match(shown(stuck), /not recorded/, "a note that cannot be written: the Patron is told");
 });
 
 test("W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' own sources, through systemMessage alone, with no second reply", async () => {
@@ -150,9 +116,6 @@ test("W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' ow
   const unread = await hook(bad, stop(words(20)));
   assert.equal(unread.code, 0, "an unreadable status-line file: not refused");
   assert.equal(shown(unread), "Claude week ?%, 5h ?% | Codex week 39% | context ?k of 300k", "an unreadable status-line file: its values are ?");
-  const both = shown(await hook(h, stop(words(201))));
-  assert.equal(both.split("\n")[0], LINE, "over the limit: the reading first");
-  assert.match(both.split("\n")[1] ?? "", /this reply is 201 words/, "over the limit: the note's line second");
   assert.equal((await hook(h, stop(words(20), { stop_hook_active: true }))).out, "", "a continuation shows nothing");
   assert.equal((await hook(h, stop(words(20), { agent_id: "a1" }))).out, "", "a subagent's Stop shows nothing");
   assert.equal((await hook(h, stop(undefined))).out, "", "a Stop with no reply text shows nothing");
@@ -162,7 +125,6 @@ test("W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' ow
   const wrongAgent = await hook(malformed, stop(words(201), { agent_id: 7 }));
   assert.equal(wrongAgent.code, 0, "a wrong-typed agent_id: not refused");
   assert.equal(wrongAgent.out, "", "a wrong-typed agent_id shows nothing");
-  assert.equal(existsSync(notePath(malformed)), false, "a wrong-typed agent_id records nothing");
   assert.equal((await hook(malformed, stop(words(201), { agent_id: "" }))).out, "", "an empty agent_id shows nothing");
   assert.equal((await hook(malformed, stop(words(201), { agent_id: null }))).out, "", "a null agent_id shows nothing");
   const wrongActive = await hook(malformed, stop(words(201), { stop_hook_active: "false" }));
@@ -171,7 +133,6 @@ test("W-508-b2 behaviour 2: a Stop shows the Patron the reading of the plans' ow
   const noActive = stop(words(201));
   delete noActive["stop_hook_active"];
   assert.equal((await hook(malformed, noActive)).out, "", "no stop_hook_active shows nothing");
-  assert.equal(existsSync(notePath(malformed)), false, "a malformed discriminator records nothing");
 });
 
 const prompt = (session: unknown = "s1", extra: Record<string, unknown> = {}): Record<string, unknown> => ({ hook_event_name: "UserPromptSubmit", session_id: session, prompt: "next", ...extra });
@@ -183,56 +144,22 @@ const context = (r: { out: string }): string => {
   return o?.additionalContext ?? "";
 };
 
-test("W-508-b3 behaviour 3: at the session's next prompt the model is handed the reading and, once, what its reply broke, told not to resend it", async () => {
+test("W-508-b3 behaviour 3: at the session's next prompt the model is handed the reading", async () => {
   const h = home(FULL);
-  await hook(h, stop(words(201)));
   const next = await hook(h, prompt());
   assert.equal(next.code, 0, "a prompt is not blocked");
-  assert.match(context(next), /this reply is 201 words, over 200 \(W-444\)/, "the model is named the count and the limit");
-  assert.match(context(next), /not sent back: do not resend/, "the model is told not to resend the reply");
+  assert.match(context(next), /context 208k of 300k/, "the model is named the count and the limit");
   assert.ok(context(next).includes(LINE), "the reading reaches the model before it writes");
   assert.match(context(next), /need not carry it/, "the model is told a reply need not carry the reading");
-  assert.equal(existsSync(notePath(h)), false, "the note is taken");
-  const again = await hook(h, prompt());
-  assert.doesNotMatch(context(again), /this reply is/, "the note is handed once");
-  assert.ok(context(again).includes(LINE), "the reading reaches every prompt");
-  await hook(h, stop(words(201)));
-  assert.doesNotMatch(context(await hook(h, prompt("s2"))), /this reply is/, "another session's prompt does not take the note");
-  assert.equal(existsSync(notePath(h)), true, "another session's prompt leaves the note");
-  assert.match(context(await hook(h, prompt())), /this reply is 201 words/, "its own session still takes it");
-  const none = home({});
-  assert.equal((await hook(none, prompt())).out, "", "no note and no source: nothing is added");
-  await hook(none, stop(words(201)));
-  const noReading = context(await hook(none, prompt()));
-  assert.match(noReading, /this reply is 201 words/, "no source: the note alone");
-  assert.doesNotMatch(noReading, /Usage now/, "no source: no reading line");
+  assert.ok(context(await hook(h, prompt())).includes(LINE), "the reading reaches every prompt");
+  assert.equal((await hook(home({}), prompt())).out, "", "no source: nothing is added");
   const sub = await hook(h, prompt("s1", { agent_id: "a1" }));
   assert.equal(sub.out, "", "an input with agent_id gets nothing");
-  const linked = home({});
-  await hook(linked, stop(words(201)));
-  const target = join(linked, "target");
-  writeFileSync(target, "this reply is 999 words");
-  rmSync(notePath(linked));
-  symlinkSync(target, notePath(linked));
-  assert.equal(context(await hook(linked, prompt())), "", "a symlink in the note's place is not handed");
-  assert.equal(readFileSync(target, "utf8"), "this reply is 999 words", "a symlink's target is untouched");
-  const big = home({});
-  mkdirSync(join(USAGE(big), "reply-notes"));
-  writeFileSync(notePath(big), "x".repeat(4097));
-  assert.equal(context(await hook(big, prompt())), "", "a note over 4 KiB is not handed");
-  const odd = home({});
-  mkdirSync(join(USAGE(odd), "reply-notes"));
-  writeFileSync(notePath(odd), "line one\u0007\u009bstill line one\nline two");
-  const oddText = context(await hook(odd, prompt()));
-  assert.ok(oddText.includes("line one still line one") && oddText.includes("line two"), "control characters in a note become one space");
-  assert.equal(context(await hook(home({}), prompt("../../x"))), "", "a session id the store does not take reads no note");
   const malformed = home(FULL);
-  await hook(malformed, stop(words(201)));
   const wrongAgent = await hook(malformed, prompt("s1", { agent_id: 7 }));
   assert.equal(wrongAgent.code, 0, "a wrong-typed agent_id at a prompt: not blocked");
   assert.equal(wrongAgent.out, "", "a wrong-typed agent_id at a prompt gets nothing");
   assert.equal((await hook(malformed, prompt("s1", { agent_id: "" }))).out, "", "an empty agent_id at a prompt gets nothing");
-  assert.equal(existsSync(notePath(malformed)), true, "a malformed agent_id at a prompt leaves the note");
   const outside = await hook(malformed, prompt("../../x"));
   assert.equal(outside.code, 0, "an out-of-domain session_id: not blocked");
   assert.equal(outside.out, "", "an out-of-domain session_id gets nothing");

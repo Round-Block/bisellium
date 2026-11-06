@@ -1,12 +1,12 @@
 /**
- * W-444 rows (studio/briefs/W-444.md, flipped by studio/briefs/W-508.md): the rule the guard `bisellium hook-event guard`
- * judges a main-thread final reply by at Stop, and its wiring. A reply is never sent back (W-508): what the rule finds is left
- * as a note for the session's next turn. node:test TAP, selected by `--test-name-pattern='^W-444-b<n>\s'`. Rows b1 and b2 feed
+ * W-444 rows (studio/briefs/W-444.md, flipped by studio/briefs/W-508.md): the guard `bisellium hook-event guard` at a
+ * main-thread Stop, and its wiring. A reply is never sent back and its length is not judged (W-508; the Patron 2026-11-06
+ * removed the length rule). node:test TAP, selected by `--test-name-pattern='^W-444-b<n>\s'`. Rows b1 and b2 feed
  * Stop inputs to `runHookEvent` with HOME set to a fixture home under the OS tmp dir; b3 checks a fixture repo's settings and
  * reads the real `.claude/settings.json`. Nothing reads or writes the real home or `studio/`.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
@@ -79,36 +79,18 @@ const main = (reply: string | undefined, extra: Record<string, unknown> = {}): R
   ...extra,
 });
 
-/** The note the Stop left for session s1 (W-508), removed so the next case starts clean; undefined when none. */
-function noted(h: string): string | undefined {
-  const p = join(h, ".bisellium-evidence", "usage", "reply-notes", "s1");
-  if (!existsSync(p)) return undefined;
-  const text = readFileSync(p, "utf8");
-  rmSync(p);
-  return text;
-}
-
-test("W-444-b1 behaviour 1: a main-thread reply over 200 words is recorded and never sent back (W-508); a subagent's, a continuation and a Stop with no reply are not judged", async () => {
+test("W-444-b1 behaviour 1: a main-thread reply of any length is never sent back (W-508); a subagent's, a continuation and a Stop with no reply exit 0 too", async () => {
   const h = home([reading(60_000, LATEST)]);
-  const over = await stop(h, main(`${words(189)}\n${LINE}`));
-  assert.equal(over.code, 0, "a 201-word main-thread reply: not refused (W-508)");
-  assert.match(noted(h) ?? "", /this reply is 201 words, over 200 \(W-444\)/, "the note names the count and the limit");
+  assert.equal((await stop(h, main(`${words(189)}\n${LINE}`))).code, 0, "a 201-word main-thread reply: not refused (W-508)");
   assert.equal((await stop(h, main(`${words(188)}\n${LINE}`))).code, 0, "200 words: exits 0");
-  assert.equal(noted(h), undefined, "200 words: no note");
   const block = `${words(120)}\n${LINE}\n\`\`\`\n${words(69)}\n\`\`\``;
   assert.equal((await stop(h, main(block))).code, 0, "a code block: exits 0");
-  assert.match(noted(h) ?? "", /this reply is 201 words/, "code blocks count");
   assert.equal((await stop(h, main(`${words(188)}\n- | -- * > ---\n${LINE}`))).code, 0, "a bare - or |: exits 0");
-  assert.equal(noted(h), undefined, "a bare - or | is not a word");
-  await stop(h, main(`${words(189)}\n${LINE}`, { stop_hook_active: true }));
-  assert.equal(noted(h), undefined, "a continuation is not judged");
-  await stop(h, main(`${words(189)}\n${LINE}`, { agent_id: "a1", agent_type: "builder" }));
-  assert.equal(noted(h), undefined, "a Stop with agent_id is not judged");
+  assert.equal((await stop(h, main(`${words(189)}\n${LINE}`, { stop_hook_active: true }))).code, 0, "a continuation: exits 0");
+  assert.equal((await stop(h, main(`${words(189)}\n${LINE}`, { agent_id: "a1", agent_type: "builder" }))).code, 0, "a Stop with agent_id: exits 0");
   const sub = { hook_event_name: "SubagentStop", session_id: "s1", agent_id: "a1", agent_type: "builder", agent_transcript_path: join(h, "none.jsonl"), stop_hook_active: false, background_tasks: [], last_assistant_message: words(400) };
   assert.equal((await stop(h, sub)).code, 0, "a subagent's final message: exits 0");
-  assert.equal(noted(h), undefined, "a subagent's final message is not judged");
   assert.equal((await stop(h, main(undefined))).code, 0, "no reply text: exits 0");
-  assert.equal(noted(h), undefined, "no reply text: not judged");
 });
 
 test("W-444-b2 behaviour 2: a main-thread reply is not judged for a usage reading: the hook shows the reading itself (W-508-b2)", async () => {
@@ -121,9 +103,7 @@ test("W-444-b2 behaviour 2: a main-thread reply is not judged for a usage readin
     ["the four parts over two lines", `${words(20)}\nClaude week 19%, 5h 16%\nCodex week 39% | context 208k of 300k`],
   ];
   for (const [name, reply] of replies) {
-    const r = await stop(h, main(reply));
-    assert.equal(r.code, 0, `${name}: not refused`);
-    assert.equal(noted(h), undefined, `${name}: no note`);
+    assert.equal((await stop(h, main(reply))).code, 0, `${name}: not refused`);
   }
   const old = home([reading(31 * 60_000, LATEST)]);
   assert.equal((await stop(old, main(words(20)))).code, 0, "a reading 31 minutes old: not refused");
@@ -131,11 +111,7 @@ test("W-444-b2 behaviour 2: a main-thread reply is not judged for a usage readin
   const unreadable = tmp();
   mkdirSync(join(unreadable, ".bisellium-evidence", "usage", "readings.jsonl"), { recursive: true });
   assert.equal((await stop(unreadable, main(words(20)))).code, 0, "an unreadable readings file: not refused");
-  const both = await stop(h, main(words(201)));
-  assert.equal(both.code, 0, "over the limit and without the reading: not refused");
-  assert.equal(noted(h)?.split("\n").length, 1, "the length note alone: one line");
-  const guard = (await import("./guard.js")) as Record<string, unknown>;
-  assert.ok(Array.isArray(guard["STOP_RULES"]) && (guard["STOP_RULES"] as unknown[]).length === 1, "STOP_RULES holds the one reply rule");
+  assert.equal((await stop(h, main(words(201)))).code, 0, "a 201-word reply without the reading: not refused");
 });
 
 /** A studio and a repo whose .claude/settings.json is `settings`; the hook.guard findings. */
