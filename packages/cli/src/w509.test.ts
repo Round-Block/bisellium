@@ -4,7 +4,7 @@
  * next-world's. Select one row with --test-name-pattern='^W-509-b<k>\s'.
  */
 import assert from "node:assert/strict";
-import { readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { FAST, type Json, type Out, PR_NUMBER, QUEUE_RULES, type Reply, SLUG, type World, asRule, cand, cli, commit, git, greens, mutating, put, ran, scratch, viewOf, world } from "./next-world.test.js";
@@ -327,3 +327,103 @@ test("W-509-b5 behaviour 5: a merge that times out reports the queue entry, and 
   isRefused(gone, /^state=QUEUE_TIMEOUT$/m, "an unreadable entry keeps the timeout");
 });
 
+test("W-509-b6 behaviour 6: landing never loses an edit: a differing copy, a staged copy or incoming work stops master with the edit kept", { timeout: 1_800_000 }, () => {
+  /** A merge commit that also carries `extra`: another PR's change, reaching local master with this one. */
+  const mergeWith = (w: World, head: string, extra: Record<string, string>): string => {
+    const dir = join(w.root, "merge-tree");
+    git(w.repo, ["worktree", "add", "-q", "--detach", dir, `refs/heads/${head}`]);
+    for (const [rel, text] of Object.entries(extra)) put(dir, rel, text);
+    git(dir, ["add", "-A"]);
+    git(dir, ["commit", "-q", "-m", "squash, with another change"]);
+    const oid = git(dir, ["rev-parse", "HEAD"]);
+    git(w.repo, ["worktree", "remove", "--force", dir]);
+    return oid;
+  };
+  const stops = (o: Out, why: RegExp, row: string): void => {
+    isRefused(o, /^state=MERGED_NOT_FETCHED$/m, row);
+    assert.match(o.out, why, ran(`${row}: the reason`, o));
+  };
+
+  // the merged copy differs from the working copy: the copy is kept, nothing is staged, master stays
+  const a = pushedHead("w509-b6-differs", edits, [HANDOFF, RECORD]);
+  const aMaster = git(a.w.repo, ["rev-parse", "refs/heads/master"]);
+  landing(a.w, a.head, { merge: mergeWith(a.w, a.head, { [HANDOFF]: "# Handoff\n\n## Queue\n\n- refreshed\n\nand someone else's line\n" }) });
+  stops(land(a.w, [HANDOFF, RECORD]), /docs\/SESSION-HANDOFF\.md differs from the merged commit .*your copy is kept/, "a differing copy");
+  assert.equal(read(a.w, HANDOFF), "# Handoff\n\n## Queue\n\n- refreshed\n", "the copy is intact");
+  assert.equal(git(a.w.repo, ["diff", "--cached", "--name-only"]), "", "no path is staged, RECORD included");
+  assert.equal(git(a.w.repo, ["rev-parse", "refs/heads/master"]), aMaster, "master stays");
+
+  // a staged copy that is neither HEAD's nor the merged one is kept
+  const b = pushedHead("w509-b6-staged", edits, [HANDOFF, RECORD]);
+  landing(b.w, b.head);
+  put(b.w.repo, HANDOFF, "# Handoff\n\n## Queue\n\n- a staged draft\n");
+  git(b.w.repo, ["add", "--", HANDOFF]);
+  put(b.w.repo, HANDOFF, "# Handoff\n\n## Queue\n\n- refreshed\n");
+  stops(land(b.w, [HANDOFF, RECORD]), /docs\/SESSION-HANDOFF\.md has staged content that is neither HEAD's nor the merged commit's; it is kept/, "a staged copy");
+  assert.equal(git(b.w.repo, ["show", `:${HANDOFF}`]), "# Handoff\n\n## Queue\n\n- a staged draft", "the staged draft is intact");
+
+  // other work on a path the merge brings: named, untouched, and the same command finishes once it is cleared
+  const c = pushedHead("w509-b6-incoming", (x) => {
+    edits(x);
+    put(x.repo, "README.md", "other work, on a path the merge brings\n");
+  }, [HANDOFF, RECORD]);
+  const cMerge = mergeWith(c.w, c.head, { "README.md": "another PR's readme\n" });
+  landing(c.w, c.head, { merge: cMerge });
+  const incoming = land(c.w, [HANDOFF, RECORD]);
+  stops(incoming, /has uncommitted tracked changes/, "incoming work");
+  assert.match(incoming.out, /^dirty: M README\.md$/m, ran("it names the path", incoming));
+  assert.equal(read(c.w, "README.md"), "other work, on a path the merge brings\n", "the other work is intact");
+  assert.equal(git(c.w.repo, ["diff", "--cached", "--name-only"]), "", "nothing is staged");
+  git(c.w.repo, ["checkout", "--", "README.md"]);
+  const finished = land(c.w, [HANDOFF, RECORD]);
+  assert.equal(finished.status, 0, ran("cleared: the same command finishes", finished));
+  assert.equal(git(c.w.repo, ["rev-parse", "refs/heads/master"]), cMerge, "cleared: master moved");
+  assert.equal(status(c.w), "", "cleared: the checkout is clean");
+  assert.equal(localHeads(c.w), "", "cleared: the head is gone");
+
+  // an untracked or ignored file on a path the merge brings: the hold comes before anything is staged, and both are kept
+  for (const [name, ignoring] of [["w509-b6-untracked", false], ["w509-b6-ignored", true]] as const) {
+    const g = pushedHead(name, edits, [HANDOFF, RECORD]);
+    const gMaster = git(g.w.repo, ["rev-parse", "refs/heads/master"]);
+    landing(g.w, g.head, { merge: mergeWith(g.w, g.head, { "incoming.txt": "another PR's file\n" }) });
+    put(g.w.repo, "incoming.txt", "a local file, not tracked\n");
+    if (ignoring) appendFileSync(join(g.w.repo, ".git", "info", "exclude"), "incoming.txt\n");
+    const kind = ignoring ? "an ignored" : "an untracked";
+    stops(land(g.w, [HANDOFF, RECORD]), /would overwrite an untracked or ignored entry.*incoming\.txt/, `${kind} incoming path`);
+    assert.equal(git(g.w.repo, ["diff", "--cached", "--name-only"]), "", `${kind} incoming path: nothing is staged`);
+    assert.equal(read(g.w, "incoming.txt"), "a local file, not tracked\n", `${kind} incoming path: the file is intact`);
+    assert.equal(read(g.w, HANDOFF), "# Handoff\n\n## Queue\n\n- refreshed\n", `${kind} incoming path: the handoff copy is intact`);
+    assert.equal(git(g.w.repo, ["rev-parse", "refs/heads/master"]), gMaster, `${kind} incoming path: master stays`);
+  }
+
+  // a head that gained a commit outside the records is refused before the push
+  const d = pushedHead("w509-b6-tampered", edits, [HANDOFF, RECORD]);
+  const dir = join(d.w.root, "tamper");
+  git(d.w.repo, ["worktree", "add", "-q", dir, d.head]);
+  put(dir, "source.txt", "changed on the head\n");
+  commit(dir, "feat: not a record");
+  git(d.w.repo, ["worktree", "remove", "--force", dir]);
+  noPrYet(d.w);
+  const tampered = land(d.w, [HANDOFF, RECORD]);
+  isRefused(tampered, /why: refusing: the existing records\/land-[0-9a-f]{12} changes source\.txt, outside the records land carries; nothing pushed/, "a tampered head");
+  assert.match(tampered.out, /way past: git -C .* branch -D records\/land-/, ran("a tampered head: the way past", tampered));
+  assert.deepEqual(mutating(d.w), [], "a tampered head: nothing pushed");
+
+  // the same contents are the same head when master has moved, and a deleted record is carried as a deletion
+  const e = pushedHead("w509-b6-moved", edits, [HANDOFF, RECORD]);
+  git(e.w.repo, ["commit", "-q", "--allow-empty", "-m", "master moves"]);
+  noPrYet(e.w);
+  assert.equal(headOf(land(e.w, [HANDOFF, RECORD])), e.head, "master moved: the same head");
+  const f = world("w509-b6-deleted", "backlog");
+  put(f.repo, "studio/ci/W-900-old.log", "an old log\n");
+  commit(f.repo, "test: a log");
+  git(f.repo, ["push", "-q", "origin", "master"]);
+  rmSync(join(f.repo, "studio/ci/W-900-old.log"));
+  noPrYet(f);
+  const fFirst = land(f, ["studio/ci/W-900-old.log"]);
+  const fHead = headOf(fFirst);
+  landing(f, fHead);
+  const fLanded = land(f, ["studio/ci/W-900-old.log"]);
+  assert.equal(fLanded.status, 0, ran("a deleted record lands", fLanded));
+  assert.equal(status(f), "", "a deleted record: the checkout is clean");
+});
