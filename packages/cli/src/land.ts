@@ -16,8 +16,9 @@ import { openStudio, parseFlags } from "@bisellium/commands/writes.js";
 import { instant } from "@bisellium/schema";
 import { recordOnly } from "../../../scripts/ci-scope.mjs";
 import { checkStudio } from "./check.js";
-import { clean, git, identifyPr, quoted, readRef, type Ctx } from "./integrate.js";
+import { clean, git, identifyPr, quoted, readRef, readReviewDecision, repoSlug, type Ctx, type Pr, type StepResult } from "./integrate.js";
 import { performLanding } from "./next.js";
+import { reviewNotice, screenDiff } from "./review-notice.js";
 
 export const LAND_USAGE = "usage: bisellium land <path>... --title <text> --sella <id> [--body-file <path>] [--past-check <reason>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]";
 
@@ -91,6 +92,29 @@ function checkCommit(repo: string, head: string, commit: string, studioRel: stri
   }
 }
 
+/** A code-owned head waits for the Patron: the verb requests their review and says so, and goes on to the merge only once GitHub reads the PR APPROVED. */
+function codeOwnerPause(repo: string, head: string, command: string): (pr: Pr) => StepResult | undefined {
+  return (pr) => {
+    const screen = screenDiff(repo, TRUNK, `refs/heads/${head}`);
+    if ("error" in screen) return { ok: false, lines: [`why: PR #${pr.number}'s code-owned paths could not be screened (${screen.error}); nothing is merged`] };
+    if (screen.paths.length === 0) return undefined;
+    const decision = readReviewDecision(repo, pr);
+    if (decision.ok && decision.decision === "APPROVED") return undefined;
+    const slug = repoSlug(repo);
+    if (!slug.ok) return { ok: false, lines: [`why: ${slug.reason}`] };
+    const notice = reviewNotice({ cwd: repo, slug: slug.slug, pr: pr.number, base: TRUNK, head: `refs/heads/${head}`, resume: command });
+    return {
+      ok: false,
+      lines: [
+        ...notice.lines,
+        `state=PATRON_REVIEW`,
+        `patron: PR #${pr.number} touches code-owned paths, so the Patron must review it; land does not get round code-owner review (.github/CODEOWNERS)`,
+        ...(decision.ok ? [] : [`review-decision: unreadable (${decision.reason}); read as not approved`]),
+        `run: ${command} (after their approval; it merges then)`,
+      ],
+    };
+  };
+}
 
 
 export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
@@ -214,6 +238,7 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
     log: (line) => console.log(clean(line, 1000)),
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     own: built.changed,
+    beforeMerge: codeOwnerPause(repo, head, command),
   };
   const result = await performLanding({ repo, studioRel }, ctx, head);
   return say(result.ok ? 0 : 1, `${head} ${result.ok ? "landed" : "held"}`, [`carries: ${built.changed.map((p) => clean(p)).join(", ")}`, ...result.lines]);

@@ -528,6 +528,14 @@ function readQueueMembership(repo: string, pr: Pr): { ok: true; queued: boolean 
   return typeof queued === "boolean" ? { ok: true, queued } : { ok: false, reason: "gh api graphql returned no boolean data.repository.pullRequest.isInMergeQueue" };
 }
 
+/** W-509: GitHub's review decision on a PR: `APPROVED` once its required reviews, a code owner's included, are met; absent reads as an empty string. */
+export function readReviewDecision(repo: string, pr: Pr): { ok: true; decision: string } | { ok: false; reason: string } {
+  const v = ghJson(repo, ["pr", "view", String(pr.number), "-R", pr.repo, "--json", "reviewDecision"]);
+  if (!v.ok) return v;
+  const decision = isObj(v.value) ? v.value["reviewDecision"] : undefined;
+  return decision === null || decision === undefined ? { ok: true, decision: "" } : typeof decision === "string" ? { ok: true, decision } : { ok: false, reason: "gh pr view returned no string reviewDecision" };
+}
+
 interface Cand {
   number: number;
   state: Pr["state"];
@@ -621,6 +629,8 @@ export interface Ctx {
   repo: string;
   /** W-509: `land`: the paths this head carries, uncommitted in the checkout; the trunk fetch settles them and leaves all other work. */
   own?: readonly string[];
+  /** W-509: `land`: read once before the merge gate of an OPEN PR; a result stops there (a code-owned head waiting for the Patron). */
+  beforeMerge?(pr: Pr): StepResult | undefined;
   id: string;
   /** The head branch this call carries to the trunk: `opus/<id>` or `chore/done-<id>`. */
   head: string;
@@ -1005,6 +1015,8 @@ export async function landHead(ctx: Ctx): Promise<StepResult> {
     if (read.kind === "held") return held(read.reason);
   }
   if (read.kind !== "pr") return held(`no PR for ${head} after the push`);
+  const paused = read.pr.state === "OPEN" ? ctx.beforeMerge?.(read.pr) : undefined;
+  if (paused !== undefined) return paused;
   const merged = await mergeGate(ctx, read.pr);
   if (!merged.ok) return merged;
   const dropped = cleanup(ctx);
