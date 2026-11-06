@@ -4,6 +4,7 @@
  * next-world's. Select one row with --test-name-pattern='^W-509-b<k>\s'.
  */
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { appendFileSync, chmodSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -390,14 +391,85 @@ test("W-509-b6 behaviour 6: landing never loses an edit: a differing copy, a sta
   git(bm.w.repo, ["reset", "-q", "--", HANDOFF]);
   git(bm.w.repo, ["update-index", "--chmod=-x", "--", HANDOFF]);
 
-  // a working-copy mode change with the merged content: the copy stays, nothing is staged, and the same command finishes once cleared
-  const wm = pushedHead("w509-b6-copy-mode", edits, [HANDOFF, RECORD]);
-  const wmMaster = git(wm.w.repo, ["rev-parse", "refs/heads/master"]);
-  landing(wm.w, wm.head, { merge: mergeWith(wm.w, wm.head, {}, (dir) => chmodSync(join(dir, HANDOFF), 0o755)) });
-  stops(land(wm.w, [HANDOFF, RECORD]), /docs\/SESSION-HANDOFF\.md differs from the merged commit .*your copy is kept/, "a working-copy mode change");
-  assert.equal(statSync(join(wm.w.repo, HANDOFF)).mode & 0o111, 0, "a working-copy mode change: the copy stays as it was");
-  assert.equal(git(wm.w.repo, ["diff", "--cached", "--name-only"]), "", "a working-copy mode change: nothing is staged");
-  assert.equal(git(wm.w.repo, ["rev-parse", "refs/heads/master"]), wmMaster, "a working-copy mode change: master stays");
+  // a merge that changes an own path's mode lands under either core.fileMode: the index takes the merge commit's entry, and the copy stays as it was
+  for (const honored of ["true", "false"]) {
+    const row = `a merged mode change, core.fileMode=${honored}`;
+    const mm = pushedHead(`w509-b6-merged-mode-${honored}`, edits, [HANDOFF, RECORD]);
+    const mmMerge = mergeWith(mm.w, mm.head, {}, (dir) => chmodSync(join(dir, HANDOFF), 0o755));
+    landing(mm.w, mm.head, { merge: mmMerge });
+    git(mm.w.repo, ["config", "core.fileMode", honored]);
+    const mmLands = land(mm.w, [HANDOFF, RECORD]);
+    assert.equal(mmLands.status, 0, ran(`${row}: it lands`, mmLands));
+    assert.equal(git(mm.w.repo, ["rev-parse", "refs/heads/master"]), mmMerge, `${row}: master is the merge commit`);
+    assert.equal(git(mm.w.repo, ["ls-files", "-s", "--", HANDOFF]).split(" ")[0], "100755", `${row}: the index holds the merge commit's mode`);
+    assert.equal(statSync(join(mm.w.repo, HANDOFF)).mode & 0o111, 0, `${row}: the copy stays as it was`);
+    assert.equal(status(mm.w), honored === "true" ? `M ${HANDOFF}` : "", `${row}: git status shows the difference only where the bit is honored`);
+  }
+
+  // a copy chmod-ed after the landing, under core.fileMode=false (the same head): judged on content, it lands, and the chmod stays. With the bit honored the
+  // chmod is a new tree entry and so a new head, the landing of that change; a mode the copy gains during the wait is the merged-mode row's form
+  const cm = pushedHead("w509-b6-copy-mode", edits, [HANDOFF, RECORD]);
+  const cmMerge = landing(cm.w, cm.head);
+  git(cm.w.repo, ["config", "core.fileMode", "false"]);
+  chmodSync(join(cm.w.repo, HANDOFF), 0o755);
+  const cmLands = land(cm.w, [HANDOFF, RECORD]);
+  assert.equal(cmLands.status, 0, ran("a chmod-ed copy: it lands", cmLands));
+  assert.equal(git(cm.w.repo, ["rev-parse", "refs/heads/master"]), cmMerge, "a chmod-ed copy: master is the merge commit");
+  assert.equal(git(cm.w.repo, ["ls-files", "-s", "--", HANDOFF]).split(" ")[0], "100644", "a chmod-ed copy: the index holds the merge commit's mode");
+  assert.notEqual(statSync(join(cm.w.repo, HANDOFF)).mode & 0o100, 0, "a chmod-ed copy: the copy stays as it was");
+
+  // a merge commit that holds an own path as anything but a regular file holds, even with the same bytes
+  const mk = pushedHead("w509-b6-merged-link", edits, [HANDOFF, RECORD]);
+  const mkMaster = git(mk.w.repo, ["rev-parse", "refs/heads/master"]);
+  const mkBytes = read(mk.w, HANDOFF);
+  landing(mk.w, mk.head, {
+    merge: mergeWith(mk.w, mk.head, {}, (dir) => {
+      rmSync(join(dir, HANDOFF));
+      symlinkSync(mkBytes, join(dir, HANDOFF));
+    }),
+  });
+  stops(land(mk.w, [HANDOFF, RECORD]), /docs\/SESSION-HANDOFF\.md is not a regular file in the merged commit/, "a merged symlink");
+  assert.equal(git(mk.w.repo, ["diff", "--cached", "--name-only"]), "", "a merged symlink: nothing is staged");
+  assert.equal(git(mk.w.repo, ["rev-parse", "refs/heads/master"]), mkMaster, "a merged symlink: master stays");
+
+  // an unfinished merge or cherry-pick, or an unmerged entry on any path: git's fast-forward would refuse, so the hold comes before anything is staged
+  const markerPath = (repo: string, name: string): string => join(repo, git(repo, ["rev-parse", "--git-path", name]));
+  const malformed = (repo: string, name: string): void => writeFileSync(markerPath(repo, name), "not a commit id\n");
+  const unfinished: readonly [string, (repo: string, oid: string) => void, (repo: string) => void][] = [
+    ["an unfinished merge", (repo, oid) => void git(repo, ["update-ref", "MERGE_HEAD", oid]), (repo) => void git(repo, ["update-ref", "-d", "MERGE_HEAD"])],
+    ["an unfinished cherry-pick", (repo, oid) => void git(repo, ["update-ref", "CHERRY_PICK_HEAD", oid]), (repo) => void git(repo, ["update-ref", "-d", "CHERRY_PICK_HEAD"])],
+    ["a malformed MERGE_HEAD", (repo) => malformed(repo, "MERGE_HEAD"), (repo) => rmSync(markerPath(repo, "MERGE_HEAD"), { force: true })],
+    ["a malformed CHERRY_PICK_HEAD", (repo) => malformed(repo, "CHERRY_PICK_HEAD"), (repo) => rmSync(markerPath(repo, "CHERRY_PICK_HEAD"), { force: true })],
+    [
+      "an unmerged entry",
+      (repo) => {
+        const blob = git(repo, ["rev-parse", "HEAD:README.md"]);
+        execFileSync("git", ["update-index", "--index-info"], { cwd: repo, input: `0 ${"0".repeat(40)}\tREADME.md\n100644 ${blob} 1\tREADME.md\n100644 ${blob} 2\tREADME.md\n100644 ${blob} 3\tREADME.md\n` });
+      },
+      (repo) => void git(repo, ["reset", "-q", "--", "README.md"]),
+    ],
+  ];
+  for (const [row, begin, clear] of unfinished) {
+    const u = pushedHead(`w509-b6-${row.replaceAll(" ", "-")}`, edits, [HANDOFF, RECORD]);
+    const uMaster = git(u.w.repo, ["rev-parse", "refs/heads/master"]);
+    landing(u.w, u.head);
+    begin(u.w.repo, uMaster);
+    stops(land(u.w, [HANDOFF, RECORD]), /a merge or cherry-pick is unfinished in this checkout/, row);
+    assert.equal(git(u.w.repo, ["ls-files", "-s", "--", HANDOFF]).split(" ")[0], "100644", `${row}: the entry is as it was`);
+    assert.equal(git(u.w.repo, ["rev-parse", "refs/heads/master"]), uMaster, `${row}: master stays`);
+    assert.equal(git(u.w.repo, ["diff", "--cached", "--name-only", "--", HANDOFF, RECORD]), "", `${row}: nothing is staged`);
+    clear(u.w.repo);
+    const uDone = land(u.w, [HANDOFF, RECORD]);
+    assert.equal(uDone.status, 0, ran(`${row}: cleared, the same command finishes`, uDone));
+  }
+
+  // a name with a space, a quote and a non-ASCII letter settles by that exact name
+  const oddName = "studio/ci/W-901 a 'quoted' n\u00e4me.log";
+  const on = pushedHead("w509-b6-odd-name", (x) => put(x.repo, oddName, "a log\n"), [oddName]);
+  landing(on.w, on.head);
+  const onLands = land(on.w, [oddName]);
+  assert.equal(onLands.status, 0, ran("an odd name: it lands", onLands));
+  assert.equal(status(on.w), "", "an odd name: the checkout ends clean");
 
   // other work on a path the merge brings: named, untouched, and the same command finishes once it is cleared
   const c = pushedHead("w509-b6-incoming", (x) => {
