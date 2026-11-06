@@ -270,3 +270,18 @@ test("W-508-b4 behaviour 4: the repo wires the guard at UserPromptSubmit, check 
   assert.match(claude, /Stop never sends a reply back/, "CLAUDE.md says a reply is never sent back");
   assert.doesNotMatch(claude, /sends the main thread's reply back/, "CLAUDE.md no longer says it is");
 });
+
+test("W-508-b5 behaviour 5: the length rule is gone: a reply of any length shows the reading alone, leaves no record and names no count to the Patron or the model", async () => {
+  const h = home(FULL);
+  const long = await hook(h, stop(words(201)));
+  assert.equal(shown(long), LINE, "a 201-word reply shows the reading alone");
+  assert.equal(shown(await hook(h, stop(words(5000)))), LINE, "a 5000-word reply shows the reading alone");
+  assert.equal(existsSync(join(USAGE(h), "reply-notes")), false, "a long reply leaves no record");
+  assert.doesNotMatch(context(await hook(h, prompt())), /words|over 200|resend/, "the next prompt names no count of a reply");
+  assert.equal((await hook(home({}), stop(words(201)))).out, "", "no source: a long reply shows nothing");
+  const guard = (await import("./guard.js")) as Record<string, unknown>;
+  assert.deepEqual(["STOP_RULES", "REPLY_WORDS", "replyWords"].filter((name) => name in guard), [], "the guard holds no reply rule table and no word count");
+  const claude = readFileSync(join(REPO, "CLAUDE.md"), "utf8");
+  assert.doesNotMatch(claude, /over 200 words/, "CLAUDE.md names no word limit");
+  assert.equal(existsSync(join(REPO, "packages", "cli", "src", "reply-note.ts")), false, "the note store is gone");
+});
