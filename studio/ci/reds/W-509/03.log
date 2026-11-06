@@ -1,0 +1,56 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-509-b3\s --import tsx packages/cli/src/w509.test.ts
+# exit: 1
+# at: 2026-11-06T06:38:58.264Z
+# sella: builder.W-509
+# tree: tree:81e8130dab6fe0f987c8a3dcd7ff1652749e82f9
+# ticket: {"opus":"W-509","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-509/studio","head":"505ed573f1e431e005ca35fb39fafa42be2f2976","brief":"020e25b4dcc472ff779e94266fcb1cf809a33172","at":"2026-11-06T06:38:56.719Z"}
+
+TAP version 13
+# Subtest: W-509-b3 behaviour 3: land checks exactly the tree it carries; a block refuses and --past-check names the way past
+not ok 1 - W-509-b3 behaviour 3: land checks exactly the tree it carries; a block refuses and --past-check names the way past
+  ---
+  duration_ms: 531.578276
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:2:7978'
+  failureType: 'testCodeFailure'
+  error: |-
+    a blocked tree: the reason
+    --- exit 1
+    --- stdout
+    push --force-with-lease records/land-3d30d12ab80a
+    gh pr create
+    land: records/land-3d30d12ab80a held
+    carries: studio/opera/W-902.md
+    why: pr create failed: stub: not yet
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    push --force-with-lease records/land-3d30d12ab80a
+    gh pr create
+    land: records/land-3d30d12ab80a held
+    carries: studio/opera/W-902.md
+    why: pr create failed: stub: not yet
+    
+  operator: 'match'
+  stack: |-
+    isRefused (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:29:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:221:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 546.398325
