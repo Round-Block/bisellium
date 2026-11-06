@@ -14,6 +14,7 @@
 import { spawnSync } from "node:child_process";
 import { accessSync, constants, lstatSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { instant } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
 import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
@@ -590,12 +591,52 @@ function readQueueMembership(repo: string, pr: Pr): { ok: true; queued: boolean 
   return typeof queued === "boolean" ? { ok: true, queued } : { ok: false, reason: "gh api graphql returned no boolean data.repository.pullRequest.isInMergeQueue" };
 }
 
-/** W-509: GitHub's review decision on a PR: `APPROVED` once its required reviews, a code owner's included, are met; absent reads as an empty string. */
-export function readReviewDecision(repo: string, pr: Pr): { ok: true; decision: string } | { ok: false; reason: string } {
-  const v = ghJson(repo, ["pr", "view", String(pr.number), "-R", pr.repo, "--json", "reviewDecision"]);
+/**
+ * W-523: where the code owners stand on a PR's current head. Not GitHub's `reviewDecision`: master's ruleset requires no
+ * review count, so that field stays empty on an approved PR (#1057, #1059, #1062, #1063). Not `latestReviews`: its `commit.oid`
+ * is empty. A review is an owner's if its author's login is theirs; an owner's latest opinion (APPROVED, CHANGES_REQUESTED,
+ * DISMISSED; a comment is none, and a pending review is not submitted) must be an APPROVED on this very head. This read only
+ * says what land does next: GitHub's own rule is what holds the merge.
+ */
+export interface OwnerReview {
+  approved: boolean;
+  /** One `owner-review:` line per owner whose approval this read does not find. */
+  notes: string[];
+}
+const OPINIONS = new Set(["APPROVED", "CHANGES_REQUESTED", "DISMISSED"]);
+export function readOwnerReview(repo: string, pr: Pr, owners: readonly string[]): { ok: true; review: OwnerReview } | { ok: false; reason: string } {
+  const v = ghJson(repo, ["pr", "view", String(pr.number), "-R", pr.repo, "--json", "headRefOid,reviews,reviewRequests,autoMergeRequest"]);
   if (!v.ok) return v;
-  const decision = isObj(v.value) ? v.value["reviewDecision"] : undefined;
-  return decision === null || decision === undefined ? { ok: true, decision: "" } : typeof decision === "string" ? { ok: true, decision } : { ok: false, reason: "gh pr view returned no string reviewDecision" };
+  const value = v.value;
+  const head = pr.headRefOid;
+  if (!isObj(value) || value["headRefOid"] !== head) return { ok: false, reason: `gh pr view did not read PR #${pr.number}'s head ${head.slice(0, 12)}` };
+  const reviews = value["reviews"];
+  const requests = value["reviewRequests"];
+  if (!Array.isArray(reviews) || !Array.isArray(requests)) return { ok: false, reason: "gh pr view returned no reviews or reviewRequests array" };
+  const notes: string[] = [];
+  let approved = true;
+  for (const owner of owners) {
+    const login = /^@([A-Za-z0-9-]+)$/.exec(owner)?.[1]?.toLowerCase();
+    if (login === undefined) {
+      approved = false;
+      notes.push(`owner-review: ${clean(owner)} is not a login, so its approval is not read here; GitHub's own rule still decides`);
+      continue;
+    }
+    const theirs: { state: string; oid: string; at: number }[] = [];
+    for (const r of reviews) {
+      const author = isObj(r) && isObj(r["author"]) ? r["author"]["login"] : undefined;
+      if (typeof author !== "string" || author.toLowerCase() !== login || !isObj(r) || r["state"] === "PENDING") continue;
+      const oid = isObj(r["commit"]) ? r["commit"]["oid"] : undefined;
+      const at = instant(r["submittedAt"])?.getTime();
+      if (typeof r["state"] !== "string" || typeof oid !== "string" || oid === "" || at === undefined) return { ok: false, reason: `gh pr view returned a review by ${login} with no state, commit or time` };
+      theirs.push({ state: r["state"], oid, at });
+    }
+    const latest = theirs.filter((r) => OPINIONS.has(r.state)).reduce<(typeof theirs)[number] | undefined>((a, b) => (a === undefined || b.at >= a.at ? b : a), undefined);
+    if (latest?.state === "APPROVED" && latest.oid === head) continue;
+    approved = false;
+    notes.push(`owner-review: ${login} ${latest === undefined ? "holds no approval" : `${clean(latest.state)} on ${latest.oid.slice(0, 12)}`}; PR #${pr.number}'s head is ${head.slice(0, 12)}`);
+  }
+  return { ok: true, review: { approved, notes } };
 }
 
 /** W-509: a PR's merge queue entry as GitHub reads it; `rollup` is the check state of the commit the queue built. Read only to report a merge that timed out. */

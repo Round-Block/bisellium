@@ -16,7 +16,7 @@ import { openStudio, parseFlags } from "@bisellium/commands/writes.js";
 import { instant } from "@bisellium/schema";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { checkStudio } from "./check.js";
-import { clean, git, identifyPr, quoted, readQueueEntry, readRef, readReviewDecision, repoSlug, type Ctx, type Pr, type StepResult } from "./integrate.js";
+import { clean, git, identifyPr, quoted, readQueueEntry, readRef, readOwnerReview, repoSlug, type Ctx, type Pr, type StepResult } from "./integrate.js";
 import { performLanding } from "./next.js";
 import { reviewNotice, screenDiff } from "./review-notice.js";
 
@@ -92,14 +92,14 @@ function checkCommit(repo: string, head: string, commit: string, studioRel: stri
   }
 }
 
-/** A code-owned head waits for the Patron: the verb requests their review and says so, and goes on to the merge only once GitHub reads the PR APPROVED. */
+/** A code-owned head waits for the Patron: the verb requests their review and says so, and goes on to the merge once the owner's latest review is an approval of this head. */
 function codeOwnerPause(repo: string, head: string, command: string): (pr: Pr) => StepResult | undefined {
   return (pr) => {
     const screen = screenDiff(repo, TRUNK, `refs/heads/${head}`);
     if ("error" in screen) return { ok: false, lines: [`why: PR #${pr.number}'s code-owned paths could not be screened (${screen.error}); nothing is merged`] };
     if (screen.paths.length === 0) return undefined;
-    const decision = readReviewDecision(repo, pr);
-    if (decision.ok && decision.decision === "APPROVED") return undefined;
+    const read = readOwnerReview(repo, pr, screen.owners);
+    if (read.ok && read.review.approved) return undefined;
     const slug = repoSlug(repo);
     if (!slug.ok) return { ok: false, lines: [`why: ${slug.reason}`] };
     const notice = reviewNotice({ cwd: repo, slug: slug.slug, pr: pr.number, base: TRUNK, head: `refs/heads/${head}`, resume: command });
@@ -107,9 +107,9 @@ function codeOwnerPause(repo: string, head: string, command: string): (pr: Pr) =
       ok: false,
       lines: [
         ...notice.lines,
+        ...(read.ok ? read.review.notes : [`owner-review: unreadable (${read.reason}); read as not approved`]),
         `state=PATRON_REVIEW`,
         `patron: PR #${pr.number} touches code-owned paths, so the Patron must review it; land does not get round code-owner review (.github/CODEOWNERS)`,
-        ...(decision.ok ? [] : [`review-decision: unreadable (${decision.reason}); read as not approved`]),
         `run: ${command} (after their approval; it merges then)`,
       ],
     };
