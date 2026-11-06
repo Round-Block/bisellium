@@ -1,0 +1,27 @@
+# opus: W-509
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-06T09:37:05.076Z
+# tree: tree:9fa3fc0155d8b3be13db3daeab700c6df09dbb93
+# brief: briefs/W-509.md blob:e0c0dec6227d0bb2b8c715726d678b2154b02ee7
+# ticket: {"opus":"W-509","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-509/studio","head":"8a159016ed7f041bc7fa56d9218bde8b5557805b","brief":"e0c0dec6227d0bb2b8c715726d678b2154b02ee7","at":"2026-11-06T09:36:57.682Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-509-spec/revise-1106/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 2 settles file modes in one rule: `settleOwn` writes the merge commit's own entry to the index by mode and blob, and judges the working copy on kind and content, so neither the copy's bit nor `core.fileMode` can leave the index differing from the commit it fast-forwards to; that closes review 1's and review 2's class at its cause, staging from the working copy — check: revise-1106/fix-code.diff, brief Decided "a mode is the merge commit's", ci/W-509-review-1.log, ci/W-509-review-2.log
+2. advisory — the other option, a hold on any mode difference among HEAD, the merge commit and the index, is rejected: it would stop every rerun of a landing whose merge changed a mode, a mode this verb carried included; a staged entry's mode still holds, on mode and blob, as review 1 required — check: W-509-b6 "a staged mode change: exit 1", W-509-b6 "a merged mode change, core.fileMode=true: it lands", W-509-b6 "a merged mode change, core.fileMode=false: it lands"
+3. advisory — the widening the review-1 fix brief asked for goes: `workedAt` and its `core.fileMode` read are removed; `copyAt` reads kind and content; `blobAt` becomes `entryAt`, which keeps a non-blob entry visible and fails closed on an unreadable tree; `sh`'s optional `input` stays, now carrying the index entries; the Files owned list of paths does not change — check: revise-1106/fix-code.diff, brief Files owned
+4. advisory — two refusals that came after staging are moved before it, found reading git's merge: an unfinished merge or cherry-pick and an unmerged entry on any path, which `dirtyReport` lets past when no merge touches the path; a merge commit's entry that is not a regular file holds too — check: W-509-b6 "an unfinished merge: the reason", W-509-b6 "an unfinished cherry-pick: the reason", W-509-b6 "an unmerged entry: the reason", W-509-b6 "a merged symlink: exit 1"
+5. advisory — limits added, each stated on the Promise line: the copy's mode is neither judged nor repaired and shows in `git status` where the bit is honored; a chmod before a rerun with the bit honored is a new head; a merged non-regular entry is settled by hand; a refusal for a cause not read here (a lock, `merge.verifySignatures`, a path edited between the reads and the fast-forward) comes after staging, is git's own, and leaves the own paths as the merge commit holds them, the same command finishing once cleared; a copy swapped for a symlink during the merge wait holds by `copyAt` with no row driving it, as a rerun meets row 2's refusal first — check: brief Promise keeps-edits, Input domain row 9
+6. advisory — how it is built: a fix round on `opus/W-509`, fix-test.diff then fix-code.diff, each applying at 56f83ae5; `next`'s replay does not start where reds are recorded, so the Prototype line stays as signed; behaviours stay six, reds 1 to 6 stand with none rewritten, and the new forms fail at the head with the test diff alone — check: revise-1106/genuine-red-b6-mode.out, packages/cli/src/prototype-replay.ts readReplay, studio/ci/reds/W-509/
+7. advisory — only `W-509-b6`'s own rows change, and no row in another file flips; the files that import or pin `integrate.ts` ran whole on the revised tree, `ladder-followon.test.ts`'s one-`spawnSync` pin among them, with lint, Prettier and typecheck; the Codex test check was not rerun, as no row outside w509.test.ts flips — check: revise-1106/gates-proto.out, revise-1106/gates-final.out
+8. advisory — eleven new kills guard the rule, each one hunk failing `W-509-b6` at a pinned assertion; K1, K2 and K11 replace `any-copy`, `any-staged` and `any-dirty`, whose text changed; the other kills of round 1 stand on text this revision keeps; a chmod-ed copy has its pin and no kill of its own, as the K6 form stops at the merged-mode row first — check: revise-1106/kills.out, ../mutants.out, revise-1106/admission.out, revise-1106/ledger-check.out
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 2 at `studio/briefs/W-509.md`, prototyped over `opus/W-509` 56f83ae5, diffs revise-1106/fix-test.diff and revise-1106/fix-code.diff; a mode is the merge commit's, never the copy's: the index takes the merge commit's entry, the copy is judged on kind and content, and a staged entry holds on mode and blob; six behaviours, no code-owned path.

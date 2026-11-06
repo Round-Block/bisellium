@@ -1,0 +1,21 @@
+# opus: W-509
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1aed3-a7cf-7e21-b5bf-5d9e47d665df
+# outcome: failed
+# at: 2026-11-06T10:13:02.034Z
+# tree: tree:9fa3fc0155d8b3be13db3daeab700c6df09dbb93
+# brief: briefs/W-509.md blob:e0c0dec6227d0bb2b8c715726d678b2154b02ee7
+# ticket: {"opus":"W-509","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-509/studio","head":"8a159016ed7f041bc7fa56d9218bde8b5557805b","brief":"e0c0dec6227d0bb2b8c715726d678b2154b02ee7","at":"2026-11-06T10:12:54.495Z"}
+
+## Findings
+1. blocking — brief:97 [severity: S1] [design: keeps] Reached by ci/W-509-spec-2.log #1’s class: revise-1106/fix-code.diff:97 checks `MERGE_HEAD` and `CHERRY_PICK_HEAD` through `commitOf`, which returns `undefined` for both absence and a malformed or unreadable pseudo-ref. That ordinary checkout mistake lets `settleOwn` stage the owned entries before the fast-forward refuses, contradicting “every other form holds with nothing staged.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w509.test.ts W-509-b6 malformed MERGE_HEAD and CHERRY_PICK_HEAD cases
+
+## Earlier findings
+- ci/W-509-spec-2.log #1: closed — packages/cli/src/integrate.ts:485 checks `overwritten` before line 492 calls `settleOwn`, and packages/cli/src/w509.test.ts:421-433 pins untracked and ignored incoming paths with nothing staged.
+
+## Verdict
+The earlier ordering defect is closed, but malformed unfinished-operation pseudo-refs can still cause staging before refusal.
+VERDICT: FAIL
