@@ -270,7 +270,7 @@ const onDisk = (path: string): "none" | "dir" | "other" | "error" => {
  * ignored entry of the checkout: present on disk, under a non-directory, or a directory holding an
  * ignored entry. `undefined` means none; a string starting with "?" is an unreadable state (hold).
  */
-function overwritten(repo: string, from: string, to: string): string | undefined {
+function overwritten(repo: string, from: string, to: string, own: readonly string[] = []): string | undefined {
   const added = git(repo, ["diff", "--no-renames", "--ignore-submodules=none", "--name-only", "-z", "--diff-filter=A", from, to]);
   if (added.status !== 0 || added.error !== undefined) return `?git diff failed: ${why(added)}`;
   const ignored = git(repo, ["ls-files", "-o", "-i", "--exclude-standard", "-z"]);
@@ -278,6 +278,7 @@ function overwritten(repo: string, from: string, to: string): string | undefined
   const dirs = new Set<string>();
   for (const e of ignored.stdout.split("\0").filter(Boolean)) for (let i = e.indexOf("/"); i !== -1; i = e.indexOf("/", i + 1)) dirs.add(e.slice(0, i));
   for (const p of added.stdout.split("\0").filter(Boolean)) {
+    if (own.includes(p)) continue; // W-509: settled by settleOwn: the index holds it as the merge commit does
     if (dirs.has(p)) return p;
     const parts = p.split("/");
     for (let i = 1; i <= parts.length; i++) {
@@ -365,13 +366,19 @@ function requestSync(repo: string, target: string): string {
   }
 }
 
+/** W-509: `land`'s own paths, staged as the merge commit holds them, so the fast-forward passes and the checkout ends clean of them. */
+function settleOwn(repo: string, reviewed: string, own: readonly string[]): string | undefined {
+  const staged = git(repo, ["update-index", "--add", "--remove", "--", ...own]);
+  return staged.status === 0 && staged.error === undefined ? undefined : `git update-index failed: ${why(staged)}`;
+}
+
 /**
  * The trunk fetch. `git fetch origin master:master` when no worktree holds `master`. Otherwise the
  * remote-tracking ref is fetched and `target` (the reviewed merge commit, the `merge` rung only) is the
  * only thing a clean checked-out `master` of `repo` is ever fast-forwarded to; with no target (the `pr`
  * rung) nothing is moved. Every read fails closed into a hold with nothing mutated.
  */
-export function fetchTrunk(repo: string, target?: string): Trunk {
+export function fetchTrunk(repo: string, target?: string, own?: readonly string[]): Trunk {
   // the tail (advice naming a path) is clipped on its own so a long head can never cut it off
   const hold = (reason: string, tail = ""): Trunk => ({ ok: false, reason: clean(reason, 400) + clean(tail, 600) });
   if (target !== undefined && !wellFormedOid(target)) return hold("the reviewed merge commit is not a well formed commit id");
@@ -417,9 +424,13 @@ export function fetchTrunk(repo: string, target?: string): Trunk {
   const fastForward = isAncestor(repo, local, reviewed);
   if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
   if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
-  const dirty = dirtyReport(repo);
+  const dirty = own === undefined ? dirtyReport(repo) : undefined;
   if (dirty !== undefined) return { ok: false, reason: clean(dirty.reason.startsWith("git status") ? dirty.reason : `${repo} has uncommitted tracked changes; commit or restore them, then re-run`, 400), after: dirty.after };
-  const clash = overwritten(repo, local, reviewed);
+  if (own !== undefined) {
+    const unsettled = settleOwn(repo, reviewed, own);
+    if (unsettled !== undefined) return hold(unsettled);
+  }
+  const clash = overwritten(repo, local, reviewed, own);
   if (clash?.startsWith("?")) return hold(clash.slice(1));
   if (clash !== undefined) return hold(`an incoming path would overwrite an untracked or ignored entry (or swaps a tracked file and directory, which a manual pull handles): ${clean(clash, 120)}; move it aside, then re-run`);
   // the merge acts on the branch that was checked, not on whatever was switched to meanwhile
@@ -608,6 +619,8 @@ export interface StepResult {
 }
 export interface Ctx {
   repo: string;
+  /** W-509: `land`: the paths this head carries, uncommitted in the checkout; the trunk fetch settles them and leaves all other work. */
+  own?: readonly string[];
   id: string;
   /** The head branch this call carries to the trunk: `opus/<id>` or `chore/done-<id>`. */
   head: string;
@@ -810,7 +823,7 @@ function readChecks(repo: string, pr: Pr): { ok: true; checks: Check[] } | { ok:
 
 /** The tail shared by a freshly merged PR and an already-MERGED one: fetch the trunk, re-check containment. */
 function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
-  const fetched = fetchTrunk(ctx.repo, pr.mergeOid);
+  const fetched = fetchTrunk(ctx.repo, pr.mergeOid, ctx.own);
   if (!fetched.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: ${fetched.reason}`, ...(fetched.after ?? []), ...extra] };
   const tip = readRef(ctx.repo, `refs/heads/${ctx.head}`);
   if (tip.kind === "error") return held(tip.reason, ...extra);
