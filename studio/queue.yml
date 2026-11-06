@@ -1,8 +1,10 @@
 queues:
   engineering:
-    lanes: { E1: W-456 }
+    lanes: { E1: W-523 }
     next:
-      - { opus: W-456, says: "study: time the serial test steps, prototype a bounded concurrent pool, measure its load on local runs; exempt from the freeze (D-183, D-185)" }
+      - { opus: W-523, says: "land reads the code owner's approval and queues; exempt, first (D-187)" }
+      - { opus: W-525, says: "a verb lifts a halt on an opus; exempt (D-187)" }
+      - { opus: W-526, says: "greenlight writes no Patron line; M4's exit reworded; exempt (D-187)" }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
       - { opus: W-520, says: "evidence storage and one safe-to-clear test; takes over W-380; exempt from the freeze (D-184)", folded: [W-380] }
       - { opus: W-521, says: "check flags git differing from the queue runner's; exempt from the freeze (D-185)" }
@@ -15,7 +17,7 @@ queues:
       - { opus: W-514, says: "next enforces the UI revision cap (D-182)" }
       - { opus: W-516, says: "Files owned check covers docs/SESSION-HANDOFF.md (D-182)" }
       - { opus: W-308, says: "opus timeline", next_ts: true }
-      - { opus: W-074, says: "greenlight and decline from the Board drawer, with W-289's refusal and a halt route" }
+      - { opus: W-074, says: "approve into the queue and decline from the Board drawer, with W-289's refusal and a halt route (D-186)" }
       - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; parked until after M4 (D-181)" }
       - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
@@ -53,6 +55,11 @@ queues:
       - { opus: W-332, says: "step tickets", next_ts: true }
       - { opus: W-304, says: "seats read live, console MVP" }
       - { opus: W-280, says: "Inbox newItem fail-open" }
+  research:
+    lanes: { R1: W-456 }
+    next:
+      - { opus: W-456, says: "study: time the serial test steps, prototype a bounded pool, measure its load; off the ladder until W-525 (D-183, D-187)" }
+      - { opus: W-527, says: "study the failed merge-group runs; read-only, off the ladder until W-525 (D-187)" }
   ui:
     lanes: { UI1: ~ }
     next:
@@ -77,4 +84,5 @@ deferred:
   - { opus: W-486, says: "The application schedules the daily retro" }
   - { opus: W-479, says: "an outside advisory that breaks the gates for every PR has a filing path: the fix opus files without an admin merge" }
   - { opus: W-371, says: "one provider-neutral sandbox row per seat in the manifest (write roots, network, tools), which bisellium run composes for each harness" }
+  - { opus: W-524, says: "remove the greenlit state and greenlight verb; after M4 (D-186, D-187)" }
   - { opus: W-515, says: "a bounded discussion across vendor seats: no pilot ruled (D-182)" }
