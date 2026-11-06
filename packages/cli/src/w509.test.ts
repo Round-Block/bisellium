@@ -212,6 +212,46 @@ test("W-509-b2 behaviour 2: land refuses anything outside its records, before an
   }
 });
 
+test("W-509-b3 behaviour 3: land checks exactly the tree it carries; a block refuses and --past-check names the way past", { timeout: 1_800_000 }, () => {
+  const BAD = '---\nid: "W-902"\nkind: "feature"\nstate: not-a-state\nprobationes: {}\n---\nbroken\n';
+  const w = world("w509-b3", "backlog");
+  put(w.repo, "studio/opera/W-902.md", BAD);
+  noPrYet(w);
+  const blocked = land(w, ["studio/opera/W-902.md"]);
+  isRefused(blocked, /why: refusing: check blocks the tree this landing carries \([1-9][0-9]* blocking\); nothing pushed/, "a blocked tree");
+  assert.match(blocked.out, /^block: .*W-902.*$/m, ran("the finding is printed", blocked));
+  assert.match(blocked.out, /way past: fix the finding, or rerun with --past-check/, ran("the way past", blocked));
+  assert.deepEqual(mutating(w), [], "nothing is pushed");
+  assert.equal(localHeads(w), "", "no head is left by a refusal");
+  assert.equal(git(w.repo, ["worktree", "list", "--porcelain"]).split("\n").filter((l) => l.startsWith("worktree ")).length, 1, "the throwaway worktree is gone");
+  // the way past: the reason rides the commit, and it goes on to the PR
+  const past = land(w, ["studio/opera/W-902.md"], ["--past-check", "the fixture's block is the point"]);
+  assert.match(past.out, /^past-check: the fixture's block is the point \(.*\)$/m, ran("the reason is printed", past));
+  const head = headOf(past);
+  assert.match(git(w.repo, ["log", "-1", "--format=%b", `refs/heads/${head}`]), /Past check: the fixture's block is the point/, "the reason rides the commit");
+  assert.equal(originHeads(w), `refs/heads/${head}`, "it was pushed");
+  // other work that would block is not judged: only the tree carried
+  const c = world("w509-b3-other", "backlog");
+  put(c.repo, "studio/opera/W-902.md", BAD);
+  put(c.repo, HANDOFF, "# Handoff\n\n## Queue\n\n- refreshed\n");
+  noPrYet(c);
+  const other = land(c, [HANDOFF]);
+  assert.doesNotMatch(other.out, /check blocks/, ran("an unrelated broken record in the checkout does not block", other));
+  assert.match(other.out, /why: pr create failed/, ran("it goes on to the PR", other));
+  assert.equal(readFileSync(join(c.repo, "studio/opera/W-902.md"), "utf8"), BAD, "the other work stays");
+  // the check runs on a branch, as CI's does: on a detached HEAD opus.records_unchanged blocks any tree holding W-096's record
+  const owned = world("w509-b3-branch", "backlog");
+  put(owned.repo, "studio/opera/W-096.md", '---\nid: "W-096"\ntitle: "fixture"\nkind: "feature"\ncollegium: "engineering"\nstate: backlog\nprobationes: {}\n---\nA record.\n');
+  commit(owned.repo, "test: W-096's record");
+  git(owned.repo, ["push", "-q", "origin", "master"]);
+  put(owned.repo, HANDOFF, "# Handoff\n\n## Queue\n\n- refreshed\n");
+  noPrYet(owned);
+  const onBranch = land(owned, [HANDOFF]);
+  assert.doesNotMatch(onBranch.out, /check blocks/, ran("W-096's record does not block on the throwaway branch", onBranch));
+  assert.equal(git(owned.repo, ["for-each-ref", "--format=%(refname)", "refs/heads/records/*-check"]), "", "the throwaway branch is gone");
+  // a check of the carried tree that passes pushes with no reason asked
+  assert.equal(git(c.repo, ["log", "-1", "--format=%b", `refs/heads/${headOf(other)}`]).includes("Past check"), false, "no reason is recorded when none was given");
+});
 
 
 
