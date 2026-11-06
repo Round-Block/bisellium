@@ -42,8 +42,8 @@ export interface Run {
   error?: Error;
 }
 
-export function sh(cmd: "git" | "gh", args: string[], cwd: string, maxBuffer = 16 * 1024 * 1024): Run {
-  const r = spawnSync(cmd, args, { cwd, encoding: "utf8", timeout: 120_000, maxBuffer });
+export function sh(cmd: "git" | "gh", args: string[], cwd: string, maxBuffer = 16 * 1024 * 1024, input?: string): Run {
+  const r = spawnSync(cmd, args, { cwd, encoding: "utf8", timeout: 120_000, maxBuffer, ...(input === undefined ? {} : { input }) });
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "", ...(r.error === undefined ? {} : { error: r.error }) };
 }
 export const git = (cwd: string, args: string[]): Run => sh("git", args, cwd);
@@ -270,7 +270,7 @@ const onDisk = (path: string): "none" | "dir" | "other" | "error" => {
  * ignored entry of the checkout: present on disk, under a non-directory, or a directory holding an
  * ignored entry. `undefined` means none; a string starting with "?" is an unreadable state (hold).
  */
-function overwritten(repo: string, from: string, to: string): string | undefined {
+function overwritten(repo: string, from: string, to: string, own: readonly string[] = []): string | undefined {
   const added = git(repo, ["diff", "--no-renames", "--ignore-submodules=none", "--name-only", "-z", "--diff-filter=A", from, to]);
   if (added.status !== 0 || added.error !== undefined) return `?git diff failed: ${why(added)}`;
   const ignored = git(repo, ["ls-files", "-o", "-i", "--exclude-standard", "-z"]);
@@ -278,6 +278,7 @@ function overwritten(repo: string, from: string, to: string): string | undefined
   const dirs = new Set<string>();
   for (const e of ignored.stdout.split("\0").filter(Boolean)) for (let i = e.indexOf("/"); i !== -1; i = e.indexOf("/", i + 1)) dirs.add(e.slice(0, i));
   for (const p of added.stdout.split("\0").filter(Boolean)) {
+    if (own.includes(p)) continue; // W-509: settled by settleOwn: the index holds it as the merge commit does
     if (dirs.has(p)) return p;
     const parts = p.split("/");
     for (let i = 1; i <= parts.length; i++) {
@@ -365,13 +366,76 @@ function requestSync(repo: string, target: string): string {
   }
 }
 
+/** The entry of `path` at `treeish` as "<mode> <object>", undefined when it holds none, or "error" when it cannot be read. */
+function entryAt(repo: string, treeish: string, path: string): string | undefined {
+  const r = git(repo, ["ls-tree", "-z", treeish, "--", path]);
+  if (r.status !== 0 || r.error !== undefined) return "error";
+  const m = /^([0-9]+) [a-z]+ ([0-9a-f]+)\t/.exec(r.stdout);
+  return m === null ? undefined : `${m[1]} ${m[2]}`;
+}
+
+/** The working copy of `path` as the blob git would hash, undefined when absent, "other" when it is not a regular file, or "error" when it cannot be read. */
+function copyAt(repo: string, path: string): string | undefined {
+  try {
+    if (!lstatSync(join(repo, path)).isFile()) return "other";
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    return code === "ENOENT" || code === "ENOTDIR" ? undefined : "error";
+  }
+  const hashed = git(repo, ["hash-object", "--", path]);
+  return hashed.status === 0 && hashed.error === undefined ? hashed.stdout.trim() : "error";
+}
+
+/** W-509: `MERGE_HEAD` and `CHERRY_PICK_HEAD` pass only when absent: present in any form, valid or not, or unreadable, holds. */
+function markersAbsent(repo: string): boolean {
+  for (const name of ["MERGE_HEAD", "CHERRY_PICK_HEAD"]) {
+    const where = git(repo, ["rev-parse", "--git-path", name]);
+    if (where.status !== 0 || where.error !== undefined || where.stdout.trim() === "") return false;
+    try {
+      lstatSync(resolve(repo, where.stdout.trim()));
+      return false;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * W-509: `land`'s own paths, staged as the merge commit holds them, so the fast-forward passes. All are judged before any is staged:
+ * git's refusals of an unfinished merge or cherry-pick or an unmerged entry, then for each path the merge commit's entry (absent or a
+ * regular file), the working copy (absent or a regular file with that content; its mode is never judged) and the index entry
+ * (HEAD's or the merge commit's, on mode and blob). A stop leaves the copy and the index as they were. The merge commit's own entry
+ * is then written to the index, so neither the copy's mode nor core.fileMode can make the index differ from the commit it fast-forwards to. The
+ * working tree is never written here: a copy whose mode differs from the merge commit's stays so and shows in `git status`.
+ */
+function settleOwn(repo: string, reviewed: string, own: readonly string[]): string | undefined {
+  const unmerged = git(repo, ["ls-files", "-u"]);
+  if (unmerged.status !== 0 || unmerged.stdout !== "" || !markersAbsent(repo)) return "a merge or cherry-pick is unfinished in this checkout, or an entry is unmerged; master is not moved: finish it, then re-run";
+  const entries: string[] = [];
+  for (const p of own) {
+    const merged = entryAt(repo, reviewed, p);
+    if (merged !== undefined && !/^100(644|755) /.test(merged)) return `${clean(p)} is not a regular file in the merged commit ${reviewed.slice(0, 12)}; your copy is kept and master is not moved: settle it by hand`;
+    const worked = copyAt(repo, p);
+    if (worked === "error") return `cannot inspect ${clean(p)}`;
+    if (worked !== merged?.split(" ")[1]) return `${clean(p)} differs from the merged commit ${reviewed.slice(0, 12)}: it was edited after the landing, or the merge brought in another change; your copy is kept and master is not moved: settle it, then re-run`;
+    const stage = git(repo, ["ls-files", "-s", "-z", "--", p]);
+    const m = /^([0-9]+) ([0-9a-f]+) 0\t/.exec(stage.stdout);
+    const indexed = m === null ? undefined : `${m[1]} ${m[2]}`;
+    if (indexed !== entryAt(repo, "HEAD", p) && indexed !== merged) return `${clean(p)} has staged content that is neither HEAD's nor the merged commit's; it is kept and master is not moved: unstage it, then re-run`;
+    entries.push(`${merged ?? `0 ${"0".repeat(40)}`}\t${p}\0`);
+  }
+  const staged = sh("git", ["update-index", "-z", "--index-info"], repo, undefined, entries.join(""));
+  return staged.status === 0 && staged.error === undefined ? undefined : `git update-index failed: ${why(staged)}`;
+}
+
 /**
  * The trunk fetch. `git fetch origin master:master` when no worktree holds `master`. Otherwise the
  * remote-tracking ref is fetched and `target` (the reviewed merge commit, the `merge` rung only) is the
  * only thing a clean checked-out `master` of `repo` is ever fast-forwarded to; with no target (the `pr`
  * rung) nothing is moved. Every read fails closed into a hold with nothing mutated.
  */
-export function fetchTrunk(repo: string, target?: string): Trunk {
+export function fetchTrunk(repo: string, target?: string, own?: readonly string[]): Trunk {
   // the tail (advice naming a path) is clipped on its own so a long head can never cut it off
   const hold = (reason: string, tail = ""): Trunk => ({ ok: false, reason: clean(reason, 400) + clean(tail, 600) });
   if (target !== undefined && !wellFormedOid(target)) return hold("the reviewed merge commit is not a well formed commit id");
@@ -417,14 +481,23 @@ export function fetchTrunk(repo: string, target?: string): Trunk {
   const fastForward = isAncestor(repo, local, reviewed);
   if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
   if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
-  const dirty = dirtyReport(repo);
+  // W-509: `land` leaves other work in place: only a dirty path the merge would write stops it, and git's own fast-forward checks that again
+  const incoming = own === undefined ? undefined : git(repo, ["diff", "--no-renames", "--name-only", "-z", local, reviewed]);
+  if (incoming !== undefined && (incoming.status !== 0 || incoming.error !== undefined)) return hold(`git diff failed: ${why(incoming)}`);
+  const moving = new Set((incoming?.stdout ?? "").split("\0").filter((p) => p !== ""));
+  const dirty = own === undefined ? dirtyReport(repo) : dirtyReport(repo, (p) => !moving.has(p) || own.includes(p));
   if (dirty !== undefined) return { ok: false, reason: clean(dirty.reason.startsWith("git status") ? dirty.reason : `${repo} has uncommitted tracked changes; commit or restore them, then re-run`, 400), after: dirty.after };
-  const clash = overwritten(repo, local, reviewed);
+  const clash = overwritten(repo, local, reviewed, own);
   if (clash?.startsWith("?")) return hold(clash.slice(1));
   if (clash !== undefined) return hold(`an incoming path would overwrite an untracked or ignored entry (or swaps a tracked file and directory, which a manual pull handles): ${clean(clash, 120)}; move it aside, then re-run`);
   // the merge acts on the branch that was checked, not on whatever was switched to meanwhile
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]);
   if (head.stdout.trim() !== TRUNK_REF) return hold(`HEAD of ${repo} is ${clean(head.stdout.trim()) || "detached"}, not master; switch back and re-run`);
+  // W-509: every hold above is judged before settleOwn stages anything, so a refusal leaves the real index as it was
+  if (own !== undefined) {
+    const unsettled = settleOwn(repo, reviewed, own);
+    if (unsettled !== undefined) return hold(unsettled);
+  }
   const partly = `; the working tree may be partly updated: git -C ${repo} status`;
   const merged = git(repo, ["-c", "submodule.recurse=false", "merge", "-q", "--ff-only", reviewed]);
   if (merged.status !== 0 || merged.error !== undefined) return hold(`git merge --ff-only failed: ${why(merged)}`, partly);
@@ -515,6 +588,39 @@ function readQueueMembership(repo: string, pr: Pr): { ok: true; queued: boolean 
   const pullRequest = isObj(repository) ? repository["pullRequest"] : undefined;
   const queued = isObj(pullRequest) ? pullRequest["isInMergeQueue"] : undefined;
   return typeof queued === "boolean" ? { ok: true, queued } : { ok: false, reason: "gh api graphql returned no boolean data.repository.pullRequest.isInMergeQueue" };
+}
+
+/** W-509: GitHub's review decision on a PR: `APPROVED` once its required reviews, a code owner's included, are met; absent reads as an empty string. */
+export function readReviewDecision(repo: string, pr: Pr): { ok: true; decision: string } | { ok: false; reason: string } {
+  const v = ghJson(repo, ["pr", "view", String(pr.number), "-R", pr.repo, "--json", "reviewDecision"]);
+  if (!v.ok) return v;
+  const decision = isObj(v.value) ? v.value["reviewDecision"] : undefined;
+  return decision === null || decision === undefined ? { ok: true, decision: "" } : typeof decision === "string" ? { ok: true, decision } : { ok: false, reason: "gh pr view returned no string reviewDecision" };
+}
+
+/** W-509: a PR's merge queue entry as GitHub reads it; `rollup` is the check state of the commit the queue built. Read only to report a merge that timed out. */
+export interface QueueEntry {
+  state: string;
+  enqueuedAt: string;
+  position: number;
+  rollup: string | undefined;
+}
+export function readQueueEntry(repo: string, pr: Pr): { ok: true; entry: QueueEntry | undefined } | { ok: false; reason: string } {
+  const slash = pr.repo.indexOf("/");
+  const query = "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){mergeQueueEntry{state enqueuedAt position headCommit{statusCheckRollup{state}}}}}}";
+  const v = ghJson(repo, ["api", "graphql", "-f", `query=${query}`, "-F", `owner=${pr.repo.slice(0, slash)}`, "-F", `name=${pr.repo.slice(slash + 1)}`, "-F", `number=${pr.number}`]);
+  if (!v.ok) return v;
+  const data = isObj(v.value) ? v.value["data"] : undefined;
+  const repository = isObj(data) ? data["repository"] : undefined;
+  const pullRequest = isObj(repository) ? repository["pullRequest"] : undefined;
+  if (!isObj(pullRequest) || !("mergeQueueEntry" in pullRequest)) return { ok: false, reason: "gh api graphql returned no data.repository.pullRequest.mergeQueueEntry" };
+  const e = pullRequest["mergeQueueEntry"];
+  if (e === null) return { ok: true, entry: undefined };
+  if (!isObj(e) || typeof e["state"] !== "string" || typeof e["enqueuedAt"] !== "string" || typeof e["position"] !== "number") return { ok: false, reason: "gh api graphql returned a queue entry with a missing field" };
+  const commit = e["headCommit"];
+  const rollup = isObj(commit) ? commit["statusCheckRollup"] : undefined;
+  const state = isObj(rollup) ? rollup["state"] : undefined;
+  return { ok: true, entry: { state: e["state"], enqueuedAt: e["enqueuedAt"], position: e["position"], rollup: typeof state === "string" ? state : undefined } };
 }
 
 interface Cand {
@@ -608,6 +714,10 @@ export interface StepResult {
 }
 export interface Ctx {
   repo: string;
+  /** W-509: `land`: the paths this head carries, uncommitted in the checkout; the trunk fetch settles them and leaves all other work. */
+  own?: readonly string[];
+  /** W-509: `land`: read once before the merge gate of an OPEN PR; a result stops there (a code-owned head waiting for the Patron). */
+  beforeMerge?(pr: Pr): StepResult | undefined;
   id: string;
   /** The head branch this call carries to the trunk: `opus/<id>` or `chore/done-<id>`. */
   head: string;
@@ -810,7 +920,7 @@ function readChecks(repo: string, pr: Pr): { ok: true; checks: Check[] } | { ok:
 
 /** The tail shared by a freshly merged PR and an already-MERGED one: fetch the trunk, re-check containment. */
 function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
-  const fetched = fetchTrunk(ctx.repo, pr.mergeOid);
+  const fetched = fetchTrunk(ctx.repo, pr.mergeOid, ctx.own);
   if (!fetched.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: ${fetched.reason}`, ...(fetched.after ?? []), ...extra] };
   const tip = readRef(ctx.repo, `refs/heads/${ctx.head}`);
   if (tip.kind === "error") return held(tip.reason, ...extra);
@@ -992,6 +1102,8 @@ export async function landHead(ctx: Ctx): Promise<StepResult> {
     if (read.kind === "held") return held(read.reason);
   }
   if (read.kind !== "pr") return held(`no PR for ${head} after the push`);
+  const paused = read.pr.state === "OPEN" ? ctx.beforeMerge?.(read.pr) : undefined;
+  if (paused !== undefined) return paused;
   const merged = await mergeGate(ctx, read.pr);
   if (!merged.ok) return merged;
   const dropped = cleanup(ctx);

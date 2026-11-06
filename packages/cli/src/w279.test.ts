@@ -149,8 +149,8 @@ test("W-279-b2 behaviour 2: lint and format ignore .worktrees and .kilo", async 
 
 test("W-279-b3 behaviour 3: a failing verify gate prints its log tail to stderr", async () => {
   const repo = tmp("w279-tail-");
-  writeFileSync(join(repo, "noisy-fail.mjs"), 'for (let i = 1; i <= 300; i++) console.log("L" + String(i).padStart(4, "0"));\nprocess.exit(1);\n');
-  writeFileSync(join(repo, "short-fail.mjs"), 'console.log("S-ONLY");\nprocess.exit(1);\n');
+  writeFileSync(join(repo, "noisy-fail.mjs"), 'for (let i = 1; i <= 300; i++) console.log("L" + String(i).padStart(4, "0"));\nprocess.exitCode = 1;\n');
+  writeFileSync(join(repo, "short-fail.mjs"), 'console.log("S-ONLY");\nprocess.exitCode = 1;\n');
   commitRepo(repo);
   const { studio, id } = writeStudio(
     [
@@ -192,6 +192,16 @@ test("W-279-b3 behaviour 3: a failing verify gate prints its log tail to stderr"
   assert.match(short, /S-ONLY/);
   const stderr = out.filter((e) => e.stream === "err").map((e) => e.text).join("\n");
   assert.ok(!stderr.includes("exit code: 0"), "lint's log reached stderr");
+});
+
+test("W-509-fixture: no gate fixture here calls process.exit after console.log, which drops lines still queued on a pipe", () => {
+  const source = readFileSync(fileURLToPath(import.meta.url), "utf8");
+  const fixtures = source.split("\n").filter((line) => /writeFileSync\(join\(repo, "[^"]+\.mjs"\)/.test(line) && line.includes("console.log"));
+  for (const name of ["noisy-fail.mjs", "short-fail.mjs"]) assert.ok(fixtures.some((line) => line.includes(`"${name}"`)), `${name} is not read as a fixture`);
+  assert.deepEqual(
+    fixtures.filter((line) => line.includes("process.exit(")),
+    [],
+  );
 });
 
 test("W-313-b2 behaviour 2: ci --opus prints each step's and each gate's start and end with the time, a step's output between them", async () => {

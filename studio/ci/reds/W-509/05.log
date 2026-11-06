@@ -1,0 +1,67 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-509-b5\s --import tsx packages/cli/src/w509.test.ts
+# exit: 1
+# at: 2026-11-06T06:40:46.419Z
+# sella: builder.W-509
+# tree: tree:a073251b61be097427e2bafc72915e5b9f044bf4
+# ticket: {"opus":"W-509","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-509/studio","head":"b92e071a9f7de232ec38a0327e9db5c06fa977e0","brief":"020e25b4dcc472ff779e94266fcb1cf809a33172","at":"2026-11-06T06:40:44.822Z"}
+
+TAP version 13
+# Subtest: W-509-b5 behaviour 5: a merge that times out reports the queue entry, and says when it reads stuck
+not ok 1 - W-509-b5 behaviour 5: a merge that times out reports the queue entry, and says when it reads stuck
+  ---
+  duration_ms: 2293.432534
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:2:13515'
+  failureType: 'testCodeFailure'
+  error: |-
+    the entry
+    --- exit 1
+    --- stdout
+    push --force-with-lease records/land-fcc8370956c1
+    gh pr create
+    checks poll 1: pass=6 pending=0 fail=0 total=6
+    gh pr merge --squash --auto
+    queue poll 1: OPEN CLEAN
+    queue poll 2: OPEN CLEAN
+    queue poll 3: OPEN CLEAN
+    land: records/land-fcc8370956c1 held
+    carries: docs/SESSION-HANDOFF.md, studio/opera/W-901.md
+    mode: merge-queue
+    state=QUEUE_TIMEOUT
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    push --force-with-lease records/land-fcc8370956c1
+    gh pr create
+    checks poll 1: pass=6 pending=0 fail=0 total=6
+    gh pr merge --squash --auto
+    queue poll 1: OPEN CLEAN
+    queue poll 2: OPEN CLEAN
+    queue poll 3: OPEN CLEAN
+    land: records/land-fcc8370956c1 held
+    carries: docs/SESSION-HANDOFF.md, studio/opera/W-901.md
+    mode: merge-queue
+    state=QUEUE_TIMEOUT
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:314:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2313.836476

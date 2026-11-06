@@ -1,0 +1,24 @@
+# opus: W-509
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-06T03:06:51.440Z
+# tree: tree:63e50661ef1396c1044a4e2df0bed4436fd0a494
+# brief: briefs/W-509.md blob:020e25b4dcc472ff779e94266fcb1cf809a33172
+# ticket: {"opus":"W-509","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"63a671dc620dbbaf78933a461d9d7ca25493d9b4","brief":"020e25b4dcc472ff779e94266fcb1cf809a33172","at":"2026-11-06T03:06:45.341Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-509-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — D-181 line 6 (records land with no review from the Patron) and `.github/CODEOWNERS` (`/studio/decisions/`) disagree for a decision; the verb keeps the code-owner rule, opens the PR, requests review and waits, and the call is left visible as Defaults 1, since only the Patron edits that file — check: brief "Where D-181 line 6 meets code-owner review", brief Defaults 1, Promise code-owned
+2. advisory — the rows run on a stub gh and a bare origin; the real push, PR and queue path is proved by the first real landing, which Acceptance names, and the two new GitHub reads ran once on #1056 only, so the stuck branch has only the fixture — check: brief Limits, graphql-probe.out
+3. advisory — a documented seam change: `Ctx` gains optional `own` and `beforeMerge`, `fetchTrunk` an optional third parameter and `performLanding` a narrowed first parameter, because the one landing helper is reused rather than a parallel path; a caller that sets none is unchanged, and next-done, next-queue, next-ladder, ladder-followon, w362 and w369 pass on the tip — check: brief Interfaces 3, gates-proto.out
+4. advisory — a stuck queue entry is reported, not repaired: removal stays a hand step on the PR's page, after the normal wait of about 20 minutes — check: brief Promise queue-report, brief Defaults 4
+5. advisory — the kills ran on a series whose `land.ts` and `integrate.ts` blobs equal the signed prototype's; only the suite pin and the runner's concurrency changed after them — check: mutants-basis.out, mutants.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) for `studio/briefs/W-509.md` at master 63a671dc: six behaviours, each red accepted by the replay classifier on the commit before its behaviour and green at its stage and later (`reds.out`, `red-b<k>.log`, `green-b<k>.log`); twenty-five one-hunk kills each failing its row at a pinned assertion (`mutants.out`); the twelve-commit mbox applying to the same tree (`mbox-check.out`); lint, format, typecheck, the touched and must-stay-green files and both officina checks pass on the tip (`gates-proto.out`); the Codex test check's two flips named (`fixture-census.md`); no file it touches is code-owned.

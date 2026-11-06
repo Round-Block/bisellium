@@ -1,0 +1,25 @@
+# opus: W-509
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-06T12:53:36.468Z
+# tree: tree:013ea244b3aff1d03968175e1abf44924313c369
+# brief: briefs/W-509.md blob:d04cdedc7023a7cd2881fde7a692d414f626ac94
+# ticket: {"opus":"W-509","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-509/studio","head":"fc24e200f63b796bf03348bb13e483cb7200de17","brief":"d04cdedc7023a7cd2881fde7a692d414f626ac94","at":"2026-11-06T12:53:30.093Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-509-spec/revise-1106b/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 carries the Patron's ruling of 2026-11-06, option A: `packages/cli/src/w279.test.ts` joins Files owned, and `noisy-fail.mjs` and `short-fail.mjs` set `process.exitCode = 1` for `process.exit(1)`; every assertion of `W-279-b3` stays — check: revise-1106b/fix-code.diff, brief "Ruled by the Patron", W-509-build/fix4/diagnosis.md
+2. advisory — the red is a new row, `W-509-fixture`, and no seventh behaviour: `land`'s behaviours do not change and six is `brief_behaviour_limit`, so it has no Promise, no Input domain row and no `bisellium red` record; it fails by `ERR_ASSERTION` at fc24e200 with the test diff alone and passes with the fix, and each fixture's call restored alone fails it — check: revise-1106b/genuine-red.out, revise-1106b/green-row.out, revise-1106b/kill-noisy.out, revise-1106b/kill-short.out
+3. advisory — the row pins text, so the cause is shown apart from it: with a reader that does not read while the child writes, `process.exit(1)` loses lines in 20 of 20 runs, always at 171 lines, and `process.exitCode = 1` in 0 of 20; a load row in the suite would be slow and only sometimes red, and this probe stays out of the tree — check: revise-1106b/probe/stalled.mjs, revise-1106b/probe/stalled.out
+4. advisory — the fix under load: `W-279-b3` passes 48 of 48, 16 parallel, against 47 of 48 at the head, which alone would prove little at that rate; fix4's isolated capture is whole in 200 of 200, 24 parallel, against 167 of 200 at the head — check: revise-1106b/stress.txt, revise-1106b/probe/repro-fixed.txt, W-509-build/fix4/stress.txt, W-509-build/fix4/repro/out.txt
+5. advisory — stated limits: the row reads only this file's one-line `.mjs` fixtures; other test files are outside the ruling, and the read-only search found none with bulk output before an exit, only one short write or `console.log` before `process.exit` — check: brief Limits, packages/cli/src/w362.test.ts:40, packages/cli/src/red-order.test.ts:199, packages/cli/src/lifecycle.test.ts:694, packages/commands/src/run.test.ts:894, packages/commands/src/run.test.ts:1925
+6. advisory — how it is built: a fix round, fix-test.diff then fix-code.diff, each also applying alone at fc24e200; both change only `w279.test.ts`, reds 1 to 6 stand with none rewritten, the rest of the signed brief stays, and the files that pin `test:suite` or a list of row files ran whole with lint, Prettier and typecheck — check: revise-1106b/gates-proto.out, revise-1106b/all.sh
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-509.md`, prototyped over `opus/W-509` fc24e200, diffs revise-1106b/fix-test.diff and revise-1106b/fix-code.diff; the flake is fixed at its cause in the fixture, by the Patron's ruling of 2026-11-06, with no row weakened; six behaviours, no code-owned path.

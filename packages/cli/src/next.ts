@@ -2894,7 +2894,7 @@ async function fixCheckSteps(f: Facts, testClock: boolean, log: (line: string) =
 }
 
 /** W-243: a landing head may change officina records only (`recordOnly`, the list certify reads): anything else is refused before the push. */
-async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
+export async function performLanding(f: { repo: string; studioRel: string }, ctx: Ctx, head: string): Promise<StepResult> {
   const paths = diffPaths(f.repo, TRUNK, `refs/heads/${head}`);
   if (paths === undefined) return heldResult(`refusing: could not read what ${head} changes (git diff failed); nothing pushed`);
   // the whole list, as certify judges it: an empty diff is not records-only either
