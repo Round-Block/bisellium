@@ -335,6 +335,32 @@ with PushNotification. Limits: the push is the session's tool call, not the
 CLI's; a notice waits for the main thread's next guarded call; a PR opened by
 hand is screened only when `review-request` is run for it.
 
+## Landing records (W-509)
+
+`bisellium land <path>... --title <text> --sella <id> [--body-file <path>]
+[--past-check <reason>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>]
+[--repo <dir>] [--now <iso>]` carries named records to master: `<studio>/opera/`,
+`<studio>/ci/`, `<studio>/decisions/`, `<studio>/acta/`, `<studio>/queue.yml`, the
+handoff and the dossier pages. Any other path is refused, with the way past: code
+and rules keep a real PR (D-181 line 6). It runs from the main checkout on master,
+with the paths as the working tree holds them, each named relative to the
+repository's top, and any other work left in place.
+
+It builds the commit through a temporary index on HEAD, so the working tree and the
+real index are not touched, and names the head `records/land-<hash>` from the paths
+and their contents, so the same command run again resumes. `check` runs on exactly
+that commit's tree in a throwaway worktree. A blocking finding refuses, unless
+`--past-check` gives a reason, which rides the commit; CI's officina check still
+judges the merge. `performLanding` then pushes, opens or reuses the PR and runs the
+merge gate. A head with a code-owned path stops at `state=PATRON_REVIEW` (exit 1)
+after requesting review, and merges only on a rerun once GitHub reads it `APPROVED`.
+A merge that times out prints `state=QUEUE_TIMEOUT` and its `queue-entry:`, with a
+`stuck:` line when the entry is `AWAITING_CHECKS` with its checks passed. Once merged,
+it stages its own paths as the merge commit holds them, fast-forwards master past any
+other work, and deletes the head. A copy edited meanwhile, a staged copy that differs
+or other work on an incoming path holds at `state=MERGED_NOT_FETCHED`, with nothing
+lost.
+
 ## The read for the console (W-300)
 
 `packages/cli/src/ladder-read.ts` answers what report mode says, as one JSON line

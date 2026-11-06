@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { openStudio, parseFlags } from "@bisellium/commands/writes.js";
 import { instant } from "@bisellium/schema";
-import { recordOnly } from "../../../scripts/ci-scope.mjs";
+import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { checkStudio } from "./check.js";
 import { clean, git, identifyPr, quoted, readQueueEntry, readRef, readReviewDecision, repoSlug, type Ctx, type Pr, type StepResult } from "./integrate.js";
 import { performLanding } from "./next.js";
@@ -221,6 +221,12 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
     const made = git(repo, ["commit-tree", built.tree, "-p", "HEAD", "-m", title, ...(bodyFile === undefined ? [] : ["-F", bodyFile]), ...(past === undefined ? [] : ["-m", `Past check: ${past}`]), "-m", trailer]);
     if (made.status !== 0 || made.error !== undefined) return say(1, head, [`why: could not commit the records: ${clean(made.stderr.trim().split("\n")[0] ?? "")}`]);
     commit = made.stdout.trim();
+  }
+  if (tip.kind === "tip") {
+    const carried = diffPaths(repo, TRUNK, ref);
+    const beyond = carried === undefined ? undefined : carried.filter((p) => !landable(p, studioRel));
+    if (beyond === undefined) return say(1, head, [`why: refusing: could not read what ${head} changes; nothing pushed`]);
+    if (beyond.length > 0) return say(1, head, [`why: refusing: the existing ${head} changes ${beyond.slice(0, 5).map((p) => clean(p)).join(", ")}, outside the records land carries; nothing pushed`, `way past: git -C ${quoted(repo)} branch -D ${head}, then run this again`]);
   }
   const prior = identifyPr(repo, head);
   if (prior.kind === "held") return say(1, head, [`why: ${prior.reason}`]);

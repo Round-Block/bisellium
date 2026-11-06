@@ -366,8 +366,29 @@ function requestSync(repo: string, target: string): string {
   }
 }
 
-/** W-509: `land`'s own paths, staged as the merge commit holds them, so the fast-forward passes and the checkout ends clean of them. */
+/** The blob of `path` at `treeish`, or undefined when it holds none. */
+function blobAt(repo: string, treeish: string, path: string): string | undefined {
+  const r = git(repo, ["ls-tree", "-z", treeish, "--", path]);
+  return /^[0-9]+ blob ([0-9a-f]+)\t/.exec(r.stdout)?.[1];
+}
+
+/**
+ * W-509: `land`'s own paths, staged as the merge commit holds them, so the fast-forward passes and the checkout ends clean of
+ * them. All are judged before any is staged: a working copy that differs from the merge commit (edited after the landing, or the
+ * merge brought in someone else's change), or an index entry that is neither HEAD's nor the merge commit's, stops it with
+ * nothing staged and the edit kept. The working tree is never written here.
+ */
 function settleOwn(repo: string, reviewed: string, own: readonly string[]): string | undefined {
+  for (const p of own) {
+    const merged = blobAt(repo, reviewed, p);
+    const here = onDisk(join(repo, p));
+    if (here === "error") return `cannot inspect ${clean(p)}`;
+    const worked = here === "none" ? undefined : git(repo, ["hash-object", "--", p]).stdout.trim();
+    if (worked !== merged) return `${clean(p)} differs from the merged commit ${reviewed.slice(0, 12)}: it was edited after the landing, or the merge brought in another change; your copy is kept and master is not moved: settle it, then re-run`;
+    const stage = git(repo, ["ls-files", "-s", "-z", "--", p]);
+    const indexed = /^[0-9]+ ([0-9a-f]+) 0\t/.exec(stage.stdout)?.[1];
+    if (indexed !== blobAt(repo, "HEAD", p) && indexed !== merged) return `${clean(p)} has staged content that is neither HEAD's nor the merged commit's; it is kept and master is not moved: unstage it, then re-run`;
+  }
   const staged = git(repo, ["update-index", "--add", "--remove", "--", ...own]);
   return staged.status === 0 && staged.error === undefined ? undefined : `git update-index failed: ${why(staged)}`;
 }
@@ -424,18 +445,23 @@ export function fetchTrunk(repo: string, target?: string, own?: readonly string[
   const fastForward = isAncestor(repo, local, reviewed);
   if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
   if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
-  const dirty = own === undefined ? dirtyReport(repo) : undefined;
+  // W-509: `land` leaves other work in place: only a dirty path the merge would write stops it, and git's own fast-forward checks that again
+  const incoming = own === undefined ? undefined : git(repo, ["diff", "--no-renames", "--name-only", "-z", local, reviewed]);
+  if (incoming !== undefined && (incoming.status !== 0 || incoming.error !== undefined)) return hold(`git diff failed: ${why(incoming)}`);
+  const moving = new Set((incoming?.stdout ?? "").split("\0").filter((p) => p !== ""));
+  const dirty = own === undefined ? dirtyReport(repo) : dirtyReport(repo, (p) => !moving.has(p) || own.includes(p));
   if (dirty !== undefined) return { ok: false, reason: clean(dirty.reason.startsWith("git status") ? dirty.reason : `${repo} has uncommitted tracked changes; commit or restore them, then re-run`, 400), after: dirty.after };
-  if (own !== undefined) {
-    const unsettled = settleOwn(repo, reviewed, own);
-    if (unsettled !== undefined) return hold(unsettled);
-  }
   const clash = overwritten(repo, local, reviewed, own);
   if (clash?.startsWith("?")) return hold(clash.slice(1));
   if (clash !== undefined) return hold(`an incoming path would overwrite an untracked or ignored entry (or swaps a tracked file and directory, which a manual pull handles): ${clean(clash, 120)}; move it aside, then re-run`);
   // the merge acts on the branch that was checked, not on whatever was switched to meanwhile
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]);
   if (head.stdout.trim() !== TRUNK_REF) return hold(`HEAD of ${repo} is ${clean(head.stdout.trim()) || "detached"}, not master; switch back and re-run`);
+  // W-509: every hold above is judged before settleOwn stages anything, so a refusal leaves the real index as it was
+  if (own !== undefined) {
+    const unsettled = settleOwn(repo, reviewed, own);
+    if (unsettled !== undefined) return hold(unsettled);
+  }
   const partly = `; the working tree may be partly updated: git -C ${repo} status`;
   const merged = git(repo, ["-c", "submodule.recurse=false", "merge", "-q", "--ff-only", reviewed]);
   if (merged.status !== 0 || merged.error !== undefined) return hold(`git merge --ff-only failed: ${why(merged)}`, partly);
