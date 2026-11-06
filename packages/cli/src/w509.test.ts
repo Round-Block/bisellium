@@ -143,6 +143,18 @@ test("W-509-b1 behaviour 1: land carries the named records to master and leaves 
   usage([RECORD, ...TITLE_ARGS, "--body-file", w.root], /--body-file must be a regular file/, "a folder as the body");
   usage([RECORD, ...TITLE_ARGS, "--poll-ms", "0"], /--poll-ms takes 1 through 60000/, "a poll of zero");
   usage([RECORD, ...TITLE_ARGS, "--no-such-flag"], /unknown flag/, "an unknown flag");
+  // --repo, --studio and --now are validated too: each invalid value exits 2 before a commit or push
+  const bad = (flags: string[], why: RegExp, row: string): void => {
+    const before = mutating(w).length;
+    const o = cli(w, ["land", RECORD, ...TITLE_ARGS, ...flags], w.repo);
+    assert.equal(o.status, 2, ran(`${row}: exit 2`, o));
+    assert.match(o.err, why, ran(`${row}: the reason`, o));
+    assert.equal(localHeads(w), "", `${row}: no head was cut`);
+    assert.equal(mutating(w).length, before, `${row}: nothing pushed`);
+  };
+  bad(["--repo", join(w.root, "no-such-repo"), "--studio", w.studio], /is not a git repository/, "a repo that is not one");
+  bad(["--repo", w.repo, "--studio", join(w.root, "no-such-studio")], /land: /, "a studio that is not one");
+  bad(["--repo", w.repo, "--studio", w.studio, "--now", "not-a-date"], /--now must be an ISO date/, "a clock that is not a date");
 });
 
 test("W-509-b2 behaviour 2: land refuses anything outside its records, before any commit or push, and names the way past", { timeout: 1_800_000 }, () => {
