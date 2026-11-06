@@ -436,8 +436,8 @@ test("W-509-b6 behaviour 6: landing never loses an edit: a differing copy, a sta
   const markerPath = (repo: string, name: string): string => join(repo, git(repo, ["rev-parse", "--git-path", name]));
   const malformed = (repo: string, name: string): void => writeFileSync(markerPath(repo, name), "not a commit id\n");
   const unfinished: readonly [string, (repo: string, oid: string) => void, (repo: string) => void][] = [
-    ["an unfinished merge", (repo, oid) => void git(repo, ["update-ref", "MERGE_HEAD", oid]), (repo) => void git(repo, ["update-ref", "-d", "MERGE_HEAD"])],
-    ["an unfinished cherry-pick", (repo, oid) => void git(repo, ["update-ref", "CHERRY_PICK_HEAD", oid]), (repo) => void git(repo, ["update-ref", "-d", "CHERRY_PICK_HEAD"])],
+    ["an unfinished merge", (repo, oid) => writeFileSync(markerPath(repo, "MERGE_HEAD"), `${oid}\n`), (repo) => rmSync(markerPath(repo, "MERGE_HEAD"), { force: true })],
+    ["an unfinished cherry-pick", (repo, oid) => writeFileSync(markerPath(repo, "CHERRY_PICK_HEAD"), `${oid}\n`), (repo) => rmSync(markerPath(repo, "CHERRY_PICK_HEAD"), { force: true })],
     ["a malformed MERGE_HEAD", (repo) => malformed(repo, "MERGE_HEAD"), (repo) => rmSync(markerPath(repo, "MERGE_HEAD"), { force: true })],
     ["a malformed CHERRY_PICK_HEAD", (repo) => malformed(repo, "CHERRY_PICK_HEAD"), (repo) => rmSync(markerPath(repo, "CHERRY_PICK_HEAD"), { force: true })],
     [
