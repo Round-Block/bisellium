@@ -1,0 +1,74 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-509-b4\s --import tsx packages/cli/src/w509.test.ts
+# exit: 1
+# at: 2026-11-06T06:39:45.551Z
+# sella: builder.W-509
+# tree: tree:866556c8f91ea4bcf095e253f1c37f27d0440a40
+# ticket: {"opus":"W-509","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-509/studio","head":"cbcb724bfa7bffac4e2634d7b6c5a2bd8a1ed319","brief":"020e25b4dcc472ff779e94266fcb1cf809a33172","at":"2026-11-06T06:39:43.981Z"}
+
+TAP version 13
+# Subtest: W-509-b4 behaviour 4: a code-owned path opens the PR, says the Patron must review it, and merges only once approved
+not ok 1 - W-509-b4 behaviour 4: a code-owned path opens the PR, says the Patron must review it, and merges only once approved
+  ---
+  duration_ms: 2406.839961
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:2:10717'
+  failureType: 'testCodeFailure'
+  error: |-
+    the wait: the reason
+    --- exit 1
+    --- stdout
+    push --force-with-lease records/land-906bad5d8ea2
+    gh pr create
+    checks poll 1: pass=6 pending=0 fail=0 total=6
+    gh pr merge --squash --auto
+    direct merge requested (CLEAN, every check pass)
+    queue poll 1: OPEN CLEAN
+    direct merge requested (CLEAN, every check pass)
+    queue poll 2: OPEN CLEAN
+    direct merge requested (CLEAN, every check pass)
+    queue poll 3: OPEN CLEAN
+    land: records/land-906bad5d8ea2 held
+    carries: studio/decisions/D-999.md
+    mode: direct
+    state=QUEUE_TIMEOUT
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    push --force-with-lease records/land-906bad5d8ea2
+    gh pr create
+    checks poll 1: pass=6 pending=0 fail=0 total=6
+    gh pr merge --squash --auto
+    direct merge requested (CLEAN, every check pass)
+    queue poll 1: OPEN CLEAN
+    direct merge requested (CLEAN, every check pass)
+    queue poll 2: OPEN CLEAN
+    direct merge requested (CLEAN, every check pass)
+    queue poll 3: OPEN CLEAN
+    land: records/land-906bad5d8ea2 held
+    carries: studio/decisions/D-999.md
+    mode: direct
+    state=QUEUE_TIMEOUT
+    
+  operator: 'match'
+  stack: |-
+    isRefused (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:29:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:269:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2425.392624
