@@ -678,3 +678,46 @@ test("W-523-b2 behaviour 2: land arms the queue when the PR opens, so approval a
   notArmed("an unreadable alert list", { rules: QUEUE_RULES, alerts: { exit: 1, stderr: "stub: down" } }, /^queue: not armed; code scanning stopped it$/m);
   notArmed("a failed arm", { rules: QUEUE_RULES, armFails: true }, /^queue: not armed; gh pr merge --squash --auto failed: stub: the arm failed$/m);
 });
+
+test("W-523-b3 behaviour 3: land asks once: no second request, notice or arm on a rerun, and none once approved", { timeout: 1_800_000 }, () => {
+  const { w, head, oid } = ownedHead("w523-b3");
+  const at = "2026-11-06T14:00:00Z";
+  landing(w, head, { rules: QUEUE_RULES, stuck: true });
+  const first = land(w, [DECISION_PATH]);
+  isRefused(first, /^state=PATRON_REVIEW$/m, "the first run");
+  assert.equal(asks(w), 1, ran("the first run asks", first));
+  assert.equal(takeNotice(w), true, ran("the first run leaves a notice", first));
+  const quiet = (name: string, review: Reply): void => {
+    landing(w, head, { rules: QUEUE_RULES, stuck: true, review });
+    const o = land(w, [DECISION_PATH]);
+    isRefused(o, /^state=PATRON_REVIEW$/m, name);
+    assert.equal(asks(w), 0, ran(`${name}: no second request`, o));
+    assert.equal(takeNotice(w), false, ran(`${name}: no second notice`, o));
+  };
+  quiet("a request still pending, armed", replyOf(oid, [], { ...ARMED, ...REQUESTED }));
+  assert.equal(ghMerges(w).length, 0, "an armed PR is not armed again");
+  quiet("changes asked on this head, armed", replyOf(oid, [reviewOf("edckt", "CHANGES_REQUESTED", oid, at)], ARMED));
+  quiet("a comment on this head, armed", replyOf(oid, [reviewOf("edckt", "COMMENTED", oid, at)], ARMED));
+  quiet("a request pending, not armed: it arms", replyOf(oid, [], REQUESTED));
+  assert.equal(ghMerges(w).length, 1, "a PR not armed is armed");
+  // a head the owner has not seen, with no request pending, asks again
+  landing(w, head, { rules: QUEUE_RULES, stuck: true, review: replyOf(oid, [reviewOf("edckt", "APPROVED", OLD_OID, at)], ARMED) });
+  const moved = land(w, [DECISION_PATH]);
+  isRefused(moved, /^state=PATRON_REVIEW$/m, "a moved head");
+  assert.equal(asks(w), 1, ran("a moved head: their review is requested", moved));
+  assert.equal(takeNotice(w), true, ran("a moved head: a notice", moved));
+  // an unreadable read may be an approval: nothing is asked or armed, and it says so
+  landing(w, head, { rules: QUEUE_RULES, stuck: true, review: { exit: 1, stderr: "stub: down" } });
+  const down = land(w, [DECISION_PATH]);
+  isRefused(down, /^owner-review: unreadable \(.*\); read as not approved, so nothing is requested or armed$/m, "an unreadable read");
+  assert.equal(asks(w), 0, ran("an unreadable read: no request", down));
+  assert.equal(takeNotice(w), false, ran("an unreadable read: no notice", down));
+  assert.equal(ghMerges(w).length, 0, ran("an unreadable read: no arm", down));
+  // approved and armed, the same command waits for the merge, asking nothing
+  const reply = real1062(oid);
+  landing(w, head, { rules: QUEUE_RULES, review: { stdout: { ...reply, ...ARMED } } });
+  const done = land(w, [DECISION_PATH]);
+  assert.equal(done.status, 0, ran("approved and armed: it lands", done));
+  assert.equal(asks(w), 0, ran("approved and armed: no request", done));
+  assert.equal(takeNotice(w), false, ran("approved and armed: no notice", done));
+});
