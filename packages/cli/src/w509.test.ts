@@ -253,5 +253,51 @@ test("W-509-b3 behaviour 3: land checks exactly the tree it carries; a block ref
   assert.equal(git(c.repo, ["log", "-1", "--format=%b", `refs/heads/${headOf(other)}`]).includes("Past check"), false, "no reason is recorded when none was given");
 });
 
+test("W-509-b4 behaviour 4: a code-owned path opens the PR, says the Patron must review it, and merges only once approved", { timeout: 1_800_000 }, () => {
+  const DECISION = "studio/decisions/D-999.md";
+  const DECISION_TEXT = '---\nid: "D-999"\ntitle: "a fixture ruling"\nat: 2026-11-06T00:00:00Z\nprovenance: stated\nby: patron\nkill_when: "when the fixture goes"\n---\n\nA ruling.\n';
+  const w = world("w509-b4", "backlog", { github: true });
+  put(w.repo, ".github/CODEOWNERS", "/studio/decisions/ @edckt\n");
+  commit(w.repo, "test: code owners");
+  git(w.repo, ["push", "-q", "origin", "master"]);
+  put(w.repo, DECISION, DECISION_TEXT);
+  noPrYet(w);
+  const head = headOf(land(w, [DECISION]));
+  landing(w, head, { stuck: true, decision: { stdout: { reviewDecision: "REVIEW_REQUIRED" } } });
+  const master = git(w.repo, ["rev-parse", "refs/heads/master"]);
+  const waits = land(w, [DECISION]);
+  isRefused(waits, /^state=PATRON_REVIEW$/m, "the wait");
+  assert.match(waits.out, /^code-owned: studio\/decisions\/D-999\.md$/m, ran("the path is named", waits));
+  assert.match(waits.out, /^review-requested: edckt$/m, ran("their review is requested", waits));
+  assert.match(waits.out, /^patron: PR #901 touches code-owned paths, so the Patron must review it; .*$/m, ran("it says so plainly", waits));
+  assert.ok(mutating(w).includes("gh pr create"), "the PR is opened");
+  assert.equal(mutating(w).includes("gh pr merge --squash --auto"), false, "no merge is requested");
+  assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), master, "master does not move");
+  assert.equal(read(w, DECISION), DECISION_TEXT, "the edit stays in the tree");
+  // an unreadable decision reads as not approved
+  landing(w, head, { stuck: true, decision: { exit: 1, stderr: "stub: down" } });
+  const down = land(w, [DECISION]);
+  isRefused(down, /^state=PATRON_REVIEW$/m, "an unreadable decision");
+  assert.match(down.out, /^review-decision: unreadable .*$/m, ran("it says it could not read it", down));
+  assert.equal(mutating(w).includes("gh pr merge --squash --auto"), false, "no merge on an unreadable decision");
+  // once approved, the same command merges
+  landing(w, head, { decision: { stdout: { reviewDecision: "APPROVED" } } });
+  const approved = land(w, [DECISION]);
+  assert.equal(approved.status, 0, ran("approved: it lands", approved));
+  assert.match(approved.out, /^state=MERGED$/m, ran("approved: merged", approved));
+  assert.ok(mutating(w).includes("gh pr merge --squash --auto"), "approved: the merge is requested");
+  // a path no owner holds never waits
+  const plain = world("w509-b4-plain", "backlog");
+  put(plain.repo, ".github/CODEOWNERS", "/studio/decisions/ @edckt\n");
+  commit(plain.repo, "test: code owners");
+  git(plain.repo, ["push", "-q", "origin", "master"]);
+  put(plain.repo, HANDOFF, "# Handoff\n\n## Queue\n\n- refreshed\n");
+  noPrYet(plain);
+  const plainHead = headOf(land(plain, [HANDOFF]));
+  landing(plain, plainHead);
+  const plainLanded = land(plain, [HANDOFF]);
+  assert.equal(plainLanded.status, 0, ran("an unowned path lands with no review", plainLanded));
+  assert.doesNotMatch(plainLanded.out, /PATRON_REVIEW/, ran("no wait", plainLanded));
+});
 
 
