@@ -1,0 +1,20 @@
+# opus: W-509
+# phase: build
+# round: 5
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1afc4-c058-7562-9736-f9af0cb835f5
+# outcome: passed
+# at: 2026-11-06T13:29:32.839Z
+# tree: tree:01672ac744a53ff0a9651d2559afe17f9873d34f
+# brief: briefs/W-509.md blob:d04cdedc7023a7cd2881fde7a692d414f626ac94
+# ticket: {"opus":"W-509","step":"review","action":"verdict-build","round":5,"actor":"censor","studio":".worktrees/W-509/studio","head":"9ea24d6cbf71d8883bfa6e22f7723f067c87b487","brief":"d04cdedc7023a7cd2881fde7a692d414f626ac94","at":"2026-11-06T13:28:57.071Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+The fixture change preserves every W-279-b3 assertion while allowing piped output to drain before the intended nonzero exit, and the new guard pins both corrected fixtures.
+VERDICT: PASS
