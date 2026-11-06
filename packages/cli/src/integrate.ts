@@ -600,6 +600,8 @@ function readQueueMembership(repo: string, pr: Pr): { ok: true; queued: boolean 
  */
 export interface OwnerReview {
   approved: boolean;
+  /** Some owner holds a pending request or has left any review on this head: land does not ask again. */
+  asked: boolean;
   /** Auto-merge is on: GitHub sends the PR into the queue once its own rule is met. */
   armed: boolean;
   /** One `owner-review:` line per owner whose approval this read does not find. */
@@ -617,6 +619,7 @@ export function readOwnerReview(repo: string, pr: Pr, owners: readonly string[])
   if (!Array.isArray(reviews) || !Array.isArray(requests)) return { ok: false, reason: "gh pr view returned no reviews or reviewRequests array" };
   const notes: string[] = [];
   let approved = true;
+  let asked = false;
   for (const owner of owners) {
     const login = /^@([A-Za-z0-9-]+)$/.exec(owner)?.[1]?.toLowerCase();
     if (login === undefined) {
@@ -634,11 +637,12 @@ export function readOwnerReview(repo: string, pr: Pr, owners: readonly string[])
       theirs.push({ state: r["state"], oid, at });
     }
     const latest = theirs.filter((r) => OPINIONS.has(r.state)).reduce<(typeof theirs)[number] | undefined>((a, b) => (a === undefined || b.at >= a.at ? b : a), undefined);
+    if (theirs.some((r) => r.oid === head) || requests.some((q) => isObj(q) && typeof q["login"] === "string" && q["login"].toLowerCase() === login)) asked = true;
     if (latest?.state === "APPROVED" && latest.oid === head) continue;
     approved = false;
     notes.push(`owner-review: ${login} ${latest === undefined ? "holds no approval" : `${clean(latest.state)} on ${latest.oid.slice(0, 12)}`}; PR #${pr.number}'s head is ${head.slice(0, 12)}`);
   }
-  return { ok: true, review: { approved, armed: isObj(value["autoMergeRequest"]), notes } };
+  return { ok: true, review: { approved, asked, armed: isObj(value["autoMergeRequest"]), notes } };
 }
 
 /** W-509: a PR's merge queue entry as GitHub reads it; `rollup` is the check state of the commit the queue built. Read only to report a merge that timed out. */

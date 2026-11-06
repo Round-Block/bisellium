@@ -352,8 +352,13 @@ and their contents, so the same command run again resumes. `check` runs on exact
 that commit's tree in a throwaway worktree. A blocking finding refuses, unless
 `--past-check` gives a reason, which rides the commit; CI's officina check still
 judges the merge. `performLanding` then pushes, opens or reuses the PR and runs the
-merge gate. A head with a code-owned path stops at `state=PATRON_REVIEW` (exit 1)
-after requesting review, and merges only on a rerun once GitHub reads it `APPROVED`.
+merge gate. A head with a code-owned path requests review once, arms the merge queue
+and stops at `state=PATRON_REVIEW` (exit 1): the code owner's approval alone then sends
+it in, as GitHub holds an armed PR out until its code-owner rule is met. A rerun once it
+has merged brings the merge to the local master. An approval is the owner's latest
+review being `APPROVED` on the PR's current head; GitHub's `reviewDecision` is not read,
+since it stays empty under a ruleset requiring no review count. Once approved, land
+requests nothing and leaves no notice, and the same command waits for the merge.
 A merge that times out prints `state=QUEUE_TIMEOUT` and its `queue-entry:`, with a
 `stuck:` line when the entry is `AWAITING_CHECKS` with its checks passed. Once merged,
 it stages its own paths as the merge commit holds them, fast-forwards master past any

@@ -92,26 +92,30 @@ function checkCommit(repo: string, head: string, commit: string, studioRel: stri
   }
 }
 
-/** A code-owned head waits for the Patron: the verb requests their review, arms the queue so their approval alone sends it in, and says so. Once the owner's latest review is an approval of this head it goes on to the merge. */
+/** A code-owned head waits for the Patron: the verb requests their review once, arms the queue so their approval alone sends it in, and says so. Once the owner's latest review is an approval of this head it goes on to the merge, asking nothing. */
 function codeOwnerPause(repo: string, head: string, command: string): (pr: Pr) => StepResult | undefined {
   return (pr) => {
     const screen = screenDiff(repo, TRUNK, `refs/heads/${head}`);
     if ("error" in screen) return { ok: false, lines: [`why: PR #${pr.number}'s code-owned paths could not be screened (${screen.error}); nothing is merged`] };
     if (screen.paths.length === 0) return undefined;
     const read = readOwnerReview(repo, pr, screen.owners);
-    if (read.ok && read.review.approved) return undefined;
+    const patron = `patron: PR #${pr.number} touches code-owned paths, so the Patron must review it; land does not get round code-owner review (.github/CODEOWNERS)`;
+    // an unreadable read may be an approval: it asks nothing and arms nothing, and the same command reads it again
+    if (!read.ok) return { ok: false, lines: [`owner-review: unreadable (${read.reason}); read as not approved, so nothing is requested or armed`, `state=PATRON_REVIEW`, patron, `run: ${command}`] };
+    const { approved, asked, armed, notes } = read.review;
+    if (approved) return undefined;
     const slug = repoSlug(repo);
     if (!slug.ok) return { ok: false, lines: [`why: ${slug.reason}`] };
-    const notice = reviewNotice({ cwd: repo, slug: slug.slug, pr: pr.number, base: TRUNK, head: `refs/heads/${head}`, resume: command });
-    const queue = !read.ok ? { armed: false, lines: [] } : read.review.armed ? { armed: true, lines: [`queue: armed; PR #${pr.number} enters the merge queue on its code owner's approval, with no rerun`] } : armQueue(repo, pr);
+    const notice = asked ? { lines: [] } : reviewNotice({ cwd: repo, slug: slug.slug, pr: pr.number, base: TRUNK, head: `refs/heads/${head}`, resume: command });
+    const queue = armed ? { armed: true, lines: [`queue: armed; PR #${pr.number} enters the merge queue on its code owner's approval, with no rerun`] } : armQueue(repo, pr);
     return {
       ok: false,
       lines: [
         ...notice.lines,
-        ...(read.ok ? read.review.notes : [`owner-review: unreadable (${read.reason}); read as not approved`]),
+        ...notes,
         ...queue.lines,
         `state=PATRON_REVIEW`,
-        `patron: PR #${pr.number} touches code-owned paths, so the Patron must review it; land does not get round code-owner review (.github/CODEOWNERS)`,
+        patron,
         `run: ${command} ${queue.armed ? "(once it has merged, to bring the merge to the local master; the merge itself needs no rerun)" : "(after their approval; it merges then)"}`,
       ],
     };
