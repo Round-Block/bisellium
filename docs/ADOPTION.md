@@ -1030,3 +1030,5 @@ and `verify` write); each log must be tracked by git and unchanged from `HEAD` (
 legacy (unmarked) record is admitted. The logs prove the automated gates at the tree, not which command wrote them;
 the rest of `CI_STEPS` and the red replays are first proven by the merge queue's `certify` and `gates` jobs. The
 older host receipt (`admitCurrentRunReceipt`) remains as history and admits nothing. `verdict` remains transcript-only and grants no admission.
+
+<!-- W-523 old-head proof A: this PR is closed unmerged -->
