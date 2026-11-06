@@ -16,7 +16,7 @@ import { openStudio, parseFlags } from "@bisellium/commands/writes.js";
 import { instant } from "@bisellium/schema";
 import { recordOnly } from "../../../scripts/ci-scope.mjs";
 import { checkStudio } from "./check.js";
-import { clean, git, identifyPr, quoted, readRef, readReviewDecision, repoSlug, type Ctx, type Pr, type StepResult } from "./integrate.js";
+import { clean, git, identifyPr, quoted, readQueueEntry, readRef, readReviewDecision, repoSlug, type Ctx, type Pr, type StepResult } from "./integrate.js";
 import { performLanding } from "./next.js";
 import { reviewNotice, screenDiff } from "./review-notice.js";
 
@@ -116,6 +116,21 @@ function codeOwnerPause(repo: string, head: string, command: string): (pr: Pr) =
   };
 }
 
+/** What a merge that timed out leaves to say: the PR's queue entry, and whether it reads stuck, as #1056 did for 100 minutes on 2026-11-05. */
+function queueReport(repo: string, head: string, command: string): string[] {
+  const read = identifyPr(repo, head);
+  if (read.kind !== "pr") return [`queue-entry: unreadable (${read.kind === "held" ? read.reason : `no PR for ${head}`})`];
+  const entry = readQueueEntry(repo, read.pr);
+  if (!entry.ok) return [`queue-entry: unreadable (${entry.reason})`, `run: ${command} (to keep waiting)`];
+  if (entry.entry === undefined) return [`queue-entry: none; PR #${read.pr.number} is not in the merge queue`, `run: ${command} (to read it again and re-arm it)`];
+  const e = entry.entry;
+  const stuck = e.state === "AWAITING_CHECKS" && e.rollup === "SUCCESS";
+  return [
+    `queue-entry: PR #${read.pr.number} ${clean(e.state)} since ${clean(e.enqueuedAt)}, position ${e.position}, checks ${clean(e.rollup ?? "unread")}`,
+    ...(stuck ? [`stuck: the entry is waiting on checks that have all passed; way past: use Remove from queue on PR #${read.pr.number}'s page, then rerun this command, which adds it again`] : []),
+    `run: ${command} (to keep waiting)`,
+  ];
+}
 
 export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
   const usage = (why: string): { exitCode: number } => {
@@ -241,5 +256,6 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
     beforeMerge: codeOwnerPause(repo, head, command),
   };
   const result = await performLanding({ repo, studioRel }, ctx, head);
+  if (result.lines.includes("state=QUEUE_TIMEOUT")) result.lines.push(...queueReport(repo, head, command));
   return say(result.ok ? 0 : 1, `${head} ${result.ok ? "landed" : "held"}`, [`carries: ${built.changed.map((p) => clean(p)).join(", ")}`, ...result.lines]);
 }

@@ -536,6 +536,31 @@ export function readReviewDecision(repo: string, pr: Pr): { ok: true; decision: 
   return decision === null || decision === undefined ? { ok: true, decision: "" } : typeof decision === "string" ? { ok: true, decision } : { ok: false, reason: "gh pr view returned no string reviewDecision" };
 }
 
+/** W-509: a PR's merge queue entry as GitHub reads it; `rollup` is the check state of the commit the queue built. Read only to report a merge that timed out. */
+export interface QueueEntry {
+  state: string;
+  enqueuedAt: string;
+  position: number;
+  rollup: string | undefined;
+}
+export function readQueueEntry(repo: string, pr: Pr): { ok: true; entry: QueueEntry | undefined } | { ok: false; reason: string } {
+  const slash = pr.repo.indexOf("/");
+  const query = "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){mergeQueueEntry{state enqueuedAt position headCommit{statusCheckRollup{state}}}}}}";
+  const v = ghJson(repo, ["api", "graphql", "-f", `query=${query}`, "-F", `owner=${pr.repo.slice(0, slash)}`, "-F", `name=${pr.repo.slice(slash + 1)}`, "-F", `number=${pr.number}`]);
+  if (!v.ok) return v;
+  const data = isObj(v.value) ? v.value["data"] : undefined;
+  const repository = isObj(data) ? data["repository"] : undefined;
+  const pullRequest = isObj(repository) ? repository["pullRequest"] : undefined;
+  if (!isObj(pullRequest) || !("mergeQueueEntry" in pullRequest)) return { ok: false, reason: "gh api graphql returned no data.repository.pullRequest.mergeQueueEntry" };
+  const e = pullRequest["mergeQueueEntry"];
+  if (e === null) return { ok: true, entry: undefined };
+  if (!isObj(e) || typeof e["state"] !== "string" || typeof e["enqueuedAt"] !== "string" || typeof e["position"] !== "number") return { ok: false, reason: "gh api graphql returned a queue entry with a missing field" };
+  const commit = e["headCommit"];
+  const rollup = isObj(commit) ? commit["statusCheckRollup"] : undefined;
+  const state = isObj(rollup) ? rollup["state"] : undefined;
+  return { ok: true, entry: { state: e["state"], enqueuedAt: e["enqueuedAt"], position: e["position"], rollup: typeof state === "string" ? state : undefined } };
+}
+
 interface Cand {
   number: number;
   state: Pr["state"];
