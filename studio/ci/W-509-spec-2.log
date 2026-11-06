@@ -1,0 +1,20 @@
+# opus: W-509
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1aed3-a7cf-7e21-b5bf-5d9e47d665df
+# outcome: failed
+# at: 2026-11-06T03:13:36.616Z
+# tree: tree:63e50661ef1396c1044a4e2df0bed4436fd0a494
+# brief: briefs/W-509.md blob:020e25b4dcc472ff779e94266fcb1cf809a33172
+# ticket: {"opus":"W-509","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"63a671dc620dbbaf78933a461d9d7ca25493d9b4","brief":"020e25b4dcc472ff779e94266fcb1cf809a33172","at":"2026-11-06T03:13:32.266Z"}
+
+## Findings
+1. blocking — brief:95 [severity: S1] [design: keeps] A plausible untracked or ignored file on a path introduced by an intervening merge makes the staged `fetchTrunk` call `settleOwn` before `overwritten`; the real `land` caller then holds at `MERGED_NOT_FETCHED` only after its own paths have been staged, contradicting “anything else holds with nothing staged,” and `W-509-b6` tests only the earlier tracked-dirty hold. Replace brief:95 with: “| 9. The checkout after the merge | own files equal the merge commit, their index entries are HEAD’s or the merge commit’s, and no other tracked, untracked or ignored entry conflicts with an incoming path; `fetchTrunk` preflights every conflict before `settleOwn` stages any own path, and every refusal leaves the index unchanged | `fetchTrunk`, `overwritten` and `settleOwn`: pinned by `W-509-b6` ‘an untracked incoming path: nothing is staged’ plus the existing copy, staged-copy and incoming-work assertions |” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w509.test.ts W-509-b6
+2. advisory — brief:90 [severity: S4] The flags row omits domains for `--repo`, `--studio` and `--now`, although new `runLand` code reads all three. Replace brief:90 with: “| 4. The flags | `--title` and `--past-check`: one non-empty control-free line; `--sella`: a manifest sella id; `--body-file`: a readable real regular file of at most 64 KiB under the repository or temp directory; `--poll-ms`: 1–60000; `--max-polls`: 1–1000; `--repo`: a Git repository; `--studio`: a readable studio whose real root is inside that repository; `--now`: an instant accepted by `instant`; no other flag | `runLand`, using `parseFlags`, `openStudio` and `instant`; every invalid value exits 2 before a commit or push |” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w509.test.ts W-509-b1
+3. advisory — brief:93 [severity: S4] The code-owner row names only GitHub’s review decision, omitting the newly invoked local owners/diff screen and reused review-notice boundary. Replace brief:93 with: “| 7. The code-owner gate | `screenDiff` yields a readable screen from the owners file at local master and the head diff, including no owners file; an unowned head goes on, while an owned head goes on only for GitHub `APPROVED`; every other decision or any unreadable screen, slug, decision or `reviewNotice` result remains held | `codeOwnerPause`, `screenDiff`, `readReviewDecision`, `repoSlug` and `reviewNotice`: pinned by `W-509-b4` ‘the wait’, ‘an unreadable decision’, ‘approved’ and ‘an unowned path’ |” [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: packages/cli/src/w509.test.ts W-509-b4
+
+## Verdict
+The spec fails because its proposed post-merge ordering can mutate the real index on a promised fail-closed hold; the two input-boundary omissions are advisory.
+VERDICT: FAIL
