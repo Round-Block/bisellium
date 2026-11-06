@@ -1,15 +1,16 @@
 queues:
   engineering:
-    lanes: { E2: W-505 }
+    lanes: { E1: W-509 }
     next:
+      - { opus: W-509, says: "a CLI verb lands a records PR (D-181)" }
       - { opus: W-505, says: "guard sync accepts the sandbox's empty alternates placeholder; Patron go-ahead 2026-11-04, exempt from the D-174 freeze" }
       - { opus: W-298, says: "petitio verb" }
-      - { opus: W-508, says: "a shown reply is never sent back: no reply reaches them twice; Patron 2026-11-05, exempt from the D-178 freeze" }
-      - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; starts after W-298" }
+      - { opus: W-508, says: "a shown reply is never sent back: temporary until the Stop-hook reply rules are removed; held, its fate decided after W-509 (D-181)" }
       - { opus: W-300, says: "the drawer shows next's read-only step, actor, round and health" }
       - { opus: W-308, says: "opus timeline", next_ts: true }
       - { opus: W-074, says: "greenlight and decline from the Board drawer, with W-289's refusal and a halt route" }
       - { opus: W-301, says: "console writes via auto-merge PR" }
+      - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; parked until after M4 (D-181)" }
       - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
@@ -47,7 +48,7 @@ queues:
       - { opus: W-304, says: "seats read live, console MVP" }
       - { opus: W-280, says: "Inbox newItem fail-open" }
   ui:
-    lanes: { UI2: W-451 }
+    lanes: { UI1: W-451 }
     next:
       - { opus: W-451, says: "Home groundwork: work links open the drawer, phone menu opens on the current page (D-175 piece 1)" }
       - { opus: W-503, says: "Home: Needs you, Stuck, Health and Work in progress (D-175 piece 2)" }
