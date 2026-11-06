@@ -1032,3 +1032,5 @@ the rest of `CI_STEPS` and the red replays are first proven by the merge queue's
 older host receipt (`admitCurrentRunReceipt`) remains as history and admits nothing. `verdict` remains transcript-only and grants no admission.
 
 <!-- W-523 old-head proof A: this PR is closed unmerged -->
+
+<!-- W-523 old-head proof B: this PR is closed unmerged -->
