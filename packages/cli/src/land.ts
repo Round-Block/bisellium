@@ -13,12 +13,26 @@ import { mkdtempSync, realpathSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { openStudio, parseFlags } from "@bisellium/commands/writes.js";
+import { recordOnly } from "../../../scripts/ci-scope.mjs";
 import { clean, git, quoted, readRef, type Ctx } from "./integrate.js";
 import { performLanding } from "./next.js";
 
 export const LAND_USAGE = "usage: bisellium land <path>... --title <text> --sella <id> [--body-file <path>] [--past-check <reason>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]";
 
 const TRUNK = "refs/heads/master";
+/** The records land carries inside the officina (`recordOnly` also takes the handoff and the dossier pages). Everything else in the officina stays out: the rules (`leges/`, `prompts/`, `bisellium.yml`) keep a real PR by D-181 line 6, a brief lands on its opus's branch. */
+const STUDIO_DIRS = ["opera/", "ci/", "decisions/", "acta/"];
+const STUDIO_FILES = ["queue.yml"];
+
+/** W-509: may `land` carry this repository-relative path? Exact forms only: no empty, `.` or `..` segment, no control character. */
+export function landable(path: string, studioRel: string): boolean {
+  if (path.split("/").some((s) => s === "" || s === "." || s === "..") || /[\u0000-\u001f\u007f-\u009f]/.test(path)) return false;
+  if (!recordOnly([path], studioRel)) return false;
+  if (!path.startsWith(`${studioRel}/`)) return true;
+  const rel = path.slice(studioRel.length + 1);
+  return STUDIO_FILES.includes(rel) || STUDIO_DIRS.some((d) => rel.startsWith(d) && rel.length > d.length);
+}
+const WHAT = (studioRel: string): string => `${[...STUDIO_DIRS, ...STUDIO_FILES].map((p) => `${studioRel}/${p}`).join(", ")}, docs/SESSION-HANDOFF.md, docs/design/dossier/*.html`;
 
 interface Tree {
   tree: string;
@@ -118,10 +132,21 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
     return { exitCode: code };
   };
   const refuse = (...lines: string[]): { exitCode: number } => say(1, "refused", lines);
+  if (resolve(repo, gd.stdout.trim()) !== resolve(repo, cd.stdout.trim())) return refuse(`why: refusing: ${repo} is a linked worktree; land runs from the repository's main checkout; nothing committed or pushed`, `way past: run it from the main checkout, with the edit there`);
+  const on = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
+  if (on !== TRUNK) return refuse(`why: refusing: land runs on master, and HEAD is ${clean(on) || "detached"}; nothing committed or pushed`, `way past: git -C ${quoted(repo)} switch master`);
+  const outside = paths.filter((p) => !landable(p, studioRel));
+  if (outside.length > 0)
+    return refuse(
+      `why: refusing: ${outside.slice(0, 5).map((p) => clean(p)).join(", ")} ${outside.length === 1 ? "is" : "are"} outside the records land carries (${WHAT(studioRel)}); nothing committed or pushed`,
+      "way past: code and rules keep a real PR (D-181 line 6): file an opus with bisellium new and land it with bisellium next",
+    );
 
   const built = buildTree(repo, paths);
   if (typeof built === "string") return refuse(`why: ${built}; nothing committed or pushed`);
   if (built.changed.length === 0) return refuse(`why: nothing to land: every named path matches HEAD`);
+  const odd = built.entries.filter((e) => !/^100(?:644|755) blob /.test(e));
+  if (odd.length > 0) return refuse(`why: refusing: land carries regular files only, and ${odd.slice(0, 5).map((e) => clean(e.slice(e.indexOf("\t") + 1))).join(", ")} is not one; nothing committed or pushed`);
   const head = `records/land-${createHash("sha256").update(JSON.stringify([built.changed, built.entries])).digest("hex").slice(0, 12)}`;
   const ref = `refs/heads/${head}`;
   const command = `bisellium land ${argv.map((a) => quoted(a)).join(" ")}`;
