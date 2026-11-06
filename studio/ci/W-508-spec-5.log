@@ -1,0 +1,27 @@
+# opus: W-508
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-06T04:26:54.024Z
+# tree: tree:f7d8e7147b4794812ee252b45d5bb019d1d32b54
+# brief: briefs/W-508.md blob:cafd25b4dcf048f42810eb544aaa67d66dd73bc0
+# ticket: {"opus":"W-508","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-508/studio","head":"d8bd4079509de65d9a318a001c15cad74692512c","brief":"cafd25b4dcf048f42810eb544aaa67d66dd73bc0","at":"2026-11-06T04:26:47.856Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-508-spec/revise-1106/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 removes the length rule on the Patron's word, 2026-11-06, "i think there is no point for the 200 word hook, remove it. i still want to keep the usage line": no word count, no note, no over-200 line, no record for the next turn; `reply-note.ts`, `STOP_RULES`, `StopRule`, `StopContext`, `REPLY_WORDS`, `replyWords` and `replyLength` go, as nothing kept reads them; Stop never refuses, the hook shows the reading, W-444's rule that a reply carries the line stays gone — check: revise-1106/fix.diff, brief Promise no-count
+2. advisory — the seam change is documented: `STOP_RULES` was the seam W-436 and W-465 were to add to, and the ruling leaves it empty, so it goes; their records are not edited, and each needs its own route when it resumes, as a rule at Stop may not refuse — check: brief Decided here, Out of scope
+3. advisory — kept with no ruling asked of it: the next-prompt reading and its UserPromptSubmit wiring, whose purpose is the reading reaching the model before it writes, not the note; old Default 3 is now Default 2, its words unchanged; the prompt's session id pattern stays as `PROMPT_SESSION` so the discriminator rows stay — check: W-508-b3, W-508-b4, brief Defaults 2
+4. advisory — how it is built: `next`'s replay starts only where no red is recorded (`readReplay`) and four are, so this brief names no series, which also keeps `replayed` from sending the gates around a builder; it lists a fifth behaviour with a genuine red at the branch's head, so the reds rung orders a builder from behaviour 5 through 5, applying fix-test.diff, the red, then fix-code.diff; no recorded red is rewritten and no history moves — check: packages/cli/src/prototype-replay.ts readReplay, packages/cli/src/next.ts reds rung, revise-1106/red-check.out, stage1-b1.out to stage1-b4.out, genuine-red-b5.out
+5. advisory — behaviours 1 to 4's reds stay true as recorded, by the red verb's own reader; behaviour 3's assertion "the model is named the count and the limit" keeps its text and first place but read a word count when recorded and reads the context count and limit now, stated in the brief; the recorded cause, no output at a prompt, is unchanged and the revised row fails the same way on behaviour 2's commit — check: revise-1106/red-check.out, revised-b3-on-b2-commit.out, brief behaviour 3
+6. advisory — the rows the rule takes are named one by one in Acceptance, with the Patron's words as their authority, and none else is removed; the Codex test check, rerun because rows flip, names no flip this brief leaves out (Unnamed: None), and every must-stay-green file it lists ran whole and passed — check: fixture-census.md, revise-1106/green-summary.out, pins-check.out
+7. advisory — on the revised tree: twenty kills guarded, the touched and must-stay-green files green, lint, format, typecheck and both officina checks exit 0; with this brief the studio check holds the one `opus.red_evidence` block for behaviour 5's red, which its order records — check: revise-1106/kills.out, gates-run.log, check-studio-brief.out, admission.out, ledger-check.out
+8. advisory — carried unchanged: what the Patron's own surface renders was not observed, so the Patron's own eye closes Acceptance; `.claude/settings.json` is code-owned, so the Patron merges; the opus record's title still needs the ladder-runner's change, and `next` holds at the build rung on review round 1's repeated class until a title names it — check: probe/interactive-refused.out, brief Promise reading, ci/W-508-review-1.log
+
+## Verdict
+
+passed — signed by the architect (`claude-opus-5-5`, D-072), brief revision 3 at `studio/briefs/W-508.md`, prototyped over `opus/W-508` cc70903d, patch revise-1106/fix.diff; the length rule is removed on the Patron's word and the usage line stays: a main-thread Stop never refuses, the hook shows the reading, and the model is handed the reading at its next prompt; five behaviours, twenty kills, one code-owned path (`.claude/settings.json`), so the Patron merges.
