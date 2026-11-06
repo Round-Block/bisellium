@@ -12,7 +12,7 @@
  * `--match-head-commit`. `BLOCKED` is never merged directly.
  */
 import { spawnSync } from "node:child_process";
-import { accessSync, constants, lstatSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, constants, lstatSync, readlinkSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
@@ -366,27 +366,58 @@ function requestSync(repo: string, target: string): string {
   }
 }
 
-/** The blob of `path` at `treeish`, or undefined when it holds none. */
+/** The entry of `path` at `treeish` as "<mode> <blob>", or undefined when it holds none: a mode change is a difference. */
 function blobAt(repo: string, treeish: string, path: string): string | undefined {
   const r = git(repo, ["ls-tree", "-z", treeish, "--", path]);
-  return /^[0-9]+ blob ([0-9a-f]+)\t/.exec(r.stdout)?.[1];
+  const m = /^([0-9]+) blob ([0-9a-f]+)\t/.exec(r.stdout);
+  return m === undefined || m === null ? undefined : `${m[1]} ${m[2]}`;
+}
+
+/** The working copy of `path` as "<mode> <blob>" the way git would stage it (the executable bit only when core.fileMode is on,
+ *  else the merged entry's own mode), undefined when absent, or "error" when it cannot be read. */
+function workedAt(repo: string, path: string, merged: string | undefined): string | undefined {
+  let st;
+  try {
+    st = lstatSync(join(repo, path));
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    return code === "ENOENT" || code === "ENOTDIR" ? undefined : "error";
+  }
+  if (st.isDirectory()) return "040000 directory";
+  let hashed;
+  if (st.isSymbolicLink()) {
+    let target: string;
+    try {
+      target = readlinkSync(join(repo, path));
+    } catch {
+      return "error";
+    }
+    hashed = spawnSync("git", ["hash-object", "--stdin"], { cwd: repo, input: target, encoding: "utf8" });
+    return hashed.status === 0 ? `120000 ${hashed.stdout.trim()}` : "error";
+  }
+  hashed = git(repo, ["hash-object", "--", path]);
+  if (hashed.status !== 0) return "error";
+  const honored = git(repo, ["config", "--bool", "core.fileMode"]).stdout.trim() !== "false";
+  const mergedMode = merged?.split(" ")[0];
+  const mode = !honored && (mergedMode === "100644" || mergedMode === "100755") ? mergedMode : (st.mode & 0o100) !== 0 ? "100755" : "100644";
+  return `${mode} ${hashed.stdout.trim()}`;
 }
 
 /**
  * W-509: `land`'s own paths, staged as the merge commit holds them, so the fast-forward passes and the checkout ends clean of
- * them. All are judged before any is staged: a working copy that differs from the merge commit (edited after the landing, or the
- * merge brought in someone else's change), or an index entry that is neither HEAD's nor the merge commit's, stops it with
- * nothing staged and the edit kept. The working tree is never written here.
+ * them. All are judged before any is staged, each on mode and content: a working copy that differs from the merge commit (edited
+ * or chmod-ed after the landing, or the merge brought in someone else's change), or an index entry that is neither HEAD's nor the
+ * merge commit's, stops it with nothing staged and the edit kept. The working tree is never written here.
  */
 function settleOwn(repo: string, reviewed: string, own: readonly string[]): string | undefined {
   for (const p of own) {
     const merged = blobAt(repo, reviewed, p);
-    const here = onDisk(join(repo, p));
-    if (here === "error") return `cannot inspect ${clean(p)}`;
-    const worked = here === "none" ? undefined : git(repo, ["hash-object", "--", p]).stdout.trim();
+    const worked = workedAt(repo, p, merged);
+    if (worked === "error") return `cannot inspect ${clean(p)}`;
     if (worked !== merged) return `${clean(p)} differs from the merged commit ${reviewed.slice(0, 12)}: it was edited after the landing, or the merge brought in another change; your copy is kept and master is not moved: settle it, then re-run`;
     const stage = git(repo, ["ls-files", "-s", "-z", "--", p]);
-    const indexed = /^[0-9]+ ([0-9a-f]+) 0\t/.exec(stage.stdout)?.[1];
+    const m = /^([0-9]+) ([0-9a-f]+) 0\t/.exec(stage.stdout);
+    const indexed = m === null ? undefined : `${m[1]} ${m[2]}`;
     if (indexed !== blobAt(repo, "HEAD", p) && indexed !== merged) return `${clean(p)} has staged content that is neither HEAD's nor the merged commit's; it is kept and master is not moved: unstage it, then re-run`;
   }
   const staged = git(repo, ["update-index", "--add", "--remove", "--", ...own]);
