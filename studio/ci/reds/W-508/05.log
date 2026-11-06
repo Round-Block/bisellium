@@ -1,0 +1,46 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-508-b5\s --import tsx packages/cli/src/w508.test.ts
+# exit: 1
+# at: 2026-11-06T04:33:17.097Z
+# sella: builder.W-508
+# tree: tree:0963a8028f7c6d6483bae67f955198bf8cf79606
+# ticket: {"opus":"W-508","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-508/studio","head":"e7267c91dc2e58fe06eca7675889cc09c5610c05","brief":"cafd25b4dcf048f42810eb544aaa67d66dd73bc0","at":"2026-11-06T04:33:12.255Z"}
+
+TAP version 13
+# Subtest: W-508-b5 behaviour 5: the length rule is gone: a reply of any length shows the reading alone, leaves no record and names no count to the Patron or the model
+not ok 1 - W-508-b5 behaviour 5: the length rule is gone: a reply of any length shows the reading alone, leaves no record and names no count to the Patron or the model
+  ---
+  duration_ms: 9.419566
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-508/packages/cli/src/w508.test.ts:3:9318'
+  failureType: 'testCodeFailure'
+  error: |-
+    a 201-word reply shows the reading alone
+    + actual - expected
+    
+    + 'Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k\n' +
+    +   'this reply is 201 words, over 200 (W-444): keep a reply to at most 200 words, code blocks counted, each asked point in one or two lines; named to the model on its next turn'
+    - 'Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k'
+  actual: |-
+    Claude week 19%, 5h 16% | Codex week 39% | context 208k of 300k
+    this reply is 201 words, over 200 (W-444): keep a reply to at most 200 words, code blocks counted, each asked point in one or two lines; named to the model on its next turn
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-508/packages/cli/src/w508.test.ts:277:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16.825163
