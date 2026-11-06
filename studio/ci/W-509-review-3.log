@@ -1,0 +1,21 @@
+# opus: W-509
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1afc4-c058-7562-9736-f9af0cb835f5
+# outcome: passed
+# at: 2026-11-06T11:11:16.562Z
+# tree: tree:88745af249c45f7343e1d35430038c2e08304d85
+# brief: briefs/W-509.md blob:e0c0dec6227d0bb2b8c715726d678b2154b02ee7
+# ticket: {"opus":"W-509","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-509/studio","head":"cdc9e928c9de9b0fe1766d03bfa764f99f7e2381","brief":"e0c0dec6227d0bb2b8c715726d678b2154b02ee7","at":"2026-11-06T11:09:17.424Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-509-review-2.log #1: closed — packages/cli/src/integrate.ts:423 now writes each reviewed mode and blob through `update-index --index-info`, while packages/cli/src/w509.test.ts:393 pins successful settlement under both `core.fileMode` settings.
+
+## Verdict
+The round-2 blocker is closed and the touched sibling paths preserve the index and working copy as promised.
+VERDICT: PASS
