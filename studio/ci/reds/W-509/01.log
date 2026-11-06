@@ -1,0 +1,52 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-509-b1\s --import tsx packages/cli/src/w509.test.ts
+# exit: 1
+# at: 2026-11-06T06:37:28.120Z
+# sella: builder.W-509
+# tree: tree:4bc125f865e13f97c705a0f19d917cceed38bc86
+# ticket: {"opus":"W-509","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-509/studio","head":"893abac5f7b55b6b095cf5c59e698a3d2a97ea88","brief":"020e25b4dcc472ff779e94266fcb1cf809a33172","at":"2026-11-06T06:37:21.123Z"}
+
+TAP version 13
+# Subtest: W-509-b1 behaviour 1: land carries the named records to master and leaves other work where it is
+not ok 1 - W-509-b1 behaviour 1: land carries the named records to master and leaves other work where it is
+  ---
+  duration_ms: 317.664853
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:2:427'
+  failureType: 'testCodeFailure'
+  error: |-
+    land names its head
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    flag --title not allowed for "land"
+    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+           bisellium init [dir] [--now <iso>] [--timezone <iana>]
+           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--description <text>] [--brief] [dir]
+           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+           bisellium retro --opus <id> --from <triage.json> [--studio <dir>] [--now <is
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    headOf (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:20:10)
+    pushedHead (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:88:21)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-509/packages/cli/src/w509.test.ts:98:30)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 743.677312
