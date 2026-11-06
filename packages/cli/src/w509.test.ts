@@ -300,4 +300,30 @@ test("W-509-b4 behaviour 4: a code-owned path opens the PR, says the Patron must
   assert.doesNotMatch(plainLanded.out, /PATRON_REVIEW/, ran("no wait", plainLanded));
 });
 
+test("W-509-b5 behaviour 5: a merge that times out reports the queue entry, and says when it reads stuck", { timeout: 1_800_000 }, () => {
+  const entry = (state: string, rollup: string | null): Reply => ({
+    stdout: { data: { repository: { pullRequest: { isInMergeQueue: true, mergeQueueEntry: { state, enqueuedAt: "2026-11-05T12:00:00Z", position: 1, headCommit: rollup === null ? null : { statusCheckRollup: { state: rollup } } } } } } },
+  });
+  const timedOut = (tag: string, graphql: Reply): Out => {
+    const { w, head } = pushedHead(tag, edits, [HANDOFF, RECORD]);
+    landing(w, head, { rules: QUEUE_RULES, stuck: true, graphql });
+    return land(w, [HANDOFF, RECORD]);
+  };
+  const stuck = timedOut("w509-b5-stuck", entry("AWAITING_CHECKS", "SUCCESS"));
+  isRefused(stuck, /^state=QUEUE_TIMEOUT$/m, "the timeout");
+  assert.match(stuck.out, /^queue-entry: PR #901 AWAITING_CHECKS since 2026-11-05T12:00:00Z, position 1, checks SUCCESS$/m, ran("the entry", stuck));
+  assert.match(stuck.out, /^stuck: the entry is waiting on checks that have all passed; way past: use Remove from queue on PR #901's page, then rerun this command, which adds it again$/m, ran("it reads stuck", stuck));
+  assert.match(stuck.out, /^run: bisellium land .*$/m, ran("the rerun is named", stuck));
+  const running = timedOut("w509-b5-running", entry("AWAITING_CHECKS", "PENDING"));
+  assert.match(running.out, /^queue-entry: .* checks PENDING$/m, ran("a check still running", running));
+  assert.doesNotMatch(running.out, /^stuck: .*$/m, ran("a check still running is not stuck", running));
+  const unread = timedOut("w509-b5-norollup", entry("AWAITING_CHECKS", null));
+  assert.match(unread.out, /^queue-entry: .* checks unread$/m, ran("no rollup", unread));
+  assert.doesNotMatch(unread.out, /^stuck: .*$/m, ran("no rollup is not stuck", unread));
+  const none = timedOut("w509-b5-none", { stdout: { data: { repository: { pullRequest: { isInMergeQueue: true, mergeQueueEntry: null } } } } });
+  assert.match(none.out, /^queue-entry: none; PR #901 is not in the merge queue$/m, ran("no entry", none));
+  const gone = timedOut("w509-b5-unread", { stdout: { data: { repository: { pullRequest: { isInMergeQueue: true } } } } });
+  assert.match(gone.out, /^queue-entry: unreadable \(gh api graphql returned no data\.repository\.pullRequest\.mergeQueueEntry\)$/m, ran("an unreadable entry", gone));
+  isRefused(gone, /^state=QUEUE_TIMEOUT$/m, "an unreadable entry keeps the timeout");
+});
 
