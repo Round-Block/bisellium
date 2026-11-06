@@ -149,8 +149,8 @@ test("W-279-b2 behaviour 2: lint and format ignore .worktrees and .kilo", async 
 
 test("W-279-b3 behaviour 3: a failing verify gate prints its log tail to stderr", async () => {
   const repo = tmp("w279-tail-");
-  writeFileSync(join(repo, "noisy-fail.mjs"), 'for (let i = 1; i <= 300; i++) console.log("L" + String(i).padStart(4, "0"));\nprocess.exit(1);\n');
-  writeFileSync(join(repo, "short-fail.mjs"), 'console.log("S-ONLY");\nprocess.exit(1);\n');
+  writeFileSync(join(repo, "noisy-fail.mjs"), 'for (let i = 1; i <= 300; i++) console.log("L" + String(i).padStart(4, "0"));\nprocess.exitCode = 1;\n');
+  writeFileSync(join(repo, "short-fail.mjs"), 'console.log("S-ONLY");\nprocess.exitCode = 1;\n');
   commitRepo(repo);
   const { studio, id } = writeStudio(
     [
