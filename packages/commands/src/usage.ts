@@ -39,6 +39,7 @@ export const USAGE =
   "       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium lift <opus> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium conclude <opus> --from <report> --decision <id> --sella <id> [--studio <dir>] [--now <iso>]\n" +
   "       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--round-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +

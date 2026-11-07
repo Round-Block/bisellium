@@ -300,6 +300,7 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       add("decision.invoked_after_kill", "block", where, `${label} ${id} at ${t ? t.toISOString() : "(no time)"} invokes a decision killed at ${k.at.toISOString()} (${k.by}); a fired clause is not an excuse`);
     };
     invoke("halted_by", data["halted_by"], data["halted_at"]);
+    invoke("concluded_by", data["concluded_by"], data["end"]);
     // W-525: a lift cites its decision in the row it writes, as a halt does in halted_by; a row or list of another shape is never skipped
     const malformedRows = haltRowsProblem(data["amendments"]);
     if (malformedRows !== undefined) add("decision.invoked_after_kill", "block", where, `${malformedRows}; a malformed lift row cannot be shown to avoid a killed decision`);

@@ -25,7 +25,7 @@ import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget, runPetitio } 
 import { runDelegate } from "./delegate.js";
 import { runProbe } from "./probe.js";
 import { mergeRefusal } from "./integrate.js";
-import { runReady, runDone, runReview, runRed, runHalt, runLift, runWaive, runAmend } from "./lifecycle.js";
+import { runReady, runDone, runReview, runRed, runHalt, runLift, runConclude, runWaive, runAmend } from "./lifecycle.js";
 import { liftQueueRefusal } from "./queue.js";
 import { runVerdict } from "./verdict.js";
 import { runServe } from "./serve.js";
@@ -121,6 +121,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "ready") return runReady(rest).exitCode;
   if (cmd === "halt") return runHalt(rest).exitCode;
   if (cmd === "lift") return runLift(rest, { queueRefusal: liftQueueRefusal }).exitCode;
+  if (cmd === "conclude") return runConclude(rest).exitCode;
   if (cmd === "waive") return runWaive(rest).exitCode;
   if (cmd === "amend") return runAmend(rest).exitCode;
   if (cmd === "done") return runDone(rest, { mergeRefusal }).exitCode;

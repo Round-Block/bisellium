@@ -20,8 +20,8 @@ import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
 import { createNextRecord, ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
-import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
-import { readContainedRegularFile, titleProblem, titleWordsProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
+import { conclusionProblem, patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
+import { concludedResearch, readContainedRegularFile, titleProblem, titleWordsProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
 import { LOG_MAX_BYTES, parseVerdictLog, readUiSpecPairing, type RecordedFinding } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
@@ -806,14 +806,30 @@ function retroFiled(root: string, id: string): boolean {
 export function owedRetros(root: string): { owed: string[] } | Refusal {
   const setting = readRetroSetting(root);
   if (isRefusal(setting)) return setting;
-  if (setting === undefined) return { owed: [] };
   const dir = join(root, "opera");
   const owed: string[] = [];
-  for (const name of existsSync(dir) ? readdirSync(dir).sort() : []) {
+  let names: string[];
+  try {
+    names = existsSync(dir) ? readdirSync(dir).sort() : [];
+  } catch (e) {
+    if (setting === undefined) return { owed };
+    throw e;
+  }
+  for (const name of names) {
     const id = /^(W-[0-9]+)\.md$/.exec(name)?.[1];
     if (id === undefined) continue;
     const rec = readOpus(root, id);
-    if (isRefusal(rec)) return rec;
+    if (isRefusal(rec)) {
+      if (setting === undefined) continue;
+      return rec;
+    }
+    // W-525: a retro reads an opus's review verdicts and reds (D-039 §2) and a concluded study has neither, so only a valid conclusion is exempt; with no setting nothing else is read
+    if (concludedResearch(rec)) {
+      const problem = conclusionProblem(root, readManifest(root), id, rec);
+      if (problem !== undefined) return { error: `opera/${id}.md: its conclusion is not valid: ${problem}` };
+      continue;
+    }
+    if (setting === undefined) continue;
     if (rec["state"] !== "done" || rec["end"] === undefined || rec["end"] === null) continue;
     const end = utcTimestampProblem(rec["end"]) === undefined ? instant(rec["end"])?.getTime() : undefined;
     if ((end === undefined || end >= setting.since) && !retroFiled(root, id)) owed.push(id);

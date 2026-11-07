@@ -97,9 +97,11 @@ stateDiagram-v2
   halted --> building: ready --spec
   halted --> greenlit: lift
   halted --> building: lift
+  backlog --> done: conclude (research)
+  greenlit --> done: conclude (research)
 ```
 
-Seven commands write a state id — `lift` (from `halted`, W-525), `greenlight` (backlog only), `ready` (from
+Eight commands write a state id — `lift` (from `halted`, W-525), `conclude` (research only, W-525), `greenlight` (backlog only), `ready` (from
 `greenlit` or `halted`, and it refuses without a spec), `verify` (below),
 `done` (from `building`, `verifying` or `review`), `review --fail`'s reopen edge
 back to `building` from `verifying`, `review` or `done` (it emits its own

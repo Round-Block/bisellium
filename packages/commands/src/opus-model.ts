@@ -371,6 +371,9 @@ export function effectiveProbationes(kind: unknown, declared: readonly Effective
 /** W-525: a record past ready (W-166's own test; only `ready` writes these two). The one reading of it for `lift`, `conclude`, `concludedResearch` and `next`. */
 export const tookLadder = (r: Record<string, unknown>): boolean => r["start"] !== undefined || r["builder_runtime"] !== undefined;
 
+/** W-525: the candidate `check` and `owedRetros` read as closed by `conclude`: research, done, off the build ladder, with a `concluded_by`; `conclusionProblem` then judges it. Any other done record keeps every gate and its retro. */
+export const concludedResearch = (r: Record<string, unknown>): boolean => r["kind"] === "research" && r["state"] === "done" && !tookLadder(r) && r["concluded_by"] !== undefined;
+
 /** W-525: a halt with no way back (W-042: abandon is a halt whose resume_when is "never"): `never` alone, or followed by anything but a letter, mark or digit, in any case. */
 export const terminalHalt = (resumeWhen: unknown): boolean => typeof resumeWhen === "string" && /^\s*never(?![\p{L}\p{M}\p{N}])/iu.test(resumeWhen);
 

@@ -16,8 +16,8 @@
  */
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { existsSync, lstatSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq, parse as parseYaml } from "yaml";
 import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
@@ -1452,6 +1452,78 @@ export function runLift(args: string[], opts: RunLiftOptions): WriteResult {
     [WF.ACTOR_ROLE]: sella,
   });
   console.log(`${opusId}: state=${to} lifted by=${decisionId}`);
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// 5c. conclude — backlog|greenlit -> done for a research record (W-525): research takes no build ladder, so no gate, branch or
+//     ticket applies; the report it produced is the evidence, kept in acta/, and a Patron's decision names the opus.
+// ---------------------------------------------------------------------------
+
+const CONCLUDE_USAGE = "usage: bisellium conclude <opus> --from <report> --decision <id> --sella <id> [--studio <dir>] [--now <iso>]";
+
+/** W-525: the one validator of a `concludedResearch` candidate, for `check` and `owedRetros`: its report in acta/, naming this opus, and its Patron's decision naming it too. */
+export function conclusionProblem(root: string, manifest: Pick<Manifest, "patron">, id: string, record: Record<string, unknown>): string | undefined {
+  const rel = record["report"];
+  if (typeof rel !== "string" || rel.trim() === "") return `report ${JSON.stringify(rel)} is not a path under acta/`;
+  const file = readContainedRegularFile(root, rel, "acta");
+  if ("error" in file) return `report ${rel}: ${file.error}`;
+  try {
+    if (parseFrontMatter<Record<string, unknown>>(file.bytes.toString("utf8"), rel).data["opus"] !== id) return `report ${rel} does not name ${id} in its opus key`;
+  } catch {
+    return `report ${rel} could not be read`;
+  }
+  const by = record["concluded_by"];
+  if (typeof by !== "string" || by.trim() === "") return `concluded_by ${JSON.stringify(by)} is not a decision id`;
+  return patronDecisionProblem(root, manifest, by, { rulingNames: id });
+}
+
+export function runConclude(args: string[], opts: WriteOptions = {}): WriteResult {
+  const open = openRuledRecord(args, ["--from", "--sella"], CONCLUDE_USAGE, "conclude", opts);
+  if ("exitCode" in open) return open;
+  const { values, opusId, decisionId, now, root, manifest, opusPath, front, refuse } = open;
+  const from = values.get("--from")!;
+  const sella = values.get("--sella")!;
+  if (front["kind"] !== "research") return refuse(`its kind is ${String(front["kind"])}, not research`);
+  const state = String(front["state"] ?? "?");
+  if (state !== "backlog" && state !== "greenlit") return refuse(`it is ${state}, not backlog or greenlit${state === "halted" ? ": lift it first" : ""}`);
+  if (tookLadder(front)) return refuse("it has taken the build ladder, so its gates apply");
+  // acta.author asks for a declared sella or the Patron: no guest, and no minted instance
+  if (!manifest.sellae.some((s) => s.id === sella)) return refuse(`--sella ${sella} is not a declared sella`);
+  const ruling = patronDecisionProblem(root, manifest, decisionId, { rulingNames: opusId });
+  if (ruling !== undefined) return refuse(ruling);
+  const unmapped = milestoneProblem(root, front);
+  if (unmapped !== undefined) return refuse(unmapped);
+  let report: string;
+  try {
+    if (!lstatSync(from).isFile()) return refuse(`--from ${from} is not a regular file`);
+    report = readFileSync(from, "utf8");
+  } catch (e) {
+    return refuse(`--from ${from} cannot be read: ${(e as Error).message.split("\n")[0]}`);
+  }
+  if (report.trim() === "") return refuse(`--from ${from} is empty`);
+  const rel = `acta/${now.toISOString().slice(0, 10)}-report-${opusId}.md`;
+  const head = `---\nauthor: ${JSON.stringify(sella)}\nkind: consultation\ntitle: ${JSON.stringify(`Report ${opusId}`)}\nat: ${JSON.stringify(now.toISOString())}\nopus: ${JSON.stringify(opusId)}\n---\n`;
+  try {
+    // "wx": never over an existing file or through a symlink at the final name
+    writeFileSync(join(ensureRealDirectory(root, "acta"), basename(rel)), head + report, { flag: "wx" });
+  } catch (e) {
+    return refuse(`${rel} cannot be written: ${(e as Error).message.split("\n")[0]}`);
+  }
+  editOpusFrontMatter(opusPath, (doc) => {
+    doc.setIn(["state"], "done");
+    doc.setIn(["end"], now.toISOString());
+    doc.setIn(["report"], rel);
+    doc.setIn(["concluded_by"], decisionId);
+    return undefined;
+  });
+  emitEvent(root, manifest, "workflow.state_changed", now, {
+    [WF.ITEM_ID]: opusId,
+    [WF.STATE_FROM]: state,
+    [WF.STATE_TO]: "done",
+    [WF.ACTOR_ROLE]: sella,
+  });
+  console.log(`${opusId}: done report=${rel} by=${decisionId}`);
   return { exitCode: 0 };
 }
 

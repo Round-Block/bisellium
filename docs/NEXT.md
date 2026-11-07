@@ -357,6 +357,24 @@ the opus. While `process.handoff.queue` reads the handoff's `## Queue` (not `que
 a record lifted to `greenlit` must be named there, or `check --repo` blocks; `land`
 can carry both.
 
+## bisellium conclude (W-525)
+
+```bash
+npm run bisellium -- conclude <opus> --from <report> --decision <id> --sella <id> [--studio <dir>] [--now <iso>]
+```
+
+Research takes no build ladder: no brief, branch, gate, ticket or merge. `conclude`
+moves a `kind: research` record from `backlog` or `greenlit` to `done`. It copies
+the report at `--from` to `acta/<date>-report-<opus>.md` (`kind: consultation`,
+`opus: <opus>`) and writes `end`, `report` and `concluded_by` on the record. It
+refuses any other kind or state, a record that has a `start` or `builder_runtime`,
+a `--sella` not declared, a `--decision` that is not by the Patron or does not name
+the opus in its ruling, and an empty or irregular `--from`. A halted study is lifted first.
+
+`check` then asks no gate of that record and asks `research.report` instead: the
+report is under `acta/`, names the opus, and the decision is the Patron's and names
+it in its ruling. Only that is exempt from a retro, which reads review verdicts and reds a study lacks; `owedRetros` refuses any other record with a `concluded_by`.
+
 ## The daily retro (W-530, D-188)
 
 A missing entry for the previous UTC day in `<studio>/acta/improvements.md` holds an

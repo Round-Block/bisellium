@@ -39,7 +39,8 @@ import { checkBriefStale } from "./rules/brief-stale.js";
 import { checkLadderTicket } from "./rules/ladder-ticket.js";
 import { checkHookGuard } from "./rules/hook-guard.js";
 import { diagnosticLabel } from "./reporting.js";
-import { effectiveProbationes, readContainedRegularFile, readRecordedFile, reviewFailedAtCertifiedTree, titleWordsProblem, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
+import { conclusionProblem } from "@bisellium/commands/lifecycle.js";
+import { concludedResearch, effectiveProbationes, readContainedRegularFile, readRecordedFile, reviewFailedAtCertifiedTree, titleWordsProblem, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
 import type { OpusModelProblem } from "@bisellium/commands/opus-model.js";
 import { DEFAULT_OPEN_LESSONS } from "@bisellium/commands/context.js";
 
@@ -614,7 +615,11 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       if (status.get(reviewProbatioId) === "failed" && reviewFailedAtCertifiedTree(root, d, { reviewId: reviewProbatioId, automatedIds: itemAutomated }))
         add("state.review.failed", "block", where, `state "review" with a failed review — item belongs back in building`);
     }
-    if (state === "done") {
+    // W-525: a research record closed by `conclude` took no build ladder, so no gate is asked; its report and ruling are, here
+    if (concludedResearch(d)) {
+      const problem = conclusionProblem(root, admissionManifest, basename(p, ".md"), d);
+      if (problem) add("research.report", "block", where, problem);
+    } else if (state === "done") {
       const missing = [
         ...notPassed(itemAutomated),
         ...notPassed(itemAgentGates),
