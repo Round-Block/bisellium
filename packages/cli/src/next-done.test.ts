@@ -3,14 +3,14 @@
  * Select one row with --test-name-pattern='^<row id>\s'.
  */
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { sourceTreeHash } from "@bisellium/shim";
 import { runDone } from "@bisellium/commands/lifecycle.js";
 import { parseFrontMatter } from "@bisellium/adapter-native";
-import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitYesNo, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, recordText, remoteBranchExists, reviewed, scenario, certificateRun, checkRunsOf, scratch, sourceTree, stagedPaths, touchHandoff, unmatched, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
+import { Alt, BRANCH, FAST, HANDOFF_DONE, Json, MIN_CHECKS, OPUS, Out, PR_NUMBER, QUEUE_RULES, REAL_GIT, Reply, SETUP_ENV, SLOT_MATCH, SLUG, SlotName, SlotValue, T, World, advanceOrigin, asRule, branchExists, briefText, cand, check, cli, commit, editRecord, eventsOf, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitYesNo, greens, landMerge, markDone, mergedList, modeLine, mutating, next, openList, outLines, parse, performMerge, performPr, prArgs, put, queueWorld, ran, recordOf, putBrief, recordText, remoteBranchExists, review, reviewed, scenario, sign, srWorld, certificateRun, checkRunsOf, scratch, sourceTree, stagedPaths, touchHandoff, unmatched, verb, viewOf, world, writeReceipt, writeTranscript } from "./next-world.test.js";
 
 
 // ---------------------------------------------------------------------------
@@ -1434,27 +1434,37 @@ test("W-384-b1 behaviour 1: the done land counts a records PR as landed when the
 });
 
 // ---------------------------------------------------------------------------
-// W-459 behaviour 3: next holds a new start while the previous UTC day's daily retro is owed, never an opus in flight
+// W-459 behaviour 3: next holds a new spec while the previous UTC day's daily retro is owed (W-530), never an opus in flight
 // ---------------------------------------------------------------------------
 /** The previous UTC day by the real clock, which the daily hold reads (a run across UTC midnight is a stated limit). */
 const previousDay = (): string => {
   const d = new Date();
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 1)).toISOString().slice(0, 10);
 };
+const trackerText = (days: string[]): string => `---\nauthor: producer\nkind: daily\ntitle: "Improvements tracker"\nat: 2026-10-17T00:00:00Z\n---\n# Improvements tracker\n\n## Daily retro\n${days.map((d) => `\n### ${d}\n\n- fixture entry\n`).join("")}`;
+const UNSIGNED = "W-902";
+/** A greenlit opus with no brief and no spec log: new work. */
+function addUnsigned(w: World): void {
+  put(w.studio, `opera/${UNSIGNED}.md`, recordText({ id: UNSIGNED, state: "greenlit", probationes: {} }));
+  commit(w.repo, `test: ${UNSIGNED} greenlit`);
+  git(w.repo, ["push", "-q", "origin", "master"]);
+}
 function setTracker(w: World, days: string[]): void {
-  put(w.studio, "acta/improvements.md", `---\nauthor: producer\nkind: daily\ntitle: "Improvements tracker"\nat: 2026-10-17T00:00:00Z\n---\n# Improvements tracker\n\n## Daily retro\n${days.map((d) => `\n### ${d}\n\n- fixture entry\n`).join("")}`);
+  put(w.studio, "acta/improvements.md", trackerText(days));
   commit(w.repo, "test: daily tracker");
   git(w.repo, ["push", "-q", "origin", "master"]);
 }
-test("W-459-b3 behaviour 3: next holds a new start at branch while the previous UTC day's retro is owed, and never an opus in flight", { timeout: 1_800_000 }, () => {
+test("W-459-b3 behaviour 3: next holds a new spec while the previous UTC day's retro is owed, and never an opus in flight", { timeout: 1_800_000 }, () => {
   const w = world("w459-b3", "done");
   addSpecced(w);
+  addUnsigned(w);
   expectOther(next(w, [OTHER]), "branch", "named", "with no tracker a new start is named as today");
 
   setTracker(w, ["2026-10-01"]);
-  const held = next(w, [OTHER]);
-  expectOther(held, "branch", "held", "a new start holds at branch while the previous UTC day has no entry");
-  assert.match(held.out, new RegExp(`daily retro owed: acta/improvements\\.md has no entry for ${previousDay()}; qa-lead runs bisellium retro --daily --studio `), ran("the hold names the day, the qa magister (D-147) and the verb", held));
+  const held = next(w, [UNSIGNED]);
+  assert.equal(held.first, `next: ${UNSIGNED} spec held`, ran("a new spec holds while the previous UTC day has no entry", held));
+  assert.match(held.out, new RegExp(`daily retro owed: acta/improvements\\.md has no entry for ${previousDay()}; a ladder-runner runs bisellium retro --daily --studio `), ran("the hold names the day, the runner and the verb", held));
+  expectOther(next(w, [OTHER]), "branch", "named", "a signed spec is not held (W-530)");
   expectStep(next(w, [OPUS]), "checkpoint", "complete", "a done opus is not held by the daily retro");
 
   setTracker(w, ["2026-10-01", previousDay()]);
@@ -1467,12 +1477,101 @@ test("W-459-b3 behaviour 3: next holds a new start at branch while the previous 
 
   const bad = world("w459-b3-bad", "done");
   addSpecced(bad);
+  addUnsigned(bad);
   put(bad.studio, "acta/improvements.md/inner.md", "a directory where the tracker should be\n");
   commit(bad.repo, "test: tracker is a directory");
   git(bad.repo, ["push", "-q", "origin", "master"]);
-  const badNew = next(bad, [OTHER]);
-  expectOther(badNew, "branch", "held", "a tracker that cannot be read holds a new start");
+  const badNew = next(bad, [UNSIGNED]);
+  assert.equal(badNew.first, `next: ${UNSIGNED} spec held`, ran("a tracker that cannot be read holds a new spec", badNew));
   assert.match(badNew.out, /the daily retro tracker cannot be read: acta\/improvements\.md: /, ran("and names the tracker", badNew));
+  expectOther(next(bad, [OTHER]), "branch", "named", "and holds no signed spec (W-530)");
+});
+
+// ---------------------------------------------------------------------------
+// W-530: a missing daily retro holds only unsigned work (D-188; studio/briefs/W-530.md)
+// ---------------------------------------------------------------------------
+const W530_BUDGET = ["--budget", "100000"];
+/** The step as `next` derives it, before the dispatch gate's own holds (a resumed round wants a fresh handoff), read from `next --all`. */
+const derived = (w: World, id: string): string | undefined => outLines(next(w, ["--all"], { clock: false })).find((l) => l.startsWith(`next: ${id} `))?.split(" · ")[0];
+test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed spec at the start of its spec, and never one with a signed spec", { timeout: 1_800_000 }, () => {
+  const w = world("w530-b1", "done");
+  addSpecced(w);
+  addUnsigned(w);
+  setTracker(w, ["2026-10-01"]);
+  const held = next(w, [UNSIGNED, ...W530_BUDGET]);
+  assert.equal(held.first, `next: ${UNSIGNED} spec held`, ran("no signed spec: held at the start of its spec", held));
+  assert.equal(held.status, 1, ran("no signed spec: exit 1", held));
+  assert.match(held.kv.get("why") ?? "", new RegExp(`^daily retro owed: acta/improvements\\.md has no entry for ${previousDay()}; a ladder-runner runs bisellium retro --daily --studio \\S+ before a new spec starts$`), ran("no signed spec: says why", held));
+
+  const named = next(w, [OTHER]);
+  expectOther(named, "branch", "named", "a signed spec with no branch is not held");
+  assert.equal(named.status, 0, ran("a signed spec: exit 0", named));
+
+  // a brief with no signature is still new work
+  put(w.repo, `studio/briefs/${UNSIGNED}.md`, briefText(w.behaviours).replace(`# ${OPUS}`, `# ${UNSIGNED}`));
+  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec held`, "a draft brief with no signature: held");
+  git(w.repo, ["rm", "-q", "--cached", "--ignore-unmatch", `studio/briefs/${UNSIGNED}.md`]);
+  rmSync(join(w.repo, `studio/briefs/${UNSIGNED}.md`));
+
+  // a signature over a brief edited since: signed work, sent back to its signer, never held
+  const brief = join(w.repo, `studio/briefs/${OTHER}.md`);
+  const signed = readFileSync(brief, "utf8");
+  writeFileSync(brief, `${signed}\nEdited after the signature.\n`);
+  assert.equal(derived(w, OTHER), `next: ${OTHER} spec named`, "a signature on an older brief: not held");
+  writeFileSync(brief, signed);
+
+  // a branch cut with no spec log is an opus in flight, signed or not
+  git(w.repo, ["branch", `opus/${UNSIGNED}`]);
+  assert.equal(derived(w, UNSIGNED), `next: ${UNSIGNED} spec named`, "a branch with no spec log: not held");
+  git(w.repo, ["branch", "-q", "-D", `opus/${UNSIGNED}`]);
+
+  // the entry filed: the new spec starts
+  setTracker(w, ["2026-10-01", previousDay()]);
+  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec named`, "the entry filed: the spec is named");
+
+  // with no budget the daily hold is clear, and the reused dispatch gate may still hold the rung
+  setTracker(w, ["2026-10-01", previousDay()]);
+  const noBudget = next(w, [UNSIGNED]);
+  assert.doesNotMatch(noBudget.out, /daily retro owed/, ran("the entry filed, no budget: the daily hold is clear", noBudget));
+  assert.equal(derived(w, UNSIGNED), `next: ${UNSIGNED} spec named`, "the entry filed, no budget: spec is the derived rung");
+
+  // an old debt still holds, by no timer: a tracker missing yesterday only, its last entry long past, reads the same
+  setTracker(w, ["2020-01-01"]);
+  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec held`, "no time limit: a tracker years behind still holds");
+
+  // a tracker that cannot be read holds new work the same way, and no signed spec
+  const bad = world("w530-b1-bad", "done");
+  addSpecced(bad);
+  addUnsigned(bad);
+  put(bad.studio, "acta/improvements.md/inner.md", "a directory where the tracker should be\n");
+  commit(bad.repo, "test: tracker is a directory");
+  git(bad.repo, ["push", "-q", "origin", "master"]);
+  const badHeld = next(bad, [UNSIGNED, ...W530_BUDGET]);
+  assert.equal(badHeld.first, `next: ${UNSIGNED} spec held`, ran("an unreadable tracker: a new spec is held", badHeld));
+  assert.match(badHeld.kv.get("why") ?? "", /^the daily retro tracker cannot be read: acta\/improvements\.md: /, ran("an unreadable tracker: says why", badHeld));
+  expectOther(next(bad, [OTHER]), "branch", "named", "an unreadable tracker: a signed spec is not held");
+
+  // with a reviewer: a first signature and a failed review are signed work
+  const r = srWorld("w530-b1-review");
+  setTracker(r, ["2026-10-01"]);
+  expectStep(next(r, [OPUS, ...W530_BUDGET]), "spec", "held", "a reviewer's world, no brief: held");
+  putBrief(r);
+  expectStep(next(r, [OPUS, ...W530_BUDGET]), "spec", "held", "a reviewer's world, a draft brief: held");
+  sign(r, 1);
+  assert.equal(derived(r, OPUS), `next: ${OPUS} spec named`, "a signature waiting for its review: not held");
+  review(r, 2, "failed");
+  assert.equal(derived(r, OPUS), `next: ${OPUS} spec named`, "a failed review sends it back to the signer: not held");
+  sign(r, 3);
+  review(r, 4, "passed");
+  expectStep(next(r, [OPUS, ...W530_BUDGET]), "branch", "named", "a reviewed spec with no branch: not held");
+
+  // a cascade retro owed stays at branch, on a signed spec, and holds no new spec
+  const c = world("w530-b1-cascade", "done");
+  addSpecced(c);
+  addUnsigned(c);
+  setRetro(c, "retro: { since: 2026-10-01T00:00:00Z }");
+  expectOther(next(c, [OTHER]), "branch", "held", "a cascade retro owed still holds at branch");
+  assert.equal(next(c, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec named`, "a cascade retro owed holds no new spec");
 });
 
 // ---------------------------------------------------------------------------
