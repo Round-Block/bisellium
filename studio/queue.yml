@@ -7,6 +7,7 @@ queues:
       - { opus: W-525, says: "a verb lifts a halt on an opus; exempt (D-187)" }
       - { opus: W-526, says: "greenlight writes no Patron line; M4's exit reworded; exempt (D-187)" }
       - { opus: W-528, says: "give the gates job a timeout; exempt, the Patron said yes 2026-11-06 (W-527)" }
+      - { opus: W-227, says: "cleanup clears an empty sandbox leftover and the guard refuses a cd into .worktrees/; a class seen twice, started without asking (D-039, cleanup meet 2026-11-08)", next_ts: true }
       - { opus: W-532, says: "cut what a fresh session loads at boot; folds W-517; exempt from the freeze on the leads' boot meet (D-189)", folded: [W-517] }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
       - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial; exempt, the Patron said yes 2026-11-06 (W-456)" }
@@ -51,7 +52,6 @@ queues:
       - { opus: W-400, says: "CLAUDE.md, AGENTS.md code-owned" }
       - { opus: W-401, says: "sessions receipt provider" }
       - { opus: W-245, says: "provider-agnostic closing step" }
-      - { opus: W-227, says: "cleanup with removed-worktree metadata", next_ts: true }
       - { opus: W-283, says: "Status page served" }
       - { opus: W-374, says: "next --all in-flight only", next_ts: true }
       - { opus: W-375, says: "context serves lex without §9, §12" }
