@@ -278,10 +278,13 @@ test("W-530-b3 behaviour 3: retro --daily writes a Proposed improvements heading
   const root = officina("w530-b3");
   tracker(root, ["2026-10-29"]);
   day(root);
+  const before = readFileSync(join(root, "acta/improvements.md"), "utf8");
   const r = daily(root);
   assert.equal(r.status, 0, `retro --daily exits 0: ${shown(r)}`);
   const written = readFileSync(join(root, "acta/improvements.md"), "utf8");
-  assert.match(written, /^[\s\S]*\n\n#### Proposed improvements\n$/, `the entry ends in the heading, with nothing under it: ${written.slice(-120)}`);
+  const entry = written.slice(before.length);
+  assert.equal(written, `${before}${r.out}`, `the tracker is the old text and the entry the run printed: ${shown(r)}`);
+  assert.equal(r.out.split("\n").slice(-3).join("\n"), "\n#### Proposed improvements\n", `the entry ends in the heading, with nothing under it: ${entry.slice(-120)}`);
   const warn = (at = NOW): Finding[] => checkStudio(root, at).findings.filter((f) => f.rule === "retro.daily.proposals");
   const found = warn();
   assert.equal(found.length, 1, `the previous day's empty heading is one finding: ${JSON.stringify(found)}`);
