@@ -56,13 +56,13 @@ In flight: W-451 work links: merged (#1045), next done, once its master verify r
 
 Ahead of the build, greenlit: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home that D-175 says stands. It is branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep that worktree). Do no W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Lane: one lane only, W-528 (gates job timeout) next, until W-512 refuses out-of-order starts (D-182). Night calls, leads' reads: calls-meet-1107/ under ~/.bisellium-evidence. Home mock-ups: W-503-spec/mockups-1107/. The producer's view on the freeze, the Patron said go ahead (11-06), no decision filed: keep it, no new exemptions unless something actively blocks work; whether W-520 to W-522 stay ahead of W-074 is open, ask them.
+Lane: one lane only until W-512 refuses out-of-order starts (D-182). W-528 merged (#1086), done owed (current-state.md); W-227, W-532 (D-190). Leads' reads: calls-meet-1107/, boot-meet-1108/ in ~/.bisellium-evidence. Home mock-ups: W-503-spec/mockups-1107/. The producer's view on the freeze, the Patron said go ahead (11-06), no decision filed: keep it, no new exemptions unless something actively blocks work; whether W-520 to W-522 stay ahead of W-074 is open, ask them.
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it.
 
 D-189: a call that would wait on the Patron goes to a meet of the relevant leads, whose recommendation is the default, vetoable at the next summary; the producer's alone is not. Its lex line landed with W-525 (#1079, production.md section 7).
 
-W-509 is done (#1060, #1061). D-186: greenlighting goes. The order (D-187, D-188, and the Patron's yes on W-528 and W-529, no decision filed): W-528 (gates timeout), W-532 (boot cut, folds W-517), W-519, W-529 (pool the local gate at eight; hosted stays serial). W-524 waits for M4. Daily retro (D-188, lex 9 step 7): after 00:00Z, ladder-runner runs, fresh QA lead proposes, ladder-runner lands. First proposals: the classes owed 11-06.
+W-509 is done (#1060, #1061). D-186: greenlighting goes. The order (D-187, D-188, and the Patron's yes on W-528 and W-529, no decision filed): W-528 (gates timeout), W-227, W-532 (boot cut), W-519, W-529 (pool the local gate at eight; hosted stays serial). W-524 waits for M4. Daily retro (D-188, lex 9 step 7): after 00:00Z, ladder-runner runs, fresh QA lead proposes, ladder-runner lands. First proposals: the classes owed 11-06.
 
 W-456 and W-527, studies finished off the ladder, are done by `conclude` (D-187), reports in studio/acta/2026-11-07-report-W-456.md and -W-527.md. W-523 is done (#1067, #1069). W-530 is done (#1070, #1072).
 
