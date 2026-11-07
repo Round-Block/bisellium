@@ -1,0 +1,26 @@
+# opus: W-525
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b4c8-b1ac-7622-b760-dede07ab5a8e
+# outcome: failed
+# at: 2026-11-07T07:01:27.479Z
+# tree: tree:b05f4b1a2cbbce3a45fde2f38d9e0f3ff4ed879e
+# brief: briefs/W-525.md blob:8b66a4851d530bb84d94240c3a9fedd50726da09
+# ticket: {"opus":"W-525","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"c0524d885e78f8d8b0729fd65ae82e24e507c09f","brief":"8b66a4851d530bb84d94240c3a9fedd50726da09","at":"2026-11-07T07:01:23.560Z"}
+
+## Findings
+1. blocking — brief:113 A halted record with an accidentally missing or non-string `reason`, `resume_when`, or `halted_by` reaches a real `lift`: `terminalHalt` classifies a non-string as nonterminal and `runLift` deletes the malformed fields while recording `"undefined"` instead of refusing; `check` is never invoked, and W-525-b1 has no malformed-halt case. Replace brief:113 with: `| 2. The halt fields read by lift | reason, resume_when and halted_by are non-blank strings; terminalHalt classifies resume_when, and only nonterminal text may lift; every malformed or terminal form refuses without writing | runLift: pinned by W-525-b1 cases for missing/non-string reason, resume_when and halted_by, plus every terminal form |`. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w525.test.ts
+
+2. blocking — brief:112 A plausible scalar or mapping `bisellium.yml#sellae` passes `openStudio`, after which real `lift`/`conclude` callers can throw in `resolveSeat` or `manifest.sellae.some` instead of returning the promised exit-2 refusal; the fixed-shape fixture does not catch this. Replace brief:112 with: `| 1. lift/conclude common flags, opus id and studio manifest | valued flags only; required values non-blank; --now absent or exact UTC; --studio names a readable manifest mapping whose studio is a non-blank string and whose sellae is a list in which the selected sella resolves; the opus id names a contained readable record | parseFlags, resolveExactNow, openStudio and openRuledRecord; openRuledRecord refuses every malformed required manifest field before either verb writes |`. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w525.test.ts
+
+3. blocking — brief:118 The added `checkProcess` reader silently skips an accidentally mapping-shaped `amendments` value, or a `field: halt` row missing `decision`, so `bisellium check` can miss a lift citing a killed decision; existing tests cover only the writer’s refusal and a well-formed row. Replace brief:118 with: `| 7. The record YAML and amendments, read by the verbs and checkProcess | a readable mapping; amendments absent or a sequence, with every field: halt row carrying an exact UTC at and a non-empty decision-id string; every other shape refuses or blocks | openRuledRecord and runLift refuse before writing; checkProcess emits decision.invoked_after_kill for a malformed amendments value or halt row |`. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/rules/decision-kill.test.ts
+
+4. blocking — brief:122 `check` validates the report and ruling, but `owedRetros` trusts only `concludedResearch`; an accidentally missing report or invalid `concluded_by` therefore blocks `check` while `next`, through `owedRetros`, declares the same opus complete, and no test exercises that disagreement. Replace brief:122 with: `| 11. A concluded research record read by check or owedRetros | kind research, state done, neither start nor builder_runtime, a non-blank report under acta naming the opus, and a non-blank concluded_by naming a valid Patron ruling | concludedResearch classifies the candidate and conclusionProblem validates it; check blocks and owedRetros returns a refusal on any conclusionProblem, while only a valid conclusion is exempt from gates and retro |`. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w525.test.ts
+
+5. blocking — brief:65 A plausible greenlit research record carrying `builder_runtime` but missing `start` is told by `next` to run `conclude`, although `runConclude` refuses that same record as having taken the ladder; W-525-b3 tests only `start`. Replace brief:65’s `with no start and no opus/<id> branch` with `with neither start nor builder_runtime and no opus/<id> branch`. [severity: S1] [design: changes] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-ladder.test.ts
+
+## Verdict
+The signed brief has design-changing S1 gaps in its malformed-input refusals and shared lifecycle classifications, so it requires revision and another spec review.
+VERDICT: FAIL

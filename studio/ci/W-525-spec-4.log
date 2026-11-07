@@ -1,0 +1,27 @@
+# opus: W-525
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b4c8-b1ac-7622-b760-dede07ab5a8e
+# outcome: passed
+# at: 2026-11-07T09:22:40.864Z
+# tree: tree:09242fe94ab03a720c95fec5a69f8a789e4c75fa
+# brief: briefs/W-525.md blob:2685da486bcd37ab0d8ce661a937101b867aeb04
+# ticket: {"opus":"W-525","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"c4e0f95c831d7a7470a242bc587b7f62aae7dda5","brief":"2685da486bcd37ab0d8ce661a937101b867aeb04","at":"2026-11-07T09:22:40.234Z"}
+
+## Findings
+1. advisory — brief:65 Reached through `ci/W-525-spec-2.log` #4’s class: with no `retro` setting, `check` blocks an unreadable opus while `owedRetros` deliberately skips the `readOpus` refusal, but the reader-agreement limit does not name that disagreement. Replace the sentence beginning “`owedRetros`’s refusal is officina-wide” with: “With no `retro` setting, `owedRetros` skips an opus it cannot read, so it cannot classify an unreadable conclusion; `check` still blocks it. Once a conclusion parses as a candidate, both readers run `conclusionProblem` and agree; with a `retro` setting, `owedRetros` refuses unreadable records as before.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w525.test.ts
+
+2. advisory — brief:115 Reached through `ci/W-525-spec-2.log` #2’s class: the revised domain says every lift actor resolves through the manifest and assigns rejection to `openRuledRecord`, but `guest` is accepted without resolution and absent or unknown actors are refused later by `runLift` through `namedSella`. Replace the actor and rejecter clauses with: “for `lift`, `--sella` or `$BISELLIUM_SELLA` is `guest` or a non-blank name that `namedSella` resolves against the manifest; `runLift` calls `namedSella` and refuses an absent or unresolved actor before writing.” [severity: S4] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w525.test.ts
+
+## Earlier findings
+- ci/W-525-spec-2.log #1: closed — brief:116 and `unliftableHalt` now refuse missing, blank, or non-string halt fields before `runLift` writes, with pinned cases.
+- ci/W-525-spec-2.log #2: closed — brief:115 and `manifestProblem` now reject malformed manifest, `studio`, and `sellae` shapes before either verb writes.
+- ci/W-525-spec-2.log #3: closed — brief:121 makes `haltRowsProblem` the shared validator for `runLift` and `checkProcess`, with malformed lists and halt rows pinned.
+- ci/W-525-spec-2.log #4: closed — brief:125 routes parseable conclusion candidates from both `check` and `owedRetros` through `conclusionProblem`, including without a `retro` setting.
+- ci/W-525-spec-2.log #5: closed — brief:65 and `tookLadder` make `start` or `builder_runtime` retain the build ladder in `next`, `runConclude`, and the conclusion readers.
+
+## Verdict
+All five S1 blockers are closed; the remaining reader-limit and input-row corrections are advisory, so the build may start.
+VERDICT: PASS
