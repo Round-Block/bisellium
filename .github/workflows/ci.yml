@@ -51,9 +51,15 @@ jobs:
   # installation or any cache-affecting step. Each checkout pins github.sha,
   # then attaches that exact commit to a constant local branch so Git-backed
   # checks can read a symbolic current branch without trusting an input ref.
+  # W-528: gates stops at 60 minutes. The slowest passing gates job in 136 runs
+  # (2026-10-21 to 11-07) took 31.8 minutes; with no limit, PR 1032's hung run
+  # held this job to GitHub's 360-minute default (W-527). It sits under
+  # certify's 100, which runs the whole mint, and under the merge queue's
+  # 120-minute wait for a required check.
   gates:
     if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
         with:
