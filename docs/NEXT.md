@@ -375,6 +375,13 @@ the opus in its ruling, and an empty or irregular `--from`. A halted study is li
 report is under `acta/`, names the opus, and the decision is the Patron's and names
 it in its ruling. Only that is exempt from a retro, which reads review verdicts and reds a study lacks; `owedRetros` refuses any other record with a `concluded_by`.
 
+## Halts and research
+
+A halted record holds at `greenlight`, and the hold names `bisellium lift`; a terminal
+halt (`resume_when` of `never`) holds and names no verb, as a malformed one does. A greenlit `kind: research` record
+with neither `start` nor `builder_runtime` and no branch holds at `spec` and names `bisellium conclude`: research takes
+no build ladder, and no ticket is issued. A concluded record is complete, with no retro owed.
+
 ## The daily retro (W-530, D-188)
 
 A missing entry for the previous UTC day in `<studio>/acta/improvements.md` holds an

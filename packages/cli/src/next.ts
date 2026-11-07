@@ -32,7 +32,7 @@ import { codexProfile, redact, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { HOST_RUN_TIMEOUT_MS, admitCurrentGates } from "@bisellium/commands/builder-run.js";
 import { webBuild, webBuildReason } from "@bisellium/commands/web-build.js";
-import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, uiReviewSuperseded, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { branchUiRuling, censorSella, effectiveProbationes, inspectUiDesignInput, isNativeOpusKind, isUiLeadLog, readContainedRegularFile, terminalHalt, tookLadder, uiReviewSuperseded, unliftableHalt, utcTimestampProblem, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { ownedFiles, readBriefForm, readBriefLimit, readRedOrder } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { CLASS_TAG, SESSION_ID, buildReviewDrift, designOf, readSequence, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readDesignMagister, readSourceExcludes, readUiSpecPairing, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
@@ -1107,9 +1107,17 @@ export function deriveNext(f: Facts): Derived {
   const state = str(rec["state"]);
   if (rec["declined"] !== undefined && rec["declined"] !== null && rec["declined"] !== false) return hold("greenlight", `${id} is declined (${one(String(rec["declined"]))}); nothing to build`);
   if (f.tipRead?.kind === "error") return hold("branch", f.tipRead.reason);
-  if (state === "halted") return hold("greenlight", `${id} is halted; resume it before the cascade continues`);
+  if (state === "halted") {
+    if (terminalHalt(rec["resume_when"])) return hold("greenlight", `${id} is halted for good (resume when: ${one(String(rec["resume_when"]))}); nothing to build`);
+    const unliftable = unliftableHalt(rec);
+    if (unliftable !== undefined) return hold("greenlight", `${id} is halted and cannot be lifted as it stands: ${one(unliftable)}`);
+    return hold("greenlight", `${id} is halted; a Patron's ruling that names it, dated after the halt, lifts it: bisellium lift ${id} --reason <text> --decision <id> --studio ${f.studioRel}`);
+  }
   if (state === undefined) return hold("greenlight", `${recordRel(id)} carries no state`);
   if (state === "backlog") return named("greenlight", "patron", `${id} is in the backlog; only the Patron greenlights`, `bisellium greenlight ${id} --studio ${f.studioRel}`);
+  // W-525: research takes no build ladder; a record already started keeps it
+  if (state === "greenlit" && rec["kind"] === "research" && !tookLadder(rec) && f.tip === undefined)
+    return hold("spec", `${id} is research and takes no build ladder; when its report is written: bisellium conclude ${id} --from <report> --decision <id> --sella <id> --studio ${f.studioRel}`);
 
   // 2 spec (the committed trunk)
   // W-355: the kind and seat pairing come from the checkout that owns the spec evidence; an unreadable owner holds here
