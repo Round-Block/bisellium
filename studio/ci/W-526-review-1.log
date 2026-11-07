@@ -1,0 +1,19 @@
+# opus: W-526
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b644-1c78-72c3-8d15-fbf06e01665d
+# outcome: passed
+# at: 2026-11-07T13:50:53.365Z
+# tree: tree:5c085df30903e1397d4713f61a0b5f4c2905a418
+# brief: briefs/W-526.md blob:cac61a299e12911a3344f67e96463b24f9f5901d
+# ticket: {"opus":"W-526","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-526/studio","head":"9b7a0235ac45bc16ef14c7503b75919793fc5fc1","brief":"cac61a299e12911a3344f67e96463b24f9f5901d","at":"2026-11-07T13:47:57.719Z"}
+
+## Findings
+1. advisory — packages/cli/src/w403.test.ts:625 The “no role exported” case spreads `process.env`, so it does not ensure `BISELLIUM_ROLE` is absent. Explicitly delete the key from the child environment; the implementation is correct, making this regression-row gap advisory. [severity: S4] [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/w403.test.ts W-526-b1
+2. advisory — packages/cli/src/w403.test.ts:329 The flipped W-403 section now invokes `runGreenlight` with no Patron role, but two assertion labels still call it “the Patron’s greenlight,” contradicting the new domain and the assertion at line 331. [severity: S4] [class: tests×test-title-made-false-by-domain-change] — check: packages/cli/src/w403.test.ts W-403-b1
+
+## Verdict
+The implementation satisfies behaviour 1, the declared file boundary, and the recorded red and gate identities. The remaining test-evidence defects are advisory only.
+VERDICT: PASS
