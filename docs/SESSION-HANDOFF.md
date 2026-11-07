@@ -56,7 +56,7 @@ In flight: W-451 work links: merged (#1045), next done, once its master verify r
 
 Ahead of the build, greenlit: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home that D-175 says stands. It is branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep that worktree). Do no W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Lane: one lane only, W-525 next, until W-512 refuses out-of-order starts (D-182). Night calls, leads' reads: calls-meet-1107/ under ~/.bisellium-evidence. The producer's view on the freeze, the Patron said go ahead (11-06), no decision filed: keep it, no new exemptions unless something actively blocks work; whether W-520 to W-522 stay ahead of W-074 is open, ask them.
+Lane: one lane only, W-525 (spec r2 failed; see notes) next, until W-512 refuses out-of-order starts (D-182). Night calls, leads' reads: calls-meet-1107/ under ~/.bisellium-evidence. Home mock-ups: W-503-spec/mockups-1107/. The producer's view on the freeze, the Patron said go ahead (11-06), no decision filed: keep it, no new exemptions unless something actively blocks work; whether W-520 to W-522 stay ahead of W-074 is open, ask them.
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it.
 
