@@ -177,6 +177,13 @@ test("W-525-b1 behaviour 1: lift undoes a halt under a Patron's ruling that name
   decree.opus("W-7");
   put(join(decree.studio, "decisions", "D-2.md"), decision("D-2").replace("## Ruling", "## Decree"));
   assert.equal(decree.run("lift", "W-7", ...LIFT).code, 0, "a ## Decree section is a ruling");
+  // the heading's domain: a whole line, ended by LF or CRLF
+  for (const [label, text] of [["## Ruling, CRLF throughout", decision("D-2").replace(/\n/g, "\r\n")], ["## Decree, CRLF throughout", decision("D-2").replace("## Ruling", "## Decree").replace(/\n/g, "\r\n")]] as const) {
+    const t = world();
+    t.opus("W-7");
+    put(join(t.studio, "decisions", "D-2.md"), text);
+    assert.equal(t.run("lift", "W-7", ...LIFT).code, 0, `a ruling: ${label}`);
+  }
   const longer = world();
   longer.opus("W-7", { resume_when: "nevertheless, when the Patron asks" });
   assert.equal(longer.run("lift", "W-7", ...LIFT).code, 0, "a longer word opening with never is no terminal halt");
@@ -194,6 +201,17 @@ test("W-525-b1 behaviour 1: lift undoes a halt under a Patron's ruling that name
     ["with the heading `## Ruling W-7`", decision("D-9").replace("## Ruling", "## Ruling W-7"), /holds no ## Ruling section/],
     ["with the heading `## Ruling-x`", decision("D-9").replace("## Ruling", "## Ruling-x"), /holds no ## Ruling section/],
     ["with the heading `##Ruling`", decision("D-9").replace("## Ruling", "##Ruling"), /holds no ## Ruling section/],
+    ["with a blank after the heading", decision("D-9").replace("## Ruling", "## Ruling "), /holds no ## Ruling section/],
+    ["with a tab after the heading", decision("D-9").replace("## Ruling", "## Ruling\t"), /holds no ## Ruling section/],
+    ["with the heading after a lone CR", decision("D-9", { names: "W-70" }).replace("\n## Ruling\n", "W-7 above.\r## Ruling\nW-7\n"), /holds no ## Ruling section/],
+    ["with the heading after a U+2028", decision("D-9", { names: "W-70" }).replace("\n## Ruling\n", "W-7 above.\u2028## Ruling\nW-7\n"), /holds no ## Ruling section/],
+    ["with the heading ended by a lone CR", decision("D-9", { names: "W-70" }).replace("## Ruling\n", "## Ruling\rW-7\n"), /holds no ## Ruling section/],
+    ["with `## Ruling` ended by U+2028", decision("D-9").replace("## Ruling\n", "## Ruling\u2028"), /holds no ## Ruling section/],
+    ["with `## Ruling` ended by U+2029", decision("D-9").replace("## Ruling\n", "## Ruling\u2029"), /holds no ## Ruling section/],
+    ["with `## Ruling` ended by a double CR", decision("D-9").replace("## Ruling\n", "## Ruling\r\r\n"), /holds no ## Ruling section/],
+    ["with `## Decree` ended by U+2028", decision("D-9").replace("## Ruling\n", "## Decree\u2028"), /holds no ## Ruling section/],
+    ["with `## Decree` ended by U+2029", decision("D-9").replace("## Ruling\n", "## Decree\u2029"), /holds no ## Ruling section/],
+    ["with `## Decree` ended by a double CR", decision("D-9").replace("## Ruling\n", "## Decree\r\r\n"), /holds no ## Ruling section/],
     ["with no by", decision("D-9").replace("by: patron\n", ""), /has no "by"/],
     ["with no at", decision("D-9").replace(/^at: .*\n/m, ""), /decision "D-9" at must be a string/],
     ["with a loose at", decision("D-9").replace(/^at: .*\n/m, "at: yesterday\n"), /decision "D-9" at must match/],
@@ -434,6 +452,15 @@ test("W-525-b2 behaviour 2: conclude closes a research record off the build ladd
     ["a decision with the heading `## Ruling W-7`", decision("D-2").replace("## Ruling", "## Ruling W-7"), /holds no ## Ruling section/],
     ["a decision with the heading `## Ruling-x`", decision("D-2").replace("## Ruling", "## Ruling-x"), /holds no ## Ruling section/],
     ["a decision with the heading `##Ruling`", decision("D-2").replace("## Ruling", "##Ruling"), /holds no ## Ruling section/],
+    ["a decision with a blank after the heading", decision("D-2").replace("## Ruling", "## Ruling "), /holds no ## Ruling section/],
+    ["a decision with the heading after a lone CR", decision("D-2", { names: "W-70" }).replace("\n## Ruling\n", "W-7 above.\r## Ruling\nW-7\n"), /holds no ## Ruling section/],
+    ["a decision with the heading after a U+2028", decision("D-2", { names: "W-70" }).replace("\n## Ruling\n", "W-7 above.\u2028## Ruling\nW-7\n"), /holds no ## Ruling section/],
+    ["a decision with `## Ruling` ended by U+2028", decision("D-2").replace("## Ruling\n", "## Ruling\u2028"), /holds no ## Ruling section/],
+    ["a decision with `## Ruling` ended by U+2029", decision("D-2").replace("## Ruling\n", "## Ruling\u2029"), /holds no ## Ruling section/],
+    ["a decision with `## Ruling` ended by a double CR", decision("D-2").replace("## Ruling\n", "## Ruling\r\r\n"), /holds no ## Ruling section/],
+    ["a decision with `## Decree` ended by U+2028", decision("D-2").replace("## Ruling\n", "## Decree\u2028"), /holds no ## Ruling section/],
+    ["a decision with `## Decree` ended by U+2029", decision("D-2").replace("## Ruling\n", "## Decree\u2029"), /holds no ## Ruling section/],
+    ["a decision with `## Decree` ended by a double CR", decision("D-2").replace("## Ruling\n", "## Decree\r\r\n"), /holds no ## Ruling section/],
   ];
   for (const [label, d, says] of rulings) {
     const t = researched();
@@ -479,6 +506,11 @@ test("W-525-b2 behaviour 2: conclude closes a research record off the build ladd
   const decreed = researched();
   put(join(decreed.studio, "decisions", "D-2.md"), decision("D-2").replace("## Ruling", "## Decree"));
   assert.equal(decreed.run("conclude", "W-7", "--from", decreed.from, ...CONCLUDE).code, 0, "a ## Decree section is a ruling");
+  for (const [label, text] of [["## Ruling, CRLF throughout", decision("D-2").replace(/\n/g, "\r\n")], ["## Decree, CRLF throughout", decision("D-2").replace("## Ruling", "## Decree").replace(/\n/g, "\r\n")]] as const) {
+    const t = researched();
+    put(join(t.studio, "decisions", "D-2.md"), text);
+    assert.equal(t.run("conclude", "W-7", "--from", t.from, ...CONCLUDE).code, 0, `a ruling: ${label}`);
+  }
   const two = researched();
   const twoOut = two.run("conclude", "W-7", "W-8", "--from", two.from, ...CONCLUDE);
   assert.deepEqual([twoOut.code, /W-8/.test(twoOut.err)], [2, true], "refused: two opus ids, naming the extra one");
