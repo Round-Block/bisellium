@@ -75,19 +75,22 @@ queues:
       - { opus: W-453, says: "Home Queue shows one lane per lead (production, design, engineering, qa, ops)" }
       - { opus: W-488, says: "comment on served UI captures" }
 halted:
-  - { opus: W-239, says: "next's merge step always fast-forwards the main checkout to the merged commit, .github/ and .claude/ included: the Patron's approval gate is the PR's code-owner review, not the pull" }
-  - { opus: W-435, says: "Home: the console's landing page — one high-level overview across every screen (Inbox, Board, Seats, Officina) with shortcut links into each" }
+  - { opus: W-073, says: "reply from the Board drawer; until the freeze ends and it is re-ranked (D-174)" }
+  - { opus: W-136, says: "live activity on the Board; until the freeze ends and it is re-ranked (D-174)" }
+  - { opus: W-438, says: "plain-English labels on every console screen; until the freeze ends and it is re-ranked (D-174)" }
+  - { opus: W-484, says: "Doc rules: byte cap, real rule ids, link fragments; docs-drift lint folded in; until the freeze ends and it is re-ranked (D-174)" }
+  - { opus: W-485, says: "ADOPTION.md restructured as a lean agent-readable contract; until the freeze ends and it is re-ranked (D-174)" }
+  - { opus: W-479, says: "an outside advisory that breaks the gates for every PR has a filing path: the fix opus files without an admin merge; until the freeze ends and it is re-ranked (D-174)" }
+  - { opus: W-371, says: "one provider-neutral sandbox row per seat in the manifest (write roots, network, tools), which bisellium run composes for each harness; until the freeze ends and it is re-ranked (D-174)" }
 cut:
   - { opus: W-436, says: "hard rule, enforced: memory does not work: every open item lives in a record the moment it arises" }
   - { opus: W-465, says: "the orchestrator drains before it hands over: past 250k context it starts no new task unless the Patron asks for that one" }
   - { opus: W-457, says: "next names a builder, not ci --opus, when the signed brief's Files owned names a file no branch commit has touched since the signature" }
   - { opus: W-405, says: "the pr step refuses a kind: ui opus until the Patron's screen approval is recorded for its built screenshots" }
+  - { opus: W-239, says: "cancelled: superseded by W-369, the guard syncs the agent clone (D-106)" }
+  - { opus: W-435, says: "cancelled: refiled as W-451, kind ui (D-088)" }
 deferred:
   - { opus: W-500, says: "Runs screen and its theatre view: after MVP (Patron 2026-11-05); status in its record" }
-  - { opus: W-484, says: "Doc rules: byte cap, real rule ids, link fragments; docs-drift lint folded in" }
-  - { opus: W-485, says: "ADOPTION.md restructured as a lean agent-readable contract" }
   - { opus: W-486, says: "The application schedules the retro, which proposes improvements (D-188: stays deferred)" }
-  - { opus: W-479, says: "an outside advisory that breaks the gates for every PR has a filing path: the fix opus files without an admin merge" }
-  - { opus: W-371, says: "one provider-neutral sandbox row per seat in the manifest (write roots, network, tools), which bisellium run composes for each harness" }
   - { opus: W-524, says: "remove the greenlit state and greenlight verb; after M4 (D-186, D-187)" }
   - { opus: W-515, says: "a bounded discussion across vendor seats: no pilot ruled (D-182)" }
