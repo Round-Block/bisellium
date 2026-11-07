@@ -8,6 +8,7 @@
  * W-335 adds scripts/test-reads.mjs's row (`--test-name-pattern='^W-335-b1\s'`).
  * W-368 adds the runner-image and action-runtime row (`--test-name-pattern='^W-368-b1\s'`).
  * W-483 adds the handoff's row (`--test-name-pattern='^W-483-b1\s'`).
+ * W-528 adds the gates job's time limit row (`--test-name-pattern='^W-528-b1\s'`).
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -880,4 +881,27 @@ test("W-368-b1 behaviour 1: every ci.yml job runs on ubuntu-24.04 and every acti
       `${name}: "${use}" is at least ${m[1]}@v${NODE24_MAJOR[m[1]]}, a Node 24 major (Node 20 actions are deprecated)`,
     );
   }
+});
+
+/** W-528: the gates job's limit in minutes. The slowest passing gates job in 136 runs (2026-10-21 to 11-07) took 31.8
+ *  minutes (studio/briefs/W-528.md); with no limit, PR 1032's hung run held gates to GitHub's 360-minute default (W-527). */
+const GATES_TIMEOUT_MINUTES = 60;
+
+test("W-528-b1 behaviour 1: the gates job stops at 60 minutes, under certify's limit, set on the job and on no step", () => {
+  const doc = workflow();
+  const gates = doc.jobs.gates;
+  assert.equal(
+    gates["timeout-minutes"],
+    GATES_TIMEOUT_MINUTES,
+    "gates carries timeout-minutes: 60, a number, so a hung run stops there and not at GitHub's 360-minute default",
+  );
+  assert.ok(
+    gates["timeout-minutes"] < doc.jobs.certify["timeout-minutes"],
+    "gates' limit sits under certify's, which runs the whole mint",
+  );
+  assert.deepEqual(
+    gates.steps.filter((step) => step["timeout-minutes"] !== undefined).map((step) => step.run ?? step.uses),
+    [],
+    "no gates step carries its own limit: the one limit is the job's",
+  );
 });

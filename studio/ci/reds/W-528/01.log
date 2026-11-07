@@ -1,0 +1,41 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-528-b1\s scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-11-07T15:57:58.706Z
+# sella: ops-lead
+# tree: tree:96542b36b4a5ac4d58c7f50c7431c911794a89b8
+# ticket: {"opus":"W-528","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-528/studio","head":"938407ab0e64aae4f236b621c1f7bfa25016dd34","brief":"945b442b174866fdf7a6f5312ce2dd1f3f0fb434","at":"2026-11-07T15:57:58.667Z"}
+
+TAP version 13
+# Subtest: W-528-b1 behaviour 1: the gates job stops at 60 minutes, under certify's limit, set on the job and on no step
+not ok 1 - W-528-b1 behaviour 1: the gates job stops at 60 minutes, under certify's limit, set on the job and on no step
+  ---
+  duration_ms: 13.769633
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-528/scripts/ci-scope.test.mjs:890:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    gates carries timeout-minutes: 60, a number, so a hung run stops there and not at GitHub's 360-minute default
+    
+    undefined !== 60
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 60
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-528/scripts/ci-scope.test.mjs:893:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 20.477014
