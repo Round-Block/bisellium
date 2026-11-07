@@ -190,6 +190,10 @@ test("W-525-b1 behaviour 1: lift undoes a halt under a Patron's ruling that name
     ["with a deeper heading", decision("D-9").replace("## Ruling", "### Ruling"), /holds no ## Ruling section/],
     ["with a longer heading", decision("D-9").replace("## Ruling", "## Rulings"), /holds no ## Ruling section/],
     ["naming it in a heading inside its front matter", decision("D-9", { names: "W-70", more: ["## Ruling W-7"] }), /does not name W-7 in its ruling/],
+    ["with the heading `## Ruling:`", decision("D-9").replace("## Ruling", "## Ruling:"), /holds no ## Ruling section/],
+    ["with the heading `## Ruling W-7`", decision("D-9").replace("## Ruling", "## Ruling W-7"), /holds no ## Ruling section/],
+    ["with the heading `## Ruling-x`", decision("D-9").replace("## Ruling", "## Ruling-x"), /holds no ## Ruling section/],
+    ["with the heading `##Ruling`", decision("D-9").replace("## Ruling", "##Ruling"), /holds no ## Ruling section/],
     ["with no by", decision("D-9").replace("by: patron\n", ""), /has no "by"/],
     ["with no at", decision("D-9").replace(/^at: .*\n/m, ""), /decision "D-9" at must be a string/],
     ["with a loose at", decision("D-9").replace(/^at: .*\n/m, "at: yesterday\n"), /decision "D-9" at must match/],
@@ -292,6 +296,9 @@ test("W-525-b1 behaviour 1: lift undoes a halt under a Patron's ruling that name
     assert.equal(u.text("W-7"), was, `writes nothing: ${label}`);
   }
 
+  const twoIds = u.run("lift", "W-7", "W-8", ...LIFT);
+  assert.deepEqual([twoIds.code, /W-8/.test(twoIds.err)], [2, true], "refused: two opus ids, naming the extra one");
+  assert.equal(u.text("W-7"), was, "writes nothing: two opus ids");
   const blankDecision = u.run("lift", "W-7", "--reason", "x", "--decision", "  ", ...named);
   assert.deepEqual([blankDecision.code, /^usage: bisellium lift/.test(blankDecision.err)], [2, true], "refused: a blank decision");
   const looseNow = u.bare("lift", "W-7", ...LIFT, "--now", "2026-11-07");
@@ -423,6 +430,10 @@ test("W-525-b2 behaviour 2: conclude closes a research record off the build ladd
   const rulings: [string, string, RegExp][] = [
     ["a decision by another seat", decision("D-2", { by: "qa-lead" }), /is by "qa-lead", not patron "patron"/],
     ["a decision that does not name it", decision("D-2", { names: "W-70" }), /does not name W-7 in its ruling/],
+    ["a decision with the heading `## Ruling:`", decision("D-2").replace("## Ruling", "## Ruling:"), /holds no ## Ruling section/],
+    ["a decision with the heading `## Ruling W-7`", decision("D-2").replace("## Ruling", "## Ruling W-7"), /holds no ## Ruling section/],
+    ["a decision with the heading `## Ruling-x`", decision("D-2").replace("## Ruling", "## Ruling-x"), /holds no ## Ruling section/],
+    ["a decision with the heading `##Ruling`", decision("D-2").replace("## Ruling", "##Ruling"), /holds no ## Ruling section/],
   ];
   for (const [label, d, says] of rulings) {
     const t = researched();
@@ -465,6 +476,14 @@ test("W-525-b2 behaviour 2: conclude closes a research record off the build ladd
   assert.equal(takenOut.code, 2, "refused: a report already at that name");
   assert.equal(readFileSync(join(taken.studio, rel), "utf8"), "already here\n", "an existing report is not overwritten");
   assert.equal(taken.front("W-7")["state"], "greenlit", "writes nothing: a report already at that name");
+  const decreed = researched();
+  put(join(decreed.studio, "decisions", "D-2.md"), decision("D-2").replace("## Ruling", "## Decree"));
+  assert.equal(decreed.run("conclude", "W-7", "--from", decreed.from, ...CONCLUDE).code, 0, "a ## Decree section is a ruling");
+  const two = researched();
+  const twoOut = two.run("conclude", "W-7", "W-8", "--from", two.from, ...CONCLUDE);
+  assert.deepEqual([twoOut.code, /W-8/.test(twoOut.err)], [2, true], "refused: two opus ids, naming the extra one");
+  assert.equal(two.front("W-7")["state"], "greenlit", "writes nothing: two opus ids");
+  assert.equal(existsSync(join(two.studio, rel)), false, "no report: two opus ids");
   const u = researched();
   for (const [label, args] of [["no --from", ["conclude", "W-7", ...CONCLUDE]], ["no decision", ["conclude", "W-7", "--from", u.from, "--sella", "producer"]], ["no sella", ["conclude", "W-7", "--from", u.from, "--decision", "D-2"]], ["a sella not declared", ["conclude", "W-7", "--from", u.from, "--decision", "D-2", "--sella", "guest"]]] as const) {
     assert.equal(u.run(...args).code, 2, `refused: ${label}`);
