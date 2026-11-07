@@ -1574,6 +1574,103 @@ test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed s
   assert.equal(next(c, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec named`, "a cascade retro owed holds no new spec");
 });
 
+const TRACKER_FILE = "studio/acta/improvements.md";
+/** The tracker on master with its entry filed, then an unstaged edit of it in the main checkout. */
+function trackerEdit(w: World): string {
+  setTracker(w, [previousDay()]);
+  appendFileSync(join(w.repo, TRACKER_FILE), "\n- an entry not yet landed\n");
+  return readFileSync(join(w.repo, TRACKER_FILE), "utf8");
+}
+const dirtyLines = (o: Out): string[] => outLines(o).filter((l) => l.startsWith("dirty: "));
+test("W-530-b2 behaviour 2: the daily retro's unstaged entry stops no branch, merge or done perform and rides none of their commits", { timeout: 1_800_000 }, () => {
+  // a spec on master: the branch is cut at master
+  const w = world("w530-b2", "spec");
+  const edited = trackerEdit(w);
+  expectStep(next(w, [OPUS]), "branch", "named", "the edit does not change the rung");
+  const cut = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(cut, "branch", "performed", "branch: the edit does not refuse it");
+  assert.equal(git(w.repo, ["show", `${BRANCH}:${TRACKER_FILE}`]), trackerText([previousDay()]).trimEnd(), ran("branch: the edit is not on the branch", cut));
+  assert.equal(readFileSync(join(w.wt, TRACKER_FILE), "utf8"), trackerText([previousDay()]), ran("branch: the worktree has the committed tracker", cut));
+  assert.equal(readFileSync(join(w.repo, TRACKER_FILE), "utf8"), edited, ran("branch: the edit stays in the main checkout", cut));
+  assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", ran("branch: HEAD is master", cut));
+
+  // a spec not yet committed: the spec commit carries the spec and not the edit
+  const s = world("w530-b2-spec", "done");
+  const sEdited = trackerEdit(s);
+  put(s.studio, `opera/${OTHER}.md`, recordText({ id: OTHER, state: "greenlit", probationes: {} }));
+  git(s.repo, ["add", `studio/opera/${OTHER}.md`]);
+  git(s.repo, ["commit", "-q", "-m", `test: ${OTHER} greenlit`]);
+  git(s.repo, ["push", "-q", "origin", "master"]);
+  put(s.repo, `studio/briefs/${OTHER}.md`, briefText(s.behaviours).replace(`# ${OPUS}`, `# ${OTHER}`));
+  verb(s.repo, ["verdict", OTHER, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(s, "spec-other.md"), "--studio", s.studio, "--now", T.spec]);
+  const specCut = next(s, [OTHER, "--perform", "--expect", "branch"]);
+  expectOther(specCut, "branch", "performed", "branch with a spec commit: the edit does not refuse it");
+  assert.deepEqual(git(s.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `opus/${OTHER}`]).split("\n").sort(), [`studio/briefs/${OTHER}.md`, `studio/ci/${OTHER}-spec-1.log`].sort(), ran("branch with a spec commit: only the spec is in it", specCut));
+  assert.equal(readFileSync(join(s.repo, TRACKER_FILE), "utf8"), sEdited, ran("branch with a spec commit: the edit stays", specCut));
+
+  // any other shape refuses as a tracked change does
+  const staged = world("w530-b2-staged", "spec");
+  trackerEdit(staged);
+  git(staged.repo, ["add", TRACKER_FILE]);
+  const stagedOut = next(staged, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(stagedOut, "a staged edit refuses");
+  assert.deepEqual(dirtyLines(stagedOut), [`dirty: M ${TRACKER_FILE}`], ran("a staged edit: named", stagedOut));
+  const gone = world("w530-b2-gone", "spec");
+  trackerEdit(gone);
+  rmSync(join(gone.repo, TRACKER_FILE));
+  const goneOut = next(gone, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(goneOut, "a deleted tracker refuses");
+  assert.deepEqual(dirtyLines(goneOut), [`dirty: D ${TRACKER_FILE}`], ran("a deleted tracker: named", goneOut));
+  const beside = world("w530-b2-beside", "spec");
+  trackerEdit(beside);
+  appendFileSync(join(beside.repo, "source.txt"), "dirty\n");
+  const besideOut = next(beside, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(besideOut, "another tracked change refuses");
+  assert.deepEqual(dirtyLines(besideOut), ["dirty: M source.txt"], ran("another tracked change: it alone is named", besideOut));
+  assert.equal(branchExists(beside), false, ran("another tracked change: no branch", besideOut));
+
+  // the merge perform: the tracker on the branch as on master, so the merge does not write it
+  const entry = trackerText([previousDay()]);
+  const m = reviewed("w530-b2-merge", {}, (x) => {
+    put(x.wt, TRACKER_FILE, entry);
+    commit(x.wt, "test: the tracker as of the base");
+    writeReceipt(x, "current");
+  }, true);
+  put(m.repo, TRACKER_FILE, entry);
+  commit(m.repo, "test: the tracker on master");
+  git(m.repo, ["push", "-q", "origin", "master"]);
+  const oid = landMerge(m, false);
+  scenario(m, { list: mergedList(m, { merge: oid }) });
+  appendFileSync(join(m.repo, TRACKER_FILE), "\n- an entry not yet landed\n");
+  expectStep(next(m, [OPUS]), "merge", "named", "merge: the world sits at merge");
+  const merged = performMerge(m);
+  expectStep(merged, "merge", "performed", "merge: the edit does not refuse it");
+  assert.equal(git(m.repo, ["rev-parse", "master"]), oid, ran("merge: master is the merge commit", merged));
+  assert.equal(readFileSync(join(m.repo, TRACKER_FILE), "utf8"), `${entry}\n- an entry not yet landed\n`, ran("merge: the edit stays", merged));
+
+  // a merge that writes the tracker itself refuses, with nothing moved
+  const w2 = reviewed("w530-b2-moving", {}, undefined, true);
+  const before2 = trackerEdit(w2);
+  const oid2 = landMerge(w2, false);
+  scenario(w2, { list: mergedList(w2, { merge: oid2 }) });
+  const master2 = git(w2.repo, ["rev-parse", "master"]);
+  const moving = performMerge(w2);
+  expectHeld(moving, "merge: an incoming write of the tracker refuses");
+  assert.deepEqual(dirtyLines(moving), [`dirty: M ${TRACKER_FILE}`], ran("merge: the tracker is named", moving));
+  assert.equal(git(w2.repo, ["rev-parse", "master"]), master2, ran("merge: master is unmoved", moving));
+  assert.equal(readFileSync(join(w2.repo, TRACKER_FILE), "utf8"), before2, ran("merge: the edit is untouched", moving));
+
+  // the done perform: the record commits, the edit does not ride
+  const e = world("w530-b2-done", "cleanup", { patron: true });
+  scenario(e, { list: mergedList(e) });
+  const eEdited = trackerEdit(e);
+  const finished = next(e, [OPUS, "--perform", "--expect", "done"]);
+  expectStep(finished, "done", "performed", "done: the edit does not refuse it");
+  assert.ok(!git(e.repo, ["show", "--name-only", "--format=", `chore/done-${OPUS}`]).split("\n").includes(TRACKER_FILE), ran("done: the edit is not in the done commit", finished));
+  assert.equal(readFileSync(join(e.repo, TRACKER_FILE), "utf8"), eEdited, ran("done: the edit stays", finished));
+  assert.equal(git(e.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", ran("done: HEAD is master", finished));
+});
+
 // ---------------------------------------------------------------------------
 // W-489 behaviour 4: the done perform removes the opus's own worktrees (studio/briefs/W-489.md)
 // ---------------------------------------------------------------------------
