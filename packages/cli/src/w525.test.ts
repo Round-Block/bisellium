@@ -363,3 +363,170 @@ test("W-525-b1 behaviour 1: lift undoes a halt under a Patron's ruling that name
   other.opus("W-7", { ...open, amendments: [{ at: "yesterday", field: "title", from: "a", to: "b" }, { at: NOW, sella: "producer", field: "halt", reason: "x", decision: "D-2", superseded: "y" }] });
   assert.deepEqual(checkStudio(other.studio, new Date(NOW)).findings.filter((x) => x.rule === "decision.invoked_after_kill"), [], "check: another field's row asks no decision, and a well-formed halt row passes");
 });
+
+const CONCLUDE = ["--decision", "D-2", "--sella", "producer"];
+const REPORT = "# The study\n\nIt found a thing.\n";
+
+test("W-525-b2 behaviour 2: conclude closes a research record off the build ladder, with its report in acta/, no gate asked and no retro owed, and refuses anything else, writing nothing", { timeout: 600_000 }, () => {
+  const researched = (f: Dict = {}): World & { from: string } => {
+    const w = world();
+    w.opus("W-7", { kind: "research", state: "greenlit", halted_at: null, reason: null, resume_when: null, halted_by: null, ...f });
+    const from = join(dirname(w.studio), "report.md");
+    writeFileSync(from, REPORT);
+    return Object.assign(w, { from });
+  };
+  const w = researched();
+  const before = w.text("W-7");
+  const r = w.run("conclude", "W-7", "--from", w.from, ...CONCLUDE);
+  const front = w.front("W-7");
+  assert.equal(front["state"], "done", `a concluded record is done: ${JSON.stringify(r)}`);
+  const rel = "acta/2026-11-07-report-W-7.md";
+  assert.deepEqual([r.code, r.out, r.err], [0, `W-7: done report=${rel} by=D-2`, ""], "the verb says what it did");
+  assert.deepEqual([front["end"], front["report"], front["concluded_by"], front["start"]], [NOW, rel, "D-2", undefined], "the record names its end, report and ruling, and has no start");
+  assert.equal(w.text("W-7").split("\n---\n")[1], before.split("\n---\n")[1], "the body is byte-identical");
+  const text = readFileSync(join(w.studio, rel), "utf8");
+  assert.deepEqual(parseYaml(/^---\n([\s\S]*?)\n---\n/.exec(text)![1]!), { author: "producer", kind: "consultation", title: "Report W-7", at: NOW, opus: "W-7" }, "the report's head");
+  assert.equal(text.split("\n---\n")[1], REPORT, "the report's bytes follow its head");
+  assert.deepEqual(
+    w.events().map((e) => [e["name"], (e["attrs"] as Dict)["workflow.state.from"], (e["attrs"] as Dict)["workflow.state.to"]]),
+    [["workflow.state_changed", "greenlit", "done"]],
+    "one state event, from greenlit to done",
+  );
+  assert.deepEqual(w.blocks("W-7"), [], "check asks no gate of a concluded record");
+  assert.deepEqual(checkStudio(w.studio, new Date(NOW)).findings.filter((x) => x.where === rel && x.level === "block").map((x) => x.rule), [], "the report passes acta's rules");
+  assert.deepEqual(owedRetros(w.studio), { owed: [] }, "a concluded record owes no retro");
+
+  // from backlog too: W-527 sits there, and a ruling names it
+  const backlog = researched({ state: "backlog" });
+  assert.equal(backlog.run("conclude", "W-7", "--from", backlog.from, ...CONCLUDE).code, 0, "a backlog study concludes");
+  assert.equal(backlog.front("W-7")["state"], "done", "a backlog study is done");
+
+  // what the verb refuses
+  const refusals: [string, Dict, RegExp][] = [
+    ["another kind", { kind: "feature" }, /its kind is feature, not research/],
+    ["halted", { state: "halted" }, /it is halted, not backlog or greenlit: lift it first/],
+    ["building", { state: "building" }, /it is building, not backlog or greenlit/],
+    ["done", { state: "done" }, /it is done, not backlog or greenlit/],
+    ["a start", { start: "2026-10-01T00:00:00Z" }, /it has taken the build ladder/],
+    ["a builder_runtime", { builder_runtime: "isolated" }, /it has taken the build ladder/],
+    ["no milestone", { milestone: null }, /no declared milestone and value/],
+  ];
+  for (const [label, f, says] of refusals) {
+    const t = researched(f);
+    const was = t.text("W-7");
+    const out = t.run("conclude", "W-7", "--from", t.from, ...CONCLUDE);
+    assert.equal(out.code, 2, `refused: ${label}`);
+    assert.match(out.err, says, `says why: ${label}`);
+    assert.equal(t.text("W-7"), was, `writes nothing: ${label}`);
+    assert.equal(existsSync(join(t.studio, rel)), false, `no report: ${label}`);
+  }
+  const rulings: [string, string, RegExp][] = [
+    ["a decision by another seat", decision("D-2", { by: "qa-lead" }), /is by "qa-lead", not patron "patron"/],
+    ["a decision that does not name it", decision("D-2", { names: "W-70" }), /does not name W-7 in its ruling/],
+  ];
+  for (const [label, d, says] of rulings) {
+    const t = researched();
+    put(join(t.studio, "decisions", "D-2.md"), d);
+    const out = t.run("conclude", "W-7", "--from", t.from, ...CONCLUDE);
+    assert.equal(out.code, 2, `refused: ${label}`);
+    assert.match(out.err, says, `says why: ${label}`);
+    assert.equal(t.front("W-7")["state"], "greenlit", `writes nothing: ${label}`);
+    assert.equal(existsSync(join(t.studio, rel)), false, `no report: ${label}`);
+  }
+  const froms: [string, (t: World & { from: string }) => string, RegExp][] = [
+    ["an empty report", (t) => (writeFileSync(t.from, " \n\n"), t.from), /is empty/],
+    ["a missing report", (t) => `${t.from}.gone`, /cannot be read/],
+    ["a directory for a report", (t) => dirname(t.from), /is not a regular file/],
+    ["a symlink for a report", (t) => (symlinkSync(t.from, `${t.from}.link`), `${t.from}.link`), /is not a regular file/],
+  ];
+  for (const [label, make, says] of froms) {
+    const t = researched();
+    const out = t.run("conclude", "W-7", "--from", make(t), ...CONCLUDE);
+    assert.equal(out.code, 2, `refused: ${label}`);
+    assert.match(out.err, says, `says why: ${label}`);
+    assert.equal(t.front("W-7")["state"], "greenlit", `writes nothing: ${label}`);
+  }
+  const linked = researched();
+  symlinkSync(join(dirname(linked.studio), "elsewhere.md"), join(linked.studio, rel));
+  assert.equal(linked.run("conclude", "W-7", "--from", linked.from, ...CONCLUDE).code, 2, "refused: a symlink at the report's name");
+  assert.equal(existsSync(join(dirname(linked.studio), "elsewhere.md")), false, "nothing is written through a symlink at the report's name");
+  for (const [label, text] of BAD_MANIFESTS) {
+    const t = researched();
+    writeFileSync(join(t.studio, "bisellium.yml"), text);
+    const out = t.run("conclude", "W-7", "--from", t.from, ...CONCLUDE);
+    assert.equal(out.code, 2, `refused: ${label}`);
+    assert.match(out.err, /bisellium\.yml: it/, `says why: ${label}`);
+    assert.equal(t.front("W-7")["state"], "greenlit", `writes nothing: ${label}`);
+    assert.equal(existsSync(join(t.studio, rel)), false, `no report: ${label}`);
+  }
+  const taken = researched();
+  put(join(taken.studio, rel), "already here\n");
+  const takenOut = taken.run("conclude", "W-7", "--from", taken.from, ...CONCLUDE);
+  assert.equal(takenOut.code, 2, "refused: a report already at that name");
+  assert.equal(readFileSync(join(taken.studio, rel), "utf8"), "already here\n", "an existing report is not overwritten");
+  assert.equal(taken.front("W-7")["state"], "greenlit", "writes nothing: a report already at that name");
+  const u = researched();
+  for (const [label, args] of [["no --from", ["conclude", "W-7", ...CONCLUDE]], ["no decision", ["conclude", "W-7", "--from", u.from, "--sella", "producer"]], ["no sella", ["conclude", "W-7", "--from", u.from, "--decision", "D-2"]], ["a sella not declared", ["conclude", "W-7", "--from", u.from, "--decision", "D-2", "--sella", "guest"]]] as const) {
+    assert.equal(u.run(...args).code, 2, `refused: ${label}`);
+    assert.equal(u.front("W-7")["state"], "greenlit", `writes nothing: ${label}`);
+  }
+
+  // what check and owedRetros ask of a record no verb wrote, or one edited since: one classifier, one validator
+  const HEAD = (opus: string): string => `---\nauthor: producer\nkind: consultation\ntitle: x\nat: "${NOW}"\nopus: ${opus}\n---\nx\n`;
+  const reads: [string, Dict, (t: World) => void, string[]][] = [
+    ["a report outside acta", { report: "briefs/W-7.md", concluded_by: "D-2" }, (t) => put(join(t.studio, "briefs", "W-7.md"), HEAD("W-7")), ["research.report"]],
+    ["no report", { concluded_by: "D-2" }, () => undefined, ["research.report"]],
+    ["a blank report", { report: " ", concluded_by: "D-2" }, () => undefined, ["research.report"]],
+    ["a report that is no string", { report: 7, concluded_by: "D-2" }, () => undefined, ["research.report"]],
+    ["a blank concluded_by", { report: "acta/mine.md", concluded_by: " " }, (t) => put(join(t.studio, "acta", "mine.md"), HEAD("W-7")), ["research.report"]],
+    ["a concluded_by that is no string", { report: "acta/mine.md", concluded_by: 7 }, (t) => put(join(t.studio, "acta", "mine.md"), HEAD("W-7")), ["research.report"]],
+    ["a concluded_by naming no decision", { report: "acta/mine.md", concluded_by: "D-404" }, (t) => put(join(t.studio, "acta", "mine.md"), HEAD("W-7")), ["research.report"]],
+    ["a report that is not there", { report: "acta/gone.md", concluded_by: "D-2" }, () => undefined, ["research.report"]],
+    ["a report for another opus", { report: "acta/other.md", concluded_by: "D-2" }, (t) => put(join(t.studio, "acta", "other.md"), `---\nauthor: producer\nkind: consultation\ntitle: x\nat: "${NOW}"\nopus: W-70\n---\nx\n`), ["research.report"]],
+    ["a ruling by another seat", { report: "acta/mine.md", concluded_by: "D-9" }, (t) => { put(join(t.studio, "acta", "mine.md"), `---\nauthor: producer\nkind: consultation\ntitle: x\nat: "${NOW}"\nopus: W-7\n---\nx\n`); put(join(t.studio, "decisions", "D-9.md"), decision("D-9", { by: "qa-lead" })); }, ["research.report"]],
+    ["no ruling: the gates apply", { report: "acta/mine.md" }, (t) => put(join(t.studio, "acta", "mine.md"), `---\nauthor: producer\nkind: consultation\ntitle: x\nat: "${NOW}"\nopus: W-7\n---\nx\n`), ["state.done.probationes"]],
+  ];
+  for (const [label, f, setup, want] of reads) {
+    const t = world();
+    t.opus("W-7", { kind: "research", state: "done", end: NOW, halted_at: null, reason: null, resume_when: null, halted_by: null, ...f });
+    setup(t);
+    assert.deepEqual(t.blocks("W-7").filter((x) => want.includes(x) || x === "research.report" || x === "state.done.probationes"), want, `check: ${label}`);
+    const owes = owedRetros(t.studio);
+    if (want.includes("research.report")) assert.match((owes as { error?: string }).error ?? "", /opera\/W-7\.md: its conclusion is not valid/, `owedRetros: ${label}`);
+    else assert.deepEqual(owes, { owed: ["W-7"] }, `owedRetros: ${label}`);
+  }
+  const blankReport = world();
+  blankReport.opus("W-7", { kind: "research", state: "done", end: NOW, report: " ", concluded_by: "D-2", halted_at: null, reason: null, resume_when: null, halted_by: null });
+  assert.match(checkStudio(blankReport.studio, new Date(NOW)).findings.find((x) => x.rule === "research.report")?.message ?? "", /is not a path under acta/, "check says why: a blank report");
+  const blankBy = world();
+  put(join(blankBy.studio, "acta", "mine.md"), HEAD("W-7"));
+  blankBy.opus("W-7", { kind: "research", state: "done", end: NOW, report: "acta/mine.md", concluded_by: " ", halted_at: null, reason: null, resume_when: null, halted_by: null });
+  assert.match(checkStudio(blankBy.studio, new Date(NOW)).findings.find((x) => x.rule === "research.report")?.message ?? "", /concluded_by " " is not a decision id/, "check says why: a blank concluded_by");
+  // an officina with no retro setting owes nothing, and still agrees with check about a conclusion
+  const unset = world();
+  writeFileSync(join(unset.studio, "bisellium.yml"), MANIFEST.replace(/retro: .*\n/, ""));
+  put(join(unset.studio, "opera", "W-70.md"), "---\nid: [oops\n---\n");
+  assert.deepEqual(owedRetros(unset.studio), { owed: [] }, "no retro setting owes nothing and reads no other record");
+  unset.opus("W-7", { kind: "research", state: "done", end: NOW, report: "acta/gone.md", concluded_by: "D-2", halted_at: null, reason: null, resume_when: null, halted_by: null });
+  assert.match((owedRetros(unset.studio) as { error?: string }).error ?? "", /its conclusion is not valid/, "owedRetros: a bad conclusion with no retro setting");
+  const runtimed = world();
+  runtimed.opus("W-7", { kind: "research", state: "done", builder_runtime: "isolated", end: NOW, report: "acta/x.md", concluded_by: "D-2", halted_at: null, reason: null, resume_when: null, halted_by: null });
+  assert.equal(runtimed.blocks("W-7").includes("state.done.probationes"), true, "check: a research record with a builder_runtime keeps its gates");
+  assert.deepEqual((owedRetros(runtimed.studio) as { owed: string[] }).owed, ["W-7"], "a research record with a builder_runtime owes its retro");
+  const killed = researched();
+  put(join(killed.studio, "decisions", "D-2.md"), decision("D-2", { more: ["killed_at: 2026-11-07T00:00:00Z", "killed_by: decisions/D-1.md"] }));
+  assert.equal(killed.run("conclude", "W-7", "--from", killed.from, ...CONCLUDE).code, 0, "fixture: the verb, like halt, leaves a killed decision to check");
+  assert.deepEqual(checkStudio(killed.studio, new Date(NOW)).findings.filter((x) => x.rule === "decision.invoked_after_kill").map((x) => x.where), ["opera/W-7.md"], "a conclusion citing a killed decision blocks");
+  const live = researched();
+  put(join(live.studio, "decisions", "D-2.md"), decision("D-2", { more: ["killed_at: 2026-11-08T00:00:00Z", "killed_by: decisions/D-1.md"] }));
+  live.run("conclude", "W-7", "--from", live.from, ...CONCLUDE);
+  assert.deepEqual(checkStudio(live.studio, new Date(NOW)).findings.filter((x) => x.rule === "decision.invoked_after_kill"), [], "a conclusion before the kill does not");
+  const started = world();
+  started.opus("W-7", { kind: "research", state: "done", start: "2026-10-01T00:00:00Z", end: NOW, report: "acta/x.md", concluded_by: "D-2", halted_at: null, reason: null, resume_when: null, halted_by: null });
+  assert.equal(started.blocks("W-7").includes("state.done.probationes"), true, "check: a research record that took the ladder keeps its gates");
+  assert.deepEqual((owedRetros(started.studio) as { owed: string[] }).owed, ["W-7"], "a research record that took the ladder owes its retro");
+  const feature = world();
+  feature.opus("W-7", { kind: "feature", state: "done", end: NOW, report: "acta/x.md", concluded_by: "D-2", halted_at: null, reason: null, resume_when: null, halted_by: null });
+  assert.equal(feature.blocks("W-7").includes("state.done.probationes"), true, "check: concluded_by on any other kind buys nothing");
+  assert.deepEqual((owedRetros(feature.studio) as { owed: string[] }).owed, ["W-7"], "any other kind owes its retro");
+});
