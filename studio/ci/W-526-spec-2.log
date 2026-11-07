@@ -1,0 +1,21 @@
+# opus: W-526
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b629-e74e-71c0-897a-7f68366805c8
+# outcome: passed
+# at: 2026-11-07T13:24:00.917Z
+# tree: tree:ba6a04255be33889f51c108c9d2f77f5e97b4f2a
+# brief: briefs/W-526.md blob:cac61a299e12911a3344f67e96463b24f9f5901d
+# ticket: {"opus":"W-526","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"dc029c7d067ecafa7d3db71e549d8c2b02881c2a","brief":"cac61a299e12911a3344f67e96463b24f9f5901d","at":"2026-11-07T13:23:54.279Z"}
+
+## Findings
+1. advisory — brief:33 The promise says every CLI run still edits the record and emits an event, although reused `runGreenlight` refuses unknown, malformed, owned, or non-backlog opera before either write. Replace brief:33’s opening with: “Promise cli-silent: every successful plain `greenlight` or `greenlight --decline` accepted by reused `runGreenlight` writes no Patron timeline line through the CLI, whatever `BISELLIUM_ROLE` the shell exports, while performing the unchanged record edit and event write; a refused call retains `runGreenlight`’s reused no-write behaviour.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w403.test.ts W-526-b1
+2. advisory — brief:37 A token-bearing, well-formed console request does not necessarily write a line: `runGreenlight` can refuse its opus or state, so the promise exceeds its accepted domain. Replace brief:37’s opening with: “Promise console-line: a greenlight or decline request accepted by the console route and successfully completed by reused `runGreenlight` writes one Patron timeline line, with `role: patron`, the opus, the result and a decline’s reason.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w403.test.ts W-526-b1
+3. advisory — brief:74 The input table omits W-526-b1’s added subprocess, server-output, HTTP-response, environment, and timeline-JSON readers, while the reused-gates row neither names the exact call nor its rejecting function. Replace brief:74 with: “| 4. Reused `bisellium ci --opus W-526 --studio studio` call, including its test, typecheck, lint, format and two officina-check steps | the call exits 0 on the opus branch | `runCi` returns non-zero when any `runStep` returns non-zero, and acceptance refuses it; reused unchanged (D-076 E) |”; then add “| 5. W-526-b1’s spawned CLI result and process role | the child starts, exits 0, returns the asserted output, and the role is absent or arbitrary because `main` clears it | `assert.deepEqual` rejects a null/non-zero status or differing output and `asRole` restores the prior role |” and “| 6. W-526-b1’s `runServe` result, printed port, HTTP JSON and timeline JSON | the server exits 0, prints a usable port, both requests return exit 0, and every timeline line is valid JSON with the asserted fields | `assert.ok`, `Response.json`, `JSON.parse` and `assert.deepEqual` reject every absent, unreadable or differing result |”. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief.input.named-rejector should census every added production and test reader
+4. advisory — brief:80 The claimed no-export case uses `cli(w, {})`, which spreads the parent environment and therefore does not ensure `BISELLIUM_ROLE` is absent. Replace “with no role exported, none either” with “with a child environment from which `BISELLIUM_ROLE` is explicitly removed, none either.” [severity: S4] [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/w403.test.ts W-526-b1
+
+## Verdict
+The signed brief has no blocking D-046 defect; the promise limits and test-input boundaries need the advisory replacements above.
+VERDICT: PASS

@@ -1,0 +1,23 @@
+# opus: W-526
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-07T13:17:01.245Z
+# tree: tree:ba6a04255be33889f51c108c9d2f77f5e97b4f2a
+# brief: briefs/W-526.md blob:cac61a299e12911a3344f67e96463b24f9f5901d
+# ticket: {"opus":"W-526","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"dc029c7d067ecafa7d3db71e549d8c2b02881c2a","brief":"cac61a299e12911a3344f67e96463b24f9f5901d","at":"2026-11-07T13:16:56.266Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-526-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the CLI cannot tell the Patron from the producer: `greenlight` takes no `--sella`, `$BISELLIUM_SELLA` is unset in the producer's sessions, and `main.ts` forced `BISELLIUM_ROLE=patron` for everyone; so the rule rests on the one path that does know, the console's token-gated route under `asPatron`, and the CLI clears the role; a Patron greenlighting from a terminal now leaves no line, which is put to the Patron — check: brief Intent, brief Defaults 1, W-526-b1
+2. advisory — a documented seam change: `runGreenlight`'s line now reads `BISELLIUM_ROLE` and no longer falls back to `appendPatronTimeline`'s "patron" default, so a direct caller with no role gets no line; `W-403-b1` section 4 flips on that, and the Codex test check names no other flip — check: brief Interfaces 3, brief Acceptance, fixture-census.md
+3. advisory — M4's exit keeps "declines", as the dispatch asked, though a decline is the same verb's `--decline`; W-524 settles it, and it is put to the Patron — check: brief Defaults 2, studio/milestones.yml
+4. advisory — not run for this spec: `npm test`, typecheck, lint, both officina checks, the browser tests and the CI run, so the prototype's types are unproved until the build — check: brief Acceptance, gates-proto.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) for `studio/briefs/W-526.md` at master dc029c7d, round 1: one behaviour, its red accepted by the replay classifier on the commit before it and green on its feature commit (`reds.out`, `red-b1.log`, `green-b1.log`); every one-hunk wrong form failing the row at a named assertion (`mutants.out`); the two-commit mbox applying to the same tree (`mbox-check.out`); the test files in `gates-proto.out` pass on the tip; the Codex test check names one flip, named in the brief (`fixture-census.md`); no code-owned file is touched, and `.github/` and `.claude/` are untouched.
