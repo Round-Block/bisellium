@@ -1,0 +1,62 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-530-b1\s --import tsx packages/cli/src/next-done.test.ts
+# exit: 1
+# at: 2026-11-07T02:41:25.896Z
+# sella: architect
+# tree: tree:74655b26be3d605c61610932ee20770b969664c6
+# ticket: {"opus":"W-530","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-530/studio","head":"214a1fab2f27cc92762dafa815e88f8396e1a481","brief":"512edeabec867135b007c934ae6054c78c86edf5","at":"2026-11-07T02:41:25.859Z"}
+
+TAP version 13
+# Subtest: W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed spec at the start of its spec, and never one with a signed spec
+not ok 1 - W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed spec at the start of its spec, and never one with a signed spec
+  ---
+  duration_ms: 2860.960228
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-530/packages/cli/src/next-done.test.ts:51:2662'
+  failureType: 'testCodeFailure'
+  error: |-
+    no signed spec: held at the start of its spec
+    --- exit 0
+    --- stdout
+    next: W-902 spec named
+    actor: architect
+    why: briefs/W-902.md is missing or lacks the six design-lex sections
+    role: architect
+    sella: architect
+    boot: bisellium context --sella architect --studio studio
+    budget_tokens: 100000
+    phase: spec
+    round: 1
+    inputs: briefs/W-902.md, opera/W-902.md#traditio
+    command: dispatch architect to sign the spec for W-902; close out with: bisellium verdict W-902 --round 1 --sella architect --outcome passed --phase spec --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-902 spec named'
+    - 'next: W-902 spec held'
+                        ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-902 spec held'
+  actual: 'next: W-902 spec named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-530/packages/cli/src/next-done.test.ts:1502:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3290.803524
