@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-525 }
+    lanes: { E1: W-528 }
     next:
       - { opus: W-523, says: "land reads the code owner's approval and queues; exempt, first (D-187)" }
       - { opus: W-530, says: "a missing retro holds only unsigned work; next names its run and land; exempt (D-188)" }
@@ -61,7 +61,7 @@ queues:
       - { opus: W-304, says: "seats read live, console MVP" }
       - { opus: W-280, says: "Inbox newItem fail-open" }
   research:
-    lanes: { R1: W-456 }
+    lanes: { R1: ~ }
     next:
       - { opus: W-456, says: "study finished off the ladder, report in evidence; record closes once W-525 can move it (D-183, D-187)" }
       - { opus: W-527, says: "study finished off the ladder, report in evidence; record closes once W-525 can move it (D-187)" }
