@@ -48,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: one until W-512 lands (D-182).
 
-Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-525 W-526 W-528 W-529 W-531.
+Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-525 W-526 W-528 W-529 W-531.
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
@@ -64,7 +64,7 @@ D-189: a call that would wait on the Patron goes to a meet of the relevant leads
 
 W-509 is done (#1060, #1061). D-186: greenlighting goes. The order (D-187, D-188, and the Patron's yes on W-528 and W-529, no decision filed): W-523, W-530, W-525, W-526, W-528 (gates timeout), W-519, W-529 (pool the local gate at eight; hosted stays serial). W-520 to W-522 stay in backlog until W-526 lands; W-524 waits for M4. Daily retro (D-188, lex 9 step 7): after 00:00Z, ladder-runner runs, fresh QA lead proposes, ladder-runner lands. First proposals: the classes owed 11-06.
 
-W-456 and W-527, studies, finished off the ladder (W-456-study/, W-527-study/ under ~/.bisellium-evidence/); W-456's record waits for W-525; W-527 is in backlog. W-523 is done (#1067, #1069). W-530 is done (#1070, #1072).
+W-456 and W-527, studies finished off the ladder, are done by `conclude` (D-187), reports in studio/acta/2026-11-07-report-W-456.md and -W-527.md. W-523 is done (#1067, #1069). W-530 is done (#1070, #1072).
 
 Open gaps and W-508's done-step lessons: "Added 11-06" lines of ~/.bisellium-evidence/current-state-until-1106.md; read them before any done step.
 
