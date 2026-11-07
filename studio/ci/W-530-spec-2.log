@@ -1,0 +1,23 @@
+# opus: W-530
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b3b8-46c9-7d81-9505-9568380618e8
+# outcome: failed
+# at: 2026-11-07T02:03:10.818Z
+# tree: tree:8849d9d4f6e70ebc34140b2574e70b987654c30a
+# brief: briefs/W-530.md blob:4b4a0bdf4b6787e785a97867b8e8622dbb156675
+# ticket: {"opus":"W-530","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"f6dfe5dd7cc84c02c5253412f12203982cb8695d","brief":"4b4a0bdf4b6787e785a97867b8e8622dbb156675","at":"2026-11-07T02:03:06.655Z"}
+
+## Findings
+1. blocking — brief:94 The new `dailyLine`/`runAll` path reads `bisellium.yml#collegia` without a domain or rejector: a plausible `collegia: {}` mistake makes the real `next --all` caller throw at `.find`, while a non-string QA magister can print a false owner, and no W-530 test catches either result. Add after row 5: “| 6. `bisellium.yml#collegia`, for the proposals owner | absent or a list of mappings with at most one `qa` row whose `magister` is a nonblank string; no QA row uses the generic owner | `dailyLine` (specified) rejects every other shape; `render` and `runAll` turn its error into a held result and exit 1 |”. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-done.test.ts (`W-530-b4` malformed `collegia` and QA-magister cases)
+2. advisory — brief:93 `entryProposals` is a classifier, not a rejecting function: it accepts every string and returns one of four states. Replace the Rejected-by cell with “`readTracker` rejects an unreadable or non-regular tracker; `checkProcess` preserves that refusal as the blocking `retro.daily.missing`, while `dailyProposalsOwed` and `dailyRetroStep` emit no warning or line; `entryProposals` classifies only successfully read text.” [severity: S4] [class: spec×input-without-named-rejector] — check: none: named-rejector prose correction
+3. advisory — brief:94 `gitSrc(...).read` collapses an absent master tracker and every failed `git show` into `undefined`, so `dailyRetroStep` can print the land step when master was merely unreadable. Replace “or that master lacks, is step 3” with “or that master lacks, is step 3; limit: a failed master read is indistinguishable from absence and can also print step 3.” [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next-done.test.ts (`W-530-b4` failed master-read case)
+4. advisory — brief:42 “once the entry is in the working tree … the spec is named” exceeds the implementation: the test supplies `--budget`, while without it the unchanged dispatch gate reports `spec held`. Replace that clause with “once the entry is in the working tree, landed or not, the daily hold clears and `spec` is the derived rung; the reused budget and handover dispatch gates may still hold it.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-done.test.ts (`W-530-b1` entry-present without-budget case)
+5. advisory — brief:50 The promise covers every `next <opus>` result, but the line is added only through `render`; successful perform output, `--track`, `--expect` refusals, and running/dead/unknown/anomaly health results bypass it. Replace the opening with “In ordinary report output that reaches `render`, `next <opus>` prints one `daily-retro:` line whatever the derived opus step, and `next --all` prints it once; `--track`, perform/refusal output and distinct step-health output do not carry it.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-done.test.ts (`W-530-b4` non-render routes)
+
+## Verdict
+The brief has one design-changing S1 input-boundary blocker and is not ready to build.
+
+VERDICT: FAIL

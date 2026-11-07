@@ -225,11 +225,17 @@ names each step and writes the step ticket the next record write consumes
    (`S1`-`S4`). When a failing verdict names an S1 class seen before, the fix
    round also fixes its cause (a check rule, brief-admission rule, prompt
    template or hook in the same opus) or files a greenlit high opus for the
-   class (D-076 D); wording classes recur as advisories. Once a day the
-   qa-lead runs `npm run -s bisellium -- retro --daily --studio studio` (D-150 A)
-   and `check` refuses a missing previous-day entry (W-459). Until W-486 (the scheduler)
-   lands, the qa-lead runs it at the first session after 00:00Z. A clerk
-   files the entry by records PR, and the producer ranks the cause fixes in the
+   class (D-076 D); wording classes recur as advisories. Once a day a
+   ladder-runner runs `npm run -s bisellium -- retro --daily --studio studio` (D-150 A);
+   the qa-lead reads the entry and writes its proposed improvements under its
+   `Proposed improvements` heading, each the change, its evidence and an owner, or
+   "none, because", with no cap and no severity gate; and a ladder-runner lands the
+   entry by `land`, as a clerk has no shell (D-188). `next` names the three in order.
+   `check` warns on a missing previous-day entry and on one with nothing under that
+   heading, and refuses neither (W-459, W-530). A missing entry holds only an opus with
+   no signed spec, at the start of its spec, with no time limit, and a failed land holds
+   nothing (D-188). Until W-486 (the scheduler) lands, the run comes at the first
+   session after 00:00Z. The producer ranks the proposals and the cause fixes in the
    Queue. Each recurring class has an owning lead: the design lead for spec, UI
    spec and design-quality classes, eng-lead for build, check-rule and test
    classes, ops-lead for script, prompt, hook and scheduling classes. W-297 makes
@@ -349,3 +355,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-10-31 | §9 step 7: the daily retro is the qa-lead's, classes assigned to the owning collegium with the clerk (D-147) | Patron |
 | 2026-11-01 | §9 steps 0 and 7, §11: the daily retro runs by `retro --daily` with an owning lead per class; design mirrors engineering in roles and models (seat changes W-452); a new process rule binds only opera started after it merges (D-150) | Patron |
 | 2026-11-05 | §7: the hold on new Opus work moves from ~87% to ~98% Claude usage | Patron |
+| 2026-11-07 | §9 step 7: a ladder-runner runs and lands the daily retro, the qa-lead writes its proposed improvements, `next` names the three steps, `check` warns rather than refuses, and a missing entry holds only an opus with no signed spec (D-188, W-530) | Patron |

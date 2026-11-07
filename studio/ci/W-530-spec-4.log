@@ -1,0 +1,21 @@
+# opus: W-530
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b3b8-46c9-7d81-9505-9568380618e8
+# outcome: passed
+# at: 2026-11-07T02:40:52.856Z
+# tree: tree:8849d9d4f6e70ebc34140b2574e70b987654c30a
+# brief: briefs/W-530.md blob:512edeabec867135b007c934ae6054c78c86edf5
+# ticket: {"opus":"W-530","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"f6dfe5dd7cc84c02c5253412f12203982cb8695d","brief":"512edeabec867135b007c934ae6054c78c86edf5","at":"2026-11-07T02:40:48.577Z"}
+
+## Findings
+1. advisory — studio/briefs/W-530.md:52 The revised promise still says an ordinary report and `--all` print one daily-retro line, but the accepted no-tracker and landed cases print none; this was reached through ci/W-530-spec-2.log #5’s class. Replace the opening with “while `dailyRetroStep` returns a step, ordinary report output that reaches `render` prints one daily-retro line, and `next --all` prints it once.” [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/next-done.test.ts (W-530-b4 no-tracker and landed cases)
+
+## Earlier findings
+- ci/W-530-spec-2.log #1: closed — /home/edckt/.bisellium-evidence/W-530-spec/apply-src.py:167 removes the manifest parameter from `dailyLine`, and lines 171, 179, and 187 hard-code the role and call it without a manifest, eliminating the added manifest reader and its failure path
+
+## Verdict
+The prior blocker is closed; the remaining round-4 finding is advisory, so the revision passes.
+VERDICT: PASS

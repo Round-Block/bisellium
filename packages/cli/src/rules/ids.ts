@@ -155,6 +155,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "queue.shape",
   "receipt.shape",
   "retro.daily.missing",
+  "retro.daily.proposals",
   "retro.overdue",
   "sella.collegium",
   "sella.stale",

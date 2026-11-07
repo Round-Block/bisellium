@@ -270,3 +270,72 @@ test("W-459-b2 behaviour 2: check warns retro.daily.missing while the tracker ha
   // the clock's domain: years 0000-0099 are stepped back as written, never remapped to 1900-1999
   assert.equal(previousUtcDay(new Date("0050-03-01T09:00:00Z")), "0050-02-28", "a year below 100 is not remapped");
 });
+
+// ---------------------------------------------------------------------------
+// W-530 behaviour 3: the entry's proposals heading and check's warning (D-188; studio/briefs/W-530.md)
+// ---------------------------------------------------------------------------
+test("W-530-b3 behaviour 3: retro --daily writes a Proposed improvements heading, and check warns, holding nothing, while the previous day's entry has nothing under it", () => {
+  const root = officina("w530-b3");
+  tracker(root, ["2026-10-29"]);
+  day(root);
+  const before = readFileSync(join(root, "acta/improvements.md"), "utf8");
+  const r = daily(root);
+  assert.equal(r.status, 0, `retro --daily exits 0: ${shown(r)}`);
+  const written = readFileSync(join(root, "acta/improvements.md"), "utf8");
+  const entry = written.slice(before.length);
+  assert.equal(written, `${before}${r.out}`, `the tracker is the old text and the entry the run printed: ${shown(r)}`);
+  assert.equal(r.out.split("\n").slice(-3).join("\n"), "\n#### Proposed improvements\n", `the entry ends in the heading, with nothing under it: ${entry.slice(-120)}`);
+  const warn = (at = NOW): Finding[] => checkStudio(root, at).findings.filter((f) => f.rule === "retro.daily.proposals");
+  const found = warn();
+  assert.equal(found.length, 1, `the previous day's empty heading is one finding: ${JSON.stringify(found)}`);
+  assert.equal(found[0]!.level, "advise", "it warns and blocks nothing");
+  assert.equal(found[0]!.where, "acta/improvements.md", "it names the tracker");
+  assert.equal(found[0]!.message, `the ${DAY} entry has nothing under "Proposed improvements": the qa-lead writes each proposal (the change, its evidence and an owner), or "none, because"`, "it says what is owed");
+  assert.deepEqual(checkStudio(root, NOW).findings.filter((f) => f.rule === "retro.daily.missing"), [], "the entry exists, so it is not missing");
+  assert.deepEqual(warn(new Date("2026-10-30T09:00:00Z")), [], "the day before, the previous day (10-29) has no such heading");
+  assert.deepEqual(warn(new Date("2026-11-01T09:00:00Z")), [], "the day after, only the missing entry is read: an older empty heading does not warn");
+
+  const put2 = (under: string): void => put(root, "acta/improvements.md", `${written}${under}`);
+  put2("\n   \n");
+  assert.equal(warn().length, 1, "blank lines are nothing");
+  put2("\n- none, because the day had no failure\n");
+  assert.deepEqual(warn(), [], "a none-because line is something");
+  put2("\n- the change; the evidence; owner: eng-lead\n");
+  assert.deepEqual(warn(), [], "a proposal is something");
+  put2("#### Later notes\n\n- not a proposal\n");
+  assert.equal(warn().length, 1, "lines under a later heading are not under it");
+  put2("##### A sub-heading of it\n");
+  assert.deepEqual(warn(), [], "a heading below it is something (a limit: the form is not read)");
+
+  // the tracker's reader is unmoved: the next run appends after proposals, and reads the days
+  put2("\n- the change; the evidence; owner: eng-lead\n");
+  const after = daily(root, new Date("2026-11-01T09:00:00Z"));
+  assert.equal(after.status, 0, `the next day's run appends after the proposals: ${shown(after)}`);
+  assert.deepEqual(checkStudio(root, new Date("2026-11-01T09:00:00Z")).findings.filter((f) => f.rule === "retro.daily.missing"), [], "and both days read as entries");
+  assert.equal(warn(new Date("2026-11-01T09:00:00Z")).length, 1, "the new entry's own empty heading is what warns");
+  assert.equal(daily(root).status, 2, "a day's second entry is still refused");
+
+  // an older entry: no heading, no warning, nothing broken
+  const old = officina("w530-b3-old");
+  tracker(old, ["2026-10-29", DAY]);
+  assert.deepEqual(checkStudio(old, NOW).findings.filter((f) => f.rule === "retro.daily.proposals"), [], "an entry with no heading does not warn");
+  assert.deepEqual(checkStudio(old, NOW).findings.filter((f) => f.rule === "retro.daily.missing"), [], "and reads as an entry");
+
+  // only the previous day's entry is read
+  const other = officina("w530-b3-other");
+  tracker(other, ["2026-10-29"], `\n### ${DAY}\n\n- fixture entry\n\n### 2026-10-31\n\n#### Proposed improvements\n\n- a later day's\n`);
+  assert.deepEqual(checkStudio(other, NOW).findings.filter((f) => f.rule === "retro.daily.proposals"), [], "another day's heading is not this entry's");
+  const later = officina("w530-b3-later");
+  tracker(later, ["2026-10-29"], `\n### ${DAY}\n\n#### Proposed improvements\n\n### 2026-10-31\n\n- a later day's line\n`);
+  assert.equal(checkStudio(later, NOW).findings.filter((f) => f.rule === "retro.daily.proposals").length, 1, "the next entry's lines are not under it");
+  const elsewhere = officina("w530-b3-elsewhere");
+  tracker(elsewhere, ["2026-10-29"], `\n## Notes\n\n### ${DAY}\n\n#### Proposed improvements\n`);
+  assert.deepEqual(checkStudio(elsewhere, NOW).findings.filter((f) => f.rule === "retro.daily.proposals"), [], "a heading outside the daily retro section is no entry: retro.daily.missing's");
+
+  // no tracker and an unreadable one: not this rule's
+  const none = officina("w530-b3-none");
+  assert.deepEqual(checkStudio(none, NOW).findings.filter((f) => f.rule === "retro.daily.proposals"), [], "no tracker: no finding");
+  const dir = officina("w530-b3-dir");
+  mkdirSync(join(dir, "acta/improvements.md"), { recursive: true });
+  assert.deepEqual(checkStudio(dir, NOW).findings.filter((f) => f.rule === "retro.daily.proposals"), [], "an unreadable tracker is retro.daily.missing's block alone");
+});

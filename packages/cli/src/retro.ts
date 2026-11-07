@@ -1152,11 +1152,12 @@ function opusState(root: string, id: string): string | undefined {
 // W-459: `bisellium retro --daily`, the daily retro (D-076 F; D-147 makes it the qa-lead's). It replaces the kept
 // retro.py: one `### <day>` section appended under `## Daily retro` in `acta/improvements.md`, read from the verdict
 // logs, the gate logs (`ci/<id>-(tests|lint|types)-<tree>.log`) and the opus records and lessons. `dailyRetroOwed` is
-// the one reader of whether a day's entry exists; `check` (`retro.daily.missing`) and `next` (the branch hold) call it.
+// the one reader of whether a day's entry exists; `check` (`retro.daily.missing`) and `next` (the hold at the start of a spec, W-530) call it.
 // ---------------------------------------------------------------------------
 
 export const DAILY_TRACKER = "acta/improvements.md";
 const DAILY_HEADING = "## Daily retro";
+const PROPOSALS_HEADING = "#### Proposed improvements";
 /** the recurrence window: the 14 calendar days from day−13 through day, inclusive */
 const DAILY_WINDOW_DAYS = 14;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -1202,6 +1203,49 @@ export function dailyRetroOwed(root: string, now: Date): { owed: string | undefi
   if (isRefusal(tracker)) return tracker;
   const day = previousUtcDay(now);
   return { owed: tracker !== undefined && !tracker.days.has(day) ? day : undefined };
+}
+
+/** W-530: what `day`'s entry holds under its proposals heading. The first such heading counts; it ends at the next heading of level 1 to 4. */
+function entryProposals(text: string, day: string): "no entry" | "no heading" | "empty" | "written" {
+  const lines = text.split("\n").map((l) => l.trimEnd());
+  let section: string | undefined;
+  const start = lines.findIndex((l) => {
+    if (l.startsWith("## ")) section = l;
+    return section === DAILY_HEADING && DAY_ENTRY.exec(l)?.[1] === day;
+  });
+  if (start === -1) return "no entry";
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((l) => l.startsWith("### ") || l.startsWith("## ") || l.startsWith("# "));
+  const entry = end === -1 ? rest : rest.slice(0, end);
+  const at = entry.indexOf(PROPOSALS_HEADING);
+  if (at === -1) return "no heading";
+  for (const l of entry.slice(at + 1)) {
+    if (/^#{1,4} /.test(l)) return "empty";
+    if (l !== "") return "written";
+  }
+  return "empty";
+}
+
+/** W-530 (D-188): the previous UTC day when its entry has a proposals heading with nothing under it. An older entry, a day with no entry and a tracker that cannot be read are `retro.daily.missing`'s or nobody's. */
+export function dailyProposalsOwed(root: string, now: Date): string | undefined {
+  const tracker = readTracker(root);
+  if (tracker === undefined || isRefusal(tracker)) return undefined;
+  const day = previousUtcDay(now);
+  return entryProposals(tracker.text, day) === "empty" ? day : undefined;
+}
+
+/**
+ * W-530 (D-188): the first daily retro step not yet done for the previous UTC day: 1 the run, 2 the qa-lead's proposals, 3 the
+ * land of the entry. `trunk` is the tracker on master. Undefined with no step left, no tracker or an unreadable one.
+ */
+export function dailyRetroStep(root: string, trunk: string | undefined, now: Date): { day: string; step: 1 | 2 | 3 } | undefined {
+  const tracker = readTracker(root);
+  if (tracker === undefined || isRefusal(tracker)) return undefined;
+  const day = previousUtcDay(now);
+  const state = entryProposals(tracker.text, day);
+  if (state === "no entry") return { day, step: 1 };
+  if (state === "empty") return { day, step: 2 };
+  return tracker.text === trunk ? undefined : { day, step: 3 };
 }
 
 type DailyRound = { opus: string; phase: "spec" | "review"; n: bigint; at: number; day: string; brief: string; failed: boolean; blockers: { cls: string; sev: string }[] };
@@ -1397,6 +1441,8 @@ export function draftDailyRetro(root: string, day: string): { section: string } 
   if (isRefusal(fixes)) return fixes;
   const owed = recurring.filter(([c]) => !fixes.has(c));
   out.push("", "#### Owed cause fixes", "", ...(owed.length > 0 ? owed.map(([c, v]) => `- OWED class ${c} (${[...v].sort().join(", ")}): no lesson of it names a greenlit cause-fix opus in addressed_by`) : ["- none owed"]));
+  // W-530 (D-188): the qa-lead's to fill; `check` warns while the previous day's is empty
+  out.push("", PROPOSALS_HEADING);
   return { section: out.join("\n") + "\n" };
 }
 

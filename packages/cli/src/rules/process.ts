@@ -16,7 +16,7 @@ import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { instant } from "@bisellium/schema";
 import { parse as parseYaml } from "yaml";
 import type { Finding, Level, RuleOpts } from "../check.js";
-import { DAILY_TRACKER, dailyRetroOwed, owedRetros } from "../retro.js";
+import { DAILY_TRACKER, dailyProposalsOwed, dailyRetroOwed, owedRetros } from "../retro.js";
 import { RULE_IDS } from "./ids.js";
 
 type Dict = Record<string, unknown>;
@@ -318,10 +318,13 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
 
   // retro.daily.missing (W-459, D-076 F): an officina that keeps the daily tracker has no entry for the previous UTC
   // day. Advise, not block: an opus branch carries the tracker as of its base, so a block would fail every in-flight
-  // opus's gates at UTC midnight; `next` holds a new start on the same reader instead. Unreadable blocks (fail closed).
+  // opus's gates at UTC midnight; `next` holds the start of a new spec on the same reader instead (W-530). Unreadable blocks (fail closed).
   const daily = dailyRetroOwed(root, _opts.now);
   if ("error" in daily) add("retro.daily.missing", "block", DAILY_TRACKER, daily.error);
   else if (daily.owed !== undefined) add("retro.daily.missing", "advise", DAILY_TRACKER, `no daily retro for ${daily.owed}: bisellium retro --daily`);
+  // retro.daily.proposals (W-530, D-188): a warning that holds no work. Its own id, since the entry exists: the two are different owners' steps.
+  const proposals = dailyProposalsOwed(root, _opts.now);
+  if (proposals !== undefined) add("retro.daily.proposals", "advise", DAILY_TRACKER, `the ${proposals} entry has nothing under "Proposed improvements": the qa-lead writes each proposal (the change, its evidence and an owner), or "none, because"`);
 
   // resolveAddressedBy: first match wins, in that fixed order. The three id
   // spaces are disjoint in practice (bisellium new / draftRetro allocate

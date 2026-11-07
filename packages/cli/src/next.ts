@@ -47,13 +47,13 @@ import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
 import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs";
-import { boundHead, clean, cleanup, dirtyHold, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readMergeQueue, rebindPr, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { boundHead, clean, cleanup, dirtyHold, unstagedEdit, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readMergeQueue, rebindPr, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
 import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
 import { sweepLines, sweepWorktrees, unpushedBranches } from "./prune.js";
 import { runVerdict } from "./verdict.js";
 import { performRewrite, rewriteOf } from "./rewrite.js";
-import { DAILY_TRACKER, dailyRetroOwed, owedRetros } from "./retro.js";
+import { DAILY_TRACKER, dailyRetroOwed, dailyRetroStep, owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
@@ -1204,6 +1204,11 @@ export function deriveNext(f: Facts): Derived {
   if (uiDone !== undefined && uiDone.outcome !== "passed" && uiOpen())
     return dispatch(f, "spec", `${uiDone.log} records the ui-lead's outcome ${uiDone.outcome} on the current brief; the signer revises the brief and signs again`, { phase: "spec", round: spec.maxRound + 1, resume: true, inputs: [briefRel(id), uiDone.log], signer, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
   if (!spec.ok) {
+    // W-530 (D-188): a missing daily retro holds new work only: an opus with no branch and no spec log, at the start of its spec
+    if (pre && !spec.anyLog) {
+      const owing = dailyHold(f);
+      if (owing !== undefined) return hold("spec", owing);
+    }
     if (pre && reviewer !== undefined && spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound);
     return dispatch(f, "spec", spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
@@ -1612,18 +1617,19 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
   return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id)], signer: reviewer.design });
 }
 
-/** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read; W-459: or the daily retro of the
- *  previous UTC day is owed, or its tracker cannot be read. Asked only at the branch rung, so an opus in flight is never held. */
+/** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. Asked only at the branch rung, so an opus in flight is never held. */
 function retroHold(f: Facts): string | undefined {
   const owed = f.owed();
   if ("error" in owed) return `the retro setting cannot be read: ${owed.error}`;
   if (owed.owed.length > 0) return `retro owed: ${owed.owed.join(", ")}; file them before a new opus starts`;
+  return undefined;
+}
+
+/** W-459, W-530 (D-188): why a new spec may not start: the daily retro of the previous UTC day is owed, or its tracker cannot be read. No time limit. */
+function dailyHold(f: Facts): string | undefined {
   const daily = f.daily();
   if ("error" in daily) return `the daily retro tracker cannot be read: ${daily.error}`;
-  if (daily.owed === undefined) return undefined;
-  // D-147: the daily retro is the qa collegium's magister's to run
-  const qa = (f.manifest.collegia ?? []).find((c) => c.id === "qa")?.magister;
-  return `daily retro owed: ${DAILY_TRACKER} has no entry for ${daily.owed}; ${qa === undefined || qa === "" ? "run" : `${qa} runs`} bisellium retro --daily --studio ${f.studioRel} before a new opus starts`;
+  return daily.owed === undefined ? undefined : `daily retro owed: ${DAILY_TRACKER} has no entry for ${daily.owed}; a ladder-runner runs bisellium retro --daily --studio ${f.studioRel} before a new spec starts`;
 }
 
 /** After done: the retro, then the checkpoint, complete once the trunk record is done (W-299: no handoff edit is asked; the done perform carries the history row, W-214). */
@@ -2511,6 +2517,18 @@ async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (l
   return { ok: true, lines: done };
 }
 
+/** W-530 (D-188): the daily retro's steps in order, from the first one left, as one line that holds nothing; undefined when none is left. */
+function dailyLine(repo: string, studioAbs: string, studioRel: string): string | undefined {
+  const at = dailyRetroStep(studioAbs, gitSrc(repo, "refs/heads/master", studioRel).read(DAILY_TRACKER), new Date());
+  if (at === undefined) return undefined;
+  const tracker = `${studioRel}/${DAILY_TRACKER}`;
+  const steps = [`a ladder-runner runs: bisellium retro --daily --studio ${studioRel}`, `the qa-lead writes the proposals under "Proposed improvements" in ${tracker}`, `a ladder-runner lands the entry: bisellium land ${tracker} --title 'chore(studio): daily retro ${at.day}' --sella producer --studio ${studioRel}`];
+  return `daily-retro: ${at.day} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
+}
+
+/** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
+const dailyEntryEdit = (f: Facts): string | undefined => unstagedEdit(f.repo, `${f.studioRel}/${DAILY_TRACKER}`);
+
 function performBranch(f: Facts): StepResult {
   const { repo, id, wt } = f;
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
@@ -2522,7 +2540,9 @@ function performBranch(f: Facts): StepResult {
   if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed, rewritten or ignored`);
   const record = `${f.studioRel}/${recordRel(id)}`;
   const paths = [...changed.spec, ...changed.other.filter((p) => p === record)];
-  const dirty = dirtyHold(repo, (p) => paths.includes(p));
+  // W-530: the daily retro's unstaged entry stays in the main checkout: `commit -- <paths>` leaves it out and `worktree add` checks out the commit
+  const entry = dailyEntryEdit(f);
+  const dirty = dirtyHold(repo, (p) => paths.includes(p) || p === entry);
   if (dirty !== undefined) return dirty;
   try {
     lstatSync(wt.dir);
@@ -3220,7 +3240,9 @@ function performDone(f: Facts, d: Derived): StepResult {
   // verify's certificates may ride along; any other tracked change refuses
   const only = `${f.studioRel}/${recordRel(id)}`;
   const rides = (path: string): boolean => path === only || (!path.startsWith(`${f.studioRel}/`) && recordOnly([path], f.studioRel));
-  const dirty = dirtyHold(repo, rides);
+  // W-530: the daily retro's unstaged entry stays in the main checkout and is never staged here
+  const entry = dailyEntryEdit(f);
+  const dirty = dirtyHold(repo, (p) => rides(p) || p === entry);
   if (dirty !== undefined) return dirty;
   if (d.act === "verify") return heldResult(`refusing: no automated certificate is recorded; run: ${d.command ?? ""}`);
   let recorded: string[] = [];
@@ -3256,7 +3278,7 @@ function performDone(f: Facts, d: Derived): StepResult {
     return { ok: false, lines: [...r.lines, ...text.slice(1, 6).map((l) => `done: ${l}`)] };
   }
   const changes = trackedChanges(repo);
-  const changed = typeof changes === "string" ? [] : changes.flatMap(touched);
+  const changed = typeof changes === "string" ? [] : changes.flatMap(touched).filter((p) => p !== entry);
   if (typeof changes === "string" || changed.some((p) => !rides(p))) {
     const r = unwind(`done changed tracked paths other than ${only}, the handoff and the dossier pages; nothing committed, ${chore} left for inspection`, [], false);
     return { ok: false, lines: [...r.lines, ...changed.map((p) => `changed: ${p}`)] };
@@ -3321,6 +3343,8 @@ function render(id: string, d: Derived, f: Facts, status: string): string[] {
     for (const [k, v] of o.extra) out.push(`${k}: ${one(v)}`);
     out.push(`inputs: ${o.inputs.map((x) => clean(x)).join(", ")}`, `command: ${one(o.command)}`);
   } else if (d.command !== undefined && d.status === "named") out.push(`command: ${one(d.command)}`);
+  const daily = dailyLine(f.repo, f.studioAbs, f.studioRel);
+  if (daily !== undefined) out.push(one(daily));
   return out;
 }
 
@@ -3410,6 +3434,8 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   }
   const now = new Date();
   lines.push(codexBurnLine(takeReading(homedir(), now, "next --all"), now));
+  const daily = dailyLine(repo, studioAbs, relative(realpathSync(repo), realpathSync(studioAbs)).split("\\").join("/"));
+  if (daily !== undefined) lines.push(daily);
   lines.push(`open: ${open}`);
   console.log(lines.map((l) => clean(l, 1000)).join("\n"));
   return { exitCode: failed ? 1 : 0 };
@@ -3571,7 +3597,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
         for (const l of refreshTicket(f, derivedStep(f), a.nowMs)) log(l);
         const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
-        const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
+        const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, rider: dailyEntryEdit(f), pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
         let result: StepResult;
         switch (d2.step) {
           case "branch":

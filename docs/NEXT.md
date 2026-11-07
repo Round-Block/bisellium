@@ -335,6 +335,26 @@ with PushNotification. Limits: the push is the session's tool call, not the
 CLI's; a notice waits for the main thread's next guarded call; a PR opened by
 hand is screened only when `review-request` is run for it.
 
+## The daily retro (W-530, D-188)
+
+A missing entry for the previous UTC day in `<studio>/acta/improvements.md` holds an
+opus only at the start of its spec: `next <opus>` reads `spec held` while the opus has
+no `opus/<id>` branch and no spec log, with no time limit, and so does a tracker that
+cannot be read. An opus with a signed spec is never held by it; a cascade retro owed
+still holds at `branch` (D-039). While any step is left, `next <opus>`'s report, the output `render` builds, and `next --all`
+print one line that holds nothing, `daily-retro: <day> step <k> of 3: <step>; then
+<step>`, naming from the first step left: a ladder-runner runs `retro --daily`, the
+qa-lead writes the proposals under `#### Proposed improvements` (each the
+change, its evidence and an owner, or "none, because"), and a ladder-runner lands the
+entry. `--track`, a performed step, an `--expect` refusal and the step-health lines do not
+carry it. `check` warns (`retro.daily.missing`, `retro.daily.proposals`) and refuses
+neither. An entry from before W-530, with no such heading, asks for no proposals.
+
+The entry is a tracked edit in the main checkout until it lands. As an unstaged edit it
+stops none of the `branch`, `merge` and `done` performs and rides none of their commits.
+A staged, deleted or renamed tracker refuses as any tracked change does, and `merge`
+refuses when the merge itself writes the tracker.
+
 ## Landing records (W-509)
 
 `bisellium land <path>... --title <text> --sella <id> [--body-file <path>]

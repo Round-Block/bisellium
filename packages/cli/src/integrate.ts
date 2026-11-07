@@ -89,6 +89,12 @@ export function trackedChanges(cwd: string): Change[] | string {
 /** Every path a change touches: a rename or copy has two. */
 export const touched = (c: Change): string[] => (c.from === undefined ? [c.path] : [c.path, c.from]);
 
+/** W-530: `path` when it carries an unstaged edit and nothing else (the daily retro's entry, not yet landed), so a perform may leave it where it is; a staged change, an add, a delete or a rename reads as undefined. */
+export function unstagedEdit(cwd: string, path: string): string | undefined {
+  const changes = trackedChanges(cwd);
+  return typeof changes !== "string" && changes.some((c) => c.path === path && c.code === "M" && !c.staged) ? path : undefined;
+}
+
 /** The one dirty-tree refusal: tracked changes outside `allow`, as the hold's reason and the lines after it. */
 export function dirtyReport(cwd: string, allow: (path: string) => boolean = () => false): { reason: string; after: string[] } | undefined {
   const changes = trackedChanges(cwd);
@@ -436,7 +442,7 @@ function settleOwn(repo: string, reviewed: string, own: readonly string[]): stri
  * only thing a clean checked-out `master` of `repo` is ever fast-forwarded to; with no target (the `pr`
  * rung) nothing is moved. Every read fails closed into a hold with nothing mutated.
  */
-export function fetchTrunk(repo: string, target?: string, own?: readonly string[]): Trunk {
+export function fetchTrunk(repo: string, target?: string, own?: readonly string[], rider?: string): Trunk {
   // the tail (advice naming a path) is clipped on its own so a long head can never cut it off
   const hold = (reason: string, tail = ""): Trunk => ({ ok: false, reason: clean(reason, 400) + clean(tail, 600) });
   if (target !== undefined && !wellFormedOid(target)) return hold("the reviewed merge commit is not a well formed commit id");
@@ -483,10 +489,11 @@ export function fetchTrunk(repo: string, target?: string, own?: readonly string[
   if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
   if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
   // W-509: `land` leaves other work in place: only a dirty path the merge would write stops it, and git's own fast-forward checks that again
-  const incoming = own === undefined ? undefined : git(repo, ["diff", "--no-renames", "--name-only", "-z", local, reviewed]);
+  // W-530: `rider`, the daily retro's unstaged entry, stays where it is unless the merge would write it
+  const incoming = own === undefined && rider === undefined ? undefined : git(repo, ["diff", "--no-renames", "--name-only", "-z", local, reviewed]);
   if (incoming !== undefined && (incoming.status !== 0 || incoming.error !== undefined)) return hold(`git diff failed: ${why(incoming)}`);
   const moving = new Set((incoming?.stdout ?? "").split("\0").filter((p) => p !== ""));
-  const dirty = own === undefined ? dirtyReport(repo) : dirtyReport(repo, (p) => !moving.has(p) || own.includes(p));
+  const dirty = own === undefined ? dirtyReport(repo, (p) => p === rider && !moving.has(p)) : dirtyReport(repo, (p) => !moving.has(p) || own.includes(p));
   if (dirty !== undefined) return { ok: false, reason: clean(dirty.reason.startsWith("git status") ? dirty.reason : `${repo} has uncommitted tracked changes; commit or restore them, then re-run`, 400), after: dirty.after };
   const clash = overwritten(repo, local, reviewed, own);
   if (clash?.startsWith("?")) return hold(clash.slice(1));
@@ -763,6 +770,8 @@ export interface Ctx {
   repo: string;
   /** W-509: `land`: the paths this head carries, uncommitted in the checkout; the trunk fetch settles them and leaves all other work. */
   own?: readonly string[];
+  /** W-530: the daily retro's unstaged entry in the main checkout, which the merge leaves in place */
+  rider?: string;
   /** W-509: `land`: read once before the merge gate of an OPEN PR; a result stops there (a code-owned head waiting for the Patron). */
   beforeMerge?(pr: Pr): StepResult | undefined;
   id: string;
@@ -967,7 +976,7 @@ function readChecks(repo: string, pr: Pr): { ok: true; checks: Check[] } | { ok:
 
 /** The tail shared by a freshly merged PR and an already-MERGED one: fetch the trunk, re-check containment. */
 function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
-  const fetched = fetchTrunk(ctx.repo, pr.mergeOid, ctx.own);
+  const fetched = fetchTrunk(ctx.repo, pr.mergeOid, ctx.own, ctx.rider);
   if (!fetched.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: ${fetched.reason}`, ...(fetched.after ?? []), ...extra] };
   const tip = readRef(ctx.repo, `refs/heads/${ctx.head}`);
   if (tip.kind === "error") return held(tip.reason, ...extra);

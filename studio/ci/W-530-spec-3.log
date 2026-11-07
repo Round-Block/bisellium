@@ -1,0 +1,27 @@
+# opus: W-530
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-07T02:36:59.073Z
+# tree: tree:8849d9d4f6e70ebc34140b2574e70b987654c30a
+# brief: briefs/W-530.md blob:512edeabec867135b007c934ae6054c78c86edf5
+# ticket: {"opus":"W-530","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"f6dfe5dd7cc84c02c5253412f12203982cb8695d","brief":"512edeabec867135b007c934ae6054c78c86edf5","at":"2026-11-07T02:36:52.725Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-530-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — review finding 1 (round 2, S1) is answered by removing the read: `dailyLine` and `runAll` no longer read `bisellium.yml#collegia`, the line names the role `the qa-lead` as `check`'s message does, and so no row or rejector is owed; an officina whose QA magister has another id still reads that role, a stated limit — check: brief "Decided at revision", brief Promise steps-named, apply-src.py
+2. advisory — review findings 2 to 5 are adopted: the named rejectors in Input domain row 4, the failed master read as a limit with a row, the daily hold clearing while the dispatch gates may still hold, and the line's routes narrowed to `render`'s report and `--all`, with rows for `--expect`, `--track`, step health and a perform — check: W-530-b1, W-530-b4, mutants.out
+3. advisory — this opus is four behaviours against the "about three" it was asked to stay near; its TypeScript source lines stay under the 200 asked, re-counted at this revision; the brief says which part would split and why it does not — check: brief Out of scope (Size), series.out
+4. advisory — the failed-land exemption is wider than the dispatch's words, which named only `branch`: `merge` and `done` refuse the same edit, and D-188 item 1 says a failed land holds nothing; it is one exact shape, and it is put to the Patron — check: brief Promise failed-land, brief Defaults 2, mutants.out
+5. advisory — a spec being drafted across 00:00Z waits at its signature, and while the run is owed `next --all` prints a held line for each unsigned greenlit opus and exits 1 (69 of 71 today); the first is put to the Patron and both are stated limits — check: brief Promise spec-start, brief Promise steps-named, brief Defaults 1
+6. advisory — not run for this spec: `npm test`, typecheck, lint, both officina checks, `next.test.ts` and the CI run, so the prototype's types are unproved until the build; Prettier ignores every owned file, so the round 1 claim that it passed proved nothing, and is corrected — check: brief Acceptance, gates-proto.out, gates-proto2.out, .prettierignore
+7. advisory — a documented seam change: `fetchTrunk` and `Ctx` gain an optional `rider`, read only by `next`, and `unstagedEdit` is new; with no `rider` both behave as they did, and `land` sets none — check: brief Interfaces 5, brief Files owned, gates-proto.out
+8. advisory — `studio/leges/qa.md` is added beyond the production lex the dispatch named, because its section 7 repeats the sentences this corrects; both lexes are code-owned and the PR needs the Patron's approval — check: brief Files owned, brief Acceptance, .github/CODEOWNERS
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) for `studio/briefs/W-530.md` at master f6dfe5dd, round 3, revising round 1 on the failed review `ci/W-530-spec-2.log`: four behaviours, each red accepted by the replay classifier on the commit before its behaviour and green at its stage and later (`reds.out`, `red-b<k>.log`, `green-b<k>.log`); every one-hunk wrong form failing its row at a named assertion (`mutants.out`); the eight-commit mbox applying to the same tree (`mbox-check.out`); the test files in `gates-proto.out` and `gates-proto2.out` pass on the tip, and the gates named in finding 6 are the build's; the Codex test check rerun on this revision (`fixture-census.md`); the code-owned lexes are named, and `.github/` and `.claude/` are untouched.
