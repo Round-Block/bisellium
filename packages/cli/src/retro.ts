@@ -1157,6 +1157,7 @@ function opusState(root: string, id: string): string | undefined {
 
 export const DAILY_TRACKER = "acta/improvements.md";
 const DAILY_HEADING = "## Daily retro";
+const PROPOSALS_HEADING = "#### Proposed improvements";
 /** the recurrence window: the 14 calendar days from day−13 through day, inclusive */
 const DAILY_WINDOW_DAYS = 14;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -1202,6 +1203,35 @@ export function dailyRetroOwed(root: string, now: Date): { owed: string | undefi
   if (isRefusal(tracker)) return tracker;
   const day = previousUtcDay(now);
   return { owed: tracker !== undefined && !tracker.days.has(day) ? day : undefined };
+}
+
+/** W-530: what `day`'s entry holds under its proposals heading. The first such heading counts; it ends at the next heading of level 1 to 4. */
+function entryProposals(text: string, day: string): "no entry" | "no heading" | "empty" | "written" {
+  const lines = text.split("\n").map((l) => l.trimEnd());
+  let section: string | undefined;
+  const start = lines.findIndex((l) => {
+    if (l.startsWith("## ")) section = l;
+    return section === DAILY_HEADING && DAY_ENTRY.exec(l)?.[1] === day;
+  });
+  if (start === -1) return "no entry";
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((l) => l.startsWith("### ") || l.startsWith("## ") || l.startsWith("# "));
+  const entry = end === -1 ? rest : rest.slice(0, end);
+  const at = entry.indexOf(PROPOSALS_HEADING);
+  if (at === -1) return "no heading";
+  for (const l of entry.slice(at + 1)) {
+    if (/^#{1,4} /.test(l)) return "empty";
+    if (l !== "") return "written";
+  }
+  return "empty";
+}
+
+/** W-530 (D-188): the previous UTC day when its entry has a proposals heading with nothing under it. An older entry, a day with no entry and a tracker that cannot be read are `retro.daily.missing`'s or nobody's. */
+export function dailyProposalsOwed(root: string, now: Date): string | undefined {
+  const tracker = readTracker(root);
+  if (tracker === undefined || isRefusal(tracker)) return undefined;
+  const day = previousUtcDay(now);
+  return entryProposals(tracker.text, day) === "empty" ? day : undefined;
 }
 
 type DailyRound = { opus: string; phase: "spec" | "review"; n: bigint; at: number; day: string; brief: string; failed: boolean; blockers: { cls: string; sev: string }[] };
@@ -1397,6 +1427,8 @@ export function draftDailyRetro(root: string, day: string): { section: string } 
   if (isRefusal(fixes)) return fixes;
   const owed = recurring.filter(([c]) => !fixes.has(c));
   out.push("", "#### Owed cause fixes", "", ...(owed.length > 0 ? owed.map(([c, v]) => `- OWED class ${c} (${[...v].sort().join(", ")}): no lesson of it names a greenlit cause-fix opus in addressed_by`) : ["- none owed"]));
+  // W-530 (D-188): the qa-lead's to fill; `check` warns while the previous day's is empty
+  out.push("", PROPOSALS_HEADING);
   return { section: out.join("\n") + "\n" };
 }
 
