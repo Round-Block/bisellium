@@ -9,6 +9,7 @@ queues:
       - { opus: W-528, says: "give the gates job a timeout; exempt, the Patron said yes 2026-11-06 (W-527)" }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
       - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial; exempt, the Patron said yes 2026-11-06 (W-456)" }
+      - { opus: W-531, says: "one spec-writing lead per collegium; qa-lead to a gpt-6 Codex model after 11-09; exempt from the freeze (D-191)" }
       - { opus: W-520, says: "evidence storage and one safe-to-clear test; takes over W-380; exempt from the freeze (D-184)", folded: [W-380] }
       - { opus: W-521, says: "check flags git differing from the queue runner's; exempt from the freeze (D-185)" }
       - { opus: W-522, says: "refuse process.exit after bulk output in fixtures; exempt from the freeze (D-185)" }
