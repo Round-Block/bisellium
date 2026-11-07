@@ -1,0 +1,19 @@
+# opus: W-525
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b567-ead8-7623-8b69-6e3b19b05c52
+# outcome: failed
+# at: 2026-11-07T09:55:59.532Z
+# tree: tree:6727fea1ec28d78cc08f9fadc762c0737dc53524
+# brief: briefs/W-525.md blob:2685da486bcd37ab0d8ce661a937101b867aeb04
+# ticket: {"opus":"W-525","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-525/studio","head":"3010a8c0562ba870449cf4caad127c622774d9b7","brief":"2685da486bcd37ab0d8ce661a937101b867aeb04","at":"2026-11-07T09:54:36.111Z"}
+
+## Findings
+1. blocking — packages/commands/src/lifecycle.ts:1606 The ruling matcher accepts non-exact headings such as `## Ruling:`, `## Ruling W-7`, and `## Ruling-x`, allowing them to authorize a lift or conclusion even though every form except the exact headings must refuse (brief:118). [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/cli/src/w525.test.ts
+2. blocking — packages/commands/src/lifecycle.ts:1396 `openRuledRecord` reads only `positionals[0]` and never rejects extras, so a mistyped command such as `bisellium lift W-7 W-8 ...` silently writes W-7 despite the singular-opus grammar and rejecting input boundary (brief:115). [severity: S1] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w525.test.ts
+
+## Verdict
+The new write verbs fail open on two inputs inside the declared grammar, including the Patron-ruling authorization boundary.
+VERDICT: FAIL
