@@ -318,7 +318,7 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
 
   // retro.daily.missing (W-459, D-076 F): an officina that keeps the daily tracker has no entry for the previous UTC
   // day. Advise, not block: an opus branch carries the tracker as of its base, so a block would fail every in-flight
-  // opus's gates at UTC midnight; `next` holds a new start on the same reader instead. Unreadable blocks (fail closed).
+  // opus's gates at UTC midnight; `next` holds the start of a new spec on the same reader instead (W-530). Unreadable blocks (fail closed).
   const daily = dailyRetroOwed(root, _opts.now);
   if ("error" in daily) add("retro.daily.missing", "block", DAILY_TRACKER, daily.error);
   else if (daily.owed !== undefined) add("retro.daily.missing", "advise", DAILY_TRACKER, `no daily retro for ${daily.owed}: bisellium retro --daily`);

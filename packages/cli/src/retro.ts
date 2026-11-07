@@ -1152,7 +1152,7 @@ function opusState(root: string, id: string): string | undefined {
 // W-459: `bisellium retro --daily`, the daily retro (D-076 F; D-147 makes it the qa-lead's). It replaces the kept
 // retro.py: one `### <day>` section appended under `## Daily retro` in `acta/improvements.md`, read from the verdict
 // logs, the gate logs (`ci/<id>-(tests|lint|types)-<tree>.log`) and the opus records and lessons. `dailyRetroOwed` is
-// the one reader of whether a day's entry exists; `check` (`retro.daily.missing`) and `next` (the branch hold) call it.
+// the one reader of whether a day's entry exists; `check` (`retro.daily.missing`) and `next` (the hold at the start of a spec, W-530) call it.
 // ---------------------------------------------------------------------------
 
 export const DAILY_TRACKER = "acta/improvements.md";

@@ -1204,6 +1204,11 @@ export function deriveNext(f: Facts): Derived {
   if (uiDone !== undefined && uiDone.outcome !== "passed" && uiOpen())
     return dispatch(f, "spec", `${uiDone.log} records the ui-lead's outcome ${uiDone.outcome} on the current brief; the signer revises the brief and signs again`, { phase: "spec", round: spec.maxRound + 1, resume: true, inputs: [briefRel(id), uiDone.log], signer, ...(pre ? {} : { studio: join(".worktrees", id, f.studioRel) }) });
   if (!spec.ok) {
+    // W-530 (D-188): a missing daily retro holds new work only: an opus with no branch and no spec log, at the start of its spec
+    if (pre && !spec.anyLog) {
+      const owing = dailyHold(f);
+      if (owing !== undefined) return hold("spec", owing);
+    }
     if (pre && reviewer !== undefined && spec.gate !== undefined) return specOrder(f, reviewer, spec, spec.maxRound);
     return dispatch(f, "spec", spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
@@ -1612,18 +1617,19 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
   return dispatch(f, "spec", ev.why, { phase: "spec", round, studio, resume: ev.anyLog, inputs: [briefRel(id)], signer: reviewer.design });
 }
 
-/** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read; W-459: or the daily retro of the
- *  previous UTC day is owed, or its tracker cannot be read. Asked only at the branch rung, so an opus in flight is never held. */
+/** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. Asked only at the branch rung, so an opus in flight is never held. */
 function retroHold(f: Facts): string | undefined {
   const owed = f.owed();
   if ("error" in owed) return `the retro setting cannot be read: ${owed.error}`;
   if (owed.owed.length > 0) return `retro owed: ${owed.owed.join(", ")}; file them before a new opus starts`;
+  return undefined;
+}
+
+/** W-459, W-530 (D-188): why a new spec may not start: the daily retro of the previous UTC day is owed, or its tracker cannot be read. No time limit. */
+function dailyHold(f: Facts): string | undefined {
   const daily = f.daily();
   if ("error" in daily) return `the daily retro tracker cannot be read: ${daily.error}`;
-  if (daily.owed === undefined) return undefined;
-  // D-147: the daily retro is the qa collegium's magister's to run
-  const qa = (f.manifest.collegia ?? []).find((c) => c.id === "qa")?.magister;
-  return `daily retro owed: ${DAILY_TRACKER} has no entry for ${daily.owed}; ${qa === undefined || qa === "" ? "run" : `${qa} runs`} bisellium retro --daily --studio ${f.studioRel} before a new opus starts`;
+  return daily.owed === undefined ? undefined : `daily retro owed: ${DAILY_TRACKER} has no entry for ${daily.owed}; a ladder-runner runs bisellium retro --daily --studio ${f.studioRel} before a new spec starts`;
 }
 
 /** After done: the retro, then the checkpoint, complete once the trunk record is done (W-299: no handoff edit is asked; the done perform carries the history row, W-214). */
