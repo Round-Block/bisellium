@@ -1548,7 +1548,7 @@ test("W-530-b1 behaviour 1: a missing daily retro holds an opus with no signed s
   git(bad.repo, ["push", "-q", "origin", "master"]);
   const badHeld = next(bad, [UNSIGNED, ...W530_BUDGET]);
   assert.equal(badHeld.first, `next: ${UNSIGNED} spec held`, ran("an unreadable tracker: a new spec is held", badHeld));
-  assert.match(badHeld.kv.get("why") ?? "", /^the daily retro tracker cannot be read: acta\/improvements\.md: /, ran("an unreadable tracker: says why", badHeld));
+  assert.match(badHeld.kv.get("why") ?? "", /^the daily retro tracker cannot be read: acta\/improvements\.md: [^\n]+$/, ran("an unreadable tracker: says why", badHeld));
   expectOther(next(bad, [OTHER]), "branch", "named", "an unreadable tracker: a signed spec is not held");
 
   // with a reviewer: a first signature and a failed review are signed work
