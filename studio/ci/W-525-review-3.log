@@ -1,0 +1,21 @@
+# opus: W-525
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b567-ead8-7623-8b69-6e3b19b05c52
+# outcome: passed
+# at: 2026-11-07T11:54:22.858Z
+# tree: tree:63ecb7b079706335371849616ab6d61377a8b20d
+# brief: briefs/W-525.md blob:68016f06d8d7af66ead28ad5a4ea74c193c88b5d
+# ticket: {"opus":"W-525","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-525/studio","head":"58b70412d0a7454a59b43c7a8c5b50ab27d5dadb","brief":"68016f06d8d7af66ead28ad5a4ea74c193c88b5d","at":"2026-11-07T11:53:53.610Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-525-review-2.log #1: reversed — the prior claim about JavaScript `$` rejecting CRLF was wrong; packages/cli/src/w525.test.ts:181 now pins CRLF rulings for both headings, while packages/commands/src/lifecycle.ts:1608-1612 explicitly normalizes one trailing CR and compares the whole line.
+
+## Verdict
+The decision-heading domain is now explicitly implemented and pinned without an outstanding defect.
+VERDICT: PASS

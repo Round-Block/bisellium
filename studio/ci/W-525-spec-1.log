@@ -1,0 +1,26 @@
+# opus: W-525
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-07T06:52:51.545Z
+# tree: tree:b05f4b1a2cbbce3a45fde2f38d9e0f3ff4ed879e
+# brief: briefs/W-525.md blob:8b66a4851d530bb84d94240c3a9fedd50726da09
+# ticket: {"opus":"W-525","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"c0524d885e78f8d8b0729fd65ae82e24e507c09f","brief":"8b66a4851d530bb84d94240c3a9fedd50726da09","at":"2026-11-07T06:52:45.515Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-525-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — size: three behaviours as asked, and 231 TypeScript source lines added, over the 200 asked; the brief says which part would split (`conclude`, about 95 lines) and why it does not — check: brief Out of scope (Size), series.out
+2. advisory — the ruling is read for the opus's name, at or below its `## Ruling` heading, and not its meaning: a later ruling saying "W-073 stays halted" would pass if cited to lift it, which is a stated limit; today no decision after their halt names W-073, W-136 or W-438, and all three are also unranked — check: brief Promise lift-guards, real-records.out
+3. advisory — W-157's lift must land with a line naming it in the handoff's `## Queue`, since `process.handoff.queue` does not read `queue.yml` yet; W-157 is the only such record of those this opus was asked about, and the words are in `docs/NEXT.md` — check: brief Facts checked, packages/cli/src/rules/process.ts
+4. advisory — a documented seam change: `patronDecisionProblem` gains optional `rulingNames` and `afterWhat`; with neither set it behaves as it did, and W-167's message is unchanged — check: brief Interfaces 5, gates-proto.out
+5. advisory — a concluded study owes no retro, an exception to D-039's first line argued from its second, and any seat may type a lift under the Patron's ruling, and a terminal halt never lifts: each is put to the Patron in plain words — check: brief Defaults for the Patron
+6. advisory — not run for this spec: `npm test`, `npm run -s typecheck` past `packages/cli`, lint and the CI run, so the types of the other packages are unproved until the build; both verbs ran on a copy of the real records, never on a real one — check: brief Acceptance, real-records.out, tsc-cli.out
+7. advisory — `docs/ADOPTION.md` is code-owned and changes by three sentences, on existing lines since it sits at its cap of 1032; the verbs' sections are in `docs/NEXT.md` since `docs/VERBS.md` sits at its cap of 450; the PR needs the Patron's approval — check: brief Files owned, .github/CODEOWNERS, studio/bisellium.yml
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) for `studio/briefs/W-525.md` at master 7789f892, round 1: three behaviours, each red accepted by the replay classifier on the commit before its behaviour and passing on it and every later stage (`reds.out`), each wrong form in `mutants.out` killed at a pinned assertion, and both verbs run on a copy of the real records (`real-records.out`).

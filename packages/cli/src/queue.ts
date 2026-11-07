@@ -175,6 +175,16 @@ export function readQueue(studio: string): QueueRead {
   return { kind: "ok", file: { queues, ...lists } };
 }
 
+/** W-525: why the Queue refuses a lift: it asks that the opus be ranked in a queue's `next` first, so a lift never puts back an unranked record (D-174 item 2). No queue.yml asks nothing. */
+export function liftQueueRefusal(studio: string, opus: string): string | undefined {
+  const read = readQueue(studio);
+  if (read.kind === "absent") return undefined;
+  if (read.kind === "held") return read.why;
+  if (read.file.queues.some((q) => q.next.some((e) => e.opus === opus))) return undefined;
+  const listed = (["halted", "cut", "deferred"] as const).find((l) => read.file[l].some((e) => e.opus === opus));
+  return `${opus} is not ranked in ${QUEUE_FILE}${listed === undefined ? "" : ` (it is under ${listed})`}: rank it in a queue's next first`;
+}
+
 /** The states an idle lane may take an entry in: the ones `next --all` lists (greenlit up to review). */
 const TAKEABLE = new Set(["greenlit", "building", "verifying", "review"]);
 /** A lane whose opus is in one of these holds nothing: the lane is idle. */

@@ -132,7 +132,7 @@ its filename, an unknown `provenance`, one of `killed_at`/`killed_by`
 without the other, a `killed_at` that is not a date or is earlier than the
 decision's `at`, or a `killed_by` that does not open as a regular file under
 the allowed directories. `decision.invoked_after_kill` blocks an opus whose
-`halted_by` (time `halted_at`) or gate `waived_by` (time `at`) names a
+`halted_by` (time `halted_at`), a lift's `decision` (time `at`, a malformed row blocks too, W-525) or gate `waived_by` (time `at`) names a
 decision at or after its `killed_at`, or with no readable time: a fired
 clause is never a retroactive excuse. Records dated before the kill are
 history. `decision.kill` blocks a missing
@@ -452,11 +452,11 @@ block at done; prose or a generic human-gate waiver is not a ruling.
 
 ## Lifecycle (fixed)
 
-`backlog → greenlit → building → verifying → review → done`, plus `halted`.
+`backlog → greenlit → building → verifying → review → done`, plus `halted`, which `lift` undoes under a Patron's ruling that names the opus, dated after the halt (W-525).
 Greenlit is the Patron's slate decision; everything after it is the collegium's.
 State is asserted by the magister, but `check` fails a state the evidence cannot
 support: `review` needs every automated gate and every other agent gate passed;
-`done` needs all non-human gates passed and any recorded human gate passed or
+Research takes no build ladder: `conclude` moves a `kind: research` record with neither `start` nor `builder_runtime` to `done`, with its report under `acta/` and a Patron's ruling that names it; `check` asks that (`research.report`) and no gate, and no retro is owed (W-525). Any other `done` needs all non-human gates passed and any recorded human gate passed or
 waived — **except** a gate exempted by `since` (above), which is dropped from
 what's demanded entirely, for either state. `waived` needs a `reason` and is
 never allowed on an automated or agent gate (`probatio.waived.automated`,

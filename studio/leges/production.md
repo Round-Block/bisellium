@@ -63,6 +63,11 @@ detection. The Aedile owns the road, not the work travelling on it.
   without asking; small reversible calls ship as veto-able defaults reported
   at the checkpoint; scope, names and ruling-contradicting calls go to the
   Patron.
+- **A call rests on the leads' meet (D-189).** A call that would otherwise wait
+  on the Patron goes to a meet of the leads whose area it touches. Their
+  recommendation is the default taken, reported at the next summary with the
+  leads who met and any split, and vetoable there; the producer's recommendation
+  alone is not a default. It does not replace a code-owned approval or a ladder gate.
 - **Session hygiene.** Refresh before the context nears 350k (Patron 2026-10-13; subagent dispatches stay capped at 500k), at a clean
   point. The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
   automates fresh sessions; never run it while a session is working.
@@ -356,3 +361,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-11-01 | §9 steps 0 and 7, §11: the daily retro runs by `retro --daily` with an owning lead per class; design mirrors engineering in roles and models (seat changes W-452); a new process rule binds only opera started after it merges (D-150) | Patron |
 | 2026-11-05 | §7: the hold on new Opus work moves from ~87% to ~98% Claude usage | Patron |
 | 2026-11-07 | §9 step 7: a ladder-runner runs and lands the daily retro, the qa-lead writes its proposed improvements, `next` names the three steps, `check` warns rather than refuses, and a missing entry holds only an opus with no signed spec (D-188, W-530) | Patron |
+| 2026-11-07 | §7: a call that would wait on the Patron rests on a meet of the relevant leads, not the producer's recommendation alone (D-189) | Patron |

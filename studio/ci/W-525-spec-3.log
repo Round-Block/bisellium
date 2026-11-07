@@ -1,0 +1,34 @@
+# opus: W-525
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-07T09:16:27.025Z
+# tree: tree:09242fe94ab03a720c95fec5a69f8a789e4c75fa
+# brief: briefs/W-525.md blob:2685da486bcd37ab0d8ce661a937101b867aeb04
+# ticket: {"opus":"W-525","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":"studio","head":"c4e0f95c831d7a7470a242bc587b7f62aae7dda5","brief":"2685da486bcd37ab0d8ce661a937101b867aeb04","at":"2026-11-07T09:16:18.312Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-525-spec/revise-1107/promise-ledger.md
+
+## Earlier findings
+
+1. Halt fields read by `lift` (brief row 2): answered. `unliftableHalt` refuses a missing, blank or non-string `reason`, `resume_when` or `halted_by`, with `halted_at`, before any write, and `next` names no lift for such a record; rows and wrong forms `halt-fields-*`, `no-*-read`, `next-names-malformed`.
+2. Malformed `bisellium.yml` (row 1): answered. `openRuledRecord` runs `manifestProblem` (a mapping, a non-blank `studio`, `sellae` a list of seats with ids) before either verb writes, exit 2; rows for eight shapes in both verbs, wrong forms `manifest-*`.
+3. `checkProcess` skipping a malformed `amendments` or halt row (row 7): answered. One reader, `haltRowsProblem`, serves `lift` and `check`; `check` blocks as `decision.invoked_after_kill`; rows `check: …`, wrong forms `check-rows-free`, `row-*`.
+4. `check` and `owedRetros` disagreeing (row 11): answered. `concludedResearch` classifies, `conclusionProblem` validates for both; `owedRetros` refuses on any problem, with or without a `retro` setting; wrong forms `retro-trusts`, `retro-setting-first`, `next-trusts`.
+5. `next` naming `conclude` for a `builder_runtime` record (Promise next-names): answered. `tookLadder` is the one reading of `start` or `builder_runtime` for `lift`, `conclude`, `concludedResearch` and `next`; row "a study with a builder_runtime keeps the ladder", wrong form `study-runtime`.
+
+## Findings
+
+1. advisory — size: three behaviours as asked, and 293 TypeScript source lines added, over the 200 asked (232 at round 1); the leads' meet kept `conclude` in, and the split line (behaviour 2 and the study half of behaviour 3, about 113 lines) is in the brief — check: brief Out of scope (Size), series.out
+2. advisory — the ruling is read for the opus's name, at or below its `## Ruling` heading in the decision's body, and not its meaning, a stated limit; no decision since their halt names W-073, W-136 or W-438 — check: brief Promise lift-guards, real-records.out
+3. advisory — an invalid conclusion makes `owedRetros` refuse for the whole officina, as an unreadable record does today: `next` holds under the unchanged words "the retro setting cannot be read", and `check` adds `manifest.shape` at `bisellium.yml#retro`, both naming the record; a stated limit — check: brief Promise conclude-reads, packages/cli/src/next.ts
+4. advisory — no verb repairs a malformed halt or row, so that is a hand edit; all 164 halted records and all 1,280 rows are well-formed today — check: brief Out of scope, census-halts.out
+5. advisory — two code-owned files, `docs/ADOPTION.md` and `studio/leges/production.md` (D-189's line and row, in behaviour 3's feat patch since the series grammar admits no other subject); the PR needs the Patron's approval; `check` on the lex adds no finding — check: .github/CODEOWNERS, lex-check.out, mbox-check.out
+6. advisory — W-157's lift must land with a line naming it in the handoff's `## Queue`, since `process.handoff.queue` does not read `queue.yml` yet — check: brief Facts checked, packages/cli/src/rules/process.ts
+7. advisory — not run for this spec: `npm test`, `npm run -s typecheck` past `packages/cli`, lint and the CI run; 28 test files ran one at a time on the tip, and both verbs ran on a copy of the real records only — check: brief Acceptance, gates-proto.out, tsc-cli.out, real-records.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) for `studio/briefs/W-525.md` at master 71c17ad6, round 3: the five findings of `ci/W-525-spec-2.log` answered; three behaviours, each red accepted on the commit before its behaviour and passing on it and every later stage (`reds.out`), all 95 wrong forms killed at a pinned assertion (`mutants.out`), the series applying at 71c17ad6 (`mbox-check.out`), and the Codex test check naming the same eleven flips, none unnamed (`fixture-census.md`).

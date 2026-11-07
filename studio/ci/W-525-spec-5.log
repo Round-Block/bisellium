@@ -1,0 +1,28 @@
+# opus: W-525
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-07T11:06:36.532Z
+# tree: tree:099172f7797c47915ffb0710d1753ccd7c89591e
+# brief: briefs/W-525.md blob:68016f06d8d7af66ead28ad5a4ea74c193c88b5d
+# ticket: {"opus":"W-525","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-525/studio","head":"1142a48310f0d8a781d43f85e381327ccef3c7d7","brief":"68016f06d8d7af66ead28ad5a4ea74c193c88b5d","at":"2026-11-07T11:06:30.655Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-525-build/revise-r2/promise-ledger.md
+
+## Earlier findings
+
+1. ci/W-525-review-1.log #1, the ruling matcher accepting non-exact headings: closed at fix round 1; the domain is now stated in Input domain row 4 (brief:118), with `## Ruling:`, `## Ruling W-7`, `## Ruling-x` and `##Ruling` among the refused forms.
+2. ci/W-525-review-2.log #1, a CRLF decision said to authorize neither verb: the claim is false at 12a84d4f (a `/m` regex's `$` matches before CR, `regex-probe.out`; the CRLF rows pass on the old code, `red-test-only.log` fails only on a lone CR), but the case was unpinned and the old rule also accepted a heading begun or ended by a lone CR or begun after a U+2028. The rule is now a line of the body split at LF with one trailing CR dropped; CRLF is pinned as accepted in both verbs, the other line ends as refused.
+
+## Findings
+
+1. advisory — the heading is read for exactly `## Ruling` or `## Decree` ended by LF or CRLF, every other form refused; all 190 real decisions are LF with exact headings (81 `## Ruling`, 83 `## Decree`), so no real record changes reading — check: brief Input domain row 4, studio/decisions/
+2. advisory — the decision body is read trimmed by the reused `parseFrontMatter`, so blanks before a heading on the body's first line are dropped; a stated limit (D-076 E) — check: brief Input domain row 4, adapters/native/src/index.ts
+3. advisory — the code change is one branch of `patronDecisionProblem` (`rulingNames`, read only by `lift`, `conclude` and `conclusionProblem`); the new refusals are red at the branch head (`red-test-only.log`) and the dropped CR is killed by the CRLF rows (`mutant-no-cr.out`); reds 1 to 3 stand unchanged — check: fix-test.diff, fix-code.diff, red-test-only.log, mutant-no-cr.out
+4. advisory — not run for this revision: `npm test` and the CI run; 19 test files ran one at a time on the r2 prototype with typecheck and lint, all exit 0 (`check.test.ts` on a scratch branch, since a detached HEAD leaves `opus.records_unchanged` unverifiable) — check: singles.out
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) for `studio/briefs/W-525.md` on opus/W-525 at 12a84d4f, build revision 2: the class tests×ruled-case-uncovered of `ci/W-525-review-1.log` and `ci/W-525-review-2.log` answered by stating the ruling heading's domain (LF or CRLF, nothing after the word) with every other form a refusal or a stated limit, pinned in both verbs, the change kept as `fix-test.diff` and `fix-code.diff` applying at the branch head.

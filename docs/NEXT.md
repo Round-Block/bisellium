@@ -335,6 +335,53 @@ with PushNotification. Limits: the push is the session's tool call, not the
 CLI's; a notice waits for the main thread's next guarded call; a PR opened by
 hand is screened only when `review-request` is run for it.
 
+## bisellium lift (W-525)
+
+```bash
+npm run bisellium -- lift <opus> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+```
+
+`lift` undoes a `halt`: `greenlit`, or `building` for a record `ready` has already
+started. It deletes the four halt fields, appends one `amendments:` row
+(`field: halt`, `at`, `sella`, `reason`, `decision`, and the halt it undid in
+`superseded`), and emits one `workflow.state_changed`. It writes no Patron
+timeline line.
+
+It refuses, writing nothing: a record that is not halted, or whose halt fields or `amendments` are malformed; a terminal halt (a
+`resume_when` of `never`, alone or followed by anything but a letter, mark or digit); a
+`--decision` that is not by the Patron, does not name the opus at or below its
+`## Ruling` (or `## Decree`) heading, or is not dated after `halted_at`; a record `check` would then block for its milestone; and, where
+`queue.yml` exists, an opus no queue's `next` ranks. So the Queue moves first.
+The name is read as a whole token: `lift` does not read what the ruling says about
+the opus. While `process.handoff.queue` reads the handoff's `## Queue` (not `queue.yml`),
+a record lifted to `greenlit` must be named there, or `check --repo` blocks; `land`
+can carry both.
+
+## bisellium conclude (W-525)
+
+```bash
+npm run bisellium -- conclude <opus> --from <report> --decision <id> --sella <id> [--studio <dir>] [--now <iso>]
+```
+
+Research takes no build ladder: no brief, branch, gate, ticket or merge. `conclude`
+moves a `kind: research` record from `backlog` or `greenlit` to `done`. It copies
+the report at `--from` to `acta/<date>-report-<opus>.md` (`kind: consultation`,
+`opus: <opus>`) and writes `end`, `report` and `concluded_by` on the record. It
+refuses any other kind or state, a record that has a `start` or `builder_runtime`,
+a `--sella` not declared, a `--decision` that is not by the Patron or does not name
+the opus in its ruling, and an empty or irregular `--from`. A halted study is lifted first.
+
+`check` then asks no gate of that record and asks `research.report` instead: the
+report is under `acta/`, names the opus, and the decision is the Patron's and names
+it in its ruling. Only that is exempt from a retro, which reads review verdicts and reds a study lacks; `owedRetros` refuses any other record with a `concluded_by`.
+
+## Halts and research
+
+A halted record holds at `greenlight`, and the hold names `bisellium lift`; a terminal
+halt (`resume_when` of `never`) holds and names no verb, as a malformed one does. A greenlit `kind: research` record
+with neither `start` nor `builder_runtime` and no branch holds at `spec` and names `bisellium conclude`: research takes
+no build ladder, and no ticket is issued. A concluded record is complete, with no retro owed.
+
 ## The daily retro (W-530, D-188)
 
 A missing entry for the previous UTC day in `<studio>/acta/improvements.md` holds an

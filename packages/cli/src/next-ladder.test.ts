@@ -1282,3 +1282,83 @@ test("W-337-fix2 a malformed ticket setting in an open unpushed lane holds revie
   assert.equal(o.kv.has("role"), false, ran("a malformed lane setting orders no reviewer", o));
   assert.equal(gitCalls(w).some((a) => a[0] === "merge-tree" && a[2] === "refs/heads/opus/W-897"), false, "the malformed lane is held before conflict comparison");
 });
+
+// W-525: next names the way on from a halt and from a study (the verbs' own rows are in w525.test.ts)
+test("W-525-b3 behaviour 3: next names lift at a halt and conclude at a study, and a lifted or concluded record moves on", { timeout: 300_000 }, () => {
+  const budget = ["--budget", "100000"];
+  const ruling = `---\nid: "D-900"\ntitle: "a ruling on ${OPUS}"\nat: 2026-10-02T11:00:00Z\nprovenance: stated\nby: patron\nkill_when: "never"\n---\n## Ruling\n\nIt moves ${OPUS}.\n`;
+  const halted = (tag: string, resume: string): World => {
+    const w = world(tag, "greenlight");
+    editRecord(w, "repo", (doc) => {
+      doc.setIn(["state"], "halted");
+      doc.setIn(["halted_at"], "2026-10-01T00:00:00.000Z");
+      doc.setIn(["reason"], "held");
+      doc.setIn(["resume_when"], resume);
+      doc.setIn(["halted_by"], "D-1");
+    });
+    put(w.repo, "studio/decisions/D-900.md", ruling);
+    commit(w.repo, "studio: halt");
+    return w;
+  };
+  const stopped = halted("w525-halt", "the freeze ends");
+  const hold = next(stopped, [OPUS, ...budget]);
+  expectHeld(hold, "a halted record holds");
+  assert.match(hold.kv.get("why") ?? "", new RegExp(`bisellium lift ${OPUS} --reason <text> --decision <id> --studio studio`), ran("a halted record's hold names lift", hold));
+  assert.equal(hold.kv.has("ticket"), false, ran("a halted record's hold issues no ticket", hold));
+
+  const terminal = next(halted("w525-never", "never: W-1 carries it"), [OPUS, ...budget]);
+  expectHeld(terminal, "a terminal halt holds");
+  assert.match(terminal.kv.get("why") ?? "", /halted for good \(resume when: never: W-1 carries it\)/, ran("a terminal halt says so", terminal));
+  assert.doesNotMatch(terminal.kv.get("why") ?? "", /bisellium lift/, ran("a terminal halt's hold names no lift", terminal));
+
+  const malformed = halted("w525-bad-halt", "the freeze ends");
+  editRecord(malformed, "repo", (doc) => doc.setIn(["halted_by"], 7));
+  commit(malformed.repo, "studio: lost a field");
+  const badHalt = next(malformed, [OPUS, ...budget]);
+  expectHeld(badHalt, "a malformed halt holds");
+  assert.match(badHalt.kv.get("why") ?? "", /cannot be lifted as it stands: its halted_by is missing or blank/, ran("a malformed halt says so", badHalt));
+  assert.doesNotMatch(badHalt.kv.get("why") ?? "", /bisellium lift/, ran("a malformed halt's hold names no lift", badHalt));
+
+  verb(stopped.repo, ["lift", OPUS, "--reason", "ruled", "--decision", "D-900", "--sella", "producer", "--studio", "studio", "--now", NOW_ISO]);
+  commit(stopped.repo, "studio: lift");
+  expectStep(next(stopped, [OPUS, ...budget]), "spec", "named", "a lifted record is named spec");
+
+  const study = (tag: string, f: Json = {}): World => {
+    const w = world(tag, "greenlight");
+    editRecord(w, "repo", (doc) => {
+      doc.setIn(["kind"], "research");
+      for (const [k, v] of Object.entries(f)) doc.setIn([k], v);
+    });
+    put(w.repo, "studio/decisions/D-900.md", ruling);
+    const bisellium = join(w.studio, "bisellium.yml");
+    writeFileSync(bisellium, `${readFileSync(bisellium, "utf8")}retro: { since: 2026-01-01T00:00:00Z }\n`);
+    commit(w.repo, "studio: a study");
+    return w;
+  };
+  const open = study("w525-study");
+  const before = snap(open);
+  const held = next(open, [OPUS, ...budget]);
+  expectHeld(held, "a greenlit study holds");
+  assert.equal(held.first, `next: ${OPUS} spec held`, ran("a greenlit study holds at spec", held));
+  assert.match(held.kv.get("why") ?? "", new RegExp(`takes no build ladder; when its report is written: bisellium conclude ${OPUS} --from <report> --decision <id> --sella <id> --studio studio`), ran("a greenlit study's hold names conclude", held));
+  assert.equal(held.kv.has("ticket"), false, ran("a greenlit study's hold issues no ticket", held));
+  assert.equal(snap(open), before, "a greenlit study's hold writes nothing");
+
+  const report = join(open.root, "report.md");
+  writeFileSync(report, "# found\n");
+  verb(open.repo, ["conclude", OPUS, "--from", report, "--decision", "D-900", "--sella", "producer", "--studio", "studio", "--now", NOW_ISO]);
+  commit(open.repo, "studio: concluded");
+  const closed = next(open, [OPUS, ...budget]);
+  expectStep(closed, "checkpoint", "complete", "a concluded record is complete, with no retro owed");
+
+  rmSync(join(open.studio, "acta", `${NOW_ISO.slice(0, 10)}-report-${OPUS}.md`));
+  commit(open.repo, "studio: the report is gone");
+  const gone = next(open, [OPUS, ...budget]);
+  assert.equal(gone.first, `next: ${OPUS} retro held`, ran("a conclusion with its report gone holds", gone));
+  assert.match(gone.kv.get("why") ?? "", /its conclusion is not valid/, ran("a conclusion with its report gone says so", gone));
+
+  const started = study("w525-started", { start: "2026-10-01T00:00:00.000Z" });
+  expectStep(next(started, [OPUS, ...budget]), "spec", "named", "a study already started keeps the ladder");
+  const runtimed = study("w525-runtime", { builder_runtime: "isolated" });
+  expectStep(next(runtimed, [OPUS, ...budget]), "spec", "named", "a study with a builder_runtime keeps the ladder");
+});
