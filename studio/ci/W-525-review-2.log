@@ -1,0 +1,22 @@
+# opus: W-525
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b567-ead8-7623-8b69-6e3b19b05c52
+# outcome: failed
+# at: 2026-11-07T10:52:33.680Z
+# tree: tree:099172f7797c47915ffb0710d1753ccd7c89591e
+# brief: briefs/W-525.md blob:2685da486bcd37ab0d8ce661a937101b867aeb04
+# ticket: {"opus":"W-525","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-525/studio","head":"eb84dcef4a8a8b68607cb2f0bfc9d3259515de7d","brief":"2685da486bcd37ab0d8ce661a937101b867aeb04","at":"2026-11-07T10:51:48.064Z"}
+
+## Findings
+1. blocking — packages/commands/src/lifecycle.ts:1607 Reached through ci/W-525-review-1.log #1’s class: the exact-heading regex rejects a valid CRLF line because `$` is tested after the retained `\r`, so a decision containing `## Ruling\r\n` or `## Decree\r\n` cannot authorize either verb despite the decision body’s any-text domain (brief:118). [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/cli/src/w525.test.ts
+
+## Earlier findings
+- ci/W-525-review-1.log #1: closed — packages/commands/src/lifecycle.ts:1607 now requires an exact heading, and both verb rows reject the three reported suffixed forms.
+- ci/W-525-review-1.log #2: closed — packages/commands/src/lifecycle.ts:1396 rejects more than one positional id before any write, with no-write assertions for both verbs.
+
+## Verdict
+The two earlier defects are closed, but the tightened authorization matcher still rejects exact headings in valid CRLF decision text.
+VERDICT: FAIL
