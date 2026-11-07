@@ -1,0 +1,18 @@
+# opus: W-525
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b4c8-b1ac-7622-b760-dede07ab5a8e
+# outcome: failed
+# at: 2026-11-07T11:10:26.496Z
+# tree: tree:099172f7797c47915ffb0710d1753ccd7c89591e
+# brief: briefs/W-525.md blob:68016f06d8d7af66ead28ad5a4ea74c193c88b5d
+# ticket: {"opus":"W-525","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-525/studio","head":"1142a48310f0d8a781d43f85e381327ccef3c7d7","brief":"68016f06d8d7af66ead28ad5a4ea74c193c88b5d","at":"2026-11-07T11:10:21.694Z"}
+
+## Findings
+1. blocking — brief:118 The proposed matcher is not exact: after LF splitting, JavaScript `$` can match before a final line terminator, so `## Ruling\u2028\nW-7` and `## Ruling\r\r\nW-7` pass, letting real `lift` and `conclude` callers accept plausible pasted or corrupted headings that the row promises to refuse; current tests cover U+2028 before the heading and CR before text, not these forms. Replace the heading clause with: “After splitting at LF, `patronDecisionProblem` removes exactly one terminal CR and compares the remainder by string equality with `## Ruling` or `## Decree`; U+2028, U+2029, a second CR, and every suffix refuse,” and add pins for headings ended by U+2028, U+2029, and double CR. [severity: S1] [design: keeps] [class: tests×ruled-case-uncovered] — check: packages/cli/src/w525.test.ts
+
+## Verdict
+The CRLF rebuttal is correct, but the proposed exact matcher still accepts ruled-out terminal-separator forms, leaving a design-preserving S1 blocker.
+VERDICT: FAIL
