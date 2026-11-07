@@ -354,13 +354,10 @@ rather than nothing at all. `cascades/README.md`'s "Usage tracking" section
 and `scripts/usage-from-workflow.mjs` are the documented bridge from a
 Workflow-tool run's own output into a series of these calls.
 
-`answer` and `budget` are Patron writes: the CLI runs them
-with `BISELLIUM_ROLE=patron`, and each one appends a line to
-`<studio>/timeline/patron.jsonl` (also gitignored) recording what the Patron
-just did. A plain `greenlight` or `--decline` appends that line only when
-it runs as the Patron, from the console's `POST /api/greenlight`; run from
-the CLI it writes none (W-526, D-186: the CLI cannot tell the Patron from
-the producer, so it clears `BISELLIUM_ROLE` for `greenlight`). `answer --petitio <id> <reply…>` appends
+`answer` and `budget` are Patron writes: the CLI runs them with `BISELLIUM_ROLE=patron`, and each appends a line to
+`<studio>/timeline/patron.jsonl` (also gitignored) recording what the Patron just did. A plain `greenlight` or `--decline`
+appends one only as the Patron, from the console's `POST /api/greenlight`; the CLI writes none (W-526, D-186: it cannot tell
+the Patron from the producer, so it clears `BISELLIUM_ROLE` for `greenlight`). `answer --petitio <id> <reply…>` appends
 `\n\n[stated] <now> <patron>: <reply>` to the petitio's body and resolves it
 (`state: resolved`; W-114: that `[stated]` reply is then shown in the boot
 context of the petitio's `from`/`to` sella for two days when the other party is
