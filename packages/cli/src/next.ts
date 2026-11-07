@@ -47,7 +47,7 @@ import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
 import { buildPacket, parsePacketArgs } from "../../../scripts/review-packet.mjs";
-import { boundHead, clean, cleanup, dirtyHold, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readMergeQueue, rebindPr, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { boundHead, clean, cleanup, dirtyHold, unstagedEdit, git, sh, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readMergeQueue, rebindPr, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
 import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
 import { sweepLines, sweepWorktrees, unpushedBranches } from "./prune.js";
@@ -2517,6 +2517,9 @@ async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (l
   return { ok: true, lines: done };
 }
 
+/** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
+const dailyEntryEdit = (f: Facts): string | undefined => unstagedEdit(f.repo, `${f.studioRel}/${DAILY_TRACKER}`);
+
 function performBranch(f: Facts): StepResult {
   const { repo, id, wt } = f;
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
@@ -2528,7 +2531,9 @@ function performBranch(f: Facts): StepResult {
   if (changed.bad.length > 0) return heldResult(`refusing: ${changed.bad.slice(0, 5).map((p) => clean(p)).join(", ")} renamed, removed, rewritten or ignored`);
   const record = `${f.studioRel}/${recordRel(id)}`;
   const paths = [...changed.spec, ...changed.other.filter((p) => p === record)];
-  const dirty = dirtyHold(repo, (p) => paths.includes(p));
+  // W-530: the daily retro's unstaged entry stays in the main checkout: `commit -- <paths>` leaves it out and `worktree add` checks out the commit
+  const entry = dailyEntryEdit(f);
+  const dirty = dirtyHold(repo, (p) => paths.includes(p) || p === entry);
   if (dirty !== undefined) return dirty;
   try {
     lstatSync(wt.dir);
@@ -3226,7 +3231,9 @@ function performDone(f: Facts, d: Derived): StepResult {
   // verify's certificates may ride along; any other tracked change refuses
   const only = `${f.studioRel}/${recordRel(id)}`;
   const rides = (path: string): boolean => path === only || (!path.startsWith(`${f.studioRel}/`) && recordOnly([path], f.studioRel));
-  const dirty = dirtyHold(repo, rides);
+  // W-530: the daily retro's unstaged entry stays in the main checkout and is never staged here
+  const entry = dailyEntryEdit(f);
+  const dirty = dirtyHold(repo, (p) => rides(p) || p === entry);
   if (dirty !== undefined) return dirty;
   if (d.act === "verify") return heldResult(`refusing: no automated certificate is recorded; run: ${d.command ?? ""}`);
   let recorded: string[] = [];
@@ -3262,7 +3269,7 @@ function performDone(f: Facts, d: Derived): StepResult {
     return { ok: false, lines: [...r.lines, ...text.slice(1, 6).map((l) => `done: ${l}`)] };
   }
   const changes = trackedChanges(repo);
-  const changed = typeof changes === "string" ? [] : changes.flatMap(touched);
+  const changed = typeof changes === "string" ? [] : changes.flatMap(touched).filter((p) => p !== entry);
   if (typeof changes === "string" || changed.some((p) => !rides(p))) {
     const r = unwind(`done changed tracked paths other than ${only}, the handoff and the dossier pages; nothing committed, ${chore} left for inspection`, [], false);
     return { ok: false, lines: [...r.lines, ...changed.map((p) => `changed: ${p}`)] };
@@ -3577,7 +3584,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
         for (const l of refreshTicket(f, derivedStep(f), a.nowMs)) log(l);
         const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
-        const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
+        const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, rider: dailyEntryEdit(f), pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
         let result: StepResult;
         switch (d2.step) {
           case "branch":
