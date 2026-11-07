@@ -1,0 +1,20 @@
+# opus: W-523
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b368-7c66-7a90-9fb6-6cffdb4aa8cb
+# outcome: passed
+# at: 2026-11-07T00:32:55.258Z
+# tree: tree:1062eb6d006df8e548fa7cf16f610fb07aaa8758
+# brief: briefs/W-523.md blob:afe2e0e56c92fd8455de96427647e44ce2760976
+# ticket: {"opus":"W-523","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-523/studio","head":"0ea17ed93dd1f8eea4a97f41726321a545fc2575","brief":"afe2e0e56c92fd8455de96427647e44ce2760976","at":"2026-11-07T00:28:50.627Z"}
+
+## Findings
+1. advisory — packages/cli/src/land.ts:110 A failed title read, notice write, or review request still proceeds to `armQueue` because `notice.ok` is ignored; this excluded failure form can arm before the Patron is successfully asked. [severity: S2] [class: review×write-failure-contract-incomplete] — check: packages/cli/src/w509.test.ts W-523-b3 review-request failure
+2. advisory — packages/cli/src/integrate.ts:640 Malformed `reviewRequests` entries are silently skipped, potentially causing a duplicate request; the brief declares only the array, not its element grammar. [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w509.test.ts W-523-b3 malformed review-request entry
+3. advisory — packages/cli/src/integrate.ts:1025 A side-effecting `gh pr merge` can enable auto-merge remotely yet return nonzero, making `queue: not armed` false until a fresh read; the test covers only a failure without the remote side effect. [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w509.test.ts W-523-b2 side-effecting nonzero arm
+
+## Verdict
+The declared behaviors, owned-file boundary, automated gates, and three genuine reds are satisfied. The findings concern excluded or undeclared failure forms and are advisory.
+VERDICT: PASS
