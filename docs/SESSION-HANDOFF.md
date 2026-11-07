@@ -48,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: one until W-512 lands (D-182).
 
-Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-528 W-529 W-531.
+Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-528 W-529 W-531 W-532.
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
@@ -62,7 +62,7 @@ Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a
 
 D-189: a call that would wait on the Patron goes to a meet of the relevant leads, whose recommendation is the default, vetoable at the next summary; the producer's alone is not. Its lex line landed with W-525 (#1079, production.md section 7).
 
-W-509 is done (#1060, #1061). D-186: greenlighting goes. The order (D-187, D-188, and the Patron's yes on W-528 and W-529, no decision filed): W-523, W-530, W-525, W-526, W-528 (gates timeout), W-519, W-529 (pool the local gate at eight; hosted stays serial). W-520 to W-522 stay in backlog until W-526 lands; W-524 waits for M4. Daily retro (D-188, lex 9 step 7): after 00:00Z, ladder-runner runs, fresh QA lead proposes, ladder-runner lands. First proposals: the classes owed 11-06.
+W-509 is done (#1060, #1061). D-186: greenlighting goes. The order (D-187, D-188, and the Patron's yes on W-528 and W-529, no decision filed): W-528 (gates timeout), W-532 (boot cut, folds W-517), W-519, W-529 (pool the local gate at eight; hosted stays serial). W-524 waits for M4. Daily retro (D-188, lex 9 step 7): after 00:00Z, ladder-runner runs, fresh QA lead proposes, ladder-runner lands. First proposals: the classes owed 11-06.
 
 W-456 and W-527, studies finished off the ladder, are done by `conclude` (D-187), reports in studio/acta/2026-11-07-report-W-456.md and -W-527.md. W-523 is done (#1067, #1069). W-530 is done (#1070, #1072).
 
@@ -74,7 +74,7 @@ D-184: W-520, after W-531 (studio/queue.yml order), exempt from the freeze, taki
 
 W-507 W-298's remainder: built, gates passed, on opus/W-507, parked until after M4 (D-181).
 
-The Claude usage hold is ~98% (Patron 2026-11-05).
+Claude usage hold: ~98% (Patron 2026-11-05).
 
 Research is its own lane (Patron 2026-11-05), but none runs alongside work under D-182's one lane without their word. W-500 Runs screen is deferred until after MVP (Patron 2026-11-05); details in its record.
 
