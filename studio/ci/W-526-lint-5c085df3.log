@@ -1,0 +1,39 @@
+certifies: tree:5c085df30903e1397d4713f61a0b5f4c2905a418
+command: npm run -s lint
+exit code: 0
+
+
+/home/edckt/agents/bisellium/.********.tsx
+  229:9  warning  'focusedId' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.tsx
+  92:9  warning  'focusedPetition' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.spec.ts
+  243:11  warning  'workspace' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  14:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  17:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.ts
+  28:7  warning  'OID_RE' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.ts
+  21:7  warning  'str' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  238:9  warning  'stalledFile' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+✖ 11 problems (0 errors, 11 warnings)
+
+
