@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-523 }
+    lanes: { E1: W-525 }
     next:
       - { opus: W-523, says: "land reads the code owner's approval and queues; exempt, first (D-187)" }
       - { opus: W-530, says: "a missing retro holds only unsigned work; next names its run and land; exempt (D-188)" }
@@ -24,6 +24,7 @@ queues:
       - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; parked until after M4 (D-181)" }
       - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
+      - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-517's study sets its number (leads 2026-11-07)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
       - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
@@ -63,6 +64,7 @@ queues:
     next:
       - { opus: W-456, says: "study finished off the ladder, report in evidence; record closes once W-525 can move it (D-183, D-187)" }
       - { opus: W-527, says: "study finished off the ladder, report in evidence; record closes once W-525 can move it (D-187)" }
+      - { opus: W-517, says: "study what a fresh session loads; runs on the Patron's word (leads 2026-11-07)" }
   ui:
     lanes: { UI1: ~ }
     next:
