@@ -1,0 +1,19 @@
+# opus: W-528
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b6b6-dfb0-7a51-978e-e4696622685e
+# outcome: passed
+# at: 2026-11-07T15:56:42.894Z
+# tree: tree:eea83414dfd108f9c065a2c34b76671167280c4b
+# brief: briefs/W-528.md blob:945b442b174866fdf7a6f5312ce2dd1f3f0fb434
+# ticket: {"opus":"W-528","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"fe2f880b8c9eebb2b8ba4149e6dfd24d23a083ff","brief":"945b442b174866fdf7a6f5312ce2dd1f3f0fb434","at":"2026-11-07T15:56:42.275Z"}
+
+## Findings
+1. advisory — brief:68 [severity: S4] The reused-gates row leaves lint, format, both officina checks, and the CI call unnamed. Replace brief:68 with: `| 4. The reused gates | npm test, npm run -s typecheck, npm run -s lint, npm run -s format:check, npm run -s check -- studio --repo ., npm run -s check -- examples/sample-studio --repo ., and bisellium ci --opus W-528 --studio studio each exit 0 | exit: every listed reused call’s non-zero exit fails acceptance; unpinned, a stated limit (D-076 E) |`. [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+
+## Verdict
+The timeout design and its promises are feasible; the sole input-boundary wording gap is advisory.
+
+VERDICT: PASS

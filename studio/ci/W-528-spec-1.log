@@ -1,0 +1,23 @@
+# opus: W-528
+# phase: spec
+# round: 1
+# sella: ops-lead
+# outcome: passed
+# at: 2026-11-07T15:52:38.447Z
+# tree: tree:eea83414dfd108f9c065a2c34b76671167280c4b
+# brief: briefs/W-528.md blob:945b442b174866fdf7a6f5312ce2dd1f3f0fb434
+# ticket: {"opus":"W-528","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"fe2f880b8c9eebb2b8ba4149e6dfd24d23a083ff","brief":"945b442b174866fdf7a6f5312ce2dd1f3f0fb434","at":"2026-11-07T15:52:32.780Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-528-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the limit is set from job times read from GitHub, not from W-527's run wall-clock minutes: 136 passing gates jobs, 2026-10-21 to 11-07, slowest 31.8 minutes, newest master pushes 29 to 31; 60 is about 1.9 times the slowest, under certify's 100 and the merge queue's live 120 — check: brief Intent, gates-times.out, job-times.out, queue-rules.out
+2. advisory — a code-owned file is touched: `.github/workflows/ci.yml` is under `/.github/` in `.github/CODEOWNERS`, so the Patron approves the PR — check: brief Status, brief Acceptance, .github/CODEOWNERS
+3. advisory — the row reads the file, so that GitHub cancels the job at 60 minutes is GitHub's behaviour and stated as a limit; what hung PR 1032 is not determined and is out of scope — check: brief Promise gates-limit, brief Limits, W-527 report
+4. advisory — not run for this spec: `npm test`, typecheck, lint, `format:check`, both officina checks and the CI run, so `test.one_sided` and prettier have not read the new row or the ci.yml comment until the build — check: brief Acceptance, gates-proto.out
+5. advisory — ops lane: 60 holds against the job times, not an estimate: the 88 full-suite passing gates jobs have median 24.7 and slowest 31.8, so 60 is 28 minutes over the slowest; gates and certify run in parallel on a merge group (no `needs` between them), so each limit sits alone under the queue's 120; the brief's median of 20.4 now names the 48 short pull-request and record-only runs inside it — check: brief Intent, gates-times.out, job-times.out, queue-rules.out, .github/workflows/ci.yml
+
+## Verdict
+
+passed — signed by the ops lead (`ops-lead`, `claude-opus-5-5`, the ops signer in spec_seats, D-150 C) for `studio/briefs/W-528.md` at master e887cfcc, round 1, on the engineering architect's draft and prototype: one behaviour, its red accepted by the replay classifier on the commit before it and green on its feature commit (`reds.out`, `red-b1.log`, `green-b1.log`); every one-hunk wrong form failing the row at a named assertion (`mutants.out`); the two-commit mbox applying to the same tree (`mbox-check.out`); every test file that parses ci.yml passes on the tip (`gates-proto.out`); the Codex test check names no flip (`fixture-census.md`); `CI_STEPS` is unchanged.
