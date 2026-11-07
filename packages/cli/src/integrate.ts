@@ -14,6 +14,7 @@
 import { spawnSync } from "node:child_process";
 import { accessSync, constants, lstatSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { instant } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
 import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
@@ -590,12 +591,58 @@ function readQueueMembership(repo: string, pr: Pr): { ok: true; queued: boolean 
   return typeof queued === "boolean" ? { ok: true, queued } : { ok: false, reason: "gh api graphql returned no boolean data.repository.pullRequest.isInMergeQueue" };
 }
 
-/** W-509: GitHub's review decision on a PR: `APPROVED` once its required reviews, a code owner's included, are met; absent reads as an empty string. */
-export function readReviewDecision(repo: string, pr: Pr): { ok: true; decision: string } | { ok: false; reason: string } {
-  const v = ghJson(repo, ["pr", "view", String(pr.number), "-R", pr.repo, "--json", "reviewDecision"]);
+/**
+ * W-523: where the code owners stand on a PR's current head. Not GitHub's `reviewDecision`: master's ruleset requires no
+ * review count, so that field stays empty on an approved PR (#1057, #1059, #1062, #1063). Not `latestReviews`: its `commit.oid`
+ * is empty. A review is an owner's if its author's login is theirs; an owner's latest opinion (APPROVED, CHANGES_REQUESTED,
+ * DISMISSED; a comment is none, and a pending review is not submitted) must be an APPROVED on this very head. This read only
+ * says what land does next: GitHub's own rule is what holds the merge.
+ */
+export interface OwnerReview {
+  approved: boolean;
+  /** Some owner holds a pending request or has left any review on this head: land does not ask again. */
+  asked: boolean;
+  /** Auto-merge is on: GitHub sends the PR into the queue once its own rule is met. */
+  armed: boolean;
+  /** One `owner-review:` line per owner whose approval this read does not find. */
+  notes: string[];
+}
+const OPINIONS = new Set(["APPROVED", "CHANGES_REQUESTED", "DISMISSED"]);
+export function readOwnerReview(repo: string, pr: Pr, owners: readonly string[]): { ok: true; review: OwnerReview } | { ok: false; reason: string } {
+  const v = ghJson(repo, ["pr", "view", String(pr.number), "-R", pr.repo, "--json", "headRefOid,reviews,reviewRequests,autoMergeRequest"]);
   if (!v.ok) return v;
-  const decision = isObj(v.value) ? v.value["reviewDecision"] : undefined;
-  return decision === null || decision === undefined ? { ok: true, decision: "" } : typeof decision === "string" ? { ok: true, decision } : { ok: false, reason: "gh pr view returned no string reviewDecision" };
+  const value = v.value;
+  const head = pr.headRefOid;
+  if (!isObj(value) || value["headRefOid"] !== head) return { ok: false, reason: `gh pr view did not read PR #${pr.number}'s head ${head.slice(0, 12)}` };
+  const reviews = value["reviews"];
+  const requests = value["reviewRequests"];
+  if (!Array.isArray(reviews) || !Array.isArray(requests)) return { ok: false, reason: "gh pr view returned no reviews or reviewRequests array" };
+  const notes: string[] = [];
+  let approved = true;
+  let asked = false;
+  for (const owner of owners) {
+    const login = /^@([A-Za-z0-9-]+)$/.exec(owner)?.[1]?.toLowerCase();
+    if (login === undefined) {
+      approved = false;
+      notes.push(`owner-review: ${clean(owner)} is not a login, so its approval is not read here; GitHub's own rule still decides`);
+      continue;
+    }
+    const theirs: { state: string; oid: string; at: number }[] = [];
+    for (const r of reviews) {
+      const author = isObj(r) && isObj(r["author"]) ? r["author"]["login"] : undefined;
+      if (typeof author !== "string" || author.toLowerCase() !== login || !isObj(r) || r["state"] === "PENDING") continue;
+      const oid = isObj(r["commit"]) ? r["commit"]["oid"] : undefined;
+      const at = instant(r["submittedAt"])?.getTime();
+      if (typeof r["state"] !== "string" || typeof oid !== "string" || oid === "" || at === undefined) return { ok: false, reason: `gh pr view returned a review by ${login} with no state, commit or time` };
+      theirs.push({ state: r["state"], oid, at });
+    }
+    const latest = theirs.filter((r) => OPINIONS.has(r.state)).reduce<(typeof theirs)[number] | undefined>((a, b) => (a === undefined || b.at >= a.at ? b : a), undefined);
+    if (theirs.some((r) => r.oid === head) || requests.some((q) => isObj(q) && typeof q["login"] === "string" && q["login"].toLowerCase() === login)) asked = true;
+    if (latest?.state === "APPROVED" && latest.oid === head) continue;
+    approved = false;
+    notes.push(`owner-review: ${login} ${latest === undefined ? "holds no approval" : `${clean(latest.state)} on ${latest.oid.slice(0, 12)}`}; PR #${pr.number}'s head is ${head.slice(0, 12)}`);
+  }
+  return { ok: true, review: { approved, asked, armed: isObj(value["autoMergeRequest"]), notes } };
 }
 
 /** W-509: a PR's merge queue entry as GitHub reads it; `rollup` is the check state of the commit the queue built. Read only to report a merge that timed out. */
@@ -952,6 +999,33 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   return { ok: done.ok, lines: [`mode: ${mode}`, ...done.lines] };
 }
 
+/** GHAS: any open alert, an API error or a non-array reply stops the merge. */
+function ghasStop(repo: string, pr: Pr): StepResult | undefined {
+  const alerts = ghJson(repo, ["api", `repos/${pr.repo}/code-scanning/alerts?state=open&per_page=100`]);
+  if (!alerts.ok || !Array.isArray(alerts.value)) return { ok: false, lines: ["state=GHAS_STOP", `why: ${alerts.ok ? "the code-scanning reply was not an array" : alerts.reason}`] };
+  if (alerts.value.length > 0) return { ok: false, lines: [`state=GHAS_STOP open_alerts=${alerts.value.length}`] };
+  return undefined;
+}
+
+/**
+ * W-523: arm the merge queue on a PR still waiting for its code owner, with the merge gate's own call, so the owner's approval
+ * alone sends it in. It does not wait on checks: GitHub holds an armed PR out until its required checks and its code owner's
+ * review are met (`next`'s gate armed 37 such PRs between 2026-10-25 and 2026-11-05, up to 149 minutes before the approval).
+ */
+export function armQueue(repo: string, pr: Pr): { armed: boolean; lines: string[] } {
+  const not = (reason: string, ...lines: string[]): { armed: boolean; lines: string[] } => ({ armed: false, lines: [...lines, `queue: not armed; ${reason}`] });
+  if (readMergeQueue(repo, pr.repo) !== "merge-queue") return not("master's merge queue did not read as on, so the merge is requested on a rerun after approval");
+  const first = readView(repo, pr);
+  if (!first.ok) return not(first.reason);
+  if (first.view.headRefOid !== pr.headRefOid) return not(`PR #${pr.number}'s head moved under the read`);
+  if (first.view.mss === "DIRTY") return not(`PR #${pr.number} conflicts with master`, "state=CONFLICT");
+  const stopped = ghasStop(repo, pr);
+  if (stopped !== undefined) return not("code scanning stopped it", ...stopped.lines);
+  const merge = sh("gh", ["pr", "merge", String(pr.number), "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pr.headRefOid], repo);
+  if (merge.status !== 0) return not(`gh pr merge --squash --auto failed: ${why(merge)}`);
+  return { armed: true, lines: [`queue: armed; PR #${pr.number} enters the merge queue on its code owner's approval, with no rerun`] };
+}
+
 async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<StepResult> {
   const { repo } = ctx;
   const queued = mode === "merge-queue";
@@ -1013,10 +1087,8 @@ async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<S
   }
   if (!green) return { ok: false, lines: [`state=WAITING total=${seen.total} pass=${seen.pass} pending=${seen.pending} failing=${seen.fail}`] };
 
-  // GHAS: any open alert, an API error or a non-array reply stops the merge.
-  const alerts = ghJson(repo, ["api", `repos/${pr.repo}/code-scanning/alerts?state=open&per_page=100`]);
-  if (!alerts.ok || !Array.isArray(alerts.value)) return { ok: false, lines: ["state=GHAS_STOP", `why: ${alerts.ok ? "the code-scanning reply was not an array" : alerts.reason}`] };
-  if (alerts.value.length > 0) return { ok: false, lines: [`state=GHAS_STOP open_alerts=${alerts.value.length}`] };
+  const stopped = ghasStop(repo, pr);
+  if (stopped !== undefined) return stopped;
 
   // the setup is read again just before the one call that depends on it; any change holds with nothing enqueued
   if (queued && readMergeQueue(repo, pr.repo) !== "merge-queue") return held("master's merge-queue setup changed while the merge step ran; nothing was enqueued");

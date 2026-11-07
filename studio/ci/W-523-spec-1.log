@@ -1,0 +1,24 @@
+# opus: W-523
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-06T16:09:15.975Z
+# tree: dirty:025778b295e187fd59b080d5692119a5d9671602
+# brief: briefs/W-523.md blob:afe2e0e56c92fd8455de96427647e44ce2760976
+# ticket: {"opus":"W-523","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"0d92553f1afcf751d339dc8682f76032d60f11ce","brief":"afe2e0e56c92fd8455de96427647e44ce2760976","at":"2026-11-06T16:09:10.299Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-523-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — D-187's second proof, an approval on an old head not counting on an armed PR, is not yet met on a real PR: the record shows the dismissal firing (#923, #1048) but neither was armed in the gap, and no PR was created or armed for this spec; named step 2 proves it with the Patron's one click, and the opus does not claim it until then — check: brief "The gate: what is proved, and what is not yet", brief Acceptance, brief Defaults 2, old-head-proof.sh
+2. advisory — the first proof, an armed unapproved PR staying out, rests on GitHub's own record of 37 code-owned PRs that `next`'s gate armed before approval, up to 149 minutes, and not on an arm by `land`; named step 1 reads the first such land, and an exit 2 there stops arming — check: survey-read.out, probe-checks.out, probe-queued.out, first-land-read.sh
+3. advisory — repo-wide typecheck, lint, `npm test` and both officina checks were not run on the prototype, as W-456's timing study holds this machine and the caller ruled single test files only; `tsx` does not type-check, so the prototype's types are unproved until the build runs them, and Acceptance requires them — check: gates-proto.out, singles.sh, brief Acceptance
+4. advisory — a documented seam change: `readReviewDecision` is removed and `readOwnerReview` and `armQueue` are added, all read only by `land.ts`; `ghasStop` is moved out of `gate` with no change to what it does, and the `beforeMerge` seam is unchanged — check: brief Interfaces, brief Files owned, gates-proto.out
+5. advisory — after `land` exits, nothing watches an armed PR: a failed queue run takes it out silently, and the local master waits for a rerun; both are stated limits and left visible to the Patron — check: brief Promise arms-at-open, brief Promise rerun-after-merge, brief Defaults 3
+
+## Verdict
+
+passed — signed by the engineering architect (`claude-opus-5-5`, D-072, D-150 C) for `studio/briefs/W-523.md` at master 0d92553f: three behaviours, each red accepted by the replay classifier on the commit before its behaviour and green at its stage and later (`reds.out`, `red-b<k>.log`, `green-b<k>.log`); twenty-six one-hunk kills each failing its row at a pinned assertion (`mutants.out`); the six-commit mbox applying to the same tree (`mbox-check.out`); Prettier and five test files pass on the tip, and the gates named in finding 3 are the build's (`gates-proto.out`); the real replies of #1062 and #923 are the fixtures; the Codex test check's flips named (`fixture-census.md`); no file it touches is code-owned, and `.github/` and the ruleset are untouched.

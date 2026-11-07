@@ -5,10 +5,10 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { appendFileSync, chmodSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, existsSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { FAST, type Json, type Out, PR_NUMBER, QUEUE_RULES, type Reply, SLUG, type World, asRule, cand, cli, commit, git, greens, mutating, put, ran, scratch, viewOf, world } from "./next-world.test.js";
+import { FAST, type Json, type Out, PR_NUMBER, QUEUE_RULES, type Reply, SLUG, type World, asRule, cand, cli, commit, ghCalls, ghMerges, git, greens, mutating, put, ran, scratch, viewOf, world } from "./next-world.test.js";
 
 const HANDOFF = "docs/SESSION-HANDOFF.md";
 const RECORD = "studio/opera/W-901.md";
@@ -30,6 +30,7 @@ const isRefused = (o: Out, why: RegExp, row: string): void => {
   assert.match(o.out, why, ran(`${row}: the reason`, o));
 };
 
+const OWNER_FIELDS = "headRefOid,reviews,reviewRequests,autoMergeRequest";
 type GhRule = { match: string[]; replies: Reply[]; alts?: { ifExists?: string; replies: Reply[] }[] };
 function setScenario(w: World, rules: GhRule[]): void {
   writeFileSync(w.scn, JSON.stringify({ rules }));
@@ -48,7 +49,14 @@ interface Gh {
   rules?: Json[];
   /** Replies to the graphql read, gate and report alike. */
   graphql?: Reply;
-  decision?: Reply;
+  /** The reply to land's read of the code owners' reviews; by default no review, no request, not armed. */
+  review?: Reply;
+  /** GitHub's merge state of the open PR. */
+  mss?: string;
+  /** The code-scanning reply. */
+  alerts?: Reply;
+  /** Arming the queue fails. */
+  armFails?: boolean;
   /** The merge never lands: the PR stays OPEN and CLEAN, and origin's master does not move. */
   stuck?: boolean;
   /** The merge commit is built by the caller (another change arrived with it). */
@@ -61,20 +69,22 @@ function landing(w: World, head: string, o: Gh = {}): string {
   const oid = git(w.repo, ["rev-parse", `refs/heads/${head}`]);
   const m = o.merge ?? git(w.repo, ["commit-tree", `${head}^{tree}`, "-p", "refs/heads/master", "-m", `squash ${head} (#${PR_NUMBER})`]);
   if (o.stuck !== true) git(w.repo, ["push", "-q", "origin", `${m}:refs/heads/master`]);
-  const open = cand(w, { state: "OPEN", head, oid });
+  const open = cand(w, { state: "OPEN", head, oid, ...(o.mss === undefined ? {} : { mss: o.mss }) });
   const done = cand(w, { state: "MERGED", head, oid, merge: m });
   setScenario(w, [
     { match: ["repo", "view"], replies: [{ stdout: { nameWithOwner: SLUG } }] },
     { match: ["pr", "list"], replies: [{ stdout: [] }], alts: [{ ifExists: merged, replies: [{ stdout: [done] }] }, { ifExists: created, replies: [{ stdout: [open] }] }] },
-    { match: ["pr", "view", String(PR_NUMBER), "--json", "reviewDecision"], replies: [o.decision ?? { stdout: { reviewDecision: null } }] },
+    { match: ["pr", "view", String(PR_NUMBER), "--json", "reviewDecision"], replies: [{ stdout: { reviewDecision: "" } }] },
+    { match: ["pr", "view", String(PR_NUMBER), "--json", OWNER_FIELDS], replies: [o.review ?? { stdout: { autoMergeRequest: null, headRefOid: oid, reviewRequests: [], reviews: [] } }] },
     { match: ["pr", "view", String(PR_NUMBER), "--json", "title"], replies: [{ stdout: { title: "chore(studio): land fixture records" } }] },
     { match: ["pr", "view"], replies: [{ stdout: viewOf(open) }], alts: [{ ifExists: merged, replies: [{ stdout: viewOf(done) }] }] },
     { match: ["pr", "checks"], ...asRule({ stdout: greens() }) },
     { match: ["pr", "edit"], replies: [{ stdout: "" }] },
     { match: ["api", `repos/${SLUG}/rules/branches/master?per_page=100`], replies: [{ stdout: o.rules ?? [] }] },
     { match: ["api", "graphql"], replies: [o.graphql ?? { stdout: { data: { repository: { pullRequest: { isInMergeQueue: true, mergeQueueEntry: null } } } } }] },
+    { match: ["api", `repos/${SLUG}/code-scanning/alerts?state=open&per_page=100`], replies: [o.alerts ?? { stdout: [] }] },
     { match: ["api"], replies: [{ stdout: [] }] },
-    { match: ["pr", "merge"], replies: o.stuck === true ? [{ stdout: "" }] : [{ stdout: "", touch: merged }] },
+    { match: ["pr", "merge"], replies: o.armFails === true ? [{ exit: 1, stderr: "stub: the arm failed" }] : o.stuck === true ? [{ stdout: "" }] : [{ stdout: "", touch: merged }] },
     { match: ["pr", "create"], replies: [{ stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n`, touch: created }] },
     { match: ["pr", "update-branch"], replies: [{ stdout: "" }] },
   ]);
@@ -92,6 +102,39 @@ const edits = (w: World): void => {
   put(w.repo, HANDOFF, "# Handoff\n\n## Queue\n\n- refreshed\n");
   put(w.repo, RECORD, RECORD_TEXT);
 };
+
+// W-523: GitHub's real replies for master's ruleset (require_code_owner_review true, required_approving_review_count 0), read on
+// 2026-11-06 with `gh pr view <n> --json headRefOid,reviews,reviewRequests,autoMergeRequest`; `--json reviewDecision` on #1062 read "".
+const REAL_1062_HEAD = "c2a0902c0ce404d8199f21afeba82ae67ee317c2";
+const REAL_1062 = String.raw`{"autoMergeRequest":null,"headRefOid":"c2a0902c0ce404d8199f21afeba82ae67ee317c2","reviewRequests":[],"reviews":[{"id":"PRR_kwDOUgF3Pc8AAAABWc5r0Q","author":{"login":"edckt"},"authorAssociation":"MEMBER","body":"","submittedAt":"2026-11-06T14:37:14Z","includesCreatedEdit":false,"reactionGroups":[],"state":"APPROVED","commit":{"oid":"c2a0902c0ce404d8199f21afeba82ae67ee317c2"}},{"id":"PRR_kwDOUgF3Pc8AAAABWc708Q","author":{"login":"edckt"},"authorAssociation":"MEMBER","body":"","submittedAt":"2026-11-06T14:39:33Z","includesCreatedEdit":false,"reactionGroups":[],"state":"APPROVED","commit":{"oid":"c2a0902c0ce404d8199f21afeba82ae67ee317c2"}}]}`;
+const REAL_923 = String.raw`{"autoMergeRequest":null,"headRefOid":"c9ec2579527bd74a6fa078538e2301ae3ca483d6","reviewRequests":[],"reviews":[{"id":"PRR_kwDOUgF3Pc8AAAABVQ3VQA","author":{"login":"edckt"},"authorAssociation":"MEMBER","body":"","submittedAt":"2026-10-31T08:10:14Z","includesCreatedEdit":false,"reactionGroups":[],"state":"APPROVED","commit":{"oid":"36ec7b822d73f8f057dae2f84a04bcd5bf98b93a"}},{"id":"PRR_kwDOUgF3Pc8AAAABVRByzw","author":{"login":"edckt"},"authorAssociation":"MEMBER","body":"","submittedAt":"2026-10-31T09:08:31Z","includesCreatedEdit":false,"reactionGroups":[],"state":"DISMISSED","commit":{"oid":"36ec7b822d73f8f057dae2f84a04bcd5bf98b93a"}},{"id":"PRR_kwDOUgF3Pc8AAAABVRHvaw","author":{"login":"edckt"},"authorAssociation":"MEMBER","body":"","submittedAt":"2026-10-31T09:38:34Z","includesCreatedEdit":false,"reactionGroups":[],"state":"APPROVED","commit":{"oid":"c9ec2579527bd74a6fa078538e2301ae3ca483d6"}}]}`;
+const OLD_OID = "1".repeat(40);
+const DECISION_PATH = "studio/decisions/D-999.md";
+const DECISION_BODY = '---\nid: "D-999"\ntitle: "a fixture ruling"\nat: 2026-11-06T00:00:00Z\nprovenance: stated\nby: patron\nkill_when: "when the fixture goes"\n---\n\nA ruling.\n';
+/** #1062's real reply with its head and its approvals on `oid`. */
+const real1062 = (oid: string): Json => JSON.parse(REAL_1062.replaceAll(REAL_1062_HEAD, oid)) as Json;
+const reviewOf = (login: string, state: string, oid: string, at: string): Json => ({ author: { login }, authorAssociation: "MEMBER", body: "", submittedAt: at, state, commit: { oid } });
+const replyOf = (head: string, reviews: Json[], extra: Json = {}): Reply => ({ stdout: { autoMergeRequest: null, headRefOid: head, reviewRequests: [], reviews, ...extra } });
+const ARMED: Json = { autoMergeRequest: { enabledAt: "2026-11-06T14:59:21Z", enabledBy: { login: "bisellium-agent" }, mergeMethod: "SQUASH" } };
+const REQUESTED: Json = { reviewRequests: [{ __typename: "User", login: "edckt" }] };
+const noticePath = (w: World): string => join(w.repo, ".git", "bisellium", "notice", String(PR_NUMBER));
+const takeNotice = (w: World): boolean => {
+  const held = existsSync(noticePath(w));
+  rmSync(noticePath(w), { force: true });
+  return held;
+};
+const asks = (w: World): number => ghCalls(w).filter((c) => c[0] === "pr" && c[1] === "edit").length;
+/** A world whose decision is code-owned by `owner`, with land's head pushed and no PR yet. */
+function ownedHead(tag: string, owner = "@edckt"): { w: World; head: string; oid: string } {
+  const w = world(tag, "backlog", { github: true });
+  put(w.repo, ".github/CODEOWNERS", `/studio/decisions/ ${owner}\n`);
+  commit(w.repo, "test: code owners");
+  git(w.repo, ["push", "-q", "origin", "master"]);
+  put(w.repo, DECISION_PATH, DECISION_BODY);
+  noPrYet(w);
+  const head = headOf(land(w, [DECISION_PATH]));
+  return { w, head, oid: git(w.repo, ["rev-parse", `refs/heads/${head}`]) };
+}
 
 test("W-509-b1 behaviour 1: land carries the named records to master and leaves other work where it is", { timeout: 1_800_000 }, () => {
   const bodyFile = join(scratch("w509-b1-body"), "body.md");
@@ -276,7 +319,7 @@ test("W-509-b4 behaviour 4: a code-owned path opens the PR, says the Patron must
   put(w.repo, DECISION, DECISION_TEXT);
   noPrYet(w);
   const head = headOf(land(w, [DECISION]));
-  landing(w, head, { stuck: true, decision: { stdout: { reviewDecision: "REVIEW_REQUIRED" } } });
+  landing(w, head, { stuck: true });
   const master = git(w.repo, ["rev-parse", "refs/heads/master"]);
   const waits = land(w, [DECISION]);
   isRefused(waits, /^state=PATRON_REVIEW$/m, "the wait");
@@ -288,13 +331,14 @@ test("W-509-b4 behaviour 4: a code-owned path opens the PR, says the Patron must
   assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), master, "master does not move");
   assert.equal(read(w, DECISION), DECISION_TEXT, "the edit stays in the tree");
   // an unreadable decision reads as not approved
-  landing(w, head, { stuck: true, decision: { exit: 1, stderr: "stub: down" } });
+  landing(w, head, { stuck: true, review: { exit: 1, stderr: "stub: down" } });
   const down = land(w, [DECISION]);
   isRefused(down, /^state=PATRON_REVIEW$/m, "an unreadable decision");
-  assert.match(down.out, /^review-decision: unreadable .*$/m, ran("it says it could not read it", down));
+  assert.match(down.out, /^owner-review: unreadable .*$/m, ran("it says it could not read it", down));
   assert.equal(mutating(w).includes("gh pr merge --squash --auto"), false, "no merge on an unreadable decision");
   // once approved, the same command merges
-  landing(w, head, { decision: { stdout: { reviewDecision: "APPROVED" } } });
+  const headOid = git(w.repo, ["rev-parse", `refs/heads/${head}`]);
+  landing(w, head, { review: { stdout: { autoMergeRequest: null, headRefOid: headOid, reviewRequests: [], reviews: [{ author: { login: "edckt" }, state: "APPROVED", submittedAt: "2026-11-06T14:37:14Z", commit: { oid: headOid } }] } } });
   const approved = land(w, [DECISION]);
   assert.equal(approved.status, 0, ran("approved: it lands", approved));
   assert.match(approved.out, /^state=MERGED$/m, ran("approved: merged", approved));
@@ -535,4 +579,145 @@ test("W-509-b6 behaviour 6: landing never loses an edit: a differing copy, a sta
   const fLanded = land(f, ["studio/ci/W-900-old.log"]);
   assert.equal(fLanded.status, 0, ran("a deleted record lands", fLanded));
   assert.equal(status(f), "", "a deleted record: the checkout is clean");
+});
+
+test("W-523-b1 behaviour 1: the approval is the code owner's latest review on the PR's current head, not GitHub's reviewDecision", { timeout: 1_800_000 }, () => {
+  // the reply GitHub really gave: #1062, empty reviewDecision, two APPROVED reviews, on the queue's rules, in one run
+  const real = ownedHead("w523-b1-real");
+  const master = git(real.w.repo, ["rev-parse", "refs/heads/master"]);
+  landing(real.w, real.head, { rules: QUEUE_RULES, review: { stdout: real1062(real.oid) } });
+  const landed = land(real.w, [DECISION_PATH]);
+  assert.equal(landed.status, 0, ran("#1062's reply: it lands", landed));
+  assert.match(landed.out, /^state=MERGED$/m, ran("#1062's reply: merged", landed));
+  assert.equal(ghCalls(real.w).some((c) => c.includes("reviewDecision")), false, ran("#1062's reply: reviewDecision is not read", landed));
+  assert.equal(asks(real.w), 0, ran("#1062's reply: no review is requested", landed));
+  assert.equal(takeNotice(real.w), false, ran("#1062's reply: no notice", landed));
+  assert.notEqual(git(real.w.repo, ["rev-parse", "refs/heads/master"]), master, "#1062's reply: local master moves");
+  const { w, head, oid } = ownedHead("w523-b1");
+  const merged = (name: string, review: Reply): void => {
+    landing(w, head, { stuck: true, review });
+    const o = land(w, [DECISION_PATH]);
+    assert.doesNotMatch(o.out, /state=PATRON_REVIEW/, ran(`${name}: no wait`, o));
+    assert.ok(mutating(w).includes("gh pr merge --squash --auto"), ran(`${name}: the merge is requested`, o));
+    assert.equal(asks(w), 0, ran(`${name}: no review is requested`, o));
+    assert.equal(takeNotice(w), false, ran(`${name}: no notice`, o));
+  };
+  const waits = (name: string, review: Reply, line: RegExp): void => {
+    landing(w, head, { stuck: true, review });
+    const o = land(w, [DECISION_PATH]);
+    isRefused(o, /^state=PATRON_REVIEW$/m, name);
+    assert.match(o.out, line, ran(`${name}: says why`, o));
+    assert.equal(ghMerges(w).length, 0, ran(`${name}: no merge is requested`, o));
+    takeNotice(w);
+  };
+  const at = (n: number): string => `2026-11-06T14:0${n}:00Z`;
+  const old1062 = { ...real1062(OLD_OID), headRefOid: oid };
+  const real923 = JSON.parse(REAL_923) as { reviews: Json[] };
+  const dismissed = real923.reviews.slice(0, 2).map((r) => ({ ...r, commit: { oid: OLD_OID } }));
+  waits("an approval on an old head (#1062's reviews)", { stdout: old1062 }, new RegExp(`^owner-review: edckt APPROVED on 111111111111; PR #901's head is ${oid.slice(0, 12)}$`, "m"));
+  waits("a dismissed latest over an old approval (#923's reviews)", replyOf(oid, dismissed), /^owner-review: edckt DISMISSED on 111111111111; /m);
+  waits("a dismissal on this head", replyOf(oid, [reviewOf("edckt", "DISMISSED", oid, at(1))]), /^owner-review: edckt DISMISSED on /m);
+  waits("changes asked after an approval", replyOf(oid, [reviewOf("edckt", "APPROVED", oid, at(1)), reviewOf("edckt", "CHANGES_REQUESTED", oid, at(2))]), /^owner-review: edckt CHANGES_REQUESTED on /m);
+  waits("changes asked after an approval, with the reply out of order", replyOf(oid, [reviewOf("edckt", "CHANGES_REQUESTED", oid, at(2)), reviewOf("edckt", "APPROVED", oid, at(1))]), /^owner-review: edckt CHANGES_REQUESTED on /m);
+  waits("another login's approval", replyOf(oid, [reviewOf("someone", "APPROVED", oid, at(1))]), /^owner-review: edckt holds no approval; /m);
+  waits("a comment alone", replyOf(oid, [reviewOf("edckt", "COMMENTED", oid, at(1))]), /^owner-review: edckt holds no approval; /m);
+  waits("no review", replyOf(oid, []), /^owner-review: edckt holds no approval; /m);
+  waits("a commit oid left empty, as latestReviews has it", replyOf(oid, [reviewOf("edckt", "APPROVED", "", at(1))]), /^owner-review: unreadable \(gh pr view returned a review by edckt with no state, commit or time\)/m);
+  waits("a reply for another head", replyOf(OLD_OID, []), /^owner-review: unreadable \(gh pr view did not read PR #901's head /m);
+  waits("a reply with no reviews", { stdout: { headRefOid: oid, reviewRequests: [] } }, /^owner-review: unreadable \(gh pr view returned no reviews or reviewRequests array\)/m);
+  merged("an approval after asked-for changes", replyOf(oid, [reviewOf("edckt", "CHANGES_REQUESTED", oid, at(1)), reviewOf("edckt", "APPROVED", oid, at(2))]));
+  merged("a comment after an approval", replyOf(oid, [reviewOf("edckt", "APPROVED", oid, at(1)), reviewOf("edckt", "COMMENTED", oid, at(2))]));
+  merged("a login in another case", replyOf(oid, [reviewOf("EdCkT", "APPROVED", oid, at(1))]));
+  // an owner that is not a login is never read as approved
+  const team = ownedHead("w523-b1-team", "@some-org/some-team");
+  landing(team.w, team.head, { stuck: true, review: replyOf(team.oid, [reviewOf("edckt", "APPROVED", team.oid, at(1))]) });
+  const teamRun = land(team.w, [DECISION_PATH]);
+  isRefused(teamRun, /^owner-review: @some-org\/some-team is not a login, /m, "a team owner");
+});
+
+test("W-523-b2 behaviour 2: land arms the queue when the PR opens, so approval alone sends it in", { timeout: 1_800_000 }, () => {
+  const { w, head, oid } = ownedHead("w523-b2");
+  landing(w, head, { rules: QUEUE_RULES, stuck: true });
+  const master = git(w.repo, ["rev-parse", "refs/heads/master"]);
+  const first = land(w, [DECISION_PATH]);
+  isRefused(first, /^state=PATRON_REVIEW$/m, "armed");
+  assert.match(first.out, /^queue: armed; PR #901 enters the merge queue on its code owner's approval, with no rerun$/m, ran("it says it is armed", first));
+  const merges = ghMerges(w);
+  assert.equal(merges.length, 1, ran("armed once", first));
+  for (const flag of ["--squash", "--auto", "--match-head-commit", oid]) assert.ok(merges[0]!.includes(flag), ran(`the arm carries ${flag}`, first));
+  assert.equal(ghCalls(w).some((c) => c[0] === "pr" && c[1] === "checks"), false, ran("arming does not wait on checks", first));
+  assert.equal(asks(w), 1, ran("their review is requested", first));
+  assert.match(first.out, /^run: bisellium land .* \(once it has merged, to bring the merge to the local master; the merge itself needs no rerun\)$/m, ran("the rerun's purpose is named", first));
+  assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), master, "master does not move");
+  assert.equal(read(w, DECISION_PATH), DECISION_BODY, "the edit stays in the tree");
+  takeNotice(w);
+  // GitHub merges it on the approval, with nothing run here; the same command then brings it to the local master
+  const m = landing(w, head, { rules: QUEUE_RULES });
+  writeFileSync(join(w.root, `merged-${head.replaceAll("/", "-")}.flag`), "");
+  const after = land(w, [DECISION_PATH]);
+  assert.equal(after.status, 0, ran("the rerun after the merge: exit 0", after));
+  assert.match(after.out, /^state=MERGED$/m, ran("the rerun after the merge: merged", after));
+  assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), m, "the rerun after the merge: local master is the merge commit");
+  assert.equal(ghMerges(w).length, 0, ran("the rerun after the merge: no merge is requested", after));
+  assert.equal(asks(w), 0, ran("the rerun after the merge: no review is requested", after));
+  assert.equal(takeNotice(w), false, ran("the rerun after the merge: no notice", after));
+  assert.equal(localHeads(w), "", "the rerun after the merge: the head is gone");
+  // each way it is not armed says so, and a rerun after approval still merges
+  const notArmed = (name: string, o: Gh, line: RegExp): void => {
+    const x = ownedHead(`w523-b2-${name.replaceAll(" ", "-")}`);
+    landing(x.w, x.head, { stuck: true, ...o });
+    const run = land(x.w, [DECISION_PATH]);
+    isRefused(run, /^state=PATRON_REVIEW$/m, name);
+    assert.match(run.out, line, ran(`${name}: says so`, run));
+    assert.match(run.out, /^run: bisellium land .* \(after their approval; it merges then\)$/m, ran(`${name}: the rerun is named`, run));
+    if (o.armFails !== true) assert.equal(ghMerges(x.w).length, 0, ran(`${name}: no arm`, run));
+  };
+  notArmed("no queue", {}, /^queue: not armed; master's merge queue did not read as on/m);
+  notArmed("a conflict", { rules: QUEUE_RULES, mss: "DIRTY" }, /^queue: not armed; PR #901 conflicts with master$/m);
+  notArmed("an open alert", { rules: QUEUE_RULES, alerts: { stdout: [{ number: 1 }] } }, /^queue: not armed; code scanning stopped it$/m);
+  notArmed("an unreadable alert list", { rules: QUEUE_RULES, alerts: { exit: 1, stderr: "stub: down" } }, /^queue: not armed; code scanning stopped it$/m);
+  notArmed("a failed arm", { rules: QUEUE_RULES, armFails: true }, /^queue: not armed; gh pr merge --squash --auto failed: stub: the arm failed$/m);
+});
+
+test("W-523-b3 behaviour 3: land asks once: no second request, notice or arm on a rerun, and none once approved", { timeout: 1_800_000 }, () => {
+  const { w, head, oid } = ownedHead("w523-b3");
+  const at = "2026-11-06T14:00:00Z";
+  landing(w, head, { rules: QUEUE_RULES, stuck: true });
+  const first = land(w, [DECISION_PATH]);
+  isRefused(first, /^state=PATRON_REVIEW$/m, "the first run");
+  assert.equal(asks(w), 1, ran("the first run asks", first));
+  assert.equal(takeNotice(w), true, ran("the first run leaves a notice", first));
+  const quiet = (name: string, review: Reply): void => {
+    landing(w, head, { rules: QUEUE_RULES, stuck: true, review });
+    const o = land(w, [DECISION_PATH]);
+    isRefused(o, /^state=PATRON_REVIEW$/m, name);
+    assert.equal(asks(w), 0, ran(`${name}: no second request`, o));
+    assert.equal(takeNotice(w), false, ran(`${name}: no second notice`, o));
+  };
+  quiet("a request still pending, armed", replyOf(oid, [], { ...ARMED, ...REQUESTED }));
+  assert.equal(ghMerges(w).length, 0, "an armed PR is not armed again");
+  quiet("changes asked on this head, armed", replyOf(oid, [reviewOf("edckt", "CHANGES_REQUESTED", oid, at)], ARMED));
+  quiet("a comment on this head, armed", replyOf(oid, [reviewOf("edckt", "COMMENTED", oid, at)], ARMED));
+  quiet("a request pending, not armed: it arms", replyOf(oid, [], REQUESTED));
+  assert.equal(ghMerges(w).length, 1, "a PR not armed is armed");
+  // a head the owner has not seen, with no request pending, asks again
+  landing(w, head, { rules: QUEUE_RULES, stuck: true, review: replyOf(oid, [reviewOf("edckt", "APPROVED", OLD_OID, at)], ARMED) });
+  const moved = land(w, [DECISION_PATH]);
+  isRefused(moved, /^state=PATRON_REVIEW$/m, "a moved head");
+  assert.equal(asks(w), 1, ran("a moved head: their review is requested", moved));
+  assert.equal(takeNotice(w), true, ran("a moved head: a notice", moved));
+  // an unreadable read may be an approval: nothing is asked or armed, and it says so
+  landing(w, head, { rules: QUEUE_RULES, stuck: true, review: { exit: 1, stderr: "stub: down" } });
+  const down = land(w, [DECISION_PATH]);
+  isRefused(down, /^owner-review: unreadable \(.*\); read as not approved, so nothing is requested or armed$/m, "an unreadable read");
+  assert.equal(asks(w), 0, ran("an unreadable read: no request", down));
+  assert.equal(takeNotice(w), false, ran("an unreadable read: no notice", down));
+  assert.equal(ghMerges(w).length, 0, ran("an unreadable read: no arm", down));
+  // approved and armed, the same command waits for the merge, asking nothing
+  const reply = real1062(oid);
+  landing(w, head, { rules: QUEUE_RULES, review: { stdout: { ...reply, ...ARMED } } });
+  const done = land(w, [DECISION_PATH]);
+  assert.equal(done.status, 0, ran("approved and armed: it lands", done));
+  assert.equal(asks(w), 0, ran("approved and armed: no request", done));
+  assert.equal(takeNotice(w), false, ran("approved and armed: no notice", done));
 });

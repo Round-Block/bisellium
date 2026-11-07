@@ -1,0 +1,19 @@
+# opus: W-523
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b341-26c8-7580-84b1-8d44d5d7a459
+# outcome: passed
+# at: 2026-11-06T23:52:28.742Z
+# tree: tree:1adf2c63375bec4ad2e232c3b8bd9acc78a2afc3
+# brief: briefs/W-523.md blob:afe2e0e56c92fd8455de96427647e44ce2760976
+# ticket: {"opus":"W-523","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a359b3d76f49e3a7dbb3110b5076270ca6bceb87","brief":"afe2e0e56c92fd8455de96427647e44ce2760976","at":"2026-11-06T23:52:24.060Z"}
+
+## Findings
+1. advisory — brief:82 The new reader classifies `reviewRequests` elements, but the row declares only the array: malformed pending-user entries are silently passed over and can cause another request. Append: `A review-request counts as pending only when it is an object with a string login matching an @login owner case-insensitively; every other form is passed over, so a malformed pending-user entry may be requested again.` [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w509.test.ts W-523-b3 malformed review-request entry
+2. advisory — brief:44 `autoMergeRequest` and the `gh pr merge` exit are two readers of armed state, but the promise treats a non-zero exit as proof that the PR is not armed; the remote operation can succeed before the local call fails. Replace that clause with: `When the call is not confirmed, land prints queue: not armed as this run's result; GitHub may already have armed it, so the next run trusts a fresh autoMergeRequest read, and an approved rerun proceeds through reused gate only after its stated stop clears.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w509.test.ts W-523-b2 side-effecting non-zero arm
+
+## Verdict
+The brief is feasible and fail-closed for merging; both findings are advisory limits to record during the build.
+VERDICT: PASS
