@@ -4,6 +4,8 @@
  * `bisellium.yml#auto_greenlit_by` names (b1); the Patron's reserved scope and a record the screen cannot read are refused
  * even for those two kinds (b2). W-417 (rows W-417-b1 and W-417-b2, at the end): a parent is screened before either kind,
  * and a cause fix that carries a parent the screen passed is a cause fix (W-403-b2's row name is kept as recorded).
+ * W-526 (row W-526-b1, at the end): a plain greenlight or decline writes a Patron timeline line only under the Patron
+ * role the console's route sets; from the CLI, or called with no Patron role, it writes none.
  * node:test TAP, selected by `--test-name-pattern='^W-403-b<k>\s'`. Each row builds its own officina in a git repository
  * under the OS tmp dir with `initStudio`, drives `runGreenlight` in process and captures its console; nothing here reads
  * or writes `studio/` or `examples/`.
@@ -13,10 +15,12 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { initStudio } from "./init.js";
+import { runServe } from "./serve.js";
 import { runGreenlight } from "./writes.js";
 
 const NOW = new Date("2026-10-25T09:00:00Z");
@@ -320,11 +324,11 @@ test("W-403-b1 behaviour 1: greenlight --auto greenlights a D-061 §4 remainder 
   decided(missing);
   refused("no such decision: refused", missing, ["W-2", "--auto"], 'W-2: greenlight --auto refused: bisellium.yml#auto_greenlit_by: decision "D-404" not found');
 
-  // 4. the Patron's greenlight is unchanged: greenlit, a timeline line, no greenlit_by
-  const p = n.green("W-9");
+  // 4. a plain greenlight is unchanged but for its line: greenlit, no greenlit_by; W-526: with no Patron role, no line
+  const p = asRole(undefined, () => n.green("W-9"));
   assert.deepEqual([p.code, p.out], [0, "W-9: greenlit"], "the Patron's greenlight: unchanged");
   assert.deepEqual([n.front("W-9")["state"], n.front("W-9")["greenlit_by"]], ["greenlit", undefined], "the Patron's greenlight writes no greenlit_by");
-  assert.equal(JSON.parse(timeline(n).trim())["action"], "greenlight", "the Patron's greenlight writes its timeline line");
+  assert.equal(timeline(n), "", "W-526: a plain greenlight called with no Patron role writes no timeline line");
 });
 
 test("W-403-b2 behaviour 2: greenlight --auto refuses the Patron's reserved scope even for a remainder or a cause fix: kind ui, over 3 points or unsized, a title naming security, the sandbox, branch protection, architecture or a code-owned path, a security class, a ui parent, a record the screen cannot read, and a cause fix that carries a parent (W-417)", () => {
@@ -611,4 +615,86 @@ test("W-417-b2 behaviour 2: greenlight --auto greenlights a D-076 D cause fix th
   );
   w.opus("W-101", { title: "cause fix for tests×ruled-case-uncovered, part of W-6, large", kind: "feature", parent: "W-6", value: 5 });
   refused("a cause fix with a valid parent, 5 points: refused", ["W-101", "--auto"], "W-101: greenlight --auto refused: W-101's value is 5, not 1, 2 or 3 points; anything larger, or unsized, is the Patron's");
+});
+
+// W-526 (D-186, D-187 item 4): the CLI cannot tell the Patron from the producer, so a greenlight it runs records no Patron
+// act; the console's token-gated route runs it as the Patron and still writes the line.
+const MAIN = fileURLToPath(new URL("./main.ts", import.meta.url));
+const ROOT = resolve(dirname(MAIN), "..", "..", "..");
+function cli(w: World, env: Record<string, string>, ...args: string[]): { code: number | null; out: string; err: string } {
+  const r = spawnSync(process.execPath, ["--import", "tsx", MAIN, "greenlight", ...args, "--studio", w.studio, "--now", NOW.toISOString()], { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...env } });
+  return { code: r.status, out: r.stdout.trim(), err: r.stderr.trim() };
+}
+function asRole<T>(role: string | undefined, fn: () => T): T {
+  const prev = process.env["BISELLIUM_ROLE"];
+  if (role === undefined) delete process.env["BISELLIUM_ROLE"];
+  else process.env["BISELLIUM_ROLE"] = role;
+  try {
+    return fn();
+  } finally {
+    if (prev === undefined) delete process.env["BISELLIUM_ROLE"];
+    else process.env["BISELLIUM_ROLE"] = prev;
+  }
+}
+const granted = (w: World): Dict[] => events(w).filter((e) => e["name"] === "workflow.greenlight");
+
+test("W-526-b1 behaviour 1: a greenlight the CLI runs writes no Patron timeline line, even under BISELLIUM_ROLE=patron, and one the console runs as the Patron still writes it", async () => {
+  const w = world();
+  for (const id of ["W-30", "W-31", "W-32", "W-33", "W-34", "W-35", "W-36"]) w.opus(id, { title: `plain ${id}`, kind: "feature", value: 2 });
+
+  // 1. the CLI: a greenlight and a decline, with the shell exporting the Patron's role: the write and its event, no line
+  const g = cli(w, { BISELLIUM_ROLE: "patron" }, "W-30");
+  assert.deepEqual([g.code, g.out, timeline(w)], [0, "W-30: greenlit", ""], "a CLI greenlight writes no Patron timeline line, even under BISELLIUM_ROLE=patron");
+  assert.equal(w.front("W-30")["state"], "greenlit", "the CLI greenlight still greenlights");
+  const d = cli(w, { BISELLIUM_ROLE: "patron" }, "W-31", "--decline", "not now");
+  assert.deepEqual([d.code, d.out, timeline(w)], [0, "W-31: declined (not now)", ""], "a CLI decline writes no Patron timeline line");
+  assert.deepEqual([w.front("W-31")["state"], w.front("W-31")["declined"]], ["backlog", "not now"], "the CLI decline still records the reason");
+  const e = cli(w, {}, "W-32");
+  assert.deepEqual([e.code, timeline(w)], [0, ""], "a CLI greenlight with no role exported writes no line");
+  assert.deepEqual(
+    granted(w).map((x) => [(x["attrs"] as Dict)["workflow.item.id"], (x["attrs"] as Dict)["workflow.greenlight"]]),
+    [["W-30", "granted"], ["W-31", "declined"], ["W-32", "granted"]],
+    "each CLI run still emits its workflow.greenlight event",
+  );
+
+  // 2. called in process: only the Patron's role writes the line, never appendPatronTimeline's own default
+  assert.equal(asRole(undefined, () => w.green("W-33")).code, 0, "fixture: W-33 greenlit with no role");
+  assert.equal(timeline(w), "", "a greenlight called with no role writes no line");
+  assert.equal(asRole("producer", () => w.green("W-34")).code, 0, "fixture: W-34 greenlit as the producer");
+  assert.equal(timeline(w), "", "a greenlight under BISELLIUM_ROLE=producer writes no line");
+
+  // 3. the console: the token-gated route runs it as the Patron, and the line is written, granted and declined
+  const printed: string[] = [];
+  const log = console.log;
+  console.log = (...a: unknown[]) => void printed.push(a.map(String).join(" "));
+  let served: Awaited<ReturnType<typeof runServe>>;
+  try {
+    served = await asRole(undefined, () => runServe(["--studio", w.studio, "--port", "0", "--once"], { now: NOW, token: "w526-token" }));
+  } finally {
+    console.log = log;
+  }
+  try {
+    assert.equal(served.exitCode, 0, "fixture: the console starts");
+    const port = /listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(printed.join("\n"))?.[1];
+    assert.ok(port !== undefined, "fixture: the console prints its port");
+    const post = async (body: Dict): Promise<Dict> => {
+      const r = await fetch(`http://127.0.0.1:${port}/api/greenlight`, { method: "POST", headers: { "content-type": "application/json", "x-bisellium-token": "w526-token" }, body: JSON.stringify(body) });
+      return (await r.json()) as Dict;
+    };
+    assert.equal((await post({ opus: "W-35" }))["exitCode"], 0, "the console greenlights W-35");
+    assert.equal((await post({ opus: "W-36", decline: "later" }))["exitCode"], 0, "the console declines W-36");
+  } finally {
+    await served.close();
+  }
+  const lines = timeline(w).split("\n").filter(Boolean).map((l) => JSON.parse(l) as Dict);
+  assert.ok(lines.every((l) => typeof l["at"] === "string"), "each console line carries its time");
+  assert.deepEqual(
+    lines.map(({ at: _at, ...rest }) => rest),
+    [
+      { role: "patron", action: "greenlight", opus: "W-35", result: "granted" },
+      { role: "patron", action: "greenlight", opus: "W-36", result: "declined", reason: "later" },
+    ],
+    "the console's greenlight and decline each write their Patron timeline line",
+  );
+  assert.equal(process.env["BISELLIUM_ROLE"], undefined, "the console's role does not outlive its request");
 });
