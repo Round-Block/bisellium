@@ -3,6 +3,7 @@ queues:
     lanes: { E1: W-523 }
     next:
       - { opus: W-523, says: "land reads the code owner's approval and queues; exempt, first (D-187)" }
+      - { opus: W-530, says: "a missing retro holds only unsigned work; next names its run and land; exempt (D-188)" }
       - { opus: W-525, says: "a verb lifts a halt on an opus; exempt (D-187)" }
       - { opus: W-526, says: "greenlight writes no Patron line; M4's exit reworded; exempt (D-187)" }
       - { opus: W-528, says: "give the gates job a timeout; exempt, the Patron said yes 2026-11-06 (W-527)" }
@@ -83,7 +84,7 @@ deferred:
   - { opus: W-500, says: "Runs screen and its theatre view: after MVP (Patron 2026-11-05); status in its record" }
   - { opus: W-484, says: "Doc rules: byte cap, real rule ids, link fragments; docs-drift lint folded in" }
   - { opus: W-485, says: "ADOPTION.md restructured as a lean agent-readable contract" }
-  - { opus: W-486, says: "The application schedules the daily retro" }
+  - { opus: W-486, says: "The application schedules the retro, which proposes improvements (D-188: stays deferred)" }
   - { opus: W-479, says: "an outside advisory that breaks the gates for every PR has a filing path: the fix opus files without an admin merge" }
   - { opus: W-371, says: "one provider-neutral sandbox row per seat in the manifest (write roots, network, tools), which bisellium run composes for each harness" }
   - { opus: W-524, says: "remove the greenlit state and greenlight verb; after M4 (D-186, D-187)" }
