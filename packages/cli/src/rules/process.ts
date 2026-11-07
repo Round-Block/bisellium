@@ -12,7 +12,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { listMd, parseFrontMatter, readFront, STATES } from "@bisellium/adapter-native";
-import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { haltRowsProblem, readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { instant } from "@bisellium/schema";
 import { parse as parseYaml } from "yaml";
 import type { Finding, Level, RuleOpts } from "../check.js";
@@ -300,6 +300,10 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       add("decision.invoked_after_kill", "block", where, `${label} ${id} at ${t ? t.toISOString() : "(no time)"} invokes a decision killed at ${k.at.toISOString()} (${k.by}); a fired clause is not an excuse`);
     };
     invoke("halted_by", data["halted_by"], data["halted_at"]);
+    // W-525: a lift cites its decision in the row it writes, as a halt does in halted_by; a row or list of another shape is never skipped
+    const malformedRows = haltRowsProblem(data["amendments"]);
+    if (malformedRows !== undefined) add("decision.invoked_after_kill", "block", where, `${malformedRows}; a malformed lift row cannot be shown to avoid a killed decision`);
+    if (Array.isArray(data["amendments"])) for (const a of data["amendments"]) if (isDict(a) && a["field"] === "halt" && str(a["decision"])) invoke("lifted by", a["decision"], a["at"]);
     if (isDict(data["probationes"])) {
       for (const [gate, g] of Object.entries(data["probationes"])) {
         if (isDict(g)) invoke(`gate "${gate}" waived_by`, g["waived_by"], g["at"]);

@@ -518,6 +518,7 @@ const PINNED_A: string[] = [
   "packages/commands/src/lifecycle.ts:runReview:opera#1",
   "packages/commands/src/lifecycle.ts:runHalt:opera#1",
   "packages/commands/src/lifecycle.ts:runHalt:decisions#1",
+  "packages/commands/src/lifecycle.ts:openRuledRecord:opera#1",
   "packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1",
   "packages/commands/src/lifecycle.ts:runWaive:opera#1",
   "packages/commands/src/lifecycle.ts:runAmend:opera#1",

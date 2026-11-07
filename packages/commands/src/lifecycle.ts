@@ -32,9 +32,12 @@ import {
   loadNativeRecords,
   parseVerdictHeader,
   readContainedRegularFile,
+  terminalHalt,
   titleProblem,
   titleWordsProblem,
+  tookLadder,
   uiRulingCarry,
+  unliftableHalt,
   utcTimestampProblem,
   validateNativeRecord,
   validateRecordReferences,
@@ -1340,6 +1343,118 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
   return { exitCode: 0 };
 }
 
+// ---------------------------------------------------------------------------
+// 5b. lift — halted -> greenlit, or building for a record past ready (W-525). A halt names its decision; so does its lift.
+// ---------------------------------------------------------------------------
+
+const LIFT_USAGE = "usage: bisellium lift <opus> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]";
+
+/** W-525: `check` blocks a record out of `halted` with no declared milestone and value (`opus.milestone`), so a verb that moves one asks first. Inert with no milestones.yml, as the rule is. */
+function milestoneProblem(root: string, front: Record<string, unknown>): string | undefined {
+  if (!existsSync(join(root, "milestones.yml"))) return undefined;
+  const m = front["milestone"];
+  if (typeof m === "string" && declaredMilestoneIds(root).has(m) && MILESTONE_VALUES.includes(front["value"] as number)) return undefined;
+  return "it has no declared milestone and value: run bisellium amend first (--milestone <id> --value <n> --reason <text>)";
+}
+
+export interface RunLiftOptions extends WriteOptions {
+  /** The Queue's reader; the CLI passes queue.ts's liftQueueRefusal. */
+  queueRefusal: (root: string, opusId: string) => string | undefined;
+}
+
+interface RuledRecord {
+  values: Map<string, string>;
+  opusId: string;
+  decisionId: string;
+  now: Date;
+  root: string;
+  manifest: Manifest;
+  opusPath: string;
+  front: Record<string, unknown>;
+  refuse: (why: string) => WriteResult;
+}
+
+/** W-525: `openStudio` only parses, and both verbs resolve a seat from `sellae` and emit an event under `studio`, so a malformed one refuses here and never throws. */
+function manifestProblem(manifest: unknown): string | undefined {
+  if (typeof manifest !== "object" || manifest === null || Array.isArray(manifest)) return "it is not a mapping";
+  const m = manifest as Record<string, unknown>;
+  if (typeof m["studio"] !== "string" || m["studio"].trim() === "") return 'its "studio" is not a non-blank string';
+  const seats = m["sellae"];
+  if (!Array.isArray(seats) || seats.some((s: unknown) => typeof s !== "object" || s === null || typeof (s as { id?: unknown }).id !== "string")) return 'its "sellae" is not a list of seats with ids';
+  return undefined;
+}
+
+/** W-525: what `lift` and `conclude` both do first; a WriteResult is a refusal already printed. */
+function openRuledRecord(args: string[], valued: string[], usage: string, verb: string, opts: WriteOptions): RuledRecord | WriteResult {
+  const stop = (message: string): WriteResult => {
+    console.error(message);
+    return { exitCode: 2 };
+  };
+  const parsed = parseFlags(args, { valued: [...valued, "--decision", "--sella", "--studio", "--now"] });
+  if ("error" in parsed) return stop(`${parsed.error}\n${usage}`);
+  const { values, positionals } = parsed;
+  const opusId = positionals[0];
+  const decisionId = values.get("--decision");
+  if (!opusId || !decisionId?.trim() || valued.some((k) => !values.get(k)?.trim())) return stop(usage);
+  const now = resolveExactNow(values.get("--now"), opts.now);
+  if (!now) return stop("--now must be an ISO date");
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) return stop(opened.error);
+  const malformed = manifestProblem(opened.manifest);
+  if (malformed !== undefined) return stop(`${join(opened.root, "bisellium.yml")}: ${malformed}`);
+  const opusPath = safeItemPath(join(opened.root, "opera"), opusId);
+  if (typeof opusPath !== "string" || !existsSync(opusPath)) return stop(`unknown opus: ${opusId}`);
+  const refusal = unsafeOpusProblem(opened.root, opusId) ?? recordOwnerRefusal(opened.root, opusId);
+  if (refusal !== undefined) return stop(refusal);
+  let front: Record<string, unknown>;
+  try {
+    front = readFront<Record<string, unknown>>(opusPath).data;
+  } catch (e) {
+    return stop(`${opusId}: its record cannot be read: ${(e as Error).message.split("\n")[0]}`);
+  }
+  if (typeof front !== "object" || front === null || Array.isArray(front)) return stop(`${opusId}: its record is not a mapping`);
+  return { values, opusId, decisionId, now, root: opened.root, manifest: opened.manifest, opusPath, front, refuse: (why) => stop(`${opusId}: ${verb} refused: ${why}`) };
+}
+
+export function runLift(args: string[], opts: RunLiftOptions): WriteResult {
+  const open = openRuledRecord(args, ["--reason"], LIFT_USAGE, "lift", opts);
+  if ("exitCode" in open) return open;
+  const { values, opusId, decisionId, now, root, manifest, opusPath, front, refuse } = open;
+  const reason = values.get("--reason")!;
+  if (front["state"] !== "halted") return refuse(`it is not halted (state: ${String(front["state"] ?? "?")})`);
+  if (terminalHalt(front["resume_when"])) return refuse(`its halt is terminal (resume when: ${String(front["resume_when"])}); file a new opus for the work`);
+  const unliftable = unliftableHalt(front);
+  if (unliftable !== undefined) return refuse(unliftable);
+  const haltedAt = instant(front["halted_at"])!.getTime();
+  const ruling = patronDecisionProblem(root, manifest, decisionId, { rulingNames: opusId, after: haltedAt, afterWhat: "the halt" });
+  if (ruling !== undefined) return refuse(ruling);
+  const unmapped = milestoneProblem(root, front);
+  if (unmapped !== undefined) return refuse(unmapped);
+  const unranked = opts.queueRefusal(root, opusId);
+  if (unranked !== undefined) return refuse(unranked);
+  // who lifted goes on the row, so nothing defaults to guest (namedSella, as amend and red read it)
+  const sella = namedSella(values.get("--sella"), manifest, opusId, "lift");
+  if (sella === undefined) return refuse("name who: --sella or $BISELLIUM_SELLA");
+  if (typeof sella !== "string") return refuse(sella.error);
+  const to = tookLadder(front) ? "building" : "greenlit";
+  const superseded = `halted ${String(front["halted_at"])} by ${String(front["halted_by"])}: ${String(front["reason"])}; resume when: ${String(front["resume_when"])}`;
+  editOpusFrontMatter(opusPath, (doc) => {
+    if (doc.getIn(["amendments"], true) === undefined) doc.setIn(["amendments"], doc.createNode([]));
+    doc.addIn(["amendments"], { at: now.toISOString(), sella, field: "halt", reason, decision: decisionId, superseded });
+    doc.setIn(["state"], to);
+    for (const k of ["halted_at", "reason", "resume_when", "halted_by"]) doc.delete(k);
+    return undefined;
+  });
+  emitEvent(root, manifest, "workflow.state_changed", now, {
+    [WF.ITEM_ID]: opusId,
+    [WF.STATE_FROM]: "halted",
+    [WF.STATE_TO]: to,
+    [WF.ACTOR_ROLE]: sella,
+  });
+  console.log(`${opusId}: state=${to} lifted by=${decisionId}`);
+  return { exitCode: 0 };
+}
+
 /** W-127: every problem that keeps this brief from admission under `limit`
  *  (`brief_behaviour_limit`), in order; empty when it is admitted. The one
  *  predicate `ready`, `check` and `next`'s spec-review order (W-196) share. */
@@ -1385,7 +1500,7 @@ export function patronDecisionProblem(
   root: string,
   manifest: Pick<Manifest, "patron">,
   decisionId: unknown,
-  opts?: { by?: string; mustName?: string; grantLine?: string; after?: number },
+  opts?: { by?: string; mustName?: string; rulingNames?: string; grantLine?: string; after?: number; afterWhat?: string },
 ): string | undefined {
   if (typeof decisionId !== "string" || decisionId.trim().length === 0) return `waived_by is missing or not a string`;
   const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
@@ -1413,6 +1528,13 @@ export function patronDecisionProblem(
   // as a whole token: W-12 is not named by a decision that only names W-127.
   if (opts?.mustName !== undefined && !namesToken(text, opts.mustName))
     return `decision "${decisionId}" does not name ${opts.mustName}`;
+  // W-525: named in the ruling itself: every hand-written decision opens with a line naming W-157 above it.
+  if (opts?.rulingNames !== undefined) {
+    const body = parseFrontMatter(text, decisionPath).body;
+    const at = body.search(/^## (?:Ruling|Decree)(?![\p{L}\p{M}\p{N}])/mu);
+    if (at === -1) return `decision "${decisionId}" holds no ## Ruling section`;
+    if (!namesToken(body.slice(at), opts.rulingNames)) return `decision "${decisionId}" does not name ${opts.rulingNames} in its ruling`;
+  }
   // W-167: a ruling's own sentence on a line of its own, and a time strictly after the failure it rules on.
   if (opts?.grantLine !== undefined && !parseFrontMatter(text, decisionPath).body.split("\n").includes(opts.grantLine))
     return `decision "${decisionId}" holds no line "${opts.grantLine}"`;
@@ -1420,7 +1542,7 @@ export function patronDecisionProblem(
     const at = data["at"];
     const problem = utcTimestampProblem(at);
     if (problem !== undefined) return `decision "${decisionId}" at ${problem}`;
-    if (instant(at)!.getTime() <= opts.after) return `decision "${decisionId}" is dated ${at as string}, not after the failure it rules on (${new Date(opts.after).toISOString()})`;
+    if (instant(at)!.getTime() <= opts.after) return `decision "${decisionId}" is dated ${at as string}, not after ${opts.afterWhat ?? "the failure it rules on"} (${new Date(opts.after).toISOString()})`;
   }
   return undefined;
 }

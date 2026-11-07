@@ -368,6 +368,36 @@ export function effectiveProbationes(kind: unknown, declared: readonly Effective
   return { probationes, problems };
 }
 
+/** W-525: a record past ready (W-166's own test; only `ready` writes these two). The one reading of it for `lift`, `conclude`, `concludedResearch` and `next`. */
+export const tookLadder = (r: Record<string, unknown>): boolean => r["start"] !== undefined || r["builder_runtime"] !== undefined;
+
+/** W-525: a halt with no way back (W-042: abandon is a halt whose resume_when is "never"): `never` alone, or followed by anything but a letter, mark or digit, in any case. */
+export const terminalHalt = (resumeWhen: unknown): boolean => typeof resumeWhen === "string" && /^\s*never(?![\p{L}\p{M}\p{N}])/iu.test(resumeWhen);
+
+/** W-525: the one reader of `amendments` for a lift's row, shared by `lift` and `check`: absent or a sequence of mappings, each `field: halt` row with an exact UTC `at` and a decision id. */
+export function haltRowsProblem(amendments: unknown): string | undefined {
+  if (amendments === undefined) return undefined;
+  if (!Array.isArray(amendments)) return "amendments: is not a sequence";
+  for (const [i, a] of amendments.entries()) {
+    if (typeof a !== "object" || a === null || Array.isArray(a)) return `amendments[${i}] is not a mapping`;
+    const row = a as Record<string, unknown>;
+    if (row["field"] !== "halt") continue;
+    if (utcTimestampProblem(row["at"]) !== undefined) return `amendments[${i}] (field: halt) has no exact UTC at`;
+    if (typeof row["decision"] !== "string" || row["decision"].trim() === "") return `amendments[${i}] (field: halt) has no decision id`;
+  }
+  return undefined;
+}
+
+/** W-525: why a halted record cannot be lifted as it stands, past its ruling, rank and milestone: the halt it would write down as undone, or the list it would write that in. Shared by `lift` and `next`. */
+export function unliftableHalt(r: Record<string, unknown>): string | undefined {
+  if (utcTimestampProblem(r["halted_at"]) !== undefined) return "its halted_at is not an exact UTC time, so no ruling can be shown to come after it";
+  for (const k of ["reason", "resume_when", "halted_by"]) {
+    const v = r[k];
+    if (typeof v !== "string" || v.trim() === "") return `its ${k} is missing or blank, so the halt cannot be written down as undone`;
+  }
+  return haltRowsProblem(r["amendments"]);
+}
+
 /**
  * W-129: is the review gate's failure still current? Fails closed: `true` (the
  * failure blocks) whenever the review gate is `failed`, unless the failure is
