@@ -824,3 +824,66 @@ Classes in more than one opus, 2026-10-23..2026-11-05:
 - OWED class mechanism×replay-environment-not-pristine (W-360, W-462, W-477): no lesson of it names a greenlit cause-fix opus in addressed_by
 - OWED class spec-gate×self-signed (W-442, W-502): no lesson of it names a greenlit cause-fix opus in addressed_by
 - OWED class tests×one-sided-bound-assertion (W-328, W-345, W-360, W-369, W-377, W-381, W-392, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+### 2026-11-06
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-508 | 1029 | 1 | S1 1 |
+| W-509 | 662 | 4 | S1 4 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-508 | review | 2 | passed | 770 |  |
+| W-508 | spec | 5 | passed | 920 |  |
+| W-508 | spec | 6 | passed | 4 |  |
+| W-509 | review | 1 | failed | - | review×write-failure-contract-incomplete S1 |
+| W-509 | review | 2 | failed | 79 | review×write-failure-contract-incomplete S1 |
+| W-509 | review | 3 | passed | 132 |  |
+| W-509 | review | 4 | passed | 56 |  |
+| W-509 | review | 5 | passed | 82 |  |
+| W-509 | spec | 1 | passed | - |  |
+| W-509 | spec | 2 | failed | 7 | spec×promise-unattainable-under-accepted-domain S1 |
+| W-509 | spec | 3 | passed | 383 |  |
+| W-509 | spec | 4 | failed | 36 | spec×promise-unattainable-under-accepted-domain S1 |
+| W-509 | spec | 5 | passed | 161 |  |
+| W-523 | spec | 1 | passed | - |  |
+| W-523 | spec | 2 | passed | 463 |  |
+
+- LOOP W-509 review: class review×write-failure-contract-incomplete, rounds 1-2 (minutes since previous round: r1 -, r2 79)
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| W-509 | ci/W-509-tests-28f68727.log | gate×tests |  |
+
+Classes in more than one opus, 2026-10-24..2026-11-06:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 5 opera: W-364, W-407, W-494, W-502, W-509
+- class interface×validation-order-masks-errors seen in 2 opera: W-379, W-474
+- class mechanism×replay-environment-not-pristine seen in 2 opera: W-462, W-477
+- class review×evidence-backfilled-or-absent seen in 10 opera: W-300, W-406, W-413, W-415, W-417, W-425, W-430, W-477, W-495, W-502
+- class review×fail-open-on-malformed-records-patched-per-site seen in 5 opera: W-403, W-404, W-430, W-444, W-468
+- class review×shared-log-grammar-rejects-valid-records seen in 2 opera: W-459, W-492
+- class security×symlink-parent-write-escape seen in 4 opera: W-418, W-423, W-430, W-461
+- class spec-gate×self-signed seen in 2 opera: W-442, W-502
+- class spec×input-domain-missing-or-unenforceable seen in 10 opera: W-298, W-370, W-403, W-409, W-430, W-433, W-445, W-452, W-459, W-461
+- class spec×input-without-named-rejector seen in 4 opera: W-416, W-418, W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 19 opera: W-298, W-333, W-355, W-379, W-398, W-407, W-417, W-425, W-452, W-459, W-462, W-468, W-472, W-489, W-494, W-495, W-498, W-501, W-509
+- class tests×assertion-satisfied-by-the-wrong-cause seen in 2 opera: W-298, W-473
+- class tests×one-sided-bound-assertion seen in 4 opera: W-345, W-381, W-392, W-487
+- class tests×ruled-case-uncovered seen in 10 opera: W-364, W-404, W-415, W-444, W-450, W-454, W-463, W-474, W-495, W-496
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-379, W-501
+- class tests×tests-that-agree-with-the-bug seen in 3 opera: W-407, W-409, W-487
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-487, W-508
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-364, W-407, W-494, W-502, W-509): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class mechanism×replay-environment-not-pristine (W-462, W-477): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class spec-gate×self-signed (W-442, W-502): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class tests×one-sided-bound-assertion (W-345, W-381, W-392, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
