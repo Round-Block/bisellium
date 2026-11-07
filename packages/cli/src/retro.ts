@@ -1234,6 +1234,20 @@ export function dailyProposalsOwed(root: string, now: Date): string | undefined 
   return entryProposals(tracker.text, day) === "empty" ? day : undefined;
 }
 
+/**
+ * W-530 (D-188): the first daily retro step not yet done for the previous UTC day: 1 the run, 2 the qa-lead's proposals, 3 the
+ * land of the entry. `trunk` is the tracker on master. Undefined with no step left, no tracker or an unreadable one.
+ */
+export function dailyRetroStep(root: string, trunk: string | undefined, now: Date): { day: string; step: 1 | 2 | 3 } | undefined {
+  const tracker = readTracker(root);
+  if (tracker === undefined || isRefusal(tracker)) return undefined;
+  const day = previousUtcDay(now);
+  const state = entryProposals(tracker.text, day);
+  if (state === "no entry") return { day, step: 1 };
+  if (state === "empty") return { day, step: 2 };
+  return tracker.text === trunk ? undefined : { day, step: 3 };
+}
+
 type DailyRound = { opus: string; phase: "spec" | "review"; n: bigint; at: number; day: string; brief: string; failed: boolean; blockers: { cls: string; sev: string }[] };
 type GateFailure = { opus: string; log: string; classes: string[]; rows: string[] };
 

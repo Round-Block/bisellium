@@ -53,7 +53,7 @@ import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from ".
 import { sweepLines, sweepWorktrees, unpushedBranches } from "./prune.js";
 import { runVerdict } from "./verdict.js";
 import { performRewrite, rewriteOf } from "./rewrite.js";
-import { DAILY_TRACKER, dailyRetroOwed, owedRetros } from "./retro.js";
+import { DAILY_TRACKER, dailyRetroOwed, dailyRetroStep, owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
@@ -2517,6 +2517,15 @@ async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (l
   return { ok: true, lines: done };
 }
 
+/** W-530 (D-188): the daily retro's steps in order, from the first one left, as one line that holds nothing; undefined when none is left. */
+function dailyLine(repo: string, studioAbs: string, studioRel: string): string | undefined {
+  const at = dailyRetroStep(studioAbs, gitSrc(repo, "refs/heads/master", studioRel).read(DAILY_TRACKER), new Date());
+  if (at === undefined) return undefined;
+  const tracker = `${studioRel}/${DAILY_TRACKER}`;
+  const steps = [`a ladder-runner runs: bisellium retro --daily --studio ${studioRel}`, `the qa-lead writes the proposals under "Proposed improvements" in ${tracker}`, `a ladder-runner lands the entry: bisellium land ${tracker} --title 'chore(studio): daily retro ${at.day}' --sella producer --studio ${studioRel}`];
+  return `daily-retro: ${at.day} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
+}
+
 /** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
 const dailyEntryEdit = (f: Facts): string | undefined => unstagedEdit(f.repo, `${f.studioRel}/${DAILY_TRACKER}`);
 
@@ -3334,6 +3343,8 @@ function render(id: string, d: Derived, f: Facts, status: string): string[] {
     for (const [k, v] of o.extra) out.push(`${k}: ${one(v)}`);
     out.push(`inputs: ${o.inputs.map((x) => clean(x)).join(", ")}`, `command: ${one(o.command)}`);
   } else if (d.command !== undefined && d.status === "named") out.push(`command: ${one(d.command)}`);
+  const daily = dailyLine(f.repo, f.studioAbs, f.studioRel);
+  if (daily !== undefined) out.push(one(daily));
   return out;
 }
 
@@ -3423,6 +3434,8 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   }
   const now = new Date();
   lines.push(codexBurnLine(takeReading(homedir(), now, "next --all"), now));
+  const daily = dailyLine(repo, studioAbs, relative(realpathSync(repo), realpathSync(studioAbs)).split("\\").join("/"));
+  if (daily !== undefined) lines.push(daily);
   lines.push(`open: ${open}`);
   console.log(lines.map((l) => clean(l, 1000)).join("\n"));
   return { exitCode: failed ? 1 : 0 };
