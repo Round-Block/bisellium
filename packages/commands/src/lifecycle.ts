@@ -1602,11 +1602,16 @@ export function patronDecisionProblem(
   if (opts?.mustName !== undefined && !namesToken(text, opts.mustName))
     return `decision "${decisionId}" does not name ${opts.mustName}`;
   // W-525: named in the ruling itself: every hand-written decision opens with a line naming W-157 above it.
+  // The heading is a whole line, split at LF with one trailing CR dropped, then compared as a string: LF and CRLF files read alike, and a
+  // lone CR or U+2028/U+2029 (line ends to a /m regex) never opens one.
   if (opts?.rulingNames !== undefined) {
-    const body = parseFrontMatter(text, decisionPath).body;
-    const at = body.search(/^## (?:Ruling|Decree)$/m);
+    const lines = parseFrontMatter(text, decisionPath).body.split("\n");
+    const at = lines.findIndex((line) => {
+      const whole = line.endsWith("\r") ? line.slice(0, -1) : line;
+      return whole === "## Ruling" || whole === "## Decree";
+    });
     if (at === -1) return `decision "${decisionId}" holds no ## Ruling section`;
-    if (!namesToken(body.slice(at), opts.rulingNames)) return `decision "${decisionId}" does not name ${opts.rulingNames} in its ruling`;
+    if (!namesToken(lines.slice(at).join("\n"), opts.rulingNames)) return `decision "${decisionId}" does not name ${opts.rulingNames} in its ruling`;
   }
   // W-167: a ruling's own sentence on a line of its own, and a time strictly after the failure it rules on.
   if (opts?.grantLine !== undefined && !parseFrontMatter(text, decisionPath).body.split("\n").includes(opts.grantLine))
