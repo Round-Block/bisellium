@@ -143,15 +143,22 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "instructions") return runInstructions(rest).exitCode;
   if (cmd === "retro") return runRetro(rest).exitCode;
   if (cmd === "serve") return runServeUntilStopped(rest);
-  // answer/greenlight/budget are Patron writes: BISELLIUM_ROLE=patron
+  // W-526 (D-186): greenlighting is no Patron gate, and the CLI cannot tell
+  // the Patron from the producer, so a greenlight run here writes no Patron
+  // timeline line: the role is cleared, whatever the shell exported. The
+  // console's route runs it as the Patron (apps/server asPatron).
+  if (cmd === "greenlight") {
+    delete process.env["BISELLIUM_ROLE"];
+    return runGreenlight(rest).exitCode;
+  }
+  // answer/budget are Patron writes: BISELLIUM_ROLE=patron
   // before calling, so their timeline/patron.jsonl line records the
   // correct role (docs/ADOPTION.md: "the CLI runs them with
   // BISELLIUM_ROLE=patron"; the functions default to "patron" on their
   // own only so tests calling them directly don't need this wrapper).
-  if (cmd === "answer" || cmd === "greenlight" || cmd === "budget") {
+  if (cmd === "answer" || cmd === "budget") {
     process.env["BISELLIUM_ROLE"] = "patron";
     if (cmd === "answer") return runAnswer(rest).exitCode;
-    if (cmd === "greenlight") return runGreenlight(rest).exitCode;
     return runBudget(rest).exitCode;
   }
 

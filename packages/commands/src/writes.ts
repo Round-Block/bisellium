@@ -926,6 +926,9 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
 
 // W-403: `--auto` greenlights, with no Patron, an opus whose scope is already decided (auto-greenlight.ts): it writes
 // greenlit_by and greenlit_basis and no Patron timeline line, and refuses anything else, writing nothing.
+// W-526 (D-186, D-187 item 4): a plain greenlight or decline writes the Patron timeline line only when it runs under
+// BISELLIUM_ROLE=patron, which the console's token-gated route sets (apps/server asPatron); main.ts clears it, since the
+// CLI cannot tell the Patron from the producer, so a greenlight run from a shell records no Patron act.
 const GREENLIGHT_USAGE = "usage: bisellium greenlight <opus> [--auto | --decline <reason>] [--studio <dir>] [--now <iso>]";
 
 export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteResult {
@@ -1021,8 +1024,9 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
     if (decline !== undefined) attrs["reason"] = decline;
     emitEvent(root, manifest, "workflow.greenlight", now, attrs);
 
-    // W-403: an auto greenlight is not the Patron's write, so it leaves no Patron timeline line
-    if (grant === undefined)
+    // W-403: an auto greenlight is not the Patron's write, so it leaves no Patron timeline line; W-526: nor one run
+    // with no Patron role, read here and nowhere else (appendPatronTimeline's own "patron" default never reaches it)
+    if (grant === undefined && process.env["BISELLIUM_ROLE"] === "patron")
       appendPatronTimeline(root, {
         at: now.toISOString(),
         action: "greenlight",
