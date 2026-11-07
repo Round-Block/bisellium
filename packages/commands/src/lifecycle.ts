@@ -1393,6 +1393,7 @@ function openRuledRecord(args: string[], valued: string[], usage: string, verb: 
   const parsed = parseFlags(args, { valued: [...valued, "--decision", "--sella", "--studio", "--now"] });
   if ("error" in parsed) return stop(`${parsed.error}\n${usage}`);
   const { values, positionals } = parsed;
+  if (positionals.length > 1) return stop(`one opus id only, not "${positionals[1]}"\n${usage}`);
   const opusId = positionals[0];
   const decisionId = values.get("--decision");
   if (!opusId || !decisionId?.trim() || valued.some((k) => !values.get(k)?.trim())) return stop(usage);
@@ -1603,7 +1604,7 @@ export function patronDecisionProblem(
   // W-525: named in the ruling itself: every hand-written decision opens with a line naming W-157 above it.
   if (opts?.rulingNames !== undefined) {
     const body = parseFrontMatter(text, decisionPath).body;
-    const at = body.search(/^## (?:Ruling|Decree)(?![\p{L}\p{M}\p{N}])/mu);
+    const at = body.search(/^## (?:Ruling|Decree)$/m);
     if (at === -1) return `decision "${decisionId}" holds no ## Ruling section`;
     if (!namesToken(body.slice(at), opts.rulingNames)) return `decision "${decisionId}" does not name ${opts.rulingNames} in its ruling`;
   }
