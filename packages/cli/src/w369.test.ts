@@ -456,7 +456,7 @@ test("W-227-b3 behaviour 3: the merge rung's hold on a Patron path requests the 
   git(main, "reset", "-q", "--hard", base);
   const held = fetchTrunk(main, target);
   assert.ok(!held.ok, "a fast-forward bringing a Patron path is held");
-  assert.match(held.reason, /^refusing: incoming paths belong to the Patron \(\.github\/workflows\/ci\.yml\)/, "the reason names the Patron path");
+  assert.equal(held.reason, "refusing: incoming paths belong to the Patron (.github/workflows/ci.yml); the main checkout is untouched", "the reason names the Patron path");
   assert.deepEqual(
     held.after,
     [`patron: git -C ${quoted(main)} merge --ff-only ${target}`, "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)"],
