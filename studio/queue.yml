@@ -38,6 +38,7 @@ queues:
       - { opus: W-535, says: "run exits with its command's status; red first, unreproduced; behind the freeze" }
       - { opus: W-540, says: "warn and refuse when the session's cwd is under .worktrees/; low (speed meet 1108); behind the freeze" }
       - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-532's measured boot sets its number (leads 2026-11-07)" }
+      - { opus: W-543, says: "a timer the Patron installs starts a refresh session from a landed handoff; filed after supervised trial 3 passed 2026-11-08; not exempt from the freeze (Patron 11-07)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
       - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
