@@ -1,0 +1,22 @@
+# opus: W-227
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b8a2-432d-7d12-a2f1-79bac0740662
+# outcome: failed
+# at: 2026-11-08T00:54:14.669Z
+# tree: tree:8082708f2412098b7c58aeda843b918cd0e9bbbe
+# brief: briefs/W-227.md blob:ec1ac46c9942cf72ff434b65f076ca2107679188
+# ticket: {"opus":"W-227","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"27b366d083d27bc02720d1d5a4546ee3ea84253f","brief":"ec1ac46c9942cf72ff434b65f076ca2107679188","at":"2026-11-08T00:54:10.638Z"}
+
+## Findings
+1. blocking — brief:90 `opusWorktree` collapses a non-zero `git worktree list` into no entry, while `lstatSafe` collapses every filesystem error into absence. A plausible damaged `.git/worktrees` entry or mistakenly non-searchable `.worktrees/` therefore makes the real `next --perform --expect cleanup` caller remove or skip a possibly registered folder and delete its branches; no existing row catches either failure. Replace brief:90 with: `| 1. The git worktree listing and <repo>/.worktrees/<id> | listWorktrees succeeds with a valid listing; the candidate is absent, or is a real direct child with the stated contents | cleanup (extended) holds before mutation when listWorktrees returns undefined or candidate lstat fails; clearLeftover rejects invalid, unreadable, symlinked or non-empty candidates |`. [severity: S1] [design: keeps] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts W-227-b1
+2. blocking — brief:94 `commandSeq` does not expose command substitutions inside double quotes, so an ordinary main-thread call such as `echo "$(cd .worktrees/W-1 && pwd)"` executes the `cd` but `worktreeCd` allows it; W-227-b4 tests only forms the parser already exposes. Replace brief:94’s `in ( ) or $( )` with `in ( ) or $( ), including a command substitution inside double quotes`, and pin that quoted form in W-227-b4. [severity: S1] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/guard.test.ts W-227-b4
+3. advisory — brief:52 The promise derives “this checkout holds master” from both `listWorktrees` and filesystem realpaths but names neither their disagreement nor which reader it trusts; an absent/unreadable holder or unreadable/different realpath writes no request. Replace brief:52 with: `Promise sync-asked: the hold writes the request only when listWorktrees returns a master holder whose realpathSync(holder.path) equals realpathSync(repo); an absent or unreadable holder, or unreadable or different realpath, writes none and remains held; requestSync failures are reported.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w369.test.ts W-227-b3
+4. advisory — brief:95 The added test rows read subprocess results, refs, call logs and filesystem entries without an input row; notably `branchExists` maps every Git failure to “absent,” so an unlikely fixture-read failure can falsely prove deletion. Replace brief:95 with a new row before the reused gates: `| 6. W-227 fixture command results and filesystem/Git observations | subprocesses finish normally; paths are readable or definitely absent; refs have only present/absent answers | throwing fixture readers and node:test assertions reject; gitYesNo replaces boolean readers that collapse Git errors to absence |`, then renumber the gates row 7. [severity: S3] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts W-227-b1/b2; packages/cli/src/w369.test.ts W-227-b3; packages/cli/src/guard.test.ts W-227-b4
+
+## Verdict
+The signed brief has two design-preserving S1 gaps that must be fixed before its promised fail-closed cleanup and no-cd behavior are buildable.
+
+VERDICT: FAIL
