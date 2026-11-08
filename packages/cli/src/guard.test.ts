@@ -546,8 +546,15 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
   ];
   for (const p of refused.slice(0, 3))
     for (const [label, who] of others) assert.equal((await guard(write(p, who))).code, 0, `another subagent writes, as before: ${label} ${named(p, root)}`);
-  for (const id of ["", 7, null])
-    assert.equal((await guard(write(refused[0]!, { agent_id: id, agent_type: "clerk" }))).code, 2, `a claimed clerk with an unusable agent_id (${JSON.stringify(id)}) is judged as a clerk, not the main thread`);
+  for (const tool of ["Write", "Edit", "NotebookEdit"])
+    assert.equal((await guard(write(refused[0]!, { agent_id: "", agent_type: "clerk" }, tool))).code, 2, `a claimed clerk with an empty agent_id is judged as a clerk, not the main thread: ${tool}`);
+  symlinkSync(join(root, "studio", "opera", "W-9.md"), join(root, "docs", "dangling"));
+  symlinkSync("../studio/opera/W-8.md", join(root, "docs", "dangling-rel"));
+  symlinkSync(join(root, "docs", "dangling"), join(root, "docs", "chain"));
+  for (const l of ["dangling", "dangling-rel", "chain"])
+    for (const tool of ["Write", "Edit", "NotebookEdit"])
+      assert.equal((await guard(write(join(root, "docs", l), CLERK, tool))).code, 2, `a clerk's ${tool} through a dangling symlink into studio/opera/ refused: docs/${l}`);
+  assert.equal((await guard(write("docs/dangling", CLERK, "Write", root))).code, 2, "a dangling symlink, relative to the input's cwd, refused");
   const mains: [string, Record<string, unknown>][] = [
     ["no agent_id", {}],
     ["agent_type clerk without agent_id", { agent_type: "clerk" }],
