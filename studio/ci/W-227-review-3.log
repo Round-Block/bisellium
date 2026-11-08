@@ -1,0 +1,22 @@
+# opus: W-227
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b8c9-a743-78b2-84a6-fd1d9bad258f
+# outcome: failed
+# at: 2026-11-08T02:56:59.161Z
+# tree: tree:71294482eeb659916c328612feb5dd48aceb4fd9
+# brief: briefs/W-227.md blob:ae0b91a2a8d74bdfbc57a97d78589e21522731ce
+# ticket: {"opus":"W-227","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-227/studio","head":"28fea1a39e7db8d68071748af8fb90fa2a1c84d6","brief":"ae0b91a2a8d74bdfbc57a97d78589e21522731ce","at":"2026-11-08T02:54:58.904Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:478 Reached through ci/W-227-review-2.log #1’s class: the tail scanner uses `\s`, so carriage return, vertical tab, and form feed split tokens even though brief:94 requires every control character except newline to remain part of a token; an actual carriage return in `cd\r.worktrees/W-1` therefore creates a false `cd` token and refusal. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-227-b4
+
+## Earlier findings
+- ci/W-227-review-2.log #1: closed — packages/cli/src/guard.ts:477 scans the entire substitution tail without balancing parentheses, and packages/cli/src/guard.test.ts:944 pins the `case`-arm form.
+
+## Verdict
+The `case` bypass is closed, but the replacement tokenizer disagrees with its declared control-character boundary.
+
+VERDICT: FAIL
