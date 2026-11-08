@@ -972,6 +972,17 @@ test("W-227-b4 behaviour 4 fix 2: a cd or pushd word is refused wherever it stan
     assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
 });
 
+test("W-227-b4 behaviour 4 fix 3: a tail token split at a carriage return is refused, and the same text before the tail is one word and runs", async () => {
+  const root = tmp();
+  mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
+  const refusedCmd = "echo $(date) cd\r.worktrees/W-1";
+  const r = await guard(bash(refusedCmd, { cwd: root }));
+  assert.equal(r.code, 2, "main thread refused: a tail cd split from its operand at a carriage return");
+  assert.match(r.err, /\(W-227\)/);
+  assert.equal((await guard(bash(refusedCmd, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, "a subagent's command runs");
+  assert.equal((await guard(bash("cd\r.worktrees/W-1", { cwd: root }))).code, 0, "main thread runs: one word before the tail");
+});
+
 test("W-227-b4 behaviour 4 fix 1: a cd the shell runs is refused wherever the scan could lose it: a quoted ) in a substitution, builtin, command, a loop or branch keyword", async () => {
   const root = tmp();
   mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
