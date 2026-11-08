@@ -1,0 +1,24 @@
+# opus: W-542
+# phase: spec
+# round: 1
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-08T15:30:03.404Z
+# tree: tree:13e7db150b66abe8b47da2975a03b6f22feac446
+# brief: briefs/W-542.md blob:54565389f34799c792445f5666b942a74a9a949a
+# ticket: {"opus":"W-542","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"dd42d2d25c531e52c97432040fd65b0a2b1272e2","brief":"54565389f34799c792445f5666b942a74a9a949a","at":"2026-11-08T15:29:52.681Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-542-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the clerk path census (74 kept clerk briefs) found two legitimate clerk paths outside the meet's four roots, `studio/queue.yml` (six or more dispatches) and `studio/lessons/` (`addressed_by` stamps, 11-08), so both are added by name; opus-record bodies, `studio/leges/` and `studio/prompts/`, which earlier dispatches wrote, are refused on purpose and stated as limits, with Default 2 to the Patron — check: brief Intent, clerk-census.out, clerk-census-paths.txt
+2. advisory — "outside the repo" is read as outside every git checkout, as `writeRefusal` already reads it for the main thread: a linked worktree, a scratch copy or another project is judged by the same roots relative to itself, and a folder under `.worktrees/` with no `.git` is judged in its parent checkout — check: brief Facts checked, brief Input domain row 3, W-542-b1
+3. advisory — the production lex §9 sentence "a clerk edits handoff and dossier text only" disagrees with the rule (the dossier is refused, the acta, decisions, lessons and queue allowed); the lex is the Patron's and is left out of scope, Default 3 — check: brief Limits, brief Defaults for the Patron
+4. advisory — code-owned file touched: `.claude/agents/clerk.md`, so the Patron approves the PR as code owner and pulls the agent clone after the merge — check: brief Status, brief Acceptance, .github/CODEOWNERS
+5. advisory — not run for this spec: `npm test`, typecheck over every package, lint, `format:check`, `check -- examples/sample-studio` and the CI run; `check studio` on the detached series checkout shows only `opus.records_unchanged` at W-096 (no current branch) — check: brief Acceptance, singles.out
+
+## Verdict
+
+passed — signed by the ops lead (`ops-lead`, `claude-opus-5-5`, the ops signer in spec_seats, D-150 C) for `studio/briefs/W-542.md` at master dd42d2d2, round 1: two behaviours, each red accepted by the replay classifier on the commit before it and green on its feature commit (`reds.out`), each red log proving its one declared pin (`pin-check.out`); eleven one-hunk wrong forms each failing a row at a named assertion (`mutants.out`); the four-commit mbox applying to the same tree (`mbox-check.out`); the touched files passing one at a time on the tip and the cli package typechecking (`singles.out`); the brief admitted by the real `ready` (`admission.out`) and the ledger by the verdict writer (`ledger-check.out`); the Codex test check (`fixture-census.md`).

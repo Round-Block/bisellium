@@ -1,0 +1,20 @@
+# opus: W-542
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1bbc9-715c-7b11-96e3-6c76bff987fd
+# outcome: passed
+# at: 2026-11-08T15:35:58.445Z
+# tree: tree:13e7db150b66abe8b47da2975a03b6f22feac446
+# brief: briefs/W-542.md blob:54565389f34799c792445f5666b942a74a9a949a
+# ticket: {"opus":"W-542","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"dd42d2d25c531e52c97432040fd65b0a2b1272e2","brief":"54565389f34799c792445f5666b942a74a9a949a","at":"2026-11-08T15:35:57.547Z"}
+
+## Findings
+1. advisory — brief:85 `str` accepts only non-empty strings, so an empty `agent_id` is classified as main and a claimed clerk can write an opera record. Replace `agent_id a string` with `agent_id a non-empty string` here and at brief:17,43. [severity: S3] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/guard.test.ts `W-542-b1`
+2. advisory — brief:88 `W-542-b2` is not a rejecting function, and “any other … body is refused” exceeds its presence assertions. Replace the domain/rejector tail with: “The readable UTF-8 file has exactly the asserted tool set and listed body fragments; other text is unjudged | `readFileSync` rejects absent/unreadable input; `assert.deepEqual`, `assert.match`, `assert.doesNotMatch` and `assert.ok` reject mismatched asserted forms.” [severity: S2] [class: spec×input-without-named-rejector] — check: packages/cli/src/guard.test.ts `W-542-b2`
+3. advisory — brief:88 The added `named(p, root)` reader is absent from the input section and silently accepts paths outside its diagnostic substitution domain. Append: “| 5. `W-542-b1` diagnostic paths | `p` is absolute beneath `root` or `dirname(root)`, and `root` is the fixture checkout | `named`, specified to throw unless that domain holds |”. [severity: S4] [class: spec×input-without-named-rejector] — check: packages/cli/src/guard.test.ts `W-542-b1`
+
+## Verdict
+The runtime design is feasible within its stated limits; all remaining findings are advisory input-contract corrections.
+VERDICT: PASS
