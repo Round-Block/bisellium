@@ -400,15 +400,108 @@ function walk(command: string, ctx: ShellContext, judge: Judge, depth: number, u
   return undefined;
 }
 
-/** W-227: the operand of the first `cd` or `pushd` in the command whose target is `.worktrees` or a folder under it, or
- *  undefined. Each simple command is read as `walk` reads it (comments and heredoc bodies dropped, `strip`'s prefixes), in
- *  a subshell, a pipeline, a branch or a command substitution inside double quotes alike; its literal operands (home for a bare `cd`) are resolved against the call's
- *  directory and every directory an earlier `cd` named, lexically and through symlinks (`realOf`), existing or not (a
- *  sandbox remakes the folder). A target is judged by its path segments: one named `.worktrees` and the name after it, the
- *  folder it enters, unless the call's own directory is already in that folder. Limits: a target built
- *  from a variable, `cd -`, `popd`, `CDPATH`, a `cd` inside a `-c` script or a script file, and `env -C` are not judged. */
+/** W-227: every `cd` or `pushd` in a command, as `[word, ...operands]`, in order, found by words and tokens, not by the
+ *  shell's grammar. Before the first substitution (a `$(`, backtick, `<(` or `>(` outside single quotes, bare or inside double
+ *  quotes) the text is split into words as the shell splits them before expansion (a blank or an operator ends a word, a
+ *  backslash escapes, quotes are removed); a word that is exactly `cd` or `pushd`, wherever it stands, takes the words up to the
+ *  next operator as operands. From the first substitution to the end no quote and no parenthesis is read: the rest is split
+ *  into tokens, and a token `cd` or `pushd` takes the tokens up to the next `;`, `&`, `|`, `)`, backtick or newline. */
+function cdWords(code: string): string[][] {
+  const out: string[][] = [];
+  const take = (words: string[]): void => {
+    words.forEach((x, i) => {
+      if (x === "cd" || x === "pushd") out.push([x, ...words.slice(i + 1)]);
+    });
+  };
+  let words: string[] = [];
+  let word = "";
+  let open = false;
+  const endWord = (): void => {
+    if (open) words.push(word);
+    word = "";
+    open = false;
+  };
+  const endCommand = (): void => {
+    endWord();
+    take(words);
+    words = [];
+  };
+  let tail = code.length;
+  for (let i = 0; i < code.length; i++) {
+    const c = code[i]!;
+    if (c === "\\") {
+      if (code[i + 1] !== "\n") {
+        word += code[i + 1] ?? "";
+        open = true;
+      }
+      i++;
+    } else if (c === "'" || (c === "$" && code[i + 1] === "'")) {
+      const escapes = c === "$";
+      let j = escapes ? i + 2 : i + 1;
+      open = true;
+      for (; j < code.length && code[j] !== "'"; j++) {
+        if (escapes && code[j] === "\\") j++;
+        word += code[j] ?? "";
+      }
+      i = j;
+    } else if (c === '"') {
+      open = true;
+      let j = i + 1;
+      for (; j < code.length && code[j] !== '"'; j++) {
+        if (code[j] === "\\") j++;
+        else if (code[j] === "`" || (code[j] === "$" && code[j + 1] === "(") || ((code[j] === "<" || code[j] === ">") && code[j + 1] === "(")) {
+          tail = j;
+          break;
+        }
+        word += code[j] ?? "";
+      }
+      if (tail < code.length) break;
+      i = j;
+    } else if (c === "`" || (c === "$" && code[i + 1] === "(") || ((c === "<" || c === ">") && code[i + 1] === "(")) {
+      tail = i;
+      break;
+    } else if (c === " " || c === "\t") endWord();
+    else if (";&|()<>\n".includes(c)) endCommand();
+    else {
+      word += c;
+      open = true;
+    }
+  }
+  endCommand();
+  const tokens: { t: string; stop: boolean }[] = [];
+  let t = "";
+  const flush = (): void => {
+    if (t !== "") tokens.push({ t, stop: false });
+    t = "";
+  };
+  for (const c of code.slice(tail).replaceAll("\\", "")) {
+    if (/[\s;&|()<>{}"'`]/.test(c)) {
+      flush();
+      if (";&|)`\n".includes(c)) tokens.push({ t: c, stop: true });
+    } else t += c;
+  }
+  flush();
+  tokens.forEach((x, i) => {
+    if (x.stop || (x.t !== "cd" && x.t !== "pushd")) return;
+    const rest: string[] = [];
+    for (const y of tokens.slice(i + 1)) {
+      if (y.stop) break;
+      rest.push(y.t);
+    }
+    out.push([x.t, ...rest]);
+  });
+  return out;
+}
+
+/** W-227: the operand of the first `cd` or `pushd` in the command (`cdWords`) whose target is `.worktrees` or a folder
+ *  under it, or undefined. The text is read without its comments and heredoc bodies (`shellCode`'s `bare`). Its literal
+ *  operands (home for a bare `cd`) are resolved against the call's directory and every directory an earlier `cd` named,
+ *  lexically and through symlinks (`realOf`), existing or not (a sandbox remakes the folder). A target is judged by its
+ *  path segments: one named `.worktrees` and the name after it, the folder it enters, unless the call's own directory is
+ *  already in that folder. It fails closed and over-refuses (`echo cd .worktrees/W-1`). Limits: a target built from a
+ *  variable, `cd -`, `popd`, `CDPATH`, a `cd` inside a quoted word before any substitution (a `-c` script), a script file,
+ *  `eval` and `env -C` are not judged. */
 export function worktreeCd(command: string, ctx: ShellContext): string | undefined {
-  const code = shellCode(command).bare;
   const held = new Set([ctx.cwd]);
   // the folder a path enters: up to its first `.worktrees` segment and the name after it; a cd that stays in the folder the
   // call starts in (a session already inside a worktree, a test run in one) enters none
@@ -420,77 +513,18 @@ export function worktreeCd(command: string, ctx: ShellContext): string | undefin
     return from !== top && !from.startsWith(top + sep);
   };
   const inside = (t: string): boolean => entered(t, ctx.cwd) || entered(realOf(t), realOf(ctx.cwd));
-  for (const c of commandSeq(code)) {
-    // `while` and `until` open a condition list: their command is read as a command (not in `strip`'s KEYWORDS: the loop rules read them as words)
-    const first = strip(c.words);
-    const { words: w, literal } = first.words[0] === "while" || first.words[0] === "until" ? strip(first.words.slice(1)) : first;
-    if (literal || (w[0] !== "cd" && w[0] !== "pushd")) continue;
-    const operands = w.slice(1).filter((x) => !/^[-+]/.test(x));
-    const targets = w[0] === "cd" && operands.length === 0 ? ["~"] : operands;
+  for (const [name, ...rest] of cdWords(shellCode(command).bare)) {
+    const operands = rest.filter((x) => !/^[-+]/.test(x));
+    const targets = name === "cd" && operands.length === 0 ? ["~"] : operands;
     for (const d of [...held])
       for (const x of targets) {
         const t = wordPath(x, { ...ctx, cwd: d });
         if (t === undefined) continue;
-        if (inside(t)) return `${w[0]} ${x}`;
+        if (inside(t)) return `${name} ${x}`;
         held.add(t);
       }
   }
-  // a command substitution inside double quotes runs its commands, though `commandSeq` reads the quotes as one word: each body is judged as a line, from every directory held
-  for (const body of quotedSubstitutions(code))
-    for (const d of [...held]) {
-      const found = worktreeCd(body, { ...ctx, cwd: d });
-      if (found) return found;
-    }
   return undefined;
-}
-
-/** W-227: the index of the `)` closing the `$(` substitution whose body starts at `from` (the end of `code` when it is
- *  unterminated). Its own quotes are read as the shell reads them: a `)` inside single or double quotes does not close it,
- *  and a `$(` inside double quotes nests a substitution whose end is found the same way. */
-function substitutionEnd(code: string, from: number): number {
-  let depth = 1;
-  for (let j = from; j < code.length; j++) {
-    const c = code[j]!;
-    if (c === "\\") j++;
-    else if (c === "'") {
-      const k = code.indexOf("'", j + 1);
-      if (k < 0) return code.length;
-      j = k;
-    } else if (c === '"') {
-      for (j++; j < code.length && code[j] !== '"'; j++) {
-        if (code[j] === "\\") j++;
-        else if (code[j] === "$" && code[j + 1] === "(") j = substitutionEnd(code, j + 2);
-      }
-    } else if (c === "(") depth++;
-    else if (c === ")" && --depth === 0) return j;
-  }
-  return code.length;
-}
-
-/** W-227: the bodies of the `$( )` and backtick command substitutions that sit inside double quotes in `code` (outside single
- *  quotes), outermost first; one nested in another is found when its body is read in turn. An unterminated one runs to the end. */
-function quotedSubstitutions(code: string): string[] {
-  const out: string[] = [];
-  let quote = false;
-  for (let i = 0; i < code.length; i++) {
-    const c = code[i]!;
-    if (c === "\\") i++;
-    else if (c === "'" && !quote) {
-      const j = code.indexOf("'", i + 1);
-      i = j < 0 ? code.length : j;
-    } else if (c === '"') quote = !quote;
-    else if (quote && c === "$" && code[i + 1] === "(") {
-      const j = substitutionEnd(code, i + 2);
-      out.push(code.slice(i + 2, j));
-      i = Math.min(j, code.length - 1);
-    } else if (quote && c === "`") {
-      let j = i + 1;
-      for (; j < code.length && code[j] !== "`"; j++) if (code[j] === "\\") j++;
-      out.push(code.slice(i + 1, j));
-      i = j;
-    }
-  }
-  return out;
 }
 
 /** W-364: the codex options that take the next word, skipped before its subcommand. */
