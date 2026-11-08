@@ -1,0 +1,47 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-541-b2\s --import tsx packages/cli/src/rules/prompts.test.ts
+# exit: 1
+# at: 2026-11-08T09:16:56.142Z
+# sella: builder.W-541
+# tree: tree:680ebe89d6d56a8a6e20275485cc8f46e6a94a6d
+# ticket: {"opus":"W-541","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-541/studio","head":"e7c122ac4f3d833df26ee46fd784bbac8a4d3d43","brief":"09d711379705d3549e11027aa0c7ce41b4003358","at":"2026-11-08T09:16:54.636Z"}
+
+TAP version 13
+# Subtest: W-541-b2 behaviour 2: the builder brief template gives no instruction to run ci --opus or the full suite
+not ok 1 - W-541-b2 behaviour 2: the builder brief template gives no instruction to run ci --opus or the full suite
+  ---
+  duration_ms: 34.93168
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-541/packages/cli/src/rules/prompts.test.ts:28:2780'
+  failureType: 'testCodeFailure'
+  error: |-
+    a builder brief holding npm run -s bisellium -- ci --opus <ID> --studio studio --repo . blocks
+    + actual - expected
+    
+    + []
+    - [
+    -   'block prompts/builder-brief.md'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'block prompts/builder-brief.md'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-541/packages/cli/src/rules/prompts.test.ts:212:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 441.067577
