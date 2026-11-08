@@ -939,3 +939,30 @@ test("W-227-b4 behaviour 4: the guard refuses the main thread's cd or pushd into
   for (const c of ['echo "$(cd /tmp && pwd)"', `echo "cd .worktrees/W-1 $(ls ${root})"`, "echo '$(cd .worktrees/W-1)'", `echo "$(git -C ${root}/.worktrees/W-1 status)"`])
     assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
 });
+
+test("W-227-b4 behaviour 4 fix 1: a cd the shell runs is refused wherever the scan could lose it: a quoted ) in a substitution, builtin, command, a loop or branch keyword", async () => {
+  const root = tmp();
+  mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
+  const refused = [
+    `echo "$(printf ')' ; cd .worktrees/W-1 && pwd)"`,
+    `echo "$(printf ')' ; pushd .worktrees/W-1)"`,
+    `echo "$(echo "a)" ; cd .worktrees/W-1)"`,
+    `echo "$(printf ')' ; echo "$(cd .worktrees/W-1)")"`,
+    "echo \"$(printf ')' ; cd .worktrees/W-1)\"",
+    "builtin cd .worktrees/W-1",
+    "builtin pushd .worktrees/W-1",
+    "command cd .worktrees/W-1",
+    "while cd .worktrees/W-1; do break; done",
+    "until cd .worktrees/W-1; do break; done",
+    "if cd .worktrees/W-1; then pwd; fi",
+    "true && builtin cd .worktrees/W-1",
+  ];
+  for (const c of refused) {
+    const r = await guard(bash(c, { cwd: root }));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.match(r.err, /\(W-227\)/, c);
+    assert.equal((await guard(bash(c, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, `a subagent's command runs: ${c}`);
+  }
+  for (const c of [`echo "$(printf ')' ; cd /tmp && pwd)"`, `while cd ${root}; do break; done`, "builtin cd /tmp"])
+    assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
+});
