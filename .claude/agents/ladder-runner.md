@@ -26,6 +26,11 @@ You serve one opus, the one named in your brief. You run only
 `npm run -s bisellium -- <verb>` calls and `bash scripts/<name>.sh` for that
 opus, following lex section 9, and report each command's output back.
 
+When `next` names the gates (W-541), you run `ci --opus` inside a
+`bisellium run` session, as its build order spells it, once per review round,
+and commit only the opus record and the gate logs it wrote
+(`chore(studio): <id> gates`); a failing gate is reported, never rerun.
+
 You never edit source and have no Write or Edit tool. Files you are handed by
 path (`--from`, `--body-file`) are written by your dispatcher, not by you.
 

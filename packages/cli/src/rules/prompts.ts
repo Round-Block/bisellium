@@ -6,7 +6,9 @@
  * lists equal through `fillSlots`. `builder-brief.md` also holds the builder's self-review (W-258, D-080 G):
  * `BUILDER_SELF_REVIEW`, its texts. The UI judges' templates (W-426) hold the sense clause, `SENSE`: they are
  * `SENSE_TEMPLATES`, checked the same way and not named by the Ops lex clause (`spec-review.md` is production lex §9
- * step 2's). `checkPromptTemplates` never throws.
+ * step 2's). W-541 (D-189): `builder-brief.md` holds none of `PROMPT_FORBIDS`' forms, the command forms of `ci --opus`
+ * and the full suite, since a ladder-runner runs `ci --opus` once per review round and W-364 refuses a builder's.
+ * `checkPromptTemplates` never throws.
  */
 import type { Finding, RuleOpts } from "../check.js";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
@@ -32,6 +34,11 @@ export const PROMPT_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   "prompts/builder-brief.md": ["<ID>", "<WORKTREE>", "<BRIEF_STATE>", "<SPECIFICS>", DATA, ...BUILDER_SELF_REVIEW],
   "prompts/build-review.md": ["<ID>", "<ROUND>", "<WORKTREE>", "<PACKET>", "<REVIEWED_HEAD>", "<FOCUS>", "<UI>", "<STUDIO>", "fills the eight slots", DATA],
 };
+/** W-541 (D-189): the command forms a template must not hold, case-sensitive substrings: the builder runs only the test
+ *  files it touches and typecheck. Any other spelling of the full suite (a script it calls, a prose paraphrase) is not read. */
+export const PROMPT_FORBIDS: Readonly<Record<string, readonly string[]>> = {
+  "prompts/builder-brief.md": ["-- ci --opus", "bisellium ci --opus", "npm test", "npm run test", "npm run -s test"],
+};
 /** W-426: the UI judges' templates and their texts; the Ops lex clause names `PROMPT_TEMPLATES` only. */
 const SENSE_TEMPLATES: Readonly<Record<string, readonly string[]>> = {
   "prompts/spec-review.md": SENSE,
@@ -46,8 +53,12 @@ export function checkPromptTemplates(root: string, opts: RuleOpts): Finding[] {
     const file = readContainedRegularFile(root, path, "prompts");
     const text = "error" in file ? undefined : file.bytes.toString("utf8");
     const missing = text === undefined ? needs : needs.filter((n) => !text.includes(n));
-    if (missing.length > 0)
-      findings.push({ rule: "process.prompt_templates", level: "block", where: path, message: text === undefined ? "not a readable regular file" : `lacks ${missing.join(", ")}` });
+    const forbidden = text === undefined ? [] : (PROMPT_FORBIDS[path] ?? []).filter((n) => text.includes(n));
+    const said = [
+      ...(text === undefined ? ["not a readable regular file"] : missing.length > 0 ? [`lacks ${missing.join(", ")}`] : []),
+      ...(forbidden.length > 0 ? [`instructs the builder to run the full suite or ci --opus (${forbidden.join(", ")}): a ladder-runner runs ci --opus once per review round (W-541)`] : []),
+    ];
+    if (said.length > 0) findings.push({ rule: "process.prompt_templates", level: "block", where: path, message: said.join("; ") });
   }
   const lex = readContainedRegularFile(root, "leges/ops.md", "leges");
   const clauses = "error" in lex ? [] : bulletClauses(lex.bytes.toString("utf8"));
