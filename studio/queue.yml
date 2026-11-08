@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-528 }
+    lanes: { E1: W-542 }
     next:
       - { opus: W-523, says: "land reads the code owner's approval and queues; exempt, first (D-187)" }
       - { opus: W-530, says: "a missing retro holds only unsigned work; next names its run and land; exempt (D-188)" }
@@ -10,6 +10,11 @@ queues:
       - { opus: W-227, says: "cleanup clears an empty sandbox leftover and the guard refuses a cd into .worktrees/; a class seen twice, started without asking (D-039, cleanup meet 2026-11-08)", next_ts: true }
       - { opus: W-541, says: "builders run touched tests, the ladder-runner the suite; exempt from the freeze on the leads' speed meet (D-189)" }
       - { opus: W-542, says: "the guard limits a clerk's writes and the clerk gets Edit; a security boundary, exempt from the freeze on the leads' unanimous call, the Patron said yes 2026-11-08 (D-189)" }
+      - { opus: W-543, says: "a timer the Patron installs starts a refresh session from a landed handoff; exempt from the freeze on the leads' overnight meet and the Patron 2026-11-08 (D-189)" }
+      - { opus: W-545, says: "the build rung as one perform: handoff, ci --opus and gate commits; exempt on the leads' meet and the Patron 2026-11-09" }
+      - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189)" }
+      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182)" }
+      - { opus: W-544, says: "CodeQL in advanced setup, rerunnable, skips records-only PRs; measure first; exempt on the leads' overnight meet (D-189)" }
       - { opus: W-532, says: "cut what a fresh session loads at boot; folds W-517; exempt from the freeze on the leads' boot meet (D-189)", folded: [W-517] }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
       - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial; exempt, the Patron said yes 2026-11-06 (W-456)" }
@@ -19,7 +24,6 @@ queues:
       - { opus: W-522, says: "refuse process.exit after bulk output in fixtures; exempt from the freeze (D-185)" }
       - { opus: W-510, says: "repair talk when its session is gone; then the leads' PR-approval debate (D-182)" }
       - { opus: W-511, says: "guard refuses raw landing, warns when the Patron's clone is behind master (D-181)" }
-      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182)" }
       - { opus: W-513, says: "settings verbs: rank, seat models, lane count (D-181)" }
       - { opus: W-157, says: "decide: the Patron records a ruling (D-181)" }
       - { opus: W-514, says: "next enforces the UI revision cap (D-182)" }
@@ -38,7 +42,6 @@ queues:
       - { opus: W-535, says: "run exits with its command's status; red first, unreproduced; behind the freeze" }
       - { opus: W-540, says: "warn and refuse when the session's cwd is under .worktrees/; low (speed meet 1108); behind the freeze" }
       - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-532's measured boot sets its number (leads 2026-11-07)" }
-      - { opus: W-543, says: "a timer the Patron installs starts a refresh session from a landed handoff; filed after supervised trial 3 passed 2026-11-08; not exempt from the freeze (Patron 11-07)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
       - { opus: W-363, says: "one stage executor: spec review, fix round, build-before-review as performs", folded: [W-480, W-482, W-470], next_ts: true }
