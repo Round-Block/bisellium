@@ -402,12 +402,13 @@ function walk(command: string, ctx: ShellContext, judge: Judge, depth: number, u
 
 /** W-227: the operand of the first `cd` or `pushd` in the command whose target is `.worktrees` or a folder under it, or
  *  undefined. Each simple command is read as `walk` reads it (comments and heredoc bodies dropped, `strip`'s prefixes), in
- *  a subshell, a pipeline or a branch alike; its literal operands (home for a bare `cd`) are resolved against the call's
+ *  a subshell, a pipeline, a branch or a command substitution inside double quotes alike; its literal operands (home for a bare `cd`) are resolved against the call's
  *  directory and every directory an earlier `cd` named, lexically and through symlinks (`realOf`), existing or not (a
  *  sandbox remakes the folder). A target is judged by its path segments: one named `.worktrees` and the name after it, the
  *  folder it enters, unless the call's own directory is already in that folder. Limits: a target built
  *  from a variable, `cd -`, `popd`, `CDPATH`, a `cd` inside a `-c` script or a script file, and `env -C` are not judged. */
 export function worktreeCd(command: string, ctx: ShellContext): string | undefined {
+  const code = shellCode(command).bare;
   const held = new Set([ctx.cwd]);
   // the folder a path enters: up to its first `.worktrees` segment and the name after it; a cd that stays in the folder the
   // call starts in (a session already inside a worktree, a test run in one) enters none
@@ -419,7 +420,7 @@ export function worktreeCd(command: string, ctx: ShellContext): string | undefin
     return from !== top && !from.startsWith(top + sep);
   };
   const inside = (t: string): boolean => entered(t, ctx.cwd) || entered(realOf(t), realOf(ctx.cwd));
-  for (const c of commandSeq(shellCode(command).bare)) {
+  for (const c of commandSeq(code)) {
     const { words: w, literal } = strip(c.words);
     if (literal || (w[0] !== "cd" && w[0] !== "pushd")) continue;
     const operands = w.slice(1).filter((x) => !/^[-+]/.test(x));
@@ -432,7 +433,45 @@ export function worktreeCd(command: string, ctx: ShellContext): string | undefin
         held.add(t);
       }
   }
+  // a command substitution inside double quotes runs its commands, though `commandSeq` reads the quotes as one word: each body is judged as a line, from every directory held
+  for (const body of quotedSubstitutions(code))
+    for (const d of [...held]) {
+      const found = worktreeCd(body, { ...ctx, cwd: d });
+      if (found) return found;
+    }
   return undefined;
+}
+
+/** W-227: the bodies of the `$( )` and backtick command substitutions that sit inside double quotes in `code` (outside single
+ *  quotes), outermost first; one nested in another is found when its body is read in turn. An unterminated one runs to the end. */
+function quotedSubstitutions(code: string): string[] {
+  const out: string[] = [];
+  let quote = false;
+  for (let i = 0; i < code.length; i++) {
+    const c = code[i]!;
+    if (c === "\\") i++;
+    else if (c === "'" && !quote) {
+      const j = code.indexOf("'", i + 1);
+      i = j < 0 ? code.length : j;
+    } else if (c === '"') quote = !quote;
+    else if (quote && c === "$" && code[i + 1] === "(") {
+      let depth = 1;
+      let j = i + 2;
+      for (; j < code.length && depth > 0; j++) {
+        if (code[j] === "\\") j++;
+        else if (code[j] === "(") depth++;
+        else if (code[j] === ")") depth--;
+      }
+      out.push(code.slice(i + 2, depth === 0 ? j - 1 : j));
+      i = j - 1;
+    } else if (quote && c === "`") {
+      let j = i + 1;
+      for (; j < code.length && code[j] !== "`"; j++) if (code[j] === "\\") j++;
+      out.push(code.slice(i + 1, j));
+      i = j;
+    }
+  }
+  return out;
 }
 
 /** W-364: the codex options that take the next word, skipped before its subcommand. */
