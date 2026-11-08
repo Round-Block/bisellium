@@ -443,6 +443,36 @@ function mainCheckout(): { main: string; advance: (...files: string[]) => string
   return { main, advance };
 }
 
+// W-227 row b3 (studio/briefs/W-227.md): a hold on a Patron path requests the sync as well (W-369's Out of scope, the later opus).
+test("W-227-b3 behaviour 3: the merge rung's hold on a Patron path requests the sync too, only when this checkout holds master, and keeps the Patron's command", () => {
+  const { main } = mainCheckout();
+  const request = join(main, ".git", "bisellium", "sync");
+  const base = git(main, "rev-parse", "HEAD");
+  put(join(main, ".github", "workflows", "ci.yml"), "name: ci\n");
+  git(main, "add", ".");
+  git(main, "commit", "-qm", "ci");
+  const target = git(main, "rev-parse", "HEAD");
+  git(main, "push", "-q", "origin", "master");
+  git(main, "reset", "-q", "--hard", base);
+  const held = fetchTrunk(main, target);
+  assert.ok(!held.ok, "a fast-forward bringing a Patron path is held");
+  assert.match(held.reason, /^refusing: incoming paths belong to the Patron \(\.github\/workflows\/ci\.yml\)/, "the reason names the Patron path");
+  assert.deepEqual(
+    held.after,
+    [`patron: git -C ${quoted(main)} merge --ff-only ${target}`, "sync: requested; the installed guard fast-forwards master to origin/master when this call returns and prints a sync: line; then rerun (W-369)"],
+    "the hold requests the sync and keeps the Patron's command",
+  );
+  assert.equal(readFileSync(request, "utf8"), `${target}\n`, "the request names the reviewed commit");
+  assert.equal(git(main, "rev-parse", "HEAD"), base, "master did not move");
+  assert.equal(git(main, "status", "--porcelain"), "", "the main checkout is untouched");
+  rmSync(request);
+  git(main, "switch", "-q", "--detach", "master");
+  const away = fetchTrunk(main, target);
+  assert.ok(!away.ok, "with master not checked out here, the hold stands");
+  assert.deepEqual(away.after, [`patron: git -C ${quoted(main)} fetch origin master:master`], "and no sync is requested: the sync moves only a checked-out master");
+  assert.equal(existsSync(request), false, "no request file");
+});
+
 test("W-369-b3 behaviour 3: the merge rung's hold on a path the session may not write requests the sync and says so", (t) => {
   if (process.getuid?.() === 0) return t.skip("root writes a read-only directory");
   const { main, advance } = mainCheckout();
