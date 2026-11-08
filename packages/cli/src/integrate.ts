@@ -223,10 +223,12 @@ export function listWorktrees(repo: string): WtEntry[] | undefined {
   return out;
 }
 
-/** The registered worktree `<repo>/.worktrees/<id>`, wherever git lists it. */
-export function opusWorktree(repo: string, id: string): { dir: string; entry?: WtEntry } {
+/** The registered worktree `<repo>/.worktrees/<id>`, wherever git lists it. W-227: `listed` is false when git's listing failed
+ *  (an absent `entry` is then not "unregistered"; a caller that mutates holds). */
+export function opusWorktree(repo: string, id: string): { dir: string; entry?: WtEntry; listed: boolean } {
   const dir = join(realpathSync(repo), ".worktrees", id);
-  return { dir, entry: listWorktrees(repo)?.find((e) => e.path === dir) };
+  const list = listWorktrees(repo);
+  return { dir, entry: list?.find((e) => e.path === dir), listed: list !== undefined };
 }
 
 /** A branch tip read three ways: a commit, truly absent (git says no such ref), or unreadable (never "absent"). */
@@ -1220,9 +1222,13 @@ export function cleanup(ctx: Ctx): StepResult {
   // (1) the worktree (only an opus branch has one)
   let pr = reread();
   if (!pr.ok) return stop("worktree", pr.reason);
-  const { dir, entry } = opusWorktree(repo, id);
-  const dirExists = lstatSafe(dir);
+  const { dir, entry, listed } = opusWorktree(repo, id);
+  const probe = lstatRead(dir);
+  const dirExists = probe.kind === "present";
   if (branch !== `opus/${id}`) out.push("worktree: skipped (not an opus branch)");
+  // W-227: nothing is mutated on a listing or a stat that failed: an absent entry or folder is not known to be absent
+  else if (!listed) return stop("worktree", `git worktree list failed, so ${dir} is not known to be unregistered; left untouched`);
+  else if (probe.kind === "error") return stop("worktree", `${dir} cannot be read (${probe.reason}); left untouched`);
   else if (entry === undefined) {
     // W-227: an empty folder git does not list, directly under .worktrees/, is a leftover (a sandbox remakes it as a mount point)
     const left = dirExists ? clearLeftover(repo, id, dir) : { ok: true as const, line: "skipped (absent)" };
@@ -1345,11 +1351,12 @@ function clearLeftover(repo: string, id: string, dir: string): { ok: true; line:
   return { ok: true, line: `ran (removed the empty leftover ${dir}, which git does not list)` };
 }
 
-function lstatSafe(path: string): boolean {
+/** W-227: a path read three ways: present, truly absent (ENOENT), or unreadable (never "absent"). */
+function lstatRead(path: string): { kind: "present" } | { kind: "absent" } | { kind: "error"; reason: string } {
   try {
     lstatSync(path);
-    return true;
-  } catch {
-    return false;
+    return { kind: "present" };
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "ENOENT" ? { kind: "absent" } : { kind: "error", reason: thrown(e) };
   }
 }
