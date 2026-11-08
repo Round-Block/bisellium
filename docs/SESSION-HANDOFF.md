@@ -32,7 +32,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 - D-085 F rides the fix census and daily retro.
 - Records dates are UTC; Patron reads times in SGT (UTC+8). The trial (lex §7) counts from the opus after W-292.
 6. Kept models: architect brief ~/.bisellium-evidence/architect-dispatch-model.md; builder brief `studio/prompts/builder-brief.md` (filled model builder-brief-model.md); spec review `studio/prompts/spec-review.md`, run by spec-review-d076/r2-run.sh <ID> (no prior packet: W-241-specreview/r8/run.sh); checkpoint row checkpoint-w433.py (row 168; one script per row); daily retro `npm run -s bisellium -- retro --daily --studio studio` (evidence paths under ~/.bisellium-evidence/); usage usage/usage-reading.sh <label>, when wanted; UI Codex via codex-passes/ui-run.sh.
-7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup busy on `.git/worktrees/<name>/`: ask the Patron to run `git worktree prune` outside the sandbox, rerun (W-227); never a hand delete. The lanes are in studio/queue.yml; the producer's working notes are in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (notes, not a record; D-109 ended with W-333).
+7. Use `npm run -s bisellium --` (`bisellium` on PATH is stale). `next` cleanup on a sandbox-held empty folder names it for the Patron and still deletes the branches (W-227); never a hand delete. After a stray `cd` into `.worktrees/`, start a new process, never `/clear`. The lanes are in studio/queue.yml; the producer's working notes are in `~/.bisellium-evidence/current-state.md`, overwritten each refresh (notes, not a record; D-109 ended with W-333).
 
 ## Artifacts
 
@@ -48,7 +48,7 @@ Current state only, after CLAUDE.md. Rules: `studio/leges/production.md`.
 
 Ranked lists, lanes, halted, cut and deferred: studio/queue.yml (W-333). Order by cycle minutes saved, D-039 highs first; a high filed since starts after one in flight. Lanes: one until W-512 lands (D-182).
 
-Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-227 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-528 W-529 W-531 W-532.
+Greenlit on master, named here until `process.handoff.queue` reads studio/queue.yml: W-074 W-157 W-169 W-183 W-185 W-242 W-245 W-254 W-261 W-280 W-281 W-283 W-289 W-290 W-301 W-304 W-308 W-331 W-332 W-349 W-363 W-372 W-374 W-375 W-380 W-383 W-393 W-394 W-395 W-399 W-400 W-401 W-414 W-429 W-431 W-432 W-434 W-439 W-440 W-453 W-455 W-458 W-460 W-464 W-467 W-469 W-470 W-471 W-476 W-478 W-480 W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W-510 W-511 W-512 W-513 W-514 W-516 W-519 W-529 W-531 W-532.
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
@@ -56,7 +56,7 @@ In flight: W-451 work links: merged (#1045), next done, once its master verify r
 
 Ahead of the build, greenlit: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home that D-175 says stands. It is branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep that worktree). Do no W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Lane: one lane only until W-512 refuses out-of-order starts (D-182). W-528 merged (#1086), done owed (current-state.md); W-227, W-532 (D-190). Leads' reads: calls-meet-1107/, boot-meet-1108/ in ~/.bisellium-evidence. Home mock-ups: W-503-spec/mockups-1107/. The producer's view on the freeze, the Patron said go ahead (11-06), no decision filed: keep it, no new exemptions unless something actively blocks work; whether W-520 to W-522 stay ahead of W-074 is open, ask them.
+Lane: one until W-512 (D-182). W-528, W-227 done (#1090, #1091). Next: owed filings (current-state.md), then W-532, W-519, W-529, W-531. Leads' reads in ~/.bisellium-evidence: calls-meet-1107/, boot-meet-1108/, speed-meet-1108/. Home mock-ups: W-503-spec/mockups-1107/. Freeze: the producer's view stands: no new exemptions unless work is blocked; W-520 to W-522 ahead of W-074 is open, ask the Patron.
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it.
 
