@@ -6,6 +6,7 @@
  * W-362 row b1 (studio/briefs/W-362.md): env's split string and a shell option's operand.
  * W-418 row b3 (studio/briefs/W-418.md): the guard hands the main thread the review notices under its checkout.
  * W-227 row b4 (studio/briefs/W-227.md): the guard refuses the main thread's cd into a folder under .worktrees/.
+ * W-542 row b1 (studio/briefs/W-542.md): a dispatched clerk's Write, Edit and NotebookEdit stay under its roots.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -471,6 +472,86 @@ test("W-310-b3 behaviour 3: the guard refuses the main thread's source and test 
   for (const p of [join(root, "studio/briefs/W-1.md"), join(root, "docs/ADOPTION.md"), join(t, "plain/x.ts")])
     assert.equal((await guard(write(p))).code, 0, `main thread allowed: ${p}`);
   for (const p of source.slice(0, 3)) assert.equal((await guard(write(p, BUILDER))).code, 0, `a builder writes ${p}`);
+});
+
+/** W-542: a hook-input path as the row names it: the checkout as `<repo>`, its tmp parent as `<tmp>`. */
+const named = (p: string, root: string): string => p.replace(root, "<repo>").replace(dirname(root), "<tmp>");
+
+test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decisions, lessons, queue and docs (not the dossier) of a checkout, or outside every checkout; the main thread and other agents are judged as before", async () => {
+  const root = checkout();
+  const t = dirname(root);
+  for (const d of ["studio/opera", "studio/ci", "studio/acta", "studio/lessons", "docs/design/dossier", ".worktrees/W-1/studio/opera", ".worktrees/W-2/studio/opera", "evidence"])
+    mkdirSync(d === "evidence" ? join(t, d) : join(root, d), { recursive: true });
+  symlinkSync(join(root, "studio"), join(root, "docs", "evil"));
+  symlinkSync(join(root, "studio", "opera"), join(t, "evidence", "opera"));
+  const refused = [
+    join(root, "studio/opera/W-1.md"),
+    join(root, "packages/cli/src/x.ts"),
+    join(root, "studio/ci/W-1-review-1.log"),
+    join(root, "packages/cli/src/x.test.ts"),
+    join(root, "package.json"),
+    join(root, "studio/briefs/W-1.md"),
+    join(root, "studio/bisellium.yml"),
+    join(root, "studio/prompts/build-review.md"),
+    join(root, "studio/leges/production.md"),
+    join(root, ".claude/agents/clerk.md"),
+    join(root, "CLAUDE.md"),
+    join(root, "studio/queue.yml.bak"),
+    join(root, "studio/acta-old/x.md"),
+    join(root, "docs/design/dossier/body.html"),
+    join(root, ".worktrees/W-1/studio/opera/W-1.md"),
+    join(root, ".worktrees/W-2/studio/opera/W-2.md"),
+    join(root, "docs/evil/opera/W-1.md"),
+    `${root}/docs/../studio/opera/W-1.md`,
+    join(t, "evidence/opera/W-1.md"),
+    join(root, "packages/my dir/x.ts"),
+    join(root, "packages/it's.ts"),
+    join(root, "packages/ünï/x.ts"),
+  ];
+  for (const p of refused)
+    for (const tool of ["Write", "Edit"]) {
+      const r = await guard(write(p, CLERK, tool));
+      assert.equal(r.code, 2, `a clerk's ${tool} refused: ${named(p, root)}`);
+      assert.match(r.err, /a dispatched clerk writes only under studio\/acta\/, studio\/decisions\/, studio\/lessons\/, studio\/queue\.yml and docs\/ \(not the dossier, docs\/design\/dossier\/\)/, named(p, root));
+    }
+  assert.match((await guard(write(refused[0]!, CLERK))).err, /\(W-542\): studio\/opera\/W-1\.md is not one; the bisellium verbs write studio\/opera\/ and studio\/ci\//, "the refusal names the path and who writes it");
+  assert.match((await guard(write(refused[15]!, CLERK))).err, /: \.worktrees\/W-2\/studio\/opera\/W-2\.md is not one/, "a folder with no .git is judged in its parent checkout");
+  assert.equal((await guard(write(refused[0]!, CLERK, "NotebookEdit"))).code, 2, "a clerk's NotebookEdit refused");
+  assert.equal((await guard(write("studio/opera/W-1.md", CLERK, "Write", root))).code, 2, "a clerk's relative path against the input's cwd refused");
+  const allowed = [
+    join(root, "studio/acta/2026-11-08.md"),
+    join(root, "studio/decisions/D-999.md"),
+    join(root, "studio/lessons/L-001.md"),
+    join(root, "studio/queue.yml"),
+    join(root, "docs/SESSION-HANDOFF.md"),
+    join(root, "docs/ADOPTION.md"),
+    join(root, "docs/design/dossier-notes.md"),
+    join(root, ".worktrees/W-1/docs/SESSION-HANDOFF.md"),
+    join(root, ".worktrees/W-1/studio/decisions/D-1.md"),
+    join(t, "plain/current-state.md"),
+    join(t, "plain/x.ts"),
+    join(root, "docs/my dir/it's ünï.md"),
+  ];
+  for (const p of allowed)
+    for (const tool of ["Write", "Edit"]) assert.deepEqual(await guard(write(p, CLERK, tool)), { code: 0, err: "" }, `a clerk's ${tool} allowed: ${named(p, root)}`);
+  assert.equal((await guard(write(allowed[0]!, CLERK, "NotebookEdit"))).code, 0, "a clerk's NotebookEdit allowed");
+  assert.equal((await guard(write("docs/x.md", CLERK, "Edit", root))).code, 0, "a clerk's relative docs path allowed");
+  const others: [string, Record<string, unknown>][] = [
+    ["builder", BUILDER],
+    ["architect", { agent_id: "a1", agent_type: "architect" }],
+    ["general-purpose", { agent_id: "g1", agent_type: "general-purpose" }],
+    ["untyped", { agent_id: "x1" }],
+  ];
+  for (const p of refused.slice(0, 3))
+    for (const [label, who] of others) assert.equal((await guard(write(p, who))).code, 0, `another subagent writes, as before: ${label} ${named(p, root)}`);
+  const mains: [string, Record<string, unknown>][] = [
+    ["no agent_id", {}],
+    ["agent_type clerk without agent_id", { agent_type: "clerk" }],
+  ];
+  for (const [label, who] of mains) {
+    assert.equal((await guard(write(refused[0]!, who))).code, 0, `the main thread writes an opera record, as before: ${label}`);
+    assert.match((await guard(write(refused[1]!, who))).err, /does not write source or tests/, `the main thread's source write keeps its W-290 refusal: ${label}`);
+  }
 });
 
 const stop = (transcript: string, tasks: unknown[], extra: Record<string, unknown> = {}) => ({
