@@ -114,7 +114,7 @@ const DURATION = /^(?:\d+(?:\.\d*)?|\.\d+)[smhd]?$/;
 const base = (w: string | undefined): string => (w ?? "").slice((w ?? "").lastIndexOf("/") + 1);
 
 /** Wrappers whose flags `strip` skips; `OPERAND` names the flags that take a separate operand (`env`'s are `envOption`'s). */
-const WRAPPERS = new Set(["env", "command", "exec", "nice", "xargs", "timeout"]);
+const WRAPPERS = new Set(["env", "command", "builtin", "exec", "nice", "xargs", "timeout"]);
 const OPERAND: Record<string, Set<string>> = {
   exec: new Set(["-a"]),
   nice: new Set(["-n", "--adjustment"]),
@@ -421,7 +421,9 @@ export function worktreeCd(command: string, ctx: ShellContext): string | undefin
   };
   const inside = (t: string): boolean => entered(t, ctx.cwd) || entered(realOf(t), realOf(ctx.cwd));
   for (const c of commandSeq(code)) {
-    const { words: w, literal } = strip(c.words);
+    // `while` and `until` open a condition list: their command is read as a command (not in `strip`'s KEYWORDS: the loop rules read them as words)
+    const first = strip(c.words);
+    const { words: w, literal } = first.words[0] === "while" || first.words[0] === "until" ? strip(first.words.slice(1)) : first;
     if (literal || (w[0] !== "cd" && w[0] !== "pushd")) continue;
     const operands = w.slice(1).filter((x) => !/^[-+]/.test(x));
     const targets = w[0] === "cd" && operands.length === 0 ? ["~"] : operands;
@@ -442,6 +444,29 @@ export function worktreeCd(command: string, ctx: ShellContext): string | undefin
   return undefined;
 }
 
+/** W-227: the index of the `)` closing the `$(` substitution whose body starts at `from` (the end of `code` when it is
+ *  unterminated). Its own quotes are read as the shell reads them: a `)` inside single or double quotes does not close it,
+ *  and a `$(` inside double quotes nests a substitution whose end is found the same way. */
+function substitutionEnd(code: string, from: number): number {
+  let depth = 1;
+  for (let j = from; j < code.length; j++) {
+    const c = code[j]!;
+    if (c === "\\") j++;
+    else if (c === "'") {
+      const k = code.indexOf("'", j + 1);
+      if (k < 0) return code.length;
+      j = k;
+    } else if (c === '"') {
+      for (j++; j < code.length && code[j] !== '"'; j++) {
+        if (code[j] === "\\") j++;
+        else if (code[j] === "$" && code[j + 1] === "(") j = substitutionEnd(code, j + 2);
+      }
+    } else if (c === "(") depth++;
+    else if (c === ")" && --depth === 0) return j;
+  }
+  return code.length;
+}
+
 /** W-227: the bodies of the `$( )` and backtick command substitutions that sit inside double quotes in `code` (outside single
  *  quotes), outermost first; one nested in another is found when its body is read in turn. An unterminated one runs to the end. */
 function quotedSubstitutions(code: string): string[] {
@@ -455,15 +480,9 @@ function quotedSubstitutions(code: string): string[] {
       i = j < 0 ? code.length : j;
     } else if (c === '"') quote = !quote;
     else if (quote && c === "$" && code[i + 1] === "(") {
-      let depth = 1;
-      let j = i + 2;
-      for (; j < code.length && depth > 0; j++) {
-        if (code[j] === "\\") j++;
-        else if (code[j] === "(") depth++;
-        else if (code[j] === ")") depth--;
-      }
-      out.push(code.slice(i + 2, depth === 0 ? j - 1 : j));
-      i = j - 1;
+      const j = substitutionEnd(code, i + 2);
+      out.push(code.slice(i + 2, j));
+      i = Math.min(j, code.length - 1);
     } else if (quote && c === "`") {
       let j = i + 1;
       for (; j < code.length && code[j] !== "`"; j++) if (code[j] === "\\") j++;
