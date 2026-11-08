@@ -12,7 +12,7 @@
  * `--match-head-commit`. `BLOCKED` is never merged directly.
  */
 import { spawnSync } from "node:child_process";
-import { accessSync, constants, lstatSync, readdirSync, realpathSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, constants, lstatSync, readdirSync, realpathSync, rmdirSync, unlinkSync, writeFileSync, type Stats } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { instant } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
@@ -1302,9 +1302,14 @@ function stubsOnly(dir: string): number | undefined {
     }
     for (const name of names) {
       if (++n > STUB_WALK_MAX) return undefined;
-      const st = lstatSync(join(d, name), { throwIfNoEntry: false });
-      if (st?.isDirectory() === true) todo.push(join(d, name));
-      else if (!(st?.isFile() === true && st.size === 0)) return undefined;
+      let st: Stats | undefined;
+      try {
+        st = lstatSync(join(d, name));
+      } catch {
+        return undefined;
+      }
+      if (st.isDirectory()) todo.push(join(d, name));
+      else if (!(st.isFile() && st.size === 0)) return undefined;
     }
   }
   return n;
