@@ -1095,7 +1095,9 @@ export function replyHookOutput(input: Dict): string | undefined {
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */
 export function guardRefusal(input: Dict): string | undefined {
   const event = input["hook_event_name"];
-  const main = str(input["agent_id"]) === undefined;
+  // W-542: a claimed clerk (`agent_type` clerk, a string `agent_id`, the empty one included) is never the main thread
+  const clerk = input["agent_type"] === "clerk" && typeof input["agent_id"] === "string";
+  const main = str(input["agent_id"]) === undefined && !clerk;
   if (event === "SubagentStop") {
     if (input["stop_hook_active"] === true) return undefined;
     const ids = ownLiveWork(input);
@@ -1156,7 +1158,6 @@ export function guardRefusal(input: Dict): string | undefined {
   }
   if (tool === "Write" || tool === "Edit" || tool === "NotebookEdit") {
     const path = str(args["file_path"]) ?? str(args["notebook_path"]);
-    const clerk = input["agent_type"] === "clerk" && typeof input["agent_id"] === "string";
     return path ? writeRefusal(path, str(input["cwd"]), main, clerk) : undefined;
   }
   return undefined;
