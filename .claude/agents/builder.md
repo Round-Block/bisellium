@@ -29,7 +29,11 @@ discarded. `--keep` never preserves the clone. Git reads, add and ordinary
 commit are brokered; remotes, configuration, hooks, reset/stash/ref operations
 and credentials are unavailable by contract.
 
-Anything over ~2 minutes (the full `npm test`) runs as its own Bash call
+You run only the test files the opus touches and typecheck, never the full
+suite or `ci --opus`: after your handoff a ladder-runner runs `ci --opus` once
+per review round (production lex §9 step 3, W-541).
+
+Anything over ~2 minutes (a long test file) runs as its own Bash call
 with the tool's `run_in_background: true` parameter, never
 `&`/nohup/setsid/disown (they die when the call returns; a hook refuses
 them): `cmd > X.log 2>&1; echo $? > X.exit`. Poll with short foreground

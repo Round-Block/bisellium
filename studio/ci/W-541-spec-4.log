@@ -1,0 +1,22 @@
+# opus: W-541
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1ba6b-2efc-7073-912f-be9556b57c87
+# session_reason: the kit started a fresh Codex session instead of resuming 01a1ba5f
+# outcome: failed
+# at: 2026-11-08T09:16:17.855Z
+# tree: tree:018690cafa0677c27223f08d2a4e3d64babf8d63
+# brief: briefs/W-541.md blob:09d711379705d3549e11027aa0c7ce41b4003358
+# ticket: {"opus":"W-541","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-541/studio","head":"ef1396eba3769471d0ecbca77a218b1b5f2ef95f","brief":"09d711379705d3549e11027aa0c7ce41b4003358","at":"2026-11-08T09:16:12.410Z"}
+
+## Earlier findings
+- ci/W-541-spec-2.log #1: closed — brief:98 now cites `instructions-test.out`, which records exit 0 with 53 PASS and no FAIL.
+
+## Findings
+1. blocking — brief:91 [severity: S1] [design: keeps] The signed `prototype.mbox` b2 test and `red-b2.log` still use the quoted assertion, so prototype replay fails `redFailsAt` against the revised quote-free pin and records no red; `amend-b2-red.out` proves only an unincorporated edit. Replace brief:91 with “**Genuine red:** the declared command on the quote-free b2 red commit in the regenerated signed `prototype.mbox` fails by `ERR_ASSERTION` at `a builder brief holding npm run -s bisellium -- ci --opus <ID> --studio studio --repo . blocks` (`red-b2.log`, accepted by `reds.out`) and passes on its following feature commit (`green-b2.log`); `series.out`, the Prototype hash and `mbox-check.out` name that regenerated series.” [class: review×evidence-backfilled-or-absent] — check: none: compare every signed-prototype red with its `declaredReds` pin through `redFailsAt` before signing
+
+## Verdict
+The earlier findings are closed, but the signed prototype still cannot record behaviour 2’s revised red as promised.
+VERDICT: FAIL

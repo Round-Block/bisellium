@@ -1,0 +1,19 @@
+# opus: W-541
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1ba5f-3f85-71d1-b3c8-1d95a8caa4ab
+# outcome: failed
+# at: 2026-11-08T09:01:42.318Z
+# tree: tree:c3b08afc0b8e93e60e0bcb5196722bb374a82a0c
+# brief: briefs/W-541.md blob:f1d6b6f5f03475390f3e0b7942f49669811f8905
+# ticket: {"opus":"W-541","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"91b50a5d15111ec28f274a8f5349bbbab8ad65ee","brief":"f1d6b6f5f03475390f3e0b7942f49669811f8905","at":"2026-11-08T09:01:37.640Z"}
+
+## Findings
+1. blocking — brief:98 The fixture census names `packages/cli/src/instructions.test.ts` rows for both changed agent files, but neither singles run executes that file, making the claimed evidence false. Replace brief:98 with “No existing row flips. The Codex test check is `fixture-census.md`: no flip, none unnamed; its must-stay-green rows that reach changed code were run above except `packages/cli/src/instructions.test.ts`, which is not run for this spec and is a gate for the build.” [severity: S1] [design: keeps] [class: review×evidence-backfilled-or-absent] — check: packages/cli/src/instructions.test.ts
+2. advisory — brief:79 Row 5 enumerates the reused gate internals and names `exit`, not the reused call and a rejecting function as D-050 requires. Replace brief:79 with “| 5. The reused ladder call | `bisellium run --sella producer --no-worktree --studio <studio> -- npm run -s bisellium -- ci --opus <id> --studio <studio> --repo .` exits 0 | `runCommand` propagates any non-zero child exit, and the ladder-runner reports the failure without performing the following gate-log commit |” [severity: S4] [class: spec×reused-code-read-enumerated-instead-of-exit-boundary] — check: none: brief.input.reused-call-coverage
+
+## Verdict
+The design is feasible, but its false test-evidence claim requires correction before the spec passes.
+VERDICT: FAIL

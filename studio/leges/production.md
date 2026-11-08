@@ -192,13 +192,13 @@ names each step and writes the step ticket the next record write consumes
    all keep the design goes to `branch` with them as required build fixes, and a blocker tagged S2-S4 is
    sent back to its reviewer session, never downgraded (D-086).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
-   in the worktree, `ready` (commit), then the reds and code. When the brief's `Prototype:` line names a series at its signed sha256 that applies at the worktree's HEAD and no red is recorded, `next` names `next <id> --perform --expect reds` (W-326): for each behaviour in order it commits the test patch, records the red with its own ticket on that commit and commits the log alone, then commits the implementation; then the orchestrator records `handoff`, runs `npm run -s bisellium -- ci --opus <id> --studio studio --repo .` in the worktree (the one full suite, in the background) and commits the record and its gate logs (`chore(studio): <id> gates`), as the build order names. Otherwise, when the perform holds, when a required fix stands (D-086 A) or when that `ci --opus` exits non-zero, a Sonnet builder (brief:
+   in the worktree, `ready` (commit), then the reds and code. When the brief's `Prototype:` line names a series at its signed sha256 that applies at the worktree's HEAD and no red is recorded, `next` names `next <id> --perform --expect reds` (W-326): for each behaviour in order it commits the test patch, records the red with its own ticket on that commit and commits the log alone, then commits the implementation; then a ladder-runner records `handoff`, runs `npm run -s bisellium -- ci --opus <id> --studio studio --repo .` in the worktree inside a `bisellium run` session (W-364 refuses it outside one; the one full suite, in the background) and commits the record and its gate logs (`chore(studio): <id> gates`), as the build order names. Otherwise, when the perform holds, when a required fix stands (D-086 A) or when that `ci --opus` exits non-zero, a Sonnet builder (brief:
    `studio/prompts/builder-brief.md`, filled): reds recorded one
-   behaviour at a time on the commit of the previous behaviour, build, gates; then, after recording `handoff`, the same `ci --opus`, the record and its gate logs committed. A fresh
+   behaviour at a time on the commit of the previous behaviour, build, and gates: only the test files the opus touches and typecheck, with a test row for each boundary case the brief names, never the full suite or `ci --opus`; then the builder records `handoff`, `next` names the gates, and a ladder-runner runs the same `ci --opus` once per review round and commits the record and its gate logs (W-541, D-189). A fresh
    builder past ~250k; dispatch builders in the background so a Patron
    message cannot cut one off. `next` orders the reds one behaviour at a
    time (W-166, D-036); each `red` needs its own `next` ticket first.
-4. **Review:** `next` orders review only when the branch record's automated gates passed at the branch's current source tree, with their logs committed (the builder's `ci --opus`, step 3); no host mint runs before review: the merge queue's `certify` is the one mint, and it replays the reds (D-071 E). `next <id> --perform --chain --budget 400000 --title <t> --body-file <f> --studio studio --repo .`, in one background call, runs the review round and the pr. Codex `gpt-5.6-sol`, round-1 prompt
+4. **Review:** `next` orders review only when the branch record's automated gates passed at the branch's current source tree, with their logs committed (the ladder-runner's `ci --opus`, step 3); no host mint runs before review: the merge queue's `certify` is the one mint, and it replays the reds (D-071 E). `next <id> --perform --chain --budget 400000 --title <t> --body-file <f> --studio studio --repo .`, in one background call, runs the review round and the pr. Codex `gpt-5.6-sol`, round-1 prompt
    `studio/prompts/build-review.md`, filled by the perform; packet
    `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
    `censor.sh <id> <round>`; the orchestrator records with
@@ -216,7 +216,7 @@ names each step and writes the step ticket the next record write consumes
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
    pushes the reviewed head without a rebase, `merge` enqueues it, and the
    queue's `certify` job mints the merge result (it replays the reds and runs the gates): a moved master needs no
-   rebase and no second gate run. In `mode: direct` no `certify` runs, so nothing replays the reds before merge: rebase if master moved, and the builder's `ci --opus` and review follow.
+   rebase and no second gate run. In `mode: direct` no `certify` runs, so nothing replays the reds before merge: rebase if master moved, and the ladder-runner's `ci --opus` and review follow.
 6. **Done:** no `verify` after the merge queue's `certify`: the done perform
    records certify's certificate (D-082 B); only a `kind: ui` opus, which
    certify cannot vouch for, runs `verify <id>` on master (~24 min, nothing
@@ -362,3 +362,4 @@ cannot run, for required fixes and for fix rounds. UI layouts at spec: `gpt-6-as
 | 2026-11-05 | §7: the hold on new Opus work moves from ~87% to ~98% Claude usage | Patron |
 | 2026-11-07 | §9 step 7: a ladder-runner runs and lands the daily retro, the qa-lead writes its proposed improvements, `next` names the three steps, `check` warns rather than refuses, and a missing entry holds only an opus with no signed spec (D-188, W-530) | Patron |
 | 2026-11-07 | §7: a call that would wait on the Patron rests on a meet of the relevant leads, not the producer's recommendation alone (D-189) | Patron |
+| 2026-11-08 | §9 steps 3 to 5: a builder runs only the test files it touches and typecheck, never the full suite or `ci --opus`; after its handoff `next` names a ladder-runner's `ci --opus` in a run session, once per review round (W-541; the leads' speed meet, D-189) | Leads (D-189); Patron at merge |
