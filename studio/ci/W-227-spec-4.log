@@ -1,0 +1,23 @@
+# opus: W-227
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1b8f1-5c39-7381-bd17-da763a8e1c58
+# session_reason: kit runs a fresh reviewer; round 2's verdict is given in the prompt
+# outcome: failed
+# at: 2026-11-08T02:21:58.045Z
+# tree: tree:bb3f3685449734451e597c9656c41114935c5c3b
+# brief: briefs/W-227.md blob:ae0b91a2a8d74bdfbc57a97d78589e21522731ce
+# ticket: {"opus":"W-227","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-227/studio","head":"015260d1e2dd6a3287b5c4b7613bbac312ec9620","brief":"ae0b91a2a8d74bdfbc57a97d78589e21522731ce","at":"2026-11-08T02:21:57.387Z"}
+
+## Findings
+1. blocking — brief:90 Reached from `ci/W-227-spec-2.log` #1: row 1 still omits the Git worktree listing and candidate lstat as inputs and names neither `cleanup` nor `lstatRead` as their fail-closed rejector; the build’s added checks do not repair the signed Input domain. Replace brief:90 with: `| 1. The git worktree listing and <repo>/.worktrees/<id> | listWorktrees succeeds and lstatRead reports absent, or present for a real direct child with the stated contents | cleanup holds before mutation when opusWorktree.listed is false or lstatRead reports an error; clearLeftover rejects invalid, unreadable, symlinked or non-empty candidates |`. [severity: S1] [design: keeps] [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/next.test.ts W-227-b1
+
+## Earlier findings
+- ci/W-227-spec-2.log #1: open — brief:90 still omits the Git worktree listing and candidate lstat inputs and their fail-closed rejectors.
+- ci/W-227-spec-2.log #2: closed — brief:54, brief:94 and brief:113 replace substitution-body parsing with the word-and-tail rule, including substitutions inside double quotes and the later `case`-arm form.
+
+## Verdict
+The amended word-and-tail rule closes round-2 finding #2, but finding #1 remains open in the signed Input domain.
+VERDICT: FAIL
