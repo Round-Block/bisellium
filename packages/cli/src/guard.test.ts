@@ -574,7 +574,7 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
   mkdirSync(join(repo, "docs"), { recursive: true });
   mkdirSync(join(repo, "studio/opera"), { recursive: true });
   const notices = join(repo, ".git", "bisellium", "notice");
-  const clerkRefusal = /^refused: a dispatched clerk writes only under studio\/acta\/.*: studio\/opera\/W-1\.md is not one;/;
+  const clerkRefusal = /^refused: a dispatched clerk writes only under studio\/acta\/.*: studio\/opera\/W-1\.md is not one; the bisellium verbs write studio\/opera\/ and studio\/ci\/, a builder the source and tests$/;
   for (const id of ["c1", ""])
     for (const tool of ["Write", "Edit", "NotebookEdit"])
       for (const [target, code] of [["docs/x.md", 0], ["studio/opera/W-1.md", 2]] as const) {
@@ -591,7 +591,7 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
   writeFileSync(join(notices, "901"), "PR #901 needs your review: first (code-owned: a)\n");
   const taken = await guard(write(join(repo, "docs/x.md"), { agent_id: "", agent_type: "builder" }, "Write", repo));
   assert.equal(taken.code, 2, "an empty agent_id that claims no clerk takes a pending notice, as the main thread: builder");
-  assert.match(taken.err, /^refused: a PR waits on the Patron's review \(W-418\)/, "an empty agent_id that claims no clerk takes a pending notice, as the main thread: builder (the W-418 refusal)");
+  assert.equal(taken.err, "refused: a PR waits on the Patron's review (W-418): send the Patron each notice below with PushNotification, then rerun this call: 1) PR #901 needs your review: first (code-owned: a)", "an empty agent_id that claims no clerk takes a pending notice, as the main thread: builder (the W-418 refusal)");
   assert.ok(!existsSync(join(notices, "901")), "an empty agent_id that claims no clerk takes a pending notice, as the main thread: builder (the notice is removed)");
   writeFileSync(join(notices, "901"), "PR #901 needs your review: first (code-owned: a)\n");
   assert.deepEqual(await guard(write(join(repo, "docs/x.md"), BUILDER, "Write", repo)), { code: 0, err: "" }, "another subagent with a notice pending does not take it: builder");
