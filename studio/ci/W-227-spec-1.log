@@ -1,0 +1,25 @@
+# opus: W-227
+# phase: spec
+# round: 1
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-08T00:49:01.014Z
+# tree: tree:8082708f2412098b7c58aeda843b918cd0e9bbbe
+# brief: briefs/W-227.md blob:ec1ac46c9942cf72ff434b65f076ca2107679188
+# ticket: {"opus":"W-227","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"27b366d083d27bc02720d1d5a4546ee3ea84253f","brief":"ec1ac46c9942cf72ff434b65f076ca2107679188","at":"2026-11-08T00:48:54.228Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-227-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — item 2 settled before the design: the sandbox makes `.worktrees/W-528` (and `.git/worktrees/W-528`) as a read-only bind mount for every sandboxed command (birth time equals each command's start) and fills it with zero-byte, mode-0444 mount points while another command of the session runs; an rmdir fails EBUSY (git's own gc printed it); the deny entry comes from the main thread's one `cd` at 2026-11-07T16:05:33Z and lasted across /clear in the same process — check: brief Intent 2, probe-stub-1.out, probe-stub-2.out, probe-stub-3.out, stages-b1-first.log, cd-evidence.out
+2. advisory — item 4's whole cause: `patronStop` asked for the sync only for sandbox-denied paths, so #1086's `.github/` hold asked for none (W-369's named Out of scope); the later SessionStart refusal on the uncommitted progress-body.html is a correct second cause, kept — check: brief Intent 3, sync-evidence.out, W-528-build/merge2.out
+3. advisory — no code-owned file is touched (six files under packages/cli/src/); the guard rule takes effect when the Patron's clone pulls the merge (W-379) — check: brief Status, Files owned, .github/CODEOWNERS
+4. advisory — EBUSY and EROFS cannot be built in a test; behaviour 2 reaches the same branch with EACCES, and EBUSY's real occurrence is git's gc line; the `.git/worktrees/<name>` stubs still make `git worktree prune` fail inside the sandbox, a stated limit with a one-line follow-up — check: brief Promise left-for-patron, Limits, Input domain row 2
+5. advisory — the record's older case (a registered worktree kept busy) is not built; Defaults 2 asks the Patron, and the title may be amended by the producer — check: brief Out of scope, Defaults 2
+6. advisory — not run for this spec: `npm test`, typecheck, lint, `format:check`, both officina checks and the CI run; the twelve files that touch the changed code were run on the tip, each exit 0 — check: brief Acceptance, gates-proto.out
+
+## Verdict
+
+passed — signed by the ops lead (`ops-lead`, `claude-opus-5-5`, the ops signer in spec_seats, D-150 C) for `studio/briefs/W-227.md` at master 87d44874, round 1: four behaviours, each red accepted by the replay classifier on the commit before it and green on its feature commit (`reds.out`); every one-hunk wrong form fails its row at an assertion (`mutants.out`); the eight-commit mbox applies to the same tree (`mbox-check.out`); the must-stay-green files pass on the tip (`gates-proto.out`); the Codex test check names one flip, named, none unnamed (`fixture-census.md`).

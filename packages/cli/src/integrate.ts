@@ -12,7 +12,7 @@
  * `--match-head-commit`. `BLOCKED` is never merged directly.
  */
 import { spawnSync } from "node:child_process";
-import { accessSync, constants, lstatSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, constants, lstatSync, readdirSync, realpathSync, rmdirSync, unlinkSync, writeFileSync, type Stats } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { instant } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
@@ -223,10 +223,12 @@ export function listWorktrees(repo: string): WtEntry[] | undefined {
   return out;
 }
 
-/** The registered worktree `<repo>/.worktrees/<id>`, wherever git lists it. */
-export function opusWorktree(repo: string, id: string): { dir: string; entry?: WtEntry } {
+/** The registered worktree `<repo>/.worktrees/<id>`, wherever git lists it. W-227: `listed` is false when git's listing failed
+ *  (an absent `entry` is then not "unregistered"; a caller that mutates holds). */
+export function opusWorktree(repo: string, id: string): { dir: string; entry?: WtEntry; listed: boolean } {
   const dir = join(realpathSync(repo), ".worktrees", id);
-  return { dir, entry: listWorktrees(repo)?.find((e) => e.path === dir) };
+  const list = listWorktrees(repo);
+  return { dir, entry: list?.find((e) => e.path === dir), listed: list !== undefined };
 }
 
 /** A branch tip read three ways: a commit, truly absent (git says no such ref), or unreadable (never "absent"). */
@@ -355,7 +357,9 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
     patron.length > 0
       ? `refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`
       : `refusing: this session may not write incoming paths (${denied.slice(0, 10).map(quoted).join(", ")}) in the main checkout (the sandbox's deny, W-362); the main checkout is untouched`;
-  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`, ...(denied.length > 0 ? [requestSync(repo, target)] : [])] };
+  // W-227: the sync is asked for a Patron path too (W-369's Out of scope): it moves only a master checked out here
+  const syncs = holder !== undefined && here(holder.path);
+  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`, ...(syncs ? [requestSync(repo, target)] : [])] };
 }
 
 /** W-369: asks the installed guard's sync (its PostToolUse hook) to fast-forward this checkout when the call returns. The
@@ -1218,12 +1222,18 @@ export function cleanup(ctx: Ctx): StepResult {
   // (1) the worktree (only an opus branch has one)
   let pr = reread();
   if (!pr.ok) return stop("worktree", pr.reason);
-  const { dir, entry } = opusWorktree(repo, id);
-  const dirExists = lstatSafe(dir);
+  const { dir, entry, listed } = opusWorktree(repo, id);
+  const probe = lstatRead(dir);
+  const dirExists = probe.kind === "present";
   if (branch !== `opus/${id}`) out.push("worktree: skipped (not an opus branch)");
+  // W-227: nothing is mutated on a listing or a stat that failed: an absent entry or folder is not known to be absent
+  else if (!listed) return stop("worktree", `git worktree list failed, so ${dir} is not known to be unregistered; left untouched`);
+  else if (probe.kind === "error") return stop("worktree", `${dir} cannot be read (${probe.reason}); left untouched`);
   else if (entry === undefined) {
-    if (dirExists) return stop("worktree", `${dir} exists but is not the registered worktree for ${branch}; left untouched`);
-    out.push("worktree: skipped (absent)");
+    // W-227: an empty folder git does not list, directly under .worktrees/, is a leftover (a sandbox remakes it as a mount point)
+    const left = dirExists ? clearLeftover(repo, id, dir) : { ok: true as const, line: "skipped (absent)" };
+    if (!left.ok) return stop("worktree", `${dir} exists but is not the registered worktree for ${branch}; ${left.reason}; left untouched`);
+    out.push(`worktree: ${left.line}`);
   } else if (entry.branch !== ref && !(entry.prunable && !dirExists)) {
     return stop("worktree", `${dir} is registered for ${entry.branch ?? "no branch"}, not ${branch}; left untouched`);
   } else if (!dirExists) {
@@ -1271,11 +1281,87 @@ export function cleanup(ctx: Ctx): StepResult {
   return { ok: true, lines: out };
 }
 
-function lstatSafe(path: string): boolean {
+/** W-227: the rmdir refusals that leave an empty leftover in place and let cleanup go on to the branch steps. */
+const LEFTOVER_KEPT = new Set(["EBUSY", "EROFS", "EACCES", "EPERM"]);
+/** W-227: the most entries `stubsOnly` reads before it gives up (and cleanup holds). */
+const STUB_WALK_MAX = 256;
+
+/** W-227: the number of entries under `dir` when every one, read without following a symlink, is a folder or a zero-byte
+ *  regular file, at most `STUB_WALK_MAX` of them: the empty mount points a sandbox makes for its deny paths (`.git`,
+ *  `.mcp.json`, `.claude/settings.json`, …). Undefined for anything else (a byte of content, a symlink, a fifo, an unreadable
+ *  folder, too many entries). It reads only. */
+function stubsOnly(dir: string): number | undefined {
+  let n = 0;
+  const todo = [dir];
+  for (let d = todo.pop(); d !== undefined; d = todo.pop()) {
+    let names: string[];
+    try {
+      names = readdirSync(d);
+    } catch {
+      return undefined;
+    }
+    for (const name of names) {
+      if (++n > STUB_WALK_MAX) return undefined;
+      let st: Stats | undefined;
+      try {
+        st = lstatSync(join(d, name));
+      } catch {
+        return undefined;
+      }
+      if (st.isDirectory()) todo.push(join(d, name));
+      else if (!(st.isFile() && st.size === 0)) return undefined;
+    }
+  }
+  return n;
+}
+
+/**
+ * W-227: an unregistered `<repo>/.worktrees/<id>` that cleanup may clear: `.worktrees` a real directory in the real repository
+ * and `<id>` a real directory directly in it (`existingRealDirectory`: no symlink at either level, one plain name), holding
+ * nothing; it is removed by one non-recursive `rmdir`. One that rmdir cannot remove (`LEFTOVER_KEPT`) and one holding only a
+ * sandbox's empty mount points (`stubsOnly`) are left untouched and named; anything else is the reason to hold.
+ */
+function clearLeftover(repo: string, id: string, dir: string): { ok: true; line: string } | { ok: false; reason: string } {
+  let real: string | undefined;
+  try {
+    real = existingRealDirectory(repo, ".worktrees", id);
+  } catch (e) {
+    return { ok: false, reason: `it is not a real folder directly under the repository's .worktrees/ (${thrown(e)})` };
+  }
+  if (real === undefined) return { ok: true, line: "skipped (absent)" };
+  if (real !== dir) return { ok: false, reason: `it is not directly under the repository's .worktrees/ (${real})` };
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch (e) {
+    return { ok: false, reason: `it cannot be listed (${thrown(e)})` };
+  }
+  if (names.length > 0) {
+    // the mount points a sandbox makes for its deny paths while another of its commands runs: left, never removed
+    const stubs = stubsOnly(dir);
+    if (stubs === undefined) return { ok: false, reason: `it is not empty (${names.length} ${names.length === 1 ? "entry" : "entries"})` };
+    return { ok: true, line: `skipped (leftover ${dir} holds only empty files and folders (${stubs}), as the mount points a sandbox makes do; git does not list it and it holds nothing, so it is left untouched; it goes when the session whose sandbox holds it ends, or the Patron runs: find ${quoted(dir)} -depth -empty -delete)` };
+  }
+  try {
+    rmdirSync(dir);
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code ?? "an error";
+    if (code === "ENOENT") return { ok: true, line: "skipped (absent)" };
+    // a mount point the sandbox keeps (EBUSY, EROFS) or a folder this process may not remove (EACCES, EPERM): it is empty and
+    // git does not list it, so leaving it loses nothing; the branch steps still run, and next's residue check does not read it
+    if (LEFTOVER_KEPT.has(code))
+      return { ok: true, line: `skipped (empty leftover ${dir}: rmdir refused (${code}); git does not list it and it holds nothing, so it is left; it goes when the session whose sandbox holds it ends, or the Patron runs: rmdir ${quoted(dir)})` };
+    return { ok: false, reason: `rmdir refused (${code})` };
+  }
+  return { ok: true, line: `ran (removed the empty leftover ${dir}, which git does not list)` };
+}
+
+/** W-227: a path read three ways: present, truly absent (ENOENT), or unreadable (never "absent"). */
+function lstatRead(path: string): { kind: "present" } | { kind: "absent" } | { kind: "error"; reason: string } {
   try {
     lstatSync(path);
-    return true;
-  } catch {
-    return false;
+    return { kind: "present" };
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "ENOENT" ? { kind: "absent" } : { kind: "error", reason: thrown(e) };
   }
 }

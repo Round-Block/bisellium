@@ -1,0 +1,24 @@
+# opus: W-227
+# phase: spec
+# round: 3
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-08T02:14:33.471Z
+# tree: tree:bb3f3685449734451e597c9656c41114935c5c3b
+# brief: briefs/W-227.md blob:ae0b91a2a8d74bdfbc57a97d78589e21522731ce
+# ticket: {"opus":"W-227","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-227/studio","head":"eb1b60e4d9c17d133da1dc944d143a04723cd29a","brief":"ae0b91a2a8d74bdfbc57a97d78589e21522731ce","at":"2026-11-08T02:14:11.974Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-227-spec/promise-ledger-r2.md
+
+## Findings
+
+1. advisory — build review rounds 1 and 2 failed on one class, tests×security-boundary-cases-uncovered, each a form the `$( )` body parser lost (a quoted `)`, then a `case` arm's `)`); under D-085 the domain is restated, not the parser grown: no `$( )` body is parsed, so no `)` can end one early — check: ci/W-227-review-1.log, ci/W-227-review-2.log, brief Status, Input domain row 5
+2. advisory — the producer's proposal kept command-position reading for the top level and paren counting for the body's end; simple paren counting still ends `$(case x in x) cd …` at the arm's `)`, and command position at the top level is the same parser class (a top-level `case` arm, `{ }`, a function body, `time`, `!`); the rule signed is simpler and closed on both: every `cd` or `pushd` word before the first substitution, and every such token from the first `$(`, backtick, `<(` or `>(` to the end of the text — check: brief Input domain row 5, behaviour 4
+3. advisory — the cost is stated, not hidden: `echo cd .worktrees/W-1` (allowed in round 1) and a `cd .worktrees/…` token after any substitution are now refused; the quoted forms run, and `echo '$(cd .worktrees/W-1)'` and `echo "cd .worktrees/W-1 $(ls …)"` still run — check: brief Input domain row 5, behaviour 4
+4. advisory — stated limits, judged against the guard's purpose (the orchestrator's own mistake, not an adversary): a `cd` in a quoted word before the tail (`bash -c` strings), a script file, `eval`, `source`, an alias or function from an earlier call, a variable- or substitution-built operand, a `cd` word built from quoted pieces in the tail, a substitution in an unquoted heredoc body, `cd -`, `popd`, `CDPATH`, `env -C`; `shellCode`, `wordPath`, `realOf` and the hook wiring are reused, a limit (D-076 E) — check: brief Promise no-cd, Input domain row 5
+5. advisory — not re-prototyped: the existing pins and kills stand for the round 1 forms; the two new forms are scoped in the ledger to fix round 2, pinned by behaviour 4's added rows (round 2's case-arm form, a `for … do cd …; done` in `$( )`, backticks, `<( )`, top-level case arm, group, function, `time`, `!`, quoted and escaped `cd`) — check: promise-ledger-r2.md, brief behaviour 4
+
+## Verdict
+
+passed — re-signed by the ops lead (`ops-lead`, `claude-opus-5-5`) for `studio/briefs/W-227.md` on opus/W-227 at eb1b60e4: Promise no-cd, Input domain row 5 and behaviour 4 restate the cd refusal's domain as two lexical forms with a stated cost and stated limits; every other line is as signed in round 1.

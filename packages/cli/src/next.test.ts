@@ -2,14 +2,15 @@
  * W-179: one behaviour group of the next.test.ts rows (studio/briefs/W-179.md); the fixture is ./next-world.test.ts.
  * W-124 behaviour 3 and its TERMINALS table stay here: ladder-followon.test.ts (W-128 behaviour 2) reads this file.
  * Select one row with --test-name-pattern='^<row id>\s'.
+ * W-227 rows b1-b2 (studio/briefs/W-227.md): cleanup clears an empty folder git does not list, directly under .worktrees/.
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmdirSync, rmSync, statSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BODY, BRANCH, HERE, MAIN, MIN_CHECKS, OID_UNFETCHED, OPUS, Out, PR_NUMBER, REPO_ROOT, SETUP_ENV, SLUG, SlotName, SlotValue, TITLE, TSX, World, advanceOrigin, advanceSource, branchExists, cand, check, expectHeld, expectStep, ghCalls, ghMerges, git, gitCalls, gitOk, greens, headOf, landMerge, mergedList, mutating, next, openList, performMerge, performPr, pushed, ran, remoteBranchExists, reviewed, runs, scenario, scratch, tipOf, unmatched, viewOf, world } from "./next-world.test.js";
+import { BODY, BRANCH, HERE, MAIN, MIN_CHECKS, OID_UNFETCHED, OPUS, Out, PR_NUMBER, REPO_ROOT, SETUP_ENV, SLUG, SlotName, SlotValue, TITLE, TSX, World, advanceOrigin, advanceSource, branchExists, cand, check, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitOk, greens, headOf, landMerge, mergedList, mutating, next, openList, performMerge, performPr, pushed, ran, remoteBranchExists, reviewed, runs, scenario, scratch, tipOf, unmatched, viewOf, world } from "./next-world.test.js";
 
 /** An open PR on the tip whose merge lands (and reads back MERGED) once `gh pr merge` has been called. */
 function landing(w: World, extra: Partial<Record<SlotName, SlotValue>> = {}): string {
@@ -583,4 +584,169 @@ test("W-179-b1 behaviour 1: test:suite runs every next row file once, side by si
   assert.equal(runners.length, 1, `one test:suite segment names the next files: ${JSON.stringify(runners.map((w) => w.join(" ")))}`);
   assert.deepEqual(runners[0]!.slice(0, 6), ["node", "--test", `--test-concurrency=${declared.length}`, "--test-reporter=tap", "--import", "tsx"], "it is one node --test call running every file at once, with TAP");
   assert.deepEqual(runners[0]!.slice(6), declared, "it names each next row file once, in path order, and nothing else");
+});
+
+// ---------------------------------------------------------------------------
+// W-227 rows b1-b2 (studio/briefs/W-227.md): an empty folder `.worktrees/<id>` that git does not list is the leftover a
+// sandbox leaves (it remakes the folder as a mount point while a session that entered it lives); cleanup clears it
+// ---------------------------------------------------------------------------
+/** A merged opus whose registered worktree is removed and whose folder `.worktrees/W-900` is back, empty, mode 0700 (the stub). */
+function w227World(tag: string): World {
+  const w = world(tag, "merge", { mainOnMaster: false });
+  scenario(w, { list: mergedList(w), view: { stdout: viewOf(cand(w, { state: "MERGED" })) } });
+  git(w.repo, ["worktree", "remove", "--force", w.wt]);
+  mkdirSync(w.wt, { mode: 0o700 });
+  return w;
+}
+const w227Cleanup = (w: World, env?: Record<string, string>): Out => next(w, [OPUS, "--perform", "--expect", "cleanup"], env === undefined ? {} : { env });
+
+test("W-227-b1 behaviour 1: cleanup removes an empty folder git does not list, directly under .worktrees/, with one rmdir, then deletes the branches; a non-empty, symlinked, nested or registered one is held and left untouched", { timeout: 1_800_000 }, () => {
+  const w = w227World("w227-b1");
+  // `kept` runs first, so a wrong form that removes something fails at the row's named "kept" assertion
+  const held = (row: string, kept: () => void): void => {
+    const o = w227Cleanup(w);
+    kept();
+    assert.equal(o.status, 1, ran(`${row}: held`, o));
+    assert.match(o.out, /worktree: held \(.*left untouched\)/, ran(`${row}: the worktree line says held and untouched`, o));
+    assert.equal(branchExists(w), true, `${row}: the local branch is left`);
+    assert.equal(remoteBranchExists(w), true, `${row}: the remote branch is left`);
+  };
+  // not empty: a file, a hidden file, a folder holding a file (the rmdir is never recursive)
+  writeFileSync(join(w.wt, "keep.txt"), "kept\n");
+  held("a file inside", () => assert.equal(existsSync(join(w.wt, "keep.txt")) && readFileSync(join(w.wt, "keep.txt"), "utf8"), "kept\n", "a file inside: kept"));
+  rmSync(join(w.wt, "keep.txt"));
+  writeFileSync(join(w.wt, ".hidden"), "x");
+  held("a hidden file inside", () => assert.equal(existsSync(join(w.wt, ".hidden")), true, "a hidden file inside: kept"));
+  rmSync(join(w.wt, ".hidden"));
+  mkdirSync(join(w.wt, "sub"));
+  writeFileSync(join(w.wt, "sub", "f"), "x");
+  held("a folder inside holding a file", () => assert.equal(existsSync(join(w.wt, "sub", "f")), true, "a folder inside holding a file: kept"));
+  rmSync(join(w.wt, "sub"), { recursive: true });
+  // a symlink at .worktrees/W-900 to an empty folder: neither the link nor its target is touched
+  const target = join(w.root, "elsewhere");
+  mkdirSync(target);
+  rmdirSync(w.wt);
+  symlinkSync(target, w.wt);
+  held("a symlink", () => {
+    assert.equal(lstatSync(w.wt, { throwIfNoEntry: false })?.isSymbolicLink(), true, "a symlink: the link is kept");
+    assert.equal(existsSync(target), true, "a symlink: its target is kept");
+  });
+  rmSync(w.wt);
+  mkdirSync(w.wt);
+  // nested: .worktrees itself a symlink to a folder outside the repository, which holds an empty W-900
+  const wts = join(w.repo, ".worktrees");
+  const away = join(w.root, "away");
+  renameSync(wts, away);
+  symlinkSync(away, wts);
+  held("a .worktrees that is a symlink out of the repository", () => assert.equal(existsSync(join(away, OPUS)), true, "a symlinked .worktrees: the folder behind it is kept"));
+  rmSync(wts);
+  renameSync(away, wts);
+  // registered: git lists a worktree at the path (for another branch), its folder emptied by hand
+  rmdirSync(w.wt);
+  git(w.repo, ["worktree", "add", "-q", "-b", "w227-other", w.wt, "master"]);
+  for (const name of readdirSync(w.wt)) rmSync(join(w.wt, name), { recursive: true, force: true });
+  held("a registered worktree, emptied", () => assert.equal(existsSync(w.wt), true, "a registered worktree: its folder is kept"));
+  git(w.repo, ["worktree", "prune"]);
+  // not a folder: a file at the path
+  rmdirSync(w.wt);
+  writeFileSync(w.wt, "not a folder\n");
+  held("a file at the path", () => assert.equal(existsSync(w.wt) && readFileSync(w.wt, "utf8"), "not a folder\n", "a file at the path: kept"));
+  rmSync(w.wt);
+  mkdirSync(w.wt);
+  // empty, unregistered, a real folder directly under the real .worktrees/: one rmdir, then the branch steps
+  const o = w227Cleanup(w);
+  assert.equal(o.status, 0, ran("the empty leftover: cleanup runs", o));
+  assert.match(o.out, /worktree: ran \(removed the empty leftover /, ran("the worktree line names the leftover removed", o));
+  assert.equal(existsSync(w.wt), false, "the empty leftover is gone");
+  assert.equal(existsSync(wts), true, "and .worktrees/ itself stays");
+  assert.equal(branchExists(w), false, "the local branch is deleted");
+  assert.equal(remoteBranchExists(w), false, "the remote branch is deleted");
+  assert.ok(gitCalls(w).every((a) => !(a[0] === "worktree" && a.includes("--force"))), "no worktree call is ever --force");
+});
+
+test("W-227-b1 behaviour 1, fail closed: cleanup holds before any mutation when git's worktree listing or the candidate's lstat fails, and on an unreadable candidate", { timeout: 1_800_000 }, (t) => {
+  if (process.getuid?.() === 0) return t.skip("root reads a folder whatever its mode");
+  const untouched = (w: World, row: string): void => {
+    assert.equal(existsSync(w.wt), true, `${row}: the folder is left`);
+    assert.equal(branchExists(w), true, `${row}: the local branch is left`);
+    assert.equal(remoteBranchExists(w), true, `${row}: the remote branch is left`);
+  };
+  // `git worktree list` fails: an absent entry is not known to be absent
+  const l = w227World("w227-b1-list");
+  const lo = w227Cleanup(l, { GIT_STUB_REAL: failingGit("w227-b1-list", ["worktree list"]) });
+  untouched(l, "a failed worktree listing");
+  assert.equal(lo.status, 1, ran("a failed worktree listing: held", lo));
+  assert.match(lo.out, /worktree: held \(.*git worktree list.*left untouched\)/, ran("a failed worktree listing: the line names the listing", lo));
+  // the candidate's lstat fails (a non-searchable .worktrees/): not an absent folder
+  const s = w227World("w227-b1-lstat");
+  const wts = join(s.repo, ".worktrees");
+  chmodSync(wts, 0o000);
+  try {
+    const so = w227Cleanup(s);
+    chmodSync(wts, 0o755);
+    untouched(s, "a failed lstat");
+    assert.equal(so.status, 1, ran("a failed lstat: held", so));
+    assert.match(so.out, /worktree: held \(.*cannot be read.*left untouched\)/, ran("a failed lstat: the line says unreadable", so));
+  } finally {
+    chmodSync(wts, 0o755);
+  }
+  // an unreadable candidate: not an empty one
+  const u = w227World("w227-b1-unreadable");
+  chmodSync(u.wt, 0o000);
+  try {
+    const uo = w227Cleanup(u);
+    chmodSync(u.wt, 0o700);
+    untouched(u, "an unreadable folder");
+    assert.equal(uo.status, 1, ran("an unreadable folder: held", uo));
+    assert.match(uo.out, /worktree: held \(.*cannot be listed.*left untouched\)/, ran("an unreadable folder: the line says so", uo));
+  } finally {
+    chmodSync(u.wt, 0o700);
+  }
+});
+
+test("W-227-b2 behaviour 2: a leftover cleanup cannot remove, rmdir refused (a mount point the sandbox keeps) or holding only the empty files and folders a sandbox mounts over, is named for the Patron and left untouched; the branches are still deleted and next moves on to done", { timeout: 1_800_000 }, (t) => {
+  if (process.getuid?.() === 0) return t.skip("root removes a folder from a read-only directory");
+  // the tree a sandbox leaves while another of its commands runs: a folder and zero-byte files, mode 0444, one per deny path
+  const s = w227World("w227-b2-stubs");
+  mkdirSync(join(s.wt, ".claude"));
+  for (const f of [".git", ".mcp.json", ".claude/settings.json", ".claude/hooks"]) {
+    writeFileSync(join(s.wt, f), "");
+    chmodSync(join(s.wt, f), 0o444);
+  }
+  const stubsHeld = (row: string, kept: () => void): void => {
+    const o = w227Cleanup(s);
+    kept();
+    assert.equal(o.status, 1, ran(`${row}: held`, o));
+    assert.equal(branchExists(s), true, `${row}: the local branch is left`);
+  };
+  chmodSync(join(s.wt, ".claude", "settings.json"), 0o644);
+  writeFileSync(join(s.wt, ".claude", "settings.json"), "{}");
+  const bytes = join(s.wt, ".claude", "settings.json");
+  stubsHeld("a stub tree holding one file with bytes in it", () => assert.equal(existsSync(bytes) && readFileSync(bytes, "utf8"), "{}", "a file with bytes in it: kept"));
+  writeFileSync(join(s.wt, ".claude", "settings.json"), "");
+  symlinkSync("/", join(s.wt, ".claude", "link"));
+  stubsHeld("a stub tree holding a symlink", () => assert.equal(lstatSync(join(s.wt, ".claude", "link"), { throwIfNoEntry: false })?.isSymbolicLink(), true, "a symlink in the tree: kept"));
+  rmSync(join(s.wt, ".claude", "link"));
+  const so = w227Cleanup(s);
+  assert.equal(so.status, 0, ran("a tree of empty stubs: cleanup still runs", so));
+  assert.match(so.out, /worktree: skipped \(leftover .* holds only empty files and folders \(5\).*the Patron runs: find .* -depth -empty -delete\)/, ran("the worktree line names the stub tree and the Patron's command", so));
+  assert.deepEqual(readdirSync(s.wt).sort(), [".claude", ".git", ".mcp.json"], "a tree of empty stubs: left untouched");
+  assert.equal(branchExists(s), false, "a tree of empty stubs: the local branch is deleted");
+  assert.equal(remoteBranchExists(s), false, "a tree of empty stubs: the remote branch is deleted");
+  expectStep(next(s, [OPUS]), "done", "named", "a tree of empty stubs: next moves on to done");
+  // an empty leftover rmdir cannot remove: .worktrees/ read-only to this process
+  const w = w227World("w227-b2");
+  const wts = join(w.repo, ".worktrees");
+  chmodSync(wts, 0o555);
+  try {
+    const o = w227Cleanup(w);
+    assert.equal(o.status, 0, ran("rmdir refused: cleanup still runs", o));
+    assert.match(o.out, /worktree: skipped \(empty leftover .*rmdir refused \(EACCES\).*the Patron runs: rmdir /, ran("the worktree line names the leftover, the refusal and the Patron's rmdir", o));
+    assert.equal(existsSync(w.wt), true, "the folder is left as rmdir found it");
+    assert.equal(branchExists(w), false, "the local branch is deleted");
+    assert.equal(remoteBranchExists(w), false, "the remote branch is deleted");
+    expectStep(next(w, [OPUS]), "done", "named", "next's residue check does not hold on the folder: the step is done");
+  } finally {
+    chmodSync(wts, 0o755);
+  }
 });

@@ -1,0 +1,22 @@
+# opus: W-227
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b8c9-a743-78b2-84a6-fd1d9bad258f
+# outcome: failed
+# at: 2026-11-08T02:08:42.918Z
+# tree: tree:bb3f3685449734451e597c9656c41114935c5c3b
+# brief: briefs/W-227.md blob:ec1ac46c9942cf72ff434b65f076ca2107679188
+# ticket: {"opus":"W-227","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-227/studio","head":"1c9f737302fbaa4a73ea838e6f194c352ccb8ad1","brief":"ec1ac46c9942cf72ff434b65f076ca2107679188","at":"2026-11-08T02:07:02.791Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:465 Reached through ci/W-227-review-1.log #1’s class: `substitutionEnd` still treats a `case` arm’s `)` as the end of `$(`, so `echo "$(case x in x) cd .worktrees/W-1;; esac)"` is truncated before the executed `cd` and bypasses brief:94’s recognized substitution domain. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-227-b4
+
+## Earlier findings
+- ci/W-227-review-1.log #1: closed — packages/cli/src/guard.ts:450 now skips parentheses inside quoted words, and packages/cli/src/guard.test.ts:947 pins the exact quoted-`)` bypass.
+
+## Verdict
+The exact earlier bypass is fixed, but the replacement scanner retains a same-class blocker for ordinary `case` syntax.
+
+VERDICT: FAIL

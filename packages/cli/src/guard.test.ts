@@ -5,6 +5,7 @@
  * `hooks check --repo` with PATH pointing at a `bisellium` it chose. Fixtures live under the OS tmp dir.
  * W-362 row b1 (studio/briefs/W-362.md): env's split string and a shell option's operand.
  * W-418 row b3 (studio/briefs/W-418.md): the guard hands the main thread the review notices under its checkout.
+ * W-227 row b4 (studio/briefs/W-227.md): the guard refuses the main thread's cd into a folder under .worktrees/.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -890,4 +891,121 @@ test("W-494-b4 behaviour 4: the agents and the briefs keep one background run at
     for (const m of t.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:10|ten)[- ]min(?:ute)?s?(?![\p{L}\p{M}\p{N}])/giu))
       assert.ok(t.slice(Math.max(0, m.index - 30), m.index).includes("`timeout` parameter"), `${rel}: no claim that 10 minutes is the default cap`);
   }
+});
+
+test("W-227-b4 behaviour 4: the guard refuses the main thread's cd or pushd into a folder under .worktrees/, and runs a subagent's", async () => {
+  const root = tmp();
+  mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
+  mkdirSync(join(root, "packages"));
+  symlinkSync(join(root, ".worktrees", "W-1"), join(root, "wt-link"));
+  const refused = [
+    `cd ${root}/.worktrees/W-1`,
+    "cd .worktrees/W-1 && git status",
+    `cd ${root} && cd .worktrees/W-1`,
+    "pushd .worktrees/W-1",
+    "(cd .worktrees/W-1; git log -1)",
+    "cd .worktrees",
+    `git status; cd "${root}/.worktrees/W-9"`,
+    "cd -P wt-link",
+    "cd ~/x/.worktrees/W-2",
+    "echo cd .worktrees/W-1",
+  ];
+  assert.match((await guard(bash(refused[1]!, { cwd: root }))).err, /`cd \.worktrees\/W-1`/, "the refusal names the cd");
+  for (const c of refused) {
+    const r = await guard(bash(c, { cwd: root }));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.match(r.err, /does not cd into a folder under \.worktrees\/ \(W-227\)/, c);
+  }
+  assert.equal((await guard(bash(`cd ${root} && cd wt-link`, { cwd: "/" }))).code, 2, "a later cd's operand is resolved in the folder an earlier cd named");
+  assert.match((await guard(bash(refused[4]!, { cwd: root }))).err, /\(W-227\)/, "a cd in a subshell is refused too");
+  assert.equal((await guard(bash(refused[6]!, { cwd: root }))).code, 2, "a cd into a worktree folder that does not exist yet is refused");
+  assert.equal((await guard(bash(refused[7]!, { cwd: root }))).code, 2, "a cd through a symlink into a worktree folder is refused");
+  assert.equal((await guard(bash(`git -C ${root}/.worktrees/W-1 status`, { cwd: root }))).code, 0, "git -C into a worktree folder runs");
+  assert.equal((await guard(bash(refused[1]!, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, "a subagent's cd into a worktree folder runs");
+  const allowed = [`git -C ${root}/.worktrees/W-1 status`, `cd ${root}`, `cd ${root}/packages && ls`, "ls .worktrees/W-1", "cd /tmp", 'bash -c "cd .worktrees/W-1 && ls"', `cd ${root}/.worktreesx`];
+  for (const c of allowed) assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
+  for (const c of refused) assert.equal((await guard(bash(c, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, `a subagent's cd runs: ${c}`);
+  const inWt = join(root, ".worktrees", "W-1");
+  mkdirSync(join(inWt, "sub"));
+  assert.equal((await guard(bash("cd sub && ls", { cwd: inWt }))).code, 0, "a cd that stays in the worktree folder the shell is already in runs");
+  assert.equal((await guard(bash("cd ../W-2", { cwd: inWt }))).code, 2, "a cd from one worktree folder into another is refused");
+  // a command substitution inside double quotes runs its cd: the refusal sees it, at any depth, and a quoted word holding no cd runs
+  const quoted = ['echo "$(cd .worktrees/W-1 && pwd)"', 'echo "x `cd .worktrees/W-1` y"', 'echo "a $(echo "$(pushd .worktrees/W-1)")"', `x="$(cd ${root} && cd .worktrees/W-1)"`];
+  for (const c of quoted) {
+    const r = await guard(bash(c, { cwd: root }));
+    assert.equal(r.code, 2, `main thread refused, a substitution inside double quotes: ${c}`);
+    assert.match(r.err, /\(W-227\)/, c);
+    assert.equal((await guard(bash(c, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, `a subagent's quoted cd runs: ${c}`);
+  }
+  for (const c of ['echo "$(cd /tmp && pwd)"', `echo "cd .worktrees/W-1 $(ls ${root})"`, "echo '$(cd .worktrees/W-1)'", `echo "$(git -C ${root}/.worktrees/W-1 status)"`])
+    assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
+});
+
+test("W-227-b4 behaviour 4 fix 2: a cd or pushd word is refused wherever it stands, and after the first substitution every such token is judged, with no quote or paren read", async () => {
+  const root = tmp();
+  mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
+  const refused = [
+    'echo "$(case x in x) cd .worktrees/W-1;; esac)"',
+    'echo "$(for d in a; do cd .worktrees/W-1; done)"',
+    "x=$(for d in a; do cd .worktrees/W-1; done)",
+    "echo `case x in x) cd .worktrees/W-1;; esac`",
+    "cat <(cd .worktrees/W-1 && ls)",
+    `echo "it's $(cd .worktrees/W-1)"`,
+    `echo $'\\'' "$(cd .worktrees/W-1)" 'y'`,
+    "case x in x) cd .worktrees/W-1;; esac",
+    "{ cd .worktrees/W-1; }",
+    "f() { cd .worktrees/W-1; }; f",
+    "time cd .worktrees/W-1",
+    "! cd .worktrees/W-1",
+    '"cd" .worktrees/W-1',
+    "c\\d .worktrees/W-1",
+    "echo cd .worktrees/W-1",
+    'echo "$(date) cd .worktrees/W-1"',
+  ];
+  for (const c of refused) {
+    const r = await guard(bash(c, { cwd: root }));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.match(r.err, /\(W-227\)/, c);
+    assert.equal((await guard(bash(c, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, `a subagent's command runs: ${c}`);
+  }
+  for (const c of ["echo '$(cd .worktrees/W-1)'", `echo "cd .worktrees/W-1 $(ls ${root})"`, 'echo "$(case x in x) cd /tmp;; esac)"', 'bash -c "cd .worktrees/W-1 && ls"', 'echo "cd .worktrees/W-1"', "echo 'cd .worktrees/W-1'"])
+    assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
+});
+
+test("W-227-b4 behaviour 4 fix 3: a tail token split at a carriage return is refused, and the same text before the tail is one word and runs", async () => {
+  const root = tmp();
+  mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
+  const refusedCmd = "echo $(date) cd\r.worktrees/W-1";
+  const r = await guard(bash(refusedCmd, { cwd: root }));
+  assert.equal(r.code, 2, "main thread refused: a tail cd split from its operand at a carriage return");
+  assert.match(r.err, /\(W-227\)/);
+  assert.equal((await guard(bash(refusedCmd, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, "a subagent's command runs");
+  assert.equal((await guard(bash("cd\r.worktrees/W-1", { cwd: root }))).code, 0, "main thread runs: one word before the tail");
+});
+
+test("W-227-b4 behaviour 4 fix 1: a cd the shell runs is refused wherever the scan could lose it: a quoted ) in a substitution, builtin, command, a loop or branch keyword", async () => {
+  const root = tmp();
+  mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
+  const refused = [
+    `echo "$(printf ')' ; cd .worktrees/W-1 && pwd)"`,
+    `echo "$(printf ')' ; pushd .worktrees/W-1)"`,
+    `echo "$(echo "a)" ; cd .worktrees/W-1)"`,
+    `echo "$(printf ')' ; echo "$(cd .worktrees/W-1)")"`,
+    "echo \"$(printf ')' ; cd .worktrees/W-1)\"",
+    "builtin cd .worktrees/W-1",
+    "builtin pushd .worktrees/W-1",
+    "command cd .worktrees/W-1",
+    "while cd .worktrees/W-1; do break; done",
+    "until cd .worktrees/W-1; do break; done",
+    "if cd .worktrees/W-1; then pwd; fi",
+    "true && builtin cd .worktrees/W-1",
+  ];
+  for (const c of refused) {
+    const r = await guard(bash(c, { cwd: root }));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.match(r.err, /\(W-227\)/, c);
+    assert.equal((await guard(bash(c, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, `a subagent's command runs: ${c}`);
+  }
+  for (const c of [`echo "$(printf ')' ; cd /tmp && pwd)"`, `while cd ${root}; do break; done`, "builtin cd /tmp"])
+    assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
 });

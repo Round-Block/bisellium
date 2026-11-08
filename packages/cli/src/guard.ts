@@ -114,7 +114,7 @@ const DURATION = /^(?:\d+(?:\.\d*)?|\.\d+)[smhd]?$/;
 const base = (w: string | undefined): string => (w ?? "").slice((w ?? "").lastIndexOf("/") + 1);
 
 /** Wrappers whose flags `strip` skips; `OPERAND` names the flags that take a separate operand (`env`'s are `envOption`'s). */
-const WRAPPERS = new Set(["env", "command", "exec", "nice", "xargs", "timeout"]);
+const WRAPPERS = new Set(["env", "command", "builtin", "exec", "nice", "xargs", "timeout"]);
 const OPERAND: Record<string, Set<string>> = {
   exec: new Set(["-a"]),
   nice: new Set(["-n", "--adjustment"]),
@@ -396,6 +396,133 @@ function walk(command: string, ctx: ShellContext, judge: Judge, depth: number, u
       const found = text === undefined ? undefined : walk(text, h, judge, depth + 1, unknown);
       if (found) return found.startsWith(REFUSED) ? found : `${found} (in ${file})`;
     }
+  }
+  return undefined;
+}
+
+/** W-227: every `cd` or `pushd` in a command, as `[word, ...operands]`, in order, found by words and tokens, not by the
+ *  shell's grammar. Before the first substitution (a `$(`, backtick, `<(` or `>(` outside single quotes, bare or inside double
+ *  quotes) the text is split into words as the shell splits them before expansion (a blank or an operator ends a word, a
+ *  backslash escapes, quotes are removed); a word that is exactly `cd` or `pushd`, wherever it stands, takes the words up to the
+ *  next operator as operands. From the first substitution to the end no quote and no parenthesis is read: the rest is split
+ *  into tokens, and a token `cd` or `pushd` takes the tokens up to the next `;`, `&`, `|`, `)`, backtick or newline. */
+function cdWords(code: string): string[][] {
+  const out: string[][] = [];
+  const take = (words: string[]): void => {
+    words.forEach((x, i) => {
+      if (x === "cd" || x === "pushd") out.push([x, ...words.slice(i + 1)]);
+    });
+  };
+  let words: string[] = [];
+  let word = "";
+  let open = false;
+  const endWord = (): void => {
+    if (open) words.push(word);
+    word = "";
+    open = false;
+  };
+  const endCommand = (): void => {
+    endWord();
+    take(words);
+    words = [];
+  };
+  let tail = code.length;
+  for (let i = 0; i < code.length; i++) {
+    const c = code[i]!;
+    if (c === "\\") {
+      if (code[i + 1] !== "\n") {
+        word += code[i + 1] ?? "";
+        open = true;
+      }
+      i++;
+    } else if (c === "'" || (c === "$" && code[i + 1] === "'")) {
+      const escapes = c === "$";
+      let j = escapes ? i + 2 : i + 1;
+      open = true;
+      for (; j < code.length && code[j] !== "'"; j++) {
+        if (escapes && code[j] === "\\") j++;
+        word += code[j] ?? "";
+      }
+      i = j;
+    } else if (c === '"') {
+      open = true;
+      let j = i + 1;
+      for (; j < code.length && code[j] !== '"'; j++) {
+        if (code[j] === "\\") j++;
+        else if (code[j] === "`" || (code[j] === "$" && code[j + 1] === "(") || ((code[j] === "<" || code[j] === ">") && code[j + 1] === "(")) {
+          tail = j;
+          break;
+        }
+        word += code[j] ?? "";
+      }
+      if (tail < code.length) break;
+      i = j;
+    } else if (c === "`" || (c === "$" && code[i + 1] === "(") || ((c === "<" || c === ">") && code[i + 1] === "(")) {
+      tail = i;
+      break;
+    } else if (c === " " || c === "\t") endWord();
+    else if (";&|()<>\n".includes(c)) endCommand();
+    else {
+      word += c;
+      open = true;
+    }
+  }
+  endCommand();
+  const tokens: { t: string; stop: boolean }[] = [];
+  let t = "";
+  const flush = (): void => {
+    if (t !== "") tokens.push({ t, stop: false });
+    t = "";
+  };
+  for (const c of code.slice(tail).replaceAll("\\", "")) {
+    if (/[\s;&|()<>{}"'`]/.test(c)) {
+      flush();
+      if (";&|)`\n".includes(c)) tokens.push({ t: c, stop: true });
+    } else t += c;
+  }
+  flush();
+  tokens.forEach((x, i) => {
+    if (x.stop || (x.t !== "cd" && x.t !== "pushd")) return;
+    const rest: string[] = [];
+    for (const y of tokens.slice(i + 1)) {
+      if (y.stop) break;
+      rest.push(y.t);
+    }
+    out.push([x.t, ...rest]);
+  });
+  return out;
+}
+
+/** W-227: the operand of the first `cd` or `pushd` in the command (`cdWords`) whose target is `.worktrees` or a folder
+ *  under it, or undefined. The text is read without its comments and heredoc bodies (`shellCode`'s `bare`). Its literal
+ *  operands (home for a bare `cd`) are resolved against the call's directory and every directory an earlier `cd` named,
+ *  lexically and through symlinks (`realOf`), existing or not (a sandbox remakes the folder). A target is judged by its
+ *  path segments: one named `.worktrees` and the name after it, the folder it enters, unless the call's own directory is
+ *  already in that folder. It fails closed and over-refuses (`echo cd .worktrees/W-1`). Limits: a target built from a
+ *  variable, `cd -`, `popd`, `CDPATH`, a `cd` inside a quoted word before any substitution (a `-c` script), a script file,
+ *  `eval` and `env -C` are not judged. */
+export function worktreeCd(command: string, ctx: ShellContext): string | undefined {
+  const held = new Set([ctx.cwd]);
+  // the folder a path enters: up to its first `.worktrees` segment and the name after it; a cd that stays in the folder the
+  // call starts in (a session already inside a worktree, a test run in one) enters none
+  const entered = (p: string, from: string): boolean => {
+    const parts = p.split(sep);
+    const k = parts.indexOf(".worktrees");
+    if (k < 0) return false;
+    const top = parts.slice(0, k + 2).join(sep);
+    return from !== top && !from.startsWith(top + sep);
+  };
+  const inside = (t: string): boolean => entered(t, ctx.cwd) || entered(realOf(t), realOf(ctx.cwd));
+  for (const [name, ...rest] of cdWords(shellCode(command).bare)) {
+    const operands = rest.filter((x) => !/^[-+]/.test(x));
+    const targets = name === "cd" && operands.length === 0 ? ["~"] : operands;
+    for (const d of [...held])
+      for (const x of targets) {
+        const t = wordPath(x, { ...ctx, cwd: d });
+        if (t === undefined) continue;
+        if (inside(t)) return `${name} ${x}`;
+        held.add(t);
+      }
   }
   return undefined;
 }
@@ -978,6 +1105,9 @@ export function guardRefusal(input: Dict): string | undefined {
   if (tool === "Bash") {
     const command = str(args["command"]);
     if (!command) return undefined;
+    // W-227: a main-thread cd into a worktree folder makes the sandbox pin it for the session's life (cleanup then cannot remove it)
+    const into = main ? worktreeCd(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
+    if (into) return `refused: the orchestrator session does not cd into a folder under .worktrees/ (W-227): \`${into}\` moves this session's shell there, and the sandbox then keeps that folder as a mount point for the session's life, so cleanup cannot remove it; use \`git -C <path>\` and absolute paths, or dispatch a subagent`;
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;

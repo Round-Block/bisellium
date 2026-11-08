@@ -1,0 +1,20 @@
+# opus: W-227
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1b8c9-a743-78b2-84a6-fd1d9bad258f
+# outcome: failed
+# at: 2026-11-08T01:38:18.732Z
+# tree: tree:641f5a1bab9e0bc7fb2779ad7b0023289271dc0c
+# brief: briefs/W-227.md blob:ec1ac46c9942cf72ff434b65f076ca2107679188
+# ticket: {"opus":"W-227","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-227/studio","head":"1d01cc127f0622a04760a11723c2060c7874ab23","brief":"ec1ac46c9942cf72ff434b65f076ca2107679188","at":"2026-11-08T01:33:03.718Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:463 `quotedSubstitutions` treats a `)` inside a quoted word as the outer substitution’s terminator, so valid `echo "$(printf ')' ; cd .worktrees/W-1 && pwd)"` bypasses the guard although its inner `cd` runs, violating brief:94. [severity: S1] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-227-b4
+2. advisory — packages/cli/src/guard.ts:425 Executing forms such as `builtin cd .worktrees/W-1` and `while cd .worktrees/W-1; do break; done` also bypass the guard; these forms are not listed in the brief’s recognized domain or limits and need a ruled case. [severity: S3] [class: tests×security-boundary-cases-uncovered] — check: packages/cli/src/guard.test.ts W-227-b4
+
+## Verdict
+The accepted quoted-command-substitution domain contains a security-boundary bypass, so behavior 4 is not satisfied.
+
+VERDICT: FAIL
