@@ -8,6 +8,7 @@ queues:
       - { opus: W-526, says: "greenlight writes no Patron line; M4's exit reworded; exempt (D-187)" }
       - { opus: W-528, says: "give the gates job a timeout; exempt, the Patron said yes 2026-11-06 (W-527)" }
       - { opus: W-227, says: "cleanup clears an empty sandbox leftover and the guard refuses a cd into .worktrees/; a class seen twice, started without asking (D-039, cleanup meet 2026-11-08)", next_ts: true }
+      - { opus: W-541, says: "builders run touched tests, the ladder-runner the suite; exempt from the freeze on the leads' speed meet (D-189)" }
       - { opus: W-532, says: "cut what a fresh session loads at boot; folds W-517; exempt from the freeze on the leads' boot meet (D-189)", folded: [W-517] }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
       - { opus: W-529, says: "pool the local test gate at eight; hosted CI stays serial; exempt, the Patron said yes 2026-11-06 (W-456)" }
@@ -27,6 +28,14 @@ queues:
       - { opus: W-301, says: "console writes via auto-merge PR" }
       - { opus: W-507, says: "W-298's remainder: two manifest input cases and the cause fix for spec×fix-opens-new-surface; parked until after M4 (D-181)" }
       - { opus: W-506, says: "cause fix, a build review running on a failed spec verdict; starts after the process freeze ends, when M4 passes (D-178)" }
+      - { opus: W-538, says: "guard ends a background run TaskStop reports not found; high, a class seen twice; behind the freeze (D-178)" }
+      - { opus: W-534, says: "land honours notice.ok, reports a remote arm, polls pending checks; behind the freeze" }
+      - { opus: W-533, says: "retro owes gate failures by failing row and recurrences after a done fix; behind the freeze" }
+      - { opus: W-537, says: "a checked ladder-runner brief template; behind the freeze" }
+      - { opus: W-539, says: "guard refuses a script path holding an expansion; behind the freeze" }
+      - { opus: W-536, says: "check refuses a spec promise proved by hand-parsed shell; eng-lead's form (speed meet 1108); behind the freeze" }
+      - { opus: W-535, says: "run exits with its command's status; red first, unreproduced; behind the freeze" }
+      - { opus: W-540, says: "warn and refuse when the session's cwd is under .worktrees/; low (speed meet 1108); behind the freeze" }
       - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-532's measured boot sets its number (leads 2026-11-07)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
