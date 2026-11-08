@@ -928,4 +928,14 @@ test("W-227-b4 behaviour 4: the guard refuses the main thread's cd or pushd into
   mkdirSync(join(inWt, "sub"));
   assert.equal((await guard(bash("cd sub && ls", { cwd: inWt }))).code, 0, "a cd that stays in the worktree folder the shell is already in runs");
   assert.equal((await guard(bash("cd ../W-2", { cwd: inWt }))).code, 2, "a cd from one worktree folder into another is refused");
+  // a command substitution inside double quotes runs its cd: the refusal sees it, at any depth, and a quoted word holding no cd runs
+  const quoted = ['echo "$(cd .worktrees/W-1 && pwd)"', 'echo "x `cd .worktrees/W-1` y"', 'echo "a $(echo "$(pushd .worktrees/W-1)")"', `x="$(cd ${root} && cd .worktrees/W-1)"`];
+  for (const c of quoted) {
+    const r = await guard(bash(c, { cwd: root }));
+    assert.equal(r.code, 2, `main thread refused, a substitution inside double quotes: ${c}`);
+    assert.match(r.err, /\(W-227\)/, c);
+    assert.equal((await guard(bash(c, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, `a subagent's quoted cd runs: ${c}`);
+  }
+  for (const c of ['echo "$(cd /tmp && pwd)"', `echo "cd .worktrees/W-1 $(ls ${root})"`, "echo '$(cd .worktrees/W-1)'", `echo "$(git -C ${root}/.worktrees/W-1 status)"`])
+    assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
 });
