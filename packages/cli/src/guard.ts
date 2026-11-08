@@ -803,14 +803,27 @@ function checkoutOf(path: string): string | undefined {
 /** W-364: the dossier, which the main thread does not write. */
 const DOSSIER = "docs/design/dossier/";
 
+/** W-542: what a dispatched clerk writes in a checkout, relative to it: the acta, the decisions, the lessons, the queue and
+ *  `docs/`, the dossier (`DOSSIER`) excepted. An entry ending `/` names everything under it; any other names one file. */
+export const CLERK_ROOTS = ["studio/acta/", "studio/decisions/", "studio/lessons/", "studio/queue.yml", "docs/"] as const;
+
+/** W-542: whether `rel`, a path relative to its checkout, is under one of `CLERK_ROOTS` and not under the dossier. */
+function clerkWrites(rel: string): boolean {
+  return !rel.startsWith(DOSSIER) && CLERK_ROOTS.some((r) => (r.endsWith("/") ? rel.startsWith(r) : rel === r));
+}
+
 /** W-290: in a git checkout, `studio/decisions/**` and `docs/SESSION-HANDOFF.md` are written only
  *  by a dispatched clerk; the main thread writes nothing outside `studio/` and `docs/`, nor (W-364) under
- *  `docs/design/dossier/`. A path outside every checkout is not judged. */
+ *  `docs/design/dossier/`; W-542: a dispatched clerk (`clerk`, a subagent whose `agent_type` is `clerk`) writes nothing
+ *  outside `CLERK_ROOTS`. Each path is judged relative to its own checkout (`checkoutOf`: a linked worktree is one) after
+ *  `..` and symlinks resolve (`realOf`). A path outside every checkout is not judged. */
 export function writeRefusal(filePath: string, cwd: string | undefined, main: boolean, clerk: boolean): string | undefined {
   const real = realOf(resolve(cwd ?? process.cwd(), filePath));
   const top = checkoutOf(real);
   if (!top) return undefined;
   const rel = relative(top, real).split(sep).join("/");
+  if (clerk && !clerkWrites(rel))
+    return `refused: a dispatched clerk writes only under studio/acta/, studio/decisions/, studio/lessons/, studio/queue.yml and docs/ (not the dossier, ${DOSSIER}) of a checkout, or outside every checkout (W-542): ${rel} is not one; the bisellium verbs write studio/opera/ and studio/ci/, a builder the source and tests`;
   if (rel.startsWith("studio/decisions/") || rel === "docs/SESSION-HANDOFF.md")
     return clerk ? undefined : `refused: ${rel} is written only by a dispatched clerk subagent (W-290): dispatch a clerk with the text`;
   if (main && rel.startsWith(DOSSIER))

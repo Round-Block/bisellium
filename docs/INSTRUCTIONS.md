@@ -94,7 +94,9 @@ hook input without `agent_id`, so a dispatched ladder-runner runs them; a `run_i
 `while`/`until` loop outside `timeout <N>` (N above zero); in a git checkout,
 the main thread's Write, Edit or NotebookEdit outside `studio/` and `docs/`,
 and anyone's write to `studio/decisions/` or `docs/SESSION-HANDOFF.md` but a
-dispatched clerk's (W-290); and, at `SubagentStop`, an agent whose own shell
+dispatched clerk's (W-290); a dispatched clerk's write in a checkout outside
+`studio/acta/`, `studio/decisions/`, `studio/lessons/`, `studio/queue.yml` and
+`docs/` but the dossier (W-542); and, at `SubagentStop`, an agent whose own shell
 or monitor task, named in its transcript, still runs (once per stop). The
 command classifier is lexical: it recognises the CLI as `bisellium`,
 `npx bisellium`, `npm run bisellium --` and `node …/bisellium.mjs`, behind
