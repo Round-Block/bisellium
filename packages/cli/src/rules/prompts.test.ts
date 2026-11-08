@@ -1,6 +1,6 @@
 /**
- * W-241 rows b1-b2 (studio/briefs/W-241.md), W-258 row b1 (studio/briefs/W-258.md) and W-426 rows b1-b2
- * (studio/briefs/W-426.md): process.prompt_templates. node:test TAP, selected by
+ * W-241 rows b1-b2 (studio/briefs/W-241.md), W-258 row b1 (studio/briefs/W-258.md), W-426 rows b1-b2
+ * (studio/briefs/W-426.md) and W-541 row b2 (studio/briefs/W-541.md): process.prompt_templates. node:test TAP, selected by
  * `--test-name-pattern='^W-<id>-b<n>\s'`. Every row builds its own officina under the OS tmp dir and reads no
  * studio/ file. Assertion messages carry rule levels, officina-relative paths and slot names only.
  */
@@ -195,4 +195,26 @@ test("W-426-b2 behaviour 2: the ui-lead's input template carries its five slots,
   rmSync(join(root, UI_INPUT));
   mkdirSync(join(root, UI_INPUT));
   assert.deepEqual(found(root), [`block ${UI_INPUT}`], "a directory at the ui-input path blocks");
+});
+
+test("W-541-b2 behaviour 2: the builder brief template gives no instruction to run ci --opus or the full suite", () => {
+  const root = officina();
+  declareOps(root);
+  lex(root, CLAUSE);
+  templates(root);
+  const BUILDER = "prompts/builder-brief.md";
+  const write = (line: string): void => put(root, BUILDER, [...NEEDS[BUILDER]!, line]);
+  write("Never the full suite or `ci --opus`: a ladder-runner runs `ci --opus` once per review round in a run session.");
+  assert.deepEqual(found(root), [], "naming the ladder-runner's `ci --opus` gives no instruction: it clears");
+  const forms = ["npm run -s bisellium -- ci --opus <ID> --studio studio --repo .", "bisellium ci --opus <ID>", "No separate full `npm test`", "npm run test", "npm run -s test:suite"];
+  for (const form of forms) {
+    write(`Then run ${form} from the worktree.`);
+    assert.deepEqual(found(root), [`block ${BUILDER}`], `a builder brief holding "${form}" blocks`);
+    assert.match(message(root, BUILDER), /^instructs the builder to run the full suite or ci --opus \(.+\): a ladder-runner runs ci --opus once per review round \(W-541\)$/, `the finding for "${form}" names the rule`);
+  }
+  put(root, BUILDER, NEEDS[BUILDER]!.filter((n) => n !== "<SPECIFICS>").concat("bisellium ci --opus <ID>"));
+  assert.equal(message(root, BUILDER), "lacks <SPECIFICS>; instructs the builder to run the full suite or ci --opus (bisellium ci --opus): a ladder-runner runs ci --opus once per review round (W-541)", "one finding names both a missing slot and a forbidden form");
+  assert.deepEqual(found(root), [`block ${BUILDER}`], "once, at the template");
+  put(root, "prompts/spec-draft.md", [...NEEDS["prompts/spec-draft.md"]!, "never the full `npm test` or `ci`"]);
+  assert.deepEqual(found(root), [`block ${BUILDER}`], "another template may name the full suite");
 });
