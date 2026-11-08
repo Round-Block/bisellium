@@ -887,3 +887,93 @@ Classes in more than one opus, 2026-10-24..2026-11-06:
 - OWED class mechanism×replay-environment-not-pristine (W-462, W-477): no lesson of it names a greenlit cause-fix opus in addressed_by
 - OWED class spec-gate×self-signed (W-442, W-502): no lesson of it names a greenlit cause-fix opus in addressed_by
 - OWED class tests×one-sided-bound-assertion (W-345, W-381, W-392, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+### 2026-11-07
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-456 | - | 0 |  |
+| W-523 | 539 | 0 |  |
+| W-525 | 353 | 4 | S1 9 |
+| W-526 | 67 | 0 |  |
+| W-527 | - | 0 |  |
+| W-530 | 181 | 1 | S1 1 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-523 | review | 1 | passed | - |  |
+| W-525 | review | 1 | failed | - | tests×ruled-case-uncovered S1, review×fail-open-on-malformed-records-patched-per-site S1 |
+| W-525 | review | 2 | failed | 57 | tests×ruled-case-uncovered S1 |
+| W-525 | review | 3 | passed | 62 |  |
+| W-525 | spec | 1 | passed | - |  |
+| W-525 | spec | 2 | failed | 9 | spec×input-domain-missing-or-unenforceable S1, spec×input-domain-missing-or-unenforceable S1, spec×input-domain-missing-or-unenforceable S1, spec×promise-unattainable-under-accepted-domain S1, spec×promise-unattainable-under-accepted-domain S1 |
+| W-525 | spec | 3 | passed | 135 |  |
+| W-525 | spec | 4 | passed | 6 |  |
+| W-525 | spec | 5 | passed | 104 |  |
+| W-525 | spec | 6 | failed | 4 | tests×ruled-case-uncovered S1 |
+| W-526 | review | 1 | passed | - |  |
+| W-526 | spec | 1 | passed | - |  |
+| W-526 | spec | 2 | passed | 7 |  |
+| W-528 | review | 1 | passed | - |  |
+| W-528 | spec | 1 | passed | - |  |
+| W-528 | spec | 2 | passed | 4 |  |
+| W-530 | review | 1 | passed | - |  |
+| W-530 | spec | 1 | passed | - |  |
+| W-530 | spec | 2 | failed | 8 | spec×input-domain-missing-or-unenforceable S1 |
+| W-530 | spec | 3 | passed | 34 |  |
+| W-530 | spec | 4 | passed | 4 |  |
+
+- LOOP W-525 review: class tests×ruled-case-uncovered, rounds 1-2 (minutes since previous round: r1 -, r2 57)
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| none | | | |
+
+Classes in more than one opus, 2026-10-25..2026-11-07:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 5 opera: W-364, W-407, W-494, W-502, W-509
+- class mechanism×replay-environment-not-pristine seen in 2 opera: W-462, W-477
+- class review×evidence-backfilled-or-absent seen in 10 opera: W-300, W-406, W-413, W-415, W-417, W-425, W-430, W-477, W-495, W-502
+- class review×fail-open-on-malformed-records-patched-per-site seen in 5 opera: W-403, W-430, W-444, W-468, W-525
+- class review×shared-log-grammar-rejects-valid-records seen in 2 opera: W-459, W-492
+- class security×symlink-parent-write-escape seen in 4 opera: W-418, W-423, W-430, W-461
+- class spec-gate×self-signed seen in 2 opera: W-442, W-502
+- class spec×input-domain-missing-or-unenforceable seen in 11 opera: W-298, W-403, W-409, W-430, W-433, W-445, W-452, W-459, W-461, W-525, W-530
+- class spec×input-without-named-rejector seen in 4 opera: W-416, W-418, W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 17 opera: W-298, W-333, W-407, W-417, W-425, W-452, W-459, W-462, W-468, W-472, W-489, W-494, W-495, W-498, W-501, W-509, W-525
+- class tests×assertion-satisfied-by-the-wrong-cause seen in 2 opera: W-298, W-473
+- class tests×ruled-case-uncovered seen in 10 opera: W-364, W-415, W-444, W-450, W-454, W-463, W-474, W-495, W-496, W-525
+- class tests×tests-that-agree-with-the-bug seen in 3 opera: W-407, W-409, W-487
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-487, W-508
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-364, W-407, W-494, W-502, W-509): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class mechanism×replay-environment-not-pristine (W-462, W-477): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class spec-gate×self-signed (W-442, W-502): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- Owed spec-gate×self-signed (W-442, W-502): stamp `addressed_by: W-506` on a lesson of the class, so OWED reads the greenlit cause fix that exists (W-506 "high: cause fix, spec-gate×self-signed", greenlit, Queue after W-507); W-506 starts after the freeze (D-178). Evidence: Owed cause fixes above, improvements.md:888, retro-process-1107/answers.md Q4. Owner: design lead.
+- Owed mechanism×replay-environment-not-pristine (W-462, W-477): covered by W-464 (greenlit, Queue); stamp `addressed_by: W-464` on a lesson of the class so OWED stops naming it; leads 11-07 found little left of it since D-174 item 5. Evidence: Owed cause fixes above, opera/W-464.md title. Owner: ops-lead.
+- Owed gate×tests (W-364, W-407, W-494, W-502, W-509) and gate×W-339 (W-463, W-487): retro classifies a gate failure by the gate script, a bucket and not a cause (all four leads, answers.md Q4), and W-509's row names no failing row (ci/W-509-tests-28f68727.log, improvements.md:861); file a cause-fix opus: `retro --daily` names a gate failure by its failing row's opus and class (FAILING_ROW, packages/cli/src/retro.ts:1187) and leaves an unrowed gate failure out of OWED with a stated line. Owner: eng-lead.
+- OWED passes a recurring class whose fix is old: `causeFixes` (packages/cli/src/retro.ts:1352-1370) counts any lesson whose `addressed_by` opus is greenlit or later, so spec×promise-unattainable-under-accepted-domain (17 opera, W-525 spec r2 S1 x2 today) is never owed though W-167/W-196/W-255 are done; file a cause-fix opus: a class recurring after its named fix reached done is owed again (as W-392 did for one-sided-bound by hand). Evidence: answers.md Q4 last line, the W-525 spec row above. Owner: eng-lead.
+- spec×promise-unattainable-under-accepted-domain and spec×input-domain-missing-or-unenforceable (W-525 spec r2: 5 S1; W-530 spec r2: 1 S1; W-523 review-1 advisory 2; W-530 spec-4 advisory 1): covered by W-393 (greenlit, folds W-395 and W-394); no new opus. Owner: design lead.
+- tests×ruled-case-uncovered (W-525 review LOOP r1-r2, spec r6): covered by W-414 (greenlit, Queue). review×fail-open-on-malformed-records-patched-per-site (W-525 review r1): covered by W-185 (greenlit, Queue). Owner: eng-lead.
+- tests×one-sided-bound-assertion (owed 11-06, improvements.md:889): none, because it has left the 14-day window (absent from today's class list) and W-392 (done) is its cause fix; if it returns, stamp `addressed_by: W-392` or file a new fix. Owner: eng-lead.
+- W-523 build review advisories 1 and 3 (ci/W-523-review-1.log:14,16, S2): `land` ignores `notice.ok` and arms the queue before the Patron is asked (packages/cli/src/land.ts:110), and a nonzero `gh pr merge` that armed remotely reports `queue: not armed` (packages/cli/src/integrate.ts:1025); not filed (no opus names them); file a fix opus with the two cases the log names as reds. Owner: eng-lead.
+- `land` holds when `gh pr checks` runs before any check is reported (#1074; a rerun passed; current-state-until-1107c.md:8): no filed opus covers it (W-386, W-390 are other cases); file a fix opus: no reported check reads as pending and is polled under a bound, never a hold. Owner: eng-lead.
+- `bisellium run ... -- ci` exits 0 when ci fails (current-state-until-1107e.md:13): no opus covers it; file a fix opus: `run` exits with its command's status, red first. Owner: eng-lead.
+- Producer briefs omit a step `next` or the lex names, a class seen twice (11-07: `next` from a worktree, `--chain` with `--expect`; 11-08: architect for an ops opus, ~170k lost; `next` without `--budget`; ladder brief without `npm ci`, the tsx partial install; a cleanup that deleted cited logs; current-state.md:21, current-state-until-1107e.md:22, -1107d.md): add a kept prompt template studio/prompts/ladder-brief.md (`next` from main only, `--budget 400000` on every `next`, the seat from `next`'s `sella:` line, `npm ci --cache` in a new worktree before gates, never delete a cited log, `--expect` without `--chain`), and a check that a kept brief under the evidence dir carries those lines; W-434 (dispatch prompts as artifacts) stores prompts but does not check them, so file it as a new opus. Owner: ops-lead.
+- The W-494 guard counts a finished background run as live, seen twice 11-07 (current-state-until-1107e.md:21, -1107d.md): `liveBackgroundRuns` (packages/cli/src/guard.ts:822-844) ends a run only on a task-notification or a "Successfully stopped task" result, so a run whose notice never lands and whose TaskStop answers "no task found" stays live forever; file a cause-fix opus (lex 11, a class seen twice): a TaskStop result naming the id as not found also ends it, red from a recorded transcript. Owner: ops-lead.
+- The W-364 heavy-run guard missed `codex exec` in a script invoked as `$D/run.sh` (current-state.md:17,22): `heavyRun` (packages/cli/src/guard.ts:425-428) refuses an unknown script directory but a path built from an expansion walks as no script; file a fix opus: a script path holding an expansion is refused (fail closed), red with `$D/run.sh`. Owner: ops-lead.
+- Cleanup held by a sandbox-pinned empty worktree folder (W-528, twice): covered by W-227 (greenlit, extended 11-08, first in the Queue: bounded rmdir and a guard refusing a cd into .worktrees/). Owner: ops-lead.
+- Clerks have no Edit or Bash tool (.claude/agents/clerk.md:4, `tools: Read, Write, Glob, Grep`): every one-line edit is a whole-file Write at 20-40k tokens, and one clerk stopped on a false anchor doubt (current-state.md:23, -1107c.md:8); propose adding Edit to the clerk's tools (a code-owned .claude/ path, the Patron's merge), or say why not; W-532 (boot cut) does not cover it. Owner: ops-lead.
+- docs/SESSION-HANDOFF.md:22 writes `check -- studio --repo .`, which a brief copies as `bisellium check -- studio` and `check` refuses (-1107d.md); fix the line to `npm run -s check -- studio --repo .` at the next handoff refresh, the form CLAUDE.md:18 already uses. Owner: ops-lead.
+- Cycle time: W-525 ran 353 min, over the 180 stop line, its spec r2 failing 9 min after r1 with 5 S1; none beyond W-393, because the round rows show spec admission, not scheduling, as the cost. Owner: design lead.
+- UI, design-quality and security classes: none, because no UI opus ran and no security finding appears in today's rows.
