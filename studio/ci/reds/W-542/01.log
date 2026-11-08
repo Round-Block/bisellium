@@ -1,0 +1,41 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-542-b1\s --import tsx packages/cli/src/guard.test.ts
+# exit: 1
+# at: 2026-11-08T15:37:26.294Z
+# sella: ops-lead
+# tree: tree:209c0a97554407eb694bd471eb3f948f36df790f
+# ticket: {"opus":"W-542","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-542/studio","head":"86ba04ac58680c8f13fac13965349eb7a7e82b38","brief":"54565389f34799c792445f5666b942a74a9a949a","at":"2026-11-08T15:37:26.258Z"}
+
+TAP version 13
+# Subtest: W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decisions, lessons, queue and docs (not the dossier) of a checkout, or outside every checkout; the main thread and other agents are judged as before
+not ok 1 - W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decisions, lessons, queue and docs (not the dossier) of a checkout, or outside every checkout; the main thread and other agents are judged as before
+  ---
+  duration_ms: 11.019862
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-542/packages/cli/src/guard.test.ts:6:4575'
+  failureType: 'testCodeFailure'
+  error: |-
+    a clerk's Write refused: <repo>/studio/opera/W-1.md
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-542/packages/cli/src/guard.test.ts:514:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 923.206497
