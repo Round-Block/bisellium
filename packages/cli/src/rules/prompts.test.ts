@@ -209,8 +209,8 @@ test("W-541-b2 behaviour 2: the builder brief template gives no instruction to r
   const forms = ["npm run -s bisellium -- ci --opus <ID> --studio studio --repo .", "bisellium ci --opus <ID>", "No separate full `npm test`", "npm run test", "npm run -s test:suite"];
   for (const form of forms) {
     write(`Then run ${form} from the worktree.`);
-    assert.deepEqual(found(root), [`block ${BUILDER}`], `a builder brief holding "${form}" blocks`);
-    assert.match(message(root, BUILDER), /^instructs the builder to run the full suite or ci --opus \(.+\): a ladder-runner runs ci --opus once per review round \(W-541\)$/, `the finding for "${form}" names the rule`);
+    assert.deepEqual(found(root), [`block ${BUILDER}`], `a builder brief holding ${form} blocks`);
+    assert.match(message(root, BUILDER), /^instructs the builder to run the full suite or ci --opus \(.+\): a ladder-runner runs ci --opus once per review round \(W-541\)$/, `the finding for ${form} names the rule`);
   }
   put(root, BUILDER, NEEDS[BUILDER]!.filter((n) => n !== "<SPECIFICS>").concat("bisellium ci --opus <ID>"));
   assert.equal(message(root, BUILDER), "lacks <SPECIFICS>; instructs the builder to run the full suite or ci --opus (bisellium ci --opus): a ladder-runner runs ci --opus once per review round (W-541)", "one finding names both a missing slot and a forbidden form");
