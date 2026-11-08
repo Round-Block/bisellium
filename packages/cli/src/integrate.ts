@@ -355,7 +355,9 @@ function patronStop(repo: string, target: string, hold: (reason: string, tail?: 
     patron.length > 0
       ? `refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`
       : `refusing: this session may not write incoming paths (${denied.slice(0, 10).map(quoted).join(", ")}) in the main checkout (the sandbox's deny, W-362); the main checkout is untouched`;
-  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`, ...(denied.length > 0 ? [requestSync(repo, target)] : [])] };
+  // W-227: the sync is asked for a Patron path too (W-369's Out of scope): it moves only a master checked out here
+  const syncs = holder !== undefined && here(holder.path);
+  return { ok: false, reason: clean(reason, 600), after: [`patron: ${command}`, ...(syncs ? [requestSync(repo, target)] : [])] };
 }
 
 /** W-369: asks the installed guard's sync (its PostToolUse hook) to fast-forward this checkout when the call returns. The
