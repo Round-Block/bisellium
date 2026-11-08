@@ -909,12 +909,12 @@ test("W-227-b4 behaviour 4: the guard refuses the main thread's cd or pushd into
     "cd -P wt-link",
     "cd ~/x/.worktrees/W-2",
   ];
+  assert.match((await guard(bash(refused[1]!, { cwd: root }))).err, /`cd \.worktrees\/W-1`/, "the refusal names the cd");
   for (const c of refused) {
     const r = await guard(bash(c, { cwd: root }));
     assert.equal(r.code, 2, `main thread refused: ${c}`);
     assert.match(r.err, /does not cd into a folder under \.worktrees\/ \(W-227\)/, c);
   }
-  assert.match((await guard(bash(refused[1]!, { cwd: root }))).err, /`cd \.worktrees\/W-1`/, "the refusal names the cd");
   assert.equal((await guard(bash(`cd ${root} && cd wt-link`, { cwd: "/" }))).code, 2, "a later cd's operand is resolved in the folder an earlier cd named");
   assert.match((await guard(bash(refused[4]!, { cwd: root }))).err, /\(W-227\)/, "a cd in a subshell is refused too");
   assert.equal((await guard(bash(refused[6]!, { cwd: root }))).code, 2, "a cd into a worktree folder that does not exist yet is refused");
