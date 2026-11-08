@@ -1,0 +1,23 @@
+# opus: W-227
+# phase: spec
+# round: 5
+# sella: ops-lead
+# outcome: passed
+# at: 2026-11-08T03:01:13.962Z
+# tree: tree:71294482eeb659916c328612feb5dd48aceb4fd9
+# brief: briefs/W-227.md blob:af6656d28206ce5c709cde3c57dc7903280792ad
+# ticket: {"opus":"W-227","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-227/studio","head":"1fc09c9541858b7663db283455230c87d8e4e287","brief":"af6656d28206ce5c709cde3c57dc7903280792ad","at":"2026-11-08T03:01:08.371Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-227-spec/promise-ledger-r3.md
+
+## Findings
+
+1. advisory — build review round 3 (ci/W-227-review-3.log #1, the same class, tests×security-boundary-cases-uncovered) found an over-refusal, not a bypass: the tail split at carriage return, vertical tab and form feed where Input domain row 5 said every control character but a newline stays in a token; under D-085 the brief is made to match the built code, with no source change — check: ci/W-227-review-3.log, brief Status, Input domain row 5
+2. advisory — row 5 now names each form's boundary characters as `cdWords` has them: before the tail a space or a tab, a newline or an operator ends a word and nothing else does (a backslash-newline removed, no `$'…'` escape decoded); in the tail every JavaScript `\s` character and the listed marks end a token, only a line feed ends the operands; run on opus/W-227 3221d75a — check: /home/edckt/.bisellium-evidence/W-227-spec/r3-boundaries.out, packages/cli/src/guard.ts:409
+3. advisory — the `\s` split in the tail is a stated, accepted over-refusal beside `echo cd .worktrees/W-1` (fail closed for the orchestrator's own mistake); before the tail the same text is one word and runs, as in the shell — check: brief Input domain row 5
+4. advisory — two pre-tail forms the shell would run as `cd` are added to the unjudged limits rather than grown into the parser: `$"cd"` locale quoting and an escape sequence inside `$'…'` (`$'c\x64'`); both run today (r3-boundaries.out) — check: brief Input domain row 5, /home/edckt/.bisellium-evidence/W-227-spec/r3-boundaries.out
+5. advisory — two rows are owed by the builder to W-227-b4, each already passing on the built code: refused `echo $(date) cd<CR>.worktrees/W-1`, running `cd<CR>.worktrees/W-1`; `shellCode`, `wordPath`, `realOf` and the hook wiring stay reused, a limit (D-076 E) — check: brief behaviour 4, r3-boundaries.out
+
+## Verdict
+
+passed — re-signed by the ops lead (`ops-lead`, `claude-opus-5-5`) for `studio/briefs/W-227.md` on opus/W-227 at 3221d75a: Input domain row 5 states the token boundaries the built code has and the resulting over-refusal; behaviour 4 names two owed rows; Status records round 3; every other line is as signed in round 2.
