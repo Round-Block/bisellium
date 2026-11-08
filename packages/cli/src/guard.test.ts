@@ -563,6 +563,27 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
     assert.equal((await guard(write(refused[0]!, who))).code, 0, `the main thread writes an opera record, as before: ${label}`);
     assert.match((await guard(write(refused[1]!, who))).err, /does not write source or tests/, `the main thread's source write keeps its W-290 refusal: ${label}`);
   }
+  // a pending W-418 review notice is the main thread's: a claimed clerk with a string agent_id, the empty one included, is judged as a clerk
+  const repo = tmp();
+  const git = (...a: string[]): string => execFileSync("git", a, { cwd: repo, encoding: "utf8" });
+  git("init", "-q", "-b", "master");
+  git("-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "--allow-empty", "-m", "init");
+  mkdirSync(join(repo, "docs"), { recursive: true });
+  mkdirSync(join(repo, "studio/opera"), { recursive: true });
+  const notices = join(repo, ".git", "bisellium", "notice");
+  const clerkRefusal = /^refused: a dispatched clerk writes only under studio\/acta\/.*: studio\/opera\/W-1\.md is not one;/;
+  for (const id of ["c1", ""])
+    for (const tool of ["Write", "Edit", "NotebookEdit"])
+      for (const [target, code] of [["docs/x.md", 0], ["studio/opera/W-1.md", 2]] as const) {
+        mkdirSync(notices, { recursive: true });
+        writeFileSync(join(notices, "901"), "PR #901 needs your review: first (code-owned: a)\n");
+        const r = await guard(write(join(repo, target), { agent_id: id, agent_type: "clerk" }, tool, repo));
+        const label = `a clerk (agent_id ${JSON.stringify(id)}) with a notice pending: ${tool} ${target}`;
+        assert.equal(r.code, code, label);
+        if (code === 0) assert.equal(r.err, "", `${label} is not refused`);
+        else assert.match(r.err, clerkRefusal, `${label} gets the clerk path refusal, not the W-418 notice`);
+        assert.ok(existsSync(join(notices, "901")), `${label} does not take the notice`);
+      }
 });
 
 test("W-542-b2 behaviour 2: the clerk agent has Edit and no Bash, says when to use Edit and Write, names the guard's roots and the CLI's records, and runs no CLI call", () => {
