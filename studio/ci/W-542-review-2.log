@@ -1,0 +1,22 @@
+# opus: W-542
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1bbfb-4cba-7670-99c6-1ad5842ec922
+# outcome: failed
+# at: 2026-11-08T17:15:07.705Z
+# tree: tree:e7431353c467a93e4a94344295563e68bc6018c0
+# brief: briefs/W-542.md blob:54565389f34799c792445f5666b942a74a9a949a
+# ticket: {"opus":"W-542","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-542/studio","head":"5df4658e3cb4b0a67b10b1894acc8447e8ddc777","brief":"54565389f34799c792445f5666b942a74a9a949a","at":"2026-11-08T17:13:39.236Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:1100 Reached by ci/W-542-review-1.log #1’s class: `main` still uses `str`, so an empty-string `agent_id` with `agent_type: "builder"` or an absent type is classified as the main thread, takes main-only PR notices, and receives main-thread write refusals despite brief:85 classifying it as another subagent. [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/cli/src/guard.test.ts W-542-b1 empty-ID non-clerk source write and pending-notice cases
+
+## Earlier findings
+- ci/W-542-review-1.log #1: closed — packages/cli/src/guard.ts:1099 recognizes every string-ID clerk independently of `str`, and packages/cli/src/guard.test.ts:549 pins the empty ID for Write, Edit and NotebookEdit.
+- ci/W-542-review-1.log #2: closed — packages/cli/src/guard.ts:788 follows dangling symlinks with `lstatSync` and `readlinkSync`; packages/cli/src/guard.test.ts:551 pins absolute, relative, chained and cwd-relative forms across the guarded tools.
+
+## Verdict
+The two reported instances are fixed, but the identity-class sibling remains wrong for empty-ID non-clerks.
+VERDICT: FAIL
