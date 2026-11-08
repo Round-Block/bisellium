@@ -1,0 +1,24 @@
+# opus: W-541
+# phase: spec
+# round: 1
+# sella: ops-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-08T08:54:55.503Z
+# tree: tree:c3b08afc0b8e93e60e0bcb5196722bb374a82a0c
+# brief: briefs/W-541.md blob:f1d6b6f5f03475390f3e0b7942f49669811f8905
+# ticket: {"opus":"W-541","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"91b50a5d15111ec28f274a8f5349bbbab8ad65ee","brief":"f1d6b6f5f03475390f3e0b7942f49669811f8905","at":"2026-11-08T08:54:46.866Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-541-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — a prose-only change would leave `next` sending the builder back after its handoff (the build rung's phase-2 order whenever the gates are not passed and no replay or fix check stands), so behaviour 1 adds the ladder-runner's order on a fresh builder handover, and behaviour 2 holds the template by `process.prompt_templates`, since W-364's verb refusal stops the run but not the instruction — check: brief Intent, packages/cli/src/next.ts, packages/cli/src/rules/prompts.ts
+2. advisory — the producer's draft was judged: its lex replay sentence still had the orchestrator run `ci --opus` (refused by W-364 on the main thread), its change-log row was out of date order, and it missed `build-review.md`, `.claude/agents/builder.md`, `.claude/agents/ladder-runner.md` and the `next.ts` comment; all are now in Files owned — check: brief Intent, ~/.bisellium-evidence/filings-1108/brief-lex.diff
+3. advisory — code-owned files are touched: `studio/prompts/`, `studio/leges/production.md` and `.claude/agents/`, so the Patron approves the PR as code owner — check: brief Status, brief Acceptance, .github/CODEOWNERS
+4. advisory — the template rule is lexical over five recognised forms; other spellings of the suite, the filled copy and a builder's actual runs are stated limits; a failing `ci --opus` leaves the builder's handover current, so `next` repeats the producer's order, whose text sends the failure to a builder, as W-326's does — check: brief Promise template-held, brief Promise gates-after-handoff, brief Input domain
+5. advisory — not run for this spec: `npm test`, typecheck over every package, lint, `format:check`, `check -- examples/sample-studio` and the CI run; `check studio` on the detached series checkout shows only `opus.records_unchanged` at W-096 (no current branch) — check: brief Acceptance, singles.out, singles2.out
+
+## Verdict
+
+passed — signed by the ops lead (`ops-lead`, `claude-opus-5-5`, the ops signer in spec_seats, D-150 C) for `studio/briefs/W-541.md` at master 91b50a5d, round 1: two behaviours, each red accepted by the replay classifier on the commit before it and green on its feature commit (`reds.out`); nine one-hunk wrong forms each failing a row at a named assertion (`mutants.out`); the four-commit mbox applying to the same tree (`mbox-check.out`); the touched files and the census's must-stay-green rows passing on the tip (`singles.out`, `singles2.out`), the cli package typechecking (`tsc-cli.log`); the Codex test check names no flip (`fixture-census.md`); the brief admitted by the real `ready` (`admission.out`) and the ledger by the verdict writer (`ledger-check.out`).
