@@ -7,6 +7,7 @@
  * W-418 row b3 (studio/briefs/W-418.md): the guard hands the main thread the review notices under its checkout.
  * W-227 row b4 (studio/briefs/W-227.md): the guard refuses the main thread's cd into a folder under .worktrees/.
  * W-542 row b1 (studio/briefs/W-542.md): a dispatched clerk's Write, Edit and NotebookEdit stay under its roots.
+ * W-542 row b2: the clerk agent's tools and text (it reads the real `.claude/agents/clerk.md`).
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -19,6 +20,7 @@ import { after, test } from "node:test";
 import { runHookEvent, runHooks } from "./hooks.js";
 import { checkStudio } from "./check.js";
 import { initStudio } from "./init.js";
+import { CLERK_ROOTS } from "./guard.js";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const NOW = new Date("2026-10-22T12:00:00Z");
@@ -552,6 +554,19 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
     assert.equal((await guard(write(refused[0]!, who))).code, 0, `the main thread writes an opera record, as before: ${label}`);
     assert.match((await guard(write(refused[1]!, who))).err, /does not write source or tests/, `the main thread's source write keeps its W-290 refusal: ${label}`);
   }
+});
+
+test("W-542-b2 behaviour 2: the clerk agent has Edit and no Bash, says when to use Edit and Write, names the guard's roots and the CLI's records, and runs no CLI call", () => {
+  const text = readFileSync(join(REPO, ".claude", "agents", "clerk.md"), "utf8");
+  const tools = (/^tools: (.*)$/m.exec(text)?.[1] ?? "").split(/,\s*/);
+  assert.ok(tools.includes("Edit"), "the clerk has Edit");
+  assert.deepEqual([...tools].sort(), ["Edit", "Glob", "Grep", "Read", "Write"], "the clerk's tools are Read, Write, Edit, Glob and Grep: no Bash");
+  assert.match(text, /Use Edit for a change to part of an existing file: Read the file first, and\nwhen an anchor is not unique, widen it until it is, never guess\. Use Write\nonly for a new file or a full rewrite\./, "Edit for a partial change, Write for a new file or a rewrite");
+  for (const r of CLERK_ROOTS) assert.ok(text.includes(`\`${r}\``), `the clerk is told its root ${r}`);
+  assert.match(text, /not the dossier, `docs\/design\/dossier\/`/, "the clerk is told the dossier is not its");
+  assert.match(text, /Opera and ci\nrecords \(`studio\/opera\/`, `studio\/ci\/`\) are the CLI's/, "opera and ci records are the CLI's");
+  assert.doesNotMatch(text, /^run: /m, "the clerk is not told to run a command");
+  assert.match(text, /You have no Bash, so you run\nno CLI call/, "the clerk is told it runs no CLI call");
 });
 
 const stop = (transcript: string, tasks: unknown[], extra: Record<string, unknown> = {}) => ({
