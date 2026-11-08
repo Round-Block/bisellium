@@ -400,6 +400,41 @@ function walk(command: string, ctx: ShellContext, judge: Judge, depth: number, u
   return undefined;
 }
 
+/** W-227: the operand of the first `cd` or `pushd` in the command whose target is `.worktrees` or a folder under it, or
+ *  undefined. Each simple command is read as `walk` reads it (comments and heredoc bodies dropped, `strip`'s prefixes), in
+ *  a subshell, a pipeline or a branch alike; its literal operands (home for a bare `cd`) are resolved against the call's
+ *  directory and every directory an earlier `cd` named, lexically and through symlinks (`realOf`), existing or not (a
+ *  sandbox remakes the folder). A target is judged by its path segments: one named `.worktrees` and the name after it, the
+ *  folder it enters, unless the call's own directory is already in that folder. Limits: a target built
+ *  from a variable, `cd -`, `popd`, `CDPATH`, a `cd` inside a `-c` script or a script file, and `env -C` are not judged. */
+export function worktreeCd(command: string, ctx: ShellContext): string | undefined {
+  const held = new Set([ctx.cwd]);
+  // the folder a path enters: up to its first `.worktrees` segment and the name after it; a cd that stays in the folder the
+  // call starts in (a session already inside a worktree, a test run in one) enters none
+  const entered = (p: string, from: string): boolean => {
+    const parts = p.split(sep);
+    const k = parts.indexOf(".worktrees");
+    if (k < 0) return false;
+    const top = parts.slice(0, k + 2).join(sep);
+    return from !== top && !from.startsWith(top + sep);
+  };
+  const inside = (t: string): boolean => entered(t, ctx.cwd) || entered(realOf(t), realOf(ctx.cwd));
+  for (const c of commandSeq(shellCode(command).bare)) {
+    const { words: w, literal } = strip(c.words);
+    if (literal || (w[0] !== "cd" && w[0] !== "pushd")) continue;
+    const operands = w.slice(1).filter((x) => !/^[-+]/.test(x));
+    const targets = w[0] === "cd" && operands.length === 0 ? ["~"] : operands;
+    for (const d of [...held])
+      for (const x of targets) {
+        const t = wordPath(x, { ...ctx, cwd: d });
+        if (t === undefined) continue;
+        if (inside(t)) return `${w[0]} ${x}`;
+        held.add(t);
+      }
+  }
+  return undefined;
+}
+
 /** W-364: the codex options that take the next word, skipped before its subcommand. */
 const CODEX_OPERAND = (w: string): boolean =>
   ["-c", "--config", "-m", "--model", "-p", "--profile", "-s", "--sandbox", "-a", "--ask-for-approval", "-C", "--cd", "-i", "--image", "--enable", "--disable", "--local-provider"].includes(w);
@@ -978,6 +1013,9 @@ export function guardRefusal(input: Dict): string | undefined {
   if (tool === "Bash") {
     const command = str(args["command"]);
     if (!command) return undefined;
+    // W-227: a main-thread cd into a worktree folder makes the sandbox pin it for the session's life (cleanup then cannot remove it)
+    const into = main ? worktreeCd(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
+    if (into) return `refused: the orchestrator session does not cd into a folder under .worktrees/ (W-227): \`${into}\` moves this session's shell there, and the sandbox then keeps that folder as a mount point for the session's life, so cleanup cannot remove it; use \`git -C <path>\` and absolute paths, or dispatch a subagent`;
     const write = main ? ladderWrite(command, { cwd: str(input["cwd"]) ?? process.cwd(), home: homedir() }) : undefined;
     if (write?.startsWith(REFUSED)) return write;
     if (write) return `refused: \`${write}\` is a ladder record write, run only by a dispatched ladder-runner (W-310): dispatch one with the command`;
