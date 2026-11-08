@@ -1273,10 +1273,40 @@ export function cleanup(ctx: Ctx): StepResult {
   return { ok: true, lines: out };
 }
 
+/** W-227: the rmdir refusals that leave an empty leftover in place and let cleanup go on to the branch steps. */
+const LEFTOVER_KEPT = new Set(["EBUSY", "EROFS", "EACCES", "EPERM"]);
+/** W-227: the most entries `stubsOnly` reads before it gives up (and cleanup holds). */
+const STUB_WALK_MAX = 256;
+
+/** W-227: the number of entries under `dir` when every one, read without following a symlink, is a folder or a zero-byte
+ *  regular file, at most `STUB_WALK_MAX` of them: the empty mount points a sandbox makes for its deny paths (`.git`,
+ *  `.mcp.json`, `.claude/settings.json`, …). Undefined for anything else (a byte of content, a symlink, a fifo, an unreadable
+ *  folder, too many entries). It reads only. */
+function stubsOnly(dir: string): number | undefined {
+  let n = 0;
+  const todo = [dir];
+  for (let d = todo.pop(); d !== undefined; d = todo.pop()) {
+    let names: string[];
+    try {
+      names = readdirSync(d);
+    } catch {
+      return undefined;
+    }
+    for (const name of names) {
+      if (++n > STUB_WALK_MAX) return undefined;
+      const st = lstatSync(join(d, name), { throwIfNoEntry: false });
+      if (st?.isDirectory() === true) todo.push(join(d, name));
+      else if (!(st?.isFile() === true && st.size === 0)) return undefined;
+    }
+  }
+  return n;
+}
+
 /**
  * W-227: an unregistered `<repo>/.worktrees/<id>` that cleanup may clear: `.worktrees` a real directory in the real repository
  * and `<id>` a real directory directly in it (`existingRealDirectory`: no symlink at either level, one plain name), holding
- * nothing; it is removed by one non-recursive `rmdir`. Anything else, and an rmdir that fails, is the reason to hold.
+ * nothing; it is removed by one non-recursive `rmdir`. One that rmdir cannot remove (`LEFTOVER_KEPT`) and one holding only a
+ * sandbox's empty mount points (`stubsOnly`) are left untouched and named; anything else is the reason to hold.
  */
 function clearLeftover(repo: string, id: string, dir: string): { ok: true; line: string } | { ok: false; reason: string } {
   let real: string | undefined;
@@ -1293,12 +1323,21 @@ function clearLeftover(repo: string, id: string, dir: string): { ok: true; line:
   } catch (e) {
     return { ok: false, reason: `it cannot be listed (${thrown(e)})` };
   }
-  if (names.length > 0) return { ok: false, reason: `it is not empty (${names.length} ${names.length === 1 ? "entry" : "entries"})` };
+  if (names.length > 0) {
+    // the mount points a sandbox makes for its deny paths while another of its commands runs: left, never removed
+    const stubs = stubsOnly(dir);
+    if (stubs === undefined) return { ok: false, reason: `it is not empty (${names.length} ${names.length === 1 ? "entry" : "entries"})` };
+    return { ok: true, line: `skipped (leftover ${dir} holds only empty files and folders (${stubs}), as the mount points a sandbox makes do; git does not list it and it holds nothing, so it is left untouched; it goes when the session whose sandbox holds it ends, or the Patron runs: find ${quoted(dir)} -depth -empty -delete)` };
+  }
   try {
     rmdirSync(dir);
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code ?? "an error";
     if (code === "ENOENT") return { ok: true, line: "skipped (absent)" };
+    // a mount point the sandbox keeps (EBUSY, EROFS) or a folder this process may not remove (EACCES, EPERM): it is empty and
+    // git does not list it, so leaving it loses nothing; the branch steps still run, and next's residue check does not read it
+    if (LEFTOVER_KEPT.has(code))
+      return { ok: true, line: `skipped (empty leftover ${dir}: rmdir refused (${code}); git does not list it and it holds nothing, so it is left; it goes when the session whose sandbox holds it ends, or the Patron runs: rmdir ${quoted(dir)})` };
     return { ok: false, reason: `rmdir refused (${code})` };
   }
   return { ok: true, line: `ran (removed the empty leftover ${dir}, which git does not list)` };
