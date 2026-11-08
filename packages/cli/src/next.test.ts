@@ -10,7 +10,7 @@ import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, rea
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BODY, BRANCH, HERE, MAIN, MIN_CHECKS, OID_UNFETCHED, OPUS, Out, PR_NUMBER, REPO_ROOT, SETUP_ENV, SLUG, SlotName, SlotValue, TITLE, TSX, World, advanceOrigin, advanceSource, branchExists, cand, check, expectHeld, expectStep, ghCalls, ghMerges, git, gitCalls, gitOk, greens, headOf, landMerge, mergedList, mutating, next, openList, performMerge, performPr, pushed, ran, remoteBranchExists, reviewed, runs, scenario, scratch, tipOf, unmatched, viewOf, world } from "./next-world.test.js";
+import { BODY, BRANCH, HERE, MAIN, MIN_CHECKS, OID_UNFETCHED, OPUS, Out, PR_NUMBER, REPO_ROOT, SETUP_ENV, SLUG, SlotName, SlotValue, TITLE, TSX, World, advanceOrigin, advanceSource, branchExists, cand, check, expectHeld, expectStep, failingGit, ghCalls, ghMerges, git, gitCalls, gitOk, greens, headOf, landMerge, mergedList, mutating, next, openList, performMerge, performPr, pushed, ran, remoteBranchExists, reviewed, runs, scenario, scratch, tipOf, unmatched, viewOf, world } from "./next-world.test.js";
 
 /** An open PR on the tip whose merge lands (and reads back MERGED) once `gh pr merge` has been called. */
 function landing(w: World, extra: Partial<Record<SlotName, SlotValue>> = {}): string {
@@ -598,7 +598,7 @@ function w227World(tag: string): World {
   mkdirSync(w.wt, { mode: 0o700 });
   return w;
 }
-const w227Cleanup = (w: World): Out => next(w, [OPUS, "--perform", "--expect", "cleanup"]);
+const w227Cleanup = (w: World, env?: Record<string, string>): Out => next(w, [OPUS, "--perform", "--expect", "cleanup"], env === undefined ? {} : { env });
 
 test("W-227-b1 behaviour 1: cleanup removes an empty folder git does not list, directly under .worktrees/, with one rmdir, then deletes the branches; a non-empty, symlinked, nested or registered one is held and left untouched", { timeout: 1_800_000 }, () => {
   const w = w227World("w227-b1");
@@ -662,6 +662,46 @@ test("W-227-b1 behaviour 1: cleanup removes an empty folder git does not list, d
   assert.equal(branchExists(w), false, "the local branch is deleted");
   assert.equal(remoteBranchExists(w), false, "the remote branch is deleted");
   assert.ok(gitCalls(w).every((a) => !(a[0] === "worktree" && a.includes("--force"))), "no worktree call is ever --force");
+});
+
+test("W-227-b1 behaviour 1, fail closed: cleanup holds before any mutation when git's worktree listing or the candidate's lstat fails, and on an unreadable candidate", { timeout: 1_800_000 }, (t) => {
+  if (process.getuid?.() === 0) return t.skip("root reads a folder whatever its mode");
+  const untouched = (w: World, row: string): void => {
+    assert.equal(existsSync(w.wt), true, `${row}: the folder is left`);
+    assert.equal(branchExists(w), true, `${row}: the local branch is left`);
+    assert.equal(remoteBranchExists(w), true, `${row}: the remote branch is left`);
+  };
+  // `git worktree list` fails: an absent entry is not known to be absent
+  const l = w227World("w227-b1-list");
+  const lo = w227Cleanup(l, { GIT_STUB_REAL: failingGit("w227-b1-list", ["worktree list"]) });
+  untouched(l, "a failed worktree listing");
+  assert.equal(lo.status, 1, ran("a failed worktree listing: held", lo));
+  assert.match(lo.out, /worktree: held \(.*git worktree list.*left untouched\)/, ran("a failed worktree listing: the line names the listing", lo));
+  // the candidate's lstat fails (a non-searchable .worktrees/): not an absent folder
+  const s = w227World("w227-b1-lstat");
+  const wts = join(s.repo, ".worktrees");
+  chmodSync(wts, 0o000);
+  try {
+    const so = w227Cleanup(s);
+    chmodSync(wts, 0o755);
+    untouched(s, "a failed lstat");
+    assert.equal(so.status, 1, ran("a failed lstat: held", so));
+    assert.match(so.out, /worktree: held \(.*cannot be read.*left untouched\)/, ran("a failed lstat: the line says unreadable", so));
+  } finally {
+    chmodSync(wts, 0o755);
+  }
+  // an unreadable candidate: not an empty one
+  const u = w227World("w227-b1-unreadable");
+  chmodSync(u.wt, 0o000);
+  try {
+    const uo = w227Cleanup(u);
+    chmodSync(u.wt, 0o700);
+    untouched(u, "an unreadable folder");
+    assert.equal(uo.status, 1, ran("an unreadable folder: held", uo));
+    assert.match(uo.out, /worktree: held \(.*cannot be listed.*left untouched\)/, ran("an unreadable folder: the line says so", uo));
+  } finally {
+    chmodSync(u.wt, 0o700);
+  }
 });
 
 test("W-227-b2 behaviour 2: a leftover cleanup cannot remove, rmdir refused (a mount point the sandbox keeps) or holding only the empty files and folders a sandbox mounts over, is named for the Patron and left untouched; the branches are still deleted and next moves on to done", { timeout: 1_800_000 }, (t) => {
