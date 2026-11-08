@@ -1,0 +1,61 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-541-b1\s --import tsx packages/cli/src/next-review.test.ts
+# exit: 1
+# at: 2026-11-08T09:02:41.604Z
+# sella: ops-lead
+# tree: tree:8574d11bb4de783ec32e2f3f369120397a459ade
+# ticket: {"opus":"W-541","step":"reds","action":"red","round":1,"actor":"producer","studio":".worktrees/W-541/studio","head":"df3470787d9754e24f52c32176bdf309767e66a6","brief":"f1d6b6f5f03475390f3e0b7942f49669811f8905","at":"2026-11-08T09:02:41.565Z"}
+
+TAP version 13
+# Subtest: W-541-b1 behaviour 1: after the builder's handoff the gates are a ladder-runner's ci --opus in a run session, never the builder's order again
+not ok 1 - W-541-b1 behaviour 1: after the builder's handoff the gates are a ladder-runner's ci --opus in a run session, never the builder's order again
+  ---
+  duration_ms: 3102.428957
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-541/packages/cli/src/next-review.test.ts:60:1262'
+  failureType: 'testCodeFailure'
+  error: |-
+    the producer's ladder-runner runs the gates
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: W-900: tests is not passed at the current source tree tree:ddda93152642; run bisellium ci --opus W-900 in the worktree and commit the record and its gate logs
+    head: opus/W-900 00ab474b9cb0
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: 2
+    inputs: briefs/W-900.md, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase 2) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'builder'
+    - 'producer'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'producer'
+  actual: 'builder'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-541/packages/cli/src/next-review.test.ts:886:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3545.703737
