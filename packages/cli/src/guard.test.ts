@@ -5,6 +5,7 @@
  * `hooks check --repo` with PATH pointing at a `bisellium` it chose. Fixtures live under the OS tmp dir.
  * W-362 row b1 (studio/briefs/W-362.md): env's split string and a shell option's operand.
  * W-418 row b3 (studio/briefs/W-418.md): the guard hands the main thread the review notices under its checkout.
+ * W-227 row b4 (studio/briefs/W-227.md): the guard refuses the main thread's cd into a folder under .worktrees/.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -890,4 +891,41 @@ test("W-494-b4 behaviour 4: the agents and the briefs keep one background run at
     for (const m of t.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:10|ten)[- ]min(?:ute)?s?(?![\p{L}\p{M}\p{N}])/giu))
       assert.ok(t.slice(Math.max(0, m.index - 30), m.index).includes("`timeout` parameter"), `${rel}: no claim that 10 minutes is the default cap`);
   }
+});
+
+test("W-227-b4 behaviour 4: the guard refuses the main thread's cd or pushd into a folder under .worktrees/, and runs a subagent's", async () => {
+  const root = tmp();
+  mkdirSync(join(root, ".worktrees", "W-1"), { recursive: true });
+  mkdirSync(join(root, "packages"));
+  symlinkSync(join(root, ".worktrees", "W-1"), join(root, "wt-link"));
+  const refused = [
+    `cd ${root}/.worktrees/W-1`,
+    "cd .worktrees/W-1 && git status",
+    `cd ${root} && cd .worktrees/W-1`,
+    "pushd .worktrees/W-1",
+    "(cd .worktrees/W-1; git log -1)",
+    "cd .worktrees",
+    `git status; cd "${root}/.worktrees/W-9"`,
+    "cd -P wt-link",
+    "cd ~/x/.worktrees/W-2",
+  ];
+  for (const c of refused) {
+    const r = await guard(bash(c, { cwd: root }));
+    assert.equal(r.code, 2, `main thread refused: ${c}`);
+    assert.match(r.err, /does not cd into a folder under \.worktrees\/ \(W-227\)/, c);
+  }
+  assert.match((await guard(bash(refused[1]!, { cwd: root }))).err, /`cd \.worktrees\/W-1`/, "the refusal names the cd");
+  assert.equal((await guard(bash(`cd ${root} && cd wt-link`, { cwd: "/" }))).code, 2, "a later cd's operand is resolved in the folder an earlier cd named");
+  assert.match((await guard(bash(refused[4]!, { cwd: root }))).err, /\(W-227\)/, "a cd in a subshell is refused too");
+  assert.equal((await guard(bash(refused[6]!, { cwd: root }))).code, 2, "a cd into a worktree folder that does not exist yet is refused");
+  assert.equal((await guard(bash(refused[7]!, { cwd: root }))).code, 2, "a cd through a symlink into a worktree folder is refused");
+  assert.equal((await guard(bash(`git -C ${root}/.worktrees/W-1 status`, { cwd: root }))).code, 0, "git -C into a worktree folder runs");
+  assert.equal((await guard(bash(refused[1]!, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, "a subagent's cd into a worktree folder runs");
+  const allowed = [`git -C ${root}/.worktrees/W-1 status`, `cd ${root}`, `cd ${root}/packages && ls`, "ls .worktrees/W-1", "echo cd .worktrees/W-1", "cd /tmp", 'bash -c "cd .worktrees/W-1 && ls"', `cd ${root}/.worktreesx`];
+  for (const c of allowed) assert.equal((await guard(bash(c, { cwd: root }))).code, 0, `main thread runs: ${c}`);
+  for (const c of refused) assert.equal((await guard(bash(c, { cwd: root, agent_id: "b1", agent_type: "builder" }))).code, 0, `a subagent's cd runs: ${c}`);
+  const inWt = join(root, ".worktrees", "W-1");
+  mkdirSync(join(inWt, "sub"));
+  assert.equal((await guard(bash("cd sub && ls", { cwd: inWt }))).code, 0, "a cd that stays in the worktree folder the shell is already in runs");
+  assert.equal((await guard(bash("cd ../W-2", { cwd: inWt }))).code, 2, "a cd from one worktree folder into another is refused");
 });
