@@ -558,6 +558,9 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
   const mains: [string, Record<string, unknown>][] = [
     ["no agent_id", {}],
     ["agent_type clerk without agent_id", { agent_type: "clerk" }],
+    ["empty agent_id, builder", { agent_id: "", agent_type: "builder" }],
+    ["empty agent_id, untyped", { agent_id: "" }],
+    ["agent_id not a string, clerk", { agent_id: 7, agent_type: "clerk" }],
   ];
   for (const [label, who] of mains) {
     assert.equal((await guard(write(refused[0]!, who))).code, 0, `the main thread writes an opera record, as before: ${label}`);
@@ -584,6 +587,15 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
         else assert.match(r.err, clerkRefusal, `${label} gets the clerk path refusal, not the W-418 notice`);
         assert.ok(existsSync(join(notices, "901")), `${label} does not take the notice`);
       }
+  mkdirSync(notices, { recursive: true });
+  writeFileSync(join(notices, "901"), "PR #901 needs your review: first (code-owned: a)\n");
+  const taken = await guard(write(join(repo, "docs/x.md"), { agent_id: "", agent_type: "builder" }, "Write", repo));
+  assert.equal(taken.code, 2, "an empty agent_id that claims no clerk takes a pending notice, as the main thread: builder");
+  assert.match(taken.err, /^refused: a PR waits on the Patron's review \(W-418\)/, "an empty agent_id that claims no clerk takes a pending notice, as the main thread: builder (the W-418 refusal)");
+  assert.ok(!existsSync(join(notices, "901")), "an empty agent_id that claims no clerk takes a pending notice, as the main thread: builder (the notice is removed)");
+  writeFileSync(join(notices, "901"), "PR #901 needs your review: first (code-owned: a)\n");
+  assert.deepEqual(await guard(write(join(repo, "docs/x.md"), BUILDER, "Write", repo)), { code: 0, err: "" }, "another subagent with a notice pending does not take it: builder");
+  assert.ok(existsSync(join(notices, "901")), "another subagent with a notice pending does not take it: builder (the notice stays)");
 });
 
 test("W-542-b2 behaviour 2: the clerk agent has Edit and no Bash, says when to use Edit and Write, names the guard's roots and the CLI's records, and runs no CLI call", () => {
