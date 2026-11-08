@@ -2,10 +2,11 @@
  * W-179: one behaviour group of the next.test.ts rows (studio/briefs/W-179.md); the fixture is ./next-world.test.ts.
  * W-124 behaviour 3 and its TERMINALS table stay here: ladder-followon.test.ts (W-128 behaviour 2) reads this file.
  * Select one row with --test-name-pattern='^<row id>\s'.
+ * W-227 rows b1-b2 (studio/briefs/W-227.md): cleanup clears an empty folder git does not list, directly under .worktrees/.
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
+import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmdirSync, rmSync, statSync, symlinkSync, writeFileSync, appendFileSync, lstatSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -583,4 +584,82 @@ test("W-179-b1 behaviour 1: test:suite runs every next row file once, side by si
   assert.equal(runners.length, 1, `one test:suite segment names the next files: ${JSON.stringify(runners.map((w) => w.join(" ")))}`);
   assert.deepEqual(runners[0]!.slice(0, 6), ["node", "--test", `--test-concurrency=${declared.length}`, "--test-reporter=tap", "--import", "tsx"], "it is one node --test call running every file at once, with TAP");
   assert.deepEqual(runners[0]!.slice(6), declared, "it names each next row file once, in path order, and nothing else");
+});
+
+// ---------------------------------------------------------------------------
+// W-227 rows b1-b2 (studio/briefs/W-227.md): an empty folder `.worktrees/<id>` that git does not list is the leftover a
+// sandbox leaves (it remakes the folder as a mount point while a session that entered it lives); cleanup clears it
+// ---------------------------------------------------------------------------
+/** A merged opus whose registered worktree is removed and whose folder `.worktrees/W-900` is back, empty, mode 0700 (the stub). */
+function w227World(tag: string): World {
+  const w = world(tag, "merge", { mainOnMaster: false });
+  scenario(w, { list: mergedList(w), view: { stdout: viewOf(cand(w, { state: "MERGED" })) } });
+  git(w.repo, ["worktree", "remove", "--force", w.wt]);
+  mkdirSync(w.wt, { mode: 0o700 });
+  return w;
+}
+const w227Cleanup = (w: World): Out => next(w, [OPUS, "--perform", "--expect", "cleanup"]);
+
+test("W-227-b1 behaviour 1: cleanup removes an empty folder git does not list, directly under .worktrees/, with one rmdir, then deletes the branches; a non-empty, symlinked, nested or registered one is held and left untouched", { timeout: 1_800_000 }, () => {
+  const w = w227World("w227-b1");
+  // `kept` runs first, so a wrong form that removes something fails at the row's named "kept" assertion
+  const held = (row: string, kept: () => void): void => {
+    const o = w227Cleanup(w);
+    kept();
+    assert.equal(o.status, 1, ran(`${row}: held`, o));
+    assert.match(o.out, /worktree: held \(.*left untouched\)/, ran(`${row}: the worktree line says held and untouched`, o));
+    assert.equal(branchExists(w), true, `${row}: the local branch is left`);
+    assert.equal(remoteBranchExists(w), true, `${row}: the remote branch is left`);
+  };
+  // not empty: a file, a hidden file, a folder holding a file (the rmdir is never recursive)
+  writeFileSync(join(w.wt, "keep.txt"), "kept\n");
+  held("a file inside", () => assert.equal(existsSync(join(w.wt, "keep.txt")) && readFileSync(join(w.wt, "keep.txt"), "utf8"), "kept\n", "a file inside: kept"));
+  rmSync(join(w.wt, "keep.txt"));
+  writeFileSync(join(w.wt, ".hidden"), "x");
+  held("a hidden file inside", () => assert.equal(existsSync(join(w.wt, ".hidden")), true, "a hidden file inside: kept"));
+  rmSync(join(w.wt, ".hidden"));
+  mkdirSync(join(w.wt, "sub"));
+  writeFileSync(join(w.wt, "sub", "f"), "x");
+  held("a folder inside holding a file", () => assert.equal(existsSync(join(w.wt, "sub", "f")), true, "a folder inside holding a file: kept"));
+  rmSync(join(w.wt, "sub"), { recursive: true });
+  // a symlink at .worktrees/W-900 to an empty folder: neither the link nor its target is touched
+  const target = join(w.root, "elsewhere");
+  mkdirSync(target);
+  rmdirSync(w.wt);
+  symlinkSync(target, w.wt);
+  held("a symlink", () => {
+    assert.equal(lstatSync(w.wt, { throwIfNoEntry: false })?.isSymbolicLink(), true, "a symlink: the link is kept");
+    assert.equal(existsSync(target), true, "a symlink: its target is kept");
+  });
+  rmSync(w.wt);
+  mkdirSync(w.wt);
+  // nested: .worktrees itself a symlink to a folder outside the repository, which holds an empty W-900
+  const wts = join(w.repo, ".worktrees");
+  const away = join(w.root, "away");
+  renameSync(wts, away);
+  symlinkSync(away, wts);
+  held("a .worktrees that is a symlink out of the repository", () => assert.equal(existsSync(join(away, OPUS)), true, "a symlinked .worktrees: the folder behind it is kept"));
+  rmSync(wts);
+  renameSync(away, wts);
+  // registered: git lists a worktree at the path (for another branch), its folder emptied by hand
+  rmdirSync(w.wt);
+  git(w.repo, ["worktree", "add", "-q", "-b", "w227-other", w.wt, "master"]);
+  for (const name of readdirSync(w.wt)) rmSync(join(w.wt, name), { recursive: true, force: true });
+  held("a registered worktree, emptied", () => assert.equal(existsSync(w.wt), true, "a registered worktree: its folder is kept"));
+  git(w.repo, ["worktree", "prune"]);
+  // not a folder: a file at the path
+  rmdirSync(w.wt);
+  writeFileSync(w.wt, "not a folder\n");
+  held("a file at the path", () => assert.equal(existsSync(w.wt) && readFileSync(w.wt, "utf8"), "not a folder\n", "a file at the path: kept"));
+  rmSync(w.wt);
+  mkdirSync(w.wt);
+  // empty, unregistered, a real folder directly under the real .worktrees/: one rmdir, then the branch steps
+  const o = w227Cleanup(w);
+  assert.equal(o.status, 0, ran("the empty leftover: cleanup runs", o));
+  assert.match(o.out, /worktree: ran \(removed the empty leftover /, ran("the worktree line names the leftover removed", o));
+  assert.equal(existsSync(w.wt), false, "the empty leftover is gone");
+  assert.equal(existsSync(wts), true, "and .worktrees/ itself stays");
+  assert.equal(branchExists(w), false, "the local branch is deleted");
+  assert.equal(remoteBranchExists(w), false, "the remote branch is deleted");
+  assert.ok(gitCalls(w).every((a) => !(a[0] === "worktree" && a.includes("--force"))), "no worktree call is ever --force");
 });
