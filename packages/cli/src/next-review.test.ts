@@ -858,6 +858,55 @@ function absentPath(path: string): boolean {
   }
 }
 
+// W-541 (D-189): the builder's handoff ends its build; the one full suite is a ladder-runner's ci --opus in a run session
+test("W-541-b1 behaviour 1: after the builder's handoff the gates are a ladder-runner's ci --opus in a run session, never the builder's order again", { timeout: 1_800_000 }, () => {
+  const w = world("w541-b1", "reds", { automated: true });
+  const notPassed = /^W-900: tests is not passed at the current source tree tree:[0-9a-f]{12}; run bisellium ci --opus W-900 in the worktree and commit the record and its gate logs$/;
+  const builderHandoff = (at: string): void => {
+    verb(w.wt, ["handoff", "--opus", OPUS, "--sella", `builder.${OPUS}`, "--next", "ready for review", "--studio", w.wtStudio, "--now", at]);
+    commit(w.wt, `studio(${OPUS}): builder handoff ${at}`);
+  };
+  const builderOrder = (label: string): void => {
+    const o = next(w, [OPUS, ...BUDGET]);
+    expectStep(o, "build", "named", `${label}: build is named`);
+    assert.equal(o.kv.get("role"), "builder", ran(`${label}: the builder's order, as before`, o));
+    assert.equal(o.kv.has("handoff"), false, ran(`${label}: no builder handover is read`, o));
+  };
+  // a producer's handover after the newest red: the builder's order, as before
+  handoffAt(w, "wt", T.handoffFresh);
+  builderOrder("a producer's handover");
+  // the builder's handover recorded before the newest red: its build is not over
+  builderHandoff(T.handoffStale);
+  builderOrder("the builder's handover before the newest red");
+
+  // the builder's handover after the newest red: the gates are a ladder-runner's, in a run session, with no second handoff
+  builderHandoff(T.handoffFresh);
+  const o = next(w, [OPUS, ...BUDGET]);
+  expectStep(o, "build", "named", "the builder's handover after the newest red: build is named");
+  assert.equal(o.kv.get("actor"), "producer", ran("the producer's ladder-runner runs the gates", o));
+  assert.equal(o.kv.has("role"), false, ran("no builder order", o));
+  assert.match(o.kv.get("why") ?? "", notPassed, ran("the why names the gate and the tree", o));
+  assert.equal(o.kv.get("handoff"), `builder.${OPUS} at ${T.handoffFresh}, after the newest red or review log`, ran("the order names the builder's handover", o));
+  const command = o.kv.get("command") ?? "";
+  assert.ok(
+    command.startsWith(`from .worktrees/${OPUS}: a ladder-runner runs bisellium run --sella producer --no-worktree --studio studio -- npm run -s bisellium -- ci --opus ${OPUS} --studio studio --repo . (the one full suite, once per review round, in the background; W-364 admits it only in a run session); then it commits the record and its gate logs (chore(studio): ${OPUS} gates).`),
+    ran("ci --opus inside a run session, then the gate commit", o),
+  );
+  assert.doesNotMatch(command, /bisellium handoff/, ran("the builder recorded the handoff: no second one", o));
+  assert.match(command, /A ci --opus that exits non-zero is a builder's: dispatch builder \(phase 2\) through the host seam/, ran("a failing suite goes to a builder", o));
+
+  // a failed review round at this tree whose gate log is gone: the builder's fix round, though the builder's handover is
+  // after the round's log
+  writeGates(w);
+  addReview(w, "failed", 1, T.review1);
+  rmSync(join(w.wtStudio, "ci", `${OPUS}-tests-${sourceTree(w.wt).slice(5, 13)}.log`));
+  commit(w.wt, "test: drop the gate log");
+  const fix = next(w, [OPUS, ...BUDGET]);
+  expectStep(fix, "build", "named", "a failed round at this tree: build is named");
+  assert.equal(fix.kv.get("role"), "builder", ran("a failed round at this tree: the builder's fix", fix));
+  assert.equal(fix.kv.get("phase"), "fix", ran("a failed round at this tree: phase fix", fix));
+});
+
 test("W-314-b1 behaviour 1: the build-review perform reads build-review.md and later-round.md from the main checkout's studio, never the opus branch", { timeout: 1_800_000 }, () => {
   const w = reviewWorld("w314-b1");
   put(w.wt, BUILD_REVIEW, BRANCH_REVIEW_TEMPLATE);
