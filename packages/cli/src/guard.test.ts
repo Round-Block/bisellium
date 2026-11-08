@@ -546,6 +546,8 @@ test("W-542-b1 behaviour 1: a dispatched clerk writes only under the acta, decis
   ];
   for (const p of refused.slice(0, 3))
     for (const [label, who] of others) assert.equal((await guard(write(p, who))).code, 0, `another subagent writes, as before: ${label} ${named(p, root)}`);
+  for (const id of ["", 7, null])
+    assert.equal((await guard(write(refused[0]!, { agent_id: id, agent_type: "clerk" }))).code, 2, `a claimed clerk with an unusable agent_id (${JSON.stringify(id)}) is judged as a clerk, not the main thread`);
   const mains: [string, Record<string, unknown>][] = [
     ["no agent_id", {}],
     ["agent_type clerk without agent_id", { agent_type: "clerk" }],
