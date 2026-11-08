@@ -18,7 +18,7 @@
  * sent back: Stop exits 0 and the hook itself shows the Patron the usage reading; at UserPromptSubmit it hands the model the
  * same reading. No rule judges a reply's text at Stop (the Patron 2026-11-06 removed the length rule).
  */
-import { accessSync, constants, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { accessSync, constants, existsSync, lstatSync, readFileSync, readlinkSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { takeNotices } from "./review-notice.js";
@@ -777,13 +777,21 @@ export function backgroundForm(command: string): string | undefined {
   return undefined;
 }
 
-/** The path with its longest existing prefix resolved through symlinks. */
-function realOf(path: string): string {
+/** The path with its longest existing prefix resolved through symlinks; a symlink whose target does not exist yet is
+ *  followed to that target (read relative to its parent), so a write through it is judged where it lands. */
+function realOf(path: string, depth = 0): string {
   const tail: string[] = [];
   for (let head = path; ; ) {
     try {
       return join(realpathSync(head), ...[...tail].reverse());
     } catch {
+      if (depth < 40 && lstatSync(head, { throwIfNoEntry: false })?.isSymbolicLink()) {
+        try {
+          return join(realOf(resolve(dirname(head), readlinkSync(head)), depth + 1), ...[...tail].reverse());
+        } catch {
+          return path;
+        }
+      }
       const parent = dirname(head);
       if (parent === head) return path;
       tail.push(basename(head));
@@ -1148,7 +1156,7 @@ export function guardRefusal(input: Dict): string | undefined {
   }
   if (tool === "Write" || tool === "Edit" || tool === "NotebookEdit") {
     const path = str(args["file_path"]) ?? str(args["notebook_path"]);
-    const clerk = !main && input["agent_type"] === "clerk";
+    const clerk = input["agent_type"] === "clerk" && typeof input["agent_id"] === "string";
     return path ? writeRefusal(path, str(input["cwd"]), main, clerk) : undefined;
   }
   return undefined;
