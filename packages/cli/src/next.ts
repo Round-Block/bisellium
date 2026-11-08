@@ -1353,7 +1353,7 @@ export function deriveNext(f: Facts): Derived {
     // review; the producer revises the brief (a spec amendment) or reverts the path
     const breach = boundaryBreach(f);
     if (breach !== undefined) return { ...hold("build", breach), uncut: true };
-    // W-312: review needs the branch's own gate logs at this tree (the builder's `bisellium ci --opus`), never a host receipt
+    // W-312: review needs the branch's own gate logs at this tree (a ladder-runner's `bisellium ci --opus` in a run session, W-541), never a host receipt
     const gates = f.gates();
     // W-326: with every red the replay's and no required fix standing, the gates need no builder: the producer runs them
     if (gates !== undefined && !gates.ok && !redo && (fixCheck !== undefined || (fixes.length === 0 && replayed(f, bs, n))))
@@ -1367,6 +1367,17 @@ export function deriveNext(f: Facts): Derived {
           : evidence.length === 0
             ? [["fix-check", `no open path at this tree (${fixCheck.census})`]]
             : [["fix-check", `no open path in Files owned at this tree (${fixCheck.census})`], ...evidence],
+      );
+    // W-541 (D-189): the builder runs only its touched tests; its handoff after the newest red or review log ends the build,
+    // and the one full suite is a ladder-runner's `ci --opus` in a run session (W-364 refuses it outside one), never the builder's
+    const handedOver = gates !== undefined && !gates.ok && !redo ? builderHandover(f, b) : undefined;
+    if (handedOver !== undefined)
+      return named(
+        "build",
+        "producer",
+        gates?.ok === false ? gates.error : "the gate evidence cannot be read",
+        `from .worktrees/${id}: a ladder-runner runs bisellium run --sella producer --no-worktree --studio ${f.studioRel} -- npm run -s bisellium -- ci --opus ${id} --studio ${f.studioRel} --repo . (the one full suite, once per review round, in the background; W-364 admits it only in a run session); then it commits the record and its gate logs (chore(studio): ${id} gates). A ci --opus that exits non-zero is a builder's: dispatch builder (phase 2) through the host seam: bisellium run --sella builder --opus ${id} --studio ${f.studioRel} -- <builder command…>`,
+        [["handoff", handedOver]],
       );
     if ((gates !== undefined && !gates.ok) || redo)
       return dispatch(f, "build", redo ? `review round ${gate?.round} failed at this tree` : gates !== undefined && !gates.ok ? gates.error : "the gate evidence cannot be read", {
@@ -1507,6 +1518,23 @@ function uiRulingWait(f: Facts, b: Dict, tree: string): string | undefined {
   const flagged = lines(ix.stdout).filter((l) => !l.startsWith("H ")).map((l) => `${l.slice(2)} (index flag ${l.charAt(0)})`);
   const open = [...lines(st.stdout).map((l) => l.slice(3)), ...flagged].sort();
   return open.length === 0 ? undefined : `the Patron's ruling ${read.ruling} is not committed on opus/${f.id} (${open.join(", ")}); commit it, then rerun`;
+}
+
+/** W-541: the sella a build order dispatches, `builder.<id>` when the manifest's builder seat mints one (`dispatch`'s own reading). */
+function builderSella(manifest: Manifest, id: string): string {
+  const resolved = resolveSeat(manifest, "builder");
+  const minted = resolved === undefined ? undefined : mintDispatchSella(resolved, "builder", id, "next");
+  return minted !== undefined && "sella" in minted ? minted.sella : "builder";
+}
+
+/** W-541 (D-189): the branch record's handover as one line when it is the build order's builder's, read whole (`handoverAt`)
+ *  and recorded at or after the newest red or review log (`evidenceAt`), so the builder's build is over; else undefined. */
+function builderHandover(f: Facts, b: Dict): string | undefined {
+  const t = b["traditio"];
+  const at = handoverAt(t);
+  if (typeof at === "string" || at < f.evidenceAt()) return undefined;
+  const sella = (t as Dict)["sella"];
+  return sella === builderSella(f.manifest, f.id) ? `${sella} at ${new Date(at).toISOString()}, after the newest red or review log` : undefined;
 }
 
 /** W-326: the brief names a prototype and each of the n reds records the design sella, the one the replay records under. */
@@ -1946,11 +1974,7 @@ function readFixCheck(f: Facts, n: number, cur: string): { open: string[]; censu
 function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; uiLead?: boolean; signer?: string; session?: string; behaviour?: { from: number; through: number }; studio?: string }): Derived {
   const { id, manifest } = f;
   const studioRel = o.studio ?? f.studioRel;
-  const builder = (() => {
-    const resolved = resolveSeat(manifest, "builder");
-    const minted = resolved === undefined ? undefined : mintDispatchSella(resolved, "builder", id, "next");
-    return minted !== undefined && "sella" in minted ? minted.sella : "builder";
-  })();
+  const builder = builderSella(manifest, id);
   const censor = censorSella(manifest) ?? "qa-lead";
   const inputs = [...o.inputs, ...(o.reviewer === undefined && o.uiLead !== true ? [`${recordRel(id)}#traditio`] : [])];
   let role: string;
