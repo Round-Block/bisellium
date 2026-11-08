@@ -12,7 +12,7 @@
  * `--match-head-commit`. `BLOCKED` is never merged directly.
  */
 import { spawnSync } from "node:child_process";
-import { accessSync, constants, lstatSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, constants, lstatSync, readdirSync, realpathSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { instant } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
@@ -1222,8 +1222,10 @@ export function cleanup(ctx: Ctx): StepResult {
   const dirExists = lstatSafe(dir);
   if (branch !== `opus/${id}`) out.push("worktree: skipped (not an opus branch)");
   else if (entry === undefined) {
-    if (dirExists) return stop("worktree", `${dir} exists but is not the registered worktree for ${branch}; left untouched`);
-    out.push("worktree: skipped (absent)");
+    // W-227: an empty folder git does not list, directly under .worktrees/, is a leftover (a sandbox remakes it as a mount point)
+    const left = dirExists ? clearLeftover(repo, id, dir) : { ok: true as const, line: "skipped (absent)" };
+    if (!left.ok) return stop("worktree", `${dir} exists but is not the registered worktree for ${branch}; ${left.reason}; left untouched`);
+    out.push(`worktree: ${left.line}`);
   } else if (entry.branch !== ref && !(entry.prunable && !dirExists)) {
     return stop("worktree", `${dir} is registered for ${entry.branch ?? "no branch"}, not ${branch}; left untouched`);
   } else if (!dirExists) {
@@ -1269,6 +1271,37 @@ export function cleanup(ctx: Ctx): StepResult {
     out.push("remote branch: ran");
   }
   return { ok: true, lines: out };
+}
+
+/**
+ * W-227: an unregistered `<repo>/.worktrees/<id>` that cleanup may clear: `.worktrees` a real directory in the real repository
+ * and `<id>` a real directory directly in it (`existingRealDirectory`: no symlink at either level, one plain name), holding
+ * nothing; it is removed by one non-recursive `rmdir`. Anything else, and an rmdir that fails, is the reason to hold.
+ */
+function clearLeftover(repo: string, id: string, dir: string): { ok: true; line: string } | { ok: false; reason: string } {
+  let real: string | undefined;
+  try {
+    real = existingRealDirectory(repo, ".worktrees", id);
+  } catch (e) {
+    return { ok: false, reason: `it is not a real folder directly under the repository's .worktrees/ (${thrown(e)})` };
+  }
+  if (real === undefined) return { ok: true, line: "skipped (absent)" };
+  if (real !== dir) return { ok: false, reason: `it is not directly under the repository's .worktrees/ (${real})` };
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch (e) {
+    return { ok: false, reason: `it cannot be listed (${thrown(e)})` };
+  }
+  if (names.length > 0) return { ok: false, reason: `it is not empty (${names.length} ${names.length === 1 ? "entry" : "entries"})` };
+  try {
+    rmdirSync(dir);
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code ?? "an error";
+    if (code === "ENOENT") return { ok: true, line: "skipped (absent)" };
+    return { ok: false, reason: `rmdir refused (${code})` };
+  }
+  return { ok: true, line: `ran (removed the empty leftover ${dir}, which git does not list)` };
 }
 
 function lstatSafe(path: string): boolean {
