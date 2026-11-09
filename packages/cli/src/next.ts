@@ -2536,7 +2536,21 @@ function meanwhileOf(f: Facts, d: Derived, nowMs: number): string[] {
 
 /** W-547: the queue's next entry after this opus and what its spec needs (`aheadIn`): its queue, its records' states and its own derivation. */
 function aheadOf(f: Facts): Pick<Owed, "ahead" | "aheadError"> {
-  return aheadIn(readQueue(f.studioAbs), f.id, (o) => queuedState(f.studioAbs, o), (o) => derivedStep(gather(f.repo, f.studioAbs, o)));
+  return aheadIn(readQueue(f.studioAbs), f.id, (o) => queuedState(f.studioAbs, o), (o) => {
+    const g = gather(f.repo, f.studioAbs, o);
+    const bad = inputErrorOf(g);
+    if (bad !== undefined) throw new Error(`the next entry ${o}'s derivation input cannot be read: ${bad}`);
+    return derivedStep(g);
+  });
+}
+
+/** W-558 (W-559 4): an input error under a derivation's facts, which `deriveNext` would read as a hold: the opus branch tip
+ *  unreadable, the spec owner's record or manifest unreadable or malformed, or an opus branch whose record cannot be read. */
+function inputErrorOf(f: Facts): string | undefined {
+  if (f.tipRead?.kind === "error") return f.tipRead.reason;
+  if ("error" in f.specOwner) return f.specOwner.error;
+  if (f.branch !== undefined && f.branchRecord === undefined) return `${recordRel(f.id)} on opus/${f.id} is absent, unreadable or malformed`;
+  return undefined;
 }
 
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
