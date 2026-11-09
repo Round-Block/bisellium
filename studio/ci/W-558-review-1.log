@@ -1,0 +1,18 @@
+# opus: W-558
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1c04d-80e8-7001-80a8-a5c2cc603870
+# outcome: failed
+# at: 2026-11-09T12:37:22.918Z
+# tree: tree:84f9df7dc011f1548fb0db57e0e246442aeeb5df
+# brief: briefs/W-558.md blob:c420e993ae7a67c64175c25b8edd053f053cf3e1
+# ticket: {"opus":"W-558","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-558/studio","head":"bee778be2c17cd6098a17479f825721cc28e776c","brief":"c420e993ae7a67c64175c25b8edd053f053cf3e1","at":"2026-11-09T12:34:24.924Z"}
+
+## Findings
+1. blocking — packages/cli/src/inputs.ts:76 [severity: S1] `lstatSync` follows a symlinked `.bisellium` parent and checks only the final `steps` component; a dangling parent becomes `absent`, while one targeting an empty `steps/` directory becomes valid with no writer, letting `land`, `retro --daily`, and `next` proceed despite the no-symlink domain at brief:82. [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w558.test.ts
+
+## Verdict
+The marker collection still fails open through a symlinked parent, so the round fails.
+VERDICT: FAIL

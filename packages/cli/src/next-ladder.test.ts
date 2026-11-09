@@ -1181,7 +1181,7 @@ test("W-337-b2 behaviour 2: a conflict with every later open opus is checked and
     [
       `next: ${OPUS} review held · opus/${OPUS} conflicts with opus/W-903, which is further along; wait for W-903 to land before review`,
       `next: ${OPUS} review held · opus/${OPUS} conflicts with opus/W-901, which is further along; wait for W-901 to land before review`,
-      `next: ${OPUS} review held · opera/W-901.md: state must be one of backlog, greenlit, building, verifying, review, done, halted; no review is ordered`,
+      `next: ${OPUS} review held · opera/W-901.md has state "buidling", not one of backlog, greenlit, building, verifying, review, done, halted; no review is ordered`,
       `next: ${OPUS} review held · opus/${OPUS} conflicts with opus/W-897, which is further along; wait for W-897 to land before review`,
       `next: ${OPUS} review held · malformed W-897 review evidence holds`,
     ],

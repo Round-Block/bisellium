@@ -914,7 +914,6 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/new.ts:runNew:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
   { key: "packages/cli/src/new.ts:runNew:writeFileSync#1", disposition: "contained", why: "briefs/<id>.md in a real briefs/ checked by ensureRealDirectory; the id comes from createNextRecord" },
   { key: "packages/cli/src/new.ts:runNew:unlinkSync#1", disposition: "contained", why: "removes the opus record createNextRecord just made in the same call" },
-  { key: "packages/cli/src/next.ts:readMarker:readFileSync#1", disposition: "outside", why: "reads the step marker under .bisellium/ (lstat first)" },
   { key: "packages/cli/src/next.ts:readProc:readFileSync#1", disposition: "outside", why: "reads /proc/<pid>/stat" },
   { key: "packages/cli/src/next.ts:readOutput:openSync#1", disposition: "outside", why: "reads the step output file under .bisellium/, opened with O_NOFOLLOW after an lstat of every parent" },
   { key: "packages/cli/src/next.ts:installMarker:mkdirSync#1", disposition: "outside", why: "writes the step marker under .bisellium/, exclusive create" },

@@ -1,0 +1,21 @@
+# opus: W-558
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1c04d-80e8-7001-80a8-a5c2cc603870
+# outcome: passed
+# at: 2026-11-09T23:05:55.026Z
+# tree: tree:10ed7112cce277278dad0c0c581ed1cb7a812331
+# brief: briefs/W-558.md blob:4d2a094b194e47198a9c5498dbd10034c6c0662d
+# ticket: {"opus":"W-558","step":"review","action":"verdict-build","round":3,"actor":"censor","studio":".worktrees/W-558/studio","head":"63d8783ef3882b11f51ee7a72ed9bb0f6bd59b70","brief":"4d2a094b194e47198a9c5498dbd10034c6c0662d","at":"2026-11-09T23:05:46.257Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-558-review-2.log #1: closed — packages/cli/src/meanwhile.ts:292 now walks `receipts/` and each `receipts/<sella>/` before listing, and line 316 uses `lstatSync` so symlinked receipts cannot be skipped by target age; the added `W-558-r2` cases cover real-copy, empty-target, dangling, and stale-target symlinks in both main and worktree studios.
+
+## Verdict
+The receipt paths now fail closed across the previously open collection and age-gate forms.
+VERDICT: PASS

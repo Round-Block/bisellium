@@ -44,6 +44,7 @@ import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
+import { STEPS, checkCollection, loadMarker, loadOpusRecord, walkReal, walkStudio, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -63,8 +64,8 @@ import { appendReading, codexBurnLine, costPhrase, readReadings, spanCost, readi
 
 export { MIN_CHECKS };
 
-export const STEPS = ["greenlight", "spec", "branch", "ready", "reds", "build", "review", "pr", "merge", "cleanup", "done", "retro", "checkpoint"] as const;
-export type Step = (typeof STEPS)[number];
+// W-558: the step names are defined once, in inputs.ts (the marker loader reads them); re-exported here
+export { STEPS, type Step } from "./inputs.js";
 export const DISPATCH_TOKEN_CAP = 500_000;
 /** Seconds of output silence after which a live step reads stalled (`dead`). */
 export const STEP_SILENCE_SECONDS: Record<Step, number> = {
@@ -661,23 +662,12 @@ function mergeTreeConflict(repo: string, left: string, right: string): { conflic
 const CONFLICT_OPEN_STATES = new Set(["greenlit", "building", "verifying", "review"]);
 
 /** One lane record, distinguishing valid absence from an unreadable or unclassifiable file. */
-function laneRecord(root: string, id: string, absent: "allowed" | "error"): { record: Dict | undefined } | { error: string } {
-  const rel = recordRel(id);
-  const file = readContainedRegularFile(root, rel, "opera");
-  if ("error" in file) {
-    if (absent === "allowed" && file.code === "ENOENT") return { record: undefined };
-    return { error: `${rel}: ${file.error}` };
-  }
-  let value: unknown;
-  try {
-    value = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
-  } catch (e) {
-    return { error: `${rel}: ${(e as Error).message.split("\n")[0]}` };
-  }
-  if (!isDict(value)) return { error: `${rel}: front matter must be a mapping` };
-  const state = value["state"];
-  if (typeof state !== "string" || !STATES.some((s) => s.id === state)) return { error: `${rel}: state must be one of ${STATES.map((s) => s.id).join(", ")}` };
-  return { record: value };
+function laneRecord(root: string, id: string, absent: "allowed" | "error", repo: string): { record: Dict | undefined } | { error: string } {
+  // W-558: the opus record loader (absent is ENOENT only; a state outside STATES is an error)
+  const read = loadOpusRecord(root, recordRel(id), repo);
+  if (read.kind === "absent") return absent === "allowed" ? { record: undefined } : { error: `${recordRel(id)}: cannot be read (ENOENT)` };
+  if (read.kind === "error") return { error: read.why };
+  return { record: read.value };
 }
 
 /** A ref read with exactly the documented present/absent answers; every other result is an error. */
@@ -690,7 +680,7 @@ function refPresence(repo: string, ref: string): { present: boolean } | { error:
 /** A local opus branch whose ref source tree already has a passed build-review gate, or why qualification is unreadable. */
 function reviewedAtTip(f: Facts): { reviewed: boolean } | { error: string } {
   if (!f.wt.usable || f.branch === undefined) return { reviewed: false };
-  const record = laneRecord(f.wt.studio, f.id, "error");
+  const record = laneRecord(f.wt.studio, f.id, "error", f.repo);
   if ("error" in record) return record;
   // Input-domain row 6: read the lane's own manifest once, then reject every malformed setting before classifying it.
   const worktree = readWorktreeManifest(f.wt.studio);
@@ -731,7 +721,7 @@ function furtherAlongBranches(f: Facts): { refs: string[] } | { error: string } 
     const id = ref.startsWith("refs/heads/opus/") ? ref.slice("refs/heads/opus/".length) : "";
     if (!ID_RE.test(id)) return { error: `git listed an opus branch whose id is outside the opus grammar` };
     if (id === f.id) continue;
-    const main = laneRecord(f.studioAbs, id, "allowed");
+    const main = laneRecord(f.studioAbs, id, "allowed", f.repo);
     if ("error" in main) return { error: main.error };
     if (main.record === undefined || !CONFLICT_OPEN_STATES.has(main.record["state"] as string)) continue;
     const pushed = refPresence(f.repo, `refs/remotes/origin/opus/${id}`);
@@ -2108,17 +2098,6 @@ function gateDispatch(d: Derived, f: Facts, budget: number | undefined, nowMs: n
 // step health
 // ---------------------------------------------------------------------------
 
-interface Marker {
-  schema: 1;
-  opus: string;
-  step: Step;
-  pid: number;
-  start_ticks: number;
-  started: string;
-  output: string;
-  budget_seconds: number;
-  writer: "perform" | "track";
-}
 interface Ident {
   ino: bigint;
   size: bigint;
@@ -2139,41 +2118,25 @@ type ProcRead = { kind: "absent" } | { kind: "unknown"; reason: string } | { kin
 
 const markerPath = (repo: string, id: string): string => join(repo, ".bisellium", "steps", `${id}.json`);
 
-function parseMarker(text: string, id: string): Marker | string {
-  let m: unknown;
-  try {
-    m = JSON.parse(text);
-  } catch {
-    return "the marker is not JSON";
-  }
-  if (!isDict(m)) return "the marker is not an object";
-  const posInt = (v: unknown, min: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= min;
-  if (m["schema"] !== 1 || m["opus"] !== id) return "the marker has another schema or opus";
-  if (typeof m["step"] !== "string" || !(STEPS as readonly string[]).includes(m["step"])) return "the marker names an unknown step";
-  if (!posInt(m["pid"], 2) || !posInt(m["start_ticks"], 1) || !posInt(m["budget_seconds"], 1) || m["budget_seconds"] > 86_400) return "the marker has an invalid pid, start_ticks or budget_seconds";
-  if (typeof m["started"] !== "string" || typeof m["output"] !== "string" || !/^steps\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(m["output"])) return "the marker has an invalid started or output";
-  if (m["writer"] !== "perform" && m["writer"] !== "track") return "the marker has an invalid writer";
-  return m as unknown as Marker;
-}
-
 export function readMarker(repo: string, id: string): MarkerRead | undefined {
   const path = markerPath(repo, id);
+  // W-558 (D-086 A): the collection is a real directory or genuinely absent; a symlinked or non-directory one is invalid, never absence
+  const collection = checkCollection(join(repo, ".bisellium"));
+  if (collection.kind === "error") return { path, invalid: collection.why };
+  if (collection.kind === "absent") return undefined;
   let st;
   try {
     st = lstatSync(path, { bigint: true });
-  } catch {
-    return undefined;
+  } catch (e) {
+    // W-558: only file-not-found is no marker; any other stat failure is an invalid marker, never absence
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    return { path, invalid: `the marker cannot be read (${(e as NodeJS.ErrnoException).code ?? "error"})` };
   }
   const ident: Ident = { ino: st.ino, size: st.size, mtimeNs: st.mtimeNs };
   if (!st.isFile()) return { path, ident, invalid: "the marker is not a regular file" };
-  let text: string;
-  try {
-    text = readFileSync(path, "utf8");
-  } catch (e) {
-    return { path, ident, invalid: `the marker is unreadable (${(e as NodeJS.ErrnoException).code ?? "error"})` };
-  }
-  const m = parseMarker(text, id);
-  return typeof m === "string" ? { path, ident, invalid: m } : { path, ident, marker: m };
+  const read = loadMarker(join(repo, ".bisellium"), `${id}.json`);
+  if (read.kind === "valid") return { path, ident, marker: read.value };
+  return { path, ident, invalid: read.kind === "absent" ? "the marker vanished while it was read" : read.why.replace(`the step marker .bisellium/steps/${id}.json `, "the marker ") };
 }
 
 /** `/proc/<pid>/stat`: ENOENT proves absence from this pid namespace; `assess` decides whether that proves death. */
@@ -2577,23 +2540,30 @@ function meanwhileOf(f: Facts, d: Derived, nowMs: number): string[] {
 
 /** W-547: the queue's next entry after this opus and what its spec needs (`aheadIn`): its queue, its records' states and its own derivation. */
 function aheadOf(f: Facts): Pick<Owed, "ahead" | "aheadError"> {
-  return aheadIn(readQueue(f.studioAbs), f.id, (o) => queuedState(f.studioAbs, o), (o) => derivedStep(gather(f.repo, f.studioAbs, o)));
+  return aheadIn(readQueue(f.studioAbs, f.repo), f.id, (o) => queuedState(f.studioAbs, o, f.repo), (o) => {
+    const g = gather(f.repo, f.studioAbs, o);
+    const bad = inputErrorOf(g);
+    if (bad !== undefined) throw new Error(`the next entry ${o}'s derivation input cannot be read: ${bad}`);
+    return derivedStep(g);
+  });
+}
+
+/** W-558 (W-559 4): an input error under a derivation's facts, which `deriveNext` would read as a hold: the opus branch tip
+ *  unreadable, the spec owner's record or manifest unreadable or malformed, or an opus branch whose record cannot be read. */
+function inputErrorOf(f: Facts): string | undefined {
+  if (f.tipRead?.kind === "error") return f.tipRead.reason;
+  if ("error" in f.specOwner) return f.specOwner.error;
+  if (f.branch !== undefined && f.branchRecord === undefined) return `${recordRel(f.id)} on opus/${f.id} is absent, unreadable or malformed`;
+  return undefined;
 }
 
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
-function queuedState(studioAbs: string, id: string): string {
-  const rel = recordRel(id);
-  const file = readContainedRegularFile(studioAbs, rel, "opera");
-  if ("error" in file) throw new Error(`the queued record ${rel} cannot be read (${file.code ?? file.error.split("\n")[0]})`);
-  let data: unknown;
-  try {
-    data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
-  } catch {
-    throw new Error(`the queued record ${rel} has no front matter`);
-  }
-  const state = isDict(data) ? data["state"] : undefined;
-  if (typeof state !== "string") throw new Error(`the queued record ${rel} has no state`);
-  return state;
+function queuedState(studioAbs: string, id: string, repo: string): string {
+  // W-558 (W-559 3): the opus record loader; absent, unreadable, no front matter, or a state outside STATES throws
+  const read = loadOpusRecord(studioAbs, recordRel(id), repo);
+  if (read.kind === "absent") throw new Error(`the queued record ${recordRel(id)} cannot be read (ENOENT)`);
+  if (read.kind === "error") throw new Error(`the queued record ${read.why}`);
+  return read.value["state"] as string;
 }
 
 /** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
@@ -3442,7 +3412,13 @@ function handoverLine(t: unknown): { line: string } | { error: string } {
 function runAll(repo: string, studioAbs: string): { exitCode: number } {
   let names: string[];
   try {
-    names = readdirSync(join(studioAbs, "opera"));
+    // W-558 (review rounds 6 and 8): the studio is walked below the checkout, then opera/ below it, before anything is listed;
+    // a symlink or non-directory at either is held, never listed through. An absent one falls to the ENOENT hold below.
+    const studioWalk = walkStudio(studioAbs, repo);
+    if (studioWalk.kind === "error") throw new Error(studioWalk.why);
+    const walked = walkReal(studioAbs, "opera");
+    if (walked.kind === "error") throw new Error(walked.why);
+    names = readdirSync(join(studioAbs, "opera")); // absent: ENOENT, held below as before
   } catch (e) {
     console.log(`next: --all held\nwhy: ${clean(`opera/ cannot be listed: ${(e as Error).message}`, 1000)}`);
     return { exitCode: 1 };
@@ -3486,7 +3462,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   }
   // W-333 (W-478 folded): with a queue.yml, one line per lane by queue, an idle lane naming the entry it would take;
   // a malformed file prints one held line and the run exits 1, as a held milestones line does
-  const queue = readQueue(studioAbs);
+  const queue = readQueue(studioAbs, repo);
   if (queue.kind === "held") {
     failed = true;
     lines.push(`queue: held · why: ${queue.why}`);

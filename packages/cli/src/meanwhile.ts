@@ -8,10 +8,10 @@
  * refuse while a perform writes main (`mainWriter`), and `next` holds a spec review order while one does or while main
  * is stashed under one. Reads only: it writes nothing. See studio/briefs/W-547.md.
  */
-import { lstatSync, readdirSync, statSync } from "node:fs";
+import { lstatSync, readdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import { HOST_RUN_TIMEOUT_MS } from "@bisellium/commands/builder-run.js";
-import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { loadMarkers, loadReceipt, walkReal, walkStudio } from "./inputs.js";
 import { clean, git } from "./integrate.js";
 import type { Derived } from "./next.js";
 import type { QueueFile, QueueRead } from "./queue.js";
@@ -220,33 +220,16 @@ interface Live {
   sinceMs: number;
 }
 
-const OUTPUT = /^steps\/[A-Za-z0-9][A-Za-z0-9._-]*$/;
-
-/** Every live marker under `<main>/.bisellium/steps/`: an absent directory is none; an unreadable directory, marker or output, or a marker or output outside its domain, is an error. */
+/** Every live marker under `<main>/.bisellium/steps/` (W-558: `loadMarkers`, whose step is one of `STEPS` and whose `.json` output is no candidate); an absent directory is none; an unreadable output, or one ahead of the clock, is an error. */
 function liveMarkers(main: string, nowMs: number): Read<Live[]> {
   const steps = join(main, ".bisellium", "steps");
-  let names: string[];
-  try {
-    names = readdirSync(steps).filter((n) => n.endsWith(".json"));
-  } catch (e) {
-    return absent(e) ? { ok: [] } : { error: `.bisellium/steps cannot be listed (${code(e)})` };
-  }
+  const read = loadMarkers(main);
+  if (read.kind === "absent") return { ok: [] };
+  if (read.kind === "error") return { error: read.why };
   const live: Live[] = [];
-  for (const name of names.sort()) {
+  for (const { name, marker } of read.value) {
     const at = `.bisellium/steps/${name}`;
-    const read = readContainedRegularFile(join(main, ".bisellium"), `steps/${name}`, "steps");
-    if ("error" in read) return { error: `the step marker ${at} cannot be read (${read.code ?? read.error.split("\n")[0]})` };
-    let m: unknown;
-    try {
-      m = JSON.parse(read.bytes.toString("utf8"));
-    } catch {
-      return { error: `the step marker ${at} is not JSON` };
-    }
-    if (typeof m !== "object" || m === null || Array.isArray(m)) return { error: `the step marker ${at} is not an object` };
-    const { opus, step, output, budget_seconds: budget } = m as Record<string, unknown>;
-    if (opus !== name.slice(0, -".json".length) || typeof step !== "string" || step === "") return { error: `the step marker ${at} names another opus or no step` };
-    if (typeof budget !== "number" || !Number.isInteger(budget) || budget < 1 || budget > 86_400) return { error: `the step marker ${at} has an invalid budget_seconds` };
-    if (typeof output !== "string" || !OUTPUT.test(output)) return { error: `the step marker ${at} has an invalid output` };
+    const { opus, step, output, budget_seconds: budget } = marker;
     let outMs: number;
     let sinceMs: number;
     try {
@@ -301,7 +284,15 @@ const isHeavy = (cmd: string[]): boolean => {
 };
 
 /** Open heavy run receipts under one studio: a receipt with no `endedAt`, written within the host run timeout of `nowMs`. An absent receipts directory counts zero; an unreadable collection or recent receipt, or one outside the receipt domain, is an error. */
-function openHeavy(studio: string, nowMs: number): Read<number> {
+function openHeavy(studio: string, nowMs: number, main: string): Read<number> {
+  // W-558 (r1 fix): the studio's components below the main checkout are real directories (the one walk, `walkStudio`)
+  const below = walkStudio(studio, main);
+  if (below.kind === "error") return { error: below.why };
+  if (below.kind === "absent") return { ok: 0 };
+  // W-558 (r2 fix, one class): `receipts` and each `receipts/<sella>` are walked with the studio's one walk before they are listed
+  const top = walkReal(studio, "receipts");
+  if (top.kind === "error") return { error: top.why };
+  if (top.kind === "absent") return { ok: 0 };
   let n = 0;
   let sellae: string[];
   try {
@@ -310,6 +301,9 @@ function openHeavy(studio: string, nowMs: number): Read<number> {
     return absent(e) ? { ok: 0 } : { error: `${join(studio, "receipts")} cannot be listed (${code(e)})` };
   }
   for (const sella of sellae.sort()) {
+    const dir = walkReal(studio, `receipts/${sella}`);
+    if (dir.kind === "error") return { error: dir.why };
+    if (dir.kind === "absent") return { error: `${join(studio, "receipts", sella)} cannot be listed (ENOENT)` };
     let names: string[];
     try {
       names = readdirSync(join(studio, "receipts", sella));
@@ -319,22 +313,17 @@ function openHeavy(studio: string, nowMs: number): Read<number> {
     for (const name of names.filter((x) => x.endsWith(".json")).sort()) {
       const at = join(studio, "receipts", sella, name);
       try {
-        if (nowMs - statSync(at).mtimeMs > HOST_RUN_TIMEOUT_MS) continue;
+        // the age is read by lstat: a symlinked receipt is an error, never skipped by its target's age
+        const st = lstatSync(at);
+        if (!st.isFile()) return { error: `the receipt ${at} is not a regular file` };
+        if (nowMs - st.mtimeMs > HOST_RUN_TIMEOUT_MS) continue;
       } catch (e) {
         return { error: `the receipt ${at} cannot be read (${code(e)})` };
       }
-      const read = readContainedRegularFile(studio, `receipts/${sella}/${name}`, "receipts");
-      if ("error" in read) return { error: `the receipt ${at} cannot be read (${read.code ?? read.error.split("\n")[0]})` };
-      let r: unknown;
-      try {
-        r = JSON.parse(read.bytes.toString("utf8"));
-      } catch {
-        return { error: `the receipt ${at} is not JSON` };
-      }
-      if (typeof r !== "object" || r === null || Array.isArray(r)) return { error: `the receipt ${at} is not an object` };
-      const { cmd, endedAt } = r as Record<string, unknown>;
-      if (!Array.isArray(cmd) || !cmd.every((a): a is string => typeof a === "string")) return { error: `the receipt ${at} has no cmd list of strings` };
-      if (endedAt === undefined && isHeavy(cmd)) n++;
+      // W-558: the receipt loader; a receipt that vanished after its stat is an error, as the stat's own failure is
+      const read = loadReceipt(studio, sella, name, main);
+      if (read.kind !== "valid") return { error: read.kind === "absent" ? `the receipt ${at} cannot be read (ENOENT)` : `the receipt ${read.why}` };
+      if (read.value.endedAt === undefined && isHeavy(read.value.cmd)) n++;
     }
   }
   return { ok: n };
@@ -342,18 +331,21 @@ function openHeavy(studio: string, nowMs: number): Read<number> {
 
 /** The heavy slots in use in main's studio and each opus worktree's (`.worktrees/<id>`): an absent `.worktrees` is none. */
 function heavyIn(main: string, studioRel: string, nowMs: number): Read<number> {
-  const first = openHeavy(join(main, studioRel), nowMs);
+  const first = openHeavy(join(main, studioRel), nowMs, main);
   if ("error" in first) return first;
   let heavy = first.ok;
   let wts: string[];
+  // W-558 (r1 fix): `.worktrees` is a real directory (the one walk); a symlinked one is an error, a missing one none
+  const dir = walkReal(main, ".worktrees");
+  if (dir.kind === "error") return { error: dir.why };
   try {
-    wts = readdirSync(join(main, ".worktrees"));
+    wts = dir.kind === "absent" ? [] : readdirSync(join(main, ".worktrees"));
   } catch (e) {
     if (!absent(e)) return { error: `.worktrees cannot be listed (${code(e)})` };
     wts = [];
   }
   for (const name of wts.filter((x) => /^[A-Z]+-[0-9]+$/.test(x)).sort()) {
-    const one = openHeavy(join(main, ".worktrees", name, studioRel), nowMs);
+    const one = openHeavy(join(main, ".worktrees", name, studioRel), nowMs, main);
     if ("error" in one) return one;
     heavy += one.ok;
   }

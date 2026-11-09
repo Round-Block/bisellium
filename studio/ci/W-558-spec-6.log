@@ -1,0 +1,23 @@
+# opus: W-558
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c0d7-49f8-77f2-b266-5d480f0a5086
+# session_reason: round 4 session 01a1c022 read nothing (Codex 0.167.0 sandbox failure); fresh session after the pin to 0.153.4
+# outcome: failed
+# at: 2026-11-09T15:11:31.053Z
+# tree: tree:b97b116506bfe25ba8e948a004e14458edade8af
+# brief: briefs/W-558.md blob:d69c4bbe43a434d807155ec8c764929399a465e3
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":6,"actor":"spec-reviewer","studio":".worktrees/W-558/studio","head":"8d1263d82458d02e04ef0e2b9eca1b5832bc9be7","brief":"d69c4bbe43a434d807155ec8c764929399a465e3","at":"2026-11-09T15:11:25.518Z"}
+
+## Findings
+1. blocking — brief:79 [severity: S1] [design: keeps] With an otherwise valid queue naming no opus, an accidentally symlinked or unreadable `opera/` still passes: changed `readQueue` reaches `recordIds`, which converts the bad collection to an empty set, so real callers `check` and `next --all` do not hold; the census only tests a queue naming W-1, and no existing test catches the empty-queue path. Replace brief:79 with: “Under each loader root, `walkReal` validates every directory component and collection before listing, including `.bisellium`, `.bisellium/steps`, the studio, `opera/`, `receipts/`, each `receipts/<sella>/`, `.worktrees`, and `.worktrees/<id>`; `readQueue` validates `opera/` before `recordIds`, even when `queue.yml` names no opus. The trusted main checkout alone is not walked; only a genuinely absent component is absence, while a symlink, non-directory or unreadable component is an error, and pre-read file metadata uses `lstat`.” [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w558.test.ts
+2. advisory — brief:77 [severity: S2] The universal propagation claim remains false: receipt errors produce `heavyError` but do not pass through `mainWriter`, while queue, queued-record and derivation errors only hold `next`. Replace brief:77 with: “The closed result is per row: marker errors make `readLocks` and `mainWriter` return an error, so `land` and `retro --daily` refuse and `next` holds; receipt errors make heavy capacity unavailable; queue, queued-record and derivation-input errors hold the meanwhile line. Only reader `ENOENT` is absence.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w547.test.ts
+3. advisory — brief:88 [severity: S4] The row names `inputCensus`, which classifies already-read text but cannot reject a missing or unreadable source file. Replace brief:88 with: “| 6. The five source files read by `W-558-b5` | each named path is readable by `readFileSync(..., "utf8")`; every returned string is valid census text, with recognition limited as Promise census states | `readFileSync` throws on a missing or unreadable path and node:test fails the row; `inputCensus` classifies recognized lines |”. [class: spec×input-without-named-rejector] — check: packages/cli/src/w558.test.ts
+4. advisory — brief:120 [severity: S2] “Every raw read” contradicts Promise census’s explicit lexical and line-scoped limit. Replace brief:120 with: “5. **A census warns on every one-line raw-read form Promise census recognizes in the five named source files.** Over fixture text, recognized raw record and marker reads are listed and a loader call is not; over the five source files each recognized warning is printed as a TAP diagnostic and `meanwhile.ts` has none.” [class: spec×prose-contradiction-under-revision] — check: none: brief prose must retain Promise census’s lexical limit
+5. advisory — brief:17 [severity: S2] The promised `read.ts` plus `./read.js` re-export fails native Node type-stripping callers with `ERR_MODULE_NOT_FOUND`; the feasible implementation inlines the exports in `index.ts`, as the class-loop ledger already records. Replace brief:17 with: “1. **One shared read (behaviour 1).** `readInput(label, read, shape)`, `InputRead` and `RawRead` are defined and exported inline by `packages/schema/src/index.ts`; the loaders remain in `packages/cli/src/inputs.ts`, and `readQueue` uses `readInput`.” Make the matching replacement at brief:45-46 and brief:61. [class: spec×promise-unattainable-under-accepted-domain] — check: studio/ci/W-558-tests-76c99972.log
+
+## Verdict
+The required shell probe returned `d8ee0bc7 chore(studio): handoff: W-547 done, W-558 build review r1 class fix round (#1114)`; one design-keeping fail-open remains in the promised directory class.
+VERDICT: FAIL

@@ -1,0 +1,23 @@
+# opus: W-558
+# phase: spec
+# round: 5
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T15:04:11.612Z
+# tree: tree:b97b116506bfe25ba8e948a004e14458edade8af
+# brief: briefs/W-558.md blob:d69c4bbe43a434d807155ec8c764929399a465e3
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-558/studio","head":"8d1263d82458d02e04ef0e2b9eca1b5832bc9be7","brief":"d69c4bbe43a434d807155ec8c764929399a465e3","at":"2026-11-09T15:03:48.309Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-558-build/classloop/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 3 names the one existing row that build round r2 flipped: `w547.test.ts` W-547-b2's expected message for a file in a sella's place under `receipts/`, `receipts/producer cannot be listed (ENOTDIR)` before, `receipts/producer is not a directory` after (openHeavy's receipts walk), an error both times and heavy capacity unavailable both times, the string rewritten in commit f33e0f98; the false "No other row flips" claim for receipts is dropped — check: brief "Existing checks flip"; git diff 6ad63b8a f33e0f98 -- '*.test.*' (w547.test.ts 1+/1-, w558.test.ts 65+/0-, no other test file)
+2. advisory — spec review round 4 (`ci/W-558-spec-4.log`) is void: the reviewer's Codex 0.167.0 shell failed (`os error 30`) and the session read no file; fixed by the pin to Codex 0.153.4; the Status line says so — check: /home/edckt/.bisellium-evidence/W-558-specreview/r4/session.log; /home/edckt/.bisellium-evidence/codex-sandbox-meet-1109/collated.md
+3. advisory — the leads' pre-sign gate (presign-meet-1109 call 1) by hand at f33e0f98: check PASS with 0 blocking; the only test files importing meanwhile.ts, inputs.ts or queue.ts are w547.test.ts (9 of 9 pass) and w558.test.ts (35 of 35 pass), no scripts/*.test.mjs imports them; each run alone — check: /home/edckt/.bisellium-evidence/W-558-build/rev3/check.log; /home/edckt/.bisellium-evidence/W-558-build/rev3/w547.log; /home/edckt/.bisellium-evidence/W-558-build/rev3/w558.log
+4. advisory — revision 3 adds no pin, no behaviour and no promise; the promise ledger of revision 2 stands unchanged — check: /home/edckt/.bisellium-evidence/W-558-build/classloop/promise-ledger.md
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`) for `studio/briefs/W-558.md` revision 3 at opus/W-558 8d1263d8: the brief names the W-547-b2 flip of build round r2 and records spec review round 4 as void.

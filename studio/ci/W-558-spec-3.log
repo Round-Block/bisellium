@@ -1,0 +1,24 @@
+# opus: W-558
+# phase: spec
+# round: 3
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T14:23:31.516Z
+# tree: tree:a2c00d8451ada41df626f5411347c6544745cc41
+# brief: briefs/W-558.md blob:21e772ee92c34cfe8a1b47d5f197f1a50fec7f43
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":3,"actor":"architect","studio":".worktrees/W-558/studio","head":"6ad63b8ad366de8223bad3458f2f559d80671ed4","brief":"21e772ee92c34cfe8a1b47d5f197f1a50fec7f43","at":"2026-11-09T14:23:21.913Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-558-build/classloop/promise-ledger.md
+
+## Findings
+
+1. advisory — the class, not the site: build reviews 1 and 2 failed on review×fail-open-on-malformed-records-patched-per-site (a symlinked `.bisellium`, then a symlinked `receipts/`); revision 2 states the rule once for every directory a reader descends or lists and every file it stats before its loader, under each loader root — check: brief Input domain "The rule covers every directory a reader descends or lists"; row 3
+2. advisory — a kept census of every read under the loader roots at opus/W-558 6ad63b8a: 146 calls listed by function (reads.py), 68 hostile shapes over 17 paths judged by the real readers (census.mts), 60 closed and 8 open, all in openHeavy's receipts listing, sella listing and age gate (meanwhile.ts:295, 302, 309) — check: /home/edckt/.bisellium-evidence/W-558-build/classloop/reads.out; /home/edckt/.bisellium-evidence/W-558-build/classloop/census.out
+3. advisory — each read is walked or a stated limit with its follow-on; the 8 open cases are walked in this build by rows `W-558-r2` (three receipts-collection shapes in main's and a worktree's studio, three sella-directory shapes, a symlinked old receipt, and an absent-receipts guard), each test-first with a recorded red, and the census reruns to 0 UNCHECKED at the tip — check: brief "The class census"
+4. advisory — the leads' pre-sign gate (presign-meet-1109 call 1) applied by hand: check and every test file importing a module the build touches, scripts/*.test.mjs included, one at a time — check: /home/edckt/.bisellium-evidence/W-558-build/classloop/gate.res
+5. advisory — revision 2 adds no pin and no behaviour; the five pins and their kills stand (pin-check, ledger-check rerun on revision 2); `ready`'s admission readers return no problem, and `ready` itself holds only on the opus's state (building), not the brief — check: /home/edckt/.bisellium-evidence/W-558-build/classloop/pin-check.out; /home/edckt/.bisellium-evidence/W-558-build/classloop/ledger-check.out; /home/edckt/.bisellium-evidence/W-558-build/classloop/admission.out
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`) for `studio/briefs/W-558.md` revision 2 at opus/W-558 6ad63b8a: the D-085 class loop of build reviews 1 and 2; the rule covers every directory a reader descends or lists, the census names every read under the loader roots, and the build owes the `W-558-r2` rows for openHeavy's three open forms.

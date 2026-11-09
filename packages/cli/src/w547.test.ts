@@ -210,7 +210,7 @@ test("W-547-b2 behaviour 2: the locks are read from live state: a perform writin
   assert.match((m.readLocks(e.repo, "studio", now) as { heavyError?: string }).heavyError ?? "", /y\.json has no cmd list of strings/, "a receipt whose cmd is not a list of strings marks heavy capacity unavailable");
   rmSync(join(e.repo, "studio", "receipts"), { recursive: true, force: true });
   put(join(e.repo, "studio"), "receipts/producer", "a file where a sella's directory belongs\n");
-  assert.match((m.readLocks(e.repo, "studio", now) as { heavyError?: string }).heavyError ?? "", /receipts\/producer cannot be listed \(ENOTDIR\)/, "an unreadable receipts collection marks heavy capacity unavailable");
+  assert.match((m.readLocks(e.repo, "studio", now) as { heavyError?: string }).heavyError ?? "", /receipts\/producer is not a directory/, "an unreadable receipts collection marks heavy capacity unavailable");
   rmSync(join(e.repo, "studio", "receipts"), { recursive: true, force: true });
   const okQueue = { kind: "ok" as const, file: { queues: [{ id: "e", lanes: [["E1", "W-1"]] as [string, string | undefined][], next: ["W-1", "W-2"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] } };
   const spec = (): never => ({ step: "spec", status: "named", actor: "architect", why: "", extra: [], order: order("architect") }) as never;

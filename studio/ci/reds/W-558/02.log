@@ -1,0 +1,36 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-558-b2\s --import tsx packages/cli/src/w558.test.ts
+# exit: 1
+# at: 2026-11-09T11:57:11.117Z
+# sella: builder.W-558
+# tree: tree:ef4b36d0330f4a053bdd57a567f0348f523e0913
+# ticket: {"opus":"W-558","step":"reds","action":"red","round":2,"actor":"builder","studio":".worktrees/W-558/studio","head":"f85d3c209c974644c6a94a07bd3269e5f519e853","brief":"c420e993ae7a67c64175c25b8edd053f053cf3e1","at":"2026-11-09T11:57:05.396Z"}
+
+TAP version 13
+# Subtest: W-558-b2 behaviour 2: an unknown marker step is an error that land and retro refuse on, and a .json marker output is an output
+not ok 1 - W-558-b2 behaviour 2: an unknown marker step is an error that land and retro refuse on, and a .json marker output is an output
+  ---
+  duration_ms: 54.78919
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-558/packages/cli/src/w558.test.ts:19:3308'
+  failureType: 'testCodeFailure'
+  error: 'an unknown marker step is a lock read error, never no writer'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-558/packages/cli/src/w558.test.ts:83:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71.647859

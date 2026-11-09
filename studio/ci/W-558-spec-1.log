@@ -1,0 +1,24 @@
+# opus: W-558
+# phase: spec
+# round: 1
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T11:47:09.687Z
+# tree: tree:875df71d9bf17d2ae3b4ca91c8a4aa9d5430ac44
+# brief: briefs/W-558.md blob:c420e993ae7a67c64175c25b8edd053f053cf3e1
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"a68cc0e691670e5fa1fcfc87d56fb2632f13ced0","brief":"c420e993ae7a67c64175c25b8edd053f053cf3e1","at":"2026-11-09T11:47:02.433Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-558-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — cut to one build: the shared read, the four loaders, the W-547 lock readers and next.ts's lock-path reads on them, W-559's four cases and a warning-only census; gather's recordOf and next --all's record reads, next's own marker re-reads, retro --opus's records and the shim's writeReceiptEnd stay raw, each named and W-185's (the follow-on) — check: brief Intent "The raw reads" and "The cut"; reads.out; Limits, stated; Out of scope
+2. advisory — the closed sets are read where they are defined: STATES from adapters/native/src/index.ts by import, STEPS moved once from next.ts into inputs.ts and re-exported by next.ts — check: packages/cli/src/inputs.ts at the tip; grep -n "export const STEPS" packages/cli/src/*.ts
+3. advisory — two existing rows flip and are repaired in Files owned: containment.test.ts W-163-b6 inventory D (next.ts readMarker's raw readFileSync now on loadMarker) and next-ladder.test.ts W-337-b2 (laneRecord's state message, now the loader's); each failed before its repair and passes with it — check: single-containment.log, single-containment-repaired.log, single-next-ladder.log, single-next-ladder-repaired.log; brief Acceptance
+4. advisory — five behaviours, each red accepted by the replay classifier and green on its feature commit, each red log proving its one pin, every pinned line killed by a one-hunk wrong form — check: reds.out, pin-check.out, mutants.out, ledger-check.out
+5. advisory — not run for this spec, each a gate for the build: npm test, typecheck over every package, format:check, both officina checks, the CI run, and rules, tick, provider-portability, brief-admission, cli and lifecycle test files (they reach receipts only through the shim and check, unchanged here) — check: brief Acceptance; singles.out
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-558.md` revision 1 at master a68cc0e6: one fail-closed read in @bisellium/schema, loaders for opus records, step markers, run receipts and queue.yml on it, W-559's four cases as errors, and a warning-only census; five behaviours, ten prototype commits (prototype.mbox), every red accepted and every pinned line killed.
