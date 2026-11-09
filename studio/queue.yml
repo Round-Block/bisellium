@@ -1,6 +1,6 @@
 queues:
   engineering:
-    lanes: { E1: W-542 }
+    lanes: { E1: W-543 }
     next:
       - { opus: W-523, says: "land reads the code owner's approval and queues; exempt, first (D-187)" }
       - { opus: W-530, says: "a missing retro holds only unsigned work; next names its run and land; exempt (D-188)" }
@@ -11,6 +11,7 @@ queues:
       - { opus: W-541, says: "builders run touched tests, the ladder-runner the suite; exempt from the freeze on the leads' speed meet (D-189)" }
       - { opus: W-542, says: "the guard limits a clerk's writes and the clerk gets Edit; a security boundary, exempt from the freeze on the leads' unanimous call, the Patron said yes 2026-11-08 (D-189)" }
       - { opus: W-543, says: "a timer the Patron installs starts a refresh session from a landed handoff; exempt from the freeze on the leads' overnight meet and the Patron 2026-11-08 (D-189)" }
+      - { opus: W-547, says: "next names a meanwhile step beside every wait; exempt at the Patron's ask 2026-11-09, ranked on the leads' overlap meet (D-189)" }
       - { opus: W-545, says: "the build rung as one perform: handoff, ci --opus and gate commits; exempt on the leads' meet and the Patron 2026-11-09" }
       - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189)" }
       - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182)" }

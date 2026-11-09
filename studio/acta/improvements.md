@@ -977,3 +977,89 @@ Classes in more than one opus, 2026-10-25..2026-11-07:
 - docs/SESSION-HANDOFF.md:22 writes `check -- studio --repo .`, which a brief copies as `bisellium check -- studio` and `check` refuses (-1107d.md); fix the line to `npm run -s check -- studio --repo .` at the next handoff refresh, the form CLAUDE.md:18 already uses. Owner: ops-lead.
 - Cycle time: W-525 ran 353 min, over the 180 stop line, its spec r2 failing 9 min after r1 with 5 S1; none beyond W-393, because the round rows show spec admission, not scheduling, as the cost. Owner: design lead.
 - UI, design-quality and security classes: none, because no UI opus ran and no security finding appears in today's rows.
+
+### 2026-11-08
+
+| Opus | Cycle min | Failed rounds | Blockers by severity |
+|---|---|---|---|
+| W-227 | 199 | 5 | S1 6 |
+| W-528 | 730 | 0 |  |
+| W-541 | 313 | 3 | S1 3 |
+
+#### Review and spec rounds
+
+| Opus | Phase | Round | Outcome | Min since previous round | Blockers (class severity) |
+|---|---|---|---|---|---|
+| W-227 | review | 1 | failed | - | tests×security-boundary-cases-uncovered S1 |
+| W-227 | review | 2 | failed | 30 | tests×security-boundary-cases-uncovered S1 |
+| W-227 | review | 3 | failed | 48 | tests×security-boundary-cases-uncovered S1 |
+| W-227 | review | 4 | passed | 29 |  |
+| W-227 | spec | 1 | passed | - |  |
+| W-227 | spec | 2 | failed | 5 | spec×input-domain-missing-or-unenforceable S1, spec×promise-unattainable-under-accepted-domain S1 |
+| W-227 | spec | 3 | passed | 80 |  |
+| W-227 | spec | 4 | failed | 7 | spec×input-domain-missing-or-unenforceable S1 |
+| W-227 | spec | 5 | passed | 39 |  |
+| W-541 | review | 1 | failed | - | review×evidence-backfilled-or-absent S1 |
+| W-541 | review | 2 | passed | 4 |  |
+| W-541 | spec | 1 | passed | - |  |
+| W-541 | spec | 2 | failed | 7 | review×evidence-backfilled-or-absent S1 |
+| W-541 | spec | 3 | passed | 7 |  |
+| W-541 | spec | 4 | failed | 8 | review×evidence-backfilled-or-absent S1 |
+| W-541 | spec | 5 | passed | 43 |  |
+| W-542 | review | 1 | failed | - | tests×ruled-case-uncovered S1, security×symlink-parent-write-escape S1 |
+| W-542 | review | 2 | failed | 45 | tests×ruled-case-uncovered S1 |
+| W-542 | review | 3 | passed | 42 |  |
+| W-542 | spec | 1 | passed | - |  |
+| W-542 | spec | 2 | passed | 6 |  |
+| W-542 | spec | 3 | passed | 104 |  |
+| W-542 | spec | 4 | passed | 4 |  |
+| W-543 | spec | 1 | passed | - |  |
+
+- LOOP W-227 review: class tests×security-boundary-cases-uncovered, rounds 1-2 (minutes since previous round: r1 -, r2 30)
+- LOOP W-227 review: any class, rounds 1-3 (minutes since previous round: r1 -, r2 30, r3 48)
+- LOOP W-542 review: class tests×ruled-case-uncovered, rounds 1-2 (minutes since previous round: r1 -, r2 45)
+
+#### Gate failures
+
+| Opus | Log | Class | Failing rows |
+|---|---|---|---|
+| none | | | |
+
+Classes in more than one opus, 2026-10-26..2026-11-08:
+- class gate×W-339 seen in 2 opera: W-463, W-487
+- class gate×tests seen in 5 opera: W-364, W-407, W-494, W-502, W-509
+- class mechanism×replay-environment-not-pristine seen in 2 opera: W-462, W-477
+- class review×evidence-backfilled-or-absent seen in 10 opera: W-300, W-413, W-415, W-417, W-425, W-430, W-477, W-495, W-502, W-541
+- class review×fail-open-on-malformed-records-patched-per-site seen in 4 opera: W-430, W-444, W-468, W-525
+- class review×shared-log-grammar-rejects-valid-records seen in 2 opera: W-459, W-492
+- class security×symlink-parent-write-escape seen in 5 opera: W-418, W-423, W-430, W-461, W-542
+- class spec-gate×self-signed seen in 2 opera: W-442, W-502
+- class spec×input-domain-missing-or-unenforceable seen in 11 opera: W-227, W-298, W-409, W-430, W-433, W-445, W-452, W-459, W-461, W-525, W-530
+- class spec×input-without-named-rejector seen in 3 opera: W-418, W-489, W-495
+- class spec×promise-unattainable-under-accepted-domain seen in 18 opera: W-227, W-298, W-333, W-407, W-417, W-425, W-452, W-459, W-462, W-468, W-472, W-489, W-494, W-495, W-498, W-501, W-509, W-525
+- class tests×assertion-satisfied-by-the-wrong-cause seen in 2 opera: W-298, W-473
+- class tests×ruled-case-uncovered seen in 11 opera: W-364, W-415, W-444, W-450, W-454, W-463, W-474, W-495, W-496, W-525, W-542
+- class tests×security-boundary-cases-uncovered seen in 2 opera: W-227, W-501
+- class tests×tests-that-agree-with-the-bug seen in 3 opera: W-407, W-409, W-487
+- class workflow×files-owned-boundary-exceeded seen in 2 opera: W-487, W-508
+
+#### Owed cause fixes
+
+- OWED class gate×W-339 (W-463, W-487): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class gate×tests (W-364, W-407, W-494, W-502, W-509): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class mechanism×replay-environment-not-pristine (W-462, W-477): no lesson of it names a greenlit cause-fix opus in addressed_by
+- OWED class spec-gate×self-signed (W-442, W-502): no lesson of it names a greenlit cause-fix opus in addressed_by
+
+#### Proposed improvements
+
+- Owed spec-gate×self-signed (W-442, W-502), owed a second day: stamp `addressed_by: W-506` on a lesson of the class (W-506 "high: cause fix, spec-gate×self-signed", greenlit; next or verdict enforces the D-086 rule so a review round is not spent on it); the 11-07 proposal was not landed, so OWED still names it. Owner: design lead. Opus: W-506.
+- Owed mechanism×replay-environment-not-pristine (W-462, W-477), owed a second day: stamp `addressed_by: W-464` (greenlit, qa; a check rule, brief-admission rule or prompt template named by the ops lead). Owner: ops-lead. Opus: W-464.
+- Owed gate×W-339 (W-463, W-487) and gate×tests (W-364, W-407, W-494, W-502, W-509): the 11-07 filing is W-533 "Retro owes gate failures by row and recurrences" (greenlit): `retro --daily` classes a gate failure by its failing row (FAILING_ROW, packages/cli/src/retro.ts:1187) and states an unrowed one; stamp `addressed_by: W-533` on a lesson of each class. Owner: eng-lead. Opus: W-533.
+- check-rule×pin-assertion-unchecked (producer, 11-09): a brief pin whose assertion holds inner quotes passes admission, since PIN (packages/commands/src/brief-admission.ts:144) matches `"…"` up to the first inner quote and checks the truncated text against nothing, and the prototype classifier (packages/cli/src/prototype-replay.ts) never reads pins; admission refuses a pin whose assertion holds an unescaped `"` or is not found verbatim in the named test row, and the prototype classifier checks each pin against its row; reds: an inner-quoted pin, a pin naming text absent from its row. Owner: eng-lead. Opus: file.
+- script×review-kit-names-another-opus (producer, 11-09): ~/.bisellium-evidence/spec-review-d076/rn-run.sh:22 hard-codes W-227's worktree path and its round-2 "Earlier spec review" line, so a run for another opus carries W-227's text into the prompt; the kit takes the opus id and round as arguments, derives every path and earlier-round line from studio/ci/<id>-spec-<n>.log, and refuses when its prompt names an opus other than its argument; it retires when W-363 part 2 (the spec-review perform, greenlit) lands. Owner: ops-lead. Opus: W-363 (kit change now, a kept script).
+- prompt×earlier-findings-hand-briefed (producer, twice, 11-09): a build verdict's `## Earlier findings` was briefed with more than the previous round's blockers, twice; the review perform writes `## Earlier findings` itself from the previous round's review log blockers only, and verdict refuses an entry not among them; W-329 (backlog) accounts for spec required fixes there but does not generate the section, so file it (or fold into W-329 and greenlight that). Owner: ops-lead. Opus: file.
+- workflow×empty-retrigger-commit (producer, 11-09; Patron: no): the guard refuses `git commit --allow-empty` (and `--allow-empty-message`) outside quotes and heredoc bodies, naming a force-push of the real head or a PR reopen; reds: the refused call, an ordinary commit passing; W-378 (backlog) leans on an empty marker commit to order a re-review and drops it in the same opus. Owner: ops-lead. Opus: file.
+- tests×ruled-case-uncovered (W-542 review LOOP r1-r2, an empty `agent_id` read as the main thread, packages/cli/src/guard.ts:957; 11 opera): the defect is fixed in W-542 (done); the class is covered by W-414 (high, greenlit: every accepted form of a brief's Input domain gets a row); no new opus. security×symlink-parent-write-escape (W-542 review r1, 5 opera) is not owed today. Owner: eng-lead. Opus: W-414.
+- workflow×idle-wait-unfilled (W-542: ~8 h overnight on the code-owner approval, then the merge-queue wait, nothing run beside either; W-528 730 min with 0 failed rounds): covered by W-547 "next names a meanwhile step beside every wait" (greenlit), which also reports idle-wait minutes per opus in this retro and warns on a wait over 15 min with no other record; the code-owner wait itself is the Patron's by design (W-418 notifies, done); none beyond W-547. Owner: ops-lead. Opus: W-547.
+- tests×security-boundary-cases-uncovered (W-227 review LOOP r1-r3, S1 x3; W-501): two opera, not owed; none, because W-227 passed at r4 and no third opus shows it; if it recurs, file a cause fix. spec×input-domain-missing-or-unenforceable and spec×promise-unattainable-under-accepted-domain (W-227 spec r2, r4): covered by W-393 (greenlit). Owner: eng-lead (tests), design lead (spec). Opus: W-393.
+- UI and design-quality classes: none, because no UI opus ran today.
