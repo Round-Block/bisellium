@@ -341,4 +341,28 @@ test("W-543-b4 behaviour 4: launch refuses on its own state: a launch that did n
   }
 });
 
+test("W-543-b5 behaviour 5: launch refuses when the Patron's clone's workspace verify fails or gh auth status fails with the agent's GitHub config", async () => {
+  {
+    let w = world();
+    w.fake.verify = { status: 1, stdout: "ok   agent clone\nFAIL agent gh login: HTTP 401\n", stderr: "" };
+    assert.equal(await w.launch("--dry-run"), 1, "a failing workspace verify refused");
+    assert.match(said(w), /workspace verify failed \(exit 1\): FAIL agent gh login: HTTP 401/, "the refusal names the FAIL line");
+    const v = w.calls.find((c) => c.cmd === "bash" && c.args[1] === "verify");
+    assert.deepEqual(v?.args, [join(w.self, "scripts", "agent-workspace.sh"), "verify"], "verify is the Patron's clone's copy");
+    w = world();
+    assert.equal(await w.launch("--dry-run"), 0, "a passing verify is no refusal");
+  }
+  {
+    let w = world();
+    w.fake.gh = { status: 1, stdout: "", stderr: "github.com\n  X Failed to log in to github.com account bisellium-agent\n" };
+    assert.equal(await w.launch("--dry-run"), 1, "a failing gh auth status refused");
+    assert.match(said(w), /gh auth status failed for .*agent-gh \(exit 1\): github\.com; the Patron logs in again/, "the refusal names the config and the fix");
+    const g = w.calls.find((c) => c.cmd === "gh");
+    assert.deepEqual(g?.args, ["auth", "status", "--hostname", "github.com"], "gh auth status for github.com");
+    assert.equal(g?.env?.["GH_CONFIG_DIR"], w.agentGh, "gh reads the agent's config");
+    assert.equal(g?.env?.["GH_TOKEN"], undefined, "gh reads no ambient token");
+    w = world();
+    assert.equal(await w.launch("--dry-run"), 0, "a passing gh auth status is no refusal");
+  }
+});
 
