@@ -257,3 +257,21 @@ test("W-558-r1 a genuinely absent studio directory or receipts collection is abs
   assert.deepEqual(readQueue(w.studio, w.repo), { kind: "absent" }, "an absent queue.yml is absence");
   assert.deepEqual(i.loadOpusRecord!(join(w.repo, "nostudio"), "opera/W-1.md", w.repo), { kind: "absent" }, "an absent studio directory is absence");
 });
+
+for (const shape of ["symlink", "dangling symlink"] as const) {
+  test(`W-558-r1 the base-less forms of the loaders walk a ${shape} studio root: an error, never the target or absence`, async () => {
+    const w = world(`w558-r1-nobase-${shape.replace(/\W+/g, "-")}`, "backlog");
+    const i = await inputs();
+    const { readQueue } = await import("./queue.js");
+    const target = join(w.root, "elsewhere");
+    cpSync(w.studio, target, { recursive: true });
+    rmSync(w.studio, { recursive: true, force: true });
+    symlinkSync(shape === "symlink" ? target : join(w.root, "nowhere"), w.studio);
+    const gone = /studio is a symlink, not a real directory/;
+    assert.match((i.loadOpusRecord!(w.studio, `opera/${OPUS}.md`) as { why?: string }).why ?? "", gone, "the two-argument loadOpusRecord refuses");
+    assert.match((i.loadReceipt!(w.studio, "producer", "r.json") as { why?: string }).why ?? "", gone, "the three-argument loadReceipt refuses");
+    const q = readQueue(w.studio);
+    assert.equal(q.kind, "held", "the one-argument readQueue holds");
+    assert.match((q as { why?: string }).why ?? "", gone);
+  });
+}
