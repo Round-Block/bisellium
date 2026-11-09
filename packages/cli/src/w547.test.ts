@@ -241,3 +241,23 @@ test("W-547-b3 behaviour 3: land refuses while a perform writes main", () => {
   assert.match(torn.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-801\.json is not JSON/, `land refuses beside a malformed marker\n${torn.out}${torn.err}`);
   assert.equal(torn.status, 1, "the malformed-marker refusal exits 1");
 });
+test("W-547-b4 behaviour 4: retro --daily refuses while a perform writes main", () => {
+  const w = world("w547-b4", "backlog");
+  marker(w.repo, "W-800", "merge", 10);
+  const args = ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO];
+  const r = cli(w, args);
+  assert.match(r.err, /^retro --daily: refused: W-800 merge is running and writes main when its PR lands/, `retro --daily refuses while a merge perform writes main\n${r.out}${r.err}`);
+  assert.equal(r.status, 1, "the refusal exits 1");
+  marker(w.repo, "W-800", "merge", 600);
+  const ok = cli(w, args);
+  assert.doesNotMatch(ok.err, /is running and writes main|writer lock cannot be read/, `a merge marker past its budget does not refuse the retro\n${ok.err}`);
+  marker(w.repo, "W-801", "merge", 10);
+  rmSync(join(w.repo, ".bisellium", "steps", "W-801.log"));
+  const gone = cli(w, args);
+  assert.match(gone.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the output \.bisellium\/steps\/W-801\.log of \.bisellium\/steps\/W-801\.json cannot be read \(ENOENT\)/, `retro --daily refuses beside a marker whose output was deleted\n${gone.out}${gone.err}`);
+  assert.equal(gone.status, 1, "the unreadable-marker refusal exits 1");
+  clear(w.repo, "W-801");
+  const nogit = cli(w, args, { PATH: join(w.root, "no-git-here") });
+  assert.match(nogit.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the main checkout cannot be found from /, `retro --daily refuses when the main checkout cannot be found (no git on PATH)\n${nogit.out}${nogit.err}`);
+  assert.equal(nogit.status, 1, "the failed-discovery refusal exits 1");
+});

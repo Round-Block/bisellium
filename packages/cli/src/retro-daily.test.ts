@@ -5,6 +5,7 @@
  * in `studio/` or `examples/`.
  */
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -27,6 +28,8 @@ const put = (root: string, rel: string, text: string): void => {
 function officina(tag: string): string {
   const root = join(mkdtempSync(join(tmpdir(), `bisellium-w459-${tag}-`)), "studio");
   made.push(join(root, ".."));
+  // W-547: retro --daily reads the main checkout's step markers and refuses when git cannot find it: the fixture is a repository
+  execFileSync("git", ["init", "-q"], { cwd: join(root, "..") });
   initStudio(root, { now: NOW });
   // the record directories the daily retro requires (dailyDir), so each refusal below is refused for its own reason
   for (const d of ["ci", "opera"]) mkdirSync(join(root, d), { recursive: true });
