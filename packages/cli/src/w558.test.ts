@@ -376,3 +376,30 @@ test("W-558-f2 a genuinely absent opera/ with a queue naming no opus is ok (abse
   const q = await import("./queue.js");
   assert.equal(q.readQueue(w.studio, w.repo).kind, "ok", "an absent opera/ and a queue naming no opus is ok");
 });
+
+/** W-558-f3 (spec review round 8, same class): the studio itself is walked before anything under it is read, by readQueue and by next --all. */
+function f3World(tag: string, shape: (typeof F2_SHAPES)[number]): World {
+  const w = world(tag, "greenlight");
+  put(w.studio, "queue.yml", noOpusQueue);
+  const target = join(w.repo, "f3-target");
+  if (shape === "symlink to a real copy") cpSync(w.studio, target, { recursive: true });
+  else if (shape === "symlink to an empty directory") mkdirSync(target, { recursive: true });
+  rmSync(w.studio, { recursive: true, force: true });
+  if (shape === "regular file") writeFileSync(w.studio, "a file where the studio goes\n");
+  else if (shape === "dangling symlink") symlinkSync(join(w.root, "f3-nowhere"), w.studio);
+  else symlinkSync(target, w.studio);
+  return w;
+}
+for (const shape of F2_SHAPES) {
+  test(`W-558-f3 a ${shape} in place of the studio is held by readQueue and next --all, nothing listed`, async () => {
+    const w = f3World(`w558-f3-${shape.replace(/\W+/g, "-")}`, shape);
+    const q = await import("./queue.js");
+    const read = q.readQueue(w.studio, w.repo);
+    assert.equal(read.kind, "held", `readQueue holds, got ${JSON.stringify(read).slice(0, 200)}`);
+    const a = cli(w, ["next", "--all", "--studio", w.studio, "--repo", w.repo]);
+    assert.notEqual(a.status, 0, `next --all does not pass, got ${a.out.slice(0, 300)}`);
+    assert.doesNotMatch(a.out, new RegExp(`next: ${OPUS} `), `next --all lists no record through the studio, got ${a.out.slice(0, 300)}`);
+    assert.doesNotMatch(a.out, /^(open|lane|next): /m, `next --all lists nothing through the studio, got ${a.out.slice(0, 300)}`);
+    assert.match(a.out + a.err, /held|not a studio/, `next --all says why, got ${(a.out + a.err).slice(0, 300)}`);
+  });
+}
