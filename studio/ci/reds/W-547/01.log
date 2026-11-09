@@ -1,0 +1,49 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=^W-547-b1\s --import tsx packages/cli/src/w547.test.ts
+# exit: 1
+# at: 2026-11-09T06:27:51.621Z
+# sella: builder.W-547
+# tree: tree:0f2f8a4166bdd54b7a5a7af9dbd6a5f3f0293301
+# ticket: {"opus":"W-547","step":"reds","action":"red","round":1,"actor":"builder","studio":".worktrees/W-547/studio","head":"dc6aaaf771e0aa9ba0f522dd379e97f457296b06","brief":"7d6b9cb0452899ce0554af737ececd51bd8f425f","at":"2026-11-09T06:27:45.724Z"}
+
+TAP version 13
+# Subtest: W-547-b1 behaviour 1: next names a meanwhile step beside every wait it names, from one table with a row per wait kind
+not ok 1 - W-547-b1 behaviour 1: next names a meanwhile step beside every wait it names, from one table with a row per wait kind
+  ---
+  duration_ms: 328.451941
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-547/packages/cli/src/w547.test.ts:1:2472'
+  failureType: 'testCodeFailure'
+  error: |-
+    a backlog opus's wait on the Patron names a meanwhile step
+    --- exit 0
+    --- stdout
+    next: W-900 greenlight named
+    actor: patron
+    why: W-900 is in the backlog; only the Patron greenlights
+    command: bisellium greenlight W-900 --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-547/packages/cli/src/w547.test.ts:58:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 354.733754
