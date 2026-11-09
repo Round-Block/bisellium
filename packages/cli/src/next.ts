@@ -44,6 +44,7 @@ import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
+import { STEPS, loadMarker, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -63,8 +64,8 @@ import { appendReading, codexBurnLine, costPhrase, readReadings, spanCost, readi
 
 export { MIN_CHECKS };
 
-export const STEPS = ["greenlight", "spec", "branch", "ready", "reds", "build", "review", "pr", "merge", "cleanup", "done", "retro", "checkpoint"] as const;
-export type Step = (typeof STEPS)[number];
+// W-558: the step names are defined once, in inputs.ts (the marker loader reads them); re-exported here
+export { STEPS, type Step } from "./inputs.js";
 export const DISPATCH_TOKEN_CAP = 500_000;
 /** Seconds of output silence after which a live step reads stalled (`dead`). */
 export const STEP_SILENCE_SECONDS: Record<Step, number> = {
@@ -2108,17 +2109,6 @@ function gateDispatch(d: Derived, f: Facts, budget: number | undefined, nowMs: n
 // step health
 // ---------------------------------------------------------------------------
 
-interface Marker {
-  schema: 1;
-  opus: string;
-  step: Step;
-  pid: number;
-  start_ticks: number;
-  started: string;
-  output: string;
-  budget_seconds: number;
-  writer: "perform" | "track";
-}
 interface Ident {
   ino: bigint;
   size: bigint;
@@ -2139,41 +2129,21 @@ type ProcRead = { kind: "absent" } | { kind: "unknown"; reason: string } | { kin
 
 const markerPath = (repo: string, id: string): string => join(repo, ".bisellium", "steps", `${id}.json`);
 
-function parseMarker(text: string, id: string): Marker | string {
-  let m: unknown;
-  try {
-    m = JSON.parse(text);
-  } catch {
-    return "the marker is not JSON";
-  }
-  if (!isDict(m)) return "the marker is not an object";
-  const posInt = (v: unknown, min: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= min;
-  if (m["schema"] !== 1 || m["opus"] !== id) return "the marker has another schema or opus";
-  if (typeof m["step"] !== "string" || !(STEPS as readonly string[]).includes(m["step"])) return "the marker names an unknown step";
-  if (!posInt(m["pid"], 2) || !posInt(m["start_ticks"], 1) || !posInt(m["budget_seconds"], 1) || m["budget_seconds"] > 86_400) return "the marker has an invalid pid, start_ticks or budget_seconds";
-  if (typeof m["started"] !== "string" || typeof m["output"] !== "string" || !/^steps\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(m["output"])) return "the marker has an invalid started or output";
-  if (m["writer"] !== "perform" && m["writer"] !== "track") return "the marker has an invalid writer";
-  return m as unknown as Marker;
-}
-
 export function readMarker(repo: string, id: string): MarkerRead | undefined {
   const path = markerPath(repo, id);
   let st;
   try {
     st = lstatSync(path, { bigint: true });
-  } catch {
-    return undefined;
+  } catch (e) {
+    // W-558: only file-not-found is no marker; any other stat failure is an invalid marker, never absence
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    return { path, invalid: `the marker cannot be read (${(e as NodeJS.ErrnoException).code ?? "error"})` };
   }
   const ident: Ident = { ino: st.ino, size: st.size, mtimeNs: st.mtimeNs };
   if (!st.isFile()) return { path, ident, invalid: "the marker is not a regular file" };
-  let text: string;
-  try {
-    text = readFileSync(path, "utf8");
-  } catch (e) {
-    return { path, ident, invalid: `the marker is unreadable (${(e as NodeJS.ErrnoException).code ?? "error"})` };
-  }
-  const m = parseMarker(text, id);
-  return typeof m === "string" ? { path, ident, invalid: m } : { path, ident, marker: m };
+  const read = loadMarker(join(repo, ".bisellium"), `${id}.json`);
+  if (read.kind === "valid") return { path, ident, marker: read.value };
+  return { path, ident, invalid: read.kind === "absent" ? "the marker vanished while it was read" : read.why.replace(`the step marker .bisellium/steps/${id}.json `, "the marker ") };
 }
 
 /** `/proc/<pid>/stat`: ENOENT proves absence from this pid namespace; `assess` decides whether that proves death. */

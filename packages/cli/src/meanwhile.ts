@@ -11,7 +11,7 @@
 import { lstatSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import { HOST_RUN_TIMEOUT_MS } from "@bisellium/commands/builder-run.js";
-import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { loadMarkers, loadReceipt } from "./inputs.js";
 import { clean, git } from "./integrate.js";
 import type { Derived } from "./next.js";
 import type { QueueFile, QueueRead } from "./queue.js";
@@ -220,33 +220,16 @@ interface Live {
   sinceMs: number;
 }
 
-const OUTPUT = /^steps\/[A-Za-z0-9][A-Za-z0-9._-]*$/;
-
-/** Every live marker under `<main>/.bisellium/steps/`: an absent directory is none; an unreadable directory, marker or output, or a marker or output outside its domain, is an error. */
+/** Every live marker under `<main>/.bisellium/steps/` (W-558: `loadMarkers`, whose step is one of `STEPS` and whose `.json` output is no candidate); an absent directory is none; an unreadable output, or one ahead of the clock, is an error. */
 function liveMarkers(main: string, nowMs: number): Read<Live[]> {
   const steps = join(main, ".bisellium", "steps");
-  let names: string[];
-  try {
-    names = readdirSync(steps).filter((n) => n.endsWith(".json"));
-  } catch (e) {
-    return absent(e) ? { ok: [] } : { error: `.bisellium/steps cannot be listed (${code(e)})` };
-  }
+  const read = loadMarkers(main);
+  if (read.kind === "absent") return { ok: [] };
+  if (read.kind === "error") return { error: read.why };
   const live: Live[] = [];
-  for (const name of names.sort()) {
+  for (const { name, marker } of read.value) {
     const at = `.bisellium/steps/${name}`;
-    const read = readContainedRegularFile(join(main, ".bisellium"), `steps/${name}`, "steps");
-    if ("error" in read) return { error: `the step marker ${at} cannot be read (${read.code ?? read.error.split("\n")[0]})` };
-    let m: unknown;
-    try {
-      m = JSON.parse(read.bytes.toString("utf8"));
-    } catch {
-      return { error: `the step marker ${at} is not JSON` };
-    }
-    if (typeof m !== "object" || m === null || Array.isArray(m)) return { error: `the step marker ${at} is not an object` };
-    const { opus, step, output, budget_seconds: budget } = m as Record<string, unknown>;
-    if (opus !== name.slice(0, -".json".length) || typeof step !== "string" || step === "") return { error: `the step marker ${at} names another opus or no step` };
-    if (typeof budget !== "number" || !Number.isInteger(budget) || budget < 1 || budget > 86_400) return { error: `the step marker ${at} has an invalid budget_seconds` };
-    if (typeof output !== "string" || !OUTPUT.test(output)) return { error: `the step marker ${at} has an invalid output` };
+    const { opus, step, output, budget_seconds: budget } = marker;
     let outMs: number;
     let sinceMs: number;
     try {
@@ -323,18 +306,10 @@ function openHeavy(studio: string, nowMs: number): Read<number> {
       } catch (e) {
         return { error: `the receipt ${at} cannot be read (${code(e)})` };
       }
-      const read = readContainedRegularFile(studio, `receipts/${sella}/${name}`, "receipts");
-      if ("error" in read) return { error: `the receipt ${at} cannot be read (${read.code ?? read.error.split("\n")[0]})` };
-      let r: unknown;
-      try {
-        r = JSON.parse(read.bytes.toString("utf8"));
-      } catch {
-        return { error: `the receipt ${at} is not JSON` };
-      }
-      if (typeof r !== "object" || r === null || Array.isArray(r)) return { error: `the receipt ${at} is not an object` };
-      const { cmd, endedAt } = r as Record<string, unknown>;
-      if (!Array.isArray(cmd) || !cmd.every((a): a is string => typeof a === "string")) return { error: `the receipt ${at} has no cmd list of strings` };
-      if (endedAt === undefined && isHeavy(cmd)) n++;
+      // W-558: the receipt loader; a receipt that vanished after its stat is an error, as the stat's own failure is
+      const read = loadReceipt(studio, sella, name);
+      if (read.kind !== "valid") return { error: read.kind === "absent" ? `the receipt ${at} cannot be read (ENOENT)` : `the receipt ${read.why}` };
+      if (read.value.endedAt === undefined && isHeavy(read.value.cmd)) n++;
     }
   }
   return { ok: n };
