@@ -223,3 +223,21 @@ test("W-547-b2 behaviour 2: the locks are read from live state: a perform writin
   assert.equal(m.nextEntry!(file, "W-1", (x) => (x === "W-2" ? "done" : "greenlit")), "W-3", "the next entry skips the opus itself, a done entry and another lane's opus");
   assert.equal(m.specAhead!({ step: "spec", status: "named", actor: "spec-reviewer", why: "", extra: [], order: order("spec-reviewer") } as never), "review", "a signed spec not yet reviewed is still ahead");
 });
+test("W-547-b3 behaviour 3: land refuses while a perform writes main", () => {
+  const w = world("w547-b3", "backlog");
+  marker(w.repo, "W-800", "merge", 10);
+  put(w.studio, "notes.md", "a record to land\n");
+  const args = ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"];
+  const r = cli(w, args);
+  assert.match(r.out, /^land: refused\nwhy: refusing: W-800 merge is running and writes main when its PR lands/, `land refuses while a merge perform writes main\n${r.out}${r.err}`);
+  assert.equal(r.status, 1, "the refusal exits 1");
+  marker(w.repo, "W-800", "done", 10);
+  assert.match(cli(w, args).out, /W-800 done is running/, "land refuses while a done perform lands through the queue");
+  marker(w.repo, "W-800", "merge", 600);
+  const ok = cli(w, args);
+  assert.doesNotMatch(ok.out, /is running and writes main|writer lock cannot be read/, `a merge marker past its budget does not refuse the land\n${ok.out}`);
+  rawMarker(w.repo, "W-801.json", "{");
+  const torn = cli(w, args);
+  assert.match(torn.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-801\.json is not JSON/, `land refuses beside a malformed marker\n${torn.out}${torn.err}`);
+  assert.equal(torn.status, 1, "the malformed-marker refusal exits 1");
+});
