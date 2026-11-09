@@ -95,12 +95,20 @@ export function walkReal(base: string, rel: string, final: "directory" | "file" 
   return { kind: "valid", value: true };
 }
 
-/** W-558 (r1 fix): a studio path below its checkout `base`: the walk of the components between them; a studio outside `base`, or `base` itself, or no `base`, is not walked (the loaders' own contained read still covers everything below the studio). */
-export function walkStudio(studio: string, base: string | undefined): InputRead<true> {
-  if (base === undefined) return { kind: "valid", value: true };
-  const rel = relative(resolve(base), resolve(studio));
-  if (rel === "" || rel.split(sep)[0] === ".." || isAbsolute(rel)) return { kind: "valid", value: true };
-  return walkReal(resolve(base), rel);
+/**
+ * W-558 (r1 fix): the one walk of a studio path's components, no loader form skipping it: below its checkout `base` when
+ * `base` holds the studio, else (no `base`, a studio outside it, or `base` itself) from the studio's own parent, so the
+ * studio directory itself is walked: the officina as the root (`check`, `lift`) is no exception. Only `base` (the trusted
+ * checkout) or the parent is unwalked; the loaders' own contained read covers everything below the studio.
+ */
+export function walkStudio(studio: string, base?: string): InputRead<true> {
+  const abs = resolve(studio);
+  if (base !== undefined) {
+    const rel = relative(resolve(base), abs);
+    if (rel !== "" && rel.split(sep)[0] !== ".." && !isAbsolute(rel)) return walkReal(resolve(base), rel);
+  }
+  const parent = dirname(abs);
+  return parent === abs ? { kind: "valid", value: true } : walkReal(parent, basename(abs));
 }
 
 /**

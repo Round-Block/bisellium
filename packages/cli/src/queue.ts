@@ -99,7 +99,7 @@ function entries(v: unknown, where: string, problems: string[]): QueueEntry[] {
  * entry, and every opus named has a record.
  */
 export function readQueue(studio: string, base?: string): QueueRead {
-  // W-558 (r1 fix): the studio's components below its checkout `base` are real directories (the one walk, `walkStudio`)
+  // W-558 (r1 fix): the studio and its components below any checkout `base` are real directories (the one walk, `walkStudio`)
   const below = walkStudio(studio, base);
   if (below.kind === "absent") return { kind: "absent" };
   if (below.kind === "error") return { kind: "held", why: below.why, problems: [below.why] };
