@@ -8,7 +8,7 @@
  * refuse while a perform writes main (`mainWriter`), and `next` holds a spec review order while one does or while main
  * is stashed under one. Reads only: it writes nothing. See studio/briefs/W-547.md.
  */
-import { lstatSync, readdirSync, statSync } from "node:fs";
+import { lstatSync, readdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import { HOST_RUN_TIMEOUT_MS } from "@bisellium/commands/builder-run.js";
 import { loadMarkers, loadReceipt, walkReal, walkStudio } from "./inputs.js";
@@ -289,6 +289,10 @@ function openHeavy(studio: string, nowMs: number, main: string): Read<number> {
   const below = walkStudio(studio, main);
   if (below.kind === "error") return { error: below.why };
   if (below.kind === "absent") return { ok: 0 };
+  // W-558 (r2 fix, one class): `receipts` and each `receipts/<sella>` are walked with the studio's one walk before they are listed
+  const top = walkReal(studio, "receipts");
+  if (top.kind === "error") return { error: top.why };
+  if (top.kind === "absent") return { ok: 0 };
   let n = 0;
   let sellae: string[];
   try {
@@ -297,6 +301,9 @@ function openHeavy(studio: string, nowMs: number, main: string): Read<number> {
     return absent(e) ? { ok: 0 } : { error: `${join(studio, "receipts")} cannot be listed (${code(e)})` };
   }
   for (const sella of sellae.sort()) {
+    const dir = walkReal(studio, `receipts/${sella}`);
+    if (dir.kind === "error") return { error: dir.why };
+    if (dir.kind === "absent") return { error: `${join(studio, "receipts", sella)} cannot be listed (ENOENT)` };
     let names: string[];
     try {
       names = readdirSync(join(studio, "receipts", sella));
@@ -306,7 +313,10 @@ function openHeavy(studio: string, nowMs: number, main: string): Read<number> {
     for (const name of names.filter((x) => x.endsWith(".json")).sort()) {
       const at = join(studio, "receipts", sella, name);
       try {
-        if (nowMs - statSync(at).mtimeMs > HOST_RUN_TIMEOUT_MS) continue;
+        // the age is read by lstat: a symlinked receipt is an error, never skipped by its target's age
+        const st = lstatSync(at);
+        if (!st.isFile()) return { error: `the receipt ${at} is not a regular file` };
+        if (nowMs - st.mtimeMs > HOST_RUN_TIMEOUT_MS) continue;
       } catch (e) {
         return { error: `the receipt ${at} cannot be read (${code(e)})` };
       }
