@@ -1,0 +1,204 @@
+certifies: tree:76c9997213da13040ce1274461ddaeb1dedf3f46
+command: node scripts/test-reads.mjs
+exit code: 1
+
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 13ms
+GET /api/live 200 13ms
+GET /api/live 200 13ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 14ms
+GET /api/live 200 17ms
+GET /api/live 200 17ms
+GET /api/live 200 17ms
+GET /api/officina 200 4ms
+GET /api/events 200 1ms
+GET /api/events?limit=3 200 1ms
+GET /api/events?limit=9999 200 1ms
+GET /api/events?since=2 200 1ms
+GET /api/events?since=2026-09-18T17%3A00%3A00.000Z 200 2ms
+GET /api/events 200 1ms
+GET /api/events?item=W-002 200 0ms
+GET /api/events?item=W-002&limit=2 200 0ms
+GET /api/events?item=W-002 200 0ms
+GET /api/events?item=NOPE-NOT-REAL 200 0ms
+GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 0ms
+GET /api/events?item=W-002&since=1 400 0ms
+GET /api/events?item=W-002 200 0ms
+POST /api/_poll 200 13ms
+GET /api/live 200 43ms
+GET /api/inbox 403 2ms
+GET /api/officina 403 0ms
+GET /api/officina 403 1ms
+GET /api/officina 403 0ms
+GET /api/officina 403 0ms
+GET /api/officina 403 0ms
+GET /api/live?token=*** 403 0ms
+GET / 403 0ms
+GET /assets/index.js 403 0ms
+POST /api/greenlight 403 0ms
+GET /api/officina 200 2ms
+GET /api/officina 200 2ms
+GET /api/officina 200 1ms
+POST /api/greenlight 200 1ms
+GET /api/officina 401 0ms
+GET /api/models 401 1ms
+GET /api/opera 401 0ms
+GET /api/opus/W-001 401 0ms
+GET /api/inbox 401 0ms
+GET /api/acta 401 0ms
+GET /api/aerarium 401 0ms
+GET /api/providers 401 0ms
+GET /api/health 401 0ms
+GET /api/completion 401 0ms
+GET /api/timeline/patron 401 0ms
+GET /api/events 401 0ms
+GET /api/receipts 401 0ms
+GET /api/live 401 0ms
+GET /api/no-such-route 401 0ms
+GET /api/officina 401 0ms
+GET /api/officina 401 0ms
+GET /api/live?token=*** 401 0ms
+GET /api/officina 200 2ms
+GET /api/opus/W-001 200 0ms
+GET /api/inbox?token=*** 401 0ms
+GET / 200 0ms
+GET /assets/no-such-asset.js 404 0ms
+GET /api/inbox?token=*** 401 0ms
+GET /api/inbox?%74oken=redacted 401 0ms
+GET /api/inbox?to%6Ben=redacted 401 0ms
+GET /api/inbox?%74%6F%6B%65%6E=redacted 401 0ms
+GET /api/live?%74oken=redacted&token=*** 401 0ms
+GET /api/inbox?%74oken=redacted&token=*** 401 0ms
+GET /api/inbox?x=1&%74oken=redacted&y=2 401 0ms
+GET /api/live?token=***&%74oken=redacted 401 0ms
+GET /api/inbox?token=***&%74oken=redacted 401 0ms
+GET /api/live?Token=*** 401 0ms
+GET /api/inbox?Token=*** 401 0ms
+GET /api/live?TOKEN=*** 401 0ms
+GET /api/inbox?TOKEN=*** 401 0ms
+GET /api/live?%54oken=redacted 401 0ms
+GET /api/inbox?%54oken=redacted 401 0ms
+GET /api/live?%74oken=redacted 200 0ms
+fatal: not a git repository (or any of the parent directories): .git
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+--spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
+--spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+--spec "briefs/../../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--description <text>] [--brief] [dir]
+/********.yml not found — not a studio
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+GET /api/health 200 57ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 200 10ms
+node:internal/modules/esm/resolve:271
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/edckt/agents/bisellium/.********.js' imported from /home/edckt/agents/bisellium/.********.ts
+    at finalizeResolution (node:internal/modules/esm/resolve:271:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #******** (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:162:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:252:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///home/edckt/agents/bisellium/.********.js'
+}
+
+Node.js v25.9.0
+--- npm test failed (exit 1): its last 0 of 0 failing lines on stdout ---
+--- npm test: its last 50 lines of stdout ---
+PASS  Cascade 1 holds its label plus the oldest commit   ["Cascade 1: init and new","chore: repo scaffold"]
+PASS  reverse-chronological order                        
+PASS  no-cascade-label fixture: one group, Unreleased    
+PASS  no-cascade-label fixture: holds every commit       
+PASS  run 1: CHANGELOG.md was written                    
+PASS  run 1: nothing outside CHANGELOG.md touched        ["CHANGELOG.md"]
+PASS  run 2: byte-identical to run 1 (deterministic)     
+PASS  CHANGELOG.md mentions the cascade label            
+PASS  CHANGELOG.md puts the later commit under Unreleased 
+PASS  run 1 actually fixed the missing semicolon         "const answer = 42;\n"
+PASS  run 2 changed nothing (idempotent)                 "const answer = 42;\n"
+PASS  parses as YAML                                     
+PASS  has a typecheck step                               
+PASS  has a lint step                                    
+PASS  has a format:check step                            
+PASS  has a test step                                    
+PASS  has a check --repo . step naming studio            
+PASS  has a check --repo . step naming examples/sample-studio 
+PASS  the string 'verify' appears nowhere in the file    
+PASS  CI_STEPS reads from packages/commands/src/ci.ts    ["npm run -s audit","npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo ."]
+PASS  CI_STEPS[0] is npm run -s audit                    "npm run -s audit"
+PASS  package.json: scripts.audit is npm audit --audit-level=moderate 
+PASS  CI_STEPS has a 'check -- studio' entry             ["npm run -s audit","npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo ."]
+PASS  workflow has exactly five jobs: gates, officina, web-e2e, certify, certificate 
+PASS  gates job's run: steps equal CI_STEPS minus the studio check, in order gates: ["npm run -s audit","npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- examples/sample-studio --repo ."]  vs  expected: ["npm run -s audit","npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- examples/sample-studio --repo ."]
+PASS  officina job's run: steps are exactly the studio check, alone officina: ["npm run -s check -- studio --repo ."]
+PASS  (documented divergence, expected false) gates+officina flattened does NOT reproduce CI_STEPS' order flattened: ["npm run -s audit","npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- examples/sample-studio --repo .","npm run -s check -- studio --repo ."]  vs  CI_STEPS: ["npm run -s audit","npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo ."]
+PASS  instructions template: ci line follows verify line 
+PASS  CLAUDE.md carries the ci line                      
+PASS  AGENTS.md carries the ci line                      
+PASS  PIPELINE.md: "## Running ci" follows "## Running run and verify" 
+PASS  PIPELINE "Running ci" shows ci's usage             
+PASS  PIPELINE "Running ci" names step: npm run -s audit 
+PASS  PIPELINE "Running ci" names step: npm run -s typecheck 
+PASS  PIPELINE "Running ci" names step: npm run -s lint  
+PASS  PIPELINE "Running ci" names step: npm run -s format:check 
+PASS  PIPELINE "Running ci" names step: npm test         
+PASS  PIPELINE "Running ci" names step: npm run -s check -- studio --repo . 
+PASS  PIPELINE "Running ci" names step: npm run -s check -- examples/sample-studio --repo . 
+PASS  PIPELINE "Running ci" names CI_STEPS, ci.ts and this guard 
+PASS  PIPELINE "Running ci" names the gates and officina jobs 
+PASS  has a web-e2e job                                  
+PASS  web-e2e: removes apps/web/dist before building it (no stale bundle) rm@4 build@5
+PASS  web-e2e: provisions chromium with playwright install --with-deps 
+PASS  web-e2e: runs the web screenshot policy row        
+PASS  web-e2e: runs test:serve                           
+PASS  web-e2e: job carries no continue-on-error, at job or step level 
+PASS  web-e2e is not the officina job (never runs check -- studio) 
+PASS  apps/web/package.json: test:serve points at playwright.serve.config.ts 
+PASS  apps/web/package.json: test:e2e still selects ./tests (untouched, 'playwright test') 
+
