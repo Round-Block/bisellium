@@ -2570,7 +2570,7 @@ function dailyLine(repo: string, studioAbs: string, studioRel: string): string |
 function meanwhileOf(f: Facts, d: Derived, nowMs: number): string[] {
   const kind = waitOf(d);
   if (kind === undefined) return [];
-  const at = dailyRetroStep(f.studioAbs, gitSrc(f.repo, "refs/heads/master", f.studioRel).read(DAILY_TRACKER), new Date());
+  const at = dailyRetroStep(f.studioAbs, gitSrc(f.repo, "refs/heads/master", f.studioRel).read(DAILY_TRACKER), new Date(nowMs));
   const owed: Owed = { studioRel: f.studioRel, ...(at === undefined ? {} : { retro: at.day }), ...aheadOf(f) };
   return meanwhileLines(kind, readLocks(f.repo, f.studioRel, nowMs), owed);
 }
