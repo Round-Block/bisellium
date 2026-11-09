@@ -7,7 +7,7 @@
  * `STATES`, the step names from `STEPS` (defined here, re-exported by next.ts). `inputCensus` lists every raw read of
  * these inputs outside the loaders, as a warning. Reads only: it writes nothing. See studio/briefs/W-558.md.
  */
-import { readdirSync } from "node:fs";
+import { lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { STATES, parseFrontMatter } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
@@ -64,9 +64,30 @@ export function markerProblem(m: unknown, id: string): string | undefined {
   return undefined;
 }
 
+/**
+ * W-558 (D-086 A): the `<bisellium>/steps` collection is valid only as a real directory reached without a symlink: a
+ * genuinely absent one (`ENOENT`) is absence; a symlink (dangling or empty-target included), a non-directory, or an
+ * unstatable path is an error.
+ */
+export function checkCollection(bisellium: string): InputRead<true> {
+  const at = ".bisellium/steps";
+  let st;
+  try {
+    st = lstatSync(join(bisellium, "steps"));
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    return code === "ENOENT" ? { kind: "absent" } : { kind: "error", why: `${at} cannot be read (${code ?? "error"})` };
+  }
+  if (st.isSymbolicLink()) return { kind: "error", why: `${at} is a symlink, not a real directory` };
+  if (!st.isDirectory()) return { kind: "error", why: `${at} is not a directory` };
+  return { kind: "valid", value: true };
+}
+
 /** W-558: the step marker `<bisellium>/steps/<name>`, `name` ending `.json`, read contained (no symlink, a regular file). */
 export function loadMarker(bisellium: string, name: string): InputRead<Marker> {
   const rel = `steps/${name}`;
+  const collection = checkCollection(bisellium);
+  if (collection.kind !== "valid") return collection;
   return readInput(`the step marker .bisellium/${rel}`, () => readContainedRegularFile(bisellium, rel, "steps"), (bytes) => {
     let m: unknown;
     try {
@@ -87,6 +108,8 @@ export function loadMarker(bisellium: string, name: string): InputRead<Marker> {
  */
 export function loadMarkers(main: string): InputRead<{ name: string; marker: Marker }[]> {
   const bisellium = join(main, ".bisellium");
+  const collection = checkCollection(bisellium);
+  if (collection.kind !== "valid") return collection;
   const listed = readInput(".bisellium/steps", () => ({ bytes: readdirSync(join(bisellium, "steps")) }), (names) => names.filter((n) => n.endsWith(".json")).sort());
   if (listed.kind !== "valid") return listed;
   const reads = listed.value.map((name) => ({ name, read: loadMarker(bisellium, name) }));

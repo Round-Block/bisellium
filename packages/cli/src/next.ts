@@ -44,7 +44,7 @@ import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
-import { STEPS, loadMarker, loadOpusRecord, type Marker, type Step } from "./inputs.js";
+import { STEPS, checkCollection, loadMarker, loadOpusRecord, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -2120,6 +2120,10 @@ const markerPath = (repo: string, id: string): string => join(repo, ".bisellium"
 
 export function readMarker(repo: string, id: string): MarkerRead | undefined {
   const path = markerPath(repo, id);
+  // W-558 (D-086 A): the collection is a real directory or genuinely absent; a symlinked or non-directory one is invalid, never absence
+  const collection = checkCollection(join(repo, ".bisellium"));
+  if (collection.kind === "error") return { path, invalid: collection.why };
+  if (collection.kind === "absent") return undefined;
   let st;
   try {
     st = lstatSync(path, { bigint: true });
