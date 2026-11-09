@@ -120,3 +120,24 @@ export function loadReceipt(studio: string, sella: string, name: string): InputR
     return { cmd, endedAt: r["endedAt"] };
   });
 }
+
+/** The forms `inputCensus` recognises as a raw read of a lock input; every other form is not seen (a stated limit). */
+const RAW_FORMS: { re: RegExp; input: string }[] = [
+  { re: /readContainedRegularFile\([^;]*"opera"/, input: "an opus record" },
+  { re: /readContainedRegularFile\([^;]*"steps"/, input: "a step marker" },
+  { re: /readContainedRegularFile\([^;]*"receipts"/, input: "a run receipt" },
+  { re: /readContainedRegularFile\([^;]*QUEUE_FILE/, input: "queue.yml" },
+  { re: /readFileSync\([^;]*(markerPath\(|receipts|queue\.yml|QUEUE_FILE)/, input: "a lock input" },
+  { re: /\.read\(recordRel\(|\brecordOf\(/, input: "an opus record" },
+  { re: /Partial<Receipt>/, input: "a run receipt" },
+];
+
+/** W-558: every raw read of a lock input in `text` (the source of `file`), one warning per line: `<file>:<line>: <input> read outside the loaders`. */
+export function inputCensus(file: string, text: string): string[] {
+  const out: string[] = [];
+  text.split("\n").forEach((line, i) => {
+    const hit = RAW_FORMS.find((f) => f.re.test(line));
+    if (hit !== undefined) out.push(`${file}:${i + 1}: ${hit.input} read outside the loaders`);
+  });
+  return out;
+}
