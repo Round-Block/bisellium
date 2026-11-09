@@ -1,0 +1,43 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-547-b4\s --import tsx packages/cli/src/w547.test.ts
+# exit: 1
+# at: 2026-11-09T06:29:05.763Z
+# sella: builder.W-547
+# tree: tree:41dc9483ea5d741db16455a5c06812489f3efcef
+# ticket: {"opus":"W-547","step":"reds","action":"red","round":4,"actor":"builder","studio":".worktrees/W-547/studio","head":"66e51b6b5992fadd6519c850d83fcc442aa61b97","brief":"7d6b9cb0452899ce0554af737ececd51bd8f425f","at":"2026-11-09T06:28:58.480Z"}
+
+TAP version 13
+# Subtest: W-547-b4 behaviour 4: retro --daily refuses while a perform writes main
+not ok 1 - W-547-b4 behaviour 4: retro --daily refuses while a perform writes main
+  ---
+  duration_ms: 290.694515
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-547/packages/cli/src/w547.test.ts:23:95'
+  failureType: 'testCodeFailure'
+  error: |-
+    retro --daily refuses while a merge perform writes main
+    acta/improvements.md: no tracker; the daily retro appends to it
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    acta/improvements.md: no tracker; the daily retro appends to it
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-547/packages/cli/src/w547.test.ts:249:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 305.775317
