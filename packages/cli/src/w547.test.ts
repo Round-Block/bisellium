@@ -128,6 +128,7 @@ test("W-547-b1 the daily retro's day is the injected --now's, never the wall clo
   commit(w.repo, "studio: W-547 tracker");
   const o = next(w, [OPUS]);
   assert.match(o.kv.get("meanwhile") ?? "", /: retro: the daily retro of 2026-10-01: /, ran("--now 2026-10-02 owes the retro of 2026-10-01, whatever day the host clock reads", o));
+  assert.match(o.out, /daily-retro: 2026-10-01 step 2 of 3: /, ran("the daily-retro line names the --now day's retro, whatever day the host clock reads", o));
 });
 test("W-547-b2 behaviour 2: the locks are read from live state: a perform writing main, a stash under a live perform, the heavy-job slots and the spec ahead", async () => {
   const w = world("w547-b2-writer", "greenlight");
