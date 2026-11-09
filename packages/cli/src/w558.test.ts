@@ -95,7 +95,7 @@ test("W-558-b2 behaviour 2: an unknown marker step is an error that land and ret
   rmSync(join(w.repo, ".bisellium", "steps"), { recursive: true, force: true });
   writeFileSync(join(w.repo, ".bisellium", "steps"), "a file where the steps directory goes\n");
   const n = await nextMod();
-  assert.match(n.readMarker!(w.repo, OPUS)?.invalid ?? "absent", /^the marker cannot be read \(ENOTDIR\)$/, "next's own marker read is invalid, never absent, when the steps path cannot be read");
+  assert.match(n.readMarker!(w.repo, OPUS)?.invalid ?? "absent", /^\.bisellium\/steps is not a directory$/, "next's own marker read is invalid, never absent, when the steps path cannot be read");
 });
 
 test("W-558-b3 behaviour 3: a queued record whose state is outside the lifecycle is an error, never skipped", () => {
@@ -166,7 +166,7 @@ for (const shape of ["symlink to a directory with a marker", "dangling symlink",
     const n = await nextMod();
     assert.notEqual(n.readMarker!(w.repo, OPUS)?.invalid, undefined, "next's own marker read is invalid, never absent");
     const o = next(w, [OPUS, ...BUDGET]);
-    assert.match(o.kv.get("meanwhile-locks") ?? "", /writer (unreadable|error|held)|cannot be read/, ran("next holds on the unreadable collection", o));
+    assert.match(o.kv.get("meanwhile-locks") ?? "", /^unreadable: \.bisellium\/steps /, ran("next holds on the unreadable collection", o));
   });
 }
 
