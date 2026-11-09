@@ -16,13 +16,13 @@
  *
  * Later is every other opus record, as the handoff's Queue said; it is not listed.
  */
-import { lstatSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { readInput } from "@bisellium/schema";
 import { parse as parseYaml } from "yaml";
 import { ID_RE } from "./check.js";
-import { walkStudio } from "./inputs.js";
+import { walkReal, walkStudio } from "./inputs.js";
 
 export const QUEUE_FILE = "queue.yml";
 const TOP_KEYS = ["queues", "halted", "cut", "deferred"] as const;
@@ -57,14 +57,19 @@ export interface QueueFile {
 }
 export type QueueRead = { kind: "absent" } | { kind: "held"; why: string; problems: string[] } | { kind: "ok"; file: QueueFile };
 
-/** The record ids under `opera/` (a file `<id>.md`), never following a symlinked `opera/`; empty when it cannot be read. */
-function recordIds(studio: string): Set<string> {
-  const dir = join(studio, "opera");
+/**
+ * The record ids under `opera/` (a file `<id>.md`), `opera/` walked with `walkReal` before it is listed (W-558, review
+ * round 6): absent (ENOENT) is no records; a symlink, a non-directory or an unreadable `opera/` is an error, never an
+ * empty set, whether or not the queue names an opus.
+ */
+function recordIds(studio: string): { kind: "ok"; ids: Set<string> } | { kind: "error"; why: string } {
+  const walked = walkReal(studio, "opera");
+  if (walked.kind === "absent") return { kind: "ok", ids: new Set() };
+  if (walked.kind === "error") return walked;
   try {
-    if (!lstatSync(dir).isDirectory()) return new Set();
-    return new Set(readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)));
-  } catch {
-    return new Set();
+    return { kind: "ok", ids: new Set(readdirSync(join(studio, "opera")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3))) };
+  } catch (e) {
+    return { kind: "error", why: `opera cannot be read (${(e as NodeJS.ErrnoException).code ?? "error"})` };
   }
 }
 
@@ -173,8 +178,11 @@ export function readQueue(studio: string, base?: string): QueueRead {
   const nextTsHeld = queues.flatMap((q) => q.lanes.filter(([, opus]) => q.next.some((e) => e.opus === opus && e.nextTs)).map(([lane, opus]) => `${lane} (${opus})`));
   if (nextTsHeld.length > 1) problems.push(`more than one lane holds a next_ts entry: ${nextTsHeld.join(", ")}; one next.ts opus is in flight at a time`);
   const records = recordIds(studio);
-  const named = new Set([...listed.keys(), ...holder.keys()]);
-  for (const opus of named) if (!records.has(opus)) problems.push(`${opus} has no record in opera/`);
+  if (records.kind === "error") problems.push(records.why);
+  else {
+    const named = new Set([...listed.keys(), ...holder.keys()]);
+    for (const opus of named) if (!records.ids.has(opus)) problems.push(`${opus} has no record in opera/`);
+  }
 
   if (problems.length > 0) return held();
   return { kind: "ok", file: { queues, ...lists } };

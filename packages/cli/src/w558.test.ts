@@ -365,7 +365,8 @@ for (const shape of F2_SHAPES) {
     assert.equal(read.kind, "held", `readQueue holds, got ${JSON.stringify(read).slice(0, 200)}`);
     assert.match((read as { why?: string }).why ?? "", /opera is (a symlink, not a real directory|not a directory)/, "the hold names opera/");
     const c = cli(w, ["check", w.studio, "--repo", w.repo, "--json"]);
-    assert.match(c.out, /queue\.shape[^\n]*opera is (a symlink|not a directory)|opera is (a symlink|not a directory)[^\n]*queue\.shape/, `check reports it, got ${c.out.slice(0, 400)}`);
+    const found = (JSON.parse(c.out) as { findings: { rule: string; message: string }[] }).findings.filter((f) => f.rule === "queue.shape");
+    assert.ok(found.some((f) => /opera is (a symlink|not a directory)/.test(f.message)), `check reports it as queue.shape, got ${c.out.slice(0, 400)}`);
     const a = cli(w, ["next", "--all", "--studio", w.studio, "--repo", w.repo]);
     assert.notEqual(a.status, 0, `next --all does not pass, got ${a.out.slice(0, 300)}`);
   });
