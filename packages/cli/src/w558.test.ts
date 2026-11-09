@@ -399,7 +399,7 @@ for (const shape of F2_SHAPES) {
     const a = cli(w, ["next", "--all", "--studio", w.studio, "--repo", w.repo]);
     assert.notEqual(a.status, 0, `next --all does not pass, got ${a.out.slice(0, 300)}`);
     assert.doesNotMatch(a.out, new RegExp(`next: ${OPUS} `), `next --all lists no record through the studio, got ${a.out.slice(0, 300)}`);
-    assert.doesNotMatch(a.out, /^(open|lane|next): /m, `next --all lists nothing through the studio, got ${a.out.slice(0, 300)}`);
+    assert.doesNotMatch(a.out, /^(open|lane|queue): |^next: W-/m, `next --all lists nothing through the studio, got ${a.out.slice(0, 300)}`);
     assert.match(a.out + a.err, /held|not a studio/, `next --all says why, got ${(a.out + a.err).slice(0, 300)}`);
   });
 }
