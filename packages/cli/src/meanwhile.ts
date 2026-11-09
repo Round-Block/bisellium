@@ -69,7 +69,7 @@ export const MEANWHILE: Record<WaitKind, Row> = {
   },
 };
 
-const CI_OPUS = /\bci --opus\b/;
+const CI_OPUS = /(?<![\p{L}\p{M}\p{N}_])ci --opus(?![\p{L}\p{M}\p{N}_])/u;
 
 /** W-547: the kind of wait a derivation names, or undefined when the caller acts next (a hold that asks a fix, a quick rung). */
 export function waitOf(d: Derived): WaitKind | undefined {

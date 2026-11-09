@@ -55,12 +55,14 @@ const order = (role: string): Record<string, unknown> => ({ role, sella: role, b
 test("W-547-b1 behaviour 1: next names a meanwhile step beside every wait it names, from one table with a row per wait kind", async () => {
   const backlog = world("w547-b1-backlog", "backlog");
   const o = next(backlog, [OPUS]);
+  // one-sided: the rest of the line is the table's ranked steps, which row b1 pins separately
   assert.match(o.kv.get("meanwhile") ?? "", /^approval wait on the Patron: /, ran("a backlog opus's wait on the Patron names a meanwhile step", o));
   assert.match(o.kv.get("meanwhile") ?? "", /no push to the PR branch/, ran("the approval row names what no step may do", o));
   assert.match(o.kv.get("meanwhile-locks") ?? "", /^writer none · stash none · heavy 0 of 3 · ahead none$/, ran("the locks are printed beside the step", o));
 
   const draft = world("w547-b1-draft", "greenlight");
   const a = next(draft, [OPUS, ...BUDGET]);
+  // one-sided: the rest of the line is the table's ranked steps and the dispatch's session name
   assert.match(a.kv.get("meanwhile") ?? "", /^agent wait on a dispatched session/, ran("a spec dispatched to the architect is an agent wait", a));
   assert.match(a.kv.get("meanwhile") ?? "", /: records: file and land records from main/, ran("with no retro owed and no next entry, the records step is named", a));
 
@@ -81,6 +83,7 @@ test("W-547-b1 behaviour 1: next names a meanwhile step beside every wait it nam
     plant();
     const h = next(hw, [OPUS, ...BUDGET], env === undefined ? {} : { env });
     assert.match(h.kv.get("health") ?? "", health, ran(`the ${kind} health branch is read`, h));
+    // one-sided: the rest of the line is the table's ranked steps and the dispatch's session name
     assert.match(h.kv.get("meanwhile") ?? "", /^agent wait on a dispatched session/, ran(`the ${kind} health branch prints the meanwhile line beside a wait`, h));
     assert.match(h.kv.get("meanwhile-locks") ?? "", /./, ran(`the ${kind} health branch prints the locks line beside a wait`, h));
   }
@@ -123,13 +126,16 @@ test("W-547-b2 behaviour 2: the locks are read from live state: a perform writin
   const w = world("w547-b2-writer", "greenlight");
   marker(w.repo, "W-800", "merge", 10);
   const o = next(w, [OPUS, ...BUDGET]);
+  // one-sided: the rest of the line is the other locks, pinned by their own rows
   assert.match(o.kv.get("meanwhile-locks") ?? "", /^writer W-800 merge · /, ran("a live merge marker of another opus is the writer lock", o));
   assert.match(o.kv.get("meanwhile") ?? "", /not now: records \(W-800 merge writes main\)/, ran("the writer lock passes over the records step", o));
   marker(w.repo, "W-800", "merge", 600);
   const dead = next(w, [OPUS, ...BUDGET]);
+  // one-sided: the rest of the line is the other locks, pinned by their own rows
   assert.match(dead.kv.get("meanwhile-locks") ?? "", /^writer none · /, ran("a marker whose output is older than its budget is no writer", dead));
   marker(w.repo, "W-800", "review", 10);
   const review = next(w, [OPUS, ...BUDGET]);
+  // one-sided: the rest of the line is the other locks, pinned by their own rows
   assert.match(review.kv.get("meanwhile-locks") ?? "", /^writer none · /, ran("a live review marker writes no main", review));
 
   const m = await load();
@@ -160,7 +166,9 @@ test("W-547-b2 behaviour 2: the locks are read from live state: a perform writin
   const e = world("w547-b2-errors", "backlog");
   assert.deepEqual(m.readLocks(e.repo, "studio", now), { heavy: 0 }, "an absent steps directory, stash, receipts and .worktrees are no lock and no error");
   const loose = scratch("w547-b2-norepo");
+  // one-sided: the rest of the line names the scratch directory the discovery ran in
   assert.match((m.readLocks(loose, "studio", now) as { error?: string }).error ?? "", /^the main checkout cannot be found from /, "a failed main-checkout discovery is an error, never the directory itself");
+  // one-sided: the rest of the line names the scratch directory the discovery ran in
   assert.match((m.mainWriter!(loose, now) as { error?: string }).error ?? "", /^the main checkout cannot be found/, "and mainWriter returns it");
   const markerErrors: [string, () => void, RegExp][] = [
     ["a marker that is not JSON", () => rawMarker(e.repo, "W-801.json", "{"), /W-801\.json is not JSON/],
@@ -180,6 +188,7 @@ test("W-547-b2 behaviour 2: the locks are read from live state: a perform writin
   clear(e.repo, "W-801");
   rawMarker(w.repo, "W-801.json", "{");
   const heldLine = next(w, [OPUS, ...BUDGET]);
+  // one-sided: the rest of the line is the table's ranked steps for the wait
   assert.match(heldLine.kv.get("meanwhile") ?? "", /^agent wait on a dispatched session[^:]*: held: the step marker \.bisellium\/steps\/W-801\.json is not JSON; no step is named until it reads; /, ran("a marker the locks cannot read holds the meanwhile line, naming no step", heldLine));
   assert.equal(heldLine.kv.get("meanwhile-locks"), "unreadable: the step marker .bisellium/steps/W-801.json is not JSON", ran("and the locks line names the read error", heldLine));
   clear(w.repo, "W-801");
@@ -209,6 +218,7 @@ test("W-547-b2 behaviour 2: the locks are read from live state: a perform writin
   put(q.studio, "queue.yml", `queues:\n  engineering:\n    lanes: { E1: ${OPUS} }\n    next:\n      - { opus: ${OPUS}, says: "in flight" }\n      - { opus: W-901, says: "next" }\n      - { opus: W-902, says: "after" }\nhalted: []\ncut: []\ndeferred: []\n`);
   commit(q.repo, "studio: W-547 queue");
   const ahead = next(q, [OPUS, ...BUDGET]);
+  // one-sided: the start of the line is the writer and stash locks, pinned by their own rows
   assert.match(ahead.kv.get("meanwhile-locks") ?? "", / · ahead W-901 draft$/, ran("the queue's next entry with no spec is ahead to draft", ahead));
   assert.match(ahead.kv.get("meanwhile") ?? "", /: spec-draft: draft W-901's spec in its own scratch worktree/, ran("the next entry's draft is named, never the entry after it", ahead));
   const file = { queues: [{ id: "e", lanes: [["E1", "W-1"], ["E2", "W-5"]] as [string, string | undefined][], next: ["W-1", "W-2", "W-5", "W-3", "W-4"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] };
@@ -229,6 +239,7 @@ test("W-547-b3 behaviour 3: land refuses while a perform writes main", () => {
   put(w.studio, "notes.md", "a record to land\n");
   const args = ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"];
   const r = cli(w, args);
+  // one-sided: the rest of the output names the PR and the marker's age
   assert.match(r.out, /^land: refused\nwhy: refusing: W-800 merge is running and writes main when its PR lands/, `land refuses while a merge perform writes main\n${r.out}${r.err}`);
   assert.equal(r.status, 1, "the refusal exits 1");
   marker(w.repo, "W-800", "done", 10);
@@ -238,6 +249,7 @@ test("W-547-b3 behaviour 3: land refuses while a perform writes main", () => {
   assert.doesNotMatch(ok.out, /is running and writes main|writer lock cannot be read/, `a merge marker past its budget does not refuse the land\n${ok.out}`);
   rawMarker(w.repo, "W-801.json", "{");
   const torn = cli(w, args);
+  // one-sided: the rest of the output is the marker reader's own reason and the scratch path
   assert.match(torn.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-801\.json is not JSON/, `land refuses beside a malformed marker\n${torn.out}${torn.err}`);
   assert.equal(torn.status, 1, "the malformed-marker refusal exits 1");
 });
@@ -246,6 +258,7 @@ test("W-547-b4 behaviour 4: retro --daily refuses while a perform writes main", 
   marker(w.repo, "W-800", "merge", 10);
   const args = ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO];
   const r = cli(w, args);
+  // one-sided: the rest of the output names the PR and the marker's age
   assert.match(r.err, /^retro --daily: refused: W-800 merge is running and writes main when its PR lands/, `retro --daily refuses while a merge perform writes main\n${r.out}${r.err}`);
   assert.equal(r.status, 1, "the refusal exits 1");
   marker(w.repo, "W-800", "merge", 600);
@@ -254,10 +267,12 @@ test("W-547-b4 behaviour 4: retro --daily refuses while a perform writes main", 
   marker(w.repo, "W-801", "merge", 10);
   rmSync(join(w.repo, ".bisellium", "steps", "W-801.log"));
   const gone = cli(w, args);
+  // one-sided: the rest of the output is the marker reader's own reason
   assert.match(gone.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the output \.bisellium\/steps\/W-801\.log of \.bisellium\/steps\/W-801\.json cannot be read \(ENOENT\)/, `retro --daily refuses beside a marker whose output was deleted\n${gone.out}${gone.err}`);
   assert.equal(gone.status, 1, "the unreadable-marker refusal exits 1");
   clear(w.repo, "W-801");
   const nogit = cli(w, args, { PATH: join(w.root, "no-git-here") });
+  // one-sided: the rest of the output names the scratch directory and git's own error
   assert.match(nogit.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the main checkout cannot be found from /, `retro --daily refuses when the main checkout cannot be found (no git on PATH)\n${nogit.out}${nogit.err}`);
   assert.equal(nogit.status, 1, "the failed-discovery refusal exits 1");
 });
@@ -267,6 +282,7 @@ test("W-547-b5 behaviour 5: next holds a spec review order while a perform write
   sign(w, 1);
   marker(w.repo, "W-800", "merge", 10);
   const held = next(w, [OPUS, ...BUDGET]);
+  // one-sided: the rest of the output is the order's inputs and the lock's age
   assert.match(held.out, /^next: W-900 spec held\n/, ran("a spec review order is held while a merge perform writes main", held));
   assert.match(held.kv.get("why") ?? "", /W-800 merge is running and writes main when its PR lands; the spec review waits/, ran("the hold names the perform", held));
   rawMarker(w.repo, "W-801.json", "{");
@@ -276,6 +292,7 @@ test("W-547-b5 behaviour 5: next holds a spec review order while a perform write
   marker(w.repo, "W-800", "review", 10);
   const free = next(w, [OPUS, ...BUDGET]);
   assert.equal(free.kv.get("role"), "spec-reviewer", ran("with no writer and no stash the spec review is ordered", free));
+  // one-sided: the rest of the line is the table's ranked steps for the wait
   assert.match(free.kv.get("meanwhile") ?? "", /^codex-review wait on a Codex review/, ran("the spec review order names its meanwhile step", free));
   put(w.repo, "README.md", "edited\n");
   spawnSync("git", ["stash", "push", "-q", "-m", "w547", "--", "README.md"], { cwd: w.repo, env: SETUP_ENV });
