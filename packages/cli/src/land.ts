@@ -18,6 +18,7 @@ import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { checkStudio } from "./check.js";
 import { armQueue, clean, git, identifyPr, quoted, readQueueEntry, readRef, readOwnerReview, repoSlug, type Ctx, type Pr, type StepResult } from "./integrate.js";
 import { performLanding } from "./next.js";
+import { mainWriter } from "./meanwhile.js";
 import { reviewNotice, screenDiff } from "./review-notice.js";
 
 export const LAND_USAGE = "usage: bisellium land <path>... --title <text> --sella <id> [--body-file <path>] [--past-check <reason>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]";
@@ -201,6 +202,10 @@ export async function runLand(argv: string[]): Promise<{ exitCode: number }> {
   };
   const refuse = (...lines: string[]): { exitCode: number } => say(1, "refused", lines);
   if (resolve(repo, gd.stdout.trim()) !== resolve(repo, cd.stdout.trim())) return refuse(`why: refusing: ${repo} is a linked worktree; land runs from the repository's main checkout; nothing committed or pushed`, `way past: run it from the main checkout, with the edit there`);
+  // W-547: the merge-queue wait forbids a land: it moves master under the queue, and the perform fast-forwards main when its PR lands
+  const writer = mainWriter(repo, now.getTime());
+  if ("error" in writer) return refuse(`why: refusing: the main checkout's writer lock cannot be read: ${writer.error}; a land now could move master under a merge queue (W-547); nothing committed or pushed`, "way past: repair or remove what the line names, then land again");
+  if (writer.writer !== undefined) return refuse(`why: refusing: ${writer.writer} is running and writes main when its PR lands; a land now moves master under the merge queue (W-547); nothing committed or pushed`, "way past: land after that perform exits; bisellium next names the step it leaves");
   const on = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
   if (on !== TRUNK) return refuse(`why: refusing: land runs on master, and HEAD is ${clean(on) || "detached"}; nothing committed or pushed`, `way past: git -C ${quoted(repo)} switch master`);
   const outside = paths.filter((p) => !landable(p, studioRel));
