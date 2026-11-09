@@ -44,7 +44,7 @@ import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
-import { STEPS, checkCollection, loadMarker, loadOpusRecord, walkReal, type Marker, type Step } from "./inputs.js";
+import { STEPS, checkCollection, loadMarker, loadOpusRecord, walkReal, walkStudio, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -3412,7 +3412,10 @@ function handoverLine(t: unknown): { line: string } | { error: string } {
 function runAll(repo: string, studioAbs: string): { exitCode: number } {
   let names: string[];
   try {
-    // W-558 (review round 6): opera/ is walked before it is listed, a symlink or non-directory is held, never listed through
+    // W-558 (review rounds 6 and 8): the studio is walked below the checkout, then opera/ below it, before anything is listed;
+    // a symlink or non-directory at either is held, never listed through. An absent one falls to the ENOENT hold below.
+    const studioWalk = walkStudio(studioAbs, repo);
+    if (studioWalk.kind === "error") throw new Error(studioWalk.why);
     const walked = walkReal(studioAbs, "opera");
     if (walked.kind === "error") throw new Error(walked.why);
     names = readdirSync(join(studioAbs, "opera")); // absent: ENOENT, held below as before
