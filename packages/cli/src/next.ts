@@ -662,9 +662,9 @@ function mergeTreeConflict(repo: string, left: string, right: string): { conflic
 const CONFLICT_OPEN_STATES = new Set(["greenlit", "building", "verifying", "review"]);
 
 /** One lane record, distinguishing valid absence from an unreadable or unclassifiable file. */
-function laneRecord(root: string, id: string, absent: "allowed" | "error"): { record: Dict | undefined } | { error: string } {
+function laneRecord(root: string, id: string, absent: "allowed" | "error", repo: string): { record: Dict | undefined } | { error: string } {
   // W-558: the opus record loader (absent is ENOENT only; a state outside STATES is an error)
-  const read = loadOpusRecord(root, recordRel(id));
+  const read = loadOpusRecord(root, recordRel(id), repo);
   if (read.kind === "absent") return absent === "allowed" ? { record: undefined } : { error: `${recordRel(id)}: cannot be read (ENOENT)` };
   if (read.kind === "error") return { error: read.why };
   return { record: read.value };
@@ -680,7 +680,7 @@ function refPresence(repo: string, ref: string): { present: boolean } | { error:
 /** A local opus branch whose ref source tree already has a passed build-review gate, or why qualification is unreadable. */
 function reviewedAtTip(f: Facts): { reviewed: boolean } | { error: string } {
   if (!f.wt.usable || f.branch === undefined) return { reviewed: false };
-  const record = laneRecord(f.wt.studio, f.id, "error");
+  const record = laneRecord(f.wt.studio, f.id, "error", f.repo);
   if ("error" in record) return record;
   // Input-domain row 6: read the lane's own manifest once, then reject every malformed setting before classifying it.
   const worktree = readWorktreeManifest(f.wt.studio);
@@ -721,7 +721,7 @@ function furtherAlongBranches(f: Facts): { refs: string[] } | { error: string } 
     const id = ref.startsWith("refs/heads/opus/") ? ref.slice("refs/heads/opus/".length) : "";
     if (!ID_RE.test(id)) return { error: `git listed an opus branch whose id is outside the opus grammar` };
     if (id === f.id) continue;
-    const main = laneRecord(f.studioAbs, id, "allowed");
+    const main = laneRecord(f.studioAbs, id, "allowed", f.repo);
     if ("error" in main) return { error: main.error };
     if (main.record === undefined || !CONFLICT_OPEN_STATES.has(main.record["state"] as string)) continue;
     const pushed = refPresence(f.repo, `refs/remotes/origin/opus/${id}`);
@@ -2540,7 +2540,7 @@ function meanwhileOf(f: Facts, d: Derived, nowMs: number): string[] {
 
 /** W-547: the queue's next entry after this opus and what its spec needs (`aheadIn`): its queue, its records' states and its own derivation. */
 function aheadOf(f: Facts): Pick<Owed, "ahead" | "aheadError"> {
-  return aheadIn(readQueue(f.studioAbs), f.id, (o) => queuedState(f.studioAbs, o), (o) => {
+  return aheadIn(readQueue(f.studioAbs, f.repo), f.id, (o) => queuedState(f.studioAbs, o, f.repo), (o) => {
     const g = gather(f.repo, f.studioAbs, o);
     const bad = inputErrorOf(g);
     if (bad !== undefined) throw new Error(`the next entry ${o}'s derivation input cannot be read: ${bad}`);
@@ -2558,9 +2558,9 @@ function inputErrorOf(f: Facts): string | undefined {
 }
 
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
-function queuedState(studioAbs: string, id: string): string {
+function queuedState(studioAbs: string, id: string, repo: string): string {
   // W-558 (W-559 3): the opus record loader; absent, unreadable, no front matter, or a state outside STATES throws
-  const read = loadOpusRecord(studioAbs, recordRel(id));
+  const read = loadOpusRecord(studioAbs, recordRel(id), repo);
   if (read.kind === "absent") throw new Error(`the queued record ${recordRel(id)} cannot be read (ENOENT)`);
   if (read.kind === "error") throw new Error(`the queued record ${read.why}`);
   return read.value["state"] as string;
@@ -3456,7 +3456,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   }
   // W-333 (W-478 folded): with a queue.yml, one line per lane by queue, an idle lane naming the entry it would take;
   // a malformed file prints one held line and the run exits 1, as a held milestones line does
-  const queue = readQueue(studioAbs);
+  const queue = readQueue(studioAbs, repo);
   if (queue.kind === "held") {
     failed = true;
     lines.push(`queue: held · why: ${queue.why}`);

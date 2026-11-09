@@ -8,7 +8,7 @@
  * these inputs outside the loaders, as a warning. Reads only: it writes nothing. See studio/briefs/W-558.md.
  */
 import { lstatSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { STATES, parseFrontMatter } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { readInput, type InputRead } from "@bisellium/schema";
@@ -22,7 +22,9 @@ const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null &&
 const STATE_IDS: readonly string[] = STATES.map((s) => s.id);
 
 /** W-558: an opus record's front matter (`rel` is the caller's `opera/<id>.md`): a mapping whose `state` is a lifecycle state id (`STATES`). */
-export function loadOpusRecord(studio: string, rel: string): InputRead<Dict> {
+export function loadOpusRecord(studio: string, rel: string, base?: string): InputRead<Dict> {
+  const below = walkStudio(studio, base);
+  if (below.kind !== "valid") return below;
   return readInput(rel, () => readContainedRegularFile(studio, rel, "opera"), (bytes) => {
     let data: unknown;
     try {
@@ -65,22 +67,49 @@ export function markerProblem(m: unknown, id: string): string | undefined {
 }
 
 /**
- * W-558 (D-086 A): the `<bisellium>/steps` collection is valid only as a real directory reached without a symlink: a
- * genuinely absent one (`ENOENT`) is absence; a symlink (dangling or empty-target included), a non-directory, or an
- * unstatable path is an error.
+ * W-558 (r1 fix, one class): the one component walk every loader path goes through. Each component of `rel` below `base`
+ * is `lstat`ed in turn: `ENOENT` at the first missing one is absence; a symlink (dangling or empty-target included), a
+ * non-directory where a directory goes (or, with `final: "file"`, a non-regular last component), or an unstatable one
+ * is an error naming the component. `base` itself (the main checkout) is the trusted root and is not walked.
+ */
+export function walkReal(base: string, rel: string, final: "directory" | "file" = "directory"): InputRead<true> {
+  const parts = rel.split(/[\\/]/).filter((p) => p !== "");
+  let at = base;
+  let shown = "";
+  for (const [i, part] of parts.entries()) {
+    at = join(at, part);
+    shown = shown === "" ? part : `${shown}/${part}`;
+    let st;
+    try {
+      st = lstatSync(at);
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      return code === "ENOENT" ? { kind: "absent" } : { kind: "error", why: `${shown} cannot be read (${code ?? "error"})` };
+    }
+    if (st.isSymbolicLink()) return { kind: "error", why: `${shown} is a symlink, not a real directory` };
+    const last = i === parts.length - 1;
+    if (last && final === "file") {
+      if (!st.isFile()) return { kind: "error", why: `${shown} is not a regular file` };
+    } else if (!st.isDirectory()) return { kind: "error", why: `${shown} is not a directory` };
+  }
+  return { kind: "valid", value: true };
+}
+
+/** W-558 (r1 fix): a studio path below its checkout `base`: the walk of the components between them; a studio outside `base`, or `base` itself, or no `base`, is not walked (the loaders' own contained read still covers everything below the studio). */
+export function walkStudio(studio: string, base: string | undefined): InputRead<true> {
+  if (base === undefined) return { kind: "valid", value: true };
+  const rel = relative(resolve(base), resolve(studio));
+  if (rel === "" || rel.split(sep)[0] === ".." || isAbsolute(rel)) return { kind: "valid", value: true };
+  return walkReal(resolve(base), rel);
+}
+
+/**
+ * W-558 (D-086 A): the `<main>/.bisellium/steps` collection is valid only as real directories reached without a symlink
+ * (`walkReal`, `.bisellium` and `steps` both): a genuinely absent one (`ENOENT`) is absence; a symlink (dangling or
+ * empty-target included), a non-directory, or an unstatable component is an error.
  */
 export function checkCollection(bisellium: string): InputRead<true> {
-  const at = ".bisellium/steps";
-  let st;
-  try {
-    st = lstatSync(join(bisellium, "steps"));
-  } catch (e) {
-    const code = (e as NodeJS.ErrnoException).code;
-    return code === "ENOENT" ? { kind: "absent" } : { kind: "error", why: `${at} cannot be read (${code ?? "error"})` };
-  }
-  if (st.isSymbolicLink()) return { kind: "error", why: `${at} is a symlink, not a real directory` };
-  if (!st.isDirectory()) return { kind: "error", why: `${at} is not a directory` };
-  return { kind: "valid", value: true };
+  return walkReal(dirname(bisellium), `${basename(bisellium)}/steps`);
 }
 
 /** W-558: the step marker `<bisellium>/steps/<name>`, `name` ending `.json`, read contained (no symlink, a regular file). */
@@ -128,8 +157,10 @@ export interface ReceiptRead {
 }
 
 /** W-558: a run receipt `<studio>/receipts/<sella>/<name>`: a JSON object whose `cmd` is a list of strings. */
-export function loadReceipt(studio: string, sella: string, name: string): InputRead<ReceiptRead> {
+export function loadReceipt(studio: string, sella: string, name: string, base?: string): InputRead<ReceiptRead> {
   const rel = `receipts/${sella}/${name}`;
+  const below = walkStudio(studio, base);
+  if (below.kind !== "valid") return below;
   return readInput(join(studio, rel), () => readContainedRegularFile(studio, rel, "receipts"), (bytes) => {
     let r: unknown;
     try {

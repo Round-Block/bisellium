@@ -11,7 +11,7 @@
 import { lstatSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import { HOST_RUN_TIMEOUT_MS } from "@bisellium/commands/builder-run.js";
-import { loadMarkers, loadReceipt } from "./inputs.js";
+import { loadMarkers, loadReceipt, walkReal, walkStudio } from "./inputs.js";
 import { clean, git } from "./integrate.js";
 import type { Derived } from "./next.js";
 import type { QueueFile, QueueRead } from "./queue.js";
@@ -284,7 +284,11 @@ const isHeavy = (cmd: string[]): boolean => {
 };
 
 /** Open heavy run receipts under one studio: a receipt with no `endedAt`, written within the host run timeout of `nowMs`. An absent receipts directory counts zero; an unreadable collection or recent receipt, or one outside the receipt domain, is an error. */
-function openHeavy(studio: string, nowMs: number): Read<number> {
+function openHeavy(studio: string, nowMs: number, main: string): Read<number> {
+  // W-558 (r1 fix): the studio's components below the main checkout are real directories (the one walk, `walkStudio`)
+  const below = walkStudio(studio, main);
+  if (below.kind === "error") return { error: below.why };
+  if (below.kind === "absent") return { ok: 0 };
   let n = 0;
   let sellae: string[];
   try {
@@ -307,7 +311,7 @@ function openHeavy(studio: string, nowMs: number): Read<number> {
         return { error: `the receipt ${at} cannot be read (${code(e)})` };
       }
       // W-558: the receipt loader; a receipt that vanished after its stat is an error, as the stat's own failure is
-      const read = loadReceipt(studio, sella, name);
+      const read = loadReceipt(studio, sella, name, main);
       if (read.kind !== "valid") return { error: read.kind === "absent" ? `the receipt ${at} cannot be read (ENOENT)` : `the receipt ${read.why}` };
       if (read.value.endedAt === undefined && isHeavy(read.value.cmd)) n++;
     }
@@ -317,18 +321,21 @@ function openHeavy(studio: string, nowMs: number): Read<number> {
 
 /** The heavy slots in use in main's studio and each opus worktree's (`.worktrees/<id>`): an absent `.worktrees` is none. */
 function heavyIn(main: string, studioRel: string, nowMs: number): Read<number> {
-  const first = openHeavy(join(main, studioRel), nowMs);
+  const first = openHeavy(join(main, studioRel), nowMs, main);
   if ("error" in first) return first;
   let heavy = first.ok;
   let wts: string[];
+  // W-558 (r1 fix): `.worktrees` is a real directory (the one walk); a symlinked one is an error, a missing one none
+  const dir = walkReal(main, ".worktrees");
+  if (dir.kind === "error") return { error: dir.why };
   try {
-    wts = readdirSync(join(main, ".worktrees"));
+    wts = dir.kind === "absent" ? [] : readdirSync(join(main, ".worktrees"));
   } catch (e) {
     if (!absent(e)) return { error: `.worktrees cannot be listed (${code(e)})` };
     wts = [];
   }
   for (const name of wts.filter((x) => /^[A-Z]+-[0-9]+$/.test(x)).sort()) {
-    const one = openHeavy(join(main, ".worktrees", name, studioRel), nowMs);
+    const one = openHeavy(join(main, ".worktrees", name, studioRel), nowMs, main);
     if ("error" in one) return one;
     heavy += one.ok;
   }

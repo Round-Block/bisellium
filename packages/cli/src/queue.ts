@@ -22,6 +22,7 @@ import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { readInput } from "@bisellium/schema";
 import { parse as parseYaml } from "yaml";
 import { ID_RE } from "./check.js";
+import { walkStudio } from "./inputs.js";
 
 export const QUEUE_FILE = "queue.yml";
 const TOP_KEYS = ["queues", "halted", "cut", "deferred"] as const;
@@ -97,7 +98,11 @@ function entries(v: unknown, where: string, problems: string[]): QueueEntry[] {
  * lanes never hold one opus, a lane's opus is an entry of its own queue's `next`, at most one lane holds a `next_ts`
  * entry, and every opus named has a record.
  */
-export function readQueue(studio: string): QueueRead {
+export function readQueue(studio: string, base?: string): QueueRead {
+  // W-558 (r1 fix): the studio's components below its checkout `base` are real directories (the one walk, `walkStudio`)
+  const below = walkStudio(studio, base);
+  if (below.kind === "absent") return { kind: "absent" };
+  if (below.kind === "error") return { kind: "held", why: below.why, problems: [below.why] };
   // W-558: the one fail-closed read: absent is ENOENT only, every other read failure holds
   const read = readInput(QUEUE_FILE, () => readContainedRegularFile(studio, QUEUE_FILE, ""), (bytes) => bytes);
   if (read.kind === "absent") return { kind: "absent" };
