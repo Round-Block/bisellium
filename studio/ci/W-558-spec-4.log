@@ -1,0 +1,21 @@
+# opus: W-558
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c022-f2b9-74f1-8fd9-94f79e98001d
+# outcome: passed
+# at: 2026-11-09T14:31:16.198Z
+# tree: tree:a2c00d8451ada41df626f5411347c6544745cc41
+# brief: briefs/W-558.md blob:21e772ee92c34cfe8a1b47d5f197f1a50fec7f43
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":".worktrees/W-558/studio","head":"6ad63b8ad366de8223bad3458f2f559d80671ed4","brief":"21e772ee92c34cfe8a1b47d5f197f1a50fec7f43","at":"2026-11-09T14:31:15.592Z"}
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-558-spec-2.log #1: closed — the class census exercises the real `loadMarkers` and `readMarker` paths for symlinked `.bisellium/steps` collections and records them closed; its only eight remaining open cases are the three `openHeavy` receipt-reader sites now owed by `W-558-r2`.
+
+## Verdict
+Revision 2 covers every enumerated loader-root read, assigns all eight remaining open receipt shapes to the new required-fix rows, and closes the earlier blocker without changing the design.
+VERDICT: PASS
