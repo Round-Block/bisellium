@@ -125,3 +125,11 @@ test("W-558-b4 behaviour 4: a held derivation input error of the next entry is a
   assert.match(o.kv.get("meanwhile") ?? "", /: held: the spec ahead cannot be read: the next entry W-906's derivation input cannot be read: /, ran("a next entry whose branch record is malformed holds the meanwhile line", o));
   assert.equal(o.kv.get("role"), "architect", ran("and the step next names is unchanged", o));
 });
+
+test("W-558-b5 behaviour 5: a census warns on every raw read of a lock input outside the loaders", async (t) => {
+  const i = await inputs();
+  const raw = 'const f = readContainedRegularFile(root, `opera/${id}.md`, "opera");\nconst r = loadOpusRecord(root, id);\nconst m = readFileSync(markerPath(repo, id), "utf8");\n';
+  assert.deepEqual(i.inputCensus?.("x.ts", raw), ["x.ts:1: an opus record read outside the loaders", "x.ts:3: a lock input read outside the loaders"], "the census flags a raw read and passes a loader call");
+  for (const f of ["cli/src/next.ts", "cli/src/meanwhile.ts", "cli/src/land.ts", "cli/src/retro.ts", "shim/src/receipts.ts"]) for (const line of i.inputCensus!(`packages/${f}`, readFileSync(join(import.meta.dirname, "..", "..", f), "utf8"))) t.diagnostic(`warning: ${line}`);
+  assert.deepEqual(i.inputCensus!("packages/cli/src/meanwhile.ts", readFileSync(join(import.meta.dirname, "meanwhile.ts"), "utf8")), [], "the W-547 lock reader reads every lock input through the loaders");
+});
