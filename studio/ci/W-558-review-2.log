@@ -1,0 +1,21 @@
+# opus: W-558
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1c04d-80e8-7001-80a8-a5c2cc603870
+# outcome: failed
+# at: 2026-11-09T13:34:09.692Z
+# tree: tree:a2c00d8451ada41df626f5411347c6544745cc41
+# brief: briefs/W-558.md blob:c420e993ae7a67c64175c25b8edd053f053cf3e1
+# ticket: {"opus":"W-558","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-558/studio","head":"1a36c9a96b39af88ab0c8efbd1d87a4b0b9874ae","brief":"c420e993ae7a67c64175c25b8edd053f053cf3e1","at":"2026-11-09T13:32:15.186Z"}
+
+## Findings
+1. blocking — packages/cli/src/meanwhile.ts:295 [severity: S1] Reached by ci/W-558-review-1.log #1’s class: the new walk stops at `studio`, after which `readdirSync` follows a symlinked `receipts`; a dangling target is mapped from `ENOENT` to zero heavy runs, while an empty target also returns zero, instead of making heavy capacity unavailable as required by brief:83. [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w558.test.ts
+
+## Earlier findings
+- ci/W-558-review-1.log #1: closed — packages/cli/src/inputs.ts:120 now walks `.bisellium` and `steps` as separate components, and the added regression cases cover linked, dangling, and empty-target `.bisellium`.
+
+## Verdict
+The original blocker is closed, but the same fail-open class remains in the receipt collection.
+VERDICT: FAIL
