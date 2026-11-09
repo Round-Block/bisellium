@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -175,4 +175,85 @@ test("W-558-f1 a genuinely absent .bisellium/steps is absence, no writer and no 
   assert.deepEqual(m.readLocks!(w.repo, "studio", NOW_MS), { heavy: 0 }, "an absent collection is no lock");
   const n = await nextMod();
   assert.equal(n.readMarker!(w.repo, OPUS), undefined, "next's own marker read is absent");
+});
+
+/** W-558-r1 (build review round 1 #1): every component of every loader path below the main checkout is a real directory (the final file a regular file); one walk, not a per-path patch. */
+type Dot = "symlink to a tree with a marker" | "dangling symlink" | "symlink to a tree with an empty steps directory";
+function dotBisellium(repo: string, shape: Dot): void {
+  const at = join(repo, ".bisellium");
+  if (shape === "dangling symlink") return symlinkSync(join(repo, "nowhere"), at);
+  const target = join(repo, "elsewhere");
+  mkdirSync(join(target, "steps"), { recursive: true });
+  if (shape === "symlink to a tree with a marker") {
+    writeFileSync(join(target, "steps", "W-800.json"), JSON.stringify({ schema: 1, opus: "W-800", step: "merge", pid: 999999, start_ticks: 1, started: NOW_ISO, output: "steps/W-800.log", budget_seconds: 120, writer: "perform" }));
+    writeFileSync(join(target, "steps", "W-800.log"), "{}\n");
+    utimesSync(join(target, "steps", "W-800.json"), (NOW_MS - 600_000) / 1000, (NOW_MS - 600_000) / 1000);
+  }
+  symlinkSync(target, at);
+}
+for (const shape of ["symlink to a tree with a marker", "dangling symlink", "symlink to a tree with an empty steps directory"] as const) {
+  test(`W-558-r1 a ${shape} in place of .bisellium is an error that land, retro --daily and next refuse on`, async () => {
+    const w = world(`w558-r1-${shape.replace(/\W+/g, "-")}`, "backlog");
+    dotBisellium(w.repo, shape);
+    const why = /\.bisellium is a symlink, not a real directory/;
+    const m = await meanwhile();
+    assert.match((m.readLocks!(w.repo, "studio", NOW_MS) as { error?: string }).error ?? "", why, "the lock read is an error, never no writer");
+    assert.match((m.mainWriter!(w.repo, NOW_MS) as { error?: string }).error ?? "", why, "the writer read is an error");
+    put(w.studio, "notes.md", "a record to land\n");
+    const land = cli(w, ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"]);
+    assert.match(land.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: \.bisellium is a symlink, not a real directory; a land now could move master under a merge queue \(W-547\); nothing committed or pushed\nway past: repair or remove what the line names, then land again\n$/, `land refuses\n${land.out}${land.err}`);
+    const retro = cli(w, ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO]);
+    assert.match(retro.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: \.bisellium is a symlink, not a real directory; the retro waits until it reads \(W-547\)\n$/, `retro --daily refuses\n${retro.err}`);
+    assert.equal(retro.status, 1, "the retro refusal exits 1");
+    const n = await nextMod();
+    assert.match(n.readMarker!(w.repo, OPUS)?.invalid ?? "absent", why, "next's own marker read is invalid, never absent");
+    const o = next(w, [OPUS, ...BUDGET]);
+    assert.match(o.kv.get("meanwhile-locks") ?? "", /^unreadable: \.bisellium is a symlink, not a real directory$/, ran("next holds on the unreadable .bisellium", o));
+  });
+}
+
+test("W-558-r1 a genuinely absent .bisellium is absence, no writer and no error", async () => {
+  const w = world("w558-r1-absent", "backlog");
+  const m = await meanwhile();
+  assert.deepEqual(m.readLocks!(w.repo, "studio", NOW_MS), { heavy: 0 }, "an absent .bisellium is no lock");
+  assert.deepEqual(m.mainWriter!(w.repo, NOW_MS), {}, "and no writer");
+  const n = await nextMod();
+  assert.equal(n.readMarker!(w.repo, OPUS), undefined, "next's own marker read is absent");
+  const i = await inputs();
+  assert.deepEqual(i.loadMarkers!(w.repo), { kind: "absent" }, "the markers of an absent .bisellium are absence");
+});
+
+for (const shape of ["symlink", "dangling symlink"] as const) {
+  test(`W-558-r1 a ${shape} in place of .worktrees or of the studio directory is an error the lock read and the loaders refuse on`, async () => {
+    const w = world(`w558-r1-wt-${shape.replace(/\W+/g, "-")}`, "backlog");
+    const i = await inputs();
+    const m = await meanwhile();
+    const { readQueue } = await import("./queue.js");
+    const target = join(w.root, "elsewhere");
+    cpSync(w.studio, target, { recursive: true });
+    const link = (at: string): void => symlinkSync(shape === "symlink" ? target : join(w.root, "nowhere"), at);
+    // .worktrees
+    link(join(w.repo, ".worktrees"));
+    assert.match((m.readLocks!(w.repo, "studio", NOW_MS) as { heavyError?: string }).heavyError ?? "", /\.worktrees is a symlink, not a real directory/, "a symlinked .worktrees is a heavy-capacity error, never none");
+    rmSync(join(w.repo, ".worktrees"), { recursive: true, force: true });
+    // the studio directory, below its main checkout
+    rmSync(w.studio, { recursive: true, force: true });
+    link(w.studio);
+    assert.match((m.readLocks!(w.repo, "studio", NOW_MS) as { heavyError?: string }).heavyError ?? "", /studio is a symlink, not a real directory/, "a symlinked studio directory is a heavy-capacity error");
+    assert.match((i.loadOpusRecord!(w.studio, `opera/${OPUS}.md`, w.repo) as { why?: string }).why ?? "", /studio is a symlink, not a real directory/, "an opus record under a symlinked studio is an error");
+    assert.match((i.loadReceipt!(w.studio, "producer", "r.json", w.repo) as { why?: string }).why ?? "", /studio is a symlink, not a real directory/, "a receipt under a symlinked studio is an error");
+    const q = readQueue(w.studio, w.repo);
+    assert.equal(q.kind, "held", "a queue.yml under a symlinked studio is held, never absent");
+    assert.match((q as { why?: string }).why ?? "", /studio is a symlink, not a real directory/);
+  });
+}
+
+test("W-558-r1 a genuinely absent studio directory or receipts collection is absence", async () => {
+  const w = world("w558-r1-studio-absent", "backlog");
+  const i = await inputs();
+  const { readQueue } = await import("./queue.js");
+  rmSync(join(w.studio, "receipts"), { recursive: true, force: true });
+  assert.deepEqual(i.loadReceipt!(w.studio, "producer", "r.json", w.repo), { kind: "absent" }, "an absent receipts collection is absence");
+  assert.deepEqual(readQueue(w.studio, w.repo), { kind: "absent" }, "an absent queue.yml is absence");
+  assert.deepEqual(i.loadOpusRecord!(join(w.repo, "nostudio"), "opera/W-1.md", w.repo), { kind: "absent" }, "an absent studio directory is absence");
 });
