@@ -122,6 +122,13 @@ test("W-547-b1 behaviour 1: next names a meanwhile step beside every wait it nam
   const suite = m.meanwhileSteps("suite", { heavy: 0 }, { studioRel: "studio", retro: "2026-10-01" });
   assert.equal(suite.find((s) => s.not === undefined)?.step, "retro", "in the suite wait an owed retro is named first");
 });
+test("W-547-b1 the daily retro's day is the injected --now's, never the wall clock's", () => {
+  const w = world("w547-b1-now", "backlog");
+  put(w.studio, "acta/improvements.md", `---\nauthor: producer\nkind: daily\ntitle: "Improvements tracker"\nat: 2026-10-01T00:00:00Z\n---\n# Improvements tracker\n\n## Daily retro\n\n### 2026-10-01\n\n- fixture entry\n`);
+  commit(w.repo, "studio: W-547 tracker");
+  const o = next(w, [OPUS]);
+  assert.match(o.kv.get("meanwhile") ?? "", /: retro: the daily retro of 2026-10-01: /, ran("--now 2026-10-02 owes the retro of 2026-10-01, whatever day the host clock reads", o));
+});
 test("W-547-b2 behaviour 2: the locks are read from live state: a perform writing main, a stash under a live perform, the heavy-job slots and the spec ahead", async () => {
   const w = world("w547-b2-writer", "greenlight");
   marker(w.repo, "W-800", "merge", 10);
