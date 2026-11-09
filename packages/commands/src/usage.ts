@@ -60,4 +60,5 @@ export const USAGE =
   "       bisellium review-request <pr> [--repo <dir>]\n" +
   "       bisellium land <path>... --title <text> --sella <id> [--body-file <path>] [--past-check <reason>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium milestones [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
-  "       bisellium docs registry [--repo <dir>] [--now <iso>]";
+  "       bisellium docs registry [--repo <dir>] [--now <iso>]\n" +
+  "       bisellium launch [--dry-run]";

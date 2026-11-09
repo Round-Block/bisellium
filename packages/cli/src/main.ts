@@ -37,6 +37,7 @@ import { runClose } from "./close.js";
 import { runPrune } from "./prune.js";
 import { runLand } from "./land.js";
 import { runNext } from "./next.js";
+import { runLaunch } from "./launch.js";
 import { runReviewRequest } from "./review-request.js";
 import { runMilestones } from "./exits.js";
 import { instant } from "@bisellium/schema";
@@ -136,6 +137,8 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "close") return runClose(rest).exitCode;
   if (cmd === "prune") return runPrune(rest).exitCode;
   if (cmd === "next") return (await runNext(rest)).exitCode;
+  // W-543: the timer-started refresh session; it judges its own argv
+  if (cmd === "launch") return (await runLaunch(rest)).exitCode;
   if (cmd === "land") return (await runLand(rest)).exitCode;
   if (cmd === "review-request") return runReviewRequest(rest).exitCode;
   if (cmd === "milestones") return runMilestones(rest).exitCode;
