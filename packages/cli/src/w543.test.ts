@@ -184,6 +184,23 @@ test("W-543-b1 behaviour 1: launch runs only as the Patron's clone's CLI on a cl
     assert.match(said(w), new RegExp(`safe/${name} links to .*/agent/bin/${name}, in a folder an agent writes`), `the refusal names the ${name} link`);
     assert.deepEqual(w.calls, [], `a ${name} linked into the agent clone runs no child`);
   }
+  for (const [name, where] of [["git", "agent"], ["claude", "evidence"]] as const) {
+    w = world();
+    const folder = where === "agent" ? join(w.agent, "bin") : join(w.home, ".bisellium-evidence", "bin");
+    put(join(folder, name), "#!/bin/sh\nexit 0\n", 0o755);
+    const hidden = join(w.t, "hidden");
+    mkdirSync(hidden);
+    symlinkSync(join(folder, name), join(hidden, name));
+    chmodSync(hidden, 0o111);
+    w.env["PATH"] = `${hidden}:${w.env["PATH"]}`;
+    try {
+      assert.equal(await w.launch("--dry-run"), 1, `a ${name} linked into the ${where} folder in an execute-only PATH folder refused`);
+      assert.match(said(w), new RegExp(`${name} .*links? .*${where === "agent" ? "agent" : "bisellium-evidence"}/bin/${name}`), `the refusal names the ${name} target`);
+      assert.deepEqual(w.calls, [], `a ${name} linked into the ${where} folder in an execute-only PATH folder runs no child`);
+    } finally {
+      chmodSync(hidden, 0o755);
+    }
+  }
   w = world();
   mkdirSync(join(w.t, "safe"));
   symlinkSync(join(w.home, ".bisellium-evidence", "jq"), join(w.t, "safe", "jq"));
