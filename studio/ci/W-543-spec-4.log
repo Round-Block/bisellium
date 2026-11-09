@@ -1,0 +1,25 @@
+# opus: W-543
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1be2e-ff70-79c3-b1ae-83590c6dc9e5
+# session_reason: the round-4 kit started a fresh codex exec instead of resuming 01a1be0a; this verdict is that round-4 session's reissue after a shape refusal
+# outcome: failed
+# at: 2026-11-09T02:48:12.357Z
+# tree: tree:8648df50f4a16d761245de7068ac8f82fa82c205
+# brief: briefs/W-543.md blob:e783f48f01e91c298e45018660a488e389af3bc4
+# ticket: {"opus":"W-543","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"2a5f57df80f52a08811df03af93c68361a775414","brief":"e783f48f01e91c298e45018660a488e389af3bc4","at":"2026-11-09T02:48:07.198Z"}
+
+## Findings
+1. blocking — brief:102 [severity: S1] [design: keeps] Round-2 finding 2 remains open: with an execute-only PATH directory containing a mistaken `git` symlink into `AGENT_DIR`, `readdirSync` fails and `pathFault` skips the directory, while `onPath` can stat the known name, causing the timer to execute agent-writable code. Replace the PATH clause with “Every PATH directory must be enumerable; after PATH selects `git`, `bash`, `gh` and `claude`, `runLaunch` independently resolves each selected executable with `real` and refuses an agent-writable target before any child process.” [class: security×symlink-parent-write-escape] — check: packages/cli/src/w543.test.ts W-543-b1 (an execute-only PATH directory containing each selected executable symlinked into `AGENT_DIR` must refuse with no `deps.run` call)
+2. advisory — brief:96 [severity: S2] Round-2 finding 4’s class reaches this sibling sentence: a real sync may change the agent clone before record 11 refuses, and record 12 is judged only after the session and state writes, so every out-of-domain value cannot guarantee “starting nothing and writing nothing.” Replace the line with “Each value outside its domain is rejected at the point its row states: records 1–9 start no session and write no launch state; a real run may sync before records 10–11 are known, and record 12 is judged after the session and its state writes.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose must distinguish the refusal points already specified
+
+## Earlier findings
+- ci/W-543-spec-2.log #1: closed — PATH, session and state-folder validation now precede the first child process, and W-543-b1 pins that rejected PATH and session inputs make no `deps.run` call.
+- ci/W-543-spec-2.log #2: open — executable targets are checked only while enumerating PATH directories; an execute-only directory cannot be enumerated, yet its known executable name can still be resolved and executed through `onPath`.
+- ci/W-543-spec-2.log #3: closed — `{agent}` and `{evidence}` rules are resolved from the real configured paths, and `runLaunch` refuses unless both Edit and Write grants exist for each.
+
+## Verdict
+Round-2 findings 1 and 3 are closed, but finding 2 remains open; finding 4’s revised Intent text is closed while its sibling overpromise remains advisory.
+VERDICT: FAIL

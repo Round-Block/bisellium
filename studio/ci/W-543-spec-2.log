@@ -1,0 +1,21 @@
+# opus: W-543
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1be0a-0617-7881-9b00-4dd00c1f057c
+# outcome: failed
+# at: 2026-11-09T02:08:36.566Z
+# tree: tree:582574330b4af4ad1581cccd38b6281b695432ea
+# brief: briefs/W-543.md blob:19c7a1d1ab39893ac8e2aba5f9f163402cac0b2d
+# ticket: {"opus":"W-543","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"0bb64339768495628f4c46b3e32f9c9d221e51fe","brief":"19c7a1d1ab39893ac8e2aba5f9f163402cac0b2d","at":"2026-11-09T02:08:35.717Z"}
+
+## Findings
+1. blocking — brief:17 [severity: S1] [design: keeps] `runLaunch` invokes PATH-resolved `git` for branch and status before validating PATH, so a timer accidentally given `AGENT_DIR/bin` first executes agent-writable code before refusing; replace the relevant sentence with “Before its first PATH-resolved child call, it validates PATH and refuses any relative or agent-writable entry; it runs nothing an agent can write.” [class: interface×validation-order-masks-errors] — check: packages/cli/src/w543.test.ts W-543-b1 (an agent-clone PATH entry must cause no `deps.run` call)
+2. blocking — brief:91 [severity: S1] [design: changes] The domain canonicalizes PATH directories but not executable targets, so a safe directory containing a `git`, `bash`, `gh` or `claude` symlink into `AGENT_DIR` passes and lets the timer execute agent-writable code; replace the PATH clause with “every PATH entry and the real target of each selected executable (`git`, `bash`, `gh`, `claude`) is absolute and outside both agent-writable folders; every other form is refused before execution.” [class: security×symlink-parent-write-escape] — check: packages/cli/src/w543.test.ts W-543-b1 (safe PATH directory with each executable symlinked into `AGENT_DIR`)
+3. blocking — brief:42 [severity: S1] [design: changes] The accepted environment permits any absolute `AGENT_DIR`, but the shipped rules grant Edit/Write only to literal `~/agents/bisellium/**`; a Patron who relocates the supported agent clone launches a real session without Edit/Write permission there, while the session stand-in cannot catch the resulting denial. Replace the first allow-list sentence with “The shipped `launch.json`, after `runLaunch` resolves its path rules, grants Edit and Write under the resolved `AGENT_DIR` and evidence folder, and the launch refuses when those resolved grants are absent.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w543.test.ts W-543-b2/W-543-b6 (non-default absolute `AGENT_DIR` is covered by emitted rules or refused before session)
+4. advisory — brief:15 [severity: S2] A real run syncs before checking the handoff, so a code-only origin advance can fast-forward the agent clone and then refuse because the handoff is unchanged; replace “refuses, changing nothing” with “may sync the agent clone, then otherwise refuses without writing launch state or starting a session.” [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose must state the already-specified sync side effect
+
+## Verdict
+The signed brief has three blocking boundary failures that can execute agent-writable code or launch with unusable permissions under plausible supported configurations.
+VERDICT: FAIL
