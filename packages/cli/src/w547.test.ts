@@ -260,6 +260,20 @@ test("W-547-b3 behaviour 3: land refuses while a perform writes main", () => {
   assert.match(torn.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-801\.json is not JSON/, `land refuses beside a malformed marker\n${torn.out}${torn.err}`);
   assert.equal(torn.status, 1, "the malformed-marker refusal exits 1");
 });
+test("W-547-b3 land from a linked worktree beside a live writer reports the writer lock first", () => {
+  const w = world("w547-b3-linked", "backlog");
+  marker(w.repo, "W-800", "merge", 10);
+  const wt = `${w.repo}-linked`;
+  const added = spawnSync("git", ["-C", w.repo, "worktree", "add", "-q", "--detach", wt], { encoding: "utf8" });
+  assert.equal(added.status, 0, `the linked worktree is made: ${added.stderr}`);
+  const args = ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", join(wt, "studio"), "--repo", wt, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"];
+  const r = cli(w, args);
+  // one-sided: the rest of the output names the PR and the marker's age
+  assert.match(r.out, /^land: refused\nwhy: refusing: W-800 merge is running and writes main when its PR lands/, `the writer refusal comes before the linked-worktree one\n${r.out}${r.err}`);
+  clear(w.repo, "W-800");
+  const alone = cli(w, args);
+  assert.match(alone.out, /is a linked worktree/, `with no writer the linked-worktree refusal stands\n${alone.out}${alone.err}`);
+});
 test("W-547-b4 behaviour 4: retro --daily refuses while a perform writes main", () => {
   const w = world("w547-b4", "backlog");
   marker(w.repo, "W-800", "merge", 10);
