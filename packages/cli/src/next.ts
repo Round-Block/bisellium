@@ -44,7 +44,7 @@ import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
 import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
-import { STEPS, loadMarker, type Marker, type Step } from "./inputs.js";
+import { STEPS, loadMarker, loadOpusRecord, type Marker, type Step } from "./inputs.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -663,22 +663,11 @@ const CONFLICT_OPEN_STATES = new Set(["greenlit", "building", "verifying", "revi
 
 /** One lane record, distinguishing valid absence from an unreadable or unclassifiable file. */
 function laneRecord(root: string, id: string, absent: "allowed" | "error"): { record: Dict | undefined } | { error: string } {
-  const rel = recordRel(id);
-  const file = readContainedRegularFile(root, rel, "opera");
-  if ("error" in file) {
-    if (absent === "allowed" && file.code === "ENOENT") return { record: undefined };
-    return { error: `${rel}: ${file.error}` };
-  }
-  let value: unknown;
-  try {
-    value = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
-  } catch (e) {
-    return { error: `${rel}: ${(e as Error).message.split("\n")[0]}` };
-  }
-  if (!isDict(value)) return { error: `${rel}: front matter must be a mapping` };
-  const state = value["state"];
-  if (typeof state !== "string" || !STATES.some((s) => s.id === state)) return { error: `${rel}: state must be one of ${STATES.map((s) => s.id).join(", ")}` };
-  return { record: value };
+  // W-558: the opus record loader (absent is ENOENT only; a state outside STATES is an error)
+  const read = loadOpusRecord(root, recordRel(id));
+  if (read.kind === "absent") return absent === "allowed" ? { record: undefined } : { error: `${recordRel(id)}: cannot be read (ENOENT)` };
+  if (read.kind === "error") return { error: read.why };
+  return { record: read.value };
 }
 
 /** A ref read with exactly the documented present/absent answers; every other result is an error. */
@@ -2552,18 +2541,11 @@ function aheadOf(f: Facts): Pick<Owed, "ahead" | "aheadError"> {
 
 /** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
 function queuedState(studioAbs: string, id: string): string {
-  const rel = recordRel(id);
-  const file = readContainedRegularFile(studioAbs, rel, "opera");
-  if ("error" in file) throw new Error(`the queued record ${rel} cannot be read (${file.code ?? file.error.split("\n")[0]})`);
-  let data: unknown;
-  try {
-    data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
-  } catch {
-    throw new Error(`the queued record ${rel} has no front matter`);
-  }
-  const state = isDict(data) ? data["state"] : undefined;
-  if (typeof state !== "string") throw new Error(`the queued record ${rel} has no state`);
-  return state;
+  // W-558 (W-559 3): the opus record loader; absent, unreadable, no front matter, or a state outside STATES throws
+  const read = loadOpusRecord(studioAbs, recordRel(id));
+  if (read.kind === "absent") throw new Error(`the queued record ${recordRel(id)} cannot be read (ENOENT)`);
+  if (read.kind === "error") throw new Error(`the queued record ${read.why}`);
+  return read.value["state"] as string;
 }
 
 /** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
