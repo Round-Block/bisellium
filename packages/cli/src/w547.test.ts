@@ -124,7 +124,7 @@ test("W-547-b1 behaviour 1: next names a meanwhile step beside every wait it nam
 });
 test("W-547-b1 the daily retro's day is the injected --now's, never the wall clock's", () => {
   const w = world("w547-b1-now", "backlog");
-  put(w.studio, "acta/improvements.md", `---\nauthor: producer\nkind: daily\ntitle: "Improvements tracker"\nat: 2026-10-01T00:00:00Z\n---\n# Improvements tracker\n\n## Daily retro\n\n### 2026-10-01\n\n- fixture entry\n`);
+  put(w.studio, "acta/improvements.md", `---\nauthor: producer\nkind: daily\ntitle: "Improvements tracker"\nat: 2026-10-01T00:00:00Z\n---\n# Improvements tracker\n\n## Daily retro\n\n### 2026-10-01\n\n- fixture entry\n\n#### Proposed improvements\n`);
   commit(w.repo, "studio: W-547 tracker");
   const o = next(w, [OPUS]);
   assert.match(o.kv.get("meanwhile") ?? "", /: retro: the daily retro of 2026-10-01: /, ran("--now 2026-10-02 owes the retro of 2026-10-01, whatever day the host clock reads", o));
