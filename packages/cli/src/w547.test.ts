@@ -7,7 +7,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { BUDGET, MAIN, NOW_ISO, NOW_MS, OPUS, PROC_ENV, SETUP_ENV, TSX, type World, commit, envFor, fakeProc, next, put, putBrief, ran, scratch, sign, srWorld, world } from "./next-world.test.js";
@@ -274,6 +274,16 @@ test("W-547-b3 land from a linked worktree beside a live writer reports the writ
   const alone = cli(w, args);
   assert.match(alone.out, /is a linked worktree/, `with no writer the linked-worktree refusal stands\n${alone.out}${alone.err}`);
 });
+test("W-547-b3 a stale merge marker does not stop an otherwise valid land", () => {
+  const w = world("w547-b3-valid", "backlog");
+  marker(w.repo, "W-800", "merge", 600);
+  put(w.studio, "acta/w547-note.md", `---\nauthor: producer\nkind: daily\ntitle: "A note"\nat: 2026-10-01T00:00:00Z\n---\na landable record\n`);
+  const args = ["land", "studio/acta/w547-note.md", "--title", "chore(studio): note", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"];
+  const r = cli(w, args);
+  assert.doesNotMatch(r.out, /is running and writes main|writer lock cannot be read|outside the records land carries|linked worktree/, `the land gets past the lock and the path checks\n${r.out}${r.err}`);
+  const made = spawnSync("git", ["-C", w.repo, "for-each-ref", "refs/heads/records/"], { encoding: "utf8" }).stdout;
+  assert.match(made, /refs\/heads\/records\/land-[0-9a-f]{12}/, `the valid land made its records commit\n${r.out}${r.err}`);
+});
 test("W-547-b4 behaviour 4: retro --daily refuses while a perform writes main", () => {
   const w = world("w547-b4", "backlog");
   marker(w.repo, "W-800", "merge", 10);
@@ -296,6 +306,16 @@ test("W-547-b4 behaviour 4: retro --daily refuses while a perform writes main", 
   // one-sided: the rest of the output names the scratch directory and git's own error
   assert.match(nogit.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the main checkout cannot be found from /, `retro --daily refuses when the main checkout cannot be found (no git on PATH)\n${nogit.out}${nogit.err}`);
   assert.equal(nogit.status, 1, "the failed-discovery refusal exits 1");
+});
+test("W-547-b4 a stale merge marker does not stop an otherwise valid retro --daily append", () => {
+  const w = world("w547-b4-valid", "backlog");
+  marker(w.repo, "W-800", "merge", 600);
+  for (const dir of ["ci", "opera"]) mkdirSync(join(w.studio, dir), { recursive: true });
+  put(w.studio, "acta/improvements.md", `---\nauthor: producer\nkind: daily\ntitle: "Improvements tracker"\nat: 2026-10-01T00:00:00Z\n---\n# Improvements tracker\n\n## Daily retro\n`);
+  const r = cli(w, ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO]);
+  assert.doesNotMatch(r.err, /is running and writes main|writer lock cannot be read/, `retro --daily gets past the lock\n${r.out}${r.err}`);
+  assert.equal(r.status, 0, `the valid retro --daily exits 0\n${r.out}${r.err}`);
+  assert.match(readFileSync(join(w.studio, "acta", "improvements.md"), "utf8"), /\n### 2026-10-01\n/, "the previous day's entry was appended");
 });
 test("W-547-b5 behaviour 5: next holds a spec review order while a perform writes main or main is stashed under a live perform", () => {
   const w = srWorld("w547-b5");
