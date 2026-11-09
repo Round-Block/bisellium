@@ -42,6 +42,9 @@ queues:
       - { opus: W-536, says: "check refuses a spec promise proved by hand-parsed shell; eng-lead's form (speed meet 1108); behind the freeze" }
       - { opus: W-535, says: "run exits with its command's status; red first, unreproduced; behind the freeze" }
       - { opus: W-540, says: "warn and refuse when the session's cwd is under .worktrees/; low (speed meet 1108); behind the freeze" }
+      - { opus: W-548, says: "admission and the prototype check enforce brief pins; daily retro 11-08; behind the freeze" }
+      - { opus: W-549, says: "the review perform writes Earlier findings itself; daily retro 11-08; behind the freeze" }
+      - { opus: W-550, says: "the guard refuses an empty commit; daily retro 11-08; behind the freeze" }
       - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-532's measured boot sets its number (leads 2026-11-07)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
