@@ -12,11 +12,15 @@ queues:
       - { opus: W-542, says: "the guard limits a clerk's writes and the clerk gets Edit; a security boundary, exempt from the freeze on the leads' unanimous call, the Patron said yes 2026-11-08 (D-189)" }
       - { opus: W-543, says: "a timer the Patron installs starts a refresh session from a landed handoff; exempt from the freeze on the leads' overnight meet and the Patron 2026-11-08 (D-189)" }
       - { opus: W-547, says: "next names a meanwhile step beside every wait; exempt at the Patron's ask 2026-11-09, ranked on the leads' overlap meet (D-189)" }
+      - { opus: W-558, says: "a shared fail-closed read and loaders for queue, receipts and step markers; W-185's first slice; high (D-039), ranked on the leads' rank meet and the Patron's yes 2026-11-09" }
       - { opus: W-554, says: "a meet verb asks the relevant leads, each named with why; check refuses a cited meet missing one; exempt at the Patron's ask 2026-11-09" }
       - { opus: W-553, says: "a spec draft declares a risk class and a 30/45-minute budget; only evidence defers to build; exempt at the Patron's ask 2026-11-09, on the leads' spec-speed meet (D-189)" }
-      - { opus: W-545, says: "the build rung as one perform: handoff, ci --opus and gate commits; exempt on the leads' meet and the Patron 2026-11-09" }
+      - { opus: W-555, says: "the queue check reads studio/queue.yml; the handoff's Greenlit list goes (W-299 part 2); exempt at the Patron's ask 2026-11-09, on the leads' simplify meet (D-189)" }
+      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182); after W-555, never before W-547, on the leads' rank meet and the Patron's yes 2026-11-09" }
+      - { opus: W-556, says: "greenlight --after writes the queue entry; no clerk step at filing; exempt at the Patron's ask 2026-11-09, on the leads' simplify meet (D-189)" }
+      - { opus: W-372, says: "an agent waits on its own background perform; ranked ahead of W-545 on the leads' simplify meet (D-189)" }
+      - { opus: W-545, says: "the build rung as one perform: handoff, ci --opus and gate commits; exempt on the leads' meet and the Patron 2026-11-09", folded: [W-557] }
       - { opus: W-546, says: "the Patron owns the guard fence: CODEOWNERS lines and a guard-import check; exempt on the leads' unanimous call (D-189)" }
-      - { opus: W-512, says: "next refuses out-of-order starts; one lane until this lands (D-181, D-182)" }
       - { opus: W-544, says: "CodeQL in advanced setup, rerunnable, skips records-only PRs; measure first; exempt on the leads' overnight meet (D-189)" }
       - { opus: W-532, says: "cut what a fresh session loads at boot; folds W-517; exempt from the freeze on the leads' boot meet (D-189)", folded: [W-517] }
       - { opus: W-519, says: "run affected tests before the full gate; exempt from the freeze (D-183)" }
@@ -69,7 +73,6 @@ queues:
       - { opus: W-349, says: "flaky row W-279-b3" }
       - { opus: W-399, says: "record verb sella check" }
       - { opus: W-242, says: "hook-set code" }
-      - { opus: W-372, says: "agent waits on background perform" }
       - { opus: W-400, says: "CLAUDE.md, AGENTS.md code-owned" }
       - { opus: W-401, says: "sessions receipt provider" }
       - { opus: W-245, says: "provider-agnostic closing step" }
