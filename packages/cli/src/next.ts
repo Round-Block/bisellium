@@ -43,7 +43,7 @@ import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
-import { meanwhileLines, waitOf, type Owed } from "./meanwhile.js";
+import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -2564,8 +2564,29 @@ function meanwhileOf(f: Facts, d: Derived, nowMs: number): string[] {
   const kind = waitOf(d);
   if (kind === undefined) return [];
   const at = dailyRetroStep(f.studioAbs, gitSrc(f.repo, "refs/heads/master", f.studioRel).read(DAILY_TRACKER), new Date());
-  const owed: Owed = { studioRel: f.studioRel, ...(at === undefined ? {} : { retro: at.day }) };
-  return meanwhileLines(kind, { heavy: 0 }, owed);
+  const owed: Owed = { studioRel: f.studioRel, ...(at === undefined ? {} : { retro: at.day }), ...aheadOf(f) };
+  return meanwhileLines(kind, readLocks(f.repo, f.studioRel, nowMs), owed);
+}
+
+/** W-547: the queue's next entry after this opus and what its spec needs (`aheadIn`): its queue, its records' states and its own derivation. */
+function aheadOf(f: Facts): Pick<Owed, "ahead" | "aheadError"> {
+  return aheadIn(readQueue(f.studioAbs), f.id, (o) => queuedState(f.studioAbs, o), (o) => derivedStep(gather(f.repo, f.studioAbs, o)));
+}
+
+/** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
+function queuedState(studioAbs: string, id: string): string {
+  const rel = recordRel(id);
+  const file = readContainedRegularFile(studioAbs, rel, "opera");
+  if ("error" in file) throw new Error(`the queued record ${rel} cannot be read (${file.code ?? file.error.split("\n")[0]})`);
+  let data: unknown;
+  try {
+    data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
+  } catch {
+    throw new Error(`the queued record ${rel} has no front matter`);
+  }
+  const state = isDict(data) ? data["state"] : undefined;
+  if (typeof state !== "string") throw new Error(`the queued record ${rel} has no state`);
+  return state;
 }
 
 /** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
