@@ -366,3 +366,67 @@ test("W-543-b5 behaviour 5: launch refuses when the Patron's clone's workspace v
   }
 });
 
+test("W-543-b6 behaviour 6: launch refuses with no landed handoff newer than the last start; a launch syncs, holds its lock and counts its start while the session runs, keeps the result and exits by the session's status", async () => {
+  {
+    let w = world();
+    const h1 = git(w.self, "log", "-1", "--format=%H", "refs/remotes/origin/master", "--", "docs/SESSION-HANDOFF.md");
+    put(join(w.state, "starts.jsonl"), JSON.stringify({ at: "2026-11-09T20:00:00.000Z", handoff: h1 }) + "\n");
+    assert.equal(await w.launch("--dry-run"), 1, "the handoff already launched refused");
+    assert.match(said(w), new RegExp(`no handoff newer than the last start: ${h1.slice(0, 12)} was launched at 2026-11-09T20:00:00.000Z`), "the refusal names the handoff and the start");
+    w.lines.length = 0;
+    w.land("code\n", "src.txt");
+    assert.equal(await w.launch("--dry-run"), 1, "a later commit that leaves the handoff alone refused");
+    const h2 = w.land("handoff 2\n");
+    w.lines.length = 0;
+    assert.equal(await w.launch("--dry-run"), 0, "a newer landed handoff launches");
+    assert.match(said(w), new RegExp(`would start for handoff ${h2.slice(0, 12)}`), "the dry run names the new handoff");
+    w = world();
+    put(join(w.self, "docs", "SESSION-HANDOFF.md"), "local only\n");
+    git(w.self, "commit", "-q", "-am", "local");
+    put(join(w.state, "starts.jsonl"), JSON.stringify({ at: "2026-11-09T20:00:00.000Z", handoff: git(w.self, "rev-parse", "refs/remotes/origin/master") }) + "\n");
+    assert.equal(await w.launch("--dry-run"), 1, "a handoff on the clone's master but not on origin/master is not landed");
+    w = world();
+    git(w.self, "update-ref", "-d", "refs/remotes/origin/master");
+    assert.equal(await w.launch("--dry-run"), 1, "no origin/master refused");
+    assert.match(said(w), /no landed handoff/, "the refusal names the missing handoff");
+  }
+  {
+    let w = world();
+    let seen: { lock?: unknown; starts?: string } = {};
+    w.fake.during = () => {
+      const f = join(w.state, "starts.jsonl");
+      seen = { lock: JSON.parse(readFileSync(join(w.state, "lock.json"), "utf8")), starts: existsSync(f) ? readFileSync(f, "utf8") : "" };
+    };
+    assert.equal(await w.launch(), 0, "a real launch starts the session and exits 0");
+    const h = git(w.self, "rev-parse", "refs/remotes/origin/master");
+    assert.deepEqual(seen.lock, { pid: ME, start_ticks: 9000, at: NOW.toISOString(), handoff: h }, "the lock names this process while the session runs");
+    assert.equal(seen.starts, JSON.stringify({ at: NOW.toISOString(), handoff: h }) + "\n", "the start is counted before the session ends");
+    const names = w.calls.map((c) => (c.cmd === "bash" ? `bash ${c.args[1]}` : c.cmd));
+    assert.ok(names.indexOf("bash sync") > names.indexOf("gh") && names.indexOf("bash sync") < names.indexOf("session"), "the sync runs after the checks and before the session");
+    const s = w.calls.find((c) => c.cmd === "session");
+    assert.equal(s?.cwd, w.agent, "the session runs in the agent clone");
+    assert.equal(s?.env?.["GH_CONFIG_DIR"], w.agentGh, "the session has the agent's gh config");
+    assert.equal(s?.env?.["GH_TOKEN"] ?? s?.env?.["GITHUB_TOKEN"], undefined, "the session has no ambient token");
+    const want = ["Edit({agent}/**)", "Write({agent}/**)", "Edit({evidence}/**)", "Write({evidence}/**)"].map((r) => resolved(w, r));
+    assert.deepEqual(want.filter((g) => !(s?.args ?? []).includes(g)), [], "the session's Edit and Write grants are under the resolved AGENT_DIR and evidence folder");
+    assert.deepEqual(s?.args.slice(0, 5), [join(w.t, "bin", "claude"), "-p", readFileSync(join(w.self, ".claude", "refresh", "prompt.md"), "utf8").trim(), "--permission-mode", "dontAsk"], "the session is claude -p with the prompt under dontAsk");
+    assert.equal(existsSync(join(w.state, "lock.json")), false, "the lock is gone after the session");
+    assert.equal(readFileSync(join(w.state, "session.json"), "utf8"), w.fake.session.stdout, "the result is kept");
+    w.lines.length = 0;
+    assert.equal(await w.launch(), 1, "the same handoff is not launched twice");
+
+    w = world();
+    w.fake.sync = { status: 1, stdout: "sync: refused: AGENT_DIR has uncommitted tracked changes ( M x); master was not moved\n", stderr: "" };
+    assert.equal(await w.launch(), 1, "a refused sync refuses the launch");
+    assert.match(said(w), /the sync refused \(exit 1\): sync: refused: AGENT_DIR has uncommitted/, "the refusal names the sync's line");
+    assert.equal(existsSync(w.state), false, "a refused sync writes no state");
+    assert.equal(w.calls.some((c) => c.cmd === "session"), false, "a refused sync starts no session");
+
+    w = world();
+    w.fake.session = { status: 1, stdout: "" };
+    assert.equal(await w.launch(), 1, "a session that fails exits 1");
+    w.lines.length = 0;
+    w.land("handoff 2\n");
+    assert.equal(await w.launch("--dry-run"), 1, "after a session with no readable result the next launch is refused");
+  }
+});
