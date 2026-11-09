@@ -2558,8 +2558,8 @@ async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (l
 }
 
 /** W-530 (D-188): the daily retro's steps in order, from the first one left, as one line that holds nothing; undefined when none is left. */
-function dailyLine(repo: string, studioAbs: string, studioRel: string): string | undefined {
-  const at = dailyRetroStep(studioAbs, gitSrc(repo, "refs/heads/master", studioRel).read(DAILY_TRACKER), new Date());
+function dailyLine(repo: string, studioAbs: string, studioRel: string, nowMs: number): string | undefined {
+  const at = dailyRetroStep(studioAbs, gitSrc(repo, "refs/heads/master", studioRel).read(DAILY_TRACKER), new Date(nowMs));
   if (at === undefined) return undefined;
   const tracker = `${studioRel}/${DAILY_TRACKER}`;
   const steps = [`a ladder-runner runs: bisellium retro --daily --studio ${studioRel}`, `the qa-lead writes the proposals under "Proposed improvements" in ${tracker}`, `a ladder-runner lands the entry: bisellium land ${tracker} --title 'chore(studio): daily retro ${at.day}' --sella producer --studio ${studioRel}`];
@@ -3402,7 +3402,7 @@ function refreshTicket(f: Facts, d: Derived, nowMs: number): string[] {
   return written === undefined ? [`ticket: ${t.action} round ${t.round}`] : none(`ticket-error: ${written}`);
 }
 
-function render(id: string, d: Derived, f: Facts, status: string): string[] {
+function render(id: string, d: Derived, f: Facts, status: string, nowMs: number): string[] {
   const out = [`next: ${id} ${d.step} ${status}`, `actor: ${d.actor}`, whyLine(d)];
   if (f.tip !== undefined) out.push(`head: opus/${id} ${f.tip.slice(0, 12)}`);
   for (const [k, v] of d.extra) out.push(`${k}: ${one(v)}`);
@@ -3413,7 +3413,7 @@ function render(id: string, d: Derived, f: Facts, status: string): string[] {
     for (const [k, v] of o.extra) out.push(`${k}: ${one(v)}`);
     out.push(`inputs: ${o.inputs.map((x) => clean(x)).join(", ")}`, `command: ${one(o.command)}`);
   } else if (d.command !== undefined && d.status === "named") out.push(`command: ${one(d.command)}`);
-  const daily = dailyLine(f.repo, f.studioAbs, f.studioRel);
+  const daily = dailyLine(f.repo, f.studioAbs, f.studioRel, nowMs);
   if (daily !== undefined) out.push(one(daily));
   return out;
 }
@@ -3504,7 +3504,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   }
   const now = new Date();
   lines.push(codexBurnLine(takeReading(homedir(), now, "next --all"), now));
-  const daily = dailyLine(repo, studioAbs, relative(realpathSync(repo), realpathSync(studioAbs)).split("\\").join("/"));
+  const daily = dailyLine(repo, studioAbs, relative(realpathSync(repo), realpathSync(studioAbs)).split("\\").join("/"), Date.now());
   if (daily !== undefined) lines.push(daily);
   lines.push(`open: ${open}`);
   console.log(lines.map((l) => clean(l, 1000)).join("\n"));
@@ -3607,7 +3607,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...meanwhileOf(f, ungated, a.nowMs), ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
       const h = assess(readMarker(repo, id), d1.step, env);
-      const lines = (status: string): string[] => render(id, d1, f, status);
+      const lines = (status: string): string[] => render(id, d1, f, status, a.nowMs);
       switch (h.kind) {
         case "running":
           return sayT(0, [
@@ -3664,7 +3664,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         f = gather(repo, opened.root, id);
         const d2 = derive(f);
         if (a.expect !== undefined && a.expect !== d2.step) return halt(refusalLines(d2));
-        if (!performable(d2) || needsText(d2)) return { code: d2.status === "held" ? 1 : 0, lines: render(id, d2, f, d2.status), after: [], ok: false };
+        if (!performable(d2) || needsText(d2)) return { code: d2.status === "held" ? 1 : 0, lines: render(id, d2, f, d2.status, a.nowMs), after: [], ok: false };
         // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
         for (const l of refreshTicket(f, derivedStep(f), a.nowMs)) log(l);
         const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
