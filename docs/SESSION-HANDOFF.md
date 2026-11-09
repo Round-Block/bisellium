@@ -54,7 +54,7 @@ Greenlit on master, continued: W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
-In flight: W-543 done (#1105, #1107). W-547 spec r4 failed; remainder filed (D-061 §4); architect cuts, signs r5. W-451 work links: merged (#1045), next done, once its master verify runs.
+In flight: W-543 done (#1105, #1107). W-547 build r2 failed; architect class loop first (current-state.md). W-451 work links: merged (#1045), next done, once its master verify runs.
 
 Ahead of the build, greenlit: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home that D-175 says stands. It is branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep that worktree). Do no W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
