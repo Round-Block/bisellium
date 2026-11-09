@@ -43,6 +43,7 @@ import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
+import { meanwhileLines, waitOf, type Owed } from "./meanwhile.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -2558,6 +2559,15 @@ function dailyLine(repo: string, studioAbs: string, studioRel: string): string |
   return `daily-retro: ${at.day} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
 }
 
+/** W-547: the meanwhile lines beside the wait `d` names (none when the caller acts next): the retro owed, the locks and the spec ahead. */
+function meanwhileOf(f: Facts, d: Derived, nowMs: number): string[] {
+  const kind = waitOf(d);
+  if (kind === undefined) return [];
+  const at = dailyRetroStep(f.studioAbs, gitSrc(f.repo, "refs/heads/master", f.studioRel).read(DAILY_TRACKER), new Date());
+  const owed: Owed = { studioRel: f.studioRel, ...(at === undefined ? {} : { retro: at.day }) };
+  return meanwhileLines(kind, { heavy: 0 }, owed);
+}
+
 /** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
 const dailyEntryEdit = (f: Facts): string | undefined => unstagedEdit(f.repo, `${f.studioRel}/${DAILY_TRACKER}`);
 
@@ -3565,7 +3575,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       const ungated = derivedStep(f);
       const tickets = refreshTicket(f, ungated, a.nowMs);
       if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
-      const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
+      // W-547: every health branch prints the meanwhile lines beside a wait, after its own lines
+      const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...meanwhileOf(f, ungated, a.nowMs), ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
       const h = assess(readMarker(repo, id), d1.step, env);
       const lines = (status: string): string[] => render(id, d1, f, status);
