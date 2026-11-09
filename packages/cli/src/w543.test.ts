@@ -294,7 +294,17 @@ test("W-543-b2 behaviour 2: launch refuses a malformed allow list; the shipped a
   const prompt = readFileSync(join(REPO, ".claude", "refresh", "prompt.md"), "utf8");
   for (const s of ["docs/SESSION-HANDOFF.md", "~/.bisellium-evidence/current-state.md", "land the handoff"]) assert.ok(prompt.includes(s), `the prompt names ${s}`);
   const unit = readFileSync(join(REPO, ".claude", "refresh", "bisellium-launch.service"), "utf8");
-  assert.match(unit, /^ExecStart=%h\/\.local\/bin\/bisellium launch$/m, "the service runs the installed bisellium");
+  const unitLines = unit.split("\n");
+  const agentWrites = /^(?:%h\/agents(?:\/|$)|%h\/\.bisellium-evidence(?:\/|$)|\/tmp(?:\/|$))/;
+  assert.match(unit, /^ExecStart=\/\S+\/node %h\/\.local\/bin\/bisellium launch$/m, "the service runs the installed bisellium by an absolute node");
+  const unitNode = unitLines.find((l) => l.startsWith("ExecStart="))?.slice("ExecStart=".length).split(" ")[0] ?? "";
+  assert.doesNotMatch(unitNode, agentWrites, "the service's node is in no folder an agent writes");
+  const unitPath = unitLines.filter((l) => l.startsWith("Environment=PATH="));
+  assert.equal(unitPath.length, 1, "the service's PATH is one fixed list of absolute folders");
+  const unitEntries = (unitPath[0] ?? "").slice("Environment=PATH=".length).split(":");
+  for (const e of unitEntries) assert.match(e, /^(?:\/|%h\/)[^\s$%]*$/, "the service's PATH is one fixed list of absolute folders");
+  for (const e of unitEntries) assert.doesNotMatch(e, agentWrites, "no PATH entry of the service is in a folder an agent writes");
+  assert.deepEqual(unitLines.filter((l) => /^(?:Exec[A-Za-z]*|Environment[A-Za-z]*|PassEnvironment|UnsetEnvironment)=/.test(l)).map((l) => l.split("=")[0]), ["Environment", "ExecStart"], "the service runs one command and sets no other environment");
   assert.doesNotMatch(unit, /agents\/bisellium|\.bisellium-evidence/, "the service names no agent-writable folder");
   assert.ok(readFileSync(join(REPO, ".claude", "refresh", "bisellium-launch.timer"), "utf8").split("\n").includes("OnCalendar=*-*-* 23,00,01,02,03,04,05,06:00,30:00 Asia/Singapore"), "the timer has a calendar");
 });
