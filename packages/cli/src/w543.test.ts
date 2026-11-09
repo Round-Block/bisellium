@@ -195,7 +195,7 @@ test("W-543-b1 behaviour 1: launch runs only as the Patron's clone's CLI on a cl
     w.env["PATH"] = `${hidden}:${w.env["PATH"]}`;
     try {
       assert.equal(await w.launch("--dry-run"), 1, `a ${name} linked into the ${where} folder in an execute-only PATH folder refused`);
-      assert.match(said(w), new RegExp(`${name} .*links? .*${where === "agent" ? "agent" : "bisellium-evidence"}/bin/${name}`), `the refusal names the ${name} target`);
+      assert.match(said(w), /hidden.*cannot be listed/, `the refusal names the unlistable folder holding the ${name} link`);
       assert.deepEqual(w.calls, [], `a ${name} linked into the ${where} folder in an execute-only PATH folder runs no child`);
     } finally {
       chmodSync(hidden, 0o755);

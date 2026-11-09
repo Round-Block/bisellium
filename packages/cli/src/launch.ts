@@ -223,7 +223,9 @@ function pathFault(path: string, writable: readonly string[]): string | undefine
     try {
       names = readdirSync(d);
     } catch {
-      continue;
+      // an unlistable folder may hold a link to the agent clone that a later program is found by: refuse it whole
+      if (!existsSync(d)) continue;
+      return `PATH entry '${d}' cannot be listed, so its links cannot be judged`;
     }
     for (const n of names) {
       const e = join(d, n);
@@ -339,11 +341,11 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   if (ungranted.length > 0) return refuse(`${LAUNCH_CONFIG} grants no ${ungranted.join(", ")}; the session could not write the agent clone or the evidence folder`);
   let prompt = "";
   try {
-    prompt = readFileSync(join(clone, LAUNCH_PROMPT), "utf8").trim();
+    prompt = readFileSync(join(clone, LAUNCH_PROMPT), "utf8");
   } catch {
     /* judged below */
   }
-  if (prompt === "") return refuse(`${LAUNCH_PROMPT} in ${clone} is missing or empty`);
+  if (prompt.trim() === "") return refuse(`${LAUNCH_PROMPT} in ${clone} is missing or empty`);
 
   const lockFile = join(state, "lock.json");
   const startsFile = join(state, "starts.jsonl");
