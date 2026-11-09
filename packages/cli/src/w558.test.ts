@@ -75,3 +75,25 @@ test("W-558-b1 behaviour 1: one shared read returns absent, valid or error, and 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("W-558-b2 behaviour 2: an unknown marker step is an error that land and retro refuse on, and a .json marker output is an output", async () => {
+  const w = world("w558-b2", "backlog");
+  marker(w.repo, "W-800", "merg", 10);
+  const m = await meanwhile();
+  assert.match((m.readLocks!(w.repo, "studio", NOW_MS) as { error?: string }).error ?? "", /^the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg"/, "an unknown marker step is a lock read error, never no writer");
+  assert.match((m.mainWriter!(w.repo, NOW_MS) as { error?: string }).error ?? "", /names an unknown step "merg"/, "the writer read refuses an unknown marker step");
+  put(w.studio, "notes.md", "a record to land\n");
+  const land = cli(w, ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"]);
+  // one-sided: the rest of the output is the marker reader's closed set
+  assert.match(land.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg"/, `land refuses beside an unknown marker step\n${land.out}${land.err}`);
+  const retro = cli(w, ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO]);
+  assert.match(retro.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg"/, `retro --daily refuses beside an unknown marker step\n${retro.err}`);
+  assert.equal(retro.status, 1, "the retro refusal exits 1");
+  rmSync(join(w.repo, ".bisellium", "steps"), { recursive: true, force: true });
+  marker(w.repo, "W-800", "merge", 10, "steps/status.json");
+  assert.deepEqual(m.readLocks!(w.repo, "studio", NOW_MS), { writer: "W-800 merge", heavy: 0 }, "a live marker whose output is a .json file is the writer lock, its output no marker");
+  rmSync(join(w.repo, ".bisellium", "steps"), { recursive: true, force: true });
+  writeFileSync(join(w.repo, ".bisellium", "steps"), "a file where the steps directory goes\n");
+  const n = await nextMod();
+  assert.match(n.readMarker!(w.repo, OPUS)?.invalid ?? "absent", /^the marker cannot be read \(ENOTDIR\)$/, "next's own marker read is invalid, never absent, when the steps path cannot be read");
+});
