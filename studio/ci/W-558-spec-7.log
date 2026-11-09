@@ -1,0 +1,23 @@
+# opus: W-558
+# phase: spec
+# round: 7
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T15:58:16.229Z
+# tree: tree:76c9148058bc4e55742d3c6bf83fe6eb744bfa9c
+# brief: briefs/W-558.md blob:4d2a094b194e47198a9c5498dbd10034c6c0662d
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":7,"actor":"architect","studio":".worktrees/W-558/studio","head":"aa0ab6b710c625ade35bb7f986735f1e704ddd73","brief":"4d2a094b194e47198a9c5498dbd10034c6c0662d","at":"2026-11-09T15:58:07.986Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-558-build/rev4/promise-ledger.md
+
+## Findings
+
+1. advisory — revision 4 owns `packages/cli/src/w547.test.ts` (W-547-b2's one expected string, `receipts/producer is not a directory`), which revision 3 named as a flip but did not own; `git diff origin/master...HEAD --stat` at aa0ab6b7 shows no other path outside `studio/` that Files owned does not name, and the listed `read.ts` entry is dropped (the build inlines it in `schema/src/index.ts`) — check: git -C /home/edckt/agents/bisellium/.worktrees/W-558 diff origin/master...HEAD --stat
+2. advisory — spec review round 6 finding 1 (S1) is built and stated: `recordIds` and `next --all`'s `runAll` walk `opera/` with `walkReal` before listing it, whether or not the queue names an opus; rows `W-558-f2` (four shapes held by `readQueue`, `check` and `next --all`; a genuinely absent `opera/` ok), red at b166c183 by `ERR_ASSERTION`, green at e5537f5a; the class census reruns with `# UNCHECKED: 0`; the stated limit that `recordIds`' hold names a missing record is dropped — check: /home/edckt/.bisellium-evidence/W-558-build/fix2/red.log; /home/edckt/.bisellium-evidence/W-558-build/fix2/census-after.out; /home/edckt/.bisellium-evidence/W-558-build/rev4/t-w558.log
+3. advisory — round 6 advisories 2 to 5 judged true and applied as worded (per-row closed result; row 6 names its rejector `readFileSync`; behaviour 5 names the lexical limit; `readInput` inline in `schema/src/index.ts`), with the admission's "a rejection fails closed" kept in the Input domain rule; the scripts are kept — check: /home/edckt/.bisellium-evidence/W-558-build/rev4/apply-rev4.py; /home/edckt/.bisellium-evidence/W-558-build/rev4/apply-rev4b.py; /home/edckt/.bisellium-evidence/W-558-build/rev4/apply-rev4c.py; /home/edckt/.bisellium-evidence/W-558-build/rev4/apply-rev4d.py (row 6, a path row since advisory 3, lists its forms and limits)
+4. advisory — pre-sign gate by hand at e5537f5a plus the brief: check PASS, 0 blocking; each run alone and green: w558 (40), w547 (9), w430 (5), spec-seats (3), ladder-followon (8), next-review (45), next-spec (35), containment (71), next-queue (28), next-ladder (18) — check: /home/edckt/.bisellium-evidence/W-558-build/rev4/check.log; /home/edckt/.bisellium-evidence/W-558-build/rev4/t-next-review.log
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`) for `studio/briefs/W-558.md` revision 4 at opus/W-558 aa0ab6b7.

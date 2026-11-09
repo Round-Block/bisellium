@@ -1,0 +1,22 @@
+# opus: W-558
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c0d7-49f8-77f2-b266-5d480f0a5086
+# outcome: failed
+# at: 2026-11-09T16:02:46.113Z
+# tree: tree:76c9148058bc4e55742d3c6bf83fe6eb744bfa9c
+# brief: briefs/W-558.md blob:4d2a094b194e47198a9c5498dbd10034c6c0662d
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":8,"actor":"spec-reviewer","studio":".worktrees/W-558/studio","head":"aa0ab6b710c625ade35bb7f986735f1e704ddd73","brief":"4d2a094b194e47198a9c5498dbd10034c6c0662d","at":"2026-11-09T16:02:41.525Z"}
+
+## Findings
+1. blocking — brief:79 `next --all`’s new `walkReal(studioAbs, "opera")` trusts `studioAbs` as its base, while `openStudio` does not reject a studio symlink; an accidentally symlinked studio targeting another in-repository studio is therefore followed and its `opera/` records are listed and rendered before the later `readQueue` hold, with no existing test covering this path. The same line also overstates absence for `next --all`, whose `runAll` still holds on a genuinely absent `opera/`; replace brief:79’s revision-4 sentence with: “Revision 4: `readQueue` validates the studio with `walkStudio(studio, base)` and then `opera/` with `walkReal`; `next --all` first validates `studioAbs` relative to `repo` with `walkStudio(studioAbs, repo)`, then validates `opera/` with `walkReal` before listing it. A symlinked, dangling, empty-target, non-directory or unreadable studio or `opera/` is a hold; for `readQueue` a genuinely absent `opera/` is no records, while `next --all` retains its existing ENOENT hold.” [severity: S1] [design: keeps] [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w558.test.ts
+2. advisory — brief:141 Revision 4 inlines `readInput` in the existing schema index, so the architecture summary’s “one new module in `@bisellium/schema`” remains false. Replace brief:141 with: “Architecture: one pure export cluster is added inline to `packages/schema/src/index.ts` and one new module in `packages/cli`; `STEPS` moves its one definition into `inputs.ts`; no new verb, flag, package edge, lifecycle transition, serve route or record.” [severity: S4] [design: keeps] [class: spec×prose-contradiction-under-revision] — check: packages/schema/src/index.ts
+
+## Earlier findings
+- ci/W-558-spec-6.log #1: closed — at e5537f5a `recordIds` and `runAll` both call `walkReal` before listing `opera/`; W-558-f2 covers the four malformed `opera/` forms for `readQueue`, `check`, and `next --all`, and `fix2/census-after.out` reports `# UNCHECKED: 0`.
+
+## Verdict
+The required shell probe returned `aa0ab6b7 spec(W-558): revision 4 owns w547.test.ts; opera/ walked before listing`; the prior site is closed, but `next --all` still enters the same class through a symlinked studio root.
+VERDICT: FAIL
