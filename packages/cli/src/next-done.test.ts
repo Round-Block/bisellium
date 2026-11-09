@@ -1677,7 +1677,9 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   addUnsigned(w);
   const line = (o: Out): string[] => outLines(o).filter((l) => l.startsWith("daily-retro:"));
   const day = previousDay();
-  assert.deepEqual(line(next(w, [OTHER])), [], "no tracker: no line");
+  // W-547: the daily-retro line reads next's --now; the row's day is the host clock's, so each report call passes it
+  const REAL = (): string[] => ["--now", new Date().toISOString()];
+  assert.deepEqual(line(next(w, [OTHER, ...REAL()])), [], "no tracker: no line");
 
   const RUN = "a ladder-runner runs: bisellium retro --daily --studio studio";
   const QA = 'the qa-lead writes the proposals under "Proposed improvements" in studio/acta/improvements.md';
@@ -1685,25 +1687,25 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
 
   // before the run
   setTracker(w, ["2026-10-01"]);
-  const before = next(w, [OTHER]);
+  const before = next(w, [OTHER, ...REAL()]);
   expectOther(before, "branch", "named", "before the run: a signed spec is still named");
   assert.equal(before.status, 0, ran("before the run: exit 0", before));
   assert.deepEqual(line(before), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], ran("before the run: all three, in order", before));
-  assert.deepEqual(line(next(w, [UNSIGNED, ...W530_BUDGET])), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], "a held spec names them too");
+  assert.deepEqual(line(next(w, [UNSIGNED, ...W530_BUDGET, ...REAL()])), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], "a held spec names them too");
   const all = next(w, ["--all"], { clock: false });
   assert.equal(outLines(all).filter((l) => l.startsWith("daily-retro:")).length, 1, ran("--all: one line, not one per opus", all));
   assert.deepEqual(line(all), [`daily-retro: ${day} step 1 of 3: ${RUN}; then ${QA}; then ${LAND}`], ran("--all: the same line", all));
 
   // after the run: the proposals, then the land; `branch` is no longer named twice with no word of them
   verb(w.repo, ["retro", "--daily", "--studio", w.studio]);
-  const run = next(w, [OTHER]);
+  const run = next(w, [OTHER, ...REAL()]);
   expectOther(run, "branch", "named", "after the run: still named");
   assert.deepEqual(line(run), [`daily-retro: ${day} step 2 of 3: ${QA}; then ${LAND}`], ran("after the run: the proposals, then the land", run));
-  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET]).first, `next: ${UNSIGNED} spec named`, "after the run: a new spec is named");
+  assert.equal(next(w, [UNSIGNED, ...W530_BUDGET, ...REAL()]).first, `next: ${UNSIGNED} spec named`, "after the run: a new spec is named");
 
   // the proposals written, not landed
   appendFileSync(join(w.repo, TRACKER_FILE), "\n- none, because the fixture had no failure\n");
-  const written = next(w, [OTHER]);
+  const written = next(w, [OTHER, ...REAL()]);
   assert.deepEqual(line(written), [`daily-retro: ${day} step 3 of 3: ${LAND}`], ran("proposals written: the land", written));
   const allWritten = next(w, ["--all"], { clock: false });
   assert.deepEqual(line(allWritten), [`daily-retro: ${day} step 3 of 3: ${LAND}`], ran("--all: the land", allWritten));
@@ -1711,7 +1713,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   // the entry landed: nothing left
   commit(w.repo, "test: the entry landed");
   git(w.repo, ["push", "-q", "origin", "master"]);
-  assert.deepEqual(line(next(w, [OTHER])), [], "landed: no line");
+  assert.deepEqual(line(next(w, [OTHER, ...REAL()])), [], "landed: no line");
   assert.deepEqual(line(next(w, ["--all"], { clock: false })), [], "landed: no line in --all");
 
   // landed with its heading empty: the proposals are still the qa-lead's, then a second land
@@ -1721,17 +1723,17 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   verb(e.repo, ["retro", "--daily", "--studio", e.studio]);
   commit(e.repo, "test: the entry landed with no proposals");
   git(e.repo, ["push", "-q", "origin", "master"]);
-  assert.deepEqual(line(next(e, [OTHER])), [`daily-retro: ${day} step 2 of 3: ${QA}; then ${LAND}`], "landed empty: the proposals are named again");
+  assert.deepEqual(line(next(e, [OTHER, ...REAL()])), [`daily-retro: ${day} step 2 of 3: ${QA}; then ${LAND}`], "landed empty: the proposals are named again");
 
   // an entry from before W-530, with no heading: no proposals asked; the land only while it is not on master
   const o = world("w530-b4-old", "done");
   addSpecced(o);
   setTracker(o, ["2026-10-01", day]);
-  assert.deepEqual(line(next(o, [OTHER])), [], "an entry with no heading, on master: no line");
-  const noRead = next(o, [OTHER], { env: { GIT_STUB_REAL: failingGit("w530-b4-show", ["show refs/heads/master:studio/acta/improvements.md"]) } });
+  assert.deepEqual(line(next(o, [OTHER, ...REAL()])), [], "an entry with no heading, on master: no line");
+  const noRead = next(o, [OTHER, ...REAL()], { env: { GIT_STUB_REAL: failingGit("w530-b4-show", ["show refs/heads/master:studio/acta/improvements.md"]) } });
   assert.deepEqual(line(noRead), [`daily-retro: ${day} step 3 of 3: ${LAND}`], ran("a failed master read reads as absent (the limit)", noRead));
   appendFileSync(join(o.repo, TRACKER_FILE), "- one more line\n");
-  assert.deepEqual(line(next(o, [OTHER])), [`daily-retro: ${day} step 3 of 3: ${LAND}`], "an entry with no heading, not on master: the land");
+  assert.deepEqual(line(next(o, [OTHER, ...REAL()])), [`daily-retro: ${day} step 3 of 3: ${LAND}`], "an entry with no heading, not on master: the land");
 
   // a tracker that cannot be read: the hold and check say so; no line
   const bad = world("w530-b4-bad", "done");
@@ -1739,7 +1741,7 @@ test("W-530-b4 behaviour 4: next names the run, the qa-lead's proposals and the 
   put(bad.studio, "acta/improvements.md/inner.md", "a directory where the tracker should be\n");
   commit(bad.repo, "test: tracker is a directory");
   git(bad.repo, ["push", "-q", "origin", "master"]);
-  assert.deepEqual(line(next(bad, [OTHER])), [], "an unreadable tracker: no line");
+  assert.deepEqual(line(next(bad, [OTHER, ...REAL()])), [], "an unreadable tracker: no line");
 
   // the routes that do not reach `render` carry no line, with a step owed
   const p = world("w530-b4-routes", "done");
