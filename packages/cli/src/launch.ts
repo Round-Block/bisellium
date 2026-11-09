@@ -340,6 +340,27 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   const lockFile = join(state, "lock.json");
   const startsFile = join(state, "starts.jsonl");
   const resultFile = join(state, "session.json");
+  // a session already live: the launch's own lock, or a claude whose working folder is in the agent clone
+  let lockPid: number | undefined;
+  if (existsSync(lockFile)) {
+    let lock: unknown;
+    try {
+      lock = JSON.parse(readFileSync(lockFile, "utf8"));
+    } catch {
+      return refuse(`${lockFile} is not JSON; remove it once no launched session runs`);
+    }
+    const pid = isDict(lock) ? lock["pid"] : undefined;
+    const ticks = isDict(lock) ? lock["start_ticks"] : undefined;
+    if (typeof pid !== "number" || typeof ticks !== "number") return refuse(`${lockFile} names no pid and start_ticks; remove it once no launched session runs`);
+    const s = stat(deps.procRoot, pid);
+    if (s !== undefined && s.state !== "Z" && s.ticks === ticks) return refuse(`a launched session is live: ${lockFile} names pid ${pid}, still running`);
+    lockPid = pid;
+  }
+  const procs = agentProcesses(deps.procRoot, deps.pid, agent);
+  const sessions = procs.filter((q) => q.name === "claude");
+  if (sessions.length > 0) return refuse(`a session is live in the agent clone: ${sessions.map((q) => `pid ${q.pid} in ${q.cwd}`).join(", ")}`);
+  // background work: any other process whose working folder is in the agent clone (a builder, a ci run, codex, a shell)
+  if (procs.length > 0) return refuse(`background work runs in the agent clone: ${procs.slice(0, 3).map((q) => `pid ${q.pid} ${q.name || "?"} in ${q.cwd}`).join(", ")}${procs.length > 3 ? ` and ${procs.length - 3} more` : ""}`);
   const sessionEnv: NodeJS.ProcessEnv = { ...deps.env, GH_CONFIG_DIR: p.agentGh };
   for (const k of GH_TOKENS) delete sessionEnv[k];
   const handoff = "0".repeat(40);
