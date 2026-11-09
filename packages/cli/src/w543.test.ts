@@ -264,6 +264,41 @@ test("W-543-b2 behaviour 2: launch refuses a malformed allow list; the shipped a
   assert.ok(readFileSync(join(REPO, ".claude", "refresh", "bisellium-launch.timer"), "utf8").split("\n").includes("OnCalendar=*-*-* 23,00,01,02,03,04,05,06:00,30:00 Asia/Singapore"), "the timer has a calendar");
 });
 
+test("W-543-b3 behaviour 3: launch refuses while anything runs in the agent clone: a live session (its own lock, or a claude there) or background work, its own parents not counted", async () => {
+  {
+    let w = world();
+    put(join(w.state, "lock.json"), JSON.stringify({ pid: 777, start_ticks: 555, at: NOW.toISOString(), handoff: "a".repeat(40) }));
+    proc(w.procRoot, 777, { comm: "node", ticks: 555, cwd: w.home });
+    assert.equal(await w.launch("--dry-run"), 1, "a live launched session refused");
+    assert.match(said(w), /a launched session is live: .*lock\.json names pid 777/, "the refusal names the lock's pid");
+    w = world();
+    put(join(w.state, "lock.json"), "{");
+    assert.equal(await w.launch("--dry-run"), 1, "a lock that is not JSON refused");
+    w = world();
+    proc(w.procRoot, 800, { comm: "claude", cwd: join(w.agent, ".worktrees", "W-1") });
+    assert.equal(await w.launch("--dry-run"), 1, "a claude in an agent worktree refused");
+    assert.match(said(w), /a session is live in the agent clone: pid 800/, "the refusal names the claude");
+    w = world();
+    proc(w.procRoot, 801, { comm: "node", argv0: "/usr/local/bin/claude", cwd: w.agent });
+    assert.equal(await w.launch("--dry-run"), 1, "a claude by its argv refused");
+    w = world();
+    proc(w.procRoot, 802, { comm: "claude", cwd: w.home });
+    proc(w.procRoot, 803, { comm: "claude", cwd: w.agent, state: "Z" });
+    assert.equal(await w.launch("--dry-run"), 0, "a claude elsewhere, or a zombie, is no live session");
+  }
+  {
+    let w = world();
+    proc(w.procRoot, 900, { comm: "node", cwd: join(w.agent, ".worktrees", "W-7") });
+    assert.equal(await w.launch("--dry-run"), 1, "a process in an agent worktree refused");
+    assert.match(said(w), /background work runs in the agent clone: pid 900 node in .*W-7/, "the refusal names the process");
+    w = world();
+    proc(w.procRoot, ME, { comm: "node", ppid: 4000, cwd: w.home, ticks: 9000 });
+    proc(w.procRoot, 4000, { comm: "zsh", ppid: 1, cwd: w.agent });
+    proc(w.procRoot, 901, { comm: "bash", cwd: w.home });
+    mkdirSync(join(w.procRoot, "902"));
+    assert.equal(await w.launch("--dry-run"), 0, "the launch's own parent shell, a process elsewhere and one with no readable folder are not counted");
+  }
+});
 
 
 
