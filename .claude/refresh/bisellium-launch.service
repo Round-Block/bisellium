@@ -1,7 +1,7 @@
 # W-543: one refresh session from a landed handoff. The Patron installs it (see the unit's timer); it runs the installed
 # bisellium, the Patron's clone at master (W-379), never a file in the agent clone. Its interpreter is named by absolute path
 # and its PATH is fixed here, so nothing reaches node through PATH before the launch judges PATH for its children (the
-# shim's `#!/usr/bin/env node` is not read: node runs it as a script). The node is this host's Node 25 (linuxbrew); the
+# shim's `#!/usr/bin/env node` is not read: node runs it as a script). The node is this host's Node 25 (linuxbrew).
 # The Patron sets their own absolute Node 25 path at install, outside every folder an agent writes.
 # A refused launch may already have synced the agent clone; it writes no launch state and starts no session.
 [Unit]
