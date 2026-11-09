@@ -54,19 +54,19 @@ Greenlit on master, continued: W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera are exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (the cause fix W-502's hold asks for) is filed greenlit and starts when the freeze ends.
 
-In flight: W-543 done (#1105, #1107). W-547 done (#1111, #1112). W-451 work links: merged (#1045), next done, once its master verify runs.
+In flight: W-558 on opus/W-558: build review r1 failed; class fix round running; steps in current-state.md NOW. W-451 work links: merged (#1045), next done, once its master verify runs.
 
 Ahead of the build, greenlit: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home that D-175 says stands. It is branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep that worktree). Do no W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
 Lane: one until W-512 (D-182). Filed 11-08/09: W-533 to W-559. Next: W-558, W-560, W-554, W-553, W-555, W-512, W-556, W-372, W-545, W-546, W-544, W-532, W-561. The next entry's spec may be drafted during the lane's build (spec-ahead-meet-1109/). Meets: overnight-meet-1108/, cli-approval-meet-1108/, simplify-meet-1109/, rank-meet-1109/. Leads-settled calls need no Patron (D-189).
 
-Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it.
+Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it. Pre-sign meet: presign-meet-1109/collated.md, filed after the 11-10 retro.
 
 D-189: a call that would wait on the Patron goes to a meet of the relevant leads, whose recommendation is the default, vetoable at the next summary; the producer's alone is not. Its lex line landed with W-525 (#1079, production.md section 7).
 
 W-509 is done (#1060, #1061). D-186: greenlighting goes. The order: studio/queue.yml (line 59). W-524 waits for M4. Daily retro (D-188, lex 9 step 7): after 00:00Z, ladder-runner runs, fresh QA lead proposes, ladder-runner lands. First proposals: the classes owed 11-06.
 
-W-456 and W-527, studies finished off the ladder, are done by `conclude` (D-187), reports in studio/acta/2026-11-07-report-W-456.md and -W-527.md. W-523 is done (#1067, #1069). W-530 is done (#1070, #1072).
+W-456 and W-527, studies finished off the ladder, are done by `conclude` (D-187), reports in studio/acta/2026-11-07-report-W-456.md and -W-527.md.
 
 Open gaps and W-508's done-step lessons: "Added 11-06" lines of ~/.bisellium-evidence/current-state-until-1106.md; read them before any done step.
 
