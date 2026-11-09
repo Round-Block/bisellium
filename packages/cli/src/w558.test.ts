@@ -340,3 +340,38 @@ for (const where of ["main", "worktree"] as const) {
     assert.deepEqual(m.readLocks!(w.repo, "studio", NOW_MS), { heavy: 0 }, "an absent receipts/ is zero runs and no error");
   });
 }
+
+/** W-558-f2 (spec review round 6, class review×fail-open-on-malformed-records-patched-per-site): `opera/` is walked before it is listed, whether or not the queue names an opus. */
+const F2_SHAPES = ["symlink to a real copy", "symlink to an empty directory", "dangling symlink", "regular file"] as const;
+const noOpusQueue = "queues:\n  engineering:\n    lanes: { E1: ~ }\n    next: []\nhalted: []\ncut: []\ndeferred: []\n";
+function f2World(tag: string, shape: (typeof F2_SHAPES)[number] | "absent"): World {
+  const w = world(tag, "backlog");
+  put(w.studio, "queue.yml", noOpusQueue);
+  const opera = join(w.studio, "opera");
+  const target = join(w.root, "f2-target");
+  if (shape === "symlink to a real copy") cpSync(opera, target, { recursive: true });
+  else if (shape === "symlink to an empty directory") mkdirSync(target, { recursive: true });
+  rmSync(opera, { recursive: true, force: true });
+  if (shape === "regular file") writeFileSync(opera, "a file where opera/ goes\n");
+  else if (shape === "dangling symlink") symlinkSync(join(w.root, "f2-nowhere"), opera);
+  else if (shape !== "absent") symlinkSync(target, opera);
+  return w;
+}
+for (const shape of F2_SHAPES) {
+  test(`W-558-f2 a ${shape} in place of opera/, with a queue naming no opus, is held by readQueue, check and next --all`, async () => {
+    const w = f2World(`w558-f2-${shape.replace(/\W+/g, "-")}`, shape);
+    const q = await import("./queue.js");
+    const read = q.readQueue(w.studio, w.repo);
+    assert.equal(read.kind, "held", `readQueue holds, got ${JSON.stringify(read).slice(0, 200)}`);
+    assert.match((read as { why?: string }).why ?? "", /opera is (a symlink, not a real directory|not a directory)/, "the hold names opera/");
+    const c = cli(w, ["check", w.studio, "--repo", w.repo, "--json"]);
+    assert.match(c.out, /queue\.shape[^\n]*opera is (a symlink|not a directory)|opera is (a symlink|not a directory)[^\n]*queue\.shape/, `check reports it, got ${c.out.slice(0, 400)}`);
+    const a = cli(w, ["next", "--all", "--studio", w.studio, "--repo", w.repo]);
+    assert.notEqual(a.status, 0, `next --all does not pass, got ${a.out.slice(0, 300)}`);
+  });
+}
+test("W-558-f2 a genuinely absent opera/ with a queue naming no opus is ok (absence, no error)", async () => {
+  const w = f2World("w558-f2-absent", "absent");
+  const q = await import("./queue.js");
+  assert.equal(q.readQueue(w.studio, w.repo).kind, "ok", "an absent opera/ and a queue naming no opus is ok");
+});
