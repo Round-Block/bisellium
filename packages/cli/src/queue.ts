@@ -19,6 +19,7 @@
 import { lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
+import { readInput } from "@bisellium/schema";
 import { parse as parseYaml } from "yaml";
 import { ID_RE } from "./check.js";
 
@@ -97,12 +98,11 @@ function entries(v: unknown, where: string, problems: string[]): QueueEntry[] {
  * entry, and every opus named has a record.
  */
 export function readQueue(studio: string): QueueRead {
-  const file = readContainedRegularFile(studio, QUEUE_FILE, "");
-  if ("error" in file) {
-    if (file.code === "ENOENT") return { kind: "absent" };
-    const why = `${QUEUE_FILE} cannot be read: ${file.error.split("\n")[0]}`;
-    return { kind: "held", why, problems: [why] };
-  }
+  // W-558: the one fail-closed read: absent is ENOENT only, every other read failure holds
+  const read = readInput(QUEUE_FILE, () => readContainedRegularFile(studio, QUEUE_FILE, ""), (bytes) => bytes);
+  if (read.kind === "absent") return { kind: "absent" };
+  if (read.kind === "error") return { kind: "held", why: read.why, problems: [read.why] };
+  const file = { bytes: read.value };
   const problems: string[] = [];
   const held = (): QueueRead => ({ kind: "held", why: `${QUEUE_FILE} is malformed: ${problems.join("; ")}`, problems });
   let doc: unknown;

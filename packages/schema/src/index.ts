@@ -6,6 +6,8 @@
  * OTel lacks is carried in the `workflow.*` attribute namespace defined here.
  */
 
+export { readInput, type InputRead, type RawRead } from "./read.js";
+
 // ---------------------------------------------------------------------------
 // Phases — the fixed normalization that lets one board span projects with
 // incompatible lifecycles. Deliberately NOT extensible (principle 2).
