@@ -1,0 +1,22 @@
+# opus: W-558
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c022-f2b9-74f1-8fd9-94f79e98001d
+# outcome: failed
+# at: 2026-11-09T11:53:53.478Z
+# tree: tree:875df71d9bf17d2ae3b4ca91c8a4aa9d5430ac44
+# brief: briefs/W-558.md blob:c420e993ae7a67c64175c25b8edd053f053cf3e1
+# ticket: {"opus":"W-558","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"a68cc0e691670e5fa1fcfc87d56fb2632f13ced0","brief":"c420e993ae7a67c64175c25b8edd053f053cf3e1","at":"2026-11-09T11:53:52.666Z"}
+
+## Findings
+1. blocking — brief:82 [severity: S1] [design: keeps] A mistakenly symlinked `.bisellium/steps` fails open: `loadMarkers` treats a dangling target’s `ENOENT` as absence and an empty target as a valid empty collection, while `readMarker` likewise treats a missing child through that symlink as absent. Consequently `readLocks`/`mainWriter` can report no lock and real callers `land`, `retro --daily`, and `next` can proceed instead of refusing or holding; no existing test covers the collection symlink. Replace the collection-domain text with: “The `.bisellium/steps` collection is valid only as a real directory reached without a symlink; `ENOENT` of a genuinely absent directory is absence, while a symlinked—including dangling or empty-target—or non-directory collection is an error.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w558.test.ts
+2. advisory — brief:77 [severity: S2] The universal propagation promise is false for receipt errors: `readLocks` exposes `heavyError`, `mainWriter` does not read receipts, and `land` and `retro --daily` do not refuse on them. Replace the downstream claim with: “The closed result is per row: marker errors make `readLocks` and `mainWriter` return an error, so `land` and `retro --daily` refuse and `next` holds; receipt errors make heavy capacity unavailable; queue, queued-record and derivation-input errors hold the meanwhile line. Only reader `ENOENT` is absence.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w547.test.ts
+3. advisory — brief:108 [severity: S2] “Every raw read” contradicts Promise census’s explicit lexical limit, including its stated `fsSrc` example; the same overclaim appears at lines 23, 72, and 131. Replace brief:108 with: “A census warns on every one-line raw-read form Promise census recognizes in the five named source files”; replace the repeated “each/every raw read” clauses with “each recognized raw-read form.” [class: spec×prose-contradiction-under-revision] — check: none: brief prose must consistently retain Promise census’s lexical limit
+4. advisory — brief:86 [severity: S4] The row gives the census patterns as the source files’ valid domain and names `inputCensus`, which classifies text but rejects nothing; the actual added readers are `readFileSync` calls whose exceptions fail the node test. Replace the row with: “The five source files read by `W-558-b5` | each named path is readable by `readFileSync(..., "utf8")`; every returned string is valid census text, with recognition limited as Promise census states | `readFileSync` throws on a missing or unreadable path and node:test fails the row; `inputCensus` classifies recognized lines.” [class: spec×input-without-named-rejector] — check: packages/cli/src/w558.test.ts
+5. advisory — brief:35 [severity: S4] The limit first says a valid marker remains a marker when another marker names it as output, then says those facts cannot coexist. Replace its final marker-output sentence with: “A `.json` file under `steps/` that is itself a valid marker remains a marker even when another valid marker names it as output; otherwise a valid marker’s `.json` output is not a candidate.” [class: spec×prose-contradiction-under-revision] — check: packages/cli/src/w558.test.ts
+
+## Verdict
+The marker-collection reader has one design-keeping fail-open that must be fixed during the build; the remaining findings are advisory contract corrections.
+VERDICT: FAIL
