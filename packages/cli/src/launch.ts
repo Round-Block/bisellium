@@ -383,8 +383,17 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   const since = deps.now().getTime() - c.cap.hours * 3_600_000;
   const recent = startsRead.filter((s) => Date.parse(s.at) > since).length;
   if (recent >= c.cap.starts) return refuse(`the cap is reached: ${recent} launches in the last ${c.cap.hours} hours (cap ${c.cap.starts})`);
+  // the workspace: the Patron's clone's own verify, never the agent clone's copy
+  const verify = deps.run(bashExe, [join(clone, "scripts", "agent-workspace.sh"), "verify"], { env: deps.env, timeoutMs: CHECK_MS });
+  if (verify.status !== 0) {
+    const fail = (verify.stdout + "\n" + verify.stderr).split("\n").find((l) => l.startsWith("FAIL ")) ?? firstLine(verify.stderr || verify.stdout);
+    return refuse(`workspace verify failed (exit ${verify.status ?? "none"}): ${fail.trim().slice(0, 200)}`);
+  }
   const sessionEnv: NodeJS.ProcessEnv = { ...deps.env, GH_CONFIG_DIR: p.agentGh };
   for (const k of GH_TOKENS) delete sessionEnv[k];
+  // the agent's GitHub login, read as the session will read it (W-420's config, no ambient token)
+  const auth = deps.run(ghExe, ["auth", "status", "--hostname", "github.com"], { env: sessionEnv, timeoutMs: CHECK_MS });
+  if (auth.status !== 0) return refuse(`gh auth status failed for ${p.agentGh} (exit ${auth.status ?? "none"}): ${firstLine(auth.stderr || auth.stdout)}; the Patron logs in again: GH_CONFIG_DIR=${p.agentGh} gh auth login -h github.com`);
   const handoff = "0".repeat(40);
 
   const home = (d: string): string => join(p.home, d.slice(2));
