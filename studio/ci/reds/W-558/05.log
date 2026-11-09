@@ -1,0 +1,46 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=^W-558-b5\s --import tsx packages/cli/src/w558.test.ts
+# exit: 1
+# at: 2026-11-09T11:58:22.215Z
+# sella: builder.W-558
+# tree: tree:d79b74c5a3205c2065163973f1f40b0a71dd1e7d
+# ticket: {"opus":"W-558","step":"reds","action":"red","round":5,"actor":"builder","studio":".worktrees/W-558/studio","head":"980d6a4d9176571a7a55826c2d017802ea5c9ea4","brief":"c420e993ae7a67c64175c25b8edd053f053cf3e1","at":"2026-11-09T11:58:20.698Z"}
+
+TAP version 13
+# Subtest: W-558-b5 behaviour 5: a census warns on every raw read of a lock input outside the loaders
+not ok 1 - W-558-b5 behaviour 5: a census warns on every raw read of a lock input outside the loaders
+  ---
+  duration_ms: 5.300409
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-558/packages/cli/src/w558.test.ts:21:2521'
+  failureType: 'testCodeFailure'
+  error: |-
+    the census flags a raw read and passes a loader call
+    + actual - expected
+    
+    + undefined
+    - [
+    -   'x.ts:1: an opus record read outside the loaders',
+    -   'x.ts:3: a lock input read outside the loaders'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'x.ts:1: an opus record read outside the loaders'
+    1: 'x.ts:3: a lock input read outside the loaders'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-558/packages/cli/src/w558.test.ts:132:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21.422286
