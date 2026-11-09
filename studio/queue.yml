@@ -45,6 +45,7 @@ queues:
       - { opus: W-548, says: "admission and the prototype check enforce brief pins; daily retro 11-08; behind the freeze" }
       - { opus: W-549, says: "the review perform writes Earlier findings itself; daily retro 11-08; behind the freeze" }
       - { opus: W-550, says: "the guard refuses an empty commit; daily retro 11-08; behind the freeze" }
+      - { opus: W-551, says: "a required fix gets a red ticket after a full replay; seen on W-542 and W-543; behind the freeze" }
       - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-532's measured boot sets its number (leads 2026-11-07)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
