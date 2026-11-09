@@ -1,0 +1,24 @@
+# opus: W-547
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T09:08:49.254Z
+# tree: tree:ca290f55abb70dc4684e81df2892453bcece8a65
+# brief: briefs/W-547.md blob:e0e77b4eff86656a6ae71a056e6640a4836bb293
+# ticket: {"opus":"W-547","step":"spec","action":"verdict-spec","round":8,"actor":"architect","studio":".worktrees/W-547/studio","head":"a39226f8e27461904c38d8ea8ea1813509f18b81","brief":"e0e77b4eff86656a6ae71a056e6640a4836bb293","at":"2026-11-09T09:08:41.605Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-547-build/classloop/promise-ledger.md
+
+## Findings
+
+1. advisory — Round 6's clock (the `daily-retro:` line reads next's `--now`) flips one existing row this brief did not name: next-done.test.ts W-530-b4 behaviour 4, whose day is the host clock's (`previousDay()`) while its report-mode `next` calls ran under the harness default `--now` 2026-10-02; found by `ci --opus` run 4 (head a39226f8 fails at line 1691, 3b6c147c passes) — check: ~/.bisellium-evidence/W-547-build/ci4/head.log, pre.log; brief Acceptance "Existing checks flip"
+2. advisory — the repair, now in Files owned: W-530-b4's twelve report-mode `next` calls pass the host clock as `--now` (`REAL()`), so `next`, `--all` (`clock: false`) and `retro --daily` (`verb`, no `--now`) read one day; no assertion changes; the `--expect` refusal and the perform carry no line either way — check: classloop/repair-w530b4.py; classloop/w530b4-repaired.log
+3. advisory — every candidate file (each test file that writes the daily tracker or asserts a `daily-retro:` line) run alone at head a39226f8, next-done.test.ts with the repair: next-done, w547, retro-daily and containment, each exit 0; the W-459-b3 and W-530 hold rows read `gather`'s host-clock hold (Round 6's limit) and do not flip — check: classloop/singles.out, repaired-next-done.log, head-w547.log, head-retro-daily.log, head-containment.log
+4. advisory — evidence rerun for revision 6: the real `ready` admits the brief, each red log proves its one pin, the ledger regenerated against head a39226f8 and passed by the verdict writer — check: classloop/admission-r8.out, pin-check-r8.out, promise-ledger.md, ledger-check-r8.out
+5. advisory — not run for this signature, each a gate for the build: the repair's commit, `npm test`, typecheck, lint, `format:check`, both officina checks and the CI run — check: brief Acceptance
+
+## Verdict
+
+passed — signed by the architect (`architect`, `claude-opus-5-5`, the engineering spec signer, D-150 C) for `studio/briefs/W-547.md` revision 6, round 8: Round 6's flip of next-done.test.ts W-530-b4 named under Existing checks flip, its repair in Files owned.
