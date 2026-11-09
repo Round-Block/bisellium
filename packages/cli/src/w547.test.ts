@@ -119,3 +119,107 @@ test("W-547-b1 behaviour 1: next names a meanwhile step beside every wait it nam
   const suite = m.meanwhileSteps("suite", { heavy: 0 }, { studioRel: "studio", retro: "2026-10-01" });
   assert.equal(suite.find((s) => s.not === undefined)?.step, "retro", "in the suite wait an owed retro is named first");
 });
+test("W-547-b2 behaviour 2: the locks are read from live state: a perform writing main, a stash under a live perform, the heavy-job slots and the spec ahead", async () => {
+  const w = world("w547-b2-writer", "greenlight");
+  marker(w.repo, "W-800", "merge", 10);
+  const o = next(w, [OPUS, ...BUDGET]);
+  assert.match(o.kv.get("meanwhile-locks") ?? "", /^writer W-800 merge · /, ran("a live merge marker of another opus is the writer lock", o));
+  assert.match(o.kv.get("meanwhile") ?? "", /not now: records \(W-800 merge writes main\)/, ran("the writer lock passes over the records step", o));
+  marker(w.repo, "W-800", "merge", 600);
+  const dead = next(w, [OPUS, ...BUDGET]);
+  assert.match(dead.kv.get("meanwhile-locks") ?? "", /^writer none · /, ran("a marker whose output is older than its budget is no writer", dead));
+  marker(w.repo, "W-800", "review", 10);
+  const review = next(w, [OPUS, ...BUDGET]);
+  assert.match(review.kv.get("meanwhile-locks") ?? "", /^writer none · /, ran("a live review marker writes no main", review));
+
+  const m = await load();
+  assert.ok(m.readLocks, "meanwhile.ts exports readLocks");
+  const now = Date.now();
+  const s = world("w547-b2-stash", "backlog");
+  marker(s.repo, "W-800", "review", 5, now);
+  assert.equal((m.readLocks(s.repo, "studio", now) as { stash?: string }).stash, undefined, "no stash entry is no stash lock");
+  put(s.repo, "README.md", "edited\n");
+  spawnSync("git", ["stash", "push", "-q", "-m", "w547", "--", "README.md"], { cwd: s.repo, env: SETUP_ENV });
+  assert.match((m.readLocks(s.repo, "studio", now) as { stash?: string }).stash ?? "", /^stash@\{0\} under W-800 review$/, "a stash pushed after a live perform took its step is the stash lock");
+  marker(s.repo, "W-800", "review", 600, now);
+  assert.equal((m.readLocks(s.repo, "studio", now) as { stash?: string }).stash, undefined, "a stash under no live perform is no lock");
+
+  const h = world("w547-b2-heavy", "backlog");
+  receipt(join(h.repo, "studio"), "a", CI, { atMs: now });
+  receipt(join(h.repo, ".worktrees", "W-800", "studio"), "b", CI, { atMs: now });
+  receipt(join(h.repo, "studio"), "c", ["npm", "run", "-s", "bisellium", "--", "verify", "W-800"], { atMs: now });
+  receipt(join(h.repo, "studio"), "d", CI, { ended: true, atMs: now });
+  receipt(join(h.repo, "studio"), "e", CI, { ageS: 7200, atMs: now });
+  receipt(join(h.repo, "studio"), "f", ["npm", "run", "-s", "bisellium", "--", "check"], { atMs: now });
+  receipt(join(h.repo, ".worktrees", "W-800-spec", "studio"), "g", CI, { atMs: now });
+  assert.equal((m.readLocks(h.repo, "studio", now) as { heavy?: number }).heavy, 3, "open ci --opus and verify receipts in main's studio and an opus worktree's fill the heavy slots; an ended, an old, a light one and a scratch worktree's are not counted");
+  const full = m.meanwhileSteps!("suite", { heavy: 3 }, { studioRel: "studio", ahead: { opus: "W-901", spec: "draft" } });
+  assert.match(full.find((x) => x.step === "spec-draft")?.text ?? "", /with no test run: 3 of 3 heavy-job slots in use/, "with every heavy slot in use the spec draft runs no test");
+
+  // every lock input tells a valid absence from a read or shape error (Input domain)
+  const e = world("w547-b2-errors", "backlog");
+  assert.deepEqual(m.readLocks(e.repo, "studio", now), { heavy: 0 }, "an absent steps directory, stash, receipts and .worktrees are no lock and no error");
+  const loose = scratch("w547-b2-norepo");
+  assert.match((m.readLocks(loose, "studio", now) as { error?: string }).error ?? "", /^the main checkout cannot be found from /, "a failed main-checkout discovery is an error, never the directory itself");
+  assert.match((m.mainWriter!(loose, now) as { error?: string }).error ?? "", /^the main checkout cannot be found/, "and mainWriter returns it");
+  const markerErrors: [string, () => void, RegExp][] = [
+    ["a marker that is not JSON", () => rawMarker(e.repo, "W-801.json", "{"), /W-801\.json is not JSON/],
+    ["a marker that is not a regular file", () => rawMarker(e.repo, "W-801.json", "dir"), /W-801\.json cannot be read/],
+    ["a marker naming another opus", () => rawMarker(e.repo, "W-801.json", JSON.stringify({ opus: "W-802", step: "merge", output: "steps/W-801.log", budget_seconds: 120 })), /names another opus/],
+    ["a marker with a string budget", () => rawMarker(e.repo, "W-801.json", JSON.stringify({ opus: "W-801", step: "merge", output: "steps/W-801.log", budget_seconds: "120" })), /invalid budget_seconds/],
+    ["a marker with an output of another form", () => rawMarker(e.repo, "W-801.json", JSON.stringify({ opus: "W-801", step: "merge", output: "../W-801.log", budget_seconds: 120 })), /invalid output/],
+    ["a marker whose output was deleted", () => (marker(e.repo, "W-801", "review", 10, now), rmSync(join(e.repo, ".bisellium", "steps", "W-801.log"))), /W-801\.log of .*cannot be read \(ENOENT\)/],
+    ["a marker whose output is ahead of the clock", () => marker(e.repo, "W-801", "review", -60, now), /ahead of the clock/],
+  ];
+  for (const [what, plant, why] of markerErrors) {
+    clear(e.repo, "W-801");
+    plant();
+    assert.match((m.readLocks(e.repo, "studio", now) as { error?: string }).error ?? "", why, `${what} is a lock read error, never no lock`);
+    assert.match((m.mainWriter!(e.repo, now) as { error?: string }).error ?? "", why, `${what} is a writer read error`);
+  }
+  clear(e.repo, "W-801");
+  rawMarker(w.repo, "W-801.json", "{");
+  const heldLine = next(w, [OPUS, ...BUDGET]);
+  assert.match(heldLine.kv.get("meanwhile") ?? "", /^agent wait on a dispatched session[^:]*: held: the step marker \.bisellium\/steps\/W-801\.json is not JSON; no step is named until it reads; /, ran("a marker the locks cannot read holds the meanwhile line, naming no step", heldLine));
+  assert.equal(heldLine.kv.get("meanwhile-locks"), "unreadable: the step marker .bisellium/steps/W-801.json is not JSON", ran("and the locks line names the read error", heldLine));
+  clear(w.repo, "W-801");
+  receipt(join(e.repo, "studio"), "x", CI, { atMs: now });
+  writeFileSync(join(e.repo, "studio", "receipts", "producer", "y.json"), "{");
+  const torn = m.readLocks(e.repo, "studio", now) as { heavy: number; heavyError?: string; error?: string };
+  assert.equal(torn.error, undefined, "a receipt error is no writer or stash error");
+  assert.match(torn.heavyError ?? "", /y\.json is not JSON/, "a malformed recent receipt marks heavy capacity unavailable");
+  assert.match(m.meanwhileSteps!("suite", torn, { studioRel: "studio", ahead: { opus: "W-901", spec: "draft" } }).find((x) => x.step === "spec-draft")?.text ?? "", /with no test run: heavy-job slots unavailable/, "with heavy capacity unavailable the spec draft runs no test");
+  writeFileSync(join(e.repo, "studio", "receipts", "producer", "y.json"), JSON.stringify({ cmd: "ci --opus W-1" }));
+  assert.match((m.readLocks(e.repo, "studio", now) as { heavyError?: string }).heavyError ?? "", /y\.json has no cmd list of strings/, "a receipt whose cmd is not a list of strings marks heavy capacity unavailable");
+  rmSync(join(e.repo, "studio", "receipts"), { recursive: true, force: true });
+  put(join(e.repo, "studio"), "receipts/producer", "a file where a sella's directory belongs\n");
+  assert.match((m.readLocks(e.repo, "studio", now) as { heavyError?: string }).heavyError ?? "", /receipts\/producer cannot be listed \(ENOTDIR\)/, "an unreadable receipts collection marks heavy capacity unavailable");
+  rmSync(join(e.repo, "studio", "receipts"), { recursive: true, force: true });
+  const okQueue = { kind: "ok" as const, file: { queues: [{ id: "e", lanes: [["E1", "W-1"]] as [string, string | undefined][], next: ["W-1", "W-2"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] } };
+  const spec = (): never => ({ step: "spec", status: "named", actor: "architect", why: "", extra: [], order: order("architect") }) as never;
+  assert.deepEqual(m.aheadIn!({ kind: "absent" }, "W-1", () => "greenlit", spec), {}, "an absent queue is no entry ahead");
+  assert.match(m.aheadIn!({ kind: "held", why: "queue.yml is malformed: x", problems: ["x"] }, "W-1", () => "greenlit", spec).aheadError ?? "", /queue\.yml is malformed/, "a malformed queue is an error, never no entry");
+  assert.match(m.aheadIn!(okQueue, "W-1", () => { throw new Error("the queued record opera/W-2.md cannot be read (EACCES)"); }, spec).aheadError ?? "", /opera\/W-2\.md cannot be read/, "an unreadable queued record is an error, never skipped");
+  assert.match(m.aheadIn!(okQueue, "W-1", () => "greenlit", () => { throw new Error("gather failed"); }).aheadError ?? "", /the spec ahead cannot be read: gather failed/, "a derivation that throws is an error, never nothing owed");
+  assert.deepEqual(m.aheadIn!(okQueue, "W-1", () => "greenlit", spec), { ahead: { opus: "W-2", spec: "draft" } }, "a readable queue names its next entry");
+
+  const q = world("w547-b2-ahead", "greenlight");
+  put(q.studio, "opera/W-901.md", "---\nid: \"W-901\"\ntitle: \"the next entry\"\nkind: \"feature\"\ncollegium: \"engineering\"\nstate: greenlit\nprobationes: {}\n---\nnext\n");
+  put(q.studio, "opera/W-902.md", "---\nid: \"W-902\"\ntitle: \"two ahead\"\nkind: \"feature\"\ncollegium: \"engineering\"\nstate: greenlit\nprobationes: {}\n---\nlater\n");
+  put(q.studio, "queue.yml", `queues:\n  engineering:\n    lanes: { E1: ${OPUS} }\n    next:\n      - { opus: ${OPUS}, says: "in flight" }\n      - { opus: W-901, says: "next" }\n      - { opus: W-902, says: "after" }\nhalted: []\ncut: []\ndeferred: []\n`);
+  commit(q.repo, "studio: W-547 queue");
+  const ahead = next(q, [OPUS, ...BUDGET]);
+  assert.match(ahead.kv.get("meanwhile-locks") ?? "", / · ahead W-901 draft$/, ran("the queue's next entry with no spec is ahead to draft", ahead));
+  assert.match(ahead.kv.get("meanwhile") ?? "", /: spec-draft: draft W-901's spec in its own scratch worktree/, ran("the next entry's draft is named, never the entry after it", ahead));
+  const file = { queues: [{ id: "e", lanes: [["E1", "W-1"], ["E2", "W-5"]] as [string, string | undefined][], next: ["W-1", "W-2", "W-5", "W-3", "W-4"].map((opus) => ({ opus, says: "", folded: [], nextTs: false })) }], halted: [], cut: [], deferred: [] };
+  put(q.studio, "opera/W-903.md", "---\nid: \"W-903\"\ntitle: \"no state\"\nkind: \"feature\"\ncollegium: \"engineering\"\nprobationes: {}\n---\nno state\n");
+  put(q.studio, "queue.yml", `queues:\n  engineering:\n    lanes: { E1: ${OPUS} }\n    next:\n      - { opus: ${OPUS}, says: "in flight" }\n      - { opus: W-903, says: "no state" }\nhalted: []\ncut: []\ndeferred: []\n`);
+  const norec = next(q, [OPUS, ...BUDGET]);
+  assert.match(norec.kv.get("meanwhile") ?? "", /: held: the spec ahead cannot be read: the queued record opera\/W-903\.md has no state; no step is named/, ran("a queued record with no state holds the meanwhile line, never skipped", norec));
+  put(q.studio, "queue.yml", "queues: [not, a, mapping]\n");
+  const badq = next(q, [OPUS, ...BUDGET]);
+  assert.match(badq.kv.get("meanwhile") ?? "", /: held: queue\.yml is malformed: /, ran("a malformed queue.yml holds the meanwhile line instead of naming a step", badq));
+  assert.equal(badq.kv.get("role"), "architect", ran("and the step next names is unchanged", badq));
+  assert.equal(m.nextEntry!(file, "W-1", (x) => (x === "W-2" ? "done" : "greenlit")), "W-3", "the next entry skips the opus itself, a done entry and another lane's opus");
+  assert.equal(m.specAhead!({ step: "spec", status: "named", actor: "spec-reviewer", why: "", extra: [], order: order("spec-reviewer") } as never), "review", "a signed spec not yet reviewed is still ahead");
+});
