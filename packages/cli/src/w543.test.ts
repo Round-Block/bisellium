@@ -201,6 +201,24 @@ test("W-543-b1 behaviour 1: launch runs only as the Patron's clone's CLI on a cl
       chmodSync(hidden, 0o755);
     }
   }
+  for (const [label, link] of [["an unselected node linked into the agent clone", true], ["nothing in it", false]] as const) {
+    w = world();
+    const hidden = join(w.t, "hidden-any");
+    mkdirSync(hidden);
+    if (link) {
+      put(join(w.agent, "bin", "node"), "#!/bin/sh\nexit 0\n", 0o755);
+      symlinkSync(join(w.agent, "bin", "node"), join(hidden, "node"));
+    }
+    chmodSync(hidden, 0o111);
+    w.env["PATH"] = `${w.env["PATH"]}:${hidden}`;
+    try {
+      assert.equal(await w.launch("--dry-run"), 1, `an unlistable PATH folder with ${label} refused`);
+      assert.match(said(w), /hidden-any.*(cannot be listed|unlistable|not enumerable)/, `the refusal names the unlistable PATH folder with ${label}`);
+      assert.deepEqual(w.calls, [], `an unlistable PATH folder with ${label} runs no child`);
+    } finally {
+      chmodSync(hidden, 0o755);
+    }
+  }
   w = world();
   mkdirSync(join(w.t, "safe"));
   symlinkSync(join(w.home, ".bisellium-evidence", "jq"), join(w.t, "safe", "jq"));
@@ -426,11 +444,18 @@ test("W-543-b6 behaviour 6: launch refuses with no landed handoff newer than the
     assert.equal(s?.env?.["GH_TOKEN"] ?? s?.env?.["GITHUB_TOKEN"], undefined, "the session has no ambient token");
     const want = ["Edit({agent}/**)", "Write({agent}/**)", "Edit({evidence}/**)", "Write({evidence}/**)"].map((r) => resolved(w, r));
     assert.deepEqual(want.filter((g) => !(s?.args ?? []).includes(g)), [], "the session's Edit and Write grants are under the resolved AGENT_DIR and evidence folder");
-    assert.deepEqual(s?.args.slice(0, 5), [join(w.t, "bin", "claude"), "-p", readFileSync(join(w.self, ".claude", "refresh", "prompt.md"), "utf8").trim(), "--permission-mode", "dontAsk"], "the session is claude -p with the prompt under dontAsk");
+    assert.deepEqual(s?.args.slice(0, 5), [join(w.t, "bin", "claude"), "-p", readFileSync(join(w.self, ".claude", "refresh", "prompt.md"), "utf8"), "--permission-mode", "dontAsk"], "the session is claude -p with the prompt under dontAsk");
     assert.equal(existsSync(join(w.state, "lock.json")), false, "the lock is gone after the session");
     assert.equal(readFileSync(join(w.state, "session.json"), "utf8"), w.fake.session.stdout, "the result is kept");
     w.lines.length = 0;
     assert.equal(await w.launch(), 1, "the same handoff is not launched twice");
+
+    w = world();
+    const spaced = "\n\n  keep   this\n\n   indented tail  \n\n";
+    put(join(w.self, ".claude", "refresh", "prompt.md"), spaced);
+    git(w.self, "commit", "-q", "-am", "spaced prompt");
+    assert.equal(await w.launch(), 0, "a nonblank prompt with leading and trailing whitespace launches");
+    assert.equal(w.calls.find((x) => x.cmd === "session")?.args[2], spaced, "the prompt reaches the session byte for byte");
 
     w = world();
     w.fake.sync = { status: 1, stdout: "sync: refused: AGENT_DIR has uncommitted tracked changes ( M x); master was not moved\n", stderr: "" };
