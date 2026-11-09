@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { BUDGET, MAIN, NOW_ISO, NOW_MS, OPUS, TSX, type World, commit, envFor, git, next, put, ran, world } from "./next-world.test.js";
+import { HOST_RUN_TIMEOUT_MS } from "@bisellium/commands/builder-run.js";
 
 type S = typeof import("@bisellium/schema");
 type I = typeof import("./inputs.js");
@@ -273,5 +274,69 @@ for (const shape of ["symlink", "dangling symlink"] as const) {
     const q = readQueue(w.studio);
     assert.equal(q.kind, "held", "the one-argument readQueue holds");
     assert.match((q as { why?: string }).why ?? "", gone);
+  });
+}
+
+/** W-558-r2 (class census, D-085): `openHeavy` walks `receipts` and each `receipts/<sella>` before it lists them, and ages a receipt by `lstat`. */
+type Where = "main" | "worktree";
+const R2_SHAPES = ["symlink to a real copy", "symlink to an empty directory", "dangling symlink"] as const;
+const heavyReceipt = (studio: string): void => {
+  const path = join(studio, "receipts", "producer", "r.json");
+  mkdirSync(join(studio, "receipts", "producer"), { recursive: true });
+  writeFileSync(path, JSON.stringify({ sella: "producer", sessionId: "r", startedAt: NOW_ISO, cwd: studio, cmd: ["npm", "run", "-s", "bisellium", "--", "ci", "--opus", "W-800"], harness: "run" }));
+  utimesSync(path, (NOW_MS - 60_000) / 1000, (NOW_MS - 60_000) / 1000);
+};
+/** The studio a row reads: main's, or the opus worktree's (a studio of `.worktrees/<id>`). */
+const r2Studio = (w: World, where: Where): string => (where === "main" ? w.studio : w.wtStudio);
+/** Put `shape` at `at`, a symlink to a copy of `real`, to an empty directory, or to nothing. */
+function r2Link(w: World, at: string, real: string, shape: (typeof R2_SHAPES)[number], tag: string): void {
+  const target = join(w.root, `r2-${tag}`);
+  if (shape === "symlink to a real copy") cpSync(real, target, { recursive: true });
+  else if (shape === "symlink to an empty directory") mkdirSync(target, { recursive: true });
+  rmSync(at, { recursive: true, force: true });
+  symlinkSync(shape === "dangling symlink" ? join(w.root, "r2-nowhere") : target, at);
+}
+for (const where of ["main", "worktree"] as const) {
+  for (const shape of R2_SHAPES) {
+    test(`W-558-r2 a ${shape} in place of receipts/ makes heavy capacity unavailable, never zero runs (${where})`, async () => {
+      const w = world(`w558-r2-rc-${where}-${shape.replace(/\W+/g, "-")}`, "backlog");
+      const m = await meanwhile();
+      const studio = r2Studio(w, where);
+      heavyReceipt(studio);
+      r2Link(w, join(studio, "receipts"), join(studio, "receipts"), shape, `rc-${where}`);
+      const locks = m.readLocks!(w.repo, "studio", NOW_MS) as { heavy?: number; heavyError?: string };
+      assert.match(locks.heavyError ?? "", /receipts is a symlink, not a real directory/, `a ${shape} receipts/ is a heavy-capacity error, got ${JSON.stringify(locks)}`);
+    });
+    test(`W-558-r2 a ${shape} in place of receipts/<sella>/ makes heavy capacity unavailable (${where})`, async () => {
+      const w = world(`w558-r2-sella-${where}-${shape.replace(/\W+/g, "-")}`, "backlog");
+      const m = await meanwhile();
+      const studio = r2Studio(w, where);
+      heavyReceipt(studio);
+      r2Link(w, join(studio, "receipts", "producer"), join(studio, "receipts", "producer"), shape, `sella-${where}`);
+      const locks = m.readLocks!(w.repo, "studio", NOW_MS) as { heavy?: number; heavyError?: string };
+      assert.match(locks.heavyError ?? "", /receipts\/producer is a symlink, not a real directory/, `a ${shape} receipts/<sella>/ is a heavy-capacity error, got ${JSON.stringify(locks)}`);
+    });
+  }
+  test(`W-558-r2 a symlinked receipt older than the host run timeout is an error, never skipped by its age (${where})`, async () => {
+    const w = world(`w558-r2-age-${where}`, "backlog");
+    const m = await meanwhile();
+    const studio = r2Studio(w, where);
+    heavyReceipt(studio);
+    const real = join(studio, "receipts", "producer", "r.json");
+    const target = join(w.root, `r2-old-${where}.json`);
+    cpSync(real, target);
+    const old = (NOW_MS - HOST_RUN_TIMEOUT_MS - 3_600_000) / 1000;
+    utimesSync(target, old, old);
+    rmSync(real);
+    symlinkSync(target, real);
+    const locks = m.readLocks!(w.repo, "studio", NOW_MS) as { heavy?: number; heavyError?: string };
+    assert.match(locks.heavyError ?? "", /r\.json/, `a symlinked receipt is an error whatever its target's age, got ${JSON.stringify(locks)}`);
+  });
+  test(`W-558-r2 a genuinely absent receipts/ is zero heavy runs and no error (${where})`, async () => {
+    const w = world(`w558-r2-absent-${where}`, "backlog");
+    const m = await meanwhile();
+    const studio = r2Studio(w, where);
+    rmSync(join(studio, "receipts"), { recursive: true, force: true });
+    assert.deepEqual(m.readLocks!(w.repo, "studio", NOW_MS), { heavy: 0 }, "an absent receipts/ is zero runs and no error");
   });
 }
