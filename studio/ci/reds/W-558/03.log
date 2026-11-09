@@ -1,0 +1,58 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-558-b3\s --import tsx packages/cli/src/w558.test.ts
+# exit: 1
+# at: 2026-11-09T11:57:44.693Z
+# sella: builder.W-558
+# tree: tree:58ef04cb2c0de5ef4bceb4293ddc9c3b63ba06fb
+# ticket: {"opus":"W-558","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-558/studio","head":"6246ff7224ea97977ab19f813dc9d41b8348b9b6","brief":"c420e993ae7a67c64175c25b8edd053f053cf3e1","at":"2026-11-09T11:57:43.155Z"}
+
+TAP version 13
+# Subtest: W-558-b3 behaviour 3: a queued record whose state is outside the lifecycle is an error, never skipped
+not ok 1 - W-558-b3 behaviour 3: a queued record whose state is outside the lifecycle is an error, never skipped
+  ---
+  duration_ms: 332.437067
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-558/packages/cli/src/w558.test.ts:21:742'
+  failureType: 'testCodeFailure'
+  error: |-
+    an unknown queued state holds the meanwhile line, never skips to a lower entry
+    --- exit 0
+    --- stdout
+    next: W-900 spec named
+    actor: architect
+    why: briefs/W-900.md is missing or lacks the six design-lex sections
+    role: architect
+    sella: architect
+    boot: bisellium context --sella architect --studio studio
+    budget_tokens: 100000
+    phase: spec
+    round: 1
+    inputs: briefs/W-900.md, opera/W-900.md#traditio
+    command: dispatch architect to sign the spec for W-900; close out with: bisellium verdict W-900 --round 1 --sella architect --outcome passed --phase spec --studio studio
+    health: no step recorded
+    meanwhile: agent wait on a dispatched session (builder, architect or ui-lead): spec-draft: draft W-905's spec in its own scratch worktree (.worktrees/W-905-spec); single test files only, 0 of 3 heavy-job slots in use; no edit to the opus's Files owned or its worktree
+    meanwhile-locks: writer none · stash none · heavy 0 of 3 · ahead W-905 draft
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: "agent wait on a dispatched session (builder, architect or ui-lead): spec-draft: draft W-905's spec in its own scratch worktree (.worktrees/W-905-spec); single test files only, 0 of 3 heavy-job slots in use; no edit to the opus's Files owned or its worktree"
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-558/packages/cli/src/w558.test.ts:108:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 348.332204
