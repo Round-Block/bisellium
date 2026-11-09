@@ -361,6 +361,28 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   if (sessions.length > 0) return refuse(`a session is live in the agent clone: ${sessions.map((q) => `pid ${q.pid} in ${q.cwd}`).join(", ")}`);
   // background work: any other process whose working folder is in the agent clone (a builder, a ci run, codex, a shell)
   if (procs.length > 0) return refuse(`background work runs in the agent clone: ${procs.slice(0, 3).map((q) => `pid ${q.pid} ${q.name || "?"} in ${q.cwd}`).join(", ")}${procs.length > 3 ? ` and ${procs.length - 3} more` : ""}`);
+  // the last launch: it finished, and its session met no permission denial
+  if (lockPid !== undefined) return refuse(`the last launch did not finish: ${lockFile} names pid ${lockPid}, which is gone; read ${resultFile}, then remove the lock`);
+  if (existsSync(resultFile)) {
+    let r: unknown;
+    try {
+      r = JSON.parse(readFileSync(resultFile, "utf8"));
+    } catch {
+      r = undefined;
+    }
+    const denials = isDict(r) ? r["permission_denials"] : undefined;
+    if (!Array.isArray(denials)) return refuse(`the last session left no readable result in ${resultFile}; read it, then remove it`);
+    if (denials.length > 0) {
+      const tools = [...new Set(denials.map((d) => (isDict(d) && typeof d["tool_name"] === "string" ? d["tool_name"] : "?")))].join(", ");
+      return refuse(`the last session had ${denials.length} permission denial(s) (${tools}); add the rule to ${LAUNCH_CONFIG} by a reviewed PR, or remove ${resultFile}`);
+    }
+  }
+  // the nightly cap: at most cap.starts launches in the last cap.hours hours
+  const startsRead = readStarts(startsFile);
+  if (typeof startsRead === "string") return refuse(startsRead);
+  const since = deps.now().getTime() - c.cap.hours * 3_600_000;
+  const recent = startsRead.filter((s) => Date.parse(s.at) > since).length;
+  if (recent >= c.cap.starts) return refuse(`the cap is reached: ${recent} launches in the last ${c.cap.hours} hours (cap ${c.cap.starts})`);
   const sessionEnv: NodeJS.ProcessEnv = { ...deps.env, GH_CONFIG_DIR: p.agentGh };
   for (const k of GH_TOKENS) delete sessionEnv[k];
   const handoff = "0".repeat(40);

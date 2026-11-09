@@ -839,6 +839,11 @@ const PINNED_C: PinnedSite[] = [
     why: "W-543: parses the launch's own start times (starts.jsonl under ${XDG_STATE_HOME:-~/.local/state}/bisellium/launch/) and a clock it was handed, never an officina record's time",
   },
   {
+    key: "packages/cli/src/launch.ts:runLaunch:Date.parse#1",
+    disposition: "outside",
+    why: "W-543: parses the launch's own start times (starts.jsonl under ${XDG_STATE_HOME:-~/.local/state}/bisellium/launch/) and a clock it was handed, never an officina record's time",
+  },
+  {
     key: "packages/commands/src/opus-model.ts:instant:Date.parse#1",
     disposition: "helper",
     why: "the exact-UTC profile's ordering instant: it runs only after utcTimestampProblem has accepted the string",
@@ -898,6 +903,7 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/launch.ts:runLaunch:readFileSync#1", disposition: "outside", why: "W-543: reads the launch's code-owned config or prompt in the Patron's clone, or its own lock, starts or last result under ${XDG_STATE_HOME:-~/.local/state}/bisellium/launch/; never an officina path" },
   { key: "packages/cli/src/launch.ts:runLaunch:readFileSync#2", disposition: "outside", why: "W-543: reads the launch's code-owned config or prompt in the Patron's clone, or its own lock, starts or last result under ${XDG_STATE_HOME:-~/.local/state}/bisellium/launch/; never an officina path" },
   { key: "packages/cli/src/launch.ts:runLaunch:readFileSync#3", disposition: "outside", why: "W-543: reads the launch's code-owned config or prompt in the Patron's clone, or its own lock, starts or last result under ${XDG_STATE_HOME:-~/.local/state}/bisellium/launch/; never an officina path" },
+  { key: "packages/cli/src/launch.ts:runLaunch:readFileSync#4", disposition: "outside", why: "W-543: reads the launch's code-owned config or prompt in the Patron's clone, or its own lock, starts or last result under ${XDG_STATE_HOME:-~/.local/state}/bisellium/launch/; never an officina path" },
   { key: "packages/cli/src/new.ts:waitAtIdsTestBarrier:writeFileSync#1", disposition: "outside", why: "test barrier file in a directory named by a test-only environment variable" },
   { key: "packages/cli/src/new.ts:newItem:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
   { key: "packages/cli/src/new.ts:runNew:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
