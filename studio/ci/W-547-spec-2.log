@@ -1,0 +1,28 @@
+# opus: W-547
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1bebb-a440-74f3-b4b5-0f324d7686d9
+# outcome: failed
+# at: 2026-11-09T05:21:38.803Z
+# tree: tree:1e2b2f1e24971f4bf2ce223e511e42896d4db745
+# brief: briefs/W-547.md blob:9ecb6511f84ff3076e273494623da6ed5360659e
+# ticket: {"opus":"W-547","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"c49ba131777a712b9d4fbe8f47c5f1f7678a4e57","brief":"9ecb6511f84ff3076e273494623da6ed5360659e","at":"2026-11-09T05:21:37.988Z"}
+
+## Findings
+1. blocking — brief:50 [severity: S1] [design: keeps] An ordinary dead, invalid, unreadable, or future-dated marker makes the changed report path return without calling `meanwhileOf`; real `next` therefore omits both promised lines, while W-547-b1 covers only the no-marker path. Replace the print clause with: “`next` report mode prints `meanwhile:` and `meanwhile-locks:` from every health branch—running, dead, invalid, unknown, anomaly, absent, finished, and stale—whenever `waitOf` classifies the ungated derivation as a wait.” [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w547.test.ts W-547-b1 health-branch cases
+
+2. blocking — brief:90 [severity: S1] [design: changes] If a daily-retro caller accidentally lacks working `git` on `PATH`, `mainCheckout` converts the failed common-directory read into the studio directory, misses a live main marker, and lets `retro --daily` append. Replace brief:90 with: “Each input has a valid domain and a fail-closed rejector; `git rev-parse --path-format=absolute --git-common-dir` must exit zero with the supported absolute common-directory form, otherwise `mainCheckout` returns an error that makes `land` and `retro` refuse and `next` hold.” [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w547.test.ts W-547-b4 failed-main-discovery case
+
+3. blocking — brief:95 [severity: S1] [design: changes] An accidentally unreadable or malformed live merge/done marker—or a deleted output while its perform still runs—is skipped by `liveMarkers`; real `land` and `retro` then proceed and `next` can dispatch a spec review, with no malformed-marker test catching it. Replace row 2 with: “An absent steps directory means no lock; otherwise its directory, every candidate marker, and its contained regular output must be readable and match the declared marker domain. `liveMarkers` returns an error for every other form, and `mainWriter`/`readLocks` propagate it so `land` and `retro` refuse and `next` holds”; replace brief:52’s malformed-marker limit accordingly. [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w547.test.ts W-547-b2 through W-547-b5 malformed and unreadable marker cases
+
+4. blocking — brief:96 [severity: S1] [design: changes] With a live review perform and a stash, a failed or malformed `git log -g` read becomes “no stash,” so a real `next` caller dispatches the review against potentially scaffolded main; W-547-b5 tests only a successful read. Replace row 3 with: “An explicitly absent `refs/stash` is no lock; otherwise the reflog call must exit zero with exactly one seconds/name record. `stashUnder` returns an error for failed or malformed reads, and `readLocks` makes `next` hold.” [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w547.test.ts W-547-b5 failed and malformed stash-read cases
+
+5. blocking — brief:97 [severity: S1] [design: changes] An accidentally unreadable receipts directory or malformed recent heavy receipt is silently skipped, so real `next` can report spare capacity and recommend tests while all slots are occupied; the test covers ended, old, and light receipts but no read failure. Replace row 4 with: “Absent receipt/worktree collections count zero; every present collection and recent candidate receipt must be readable and match the receipt domain. `openHeavy` returns an error for every other form, and `readLocks` marks heavy capacity unavailable so `meanwhileSteps` never recommends a test run.” [class: review×fail-open-on-malformed-records-patched-per-site] — check: packages/cli/src/w547.test.ts W-547-b2 unreadable-directory and malformed-receipt cases
+
+6. blocking — brief:98 [severity: S1] [design: changes] A plausible malformed `queue.yml` is collapsed by `aheadOf` to “no entry,” while an unreadable/malformed queued opus record is skipped and a thrown next-entry derivation becomes “nothing owed”; real `next` can therefore recommend records or draft a lower-ranked opus, contradicting “never two ahead,” and no negative case catches it. Replace rows 5–6 with rows requiring `readQueue`, each queued record/state read, `gather`, and `derivedStep` to distinguish valid absence/non-spec derivations from read or shape errors, with `aheadOf` propagating every error so report mode holds instead of printing a meanwhile recommendation. [class: spec×input-domain-missing-or-unenforceable] — check: packages/cli/src/w547.test.ts W-547-b2 malformed-queue, unreadable-record, and thrown-derivation cases
+
+## Verdict
+The signed brief has design-changing S1 fail-open paths and an uncovered report branch, so it requires revision and another spec review before building.
+VERDICT: FAIL
