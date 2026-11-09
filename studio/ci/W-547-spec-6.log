@@ -1,0 +1,24 @@
+# opus: W-547
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T08:19:14.786Z
+# tree: tree:96da4e0613393f5452e82552d8e4c09f778cedaa
+# brief: briefs/W-547.md blob:518304203ff5b50ed17200429235f758138f73ba
+# ticket: {"opus":"W-547","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-547/studio","head":"22df0223df12f002d7884b37571942d9083f0e30","brief":"518304203ff5b50ed17200429235f758138f73ba","at":"2026-11-09T08:19:07.184Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-547-build/classloop/promise-ledger.md
+
+## Findings
+
+1. advisory — class loop (D-085): build review rounds 1 and 2 failed on one class, tests×ruled-case-uncovered, read here as "a report line computed from the wall clock where the caller injects a clock"; every `new Date()` and `Date.now()` in next.ts at the branch head 22df0223 is listed and read for whether `next <opus>` report mode prints it beside the meanwhile lines — check: ~/.bisellium-evidence/W-547-build/classloop/clock-sites.out; brief "Round 6"
+2. advisory — covered inside W-547: `render`'s `dailyLine` (next.ts:2561, W-530's code) takes the clock as a parameter, report mode passes `--now`, `next --all` the real clock; the builder adds one W-547-b1 assertion, red first, "the daily-retro line names the --now day's retro, whatever day the host clock reads" (`daily-retro: 2026-10-01 step 2 of 3: ` under `--now 2026-10-02`); Files owned's next.ts entry names the parameter — check: brief Promise wait-row, Behaviours 1, Input domain row 8, Files owned
+3. advisory — stated limits, not promised (D-076 E): `gather`'s `daily` memo (the daily-retro hold, and through `aheadOf` the next entry's spec derivation) and its `redFindings` read the host clock under `--now`; threading the clock into `gather` changes every derivation's facts and flips next-spec.test.ts W-459-b3's host-clock rows, so it is a follow-on for the producer to file; `next --all` takes no `--now` — check: brief Round 6, Limits stated, Promise wait-row limit
+4. advisory — evidence rerun for revision 5: the real `ready` admits the brief (scratch record read as greenlit, stopping only at the step ticket), each red log still proves its one pin, the ledger regenerated against the branch head and passed by the verdict writer; the prototype mbox and the five recorded reds are unchanged — check: classloop/admission.out, classloop/pin-check.out, classloop/promise-ledger.md, classloop/ledger-check.out
+5. advisory — not run for this signature, each a gate for the build: the added W-547-b1 assertion's red and green, `npm test`, typecheck, lint, `format:check`, both officina checks and the CI run — check: brief Acceptance
+
+## Verdict
+
+passed — signed by the architect (`architect`, `claude-opus-5-5`, the engineering spec signer, D-150 C) for `studio/briefs/W-547.md` revision 5, round 6: the D-085 class loop; the `daily-retro:` line joins the injected-clock rule with one W-547-b1 assertion the builder adds, and `gather`'s host-clock reads are stated limits for a follow-on.

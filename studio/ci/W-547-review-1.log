@@ -1,0 +1,21 @@
+# opus: W-547
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1bf18-efb4-7fe0-b3e9-53aaced9e2f1
+# outcome: failed
+# at: 2026-11-09T07:03:46.624Z
+# tree: tree:c95d915c5c13109d9adbe13ec38df1b171ab595a
+# brief: briefs/W-547.md blob:7d6b9cb0452899ce0554af737ececd51bd8f425f
+# ticket: {"opus":"W-547","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-547/studio","head":"92377977583d4bac4bf0928bd36ec8aea22346a8","brief":"7d6b9cb0452899ce0554af737ececd51bd8f425f","at":"2026-11-09T06:57:22.940Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:2573 brief:115 [severity: S1] `meanwhileOf` uses the host clock via `new Date()` instead of `new Date(nowMs)`, so `next --now` can rank or omit the daily retro for the wrong day. [class: tests×ruled-case-uncovered] — check: packages/cli/src/w547.test.ts W-547-b1 `--now`/daily-retro case
+2. blocking — packages/cli/src/land.ts:204 brief:66 [severity: S1] The linked-worktree refusal runs before `mainWriter`, contrary to the promised validation order; a linked-worktree invocation beside a live writer therefore reports only the worktree error instead of the writer lock. [class: interface×validation-order-masks-errors] — check: packages/cli/src/w547.test.ts W-547-b3 linked-worktree case
+3. advisory — packages/cli/src/w547.test.ts:239 [severity: S3] The b3 and b4 rows use an unlandable path and a studio without a daily tracker, so they pin refusal precedence without exercising an otherwise valid land or retro append. Add landable-record and valid-tracker variants. [class: tests×assertion-satisfied-by-the-wrong-cause] — check: packages/cli/src/w547.test.ts
+
+## Verdict
+The implementation has two blocking mismatches with the signed brief’s clock and validation-order contracts.
+
+VERDICT: FAIL

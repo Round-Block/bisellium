@@ -1,0 +1,23 @@
+# opus: W-547
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1bf18-efb4-7fe0-b3e9-53aaced9e2f1
+# outcome: failed
+# at: 2026-11-09T07:47:14.506Z
+# tree: tree:96da4e0613393f5452e82552d8e4c09f778cedaa
+# brief: briefs/W-547.md blob:7d6b9cb0452899ce0554af737ececd51bd8f425f
+# ticket: {"opus":"W-547","step":"review","action":"verdict-build","round":2,"actor":"censor","studio":".worktrees/W-547/studio","head":"3b6c147c13bb84ff5082583d4f3e6855d2745e57","brief":"7d6b9cb0452899ce0554af737ececd51bd8f425f","at":"2026-11-09T07:45:49.493Z"}
+
+## Findings
+1. blocking — packages/cli/src/next.ts:2562 brief:115 [severity: S1] Reached by ci/W-547-review-1.log #1’s class: report-mode `dailyLine` still passes `new Date()` to `dailyRetroStep`, so `next --now` can print a wall-clock `daily-retro:` day beside the correctly injected `meanwhile:` day. [class: tests×ruled-case-uncovered] — check: packages/cli/src/w547.test.ts W-547-b1 assert the `daily-retro` and `meanwhile` dates both follow `--now`
+
+## Earlier findings
+- ci/W-547-review-1.log #1: closed — packages/cli/src/next.ts:2573 now passes `new Date(nowMs)`, and the added W-547-b1 case pins the meanwhile retro day to `--now`.
+- ci/W-547-review-1.log #2: closed — packages/cli/src/land.ts:204-208 now checks `mainWriter` before the linked-worktree refusal, with a linked-worktree regression case.
+
+## Verdict
+The earlier blockers are fixed, but the same clock defect remains in the sibling report-mode daily-retro line.
+
+VERDICT: FAIL

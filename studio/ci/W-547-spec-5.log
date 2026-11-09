@@ -1,0 +1,24 @@
+# opus: W-547
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T06:20:20.689Z
+# tree: dirty:020ec7c69989a52281577cfc10449db04dcd2a3a
+# brief: briefs/W-547.md blob:7d6b9cb0452899ce0554af737ececd51bd8f425f
+# ticket: {"opus":"W-547","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":"studio","head":"feae80b6f1709f466d25caae5157caf8fae3a630","brief":"7d6b9cb0452899ce0554af737ececd51bd8f425f","at":"2026-11-09T06:20:13.712Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-547-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — cut under D-061 §4 after spec review round 4 failed (no third review): the brief keeps every behaviour and promise round 4 closed (round 2's findings 1, 2, 4 and 5) or did not flag, and changes no behaviour, row, prototype commit or Files owned entry; the prototype mbox is the round-3 one (sha256 f28161ce…) — check: brief Status and "Round 5: cut to what round 4 passed"; diff brief-r3.md against studio/briefs/W-547.md; sha256sum prototype.mbox
+2. advisory — round 4's four open paths are W-559's (filed by the producer, folded into W-558) and stated as limits, not promised: an unknown non-empty marker step and a marker output ending `.json` (Input domain row 3), a queued state outside the lifecycle (row 6), a held derivation of the next entry read as nothing owed (row 7), each also in Promise locks' limit, Limits stated and Out of scope — check: brief Input domain rows 3, 6 and 7; Promise locks limit; studio/opera/W-559.md
+3. advisory — round 2's findings 1, 2, 4 and 5 stay closed as round 4 read them: the one `sayT` print site, the explicit main-checkout error, the stash errors and the receipt errors as heavyError — check: ~/.bisellium-evidence/W-547-specreview/r4/verdict.md Earlier findings; packages/cli/src/w547.test.ts W-547-b1 to W-547-b5; mutants.out
+4. advisory — evidence rerun for the cut: the brief admitted by the real `ready` (admission.out), each red log proving its one pin (pin-check.out), the mbox applying to origin/master feae80b6 with the same touched files (mbox-check.out), the ledger regenerated for revision 4 and passed by the verdict writer (ledger-check.out); no red, row or test file rerun since no row, prototype or Files owned entry changed — check: admission.out, pin-check.out, mbox-check.out, promise-ledger.md, ledger-check.out
+5. advisory — not run for this spec, each a gate for the build: `npm test`, typecheck over every package, `format:check`, both officina checks and the CI run — check: brief Acceptance
+
+## Verdict
+
+passed — signed by the architect (`architect`, `claude-opus-5-5`, the engineering spec signer, D-150 C) for `studio/briefs/W-547.md` revision 4 at master c49ba131, round 5: cut to what spec review round 4 passed under D-061 §4, the four open paths W-559's and stated as limits; five behaviours, each red accepted and green on its feature commit (`reds.out`); the round-3 prototype, wrong forms and file runs unchanged.

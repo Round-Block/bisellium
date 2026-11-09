@@ -1,0 +1,27 @@
+# opus: W-547
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T04:16:11.585Z
+# tree: tree:f11d633bef6442aed7bd663f1bc17933921b5af9
+# brief: briefs/W-547.md blob:9ecb6511f84ff3076e273494623da6ed5360659e
+# ticket: {"opus":"W-547","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"a7410beeb804e6f359de53314a1a7af4400e598d","brief":"9ecb6511f84ff3076e273494623da6ed5360659e","at":"2026-11-09T04:16:04.949Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-547-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the waits `next` emits are enumerated from the code, every derivation site placed as one of five kinds or as no wait, and `waitOf` reads each shape as the table says; a wait added later in a new shape prints no line until `waitOf` names it, a stated limit — check: waits.py -> waits.out (100 sites, none unplaced), packages/cli/src/w547.test.ts W-547-b1 "every wait kind has a table row, and no row is for another kind"; mutants.out approval-unread, all-wait
+2. advisory — the merge perform holds main only at its landing: `mergeGate` and `gate` read GitHub alone while they poll, and `landed` (`fetchTrunk`, `patronStop`, the guard sync) is the one place main is read or moved; no perform stashes main, so there is no whole-wait hold to fix here, and the meet's merge-queue row is kept as set, Default 1 asking whether to free the retro there — check: brief Intent "The merge perform holds main only at its landing", packages/cli/src/integrate.ts mergeGate, gate, landed, fetchTrunk
+3. advisory — the locks are read from live state without /proc: a marker live by its output's freshness within its own budget, a stash after a live marker's start, open `ci --opus` and `verify` run receipts in main's studio and every opus worktree's, the next entry by its own derivation; reads that fail are not counted, and the refusals read the same writer lock, both stated limits — check: packages/cli/src/w547.test.ts W-547-b2; mutants.out merge-unread, stash-unread, ended-counted, lane-taken, draft-unread
+4. advisory — a red per refusal: the land refusal, the retro refusal and the spec review hold are behaviours 3, 4 and 5, each red accepted on the commit before it — check: reds.out, pin-check.out, mutants.out land-clock, retro-unrefused, review-unheld
+5. advisory — no W-543 file is touched: no verb or flag (no main.ts or usage.ts), and `meanwhile.ts` makes no raw fs or date site the containment scan pins, so containment.test.ts passes unchanged on the tip — check: brief Facts checked, round1.log (containment exit 0), mbox-check.out
+6. advisory — one existing row flips by design and is repaired in Files owned: next.test.ts W-179-b1 reads w547.test.ts as a next row file, so it joins the declared list and test:suite's one node --test call (concurrency 12 to 13), at row b1; the census names no other flip and its must-stay-green rows were run — check: brief Acceptance, fixture-census.md, singles-r0.out, round1.log, singles2.out
+7. advisory — out of scope, each its own follow-up: `land --from <records worktree>` (Default 3) and the two measures (Default 4); the other forbids in the table (a worktree edit, a push, a test run with every slot in use) are named in the line and not refused, since no verb runs them — check: brief Out of scope, brief Limits
+8. advisory — not run for this spec: `npm test`, typecheck over every package, `format:check`, both officina checks and the CI run; the cli package typechecks and eslint passes on the two new files — check: brief Acceptance, tsc-tip.out, lint.out
+
+## Verdict
+
+passed — signed by the architect (`architect`, `claude-opus-5-5`, the engineering spec signer, D-150 C) for `studio/briefs/W-547.md` revision 1 at master 2a5f57df, round 1: five behaviours, each red accepted by the replay classifier on the commit before it and green on its feature commit (`reds.out`), each red log proving its one declared pin (`pin-check.out`); ten one-hunk wrong forms each failing a row at a pinned assertion (`mutants.out`); the ten-commit mbox applying to a7410bee with the same touched files (`mbox-check.out`); the touched files passing one at a time on the tip (`singles-r0.out`, `round1.log`, `singles2.out`), the cli package typechecking and lint passing on the new files (`tsc-tip.out`, `lint.out`); the brief admitted by the real `ready` (`admission.out`) and the ledger by the verdict writer (`ledger-check.out`); the Codex test check (`fixture-census.md`).

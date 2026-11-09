@@ -25,6 +25,7 @@ import { concludedResearch, readContainedRegularFile, titleProblem, titleWordsPr
 import { LOG_MAX_BYTES, parseVerdictLog, readUiSpecPairing, type RecordedFinding } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
+import { mainWriter } from "./meanwhile.js";
 import { RULE_IDS } from "./rules/ids.js";
 
 export interface RetroFinding {
@@ -1464,6 +1465,10 @@ export function draftDailyRetro(root: string, day: string): { section: string } 
 
 /** `retro --daily`: appends the previous UTC day's section to the tracker, once; refused with no tracker, a second entry, or a tracker whose last section is not the daily retro. */
 function runDailyRetro(root: string, now: Date): { exitCode: number } {
+  // W-547: the merge-queue wait forbids the retro: it is a tracked edit in main, which the perform fast-forwards when its PR lands
+  const writer = mainWriter(root, now.getTime());
+  if ("error" in writer) return (console.error(`retro --daily: refused: the main checkout's writer lock cannot be read: ${writer.error}; the retro waits until it reads (W-547)`), { exitCode: 1 });
+  if (writer.writer !== undefined) return (console.error(`retro --daily: refused: ${writer.writer} is running and writes main when its PR lands; run the daily retro after that perform exits (W-547)`), { exitCode: 1 });
   const tracker = readTracker(root);
   if (isRefusal(tracker)) return (console.error(tracker.error), { exitCode: 2 });
   if (tracker === undefined) return (console.error(`${DAILY_TRACKER}: no tracker; the daily retro appends to it`), { exitCode: 2 });

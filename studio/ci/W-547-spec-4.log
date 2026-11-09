@@ -1,0 +1,33 @@
+# opus: W-547
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1bebb-a440-74f3-b4b5-0f324d7686d9
+# outcome: failed
+# at: 2026-11-09T06:16:16.933Z
+# tree: tree:020ec7c69989a52281577cfc10449db04dcd2a3a
+# brief: briefs/W-547.md blob:fc81ce718b3cb447e261e9eec2866c41e73a24cc
+# ticket: {"opus":"W-547","step":"spec","action":"verdict-spec","round":4,"actor":"spec-reviewer","studio":"studio","head":"feae80b6f1709f466d25caae5157caf8fae3a630","brief":"fc81ce718b3cb447e261e9eec2866c41e73a24cc","at":"2026-11-09T06:16:16.135Z"}
+
+## Findings
+1. blocking — /home/edckt/.bisellium-evidence/W-547-spec/proto/meanwhile.ts:247 brief:102 accepts every non-empty marker `step`; an ordinary typo such as `merg` therefore passes validation, but `writerOf` does not recognize it and `land`, `retro`, or review dispatch can proceed. Reached through ci/W-547-spec-2.log #3’s class. [severity: S1] [design: changes] [class: review×fail-open-on-malformed-records-patched-per-site] — check: W547-b2 through W547-b5 must cover an unknown non-empty marker step
+
+2. blocking — /home/edckt/.bisellium-evidence/W-547-spec/proto/meanwhile.ts:230 brief:102 treats every `.json` file as a marker while also permitting a marker’s regular-file output to end in `.json`; a valid tracked output such as `steps/status.json` is consequently reparsed as a malformed marker and wrongly holds or refuses real callers. Reached through ci/W-547-spec-2.log #3’s class. [severity: S1] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: W547-b2 through W547-b5 must cover a valid marker whose output is a `.json` file
+
+3. blocking — /home/edckt/.bisellium-evidence/W-547-spec/apply-src.py:48 brief:105 validates queued `state` only as a string, so an ordinary lifecycle-state typo is silently treated as non-takeable and `nextEntry` may choose a lower-ranked opus, allowing work two opuses ahead. Reached through ci/W-547-spec-2.log #6’s class. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: W547-b2 must cover an unknown string lifecycle state in the queued record
+
+4. blocking — /home/edckt/.bisellium-evidence/W-547-spec/proto/meanwhile.ts:175 brief:106 maps every held derivation to “no spec step owed”; therefore an unreadable or malformed working/branch record represented as held by packages/cli/src/next.ts:1125 is not an error, and recommendation proceeds. Reached through ci/W-547-spec-2.log #6’s class. [severity: S1] [design: changes] [class: spec×input-domain-missing-or-unenforceable] — check: W547-b2 must cover a queued opus whose selected derivation source returns a held input error
+
+## Earlier findings
+- ci/W-547-spec-2.log #1: closed — the single `sayT` return choke point appends meanwhile lines to every report-health branch, with branch coverage in W547-b1
+- ci/W-547-spec-2.log #2: closed — `mainCheckout` now returns an explicit error for failed or unusable Git output, covered by W547-b2 and W547-b4
+- ci/W-547-spec-2.log #3: open — although the listed malformed-marker cases now refuse, unknown non-empty steps still pass and permitted `.json` outputs are misclassified as markers
+- ci/W-547-spec-2.log #4: closed — stash discovery and parsing errors now return `stashError`, with malformed and failed-read coverage in W547-b5
+- ci/W-547-spec-2.log #5: closed — receipt read and validation failures now become `heavyError`, with malformed and unreadable receipt coverage in W547-b2
+- ci/W-547-spec-2.log #6: open — lifecycle-state typos remain silently skippable and held derivation input errors are still collapsed into “nothing owed”
+
+## Verdict
+The revision closes four earlier blockers, but malformed marker and queued-derivation paths still fail to refuse ordinary mistakes.
+
+VERDICT: FAIL

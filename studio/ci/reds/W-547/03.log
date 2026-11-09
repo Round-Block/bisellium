@@ -1,0 +1,47 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-547-b3\s --import tsx packages/cli/src/w547.test.ts
+# exit: 1
+# at: 2026-11-09T06:28:38.825Z
+# sella: builder.W-547
+# tree: tree:4f27211173d68ddd81bf03a8f575303e46b048f2
+# ticket: {"opus":"W-547","step":"reds","action":"red","round":3,"actor":"builder","studio":".worktrees/W-547/studio","head":"0e61689b80be9d6892d3bcb15150f3abb96295b2","brief":"7d6b9cb0452899ce0554af737ececd51bd8f425f","at":"2026-11-09T06:28:31.683Z"}
+
+TAP version 13
+# Subtest: W-547-b3 behaviour 3: land refuses while a perform writes main
+not ok 1 - W-547-b3 behaviour 3: land refuses while a perform writes main
+  ---
+  duration_ms: 297.052464
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-547/packages/cli/src/w547.test.ts:20:959'
+  failureType: 'testCodeFailure'
+  error: |-
+    land refuses while a merge perform writes main
+    land: refused
+    why: refusing: studio/notes.md is outside the records land carries (studio/opera/, studio/ci/, studio/decisions/, studio/acta/, studio/queue.yml, docs/SESSION-HANDOFF.md, docs/design/dossier/*.html); nothing committed or pushed
+    way past: code and rules keep a real PR (D-181 line 6): file an opus with bisellium new and land it with bisellium next
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    land: refused
+    why: refusing: studio/notes.md is outside the records land carries (studio/opera/, studio/ci/, studio/decisions/, studio/acta/, studio/queue.yml, docs/SESSION-HANDOFF.md, docs/design/dossier/*.html); nothing committed or pushed
+    way past: code and rules keep a real PR (D-181 line 6): file an opus with bisellium new and land it with bisellium next
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-547/packages/cli/src/w547.test.ts:232:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 326.170791

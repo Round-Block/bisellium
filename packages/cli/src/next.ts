@@ -43,6 +43,7 @@ import { ensureRealDirectory, existingRealDirectory, requireRealDirectory } from
 import { createOpusBranch } from "./branch.js";
 import { milestonesLine } from "./exits.js";
 import { laneLines, readQueue } from "./queue.js";
+import { aheadIn, meanwhileLines, readLocks, waitOf, type Owed } from "./meanwhile.js";
 import { ID_RE } from "./check.js";
 import { diffPaths, recordOnly } from "../../../scripts/ci-scope.mjs";
 import { CERTIFICATE_CHECK, readCertificate } from "../../../scripts/ci-certificate.mjs";
@@ -2077,9 +2078,16 @@ function handoverAt(t: unknown): number | string {
 
 /** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too.
  *  W-430: and a session under the context wind-down: `usage` (read once, only for an order) past it holds the order. */
-function gateDispatch(d: Derived, f: Facts, budget: number | undefined, usage?: () => Reading): Derived {
+function gateDispatch(d: Derived, f: Facts, budget: number | undefined, nowMs: number, usage?: () => Reading): Derived {
   if (d.status !== "named" || d.order === undefined) return d;
   const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [["underlying", d.why]] });
+  // W-547: a spec review reads main: never while a perform writes it, nor while main is stashed under a live perform (W-499 r14)
+  if (d.order.role === "spec-reviewer") {
+    const locks = readLocks(f.repo, f.studioRel, nowMs);
+    if ("error" in locks) return refuse(`the main checkout's locks cannot be read: ${locks.error}; the spec review waits until they read (W-547)`);
+    if (locks.writer !== undefined) return refuse(`${locks.writer} is running and writes main when its PR lands; the spec review waits for that perform to exit (W-547)`);
+    if (locks.stash !== undefined) return refuse(`main is stashed under a live perform (${locks.stash}); a spec review now reads the scaffold (W-499 r14): it waits for that perform to exit and the stash to be applied (W-547)`);
+  }
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
   const wind = usage === undefined ? undefined : windDown(usage());
@@ -2550,12 +2558,42 @@ async function performReds(f0: Facts, nowMs: number, testClock: boolean, log: (l
 }
 
 /** W-530 (D-188): the daily retro's steps in order, from the first one left, as one line that holds nothing; undefined when none is left. */
-function dailyLine(repo: string, studioAbs: string, studioRel: string): string | undefined {
-  const at = dailyRetroStep(studioAbs, gitSrc(repo, "refs/heads/master", studioRel).read(DAILY_TRACKER), new Date());
+function dailyLine(repo: string, studioAbs: string, studioRel: string, nowMs: number): string | undefined {
+  const at = dailyRetroStep(studioAbs, gitSrc(repo, "refs/heads/master", studioRel).read(DAILY_TRACKER), new Date(nowMs));
   if (at === undefined) return undefined;
   const tracker = `${studioRel}/${DAILY_TRACKER}`;
   const steps = [`a ladder-runner runs: bisellium retro --daily --studio ${studioRel}`, `the qa-lead writes the proposals under "Proposed improvements" in ${tracker}`, `a ladder-runner lands the entry: bisellium land ${tracker} --title 'chore(studio): daily retro ${at.day}' --sella producer --studio ${studioRel}`];
   return `daily-retro: ${at.day} step ${at.step} of 3: ${steps.slice(at.step - 1).join("; then ")}`;
+}
+
+/** W-547: the meanwhile lines beside the wait `d` names (none when the caller acts next): the retro owed, the locks and the spec ahead. */
+function meanwhileOf(f: Facts, d: Derived, nowMs: number): string[] {
+  const kind = waitOf(d);
+  if (kind === undefined) return [];
+  const at = dailyRetroStep(f.studioAbs, gitSrc(f.repo, "refs/heads/master", f.studioRel).read(DAILY_TRACKER), new Date(nowMs));
+  const owed: Owed = { studioRel: f.studioRel, ...(at === undefined ? {} : { retro: at.day }), ...aheadOf(f) };
+  return meanwhileLines(kind, readLocks(f.repo, f.studioRel, nowMs), owed);
+}
+
+/** W-547: the queue's next entry after this opus and what its spec needs (`aheadIn`): its queue, its records' states and its own derivation. */
+function aheadOf(f: Facts): Pick<Owed, "ahead" | "aheadError"> {
+  return aheadIn(readQueue(f.studioAbs), f.id, (o) => queuedState(f.studioAbs, o), (o) => derivedStep(gather(f.repo, f.studioAbs, o)));
+}
+
+/** W-547: a queued opus's state, from its record; an unreadable record, one with no front matter or no string state, throws. */
+function queuedState(studioAbs: string, id: string): string {
+  const rel = recordRel(id);
+  const file = readContainedRegularFile(studioAbs, rel, "opera");
+  if ("error" in file) throw new Error(`the queued record ${rel} cannot be read (${file.code ?? file.error.split("\n")[0]})`);
+  let data: unknown;
+  try {
+    data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), rel).data;
+  } catch {
+    throw new Error(`the queued record ${rel} has no front matter`);
+  }
+  const state = isDict(data) ? data["state"] : undefined;
+  if (typeof state !== "string") throw new Error(`the queued record ${rel} has no state`);
+  return state;
 }
 
 /** W-530 (D-188): the daily retro's entry, when it is an unstaged edit in the main checkout. A failed land of it holds no branch, merge or done. */
@@ -3364,7 +3402,7 @@ function refreshTicket(f: Facts, d: Derived, nowMs: number): string[] {
   return written === undefined ? [`ticket: ${t.action} round ${t.round}`] : none(`ticket-error: ${written}`);
 }
 
-function render(id: string, d: Derived, f: Facts, status: string): string[] {
+function render(id: string, d: Derived, f: Facts, status: string, nowMs: number): string[] {
   const out = [`next: ${id} ${d.step} ${status}`, `actor: ${d.actor}`, whyLine(d)];
   if (f.tip !== undefined) out.push(`head: opus/${id} ${f.tip.slice(0, 12)}`);
   for (const [k, v] of d.extra) out.push(`${k}: ${one(v)}`);
@@ -3375,7 +3413,7 @@ function render(id: string, d: Derived, f: Facts, status: string): string[] {
     for (const [k, v] of o.extra) out.push(`${k}: ${one(v)}`);
     out.push(`inputs: ${o.inputs.map((x) => clean(x)).join(", ")}`, `command: ${one(o.command)}`);
   } else if (d.command !== undefined && d.status === "named") out.push(`command: ${one(d.command)}`);
-  const daily = dailyLine(f.repo, f.studioAbs, f.studioRel);
+  const daily = dailyLine(f.repo, f.studioAbs, f.studioRel, nowMs);
   if (daily !== undefined) out.push(one(daily));
   return out;
 }
@@ -3466,7 +3504,7 @@ function runAll(repo: string, studioAbs: string): { exitCode: number } {
   }
   const now = new Date();
   lines.push(codexBurnLine(takeReading(homedir(), now, "next --all"), now));
-  const daily = dailyLine(repo, studioAbs, relative(realpathSync(repo), realpathSync(studioAbs)).split("\\").join("/"));
+  const daily = dailyLine(repo, studioAbs, relative(realpathSync(repo), realpathSync(studioAbs)).split("\\").join("/"), Date.now());
   if (daily !== undefined) lines.push(daily);
   lines.push(`open: ${open}`);
   console.log(lines.map((l) => clean(l, 1000)).join("\n"));
@@ -3517,7 +3555,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   // W-430: the session's usage, read at most once and only when a dispatch order is gated
   let reading: Reading | undefined;
   const sessionUsage = (): Reading => (reading ??= takeReading(homedir(), new Date(a.nowMs), `${id} next`));
-  const derive = (facts: Facts): Derived => gateDispatch(derivedStep(facts), facts, a.budget, sessionUsage);
+  const derive = (facts: Facts): Derived => gateDispatch(derivedStep(facts), facts, a.budget, a.nowMs, sessionUsage);
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
@@ -3565,10 +3603,11 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       const ungated = derivedStep(f);
       const tickets = refreshTicket(f, ungated, a.nowMs);
       if (a.chain) return say(1, [`next: ${id} ${d1.step} held`, `why: refusing: --chain performs only the review and pr rungs; ${d1.status === "held" ? one(d1.why) : `the next step for ${id} is ${d1.step}`}`, ...tickets]);
-      const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
+      // W-547: every health branch prints the meanwhile lines beside a wait, after its own lines
+      const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...meanwhileOf(f, ungated, a.nowMs), ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
       const h = assess(readMarker(repo, id), d1.step, env);
-      const lines = (status: string): string[] => render(id, d1, f, status);
+      const lines = (status: string): string[] => render(id, d1, f, status, a.nowMs);
       switch (h.kind) {
         case "running":
           return sayT(0, [
@@ -3625,7 +3664,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
         f = gather(repo, opened.root, id);
         const d2 = derive(f);
         if (a.expect !== undefined && a.expect !== d2.step) return halt(refusalLines(d2));
-        if (!performable(d2) || needsText(d2)) return { code: d2.status === "held" ? 1 : 0, lines: render(id, d2, f, d2.status), after: [], ok: false };
+        if (!performable(d2) || needsText(d2)) return { code: d2.status === "held" ? 1 : 0, lines: render(id, d2, f, d2.status, a.nowMs), after: [], ok: false };
         // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
         for (const l of refreshTicket(f, derivedStep(f), a.nowMs)) log(l);
         const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
