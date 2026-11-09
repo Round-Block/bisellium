@@ -2078,9 +2078,16 @@ function handoverAt(t: unknown): number | string {
 
 /** The cap, the declaration and the handover: a dispatch order needs all three. W-275: a hold prints the derivation's why too.
  *  W-430: and a session under the context wind-down: `usage` (read once, only for an order) past it holds the order. */
-function gateDispatch(d: Derived, f: Facts, budget: number | undefined, usage?: () => Reading): Derived {
+function gateDispatch(d: Derived, f: Facts, budget: number | undefined, nowMs: number, usage?: () => Reading): Derived {
   if (d.status !== "named" || d.order === undefined) return d;
   const refuse = (why: string): Derived => ({ step: d.step, status: "held", actor: d.actor, why, extra: [["underlying", d.why]] });
+  // W-547: a spec review reads main: never while a perform writes it, nor while main is stashed under a live perform (W-499 r14)
+  if (d.order.role === "spec-reviewer") {
+    const locks = readLocks(f.repo, f.studioRel, nowMs);
+    if ("error" in locks) return refuse(`the main checkout's locks cannot be read: ${locks.error}; the spec review waits until they read (W-547)`);
+    if (locks.writer !== undefined) return refuse(`${locks.writer} is running and writes main when its PR lands; the spec review waits for that perform to exit (W-547)`);
+    if (locks.stash !== undefined) return refuse(`main is stashed under a live perform (${locks.stash}); a spec review now reads the scaffold (W-499 r14): it waits for that perform to exit and the stash to be applied (W-547)`);
+  }
   if (budget === undefined) return refuse("dispatch budget undeclared");
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
   const wind = usage === undefined ? undefined : windDown(usage());
@@ -3548,7 +3555,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   // W-430: the session's usage, read at most once and only when a dispatch order is gated
   let reading: Reading | undefined;
   const sessionUsage = (): Reading => (reading ??= takeReading(homedir(), new Date(a.nowMs), `${id} next`));
-  const derive = (facts: Facts): Derived => gateDispatch(derivedStep(facts), facts, a.budget, sessionUsage);
+  const derive = (facts: Facts): Derived => gateDispatch(derivedStep(facts), facts, a.budget, a.nowMs, sessionUsage);
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
