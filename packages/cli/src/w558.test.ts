@@ -97,3 +97,15 @@ test("W-558-b2 behaviour 2: an unknown marker step is an error that land and ret
   const n = await nextMod();
   assert.match(n.readMarker!(w.repo, OPUS)?.invalid ?? "absent", /^the marker cannot be read \(ENOTDIR\)$/, "next's own marker read is invalid, never absent, when the steps path cannot be read");
 });
+
+test("W-558-b3 behaviour 3: a queued record whose state is outside the lifecycle is an error, never skipped", () => {
+  const q = world("w558-b3", "greenlight");
+  put(q.studio, "opera/W-904.md", record("W-904", "greenlti"));
+  put(q.studio, "opera/W-905.md", record("W-905", "greenlit"));
+  put(q.studio, "queue.yml", queue(["W-904", "W-905"]));
+  commit(q.repo, "studio: W-558 queue");
+  const o = next(q, [OPUS, ...BUDGET]);
+  assert.match(o.kv.get("meanwhile") ?? "", /: held: the spec ahead cannot be read: the queued record opera\/W-904\.md has state "greenlti", not one of backlog, /, ran("an unknown queued state holds the meanwhile line, never skips to a lower entry", o));
+  assert.doesNotMatch(o.kv.get("meanwhile-locks") ?? "", /ahead W-905/, ran("the entry below the typo is never named ahead", o));
+  assert.equal(o.kv.get("role"), "architect", ran("and the step next names is unchanged", o));
+});
