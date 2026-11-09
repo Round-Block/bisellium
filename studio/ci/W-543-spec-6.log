@@ -1,0 +1,21 @@
+# opus: W-543
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T03:46:10.265Z
+# tree: tree:4f0f1bbb0e5c4b125606c121db2965a417f08444
+# brief: briefs/W-543.md blob:67034d577ed986ba5b39cbd6c8cd7e25623e7036
+# ticket: {"opus":"W-543","step":"spec","action":"verdict-spec","round":6,"actor":"architect","studio":".worktrees/W-543/studio","head":"02c4e9467169b74e7e8e88c38196f953c7fb94b3","brief":"67034d577ed986ba5b39cbd6c8cd7e25623e7036","at":"2026-11-09T03:45:33.777Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-543-spec/classloop/promise-ledger.md
+
+## Findings
+
+1. advisory — `ci --opus` (`~/.bisellium-evidence/W-543-build/ci-opus-2.log`) blocked at `brief.admission`: revision 3's Input domain preamble, folding in spec review 4 #2, dropped the statement that a rejection fails closed; the preamble now says "Each value outside its domain is rejected at the point its row states, and every rejection fails closed: ..." and keeps round 4's meaning unchanged (records 1-9 start no session and write no launch state, a real run may sync before records 10-11, record 12 is judged after the session) — check: r6/brief.diff (one line), r6/check.out (PASS, 0 blocking, no `brief.admission` finding)
+2. advisory — no other change to the brief: Promises, Interfaces, Files owned, the table rows and the round 5 evidence (classloop/, the revision 2 reds, refusal matrix, mutants and pins) stand as signed at round 5 — check: r6/brief.diff
+
+## Verdict
+
+passed — signed by the architect (`architect`, `claude-opus-5-5`, the engineering spec signer, D-150 C) for `studio/briefs/W-543.md` revision 3 on opus/W-543, round 6, restoring the Input domain's fails-closed statement the admission rule requires (packages/commands/src/brief-admission.ts); the round 5 signature's findings and evidence carry over unchanged.
