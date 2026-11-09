@@ -13,6 +13,7 @@ queues:
       - { opus: W-543, says: "a timer the Patron installs starts a refresh session from a landed handoff; exempt from the freeze on the leads' overnight meet and the Patron 2026-11-08 (D-189)" }
       - { opus: W-547, says: "next names a meanwhile step beside every wait; exempt at the Patron's ask 2026-11-09, ranked on the leads' overlap meet (D-189)" }
       - { opus: W-558, says: "a shared fail-closed read and loaders for queue, receipts and step markers; W-185's first slice; high (D-039), ranked on the leads' rank meet and the Patron's yes 2026-11-09", folded: [W-559] }
+      - { opus: W-560, says: "a failed ci --opus commits its own gate logs, so a class-loop spec perform is never refused for them; high, the Patron's call 2026-11-09 (W-547); producer's rank, vetoable" }
       - { opus: W-554, says: "a meet verb asks the relevant leads, each named with why; check refuses a cited meet missing one; exempt at the Patron's ask 2026-11-09" }
       - { opus: W-553, says: "a spec draft declares a risk class and a 30/45-minute budget; only evidence defers to build; exempt at the Patron's ask 2026-11-09, on the leads' spec-speed meet (D-189)" }
       - { opus: W-555, says: "the queue check reads studio/queue.yml; the handoff's Greenlit list goes (W-299 part 2); exempt at the Patron's ask 2026-11-09, on the leads' simplify meet (D-189)" }
@@ -85,6 +86,7 @@ queues:
       - { opus: W-332, says: "step tickets", next_ts: true }
       - { opus: W-304, says: "seats read live, console MVP" }
       - { opus: W-280, says: "Inbox newItem fail-open" }
+      - { opus: W-561, says: "next's gather reads --now for the daily hold and red findings; W-547's stated limit; producer's rank, vetoable" }
   research:
     lanes: { R1: ~ }
     next:
