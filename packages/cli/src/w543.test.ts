@@ -300,5 +300,45 @@ test("W-543-b3 behaviour 3: launch refuses while anything runs in the agent clon
   }
 });
 
+test("W-543-b4 behaviour 4: launch refuses on its own state: a launch that did not finish, a last result it cannot read or with permission denials, and the nightly cap", async () => {
+  {
+    let w = world();
+    put(join(w.state, "lock.json"), JSON.stringify({ pid: 777, start_ticks: 555, at: NOW.toISOString(), handoff: "a".repeat(40) }));
+    assert.equal(await w.launch("--dry-run"), 1, "a lock left by a launch that is gone refused");
+    assert.match(said(w), /the last launch did not finish: .*pid 777, which is gone/, "the refusal names the lock");
+    w = world();
+    put(join(w.state, "lock.json"), JSON.stringify({ pid: 777, start_ticks: 555, at: NOW.toISOString(), handoff: "a".repeat(40) }));
+    proc(w.procRoot, 777, { comm: "node", ticks: 556, cwd: w.home });
+    assert.equal(await w.launch("--dry-run"), 1, "a lock whose pid now names another process refused as unfinished");
+    assert.match(said(w), /the last launch did not finish/, "a reused pid is not the launch");
+    w = world();
+    put(join(w.state, "session.json"), JSON.stringify({ permission_denials: [{ tool_name: "Bash", tool_use_id: "x", tool_input: {} }, { tool_name: "Edit" }] }));
+    assert.equal(await w.launch("--dry-run"), 1, "a last session with permission denials refused");
+    assert.match(said(w), /had 2 permission denial\(s\) \(Bash, Edit\)/, "the refusal names the tools");
+    w = world();
+    put(join(w.state, "session.json"), "");
+    assert.equal(await w.launch("--dry-run"), 1, "an empty last result refused");
+    w = world();
+    put(join(w.state, "session.json"), JSON.stringify({ type: "result" }));
+    assert.equal(await w.launch("--dry-run"), 1, "a last result with no permission_denials refused");
+    w = world();
+    put(join(w.state, "session.json"), JSON.stringify({ permission_denials: [] }));
+    assert.equal(await w.launch("--dry-run"), 0, "a clean last result is no refusal");
+  }
+  {
+    const starts = (w: World, ...hoursAgo: number[]): void =>
+      put(join(w.state, "starts.jsonl"), hoursAgo.map((h, i) => JSON.stringify({ at: new Date(NOW.getTime() - h * 3_600_000).toISOString(), handoff: String(i).repeat(40).slice(0, 40).replace(/[^0-9]/g, "0") })).join("\n") + "\n");
+    let w = world();
+    starts(w, 11, 6, 3, 1);
+    assert.equal(await w.launch("--dry-run"), 1, "four starts in the last 12 hours refused");
+    assert.match(said(w), /the cap is reached: 4 launches in the last 12 hours \(cap 4\)/, "the refusal names the cap");
+    w = world();
+    starts(w, 30, 12, 6, 3, 1);
+    assert.equal(await w.launch("--dry-run"), 0, "a start 12 hours ago or older is not counted");
+    w = world();
+    put(join(w.state, "starts.jsonl"), "{\"at\":1}\n");
+    assert.equal(await w.launch("--dry-run"), 1, "a start line that is not { at, handoff } refused");
+  }
+});
 
 
