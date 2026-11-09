@@ -1,0 +1,25 @@
+# opus: W-543
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-09T03:34:46.387Z
+# tree: tree:b4f11757cdcb92b99c8641c28da803683f35d44d
+# brief: briefs/W-543.md blob:20620de7108ed415f0b54d3223d1116d5c4d8a4f
+# ticket: {"opus":"W-543","step":"spec","action":"verdict-spec","round":5,"actor":"architect","studio":".worktrees/W-543/studio","head":"4a264cc3e1c17f73988f8c98a6584179523b26a2","brief":"20620de7108ed415f0b54d3223d1116d5c4d8a4f","at":"2026-11-09T03:34:39.827Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-543-spec/classloop/promise-ledger.md
+
+## Findings
+
+1. advisory — class loop `security×symlink-parent-write-escape` (spec review 4 #1, build review 1 #1, fix-1 census open paths `packages/cli/bin/bisellium.mjs:1` and `.claude/refresh/bisellium-launch.service:10`) closed by stating the boundary where it is enforced: no code inside the launch can judge the interpreter that runs it, so the timer's unit names `node` by absolute path (`ExecStart=/home/linuxbrew/.linuxbrew/bin/node %h/.local/bin/bisellium launch`, never `/usr/bin/env`) under one fixed `Environment=PATH=` of absolute folders, none agent-writable, relative or empty, with no other `Exec` line or environment — check: packages/cli/src/w543.test.ts W-543-b2 "the service runs the installed bisellium by an absolute node", "the service's node is in no folder an agent writes", "the service's PATH is one fixed list of absolute folders", "no PATH entry of the service is in a folder an agent writes", "the service runs one command and sets no other environment"; classloop/unit-rows.out (red on the head's unit at the first, green on the amended unit, four wrong forms each failing its assertion)
+2. advisory — the Patron's terminal entry (`bisellium launch` typed in his shell) is a stated limit with its reason: his PATH selects `node` through the shared shim's `#!/usr/bin/env node` before any launch code, the shim is reused unchanged (D-076 E), and `pathFault` still judges that PATH for every child; he may type the unit's `ExecStart` line for the guarded form — check: brief Promise patron-clone limit, Interfaces "The trust boundary, stated where it is enforced"
+3. advisory — the shipped service PATH held no Node 25 (`/usr/local/bin/node` v22, `/usr/bin/node` v18), so the session's hooks and `npm` would have run an old node; revision 3 adds `/home/linuxbrew/.linuxbrew/bin` (v25.9.0), whose 418 links in the fixed PATH's folders point into no agent-writable folder; the Patron checks the node's version at install — check: classloop/fixed-path.out, brief "Trial 4 and the first nights" step 3
+4. advisory — spec review 4 #2 (S2, brief Input domain preamble) folded in: each out-of-domain value is rejected at the point its row states; records 1-9 start no session and write no launch state, a real run may sync before records 10-11, and record 12 is judged after the session — check: brief Input domain preamble
+5. advisory — the unit pins read the shipped unit's text, so they are pinned on a config file, not on `launch.ts`'s behaviour; the allow-list Promise keeps its code kills (no-edit-twin, no-force-push-denial, grant-unchecked, odd-path-accepted), and the unit's wrong forms are in `classloop/unit-rows.out` — check: classloop/promise-ledger.md, mutants.out
+6. advisory — Files owned are unchanged (`bisellium-launch.service` and `w543.test.ts` were owned); `packages/cli/bin/bisellium.mjs` is not touched (a seam every verb shares); the builder's fix round changes the service's `ExecStart=` and `Environment=PATH=` lines and header, and adds the unit assertions to W-543-b2, replacing "the service runs the installed bisellium" — check: brief Files owned, classloop/service-amended, classloop/unit-rows.mjs
+
+## Verdict
+
+passed — signed by the architect (`architect`, `claude-opus-5-5`, the engineering spec signer, D-150 C) for `studio/briefs/W-543.md` revision 3 on opus/W-543 at 4a264cc3, round 5, closing the class loop (D-085) by moving the trust boundary to the unit that chooses the interpreter and stating the terminal entry as a limit; the revision 2 evidence (reds, refusal matrix, mutants, pins) stands for the unchanged behaviours, and the unit rows are prototyped red and green over the head's and the amended unit (`classloop/unit-rows.out`).

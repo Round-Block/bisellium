@@ -1,0 +1,26 @@
+# opus: W-543
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-08T16:50:31.263Z
+# tree: tree:247a84709f2bb30122c7a8142d28e831e4149729
+# brief: briefs/W-543.md blob:19c7a1d1ab39893ac8e2aba5f9f163402cac0b2d
+# ticket: {"opus":"W-543","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"c7c8ea0cb8f3aee9e47c456f059043fb4140f649","brief":"19c7a1d1ab39893ac8e2aba5f9f163402cac0b2d","at":"2026-11-08T16:50:24.315Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-543-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the shipped allow list grants Bash whole, bounded by the user settings' sandbox (judged by `agent-workspace.sh verify` before each launch) and the PreToolUse guard, because the census of 403 transcripts found more than 80 leading command forms and under dontAsk an unlisted one is denied silently; a prefix deny list holds the Patron-only steps and is a stated limit (a force-push written another way is not seen); Default 1 asks the Patron — check: brief Intent "Why Bash whole", allow-census.out, Promise allow-list
+2. advisory — the record's ten refusals are grouped into six behaviours under brief_behaviour_limit 6; "already launched for that commit" is folded into "no newer handoff" (both key on the handoff commit, the leads' call); a red per refusal is kept in refusal-matrix/ (ten rows, each accepted on the commit before its code) — check: brief Intent, refusal-matrix/reds.out, reds.out
+3. advisory — the rows run every judgement over stand-ins (verify, gh, the sync, the session, /proc); the real claude spawn, the sync and Claude Code's reading of the rules are reused unchanged and are trial 4's to prove, before any night — check: brief Limits, brief "Trial 4 and the first nights"
+4. advisory — no W-542 file is touched (spec-ahead meet 1109); the verb is therefore not named in CLAUDE.md or docs/INSTRUCTIONS.md until a follow-up after W-542 merges, Default 4 — check: brief Facts checked, brief Files owned, brief Out of scope
+5. advisory — one existing check flips by design: usage.test.ts "scanned every known usage constant" moves from 50 to 51 for LAUNCH_USAGE — check: brief Acceptance, singles.out
+6. advisory — code-owned files added: the four files under `.claude/refresh/`, so the Patron approves the PR as code owner, runs the guard step after the merge and installs the units himself — check: brief Status, brief Acceptance, .github/CODEOWNERS
+7. advisory — not run for this spec: `npm test`, typecheck over every package, `format:check`, `check -- examples/sample-studio` and the CI run; `check studio` on the detached series checkout shows only `opus.records_unchanged` at W-096 (no current branch) — check: brief Acceptance, singles.out
+
+## Verdict
+
+passed — signed by the architect (`architect`, `claude-opus-5-5`, the engineering spec signer, D-150 C) for `studio/briefs/W-543.md` at master c7c8ea0c, round 1: six behaviours, each red accepted by the replay classifier on the commit before it and green on its feature commit (`reds.out`), each red log proving its one declared pin (`pin-check.out`); a red per refusal over ten one-stage rows (`refusal-matrix/reds.out`); nineteen one-hunk wrong forms each failing a row at a named assertion (`mutants.out`); the twelve-commit mbox applying to master c7c8ea0c and yielding the series tree (`mbox-check.out`); the touched files passing one at a time on the tip, both packages typechecking and lint passing on the new files (`singles.out`, `lint.out`); the brief admitted by the real `ready` (`admission.out`) and the ledger by the verdict writer (`ledger-check.out`); the Codex test check (`fixture-census.md`).

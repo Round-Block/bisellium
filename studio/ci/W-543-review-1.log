@@ -1,0 +1,18 @@
+# opus: W-543
+# phase: build
+# round: 1
+# sella: qa-lead
+# session: 01a1be4b-ec5c-7a50-82e7-a7429c70f95a
+# outcome: failed
+# at: 2026-11-09T03:20:42.840Z
+# tree: tree:1aae998ef369bf28b2185d3fc571a411ef269bfe
+# brief: briefs/W-543.md blob:e783f48f01e91c298e45018660a488e389af3bc4
+# ticket: {"opus":"W-543","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-543/studio","head":"efb924c1e7be17ba69dd341e67cdb22effd2f28f","brief":"e783f48f01e91c298e45018660a488e389af3bc4","at":"2026-11-09T03:20:12.054Z"}
+
+## Findings
+1. blocking — packages/cli/src/launch.ts:225 `pathFault` silently skips an unenumerable PATH directory. An execute-only directory can therefore contain an unselected `node` symlink into `AGENT_DIR`; `agent-workspace.sh verify` then invokes that agent-writable target at scripts/agent-workspace.sh:556, violating brief:17. [severity: S1] [class: security×symlink-parent-write-escape] — check: packages/cli/src/w543.test.ts W-543-b1 (an execute-only PATH directory containing an unselected `node` symlink into `AGENT_DIR` must refuse with no `deps.run` call)
+2. blocking — packages/cli/src/launch.ts:342 The prompt is trimmed before being passed to Claude, although brief:104 admits any nonblank text and requires it to be passed whole and as written; the existing assertion at packages/cli/src/w543.test.ts:429 duplicates the trim instead of detecting the loss. [severity: S1] [class: tests×tests-that-agree-with-the-bug] — check: packages/cli/src/w543.test.ts W-543-b2/W-543-b6 (a nonblank prompt with leading and trailing whitespace must reach the session byte-for-byte)
+
+## Verdict
+The launch still exposes an agent-writable executable through an unenumerable PATH entry and alters an accepted prompt input.
+VERDICT: FAIL

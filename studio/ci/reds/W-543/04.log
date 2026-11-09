@@ -1,0 +1,40 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=^W-543-b4\s --import tsx packages/cli/src/w543.test.ts
+# exit: 1
+# at: 2026-11-09T02:49:55.112Z
+# sella: architect
+# tree: tree:c6e3db3d7c08c69b8b9b4a7c01b3a7438789ba13
+# ticket: {"opus":"W-543","step":"reds","action":"red","round":4,"actor":"producer","studio":".worktrees/W-543/studio","head":"f8b73056235d12bb4487a1b6468e12b2a17cf418","brief":"e783f48f01e91c298e45018660a488e389af3bc4","at":"2026-11-09T02:49:55.075Z"}
+
+TAP version 13
+# Subtest: W-543-b4 behaviour 4: launch refuses on its own state: a launch that did not finish, a last result it cannot read or with permission denials, and the nightly cap
+not ok 1 - W-543-b4 behaviour 4: launch refuses on its own state: a launch that did not finish, a last result it cannot read or with permission denials, and the nightly cap
+  ---
+  duration_ms: 29.030302
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-543/packages/cli/src/w543.test.ts:3:13172'
+  failureType: 'testCodeFailure'
+  error: |-
+    a lock left by a launch that is gone refused
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-543/packages/cli/src/w543.test.ts:307:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37.335019

@@ -1,0 +1,21 @@
+# opus: W-543
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1be2e-ff70-79c3-b1ae-83590c6dc9e5
+# outcome: passed
+# at: 2026-11-09T03:49:38.788Z
+# tree: tree:4f0f1bbb0e5c4b125606c121db2965a417f08444
+# brief: briefs/W-543.md blob:67034d577ed986ba5b39cbd6c8cd7e25623e7036
+# ticket: {"opus":"W-543","step":"spec","action":"verdict-spec","round":7,"actor":"spec-reviewer","studio":".worktrees/W-543/studio","head":"02c4e9467169b74e7e8e88c38196f953c7fb94b3","brief":"67034d577ed986ba5b39cbd6c8cd7e25623e7036","at":"2026-11-09T03:49:30.429Z"}
+
+## Findings
+1. advisory — .claude/refresh/bisellium-launch.service:6 The amended header still says a refused launch “changes nothing,” but a real launch may already have synced the agent clone before a later refusal. Replace lines 5–6 with “The Patron sets his own absolute Node 25 path at install, outside every folder an agent writes. A refused launch may already have synced the agent clone; it writes no launch state and starts no session.” [severity: S2] [design: keeps] [class: spec×promise-unattainable-under-accepted-domain] — check: none: prose must match brief:15 and brief:103
+
+## Earlier findings
+- ci/W-543-spec-4.log #1: closed — `pathFault` now refuses an existing unlistable PATH directory, `runLaunch` independently resolves every selected child executable before its first child call, W-543-b1 pins execute-only directories with agent/evidence symlinks and no `deps.run`, and the timer invokes the shim through an absolute Node path.
+
+## Verdict
+The sole prior blocker is closed; the remaining service-comment overstatement is advisory.
+VERDICT: PASS
