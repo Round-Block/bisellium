@@ -5,9 +5,12 @@
  * reading it: it runs nothing an agent can write. It starts `claude -p` with every hook (never a Stop-hook relaunch, never
  * scripts/cascade-loop.sh), under `--permission-mode dontAsk` and the code-owned allow list in `.claude/refresh/`.
  * Before its first child process it judges PATH: every entry, and the real target of every link in a PATH folder, lies
- * outside both agent-writable folders, and git, bash, gh and claude run by the absolute paths found there. A real launch
- * may sync the agent clone, then otherwise refuses with one `launch: refused:` line and exit 1, writing no launch state
- * and starting no session; `--dry-run` judges the same but the sync and prints the command it would run, writing nothing.
+ * outside both agent-writable folders, and git, bash, gh and claude run by the absolute paths found there, each judged by
+ * its real target whether or not its PATH folder can be listed. A refusal is one `launch: refused:` line and exit 1. Each
+ * value outside its domain is rejected at the point its row states: the checks before the workspace verify start no
+ * session and write no launch state; a real run may sync before the later checks are known, and the result of a session
+ * is judged after the session and its state writes. `--dry-run` judges the same but the sync and prints the command it
+ * would run, writing nothing.
  */
 import { spawn, spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -301,6 +304,11 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   const found = EXES.map((n) => [n, onPath(n, path)] as const);
   const absent = found.find(([, at]) => at === undefined);
   if (absent !== undefined) return refuse(`no ${absent[0]} on PATH`);
+  // an unlistable PATH folder is no pass: each selected executable is judged by its real target
+  for (const [n, at] of found) {
+    const target = real(at!);
+    if ([agent, evidence].some((w) => within(target, w))) return refuse(`${n} on PATH (${at}) links to ${target}, in a folder an agent writes`);
+  }
   const [gitExe, bashExe, ghExe, claude] = found.map(([, at]) => at!) as [string, string, string, string];
   const git = (...args: string[]): Ran => deps.run(gitExe, ["-C", clone, ...args], { timeoutMs: CHECK_MS });
   if (git("symbolic-ref", "-q", "HEAD").stdout.trim() !== "refs/heads/master") return refuse(`${clone} is not on master; launch runs only from the Patron's clone on master`);
