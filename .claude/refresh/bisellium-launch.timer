@@ -1,0 +1,11 @@
+# W-543: tries a launch every 30 minutes through the night (SGT, UTC+8, 23:00 to 06:30); each try refuses unless a newer
+# handoff landed and nothing runs. A try while the service still runs is skipped by systemd.
+[Unit]
+Description=bisellium launch, every 30 minutes at night (W-543)
+
+[Timer]
+OnCalendar=*-*-* 23,00,01,02,03,04,05,06:00,30:00 Asia/Singapore
+Persistent=false
+
+[Install]
+WantedBy=timers.target

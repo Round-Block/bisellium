@@ -135,6 +135,30 @@ export interface LaunchConfig {
   addDirs: string[];
   cap: { starts: number; hours: number };
 }
+const RULE = /^([A-Za-z][A-Za-z0-9_]*)(?:\((.+)\))?$/;
+const PATH_TOOLS = new Set(["Read", "Write", "Edit", "NotebookEdit"]);
+const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === "string" && s.trim() !== "" && s === s.trim());
+
+/** W-543: every fault in a launch config, in order; [] for a config the launch runs. */
+export function configFaults(v: unknown): string[] {
+  if (!isDict(v)) return ["the config is not a JSON object"];
+  const f: string[] = [];
+  if (!strings(v["allow"]) || v["allow"].length === 0) f.push("allow is not a non-empty list of rules");
+  if (!strings(v["disallow"])) f.push("disallow is not a list of rules");
+  if (!strings(v["addDirs"]) || v["addDirs"].some((d) => !d.startsWith("~/"))) f.push("addDirs is not a list of ~/ paths");
+  const cap = v["cap"];
+  const int = (n: unknown, max: number): boolean => typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= max;
+  if (!isDict(cap) || !int(cap["starts"], 24) || !int(cap["hours"], 24)) f.push("cap is not { starts: 1..24, hours: 1..24 }");
+  const rules = [...(strings(v["allow"]) ? v["allow"] : []), ...(strings(v["disallow"]) ? v["disallow"] : [])];
+  for (const r of rules) {
+    const m = RULE.exec(r);
+    if (!m) f.push(`${r} is not a Tool or Tool(spec) rule`);
+    else if (m[2] !== undefined && PATH_TOOLS.has(m[1]!) && !["~/", "//", ...Object.keys(TOKENS).map((t) => `${t}/`)].some((s) => m[2]!.startsWith(s))) f.push(`${r}: a path rule names ~/, //, {agent}/ or {evidence}/ paths only (a /path is the project's)`);
+  }
+  // trial 2: a Write(path) rule did not admit the Write tool under dontAsk; Edit(path) does
+  if (strings(v["allow"])) for (const r of v["allow"]) if (r.startsWith("Write(") && !v["allow"].includes(`Edit(${r.slice(6)}`)) f.push(`${r} has no Edit(${r.slice(6, -1)}) beside it`);
+  return f;
+}
 
 /** A process as `/proc/<pid>/stat` reads: its state, parent and start time in clock ticks (field 22). */
 function stat(procRoot: string, pid: number): { state: string; ppid: number; ticks: number } | undefined {
@@ -290,6 +314,8 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   } catch {
     return refuse(`${LAUNCH_CONFIG} in ${clone} is missing or not JSON`);
   }
+  const faults = configFaults(config);
+  if (faults.length > 0) return refuse(`${LAUNCH_CONFIG}: ${faults.join("; ")}`);
   const c = config as LaunchConfig;
   // the path rules' tokens, read at the agent clone's and the evidence folder's real paths (an absolute `//` rule)
   const folders = { agent, evidence };
@@ -299,6 +325,10 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   };
   const allow = c.allow.map(expand);
   const disallow = c.disallow.map(expand);
+  // the session must be able to write where it works: Edit and Write under the resolved AGENT_DIR and evidence folder
+  for (const [k, v] of [["AGENT_DIR", agent], ["the evidence folder", evidence]] as const) if (!/^\/[A-Za-z0-9_.@+/-]*$/.test(v)) return refuse(`${k}'s real path ${v} holds a character a permission rule does not carry; launch accepts A-Z a-z 0-9 _ . @ + / - only`);
+  const ungranted = [agent, evidence].flatMap((d) => [`Edit(/${d}/**)`, `Write(/${d}/**)`]).filter((g) => !allow.includes(g));
+  if (ungranted.length > 0) return refuse(`${LAUNCH_CONFIG} grants no ${ungranted.join(", ")}; the session could not write the agent clone or the evidence folder`);
   let prompt = "";
   try {
     prompt = readFileSync(join(clone, LAUNCH_PROMPT), "utf8").trim();

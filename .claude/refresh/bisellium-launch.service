@@ -1,0 +1,11 @@
+# W-543: one refresh session from a landed handoff. The Patron installs it (see the unit's timer); it runs the installed
+# bisellium, the Patron's clone at master (W-379), never a file in the agent clone. A refused launch exits 1 and changes
+# nothing; journalctl --user -u bisellium-launch shows each run's one line.
+[Unit]
+Description=bisellium launch: start one refresh session from a landed handoff (W-543)
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/bin/bisellium launch
+TimeoutStartSec=12h
