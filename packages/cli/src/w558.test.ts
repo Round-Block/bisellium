@@ -59,7 +59,7 @@ test("W-558-b1 behaviour 1: one shared read returns absent, valid or error, and 
     mkdirSync(join(root, "opera", "W-2.md"), { recursive: true });
     assert.equal(i.loadOpusRecord?.(root, "opera/W-2.md")?.kind, "error", "an opus record that is a directory is an error, not absent");
     put(root, "opera/W-3.md", record("W-3", "greenlti"));
-    assert.match((i.loadOpusRecord?.(root, "opera/W-3.md") as { why?: string })?.why ?? "", /^opera\/W-3\.md has state "greenlti", not one of backlog, greenlit, /, "an opus record whose state is outside the lifecycle is an error");
+    assert.match((i.loadOpusRecord?.(root, "opera/W-3.md") as { why?: string })?.why ?? "", /^opera\/W-3\.md has state "greenlti", not one of backlog, greenlit, building, verifying, review, done, halted$/, "an opus record whose state is outside the lifecycle is an error");
     put(root, "opera/W-4.md", record("W-4", "building"));
     assert.equal((i.loadOpusRecord?.(root, "opera/W-4.md") as { value?: Record<string, unknown> })?.value?.["state"], "building", "an opus record in a lifecycle state is valid");
     put(root, "receipts/producer/r.json", "{");
@@ -80,14 +80,13 @@ test("W-558-b2 behaviour 2: an unknown marker step is an error that land and ret
   const w = world("w558-b2", "backlog");
   marker(w.repo, "W-800", "merg", 10);
   const m = await meanwhile();
-  assert.match((m.readLocks!(w.repo, "studio", NOW_MS) as { error?: string }).error ?? "", /^the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg"/, "an unknown marker step is a lock read error, never no writer");
+  assert.match((m.readLocks!(w.repo, "studio", NOW_MS) as { error?: string }).error ?? "", /^the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg" \(not one of greenlight, spec, branch, ready, reds, build, review, pr, merge, cleanup, done, retro, checkpoint\)$/, "an unknown marker step is a lock read error, never no writer");
   assert.match((m.mainWriter!(w.repo, NOW_MS) as { error?: string }).error ?? "", /names an unknown step "merg"/, "the writer read refuses an unknown marker step");
   put(w.studio, "notes.md", "a record to land\n");
   const land = cli(w, ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"]);
-  // one-sided: the rest of the output is the marker reader's closed set
-  assert.match(land.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg"/, `land refuses beside an unknown marker step\n${land.out}${land.err}`);
+  assert.match(land.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg" \(not one of greenlight, spec, branch, ready, reds, build, review, pr, merge, cleanup, done, retro, checkpoint\); a land now could move master under a merge queue \(W-547\); nothing committed or pushed\nway past: repair or remove what the line names, then land again\n$/, `land refuses beside an unknown marker step\n${land.out}${land.err}`);
   const retro = cli(w, ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO]);
-  assert.match(retro.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg"/, `retro --daily refuses beside an unknown marker step\n${retro.err}`);
+  assert.match(retro.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: the step marker \.bisellium\/steps\/W-800\.json names an unknown step "merg" \(not one of greenlight, spec, branch, ready, reds, build, review, pr, merge, cleanup, done, retro, checkpoint\); the retro waits until it reads \(W-547\)\n$/, `retro --daily refuses beside an unknown marker step\n${retro.err}`);
   assert.equal(retro.status, 1, "the retro refusal exits 1");
   rmSync(join(w.repo, ".bisellium", "steps"), { recursive: true, force: true });
   marker(w.repo, "W-800", "merge", 10, "steps/status.json");
@@ -159,14 +158,14 @@ for (const shape of ["symlink to a directory with a marker", "dangling symlink",
     assert.match((m.mainWriter!(w.repo, NOW_MS) as { error?: string }).error ?? "", /\.bisellium\/steps/, "the writer read is an error");
     put(w.studio, "notes.md", "a record to land\n");
     const land = cli(w, ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"]);
-    assert.match(land.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: /, `land refuses\n${land.out}${land.err}`);
+    assert.match(land.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: \.bisellium\/steps is (?:a symlink, not a real directory|not a directory); a land now could move master under a merge queue \(W-547\); nothing committed or pushed\nway past: repair or remove what the line names, then land again\n$/, `land refuses\n${land.out}${land.err}`);
     const retro = cli(w, ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO]);
-    assert.match(retro.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: /, `retro --daily refuses\n${retro.err}`);
+    assert.match(retro.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: \.bisellium\/steps is (?:a symlink, not a real directory|not a directory); the retro waits until it reads \(W-547\)\n$/, `retro --daily refuses\n${retro.err}`);
     assert.equal(retro.status, 1, "the retro refusal exits 1");
     const n = await nextMod();
     assert.notEqual(n.readMarker!(w.repo, OPUS)?.invalid, undefined, "next's own marker read is invalid, never absent");
     const o = next(w, [OPUS, ...BUDGET]);
-    assert.match(o.kv.get("meanwhile-locks") ?? "", /^unreadable: \.bisellium\/steps /, ran("next holds on the unreadable collection", o));
+    assert.match(o.kv.get("meanwhile-locks") ?? "", /^unreadable: \.bisellium\/steps is (?:a symlink, not a real directory|not a directory)$/, ran("next holds on the unreadable collection", o));
   });
 }
 

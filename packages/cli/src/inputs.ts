@@ -151,7 +151,7 @@ const RAW_FORMS: { re: RegExp; input: string }[] = [
   { re: /readContainedRegularFile\([^;]*"receipts"/, input: "a run receipt" },
   { re: /readContainedRegularFile\([^;]*QUEUE_FILE/, input: "queue.yml" },
   { re: /readFileSync\([^;]*(markerPath\(|receipts|queue\.yml|QUEUE_FILE)/, input: "a lock input" },
-  { re: /\.read\(recordRel\(|\brecordOf\(/, input: "an opus record" },
+  { re: /\.read\(recordRel\(|(?<![\p{L}\p{M}\p{N}])recordOf\(/u, input: "an opus record" },
   { re: /Partial<Receipt>/, input: "a run receipt" },
 ];
 
