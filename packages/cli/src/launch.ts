@@ -394,7 +394,16 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
   // the agent's GitHub login, read as the session will read it (W-420's config, no ambient token)
   const auth = deps.run(ghExe, ["auth", "status", "--hostname", "github.com"], { env: sessionEnv, timeoutMs: CHECK_MS });
   if (auth.status !== 0) return refuse(`gh auth status failed for ${p.agentGh} (exit ${auth.status ?? "none"}): ${firstLine(auth.stderr || auth.stdout)}; the Patron logs in again: GH_CONFIG_DIR=${p.agentGh} gh auth login -h github.com`);
-  const handoff = "0".repeat(40);
+  // the sync: fetch origin's master into the Patron's clone and fast-forward the agent clone (W-369), the Patron's copy
+  if (!dryRun) {
+    const sync = deps.run(bashExe, [join(clone, "scripts", "agent-workspace.sh"), "sync"], { env: deps.env, timeoutMs: CHECK_MS });
+    if (sync.status !== 0) return refuse(`the sync refused (exit ${sync.status ?? "none"}): ${firstLine(sync.stdout || sync.stderr)}`);
+  }
+  // a handoff landed on master since the last start: the newest commit touching the handoff on the Patron's origin/master
+  const handoff = git("log", "-1", "--format=%H", "refs/remotes/origin/master", "--", HANDOFF).stdout.trim();
+  if (!/^[0-9a-f]{40}$/.test(handoff)) return refuse(`no landed handoff: ${HANDOFF} has no commit on the Patron's origin/master`);
+  const last = startsRead.at(-1);
+  if (last !== undefined && last.handoff === handoff) return refuse(`no handoff newer than the last start: ${handoff.slice(0, 12)} was launched at ${last.at}`);
 
   const home = (d: string): string => join(p.home, d.slice(2));
   const args = ["-p", prompt, "--permission-mode", "dontAsk", ...c.addDirs.flatMap((d) => ["--add-dir", home(d)]), "--allowedTools", ...allow, ...(disallow.length > 0 ? ["--disallowedTools", ...disallow] : []), "--output-format", "json"];
@@ -403,5 +412,23 @@ export async function runLaunch(argv: readonly string[], deps: LaunchDeps = defa
     deps.out(`launch: dry run: would start for handoff ${handoff.slice(0, 12)} in ${agent}: env ${shown.map(quote).join(" ")}`);
     return { exitCode: 0 };
   }
-  return refuse("only --dry-run runs before behaviour 10");
+  // the start: the lock names this process while the session runs; the start is counted before the session begins
+  mkdirSync(state, { recursive: true });
+  const me = stat(deps.procRoot, deps.pid);
+  if (me === undefined) return refuse(`cannot read ${join(deps.procRoot, String(deps.pid), "stat")}`);
+  writeFileSync(lockFile, JSON.stringify({ pid: deps.pid, start_ticks: me.ticks, at: deps.now().toISOString(), handoff }) + "\n");
+  appendFileSync(startsFile, JSON.stringify({ at: deps.now().toISOString(), handoff }) + "\n");
+  deps.out(`launch: started for handoff ${handoff.slice(0, 12)} in ${agent}`);
+  const end = await deps.session(claude, args, { cwd: agent, env: sessionEnv });
+  writeFileSync(resultFile, end.stdout);
+  rmSync(lockFile, { force: true });
+  let n = "unknown";
+  try {
+    const r: unknown = JSON.parse(end.stdout);
+    if (isDict(r) && Array.isArray(r["permission_denials"])) n = String(r["permission_denials"].length);
+  } catch {
+    /* an unreadable result: the next launch refuses on it */
+  }
+  deps.out(`launch: session ended (exit ${end.status ?? "none"}; permission denials ${n}); result in ${resultFile}`);
+  return { exitCode: end.status === 0 ? 0 : 1 };
 }
