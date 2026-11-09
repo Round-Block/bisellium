@@ -109,3 +109,19 @@ test("W-558-b3 behaviour 3: a queued record whose state is outside the lifecycle
   assert.doesNotMatch(o.kv.get("meanwhile-locks") ?? "", /ahead W-905/, ran("the entry below the typo is never named ahead", o));
   assert.equal(o.kv.get("role"), "architect", ran("and the step next names is unchanged", o));
 });
+
+test("W-558-b4 behaviour 4: a held derivation input error of the next entry is an error, never nothing owed", () => {
+  const q = world("w558-b4", "greenlight");
+  put(q.studio, "opera/W-906.md", record("W-906", "greenlit"));
+  put(q.studio, "queue.yml", queue(["W-906"]));
+  commit(q.repo, "studio: W-558 queue");
+  git(q.repo, ["branch", "opus/W-906"]);
+  const wt = join(q.repo, "..", "w558-b4-branch");
+  git(q.repo, ["worktree", "add", "-q", wt, "opus/W-906"]);
+  put(join(wt, "studio"), "opera/W-906.md", "---\nid: [unclosed\n---\n");
+  commit(wt, "studio: W-906 malformed on its branch");
+  git(q.repo, ["worktree", "remove", "--force", wt]);
+  const o = next(q, [OPUS, ...BUDGET]);
+  assert.match(o.kv.get("meanwhile") ?? "", /: held: the spec ahead cannot be read: the next entry W-906's derivation input cannot be read: /, ran("a next entry whose branch record is malformed holds the meanwhile line", o));
+  assert.equal(o.kv.get("role"), "architect", ran("and the step next names is unchanged", o));
+});
