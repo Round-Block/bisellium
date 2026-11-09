@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -132,4 +132,48 @@ test("W-558-b5 behaviour 5: a census warns on every raw read of a lock input out
   assert.deepEqual(i.inputCensus?.("x.ts", raw), ["x.ts:1: an opus record read outside the loaders", "x.ts:3: a lock input read outside the loaders"], "the census flags a raw read and passes a loader call");
   for (const f of ["cli/src/next.ts", "cli/src/meanwhile.ts", "cli/src/land.ts", "cli/src/retro.ts", "shim/src/receipts.ts"]) for (const line of i.inputCensus!(`packages/${f}`, readFileSync(join(import.meta.dirname, "..", "..", f), "utf8"))) t.diagnostic(`warning: ${line}`);
   assert.deepEqual(i.inputCensus!("packages/cli/src/meanwhile.ts", readFileSync(join(import.meta.dirname, "meanwhile.ts"), "utf8")), [], "the W-547 lock reader reads every lock input through the loaders");
+});
+
+/** W-558-f1: the `.bisellium/steps` collection is valid only as a real directory reached without a symlink. */
+type Shape = "symlink to a directory with a marker" | "dangling symlink" | "symlink to an empty directory" | "regular file";
+function collection(repo: string, shape: Shape): void {
+  const at = join(repo, ".bisellium", "steps");
+  mkdirSync(join(repo, ".bisellium"), { recursive: true });
+  if (shape === "regular file") return writeFileSync(at, "a file where the steps directory goes\n");
+  if (shape === "dangling symlink") return symlinkSync(join(repo, "nowhere"), at);
+  const target = join(repo, "elsewhere");
+  mkdirSync(target, { recursive: true });
+  if (shape === "symlink to a directory with a marker") {
+    writeFileSync(join(target, "W-800.json"), JSON.stringify({ schema: 1, opus: "W-800", step: "merge", pid: 999999, start_ticks: 1, started: NOW_ISO, output: "steps/W-800.log", budget_seconds: 120, writer: "perform" }));
+    writeFileSync(join(target, "W-800.log"), "{}\n");
+    utimesSync(join(target, "W-800.json"), (NOW_MS - 600_000) / 1000, (NOW_MS - 600_000) / 1000);
+  }
+  symlinkSync(target, at);
+}
+for (const shape of ["symlink to a directory with a marker", "dangling symlink", "symlink to an empty directory", "regular file"] as const) {
+  test(`W-558-f1 a ${shape} in place of .bisellium/steps is an error that land, retro --daily and next refuse on`, async () => {
+    const w = world(`w558-f1-${shape.replace(/\W+/g, "-")}`, "backlog");
+    collection(w.repo, shape);
+    const m = await meanwhile();
+    assert.match((m.readLocks!(w.repo, "studio", NOW_MS) as { error?: string }).error ?? "", /\.bisellium\/steps/, "the lock read is an error, never no writer");
+    assert.match((m.mainWriter!(w.repo, NOW_MS) as { error?: string }).error ?? "", /\.bisellium\/steps/, "the writer read is an error");
+    put(w.studio, "notes.md", "a record to land\n");
+    const land = cli(w, ["land", "studio/notes.md", "--title", "chore(studio): notes", "--sella", "producer", "--studio", w.studio, "--repo", w.repo, "--now", NOW_ISO, "--poll-ms", "1", "--max-polls", "1"]);
+    assert.match(land.out, /^land: refused\nwhy: refusing: the main checkout's writer lock cannot be read: /, `land refuses\n${land.out}${land.err}`);
+    const retro = cli(w, ["retro", "--daily", "--studio", w.studio, "--now", NOW_ISO]);
+    assert.match(retro.err, /^retro --daily: refused: the main checkout's writer lock cannot be read: /, `retro --daily refuses\n${retro.err}`);
+    assert.equal(retro.status, 1, "the retro refusal exits 1");
+    const n = await nextMod();
+    assert.notEqual(n.readMarker!(w.repo, OPUS)?.invalid, undefined, "next's own marker read is invalid, never absent");
+    const o = next(w, [OPUS, ...BUDGET]);
+    assert.match(o.kv.get("meanwhile-locks") ?? "", /writer (unreadable|error|held)|cannot be read/, ran("next holds on the unreadable collection", o));
+  });
+}
+
+test("W-558-f1 a genuinely absent .bisellium/steps is absence, no writer and no error", async () => {
+  const w = world("w558-f1-absent", "backlog");
+  const m = await meanwhile();
+  assert.deepEqual(m.readLocks!(w.repo, "studio", NOW_MS), { heavy: 0 }, "an absent collection is no lock");
+  const n = await nextMod();
+  assert.equal(n.readMarker!(w.repo, OPUS), undefined, "next's own marker read is absent");
 });
