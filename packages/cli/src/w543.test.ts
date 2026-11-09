@@ -212,6 +212,57 @@ test("W-543-b1 behaviour 1: launch runs only as the Patron's clone's CLI on a cl
   assert.equal(w.calls.some((c) => c.cmd === "session" || (c.cmd === "bash" && c.args[1] === "sync")), false, "a dry run starts no session and runs no sync");
 });
 
+test("W-543-b2 behaviour 2: launch refuses a malformed allow list; the shipped allow list, prompt and timer units are the working session's", async () => {
+  const { configFaults } = await load();
+  const cfgPath = (w: World): string => join(w.self, ".claude", "refresh", "launch.json");
+  const recommit = (w: World, v: unknown): void => {
+    put(cfgPath(w), JSON.stringify(v));
+    git(w.self, "commit", "-q", "-am", "config");
+  };
+  const shipped = JSON.parse(readFileSync(join(REPO, ".claude", "refresh", "launch.json"), "utf8")) as { allow: string[]; disallow: string[]; addDirs: string[]; cap: unknown };
+  let w = world();
+  recommit(w, { ...shipped, allow: [...shipped.allow, "Write(~/x/**)"] });
+  assert.equal(await w.launch("--dry-run"), 1, "a Write rule with no Edit rule beside it refused");
+  assert.match(said(w), /Write\(~\/x\/\*\*\) has no Edit\(~\/x\/\*\*\) beside it/, "the refusal names the Write rule");
+  assert.deepEqual(configFaults({ ...shipped, allow: ["Edit(/src/**)"] }), ["Edit(/src/**): a path rule names ~/, //, {agent}/ or {evidence}/ paths only (a /path is the project's)"], "a project-relative path rule refused");
+  assert.deepEqual(configFaults({ ...shipped, allow: [] }), ["allow is not a non-empty list of rules"], "an empty allow list refused");
+  assert.deepEqual(configFaults({ ...shipped, addDirs: ["/abs"] }), ["addDirs is not a list of ~/ paths"], "an add-dir not under ~/ refused");
+  assert.deepEqual(configFaults({ ...shipped, cap: { starts: 0, hours: 12 } }), ["cap is not { starts: 1..24, hours: 1..24 }"], "a zero cap refused");
+  assert.deepEqual(configFaults({ ...shipped, disallow: ["Bash(git push -f"] }), ["Bash(git push -f is not a Tool or Tool(spec) rule"], "a rule that does not parse refused");
+  assert.deepEqual(configFaults([]), ["the config is not a JSON object"], "a list refused");
+  w = world();
+  put(cfgPath(w), "{");
+  git(w.self, "commit", "-q", "-am", "broken");
+  assert.equal(await w.launch("--dry-run"), 1, "a config that is not JSON refused");
+  w = world();
+  put(join(w.self, ".claude", "refresh", "prompt.md"), "  \n");
+  git(w.self, "commit", "-q", "-am", "empty prompt");
+  assert.equal(await w.launch("--dry-run"), 1, "an empty prompt refused");
+
+  const grants = ["Edit({agent}/**)", "Write({agent}/**)", "Edit({evidence}/**)", "Write({evidence}/**)"];
+  w = world();
+  recommit(w, { ...shipped, allow: shipped.allow.filter((r) => !r.includes("{agent}")) });
+  assert.equal(await w.launch("--dry-run"), 1, "a config with no Edit and Write grant under the agent clone refused");
+  assert.match(said(w), /grants no Edit\(\/\/.*\/agent\/\*\*\), Write\(\/\/.*\/agent\/\*\*\); the session could not write/, "the refusal names the missing grants");
+  w = world();
+  recommit(w, { ...shipped, allow: shipped.allow.map((r) => r.replace("{agent}", "~/agents/bisellium")) });
+  assert.equal(await w.launch("--dry-run"), 1, "a grant for the default agent clone path refused while AGENT_DIR is elsewhere");
+  w = world();
+  w.env["AGENT_DIR"] = join(w.t, "agent clone");
+  mkdirSync(w.env["AGENT_DIR"]);
+  assert.equal(await w.launch("--dry-run"), 1, "an AGENT_DIR whose real path holds a space refused");
+  assert.match(said(w), /AGENT_DIR's real path .* holds a character a permission rule does not carry/, "the refusal names the AGENT_DIR");
+
+  assert.deepEqual(configFaults(shipped), [], "the shipped allow list has no fault");
+  for (const r of ["Agent", "Bash", "Read", ...grants, "SubagentHandback", "TaskStop"]) assert.ok(shipped.allow.includes(r), `the shipped allow list grants ${r}`);
+  for (const r of ["Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(gh pr close:*)", "Bash(git stash drop:*)", "Bash(git worktree prune:*)", "Bash(claude:*)", "Edit({agent}/.claude/**)", "Edit(~/projects/**)"]) assert.ok(shipped.disallow.includes(r), `the shipped list denies ${r}`);
+  const prompt = readFileSync(join(REPO, ".claude", "refresh", "prompt.md"), "utf8");
+  for (const s of ["docs/SESSION-HANDOFF.md", "~/.bisellium-evidence/current-state.md", "land the handoff"]) assert.ok(prompt.includes(s), `the prompt names ${s}`);
+  const unit = readFileSync(join(REPO, ".claude", "refresh", "bisellium-launch.service"), "utf8");
+  assert.match(unit, /^ExecStart=%h\/\.local\/bin\/bisellium launch$/m, "the service runs the installed bisellium");
+  assert.doesNotMatch(unit, /agents\/bisellium|\.bisellium-evidence/, "the service names no agent-writable folder");
+  assert.ok(readFileSync(join(REPO, ".claude", "refresh", "bisellium-launch.timer"), "utf8").split("\n").includes("OnCalendar=*-*-* 23,00,01,02,03,04,05,06:00,30:00 Asia/Singapore"), "the timer has a calendar");
+});
 
 
 
