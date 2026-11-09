@@ -1,0 +1,19 @@
+# opus: W-542
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1bbfb-4cba-7670-99c6-1ad5842ec922
+# outcome: failed
+# at: 2026-11-08T16:30:17.118Z
+# tree: tree:866100c2aa0bebc68f3af65d0d97709d736350ff
+# brief: briefs/W-542.md blob:54565389f34799c792445f5666b942a74a9a949a
+# ticket: {"opus":"W-542","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-542/studio","head":"3cdf55cf0bb3d5bf3c63f31b20f79532666cd4ac","brief":"54565389f34799c792445f5666b942a74a9a949a","at":"2026-11-08T16:26:08.235Z"}
+
+## Findings
+1. blocking — packages/cli/src/guard.ts:1090 `str` treats an empty-string `agent_id` as absent, so a valid clerk input with `agent_id: ""` is classified as the main thread and may write `studio/opera/`, contrary to brief:85. [severity: S1] [class: tests×ruled-case-uncovered] — check: packages/cli/src/guard.test.ts W-542-b1 empty-string `agent_id`
+2. blocking — packages/cli/src/guard.ts:781 `realOf` treats a present dangling symlink as an unresolved leaf: `docs/link` pointing to a not-yet-created `studio/opera/W-1.md` is authorized as `docs/link`, after which Write follows the link into the CLI-owned record, violating brief:87. [severity: S1] [class: security×symlink-parent-write-escape] — check: packages/cli/src/guard.test.ts W-542-b1 dangling leaf symlink into `studio/opera/`
+
+## Verdict
+The clerk write boundary has two authorization escapes within its stated domain.
+VERDICT: FAIL

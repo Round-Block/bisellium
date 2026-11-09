@@ -1,0 +1,38 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=^W-542-b2\s --import tsx packages/cli/src/guard.test.ts
+# exit: 1
+# at: 2026-11-08T15:37:29.523Z
+# sella: ops-lead
+# tree: tree:59e04635dbaf47d8a4e70091ed12c00a1a70e51a
+# ticket: {"opus":"W-542","step":"reds","action":"red","round":2,"actor":"producer","studio":".worktrees/W-542/studio","head":"01c28987ba1a5810838e4ff7f10857d6ba16327e","brief":"54565389f34799c792445f5666b942a74a9a949a","at":"2026-11-08T15:37:29.487Z"}
+
+TAP version 13
+# Subtest: W-542-b2 behaviour 2: the clerk agent has Edit and no Bash, says when to use Edit and Write, names the guard's roots and the CLI's records, and runs no CLI call
+not ok 1 - W-542-b2 behaviour 2: the clerk agent has Edit and no Bash, says when to use Edit and Write, names the guard's roots and the CLI's records, and runs no CLI call
+  ---
+  duration_ms: 3.930246
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-542/packages/cli/src/guard.test.ts:6:8652'
+  failureType: 'testCodeFailure'
+  error: 'the clerk has Edit'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-542/packages/cli/src/guard.test.ts:562:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11.49452
