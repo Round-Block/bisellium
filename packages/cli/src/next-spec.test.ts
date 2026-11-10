@@ -408,6 +408,7 @@ test("W-215-b3 behaviour 3: the spec reviewer's order resumes the recorded sessi
   const w = srWorld("w215-b3-spec");
   putBrief(w);
   sign(w, 1);
+  ranRollout("S1");
   review(w, 2, "failed", { extra: ["--session", "S1"] });
   sign(w, 3);
   const o = specNext(w);
@@ -880,6 +881,17 @@ function uiWorld(tag: string, o: { pointer?: boolean; kind?: "ui" | "opus" } = {
   return w;
 }
 /** A spec-phase verdict through the real writer, its exit and output returned (never thrown), in `studio` (the main checkout's by default). */
+/** W-571: a Codex rollout whose last turn ran a command to exit 0, under SETUP_ENV's HOME, so `verdict` records `session`. */
+function ranRollout(session: string): void {
+  const day = join(SETUP_ENV["HOME"]!, ".codex", "sessions", "2026", "11", "10");
+  mkdirSync(day, { recursive: true });
+  const turn = `${session}-turn-1`;
+  const lines = [
+    { type: "event_msg", payload: { type: "task_started", turn_id: turn } },
+    { type: "event_msg", payload: { type: "item_completed", turn_id: turn, item: { type: "CommandExecution", status: "completed", exit_code: 0 } } },
+  ];
+  writeFileSync(join(day, `rollout-2026-11-10T00-00-00-${session}.jsonl`), lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
+}
 function specRun(w: World, round: number, sella: string, outcome: string, body: string, extra: string[] = [], studio = w.studio): { status: number | null; out: string } {
   const from = join(w.root, `w338-${round}-${sella}.md`);
   writeFileSync(from, body);
@@ -1727,6 +1739,7 @@ test("W-433-b1 behaviour 1: a ui-lead revise on a sessioned sequence carries its
   assert.match(advisory.out, /outcome revise with no standing blocking finding/, "a revise needs a standing blocker, as failed does");
   const odd = w433Input(v, 2, "maybe", W433_REVISE, ["--session", "astra-b", ...reason]);
   assert.equal(odd.status, 2, `another UI outcome exits 2\n${odd.out}`);
+  ranRollout("sr-a");
   const reviewer = specRun(v, 2, SR, "revise", NO_FINDINGS, ["--model", SR_MODEL, "--session", "sr-a"]);
   assert.equal(reviewer.status, 2, `a sessioned spec review recorded revise exits 2\n${reviewer.out}`);
   assert.match(reviewer.out, /a sessioned verdict's outcome is exactly passed or failed/, "only the ui-lead input gains revise");

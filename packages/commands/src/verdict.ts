@@ -6,6 +6,7 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
+import { codexHome, codexModels, sessionRan, validTurnRan, type TurnRan } from "./codex-run.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
@@ -28,6 +29,8 @@ export const VERDICT_USAGE =
 
 export interface VerdictOptions extends WriteOptions {
   stdin?: Buffer;
+  /** W-571: the caller's own judgment of the Codex turn it ran (a perform); without it the session's rollout is read. */
+  turnRan?: TurnRan;
 }
 
 const GIT_TIMEOUT_MS = 30_000;
@@ -1228,6 +1231,31 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   } else if (sessionReason !== undefined) {
     console.error("--session-reason is valid only when --session replaces the sequence's recorded session; this sequence has none");
     return { exitCode: 2 };
+  }
+
+  // W-571: a caller's own turn judgment is exactly one of TurnRan's two forms, or the verdict is refused
+  const given = opts.turnRan === undefined ? undefined : validTurnRan(opts.turnRan);
+  if (given !== undefined && "error" in given) {
+    console.error(`${opusId}: refusing: ${given.error}`);
+    return { exitCode: 2 };
+  }
+  // W-571: a sessioned verdict whose model the manifest seats on the codex harness is recorded only from a turn that ran a
+  // command to exit 0: the caller's own turn (a perform), else the session's rollout under Codex's home; a blind one, or a
+  // manifest that cannot say which models are Codex's, is refused
+  if (session !== undefined && model !== undefined) {
+    const seated = codexModels(manifest);
+    if ("error" in seated) {
+      console.error(`${opusId}: refusing: a sessioned verdict cannot be classified Codex or not: ${seated.error}`);
+      return { exitCode: 2 };
+    }
+    if (seated.models.has(model)) {
+      const home = given === undefined ? codexHome(process.env) : undefined;
+      const turn: TurnRan = given ?? (home === undefined || "error" in home ? { ran: false, why: home?.error ?? "no Codex home" } : sessionRan(home.home, session));
+      if (!turn.ran) {
+        console.error(`${opusId}: refusing: Codex session ${session} failed to run: ${turn.why}; a verdict from a blind session is never recorded`);
+        return { exitCode: 2 };
+      }
+    }
   }
 
   const filenamePhase = LOG_KIND[phase];

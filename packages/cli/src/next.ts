@@ -54,6 +54,7 @@ import { runDone, runReady, runRed, runReview } from "./lifecycle.js";
 import { amPatch, readPrototype, readReplay, writeAttempt, type Replay } from "./prototype-replay.js";
 import { sweepLines, sweepWorktrees, unpushedBranches } from "./prune.js";
 import { runVerdict } from "./verdict.js";
+import { censusUnrun, execStreamRan } from "@bisellium/commands/codex-run.js";
 import { performRewrite, rewriteOf } from "./rewrite.js";
 import { DAILY_TRACKER, dailyRetroOwed, dailyRetroStep, owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
@@ -2817,9 +2818,15 @@ async function reviewSteps(f: Facts, d: Readonly<Derived>, nowMs: number, testCl
     if (turn.exitCode !== 0) return heldResult(`codex exited ${turn.exitCode}${why}; nothing is recorded`);
     if (!SESSION_ID.test(turn.sessionId)) return heldResult("codex reported no session id; nothing is recorded");
     if (previous !== undefined && turn.sessionId !== previous) return heldResult(`codex resumed ${previous} but reported session ${clean(turn.sessionId)}; nothing is recorded`);
+    // W-571: a turn whose stream holds no command run to exit 0 read nothing: failed to run, kept in the packet, never a verdict
+    const ranTurn = execStreamRan(typeof raw["stdout"] === "string" ? raw["stdout"] : "");
+    if (!ranTurn.ran) {
+      writeFileSync(join(packet, "failed-to-run.json"), `${JSON.stringify({ round, session: turn.sessionId, why: ranTurn.why })}\n`, { flag: "wx" });
+      return heldResult(`codex session ${clean(turn.sessionId)} failed to run: ${ranTurn.why}; recorded failed-to-run (${packet}/failed-to-run.json), nothing is recorded`);
+    }
     const replied = replyOutcome(turn.reply);
     if (replied === undefined) return heldResult(`the reply's last line is not "VERDICT: PASS" or "VERDICT: FAIL" (${packet}/verdict.md); nothing is recorded`);
-    const v = capture(() => runVerdict([id, "--round", String(round), "--sella", censor, "--outcome", replied, "--model", REVIEWER_MODEL, "--session", turn.sessionId, "--from", join(packet, "verdict.md"), ...(uiInput === undefined ? [] : ["--ui-input", uiInput]), "--studio", wt.studio]));
+    const v = capture(() => runVerdict([id, "--round", String(round), "--sella", censor, "--outcome", replied, "--model", REVIEWER_MODEL, "--session", turn.sessionId, "--from", join(packet, "verdict.md"), ...(uiInput === undefined ? [] : ["--ui-input", uiInput]), "--studio", wt.studio], { turnRan: ranTurn }));
     if (v.exit !== 0) return heldResult(`verdict refused: ${[...v.err, ...v.out].map(one).filter(Boolean)[0] ?? `exit ${v.exit}`}`, ...v.err.slice(1, 6).map((l) => `verdict: ${one(l)}`));
   } else if (d.ticket?.action === "review") round = d.ticket.round;
   else return heldResult(`refusing: the review rung names neither an order nor a recorded verdict to cite`);
@@ -2947,6 +2954,13 @@ async function fixCheckSteps(f: Facts, testClock: boolean, log: (line: string) =
   if (turn.exitCode !== 0) return heldResult(`codex exited ${turn.exitCode}${why}; no fix check is recorded`);
   if (!SESSION_ID.test(turn.sessionId)) return heldResult("codex reported no session id; no fix check is recorded");
   if (reviewer.includes(turn.sessionId)) return heldResult(`codex reported the reviewer's session ${clean(turn.sessionId)}; no fix check is recorded`);
+  // W-571: a census from a turn that ran no command, or one that names itself unrun, is no fix check
+  const ranTurn = execStreamRan(typeof raw["stdout"] === "string" ? raw["stdout"] : "");
+  if (!ranTurn.ran) {
+    writeFileSync(join(dir, "failed-to-run.json"), `${JSON.stringify({ round: failed.n, session: turn.sessionId, why: ranTurn.why })}\n`, { flag: "wx" });
+    return heldResult(`codex session ${clean(turn.sessionId)} failed to run: ${ranTurn.why}; recorded failed-to-run (${dir}/failed-to-run.json), no fix check is recorded`);
+  }
+  if (censusUnrun(turn.reply)) return heldResult(`the census names itself unrun ("Not determined" under ## Open, ${dir}/census.md); no fix check is recorded`);
   const open = openPaths(turn.reply);
   if (open === undefined) return heldResult(`the census has no single ## Open section with a path or "None" (${dir}/census.md); no fix check is recorded`);
   writeFileSync(join(dir, "check.json"), `${JSON.stringify({ round: failed.n, tree: cur, session: turn.sessionId, open })}\n`, { flag: "wx" });

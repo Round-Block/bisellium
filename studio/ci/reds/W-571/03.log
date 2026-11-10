@@ -1,0 +1,100 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=^W-571-b3\s --import tsx packages/cli/src/w571.test.ts
+# exit: 1
+# at: 2026-11-10T09:27:11.843Z
+# sella: ladder-lead
+# tree: tree:cc8b2948053e0cb0723dae954cc460c27770a79d
+# ticket: {"opus":"W-571","step":"reds","action":"red","round":3,"actor":"producer","studio":".worktrees/W-571/studio","head":"1e9ef265c0cc9bbb686d7387658cc66cd698a11f","brief":"3cd3affef7f5b76ccd82c05845f6996a51df82f2","at":"2026-11-10T09:27:11.806Z"}
+
+TAP version 13
+# Subtest: W-571-b3 behaviour 3: a manifest whose sellae cannot say which models are Codex's refuses a sessioned verdict
+not ok 1 - W-571-b3 behaviour 3: a manifest whose sellae cannot say which models are Codex's refuses a sessioned verdict
+  ---
+  duration_ms: 20.336193
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-571/packages/cli/src/w571.test.ts:4:745'
+  failureType: 'testCodeFailure'
+  error: |-
+    a sellae that is not a list is refused
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-571/packages/cli/src/w571.test.ts:203:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-571-b3 behaviour 3: a caller's turn judgment is exactly one of its two forms, or the verdict is refused
+not ok 2 - W-571-b3 behaviour 3: a caller's turn judgment is exactly one of its two forms, or the verdict is refused
+  ---
+  duration_ms: 6.53978
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-571/packages/cli/src/w571.test.ts:4:1856'
+  failureType: 'testCodeFailure'
+  error: |-
+    a turn that ran zero commands is refused
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-571/packages/cli/src/w571.test.ts:215:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-571-b3 behaviour 3: a Codex home that is empty or relative is refused, never searched
+not ok 3 - W-571-b3 behaviour 3: a Codex home that is empty or relative is refused, never searched
+  ---
+  duration_ms: 4.211211
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-571/packages/cli/src/w571.test.ts:4:3039'
+  failureType: 'testCodeFailure'
+  error: |-
+    an empty CODEX_HOME is named, never read as unset
+    + actual - expected
+    
+    + 'W-300: refusing: Codex session s-562-b3 failed to run: no rollout file(s) for session s-562-b3 under /tmp/claude-1000/bisellium-w571-home-v6A5yj/.codex/sessions; a verdict from a blind session is never recorded\n'
+    - 'W-300: refusing: Codex session s-562-b3 failed to run: CODEX_HOME "" is not an absolute path; a verdict from a blind session is never recorded\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    W-300: refusing: Codex session s-562-b3 failed to run: CODEX_HOME "" is not an absolute path; a verdict from a blind session is never recorded
+    
+  actual: |-
+    W-300: refusing: Codex session s-562-b3 failed to run: no rollout file(s) for session s-562-b3 under /tmp/claude-1000/bisellium-w571-home-v6A5yj/.codex/sessions; a verdict from a blind session is never recorded
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-571/packages/cli/src/w571.test.ts:229:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 0
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 39.126012
