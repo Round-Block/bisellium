@@ -68,6 +68,9 @@ detection. The Aedile owns the road, not the work travelling on it.
   recommendation is the default taken, reported at the next summary with the
   leads who met and any split, and vetoable there; the producer's recommendation
   alone is not a default. It does not replace a code-owned approval or a ladder gate.
+  The guard holds it at the main thread's AskUserQuestion: each question cites
+  the meet's collation by its path, or opens with a Patron-only tag, `[ui]`,
+  `[architecture]`, `[code-owner]`, `[settings]` or `[veto]` (W-572) (check: hook.guard)
 - **Session hygiene.** Refresh before the context nears 350k (Patron 2026-10-13; subagent dispatches stay capped at 500k), at a clean
   point. The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
   automates fresh sessions; never run it while a session is working.

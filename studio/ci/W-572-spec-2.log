@@ -1,0 +1,21 @@
+# opus: W-572
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c5c2-9d73-7223-96e3-e973ba5ec096
+# outcome: passed
+# at: 2026-11-10T14:04:30.441Z
+# tree: tree:462152b6b7a8258b8b95a1c8c3048b933cf51823
+# brief: briefs/W-572.md blob:1f6aabe8281de5d358a004b48e7c029ddf5b3669
+# ticket: {"opus":"W-572","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"e43cdf0a23875f7ea24b5c7ed9c8e92f458a416f","brief":"1f6aabe8281de5d358a004b48e7c029ddf5b3669","at":"2026-11-10T14:04:29.920Z"}
+
+## Findings
+1. advisory — brief:44 A pending W-418 notice is returned before the AskUserQuestion branch, so the first failing question can exit 2 without W-572’s rule or five tags. Replace the opening promise sentence with: `Promise question-refused: after any W-418 notice for the input cwd has been taken, a main-thread AskUserQuestion with a failing question exits 2 with the rule and five tags; before then the W-418 notice refusal wins and the question is retried.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w572.test.ts
+2. advisory — brief:46 The same W-418 precedence means an otherwise allowed question can initially exit 2, not 0. Replace the opening promise sentence with: `Promise question-allowed: after any W-418 notice for the input cwd has been taken, the same input exits 0 with nothing on stderr when every question opens with one of the five tags or cites at least one collation; before then the W-418 notice refusal wins and the question is retried.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w572.test.ts
+3. advisory — brief:50 A pending W-418 notice also prevents malformed input’s first refusal from carrying the promised W-572 rule. Replace the opening promise sentence with: `Promise fail-closed: after any W-418 notice for the input cwd has been taken, a main-thread AskUserQuestion whose tool_input is outside record 2’s domain exits 2 with the rule; before then the W-418 notice refusal wins and the question is retried.` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: packages/cli/src/w572.test.ts
+4. advisory — brief:100 Row 6 names no rejecting function, and the added `CLAUDE.md` reader declared at brief:104 has no input row. Replace brief:100 with rows for the D-189 line and `CLAUDE.md`, each naming a specified `assertW572Texts` helper in `packages/cli/src/w572.test.ts` that performs the read and assertions, so missing, unreadable, or mismatching text fails the row. [severity: S4] [class: spec×input-without-named-rejector] — check: none: brief admission does not verify changed-reader coverage or named rejectors
+
+## Verdict
+Shell output was `e43cdf0a chore(studio): file W-574, Stop hook shows the next-session prompt (#1129)`; the findings are advisory only.
+VERDICT: PASS

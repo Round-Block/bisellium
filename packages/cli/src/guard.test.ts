@@ -664,7 +664,7 @@ test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard wh
   assert.equal(f[0]?.level, "block");
   assert.equal(f[0]?.where, ".claude/settings.json");
   assert.match(f[0]?.message ?? "", /SubagentStop/);
-  assert.equal(hookGuard(JSON.stringify({ hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }] }] } })).length, 6, "Bash only: Write, Edit, NotebookEdit, SubagentStop, Stop and UserPromptSubmit");
+  assert.equal(hookGuard(JSON.stringify({ hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "bisellium hook-event guard --studio studio", timeout: 2 }] }] } })).length, 7, "Bash only: Write, Edit, NotebookEdit, AskUserQuestion, SubagentStop, Stop and UserPromptSubmit");
   assert.equal(hookGuard("{ not json").length, 1, "an unparseable settings file blocks");
   const narrowed = realSettings();
   (narrowed["hooks"] as Record<string, { matcher: string }[]>)["SubagentStop"]![0]!.matcher = "builder";
@@ -674,7 +674,7 @@ test("W-310-b5 behaviour 5: the repo wires the guard, check blocks hook.guard wh
   assert.equal(hookGuard(JSON.stringify(typed)).length, 1, "a non-command hook type blocks");
   const slow = realSettings();
   (slow["hooks"] as Record<string, { hooks: { timeout: number }[] }[]>)["PreToolUse"]![0]!.hooks[0]!.timeout = 5;
-  assert.equal(hookGuard(JSON.stringify(slow)).length, 4, "a timeout other than 2 blocks each tool");
+  assert.equal(hookGuard(JSON.stringify(slow)).length, 5, "a timeout other than 2 blocks each tool");
   assert.deepEqual(hookGuard(undefined), [], "no settings file: not judged");
   assert.deepEqual(hookGuard(readFileSync(SETTINGS_PATH, "utf8")), [], "the repo's own settings wire the guard");
   const real = realSettings()["hooks"] as Record<string, { matcher: string; hooks: { command: string }[] }[]>;

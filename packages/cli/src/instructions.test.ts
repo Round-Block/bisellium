@@ -242,7 +242,7 @@ withTempCopy(join(repo, "studio"), (dir) => {
       const guardGroup = pre?.[0];
       report(
         "settings.pretooluse-guard",
-        guardGroup?.matcher === "Bash|Write|Edit|NotebookEdit" && guardGroup.hooks.length === 1 && guardGroup.hooks[0]?.command === "bisellium hook-event guard --studio studio",
+        guardGroup?.matcher === "Bash|Write|Edit|NotebookEdit|AskUserQuestion" && guardGroup.hooks.length === 1 && guardGroup.hooks[0]?.command === "bisellium hook-event guard --studio studio",
         JSON.stringify(guardGroup),
       );
       const start = hooks?.["SessionStart"] as { matcher?: string; hooks: { command: string; timeout: number }[] }[] | undefined;

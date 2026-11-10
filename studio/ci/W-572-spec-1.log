@@ -1,0 +1,24 @@
+# opus: W-572
+# phase: spec
+# round: 1
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-10T13:57:46.306Z
+# tree: tree:462152b6b7a8258b8b95a1c8c3048b933cf51823
+# brief: briefs/W-572.md blob:1f6aabe8281de5d358a004b48e7c029ddf5b3669
+# ticket: {"opus":"W-572","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"e43cdf0a23875f7ea24b5c7ed9c8e92f458a416f","brief":"1f6aabe8281de5d358a004b48e7c029ddf5b3669","at":"2026-11-10T13:57:38.465Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-572-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — the AskUserQuestion hook input shape is read from 115 transcript tool_use inputs and the recorded tool schema, not from a recorded PreToolUse payload; the brief states it as a limit, pins the shape in the ask() fixture, and refuses any other shape as malformed (fail-closed) — check: askuser-shape-probe.py; askuser-shape-probe.out; brief Limits, stated; Input domain row 2
+2. advisory — the main checkout's .claude/settings.json is not writable from this sandbox; the opus worktree's copy is, and the prototype's behaviour 2 commit carries the matcher change, so the reds perform applies it with the series and the main checkout gets it only at the merge, by the Patron's code-owner approval (/.claude/ and /studio/leges/) — check: settings-writable.out; series.out; .github/CODEOWNERS
+3. advisory — every red was replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR under $TMPDIR): each fails by ERR_ASSERTION only, with no EROFS, ENOENT, EACCES, EPERM or sandbox text, is accepted by scripts/replay-accept.mjs's classifyReplay, and leaves the HOME empty; each green passes in the same cell; row b1's evidence root is a fake .bisellium-evidence in a temp HOME — check: reds.sh; red-accept.mjs; reds.out; red-b1.log; red-b2.log; green-b1.log; green-b2.log
+4. advisory — Codex's test check (fixture-census.sh) was not run, as this dispatch runs no codex; the flipped rows (W-310-b5's two counts, instructions.test.ts's settings.pretooluse-guard) come from importers.sh and the files run at the tip — check: importers.out; singles.out; brief Acceptance
+5. advisory — the citation is lexical: any existing meet collation passes whether or not its meet ruled on the question, and the other question routes (reply text, PushNotification, Bash and Write surfaces, unmatched tools) are stated limits — check: brief Intent, the census; Limits, stated
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-572.md` revision 1 at master 5291063a: the guard refuses a main-thread AskUserQuestion unless each question cites a leads' meet collation by its path or opens with a Patron-only tag, a subagent's question is not judged, a malformed input is refused, and the PreToolUse matcher, CLAUDE.md and the D-189 lex line carry the rule; two behaviours, four prototype commits (prototype.mbox), every red accepted under certify's empty-HOME cell.

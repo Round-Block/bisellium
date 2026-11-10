@@ -1,6 +1,6 @@
 /**
  * packages/cli/src/guard.ts — W-310 (with W-290): the guard `bisellium hook-event guard` runs for
- * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit), SubagentStop, Stop and UserPromptSubmit hooks. Deny-only at a tool call and a
+ * Claude Code's PreToolUse (Bash, Write, Edit, NotebookEdit, AskUserQuestion), SubagentStop, Stop and UserPromptSubmit hooks. Deny-only at a tool call and a
  * subagent's stop, and fail-open: it returns a refusal or nothing, never an allow, and hooks.ts lets the call run on any
  * error, unknown event or unreadable input. The main thread is a hook input without `agent_id`
  * (Claude Code sets it only inside a subagent, D-073 B).
@@ -17,6 +17,9 @@
  * W-444, W-508: at a main-thread Stop the session's final reply (`last_assistant_message`) has been shown, so it is never
  * sent back: Stop exits 0 and the hook itself shows the Patron the usage reading; at UserPromptSubmit it hands the model the
  * same reading. No rule judges a reply's text at Stop (the Patron 2026-11-06 removed the length rule).
+ *
+ * W-572 (D-189): a main-thread AskUserQuestion is refused unless each question cites a leads' meet collation by its path or
+ * opens with a Patron-only tag (`questionRefusal`); a subagent's question is not judged.
  */
 import { accessSync, constants, existsSync, lstatSync, readFileSync, readlinkSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
@@ -1092,6 +1095,70 @@ export function replyHookOutput(input: Dict): string | undefined {
   return event === "Stop" ? stopOutput(input) : event === "UserPromptSubmit" ? promptOutput(input) : undefined;
 }
 
+/** W-572: the Patron-only tags a main-thread question may open with, written `[tag]`, instead of citing a leads' meet. */
+export const PATRON_TAGS = ["ui", "architecture", "code-owner", "settings", "veto"] as const;
+/** W-572: the evidence root under the home, where each leads' meet keeps its folder. */
+const EVIDENCE_ROOT = ".bisellium-evidence";
+/** W-572: a path written in a question's text: `/…` or `~/…` at the text's start or after a blank, a quote, a backtick, `(`,
+ *  `<` or `[`, up to the next blank, quote, backtick, parenthesis, angle bracket or square bracket; trailing `.,;:!?` drop. */
+const WRITTEN_PATH = /(?<=^|[\s"'`(<[])(?:~\/|\/)[^\s"'`()<>[\]]+/g;
+const COLLATED = /^collated[^/]*\.md$/;
+/** W-572: a question's opening tag, `[tag]` as its first characters. */
+const OPENING_TAG = /^\[([^\]\n]*)\]/;
+
+/** W-572: why the written path is not a leads' meet collation, or undefined when it is one: after `~/` is the home and `..`
+ *  resolves, a non-empty regular file by lstat (so not a symlink), readable, whose real path is
+ *  `<home>/.bisellium-evidence/<dir>/collated*.md` (the root's real path) with `meet` in `<dir>`. */
+function notCollation(written: string, home: string): string {
+  const path = resolve(written.startsWith("~/") ? join(home, written.slice(2)) : written);
+  let root: string;
+  try {
+    root = realpathSync(join(home, EVIDENCE_ROOT));
+  } catch {
+    return `no ~/${EVIDENCE_ROOT}/`;
+  }
+  try {
+    const st = lstatSync(path, { throwIfNoEntry: false });
+    if (!st) return "no such file";
+    if (st.isSymbolicLink()) return "a symlink";
+    if (!st.isFile()) return "not a regular file";
+    if (st.size === 0) return "empty";
+    accessSync(path, constants.R_OK);
+    const parts = relative(root, realpathSync(path)).split(sep);
+    if (parts.length !== 2 || parts[0] === ".." || parts[0] === "") return `not directly in a folder under ~/${EVIDENCE_ROOT}/`;
+    if (!parts[0]!.includes("meet")) return `its folder ${parts[0]} is not a leads' meet (no "meet" in its name)`;
+    if (!COLLATED.test(parts[1]!)) return "not a collated*.md";
+    return "";
+  } catch {
+    return "unreadable";
+  }
+}
+
+/** W-572 (D-189): the main thread's AskUserQuestion is refused unless every question in the call either opens with a
+ *  Patron-only tag (`OPENING_TAG`, one of `PATRON_TAGS`, exact) or cites a leads' meet collation by a path written in its
+ *  `question` text (`WRITTEN_PATH`, `notCollation`). An input not of the tool's shape (`questions` a non-empty list of
+ *  objects, each with a non-empty string `question`) is refused: fail-closed. */
+export function questionRefusal(args: Dict, home: string): string | undefined {
+  const rule = `each question cites a leads' meet collation by its path (~/${EVIDENCE_ROOT}/<a folder with "meet" in its name>/collated*.md, a readable regular file, not a symlink) or opens with a Patron-only tag, ${PATRON_TAGS.map((t) => `[${t}]`).join(", ")}: run the leads' meet first, and ask the Patron only a call that is theirs alone`;
+  const refuse = (why: string): string => `refused: the orchestrator asks the Patron only after a leads' meet (D-189, W-572): ${why}; ${rule}`;
+  const questions = args["questions"];
+  if (!Array.isArray(questions) || questions.length === 0) return refuse("the input holds no list of questions");
+  for (const [i, q] of questions.entries()) {
+    const text = isDict(q) ? str(q["question"]) : undefined;
+    if (text === undefined) return refuse(`question ${i + 1} has no question text`);
+    const tag = OPENING_TAG.exec(text)?.[1];
+    if (tag !== undefined && (PATRON_TAGS as readonly string[]).includes(tag)) continue;
+    const cited = (text.match(WRITTEN_PATH) ?? []).map((p) => p.replace(/[.,;:!?]+$/, ""));
+    const why = cited.map((p) => notCollation(p, home));
+    if (why.includes("")) continue;
+    const shown = JSON.stringify(text.length > 60 ? `${text.slice(0, 60)}…` : text);
+    const opens = tag === undefined ? "" : `opens with the unknown tag [${tag}] and `;
+    const cites = cited.length ? `cites no leads' meet collation (${cited.map((p, k) => `${p}: ${why[k]}`).join("; ")})` : "cites no path and opens with no Patron-only tag";
+    return refuse(`question ${i + 1} (${shown}) ${opens}${cites}`);
+  }
+  return undefined;
+}
+
 /** The guard's one entry: a refusal line for the hook input, or undefined to let the call run. */
 export function guardRefusal(input: Dict): string | undefined {
   const event = input["hook_event_name"];
@@ -1125,6 +1192,8 @@ export function guardRefusal(input: Dict): string | undefined {
   }
   const tool = input["tool_name"];
   const args = isDict(input["tool_input"]) ? input["tool_input"] : {};
+  // W-572 (D-189): a main-thread question to the Patron rests on a leads' meet or carries a Patron-only tag; a subagent's is not judged
+  if (tool === "AskUserQuestion") return main ? questionRefusal(args, homedir()) : undefined;
   if (tool === "Bash") {
     const command = str(args["command"]);
     if (!command) return undefined;
@@ -1165,7 +1234,7 @@ export function guardRefusal(input: Dict): string | undefined {
 
 /** The hook command the repo's `.claude/settings.json` wires for the guard. */
 export const GUARD_COMMAND = "bisellium hook-event guard --studio studio";
-const GUARDED_TOOLS = ["Bash", "Write", "Edit", "NotebookEdit"];
+const GUARDED_TOOLS = ["Bash", "Write", "Edit", "NotebookEdit", "AskUserQuestion"];
 
 /** What the settings lack for the guard: a PreToolUse group whose matcher covers each of
  *  `GUARDED_TOOLS`, a SubagentStop group whose matcher is `*`, a Stop group (W-444) and a UserPromptSubmit group (W-508; neither
