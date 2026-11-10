@@ -6,12 +6,18 @@
  * `studio/leges/production.md`. Nothing reads or writes the real home.
  */
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
+import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import { runHookEvent } from "./hooks.js";
+import { checkStudio } from "./check.js";
+import { PATRON_TAGS } from "./guard.js";
+import { initStudio } from "./init.js";
+import { RULE_IDS } from "./rules/ids.js";
+import { bulletClauses } from "./rules/lex.js";
 
 const dirs: string[] = [];
 const tmp = (): string => {
@@ -176,4 +182,38 @@ test("W-572-b1 behaviour 1: a malformed AskUserQuestion input is refused (fail-c
   }
   assert.equal((await guard(ask(["[ui] Approve?"], {}, h), join(h, "no-such-home"))).code, 0, "a tagged question passes with no evidence root");
   assert.equal((await guard(ask([`Route? ${join(h, ".bisellium-evidence", "w562-certify-meet-1110", "collated.md")}`], {}, h), join(h, "no-such-home"))).code, 2, "with no evidence root nothing is a collation");
+});
+
+const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+/** A studio and a repo whose .claude/settings.json is `settings`; the hook.guard findings. */
+function hookGuard(settings: string): { message: string; level: string }[] {
+  const t = tmp();
+  const studio = join(t, "studio");
+  const now = new Date("2026-11-10T12:00:00Z");
+  assert.ok(initStudio(studio, { now }).root);
+  mkdirSync(join(t, ".claude"));
+  writeFileSync(join(t, ".claude", "settings.json"), settings);
+  return checkStudio(studio, now, { repo: t }).findings.filter((f) => f.rule === "hook.guard");
+}
+
+test("W-572-b2 behaviour 2: AskUserQuestion reaches the guard: check blocks hook.guard without it, the repo wires it, and CLAUDE.md and the lex name the rule", () => {
+  const text = readFileSync(join(REPO, ".claude", "settings.json"), "utf8");
+  const settings = JSON.parse(text) as { hooks: Record<string, { matcher?: string; hooks: { type: string; command: string; timeout: number }[] }[]> };
+  const narrowed = structuredClone(settings);
+  narrowed.hooks["PreToolUse"]![0]!.matcher = "Bash|Write|Edit|NotebookEdit";
+  const f = hookGuard(JSON.stringify(narrowed));
+  assert.equal(f.length, 1, "a PreToolUse matcher without AskUserQuestion: one block");
+  assert.match(f[0]?.message ?? "", /the guard is not wired: PreToolUse AskUserQuestion -> bisellium hook-event guard --studio studio \(type command, timeout 2\)/, "the block names AskUserQuestion");
+  assert.deepEqual(hookGuard(text), [], "the repo's own settings wire the guard for AskUserQuestion");
+  assert.ok((settings.hooks["PreToolUse"]?.[0]?.matcher ?? "").split("|").includes("AskUserQuestion"), "the repo's PreToolUse matcher names AskUserQuestion");
+  const claude = readFileSync(join(REPO, "CLAUDE.md"), "utf8");
+  assert.match(claude, /a main-thread AskUserQuestion whose questions neither cite a leads' meet collation nor open with a Patron-only tag/, "CLAUDE.md names the refusal");
+  const lex = readFileSync(join(REPO, "studio", "leges", "production.md"), "utf8");
+  const line = bulletClauses(lex).find((c) => c.startsWith("- **A call rests on the leads' meet (D-189).**"));
+  assert.ok(line, "the lex holds the D-189 line");
+  assert.match(line, /AskUserQuestion/, "the D-189 line names the guard's question rule");
+  for (const t of PATRON_TAGS) assert.ok(line.includes(`\`[${t}]\``), `the D-189 line names the tag [${t}]`);
+  const marker = /\(check: ([^)]+)\)$/.exec(line)?.[1];
+  assert.equal(marker, "hook.guard", "the D-189 line ends with the hook.guard marker");
+  assert.ok(RULE_IDS.has(marker), "the marker names a check rule");
 });
