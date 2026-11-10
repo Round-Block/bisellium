@@ -54,13 +54,13 @@ Greenlit on master, continued: W-481 W-482 W-488 W-500 W-503 W-504 W-506 W-507 W
 
 D-178: no new process opus starts until M4's exit passes (D-177); product opera exempt. D-174's items 3 to 7 keep their 2026-11-17 date. W-506 (W-502's cause fix) is filed greenlit and starts when the freeze ends.
 
-In flight: W-451 work links: merged (#1045), next done, once its master verify runs.
+In flight: W-451 work links: merged (#1045), next done, once its master verify runs. W-572 (guard routes Patron questions to a leads' meet) merged #1130 and W-568 (verdict refuses an unknown manifest harness) merged #1132: both owe cleanup and done in a fresh session, W-572 first.
 
 Greenlit ahead of build: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep it). No W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Filed 11-08/10: W-533 to W-575. Next: W-572, W-568, W-574, W-573, W-560, W-563, W-564, W-569, W-570, W-554, W-553, W-555, W-512, W-556, W-372, W-545, W-546, W-544, W-532, W-561. The next entry's spec may be drafted during the build (spec-ahead-meet-1109/). Meets: overnight-meet-1108/, cli-approval-meet-1108/, simplify-meet-1109/, rank-meet-1109/, presign-meet-1109/, codex-sandbox-meet-1109/. Leads-settled calls need no Patron (D-189).
+Filed 11-08/10: W-533 to W-575. Next: W-574, W-573, W-560, W-563, W-564, W-569, W-570, W-554, W-553, W-555, W-512, W-556, W-372, W-545, W-546, W-544, W-532, W-561. The next entry's spec may be drafted during the build (spec-ahead-meet-1109/). Meets: overnight-meet-1108/, cli-approval-meet-1108/, simplify-meet-1109/, rank-meet-1109/, presign-meet-1109/, codex-sandbox-meet-1109/. Leads-settled calls need no Patron (D-189).
 
-Next session, in order: daily retro for 11-10 after 00:00Z (D-188, kit retro-1110/; feed the RETRO lines of current-state.md NOW); W-572 spec (brief shape ~/.bisellium-evidence/W-571-spec/architect-brief.md); the end-of-session prompt meet is done: W-574 filed after W-568 (endprompt-meet-1110/collated.md), D-178 exemption asked. W-562 retired (halted, PR #1121 closed, branch deleted; recovery refs/pull/1121/head).
+Next session, in order: W-572 done, then W-568 done (briefs W-572-build/, W-568-build/ladder-brief-done.md); daily retro for 11-10 after 00:00Z (D-188, kit retro-1110/; feed current-state.md RETRO lines NOW and endprompt-meet-1110/collated.md); then W-574 if the Patron exempts it, else W-573. W-562 retired (halted; recovery refs/pull/1121/head).
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it. Meets filed: W-562, W-563, W-564.
 
