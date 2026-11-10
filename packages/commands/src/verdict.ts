@@ -6,7 +6,7 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { countBehaviours, evidenceClaims, evidenceRoots, inputDomainRows, killedPin, redCommand, textKilledLine, redEvidence, ruledCases, type RuledCase } from "./brief-admission.js";
-import type { TurnRan } from "./codex-run.js";
+import { codexHome, sessionRan, type TurnRan } from "./codex-run.js";
 import { ensureRealDirectory } from "./ids.js";
 import { readSpecSeats, type SpecLogSource } from "./spec-seats.js";
 import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
@@ -31,6 +31,18 @@ export interface VerdictOptions extends WriteOptions {
   stdin?: Buffer;
   /** W-571: the caller's own judgment of the Codex turn it ran (a perform); without it the session's rollout is read. */
   turnRan?: TurnRan;
+}
+
+/** W-571: the models the manifest seats on the codex harness. */
+function codexModels(manifest: Manifest): Set<string> {
+  const rows = (manifest as unknown as Record<string, unknown>)["sellae"];
+  const out = new Set<string>();
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (typeof r !== "object" || r === null) continue;
+    const row = r as Record<string, unknown>;
+    if (row["harness"] === "codex" && typeof row["model"] === "string") out.add(row["model"]);
+  }
+  return out;
 }
 
 const GIT_TIMEOUT_MS = 30_000;
@@ -1231,6 +1243,17 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   } else if (sessionReason !== undefined) {
     console.error("--session-reason is valid only when --session replaces the sequence's recorded session; this sequence has none");
     return { exitCode: 2 };
+  }
+
+  // W-571: a sessioned verdict whose model the manifest seats on the codex harness is recorded only from a turn that ran a
+  // command to exit 0: the caller's own turn (a perform), else the session's rollout under Codex's home; a blind one is refused
+  if (session !== undefined && model !== undefined && codexModels(manifest).has(model)) {
+    const home = opts.turnRan === undefined ? codexHome(process.env) : undefined;
+    const turn: TurnRan = opts.turnRan ?? (home === undefined ? { ran: false, why: "neither CODEX_HOME nor HOME is set" } : sessionRan(home, session));
+    if (!turn.ran) {
+      console.error(`${opusId}: refusing: Codex session ${session} failed to run: ${turn.why}; a verdict from a blind session is never recorded`);
+      return { exitCode: 2 };
+    }
   }
 
   const filenamePhase = LOG_KIND[phase];
