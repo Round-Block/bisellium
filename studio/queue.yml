@@ -13,7 +13,10 @@ queues:
       - { opus: W-543, says: "a timer the Patron installs starts a refresh session from a landed handoff; exempt from the freeze on the leads' overnight meet and the Patron 2026-11-08 (D-189)" }
       - { opus: W-547, says: "next names a meanwhile step beside every wait; exempt at the Patron's ask 2026-11-09, ranked on the leads' overlap meet (D-189)" }
       - { opus: W-558, says: "a shared fail-closed read and loaders for queue, receipts and step markers; W-185's first slice; high (D-039), ranked on the leads' rank meet and the Patron's yes 2026-11-09", folded: [W-559] }
+      - { opus: W-562, says: "a Codex verdict from a blind session (shell failed or no repo command) is failed-to-run; upgrades admitted by smoke; high, exempt, the Patron 2026-11-10 (D-189)" }
       - { opus: W-560, says: "a failed ci --opus commits its own gate logs, so a class-loop spec perform is never refused for them; high, the Patron's call 2026-11-09 (W-547); producer's rank, vetoable" }
+      - { opus: W-563, says: "verdict --phase spec runs check and the touched tests, scripts/*.test.mjs included; repeated-class briefs carry a census; on the leads' pre-sign meet (D-189), ranked after W-560" }
+      - { opus: W-564, says: "the branch perform and the reds replay npm ci the worktree; on the leads' pre-sign meet (D-189)" }
       - { opus: W-554, says: "a meet verb asks the relevant leads, each named with why; check refuses a cited meet missing one; exempt at the Patron's ask 2026-11-09" }
       - { opus: W-553, says: "a spec draft declares a risk class and a 30/45-minute budget; only evidence defers to build; exempt at the Patron's ask 2026-11-09, on the leads' spec-speed meet (D-189)" }
       - { opus: W-555, says: "the queue check reads studio/queue.yml; the handoff's Greenlit list goes (W-299 part 2); exempt at the Patron's ask 2026-11-09, on the leads' simplify meet (D-189)" }
@@ -53,6 +56,9 @@ queues:
       - { opus: W-549, says: "the review perform writes Earlier findings itself; daily retro 11-08; behind the freeze" }
       - { opus: W-550, says: "the guard refuses an empty commit; daily retro 11-08; behind the freeze" }
       - { opus: W-551, says: "a required fix gets a red ticket after a full replay; seen on W-542 and W-543; behind the freeze" }
+      - { opus: W-565, says: "the guard refuses a second ladder-runner while one acts; daily retro 11-09; behind the freeze" }
+      - { opus: W-566, says: "handoff check takes an in-flight id's state from its record; daily retro 11-09; behind the freeze" }
+      - { opus: W-567, says: "a post-ceiling security amendment gets one spec review; daily retro 11-09; behind the freeze" }
       - { opus: W-518, says: "start the handoff refresh earlier, enforced; behind the process freeze, not exempt; W-532's measured boot sets its number (leads 2026-11-07)" }
       - { opus: W-393, says: "one spec admission table checked at signing", folded: [W-395, W-394, W-481] }
       - { opus: W-458, says: "done finishes a merged rung: one trunk step", folded: [W-469] }
