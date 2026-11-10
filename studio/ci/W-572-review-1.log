@@ -1,0 +1,18 @@
+# opus: W-572
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1c5ec-6d9c-7241-8314-ccd00afeec24
+# outcome: passed
+# at: 2026-11-10T14:49:01.005Z
+# tree: tree:6ea30b15d0db2198a00738938c4620882f428ff1
+# brief: briefs/W-572.md blob:1f6aabe8281de5d358a004b48e7c029ddf5b3669
+# ticket: {"opus":"W-572","step":"review","action":"verdict-build","round":1,"actor":"censor","studio":".worktrees/W-572/studio","head":"1ac75c618a147792c93ed7f6ed1d531b78a3b740","brief":"1f6aabe8281de5d358a004b48e7c029ddf5b3669","at":"2026-11-10T14:46:06.810Z"}
+
+## Findings
+1. advisory — packages/cli/src/w572.test.ts:214 Row b2 checks only `AskUserQuestion`, the five tags, and the marker; it still passes if the D-189 line no longer says each question must cite a collation or open with a tag, leaving brief:100’s ruled text uncovered. [severity: S4] [class: tests×ruled-case-uncovered] — check: packages/cli/src/w572.test.ts
+
+## Verdict
+The implementation is correct; the incomplete regression assertion is advisory-only and should be completed in the same pass.
+VERDICT: PASS
