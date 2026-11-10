@@ -1,0 +1,24 @@
+# opus: W-571
+# phase: spec
+# round: 1
+# sella: ladder-lead
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-11-10T09:20:09.366Z
+# tree: tree:c55b4d935711853c22ec88977aad78da1b55d4bb
+# brief: briefs/W-571.md blob:3cd3affef7f5b76ccd82c05845f6996a51df82f2
+# ticket: {"opus":"W-571","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"498077fa55ab273f4f8de449ccae31a07b5cec2c","brief":"3cd3affef7f5b76ccd82c05845f6996a51df82f2","at":"2026-11-10T09:20:02.968Z"}
+
+Promise ledger: /home/edckt/.bisellium-evidence/W-571-spec/promise-ledger.md
+
+## Findings
+
+1. advisory — W-571 is W-562 rebuilt under a new id (the leads' meet, w562-certify-meet-1110/collated-r2.md): the brief is W-562's signed brief (spec review round 7 passed) with W-562's ids renamed by a kept script, and its one change is the b3 rows' description, now hermetic (HOME a scratch home holding .codex/sessions, CODEX_HOME unset unless the row sets it); no promise, row, limit, follow-on or Default changes, and W-562 is named as superseded — check: make-brief.py; rename.py; diff of opus/W-562:studio/briefs/W-562.md through rename.py against studio/briefs/W-571.md
+2. advisory — the prototype is W-562's signed series renamed with the meet's hermetic fix on the b3 test commit, and its tip's source equals opus/W-562 2177d069's renamed, file by file — check: stages.sh; series.out; tree-match.out
+3. advisory — every red was replayed as certify replays it (env -i, an empty HOME, a writable TMPDIR under $TMPDIR): each fails by ERR_ASSERTION only, with no EROFS, ENOENT, EACCES, EPERM or sandbox text, is accepted by scripts/replay-accept.mjs's classifyReplay, and leaves the HOME empty; each green passes in the same cell — check: reds.sh; red-accept.mjs; reds.out; red-b1.log; red-b2.log; red-b3.log; green-b1.log; green-b2.log; green-b3.log
+4. advisory — the test file is renamed to packages/cli/src/w571.test.ts: its rows are W-571-b2 and W-571-b3, and the brief's red commands, Files owned and package.json's test:suite name it; nothing on master holds w562.test.ts (W-562 never merged) — check: brief Files owned; series.out
+5. advisory — the harness check against the known harness ids stays W-568's, and W-569 and W-570 are unchanged follow-ons, now following W-571 — check: brief Limits, stated; Out of scope
+
+## Verdict
+
+passed — signed by the ladder-lead seat (`ladder-lead`, `claude-opus-5-5`, the production collegium's spec signer, studio/bisellium.yml) for `studio/briefs/W-571.md` revision 1 at master 498077fa: W-562 rebuilt (superseded, halted), the performs and `verdict` refuse a Codex turn that ran no command to exit 0, the boundary refuses the malformed inputs it judges, and a harness string other than exactly codex is a stated limit, W-568's; three behaviours, six prototype commits (prototype.mbox), every red accepted under certify's empty-HOME cell.

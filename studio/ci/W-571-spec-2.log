@@ -1,0 +1,18 @@
+# opus: W-571
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1c4c3-0aee-79d2-b2f7-a06433239cbb
+# outcome: passed
+# at: 2026-11-10T09:25:15.265Z
+# tree: tree:c55b4d935711853c22ec88977aad78da1b55d4bb
+# brief: briefs/W-571.md blob:3cd3affef7f5b76ccd82c05845f6996a51df82f2
+# ticket: {"opus":"W-571","step":"spec","action":"verdict-spec","round":2,"actor":"spec-reviewer","studio":"studio","head":"498077fa55ab273f4f8de449ccae31a07b5cec2c","brief":"3cd3affef7f5b76ccd82c05845f6996a51df82f2","at":"2026-11-10T09:25:14.722Z"}
+
+## Findings
+1. advisory — brief:29 The promise says judgment happens “before the reply is read,” but `reviewSteps` first reads `turn.reply` to write `verdict.md`; only `replyOutcome` parsing happens afterward. Replace brief:29 with: `Promise review-perform: after the packet keeps turn.reply as verdict.md and the session checks pass, but before replyOutcome parses the reply, the review perform judges execStreamRan over turn.raw.stdout; not ran, it writes failed-to-run.json ({ round, session, why }) in the round’s packet and holds, recording no verdict log, review record or commit; ran, it passes { turnRan } to runVerdict — limit: the perform’s other packet, session and commit steps are reused unchanged (W-274, W-316).` [severity: S2] [class: spec×promise-unattainable-under-accepted-domain] — check: none: compare Promise review-perform with packages/cli/src/next.ts reviewSteps
+
+## Verdict
+The required shell head was "498077fa chore(studio): file W-571..W-573 (W-562 rebuilt, question guard, empty-HOME reds); W-562 halted (#1123)"; the brief is feasible and fail-closed, with one advisory ordering correction.
+VERDICT: PASS
