@@ -58,9 +58,9 @@ In flight: W-451 work links: merged (#1045), next done, once its master verify r
 
 Ahead of the build, greenlit: W-503 Home is HELD for the Patron's four calls in ~/.bisellium-evidence/W-503-spec/compare-1105.md, section 4: the spec drifted from the signed round-6 Home D-175 keeps. Branched (opus/W-503); one required build fix stands (ci/W-503-spec-8.log #1, uncommitted in .worktrees/W-503 only: keep that worktree). Do no W-503 step before they answer; D-181 restores the signed screens and puts Home after W-301.
 
-Filed 11-08/10: W-533 to W-573. Next: W-571, W-572, W-568, W-573, W-560, W-563, W-564, W-569, W-570, W-554, W-553, W-555, W-512, W-556, W-372, W-545, W-546, W-544, W-532, W-561. The next entry's spec may be drafted during the build (spec-ahead-meet-1109/). Meets: overnight-meet-1108/, cli-approval-meet-1108/, simplify-meet-1109/, rank-meet-1109/, presign-meet-1109/, codex-sandbox-meet-1109/. Leads-settled calls need no Patron (D-189).
+Filed 11-08/10: W-533 to W-573. Next: W-572, W-568, W-573, W-560, W-563, W-564, W-569, W-570, W-554, W-553, W-555, W-512, W-556, W-372, W-545, W-546, W-544, W-532, W-561. The next entry's spec may be drafted during the build (spec-ahead-meet-1109/). Meets: overnight-meet-1108/, cli-approval-meet-1108/, simplify-meet-1109/, rank-meet-1109/, presign-meet-1109/, codex-sandbox-meet-1109/. Leads-settled calls need no Patron (D-189).
 
-W-562 is halted on opus/W-562 (424fa2fe), superseded by W-571 (leads' meet w562-certify-meet-1110 route 2); PR #1121 stays open until the Patron closes it.
+W-572 spec first next session: brief kit ~/.bisellium-evidence/W-571-spec/architect-brief.md shape; W-562 retired (halted, PR #1121 closed, branch deleted; recovery refs/pull/1121/head).
 
 Unruled notes, read first: end of ~/.bisellium-evidence/current-state.md; talk-a2a-1106/combined.md beside it. Meets filed: W-562, W-563, W-564.
 
