@@ -1223,6 +1223,9 @@ process.stdin.on("end", () => {
   for (const end = Date.now() + (r.sleepMs ?? 0); Date.now() < end; ) { /* spin */ }
   (() => {
     if (r.session !== undefined) process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: r.session }) + "\n");
+    // W-562: the turn's commands as codex exec --json reports them: one run to exit 0 unless the reply names others
+    for (const [i, code] of (r.commands ?? [0]).entries())
+      process.stdout.write(JSON.stringify({ type: "item.completed", item: { id: "item_" + i, type: "command_execution", command: "/usr/bin/zsh -lc pwd", aggregated_output: "", exit_code: code, status: code === 0 ? "completed" : "failed" } }) + "\n");
     process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: r.reply } }) + "\n", () => {
       if (r.signal !== undefined) process.kill(process.pid, r.signal);
       else {

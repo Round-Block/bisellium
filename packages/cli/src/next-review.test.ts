@@ -247,7 +247,7 @@ function w340Png(width: number, height = 900): Buffer {
     w340Chunk("IEND", Buffer.alloc(0)),
   ]);
 }
-type CodexReply = { session?: string; reply: string; exit?: number; stderr?: string; sleepMs?: number; signal?: string; poison?: boolean };
+type CodexReply = { session?: string; reply: string; exit?: number; stderr?: string; sleepMs?: number; signal?: string; poison?: boolean; commands?: number[] };
 const codexSays = (w: World, r: CodexReply): void => writeFileSync(join(w.home, "codex-reply.json"), JSON.stringify(r));
 const codexCalls = (w: World): { argv: string[]; stdin: string; cwd: string }[] =>
   existsSync(join(w.home, "codex-calls.jsonl")) ? readFileSync(join(w.home, "codex-calls.jsonl"), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { argv: string[]; stdin: string; cwd: string }) : [];
@@ -2505,4 +2505,43 @@ test("W-502-b1 behaviour 1: past its entry budget a silence read stops and says 
   assert.doesNotMatch(healthAt("no test clock", 0, "named", { clock: false }), /not judged/, "the seam is honoured only with BISELLIUM_TEST_CLOCK=1");
   const { SILENCE_WALK_ENTRIES } = (await import("./next.js")) as { SILENCE_WALK_ENTRIES?: number };
   assert.equal(SILENCE_WALK_ENTRIES, 100_000, "the budget's value: above W-451's 70024 entries, the largest honest opus measured");
+});
+
+// ---------------------------------------------------------------------------
+// W-562: a codex turn that ran no command to exit 0 (its shell failed, or it ran none) read nothing: the review and fix-check
+// performs record it failed-to-run in the packet and record no verdict and no fix check; a census naming itself unrun is none
+// ---------------------------------------------------------------------------
+test("W-562-b1 behaviour 1: the review perform refuses a codex turn that ran no command to exit 0, recording it failed-to-run", { timeout: 1_800_000 }, () => {
+  const w = reviewWorld("w562-b1-blind");
+  const tip = tipOf(w);
+  codexSays(w, { session: "s-562-1", reply: PASS_REPLY, commands: [] });
+  const o = performReview(w);
+  assert.equal(o.first, `next: ${OPUS} review held`, ran("blind: held", o));
+  assert.match(o.kv.get("why") ?? "", /^codex session s-562-1 failed to run: it ran no command to exit code 0 in this turn \(its shell failed or it ran none\); recorded failed-to-run \(.*failed-to-run\.json\), nothing is recorded$/, ran("blind: why", o));
+  assert.equal(existsSync(reviewLog(w, 1)), false, "blind: no verdict log");
+  assert.equal(tipOf(w), tip, "blind: no commit");
+  assert.deepEqual(JSON.parse(readFileSync(join(packetDir(w, 1), "failed-to-run.json"), "utf8")), { round: 1, session: "s-562-1", why: "it ran no command to exit code 0 in this turn (its shell failed or it ran none)" }, "blind: recorded failed-to-run");
+
+  const x = reviewWorld("w562-b1-exit");
+  codexSays(x, { session: "s-562-2", reply: PASS_REPLY, commands: [1, 127] });
+  const xo = performReview(x);
+  assert.equal(xo.first, `next: ${OPUS} review held`, ran("every command non-zero: held", xo));
+  assert.equal(existsSync(reviewLog(x, 1)), false, "every command non-zero: no verdict log");
+});
+
+test("W-562-b1 behaviour 1: the fix-check perform refuses a codex turn that ran no command, and a census that names itself unrun is no fix check", { timeout: 1_800_000 }, () => {
+  const f = fixWorld("w562-b1-fix");
+  codexSays(f, { session: "s-562-3", reply: CENSUS("None"), commands: [] });
+  const o = performFixCheck(f);
+  assert.equal(o.first, `next: ${OPUS} review held`, ran("blind census: held", o));
+  assert.match(o.kv.get("why") ?? "", /^codex session s-562-3 failed to run: .*; recorded failed-to-run \(.*fix-1\/failed-to-run\.json\), no fix check is recorded$/, ran("blind census: why", o));
+  assert.equal(existsSync(join(fixPacket(f, 1), "check.json")), false, "blind census: no check.json");
+  assert.ok(existsSync(join(fixPacket(f, 1), "failed-to-run.json")), "blind census: recorded failed-to-run");
+
+  // W-558 fix-2's reply: the census itself says it could not run; never an open path
+  codexSays(f, { session: "s-562-4", reply: CENSUS("Not determined; no path evidence was accessible.") });
+  const u = performFixCheck(f);
+  assert.equal(u.first, `next: ${OPUS} review held`, ran("unrun census: held", u));
+  assert.match(u.kv.get("why") ?? "", /^the census names itself unrun \("Not determined" under ## Open, .*census\.md\); no fix check is recorded$/, ran("unrun census: why", u));
+  assert.equal(existsSync(join(fixPacket(f, 1), "check.json")), false, "unrun census: no check.json, so no open path is counted");
 });
